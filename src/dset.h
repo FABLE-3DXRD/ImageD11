@@ -19,7 +19,27 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-
+/* ********************************************************************
+ * Disjoint set
+ *
+ * See a good book on algorithms (reference TODO)
+ *
+ * Stored in array S
+ *
+ * S[0] = malloc'ed length of the array
+ * S[:-1] = current end element 
+ *
+ * dset_initialise(int size) => S[:] = 0
+ * dset_new(S) => new item at end of working part of array
+ * dset_makeunion(S,i,j) => make S[i]==S[j]
+ * dset_find(i,S) => return set of i
+ *
+ * eg: sets are 1,2,3,4,5
+ *     Now say 1 and 3 are actually the same thing:
+ *     1,2,3=1,4,5
+ *     Ask for set of 3 => S[3]=1 => S[1]=1 => return 1
+ *
+ * ********************************************************************  */
 
 #ifndef _dset_h
 #define _dset_h

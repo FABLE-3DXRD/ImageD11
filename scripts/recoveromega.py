@@ -26,15 +26,22 @@ try:
    newpksfile = open(sys.argv[3],"w")
 except:
    print "Usage: %s logfile pksfile newpksfile"%(sys.argv[0])
+   print " recovers omega angles from spec log files to fill information into"
+   print " peaksearch output files"
    sys.exit()
 
-# Read all of the scans into a dictionary of filenames/omega angles
+# Read all of the lines in logfile into a dictionary of filenames/omega angles
 
 lookups = {}
 
 for line in logfile.readlines():
    if line.find(".edf")>0:
       try:
+         # 12.34 /data/opid11/external/me001/mysample/mysample0012.edf
+         # split()[0] = 12.34
+         # split()[1] = /data/opid11/external/me001/mysample/mysample0012.edf
+         # name = mysample0012.edf
+         # Finally lookups['mysample0012.edf']="12.34" - voila.
          om = line.split()[0]
          fullname=line.split()[1]
          name=fullname.split('/')[-1]
@@ -46,12 +53,12 @@ for line in logfile.readlines():
 logfile.close()
 
 for line in pksfile.readlines():
-   newpksfile.write(line)
-   if line.find("File ")>0:
-      name=line.split()[-1]
-      
-      newpksfile.write("# Omega = %s\n"%(lookups[name]) )
+   # Reading in the pksfile from the peaksearching script
+   newpksfile.write(line) # echo line
+   if line.find("File ")>0: # We found a filename
+      name=line.split()[-1] 
+      newpksfile.write("# Omega = %s\n"%(lookups[name]) ) # So add the angle
 
-
+# all done
 pksfile.close()
 newpksfile.close()

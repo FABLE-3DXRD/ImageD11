@@ -20,6 +20,39 @@
 */
 
 
+/* *******************************************************************
+ * closest.c  Two useful functions for indexing grains 
+ *
+ * 1. From python: closest(cosines_allowed, cosine_measured)
+ *    Take 1 peak with hkl's assigned, compute the cosines to
+ *    another powder ring (angles between this peak and peaks in
+ *    that ring). This extension finds the best peak in the
+ *    other ring to pair up with.
+ *
+ *    More generally closest(array, values) finds the closest
+ *    item in values to one of the values in array.  Returns the
+ *    difference and the index of the closest thing it finds.
+ *
+ *    Both arguments should be one dimensional Numeric arrays
+ *    of type Numeric.Float
+ *
+ * 2. From python: score(ubi, gv, tol) where ubi is an orientation
+ *    matrix and gv are an array of g-vectors. Returns the number
+ *    of g-vectors which have integer hkl peaks within tolerance
+ *    tol. Uses the conv_double_to_int_fast function in here for 
+ *    factor of !EIGHT! speed increase compared to rounding in 
+ *    C. In fact this gives the nearest even integer, instead
+ *    of the nearest integer, but we don't care, as a peak having
+ *    hkl of 0.5 is nowhere near being indexed anyway.
+ *
+ *    Returns and integer - number of peaks indexed
+ *    UBI is a 3x3 Numeric.Float array (figure out the transposing yourself)
+ *    GV is a nx3 Numeric.Float array, and you should try to make the 3 
+ *       be the fast index for best performance
+ *
+ * ****************************************************************** */
+
+
 #include <Python.h>                  /* To talk to python */
 #include "Numeric/arrayobject.h"     /* Access to Numeric */
 
@@ -185,7 +218,9 @@ inline int conv_double_to_int_safe(double x){
 
 
 inline int conv_double_to_int_fast(double x){
-   /* This was benched as about ten times faster than the safe mode!! */
+   /* This was benched as about eight times faster than the safe mode!! */
+
+   /* Put in the reference for where this was found on the web TODO */
    const int p=52;
    const double c_p1 = (1L << (p/2));
    const double c_p2 = (1L << (p-p/2));
@@ -196,15 +231,18 @@ inline int conv_double_to_int_fast(double x){
    return (a);
 }
 
-/* Make a UBI matrix from two peaks and score it ?? */
+/* TODO - Make a UBI matrix from two peaks and score it ?? */
 
    
    
 static PyMethodDef closestMethods[] = {
    { "closest", (PyCFunction) closest, METH_VARARGS, 
-      "int,float closest(x,v)\nFind element in x closest to one in v\nx,v 1D flat Float arrays"},
+      "int,float closest(x,v)\n"\
+      "    Find element in x closest to one in v\n"\
+      "    x,v 1D flat Float arrays"},
    { "score", (PyCFunction) score, METH_VARARGS, 
-      "int score(ubi,gv,tol)\nFind number of gv which are integer h within tol"},
+      "int score(ubi,gv,tol)\n"\
+      "    Find number of gv which are integer h within tol"},
    { NULL, NULL, 0, NULL }  
 };
 

@@ -19,15 +19,21 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
+"""
+Defines a class for correcting peak positions for spatial distortion
+via a fit2d spline file
+
+To think about doing - valid regions? What if someone uses a 1K spline
+file for a 2K image etc?
+"""
+
 import Numeric as n
 import bisplev, math
 
 class correctorclass:
-
    """
    Applies a spatial distortion to a peak position using a fit2d splinefile
    """
-
    def __init__(self,splinefile):
       """
       Argument is the name of a fit2d spline file
@@ -51,6 +57,8 @@ class correctorclass:
       """
       Distort a pair of points xnew, ynew to find where they
       would be in a raw image
+
+      Iterative algorithm...
       """
       yold=ynew-bisplev.bisplev(ynew,xnew,self.tck1)
       xold=xnew-bisplev.bisplev(ynew,xnew,self.tck2)

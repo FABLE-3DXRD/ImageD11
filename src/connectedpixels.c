@@ -25,11 +25,12 @@
 
 #include <Python.h>                  /* To talk to python */
 #include "Numeric/arrayobject.h"     /* Access to Numeric */
-#include "dset.h"
-#include <time.h>
-#include <unistd.h>
-#include <stdlib.h>
-/*
+#include "dset.h"   /* Disjoint sets thing for blob finding */
+#include <time.h>  /* Benchmarking */
+#include <unistd.h> /* ??? */
+#include <stdlib.h> /* ??? */
+
+/* used from From dset.h
 int * dset_initialise(int size); 
 int * dset_new(int ** S);
 void dset_makeunion(int * S, int r1, int r2);
@@ -42,6 +43,8 @@ int dset_find(int x, int * S);
 int getval(char *p,int type);
 
 int getval(char *p,int type){
+   /* return the value of a python array element converted to the 
+    * universal c type of int - why is this not float I wonder? */
   switch (type){
      case    PyArray_CHAR   : return *(char          *)p*1;
      case    PyArray_SBYTE  : return *(signed char   *)p*1;
@@ -62,6 +65,7 @@ int getval(char *p,int type){
 }
 
 void ptype(int type){
+   /* Print out the type of a Numeric array from the C point of view */
   printf("Your input type was ");
   switch (type){
      case    PyArray_CHAR   : printf("PyArray_CHAR *(char *)\n");break;
@@ -80,13 +84,13 @@ void ptype(int type){
 }
 
 
-/* make an image of peak assignement for pixels */
+/* Fill in an image of peak assignments for pixels */
 static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *keywds)
 {
-   PyArrayObject *dataarray=NULL,*results=NULL; /* in (not modified) and out */
+   PyArrayObject *dataarray=NULL,*results=NULL; /* in (not modified) and out (modified) */
 
    int i,j,k,l,ival,f,s,np;        
-   int *T;                         /* for the disjoint set copy */
+   int *T;                            /* for the disjoint set copy */
    int verbose=0,type;                /* whether to print stuff and the type of the input array */
    int percent,npover;                       /* for the progress indicator in verbose mode */
    static char *kwlist[] = {"data","results","threshold","verbose", NULL};
@@ -103,15 +107,21 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
       }
 
    tv1=clock();  
-   /* Check array is two dimensional and float */
-   if(dataarray->nd != 2){    
+   /* Check array is two dimensional and Ushort */
+   if(dataarray->nd != 2 || dataarray->descr->type_num!=PyArray_USHORT){    
       PyErr_SetString(PyExc_ValueError,
-                       "Array must be 2d, first arg problem");
+       "Data array must be 2d, UInt16, first arg problem, easy fix in the C source if you really have something else");
       return NULL;
       }
    type=dataarray->descr->type_num;
    if(verbose!=0)ptype(type);
    if(verbose!=0)printf("Thresholding at level %f\n",threshold);
+
+   /*
+    * Abandoned this - allocating in here gives memory leaks and is dumb
+    * as you add an overhead which is not really needed here
+    *
+    * */
    /* make an array to hold the integer peak assignments */
    /*   PyArray_FromDims(int n_dimensions, int dimensions[n_dimensions], int type_num) */
    /* Make a new array to hold the results... how to do optional arguments?? */
@@ -133,7 +143,7 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
       return NULL;
       }
 
-   S = dset_initialise(16384); /* Default number before reallocation */
+   S = dset_initialise(16384); /* Default number before reallocation, rather large */
    if(verbose!=0)printf("Initialised the disjoint set\n");
    npover=0; /* number of pixels over threshold */
    /* Decide on fast/slow loop - inner versus outer */
@@ -144,7 +154,7 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
    }
    if (verbose!=0){
         printf("Fast index is %d, slow index is %d, ",f,s);
-   printf("strides[0]=%d, strides[1]=%d\n",dataarray->strides[0],dataarray->strides[1]);
+        printf("strides[0]=%d, strides[1]=%d\n",dataarray->strides[0],dataarray->strides[1]);
    }
    percent=(results->dimensions[s]-1)/80.0;
    if(percent < 1)percent=1;
@@ -156,61 +166,63 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
 
    if(verbose!=0)printf("Scanning image\n");
    for( i = 0 ; i < (results->dimensions[s]) ; i++ ){    /* i,j is looping along the indices data array */
+
       if(verbose!=0 && (i%percent == 0) )printf(".");
 
 
       for( j = 0 ; j < (results->dimensions[f]) ; j++ ){
 
-	/* Set result for this pixel to zero */
+      	/* Set result for this pixel to zero - Not needed here? */
 	
-	(*(int *)(results->data + i*results->strides[s] + j*results->strides[f])) = 0;
+      	(*(int *)(results->data + i*results->strides[s] + j*results->strides[f])) = 0;
 
          ival= (* (unsigned short *) (dataarray->data + i*dataarray->strides[s] + j*dataarray->strides[f])) ;
-	 /* val=getval((dataarray->data + i*dataarray->strides[s] + j*dataarray->strides[f]),type); */
+         /* UNCOMMENT HERE FOR OTHER NUMERICAL TYPES, AND MAYBE MAKE IVAL A FLOAT/DOUBLE */
+	      /* val=getval((dataarray->data + i*dataarray->strides[s] + j*dataarray->strides[f]),type); */
          if( ival > threshold) {
              npover++;
              k=0;l=0;
-                /* peak needs to be assigned */
-	     /* i-1, j-1, assign same index */
-        if(i!=0 && j!=0)
-             if( ( k=*(int *)(results->data + (i-1)*results->strides[s] + (j-1)*results->strides[f] )) >0 ) {
-                 (*(int *)(results->data + i*results->strides[s] + j*results->strides[f])) = k;
-       l=k; /* l holds the assignment of the current pixel */
-        }
-           /* i-1,j */
-        if(i!=0)
-             if( ( k=*(int *)(results->data + (i-1)*results->strides[s] + j*results->strides[f] )) >0 ) {
-            if(l==0){
-                 (*(int *)(results->data + i*results->strides[s] + j*results->strides[f])) = k;
-       l=k; /* l holds the assignment of the current pixel */
-       } else {
-       if(l!=k)dset_makeunion(S,k,l);
-       }
-        }
-                /* i-1, j+1 */
-        if(i!=0 && j!=(results->dimensions[f]-1))  
-             if( ( k=*(int *)(results->data + (i-1)*results->strides[s] + (j+1)*results->strides[f] )) >0 ) {
-            if(l==0){
-                 (*(int *)(results->data + i*results->strides[s] + j*results->strides[f])) = k;
-       l=k; /* l holds the assignment of the current pixel */
-       } else {
-       if(l!=k)dset_makeunion(S,k,l);
-       }
-        }
-           /* i, j-1 */
-        if(j!=0)
-             if( ( k=*(int *)(results->data + i*results->strides[s] + (j-1)*results->strides[f] )) >0 ) {
-            if(l==0){
-                 (*(int *)(results->data + i*results->strides[s] + j*results->strides[f])) = k;
-       l=k; /* l holds the assignment of the current pixel */
-       } else {
-       if(l!=k)dset_makeunion(S,k,l);
-       }
-        }
-             if(l==0){ /* pixel has no neighbours thus far */
-            S = dset_new(&S);
-            (*(int *)(results->data + i*results->strides[s] + j*results->strides[f])) = S[S[0]-1];
-        } 
+             /* peak needs to be assigned */
+             /* i-1, j-1, assign same index */
+             if(i!=0 && j!=0)
+                if( ( k=*(int *)(results->data + (i-1)*results->strides[s] + (j-1)*results->strides[f] )) >0 ) {
+                       (*(int *)(results->data + i*results->strides[s] + j*results->strides[f])) = k;
+                       l=k; /* l holds the assignment of the current pixel */
+                       }
+             /* i-1,j */
+             if(i!=0)
+                if( ( k=*(int *)(results->data + (i-1)*results->strides[s] + j*results->strides[f] )) >0 ) {
+                    if(l==0){
+                       (*(int *)(results->data + i*results->strides[s] + j*results->strides[f])) = k;
+                       l=k; /* l holds the assignment of the current pixel */
+                       } else {
+                       if(l!=k)dset_makeunion(S,k,l);
+                    }
+              }
+              /* i-1, j+1 */
+              if(i!=0 && j!=(results->dimensions[f]-1))  
+                 if( ( k=*(int *)(results->data + (i-1)*results->strides[s] + (j+1)*results->strides[f] )) >0 ) {
+                    if(l==0){
+                        (*(int *)(results->data + i*results->strides[s] + j*results->strides[f])) = k;
+                        l=k; /* l holds the assignment of the current pixel */
+                        } else {
+                        if(l!=k)dset_makeunion(S,k,l);
+                    }
+              }
+              /* i, j-1 */
+              if(j!=0)
+                 if( ( k=*(int *)(results->data + i*results->strides[s] + (j-1)*results->strides[f] )) >0 ) {
+                    if(l==0){
+                        (*(int *)(results->data + i*results->strides[s] + j*results->strides[f])) = k;
+                        l=k; /* l holds the assignment of the current pixel */
+                        } else {
+                        if(l!=k)dset_makeunion(S,k,l);
+                    }
+              }
+              if(l==0){ /* pixel has no neighbours thus far */
+                 S = dset_new(&S);
+                 (*(int *)(results->data + i*results->strides[s] + j*results->strides[f])) = S[S[0]-1];
+              } 
     } /* active pixel */
     else { /* inactive pixel  - zero in results */
                  (*(int *)(results->data + i*results->strides[s] + j*results->strides[f])) = 0;
@@ -240,19 +252,19 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
    for(i=1;i<S[S[0]-1]+1;i++){
      if(S[i]==i){
       np++;
-   T[i]=np;
-   }
-     else{  /* check */
+      T[i]=np;
+      }
+      else{  /* check */
         j=dset_find(i,S);
-   T[i]=T[j];
-   if(j>=i && verbose){
+        T[i]=T[j];
+        if(j>=i && verbose){
             printf("Oh dear - there was a problem compressing the disjoint set, j=%d, i=%d \n",j,i);
-       }
-   if(S[j]!=j && verbose!=0){
-       printf("Oh dear - the disjoint set is squiff,S[j]=%d,j=%d\n",S[j],j);
-       }
+        }
+        if(S[j]!=j && verbose!=0){
+            printf("Oh dear - the disjoint set is squiff,S[j]=%d,j=%d\n",S[j],j);
+        }
+      }
    }
-     }
    if(verbose!=0)printf("\n");
    tv3=clock();
    if(verbose!=0){
@@ -318,8 +330,8 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
    int i,j,safelyneed,*anpix, percent;
    if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!i|i",kwlist,      
                         &PyArray_Type, &dataarray,   /* array args - data */
-         &PyArray_Type, &blobarray,   /* blobs */
-         &np,              /* Number of peaks to treat */
+                        &PyArray_Type, &blobarray,   /* blobs */
+                        &np,              /* Number of peaks to treat */
                         &verbose))        /* threshold and optional verbosity */
       return NULL;
 
@@ -330,7 +342,7 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
       return NULL;
       }
    if(verbose!=0)printf("Welcome to blobproperties\n");
-   /* Check array is two dimensional and float */
+   /* Check array is two dimensional and int - results from connectedpixels above */
    if(blobarray->nd != 2 && blobarray->descr->type_num != PyArray_INT){     
       PyErr_SetString(PyExc_ValueError,
                        "Blob array must be 2d and integer, second arg problem");
@@ -359,14 +371,14 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
   com11 = (PyArrayObject *)PyArray_FromDims(1,&safelyneed,PyArray_DOUBLE);
 
   if (npix == NULL || sumsq == NULL || sum == NULL || com0 == NULL || com1 == NULL) goto fail;
-  anpix  = (int   *)  npix->data;
+  anpix  = (int   *)   npix->data;
   asumsq = (double *) sumsq->data;
   asum   = (double *)   sum->data;
   acom0  = (double *)  com0->data;
   acom1  = (double *)  com1->data;
-  acom00 = (double *)  com00->data;
-  acom01 = (double *)  com01->data;
-  acom11 = (double *)  com11->data;
+  acom00 = (double *) com00->data;
+  acom01 = (double *) com01->data;
+  acom11 = (double *) com11->data;
 
   for ( i=0 ; i<safelyneed ; i++){
     anpix[i]  = 0;
@@ -391,24 +403,25 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
          peak=* (int *) (blobarray->data + i*blobarray->strides[s] + j*blobarray->strides[f]);
          if( peak > 0  && peak <=np ) {
              fval=(double)(getval((dataarray->data + i*dataarray->strides[s] + j*dataarray->strides[f]),type));
-             asum[peak]  =asum[peak]+fval;
-	     asumsq[peak]=asumsq[peak]+fval*fval;
-	     acom0[peak] =acom0[peak]+i*fval;
-	     acom1[peak] =acom1[peak]+j*fval;
-	     acom00[peak] =acom00[peak]+i*i*fval;
-	     acom01[peak] =acom01[peak]+i*j*fval;
-	     acom11[peak] =acom11[peak]+j*j*fval;
-	     anpix[peak] =anpix[peak]++;
+             asum[peak]   =asum[peak]   +     fval;
+             asumsq[peak] =asumsq[peak] +fval*fval;
+             acom0[peak]  =acom0[peak]  +   i*fval;
+             acom1[peak]  =acom1[peak]  +   j*fval;
+             acom00[peak] =acom00[peak] + i*i*fval;
+             acom01[peak] =acom01[peak] + i*j*fval;
+             acom11[peak] =acom11[peak] + j*j*fval;
+             anpix[peak]  =anpix[peak]  + 1       ;
 #ifdef PARANOID
              if(verbose!=0){
-	       printf("peak=%d i=%d j=%d val=%f acom00[peak]=%f 01=%f 11=%f\n",peak,i,j,fval,acom00[peak],
-		      acom01[peak],acom11[peak]);}
+                printf("peak=%d i=%d j=%d val=%f acom00[peak]=%f 01=%f 11=%f\n",peak,i,j,fval,acom00[peak],
+                        acom01[peak],acom11[peak]);}
 #endif
-	 }
+    }
      else{
        if(peak!=0){
           bad++;
           if(verbose!=0 && bad<10){printf("Found %d in your blob image at i=%d, j=%d\n",peak,i,j);}
+          /* Only complain 10 times - otherwise piles of crap go to screen */
           }
        }
       } /* j */
@@ -417,9 +430,13 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
      printf("\nFound %d bad pixels in the blob image\n",bad);
    }
    return Py_BuildValue("OOOOOOOO", PyArray_Return(npix),
-			PyArray_Return(sum),PyArray_Return(sumsq),
-			PyArray_Return(com0),PyArray_Return(com1),PyArray_Return(com00),
-			PyArray_Return(com01),PyArray_Return(com11) ); 
+                                    PyArray_Return(sum),
+                                    PyArray_Return(sumsq),
+                                    PyArray_Return(com0),
+                                    PyArray_Return(com1),
+                                    PyArray_Return(com00),
+                                    PyArray_Return(com01),
+                                    PyArray_Return(com11)   ); 
    fail:
     Py_XDECREF(npix);
     Py_XDECREF(sum);

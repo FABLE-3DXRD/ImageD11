@@ -17,12 +17,19 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
-# ImageD11 data object
+"""
+ImageD11 data object
+
+Try not to blown away, it is just a Numeric array with a 
+dictionary tagged on so that pseudodata (eg motor positions etc)
+can follow around together. Throw whatever it is that you need
+in the dictionary
+"""
 
 class data:
    """ Generic datatype for handling 2D images 
        Just a wrapper for Numeric arrays now, so that information
-       from file headers can be transported around
+       from file headers can be transported around in a dict
    """
    def __init__(self,array,header=None):
       """ Minimal things - dimensions and a numeric array """

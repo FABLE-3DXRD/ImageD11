@@ -30,7 +30,7 @@ In Linux
     python setup.py build sdist
 
 Assumes you have the "g77" compiler available for fortran and that
-the usual (linux/win32 x86) name mangling are done for the splines
+the usual (gnu linux/win32 x86) name mangling are done for the splines
 extension to work
 
 """
@@ -69,6 +69,8 @@ setup(name='ImageD11',
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
       ext_modules = [cl,cp,bl],
       packages = ["ImageD11"],
-      scripts = ["scripts/peaksearch.py", "scripts/ImageD11_gui.py"])
+      scripts = ["scripts/peaksearch.py", 
+                 "scripts/recoveromega.py",
+                 "scripts/ImageD11_gui.py"])
 
       

@@ -18,16 +18,36 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+"""
+ImageD11 generic file opener
 
-# ImageD11 generic file opener
-#
-#
-# Returns a data object
-#
+Returns a data object
+
+Try to determine file type from extension or otherwise first few
+bytes???
+"""
+
 from data import data
 from Numeric import *
 
+
+def opendata(filename):
+   """
+   Guess the file type and return a data object
+   """
+   if filename[-3:]in ["edf", "EDF"] :
+      return openedf(filename)
+   if filename[-3:] in ["xye","epf","inp"]:
+      return openxye(filename)
+   if filename[-5]=="." and filename[-4:].isdigit():
+      return openbruker(filename)
+
+
+
 def makename(stem,num,extn,width=4):
+   """
+   Filename creation mydata1234.edf etc
+   """
    if width>0:
       fs="%s%0"+"%d"%(width)+"d%s"
    else:
@@ -35,19 +55,15 @@ def makename(stem,num,extn,width=4):
    return fs%(stem,num,extn)
 
 
-def opendata(filename):
-   if filename[-3:]=="edf":
-      return openedf(filename)
-   if filename[-3:] in ["xye","epf","inp"]:
-      return openxye(filename)
-   if filename[-5]=="." and filename[-4:].isdigit():
-      return openbruker(filename)
 
 def openxye(filename):
    h={}
    h['columns']=3
    for line in open(filename,"r"):
-      xye.append(map(float,line.split()))
+      try:
+         xye.append(map(float,line.split()))
+      except:
+         pass
    a=array(xye)
    h['rows']=a.shape[1]
    h['xye']=True
@@ -66,6 +82,10 @@ def readbytestream(file,offset,x,y,nbytespp,datatype='int',signed='n',
    swap, normally do not bother, but 'y' to swap bytes
    typeout is the Numeric type to output, normally UInt16, but more if overflows occurred
    x and y are the pixel dimensions
+
+   TODO : Read in regions of interest
+
+   PLEASE LEAVE THE STRANGE INTERFACE ALONE - IT IS USEFUL FOR THE BRUKER FORMAT
    """
    tin="dunno"
    len=nbytespp*x*y # bytes per pixel times number of pixels
@@ -111,7 +131,7 @@ def readbrukerheader(file):
       f=file
       opened=0                # opened var flags to close again if we open the file
    i=80
-   hs=f.read(512)          # always start with a 512 byte header
+   hs=f.read(512)             # always start with a 512 byte header
    block=hs
    Header={}                  # dict to take results
    while i < 512 :            # wander along the 512 bytes
@@ -145,7 +165,7 @@ def readbrukerheader(file):
    if(opened):f.close()
 #   print hs
    Header['headerstring']=hs
-   print Header['datastart'],len(hs)
+#   print Header['datastart'],len(hs)
    return Header     # s
 
 
@@ -154,7 +174,7 @@ def readbruker(file):
    """
    Reads in a Bruker file, returning the data and header
    file may be a string or file object
-   FIXME we should later modify to take ROI ranges somehow (xmin,xmax,ymin,ymax)
+   TODO we should later modify to take ROI ranges somehow (xmin,xmax,ymin,ymax)
    """
    s="string"                 # s is a string
    if type(s) == type(file):  # if arg is a string, open file, else treat as file object
@@ -192,9 +212,14 @@ def readbruker(file):
 def openbruker(filename):
    return data(readbruker(filename))
 
-def edfheader(filename):
-   f=open(filename,"rb")
-   # Header is 1024 byte blocks, terminated by "}"
+def edfheader(file):
+   if type(file)==type("string"):
+      f=open(filename,"rb")
+      opened=1
+   else:
+      f=file
+      opened=0
+   # Header comes in 1024 byte blocks, terminated by "}"
    fh=f.read(1024)
    i=1023
    while fh.find("}\n")<0: 
@@ -207,55 +232,31 @@ def edfheader(filename):
          hd[item.split("=")[0].lstrip().rstrip()]=item.split("=")[1].lstrip().rstrip()
    hd["rows"]=int(hd["Dim_1"])
    hd["columns"]=int(hd["Dim_2"])
-#   print hd['description']
-#   line=hd['description'].split(" ")
-#   print line
-#   while 1:
-#     try:
-#      value=line.pop(-1)
-#      name=line.pop(-1)
-#      print "n,v",name,value
-#      hd[name]=value
-#     except:
-#      break
+   #   print hd['description']
+   #   line=hd['description'].split(" ")
+   #   print line
+   #   while 1:  
+   #     try:
+   #      value=line.pop(-1)
+   #      name=line.pop(-1)
+   #      print "n,v",name,value
+   #      hd[name]=value
+   #     except:
+   #      break
    #print hd 
    # seek back from the end of the file
-   f.seek( -int(hd["Size"]) , 2  )
-   datastring=f.read( int(hd["Size"]) )
-   f.close()
+   #f.seek( -int(hd["Size"]) , 2  )
+   #datastring=f.read( int(hd["Size"]) )
+   #f.close()
+   if(opened): f.close()
    return hd
 
 def openedf(filename):
    f=open(filename,"rb")
-   # Header is 1024 byte blocks, terminated by "}"
-   fh=f.read(1024)
-   i=1023
-   while fh.find("}\n")<0: 
-      fh+=f.read(1024)
-   # Interpret header
-   headeritems=fh[1:-1].split(";")
-   hd={}
-   for item in headeritems: 
-      if item.find("=")>0:
-         hd[item.split("=")[0].lstrip().rstrip()]=item.split("=")[1].lstrip().rstrip()
-   hd["rows"]=int(hd["Dim_1"])
-   hd["columns"]=int(hd["Dim_2"])
-#   print hd['description']
-#   line=hd['description'].split(" ")
-#   print line
-#   while 1:
-#     try:
-#      value=line.pop(-1)
-#      name=line.pop(-1)
-#      print "n,v",name,value
-#      hd[name]=value
-#     except:
-#      break
-   #print hd 
+   hd=edfheader(f)
    # seek back from the end of the file
    f.seek( -int(hd["Size"]) , 2  )
    datastring=f.read( int(hd["Size"]) )
-
    f.close()
    # Convert datastring to Numeric array
    if hd["DataType"]=="UnsignedShort": numerictype=UInt16
