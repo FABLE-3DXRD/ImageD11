@@ -18,39 +18,57 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+"""
+Setup script for python distutils package
+
+Can be used to generate source and binary distributions
+
+On windows (with mingw tools installed, from www.mingw.org:
+    python setup.py build --compiler=mingw32 sdist bdist bdist_wininst
+
+In Linux
+    python setup.py build sdist
+
+Assumes you have the "g77" compiler available for fortran and that
+the usual (linux/win32 x86) name mangling are done for the splines
+extension to work
+
+"""
 
 
 
 
 from distutils.core import setup, Extension
 
+
+# Compiled extensions:
+
+# closest is for indexing grains 
 cl = Extension("closest", sources=['src/closest.c'])
+
+# connectedpixels is for peaksearching images
 cp = Extension("connectedpixels", sources = ['src/connectedpixels.c'])
-# Fortran hack
+
+# Fortran hack - just need to have libsplines.a available for linking
 import os
 os.system("g77 -c src/bispev.f -o src/bispev.o")
 os.system("ar -cr src/libsplines.a src/bispev.o")
+
+# _splines is for correcting peak positions for spatial distortion
 bl = Extension("_splines", sources = ['src/splines.c'], 
                      libraries = ["splines"], library_dirs = ["src"] )
 
 
+# See the distutils docs...
 setup(name='ImageD11',
       version=0.4,
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',
       license = "GPL",
-      ext_package = "ImageD11",
+      ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
       ext_modules = [cl,cp,bl],
       packages = ["ImageD11"],
       scripts = ["scripts/peaksearch.py", "scripts/ImageD11_gui.py"])
 
       
-      
-"""py_modules = ["bisplev","blobcorrector","data","opendata",
-                    "peakmerge","peaksearch","simplex",
-                    "transform","unitcell","indexing",
-                    "guiindexer","guimaker","guipeaksearch",
-                    "guitransformer","listdialog","plot3d","twodplot"]
-      )"""
-

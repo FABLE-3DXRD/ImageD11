@@ -1,5 +1,3 @@
-from ImageD11.guimaker import GuiMaker
-from Tkinter import *
 
 
 # ImageD11_v0.4 Software for beamline ID11
@@ -20,12 +18,36 @@ from Tkinter import *
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
+"""
+Graphical user interface for ImageD11
 
+Uses Tkinter (comes with python, normally)
+Also depends eventually on matplotlib (publication quality 2d plotting)
+and on OpenGl for plotting things in 3D (reciprocal space)
+
+Hopefully the gui and the gruntwork can be completely separated, eventually.
+"""
+
+
+from ImageD11.guimaker import GuiMaker
+# GuiMaker is for building up the windows etc
+
+from Tkinter import *
+
+
+
+
+# This does not do anything unless you call it as a program:
 
 if __name__=="__main__":
+
+   # Help message - TODO - proper online help
    def help():
       from tkMessageBox import showinfo
       showinfo("Help","Sorry, no help for you!\nPlease try harder")
+
+
+   # Credits message
    ImageD11credits = """Thanks to:
                        
                        All of the Fable team, which includes at least:
@@ -39,30 +61,39 @@ if __name__=="__main__":
                           
                        Jon Wright, for writing me!
                       """
-   from ImageD11 import license
-   license = license.license
-
 
    def credits():
       from tkMessageBox import showinfo
       showinfo("Credits",ImageD11credits)
 
+
+   # GPL is stored in ImageD11/license.py as a string to be
+   # displayed in the GUI if the user asks to see it
+
+   from ImageD11 import license
+   license = license.license
+
    def showlicense():
       from ScrolledText import ScrolledText
       win = ScrolledText(Toplevel(),width=100)
       win.insert(END,license)
-#      print dir(win)
       win.pack(expand=1,fill=BOTH)
       win.focus_set()
-#      showinfo("License",license)
+
 
    import tkFileDialog,os
 
+
+   # Inherits from the GuiMaker and uses functions defined above
    class TestGuiMaker(GuiMaker):
       def start(self):
+          """
+          Override the GuiMaker start
+          These are things to do when the gui starts
+          eg: show a message about the license and list of things to do
+          Then build the actual gui
+          """
           from tkMessageBox import showinfo
-
-
           startmessage = """
 ImageD11 version 0.4, Copyright (C) 2005 Jon Wright
 ImageD11 comes with ABSOLUTELY NO WARRANTY; for details select help, license.
@@ -83,20 +114,35 @@ Stuff to do:
    Sort out a file format which tracks all information properly?
 """
           showinfo("Welcome to ImageD11_v0.4",startmessage)
-#             from tkMessageBox import showinfo
-#             showinfo("Sorry","You had to say yes then if you want to use the program")
-#             sys.exit()
 
+
+          # For the peaksearch menu
           from ImageD11 import guipeaksearch 
           self.peaksearcher = guipeaksearch.guipeaksearcher(self)
+
+          # self.finalpeaks is what the peaksearchmenu is meant to generate
+          # and what the transformer should transform
           self.finalpeaks=None
+
+          # For the transformation menu
           from ImageD11 import guitransformer
+
+          # Unit cell is for generating theoretical peak positions
           self.unitcell=None
+
+          # self.gv holds the g-vectors, after they are generated 
           self.gv=None
           self.transformer  = guitransformer.guitransformer(self)
+
+          # For the indexing - supposed to generate orientations from the
+          # unitcell and g-vectors
           from ImageD11 import guiindexer
           self.indexer = guiindexer.guiindexer(self)
+
+          # sys is for sys.exit
           import sys
+
+          # Configure the menubar (lists of Tuples of (name, underline_char, command_or_submenu) )
           self.menuBar = [ ( "File", 0,
                               [ ( "Print" , 0, self.printplot ),
                                 ( "Exit", 1, sys.exit) ] ) ,
@@ -114,23 +160,47 @@ Stuff to do:
                                 ( "License" , 0, showlicense)
                                 ] ) ]
 
-      def printplot(self): self.twodplotter.printplot()
+      # The twodplot object should be taking care of it's own menu
+      # Stop doing it here - TODO
+      def printplot(self):
+         """
+         Print the 2D plot (probably to a file?)
+         """
+         self.twodplotter.printplot()
   
       def autoscaleplot(self):
+         """
+         Autoscale the plot
+         """
          self.twodplotter.autoscale()
+
       def clearplot(self):
+         """
+         Clear out the twodplot
+         """
          self.twodplotter.plotitems={}
          self.twodplotter.replot()
 
       def makeWidgets(self):
-         # Get size of TopLevels window
+         """
+         Draw the gui and initialise some hidden things
+         """
+         # TODO Get size of TopLevels window and position it in a sensible way
+         #
+         # Opening and saving file widgets, normally hidden, they remember where
+         # you were for working directories
          self.opener=tkFileDialog.Open()
          self.saver=tkFileDialog.SaveAs()
+         #
+         # Draw the twodplot
          from ImageD11 import twodplot
          self.twodplotter=twodplot.twodplot(self)
          self.twodplotter.pack(side=RIGHT, expand=1, fill=BOTH)
-        
+
+   # Start up Tkinter
    root = Tk()
    root.wm_title("ImageD11")
+   # Instantiate an object of the class TestGuiMaker
    TestGuiMaker()
+   # Thats it!
    root.mainloop()
