@@ -40,23 +40,24 @@ int dset_find(int x, int * S);
 
 #undef PARANOID
 
-int getval(char *p,int type);
+double getval(char *p,int type);
 
-int getval(char *p,int type){
+double getval(char *p,int type){
    /* return the value of a python array element converted to the 
-    * universal c type of int - why is this not float I wonder? */
+    * universal c type of double */
+
   switch (type){
-     case    PyArray_CHAR   : return *(char          *)p*1;
-     case    PyArray_SBYTE  : return *(signed char   *)p*1;
-     case    PyArray_SHORT  : return *(short         *)p*1;
-     case    PyArray_INT    : return *(int           *)p*1;
-     case    PyArray_LONG   : return *(long          *)p*1;
-     case    PyArray_FLOAT  : return *(float         *)p*1;
-     case    PyArray_DOUBLE : return *(double        *)p*1;
+     case    PyArray_CHAR   : return *(char          *)p*1.;
+     case    PyArray_SBYTE  : return *(signed char   *)p*1.;
+     case    PyArray_SHORT  : return *(short         *)p*1.;
+     case    PyArray_INT    : return *(int           *)p*1.;
+     case    PyArray_LONG   : return *(long          *)p*1.;
+     case    PyArray_FLOAT  : return *(float         *)p*1.;
+     case    PyArray_DOUBLE : return *(double        *)p*1.;
 #ifdef PyArray_UNSIGNED_TYPES
-     case    PyArray_UBYTE  : return *(unsigned char *)p*1;
-     case    PyArray_USHORT : return *(unsigned short*)p*1;
-     case    PyArray_UINT   : return *(unsigned int  *)p*1;
+     case    PyArray_UBYTE  : return *(unsigned char *)p*1.;
+     case    PyArray_USHORT : return *(unsigned short*)p*1.;
+     case    PyArray_UINT   : return *(unsigned int  *)p*1.;
 #endif
      }
    printf("Oh bugger in getval - unrecongnised numeric type\n");
@@ -82,6 +83,69 @@ void ptype(int type){
 #endif
      }
 }
+
+
+/* Fill in an image of peak assignments for pixels */
+static PyObject * roisum (PyObject *self, PyObject *args,  PyObject *keywds)
+{
+   PyArrayObject *dat=NULL; /* in (not modified) */
+   int i,j,f,s,np;
+   int xl,xh,yl,yh;
+   int verbose=0,type;                /* whether to print stuff and the type of the input array */
+   static char *kwlist[] = {"data","xl","xh","yl","yh","verbose", NULL};
+   double time,sum;
+
+   if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!iiii|i",kwlist,      
+				   &PyArray_Type, &dat,   /* array arg */
+				   &xl,&xh,&yl,&yh,
+				   &verbose))        /* optional verbosity */
+     return NULL;
+
+   if(verbose!=0){
+     printf("\n\nHello there from roisum, you wanted the verbose output...\n");
+      }
+
+   /* Check array is two dimensional and Ushort */
+   if(dat->nd != 2 ){    
+     PyErr_SetString(PyExc_ValueError,
+		     "Data array must be 2d,first arg problem");
+     return NULL;
+   }
+   type=dat->descr->type_num;
+   if(verbose!=0)ptype(type);
+
+   /* Decide on fast/slow loop - inner versus outer */
+   if(dat->strides[0] > dat->strides[1]) {
+      f=1;  s=0;}
+   else {
+      f=0;  s=1;
+   }
+   if (verbose!=0){
+        printf("Fast index is %d, slow index is %d, ",f,s);
+        printf("strides[0]=%d, strides[1]=%d\n",dat->strides[0],dat->strides[1]);
+   }
+
+   /* Check ROI is sane */
+   if(xl>xh || yl>yh || yl < 0 || xl < 0 || xh>dat->dimensions[s] || yh>dat->dimensions[f]){
+     PyErr_SetString(PyExc_ValueError,
+		     "Problem with your ROI");
+     return NULL;
+   }
+   if(verbose!=0)printf("Summing ROI\n");
+   sum=0.;
+   np=0;
+   for( i = xl ; i < xh ; i++ ){    /* i,j is looping along the indices data array */
+     for( j = yl ; j < yh ; j++ ){
+       sum+=getval((dat->data + i*dat->strides[s] + j*dat->strides[f]),type); 
+       np++;
+       if(verbose>2){
+	 printf("%d %d %f\n",i,j,getval((dat->data + i*dat->strides[s] + j*dat->strides[f]),type)); 
+       }
+     }
+   }
+   return Py_BuildValue("f", sum/np); 
+}
+
 
 
 /* Fill in an image of peak assignments for pixels */
@@ -456,8 +520,9 @@ static PyMethodDef connectedpixelsMethods[] = {
    {"connectedpixels", (PyCFunction) connectedpixels, METH_VARARGS | METH_KEYWORDS,
    "Assign connected pixels in image (first arg) above threshold (float second arg) to return image of peak number.Optional arguement verbose!=0 prints some info as it runs"},
    {"blobproperties", (PyCFunction) blobproperties, METH_VARARGS | METH_KEYWORDS,
-   "Computes various properties of a blob image (created by connecetedpixels)"},
-   
+   "Computes various properties of a blob image (created by connectedpixels)"},
+   {"roisum", (PyCFunction) roisum, METH_VARARGS | METH_KEYWORDS,
+   "Computes average in roi"},
    {NULL, NULL, 0, NULL} /* setinel */
 };
 

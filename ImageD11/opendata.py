@@ -265,11 +265,11 @@ def openedf(filename):
    if hd["ByteOrder"]=="LowByteFirst": 
       ar=reshape(
             fromstring(datastring,numerictype),
-            (hd["rows"],hd["columns"]) )
+            (hd["columns"],hd["rows"]) )
    else:
       ar=reshape(
             fromstring(datastring,numerictype).byteswapped(),
-            (hd["rows"],hd["columns"]) )
+            (hd["columns"],hd["rows"]) )
    return data(ar,hd)
 
 
