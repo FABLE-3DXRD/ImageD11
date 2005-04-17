@@ -53,10 +53,11 @@ class guiindexer:
       self.plot3d=None
 
    def loadgv(self):
-      if self.parent.gv!=None:
-         from tkMessageBox import askyesno
-         if not askyesno("Overwrite current g-vectors?","Loading new will overwrite the ones in memory now, are you sure?"):
-            return
+#      if self.parent.gv!=None:
+#         from tkMessageBox import askyesno
+#         if not askyesno("Overwrite current g-vectors?","Loading new will 
+#overwrite the ones in memory now, are you sure?"):
+#            return
       filename=self.parent.opener.show(title="File containing g-vectors")
       self.indexer.readgvfile(filename)
 

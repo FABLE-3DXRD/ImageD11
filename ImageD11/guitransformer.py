@@ -53,10 +53,11 @@ class guitransformer:
       self.loadparameters()
 
    def loadfiltered(self):
-      if self.parent.finalpeaks!=None:
-         from tkMessageBox import askyesno
-         if not askyesno("Overwrite current peaks?","Loading new peaks will overwrite the ones in memory now, are you sure?"):
-            return
+#      if self.parent.finalpeaks!=None:
+#         from tkMessageBox import askyesno
+#         if not askyesno("Overwrite current peaks?","Loading new peaks 
+#will overwrite the ones in memory now, are you sure?"):
+#            return
       filename=self.parent.opener.show(title="File containing filtered peaks")
       f=open(filename,"r")
       #                   0123456789012

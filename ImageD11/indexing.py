@@ -287,14 +287,15 @@ class indexer:
          f.write("Grain: %d   Npeaks=%d   <drlv>=%f\n"%(i,ind.shape[0],mdrlv))
          i=i+1
          f.write("UBI:\n"+str(ubi)+"\n")
-         f.write("Peak   (  h       k       l      )   drlv       ")
+         f.write("Peak   (  h       k       l      )   drlv             x       y ")
          if self.wavelength < 0:
             f.write("\n")
          else:
             f.write("   Omega_obs Omega_calc   Eta_obs Eta_calc   tth_obs tth_calc\n")
             tc,ec,oc =  transform.uncompute_g_vectors(gint,self.wavelength)
          for j in ind:          
-            f.write("%-6d ( % 6.4f % 6.4f % 6.4f ) % 12.8f "%(j,h[0,j],h[1,j],h[2,j],sqrt(drlv2[j])) ) 
+            f.write("%-6d ( % 6.4f % 6.4f % 6.4f ) % 12.8f "%(j,h[0,j],h[1,j],h[2,j],sqrt(drlv2[j])) )
+            f.write(" % 7.1f % 7.1f "%(self.xp[j],self.yp[j]) )
             if self.wavelength < 0:
                f.write("\n")
             else:

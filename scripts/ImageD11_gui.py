@@ -1,4 +1,4 @@
-
+#!/bliss/users/blissadm/bin/python
 
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright

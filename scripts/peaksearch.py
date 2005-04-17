@@ -1,4 +1,4 @@
-
+#!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 
 # ImageD11_v0.4 Software for beamline ID11
@@ -138,10 +138,10 @@ def peaksearch(filename, outputfile, corrector, blobim , thresholds):
             except:
                c01=0.
          # Spatial corrections, c0c and c1c are the distortion corrected centre of mass :
-         c0c, c1c = corrector.correct(c0,c1)
-         s = "%d  %f    %f %f    %f %f    %f %f %f\n"%(n, avg, c0, c1, c0c, c1c,  c00, c11, c01)
-         f.write(s)
-      # Progress indicator
+            c0c, c1c = corrector.correct(c0,c1)
+            c0c, c1c = corrector.correct(c0,c1)
+            s = "%d  %f    %f %f    %f %f    %f %f %f\n"%(n, avg, c0, c1, c0c, c1c,  c00, c11, c01)
+            f.write(s)
       print "T=%-5d n=%-5d;"%(int(threshold),npks),
    # Close the output file
    f.close()
