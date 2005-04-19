@@ -44,6 +44,44 @@ class edfFile:
 		self.maxI=maximum.reduce(self.data)
 		print "Opened",filename,"max=",self.maxI,"min=",self.minI
 
+class myOpengl(Opengl):
+
+	def __init__(self, master=None, cnf={}, **kw):
+		apply(Opengl.__init__, (self, master, cnf), kw)
+
+	def StartRotate(self,event):
+		"""
+		Clear old selection box
+		Start new one
+		"""
+		pass
+#		Opengl.StartRotate(self,event)
+
+
+	def tkRotate(self, event):
+		"""
+		Draw selection box
+		"""
+		win_height = max( 1,self.winfo_height() )
+
+		obj_c	= ( 0., 0., 0. )
+		win	= gluProject( obj_c[0], obj_c[1], obj_c[2])
+		obj	= gluUnProject( win[0], win[1] + 0.5 * win_height, win[2])
+		dist	= math.sqrt( v3distsq( obj, obj_c ) )
+		scale	  = abs( dist / ( 0.5 * win_height ) )
+		realy = self.winfo_height() - event.y
+		p1 = gluUnProject(event.x, realy, 0.) # Image is at z = 0
+		p2 = gluUnProject(event.x, realy, 1.) # Image is at z = 0
+		print p1[0],p1[1],p1[2]
+#		Opengl.tkRotate(self,event)
+
+	def tkAutoSpin(self, event):
+		"""
+		Finish drawing selection box
+		"""
+		pass
+#		Opengl.tkAutoSpin(self,event)
+
 
 class checker:
 
@@ -60,8 +98,6 @@ class checker:
 		d=ravel(d.astype(UInt8))
 		print maximum.reduce(d),minimum.reduce(d),d.typecode()
 		self.image=d.tostring()
-		self.imageWidth = self.edfFile.rows
-		self.imageHeight = self.edfFile.cols
 
 		
 	def display(self, event=None):
@@ -69,11 +105,12 @@ class checker:
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		glBegin(GL_QUADS)
 
-
-		glTexCoord2f(0.0, 0.0);		glVertex3f(-10.0,-10., 0.0)
-		glTexCoord2f(0.0, 1.0);		glVertex3f(-10.0, 10., 0.0)
-		glTexCoord2f(1.0, 1.0);		glVertex3f( 10. , 10., 0.0)
-		glTexCoord2f(1.0, 0.0);		glVertex3f( 10., -10., 0.0)
+		w=self.imageWidth/2
+		h=self.imageHeight/2
+		glTexCoord2f(0.0, 0.0);		glVertex3f(-w, -h, 0.0)
+		glTexCoord2f(0.0, 1.0);		glVertex3f(-w,  h, 0.0)
+		glTexCoord2f(1.0, 1.0);		glVertex3f( w,  h, 0.0)
+		glTexCoord2f(1.0, 0.0);		glVertex3f( w, -h, 0.0)
 
 		glEnd()
 		glFlush()
@@ -84,17 +121,17 @@ class checker:
 
 	def SetupWindow(self):
 
-
-
 		self.OglFrame = Frame()
 		self.OglFrame.pack(side = 'top', expand=1 ,fill='both')
 
-		self.ogl = Opengl(master=self.OglFrame, width = 500, height = 500, double = 1)
+		self.ogl = myOpengl(master=self.OglFrame, width = 500, height = 500, double = 1)
 
 
 		self.ogl.pack(side = 'top', expand = 1, fill = 'both')
-		self.ogl.distance=100.
-		self.ogl.fovy=11.5
+		self.ogl.distance=max(self.imageWidth+10,self.imageHeight+10)*10
+		self.ogl.near=max(self.imageWidth+10,self.imageHeight+10)*100.
+		self.ogl.far=max(self.imageWidth+10,self.imageHeight+10)/100.
+		self.ogl.fovy=10.
 #		self.ogl.set_centerpoint(0, 0, 0)
                 self.ogl.autospin_allowed=1
 		self.ogl.redraw = self.display
@@ -108,14 +145,20 @@ class checker:
 
 		Label(self.bf,text="MIN:").pack(side=LEFT)
 		self.minI=StringVar()
-		self.minI.set(str(self.edfFile.minI))
+		try:
+			self.minI.set(str(int(sys.argv[2])))
+		except:
+			self.minI.set(str(self.edfFile.minI))
 		self.minIentry=Entry(self.bf, textvariable=self.minI)
 		self.minIentry.bind('<KeyPress-Return>', self.change)
 		self.minIentry.pack(side=LEFT)
 
 		Label(self.bf,text="   MAX:").pack(side=LEFT)
 		self.maxI=StringVar()
-		top=self.edfFile.minI+(self.edfFile.maxI-self.edfFile.minI)/10.
+		try:
+			top=int(sys.argv[3])
+		except:
+			top=self.edfFile.minI+(self.edfFile.maxI-self.edfFile.minI)/10.
 		self.maxI.set(str(top))
 		self.maxIentry=Entry(self.bf, textvariable=self.maxI)
 		self.maxIentry.bind('<KeyPress-Return>', self.change)
@@ -147,12 +190,17 @@ class checker:
 		glShadeModel(GL_FLAT)
 
 
+
+
 	def __init__(self):
 		try:
 			self.edfFile = edfFile(sys.argv[1])
 		except:
 			sys.stderr.write("usage: %s edf_file\n"%(sys.argv[0]))
 			raise
+		self.imageWidth = self.edfFile.rows
+		self.imageHeight = self.edfFile.cols
+
 		self.SetupWindow()
 		self.SetupTexture()
 		self.ogl.mainloop()

@@ -239,19 +239,22 @@ class indexer:
             print self.gv[j]
             raise
          if n > self.minpks:
-# See if we already have this grain...
-            ubio=self.refine(self.unitcell.UBI.copy()) # refine the orientation
-            ind=self.getind(ubio) # indices of peaks indexed
-            ga=take(self.ga,ind)  # previous grain assignments
-            uniqueness=sum(where(ga==-1,1,0))*1.0/ga.shape[0]
-            if uniqueness > self.uniqueness:
-               put(self.ga,ind,len(self.scores)+1)
-               self.ubis.append(self.unitcell.UBI.copy())
-               self.scores.append(n)
-               ng=ng+1
-            else:
-               nuniq=nuniq+1
-#            put(self.ga,ind,ng)
+            # See if we already have this grain...
+            try:
+               ubio=self.refine(self.unitcell.UBI.copy()) # refine the orientation
+               ind=self.getind(ubio) # indices of peaks indexed
+               ga=take(self.ga,ind)  # previous grain assignments
+               uniqueness=sum(where(ga==-1,1,0))*1.0/ga.shape[0]
+               if uniqueness > self.uniqueness:
+                  put(self.ga,ind,len(self.scores)+1)
+                  self.ubis.append(self.unitcell.UBI.copy())
+                  self.scores.append(n)
+                  ng=ng+1
+               else:
+                  nuniq=nuniq+1
+               #            put(self.ga,ind,ng)
+            except:
+               pass
       print
       print "Number of orientations with more than",self.minpks,"peaks is",len(self.ubis)
       print "Time taken",time.time()-start
@@ -472,8 +475,10 @@ class indexer:
       try:
          self.fitlastrefined=math.sqrt(sum(contribs)/contribs.shape[0])
       except:
+         print "\n\n\n"
          print "No contributing reflections for\n",UBI
          print "After refinement, it was OK before ???"
+         print "\n\n\n"
          raise
 #      for i in ind:
 #         print "( %-6.4f %-6.4f %-6.4f ) %12.8f %12.8f"%(h[0,i],h[1,i],h[2,i],sqrt(drlv2[i]),sqrt(drlv2_old[i]))

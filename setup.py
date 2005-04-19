@@ -71,6 +71,7 @@ setup(name='ImageD11',
       packages = ["ImageD11"],
       scripts = ["scripts/peaksearch.py", 
                  "scripts/recoveromega.py",
-                 "scripts/ImageD11_gui.py"])
+                 "scripts/ImageD11_gui.py",
+                 "scripts/plotedf.py"])
 
       

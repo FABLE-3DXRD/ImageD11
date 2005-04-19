@@ -25,6 +25,7 @@ src\bispev.f
 scripts\ImageD11_gui.py
 scripts\peaksearch.py
 scripts\recoveromega.py
+scripts\plotedf.py
 README.TXT
 MANIFEST
 LICENSE
