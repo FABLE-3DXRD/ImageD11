@@ -19,7 +19,7 @@ class GuiMaker(Frame):   # Inherit from Tk frame
       self.makeMenuBar()
 
    def makeMenuBar(self):
-      menubar = Menu(self.master)
+      menubar = Menu(self.master,tearoff=0)
       self.master.config(menu=menubar)
       for (name, key, items) in self.menuBar:
          pulldown = Menu(menubar)

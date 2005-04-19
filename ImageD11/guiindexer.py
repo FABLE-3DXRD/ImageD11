@@ -45,6 +45,7 @@ class guiindexer:
                            ( "Generate trial orientations",0, self.find),
                            ( "Score trial orientations",0, self.scorethem),
                            ( "Save parameters", 0, self.saveparameters),
+                           ( "Save UBI matrices", 5, self.saveubis),
                            ( "Write out indexed peaks",0,self.saveindexing )
                          ] ) 
       self.parameters={}
@@ -61,8 +62,15 @@ class guiindexer:
       filename=self.parent.opener.show(title="File containing g-vectors")
       self.indexer.readgvfile(filename)
 
+   def saveubis(self):
+      filename=self.parent.saver.show(title="File to save UBIS")
+      self.indexer.saveubis(filename)
+
+
+
    def scorethem(self):
       self.indexer.scorethem()
+      
    def assignpeaks(self):
       self.indexer.assigntorings()
 
@@ -112,6 +120,21 @@ class guiindexer:
             f.write("%s %s\n"%(key,self.parameters[key]))
       f.close()
 
+   def saveparameters(self,filename=None):
+      if filename==None:
+         filename=self.parent.saver.show(title="File to save indexing parameters")
+      f=open(filename,"w")
+      keys=self.parameters.keys()
+      keys.sort()
+      for key in keys:
+         try:
+            f.write("%s %f\n"%(key,self.parameters[key]))
+         except:
+            f.write("%s %s\n"%(key,self.parameters[key]))
+      f.close()
+
+
+
 
    def editparameters(self):
       self.parameters['cosine_tol']=self.indexer.cosine_tol
@@ -158,4 +181,4 @@ class guiindexer:
    def saveindexing(self,filename=None):
       if filename==None:
          filename=self.parent.saver.show(title="File to save indexing parameters")
-      self.indexer.saveubis(filename)
+      self.indexer.saveindexing(filename)

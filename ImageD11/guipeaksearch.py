@@ -183,7 +183,15 @@ class guipeaksearcher:
       i=0
       while i < len(self.images):
          self.imagenumbers[i]=int(self.images[i].imagenumber)
-         self.omegas[i]      =float(self.images[i].header["Omega"])
+         try:
+            self.omegas[i]      =float(self.images[i].header["Omega"])
+         except:
+            # Oh dear, you have no Omega in your header
+            #
+            # FIXME - pop up an annoying message and or offer
+            # omega recovery gui option
+            self.images[i].header["Omega"]=0.
+            self.omegas[i]=0.
          i=i+1
       import twodplot
       self.parent.twodplotter.adddata(

@@ -265,7 +265,7 @@ class indexer:
       else:
          print "Try again, either with larger tolerance or fewer minimum peaks"
 
-   def saveubis(self,filename,tol=None):
+   def saveindexing(self,filename,tol=None):
       """
       Save orientation matrices
       """
@@ -483,7 +483,17 @@ class indexer:
 #      print "Mean drlv now",sum(sqrt(drlv2))/drlv2.shape[0],
 #      print "Mean drlv old",sum(sqrt(drlv2_old))/drlv2_old.shape[0]
       return UBIo
-      
+   
+   def saveubis(self,filename):
+      """
+      Save the generated ubi matrices into a text file
+      """
+      f=open(filename,"w")
+      for u in self.ubis:
+         f.write("%f %f %f\n"  %(u[0,0],u[0,1],u[0,2]))
+         f.write("%f %f %f\n"  %(u[1,0],u[1,1],u[1,2]))
+         f.write("%f %f %f\n\n"%(u[2,0],u[2,1],u[2,2]))
+      f.close()
         
    def coverage(self):
       """
