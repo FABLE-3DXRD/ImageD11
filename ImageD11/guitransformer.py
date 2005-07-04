@@ -45,11 +45,13 @@ class guitransformer:
                            ( "Add unit cell peaks",0, self.addcellpeaks),
                            ( "Fit",0, self.fit),
                            ( "Save parameters", 0, self.saveparameters),
+                           ( "Set axis orientation", 0, self.setaxisorientation),
                            ( "Compute g-vectors", 0, self.computegv),
                            ( "Save g-vectors", 0, self.savegv)
                          ] ) 
       self.twotheta=None
       self.parameters={}
+      self.wedge=0.0
       self.loadparameters()
 
    def loadfiltered(self):
@@ -148,18 +150,19 @@ class guitransformer:
       self.parameters['y-center']=args[0]
       self.parameters['z-center']=args[1]
       self.parameters['distance']=args[2]
-      self.parameters['wavelength']=args[3]
-      self.parameters['tilt-y']=args[4]
-      self.parameters['tilt-z']=args[5]
+#      self.parameters['wavelength']=args[3]
+      self.parameters['tilt-y']=args[3]
+      self.parameters['tilt-z']=args[4]
       self.twotheta, self.eta = transform.compute_tth_eta( self.peaks_xy,
-               args[0], # yc is the centre in y
-               float(self.parameters['y-size'])  , # ys is the y pixel size
-               args[4]  , # ty is the tilt around y
-               args[1], # zc is the centre in z
-               float(self.parameters['z-size'])  , # zs is the z pixel size
-               args[5]  , # tz is the tilt around z
-               args[2]*1e3) # is the sample - detector distance
-      w=args[3]
+                                                           self.parameters['y-center'],
+                                                           float(self.parameters['y-size']), # ys is the y pixel size
+                                                           self.parameters['tilt-y'],
+                                                           self.parameters['z-center'],
+                                                           float(self.parameters['z-size'])  , # zs is the z pixel size
+                                                           self.parameters['tilt-z'],
+                                                           self.parameters['distance']*1e3
+                                                           )
+      w=float(self.parameters['wavelength']) # args[3] # what?
       gof=0.
       npeaks=0
       for i in range(len(self.tthc)):# (twotheta_rad_cell.shape[0]):
@@ -206,18 +209,18 @@ class guitransformer:
       guess=[ float(self.parameters['y-center']) , 
               float(self.parameters['z-center']) ,
               float(self.parameters['distance']) , 
-              float(self.parameters['wavelength']) ,
+#              float(self.parameters['wavelength']) ,
               float(self.parameters['tilt-y']) ,
               float(self.parameters['tilt-z']) ]
-      inc=[ .1 , .1 , .1 , 0.001 , transform.radians(0.1) , transform.radians(0.1) ]
+      inc=[ .1 , .1 , .1 , transform.radians(0.1) , transform.radians(0.1) ]
       s=simplex.Simplex(self.gof,guess,inc)
       newguess,error,iter=s.minimize()
       self.parameters['y-center']=newguess[0]
       self.parameters['z-center']=newguess[1]
       self.parameters['distance']=newguess[2]
-      self.parameters['wavelength']=newguess[3]
-      self.parameters['tilt-y']=newguess[4]
-      self.parameters['tilt-z']=newguess[5]
+#      self.parameters['wavelength']=newguess[3]
+      self.parameters['tilt-y']=newguess[3]
+      self.parameters['tilt-z']=newguess[4]
       inc=[ .01 , .01 , .01 , 0.0001 , transform.radians(0.01) , transform.radians(0.01) ]
       guess=newguess
       s=simplex.Simplex(self.gof,guess,inc)
@@ -225,9 +228,9 @@ class guitransformer:
       self.parameters['y-center']=newguess[0]
       self.parameters['z-center']=newguess[1]
       self.parameters['distance']=newguess[2]
-      self.parameters['wavelength']=newguess[3]
-      self.parameters['tilt-y']=newguess[4]
-      self.parameters['tilt-z']=newguess[5]      
+#      self.parameters['wavelength']=newguess[3]
+      self.parameters['tilt-y']=newguess[3]
+      self.parameters['tilt-z']=newguess[4]      
       print newguess
 
    def plotreta(self):
@@ -308,13 +311,24 @@ class guitransformer:
                        {'color':'r',
                         'pointtype':'+'}
                )))
+      
+   def setaxisorientation(self):
+      """
+      Allow the rotation axis to not be perpendicular to the beam
+      """
+      p = { "wedge" : self.wedge }
+      d=listdialog(self.parent,items=p,title="Axis Orientation")
+      self.wedge = float(d.result["wedge"])
+      print "set self.wedge to",self.wedge
+
+
             
    def computegv(self):
       """
       Using self.twotheta, self.eta and omega angles, compute x,y,z of spot
       in reciprocal space
       """
-      self.gv = transform.compute_g_vectors(self.twotheta,self.eta,self.omega,float(self.parameters['wavelength']))
+      self.gv = transform.compute_g_vectors(self.twotheta,self.eta,self.omega,float(self.parameters['wavelength']),wedge=self.wedge)
 #      tthnew,etanew,omeganew=transform.uncompute_g_vectors(self.gv,float(self.parameters['wavelength']))
       self.parent.gv=self.gv
 #      print "Testing reverse transformations"

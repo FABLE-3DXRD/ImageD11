@@ -42,6 +42,7 @@ class guiindexer:
                            ( "Load parameters", 1, self.loadfileparameters),
                            ( "Edit parameters", 0, self.editparameters),
                            ( "Assign peaks to powder rings", 0, self.assignpeaks),
+                           ( "Make Friedel pair file", 5, self.makefriedel),
                            ( "Generate trial orientations",0, self.find),
                            ( "Score trial orientations",0, self.scorethem),
                            ( "Save parameters", 0, self.saveparameters),
@@ -65,6 +66,10 @@ class guiindexer:
    def saveubis(self):
       filename=self.parent.saver.show(title="File to save UBIS")
       self.indexer.saveubis(filename)
+
+   def makefriedel(self):
+      filename=self.parent.saver.show(title="File to save Friedels")
+      self.indexer.friedelpairs(filename)
 
 
 

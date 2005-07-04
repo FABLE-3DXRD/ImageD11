@@ -77,11 +77,14 @@ def compute_tth_eta(peaks,yc,ys,ty,zc,zs,tz,dist):
 
 
 
-def compute_g_vectors(tth,eta,omega,wavelength):
+def compute_g_vectors(tth,eta,omega,wavelength, wedge = 0.0):
    """
    Generates spot positions in reciprocal space from twotheta, wavelength, omega and eta
    Assumes single axis vertical
+   ... unless a wedge angle is specified
    """
+   if wedge != 0.:
+      print "Using a wedge angle of ",wedge
    tth=radians(tth)
    eta=radians(eta)
    om =radians(omega)
@@ -98,18 +101,31 @@ def compute_g_vectors(tth,eta,omega,wavelength):
    k[2,:] =  ds*c*cos(eta)
    # G-vectors - rotate k onto the crystal axes
    g=zeros((3,ds.shape[0]),Float)
+   t=zeros((3,ds.shape[0]),Float)
    # 
-   # g = R . k where:
+   # g = W . R . k where:
    # R = ( cos(omega) , sin(omega), 0 )
    #     (-sin(omega) , cos(omega), 0 )
    #     (         0  ,         0 , 1 )
+   #
+   # W = ( cos(wedge) ,  0  ,  sin(wedge) )
+   #     (         0  ,  1  ,          0  )
+   #     (-sin(wedge) ,  0  ,  cos(wedge) )
+   #
+   if wedge != 0.0:
+      c = cos(radians(wedge))
+      s = sin(radians(wedge))
+      t[0,:]= c * k[0,:]           + s * k[2,:]
+      t[1,:]=            k[1,:]
+      t[2,:]=-s * k[0,:]           + c * k[2,:]
+      k=t
    g[0,:] = cos(om)*k[0,:]+sin(om)*k[1,:]
    g[1,:] =-sin(om)*k[0,:]+cos(om)*k[1,:]
-   g[2,:] = k[2,:]
+   g[2,:] =                               k[2,:]
    return g
 
 
-def uncompute_g_vectors(gv,wavelength):
+def uncompute_g_vectors(gv,wavelength, wedge=0.0):
    """
    Given g-vectors compute tth,eta,omega
    assert uncompute_g_vectors(compute_g_vector(tth,eta,omega))==tth,eta,omega
@@ -117,7 +133,17 @@ def uncompute_g_vectors(gv,wavelength):
    # k=array(g.shape,Float)
    # k[2,:]=g[2,:] # Z component in laboratory
    # Length gives two-theta
-   gv=gv.copy().astype(Float)
+   #
+   # Deal with wedge ... we had           g = W . R . k
+   #                    now get     W-1 . g =     R . k
+   # and proceed as before for R
+   g=zeros(gv.shape,Float)
+   c = cos(radians(wedge))
+   s = sin(radians(wedge))
+   g[0,:]= c * gv[0,:]           - s * gv[2,:]
+   g[1,:]=            gv[1,:]
+   g[2,:]= s * gv[0,:]           + c * gv[2,:]
+   gv = g
    ds = sqrt(sum(gv*gv,0))
    s = ds*wavelength/2 # sin theta
    # Two theta from Bragg's law
@@ -157,7 +183,7 @@ def uncompute_g_vectors(gv,wavelength):
    omega2 = degrees(  omega_crystal - omega_laboratory )
    return tth,[eta1,eta2],[omega1,omega2]       
 
-def uncompute_one_g_vector(gv,wavelength):
+def uncompute_one_g_vector(gv,wavelength, wedge=0.0):
    """
    Given g-vectors compute tth,eta,omega
    assert uncompute_g_vectors(compute_g_vector(tth,eta,omega))==tth,eta,omega

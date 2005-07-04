@@ -111,6 +111,10 @@ Stuff to do:
    Tidy the mulitple threshold consequences
    Implement those filters based in intensity etc
 
+   Sort peaks in output file by integer hkl
+   Allow merging algorith to be more flexible in tolerance, perhaps decide
+   overlap as a multiple of FWHM observed.
+
    Sort out a file format which tracks all information properly?
 """
           showinfo("Welcome to ImageD11_v0.4",startmessage)

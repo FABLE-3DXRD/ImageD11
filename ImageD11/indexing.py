@@ -1,6 +1,5 @@
 
 
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -119,8 +118,33 @@ class indexer:
       print "Shape of scoring matrix",self.gvr.shape
       self.gvflat=reshape(fromstring(self.gvr.tostring(),Float),self.gvr.shape) # Makes it contiguous in memory, hkl fast index
 
-      
+   def friedelpairs(self,filename):
+      """
+      Attempt to identify Freidel pairs
 
+      Peaks must be assigned to the same powder ring
+      Peaks will be the closest thing to being 18 degrees apart
+      """
+      out = open(filename,"w")
+      dsr=self.unitcell.ringds
+      print "Ring     (  h,  k,  l) Mult  total indexed to_index  "
+      for j in range(len(dsr)):
+         ind = compress( equal(self.ra,j), arange(self.ra.shape[0]) )
+         # ind is the indices of the ring assigment array - eg which hkl is this gv
+         #
+         # Compute cosines of the angles between peaks
+         thesepeaks = take(self.gv,ind)
+         #
+         # Most dumb estimate would be gv[a] + gv[b] == 0
+         # This has problems of beam centre. Maybe in terms of eta and difference in omega?
+         h=self.unitcell.ringhkls[dsr[j]][0]
+         out.write("\n\n\n# %d %d %d\n"%(h[0],h[1],h[2]))
+         out.write("# eta, omega, tth, gv[0], gv[1], gv[2]\n")
+         for i in ind:
+            out.write("%f %f %f %f %f %f\n"%(self.eta[i],self.omega[i],self.tth[i],self.gv[i][0],self.gv[i][1],self.gv[i][2]))
+
+
+         
    def find(self):
       """
       Dig out the potential hits

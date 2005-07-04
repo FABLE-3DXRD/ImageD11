@@ -18,12 +18,12 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 from Numeric import *
-import time
+import time,sys
 
-TOLERANCE = 1.0 # Pixel separation for combining peaks
 
 class peak:
    def __init__(self,line,omega,threshold,num):
+      self.TOLERANCE = 2.0 # Pixel separation for combining peaks
       self.omega=omega
       self.num=num
       self.line=line
@@ -86,7 +86,7 @@ class peak:
 
    def __eq__(self,other):
         try:
-           if abs(self.xc - other.xc) < TOLERANCE and abs(self.yc - other.yc) < TOLERANCE :
+           if abs(self.xc - other.xc) < self.TOLERANCE and abs(self.yc - other.yc) < self.TOLERANCE :
               return True
            else:
               return False
@@ -270,7 +270,7 @@ Otherwise, say no, select the right range and come back "harvestpeaks" again
       i=1
       while i < npeaks:
          # merge peaks with same omega values
-         if self.allpeaks[i] == merge1[-1]:
+         if self.allpeaks[i] == merge1[-1] and self.allpeaks[i].omega == merge1[-1].omega:
             merge1[-1]=merge1[-1].combine(self.allpeaks[i])
          else:
             merge1.append(self.allpeaks[i])
@@ -319,6 +319,7 @@ Otherwise, say no, select the right range and come back "harvestpeaks" again
          nextlast =uniq[keys[i+2]]
          nextframe=peaks[last:nextlast]
          print "Setting %-5d with %-6d peaks on this and %-5d peaks on next, %-5d in buffer\r"%(i,last-first,nextlast-last,ncarry),
+         sys.stdout.flush()
          for peak1 in active:
             m=0
             if peak1.forgotten:
