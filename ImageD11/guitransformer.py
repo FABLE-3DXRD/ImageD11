@@ -30,10 +30,11 @@ from listdialog import listdialog
 
 class guitransformer:
                            
-   def __init__(self,parent):
+   def __init__(self,parent,quiet="No"):
       """
       Parent is a hook to features of the parent gui
       """
+      self.quiet=quiet
       self.parent=parent
 # peaks are in      self.parent.finalpeaks
       self.menuitems = ( "Transformation", 0,
@@ -54,13 +55,14 @@ class guitransformer:
       self.wedge=0.0
       self.loadparameters()
 
-   def loadfiltered(self):
-#      if self.parent.finalpeaks!=None:
-#         from tkMessageBox import askyesno
-#         if not askyesno("Overwrite current peaks?","Loading new peaks 
-#will overwrite the ones in memory now, are you sure?"):
-#            return
-      filename=self.parent.opener.show(title="File containing filtered peaks")
+   def loadfiltered(self,filename=None):
+      #      if self.parent.finalpeaks!=None:
+      #         from tkMessageBox import askyesno
+      #         if not askyesno("Overwrite current peaks?","Loading new peaks 
+      #will overwrite the ones in memory now, are you sure?"):
+      #            return
+      if filename==None: 
+         filename=self.parent.opener.show(title="File containing filtered peaks")
       f=open(filename,"r")
       #                   0123456789012
       line=f.readline()
@@ -80,8 +82,9 @@ class guitransformer:
       f.close()
       self.parent.finalpeaks=array([x,y,om])
 
-   def loadfileparameters(self):
-      filename=self.parent.opener.show(title="File containing detector parameters")
+   def loadfileparameters(self,filename=None):
+      if filename==None:
+         filename=self.parent.opener.show(title="File containing detector parameters")
       self.loadparameters(filename)
 
    def loadparameters(self,filename=None):   

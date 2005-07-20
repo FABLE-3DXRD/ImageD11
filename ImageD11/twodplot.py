@@ -41,8 +41,9 @@ class data:
       self.d=d
    
 class twodplot(Tk.Frame):
-   def __init__(self,parent=None,data=None):
+   def __init__(self,parent=None,data=None,quiet="No"):
       Tk.Frame.__init__(self,parent)
+      self.quiet=quiet
       self.f = Figure(figsize=(8,5), dpi=100)
       self.a = self.f.add_subplot(111)
       self.plotitems={}
@@ -194,10 +195,13 @@ class twodplot(Tk.Frame):
          if item.d.has_key("title"):
             self.a.set_title(item.d["title"])
          if item.x.shape[0]>self.maxpoints:
-            if tkMessageBox.askyesno("Slow plotting workaround","Shall I plot only the first %d points for increased speed?"%(self.maxpoints)):
-               ret = self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],pc)
+            if self.quiet=="No": 
+               if tkMessageBox.askyesno("Slow plotting workaround","Shall I plot only the first %d points for increased speed?"%(self.maxpoints)):
+                  ret = self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],pc)
+               else:
+                  ret = self.a.plot(item.x,item.y,pc)
             else:
-                 ret = self.a.plot(item.x,item.y,pc)
+               ret = self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],pc)
          else:
             ret = self.a.plot(item.x,item.y,pc)
       if self.xr!=None:

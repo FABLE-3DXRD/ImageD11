@@ -596,3 +596,19 @@ class indexer:
 #            tc=math.asin(self.ds[i]*self.wavelength/2)*360/math.pi
 #            print i,tc,to[i],self.eta[i],eo[0][i],eo[1][i],self.omega[i],oo[0][i],oo[1][i]
 #         print  "...."
+
+
+
+def ubitocellpars(ubi):
+   """
+   convert ubi matrix to unit cell
+   """
+   g=matrixmultiply(ubi,transpose(ubi))
+   a=sqrt(g[0,0])
+   b=sqrt(g[1,1])
+   c=sqrt(g[2,2])
+   from math import acos, degrees
+   alpha=degrees(acos(g[1,2]/b/c))
+   beta =degrees(acos(g[0,2]/a/c))
+   gamma=degrees(acos(g[0,1]/a/b))
+   return a,b,c,alpha,beta,gamma

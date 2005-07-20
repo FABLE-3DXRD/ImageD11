@@ -21,10 +21,19 @@ from Numeric import *
 import time,sys
 
 
+def roundfloat(x,tol):
+   """
+   Return the float nearest to x stepsize tol
+   """
+   return x  # .__divmod__(tol)[0]*tol
+
+print "Using omega tolerance of 1e-5"
+
 class peak:
    def __init__(self,line,omega,threshold,num):
       self.TOLERANCE = 2.0 # Pixel separation for combining peaks
-      self.omega=omega
+      self.omegatol=1e-5
+      self.omega=roundfloat(omega,self.omegatol) # round to nearest
       self.num=num
       self.line=line
       self.threshold=threshold
@@ -73,19 +82,26 @@ class peak:
             # Make a new line
             line = "%d  %f    %f %f   %f %f    %f %f %f"%(np,avg,x,y,xc,yc,sigx,sigy,covxy)
             return peak(line,omega,threshold,num)
+         
    def __cmp__(self,other):
-        o=cmp(self.omega,other.omega)
-        if o == 0:
-            x=cmp(self.xc,other.xc)
-            if x ==0 :
-                return cmp(self.yc,other.yc)
-            else:
-                return x
-        else:
-            return o        
-
+      if self.omega - other.omega > self.omegatol:
+         return 1
+      if self.omega - other.omega < -self.omegatol:
+         return -1
+      if self.xc - other.xc > self.TOLERANCE:
+         return -1
+      if self.xc - other.xc < -self.TOLERANCE:
+         return 1
+      # xc within tol
+      if self.yc - other.yc > self.TOLERANCE:
+         return -1
+      if self.yc - other.yc < -self.TOLERANCE:
+         return 1
+      return 0
+      
    def __eq__(self,other):
         try:
+#           print "using __eq__"
            if abs(self.xc - other.xc) < self.TOLERANCE and abs(self.yc - other.yc) < self.TOLERANCE :
               return True
            else:
@@ -94,6 +110,11 @@ class peak:
             print self,other
             raise
 
+   def __str__(self):
+      return "Peak xc=%f yc=%f omega=%f"%(self.xc,self.yc,self.omega)
+
+   def __repr__(self):
+      return "Peak xc=%f yc=%f omega=%f"%(self.xc,self.yc,self.omega)
 
 class pkimage:
    """
@@ -127,11 +148,13 @@ class pkimage:
 
 class guipeaksearcher:
                            
-   def __init__(self,parent):
+   def __init__(self,parent,quiet="No"):
       """
       Parent is a hook to features of the parent gui
       """
       self.parent=parent
+      self.quiet=quiet
+      #print "I am in quiet mode",quiet
       self.lines=None
       self.allpeaks=None
       self.merged=None
@@ -212,14 +235,15 @@ class guipeaksearcher:
          self.readpeaks()
       # Now we need to select the range of peaks to use
       from tkMessageBox import askyesno
-      ans = askyesno("Have you selected a sensible range of images?","""
+      if self.quiet=="No":
+         ans = askyesno("Have you selected a sensible range of images?","""
 Use the mouse to select the range of image numbers and omega angles that
 you want to use from the graph on the screen.
 
 If all is OK, then say yes now and we will try to harvest the peaks. 
 Otherwise, say no, select the right range and come back "harvestpeaks" again
 """       ) 
-      print ans
+         print ans
       # We now have the ranges in imagenumber and omega from
       # the graph
       numlim=self.parent.twodplotter.a.get_xlim()
@@ -229,6 +253,7 @@ Otherwise, say no, select the right range and come back "harvestpeaks" again
       for image in self.images:
          # Check
          om=float(image.header["Omega"])
+         #print "%50.40f %s"%(om,image.header["Omega"]),
          if image.imagenumber < numlim[1]    and  \
             image.imagenumber > numlim[0]    and  \
             om < omlim[1] and om > omlim[0]    :
@@ -241,7 +266,9 @@ Otherwise, say no, select the right range and come back "harvestpeaks" again
                   if line.find("Threshold")>0:
                      threshold=float(line.split()[-1])
                   if line[0]!='#' and len(line)>10:
-                     peaks.append(peak(line, om, threshold, image.imagenumber))
+                     p=peak(line, om, threshold, image.imagenumber)
+                     p.jth=npks
+                     peaks.append(p)                     
                      npks=npks+1
                   i=i+1
                   line=self.lines[i]
@@ -252,8 +279,10 @@ Otherwise, say no, select the right range and come back "harvestpeaks" again
       print "Time to sort by omega:",time.time()-start      
       self.allpeaks=peaks
       from tkMessageBox import showinfo
-      showinfo("Harvested peaks","You have a total of %d peaks,"%(len(self.allpeaks))+
+      if self.quiet=="No":
+         showinfo("Harvested peaks","You have a total of %d peaks,"%(len(self.allpeaks))+
             "no peaks have been merged")
+      
 
 
                   
@@ -270,7 +299,7 @@ Otherwise, say no, select the right range and come back "harvestpeaks" again
       i=1
       while i < npeaks:
          # merge peaks with same omega values
-         if self.allpeaks[i] == merge1[-1] and self.allpeaks[i].omega == merge1[-1].omega:
+         if self.allpeaks[i] == merge1[-1] and abs(self.allpeaks[i].omega - merge1[-1].omega) < merge1[-1].omegatol:
             merge1[-1]=merge1[-1].combine(self.allpeaks[i])
          else:
             merge1.append(self.allpeaks[i])
@@ -283,13 +312,17 @@ Otherwise, say no, select the right range and come back "harvestpeaks" again
       i=0
       start=time.time()
       uniq={}
+      olast = -1e9
       while i < npeaks:
          omega = peaks[i].omega
-         i=i+1
-         if uniq.has_key(omega):
-            continue
-         else:
+         if omega > olast:
+            olast=omega
             uniq[omega]=i
+         else:
+            pass
+            #ok
+            #raise Exception("Peaks apparently not sorted by omegas!!! "+str(i)+" "+str(peaks[i].omega)+" "+str(peaks[i-1].omega))
+         i=i+1
       # 
       nomega=len(uniq.keys())
       print "Number of different omegas=",nomega,time.time()-start
@@ -301,10 +334,14 @@ Otherwise, say no, select the right range and come back "harvestpeaks" again
       merged=[]
       keys=uniq.keys()
       keys.sort()
+      #print keys
       prevframe=[]
       while i < nomega-2:
          first=uniq[keys[i]]
          last =uniq[keys[i+1]]
+         if last < first:
+            raise Exception("Keysort problem")
+         #print first,last
          #
          # Active peaks are present on the current frame
          # These can merge with the next frame
@@ -318,7 +355,8 @@ Otherwise, say no, select the right range and come back "harvestpeaks" again
             raise "Problem here - lost something"
          nextlast =uniq[keys[i+2]]
          nextframe=peaks[last:nextlast]
-         print "Setting %-5d with %-6d peaks on this and %-5d peaks on next, %-5d in buffer\r"%(i,last-first,nextlast-last,ncarry),
+         om=keys[i]
+         print "Setting %-5d  %8f with %-6d peaks on this and %-5d peaks on next, %-5d in buffer\r"%(i,om,last-first,nextlast-last,ncarry),
          sys.stdout.flush()
          for peak1 in active:
             m=0
@@ -372,7 +410,8 @@ Otherwise, say no, select the right range and come back "harvestpeaks" again
       merged.sort()
       self.merged=merged
       from tkMessageBox import showinfo
-      showinfo("Finished merging peaks","You have a total of "+str(len(self.merged))+" after merging")
+      if self.quiet=="No":
+         showinfo("Finished merging peaks","You have a total of "+str(len(self.merged))+" after merging")
       print "That took",time.time()-start
       return
 
@@ -391,8 +430,9 @@ Otherwise, say no, select the right range and come back "harvestpeaks" again
          om.append(peak.omega)
       self.parent.finalpeaks=array([x,y,om])
       import twodplot
-      self.parent.twodplotter.hideall()
-      self.parent.twodplotter.adddata( 
+      if self.quiet=="No":
+         self.parent.twodplotter.hideall()
+         self.parent.twodplotter.adddata( 
                ( "Filtered peaks",
                   twodplot.data(
                      self.parent.finalpeaks[0,:],
