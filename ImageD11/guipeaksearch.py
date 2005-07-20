@@ -30,8 +30,8 @@ def roundfloat(x,tol):
 print "Using omega tolerance of 1e-5"
 
 class peak:
-   def __init__(self,line,omega,threshold,num):
-      self.TOLERANCE = 2.0 # Pixel separation for combining peaks
+   def __init__(self,line,omega,threshold,num,tolerance=2):
+      self.TOLERANCE = tolerance # Pixel separation for combining peaks
       self.omegatol=1e-5
       self.omega=roundfloat(omega,self.omegatol) # round to nearest
       self.num=num
@@ -159,15 +159,20 @@ class guipeaksearcher:
       self.allpeaks=None
       self.merged=None
       self.final=None
+      self.tolerance=2.0
       self.menuitems = ( "PeakSearching", 4,
                          [ ( "Search raw images" , 0, self.searchraw ),
                            ( "Read pks file", 0, self.readpeaks ),
+                           # ( "Pixel tolerance", 0, self.setpixeltolerance ),
                            ( "Harvest peaks", 0, self.harvestpeaks),
                            ( "Merge peaks",  0, self.mergepeaks ),
                            ( "Filter peaks", 0, self.filter     ),
                            ( "Save good peaks",2, self.savepeaks) ] ) 
 
       pass
+
+#   def setpixeltolerance(self,tolerance=2):
+      
 
    def searchraw(self):
       from tkMessageBox import showinfo
@@ -266,7 +271,7 @@ Otherwise, say no, select the right range and come back "harvestpeaks" again
                   if line.find("Threshold")>0:
                      threshold=float(line.split()[-1])
                   if line[0]!='#' and len(line)>10:
-                     p=peak(line, om, threshold, image.imagenumber)
+                     p=peak(line, om, threshold, image.imagenumber,self.tolerance)
                      p.jth=npks
                      peaks.append(p)                     
                      npks=npks+1

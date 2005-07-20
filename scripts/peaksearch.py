@@ -40,7 +40,7 @@ from ImageD11 import opendata
 from ImageD11 import connectedpixels
 import Numeric
 
-def peaksearch(filename, outputfile, corrector, blobim , thresholds):
+def peaksearch(filename, outputfile, corrector, blobim , thresholds, dark=None, flood=None):
    """
    Searches for peaks, arguments are:
    filename   : image filename to search for peaks in
@@ -57,6 +57,10 @@ def peaksearch(filename, outputfile, corrector, blobim , thresholds):
    data_object = opendata.openedf(filename)
    picture = data_object.data
    # picture is (hopefully) a 2D Numeric array of type UInt16
+   if dark != None:
+      picture=picture-dark
+   if flood != None:
+      picture=picture/flood
    print "%s"%(filename), # Progress indicator
    #
    # Transfer header information to output file
@@ -153,13 +157,33 @@ def peaksearch(filename, outputfile, corrector, blobim , thresholds):
 if __name__=="__main__":
    # If we are running from a command line:
    try:
-      stem =        sys.argv[1]
-      outfile =     sys.argv[2]
-      first =   int(sys.argv[3])
-      last =    int(sys.argv[4])
-      corrector=blobcorrector.correctorclass(sys.argv[5])
+      from optparse import OptionParser
+      parser = OptionParser()
+      parser.add_option("-n","--namestem",action="store", type="string", dest="stem",
+                        help="Name of the files up the digits part, eg mydata in mydata0000.edf" )
+      parser.add_option("-f","--first",action="store", type="int", dest="first",default=0,
+                        help="Number of first file to process, default=0")
+      parser.add_option("-l","--last",action="store", type="int", dest="last",
+                        help="Number of last file to process")
+      parser.add_option("-o","--outfile",action="store", type="string", dest="outfile",default="peaks.out",
+                        help="Output filename, default=peaks.out")
+      parser.add_option("-d","--darkfile",action="store", type="string", dest="dark",default=None,
+                        help="Dark current filename, to be subtracted, default=None")
+      parser.add_option("-D","--darkfileoffset",action="store", type="int", dest="darkoffset",default=100,
+                        help="Constant to subtract from dark to avoid overflows, default=100")
+      s="/data/opid11/inhouse/Frelon2K/spatial2k.spline"
+      parser.add_option("-s","--splinefile",action="store", type="string", dest="spline",default=s,
+                        help="Spline file for spatial distortion, default=%s"%(s))
+      parser.add_option("-t","--threshold",action="append", type="float", dest="thresholds", default=None,
+                        help="Threshold level, you can have several")
+      options , args = parser.parse_args()
+      stem =        options.stem
+      outfile =     options.outfile
+      first =       options.first
+      last =        options.last
+      corrector=blobcorrector.correctorclass(options.spline)
       # List comprehension - convert remaining args to floats
-      thresholds = [float(t) for t in sys.argv[6:]]
+      thresholds = [float(t) for t in options.thresholds]
       # Generate list of files to proces
       files = ["%s%04d%s"%(stem,i,".edf") for i in range(first,last+1)]
       # Make a blobimage the same size as the first image to process
@@ -168,12 +192,16 @@ if __name__=="__main__":
       blobim=Numeric.zeros(opendata.openedf(files[0]).data.shape,Numeric.Int)
       # Not sure why that was there (I think if glob was used)
       # files.sort()
+      if options.dark!=None:
+         dark=(opendata.openedf(options.dark).data - options.darkoffset).astype(Numeric.UInt16)
+      else:
+         dark=None
       start = time.time()
       print "File being treated in -> out, elapsed time"
       for filein in files:
-         peaksearch(filein, outfile, corrector, blobim, thresholds)
+         peaksearch(filein, outfile, corrector, blobim, options.thresholds,dark=dark)
    except:
-      print "Usage: %s filename  outputfile first last spline threshold [threshold...]"
+#      print "Usage: %s filename  outputfile first last spline threshold [threshold...]"%(sys.argv[0])
       print
       # Raise the exception to find out in more detail where we went wrong
       raise
