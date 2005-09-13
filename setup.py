@@ -50,13 +50,14 @@ cl = Extension("closest", sources=['src/closest.c'])
 cp = Extension("connectedpixels", sources = ['src/connectedpixels.c'])
 
 # Fortran hack - just need to have libsplines.a available for linking
-import os
-os.system("g77 -c src/bispev.f -o src/bispev.o")
-os.system("ar -cr src/libsplines.a src/bispev.o")
+#import os
+#os.system("g77 -c src/bispev.f -o src/bispev.o")
+#os.system("ar -cr src/libsplines.a src/bispev.o")
 
 # _splines is for correcting peak positions for spatial distortion
-bl = Extension("_splines", sources = ['src/splines.c'], 
-                     libraries = ["splines"], library_dirs = ["src"] )
+bl = Extension("_splines", sources = ['src/splines.c', 'src/bispev.c'] )
+#, 
+#                     libraries = ["splines"], library_dirs = ["src"] )
 
 
 # See the distutils docs...
