@@ -18,7 +18,11 @@ example usage:
 
 
 class cakemacrogenerator:
-    
+    """
+    Generates a macro to run fit2d to cake some images
+    """
+
+    # String to be used on the first time through the caking menu 
     first_time_run_string = """GRAPHICAL COORDINATE
            1
  1.0E+00
@@ -32,6 +36,8 @@ class cakemacrogenerator:
  3.0E00
  3.0E00
 """
+
+    # Options when reading in an image on the powder diffraction menu
     input_options_names=[
         "DARK CURRENT",
         "DC FILE",
@@ -52,7 +58,9 @@ class cakemacrogenerator:
         "SPATIAL DIS." : "NO",
         "SD FILE"      : None
         }
-        
+
+
+    # First caking menu parameters
     image_pars_names=[    
         "X-PIXEL SIZE",
         "Y-PIXEL SIZE",
@@ -64,7 +72,7 @@ class cakemacrogenerator:
         "ANGLE OF TILT"
         ]
     image_pars_values = {
-        "X-PIXEL SIZE" : 46.77648 ,
+        "X-PIXEL SIZE" : 46.77648 ,      
         "Y-PIXEL SIZE" : 48.08150 ,
         "DISTANCE"     : 975.0000 ,
         "WAVELENGTH"   : 0.154981 ,
@@ -73,6 +81,8 @@ class cakemacrogenerator:
         "TILT ROTATION": 154.3416 ,
         "ANGLE OF TILT": 0.899907 } 
 
+
+    # Second caking menu parameters
     integrate_pars_names = [
         "START AZIMUTH",
         "END AZIMUTH",
@@ -99,14 +109,18 @@ class cakemacrogenerator:
         "POLARISATION"  : "NO"     ,
         "GEOMETRY COR." : "YES"
         }
-    
+
+
+    # Parameters for writing out results
     input_extn = "edf"
     saving_format = "CHIPLOT"
     output_extn = "chi"
 
     def __init__(self):
+        # Object holds a macro in a string
         self.macro="I ACCEPT\n"
         self.macro=self.macro+"POWDER DIFFRACTION (2-D)\n"
+        # Flag to see if you have been through the caking menu yet
         self.first_time_run=True
 
     def writepars(self,parfile):
@@ -138,6 +152,7 @@ class cakemacrogenerator:
         pf.close()
 
     def readpars(self,parfile):
+        # Read in the parameters for image processing
         pf=open(parfile,"r").readlines()
         for line in pf:
             if line[0]=="#" or len(line)<3 or line.find("=")<0:
@@ -170,6 +185,8 @@ class cakemacrogenerator:
         else:
             print "Failure to set",key,value
 
+    # Dictionary to translate .fit2d.def file syntax into macro syntax
+
     fit2d_def_names_to_macro_names = {
         "DARK_CURRENT_CORRECTION" : "DARK CURRENT",
         "DARK_CURRENT_FILE"       : "DC FILE",
@@ -198,8 +215,13 @@ class cakemacrogenerator:
 
 
     def deg(x):
+        """
+        Convert string of radians to degrees helper function
+        """
         from math import degrees
         return degrees(float(x))
+
+    # Convert units from .fit2d.def file to macro units
     
     fit2d_def_to_macro_converters = {
         "X_PIXEL_SIZE"          : lambda x : float(x)*1e6     , # to microns
@@ -216,7 +238,8 @@ class cakemacrogenerator:
     def generate_pars_from_def_file(self,def_file):
         """
         Attempt to generate parameters from a .fit2d.def file
-        So you have run fit2d, all worked and you cleanly exited
+        So you have run fit2d, all worked and you cleanly exited to generate the def file
+        This function picks up the parameters
         """
         f=open(def_file,"r")
         while 1:
@@ -239,6 +262,9 @@ class cakemacrogenerator:
                 break
             
     def inputfile(self,filein):
+        """
+        Read in a file on the powder menu in fit2d
+        """
         self.macro=self.macro+"INPUT\n"+filein+"\n"
         for name in self.input_options_names:
             value=self.input_options_values[name]
@@ -247,6 +273,9 @@ class cakemacrogenerator:
         self.macro=self.macro+"O.K.\n"
         
     def imagepars(self):
+        """
+        Set the image parameters after cake -> integrate
+        """
         for name in self.image_pars_names:
             value=self.image_pars_values[name]
             if value!=None:
@@ -254,6 +283,9 @@ class cakemacrogenerator:
         self.macro=self.macro+"O.K.\n"
 
     def cakepars(self):
+        """
+        Set the caking parameters (second part of cake -> integrate)
+        """
         for name in self.integrate_pars_names:
             value=self.integrate_pars_values[name]
             if value!=None:
@@ -261,34 +293,60 @@ class cakemacrogenerator:
         self.macro=self.macro+"O.K.\n"
 
     def outputfile(self,file):
+        """
+        Save the memory from fit2d (probably your results)
+        TODO: Make this format friendly - deal with other formats
+        """
         self.macro=self.macro+"EXIT\nOUTPUT\n%s\nFILE NAME\n"%(self.saving_format)
         self.macro=self.macro+file+"\n"
         self.macro=self.macro+"O.K.\n"
 
         
     def cakeafile(self,filein,fileout):
+        """
+        Take one input file and convert it to one output file
+        """
+        # Read data in (assumes you are in powder diffraction menu)
         self.inputfile(filein)
+        # Select cake -> integrate 
         self.macro=self.macro+"CAKE\n"
         if self.first_time_run:
+            # Give annoying clicks
             self.macro=self.macro+self.first_time_run_string
             self.first_time_run=False
         self.macro=self.macro+"INTEGRATE\n"
+        # fill out the first menu parameters (geometry)
         self.imagepars()
+        # fill out the second menu parameters (transform)
         self.cakepars()
+        # Save results
         self.outputfile(fileout)
+        # Conventionally exchange
         self.macro=self.macro+"EXCHANGE\n"
 
     def cakefileseries(self,stem,first,last):
+        """
+        Cake a file sequence - eventually emulating fit2d run sequence command
+        """
         for i in range(first,last+1):
             filein ="%s%04d.%s"%(stem,i,self.input_extn)
             fileout="%s%04d.%s"%(stem,i,self.output_extn)
             self.cakeafile(filein,fileout)
 
     def run(self):
+        """
+        Run the generated macro
+        """
         self.macro=self.macro+"EXIT\nEXIT FIT2d\nYES\n"
         open("fit2dcake.mac","w").write(self.macro)
-        import os
+        import os, time
+        # Send the display to a local black hole
+        os.system("Xvfb :1 &")
+        time.sleep(1)
+        displaywas=os.environ["DISPLAY"]
+        os.environ["DISPLAY"]=os.environ["HOST"]+":1"
         os.system("fit2d_12_081_i686_linux2.4.20 -dim2048x2048 -macfit2dcake.mac")
+        os.environ["DISPLAY"]=displaywas
 
 if __name__=="__main__":
 
@@ -323,7 +381,7 @@ if __name__=="__main__":
         parser.print_usage()
         sys.exit()
 
-    caker.readpars(options.ipars)
+    caker.readpars(parfile)
 
     caker.cakefileseries(sys.argv[1],int(sys.argv[2]),int(sys.argv[3]))
 
