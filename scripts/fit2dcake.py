@@ -346,6 +346,7 @@ class cakemacrogenerator:
         displaywas=os.environ["DISPLAY"]
         os.environ["DISPLAY"]=os.environ["HOST"]+":1"
         os.system("fit2d_12_081_i686_linux2.4.20 -dim2048x2048 -macfit2dcake.mac")
+        os.system("rm -f fit2dcake.mac")
         os.environ["DISPLAY"]=displaywas
 
 if __name__=="__main__":
