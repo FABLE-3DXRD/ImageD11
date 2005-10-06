@@ -122,6 +122,8 @@ class cakemacrogenerator:
         self.macro=self.macro+"POWDER DIFFRACTION (2-D)\n"
         # Flag to see if you have been through the caking menu yet
         self.first_time_run=True
+        # Flag to check parameters have been read in
+        self.parsread=False
 
     def writepars(self,parfile):
         # Dump all dictionaries to a file as name value
@@ -166,6 +168,8 @@ class cakemacrogenerator:
             if value == "None":
                 value=None
             self.setparameter(key,value)
+        self.parsread=True
+        
 
 
     def setparameter(self,key,value):
@@ -306,6 +310,10 @@ class cakemacrogenerator:
         """
         Take one input file and convert it to one output file
         """
+        if not self.parsread:
+            raise Exception("Trying to process data with no parameters, give up!!")
+        mac = self.macro # local copy
+        self.macro=""    
         # Read data in (assumes you are in powder diffraction menu)
         self.inputfile(filein)
         # Select cake -> integrate 
@@ -321,33 +329,70 @@ class cakemacrogenerator:
         self.cakepars()
         # Save results
         self.outputfile(fileout)
-        # Conventionally exchange
-        self.macro=self.macro+"EXCHANGE\n"
+        # Conventionally exchange and put previous back in
+        self.macro=mac+self.macro+"EXCHANGE\n"
+
+    def cakefileglob(self,stem,replace=False):
+        import glob
+        #        print stem
+        filelist=glob.glob("%s????.%s"%(stem,self.input_extn))
+        if replace:
+            todolist=filelist
+        else:
+            donefilelist=glob.glob("%s????.%s"%(stem,self.output_extn))
+            donefilelist=[s.replace(self.output_extn,self.input_extn) for s in
+                          donefilelist]
+            #        print filelist
+            import sets
+            todolist = sets.Set(filelist).difference(sets.Set(donefilelist))
+            todolist = [x for x in todolist]
+            todolist.sort()
+        for f in todolist:
+            i = int(f[-8:-4])
+            filein = f
+            fileout = f[:-3]+self.output_extn
+            self.cakeafile(filein,fileout)
+
+
 
     def cakefileseries(self,stem,first,last):
         """
         Cake a file sequence - eventually emulating fit2d run sequence command
         """
+        import sys
         for i in range(first,last+1):
             filein ="%s%04d.%s"%(stem,i,self.input_extn)
             fileout="%s%04d.%s"%(stem,i,self.output_extn)
             self.cakeafile(filein,fileout)
+            if i%100 == 0:
+                print i,
+                sys.stdout.flush()
 
     def run(self):
         """
         Run the generated macro
         """
         self.macro=self.macro+"EXIT\nEXIT FIT2d\nYES\n"
-        open("fit2dcake.mac","w").write(self.macro)
-        import os, time
+        import os, time, tempfile
+        tmpfilename=tempfile.mkstemp(dir="/tmp")[1]
+        tmpfile=open(tmpfilename,"w")
+        tmpfile.write(self.macro)
+        tmpfile.close()
         # Send the display to a local black hole
-        os.system("Xvfb :1 &")
+        os.system("/users/wright/bin/Xvfb :1 &")
         time.sleep(1)
-        displaywas=os.environ["DISPLAY"]
-        os.environ["DISPLAY"]=os.environ["HOST"]+":1"
-        os.system("fit2d_12_081_i686_linux2.4.20 -dim2048x2048 -macfit2dcake.mac")
-        os.system("rm -f fit2dcake.mac")
+        try:
+           displaywas=os.environ["DISPLAY"]
+        except:
+           displaywas=":0"
+        try:
+           os.environ["DISPLAY"]=os.environ["HOST"]+":1"
+        except:
+           os.environ["DISPLAY"]=":1"
+        os.system("/users/wright/bin/fit2d_12_081_i686_linux2.4.20 -dim2048x2048 -mac%s"%(tmpfilename))
+        os.system("rm -f %s"%(tmpfilename))
         os.environ["DISPLAY"]=displaywas
+        print tmpfilename
 
 if __name__=="__main__":
 
@@ -359,6 +404,12 @@ if __name__=="__main__":
                       help="Generate parameter file from DEFFILE file to save in CPARS")
     parser.add_option("-d","--def-file",action="store",type="string",dest="deffile",
                       help="The fit2d .fit2d.def to read, defaults to $HOME/.fit2d.def")
+    parser.add_option("-p","--pars",action="store",type="string",dest="parfile",
+                      help="Input parameter file")
+    parser.add_option("-g","--glob",action="store",type="string",dest="glob",
+                      help="Ignore numbers and glob for files")
+    parser.add_option("-f","--forceoverwrite",action="store",type="string",dest="forceoverwrite",
+                      help="Force overwrite when globbing")
     options , args = parser.parse_args()
     
     caker=cakemacrogenerator()
@@ -372,6 +423,14 @@ if __name__=="__main__":
         caker.generate_pars_from_def_file( f )
         caker.writepars(options.cpars)
         sys.exit()
+
+
+
+    if options.glob != None:
+        caker.readpars(options.parfile)
+        caker.cakefileglob(options.glob,options.forceoverwrite is not None)
+        caker.run()
+        sys.exit()
         
     try:
         stem = args[0]
@@ -384,7 +443,7 @@ if __name__=="__main__":
 
     caker.readpars(parfile)
 
-    caker.cakefileseries(sys.argv[1],int(sys.argv[2]),int(sys.argv[3]))
+    caker.cakefileseries(stem,first,last)
 
     caker.run()
         
