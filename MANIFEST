@@ -22,6 +22,8 @@ src\connectedpixels.c
 src\splines.c
 src\dset.h
 src\bispev.f
+src\bispev.c
+src\f2c.h
 scripts\ImageD11_gui.py
 scripts\peaksearch.py
 scripts\recoveromega.py
