@@ -63,12 +63,15 @@ def openchi(filename):
    h['columns']=2
    for line in open(filename,"r"):
       try:
-         xy.append(map(float,line.split()))
+         v=[float(x) for x in line.split()]
+         if len(v)==2:
+            xy.append(v)
       except:
          pass # titles
-   a=array(xy)
+      
+   a=array(xy,Float)
    h['rows']=a.shape[1]
-   return data(h,a)
+   return data(a,h)
    
 def openxye(filename):
    h={}
@@ -82,7 +85,7 @@ def openxye(filename):
    a=array(xye)
    h['rows']=a.shape[1]
    h['xye']=True
-   return data(h,a)
+   return data(a,h)
 
 def readbytestream(file,offset,x,y,nbytespp,datatype='int',signed='n',
                    swap='n',typeout=UInt16):
