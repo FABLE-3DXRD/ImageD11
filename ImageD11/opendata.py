@@ -39,6 +39,8 @@ def opendata(filename):
       return openedf(filename)
    if filename[-3:] in ["xye","epf","inp"]:
       return openxye(filename)
+   if filename[-3:] in ["chi"]:
+      return openchi(filename)
    if filename[-5]=="." and filename[-4:].isdigit():
       return openbruker(filename)
 
@@ -55,9 +57,22 @@ def makename(stem,num,extn,width=4):
    return fs%(stem,num,extn)
 
 
-
+def openchi(filename):
+   h={}
+   xy=[]
+   h['columns']=2
+   for line in open(filename,"r"):
+      try:
+         xy.append(map(float,line.split()))
+      except:
+         pass # titles
+   a=array(xy)
+   h['rows']=a.shape[1]
+   return data(h,a)
+   
 def openxye(filename):
    h={}
+   xye=[]
    h['columns']=3
    for line in open(filename,"r"):
       try:
