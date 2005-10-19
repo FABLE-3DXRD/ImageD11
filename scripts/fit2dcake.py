@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
 """
 Fit2d caking python script
@@ -301,9 +301,23 @@ class cakemacrogenerator:
         Save the memory from fit2d (probably your results)
         TODO: Make this format friendly - deal with other formats
         """
-        self.macro=self.macro+"EXIT\nOUTPUT\n%s\nFILE NAME\n"%(self.saving_format)
-        self.macro=self.macro+file+"\n"
-        self.macro=self.macro+"O.K.\n"
+        if self.saving_format.find("SPREAD SHEET")>-1:
+            self.macro=self.macro+"EXIT\nEXIT\nIMAGE PROCESSING\nGEOMETRIC\nTRANSPOSE\n"
+            self.macro=self.macro+"EXIT\nEXIT\nPOWDER DIFFRACTION\nOUTPUT\n"+self.saving_format
+            self.macro=self.macro+"\nYES\n"
+            self.macro=self.macro+file+"\n"
+            self.macro=self.macro+"O.K.\n"
+            # Now output a chi files to get the x axis and y axis
+            self.macro=self.macro+"OUTPUT\nCHIPLOT\nFILE NAME\n"+file+"_x\n"
+            self.macro=self.macro+"OUTPUT ROWS\nYES\nO.K.\n"
+            self.macro=self.macro+"OUTPUT\nCHIPLOT\nFILE NAME\n"+file+"_y\n"
+            self.macro=self.macro+"OUTPUT ROWS\nNO\nO.K.\n"
+            
+        else:
+            self.macro=self.macro+"EXIT\nOUTPUT\n%s\n"%(self.saving_format)
+            self.macro=self.macro+"FILE NAME\n"
+            self.macro=self.macro+file+"\n"
+            self.macro=self.macro+"O.K.\n"
 
         
     def cakeafile(self,filein,fileout):

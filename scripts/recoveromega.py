@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 
 
 # ImageD11_v0.4 Software for beamline ID11
@@ -56,9 +56,11 @@ for line in pksfile.readlines():
    # Reading in the pksfile from the peaksearching script
    newpksfile.write(line) # echo line
    if line.find("File ")>0: # We found a filename
-      name=line.split()[-1] 
-      newpksfile.write("# Omega = %s\n"%(lookups[name]) ) # So add the angle
-
+      name=line.split()[-1]
+      try:
+         newpksfile.write("# Omega = %s\n"%(lookups[name]) ) # So add the angle
+      except:
+         newpksfile.write("# Omega = -999\n" ) # So add the angle
 # all done
 pksfile.close()
 newpksfile.close()
