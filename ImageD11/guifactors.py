@@ -36,8 +36,13 @@ class guifactors:
 # peaks are in      self.parent.finalpeaks
       self.menuitems = ( "Factors", 0,
                          [ ( "Load chi files", 0, self.loadchis),
-                           ( "Plot a chi", 0, self.plotchi     ),
-			   ( "Generate SVD", 0, self.svd ),
+                           ( "Save obsdata in binary",0,self.saveobsdata),
+                           ( "Read obsdata in binary",0,self.readobsdata),
+                           ( "Plot a 1D", 0, self.plotchi     ),
+                           ( "Plot obs colormap",0,self.plotsurf ),
+			   ( "Generate SVD", 0, self.factorsvd ),
+                           ( "Save SVD",1,self.savesvd),
+                           ( "Load SVD",0,self.loadsvd),
 			   ( "Select number of factors", 0, self.setnfactors),
 			   ( "Generate differences", 9, self.dataminuscalc)
                          ] ) 
@@ -48,6 +53,9 @@ class guifactors:
       # globs by default
       self.factors.loadchis(filename)
 
+   def saveobsdata(self):
+      
+
    def plotchi(self):
       # which one?
       self.parent.twodplotter.adddata(
@@ -56,8 +64,8 @@ class guifactors:
 	  "ylabel":"probably intensity",
 	  "title":"chifile %d"%(i) } ) )
 
-   def svd(self):
-      self.factors.svd()
+   def factorsvd(self):
+      self.factors.factorsvd()
       # Give scree plot
 
    def setnfactors(self):

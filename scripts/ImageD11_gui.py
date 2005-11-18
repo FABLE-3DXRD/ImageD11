@@ -143,8 +143,8 @@ Stuff to do:
           from ImageD11 import guiindexer
           self.indexer = guiindexer.guiindexer(self)
 
-          from ImageD11 import guifactors
-          self.factors=guifactors.guifactors(self)
+          #from ImageD11 import guifactors
+          #self.factors=guifactors.guifactors(self)
 
           # sys is for sys.exit
           import sys
@@ -156,7 +156,7 @@ Stuff to do:
                            self.peaksearcher.menuitems,
                            self.transformer.menuitems,
                            self.indexer.menuitems,
-                           self.factors.menuitems,
+                           #self.factors.menuitems,
                            ( "Plotting", 0, 
                               [ ( "Autoscale", 0, self.autoscaleplot),
                                 ( "Clear plot",0, self.clearplot),
