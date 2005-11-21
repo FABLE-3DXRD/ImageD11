@@ -71,16 +71,13 @@ class guitransformer:
          from tkMessageBox import showinfo
          showinfo("Sorry","That does not seem to be a filter peaks file, output from the peaksearching menu option")
          return
-      x=[]
-      y=[]
-      om=[]
+      bigarray=[]
       for line in f.readlines():
          v=[float(z) for z in line.split()]
-         x.append(v[0])
-         y.append(v[1])
-         om.append(v[2])
+         bigarray.append(v)
       f.close()
-      self.parent.finalpeaks=array([x,y,om])
+      self.parent.finalpeaks=transpose(array(bigarray))
+      print self.parent.finalpeaks.shape
 
    def loadfileparameters(self,filename=None):
       if filename==None:

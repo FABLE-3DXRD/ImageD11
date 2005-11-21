@@ -67,9 +67,12 @@ def peaksearch(filename, outputfile, corrector, blobim , thresholds, dark=None, 
    # Also information on spatial correction applied
    f.write("\n\n# File %s\n"%(filename))
    f.write("# Processed on %s\n"%(time.asctime()))
-   f.write("# Spatial correction from %s\n"%(corrector.splinefile))
-   f.write("# SPLINE X-PIXEL-SIZE %f\n"%(corrector.xsize))
-   f.write("# SPLINE Y-PIXEL-SIZE %f\n"%(corrector.ysize))
+   try:
+      f.write("# Spatial correction from %s\n"%(corrector.splinefile))
+      f.write("# SPLINE X-PIXEL-SIZE %f\n"%(corrector.xsize))
+      f.write("# SPLINE Y-PIXEL-SIZE %f\n"%(corrector.ysize))
+   except:
+      pass
    for item in data_object.header.keys():
       try:
          f.write("# %s = %s\n"%(item,data_object.header[item]))
@@ -141,9 +144,11 @@ def peaksearch(filename, outputfile, corrector, blobim , thresholds, dark=None, 
                c01 = (com01[i]/sum[i] - c0*c1)/c00/c11
             except:
                c01=0.
-         # Spatial corrections, c0c and c1c are the distortion corrected centre of mass :
-            c0c, c1c = corrector.correct(c0,c1)
-            c0c, c1c = corrector.correct(c0,c1)
+            # Spatial corrections, c0c and c1c are the distortion corrected centre of mass :
+            try:
+               c0c, c1c = corrector.correct(c0,c1)
+            except:
+               c0c, c1c =c0,c1
             s = "%d  %f    %f %f    %f %f    %f %f %f\n"%(n, avg, c0, c1, c0c, c1c,  c00, c11, c01)
             f.write(s)
       print "T=%-5d n=%-5d;"%(int(threshold),npks),
@@ -174,6 +179,9 @@ if __name__=="__main__":
       s="/data/opid11/inhouse/Frelon2K/spatial2k.spline"
       parser.add_option("-s","--splinefile",action="store", type="string", dest="spline",default=s,
                         help="Spline file for spatial distortion, default=%s"%(s))
+      parser.add_option("-p","--perfect_images",action="store",type="choice",
+                        choices=["Y","N"],default="N",dest="perfect",
+                        help="Ignore spline Y|N, default=N")
       parser.add_option("-t","--threshold",action="append", type="float", dest="thresholds", default=None,
                         help="Threshold level, you can have several")
       options , args = parser.parse_args()
@@ -181,7 +189,10 @@ if __name__=="__main__":
       outfile =     options.outfile
       first =       options.first
       last =        options.last
-      corrector=blobcorrector.correctorclass(options.spline)
+      if options.spline=="N":
+         corrector=blobcorrector.correctorclass(options.spline)
+      else:
+         corrector=None
       # List comprehension - convert remaining args to floats
       thresholds = [float(t) for t in options.thresholds]
       # Generate list of files to proces

@@ -426,14 +426,14 @@ Otherwise, say no, select the right range and come back "harvestpeaks" again
       # Eventually we should offer filters based on shape/intensity/x/y etc
       #
       # For now just throw everything into an array
-      x=[] # To hold xc, yc, omega
-      y=[]
-      om=[]
+      biglist=[]
       for peak in self.merged:
-         x.append(peak.xc)
-         y.append(peak.yc)
-         om.append(peak.omega)
-      self.parent.finalpeaks=array([x,y,om])
+         biglist.append(
+            [ peak.xc,peak.yc,peak.omega,
+              peak.np,peak.avg,peak.x,peak.y,peak.sigx,peak.sigy,peak.covxy]
+            )
+      self.parent.finalpeaks=transpose(array(biglist))
+      print self.parent.finalpeaks.shape
       import twodplot
       if self.quiet=="No":
          self.parent.twodplotter.hideall()
@@ -458,9 +458,11 @@ Otherwise, say no, select the right range and come back "harvestpeaks" again
          if filename==None:
             filename=self.parent.saver.show(title="Filtered peak positions")
          f=open(filename,"w")
-         f.write("# xc yc omega\n")
+         f.write("# xc yc omega npixels avg_intensity x_raw y_raw sigx sigy covxy\n")
          for i in range(p.shape[1]):
-            f.write("%f %f %f\n"%(p[0,i],p[1,i],p[2,i]))
+            for j in range(p.shape[0]):
+               f.write("%f "%(p[j,i]))
+            f.write("\n")
          f.close()
                
 
