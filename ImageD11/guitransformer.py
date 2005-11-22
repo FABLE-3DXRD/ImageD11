@@ -48,7 +48,8 @@ class guitransformer:
                            ( "Save parameters", 0, self.saveparameters),
                            ( "Set axis orientation", 0, self.setaxisorientation),
                            ( "Compute g-vectors", 0, self.computegv),
-                           ( "Save g-vectors", 0, self.savegv)
+                           ( "Save g-vectors", 0, self.savegv),
+                           ( "Write graindex finalpeaks.log",0, self.write_graindex_gv)
                          ] ) 
       self.twotheta=None
       self.parameters={}
@@ -359,3 +360,17 @@ class guitransformer:
       f.close()
 
 
+   def write_graindex_gv(self):
+      filename=self.parent.saver.show(title="File for graindex, try finalpeaks.log")
+      from ImageD11 import write_graindex_gv
+      #self.parent.finalpeaks=transpose(array(bigarray))
+      self.intensity = self.parent.finalpeaks[3,:]*self.parent.finalpeaks[4,:]
+      print self.intensity.shape
+      write_graindex_gv.write_graindex_gv(filename,
+                                          self.gv,
+                                          self.twotheta,
+                                          self.eta,
+                                          self.omega,
+                                          self.intensity,
+                                          self.unitcell)
+      
