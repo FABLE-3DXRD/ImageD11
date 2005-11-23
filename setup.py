@@ -62,7 +62,7 @@ bl = Extension("_splines", sources = ['src/splines.c', 'src/bispev.c'] )
 
 # See the distutils docs...
 setup(name='ImageD11',
-      version=0.4,
+      version='0.5',
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',
@@ -71,6 +71,7 @@ setup(name='ImageD11',
       ext_modules = [cl,cp,bl],
       packages = ["ImageD11"],
       scripts = ["scripts/peaksearch.py", 
+                 "scripts/edfheader.py",
                  "scripts/recoveromega.py",
                  "scripts/ImageD11_gui.py",
                  "scripts/plotedf.py"])
