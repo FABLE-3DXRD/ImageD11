@@ -189,7 +189,28 @@ class cakemacrogenerator:
                 value=None
             self.setparameter(key,value)
         self.parsread=True
-        
+        self.checkpars()
+
+    def checkpars(self):
+        """
+        Try to catch some (potentially fatal) errors
+        """
+        if int(self.mask_pars_values["DIM1_DATA"]) < \
+           int(self.integrate_pars_values["RADIAL BINS"]) or \
+           int(self.mask_pars_values["DIM2_DATA"]) < \
+           int(self.integrate_pars_values["RADIAL BINS"]) or \
+           int(self.mask_pars_values["DIM1_DATA"]) < \
+           int(self.integrate_pars_values["AZIMUTH BINS"]) or \
+           int(self.mask_pars_values["DIM2_DATA"]) < \
+           int(self.integrate_pars_values["AZIMUTH BINS"]):
+            print "Problem with array dimensions, check your input pars"
+            print "RADIAL BINS",self.integrate_pars_values["RADIAL BINS"]
+            print "AZIMUTH BINS",self.integrate_pars_values["AZIMUTH BINS"]
+            print "DIM1_DATA",self.mask_pars_values["DIM1_DATA"]
+            print "DIM2_DATA",self.mask_pars_values["DIM2_DATA"]
+            sys.exit()
+
+           
 
 
     def setparameter(self,key,value):
