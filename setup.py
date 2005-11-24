@@ -74,6 +74,8 @@ setup(name='ImageD11',
                  "scripts/edfheader.py",
                  "scripts/recoveromega.py",
                  "scripts/ImageD11_gui.py",
+                 "scripts/scriptable_gui.py",
+                 "scripts/bgmaker.py",
                  "scripts/plotedf.py"])
 
       

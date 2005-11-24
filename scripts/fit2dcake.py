@@ -56,9 +56,8 @@ class cakemacrogenerator:
         "FF SCALE"     : "NO",
         "FF MULTIPLIER": 1.0 ,
         "SPATIAL DIS." : "NO",
-        "SD FILE"      : None
+        "SD FILE"      : None,
         }
-
 
     # First caking menu parameters
     image_pars_names=[    
@@ -71,6 +70,7 @@ class cakemacrogenerator:
         "TILT ROTATION",
         "ANGLE OF TILT"
         ]
+    
     image_pars_values = {
         "X-PIXEL SIZE" : 46.77648 ,      
         "Y-PIXEL SIZE" : 48.08150 ,
@@ -96,6 +96,7 @@ class cakemacrogenerator:
         "POLARISATION",
         "GEOMETRY COR."
         ]
+    
     integrate_pars_values= {
         "START AZIMUTH" :  160.0   ,
         "END AZIMUTH"   : -160.0   ,
@@ -110,6 +111,19 @@ class cakemacrogenerator:
         "GEOMETRY COR." : "YES"
         }
 
+    mask_pars_names = [
+        "USE MASK",
+        "MASK FILE",
+        "DIM1_DATA",
+        "DIM2_DATA"
+        ]
+    mask_pars_values = {
+        "USE MASK"     : "NO",
+        "MASK FILE"    : None,
+        "DIM1_DATA"    : 2048,
+        "DIM2_DATA"    : 2048
+        }
+        
 
     # Parameters for writing out results
     input_extn = "edf"
@@ -147,6 +161,12 @@ class cakemacrogenerator:
         for k in keys:
             pf.write("%s = %s\n"%(k,d[k]))
 
+        d = self.mask_pars_values
+        keys = self.mask_pars_names 
+        pf.write("\n# Mask and dimensions\n")
+        for k in keys:
+            pf.write("%s = %s\n"%(k,d[k]))
+
         pf.write("\n# I/O parameters\n")
         pf.write("input_extn = %s\n"%(self.input_extn))
         pf.write("saving_format = %s\n"%(self.saving_format))
@@ -180,6 +200,8 @@ class cakemacrogenerator:
             self.image_pars_values[key]=value
         elif key in self.input_options_values.keys():
             self.input_options_values[key]=value
+        elif key in self.mask_pars_values.keys():
+            self.mask_pars_values[key]=value
         elif key == "input_extn":
             self.input_extn=value
         elif key == "output_extn":
@@ -214,7 +236,9 @@ class cakemacrogenerator:
         "WAVELENGTH"              : "WAVELENGTH",    # meters
         "SAMPLE_DISTANCE"         : "DISTANCE",      # meters
         "TILT_ROTATION"           : "TILT ROTATION", # radians
-        "TILT_ANGLE"              : "ANGLE OF TILT"  # radians
+        "TILT_ANGLE"              : "ANGLE OF TILT",  # radians
+        "DIM1_DATA"               : "DIM1_DATA",
+        "DIM2_DATA"               : "DIM2_DATA"
         }
 
 
@@ -272,9 +296,25 @@ class cakemacrogenerator:
         self.macro=self.macro+"INPUT\n"+filein+"\n"
         for name in self.input_options_names:
             value=self.input_options_values[name]
+            if name.find("MASK")>=0:
+                continue
             if value!=None:
                 self.macro=self.macro+name+"\n"+str(value)+"\n"
         self.macro=self.macro+"O.K.\n"
+
+    def addmask(self):
+        """
+        Read in a mask file if requested in input file
+        """
+        #print "Trying to add mask"
+        #print self.mask_pars_values["USE MASK"], self.mask_pars_values["MASK FILE"]
+        #print self.mask_pars_values["USE MASK"] == "YES", self.mask_pars_values["MASK FILE"] is not None
+        if self.mask_pars_values["USE MASK"] == "YES" and \
+           self.mask_pars_values["MASK FILE"] is not None:
+            self.macro=self.macro+"MASK\nLOAD MASK\n"+\
+                        self.mask_pars_values["MASK FILE"]+\
+                        "\nEXIT\n"
+            
         
     def imagepars(self):
         """
@@ -330,6 +370,8 @@ class cakemacrogenerator:
         self.macro=""    
         # Read data in (assumes you are in powder diffraction menu)
         self.inputfile(filein)
+        # Add mask
+        self.addmask()
         # Select cake -> integrate 
         self.macro=self.macro+"CAKE\n"
         if self.first_time_run:
@@ -382,7 +424,7 @@ class cakemacrogenerator:
                 print i,
                 sys.stdout.flush()
 
-    def run(self):
+    def run(self,show=None):
         """
         Run the generated macro
         """
@@ -393,19 +435,22 @@ class cakemacrogenerator:
         tmpfile.write(self.macro)
         tmpfile.close()
         # Send the display to a local black hole
-        os.system("/users/wright/bin/Xvfb :1 &")
-        time.sleep(1)
-        try:
-           displaywas=os.environ["DISPLAY"]
-        except:
-           displaywas=":0"
-        try:
-           os.environ["DISPLAY"]=os.environ["HOST"]+":1"
-        except:
-           os.environ["DISPLAY"]=":1"
-        os.system("/users/wright/bin/fit2d_12_081_i686_linux2.4.20 -dim2048x2048 -mac%s"%(tmpfilename))
+        if show is None:
+            os.system("/users/wright/bin/Xvfb :1 &")
+            time.sleep(1)
+            try:
+                displaywas=os.environ["DISPLAY"]
+            except:
+                displaywas=":0"
+            try:
+                os.environ["DISPLAY"]=os.environ["HOST"]+":1"
+            except:
+                os.environ["DISPLAY"]=":1"
+        array=self.mask_pars_values["DIM1_DATA"]+"x"+self.mask_pars_values["DIM2_DATA"]
+        os.system("/users/wright/bin/fit2d_12_081_i686_linux2.4.20 -dim%s -mac%s"%(array,tmpfilename))
         os.system("rm -f %s"%(tmpfilename))
-        os.environ["DISPLAY"]=displaywas
+        if show is None:
+            os.environ["DISPLAY"]=displaywas
         print tmpfilename
 
 if __name__=="__main__":
@@ -420,8 +465,12 @@ if __name__=="__main__":
                       help="The fit2d .fit2d.def to read, defaults to $HOME/.fit2d.def")
     parser.add_option("-p","--pars",action="store",type="string",dest="parfile",
                       help="Input parameter file")
+    parser.add_option("-s","--show",action="store",type="string",dest="show",
+                      help="Show the flickering blue window")
     parser.add_option("-g","--glob",action="store",type="string",dest="glob",
                       help="Ignore numbers and glob for files")
+    parser.add_option("-b","--debug",action="store",type="string",dest="debug",
+                      help="Debugging - write macro to file and stop")
     parser.add_option("-f","--forceoverwrite",action="store",type="string",dest="forceoverwrite",
                       help="Force overwrite when globbing")
     options , args = parser.parse_args()
@@ -440,10 +489,10 @@ if __name__=="__main__":
 
 
 
-    if options.glob != None:
+    if options.glob is not None:
         caker.readpars(options.parfile)
         caker.cakefileglob(options.glob,options.forceoverwrite is not None)
-        caker.run()
+        caker.run(show=options.show)
         sys.exit()
         
     try:
@@ -459,6 +508,10 @@ if __name__=="__main__":
 
     caker.cakefileseries(stem,first,last)
 
-    caker.run()
+    if options.debug is None:
+        caker.run(show=options.show)
+    else:
+        open(options.debug,"w").write(caker.macro)
+    
         
     
