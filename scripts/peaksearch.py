@@ -189,9 +189,11 @@ if __name__=="__main__":
       outfile =     options.outfile
       first =       options.first
       last =        options.last
-      if options.spline=="N":
+      if options.perfect=="N":
+         print "Using spatial from",options.spline
          corrector=blobcorrector.correctorclass(options.spline)
       else:
+         print "Avoiding spatial correction"
          corrector=None
       # List comprehension - convert remaining args to floats
       thresholds = [float(t) for t in options.thresholds]
