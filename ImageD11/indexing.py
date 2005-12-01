@@ -58,6 +58,7 @@ class indexer:
       """
       self.unitcell=unitcell
       self.gv=gv
+      self.wedge=0.0 # Default
       if gv !=None:
          self.gvflat=reshape(fromstring(self.gv.tostring(),Float),self.gv.shape) # Makes it contiguous in memory, hkl fast index
 
@@ -319,7 +320,7 @@ class indexer:
             f.write("\n")
          else:
             f.write("   Omega_obs Omega_calc   Eta_obs Eta_calc   tth_obs tth_calc\n")
-            tc,ec,oc =  transform.uncompute_g_vectors(gint,self.wavelength)
+            tc,ec,oc =  transform.uncompute_g_vectors(gint,self.wavelength,wedge=self.wedge)
          for j in ind:          
             f.write("%-6d ( % 6.4f % 6.4f % 6.4f ) % 12.8f "%(j,h[0,j],h[1,j],h[2,j],sqrt(drlv2[j])) )
             f.write(" % 7.1f % 7.1f "%(self.xp[j],self.yp[j]) )
@@ -370,7 +371,7 @@ class indexer:
                f.write("Grain %-5d (%3d,%3d,%3d)"%(m,hint[0],hint[1],hint[2]))
                f.write("  ( % -6.4f % -6.4f % -6.4f )  "%(hi[0],hi[1],hi[2]))
                # hint
-               tt,e,o=transform.uncompute_one_g_vector(gint,self.wavelength)
+               tt,e,o=transform.uncompute_one_g_vector(gint,self.wavelength,self.wedge)
 #               print "obs",self.omega[peak],self.eta[peak],self.tth[peak]
 #               print "calc",tt,e,o
                w=[ abs(e[0] - self.eta[peak]) , abs(e[1] - self.eta[peak]) ]
@@ -544,6 +545,10 @@ class indexer:
             if line.find("wavelength")>-1:
                self.wavelength = float(line.split()[-1])
                print "Got wavelength from gv file of ",self.wavelength
+               continue
+            if line.find("wedge")>-1:
+               self.wedge = float(line.split()[-1])
+               print "Got wedge from gv file of ",self.wedge
                continue
             if line.find("ds h k l")>-1:
                continue   # reads up to comment line

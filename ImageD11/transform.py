@@ -103,7 +103,7 @@ def compute_g_vectors(tth,eta,omega,wavelength, wedge = 0.0):
    g=zeros((3,ds.shape[0]),Float)
    t=zeros((3,ds.shape[0]),Float)
    # 
-   # g = W . R . k where:
+   # g =  R . W . k where:
    # R = ( cos(omega) , sin(omega), 0 )
    #     (-sin(omega) , cos(omega), 0 )
    #     (         0  ,         0 , 1 )
@@ -188,7 +188,7 @@ def uncompute_one_g_vector(gv,wavelength, wedge=0.0):
    Given g-vectors compute tth,eta,omega
    assert uncompute_g_vectors(compute_g_vector(tth,eta,omega))==tth,eta,omega
    """
-   t,e,o=uncompute_g_vectors(transpose(array([gv,gv])),wavelength)
+   t,e,o=uncompute_g_vectors(transpose(array([gv,gv])),wavelength,wedge=wedge)
    return t[0],[e[0][0],e[1][0]],[o[0][0],o[1][0]]       
 
    

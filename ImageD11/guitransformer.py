@@ -330,12 +330,12 @@ class guitransformer:
       in reciprocal space
       """
       self.gv = transform.compute_g_vectors(self.twotheta,self.eta,self.omega,float(self.parameters['wavelength']),wedge=self.wedge)
-#      tthnew,etanew,omeganew=transform.uncompute_g_vectors(self.gv,float(self.parameters['wavelength']))
+      tthnew,etanew,omeganew=transform.uncompute_g_vectors(self.gv,float(self.parameters['wavelength']),wedge=self.wedge)
       self.parent.gv=self.gv
-#      print "Testing reverse transformations"
-#      for i in range(50):
-#         print self.twotheta[i],self.eta[i],self.omega[i],
-#         print tthnew[i],etanew[0][i],omeganew[0][i]
+      print "Testing reverse transformations"
+      for i in range(5):
+         print "%8.3f %8.3f %8.3f "%(self.twotheta[i],self.eta[i],self.omega[i]),
+         print "%8.3f %8.3f %8.3f %8.3f %8.3f"%(tthnew[i],etanew[0][i],omeganew[0][i],etanew[1][i],omeganew[1][i])
       return
 
    def savegv(self,filename=None):
@@ -349,6 +349,7 @@ class guitransformer:
       f.write(self.unitcell.tostring())
       f.write("\n")
       f.write("# wavelength = %f\n"%( float(self.parameters['wavelength']) ) )
+      f.write("# wedge = %f\n"%( float(self.wedge) ))
       f.write("# ds h k l\n")
       for peak in self.theorypeaks:
            f.write("%10.7f %4d %4d %4d\n"%(peak[0],peak[1][0],peak[1][1],peak[1][2]))

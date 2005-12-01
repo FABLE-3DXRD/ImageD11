@@ -26,7 +26,11 @@ import sys
 
 
 class plot3d(Toplevel):
-   def __init__(self,parent,data=None):
+   def __init__(self,parent,data=None,lines=None):
+      """
+      Data would be your observed g-vectors. Lines will
+      be a computed lattice
+      """
       Toplevel.__init__(self,parent)
       if data!=None:
          xyz=data.copy()
