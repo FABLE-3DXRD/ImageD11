@@ -1,5 +1,5 @@
+#!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
-#!
 
 # This is statement is required by the build system to query build info
 if __name__ == '__build__':
@@ -22,26 +22,32 @@ import math
 
 const = math.pi
 
+from ImageD11 import opendata
+
 class edfFile:
 	"""
 	Absolute minimum edf file format, UInt16, rows and columns
 	"""
 	def __init__(self,filename):
-		f=open(filename,"rb")
-		h=f.read(1024)
-		rows=None
-		cols=None
-		for item in h.split(";"):
-			if item.find("Dim_1")>=0:
-				rows=int(item.split()[-1])
-			if item.find("Dim_2")>=0:
-				cols=int(item.split()[-1])
-		f.seek(-rows*cols*2,2)
-		self.rows=rows
-		self.cols=cols
-		self.data=array(fromstring(f.read(rows*cols*2),UInt16),savespace=1)
-		self.minI=minimum.reduce(self.data)
-		self.maxI=maximum.reduce(self.data)
+		#f=open(filename,"rb")
+		#h=f.read(1024)
+		#rows=None
+		#cols=None
+		#for item in h.split(";"):
+		#	if item.find("Dim_1")>=0:
+		#		rows=int(item.split()[-1])
+		#	if item.find("Dim_2")>=0:
+		#		cols=int(item.split()[-1])
+		#f.seek(-rows*cols*2,2)
+		#self.rows=rows
+		#self.cols=cols
+		#self.data=array(fromstring(f.read(rows*cols*2),UInt16),savespace=1)
+		self.data=opendata.openedf(filename).data
+		self.rows=self.data.shape[0]
+		self.cols=self.data.shape[1]
+		self.data=ravel(self.data)
+		self.minI=minimum.reduce(ravel(self.data))
+		self.maxI=maximum.reduce(ravel(self.data))
 		print "Opened",filename,"max=",self.maxI,"min=",self.minI
 
 class myOpengl(Opengl):
