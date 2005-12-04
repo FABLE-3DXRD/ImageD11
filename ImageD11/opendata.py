@@ -28,6 +28,7 @@ bytes???
 """
 
 from data import data
+import gzip
 from Numeric import *
 
 
@@ -270,11 +271,13 @@ def edfheader(file):
    return hd
 
 def openedf(filename):
-   f=open(filename,"rb")
+   try:
+      f=open(filename,"rb")
+   except: # Attempt to find a .gz file
+      f=gzip.GzipFile(filename+".gz","rb")
    hd=edfheader(f)
-   # seek back from the end of the file
-   f.seek( -int(hd["Size"]) , 2  )
-   datastring=f.read( int(hd["Size"]) )
+   # seek back from the end of the file - fails on gzipped so read all
+   datastring=f.read()[-int(hd["Size"]):] # all of the data
    f.close()
    # Convert datastring to Numeric array
    if hd["DataType"]=="UnsignedShort": numerictype=UInt16

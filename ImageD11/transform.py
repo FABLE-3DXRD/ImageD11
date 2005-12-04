@@ -125,7 +125,135 @@ def compute_g_vectors(tth,eta,omega,wavelength, wedge = 0.0):
    return g
 
 
-def uncompute_g_vectors(gv,wavelength, wedge=0.0):
+def uncompute_g_vectors(g,wavelength, wedge=0.0):
+   """
+   Given g-vectors compute tth,eta,omega
+   assert uncompute_g_vectors(compute_g_vector(tth,eta,omega))==tth,eta,omega
+   """
+   # print "new uncompute using wavelength",wavelength,"and wedge",wedge
+   # k = W-1 R-1 g    ...or...      g = R W k
+   #
+   # |g| = 1 / d
+   # sin(theta) = wavelength / 2 d = |g| wavelength / 2
+   #
+   ds = sqrt(sum(g*g,0))
+   s = ds*wavelength/2.0 # sin theta
+   #
+   #     k0 = projection of scattering vector along x in lab
+   #          must satisfy laue condition 
+   #        =  - sin(theta)/d
+   #
+   k0 = zeros(g.shape[0],Float)
+   k0 = -ds*s 
+   #
+   # this component: k = W-1 R-1 g
+   # k = W-1 ( g0 cos(omega) - g1 sin(omega)  + 0  )
+   #         ( g0 sin(omega) + g1 cos(omega)  + 0  )
+   #         (       0       +      0         + g2 )
+   #
+   # k0 = cos(wedge)[g0 cos(omega) - g1 sin(omega)] - sin(wedge) g2
+   #                   
+   cw = cos(radians(wedge))
+   sw = sin(radians(wedge))
+   #
+   # k0 = cw[g0 cos(omega) - g1 sin(omega)] - sw g2
+   # (k0 + sw g2) / cw = g0 cos(omega) - g1 sin(omega)
+   #
+   lhs = ( k0 + sw * g[2,:] ) / cw
+   #
+   #      lhs = g0 cos(omega) - g1 sin(omega) 
+   #      lhs + g1 sin(omega) = g0 cos(omega)
+   #      lhs^2 + 2 g1 lhs sin(omega) + g1^2 sin^2(omega) = g0^2 cos^2(omega) 
+   #      - g0^2 + lhs^2 + 2 g1 lhs sin(omega) + g1^2 sin^2(omega) + g0^2 sin^2(omega)  = 0 
+   #
+   # Finally - solve the quadratic for sin(omega)
+   # axx + bx + c = 0
+   # x = {- b +/- sqrt(b*b-4ac) } / 2a
+   #
+   c = lhs * lhs - g[0,:]*g[0,:]
+   b = 2. * g[1,:] * lhs
+   a = g[1,:]*g[1,:] + g[0,:]*g[0,:]
+   t = b*b - 4*a*c
+   valid = where(t>0.0 , 1., 0.)
+   t = t * valid
+   sinomega1 = (- b - sqrt(t)) / (a * 2.)   # a can clearly be zero
+   sinomega2 = (- b + sqrt(t)) / (a * 2.)   # a can clearly be zero
+   #
+   # Now we need also cosomega to isolate the two choices of arcsin
+   #
+   #      lhs = g0 cos(omega) - g1 sin(omega)
+   #      g0 cos(omega) - lhs =  g1 sin(omega) 
+   #      g0^2 cos^2(omega) - 2 lhs g0 cos(omega) + lhs^2 =  g1^2 sin^2(omega)
+   #      (g0^2+g1^2) cos^2(omega) - 2 lhs g0 cos(omega) + lhs^2 - g1^2  = 0
+   #
+   c = lhs * lhs - g[1,:]*g[1,:]
+   b = -2. * g[0,:] * lhs
+   t = b*b - 4*a*c
+   valid = where(t>0.0 , 1., 0.)
+   t = t * valid
+   cosomega1 = (- b - sqrt(t)) / (a * 2.)   # a can clearly be zero
+   cosomega2 = (- b + sqrt(t)) / (a * 2.)   # a can clearly be zero
+   #
+   # Now we need to find out which solutions go together via sin^2 + cos^2 = 1
+   # ... turns out it could be arctan2(sin1,cos1) or arctan2(sin1,cos2)
+   # 
+   hypothesis_1 = abs(sinomega1*sinomega1+cosomega1*cosomega1 - 1.)
+   hypothesis_2 = abs(sinomega1*sinomega1+cosomega2*cosomega2 - 1.)
+   same_sign = where(abs(hypothesis_1 < hypothesis_2 ), 1, 0)
+   omega1 = same_sign * arctan2(sinomega1,cosomega1) + (1.-same_sign) * arctan2(sinomega1,cosomega2)
+   omega2 = same_sign * arctan2(sinomega2,cosomega2) + (1.-same_sign) * arctan2(sinomega2,cosomega1)
+   #
+   # Finally re-compute cosomega and sinomega due to the flipping possibility for getting eta
+   cosomega1 = cos(omega1)
+   sinomega1 = sin(omega1)
+   cosomega2 = cos(omega2)
+   sinomega2 = sin(omega2)
+   #
+   # Now we know R-1 and W-1 , so compute k = W-1 R-1 g
+   #
+   R1g1 = zeros(g.shape,Float)
+   R1g2 = zeros(g.shape,Float)
+   #
+   R1g1[0,:] = cosomega1*g[0,:] - sinomega1*g[1,:]
+   R1g1[1,:] = sinomega1*g[0,:] + cosomega1*g[1,:]
+   R1g1[2,:] =                                     g[2,:]
+   #
+   R1g2[0,:] = cosomega2*g[0,:] - sinomega2*g[1,:]
+   R1g2[1,:] = sinomega2*g[0,:] + cosomega2*g[1,:]
+   R1g2[2,:] =                                     g[2,:]
+   #
+   #
+   k_one =  zeros(g.shape,Float)
+   k_two =  zeros(g.shape,Float)
+   #
+   # W-1 = ( cos(wedge) ,  0  , -sin(wedge) )
+   #       (         0  ,  1  ,          0  )
+   #       ( sin(wedge) ,  0  ,  cos(wedge) )
+   #
+   k_one[0,:] = cw * R1g1[0,:]                 - sw * R1g1[2,:]
+   k_one[1,:] =                    R1g1[1,:]
+   k_one[2,:] = sw * R1g1[0,:]                 + cw * R1g1[2,:]
+   #
+   k_two[0,:] = cw * R1g2[0,:]                 - sw * R1g2[2,:]
+   k_two[1,:] =                    R1g2[1,:]
+   k_two[2,:] = sw * R1g2[0,:]                 + cw * R1g2[2,:]
+   #
+   # k[1,:] = -ds*c*sin(eta)
+   # ------    -------------   .... tan(eta) = -k1/k2
+   # k[2,:] =  ds*c*cos(eta)
+   #
+   eta_one = arctan2(-k_one[1,:],k_one[2,:])
+   eta_two = arctan2(-k_two[1,:],k_two[2,:])
+   #
+   #
+   tth = degrees(arcsin(s)*2.) * valid
+   eta1 = degrees(eta_one)*valid
+   eta2 = degrees(eta_two)*valid
+   omega1 = degrees(omega1)*valid
+   omega2 = degrees(omega2)*valid
+   return tth,[eta1,eta2],[omega1,omega2]
+
+def old_uncompute_g_vectors(gv,wavelength, wedge=0.0):
    """
    Given g-vectors compute tth,eta,omega
    assert uncompute_g_vectors(compute_g_vector(tth,eta,omega))==tth,eta,omega
@@ -194,3 +322,44 @@ def uncompute_one_g_vector(gv,wavelength, wedge=0.0):
    
    
    
+if __name__=="__main__":
+   # from indexing import mod_360
+   def mod_360(theta, target):
+      """
+      Find multiple of 360 to add to theta to be closest to target
+      """
+      diff=theta-target
+      while diff < -180:
+         theta=theta+360
+         diff=theta-target
+      while diff > 180:
+         theta=theta-360
+         diff=theta-target
+      return theta
+
+   tth = array([   1,  2,  3,  4,  5,  6,  7,  8,  9, 10], Float)
+   eta = array([  10, 40, 70,100,130,160,190,220,270,340], Float)
+   om  = array([   0, 20, 40,100, 60,240,300, 20, 42, 99], Float)
+#   tth = array([    4, 5, 7], Float)
+#   eta = array([  100, 5, 190], Float)
+#   om  = array([  100, 5, 300], Float)
+   
+   for wavelength in [ 0.1, 0.2, 0.3]:
+      for wedge in [-10. , -5., 0., 5., 10.]:
+         print "Wavelength",wavelength,"wedge",wedge
+         print "tth, eta, omega   ...   tth, eta, omega   ... tth, eta, omega"
+         gv = compute_g_vectors(tth,eta,om,wavelength,wedge)
+         t,e,o = new_uncompute_g_vectors(gv,wavelength, wedge)
+         for i in range(tth.shape[0]):
+            print "%9.3f %9.3f %9.3f  "%(tth[i],eta[i],om[i]),
+            print "%9.3f %9.3f %9.3f  "%(t[i],mod_360(e[0][i],eta[i]),mod_360(o[0][i],om[i])),
+            print "%9.3f %9.3f %9.3f  "%(t[i],mod_360(e[1][i],eta[i]),mod_360(o[1][i],om[i])),
+            # Choose best fitting
+            e_eta1 = mod_360(e[0][i],eta[i]) - eta[i]
+            e_om1  = mod_360(o[0][i], om[i]) -  om[i]
+            score_1 = e_eta1*e_eta1 + e_om1*e_om1
+            e_eta2 = mod_360(e[1][i],eta[i]) - eta[i]
+            e_om2  = mod_360(o[1][i], om[i]) -  om[i]
+            score_2 = e_eta2*e_eta2 + e_om2*e_om2
+            print "%.5g %.5g"%(score_1,score_2)
+         
