@@ -7,7 +7,7 @@ This is the source distribution.... I assume you know what you are doing!
 
 Try this:
 Download and install python from www.python.org
-Download and install the Numeric extensions from numpy.sourceforge.net (version >23, be sure to get Numeric, not numarray)
+Download and install the Numeric extensions from numeric.scipy.org (version >23, be sure to get Numeric, not numarray)
 Download and install the matplotlib plotting package from matplotlib.sourceforge.net
 Download and install the opengl extensions pyopengl.sourceforge.net
 
@@ -33,3 +33,4 @@ Good luck!
 
 
 
+(Thanks to Tine Knudsen for updating the links in this file!)
