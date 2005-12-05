@@ -19,10 +19,23 @@
 
 
 from Numeric import *
-import closest
+from ImageD11 import closest
 
 
 import math,time,sys
+def ubitocellpars(ubi):
+   """
+   convert ubi matrix to unit cell
+   """
+   g=matrixmultiply(ubi,transpose(ubi))
+   a=sqrt(g[0,0])
+   b=sqrt(g[1,1])
+   c=sqrt(g[2,2])
+   from math import acos, degrees
+   alpha=degrees(acos(g[1,2]/b/c))
+   beta =degrees(acos(g[0,2]/a/c))
+   gamma=degrees(acos(g[0,1]/a/b))
+   return a,b,c,alpha,beta,gamma
 
 def mod_360(theta, target):
    """
@@ -224,6 +237,42 @@ class indexer:
       print "Time taken",time.time()-start
       self.hits=hits
 
+   def histogram_drlv_fit(self,UBI=None,bins=None):
+      """
+      Generate a histogram of |drlv| for a ubi matrix
+      For use in validation of grains
+      """
+      if UBI is None:
+         ubilist = self.ubis
+      else:
+         ubilist = [UBI]
+      if bins is None:
+         start=0.25
+         fac=2
+         bins=[start]
+         while start > 1e-5: 
+            start=start/fac
+            bins.append(start)
+         bins.append(-start)
+         bins.reverse()
+         bins=array(bins)
+      hist = zeros((len(ubilist),bins.shape[0]-1),Int)
+      j=0
+      for UBI in ubilist:
+         h=matrixmultiply(UBI,transpose(self.gv))
+         hint=floor(h+0.5).astype(Int) # rounds down
+         diff=h-hint
+         drlv=sort(sqrt(sum(diff*diff,0))) # always +ve
+         if drlv[-1]>0.866:
+            print "drlv of greater than 0.866!!!",drlv[-1]
+         positions =  searchsorted(drlv,bins)
+         hist[j,:] =  positions[1:]-positions[:-1]
+         j=j+1
+      #for i in range(bins.shape[0]-1):
+      #   print "%10.7f - %10.7f   %10d"%(bins[i],bins[i+1],hist[i])
+      #print sum(hist),hist.shape,bins.shape
+      self.bins=bins
+      self.histogram=hist
  
    def scorethem(self):
       start=time.time()
@@ -272,7 +321,7 @@ class indexer:
                uniqueness=sum(where(ga==-1,1,0))*1.0/ga.shape[0]
                if uniqueness > self.uniqueness:
                   put(self.ga,ind,len(self.scores)+1)
-                  self.ubis.append(self.unitcell.UBI.copy())
+                  self.ubis.append(ubio)
                   self.scores.append(n)
                   ng=ng+1
                else:
@@ -285,11 +334,13 @@ class indexer:
       print "Time taken",time.time()-start
       if len(self.ubis)>0:
          bestfitting=argmax(self.scores)
-         print "UBI for best fitting\n",self.refine(self.ubis[bestfitting])
+         print "UBI for best fitting\n",self.ubis[bestfitting]
+         print "Unit cell\n",ubitocellpars(self.ubis[bestfitting])
          print "Indexes",self.scorelastrefined,"peaks, with <drlv2>=",self.fitlastrefined
          print "That was the best thing I found so far"
          notaccountedfor = sum(where( logical_and(self.ga==-1, self.ra!=-1),1,0))
          print "Number of peaks assigned to rings but not indexed = ",notaccountedfor
+         #self.histogram(self.ubis[bestfitting])
       else:
          print "Try again, either with larger tolerance or fewer minimum peaks"
 
@@ -315,6 +366,11 @@ class indexer:
          f.write("Grain: %d   Npeaks=%d   <drlv>=%f\n"%(i,ind.shape[0],mdrlv))
          i=i+1
          f.write("UBI:\n"+str(ubi)+"\n")
+         cellpars = ubitocellpars(ubi)
+         f.write("Cell pars: ")
+         for abc in cellpars[:3]: f.write("%10.6f "%(abc))
+         for abc in cellpars[3:]: f.write("%10.3f "%(abc))
+         f.write("\n")
          f.write("Peak   (  h       k       l      )   drlv             x       y ")
          if self.wavelength < 0:
             f.write("\n")
@@ -604,16 +660,4 @@ class indexer:
 
 
 
-def ubitocellpars(ubi):
-   """
-   convert ubi matrix to unit cell
-   """
-   g=matrixmultiply(ubi,transpose(ubi))
-   a=sqrt(g[0,0])
-   b=sqrt(g[1,1])
-   c=sqrt(g[2,2])
-   from math import acos, degrees
-   alpha=degrees(acos(g[1,2]/b/c))
-   beta =degrees(acos(g[0,2]/a/c))
-   gamma=degrees(acos(g[0,1]/a/b))
-   return a,b,c,alpha,beta,gamma
+

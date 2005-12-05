@@ -45,6 +45,7 @@ class guiindexer:
                            ( "Make Friedel pair file", 5, self.makefriedel),
                            ( "Generate trial orientations",0, self.find),
                            ( "Score trial orientations",0, self.scorethem),
+                           ( "Histogram fit quality",0, self.histogram_drlv_fit),
                            ( "Save parameters", 0, self.saveparameters),
                            ( "Save UBI matrices", 5, self.saveubis),
                            ( "Write out indexed peaks",0,self.saveindexing )
@@ -75,6 +76,22 @@ class guiindexer:
 
    def scorethem(self):
       self.indexer.scorethem()
+
+   def histogram_drlv_fit(self):
+      self.indexer.histogram_drlv_fit()
+      x=self.indexer.bins
+      y=self.indexer.histogram
+      self.parent.twodplotter.plotitems={}
+      from ImageD11 import twodplot
+      for yline in range(y.shape[0]):
+         self.parent.twodplotter.plotitems["drlv histogram"+str(yline)]=twodplot.data(
+                  x[1:],y[yline,:],
+                {"xlabel" : "drlv",
+                 "ylabel" : "freq",
+                 "title"  : "drlv histogram"}
+                ) # data
+      self.parent.twodplotter.replot()
+
       
    def assignpeaks(self):
       self.indexer.assigntorings()

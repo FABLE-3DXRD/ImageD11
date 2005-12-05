@@ -55,7 +55,15 @@ if __name__=="__main__":
                           Soren Schmidt, Henning Poulsen, Larry Margulies
                        ...and others who should remind me to mention them
 
-                       John Hunter for the matplotlib plotting
+                       Tine Knudsen who bravely helped commission the 
+                       introduction of a second rotation axis (wedge). 
+
+                       Benoit Mallard for his assistance with some extreme 
+                       programming to debug the transformation module.
+
+                       John Hunter for the matplotlib plotting.
+
+                       All of the pyopengl, Numeric and python teams
                        
                        Anyone who tests me and gives useful feedback
                           
@@ -95,7 +103,7 @@ if __name__=="__main__":
           """
           from tkMessageBox import showinfo
           startmessage = """
-ImageD11 version 0.4, Copyright (C) 2005 Jon Wright
+ImageD11 version 0.5.1, Copyright (C) 2005 Jon Wright
 ImageD11 comes with ABSOLUTELY NO WARRANTY; for details select help, license.
 This is free software, and you are welcome to redistribute it under certain conditions
 
