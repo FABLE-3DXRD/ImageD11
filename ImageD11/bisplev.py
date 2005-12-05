@@ -5,7 +5,7 @@
 # IT HAS BEEN COPIED TO SAVE YOU HAVING TO INSTALL ALL THE 
 # OTHER STUFF FROM THERE. 
 #
-import _splines
+from ImageD11 import _splines
 import Numeric as n
 
 def myasarray(a):
