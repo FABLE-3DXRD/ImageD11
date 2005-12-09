@@ -174,10 +174,14 @@ def uncompute_g_vectors(g,wavelength, wedge=0.0):
    b = 2. * g[1,:] * lhs
    a = g[1,:]*g[1,:] + g[0,:]*g[0,:]
    t = b*b - 4*a*c
-   valid = where(t>0.0 , 1., 0.)
+   valid = where(t>0.0 , 1, 0)
    t = t * valid
+   another_valid = where(a < 1e-12, 1, 0)
+   a = where(another_valid == 1, 1, a)
    sinomega1 = (- b - sqrt(t)) / (a * 2.)   # a can clearly be zero
    sinomega2 = (- b + sqrt(t)) / (a * 2.)   # a can clearly be zero
+   sinomega1 = sinomega1*(1-another_valid)
+   sinomega2 = sinomega2*(1-another_valid)   
    #
    # Now we need also cosomega to isolate the two choices of arcsin
    #
@@ -191,8 +195,13 @@ def uncompute_g_vectors(g,wavelength, wedge=0.0):
    t = b*b - 4*a*c
    valid = where(t>0.0 , 1., 0.)
    t = t * valid
+   another_valid = where(a < 1e-12, 1, 0)
+   a = where(another_valid == 1, 1, a)
    cosomega1 = (- b - sqrt(t)) / (a * 2.)   # a can clearly be zero
    cosomega2 = (- b + sqrt(t)) / (a * 2.)   # a can clearly be zero
+   cosomega1 = cosomega1*(1-another_valid)
+   cosomega2 = cosomega2*(1-another_valid)   
+      
    #
    # Now we need to find out which solutions go together via sin^2 + cos^2 = 1
    # ... turns out it could be arctan2(sin1,cos1) or arctan2(sin1,cos2)
