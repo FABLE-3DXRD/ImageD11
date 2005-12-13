@@ -120,8 +120,8 @@ class cakemacrogenerator:
     mask_pars_values = {
         "USE MASK"     : "NO",
         "MASK FILE"    : None,
-        "DIM1_DATA"    : 2048,
-        "DIM2_DATA"    : 2048
+        "DIM1_DATA"    : "2048",
+        "DIM2_DATA"    : "2048"
         }
         
 
@@ -467,7 +467,7 @@ class cakemacrogenerator:
                 os.environ["DISPLAY"]=os.environ["HOST"]+":1"
             except:
                 os.environ["DISPLAY"]=":1"
-        array=self.mask_pars_values["DIM1_DATA"]+"x"+self.mask_pars_values["DIM2_DATA"]
+        array=str(self.mask_pars_values["DIM1_DATA"])+"x"+str(self.mask_pars_values["DIM2_DATA"])
         os.system("/users/wright/bin/fit2d_12_081_i686_linux2.4.20 -dim%s -mac%s"%(array,tmpfilename))
         os.system("rm -f %s"%(tmpfilename))
         if show is None:
