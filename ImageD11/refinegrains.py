@@ -38,6 +38,7 @@ class refinegrains:
         self.wedge = 0.0
         self.chi = 0.0
         self.parameters = {}
+        self.varyingtranslations=False
 
     def loadparameters(self,filename):
         lines = open(filename,"r").readlines()
