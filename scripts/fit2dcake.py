@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 """
 Fit2d caking python script
@@ -15,8 +15,27 @@ example usage:
   4) Process your data using the parameter file you have generated
         eg: fit2dcake.py 
 """
+import Numeric
 
-
+def spr_to_median(filename,outputfilename):
+    data = []
+    for line in open(filename,"r").readlines()[1:]:
+        data.append([float(x) for x in line.split()])
+    data = Numeric.array(data)
+    # print data[512,:]
+    data = Numeric.sort(data,1)
+    # print data[512,:]
+    x_axis = []
+    for line in open(filename+"_y","r").readlines()[4:]:
+        x_axis.append(float(line.split()[0]))
+    # print len(x_axis)
+    # Final result
+    o=open(outputfilename,"w")
+    med = data[:,data.shape[1]/2]
+    err = data[:,3*data.shape[1]/4] - data[:,data.shape[1]/4]
+    for i in range(len(x_axis)):
+        o.write("%f   %f    %f\n"%(x_axis[i],med[i],err[i]))
+    print "converted",filename,outputfilename
 class cakemacrogenerator:
     """
     Generates a macro to run fit2d to cake some images
@@ -36,7 +55,7 @@ class cakemacrogenerator:
  3.0E00
  3.0E00
 """
-
+    do_when_finished = []
     # Options when reading in an image on the powder diffraction menu
     input_options_names=[
         "DARK CURRENT",
@@ -315,6 +334,8 @@ class cakemacrogenerator:
         Read in a file on the powder menu in fit2d
         """
         self.macro=self.macro+"INPUT\n"+filein+"\n"
+        if self.input_extn.find("mccd")>-1:
+            self.macro+="O.K.\n"
         for name in self.input_options_names:
             value=self.input_options_values[name]
             if name.find("MASK")>=0:
@@ -360,9 +381,10 @@ class cakemacrogenerator:
     def outputfile(self,file):
         """
         Save the memory from fit2d (probably your results)
-        TODO: Make this format friendly - deal with other formats
+        TODO Make this format friendly - deal with other formats
         """
         if self.saving_format.find("SPREAD SHEET")>-1:
+            self.do_when_finished.append([spr_to_median,file,file[:-3]+"med"])
             self.macro=self.macro+"EXIT\nEXIT\nIMAGE PROCESSING\nGEOMETRIC\nTRANSPOSE\n"
             self.macro=self.macro+"EXIT\nEXIT\nPOWDER DIFFRACTION\nOUTPUT\n"+self.saving_format
             self.macro=self.macro+"\nYES\n"
@@ -425,7 +447,7 @@ class cakemacrogenerator:
             todolist = [x for x in todolist]
             todolist.sort()
         for f in todolist:
-            i = int(f[-8:-4])
+            i = int(f.replace("."+self.input_extn,"")[-4:])
             filein = f
             fileout = f[:-3]+self.output_extn
             self.cakeafile(filein,fileout)
@@ -445,10 +467,11 @@ class cakemacrogenerator:
                 print i,
                 sys.stdout.flush()
 
-    def run(self,show=None):
+    def run(self,show=True):
         """
         Run the generated macro
         """
+        show=True
         self.macro=self.macro+"EXIT\nEXIT FIT2d\nYES\n"
         import os, time, tempfile
         tmpfilename=tempfile.mkstemp(dir="/tmp")[1]
@@ -468,11 +491,15 @@ class cakemacrogenerator:
             except:
                 os.environ["DISPLAY"]=":1"
         array=str(self.mask_pars_values["DIM1_DATA"])+"x"+str(self.mask_pars_values["DIM2_DATA"])
-        os.system("/users/wright/bin/fit2d_12_081_i686_linux2.4.20 -dim%s -mac%s"%(array,tmpfilename))
+        os.system("fit2d_12_081_i686_linux2.4.20 -dim%s -mac%s"%(array,tmpfilename))
         os.system("rm -f %s"%(tmpfilename))
         if show is None:
             os.environ["DISPLAY"]=displaywas
         print tmpfilename
+        print "Finalising"
+        for job in self.do_when_finished:
+            job[0](job[1],job[2])
+
 
 if __name__=="__main__":
 

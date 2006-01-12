@@ -334,8 +334,8 @@ class guitransformer:
       self.parent.gv=self.gv
       print "Testing reverse transformations"
       for i in range(5):
-         print "%8.3f %8.3f %8.3f "%(self.twotheta[i],self.eta[i],self.omega[i]),
-         print "%8.3f %8.3f %8.3f %8.3f %8.3f"%(tthnew[i],etanew[0][i],omeganew[0][i],etanew[1][i],omeganew[1][i])
+         print "tth %8.3f eta %8.3f om %8.3f in "%(self.twotheta[i],self.eta[i],self.omega[i]),
+         print "tth %8.3f [eta %8.3f om %8.3f or eta %8.3f om %8.3f]"%(tthnew[i],etanew[0][i],omeganew[0][i],etanew[1][i],omeganew[1][i])
       return
 
    def savegv(self,filename=None):

@@ -20,62 +20,144 @@
 
 
 from Numeric import *
-import math as m
+
+from math import pi
+
+
 
 def degrees(x):
    """Convenience function"""
-   return x*180.0/math.pi
+   return x*180.0/pi
 
 def radians(x):
    """Convenience function"""
-   return x*math.pi/180.0
+   return x*pi/180.0
 
 
-def compute_tth_eta(peaks,yc,ys,ty,zc,zs,tz,dist):
+def compute_tth_eta(peaks,
+                    yc,ys,ty,
+                    zc,zs,tz,
+                    dist,
+                    detector_orientation=((1,0),(0,1)),
+                    crystal_translation = None,
+                    omega = None,         #       == phi at chi=90
+                    axis_orientation1=0.0, # Wedge == theta on 4circ
+                    axis_orientation2=0.0 #       == chi - 90
+                    ):
    """
    Peaks is a 2 d array of x,y
    yc is the centre in y
-   ys is the y pixel size
+   ys is the y pixel size 
    ty is the tilt around y
    zc is the centre in z
    zs is the z pixel size
    tz is the tilt around z
    dist is the sample - detector distance
+   detector_orientation is a matrix to apply to peaks arg to get ImageD11 convention
+        (( 0, 1),( 1, 0)) for ( y, x)
+        ((-1, 0),( 0, 1)) for (-x, y)
+        (( 0,-1),(-1, 0)) for (-y,-x)
+     etc...
+   crystal_translation is the position of the grain giving rise to a diffraction spot
+                in x,y,z ImageD11 co-ordinates
+                x,y with respect to axis of rotation and or beam centre ??
+                z with respect to beam height, z centre
+   omega data needed if crystal translations used
    """
-   r1 = array( [ [ m.cos(tz) , m.sin(tz) , 0 ],
-                 [ -m.sin(tz), m.cos(tz) , 0 ],
-                 [         0 ,         0 , 1 ]],Float)
-   r2 = array( [ [ m.cos(ty) , 0 , m.sin(ty) ],
-                 [       0   , 1 , 0         ],
-                 [-m.sin(ty) , 0 , m.cos(ty) ]],Float)
+   # Matrices for the tilt rotations
+   r1 = array( [ [  cos(tz) , sin(tz) , 0 ],
+                 [ -sin(tz) , cos(tz) , 0 ],
+                 [    0     ,    0    , 1 ]],Float)
+   r2 = array( [ [ cos(ty) , 0 , sin(ty) ],
+                 [       0 , 1 ,   0     ],
+                 [-sin(ty) , 0 , cos(ty) ]],Float)
    r2r1=matrixmultiply(r1,r2)
-   vec =array( [     zeros(peaks.shape[1]) , # place detector at zero, sample at -dist
-                   (peaks[0,:]-yc)*ys      ,            # x in search
-                   (peaks[1,:]-zc)*zs ]    , Float)     # y in search
+   # Peak positions in 3D space
+   #  - apply detector orientation
+   mypeaks = matrixmultiply(array(detector_orientation,Float),peaks)
+   vec =array( [ zeros(mypeaks.shape[1])     , # place detector at zero, sample at -dist
+                   (mypeaks[0,:]-yc)*ys      ,            # x in search
+                   (mypeaks[1,:]-zc)*zs ]    , Float)     # y in search
    #print vec.shape
+   # Position of diffraction spots in 3d space after detector tilts is:
    rotvec=matrixmultiply(r2r1,vec)
-   magrotvec=sqrt(sum(rotvec*rotvec,0))
-   #print magrotvec.shape
-   eta=degrees(arctan2(rotvec[2,:],rotvec[1,:])) # bugger this one for tilts
-   # cosine rule a2 = b2+c2-2bccos(A)
-   # a is distance from (0,0,0) to rotvec => magrotvec
-   # b is distance from sample to detector
-   # c is distance from sample to pixel
-   a=magrotvec  # 1D
-   b=dist            # 0D
-   c=rotvec     # 3D
-   #print c.shape
-   c[0,:]=c[0,:]-dist# 3D
-   c=sqrt(sum(c*c,0))# 1D
-   #print a.shape,c.shape
-   #   print a.shape,c.shape
-   costwotheta = (b*b + c*c - a*a)/2/b/c
-   #   print self.costwotheta.shape
-   twothetarad=arccos(costwotheta)
-   twotheta=degrees(twothetarad)
-   return twotheta, eta
+   # Scattering vectors
+   if crystal_translation is None:
+      magrotvec=sqrt(sum(rotvec*rotvec,0))
+      #print magrotvec.shape
+   
+      eta=degrees(arctan2(rotvec[2,:],rotvec[1,:])) # bugger this one for tilts
+      # cosine rule a2 = b2+c2-2bccos(A)
+      # a is distance from (0,0,0) to rotvec => magrotvec
+      # b is distance from sample to detector
+      # c is distance from sample to pixel
+      a=magrotvec  # 1D
+      b=dist       # 0D
+      c=rotvec     # 3D
+      #print c.shape
+      c[0,:]=c[0,:]+dist# 3D
+      # print c
+      c=sqrt(sum(c*c,0))# 1D
+      #print a.shape,c.shape
+      #   print a.shape,c.shape
+      costwotheta = (b*b + c*c - a*a)/2/b/c
+      #print costwotheta
+      twothetarad=arccos(costwotheta)
+      twotheta=degrees(twothetarad)
+      return twotheta, eta
+   else:
+      # Compute positions of grains
+      # expecting tx, ty, tz for each diffraction spot
+      origin =  array([ -dist, 0, 0 ], Float)
+                      
+      # 
+      # g =  R . W . k
+      #  g - is g-vector w.r.t crystal
+      #  k is scattering vector in lab
+      #  so we want displacement in lab from displacement in sample
+      #  shift =  W-1  R-1 crystal_translation
+      #
+      # R = ( cos(omega) , sin(omega), 0 )
+      #     (-sin(omega) , cos(omega), 0 )
+      #     (         0  ,         0 , 1 )
+      #
+      # W = ( cos(wedge) ,  0  ,  sin(wedge) )
+      #     (         0  ,  1  ,          0  )
+      #     (-sin(wedge) ,  0  ,  cos(wedge) ) 
+      #
+      # C = (         1  ,          0  ,       0     ) ??? Use eta0 instead
+      #     (         0  ,   cos(chi)  ,  sin(chi)   )  ??? Use eta0 instead
+      #     (         0  ,  -sin(chi)  ,  cos(chi)   )  ??? Use eta0 instead
+      w=radians(axis_orientation1)
+      WI = array( [ [ cos(w),         0, -sin(w)],
+                    [      0,         1,       0],
+                    [ sin(w),         0,  cos(w)] ] , Float)
+      c=radians(axis_orientation2)
+      CI = array( [ [      1,          0,       0],
+                    [      0,     cos(c), -sin(c)],
+                    [      0,     sin(c),  cos(c)] ] , Float)
+      if omega.shape[0] != peaks.shape[1]:
+         raise Exception("omega and peaks arrays must have same number of peaks")
+      eta=zeros(omega.shape[0],Float)
+      tth=zeros(omega.shape[0],Float)
+      
+      for i in range(omega.shape[0]):
+         om = radians(omega[i])
+         RI = array( [ [ cos(om), -sin(om), 0],
+                       [ sin(om),  cos(om), 0],
+                       [       0,        0, 1] ] , Float)
+         rotate = matrixmultiply(WI,matrixmultiply(CI,RI))
+         #print rotate.shape,origin.shape,crystal_translation.shape
+         myorigin = origin + matrixmultiply(rotate , crystal_translation)
+         scattering_vectors = s = rotvec[:,i] - myorigin
+         #print i,s,
+         eta[i]=degrees(arctan2(s[2],s[1]))
+         mag_s=sqrt(sum(s*s,0))
+         costth = s[0] / mag_s
+         #print costth
+         tth[i] = degrees(arccos(costth))
 
-
+      return tth, eta
 
 def compute_g_vectors(tth,eta,omega,wavelength, wedge = 0.0):
    """
@@ -87,6 +169,7 @@ def compute_g_vectors(tth,eta,omega,wavelength, wedge = 0.0):
       print "Using a wedge angle of ",wedge
    tth=radians(tth)
    eta=radians(eta)
+
    om =radians(omega)
    # Compute k vector - the scattering in the laboratory
    c=cos(tth/2) # cos theta
