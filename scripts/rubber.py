@@ -417,11 +417,15 @@ class rubber(Frame):
         print "tth,eta,om",tth,eta,om
         self.gv = transform.compute_g_vectors(tth,eta,om,float(self.parameters['wavelength']), self.parameters['wedge'])
         self.gv = transpose(self.gv)
+        s=""
+        i=0
         for ubi in self.ubisread:
             h=matrixmultiply(ubi,transpose(self.gv))
             print ubi, "hkl=",h
+            i+=1
+            s+="grain %3d\n h = %.3f k=%.3f l = %.3f\n"%(i,h[0],h[1],h[2])
         showinfo("Right clicked",
-                 "You click at %f %f, tth=%f eta=%f omega=%f\n h=%f k=%f l=%f"%(xpos,ypos,tth,eta,om,h[0],h[1],h[2]))
+                 "You click at %f %f, tth=%f eta=%f omega=%f\n %s"%(xpos,ypos,tth,eta,om,s))
         
 
     def mouseDown(self, event):
