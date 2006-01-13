@@ -30,7 +30,7 @@ def roundfloat(x,tol):
 print "Using omega tolerance of 1e-5"
 
 class peak:
-   def __init__(self,line,omega,threshold,num,tolerance=2):
+   def __init__(self,line,omega,threshold,num,tolerance=4):
       self.TOLERANCE = tolerance # Pixel separation for combining peaks
       self.omegatol=1e-5
       self.omega=roundfloat(omega,self.omegatol) # round to nearest
