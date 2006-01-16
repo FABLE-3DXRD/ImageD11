@@ -22,9 +22,9 @@ class grain:
     def __init__(self,ubi,translation=None):
         self.ubi=ubi
         if translation==None:
-            self.translation = Numeric.zeros(3,Numeric.Float)
+            self.translation = zeros(3,Float)
         else:
-            self.translation = Numeric.array(translation)
+            self.translation = array(translation)
 
     def ubitocellpars(self):
         """
