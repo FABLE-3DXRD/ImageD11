@@ -49,6 +49,7 @@ class plot3d(Toplevel):
       self.o.far=1e-6
       import math  
       self.o.distance=maximum.reduce(ravel(xyz))*4/math.tan(self.o.fovy*math.pi/180)
+      print type(xyz),xyz.typecode(),xyz.shape
       glVertexPointerd(xyz)
       glEnableClientState(GL_VERTEX_ARRAY)
       f=Frame(self)
@@ -141,7 +142,6 @@ if __name__=="__main__":
          on=1
 
    npeaks = len(xyz)
-
    xyz=array(xyz)
-   main(xyz)
-
+   o=plot3d(None,data=xyz)
+   o.mainloop()

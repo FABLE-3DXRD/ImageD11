@@ -58,7 +58,7 @@
 
 inline int conv_double_to_int_fast(double);
 inline int conv_double_to_int_safe(double);
-
+int inverse3x3(double A[3][3]);
 
 static PyObject *closest( PyObject *self, PyObject *args, PyObject *keywds){
    PyArrayObject *ar=NULL, *vals=NULL;
@@ -209,6 +209,167 @@ static PyObject *score( PyObject *self, PyObject *args, PyObject *keywds){
    return Py_BuildValue("i",n);
 }
 
+
+static PyObject *score_and_refine( PyObject *self, PyObject *args, PyObject *keywds){
+   PyArrayObject *ubi=NULL, *gv=NULL;
+   double u00,u11,u22,u01,u02,u10,u12,u20,u21;
+   double g0,g1,g2,h0,h1,h2,t0,t1,t2;
+   double tol,sumsq;
+   double R[3][3],H[3][3],ih[3],rh[3], UB[3][3];
+   int n,k,i,j,l;
+
+   for(i=0;i<3;i++){
+     ih[i]=0.;
+     rh[i]=0.;
+     for(j=0;j<3;j++){
+       R[i][j] = 0.;
+       H[i][j] = 0.;
+       UB[i][j] = 0.;
+     }
+   }
+
+   
+   if(!PyArg_ParseTuple(args,"O!O!d",
+                        &PyArray_Type, &ubi,   /* array args */
+                        &PyArray_Type, &gv,    /* array args */
+                        &tol)) /* Tolerance */
+      return NULL;
+
+   if(ubi->nd != 2 || ubi->descr->type_num!=PyArray_DOUBLE){
+      printf("first arg nd %d\n",ubi->nd);
+      printf("first arg type %d\n",ubi->descr->type_num);
+      PyErr_SetString(PyExc_ValueError,
+            "First array must be 3x3 2d and double");
+      return NULL;
+   }
+   if(gv->nd != 2 || gv->descr->type_num!=PyArray_DOUBLE){
+      PyErr_SetString(PyExc_ValueError,
+            "Second array must be 3xn 2d and double");
+      return NULL;
+   }
+      
+/*   if(gv->strides[0] != sizeof(double) || ubi->strides[0] != sizeof(double)){
+      PyErr_SetString(PyExc_ValueError,
+            "Arrays must be flat (strides == sizeof(double))");
+      return NULL;
+   } */
+
+   if(ubi->dimensions[0] != 3 || ubi->dimensions[1] != 3){
+      PyErr_SetString(PyExc_ValueError,
+            "First array must be 3x3 2d, dimensions problem");
+      return NULL;
+   }
+
+   if(gv->dimensions[1] != 3){
+      PyErr_SetString(PyExc_ValueError,
+            "Second array must be 3xn 2d and double");
+      return NULL;
+   }
+/*   if(gv->strides[1] != sizeof(double)){
+      PyErr_SetString(PyExc_ValueError,
+            "Second array must be 3xn 2d and double, and you want it aligned!!!");
+      return NULL;
+   }
+*/
+
+
+   u00=* (double *) (ubi->data + 0*ubi->strides[0] + 0*ubi->strides[1]);
+   u01=* (double *) (ubi->data + 0*ubi->strides[0] + 1*ubi->strides[1]);
+   u02=* (double *) (ubi->data + 0*ubi->strides[0] + 2*ubi->strides[1]);
+   u10=* (double *) (ubi->data + 1*ubi->strides[0] + 0*ubi->strides[1]);
+   u11=* (double *) (ubi->data + 1*ubi->strides[0] + 1*ubi->strides[1]);
+   u12=* (double *) (ubi->data + 1*ubi->strides[0] + 2*ubi->strides[1]);
+   u20=* (double *) (ubi->data + 2*ubi->strides[0] + 0*ubi->strides[1]);
+   u21=* (double *) (ubi->data + 2*ubi->strides[0] + 1*ubi->strides[1]);
+   u22=* (double *) (ubi->data + 2*ubi->strides[0] + 2*ubi->strides[1]);
+
+   n=0;
+   tol=tol*tol;
+
+
+
+   for(k=0;k<gv->dimensions[0];k++){ /* Loop over observed peaks */
+      /* Compute hkls of this peak as h = UBI g */
+      g0 = * (double *) (gv->data + k*gv->strides[0] + 0*gv->strides[1]);
+      g1 = * (double *) (gv->data + k*gv->strides[0] + 1*gv->strides[1]);
+      g2 = * (double *) (gv->data + k*gv->strides[0] + 2*gv->strides[1]);
+      h0 = u00*g0 + u01*g1 + u02*g2;
+      h1 = u10*g0 + u11*g1 + u12*g2;
+      h2 = u20*g0 + u21*g1 + u22*g2;
+      t0=h0-conv_double_to_int_fast(h0);
+      t1=h1-conv_double_to_int_fast(h1);
+      t2=h2-conv_double_to_int_fast(h2);
+      sumsq = t0*t0+t1*t1+t2*t2;
+
+      if (sumsq < tol){
+         n=n+1;
+	 /* 	    From Paciorek et al Acta A55 543 (1999)
+	    UB = R H-1
+	    where:
+	    R = sum_n r_n h_n^t
+	    H = sum_n h_n h_n^t
+	    r = g-vectors
+	    h = hkl indices
+	    The hkl integer indices are: */
+	 ih[0] = conv_double_to_int_fast(h0);
+	 ih[1] = conv_double_to_int_fast(h1);
+	 ih[2] = conv_double_to_int_fast(h2);
+	 /* The g-vector was: */
+	 rh[0] = g0; rh[1] = g1 ; rh[2] = g2;
+	 for(i=0;i<3;i++){
+	   for(j=0;j<3;j++){
+	     /* Robust weight factor, fn(tol), would go here */
+	     R[i][j] = R[i][j] + ih[j] * rh[i];
+	     H[i][j] = H[i][j] + ih[j] * ih[i];
+	   }
+	 }
+      }
+   }
+
+
+   if (inverse3x3(H)==0){
+
+
+     /* Form best fit UB */
+     
+     for(i=0;i<3;i++)
+       for(j=0;j<3;j++)
+	 for(l=0;l<3;l++)
+	   UB[i][j] = UB[i][j] + R[i][l]*H[l][j];
+     
+	/* Return inverse in argument 
+	   for(i=0;i<3;i++)
+	   for(j=0;j<3;j++)
+	   printf("UBi[%d][%d]=%f",i,j,UB[i][j]);
+	*/
+     if (inverse3x3(UB)==0){
+       /*printf("Got a new UB\n");
+       for(i=0;i<3;i++)
+	  for(j=0;j<3;j++)
+	    printf("UBi[%d][%d]=%f",i,j,UB[i][j]);
+       printf("\n");
+       */
+
+       * (double *) (ubi->data + 0*ubi->strides[0] + 0*ubi->strides[1]) = UB[0][0];
+       * (double *) (ubi->data + 0*ubi->strides[0] + 1*ubi->strides[1]) = UB[0][1];
+       * (double *) (ubi->data + 0*ubi->strides[0] + 2*ubi->strides[1]) = UB[0][2];
+       * (double *) (ubi->data + 1*ubi->strides[0] + 0*ubi->strides[1]) = UB[1][0];
+       * (double *) (ubi->data + 1*ubi->strides[0] + 1*ubi->strides[1]) = UB[1][1];
+       * (double *) (ubi->data + 1*ubi->strides[0] + 2*ubi->strides[1]) = UB[1][2];
+       * (double *) (ubi->data + 2*ubi->strides[0] + 0*ubi->strides[1]) = UB[2][0];
+       * (double *) (ubi->data + 2*ubi->strides[0] + 1*ubi->strides[1]) = UB[2][1];
+       * (double *) (ubi->data + 2*ubi->strides[0] + 2*ubi->strides[1]) = UB[2][2];
+       
+     }
+     
+   }
+   
+      
+   return Py_BuildValue("i",n);
+}
+
+
+
 inline int conv_double_to_int_safe(double x){
    int a;
    a = floor(x+0.5);
@@ -231,6 +392,52 @@ inline int conv_double_to_int_fast(double x){
    return (a);
 }
 
+
+int inverse3x3 ( double H[3][3]){
+  double det, inverse[3][3];
+  int i,j;
+      /*
+      # | a11 a12 a13 |-1             |   a33a22-a32a23  -(a33a12-a32a13)   a23a12-a22a13  |
+      # | a21 a22 a23 |    =  1/DET * | -(a33a21-a31a23)   a33a11-a31a13  -(a23a11-a21a13) |
+      # | a31 a32 a33 |               |   a32a21-a31a22  -(a32a11-a31a12)   a22a11-a21a12  |
+      
+      # DET=a11   (a33     a22    -a32     a23)-  
+            a21   (a33      a12   -a32     a13)+      
+            a31   (a23     a12    -a22     a13)
+      */
+
+      det=H[0][0]*(H[2][2]*H[1][1]-H[2][1]*H[1][2])-
+          H[1][0]*(H[2][2]*H[0][1]-H[2][1]*H[0][2])+
+ 	  H[2][0]*(H[1][2]*H[0][1]-H[1][1]*H[0][2])  ;
+
+      if (det != 0.) {
+
+
+        inverse[0][0] =   (H[2][2]*H[1][1]-H[2][1]*H[1][2])/det;
+	inverse[0][1] = -(H[2][2]*H[0][1]-H[2][1]*H[0][2])/det;
+	inverse[0][2] =  (H[1][2]*H[0][1]-H[1][1]*H[0][2])/det; 
+        inverse[1][0] =  -(H[2][2]*H[1][0]-H[2][0]*H[1][2])/det;
+        inverse[1][1] =  (H[2][2]*H[0][0]-H[2][0]*H[0][2])/det;
+	inverse[1][2] = -(H[1][2]*H[0][0]-H[1][0]*H[0][2])/det;
+	inverse[2][0] = (H[2][1]*H[1][0]-H[2][0]*H[1][1])/det;
+	inverse[2][1] = -(H[2][1]*H[0][0]-H[2][0]*H[0][1])/det;
+        inverse[2][2] =  (H[1][1]*H[0][0]-H[1][0]*H[0][1])/det;
+
+	for(i=0;i<3;i++)
+	  for(j=0;j<3;j++)
+	    H[i][j]=inverse[i][j];
+
+	return 0;
+
+      }
+      else{
+	return -1;
+      }
+}
+
+
+
+
 /* TODO - Make a UBI matrix from two peaks and score it ?? */
 
    
@@ -243,6 +450,9 @@ static PyMethodDef closestMethods[] = {
    { "score", (PyCFunction) score, METH_VARARGS, 
       "int score(ubi,gv,tol)\n"\
       "    Find number of gv which are integer h within tol"},
+   { "score_and_refine", (PyCFunction) score_and_refine, METH_VARARGS, 
+      "int score_and_refine(ubi,gv,tol)\n"\
+      "    Find number of gv which are integer h within tol and returned refined UB"},
    { NULL, NULL, 0, NULL }  
 };
 

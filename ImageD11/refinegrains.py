@@ -129,6 +129,7 @@ class refinegrains:
         om      = self.scantitles[scanname].index("omega")
         om = self.scandata[scanname][:,om]
         g = self.grains[(grainname,scanname)]
+
         tth,eta = transform.compute_tth_eta( Numeric.array([x, y]) ,
                                              self.parameters['y-center'],
                                              self.parameters['y-size'],
@@ -144,58 +145,75 @@ class refinegrains:
         self.gv = transform.compute_g_vectors(tth,eta,om,float(self.parameters['wavelength']), self.wedge)
         self.gv = Numeric.transpose(self.gv)
 
-    def refine(self,ubi,quiet=True):
-        return indexing.refine(ubi,self.gv,self.tolerance,quiet=quiet)
 
+    def refine(self,ubi,quiet=True):
+        from ImageD11 import closest
+        mat=ubi.copy()
+        npks = closest.score_and_refine(mat, self.gv, self.tolerance)
+        if not quiet:
+            print npks 
+        #mat = indexing.refine(ubi,self.gv,self.tolerance,quiet=quiet)
+        #print ubi, testmatrix,ubi-testmatrix,mat-testmatrix
+        return mat
+    
     def gof(self,args):
         """
         <drlv> for all of the grains in all of the scans
         """
+
         self.applyargs(args)
         diffs = 0.
         contribs = 0.
         sumdrlv = 0.
         goodpks = 0
+        
+        
+        first = True
         for key in self.grains.keys():
             g = self.grains[key]
             grainname = key[0]
             scanname = key[1]
-            if self.varyingtranslations:
+            if self.varyingtranslations or first:
+                first = False
                 # Compute gv using current parameters
                 self.compute_gv(grainname,scanname)
                 #print self.gv.shape
                 #print self.gv[0:10,:]
-                g.ubi = self.refine(g.ubi)
+
+            g.ubi = self.refine(g.ubi)
 
             h=Numeric.matrixmultiply(g.ubi,Numeric.transpose(self.gv))
             hint=Numeric.floor(h+0.5).astype(Numeric.Int) # rounds down
             diff=h-hint
             drlv=Numeric.sqrt(Numeric.sum(diff*diff,0))
             t=self.tolerance
-            drlv=Numeric.where(drlv<t,drlv,t)-t
+            n_ind = Numeric.sum(Numeric.where(drlv<t,1,0)) # drlv
+            drlv = Numeric.where(drlv<t,drlv,0)
             diffs += Numeric.sum(drlv)
-            contribs+= drlv.shape[0]
-            n_ind = Numeric.sum(Numeric.where(drlv<-t/1000.,1,0)) # drlv
+            contribs+= n_ind
             sumdrlv -= Numeric.sum(drlv)
             goodpks += n_ind
-            #print "GOF: %10s %10s"%(scanname, grainname), Numeric.sum(drlv)/drlv.shape[0], n_ind
+            
+
             if n_ind>300:
                 print g.ubi
                 print diff.shape
                 print diff[:,:40]
+                print drlv[:40]
                 raise Exception("")
         #print "indexed %10d with mean error %f"%(goodpks,sumdrlv/goodpks)
-        return 1e3*diffs/contribs
+
+        return 1e6*diffs/contribs
 
     stepsizes = {
         "wavelength" : 0.001,
-        'y-center'   : 0.5,
-        'z-center'   : 0.5,
-        'distance'   : 0.5,
-        'tilt-y'     : transform.radians(0.5),
-        'tilt-z'     : transform.radians(0.5),
-        'wedge'      : transform.radians(0.1),
-        'chi'        : transform.radians(0.1),
+        'y-center'   : 0.1,
+        'z-center'   : 0.1,
+        'distance'   : 0.1,
+        'tilt-y'     : transform.radians(0.1),
+        'tilt-z'     : transform.radians(0.1),
+        'wedge'      : transform.radians(0.01),
+        'chi'        : transform.radians(0.01),
         'translation' : 0.1
         }
 
@@ -235,19 +253,21 @@ class refinegrains:
                 inc.append(self.stepsizes[item])
             except:
                 pass
-            
-        s=simplex.Simplex(self.gof,guess,inc)
 
+        print "Start of simplex:"
         self.printresult(guess)
         print
+            
+        s=simplex.Simplex(self.gof,guess,inc)
       
-        newguess,error,iter=s.minimize(maxiters=50)
+        newguess,error,iter=s.minimize(maxiters=100)
 
         print
-
+        print "End of simplex"
         self.printresult(newguess)
-
+    
     def refineubis(self,quiet=True):
+        
         for key in self.grains.keys():
             g = self.grains[key]
             grainname = key[0]
@@ -260,7 +280,8 @@ class refinegrains:
             #print self.gv[0:10,:]
             g.ubi = self.refine(g.ubi,quiet=quiet)
         
-        
+            
+
         
         
 
@@ -273,11 +294,11 @@ if __name__ == "__main__":
     o.readubis("ubitest")
     o.generate_grains()
     o.tolerance = 0.1
-    o.varylist = ['y-center','z-center','distance','tilt-y','tilt-z','wedge','chi']
     #o.varytranslations()
-    o.refineubis(quiet=False)
+    for o.tolerance in [0.1,0.2,0.15,0.1,0.075,0.05]:
+        o.refineubis(quiet=False)
     print "***"
-    o.tolerance = 0.05
     o.refineubis(quiet=False)
+    o.varylist = ['y-center','z-center','distance','tilt-y','tilt-z','wedge','chi']
     o.fit()
     o.refineubis(quiet=False)
