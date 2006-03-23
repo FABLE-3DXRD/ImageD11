@@ -460,7 +460,10 @@ class cakemacrogenerator:
         """
         import sys
         for i in range(first,last+1):
-            filein ="%s%04d.%s"%(stem,i,self.input_extn)
+            if self.input_extn.lstrip() == "":
+                filein ="%s.%04d%s"%(stem,i,self.input_extn)
+            else:
+                filein ="%s%04d.%s"%(stem,i,self.input_extn)
             fileout="%s%04d.%s"%(stem,i,self.output_extn)
             self.cakeafile(filein,fileout)
             if i%100 == 0:
@@ -471,7 +474,6 @@ class cakemacrogenerator:
         """
         Run the generated macro
         """
-        show=True
         self.macro=self.macro+"EXIT\nEXIT FIT2d\nYES\n"
         import os, time, tempfile
         tmpfilename=tempfile.mkstemp(dir="/tmp")[1]
@@ -479,7 +481,7 @@ class cakemacrogenerator:
         tmpfile.write(self.macro)
         tmpfile.close()
         # Send the display to a local black hole
-        if show is None:
+        if show!="SHOW":
             os.system("/users/wright/bin/Xvfb :1 &")
             time.sleep(1)
             try:
