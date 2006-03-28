@@ -88,7 +88,9 @@ class guiindexer:
                   x[1:],y[yline,:],
                 {"xlabel" : "drlv",
                  "ylabel" : "freq",
-                 "title"  : "drlv histogram"}
+                 "title"  : "drlv histogram",
+                 "pointtype" : "-"
+                 }
                 ) # data
       self.parent.twodplotter.replot()
 
