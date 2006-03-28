@@ -54,7 +54,7 @@ def peaksearch(filename, outputfile, corrector, blobim , thresholds, dark=None, 
    t0=time.time()
    f=open(outputfile,"aq") # Open the output file for appending
    # Assumes an edf file for now - TODO - should be independent
-   data_object = opendata.openedf(filename)
+   data_object = opendata.opendata(filename)
    picture = data_object.data
    # picture is (hopefully) a 2D Numeric array of type UInt16
    if dark != None:
@@ -74,8 +74,10 @@ def peaksearch(filename, outputfile, corrector, blobim , thresholds, dark=None, 
    except:
       pass
    for item in data_object.header.keys():
+      if item == "headerstring": # skip
+         continue
       try:
-         f.write("# %s = %s\n"%(item,data_object.header[item]))
+         f.write("# %s = %s\n"%(item,str(data_object.header[item]).replace("\n"," ")))
       except KeyError:
          pass
    # Check the blobim matches the data for shape
@@ -166,6 +168,8 @@ if __name__=="__main__":
       parser = OptionParser()
       parser.add_option("-n","--namestem",action="store", type="string", dest="stem",
                         help="Name of the files up the digits part, eg mydata in mydata0000.edf" )
+      parser.add_option("-F","--format",action="store", type="string", dest="format",default="edf",
+                        help="Image File format, eg edf or bruker" )
       parser.add_option("-f","--first",action="store", type="int", dest="first",default=0,
                         help="Number of first file to process, default=0")
       parser.add_option("-l","--last",action="store", type="int", dest="last",
@@ -197,12 +201,16 @@ if __name__=="__main__":
          corrector=None
       # List comprehension - convert remaining args to floats
       thresholds = [float(t) for t in options.thresholds]
-      # Generate list of files to proces
-      files = ["%s%04d%s"%(stem,i,".edf") for i in range(first,last+1)]
+      # Generate list of files to process
+      print "Input format is",options.format
+      if options.format == "edf":
+         files = ["%s%04d%s"%(stem,i,".edf") for i in range(first,last+1)]
+      if options.format == "bruker":
+         files = ["%s.%04d"%(stem,i) for i in range(first,last+1)]         
       # Make a blobimage the same size as the first image to process
       if len(files)==0:
          raise "No files found for stem %s"%(stem)
-      blobim=Numeric.zeros(opendata.openedf(files[0]).data.shape,Numeric.Int)
+      blobim=Numeric.zeros(opendata.opendata(files[0]).data.shape,Numeric.Int)
       # Not sure why that was there (I think if glob was used)
       # files.sort()
       if options.dark!=None:

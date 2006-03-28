@@ -93,7 +93,7 @@ static PyObject * roisum (PyObject *self, PyObject *args,  PyObject *keywds)
    int xl,xh,yl,yh;
    int verbose=0,type;                /* whether to print stuff and the type of the input array */
    static char *kwlist[] = {"data","xl","xh","yl","yh","verbose", NULL};
-   double time,sum;
+   double sum;
 
    if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!iiii|i",kwlist,      
 				   &PyArray_Type, &dat,   /* array arg */
@@ -153,13 +153,13 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
 {
    PyArrayObject *dataarray=NULL,*results=NULL; /* in (not modified) and out (modified) */
 
-   int i,j,k,l,ival,f,s,np;        
+   int i,j,k,l,f,s,np,ival;        
    int *T;                            /* for the disjoint set copy */
    int verbose=0,type;                /* whether to print stuff and the type of the input array */
    int percent,npover;                       /* for the progress indicator in verbose mode */
    static char *kwlist[] = {"data","results","threshold","verbose", NULL};
    clock_t tv1,tv1point5,tv2,tv3,tv4;
-   double time;
+   double time,val;
    float threshold;
    if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!f|i",kwlist,      
                         &PyArray_Type, &dataarray,   /* array args */
@@ -171,12 +171,18 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
       }
 
    tv1=clock();  
-   /* Check array is two dimensional and Ushort */
-   if(dataarray->nd != 2 || dataarray->descr->type_num!=PyArray_USHORT){    
-      PyErr_SetString(PyExc_ValueError,
-       "Data array must be 2d, UInt16, first arg problem, easy fix in the C source if you really have something else");
-      return NULL;
+   /* Check array is two dimensional */
+   if(dataarray->nd != 2){
+     PyErr_SetString(PyExc_ValueError, "Array must be 2D!");
+     return NULL;
+   }
+     /* Using int types now for Bruker images ...
+	if(  dataarray->descr->type_num!=PyArray_USHORT){    
+	PyErr_SetString(PyExc_ValueError,
+	"Data array must be 2d, UInt16, first arg problem, easy fix in the C source if you really have something else");
+	return NULL;
       }
+     */
    type=dataarray->descr->type_num;
    if(verbose!=0)ptype(type);
    if(verbose!=0)printf("Thresholding at level %f\n",threshold);
@@ -240,10 +246,12 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
 	
       	(*(int *)(results->data + i*results->strides[s] + j*results->strides[f])) = 0;
 
-         ival= (* (unsigned short *) (dataarray->data + i*dataarray->strides[s] + j*dataarray->strides[f])) ;
-         /* UNCOMMENT HERE FOR OTHER NUMERICAL TYPES, AND MAYBE MAKE IVAL A FLOAT/DOUBLE */
-	      /* val=getval((dataarray->data + i*dataarray->strides[s] + j*dataarray->strides[f]),type); */
-         if( ival > threshold) {
+
+	/* CHANGE COMMENT HERE FOR UINT16 NUMERICAL TYPE, AND MAYBE MAKE IVAL A USHORT */
+	/* ival= (* (unsigned short *) (dataarray->data + i*dataarray->strides[s] + j*dataarray->strides[f])) ;*/
+
+	val=getval((dataarray->data + i*dataarray->strides[s] + j*dataarray->strides[f]),type); 
+         if( val > threshold) {
              npover++;
              k=0;l=0;
              /* peak needs to be assigned */

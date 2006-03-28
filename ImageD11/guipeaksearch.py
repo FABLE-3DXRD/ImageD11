@@ -128,6 +128,15 @@ class pkimage:
       if headerline.find("=")>0:
          h,v=headerline[1:].split("=")
          self.header[h.lstrip().rstrip()]=v
+         if h.lstrip().rstrip() == "ANGLES":
+            # Got the Bruker angles
+            # map them to ImageD11 geometry
+            vals = v.split()
+            self.header["TWOTHETA"]=vals[0]
+            self.header["THETA"] = vals[1]
+            self.header["Omega"] = vals[2] # sorry
+            self.header["CHI"]=vals[3]
+            
          return
 
    def otherheaderstuff(self,headerline):
@@ -196,10 +205,16 @@ class guipeaksearcher:
             name = line.split()[-1]
             currentimage=pkimage(name)
             self.images.append(currentimage)
-            try:
-               imagenumber = int(name[-8:-4])
-            except:
-               imagenumber = -1
+            if name.find("edf")>-1:
+               try:
+                  imagenumber = int(name[-8:-4])
+               except:
+                  imagenumber = -1
+            else:
+               try:
+                  imagenumber = int(name.split(".")[-1])
+               except:
+                  imagenumber=-1
             currentimage.linestart=i
             currentimage.imagenumber=imagenumber
             continue

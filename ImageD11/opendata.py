@@ -229,7 +229,8 @@ def readbruker(file):
 
 
 def openbruker(filename):
-   return data(readbruker(filename))
+   h,d=readbruker(filename)
+   return data(d,h)
 
 def edfheader(file):
    if type(file)==type("string"):

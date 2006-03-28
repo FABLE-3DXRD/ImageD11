@@ -54,6 +54,7 @@ class guitransformer:
       self.twotheta=None
       self.parameters={}
       self.wedge=0.0
+      self.chi=0.0
       self.loadparameters()
 
    def loadfiltered(self,filename=None):
@@ -317,9 +318,11 @@ class guitransformer:
       """
       Allow the rotation axis to not be perpendicular to the beam
       """
-      p = { "wedge" : self.wedge }
+      p = { "wedge" : self.wedge,
+            "chi"   : self.chi   }
       d=listdialog(self.parent,items=p,title="Axis Orientation")
       self.wedge = float(d.result["wedge"])
+      self.chi = float(d.result["chi"])
       print "set self.wedge to",self.wedge
 
 
