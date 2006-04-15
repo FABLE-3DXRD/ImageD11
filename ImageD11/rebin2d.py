@@ -38,6 +38,20 @@ class polygon:
         xy are a list of pairs of xy points (directed)
         """
         self.xy=xy
+
+    def area(self):
+        """
+        http://mathworld.wolfram.com/PolygonArea.html
+        # sign of area tells us if it is convex or concave
+        """
+        area=0.
+        for i in range(len(self.xy)):
+            x1,y1 = self.xy[i%len(self.xy)]
+            x2,y2 = self.xy[(i+1)%len(self.xy)]
+            area+=x1*y2-x2*y1
+        area=area/2.
+        return area
+    
     def walkaroundintegervertices(self):
         """
         Generate a list of points along the edges of integers
@@ -79,7 +93,16 @@ class polygon:
 
         self.path=path
                 
-                    
+
+
+def testpolywalkandplot(vertices):
+    from matplotlib.pylab import plot
+    import Numeric
+    obj = polygon(vertices)
+    obj.walkaroundintegervertices()
+    plot(Numeric.array(vertices)[:,0],Numeric.array(vertices)[:,1],"o")
+    plot(Numeric.array(obj.path)[:,0],Numeric.array(obj.path)[:,1],"+-")
+    print obj.area()
 
 def distance(p1,p2):
     return sqrt(p1[0]*p1[0]+p2[0]*p2[0])
@@ -87,13 +110,18 @@ def distance(p1,p2):
 
 def main():
     print "started"
-    vertices = [ [ 1.1, 0.9] ,
-                 [ 3.2, 1.1] ,
-                 [ 3.2, 4.2] ,
-                 [ 1.2, 3.1] ]
-    obj = polygon(vertices)
-    obj.walkaroundintegervertices()
+    testpolywalkandplot([ [ 1.1, 0.9] ,
+                          [ 3.2, 1.1] ,
+                          [ 3.2, 4.2] ,
+                          [ 1.2, 3.1] ])
+    testpolywalkandplot([ [ 4.1, 0.9] ,
+                          [ 7.2, 1.1] ,
+                          [ 5.2, 4.3] ,
+                          [ 6.2, 1.8] ])
+    from matplotlib.pylab import show
+    show()
 
+                        
 if __name__=="__main__":
     main()
 
