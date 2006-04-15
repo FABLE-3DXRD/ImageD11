@@ -32,10 +32,22 @@ def spr_to_median(filename,outputfilename):
     # Final result
     o=open(outputfilename,"w")
     med = data[:,data.shape[1]/2]
-    err = data[:,3*data.shape[1]/4] - data[:,data.shape[1]/4]
+    sum=Numeric.sum
+    d = data[:,2:-2]
+    # VAR = E(X^2) - E(X)*E(X)
+    EX2 = sum(d*d,1)/d.shape[1]
+    EX = sum(d,1)/d.shape[1]
+    VAR = EX2 - EX*EX
+    try:
+       err = Numeric.sqrt(VAR)
+    except:
+       err = Numeric.sqrt(Numeric.where(VAR>0.,VAR,1))
+    #print sum(data[:,2:-2],1).shape, 
+    #print sum(data[:,2:-2],0).shape
     for i in range(len(x_axis)):
         o.write("%f   %f    %f\n"%(x_axis[i],med[i],err[i]))
     print "converted",filename,outputfilename
+
 class cakemacrogenerator:
     """
     Generates a macro to run fit2d to cake some images
@@ -431,30 +443,26 @@ class cakemacrogenerator:
         # Conventionally exchange and put previous back in
         self.macro=mac+self.macro+"EXCHANGE\n"
 
-    def cakefileglob(self,stem,replace=False):
-        import glob
-        #        print stem
+    def cakefileglob(self,stem,replace=False,outstem=None):
+        import glob,os
         filelist=glob.glob("%s????.%s"%(stem,self.input_extn))
-        if replace:
-            todolist=filelist
+        if stem==None: outstem=stem
+        outputfilelist = [s.replace(self.input_extn,self.output_extn) for s in filelist ]
+        outputfilelist = [s.replace(stem,outstem) for s in outputfilelist ]
+        if not replace:
+            alreadydone = glob.glob(outstem+"*"+self.output_extn)
+            # 1:1 mapping of input to output
         else:
-            donefilelist=glob.glob("%s????.%s"%(stem,self.output_extn))
-            donefilelist=[s.replace(self.output_extn,self.input_extn) for s in
-                          donefilelist]
-            #        print filelist
-            import sets
-            todolist = sets.Set(filelist).difference(sets.Set(donefilelist))
-            todolist = [x for x in todolist]
-            todolist.sort()
-        for f in todolist:
-            i = int(f.replace("."+self.input_extn,"")[-4:])
-            filein = f
-            fileout = f[:-3]+self.output_extn
-            self.cakeafile(filein,fileout)
+            alreadydone = []
+        for i in range(len(filelist)):
+            if outputfilelist[i] not in alreadydone:
+                print "%s %s"%(filelist[i],outputfilelist[i])
+                self.cakeafile(filelist[i],outputfilelist[i])
+                
 
 
 
-    def cakefileseries(self,stem,first,last):
+    def cakefileseries(self,stem,first,last,outstem=None):
         """
         Cake a file sequence - eventually emulating fit2d run sequence command
         """
@@ -464,7 +472,8 @@ class cakemacrogenerator:
                 filein ="%s.%04d%s"%(stem,i,self.input_extn)
             else:
                 filein ="%s%04d.%s"%(stem,i,self.input_extn)
-            fileout="%s%04d.%s"%(stem,i,self.output_extn)
+            if outstem == None: outstem=stem
+            fileout="%s%04d.%s"%(outstem,i,self.output_extn)
             self.cakeafile(filein,fileout)
             if i%100 == 0:
                 print i,
@@ -476,7 +485,7 @@ class cakemacrogenerator:
         """
         self.macro=self.macro+"EXIT\nEXIT FIT2d\nYES\n"
         import os, time, tempfile
-        tmpfilename=tempfile.mkstemp(dir="/tmp")[1]
+        tmpfilename=tempfile.mkstemp(dir=".")[1]
         tmpfile=open(tmpfilename,"w")
         tmpfile.write(self.macro)
         tmpfile.close()
@@ -515,7 +524,7 @@ if __name__=="__main__":
                       help="The fit2d .fit2d.def to read, defaults to $HOME/.fit2d.def")
     parser.add_option("-p","--pars",action="store",type="string",dest="parfile",
                       help="Input parameter file")
-    parser.add_option("-s","--show",action="store",type="string",dest="show",
+    parser.add_option("-s","--show",action="store",type="string",dest="show",# default="SHOW",
                       help="Show the flickering blue window")
     parser.add_option("-g","--glob",action="store",type="string",dest="glob",
                       help="Ignore numbers and glob for files")
@@ -523,6 +532,8 @@ if __name__=="__main__":
                       help="Debugging - write macro to file and stop")
     parser.add_option("-f","--forceoverwrite",action="store",type="string",dest="forceoverwrite",
                       help="Force overwrite when globbing")
+    parser.add_option("-o","--outstem",action="store",type="string",dest="outstem",
+                      help="Output file stem, if different from input")
     options , args = parser.parse_args()
     
     caker=cakemacrogenerator()
@@ -541,7 +552,7 @@ if __name__=="__main__":
 
     if options.glob is not None:
         caker.readpars(options.parfile)
-        caker.cakefileglob(options.glob,options.forceoverwrite is not None)
+        caker.cakefileglob(options.glob,options.forceoverwrite is not None,options.outstem)
         caker.run(show=options.show)
         sys.exit()
         
@@ -556,7 +567,7 @@ if __name__=="__main__":
 
     caker.readpars(parfile)
 
-    caker.cakefileseries(stem,first,last)
+    caker.cakefileseries(stem,first,last,options.outstem)
 
     if options.debug is None:
         caker.run(show=options.show)
