@@ -165,7 +165,46 @@ class correctorclass:
       self.tck1=(tx1,ty1,c1,kx,ky)
       self.tck2=(tx2,ty2,c2,kx,ky)
    
-   
+"""
+http://homepages.inf.ed.ac.uk/rbf/CVonline/LOCAL_COPIES/OWENS/LECT5/node5.html
+
+Various interpolation schemes can be used. A common one is bilinear interpolation, given by 
+
+v(x,y) = c1x + c2y + c3xy + c4, 
+
+where v(x,y) is the grey value at position (x,y). 
+Thus we have four coefficients to solve for. We use the known grey values of the 4 pixels 
+surrounding the `come from' location to solve for the coefficients. 
+
+We need to solve the equation 
+
+v1   ( x1 y1 x1y1 1 ) c1 
+v2 = ( x2 y2 x2y2 1 ) c2
+v3   ( x3 y3 x3y3 1 ) c3
+v4   ( x4 y4 x4y4 1 ) c4 
+
+
+or, in short, 
+[V] = [M][C], 
+
+which implies 
+[C] = [M]-1[V]. 
+
+This has to be done for every pixel location in the output image and is thus a lot of computation! 
+Alternatively one could simply use the integer pixel position closest to the `come from location'. 
+This is adequate for most cases. 
+
+"""
+
+def unwarpimage(image, xpositions, ypositions):
+   """
+   xpositions/ypositions are floats giving pixel co-ords of the input image.
+
+   We need the positions of the pixels in the output image, on the input image.
+
+   Hence, for now,
+   """
+   pass
 
 if __name__=="__main__":
    import sys,time
