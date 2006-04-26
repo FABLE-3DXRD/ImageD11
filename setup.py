@@ -29,9 +29,10 @@ On windows (with mingw tools installed, from www.mingw.org:
 In Linux
     python setup.py build sdist
 
-Assumes you have the "g77" compiler available for fortran and that
+Once assumed you have the "g77" compiler available for fortran and that
 the usual (gnu linux/win32 x86) name mangling are done for the splines
-extension to work
+extension to work ... now that code went through f2c, so it should just
+work ??
 
 """
 
@@ -48,6 +49,9 @@ cl = Extension("closest", sources=['src/closest.c'])
 
 # connectedpixels is for peaksearching images
 cp = Extension("connectedpixels", sources = ['src/connectedpixels.c'])
+
+# histogramming thing
+ch = Extension("_hist", sources = ['src/hist.c'])
 
 # Fortran hack - just need to have libsplines.a available for linking
 #import os
@@ -68,7 +72,7 @@ setup(name='ImageD11',
       description='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
-      ext_modules = [cl,cp,bl],
+      ext_modules = [cl,cp,bl,ch],
       packages = ["ImageD11"],
       scripts = ["scripts/peaksearch.py", 
                  "scripts/fit2dcake.py",
