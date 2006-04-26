@@ -274,7 +274,10 @@ def edfheader(file):
 def openedf(filename):
    try:
       if filename[-3:] == ".gz":
-         f=gzip.GzipFile(filename+".gz","rb")
+         f=gzip.GzipFile(filename,"rb")
+      elif filename[-4:] == ".bz2":
+         import bz2
+         f=bz2.BZ2File(filename,"rb")         
       else:
          f=open(filename,"rb")
    except: # Attempt to find a .gz file
