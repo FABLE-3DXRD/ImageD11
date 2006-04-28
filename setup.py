@@ -66,7 +66,7 @@ bl = Extension("_splines", sources = ['src/splines.c', 'src/bispev.c'] )
 
 # See the distutils docs...
 setup(name='ImageD11',
-      version='0.5.1',
+      version='0.6.1',
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',

@@ -143,6 +143,7 @@ class indexer:
          ds_tol=0.005,
          wavelength=-1,
          uniqueness=0.5,
+	 eta_range=0.,
          max_grains=100):
       """
       Unitcell would be a unitcell object for generating hkls peaks
@@ -163,11 +164,18 @@ class indexer:
       self.minpks=minpks
       self.ds_tol=ds_tol
       self.max_grains=max_grains
-
+      self.eta_range = eta_range
       self.ubis=[]
       self.scores=[]
 
-
+   def out_of_eta_range(self,e):
+  
+      if e < abs(self.eta_range) and e > -abs(self.eta_range):
+         return True
+      if e < -180.+abs(self.eta_range) or e > 180.-abs(self.eta_range):
+         return True
+      return False  
+      
    def assigntorings(self):
       """
       Assign the g-vectors to hkl rings
@@ -700,6 +708,8 @@ class indexer:
       for line in f.xreadlines():
          try:
             v=[float(x) for x in line.split()]
+	    if self.out_of_eta_range(v[6]):
+               continue
             self.xr.append(v[0])
             self.yr.append(v[1])
             self.zr.append(v[2])
@@ -707,7 +717,7 @@ class indexer:
             self.yp.append(v[4])
             self.ds.append(v[5])
             self.eta.append(v[6])
-            self.omega.append(v[7])
+            self.omega.append(v[7])    
          except:
             print line
             raise
@@ -718,6 +728,7 @@ class indexer:
       else:
          self.tth=zeros(len(self.ds))
       self.gv=transpose(array( [ self.xr , self.yr, self.zr ] ,Float))  
+      self.allgv = self.gv.copy()
       self.ga=zeros(len(self.ds),Int)-1 # Grain assignments
 
       self.gvflat=reshape(fromstring(self.gv.tostring(),Float),self.gv.shape) # Makes it contiguous in memory, hkl fast index

@@ -30,7 +30,7 @@ def roundfloat(x,tol):
 print "Using omega tolerance of 1e-5"
 
 class peak:
-   def __init__(self,line,omega,threshold,num,tolerance=4):
+   def __init__(self,line,omega,threshold,num,tolerance):
       self.TOLERANCE = tolerance # Pixel separation for combining peaks
       self.omegatol=1e-5
       self.omega=roundfloat(omega,self.omegatol) # round to nearest
@@ -81,7 +81,7 @@ class peak:
             other.forgotten=True
             # Make a new line
             line = "%d  %f    %f %f   %f %f    %f %f %f"%(np,avg,x,y,xc,yc,sigx,sigy,covxy)
-            return peak(line,omega,threshold,num)
+            return peak(line,omega,threshold,num,self.TOLERANCE)
          
    def __cmp__(self,other):
       if self.omega - other.omega > self.omegatol:
@@ -168,7 +168,7 @@ class guipeaksearcher:
       self.allpeaks=None
       self.merged=None
       self.final=None
-      self.tolerance=2.0
+      self.tolerance=5.0
       self.menuitems = ( "PeakSearching", 4,
                          [ ( "Search raw images" , 0, self.searchraw ),
                            ( "Read pks file", 0, self.readpeaks ),

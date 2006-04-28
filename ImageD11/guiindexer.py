@@ -169,6 +169,7 @@ class guiindexer:
       self.parameters['uniqueness']=self.indexer.uniqueness
       self.parameters['ds_tol']=self.indexer.ds_tol
       self.parameters['wavelength']=self.indexer.wavelength
+      self.parameters['eta_range']=self.indexer.eta_range
       d=listdialog(self.parent,items=self.parameters,title="Indexing parameters")
       self.parameters=d.result
       self.indexer.cosine_tol=float(self.parameters['cosine_tol'])
@@ -178,6 +179,7 @@ class guiindexer:
       self.indexer.minpks=int(self.parameters['minpks'])
       self.indexer.ds_tol=float(self.parameters['ds_tol'])
       self.indexer.uniqueness=float(self.parameters['uniqueness'])
+      self.indexer.eta_range=float(self.parameters['eta_range'])
       try:
          self.indexer.wavelength=float(self.parameters['wavelength'])
       except:
