@@ -194,16 +194,19 @@ class twodplot(Tk.Frame):
             self.a.set_ylabel(item.d["ylabel"])
          if item.d.has_key("title"):
             self.a.set_title(item.d["title"])
-         if item.x.shape[0]>self.maxpoints:
-            if self.quiet=="No": 
-               if tkMessageBox.askyesno("Slow plotting workaround","Shall I plot only the first %d points for increased speed?"%(self.maxpoints)):
-                  ret = self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],pc)
+         try:
+            if item.x.shape[0]>self.maxpoints:
+               if self.quiet=="No": 
+                  if tkMessageBox.askyesno("Slow plotting workaround","Shall I plot only the first %d points for increased speed?"%(self.maxpoints)):
+                     ret = self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],pc)
+                  else:
+                     ret = self.a.plot(item.x,item.y,pc)
                else:
-                  ret = self.a.plot(item.x,item.y,pc)
+                  ret = self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],pc)
             else:
-               ret = self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],pc)
-         else:
-            ret = self.a.plot(item.x,item.y,pc)
+               ret = self.a.plot(item.x,item.y,pc)
+         except:
+            print "plotting exception ignored"
       if self.xr!=None:
          self.a.set_xlim(self.xr)
       if self.yr!=None:
