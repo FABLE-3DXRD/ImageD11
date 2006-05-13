@@ -98,12 +98,27 @@ class checker:
 		except:
 			mi=self.edfFile.minI
 			mx=self.edfFile.maxI
-		d=clip(self.edfFile.data,mi,mx) # makes a clipped copy
-		print mx,mi,maximum.reduce(d),minimum.reduce(d),d.typecode(),
+		shape=(self.edfFile.rows,self.edfFile.cols)
+		d=reshape(clip(self.edfFile.data,mi,mx),shape) # makes a clipped copy
+		print "makeImage",mx,mi,maximum.reduce(ravel(d)),minimum.reduce(ravel(d)),d.typecode(),
+		newshape = []
+		for i in shape:
+			j=4
+			print j,pow(2,j),i,i<pow(2,j)
+			while i > pow(2,j):
+				j+=1
+			newshape.append(j)
+		newshape = tuple([pow(2,v) for v in newshape])
+		print "newshape",newshape
 		d=255.*(d-mi)/(mx-mi)
-		d=ravel(d.astype(UInt8))
-		print maximum.reduce(d),minimum.reduce(d),d.typecode()
-		self.image=d.tostring()
+		self.image=zeros(newshape,UInt8)
+		print self.image.shape,d.shape
+		self.image[:shape[0],:shape[1]] = self.image[:shape[0],:shape[1]]+ d.astype(UInt8)
+		print self.image.shape
+		self.image = self.image.tostring()
+		self.imageWidth = newshape[1]
+		self.imageHeight = newshape[0]		
+		print "Returning"
 
 		
 	def display(self, event=None):
@@ -184,7 +199,12 @@ class checker:
 		self.makeImage()
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
 ##		glTexImage2D(GL_TEXTURE_2D, 0, 3, self.imageWidth, self.imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,  self.image)
-		glTexImage2D(GL_TEXTURE_2D, 0, 3, self.imageWidth, self.imageHeight, 0, GL_LUMINANCE ,GL_UNSIGNED_BYTE,  self.image)
+		try:
+			# 1024  -  self.imageWidth , 1024 -  self.imageHeight
+			glTexImage2D(GL_TEXTURE_2D, 0, 3, self.imageWidth, self.imageHeight, 0, GL_LUMINANCE ,GL_UNSIGNED_BYTE,  self.image)
+		except:
+			print self.imageWidth, self.imageHeight, type(self.image), len(self.image)
+			raise
 ##		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
 ##		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
