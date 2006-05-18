@@ -36,14 +36,19 @@ def opendata(filename):
    """
    Guess the file type and return a data object
    """
-   if filename[-3:]in ["edf", "EDF"] :
+   f = filename.rstrip()
+   if f[-3:]in ["edf", "EDF"] :
       return openedf(filename)
-   if filename[-3:] in ["xye","epf","inp"]:
+   if f[-7:] in [".edf.gz"]:
+      return openedf(filename)
+   if f[-3:] in ["xye","epf","inp"]:
       return openxye(filename)
-   if filename[-3:] in ["chi"]:
+   if f[-3:] in ["chi"]:
       return openchi(filename)
-   if filename[-5]=="." and filename[-4:].isdigit():
+   if f[-5]=="." and f[-4:].isdigit():
       return openbruker(filename)
+   s = "\n\nUnrecognised filename: %s\n"%(f)
+   raise Exception(s)
 
 
 
@@ -268,6 +273,11 @@ def edfheader(file):
    #f.seek( -int(hd["Size"]) , 2  )
    #datastring=f.read( int(hd["Size"]) )
    #f.close()
+   if "Size" not in hd.keys():
+      if hd["DataType"]=="UnsignedShort":
+         hd["Size"]=hd["rows"]*hd["columns"]*2
+      if hd["DataType"]=="FLOAT":   # fit2d
+         hd["Size"]=hd["rows"]*hd["columns"]*4 
    if(opened): f.close()
    return hd
 
@@ -281,14 +291,26 @@ def openedf(filename):
       else:
          f=open(filename,"rb")
    except: # Attempt to find a .gz file
-      f=gzip.GzipFile(filename+".gz","rb")
+      try:
+         f=gzip.GzipFile(filename+".gz","rb")
+      except:
+         try:
+            f=bz2.BZ2File(filename+".bz2","rb")
+         except:
+            raise Exception("Cannot manage to open %s"%(filename))
    hd=edfheader(f)
-   # seek back from the end of the file - fails on gzipped so read all
-   datastring=f.read()[-int(hd["Size"]):] # all of the data
+   try:
+      # seek back from the end of the file - fails on gzipped so read all
+      datastring=f.read()[-int(hd["Size"]):] # all of the data
+   except:
+      print hd
+      raise
    f.close()
    # Convert datastring to Numeric array
+   numerictype = "dunno"
    if hd["DataType"]=="UnsignedShort": numerictype=UInt16
-   else: 
+   if hd["DataType"]=="FLOAT": numerictype=Float32
+   if numerictype == "dunno":
       raise TypeError("Unimplemented edf filetype")
    if hd["ByteOrder"]=="LowByteFirst": 
       ar=reshape(

@@ -82,6 +82,7 @@ setup(name='ImageD11',
                  "scripts/scriptable_gui.py",
                  "scripts/bgmaker.py",
                  "scripts/plotedf.py",
-                 "scripts/rubber.py"])
+                 "scripts/rubber.py",
+                 "scripts/edf2bruker.py"])
 
       
