@@ -74,15 +74,18 @@ if __name__=="__main__":
                         help="Number of first file to process, default=0")
       parser.add_option("-l","--last",action="store", type="int", dest="last",
                         help="Number of last file to process")
-      parser.add_option("-o","--outfile",action="store", type="string", dest="outfile",default="peaks.out",
-                        help="Output filename, default=peaks.out")
+      parser.add_option("-o","--outfile",action="store", type="string", dest="outfile",default="bkg.edf",
+                        help="Output filename, default=bkg.edf")
+      parser.add_option("-s","--step",action="store", type="int", dest="step",default=1,
+                        help="step - every nth image")
       options , args = parser.parse_args()
       stem =        options.stem
       outfile =     options.outfile
       first =       options.first
       last =        options.last
+      step = options.step
       # Generate list of files to proces
-      files = ["%s%04d%s"%(stem,i,".edf") for i in range(first,last+1)]
+      files = ["%s%04d%s"%(stem,i,".edf") for i in range(first,last+1,step)]
       outputfile = open(outfile,"wb")
       if len(files)==0:
          raise "No files found for stem %s"%(stem)
@@ -102,7 +105,7 @@ if __name__=="__main__":
       outputfile.write(mi.minimum_image.astype(Numeric.UInt16).tostring())
       outputfile.close()
    except:
-      print "Help message"
+      parser.print_help()
       raise
 end=time.time()
 t=end-reallystart

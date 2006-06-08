@@ -58,7 +58,8 @@ def peaksearch(filename, outputfile, corrector, blobim , thresholds, dark=None, 
    picture = data_object.data
    # picture is (hopefully) a 2D Numeric array of type UInt16
    if dark != None:
-      picture=picture-dark
+      # Slows down timing but avoid overflows
+      picture=picture.astype(Numeric.Float32)-dark
    if flood != None:
       picture=picture/flood
    print "%s"%(filename), # Progress indicator
@@ -186,6 +187,9 @@ if __name__=="__main__":
       parser.add_option("-p","--perfect_images",action="store",type="choice",
                         choices=["Y","N"],default="N",dest="perfect",
                         help="Ignore spline Y|N, default=N")
+      parser.add_option("-O","--flood",action="store",type="string",
+                        default=None,dest="flood",
+                        help="Flood file, default=None")
       parser.add_option("-t","--threshold",action="append", type="float", dest="thresholds", default=None,
                         help="Threshold level, you can have several")
       options , args = parser.parse_args()
@@ -217,10 +221,21 @@ if __name__=="__main__":
          dark=(opendata.openedf(options.dark).data - options.darkoffset).astype(Numeric.UInt16)
       else:
          dark=None
+      if options.flood!=None:
+         flood=opendata.openedf(options.flood).data
+         # Check flood normalisation
+         m1 = flood.shape[0]/6
+         m2 = flood.shape[1]/6
+         middle = Numeric.ravel(flood[m1:-m1,m2:-m2])
+         avg =  Numeric.sum(middle)/middle.shape[0]
+         if avg < 0.7 or avg > 1.3:
+            print "Your flood image does not seem to be normalised!!!"
+      else:
+         flood=None
       start = time.time()
       print "File being treated in -> out, elapsed time"
       for filein in files:
-         peaksearch(filein, outfile, corrector, blobim, options.thresholds,dark=dark)
+         peaksearch(filein, outfile, corrector, blobim, options.thresholds,dark=dark,flood=flood)
    except:
 #      print "Usage: %s filename  outputfile first last spline threshold [threshold...]"%(sys.argv[0])
       print

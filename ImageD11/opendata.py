@@ -28,7 +28,7 @@ bytes???
 """
 
 from data import data
-import gzip
+import gzip, bz2
 from Numeric import *
 
 
@@ -286,7 +286,6 @@ def openedf(filename):
       if filename[-3:] == ".gz":
          f=gzip.GzipFile(filename,"rb")
       elif filename[-4:] == ".bz2":
-         import bz2
          f=bz2.BZ2File(filename,"rb")         
       else:
          f=open(filename,"rb")
@@ -297,7 +296,8 @@ def openedf(filename):
          try:
             f=bz2.BZ2File(filename+".bz2","rb")
          except:
-            raise Exception("Cannot manage to open %s"%(filename))
+            print "Cannot manage to open %s"%(filename)
+            raise
    hd=edfheader(f)
    try:
       # seek back from the end of the file - fails on gzipped so read all

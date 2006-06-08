@@ -89,7 +89,8 @@ class darkflood:
     
 class edf2bruker:
 
-    def __init__(self,dark,flood,template, darkoffset=100):
+    def __init__(self,dark,flood,template, darkoffset=100,distance=5.0):
+        self.distance=distance
         self.darkflood=darkflood(darkoffset=darkoffset)
         self.darkflood.readdark(dark)
         self.darkflood.readflood(flood)
@@ -115,12 +116,18 @@ class edf2bruker:
         # Apply dark and flood
         corrected_image = self.darkflood.correct(data_in.data)
         # make new header
-        om = float(data_in.header["Omega"])
-        oms= float(data_in.header["OmegaStep"])
+        try:
+            om = -float(data_in.header["Omega"])
+            oms= -float(data_in.header["OmegaStep"])
+        except:
+            om = 0.
+            oms = 0.
         self.putitem("ANGLES",
                      "ANGLES :%14f%14f%14f%14f"%(0,0,om,90)+" "*(80-14*4-8))
+        self.putitem("DISTANC",
+                     "DISTANC:%14f"%(self.distance)+" "*(80-14-8))
         self.putitem("RANGE",
-                     "RANGE  :     %9f"%( oms ) + " "*58) 
+                     "RANGE  :     %9f"%( abs(oms) ) + " "*58) 
         self.putitem("INCREME:",
                      "INCREME:     %9f"%( oms ) + " "*58 )
         self.putitem("START",
@@ -155,13 +162,15 @@ if __name__=="__main__":
       parser.add_option("-F","--Flood",action="store", type="string", dest="flood",
                         default="/data/opid11/inhouse/Frelon2K/Ags_mask0000.edf",
                         help="Flood field")
+      parser.add_option("-D","--distance",action="store",type="float", dest="distance",default=5.0,help="Sample to detector distance")
+
       parser.add_option("-t","--template",action="store", type="string", dest="template",
                         default = "/data/opid11/inhouse/Frelon2K/brukertemplate.0000")
 
       options, args = parser.parse_args()
 
 
-      converter = edf2bruker(options.dark , options.flood , options.template)
+      converter = edf2bruker(options.dark , options.flood , options.template, distance=options.distance)
       
       for i in range(options.first, options.last+1):
           filein = opendata.makename( options.stem, i, ".edf" )
