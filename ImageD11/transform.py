@@ -411,9 +411,35 @@ def uncompute_one_g_vector(gv,wavelength, wedge=0.0):
    t,e,o=uncompute_g_vectors(transpose(array([gv,gv])),wavelength,wedge=wedge)
    return t[0],[e[0][0],e[1][0]],[o[0][0],o[1][0]]       
 
+
+
+def compute_lorentz_factors(args):
+   """
+   From Kabsch 1988 J. Appl. Cryst. 21 619
+
+   Multiply the intensities by:
+   Lorentz = | S.(u x S_0)| / |S|.|S_0|
+   S = scattered vector
+   S_0 = incident vector
+   u = unit vector along rotation axis
+   """
+   pass
+
+def compute_polarisation_factors(args):
+   """
+   From Kabsch 1988 J. Appl. Cryst. 21 619
+
+   DIVIDE the intensities by:
+   <sin2 psi> = ( 1 - 2p) [ 1 - (n.S/|S|^2) ] + p { 1 + [S.S_0/(|S||S_0|)^2]^2}
    
-   
-   
+   p = degree of polarisation (sync = 1, tube = 0.5 , mono + tube in between)
+       or "probability of finding electric field vector in plane having normal, n"
+   S = scattered vector
+   S_0 = incident vector
+   n = normal to polarisation plane, typically perpendicular to S_0
+   """
+   pass
+
 if __name__=="__main__":
    # from indexing import mod_360
    def mod_360(theta, target):

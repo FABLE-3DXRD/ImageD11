@@ -252,6 +252,7 @@ def edfheader(file):
    # Interpret header
    headeritems=fh[1:-1].split(";")
    hd={}
+   hd["headerstring"]=fh
    for item in headeritems: 
       if item.find("=")>0:
          hd[item.split("=")[0].lstrip().rstrip()]=item.split("=")[1].lstrip().rstrip()

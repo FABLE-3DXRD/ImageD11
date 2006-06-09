@@ -168,7 +168,7 @@ class guipeaksearcher:
       self.allpeaks=None
       self.merged=None
       self.final=None
-      self.tolerance=5.0
+      self.tolerance=1.0
       self.menuitems = ( "PeakSearching", 4,
                          [ ( "Search raw images" , 0, self.searchraw ),
                            ( "Read pks file", 0, self.readpeaks ),
@@ -315,6 +315,7 @@ Otherwise, say no, select the right range and come back "harvestpeaks" again
       from tkMessageBox import showinfo
       # Now go through blocks in omega order, sorting by x,y
       npeaks=len(self.allpeaks)
+      print "len(self.allpeaks)",len(self.allpeaks)
       merge1=[self.allpeaks[0]]
       i=1
       while i < npeaks:

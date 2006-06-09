@@ -20,7 +20,7 @@ import sys
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-import gzip
+import gzip, bz2
 def getheader(filename):
     """
     Reads a header from an edf file in 1024 byte chunks.
@@ -29,10 +29,15 @@ def getheader(filename):
     Adds a filename key at the top
     """
     h="filename = "
-    try:
-        fp=open(filename,"rb")
-    except:
-        fp=gzip.GzipFile(filename+".gz","rb")
+    if filename[-3:]==".gz":
+        fp=gzip.GzipFile(filename,"rb")
+    elif filename [-4:]==".bz2":
+        fp=bz2.BZ2File(filename,"rb")
+    else:
+        try:
+            fp=open(filename,"rb")
+        except:
+            return ""
     h=h+filename+";\n"
     s=fp.read(1024)
     if s.find("{")==-1:

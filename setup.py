@@ -83,6 +83,7 @@ setup(name='ImageD11',
                  "scripts/bgmaker.py",
                  "scripts/plotedf.py",
                  "scripts/rubber.py",
-                 "scripts/edf2bruker.py"])
+                 "scripts/edf2bruker.py",
+                 "scripts/powderimagetopeaks.py"])
 
       
