@@ -1,0 +1,9 @@
+
+
+Put authorship and license into bisplev properly
+
+Module docs and functions and function docs from compiled extensions
+
+
+run makedocs in doc subdir as part of setup.py build ??
+

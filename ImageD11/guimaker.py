@@ -1,28 +1,35 @@
 
+"""
+Script to put the menus together and build an appli with each bit
+being relatively clutterfree
 
-# This is copied from a book somewhere
-# either programming python or the cookbook.
-# look it up and give credit please..! Probably the book from Mark Lutz??
+Each of guiindexer, guipeaksearch and guitransformer offer members
+menuitems to put in menus. The overall gui (imaged11_gui) inherits
+from this I think
 
+# The code was copied from a book somewhere
+# probably programming python or maybe cookbook.
+# Most probably programming python by Mark Lutz
+"""
 import sys
-from Tkinter import *
+import Tkinter as Tk
 
-class GuiMaker(Frame):   # Inherit from Tk frame
+class GuiMaker(Tk.Frame):   # Inherit from Tk frame
    menuBar=[]
    def __init__(self,parent=None):
-      Frame.__init__(self,parent)
-      self.pack(expand=YES, fill=BOTH)
-      self.statusbar=Label(self,text="Welcome to ImageD11_v0.4")
-      self.statusbar.pack(side=BOTTOM)
+      Tk.Frame.__init__(self,parent)
+      self.pack(expand=Tk.YES, fill=Tk.BOTH)
+      self.statusbar=Tk.Label(self,text="Welcome to ImageD11_v0.4")
+      self.statusbar.pack(side=Tk.BOTTOM)
       self.start()
       self.makeWidgets()
       self.makeMenuBar()
 
    def makeMenuBar(self):
-      menubar = Menu(self.master,tearoff=0)
+      menubar = Tk.Menu(self.master,tearoff=0)
       self.master.config(menu=menubar)
       for (name, key, items) in self.menuBar:
-         pulldown = Menu(menubar)
+         pulldown = Tk.Menu(menubar)
          self.addMenuItems(pulldown,items)
          menubar.add_cascade(label=name, underline=key, menu=pulldown)
 

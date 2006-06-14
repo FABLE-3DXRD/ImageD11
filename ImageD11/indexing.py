@@ -168,6 +168,25 @@ class indexer:
       self.ubis=[]
       self.scores=[]
 
+
+      # it would make more sense to inherit the parameter object - will 
+      # have to think about this some more - how general is it?
+      from ImageD11 import parameters
+      self.parameterobj = parameters.parameters(cosine_tol=self.cosine_tol, 
+            hkl_tol=self.hkl_tol, ring_1=self.ring_1, ring_2=self.ring_2, 
+            minpks=self.minpks, uniqueness=self.uniqueness, ds_tol=self.ds_tol, 
+            wavelength=self.wavelength, eta_range=self.eta_range)
+
+   def loadpars(self,filename=None):
+      if filename is not None:
+         self.parameterobj.loadparameters(filename)
+      self.parameterobj.update_other(self)
+   
+   def savepars(self,filename=None):
+      self.parameterobj.update_yourself(self)
+      if filename is not None: 
+         self.parameterobj.saveparameters(filename)
+
    def out_of_eta_range(self,e):
   
       if e < abs(self.eta_range) and e > -abs(self.eta_range):
@@ -224,25 +243,34 @@ class indexer:
       Attempt to identify Freidel pairs
 
       Peaks must be assigned to the same powder ring
-      Peaks will be the closest thing to being 18 degrees apart
+      Peaks will be the closest thing to being 180 degrees apart
       """
       out = open(filename,"w")
       dsr=self.unitcell.ringds
-      print "Ring     (  h,  k,  l) Mult  total indexed to_index  "
-      for j in range(len(dsr)):
+      nring = len(dsr)
+      for j in range( nring ):
          ind = compress( equal(self.ra,j), arange(self.ra.shape[0]) )
          # ind is the indices of the ring assigment array - eg which hkl is this gv
          #
-         # Compute cosines of the angles between peaks
+         if len(ind)==0:
+            continue
          thesepeaks = take(self.gv,ind)
          #
-         # Most dumb estimate would be gv[a] + gv[b] == 0
-         # This has problems of beam centre. Maybe in terms of eta and difference in omega?
          h=self.unitcell.ringhkls[dsr[j]][0]
-         out.write("\n\n\n# %d %d %d\n"%(h[0],h[1],h[2]))
-         out.write("# eta, omega, tth, gv[0], gv[1], gv[2]\n")
-         for i in ind:
-            out.write("%f %f %f %f %f %f\n"%(self.eta[i],self.omega[i],self.tth[i],self.gv[i][0],self.gv[i][1],self.gv[i][2]))
+         #
+         out.write("\n\n\n# h = %d \n"%(h[0]))
+         out.write("# k = %d \n"%(h[1]))
+         out.write("# l = %d \n"%(h[2]))
+         out.write("# npks = %d \n"%(thesepeaks.shape[0]))
+         out.write("# score eta1 omega1 tth1 gv1_x gv1_y gv1_z eta2 omega2 tth2 gv2_x gv2_y gv2_z\n")
+         for k in range(thesepeaks.shape[0]):
+             nearlyzero = thesepeaks + thesepeaks[k] 
+             mag = sum(nearlyzero*nearlyzero,1)
+             b = argmin(mag)
+             if b > k:
+                out.write("%f "%( sqrt(mag[b]) ) )
+                out.write("%f %f %f %f %f %f    "%(self.eta[k],self.omega[k],self.tth[k],self.gv[k][0],self.gv[k][1],self.gv[k][2]))
+                out.write("%f %f %f %f %f %f\n"%(self.eta[b],self.omega[b],self.tth[b],self.gv[b][0],self.gv[b][1],self.gv[b][2]))
 
 
          

@@ -1,0 +1,6 @@
+
+
+Friedel pair files should be implemented in indexer.py
+
+Separation of the gui from the working code via parameters.py and guicommand.py
+

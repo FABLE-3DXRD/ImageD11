@@ -18,12 +18,13 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
-from Numeric import *
-from Tkinter import *
+"""
+Tkinter wrapper for ImageD11 indexing object
 
-import time,math,unitcell,sys
+All communication should be via parent guicommander object
 
-import indexing
+Owner of the plot3d window
+"""
 
 from listdialog import listdialog
 
@@ -32,13 +33,14 @@ class guiindexer:
                            
    def __init__(self,parent):
       """
-      Parent is a hook to features of the parent gui
+      Parent (arg) is a hook to features of the parent gui
+      sets up indexing menuitems
       """
       self.parent=parent
 # peaks are in      self.parent.finalpeaks
       self.menuitems = ( "Indexing", 0,
                          [ ( "Load g-vectors", 0, self.loadgv),
-                           ( "Plot x/y/z", 5, self.plotxyz     ),
+                           ( "Plot x/y/z", 5, self.plotxyz),
                            ( "Load parameters", 1, self.loadfileparameters),
                            ( "Edit parameters", 0, self.editparameters),
                            ( "Assign peaks to powder rings", 0, self.assignpeaks),
@@ -48,40 +50,39 @@ class guiindexer:
                            ( "Histogram fit quality",0, self.histogram_drlv_fit),
                            ( "Save parameters", 0, self.saveparameters),
                            ( "Save UBI matrices", 5, self.saveubis),
-                           ( "Write out indexed peaks",0,self.saveindexing )
+                           ( "Write out indexed peaks",0,self.saveindexing)
                          ] ) 
-      self.parameters={}
-      self.indexer=indexing.indexer(unitcell=self.parent.unitcell,gv=self.parent.gv)
-      self.loadparameters()
+      import plot3d
       self.plot3d=None
 
    def loadgv(self):
-#      if self.parent.gv!=None:
-#         from tkMessageBox import askyesno
-#         if not askyesno("Overwrite current g-vectors?","Loading new will 
-#overwrite the ones in memory now, are you sure?"):
-#            return
+      """ see indexing.readgvfile """
       filename=self.parent.opener.show(title="File containing g-vectors")
-      self.indexer.readgvfile(filename)
+      self.parent.guicommander.execute("indexer","readgvfile",filename)
 
    def saveubis(self):
+      """ see indexing.saveubis """
       filename=self.parent.saver.show(title="File to save UBIS")
-      self.indexer.saveubis(filename)
+      self.parent.guicommander.execute("indexer","saveubis",filename)
 
    def makefriedel(self):
-      filename=self.parent.saver.show(title="File to save Friedels")
-      self.indexer.friedelpairs(filename)
-
-
+      """ see indexing.friedelpairs """
+      filename=self.parent.saver.show(title="File to save Friedelpairs")
+      self.parent.guicommander.execute("indexer","friedelpairs",filename)
 
    def scorethem(self):
-      self.indexer.scorethem()
+      """ see indexing.scorethem """
+      self.parent.guicommander.execute("indexer","scorethem")
 
    def histogram_drlv_fit(self):
-      self.indexer.histogram_drlv_fit()
-      x=self.indexer.bins
-      y=self.indexer.histogram
-      self.parent.twodplotter.plotitems={}
+      """
+      Calls indexer.histogram_drlv_fit
+      Plots indexer.bins versus indexer.histogram
+      """
+      self.parent.guicommander.execute("indexer","histogram_drlv_fit")
+      x=self.parent.guicommander.getdata("indexer","bins")
+      y=self.parent.guicommander.getdata("indexer","histogram")
+      self.parent.twodplotter.plotitems={} # clears plot
       from ImageD11 import twodplot
       for yline in range(y.shape[0]):
          self.parent.twodplotter.plotitems["drlv histogram"+str(yline)]=twodplot.data(
@@ -96,115 +97,63 @@ class guiindexer:
 
       
    def assignpeaks(self):
-      self.indexer.assigntorings()
+      """ see indexing.assigntorings """
+      self.parent.guicommander.execute("indexer","assigntorings")
 
    def loadfileparameters(self):
+      """ see indexing.loadpars and parameters.loadpars """
       filename=self.parent.opener.show(title="File containing indexing parameters")
-      self.loadparameters(filename)
+      self.parent.guicommander.execute("indexer","loadpars",filename)
 
-   def loadparameters(self,filename=None):   
-      if filename==None:
-         self.parameters['cosine_tol']=self.indexer.cosine_tol
-         self.parameters['hkl_tol']=self.indexer.hkl_tol
-         self.parameters['ring_1']=self.indexer.ring_1
-         self.parameters['ring_2']=self.indexer.ring_2
-         self.parameters['minpks']=self.indexer.minpks
-         self.parameters['uniqueness']=self.indexer.uniqueness
-         self.parameters['ds_tol']=self.indexer.ds_tol
-         self.parameters['wavelength']=self.indexer.wavelength
-      else:
-         try:
-            lines = open(filename,"r").readlines()
-            for line in lines:
-               name,value=line.split()
-               self.parameters[name]=value
-            self.indexer.cosine_tol=float(self.parameters['cosine_tol'])
-            self.indexer.hkl_tol= float(self.parameters['hkl_tol'])
-            self.indexer.ring_1=int(self.parameters['ring_1'])
-            self.indexer.ring_2=int(self.parameters['ring_2'])
-            self.indexer.minpks=int(self.parameters['minpks'])
-            self.indexer.uniqueness=float(self.parameters['uniqueness'])
-            self.indexer.ds_tol=float(self.parameters['ds_tol'])
-            self.indexer.wavelength=float(self.parameters['wavelength'])
-         except IOError:
-            from tkMessageBox import showinfo
-            showinfo("Sorry","Could not open/interpret your file")
-               
-
-   def saveparameters(self,filename=None):
-      if filename==None:
-         filename=self.parent.saver.show(title="File to save indexing parameters")
-      f=open(filename,"w")
-      keys=self.parameters.keys()
-      keys.sort()
-      for key in keys:
-         try:
-            f.write("%s %f\n"%(key,self.parameters[key]))
-         except:
-            f.write("%s %s\n"%(key,self.parameters[key]))
-      f.close()
-
-   def saveparameters(self,filename=None):
-      if filename==None:
-         filename=self.parent.saver.show(title="File to save indexing parameters")
-      f=open(filename,"w")
-      keys=self.parameters.keys()
-      keys.sort()
-      for key in keys:
-         try:
-            f.write("%s %f\n"%(key,self.parameters[key]))
-         except:
-            f.write("%s %s\n"%(key,self.parameters[key]))
-      f.close()
-
-
+   def saveparameters(self):
+      """ see indexing.savepars and parameters.savepars """
+      filename=self.parent.saver.show(title="File to save indexing parameters")
+      self.parent.guicommander.execute("indexer","savepars",filename)
 
 
    def editparameters(self):
-      self.parameters['cosine_tol']=self.indexer.cosine_tol
-      self.parameters['hkl_tol']=self.indexer.hkl_tol
-      self.parameters['ring_1']=self.indexer.ring_1
-      self.parameters['ring_2']=self.indexer.ring_2
-      self.parameters['minpks']=self.indexer.minpks
-      self.parameters['uniqueness']=self.indexer.uniqueness
-      self.parameters['ds_tol']=self.indexer.ds_tol
-      self.parameters['wavelength']=self.indexer.wavelength
-      self.parameters['eta_range']=self.indexer.eta_range
-      d=listdialog(self.parent,items=self.parameters,title="Indexing parameters")
-      self.parameters=d.result
-      self.indexer.cosine_tol=float(self.parameters['cosine_tol'])
-      self.indexer.hkl_tol= float(self.parameters['hkl_tol'])
-      self.indexer.ring_1=int(self.parameters['ring_1'])
-      self.indexer.ring_2=int(self.parameters['ring_2'])
-      self.indexer.minpks=int(self.parameters['minpks'])
-      self.indexer.ds_tol=float(self.parameters['ds_tol'])
-      self.indexer.uniqueness=float(self.parameters['uniqueness'])
-      self.indexer.eta_range=float(self.parameters['eta_range'])
-      try:
-         self.indexer.wavelength=float(self.parameters['wavelength'])
-      except:
-         self.indexer.wavelength=None
+      """ 
+      Has the indexing object update its parameter object 
+             eg : savepars(None)
+      gets a copy of the parameter object
+      Allows user to edit parameters
+      Has the indexing object update itself from the parameter object 
+             eg : loadpars(None)
+      """
+      # First make the indexer update its parameters object
+      self.parent.guicommander.execute("indexer","savepars") # no filename arg
+      # Now borrow a copy to read them and edit
+      pars = self.parent.guicommander.getdata("indexer","parameterobj")
+      mydict = pars.get_parameters()
+      print mydict
+      d=listdialog(self.parent,items=mydict,title="Indexing parameters")
+      # Now send the results back
+      pars.set_parameters(d.result)
+      self.parent.guicommander.execute("indexer","loadpars") # no filename arg
       
       
    def plotxyz(self):
       """
-      Plots the x,y arrays being used
+      Gets gv from indexing object
+      Plots the x,y,z (gv) array in a 3D opengl window
       """
       import plot3d
-      if self.indexer.gv!=None:
+      gv = self.parent.guicommander.getdata("indexer","gv")
+      if gv is not None:
          if self.plot3d==None:
-            self.plot3d = plot3d.plot3d(self.parent,self.indexer.gv)
+            self.plot3d = plot3d.plot3d(self.parent,gv)
             self.plot3d.go()
             print self.plot3d
          else:
-            self.plot3d.changedata(self.indexer.gv)
-
+            self.plot3d.changedata(gv)
 
    def find(self):
-      self.indexer.find()
+      """ see indexing.find """
+      self.parent.guicommander.execute("indexer","find")
 
+   def saveindexing(self):
+      """ see indexing.saveindexing """
+      filename=self.parent.saver.show(title="File to save indexing output")
+      self.parent.guicommander.execute("indexer","saveindexing",filename)
 
-   def saveindexing(self,filename=None):
-      if filename==None:
-         filename=self.parent.saver.show(title="File to save indexing parameters")
-      self.indexer.saveindexing(filename)
+      

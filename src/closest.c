@@ -20,38 +20,41 @@
 */
 
 
-/* *******************************************************************
- * closest.c  Two useful functions for indexing grains 
- *
- * 1. From python: closest(cosines_allowed, cosine_measured)
- *    Take 1 peak with hkl's assigned, compute the cosines to
- *    another powder ring (angles between this peak and peaks in
- *    that ring). This extension finds the best peak in the
- *    other ring to pair up with.
- *
- *    More generally closest(array, values) finds the closest
- *    item in values to one of the values in array.  Returns the
- *    difference and the index of the closest thing it finds.
- *
- *    Both arguments should be one dimensional Numeric arrays
- *    of type Numeric.Float
- *
- * 2. From python: score(ubi, gv, tol) where ubi is an orientation
- *    matrix and gv are an array of g-vectors. Returns the number
- *    of g-vectors which have integer hkl peaks within tolerance
- *    tol. Uses the conv_double_to_int_fast function in here for 
- *    factor of !EIGHT! speed increase compared to rounding in 
- *    C. In fact this gives the nearest even integer, instead
- *    of the nearest integer, but we don't care, as a peak having
- *    hkl of 0.5 is nowhere near being indexed anyway.
- *
- *    Returns and integer - number of peaks indexed
- *    UBI is a 3x3 Numeric.Float array (figure out the transposing yourself)
- *    GV is a nx3 Numeric.Float array, and you should try to make the 3 
- *       be the fast index for best performance
- *
- * ****************************************************************** */
-
+static char moduledocs[] = "/* *******************************************************************\n"\
+" * closest.c  Two useful functions for indexing grains \n"\
+" *\n"\
+" * 1. From python: closest(cosines_allowed, cosine_measured)\n"\
+" *    Take 1 peak with hkl's assigned, compute the cosines to\n"\
+" *    another powder ring (angles between this peak and peaks in\n"\
+" *    that ring). This extension finds the best peak in the\n"\
+" *    other ring to pair up with.\n"\
+" *\n"\
+" *    More generally closest(array, values) finds the closest\n"\
+" *    item in values to one of the values in array.  Returns the\n"\
+" *    difference and the index of the closest thing it finds.\n"\
+" *\n"\
+" *    Both arguments should be one dimensional Numeric arrays\n"\
+" *    of type Numeric.Float\n"\
+" *\n"\
+" * 2. From python: score(ubi, gv, tol) where ubi is an orientation\n"\
+" *    matrix and gv are an array of g-vectors. Returns the number\n"\
+" *    of g-vectors which have integer hkl peaks within tolerance\n"\
+" *    tol. Uses the conv_double_to_int_fast function in here for \n"\
+" *    factor of !EIGHT! speed increase compared to rounding in \n"\
+" *    C. In fact this gives the nearest even integer, instead\n"\
+" *    of the nearest integer, but we don't care, as a peak having\n"\
+" *    hkl of 0.5 is nowhere near being indexed anyway.\n"\
+" *\n"\
+" *    Returns and integer - number of peaks indexed\n"\
+" *    UBI is a 3x3 Numeric.Float array (figure out the transposing yourself)\n"\
+" *    GV is a nx3 Numeric.Float array, and you should try to make the 3 \n"\
+" *       be the fast index for best performance\n"\
+" *       \n"\
+" * 3. From python: same as score, I hope, but ubi is overwritten\n"\
+" *    with refined matrix following paciorek algorithm which is \n"\
+" *    in indexing.py\n"\
+" *    \n"\
+" * ****************************************************************** */ ";
 
 #include <Python.h>                  /* To talk to python */
 #include "Numeric/arrayobject.h"     /* Access to Numeric */
@@ -452,16 +455,21 @@ static PyMethodDef closestMethods[] = {
       "    Find number of gv which are integer h within tol"},
    { "score_and_refine", (PyCFunction) score_and_refine, METH_VARARGS, 
       "int score_and_refine(ubi,gv,tol)\n"\
-      "    Find number of gv which are integer h within tol and returned refined UB"},
+      "    Find number of gv which are integer h within tol and overwrite UB with refined"},
    { NULL, NULL, 0, NULL }  
 };
 
 void initclosest(void)
 {
-   PyObject *m, *d;
+   PyObject *m, *d, *s;
    m=Py_InitModule("closest",closestMethods);
    import_array();
    d=PyModule_GetDict(m);
+   s = PyString_FromString(moduledocs);
+   PyDict_SetItemString(d,"__doc__",s);
+   Py_DECREF(s);
+   if (PyErr_Occurred())
+      Py_FatalError("cant initialise closest module");
 }
      
 

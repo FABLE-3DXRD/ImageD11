@@ -1,0 +1,177 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module ImageD11.opendata</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.opendata</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python24/lib/site-packages/imaged11/opendata.py">c:\python24\lib\site-packages\imaged11\opendata.py</a></font></td></tr></table>
+    <p><tt>ImageD11&nbsp;generic&nbsp;file&nbsp;opener<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;data&nbsp;object<br>
+&nbsp;<br>
+Try&nbsp;to&nbsp;determine&nbsp;file&nbsp;type&nbsp;from&nbsp;extension&nbsp;or&nbsp;otherwise&nbsp;first&nbsp;few<br>
+bytes???</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="bz2.html">bz2</a><br>
+<a href="copy.html">copy</a><br>
+<a href="copy_reg.html">copy_reg</a><br>
+</td><td width="25%" valign=top><a href="gzip.html">gzip</a><br>
+<a href="math.html">math</a><br>
+<a href="multiarray.html">multiarray</a><br>
+</td><td width="25%" valign=top><a href="pickle.html">pickle</a><br>
+<a href="string.html">string</a><br>
+<a href="types.html">types</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-arange"><strong>arange</strong></a>(...)</dt><dd><tt><a href="#-arange">arange</a>(start,&nbsp;stop=None,&nbsp;step=1,&nbsp;typecode=None)<br>
+&nbsp;<br>
+&nbsp;Just&nbsp;like&nbsp;range()&nbsp;except&nbsp;it&nbsp;returns&nbsp;an&nbsp;array&nbsp;whose&nbsp;type&nbsp;can&nbsp;be<br>
+specified&nbsp;by&nbsp;the&nbsp;keyword&nbsp;argument&nbsp;typecode.</tt></dd></dl>
+ <dl><dt><a name="-array"><strong>array</strong></a>(...)</dt><dd><tt><a href="#-array">array</a>(sequence,&nbsp;typecode=None,&nbsp;copy=1,&nbsp;savespace=0)&nbsp;will&nbsp;return&nbsp;a&nbsp;new&nbsp;array&nbsp;formed&nbsp;from&nbsp;the&nbsp;given&nbsp;(potentially&nbsp;nested)&nbsp;sequence&nbsp;with&nbsp;type&nbsp;given&nbsp;by&nbsp;typecode.&nbsp;&nbsp;If&nbsp;no&nbsp;typecode&nbsp;is&nbsp;given,&nbsp;then&nbsp;the&nbsp;type&nbsp;will&nbsp;be&nbsp;determined&nbsp;as&nbsp;the&nbsp;minimum&nbsp;type&nbsp;required&nbsp;to&nbsp;hold&nbsp;the&nbsp;objects&nbsp;in&nbsp;sequence.&nbsp;&nbsp;If&nbsp;copy&nbsp;is&nbsp;zero&nbsp;and&nbsp;sequence&nbsp;is&nbsp;already&nbsp;an&nbsp;array,&nbsp;a&nbsp;reference&nbsp;will&nbsp;be&nbsp;returned.&nbsp;&nbsp;If&nbsp;savespace&nbsp;is&nbsp;nonzero,&nbsp;the&nbsp;new&nbsp;array&nbsp;will&nbsp;maintain&nbsp;its&nbsp;precision&nbsp;in&nbsp;operations.</tt></dd></dl>
+ <dl><dt><a name="-arrayrange"><strong>arrayrange</strong></a> = arange(...)</dt><dd><tt><a href="#-arange">arange</a>(start,&nbsp;stop=None,&nbsp;step=1,&nbsp;typecode=None)<br>
+&nbsp;<br>
+&nbsp;Just&nbsp;like&nbsp;range()&nbsp;except&nbsp;it&nbsp;returns&nbsp;an&nbsp;array&nbsp;whose&nbsp;type&nbsp;can&nbsp;be<br>
+specified&nbsp;by&nbsp;the&nbsp;keyword&nbsp;argument&nbsp;typecode.</tt></dd></dl>
+ <dl><dt><a name="-choose"><strong>choose</strong></a>(...)</dt><dd><tt><a href="#-choose">choose</a>(a,&nbsp;(b1,b2,...))</tt></dd></dl>
+ <dl><dt><a name="-cross_correlate"><strong>cross_correlate</strong></a>(...)</dt><dd><tt><a href="#-cross_correlate">cross_correlate</a>(a,v,&nbsp;mode=0)</tt></dd></dl>
+ <dl><dt><a name="-edfheader"><strong>edfheader</strong></a>(file)</dt></dl>
+ <dl><dt><a name="-empty"><strong>empty</strong></a>(...)</dt><dd><tt><a href="#-empty">empty</a>((d1,...,dn),typecode='l',savespace=0)&nbsp;will&nbsp;return&nbsp;a&nbsp;new&nbsp;array<br>
+of&nbsp;shape&nbsp;(d1,...,dn)&nbsp;and&nbsp;given&nbsp;type&nbsp;with&nbsp;all&nbsp;its&nbsp;entries&nbsp;uninitialized.&nbsp;&nbsp;If&nbsp;savespace&nbsp;is<br>
+nonzero,&nbsp;the&nbsp;array&nbsp;will&nbsp;be&nbsp;a&nbsp;spacesaver&nbsp;array.&nbsp;&nbsp;This&nbsp;can&nbsp;be&nbsp;faster&nbsp;than&nbsp;zeros.</tt></dd></dl>
+ <dl><dt><a name="-fromstring"><strong>fromstring</strong></a>(...)</dt><dd><tt><a href="#-fromstring">fromstring</a>(string,&nbsp;typecode='l',&nbsp;count=-1)&nbsp;returns&nbsp;a&nbsp;new&nbsp;1d&nbsp;array&nbsp;initialized&nbsp;from&nbsp;the&nbsp;raw&nbsp;binary&nbsp;data&nbsp;in&nbsp;string.&nbsp;&nbsp;If&nbsp;count&nbsp;is&nbsp;positive,&nbsp;the&nbsp;new&nbsp;array&nbsp;will&nbsp;have&nbsp;count&nbsp;elements,&nbsp;otherwise&nbsp;it's&nbsp;size&nbsp;is&nbsp;determined&nbsp;by&nbsp;the&nbsp;size&nbsp;of&nbsp;string.</tt></dd></dl>
+ <dl><dt><a name="-makename"><strong>makename</strong></a>(stem, num, extn, width<font color="#909090">=4</font>)</dt><dd><tt>Filename&nbsp;creation&nbsp;mydata1234.edf&nbsp;etc</tt></dd></dl>
+ <dl><dt><a name="-openbruker"><strong>openbruker</strong></a>(filename)</dt></dl>
+ <dl><dt><a name="-openchi"><strong>openchi</strong></a>(filename)</dt></dl>
+ <dl><dt><a name="-opendata"><strong>opendata</strong></a>(filename)</dt><dd><tt>Guess&nbsp;the&nbsp;file&nbsp;type&nbsp;and&nbsp;return&nbsp;a&nbsp;data&nbsp;object</tt></dd></dl>
+ <dl><dt><a name="-openedf"><strong>openedf</strong></a>(filename)</dt></dl>
+ <dl><dt><a name="-openxye"><strong>openxye</strong></a>(filename)</dt></dl>
+ <dl><dt><a name="-readbruker"><strong>readbruker</strong></a>(file)</dt><dd><tt>Reads&nbsp;in&nbsp;a&nbsp;Bruker&nbsp;file,&nbsp;returning&nbsp;the&nbsp;data&nbsp;and&nbsp;header<br>
+file&nbsp;may&nbsp;be&nbsp;a&nbsp;string&nbsp;or&nbsp;file&nbsp;object<br>
+TODO&nbsp;we&nbsp;should&nbsp;later&nbsp;modify&nbsp;to&nbsp;take&nbsp;ROI&nbsp;ranges&nbsp;somehow&nbsp;(xmin,xmax,ymin,ymax)</tt></dd></dl>
+ <dl><dt><a name="-readbrukerheader"><strong>readbrukerheader</strong></a>(file)</dt><dd><tt>Reads&nbsp;a&nbsp;Bruker&nbsp;file&nbsp;header&nbsp;into&nbsp;a&nbsp;Python&nbsp;dictionary<br>
+file=filename&nbsp;or&nbsp;file&nbsp;pointer</tt></dd></dl>
+ <dl><dt><a name="-readbytestream"><strong>readbytestream</strong></a>(file, offset, x, y, nbytespp, datatype<font color="#909090">='int'</font>, signed<font color="#909090">='n'</font>, swap<font color="#909090">='n'</font>, typeout<font color="#909090">='w'</font>)</dt><dd><tt>Reads&nbsp;in&nbsp;a&nbsp;bytestream&nbsp;from&nbsp;a&nbsp;file&nbsp;(which&nbsp;may&nbsp;be&nbsp;a&nbsp;string&nbsp;indicating<br>
+a&nbsp;filename,&nbsp;or&nbsp;an&nbsp;already&nbsp;opened&nbsp;file&nbsp;(should&nbsp;be&nbsp;"rb"))<br>
+offset&nbsp;is&nbsp;the&nbsp;position&nbsp;(in&nbsp;bytes)&nbsp;where&nbsp;the&nbsp;pixel&nbsp;data&nbsp;start<br>
+nbytespp&nbsp;=&nbsp;number&nbsp;of&nbsp;bytes&nbsp;per&nbsp;pixel<br>
+type&nbsp;can&nbsp;be&nbsp;int&nbsp;or&nbsp;float&nbsp;(4&nbsp;bytes&nbsp;pp)&nbsp;or&nbsp;double&nbsp;(8&nbsp;bytes&nbsp;pp)<br>
+signed:&nbsp;normally&nbsp;signed&nbsp;data&nbsp;'y',&nbsp;but&nbsp;'n'&nbsp;to&nbsp;try&nbsp;to&nbsp;get&nbsp;back&nbsp;the&nbsp;right&nbsp;numbers<br>
+&nbsp;&nbsp;when&nbsp;unsigned&nbsp;data&nbsp;are&nbsp;converted&nbsp;to&nbsp;signed&nbsp;(python&nbsp;has&nbsp;no&nbsp;unsigned&nbsp;numeric&nbsp;types.)<br>
+swap,&nbsp;normally&nbsp;do&nbsp;not&nbsp;bother,&nbsp;but&nbsp;'y'&nbsp;to&nbsp;swap&nbsp;bytes<br>
+typeout&nbsp;is&nbsp;the&nbsp;Numeric&nbsp;type&nbsp;to&nbsp;output,&nbsp;normally&nbsp;UInt16,&nbsp;but&nbsp;more&nbsp;if&nbsp;overflows&nbsp;occurred<br>
+x&nbsp;and&nbsp;y&nbsp;are&nbsp;the&nbsp;pixel&nbsp;dimensions<br>
+&nbsp;<br>
+TODO&nbsp;:&nbsp;Read&nbsp;in&nbsp;regions&nbsp;of&nbsp;interest<br>
+&nbsp;<br>
+PLEASE&nbsp;LEAVE&nbsp;THE&nbsp;STRANGE&nbsp;INTERFACE&nbsp;ALONE&nbsp;-&nbsp;IT&nbsp;IS&nbsp;USEFUL&nbsp;FOR&nbsp;THE&nbsp;BRUKER&nbsp;FORMAT</tt></dd></dl>
+ <dl><dt><a name="-reshape"><strong>reshape</strong></a>(...)</dt><dd><tt><a href="#-reshape">reshape</a>(a,&nbsp;(d1,&nbsp;d2,&nbsp;...,&nbsp;dn)).&nbsp;&nbsp;Change&nbsp;the&nbsp;shape&nbsp;of&nbsp;a&nbsp;to&nbsp;be&nbsp;an&nbsp;n-dimensional&nbsp;array&nbsp;with&nbsp;dimensions&nbsp;given&nbsp;by&nbsp;d1...dn.&nbsp;&nbsp;Note:&nbsp;the&nbsp;size&nbsp;specified&nbsp;for&nbsp;the&nbsp;new&nbsp;array&nbsp;must&nbsp;be&nbsp;exactly&nbsp;equal&nbsp;to&nbsp;the&nbsp;size&nbsp;of&nbsp;the&nbsp;&nbsp;old&nbsp;one&nbsp;or&nbsp;an&nbsp;error&nbsp;will&nbsp;occur.</tt></dd></dl>
+ <dl><dt><a name="-searchsorted"><strong>searchsorted</strong></a> = binarysearch(...)</dt><dd><tt>binarysearch(a,v)</tt></dd></dl>
+ <dl><dt><a name="-take"><strong>take</strong></a>(...)</dt><dd><tt><a href="#-take">take</a>(a,&nbsp;indices,&nbsp;axis=0).&nbsp;&nbsp;Selects&nbsp;the&nbsp;elements&nbsp;in&nbsp;indices&nbsp;from&nbsp;array&nbsp;a&nbsp;along&nbsp;the&nbsp;given&nbsp;axis.</tt></dd></dl>
+ <dl><dt><a name="-zeros"><strong>zeros</strong></a>(...)</dt><dd><tt><a href="#-zeros">zeros</a>((d1,...,dn),typecode='l',savespace=0)&nbsp;will&nbsp;return&nbsp;a&nbsp;new&nbsp;array&nbsp;of&nbsp;shape&nbsp;(d1,...,dn)&nbsp;and&nbsp;type&nbsp;typecode&nbsp;with&nbsp;all&nbsp;it's&nbsp;entries&nbsp;initialized&nbsp;to&nbsp;zero.&nbsp;&nbsp;If&nbsp;savespace&nbsp;is&nbsp;nonzero&nbsp;the&nbsp;array&nbsp;will&nbsp;be&nbsp;a&nbsp;spacesaver&nbsp;array.</tt></dd></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>Character</strong> = 'c'<br>
+<strong>Complex</strong> = 'D'<br>
+<strong>Complex0</strong> = 'F'<br>
+<strong>Complex16</strong> = 'F'<br>
+<strong>Complex32</strong> = 'F'<br>
+<strong>Complex64</strong> = 'D'<br>
+<strong>Complex8</strong> = 'F'<br>
+<strong>Float</strong> = 'd'<br>
+<strong>Float0</strong> = 'f'<br>
+<strong>Float16</strong> = 'f'<br>
+<strong>Float32</strong> = 'f'<br>
+<strong>Float64</strong> = 'd'<br>
+<strong>Float8</strong> = 'f'<br>
+<strong>Int</strong> = 'l'<br>
+<strong>Int0</strong> = '1'<br>
+<strong>Int16</strong> = 's'<br>
+<strong>Int32</strong> = 'i'<br>
+<strong>Int8</strong> = '1'<br>
+<strong>LittleEndian</strong> = True<br>
+<strong>NewAxis</strong> = None<br>
+<strong>PyObject</strong> = 'O'<br>
+<strong>UInt</strong> = 'u'<br>
+<strong>UInt16</strong> = 'w'<br>
+<strong>UInt32</strong> = 'u'<br>
+<strong>UInt8</strong> = 'b'<br>
+<strong>UnsignedInt16</strong> = 'w'<br>
+<strong>UnsignedInt32</strong> = 'u'<br>
+<strong>UnsignedInt8</strong> = 'b'<br>
+<strong>UnsignedInteger</strong> = 'u'<br>
+<strong>absolute</strong> = &lt;ufunc 'absolute'&gt;<br>
+<strong>add</strong> = &lt;ufunc 'add'&gt;<br>
+<strong>arccos</strong> = &lt;ufunc 'arccos'&gt;<br>
+<strong>arccosh</strong> = &lt;ufunc 'arccosh'&gt;<br>
+<strong>arcsin</strong> = &lt;ufunc 'arcsin'&gt;<br>
+<strong>arcsinh</strong> = &lt;ufunc 'arcsinh'&gt;<br>
+<strong>arctan</strong> = &lt;ufunc 'arctan'&gt;<br>
+<strong>arctan2</strong> = &lt;ufunc 'arctan2'&gt;<br>
+<strong>arctanh</strong> = &lt;ufunc 'arctanh'&gt;<br>
+<strong>bitwise_and</strong> = &lt;ufunc 'bitwise_and'&gt;<br>
+<strong>bitwise_or</strong> = &lt;ufunc 'bitwise_or'&gt;<br>
+<strong>bitwise_xor</strong> = &lt;ufunc 'bitwise_xor'&gt;<br>
+<strong>ceil</strong> = &lt;ufunc 'ceil'&gt;<br>
+<strong>conjugate</strong> = &lt;ufunc 'conjugate'&gt;<br>
+<strong>cos</strong> = &lt;ufunc 'cos'&gt;<br>
+<strong>cosh</strong> = &lt;ufunc 'cosh'&gt;<br>
+<strong>divide</strong> = &lt;ufunc 'divide'&gt;<br>
+<strong>divide_safe</strong> = &lt;ufunc 'divide_safe'&gt;<br>
+<strong>e</strong> = 2.7182818284590451<br>
+<strong>equal</strong> = &lt;ufunc 'equal'&gt;<br>
+<strong>exp</strong> = &lt;ufunc 'exp'&gt;<br>
+<strong>fabs</strong> = &lt;ufunc 'fabs'&gt;<br>
+<strong>floor</strong> = &lt;ufunc 'floor'&gt;<br>
+<strong>floor_divide</strong> = &lt;ufunc 'floor_divide'&gt;<br>
+<strong>fmod</strong> = &lt;ufunc 'fmod'&gt;<br>
+<strong>greater</strong> = &lt;ufunc 'greater'&gt;<br>
+<strong>greater_equal</strong> = &lt;ufunc 'greater_equal'&gt;<br>
+<strong>hypot</strong> = &lt;ufunc 'hypot'&gt;<br>
+<strong>invert</strong> = &lt;ufunc 'invert'&gt;<br>
+<strong>left_shift</strong> = &lt;ufunc 'left_shift'&gt;<br>
+<strong>less</strong> = &lt;ufunc 'less'&gt;<br>
+<strong>less_equal</strong> = &lt;ufunc 'less_equal'&gt;<br>
+<strong>log</strong> = &lt;ufunc 'log'&gt;<br>
+<strong>log10</strong> = &lt;ufunc 'log10'&gt;<br>
+<strong>logical_and</strong> = &lt;ufunc 'logical_and'&gt;<br>
+<strong>logical_not</strong> = &lt;ufunc 'logical_not'&gt;<br>
+<strong>logical_or</strong> = &lt;ufunc 'logical_or'&gt;<br>
+<strong>logical_xor</strong> = &lt;ufunc 'logical_xor'&gt;<br>
+<strong>maximum</strong> = &lt;ufunc 'maximum'&gt;<br>
+<strong>minimum</strong> = &lt;ufunc 'minimum'&gt;<br>
+<strong>multiply</strong> = &lt;ufunc 'multiply'&gt;<br>
+<strong>negative</strong> = &lt;ufunc 'negative'&gt;<br>
+<strong>not_equal</strong> = &lt;ufunc 'not_equal'&gt;<br>
+<strong>pi</strong> = 3.1415926535897931<br>
+<strong>power</strong> = &lt;ufunc 'power'&gt;<br>
+<strong>remainder</strong> = &lt;ufunc 'remainder'&gt;<br>
+<strong>right_shift</strong> = &lt;ufunc 'right_shift'&gt;<br>
+<strong>sin</strong> = &lt;ufunc 'sin'&gt;<br>
+<strong>sinh</strong> = &lt;ufunc 'sinh'&gt;<br>
+<strong>sqrt</strong> = &lt;ufunc 'sqrt'&gt;<br>
+<strong>subtract</strong> = &lt;ufunc 'subtract'&gt;<br>
+<strong>tan</strong> = &lt;ufunc 'tan'&gt;<br>
+<strong>tanh</strong> = &lt;ufunc 'tanh'&gt;<br>
+<strong>true_divide</strong> = &lt;ufunc 'true_divide'&gt;<br>
+<strong>typecodes</strong> = {'Character': 'c', 'Complex': 'FD', 'Float': 'fd', 'Integer': '1sil', 'UnsignedInteger': 'bwu'}</td></tr></table>
+</body></html>

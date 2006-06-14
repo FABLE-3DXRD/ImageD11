@@ -16,7 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-from Numeric import * # transpose, matrixmulitply,Int, floor, sum
+from Numeric import transpose, matrixmultiply, Float, Int, floor, sum, zeros
 
 class grain:
     def __init__(self,ubi,translation=None):

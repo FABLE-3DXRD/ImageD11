@@ -54,12 +54,12 @@ class guifactors:
       self.factors.loadchis(filename)
 
    def saveobsdata(self):
-      
+      pass      
 
    def plotchi(self):
       # which one?
       self.parent.twodplotter.adddata(
-      	( "Chi file", twodplot.data(self.factors.x,self.factors.y[i],
+      	 "Chi file", twodplot.data(self.factors.x,self.factors.y[i],
 	{ "xlabel":"probably 2theta",
 	  "ylabel":"probably intensity",
 	  "title":"chifile %d"%(i) } ) )

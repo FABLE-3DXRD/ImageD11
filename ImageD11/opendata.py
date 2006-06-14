@@ -29,17 +29,21 @@ bytes???
 
 from data import data
 import gzip, bz2
-from Numeric import *
-
+import Numeric as N
 
 def opendata(filename):
    """
-   Guess the file type and return a data object
+   Guesses the file type and return a data object
+
+   Supports edf, edf.gz, edf.bz2, xye, epf, inp, chi 
+    ... otherwise tries bruker
    """
    f = filename.rstrip()
    if f[-3:]in ["edf", "EDF"] :
       return openedf(filename)
    if f[-7:] in [".edf.gz"]:
+      return openedf(filename)
+   if f[-8:] in [".edf.bz2"]:
       return openedf(filename)
    if f[-3:] in ["xye","epf","inp"]:
       return openxye(filename)
@@ -55,6 +59,7 @@ def opendata(filename):
 def makename(stem,num,extn,width=4):
    """
    Filename creation mydata1234.edf etc
+   eg stem + num + extn   ... with num being width wide, 
    """
    if width>0:
       fs="%s%0"+"%d"%(width)+"d%s"
@@ -64,6 +69,10 @@ def makename(stem,num,extn,width=4):
 
 
 def openchi(filename):
+   """
+   opens a chi file and returns a data object
+   2 columns in resulting array (x,y)
+   """
    h={}
    xy=[]
    h['columns']=2
@@ -75,11 +84,15 @@ def openchi(filename):
       except:
          pass # titles
       
-   a=array(xy,Float)
+   a=Numeric.array(xy,Numeric.Float)
    h['rows']=a.shape[1]
    return data(a,h)
    
 def openxye(filename):
+   """
+   opens an xye file and returns a data object
+   3 columns in resulting array (x,y,e)
+   """
    h={}
    xye=[]
    h['columns']=3
@@ -88,7 +101,7 @@ def openxye(filename):
          xye.append(map(float,line.split()))
       except:
          pass
-   a=array(xye)
+   a=Numeric,array(xye)
    h['rows']=a.shape[1]
    h['xye']=True
    return data(a,h)
@@ -114,17 +127,17 @@ def readbytestream(file,offset,x,y,nbytespp,datatype='int',signed='n',
    tin="dunno"
    len=nbytespp*x*y # bytes per pixel times number of pixels
    if datatype=='int' and signed=='n':
-      if nbytespp==1 : tin=UInt8
-      if nbytespp==2 : tin=UInt16
-      if nbytespp==4 : tin=UInt32
+      if nbytespp==1 : tin=Numeric.UInt8
+      if nbytespp==2 : tin=Numeric.UInt16
+      if nbytespp==4 : tin=Numeric.UInt32
    if datatype=='int' and signed=='y':
-      if nbytespp==1 : tin=Int8
-      if nbytespp==2 : tin=Int16
-      if nbytespp==4 : tin=Int32
+      if nbytespp==1 : tin=Numeric.Int8
+      if nbytespp==2 : tin=Numeric.Int16
+      if nbytespp==4 : tin=Numeric.Int32
    if datatype=='float':
-      tin=Float32
+      tin=Numeric.Float32
    if datatype=='double' :
-      tin=Float64
+      tin=Numeric.Float64
    if tin=="dunno" :
       raise SyntaxError, "Did not understand what type to try to read"
    opened=0
@@ -135,9 +148,11 @@ def readbytestream(file,offset,x,y,nbytespp,datatype='int',signed='n',
       f=file
    f.seek(offset)
    if swap=='y':
-      ar=array(reshape(byteswapped(fromstring(f.read(len),tin)),(x,y)),typeout)
+      ar=Numeric.array(Numeric.reshape(
+         Numeric.byteswapped(Numeric.fromstring(f.read(len),tin)),(x,y)),typeout)
    else:   
-      ar=array(reshape(fromstring(f.read(len),tin),(x,y)),typeout)
+      ar=Numeric.array(Numeric.reshape(
+                             Numeric.fromstring(f.read(len),tin) ,(x,y)),typeout)
    if(opened):f.close()
    return(ar)
 
@@ -217,7 +232,7 @@ def readbruker(file):
    no=int(Header['NOVERFL'])        # now process the overflows
    if no>0:   # Read in the overflows
        # need at least Int32 sized data I guess - can reach 2^21
-       data=data.astype(UInt32)
+       data=data.astype(Numeric.UInt32)
        # 16 character overflows, 9 characters of intensity, 7 character position
        for i in range(no):
           ov=f.read(16)
@@ -234,10 +249,17 @@ def readbruker(file):
 
 
 def openbruker(filename):
+   """
+   Reads a bruker file into a data object
+   """
    h,d=readbruker(filename)
    return data(d,h)
 
 def edfheader(file):
+   """
+   Reads the header of edf files into a dictionary
+   file can be fileobject or filename
+   """
    if type(file)==type("string"):
       f=open(filename,"rb")
       opened=1
@@ -283,6 +305,12 @@ def edfheader(file):
    return hd
 
 def openedf(filename):
+   """
+   Opens edf files returning data objects
+   Can be gzipped or bzipped
+
+   So far only UnsignedShort (eg frelon) or FLOAT (eg fit2d)
+   """
    try:
       if filename[-3:] == ".gz":
          f=gzip.GzipFile(filename,"rb")
@@ -300,6 +328,7 @@ def openedf(filename):
             print "Cannot manage to open %s"%(filename)
             raise
    hd=edfheader(f)
+   # TODO : USE READBYTESTREAM
    try:
       # seek back from the end of the file - fails on gzipped so read all
       datastring=f.read()[-int(hd["Size"]):] # all of the data
@@ -309,17 +338,17 @@ def openedf(filename):
    f.close()
    # Convert datastring to Numeric array
    numerictype = "dunno"
-   if hd["DataType"]=="UnsignedShort": numerictype=UInt16
-   if hd["DataType"]=="FLOAT": numerictype=Float32
+   if hd["DataType"]=="UnsignedShort": numerictype=Numeric.UInt16
+   if hd["DataType"]=="FLOAT": numerictype=Numeric.Float32
    if numerictype == "dunno":
       raise TypeError("Unimplemented edf filetype")
    if hd["ByteOrder"]=="LowByteFirst": 
-      ar=reshape(
-            fromstring(datastring,numerictype),
+      ar=Numeric.reshape(
+            Numeric.fromstring(datastring,numerictype),
             (hd["columns"],hd["rows"]) )
    else:
-      ar=reshape(
-            fromstring(datastring,numerictype).byteswapped(),
+      ar=Numeric.reshape(
+            Numeric.fromstring(datastring,numerictype).byteswapped(),
             (hd["columns"],hd["rows"]) )
    return data(ar,hd)
 
@@ -335,16 +364,16 @@ if __name__=="__main__":
    print "Time to read file =",t2-t2,"/s"
    print "Rows              =",testdata.header['rows']
    print "Columns           =",testdata.header['columns']
-   print "Maximum           =",maximum.reduce(ravel(testdata.data))
-   print "Minimum           =",minimum.reduce(ravel(testdata.data))
+   print "Maximum           =",Numeric.maximum.reduce(Numeric.ravel(testdata.data))
+   print "Minimum           =",Numeric.minimum.reduce(Numeric.ravel(testdata.data))
    t3=time.time()
    print "Time native ops   =",t3-t2,"/s"
-   s =sum( ravel(testdata.data).astype(Float32) )  # 16 bit overflows
-   sq=sum( pow( ravel(testdata.data).astype(Float32), 2) )
+   s =sum( Numeric.ravel(testdata.data).astype(Numeric.Float32) )  # 16 bit overflows
+   sq=sum( Numeric.pow( ravel(testdata.data).astype(Numeric.Float32), 2) )
    n=testdata.header['rows']*testdata.header['columns']
    print "Sum               =",s
    print "Average           =",s/n
-   print "Variance          =",sqrt(sq/n - (s/n)*(s/n))
+   print "Variance          =",Numeric.sqrt(sq/n - (s/n)*(s/n))
    t4=time.time()
    print "Time float ops    =",t4-t3,"/s"
    print "Total run time    =",t4-t1,"/s"

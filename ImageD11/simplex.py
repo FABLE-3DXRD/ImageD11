@@ -1,5 +1,21 @@
 #!/usr/bin/env python
 # 
+
+
+""" Simplex - a regression method for arbitrary nonlinear function minimization
+
+Simplex minimizes an arbitrary nonlinear function of N variables by the
+Nelder-Mead Simplex method as described in:
+
+Nelder, J.A. and Mead, R., "A Simplex Method for Function Minimization",
+   Computer Journal, Vol. 7, 1965, pp. 308-313.
+
+It makes no assumptions about the smoothness of the function being minimized.
+It converges to a local minimum which may or may not be the global minimum
+depending on the initial guess used as a starting point.
+
+
+
 # Copyright (c) 2001 Vivake Gupta (v@omniscia.org).  All rights reserved.
 # 
 # This program is free software; you can redistribute it and/or
@@ -23,18 +39,6 @@
 # Modified (debugged?) 7/16/2004 Michele Vallisneri (vallis@vallis.org)
 
 # Copied into ImageD11 by Jon Wright - This works really really well!!!
-
-""" Simplex - a regression method for arbitrary nonlinear function minimization
-
-Simplex minimizes an arbitrary nonlinear function of N variables by the
-Nelder-Mead Simplex method as described in:
-
-Nelder, J.A. and Mead, R., "A Simplex Method for Function Minimization",
-   Computer Journal, Vol. 7, 1965, pp. 308-313.
-
-It makes no assumptions about the smoothness of the function being minimized.
-It converges to a local minimum which may or may not be the global minimum
-depending on the initial guess used as a starting point.
 """
 
 import math

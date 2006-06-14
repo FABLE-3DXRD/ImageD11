@@ -28,6 +28,9 @@ import Numeric
 from math import sqrt, pi
 
 def make_ds_list(cell,limit=2.):
+    """
+    Generates a list of d-spacings
+    """
     print "Generating hkls with unit cell:", cell
     cell.makerings(limit)
     ds_list=[]
@@ -54,6 +57,10 @@ def make_ds_list(cell,limit=2.):
     return ds_list
 
 def get_ds_string(g,ds_list):
+    """
+    Attempt to emulate the graindex (hkl) syntax. 
+    Obviously you would not want a (10,0,0) peak!
+    """
     length = sqrt(g[0]*g[0]+g[1]*g[1]+g[2]*g[2])
     # this is 1/d
     min_diff = abs(length - ds_list[0][0])
@@ -73,7 +80,6 @@ def write_graindex_gv(outfilename,gv,tth,eta,omega,intensity,unitcell):
     call with array of gvectors, tth, eta and omega vals
 
     Using an indexing object to get the ring assignments
-    
     """
     outputfile = open(outfilename,"w")
     ds_list=make_ds_list(unitcell) #

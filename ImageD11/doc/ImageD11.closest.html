@@ -1,0 +1,62 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module ImageD11.closest</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.closest</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python24/lib/site-packages/imaged11/closest.pyd">c:\python24\lib\site-packages\imaged11\closest.pyd</a></font></td></tr></table>
+    <p><tt>/*&nbsp;*******************************************************************<br>
+*&nbsp;closest.c&nbsp;&nbsp;Two&nbsp;useful&nbsp;functions&nbsp;for&nbsp;indexing&nbsp;grains&nbsp;<br>
+*<br>
+*&nbsp;1.&nbsp;From&nbsp;python:&nbsp;<a href="#-closest">closest</a>(cosines_allowed,&nbsp;cosine_measured)<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;Take&nbsp;1&nbsp;peak&nbsp;with&nbsp;hkl's&nbsp;assigned,&nbsp;compute&nbsp;the&nbsp;cosines&nbsp;to<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;another&nbsp;powder&nbsp;ring&nbsp;(angles&nbsp;between&nbsp;this&nbsp;peak&nbsp;and&nbsp;peaks&nbsp;in<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;that&nbsp;ring).&nbsp;This&nbsp;extension&nbsp;finds&nbsp;the&nbsp;best&nbsp;peak&nbsp;in&nbsp;the<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;other&nbsp;ring&nbsp;to&nbsp;pair&nbsp;up&nbsp;with.<br>
+*<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;More&nbsp;generally&nbsp;<a href="#-closest">closest</a>(array,&nbsp;values)&nbsp;finds&nbsp;the&nbsp;closest<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;item&nbsp;in&nbsp;values&nbsp;to&nbsp;one&nbsp;of&nbsp;the&nbsp;values&nbsp;in&nbsp;array.&nbsp;&nbsp;Returns&nbsp;the<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;difference&nbsp;and&nbsp;the&nbsp;index&nbsp;of&nbsp;the&nbsp;closest&nbsp;thing&nbsp;it&nbsp;finds.<br>
+*<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;Both&nbsp;arguments&nbsp;should&nbsp;be&nbsp;one&nbsp;dimensional&nbsp;Numeric&nbsp;arrays<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;of&nbsp;type&nbsp;Numeric.Float<br>
+*<br>
+*&nbsp;2.&nbsp;From&nbsp;python:&nbsp;<a href="#-score">score</a>(ubi,&nbsp;gv,&nbsp;tol)&nbsp;where&nbsp;ubi&nbsp;is&nbsp;an&nbsp;orientation<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;matrix&nbsp;and&nbsp;gv&nbsp;are&nbsp;an&nbsp;array&nbsp;of&nbsp;g-vectors.&nbsp;Returns&nbsp;the&nbsp;number<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;of&nbsp;g-vectors&nbsp;which&nbsp;have&nbsp;integer&nbsp;hkl&nbsp;peaks&nbsp;within&nbsp;tolerance<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;tol.&nbsp;Uses&nbsp;the&nbsp;conv_double_to_int_fast&nbsp;function&nbsp;in&nbsp;here&nbsp;for&nbsp;<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;factor&nbsp;of&nbsp;!EIGHT!&nbsp;speed&nbsp;increase&nbsp;compared&nbsp;to&nbsp;rounding&nbsp;in&nbsp;<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;C.&nbsp;In&nbsp;fact&nbsp;this&nbsp;gives&nbsp;the&nbsp;nearest&nbsp;even&nbsp;integer,&nbsp;instead<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;of&nbsp;the&nbsp;nearest&nbsp;integer,&nbsp;but&nbsp;we&nbsp;don't&nbsp;care,&nbsp;as&nbsp;a&nbsp;peak&nbsp;having<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;hkl&nbsp;of&nbsp;0.5&nbsp;is&nbsp;nowhere&nbsp;near&nbsp;being&nbsp;indexed&nbsp;anyway.<br>
+*<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;and&nbsp;integer&nbsp;-&nbsp;number&nbsp;of&nbsp;peaks&nbsp;indexed<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;UBI&nbsp;is&nbsp;a&nbsp;3x3&nbsp;Numeric.Float&nbsp;array&nbsp;(figure&nbsp;out&nbsp;the&nbsp;transposing&nbsp;yourself)<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;GV&nbsp;is&nbsp;a&nbsp;nx3&nbsp;Numeric.Float&nbsp;array,&nbsp;and&nbsp;you&nbsp;should&nbsp;try&nbsp;to&nbsp;make&nbsp;the&nbsp;3&nbsp;<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;be&nbsp;the&nbsp;fast&nbsp;index&nbsp;for&nbsp;best&nbsp;performance<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+*&nbsp;3.&nbsp;From&nbsp;python:&nbsp;same&nbsp;as&nbsp;score,&nbsp;I&nbsp;hope,&nbsp;but&nbsp;ubi&nbsp;is&nbsp;overwritten<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;with&nbsp;refined&nbsp;matrix&nbsp;following&nbsp;paciorek&nbsp;algorithm&nbsp;which&nbsp;is&nbsp;<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;in&nbsp;indexing.py<br>
+*&nbsp;&nbsp;&nbsp;&nbsp;<br>
+*&nbsp;******************************************************************&nbsp;*/</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-closest"><strong>closest</strong></a>(...)</dt><dd><tt>int,float&nbsp;<a href="#-closest">closest</a>(x,v)<br>
+Find&nbsp;element&nbsp;in&nbsp;x&nbsp;closest&nbsp;to&nbsp;one&nbsp;in&nbsp;v<br>
+x,v&nbsp;1D&nbsp;flat&nbsp;Float&nbsp;arrays</tt></dd></dl>
+ <dl><dt><a name="-score"><strong>score</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#-score">score</a>(ubi,gv,tol)<br>
+Find&nbsp;number&nbsp;of&nbsp;gv&nbsp;which&nbsp;are&nbsp;integer&nbsp;h&nbsp;within&nbsp;tol</tt></dd></dl>
+ <dl><dt><a name="-score_and_refine"><strong>score_and_refine</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#-score_and_refine">score_and_refine</a>(ubi,gv,tol)<br>
+Find&nbsp;number&nbsp;of&nbsp;gv&nbsp;which&nbsp;are&nbsp;integer&nbsp;h&nbsp;within&nbsp;tol&nbsp;and&nbsp;overwrite&nbsp;UB&nbsp;with&nbsp;refined</tt></dd></dl>
+</td></tr></table>
+</body></html>

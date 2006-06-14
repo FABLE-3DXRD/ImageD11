@@ -1,0 +1,205 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module ImageD11.transform</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.transform</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python24/lib/site-packages/imaged11/transform.py">c:\python24\lib\site-packages\imaged11\transform.py</a></font></td></tr></table>
+    <p><tt>#&nbsp;ImageD11_v0.4&nbsp;Software&nbsp;for&nbsp;beamline&nbsp;ID11<br>
+#&nbsp;Copyright&nbsp;(C)&nbsp;2005&nbsp;&nbsp;Jon&nbsp;Wright<br>
+#<br>
+#&nbsp;This&nbsp;program&nbsp;is&nbsp;free&nbsp;software;&nbsp;you&nbsp;can&nbsp;redistribute&nbsp;it&nbsp;and/or&nbsp;modify<br>
+#&nbsp;it&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;GNU&nbsp;General&nbsp;Public&nbsp;License&nbsp;as&nbsp;published&nbsp;by<br>
+#&nbsp;the&nbsp;Free&nbsp;Software&nbsp;Foundation;&nbsp;either&nbsp;version&nbsp;2&nbsp;of&nbsp;the&nbsp;License,&nbsp;or<br>
+#&nbsp;(at&nbsp;your&nbsp;option)&nbsp;any&nbsp;later&nbsp;version.<br>
+#<br>
+#&nbsp;This&nbsp;program&nbsp;is&nbsp;distributed&nbsp;in&nbsp;the&nbsp;hope&nbsp;that&nbsp;it&nbsp;will&nbsp;be&nbsp;useful,<br>
+#&nbsp;but&nbsp;WITHOUT&nbsp;ANY&nbsp;WARRANTY;&nbsp;without&nbsp;even&nbsp;the&nbsp;implied&nbsp;warranty&nbsp;of<br>
+#&nbsp;MERCHANTABILITY&nbsp;or&nbsp;FITNESS&nbsp;FOR&nbsp;A&nbsp;PARTICULAR&nbsp;PURPOSE.&nbsp;&nbsp;See&nbsp;the<br>
+#&nbsp;GNU&nbsp;General&nbsp;Public&nbsp;License&nbsp;for&nbsp;more&nbsp;details.<br>
+#<br>
+#&nbsp;You&nbsp;should&nbsp;have&nbsp;received&nbsp;a&nbsp;copy&nbsp;of&nbsp;the&nbsp;GNU&nbsp;General&nbsp;Public&nbsp;License<br>
+#&nbsp;along&nbsp;with&nbsp;this&nbsp;program;&nbsp;if&nbsp;not,&nbsp;write&nbsp;to&nbsp;the&nbsp;Free&nbsp;Software<br>
+#&nbsp;Foundation,&nbsp;Inc.,&nbsp;59&nbsp;Temple&nbsp;Place,&nbsp;Suite&nbsp;330,&nbsp;Boston,&nbsp;MA&nbsp;&nbsp;02111-1307&nbsp;&nbsp;USA</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="copy.html">copy</a><br>
+<a href="copy_reg.html">copy_reg</a><br>
+</td><td width="25%" valign=top><a href="math.html">math</a><br>
+<a href="multiarray.html">multiarray</a><br>
+</td><td width="25%" valign=top><a href="pickle.html">pickle</a><br>
+<a href="string.html">string</a><br>
+</td><td width="25%" valign=top><a href="types.html">types</a><br>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-arange"><strong>arange</strong></a>(...)</dt><dd><tt><a href="#-arange">arange</a>(start,&nbsp;stop=None,&nbsp;step=1,&nbsp;typecode=None)<br>
+&nbsp;<br>
+&nbsp;Just&nbsp;like&nbsp;range()&nbsp;except&nbsp;it&nbsp;returns&nbsp;an&nbsp;array&nbsp;whose&nbsp;type&nbsp;can&nbsp;be<br>
+specified&nbsp;by&nbsp;the&nbsp;keyword&nbsp;argument&nbsp;typecode.</tt></dd></dl>
+ <dl><dt><a name="-array"><strong>array</strong></a>(...)</dt><dd><tt><a href="#-array">array</a>(sequence,&nbsp;typecode=None,&nbsp;copy=1,&nbsp;savespace=0)&nbsp;will&nbsp;return&nbsp;a&nbsp;new&nbsp;array&nbsp;formed&nbsp;from&nbsp;the&nbsp;given&nbsp;(potentially&nbsp;nested)&nbsp;sequence&nbsp;with&nbsp;type&nbsp;given&nbsp;by&nbsp;typecode.&nbsp;&nbsp;If&nbsp;no&nbsp;typecode&nbsp;is&nbsp;given,&nbsp;then&nbsp;the&nbsp;type&nbsp;will&nbsp;be&nbsp;determined&nbsp;as&nbsp;the&nbsp;minimum&nbsp;type&nbsp;required&nbsp;to&nbsp;hold&nbsp;the&nbsp;objects&nbsp;in&nbsp;sequence.&nbsp;&nbsp;If&nbsp;copy&nbsp;is&nbsp;zero&nbsp;and&nbsp;sequence&nbsp;is&nbsp;already&nbsp;an&nbsp;array,&nbsp;a&nbsp;reference&nbsp;will&nbsp;be&nbsp;returned.&nbsp;&nbsp;If&nbsp;savespace&nbsp;is&nbsp;nonzero,&nbsp;the&nbsp;new&nbsp;array&nbsp;will&nbsp;maintain&nbsp;its&nbsp;precision&nbsp;in&nbsp;operations.</tt></dd></dl>
+ <dl><dt><a name="-arrayrange"><strong>arrayrange</strong></a> = arange(...)</dt><dd><tt><a href="#-arange">arange</a>(start,&nbsp;stop=None,&nbsp;step=1,&nbsp;typecode=None)<br>
+&nbsp;<br>
+&nbsp;Just&nbsp;like&nbsp;range()&nbsp;except&nbsp;it&nbsp;returns&nbsp;an&nbsp;array&nbsp;whose&nbsp;type&nbsp;can&nbsp;be<br>
+specified&nbsp;by&nbsp;the&nbsp;keyword&nbsp;argument&nbsp;typecode.</tt></dd></dl>
+ <dl><dt><a name="-choose"><strong>choose</strong></a>(...)</dt><dd><tt><a href="#-choose">choose</a>(a,&nbsp;(b1,b2,...))</tt></dd></dl>
+ <dl><dt><a name="-compute_g_vectors"><strong>compute_g_vectors</strong></a>(tth, eta, omega, wavelength, wedge<font color="#909090">=0.0</font>)</dt><dd><tt>Generates&nbsp;spot&nbsp;positions&nbsp;in&nbsp;reciprocal&nbsp;space&nbsp;from&nbsp;twotheta,&nbsp;wavelength,&nbsp;omega&nbsp;and&nbsp;eta<br>
+Assumes&nbsp;single&nbsp;axis&nbsp;vertical<br>
+...&nbsp;unless&nbsp;a&nbsp;wedge&nbsp;angle&nbsp;is&nbsp;specified</tt></dd></dl>
+ <dl><dt><a name="-compute_lorentz_factors"><strong>compute_lorentz_factors</strong></a>(args)</dt><dd><tt>From&nbsp;Kabsch&nbsp;1988&nbsp;J.&nbsp;Appl.&nbsp;Cryst.&nbsp;21&nbsp;619<br>
+&nbsp;<br>
+Multiply&nbsp;the&nbsp;intensities&nbsp;by:<br>
+Lorentz&nbsp;=&nbsp;|&nbsp;S.(u&nbsp;x&nbsp;S_0)|&nbsp;/&nbsp;|S|.|S_0|<br>
+S&nbsp;=&nbsp;scattered&nbsp;vector<br>
+S_0&nbsp;=&nbsp;incident&nbsp;vector<br>
+u&nbsp;=&nbsp;unit&nbsp;vector&nbsp;along&nbsp;rotation&nbsp;axis</tt></dd></dl>
+ <dl><dt><a name="-compute_polarisation_factors"><strong>compute_polarisation_factors</strong></a>(args)</dt><dd><tt>From&nbsp;Kabsch&nbsp;1988&nbsp;J.&nbsp;Appl.&nbsp;Cryst.&nbsp;21&nbsp;619<br>
+&nbsp;<br>
+DIVIDE&nbsp;the&nbsp;intensities&nbsp;by:<br>
+&lt;sin2&nbsp;psi&gt;&nbsp;=&nbsp;(&nbsp;1&nbsp;-&nbsp;2p)&nbsp;[&nbsp;1&nbsp;-&nbsp;(n.S/|S|^2)&nbsp;]&nbsp;+&nbsp;p&nbsp;{&nbsp;1&nbsp;+&nbsp;[S.S_0/(|S||S_0|)^2]^2}<br>
+&nbsp;<br>
+p&nbsp;=&nbsp;degree&nbsp;of&nbsp;polarisation&nbsp;(sync&nbsp;=&nbsp;1,&nbsp;tube&nbsp;=&nbsp;0.5&nbsp;,&nbsp;mono&nbsp;+&nbsp;tube&nbsp;in&nbsp;between)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;or&nbsp;"probability&nbsp;of&nbsp;finding&nbsp;electric&nbsp;field&nbsp;vector&nbsp;in&nbsp;plane&nbsp;having&nbsp;normal,&nbsp;n"<br>
+S&nbsp;=&nbsp;scattered&nbsp;vector<br>
+S_0&nbsp;=&nbsp;incident&nbsp;vector<br>
+n&nbsp;=&nbsp;normal&nbsp;to&nbsp;polarisation&nbsp;plane,&nbsp;typically&nbsp;perpendicular&nbsp;to&nbsp;S_0</tt></dd></dl>
+ <dl><dt><a name="-compute_tth_eta"><strong>compute_tth_eta</strong></a>(peaks, yc, ys, ty, zc, zs, tz, dist, detector_orientation<font color="#909090">=((1, 0), (0, 1))</font>, crystal_translation<font color="#909090">=None</font>, omega<font color="#909090">=None</font>, axis_orientation1<font color="#909090">=0.0</font>, axis_orientation2<font color="#909090">=0.0</font>)</dt><dd><tt>Peaks&nbsp;is&nbsp;a&nbsp;2&nbsp;d&nbsp;array&nbsp;of&nbsp;x,y<br>
+yc&nbsp;is&nbsp;the&nbsp;centre&nbsp;in&nbsp;y<br>
+ys&nbsp;is&nbsp;the&nbsp;y&nbsp;pixel&nbsp;size&nbsp;<br>
+ty&nbsp;is&nbsp;the&nbsp;tilt&nbsp;around&nbsp;y<br>
+zc&nbsp;is&nbsp;the&nbsp;centre&nbsp;in&nbsp;z<br>
+zs&nbsp;is&nbsp;the&nbsp;z&nbsp;pixel&nbsp;size<br>
+tz&nbsp;is&nbsp;the&nbsp;tilt&nbsp;around&nbsp;z<br>
+dist&nbsp;is&nbsp;the&nbsp;sample&nbsp;-&nbsp;detector&nbsp;distance<br>
+detector_orientation&nbsp;is&nbsp;a&nbsp;matrix&nbsp;to&nbsp;apply&nbsp;to&nbsp;peaks&nbsp;arg&nbsp;to&nbsp;get&nbsp;ImageD11&nbsp;convention<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((&nbsp;0,&nbsp;1),(&nbsp;1,&nbsp;0))&nbsp;for&nbsp;(&nbsp;y,&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((-1,&nbsp;0),(&nbsp;0,&nbsp;1))&nbsp;for&nbsp;(-x,&nbsp;y)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((&nbsp;0,-1),(-1,&nbsp;0))&nbsp;for&nbsp;(-y,-x)<br>
+&nbsp;&nbsp;etc...<br>
+crystal_translation&nbsp;is&nbsp;the&nbsp;position&nbsp;of&nbsp;the&nbsp;grain&nbsp;giving&nbsp;rise&nbsp;to&nbsp;a&nbsp;diffraction&nbsp;spot<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;in&nbsp;x,y,z&nbsp;ImageD11&nbsp;co-ordinates<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x,y&nbsp;with&nbsp;respect&nbsp;to&nbsp;axis&nbsp;of&nbsp;rotation&nbsp;and&nbsp;or&nbsp;beam&nbsp;centre&nbsp;??<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;z&nbsp;with&nbsp;respect&nbsp;to&nbsp;beam&nbsp;height,&nbsp;z&nbsp;centre<br>
+omega&nbsp;data&nbsp;needed&nbsp;if&nbsp;crystal&nbsp;translations&nbsp;used</tt></dd></dl>
+ <dl><dt><a name="-cross_correlate"><strong>cross_correlate</strong></a>(...)</dt><dd><tt><a href="#-cross_correlate">cross_correlate</a>(a,v,&nbsp;mode=0)</tt></dd></dl>
+ <dl><dt><a name="-degrees"><strong>degrees</strong></a>(x)</dt><dd><tt>Convenience&nbsp;function</tt></dd></dl>
+ <dl><dt><a name="-empty"><strong>empty</strong></a>(...)</dt><dd><tt><a href="#-empty">empty</a>((d1,...,dn),typecode='l',savespace=0)&nbsp;will&nbsp;return&nbsp;a&nbsp;new&nbsp;array<br>
+of&nbsp;shape&nbsp;(d1,...,dn)&nbsp;and&nbsp;given&nbsp;type&nbsp;with&nbsp;all&nbsp;its&nbsp;entries&nbsp;uninitialized.&nbsp;&nbsp;If&nbsp;savespace&nbsp;is<br>
+nonzero,&nbsp;the&nbsp;array&nbsp;will&nbsp;be&nbsp;a&nbsp;spacesaver&nbsp;array.&nbsp;&nbsp;This&nbsp;can&nbsp;be&nbsp;faster&nbsp;than&nbsp;zeros.</tt></dd></dl>
+ <dl><dt><a name="-fromstring"><strong>fromstring</strong></a>(...)</dt><dd><tt><a href="#-fromstring">fromstring</a>(string,&nbsp;typecode='l',&nbsp;count=-1)&nbsp;returns&nbsp;a&nbsp;new&nbsp;1d&nbsp;array&nbsp;initialized&nbsp;from&nbsp;the&nbsp;raw&nbsp;binary&nbsp;data&nbsp;in&nbsp;string.&nbsp;&nbsp;If&nbsp;count&nbsp;is&nbsp;positive,&nbsp;the&nbsp;new&nbsp;array&nbsp;will&nbsp;have&nbsp;count&nbsp;elements,&nbsp;otherwise&nbsp;it's&nbsp;size&nbsp;is&nbsp;determined&nbsp;by&nbsp;the&nbsp;size&nbsp;of&nbsp;string.</tt></dd></dl>
+ <dl><dt><a name="-old_uncompute_g_vectors"><strong>old_uncompute_g_vectors</strong></a>(gv, wavelength, wedge<font color="#909090">=0.0</font>)</dt><dd><tt>Given&nbsp;g-vectors&nbsp;compute&nbsp;tth,eta,omega<br>
+assert&nbsp;<a href="#-uncompute_g_vectors">uncompute_g_vectors</a>(compute_g_vector(tth,eta,omega))==tth,eta,omega</tt></dd></dl>
+ <dl><dt><a name="-radians"><strong>radians</strong></a>(x)</dt><dd><tt>Convenience&nbsp;function</tt></dd></dl>
+ <dl><dt><a name="-reshape"><strong>reshape</strong></a>(...)</dt><dd><tt><a href="#-reshape">reshape</a>(a,&nbsp;(d1,&nbsp;d2,&nbsp;...,&nbsp;dn)).&nbsp;&nbsp;Change&nbsp;the&nbsp;shape&nbsp;of&nbsp;a&nbsp;to&nbsp;be&nbsp;an&nbsp;n-dimensional&nbsp;array&nbsp;with&nbsp;dimensions&nbsp;given&nbsp;by&nbsp;d1...dn.&nbsp;&nbsp;Note:&nbsp;the&nbsp;size&nbsp;specified&nbsp;for&nbsp;the&nbsp;new&nbsp;array&nbsp;must&nbsp;be&nbsp;exactly&nbsp;equal&nbsp;to&nbsp;the&nbsp;size&nbsp;of&nbsp;the&nbsp;&nbsp;old&nbsp;one&nbsp;or&nbsp;an&nbsp;error&nbsp;will&nbsp;occur.</tt></dd></dl>
+ <dl><dt><a name="-searchsorted"><strong>searchsorted</strong></a> = binarysearch(...)</dt><dd><tt>binarysearch(a,v)</tt></dd></dl>
+ <dl><dt><a name="-take"><strong>take</strong></a>(...)</dt><dd><tt><a href="#-take">take</a>(a,&nbsp;indices,&nbsp;axis=0).&nbsp;&nbsp;Selects&nbsp;the&nbsp;elements&nbsp;in&nbsp;indices&nbsp;from&nbsp;array&nbsp;a&nbsp;along&nbsp;the&nbsp;given&nbsp;axis.</tt></dd></dl>
+ <dl><dt><a name="-uncompute_g_vectors"><strong>uncompute_g_vectors</strong></a>(g, wavelength, wedge<font color="#909090">=0.0</font>)</dt><dd><tt>Given&nbsp;g-vectors&nbsp;compute&nbsp;tth,eta,omega<br>
+assert&nbsp;<a href="#-uncompute_g_vectors">uncompute_g_vectors</a>(compute_g_vector(tth,eta,omega))==tth,eta,omega</tt></dd></dl>
+ <dl><dt><a name="-uncompute_one_g_vector"><strong>uncompute_one_g_vector</strong></a>(gv, wavelength, wedge<font color="#909090">=0.0</font>)</dt><dd><tt>Given&nbsp;g-vectors&nbsp;compute&nbsp;tth,eta,omega<br>
+assert&nbsp;<a href="#-uncompute_g_vectors">uncompute_g_vectors</a>(compute_g_vector(tth,eta,omega))==tth,eta,omega</tt></dd></dl>
+ <dl><dt><a name="-zeros"><strong>zeros</strong></a>(...)</dt><dd><tt><a href="#-zeros">zeros</a>((d1,...,dn),typecode='l',savespace=0)&nbsp;will&nbsp;return&nbsp;a&nbsp;new&nbsp;array&nbsp;of&nbsp;shape&nbsp;(d1,...,dn)&nbsp;and&nbsp;type&nbsp;typecode&nbsp;with&nbsp;all&nbsp;it's&nbsp;entries&nbsp;initialized&nbsp;to&nbsp;zero.&nbsp;&nbsp;If&nbsp;savespace&nbsp;is&nbsp;nonzero&nbsp;the&nbsp;array&nbsp;will&nbsp;be&nbsp;a&nbsp;spacesaver&nbsp;array.</tt></dd></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>Character</strong> = 'c'<br>
+<strong>Complex</strong> = 'D'<br>
+<strong>Complex0</strong> = 'F'<br>
+<strong>Complex16</strong> = 'F'<br>
+<strong>Complex32</strong> = 'F'<br>
+<strong>Complex64</strong> = 'D'<br>
+<strong>Complex8</strong> = 'F'<br>
+<strong>Float</strong> = 'd'<br>
+<strong>Float0</strong> = 'f'<br>
+<strong>Float16</strong> = 'f'<br>
+<strong>Float32</strong> = 'f'<br>
+<strong>Float64</strong> = 'd'<br>
+<strong>Float8</strong> = 'f'<br>
+<strong>Int</strong> = 'l'<br>
+<strong>Int0</strong> = '1'<br>
+<strong>Int16</strong> = 's'<br>
+<strong>Int32</strong> = 'i'<br>
+<strong>Int8</strong> = '1'<br>
+<strong>LittleEndian</strong> = True<br>
+<strong>NewAxis</strong> = None<br>
+<strong>PyObject</strong> = 'O'<br>
+<strong>UInt</strong> = 'u'<br>
+<strong>UInt16</strong> = 'w'<br>
+<strong>UInt32</strong> = 'u'<br>
+<strong>UInt8</strong> = 'b'<br>
+<strong>UnsignedInt16</strong> = 'w'<br>
+<strong>UnsignedInt32</strong> = 'u'<br>
+<strong>UnsignedInt8</strong> = 'b'<br>
+<strong>UnsignedInteger</strong> = 'u'<br>
+<strong>absolute</strong> = &lt;ufunc 'absolute'&gt;<br>
+<strong>add</strong> = &lt;ufunc 'add'&gt;<br>
+<strong>arccos</strong> = &lt;ufunc 'arccos'&gt;<br>
+<strong>arccosh</strong> = &lt;ufunc 'arccosh'&gt;<br>
+<strong>arcsin</strong> = &lt;ufunc 'arcsin'&gt;<br>
+<strong>arcsinh</strong> = &lt;ufunc 'arcsinh'&gt;<br>
+<strong>arctan</strong> = &lt;ufunc 'arctan'&gt;<br>
+<strong>arctan2</strong> = &lt;ufunc 'arctan2'&gt;<br>
+<strong>arctanh</strong> = &lt;ufunc 'arctanh'&gt;<br>
+<strong>bitwise_and</strong> = &lt;ufunc 'bitwise_and'&gt;<br>
+<strong>bitwise_or</strong> = &lt;ufunc 'bitwise_or'&gt;<br>
+<strong>bitwise_xor</strong> = &lt;ufunc 'bitwise_xor'&gt;<br>
+<strong>ceil</strong> = &lt;ufunc 'ceil'&gt;<br>
+<strong>conjugate</strong> = &lt;ufunc 'conjugate'&gt;<br>
+<strong>cos</strong> = &lt;ufunc 'cos'&gt;<br>
+<strong>cosh</strong> = &lt;ufunc 'cosh'&gt;<br>
+<strong>divide</strong> = &lt;ufunc 'divide'&gt;<br>
+<strong>divide_safe</strong> = &lt;ufunc 'divide_safe'&gt;<br>
+<strong>e</strong> = 2.7182818284590451<br>
+<strong>equal</strong> = &lt;ufunc 'equal'&gt;<br>
+<strong>exp</strong> = &lt;ufunc 'exp'&gt;<br>
+<strong>fabs</strong> = &lt;ufunc 'fabs'&gt;<br>
+<strong>floor</strong> = &lt;ufunc 'floor'&gt;<br>
+<strong>floor_divide</strong> = &lt;ufunc 'floor_divide'&gt;<br>
+<strong>fmod</strong> = &lt;ufunc 'fmod'&gt;<br>
+<strong>greater</strong> = &lt;ufunc 'greater'&gt;<br>
+<strong>greater_equal</strong> = &lt;ufunc 'greater_equal'&gt;<br>
+<strong>hypot</strong> = &lt;ufunc 'hypot'&gt;<br>
+<strong>invert</strong> = &lt;ufunc 'invert'&gt;<br>
+<strong>left_shift</strong> = &lt;ufunc 'left_shift'&gt;<br>
+<strong>less</strong> = &lt;ufunc 'less'&gt;<br>
+<strong>less_equal</strong> = &lt;ufunc 'less_equal'&gt;<br>
+<strong>log</strong> = &lt;ufunc 'log'&gt;<br>
+<strong>log10</strong> = &lt;ufunc 'log10'&gt;<br>
+<strong>logical_and</strong> = &lt;ufunc 'logical_and'&gt;<br>
+<strong>logical_not</strong> = &lt;ufunc 'logical_not'&gt;<br>
+<strong>logical_or</strong> = &lt;ufunc 'logical_or'&gt;<br>
+<strong>logical_xor</strong> = &lt;ufunc 'logical_xor'&gt;<br>
+<strong>maximum</strong> = &lt;ufunc 'maximum'&gt;<br>
+<strong>minimum</strong> = &lt;ufunc 'minimum'&gt;<br>
+<strong>multiply</strong> = &lt;ufunc 'multiply'&gt;<br>
+<strong>negative</strong> = &lt;ufunc 'negative'&gt;<br>
+<strong>not_equal</strong> = &lt;ufunc 'not_equal'&gt;<br>
+<strong>pi</strong> = 3.1415926535897931<br>
+<strong>power</strong> = &lt;ufunc 'power'&gt;<br>
+<strong>remainder</strong> = &lt;ufunc 'remainder'&gt;<br>
+<strong>right_shift</strong> = &lt;ufunc 'right_shift'&gt;<br>
+<strong>sin</strong> = &lt;ufunc 'sin'&gt;<br>
+<strong>sinh</strong> = &lt;ufunc 'sinh'&gt;<br>
+<strong>sqrt</strong> = &lt;ufunc 'sqrt'&gt;<br>
+<strong>subtract</strong> = &lt;ufunc 'subtract'&gt;<br>
+<strong>tan</strong> = &lt;ufunc 'tan'&gt;<br>
+<strong>tanh</strong> = &lt;ufunc 'tanh'&gt;<br>
+<strong>true_divide</strong> = &lt;ufunc 'true_divide'&gt;<br>
+<strong>typecodes</strong> = {'Character': 'c', 'Complex': 'FD', 'Float': 'fd', 'Integer': '1sil', 'UnsignedInteger': 'bwu'}</td></tr></table>
+</body></html>

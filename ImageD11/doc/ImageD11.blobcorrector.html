@@ -1,0 +1,79 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module ImageD11.blobcorrector</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.blobcorrector</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python24/lib/site-packages/imaged11/blobcorrector.py">c:\python24\lib\site-packages\imaged11\blobcorrector.py</a></font></td></tr></table>
+    <p><tt>Defines&nbsp;a&nbsp;class&nbsp;for&nbsp;correcting&nbsp;peak&nbsp;positions&nbsp;for&nbsp;spatial&nbsp;distortion<br>
+via&nbsp;a&nbsp;fit2d&nbsp;spline&nbsp;file<br>
+&nbsp;<br>
+To&nbsp;think&nbsp;about&nbsp;doing&nbsp;-&nbsp;valid&nbsp;regions?&nbsp;What&nbsp;if&nbsp;someone&nbsp;uses&nbsp;a&nbsp;1K&nbsp;spline<br>
+file&nbsp;for&nbsp;a&nbsp;2K&nbsp;image&nbsp;etc?</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="ImageD11.bisplev.html">ImageD11.bisplev</a><br>
+</td><td width="25%" valign=top><a href="math.html">math</a><br>
+</td><td width="25%" valign=top><a href="Numeric.html">Numeric</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="ImageD11.blobcorrector.html#correctorclass">correctorclass</a>
+</font></dt></dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="correctorclass">class <strong>correctorclass</strong></a></font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Applies&nbsp;a&nbsp;spatial&nbsp;distortion&nbsp;to&nbsp;a&nbsp;peak&nbsp;position&nbsp;using&nbsp;a&nbsp;fit2d&nbsp;splinefile<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="correctorclass-__init__"><strong>__init__</strong></a>(self, splinefile)</dt><dd><tt>Argument&nbsp;is&nbsp;the&nbsp;name&nbsp;of&nbsp;a&nbsp;fit2d&nbsp;spline&nbsp;file</tt></dd></dl>
+
+<dl><dt><a name="correctorclass-correct"><strong>correct</strong></a>(self, x, y)</dt><dd><tt>Transform&nbsp;x,y&nbsp;in&nbsp;raw&nbsp;image&nbsp;coordinates&nbsp;into&nbsp;x,y&nbsp;of&nbsp;an<br>
+idealised&nbsp;image.&nbsp;Returns&nbsp;a&nbsp;tuple&nbsp;(x,y),&nbsp;expects&nbsp;a&nbsp;<br>
+pair&nbsp;of&nbsp;floats&nbsp;as&nbsp;arguments</tt></dd></dl>
+
+<dl><dt><a name="correctorclass-distort"><strong>distort</strong></a>(self, xnew, ynew)</dt><dd><tt>Distort&nbsp;a&nbsp;pair&nbsp;of&nbsp;points&nbsp;xnew,&nbsp;ynew&nbsp;to&nbsp;find&nbsp;where&nbsp;they<br>
+would&nbsp;be&nbsp;in&nbsp;a&nbsp;raw&nbsp;image<br>
+&nbsp;<br>
+Iterative&nbsp;algorithm...</tt></dd></dl>
+
+<dl><dt><a name="correctorclass-readfit2dfloats"><strong>readfit2dfloats</strong></a>(self, fp, n, debug<font color="#909090">=0</font>)</dt><dd><tt>Interprets&nbsp;a&nbsp;5E14.7&nbsp;formatted&nbsp;fortran&nbsp;line</tt></dd></dl>
+
+<dl><dt><a name="correctorclass-readfit2dspline"><strong>readfit2dspline</strong></a>(self, name)</dt><dd><tt>Reads&nbsp;a&nbsp;fit2d&nbsp;spline&nbsp;file&nbsp;into&nbsp;a&nbsp;scipy/fitpack&nbsp;tuple,&nbsp;tck<br>
+A&nbsp;fairly&nbsp;long&nbsp;and&nbsp;dull&nbsp;routine...</tt></dd></dl>
+
+<dl><dt><a name="correctorclass-test"><strong>test</strong></a>(self, x, y)</dt><dd><tt>Checks&nbsp;that&nbsp;the&nbsp;correct&nbsp;and&nbsp;distort&nbsp;functions&nbsp;are&nbsp;indeed<br>
+inversely&nbsp;related&nbsp;to&nbsp;each&nbsp;other</tt></dd></dl>
+
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-unwarpimage"><strong>unwarpimage</strong></a>(image, xpositions, ypositions)</dt><dd><tt>xpositions/ypositions&nbsp;are&nbsp;floats&nbsp;giving&nbsp;pixel&nbsp;co-ords&nbsp;of&nbsp;the&nbsp;input&nbsp;image.<br>
+&nbsp;<br>
+We&nbsp;need&nbsp;the&nbsp;positions&nbsp;of&nbsp;the&nbsp;pixels&nbsp;in&nbsp;the&nbsp;output&nbsp;image,&nbsp;on&nbsp;the&nbsp;input&nbsp;image.<br>
+&nbsp;<br>
+Hence,&nbsp;for&nbsp;now,</tt></dd></dl>
+</td></tr></table>
+</body></html>

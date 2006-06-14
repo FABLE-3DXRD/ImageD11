@@ -27,9 +27,14 @@ for plotedf
 Also try to do a fast median filter based on pixel histograms
 """
 
-import _hist, Numeric
+from ImageD11 import _hist
+import Numeric
 
 def hist(data,verbose=0):
+    """
+    Wrapper to ImageD11 histogram generators (c functions)
+    returns histogram if data is a 2D Numeric.UInt16 array
+    """
     if data.typecode() == Numeric.UInt16:
         h = Numeric.zeros(pow(2,16)-1,Numeric.Int)
         _hist._hist(data,h,verbose)

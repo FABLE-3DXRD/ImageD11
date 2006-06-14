@@ -1,0 +1,69 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module ImageD11.guicommand</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.guicommand</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python24/lib/site-packages/imaged11/guicommand.py">c:\python24\lib\site-packages\imaged11\guicommand.py</a></font></td></tr></table>
+    <p><tt>Interface&nbsp;between&nbsp;Tkinter&nbsp;gui&nbsp;and&nbsp;the&nbsp;actual&nbsp;useful&nbsp;code.<br>
+&nbsp;<br>
+There&nbsp;should&nbsp;be&nbsp;no&nbsp;scientific&nbsp;algorithms&nbsp;(eventually)&nbsp;on<br>
+the&nbsp;gui&nbsp;side&nbsp;of&nbsp;this&nbsp;class.<br>
+&nbsp;<br>
+This&nbsp;class&nbsp;will&nbsp;eventually&nbsp;offer&nbsp;macro&nbsp;recording&nbsp;capability.</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="ImageD11.indexing.html">ImageD11.indexing</a><br>
+</td><td width="25%" valign=top><a href="ImageD11.peakmerge.html">ImageD11.peakmerge</a><br>
+</td><td width="25%" valign=top><a href="ImageD11.transform.html">ImageD11.transform</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="ImageD11.guicommand.html#guicommand">guicommand</a>
+</font></dt></dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="guicommand">class <strong>guicommand</strong></a></font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Keeps&nbsp;a&nbsp;log&nbsp;of&nbsp;all&nbsp;commands&nbsp;issued&nbsp;-&nbsp;separates&nbsp;gui&nbsp;code&nbsp;from<br>
+algorithmical&nbsp;code<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="guicommand-__init__"><strong>__init__</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="guicommand-execute"><strong>execute</strong></a>(self, object, command, *args, **kwds)</dt><dd><tt>Pass&nbsp;in&nbsp;object&nbsp;as&nbsp;string&nbsp;[peakmerger|transformer|indexer]<br>
+Pass&nbsp;in&nbsp;command&nbsp;as&nbsp;string,&nbsp;getattr(command)&nbsp;will&nbsp;be&nbsp;used<br>
+Returns&nbsp;the&nbsp;return&nbsp;value&nbsp;of&nbsp;the&nbsp;function....<br>
+&nbsp;<br>
+TODO&nbsp;:&nbsp;change&nbsp;this&nbsp;interface???<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eg&nbsp;:&nbsp;works&nbsp;-&nbsp;returns&nbsp;True<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;you&nbsp;look&nbsp;for&nbsp;self.<strong>lastreturned</strong><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fails&nbsp;-&nbsp;returns&nbsp;False&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;you&nbsp;look&nbsp;for&nbsp;self.<strong>lasttraceback</strong></tt></dd></dl>
+
+<dl><dt><a name="guicommand-getdata"><strong>getdata</strong></a>(self, object, name)</dt><dd><tt>Allows&nbsp;access&nbsp;to&nbsp;"live"&nbsp;data&nbsp;in&nbsp;the&nbsp;objects&nbsp;wrapped<br>
+&nbsp;<br>
+By&nbsp;passing&nbsp;references&nbsp;back&nbsp;you&nbsp;can&nbsp;circumvent&nbsp;the&nbsp;<br>
+cleanliness&nbsp;of&nbsp;the&nbsp;interface.&nbsp;Please&nbsp;dont.<br>
+&nbsp;<br>
+Returns&nbsp;object.name</tt></dd></dl>
+
+</td></tr></table></td></tr></table>
+</body></html>

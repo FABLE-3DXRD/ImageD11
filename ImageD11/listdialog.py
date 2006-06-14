@@ -6,24 +6,24 @@
 
 
 
-from Numeric import *
-from Tkinter import *
+# from Numeric import *
+import Tkinter as Tk
 
 
 
-class listdialog(Toplevel):
+class listdialog(Tk.Toplevel):
     """
     Dialog box for setting detector parameters
     Takes a list of strings and numbers
     """
     def __init__(self, parent, title = None, items=None):
-        Toplevel.__init__(self, parent)
+        Tk.Toplevel.__init__(self, parent)
         self.transient(parent)
         if title:
             self.title(title)
         self.parent = parent
         self.result = items
-        body = Frame(self)
+        body = Tk.Frame(self)
         self.initial_focus = self.body(body,items)
         body.pack(padx=5, pady=5)
         self.buttonbox()
@@ -45,9 +45,9 @@ class listdialog(Toplevel):
            keys.sort()
            self.keys=keys
            for key in keys:
-              Label(master,text=key).grid(row=i)
-              el=Entry(master)
-              el.insert(END,items[key])
+              Tk.Label(master,text=key).grid(row=i)
+              el=Tk.Entry(master)
+              el.insert(Tk.END,items[key])
               el.grid(row=i,column=1)
               self.e.append(el)
               i=i+1
@@ -56,13 +56,13 @@ class listdialog(Toplevel):
     def buttonbox(self):
         # add standard button box. override if you don't want the
         # standard buttons
-        box = Frame(self)
-        w = Button(box, text="OK", width=10, command=self.ok, default=ACTIVE)
-        w.pack(side=LEFT, padx=5, pady=5)
-        w = Button(box, text="Cancel", width=10, command=self.cancel)
-        w.pack(side=LEFT, padx=5, pady=5)
-        self.bind("&lt;Return>", self.ok)
-        self.bind("&lt;Escape>", self.cancel)
+        box = Tk.Frame(self)
+        w = Tk.Button(box, text="OK", width=10, command=self.ok, default=Tk.ACTIVE)
+        w.pack(side=Tk.LEFT, padx=5, pady=5)
+        w = Tk.Button(box, text="Cancel", width=10, command=self.cancel)
+        w.pack(side=Tk.LEFT, padx=5, pady=5)
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
         box.pack()
     #
     # standard button semantics

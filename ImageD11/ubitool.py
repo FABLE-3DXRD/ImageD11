@@ -23,6 +23,9 @@
 Tools for processing UBI matrices together with data
 
 Uses indexing objects to do refinement
+
+Mostly unimplemented dummies - see also refinegrains
+
 """
 
 
