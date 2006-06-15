@@ -199,12 +199,33 @@ class checker:
 		self.makeImage()
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
 ##		glTexImage2D(GL_TEXTURE_2D, 0, 3, self.imageWidth, self.imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,  self.image)
+		glTexImage2D(GL_TEXTURE_2D, 0, 3, self.imageWidth, self.imageHeight, 0, GL_RGBA ,GL_UNSIGNED_BYTE,  self.image)
+##		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+##		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+		glEnable(GL_TEXTURE_2D)
+		glShadeModel(GL_FLAT)
+
+
+
+
+	def broken(self):
+
+
+        
+		self.makeImage()
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+##		glTexImage2D(GL_TEXTURE_2D, 0, 3, self.imageWidth, self.imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,  self.image)
 		try:
 			# 1024  -  self.imageWidth , 1024 -  self.imageHeight
-			glTexImage2D(GL_TEXTURE_2D, 0, 3, self.imageWidth, self.imageHeight, 0, GL_LUMINANCE ,GL_UNSIGNED_BYTE,  self.image)
+			glTexImage2D(GL_TEXTURE_2D, 0, 3, self.imageWidth, self.imageHeight, 0, GL_LUMINANCE , GL_UNSIGNED_BYTE,  self.image)
 		except:
-			print self.imageWidth, self.imageHeight, type(self.image), len(self.image)
-			raise
+			print self.imageWidth, self.imageHeight, type(self.image), len(self.image),len(self.image)*1./self.imageWidth/self.imageHeight
+			
 ##		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
 ##		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
