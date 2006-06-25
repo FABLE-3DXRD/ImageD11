@@ -236,8 +236,13 @@ if __name__=="__main__":
         print "Input format is",options.format
         if options.format == "edf":
             files = ["%s%04d%s" % (stem,i,".edf") for i in range(first,last+1)]
+            corrfunc.orientation = "edf"
         if options.format == "bruker":
             files = ["%s.%04d" % (stem,i) for i in range(first,last+1)]
+            corrfunc.orientation = "bruker"
+            if options.spline.find("spatial2k.spline")>0:
+                if raw_input("Are you sure abuot the spline??")!="y":
+                    sys.exit()
         # Make a blobimage the same size as the first image to process
         if len(files)==0:
             raise "No files found for stem %s" % (stem)
@@ -275,3 +280,4 @@ if __name__=="__main__":
 end = time.time()
 t = end-reallystart
 print "Total time = %f /s, per image = %f /s" % (t,t/len(files))
+

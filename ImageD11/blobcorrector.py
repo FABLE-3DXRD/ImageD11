@@ -34,13 +34,14 @@ class correctorclass:
     """
     Applies a spatial distortion to a peak position using a fit2d splinefile
     """
-    def __init__(self,splinefile):
+    def __init__(self,splinefile,orientation="edf"):
         """
         Argument is the name of a fit2d spline file
         """
         self.splinefile=splinefile
         self.readfit2dspline(splinefile)
         self.tolerance=1e-5
+        self.orientation=orientation
 
 
     def correct(self,x,y):
@@ -49,8 +50,14 @@ class correctorclass:
         idealised image. Returns a tuple (x,y), expects a
         pair of floats as arguments
         """
-        ynew=bisplev.bisplev(y,x,self.tck1)+y
-        xnew=bisplev.bisplev(y,x,self.tck2)+x
+        if self.orientation == "edf":
+            xnew = x + bisplev.bisplev(y,x,self.tck2)
+            ynew = y + bisplev.bisplev(y,x,self.tck1)
+        elif self.orientation == "bruker":
+            # fit2d does a flip
+            xpos = self.xmax - x
+            xnew = x - bisplev.bisplev(y,xpos,self.tck2)
+            ynew = y + bisplev.bisplev(y,xpos,self.tck1)
         return xnew, ynew
 
     def distort(self,xnew,ynew):
@@ -133,7 +140,7 @@ class correctorclass:
         vals=line.split()
         self.xmin=float(vals[0])
         self.ymin=float(vals[1])
-        self.xmax=float(vals[3])
+        self.xmax=float(vals[2])
         self.ymax=float(vals[3])
         line=fp.readline() # BLANK
         line=fp.readline() # GRID SPACING, X-PIXEL SIZE, Y-PIXEL SIZE
