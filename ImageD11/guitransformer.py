@@ -88,6 +88,7 @@ class guitransformer:
 
     def loadparameters(self,filename=None):
         if filename==None:
+            self.parameters['omegasign']=1
             self.parameters['z-center']=1002.832
             self.parameters['y-center']=1005.768
             self.parameters['distance']=303.7
@@ -332,7 +333,12 @@ class guitransformer:
         Using self.twotheta, self.eta and omega angles, compute x,y,z of spot
         in reciprocal space
         """
-        self.gv = transform.compute_g_vectors(self.twotheta,self.eta,self.omega,float(self.parameters['wavelength']),wedge=self.wedge)
+        try:
+            omegasign = float(self.parameters['omegasign'])
+        except:
+            omegasign = 1.
+        self.gv = transform.compute_g_vectors(self.twotheta,self.eta,self.omega*omegasign
+                                              ,float(self.parameters['wavelength']),wedge=self.wedge)
         tthnew,etanew,omeganew=transform.uncompute_g_vectors(self.gv,float(self.parameters['wavelength']),wedge=self.wedge)
         self.parent.gv=self.gv
         print "Testing reverse transformations"
@@ -348,6 +354,10 @@ class guitransformer:
         """
         if filename==None:
             filename=self.parent.saver.show(title="File to save gvectors")
+        try:
+            omegasign = float(self.parameters['omegasign'])
+        except:
+            omegasign = 1.
         f=open(filename,"w")
         f.write(self.unitcell.tostring())
         f.write("\n")
@@ -360,12 +370,16 @@ class guitransformer:
         f.write("# xr yr zr xc yc ds phi omega\n")
         print maximum.reduce(self.omega),minimum.reduce(self.omega)
         for i in order:
-            f.write("%f %f %f %f %f %f %f %f \n"%(self.gv[0,i],self.gv[1,i],self.gv[2,i],self.x[i],self.y[i],self.ds[i],self.eta[i],self.omega[i]))
+            f.write("%f %f %f %f %f %f %f %f \n"%(self.gv[0,i],self.gv[1,i],self.gv[2,i],self.x[i],self.y[i],self.ds[i],self.eta[i],self.omega[i]*omegasign))
         f.close()
 
 
     def write_graindex_gv(self):
         filename=self.parent.saver.show(title="File for graindex, try finalpeaks.log")
+        try:
+            omegasign = float(self.parameters['omegasign'])
+        except:
+            omegasign = 1.
         from ImageD11 import write_graindex_gv
         #self.parent.finalpeaks=transpose(array(bigarray))
         self.intensity = self.parent.finalpeaks[3,:]*self.parent.finalpeaks[4,:]
@@ -374,6 +388,6 @@ class guitransformer:
                                             self.gv,
                                             self.twotheta,
                                             self.eta,
-                                            self.omega,
+                                            self.omega*omegasign,
                                             self.intensity,
                                             self.unitcell)
