@@ -1,10 +1,37 @@
-      
 
-# THIS CODE COMES FROM THE SCIPY PACKAGE AT www.scipy.org
-#
-# IT HAS BEEN COPIED TO SAVE YOU HAVING TO INSTALL ALL THE 
-# OTHER STUFF FROM THERE. 
-#
+"""
+Interface to the bispev bit of fitpack.
+
+
+fitpack (dierckx in netlib) --- A Python-C wrapper to FITPACK (by P. Dierckx).
+        FITPACK is a collection of FORTRAN programs for CURVE and SURFACE
+        FITTING with SPLINES and TENSOR PRODUCT SPLINES.
+
+See
+ http://www.cs.kuleuven.ac.be/cwis/research/nalag/research/topics/fitpack.html
+or
+ http://www.netlib.org/dierckx/index.html
+
+
+(I think) This code was copied from fitpack.py and modified by J. P. Wright
+so as to avoid having to install all of scipy. Hence the following notice:
+
+
+
+Copyright 2002 Pearu Peterson all rights reserved,
+Pearu Peterson <pearu@cens.ioc.ee>
+Permission to use, modify, and distribute this software is given under the
+terms of the SciPy (BSD style) license.  See LICENSE.txt that came with
+scipy for specifics.
+
+NO WARRANTY IS EXPRESSED OR IMPLIED.  USE AT YOUR OWN RISK.
+
+Pearu Peterson
+
+"""
+
+
+
 from ImageD11 import _splines
 import Numeric as n
 
@@ -18,36 +45,36 @@ def myasarray(a):
         return n.asarray(a)
 
 def bisplev(x,y,tck,dx=0,dy=0):
-   """Evaluate a bivariate B-spline and its derivatives.
-   Description:
-     Return a rank-2 array of spline function values (or spline derivative
-     values) at points given by the cross-product of the rank-1 arrays x and y.
-     In special cases, return an array or just a float if either x or y or
-     both are floats.
-   Inputs:
-     x, y -- Rank-1 arrays specifying the domain over which to evaluate the
-             spline or its derivative.
-     tck -- A sequence of length 5 returned by bisplrep containing the knot
-            locations, the coefficients, and the degree of the spline:
-            [tx, ty, c, kx, ky].
-     dx, dy -- The orders of the partial derivatives in x and y respectively.
-   Outputs: (vals, )
-     vals -- The B-pline or its derivative evaluated over the set formed by
-             the cross-product of x and y.
-   """
-   tx,ty,c,kx,ky=tck
-   if not (0<=dx<kx): raise ValueError,"0<=dx=%d<kx=%d must hold"%(dx,kx)
-   if not (0<=dy<ky): raise ValueError,"0<=dy=%d<ky=%d must hold"%(dy,ky)
-   x,y=map(myasarray,[x,y])
-   if (len(x.shape) != 1) or (len(y.shape) != 1):
-       raise ValueError, "First two entries should be rank-1 arrays."
-   z,ier=_splines._bispev(tx,ty,c,kx,ky,x,y,dx,dy)
-   if ier==10: raise ValueError,"Invalid input data"
-   if ier: raise TypeError,"An error occurred"
-   z.shape=len(x),len(y)
-   if len(z)>1: return z
-   if len(z[0])>1: return z[0]
-   return z[0][0]
+    """Evaluate a bivariate B-spline and its derivatives.
+    Description:
+      Return a rank-2 array of spline function values (or spline derivative
+      values) at points given by the cross-product of the rank-1 arrays x and y.
+      In special cases, return an array or just a float if either x or y or
+      both are floats.
+    Inputs:
+      x, y -- Rank-1 arrays specifying the domain over which to evaluate the
+              spline or its derivative.
+      tck -- A sequence of length 5 returned by bisplrep containing the knot
+             locations, the coefficients, and the degree of the spline:
+             [tx, ty, c, kx, ky].
+      dx, dy -- The orders of the partial derivatives in x and y respectively.
+    Outputs: (vals, )
+      vals -- The B-pline or its derivative evaluated over the set formed by
+              the cross-product of x and y.
+    """
+    tx,ty,c,kx,ky=tck
+    if not (0<=dx<kx): raise ValueError,"0<=dx=%d<kx=%d must hold"%(dx,kx)
+    if not (0<=dy<ky): raise ValueError,"0<=dy=%d<ky=%d must hold"%(dy,ky)
+    x,y=map(myasarray,[x,y])
+    if (len(x.shape) != 1) or (len(y.shape) != 1):
+        raise ValueError, "First two entries should be rank-1 arrays."
+    z,ier=_splines._bispev(tx,ty,c,kx,ky,x,y,dx,dy)
+    if ier==10: raise ValueError,"Invalid input data"
+    if ier: raise TypeError,"An error occurred"
+    z.shape=len(x),len(y)
+    if len(z)>1: return z
+    if len(z[0])>1: return z[0]
+    return z[0][0]
 
 
 
@@ -67,7 +94,7 @@ def bisplrep(x,y,z,w=None,xb=None,xe=None,yb=None,ye=None,kx=3,ky=3,task=0,s=Non
 
       x, y, z -- Rank-1 arrays of data points.
       w -- Rank-1 array of weights. By default w=ones(len(x)).
-      xb, xe -- End points of approximation interval in x. 
+      xb, xe -- End points of approximation interval in x.
       yb, ye -- End points of approximation interval in y.
                 By default xb, xe, yb, ye = x[0], x[-1], y[0], y[-1]
       kx, ky -- The degrees of the spline (1 <= kx, ky <= 5).  Third order
@@ -106,12 +133,12 @@ def bisplrep(x,y,z,w=None,xb=None,xe=None,yb=None,ye=None,kx=3,ky=3,task=0,s=Non
     Remarks:
 
       SEE bisplev to evaluate the value of the B-spline given its tck
-      representation.           
+      representation.
     """
     x,y,z=map(myasarray,[x,y,z])
     x,y,z=map(n.ravel,[x,y,z])  # ensure 1-d arrays.
     m=len(x)
-    if not (m==len(y)==len(z)): raise TypeError, 'len(x)==len(y)==len(z) must hold.'  
+    if not (m==len(y)==len(z)): raise TypeError, 'len(x)==len(y)==len(z) must hold.'
     if w is None: w=n.ones(m,'d')
     else: w=myasarray(w)
     if not len(w) == m: raise TypeError,' len(w)=%d is not equal to m=%d'%(len(w),m)
@@ -131,7 +158,7 @@ def bisplrep(x,y,z,w=None,xb=None,xe=None,yb=None,ye=None,kx=3,ky=3,task=0,s=Non
         raise TypeError, 'There must be at least 2*kx+2 knots_x for task=-1'
     if task==-1 and ny<2*ky+2:
         raise TypeError, 'There must be at least 2*ky+2 knots_x for task=-1'
-    if not ((1<=kx<=5) and (1<=ky<=5)): 
+    if not ((1<=kx<=5) and (1<=ky<=5)):
         raise TypeError, \
        'Given degree of the spline (kx,ky=%d,%d) is not supported. (1<=k<=5)'%(kx,ky)
     if m<(kx+1)*(ky+1): raise TypeError, 'm>=(kx+1)(ky+1) must hold'
@@ -182,4 +209,3 @@ def bisplrep(x,y,z,w=None,xb=None,xe=None,yb=None,ye=None,kx=3,ky=3,task=0,s=Non
             return tck,fp,ier,_iermess2['unknown'][0]
     else:
         return tck
-

@@ -41,184 +41,184 @@ from Tkinter import *
 
 if __name__=="__main__":
 
-   # Help message - TODO - proper online help
-   def help():
-      from tkMessageBox import showinfo
-      showinfo("Help","Sorry, no help for you!\nPlease try harder")
+    # Help message - TODO - proper online help
+    def help():
+        from tkMessageBox import showinfo
+        showinfo("Help","Sorry, no help for you!\nPlease try harder")
 
 
-   # Credits message
-   ImageD11credits = """Thanks to:
-                       
-                       All of the Fable team, which includes at least:
-                          Andy Goetz, Gavin Vaughan,
-                          Soren Schmidt, Henning Poulsen, Larry Margulies
-                       ...and others who should remind me to mention them
+    # Credits message
+    ImageD11credits = """Thanks to:
 
-                       Tine Knudsen who bravely helped commission the 
-                       introduction of a second rotation axis (wedge). 
+                        All of the Fable team, which includes at least:
+                           Andy Goetz, Gavin Vaughan,
+                           Soren Schmidt, Henning Poulsen, Larry Margulies
+                        ...and others who should remind me to mention them
 
-                       Benoit Mallard for his assistance with some extreme 
-                       programming to debug the transformation module.
+                        Tine Knudsen who bravely helped commission the
+                        introduction of a second rotation axis (wedge).
 
-                       John Hunter for the matplotlib plotting.
+                        Benoit Mallard for his assistance with some extreme
+                        programming to debug the transformation module.
 
-                       All of the pyopengl, Numeric and python teams
-                       
-                       Anyone who tests me and gives useful feedback
-                          
-                       Jon Wright, for writing me!
-                      """
+                        John Hunter for the matplotlib plotting.
 
-   def credits():
-      from tkMessageBox import showinfo
-      showinfo("Credits",ImageD11credits)
+                        All of the pyopengl, Numeric and python teams
 
+                        Anyone who tests me and gives useful feedback
 
-   # GPL is stored in ImageD11/license.py as a string to be
-   # displayed in the GUI if the user asks to see it
+                        Jon Wright, for writing me!
+                       """
 
-   from ImageD11 import license
-   license = license.license
-
-   def showlicense():
-      from ScrolledText import ScrolledText
-      win = ScrolledText(Toplevel(),width=100)
-      win.insert(END,license)
-      win.pack(expand=1,fill=BOTH)
-      win.focus_set()
+    def credits():
+        from tkMessageBox import showinfo
+        showinfo("Credits",ImageD11credits)
 
 
-   import tkFileDialog,os
+    # GPL is stored in ImageD11/license.py as a string to be
+    # displayed in the GUI if the user asks to see it
+
+    from ImageD11 import license
+    license = license.license
+
+    def showlicense():
+        from ScrolledText import ScrolledText
+        win = ScrolledText(Toplevel(),width=100)
+        win.insert(END,license)
+        win.pack(expand=1,fill=BOTH)
+        win.focus_set()
 
 
-   # Inherits from the GuiMaker and uses functions defined above
-   class TestGuiMaker(GuiMaker):
-      from ImageD11 import guicommand
-      guicommander = guicommand.guicommand()
-      def start(self):
-          """
-          Override the GuiMaker start
-          These are things to do when the gui starts
-          eg: show a message about the license and list of things to do
-          Then build the actual gui
-          """
-          from tkMessageBox import showinfo
-          startmessage = """
-ImageD11 version 0.5.1, Copyright (C) 2005 Jon Wright
-ImageD11 comes with ABSOLUTELY NO WARRANTY; for details select help, license.
-This is free software, and you are welcome to redistribute it under certain conditions
-
-Please send useful feedback to wright@esrf.fr
-"""
-
-          startmessage += """
-Stuff to do:
-
-   Implement the image peaksearching in the gui (maybe display opengl images??)
-   Separate the peak merging/reading from the gui for standalone scripting
-   Same for the transformations - once parameters are known gui is not needed
-   Tidy the mulitple threshold consequences
-   Implement those filters based in intensity etc
-
-   Sort peaks in output file by integer hkl
-   Allow merging algorith to be more flexible in tolerance, perhaps decide
-   overlap as a multiple of FWHM observed.
-
-   Sort out a file format which tracks all information properly?
-"""
-          showinfo("Welcome to ImageD11_v0.4",startmessage)
+    import tkFileDialog,os
 
 
-          # For the peaksearch menu
-          from ImageD11 import guipeaksearch 
-          self.peaksearcher = guipeaksearch.guipeaksearcher(self)
+    # Inherits from the GuiMaker and uses functions defined above
+    class TestGuiMaker(GuiMaker):
+        from ImageD11 import guicommand
+        guicommander = guicommand.guicommand()
+        def start(self):
+            """
+            Override the GuiMaker start
+            These are things to do when the gui starts
+            eg: show a message about the license and list of things to do
+            Then build the actual gui
+            """
+            from tkMessageBox import showinfo
+            startmessage = """
+  ImageD11 version 0.5.1, Copyright (C) 2005 Jon Wright
+  ImageD11 comes with ABSOLUTELY NO WARRANTY; for details select help, license.
+  This is free software, and you are welcome to redistribute it under certain conditions
 
-          # self.finalpeaks is what the peaksearchmenu is meant to generate
-          # and what the transformer should transform
-          self.finalpeaks=None
+  Please send useful feedback to wright@esrf.fr
+  """
 
-          # For the transformation menu
-          from ImageD11 import guitransformer
+            startmessage += """
+  Stuff to do:
 
-          # Unit cell is for generating theoretical peak positions
-          self.unitcell=None
+     Implement the image peaksearching in the gui (maybe display opengl images??)
+     Separate the peak merging/reading from the gui for standalone scripting
+     Same for the transformations - once parameters are known gui is not needed
+     Tidy the mulitple threshold consequences
+     Implement those filters based in intensity etc
 
-          # self.gv holds the g-vectors, after they are generated 
-          self.gv=None
-          self.transformer  = guitransformer.guitransformer(self)
+     Sort peaks in output file by integer hkl
+     Allow merging algorith to be more flexible in tolerance, perhaps decide
+     overlap as a multiple of FWHM observed.
 
-          # For the indexing - supposed to generate orientations from the
-          # unitcell and g-vectors
-          from ImageD11 import guiindexer
-          self.indexer = guiindexer.guiindexer(self)
+     Sort out a file format which tracks all information properly?
+  """
+            showinfo("Welcome to ImageD11_v0.4",startmessage)
 
-          #from ImageD11 import guifactors
-          #self.factors=guifactors.guifactors(self)
 
-          # sys is for sys.exit
-          import sys
+            # For the peaksearch menu
+            from ImageD11 import guipeaksearch
+            self.peaksearcher = guipeaksearch.guipeaksearcher(self)
 
-          # Configure the menubar (lists of Tuples of (name, underline_char, command_or_submenu) )
-          self.menuBar = [ ( "File", 0,
-                              [ ( "Print" , 0, self.printplot ),
-                                ( "Exit", 1, sys.exit) ] ) ,
-                           self.peaksearcher.menuitems,
-                           self.transformer.menuitems,
-                           self.indexer.menuitems,
-                           #self.factors.menuitems,
-                           ( "Plotting", 0, 
-                              [ ( "Autoscale", 0, self.autoscaleplot),
-                                ( "Clear plot",0, self.clearplot),
-                              ] ) ,
-                           
-                           ( "Help", 0, 
-                              [ ( "Help Me!", 0, help) ,
-                                ( "Credits" , 0, credits) ,
-                                ( "License" , 0, showlicense)
-                                ] ) ]
+            # self.finalpeaks is what the peaksearchmenu is meant to generate
+            # and what the transformer should transform
+            self.finalpeaks=None
 
-      # The twodplot object should be taking care of it's own menu
-      # Stop doing it here - TODO
-      def printplot(self):
-         """
-         Print the 2D plot (probably to a file?)
-         """
-         self.twodplotter.printplot()
-  
-      def autoscaleplot(self):
-         """
-         Autoscale the plot
-         """
-         self.twodplotter.autoscale()
+            # For the transformation menu
+            from ImageD11 import guitransformer
 
-      def clearplot(self):
-         """
-         Clear out the twodplot
-         """
-         self.twodplotter.plotitems={}
-         self.twodplotter.replot()
+            # Unit cell is for generating theoretical peak positions
+            self.unitcell=None
 
-      def makeWidgets(self):
-         """
-         Draw the gui and initialise some hidden things
-         """
-         # TODO Get size of TopLevels window and position it in a sensible way
-         #
-         # Opening and saving file widgets, normally hidden, they remember where
-         # you were for working directories
-         self.opener=tkFileDialog.Open()
-         self.saver=tkFileDialog.SaveAs()
-         #
-         # Draw the twodplot
-         from ImageD11 import twodplot
-         self.twodplotter=twodplot.twodplot(self)
-         self.twodplotter.pack(side=RIGHT, expand=1, fill=BOTH)
+            # self.gv holds the g-vectors, after they are generated
+            self.gv=None
+            self.transformer  = guitransformer.guitransformer(self)
 
-   # Start up Tkinter
-   root = Tk()
-   root.wm_title("ImageD11")
-   # Instantiate an object of the class TestGuiMaker
-   TestGuiMaker()
-   # Thats it!
-   root.mainloop()
+            # For the indexing - supposed to generate orientations from the
+            # unitcell and g-vectors
+            from ImageD11 import guiindexer
+            self.indexer = guiindexer.guiindexer(self)
+
+            #from ImageD11 import guifactors
+            #self.factors=guifactors.guifactors(self)
+
+            # sys is for sys.exit
+            import sys
+
+            # Configure the menubar (lists of Tuples of (name, underline_char, command_or_submenu) )
+            self.menuBar = [ ( "File", 0,
+                                [ ( "Print" , 0, self.printplot ),
+                                  ( "Exit", 1, sys.exit) ] ) ,
+                             self.peaksearcher.menuitems,
+                             self.transformer.menuitems,
+                             self.indexer.menuitems,
+                             #self.factors.menuitems,
+                             ( "Plotting", 0,
+                                [ ( "Autoscale", 0, self.autoscaleplot),
+                                  ( "Clear plot",0, self.clearplot),
+                                ] ) ,
+
+                             ( "Help", 0,
+                                [ ( "Help Me!", 0, help) ,
+                                  ( "Credits" , 0, credits) ,
+                                  ( "License" , 0, showlicense)
+                                  ] ) ]
+
+        # The twodplot object should be taking care of it's own menu
+        # Stop doing it here - TODO
+        def printplot(self):
+            """
+            Print the 2D plot (probably to a file?)
+            """
+            self.twodplotter.printplot()
+
+        def autoscaleplot(self):
+            """
+            Autoscale the plot
+            """
+            self.twodplotter.autoscale()
+
+        def clearplot(self):
+            """
+            Clear out the twodplot
+            """
+            self.twodplotter.plotitems={}
+            self.twodplotter.replot()
+
+        def makeWidgets(self):
+            """
+            Draw the gui and initialise some hidden things
+            """
+            # TODO Get size of TopLevels window and position it in a sensible way
+            #
+            # Opening and saving file widgets, normally hidden, they remember where
+            # you were for working directories
+            self.opener=tkFileDialog.Open()
+            self.saver=tkFileDialog.SaveAs()
+            #
+            # Draw the twodplot
+            from ImageD11 import twodplot
+            self.twodplotter=twodplot.twodplot(self)
+            self.twodplotter.pack(side=RIGHT, expand=1, fill=BOTH)
+
+    # Start up Tkinter
+    root = Tk()
+    root.wm_title("ImageD11")
+    # Instantiate an object of the class TestGuiMaker
+    TestGuiMaker()
+    # Thats it!
+    root.mainloop()

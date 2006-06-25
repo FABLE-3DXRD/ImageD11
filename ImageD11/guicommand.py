@@ -32,73 +32,72 @@ from ImageD11 import peakmerge, indexing, transform
 
 
 class guicommand:
-   """
-   Keeps a log of all commands issued - separates gui code from
-   algorithmical code
-   """
-   def __init__(self):
-      self.objects = { "peakmerger" : peakmerge.peakmerger(), 
-                       "transformer": None,
-                       "indexer"    : indexing.indexer()
-                       }
-                       
-      self.commandscript = """
-from ImageD11 import peakmerger, indexing, transform
-mypeakmerger = peakmerger.peakmerger()
-mytransformer = transform.transformer()
-myindexer = indexing.indexer()      
-"""
+    """
+    Keeps a log of all commands issued - separates gui code from
+    algorithmical code
+    """
+    def __init__(self):
+        self.objects = { "peakmerger" : peakmerge.peakmerger(),
+                         "transformer": None,
+                         "indexer"    : indexing.indexer()
+                         }
 
-   def execute(self,object,command,*args,**kwds):
-      """
-      Pass in object as string [peakmerger|transformer|indexer]
-      Pass in command as string, getattr(command) will be used
-      Returns the return value of the function....
+        self.commandscript = """
+  from ImageD11 import peakmerger, indexing, transform
+  mypeakmerger = peakmerger.peakmerger()
+  mytransformer = transform.transformer()
+  myindexer = indexing.indexer()
+  """
 
-      TODO : change this interface???
-           eg : works - returns True
-                        you look for self.lastreturned
-                fails - returns False 
-                        you look for self.lasttraceback
-      """
-      if object not in self.objects.keys():
-         raise Exception("ERROR! Unknown command object")
-      o = self.objects[object]
-      func = getattr(o,command) 
-      try:
-         ran = "my%s.%s("%(object,command)
-         addedcomma = ""
-         for a in args:
-            ran="%s %s %s"%(ran,addedcomma,repr(a))
-            addedcomma=","
-         for k,v in kwds.items():
-            ran="%s %s %s=%s "%(ran,addedcomma,k,v)
-            addedcomma=","
-         ran+=" )"
-         ret = func(*args, **kwds)  
-      except:
-         print self
-         print object
-         print command
-         print func
-         print args
-         print kwds
-         raise
-      print "Ran:",ran
-      self.commandscript+=ran
-      return ret
- 
-   def getdata(self,object,name):
-      """
-      Allows access to "live" data in the objects wrapped
-      
-      By passing references back you can circumvent the 
-      cleanliness of the interface. Please dont.
+    def execute(self,object,command,*args,**kwds):
+        """
+        Pass in object as string [peakmerger|transformer|indexer]
+        Pass in command as string, getattr(command) will be used
+        Returns the return value of the function....
 
-      Returns object.name 
-      """
-      if object not in self.objects.keys():
-         raise Exception("ERROR! Unknown command object")
-      attribute = getattr(self.objects[object],name)
-      return attribute
+        TODO : change this interface???
+             eg : works - returns True
+                          you look for self.lastreturned
+                  fails - returns False
+                          you look for self.lasttraceback
+        """
+        if object not in self.objects.keys():
+            raise Exception("ERROR! Unknown command object")
+        o = self.objects[object]
+        func = getattr(o,command)
+        try:
+            ran = "my%s.%s("%(object,command)
+            addedcomma = ""
+            for a in args:
+                ran="%s %s %s"%(ran,addedcomma,repr(a))
+                addedcomma=","
+            for k,v in kwds.items():
+                ran="%s %s %s=%s "%(ran,addedcomma,k,v)
+                addedcomma=","
+            ran+=" )"
+            ret = func(*args, **kwds)
+        except:
+            print self
+            print object
+            print command
+            print func
+            print args
+            print kwds
+            raise
+        print "Ran:",ran
+        self.commandscript+=ran
+        return ret
 
+    def getdata(self,object,name):
+        """
+        Allows access to "live" data in the objects wrapped
+
+        By passing references back you can circumvent the
+        cleanliness of the interface. Please dont.
+
+        Returns object.name
+        """
+        if object not in self.objects.keys():
+            raise Exception("ERROR! Unknown command object")
+        attribute = getattr(self.objects[object],name)
+        return attribute

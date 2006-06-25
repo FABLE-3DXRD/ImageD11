@@ -59,8 +59,8 @@ class refinegrains:
             except:
                 out.write("%s %s\n"%(key,self.parameters[key]))
         f.close()
-                    
-        
+
+
     def readubis(self,filename):
         """
         Save the generated ubi matrices into a text file
@@ -102,8 +102,8 @@ class refinegrains:
         self.scannames.append(filename)
         self.scantitles[filename]=titles
         self.scandata[filename]=Numeric.array(bigarray)
-        
-                         
+
+
     def generate_grains(self):
         for grainname in self.grainnames:
             for scanname in self.scannames:
@@ -151,11 +151,11 @@ class refinegrains:
         mat=ubi.copy()
         npks = closest.score_and_refine(mat, self.gv, self.tolerance)
         if not quiet:
-            print npks 
+            print npks
         #mat = indexing.refine(ubi,self.gv,self.tolerance,quiet=quiet)
         #print ubi, testmatrix,ubi-testmatrix,mat-testmatrix
         return mat
-    
+
     def gof(self,args):
         """
         <drlv> for all of the grains in all of the scans
@@ -166,8 +166,8 @@ class refinegrains:
         contribs = 0.
         sumdrlv = 0.
         goodpks = 0
-        
-        
+
+
         first = True
         for key in self.grains.keys():
             g = self.grains[key]
@@ -193,7 +193,7 @@ class refinegrains:
             contribs+= n_ind
             sumdrlv -= Numeric.sum(drlv)
             goodpks += n_ind
-            
+
 
             if n_ind>300:
                 print g.ubi
@@ -237,7 +237,7 @@ class refinegrains:
             except:
                 # Hopefully a crystal translation
                 pass
-        
+
 
     def fit(self):
         import simplex
@@ -257,17 +257,17 @@ class refinegrains:
         print "Start of simplex:"
         self.printresult(guess)
         print
-            
+
         s=simplex.Simplex(self.gof,guess,inc)
-      
+
         newguess,error,iter=s.minimize(maxiters=100)
 
         print
         print "End of simplex"
         self.printresult(newguess)
-    
+
     def refineubis(self,quiet=True):
-        
+
         for key in self.grains.keys():
             g = self.grains[key]
             grainname = key[0]
@@ -279,11 +279,11 @@ class refinegrains:
             #print self.gv.shape
             #print self.gv[0:10,:]
             g.ubi = self.refine(g.ubi,quiet=quiet)
-        
-            
 
-        
-        
+
+
+
+
 
 if __name__ == "__main__":
     o=refinegrains()

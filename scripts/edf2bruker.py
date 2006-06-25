@@ -35,7 +35,7 @@ class darkflood:
         #
         self.darkimage = None
         self.floodimage = None
-        
+
     def readdark(self,darkfile):
         try:
             self.darkdata = opendata.opendata(darkfile)
@@ -46,7 +46,7 @@ class darkflood:
         except:
             print "problem, darkfile was",darkfile
             raise
-            
+
     def readflood(self,floodfile):
         try:
             self.flooddata = opendata.opendata(floodfile)
@@ -59,7 +59,7 @@ class darkflood:
         except:
             print "problem, floodfile was",floodfile
             raise
-            
+
     def correct(self,data):
         tin = data.typecode()
         # c0 = data.shape[0]/2
@@ -80,13 +80,13 @@ class darkflood:
         cor =  where(cor>0.1,cor,0.) # truncate zero
         # print cor[c0,c1]
         return cor.astype(tin)
-    
-            
 
 
 
 
-    
+
+
+
 class edf2bruker:
 
     def __init__(self,dark,flood,template, darkoffset=100,distance=5.0):
@@ -108,8 +108,8 @@ class edf2bruker:
             self.h = h[:p]+new+h[p+80:]
         else:
             raise Exception(TITLE+" not found")
-        
-        
+
+
     def convert(self,filein,fileout):
         # Read input file
         data_in = opendata.opendata(filein)
@@ -127,7 +127,7 @@ class edf2bruker:
         self.putitem("DISTANC",
                      "DISTANC:%14f"%(self.distance)+" "*(80-14-8))
         self.putitem("RANGE",
-                     "RANGE  :     %9f"%( abs(oms) ) + " "*58) 
+                     "RANGE  :     %9f"%( abs(oms) ) + " "*58)
         self.putitem("INCREME:",
                      "INCREME:     %9f"%( oms ) + " "*58 )
         self.putitem("START",
@@ -144,45 +144,44 @@ class edf2bruker:
         outf.write(self.h)
         outf.write(transpose(corrected_image).astype(UInt16).tostring())
         outf.close()
-        
+
 
 if __name__=="__main__":
-   import sys
-   try:
-      from optparse import OptionParser
-      parser = OptionParser()
-      parser.add_option("-n","--namestem",action="store", type="string", dest="stem",
-                        help="Name of the files up the digits part, eg mydata in mydata0000.edf" )
-      parser.add_option("-f","--first",action="store", type="int", dest="first",default=0,
-                        help="Number of first file to process, default=0")
-      parser.add_option("-l","--last",action="store", type="int", dest="last",default=0,
-                        help="Number of last file to process, default=0")
-      parser.add_option("-d","--dark",action="store", type="string", dest="dark",
-                        help="Dark current")
-      parser.add_option("-F","--Flood",action="store", type="string", dest="flood",
-                        default="/data/opid11/inhouse/Frelon2K/Ags_mask0000.edf",
-                        help="Flood field")
-      parser.add_option("-D","--distance",action="store",type="float", dest="distance",default=5.0,help="Sample to detector distance")
+    import sys
+    try:
+        from optparse import OptionParser
+        parser = OptionParser()
+        parser.add_option("-n","--namestem",action="store", type="string", dest="stem",
+                          help="Name of the files up the digits part, eg mydata in mydata0000.edf" )
+        parser.add_option("-f","--first",action="store", type="int", dest="first",default=0,
+                          help="Number of first file to process, default=0")
+        parser.add_option("-l","--last",action="store", type="int", dest="last",default=0,
+                          help="Number of last file to process, default=0")
+        parser.add_option("-d","--dark",action="store", type="string", dest="dark",
+                          help="Dark current")
+        parser.add_option("-F","--Flood",action="store", type="string", dest="flood",
+                          default="/data/opid11/inhouse/Frelon2K/Ags_mask0000.edf",
+                          help="Flood field")
+        parser.add_option("-D","--distance",action="store",type="float", dest="distance",default=5.0,help="Sample to detector distance")
 
-      parser.add_option("-t","--template",action="store", type="string", dest="template",
-                        default = "/data/opid11/inhouse/Frelon2K/brukertemplate.0000")
+        parser.add_option("-t","--template",action="store", type="string", dest="template",
+                          default = "/data/opid11/inhouse/Frelon2K/brukertemplate.0000")
 
-      options, args = parser.parse_args()
-
-
-      converter = edf2bruker(options.dark , options.flood , options.template, distance=options.distance)
-      
-      for i in range(options.first, options.last+1):
-          filein = opendata.makename( options.stem, i, ".edf" )
-          fileout = opendata.makename( options.stem+"_bruker_0.", i, "" )
-          print filein,
-          converter.convert(filein,fileout)
-          print fileout
-          sys.stdout.flush()
+        options, args = parser.parse_args()
 
 
-   except:
-       parser.print_help()
+        converter = edf2bruker(options.dark , options.flood , options.template, distance=options.distance)
 
-       raise
+        for i in range(options.first, options.last+1):
+            filein = opendata.makename( options.stem, i, ".edf" )
+            fileout = opendata.makename( options.stem+"_bruker_0.", i, "" )
+            print filein,
+            converter.convert(filein,fileout)
+            print fileout
+            sys.stdout.flush()
 
+
+    except:
+        parser.print_help()
+
+        raise

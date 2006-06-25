@@ -40,19 +40,19 @@ class listdialog(Tk.Toplevel):
         # initial focus.  this method should be overridden
         self.e=[]
         if items!=None:
-           i=0
-           keys=items.keys()
-           keys.sort()
-           self.keys=keys
-           for key in keys:
-              Tk.Label(master,text=key).grid(row=i)
-              el=Tk.Entry(master)
-              el.insert(Tk.END,items[key])
-              el.grid(row=i,column=1)
-              self.e.append(el)
-              i=i+1
-           return self.e[0]
-        
+            i=0
+            keys=items.keys()
+            keys.sort()
+            self.keys=keys
+            for key in keys:
+                Tk.Label(master,text=key).grid(row=i)
+                el=Tk.Entry(master)
+                el.insert(Tk.END,items[key])
+                el.grid(row=i,column=1)
+                self.e.append(el)
+                i=i+1
+            return self.e[0]
+
     def buttonbox(self):
         # add standard button box. override if you don't want the
         # standard buttons
@@ -74,7 +74,7 @@ class listdialog(Tk.Toplevel):
         self.update_idletasks()
         self.apply()
         self.cancel()
-        
+
     def cancel(self, event=None):
         # put focus back to the parent window
         self.parent.focus_set()
@@ -83,13 +83,12 @@ class listdialog(Tk.Toplevel):
     # command hooks
     def validate(self):
         return 1 # override
-     
+
     def apply(self):
         retdict={}
         i=0
         for item in self.e:
-           retdict[self.keys[i]]=item.get()
-           i=i+1
+            retdict[self.keys[i]]=item.get()
+            i=i+1
         self.result=retdict
         print self.result
-

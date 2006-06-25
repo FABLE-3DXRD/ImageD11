@@ -28,7 +28,7 @@ class testtransform(unittest.TestCase):
     def setUp(self):
         self.peaks = Numeric.array([ [ 10, 20 , 50, 100 ],
                                      [ 100, 10, 50, 99  ] ], Numeric.Float)
-        
+
     def test_compute_tth_eta1(self):
         # Check translation of 0,0,0 has no effect
         yc = 49. ; ys=0.05 ; ty = 0.001
@@ -50,6 +50,6 @@ class testtransform(unittest.TestCase):
         self.assertEqual(not_trans, trans)
         self.assertEqual(not_trans, trans)
 
-        
+
 if __name__=="__main__":
     unittest.main()

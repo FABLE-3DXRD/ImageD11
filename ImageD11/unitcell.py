@@ -19,7 +19,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #
-# 
+#
 #
 
 
@@ -31,22 +31,22 @@ def radians(x):
     return x*math.pi/180.
 
 def degrees(x):
-   return x*180./math.pi
+    return x*180./math.pi
 
 
 
 def cross(a,b):
-   """
-   a x b has length |a||b|sin(theta)
-   """
-   return Numeric.array([ a[1]*b[2]-a[2]*b[1] ,a[2]*b[0]-b[2]*a[0], a[0]*b[1]-b[0]*a[1] ],Numeric.Float)
+    """
+    a x b has length |a||b|sin(theta)
+    """
+    return Numeric.array([ a[1]*b[2]-a[2]*b[1] ,a[2]*b[0]-b[2]*a[0], a[0]*b[1]-b[0]*a[1] ],Numeric.Float)
 
 def unit(a):
-   """
-   Normalise vector a to unit length
-   """
-   return a/Numeric.sqrt(Numeric.dot(a,a))
-     
+    """
+    Normalise vector a to unit length
+    """
+    return a/Numeric.sqrt(Numeric.dot(a,a))
+
 
 
 
@@ -79,14 +79,14 @@ outif = {
     "F" : F }
 
 def cellfromstring(s):
-   items=s.split()
-   # print items
-   latt = [float(x) for x in items[0:6]]
-   try:
-      symm = items[6]
-   except IndexError:
-      symm = 'P'
-   return unitcell(latt,symm)
+    items=s.split()
+    # print items
+    latt = [float(x) for x in items[0:6]]
+    try:
+        symm = items[6]
+    except IndexError:
+        symm = 'P'
+    return unitcell(latt,symm)
 
 class unitcell:
     # Unit cell stuff
@@ -125,13 +125,13 @@ class unitcell:
         self.as=Numeric.sqrt(self.gi[0,0])
         self.bs=Numeric.sqrt(self.gi[1,1])
         self.cs=Numeric.sqrt(self.gi[2,2])
-        
+
         self.alphas=degrees(math.acos(self.gi[1,2]/self.bs/self.cs))
         self.betas =degrees(math.acos(self.gi[0,2]/self.as/self.cs))
         self.gammas=degrees(math.acos(self.gi[0,1]/self.as/self.bs))
         if verbose==1: print "Reciprocal cell"
         if verbose==1: print self.as,self.bs,self.cs,self.alphas,self.betas,self.gammas
-        # Equation 3 from Busing and Levy  
+        # Equation 3 from Busing and Levy
         self.B = Numeric.array ( [ [ self.as , self.bs*math.cos(radians(self.gammas)) , self.cs*math.cos(radians(self.betas)) ] ,
                            [       0 , self.bs*math.sin(radians(self.gammas)) , -self.cs*math.sin(radians(self.betas))*ca ],
                            [       0 ,                       0  ,      1./c ] ] , Numeric.Float)
@@ -142,16 +142,16 @@ class unitcell:
         self.limit=0
 
     def tostring(self):
-       """
-       Write out a line containing unit cell information
-       """
-       return "%f %f %f %f %f %f %s"%(self.lattice_parameters[0],
-             self.lattice_parameters[1],
-             self.lattice_parameters[2],
-             self.lattice_parameters[3],
-             self.lattice_parameters[4],
-             self.lattice_parameters[5],
-             self.symmetry)
+        """
+        Write out a line containing unit cell information
+        """
+        return "%f %f %f %f %f %f %s"%(self.lattice_parameters[0],
+              self.lattice_parameters[1],
+              self.lattice_parameters[2],
+              self.lattice_parameters[3],
+              self.lattice_parameters[4],
+              self.lattice_parameters[5],
+              self.symmetry)
 
     def anglehkls(self,h1,h2):
         """
@@ -162,16 +162,16 @@ class unitcell:
         g12= Numeric.dot(h1,Numeric.matrixmultiply(self.gi,h2))
         costheta = g12/math.sqrt(g1*g2)
         try:
-           return degrees(math.acos(costheta)),costheta
+            return degrees(math.acos(costheta)),costheta
         except:
-           if abs(costheta-1) < 1e-6:
-              return 0.,1.0
-           if abs(costheta+1) < 1e-6:
-              return 180.,-1.0
-           print "Error in unit cell class determining angle"
-           print "h1",h1,"h2",h2,"Costheta=",costheta
-           raise
-     
+            if abs(costheta-1) < 1e-6:
+                return 0.,1.0
+            if abs(costheta+1) < 1e-6:
+                return 180.,-1.0
+            print "Error in unit cell class determining angle"
+            print "h1",h1,"h2",h2,"Costheta=",costheta
+            raise
+
     def gethkls(self,dsmax):
         """
         Generate hkl list
@@ -181,7 +181,7 @@ class unitcell:
         assumes [h|k|l] < 20
         """
         if dsmax == self.limit and self.peaks!=None:
-           return self.peaks
+            return self.peaks
         h=k=0
         l=1 # skip 0,0,0
         hs=ks=ls=1
@@ -193,9 +193,9 @@ class unitcell:
                     ds=self.ds([h,k,l])
                     if ds < dsmax:
                         if not self.absent(h,k,l):
-                           peaks.append([ds,(h,k,l)])
+                            peaks.append([ds,(h,k,l)])
                         else:
-                           pass
+                            pass
                         b=0
                     else:
                         if ls==1:
@@ -227,7 +227,7 @@ class unitcell:
                     hs=1
                     h=0
                     break
-                    
+
         peaks.sort()
         #for peak in peaks:
         #   print peak
@@ -241,80 +241,80 @@ class unitcell:
 
 
     def makerings(self,limit,tol=0.001):
-      """
-      Makes a list of computed powder rings
-      The tolerance is the difference in d* to decide
-      if two peaks overlap
-      """
-      self.peaks=self.gethkls(limit) # [ ds, [hkl] ]
-      self.ringds=[]   # a list of floats
-      self.ringhkls={} # a dict of lists of integer hkl
-      # Append first peak
-      peak = self.peaks[0]
-      self.ringds.append(peak[0])
-      self.ringhkls[peak[0]] = [peak[1]]
-      for peak in self.peaks[1:]:
-         if abs(peak[0] - self.ringds[-1]) < tol:
-            self.ringhkls[self.ringds[-1]].append(peak[1])
-         else:
-            self.ringds.append(peak[0])
-            self.ringhkls[self.ringds[-1]]= [peak[1]]
+        """
+        Makes a list of computed powder rings
+        The tolerance is the difference in d* to decide
+        if two peaks overlap
+        """
+        self.peaks=self.gethkls(limit) # [ ds, [hkl] ]
+        self.ringds=[]   # a list of floats
+        self.ringhkls={} # a dict of lists of integer hkl
+        # Append first peak
+        peak = self.peaks[0]
+        self.ringds.append(peak[0])
+        self.ringhkls[peak[0]] = [peak[1]]
+        for peak in self.peaks[1:]:
+            if abs(peak[0] - self.ringds[-1]) < tol:
+                self.ringhkls[self.ringds[-1]].append(peak[1])
+            else:
+                self.ringds.append(peak[0])
+                self.ringhkls[self.ringds[-1]]= [peak[1]]
 
 
     def orient(self,ring1,g1,ring2,g2,verbose=0):
-      """
-      Compute an orientation matrix using cell parameters and the indexing
-      of two reflections
+        """
+        Compute an orientation matrix using cell parameters and the indexing
+        of two reflections
 
-      Orientation matrix:
-      A matrix such that h = A^1 g
-      define 3 vectors t1,t2,t3
-      t1 is parallel to first peak (unit vector along g1)
-      t2 is in the plane of both   (unit vector along g1x(g1xg2))
-      t3 is perpendicular to both  (unit vector along g1xg2)
-      """
-      from Numeric import dot
-      from math import sqrt
-      costheta = Numeric.dot(g1,g2)/math.sqrt(Numeric.dot(g2,g2))/math.sqrt(Numeric.dot(g1,g1))
-      if verbose==1: print "observed costheta",costheta
-      best=5.
-      for ha in self.ringhkls[self.ringds[ring1]]:
-          for hb in self.ringhkls[self.ringds[ring2]]:
-             ca=self.anglehkls(ha,hb)
-             if abs(ca[1]-costheta) < best and ha!=hb:
-                   h1=ha
-                   h2=hb
-                   best=ca[1]
-      if verbose==1:
-         print "Assigning h1",h1,g1,self.ds(h1),math.sqrt(dot(g1,g1)),self.ds(h1)-math.sqrt(dot(g1,g1))
-         print "Assigning h2",h2,g2,self.ds(h2),math.sqrt(dot(g2,g2)),self.ds(h1)-math.sqrt(dot(g1,g1))
-         print "Cos angle calc",self.anglehkls(h1,h2),"obs",costheta
-      h1c=Numeric.matrixmultiply(self.B,h1)
-      h2c=Numeric.matrixmultiply(self.B,h2)
-      t1c=unit(h1c)
-      t3c=unit(cross(h1c,h2c))
-      t2c=unit(cross(h1c,t3c))
-      t1g=unit(g1)
-      t3g=unit(cross(g1,g2))
-      t2g=unit(cross(g1,t3g))
-      T_g = Numeric.transpose(Numeric.array([t1g,t2g,t3g]))  # Array are stored by rows and 
-      T_c = Numeric.transpose(Numeric.array([t1c,t2c,t3c]))  # these are columns
-      U=Numeric.matrixmultiply(T_g , inverse(T_c))
-      UB=Numeric.matrixmultiply(U,self.B)
-      UBI=inverse(UB)
-      if verbose==1:
-         print "UBI"
-         print UBI
-         print "Grain gi"
-         print Numeric.matrixmultiply(Numeric.transpose(UB),UB)
-         print "Cell gi"
-         print self.gi
-         h=Numeric.matrixmultiply(UBI,g1)
-         print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
-         h=Numeric.matrixmultiply(UBI,g2)
-         print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
-      self.UBI=UBI
-      self.UB=UB
+        Orientation matrix:
+        A matrix such that h = A^1 g
+        define 3 vectors t1,t2,t3
+        t1 is parallel to first peak (unit vector along g1)
+        t2 is in the plane of both   (unit vector along g1x(g1xg2))
+        t3 is perpendicular to both  (unit vector along g1xg2)
+        """
+        from Numeric import dot
+        from math import sqrt
+        costheta = Numeric.dot(g1,g2)/math.sqrt(Numeric.dot(g2,g2))/math.sqrt(Numeric.dot(g1,g1))
+        if verbose==1: print "observed costheta",costheta
+        best=5.
+        for ha in self.ringhkls[self.ringds[ring1]]:
+            for hb in self.ringhkls[self.ringds[ring2]]:
+                ca=self.anglehkls(ha,hb)
+                if abs(ca[1]-costheta) < best and ha!=hb:
+                    h1=ha
+                    h2=hb
+                    best=ca[1]
+        if verbose==1:
+            print "Assigning h1",h1,g1,self.ds(h1),math.sqrt(dot(g1,g1)),self.ds(h1)-math.sqrt(dot(g1,g1))
+            print "Assigning h2",h2,g2,self.ds(h2),math.sqrt(dot(g2,g2)),self.ds(h1)-math.sqrt(dot(g1,g1))
+            print "Cos angle calc",self.anglehkls(h1,h2),"obs",costheta
+        h1c=Numeric.matrixmultiply(self.B,h1)
+        h2c=Numeric.matrixmultiply(self.B,h2)
+        t1c=unit(h1c)
+        t3c=unit(cross(h1c,h2c))
+        t2c=unit(cross(h1c,t3c))
+        t1g=unit(g1)
+        t3g=unit(cross(g1,g2))
+        t2g=unit(cross(g1,t3g))
+        T_g = Numeric.transpose(Numeric.array([t1g,t2g,t3g]))  # Array are stored by rows and
+        T_c = Numeric.transpose(Numeric.array([t1c,t2c,t3c]))  # these are columns
+        U=Numeric.matrixmultiply(T_g , inverse(T_c))
+        UB=Numeric.matrixmultiply(U,self.B)
+        UBI=inverse(UB)
+        if verbose==1:
+            print "UBI"
+            print UBI
+            print "Grain gi"
+            print Numeric.matrixmultiply(Numeric.transpose(UB),UB)
+            print "Cell gi"
+            print self.gi
+            h=Numeric.matrixmultiply(UBI,g1)
+            print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
+            h=Numeric.matrixmultiply(UBI,g2)
+            print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
+        self.UBI=UBI
+        self.UB=UB
 
 
 
@@ -326,12 +326,7 @@ if __name__=="__main__":
     n=len(p)
     print "Generated",n,"peaks in",time.time()-start,"/s"
     for k in p:
-       try:
-          print k[1],k[0],1/k[0],k[1]
-       except:
-          pass
-
-
-        
-        
-        
+        try:
+            print k[1],k[0],1/k[0],k[1]
+        except:
+            pass

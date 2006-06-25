@@ -39,11 +39,11 @@ class grain:
         beta =degrees(acos(g[0,2]/a/c))
         gamma=degrees(acos(g[0,1]/a/b))
         return a,b,c,alpha,beta,gamma
- 
+
     def refine(self,gv,tol,quiet=True):
         """
         Refine an orientation matrix and rescore it.
-        
+
         From Paciorek et al Acta A55 543 (1999)
         UB = R H-1
         where:
@@ -116,4 +116,3 @@ class grain:
         #      print "Mean drlv now",sum(sqrt(drlv2))/drlv2.shape[0],
         #      print "Mean drlv old",sum(sqrt(drlv2_old))/drlv2_old.shape[0]
         return UBIo
-

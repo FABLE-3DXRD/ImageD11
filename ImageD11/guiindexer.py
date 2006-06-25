@@ -30,130 +30,128 @@ from listdialog import listdialog
 
 
 class guiindexer:
-                           
-   def __init__(self,parent):
-      """
-      Parent (arg) is a hook to features of the parent gui
-      sets up indexing menuitems
-      """
-      self.parent=parent
+
+    def __init__(self,parent):
+        """
+        Parent (arg) is a hook to features of the parent gui
+        sets up indexing menuitems
+        """
+        self.parent=parent
 # peaks are in      self.parent.finalpeaks
-      self.menuitems = ( "Indexing", 0,
-                         [ ( "Load g-vectors", 0, self.loadgv),
-                           ( "Plot x/y/z", 5, self.plotxyz),
-                           ( "Load parameters", 1, self.loadfileparameters),
-                           ( "Edit parameters", 0, self.editparameters),
-                           ( "Assign peaks to powder rings", 0, self.assignpeaks),
-                           ( "Make Friedel pair file", 5, self.makefriedel),
-                           ( "Generate trial orientations",0, self.find),
-                           ( "Score trial orientations",0, self.scorethem),
-                           ( "Histogram fit quality",0, self.histogram_drlv_fit),
-                           ( "Save parameters", 0, self.saveparameters),
-                           ( "Save UBI matrices", 5, self.saveubis),
-                           ( "Write out indexed peaks",0,self.saveindexing)
-                         ] ) 
-      import plot3d
-      self.plot3d=None
+        self.menuitems = ( "Indexing", 0,
+                           [ ( "Load g-vectors", 0, self.loadgv),
+                             ( "Plot x/y/z", 5, self.plotxyz),
+                             ( "Load parameters", 1, self.loadfileparameters),
+                             ( "Edit parameters", 0, self.editparameters),
+                             ( "Assign peaks to powder rings", 0, self.assignpeaks),
+                             ( "Make Friedel pair file", 5, self.makefriedel),
+                             ( "Generate trial orientations",0, self.find),
+                             ( "Score trial orientations",0, self.scorethem),
+                             ( "Histogram fit quality",0, self.histogram_drlv_fit),
+                             ( "Save parameters", 0, self.saveparameters),
+                             ( "Save UBI matrices", 5, self.saveubis),
+                             ( "Write out indexed peaks",0,self.saveindexing)
+                           ] )
+        import plot3d
+        self.plot3d=None
 
-   def loadgv(self):
-      """ see indexing.readgvfile """
-      filename=self.parent.opener.show(title="File containing g-vectors")
-      self.parent.guicommander.execute("indexer","readgvfile",filename)
+    def loadgv(self):
+        """ see indexing.readgvfile """
+        filename=self.parent.opener.show(title="File containing g-vectors")
+        self.parent.guicommander.execute("indexer","readgvfile",filename)
 
-   def saveubis(self):
-      """ see indexing.saveubis """
-      filename=self.parent.saver.show(title="File to save UBIS")
-      self.parent.guicommander.execute("indexer","saveubis",filename)
+    def saveubis(self):
+        """ see indexing.saveubis """
+        filename=self.parent.saver.show(title="File to save UBIS")
+        self.parent.guicommander.execute("indexer","saveubis",filename)
 
-   def makefriedel(self):
-      """ see indexing.friedelpairs """
-      filename=self.parent.saver.show(title="File to save Friedelpairs")
-      self.parent.guicommander.execute("indexer","friedelpairs",filename)
+    def makefriedel(self):
+        """ see indexing.friedelpairs """
+        filename=self.parent.saver.show(title="File to save Friedelpairs")
+        self.parent.guicommander.execute("indexer","friedelpairs",filename)
 
-   def scorethem(self):
-      """ see indexing.scorethem """
-      self.parent.guicommander.execute("indexer","scorethem")
+    def scorethem(self):
+        """ see indexing.scorethem """
+        self.parent.guicommander.execute("indexer","scorethem")
 
-   def histogram_drlv_fit(self):
-      """
-      Calls indexer.histogram_drlv_fit
-      Plots indexer.bins versus indexer.histogram
-      """
-      self.parent.guicommander.execute("indexer","histogram_drlv_fit")
-      x=self.parent.guicommander.getdata("indexer","bins")
-      y=self.parent.guicommander.getdata("indexer","histogram")
-      self.parent.twodplotter.plotitems={} # clears plot
-      from ImageD11 import twodplot
-      for yline in range(y.shape[0]):
-         self.parent.twodplotter.plotitems["drlv histogram"+str(yline)]=twodplot.data(
-                  x[1:],y[yline,:],
-                {"xlabel" : "drlv",
-                 "ylabel" : "freq",
-                 "title"  : "drlv histogram",
-                 "pointtype" : "-"
-                 }
-                ) # data
-      self.parent.twodplotter.replot()
-
-      
-   def assignpeaks(self):
-      """ see indexing.assigntorings """
-      self.parent.guicommander.execute("indexer","assigntorings")
-
-   def loadfileparameters(self):
-      """ see indexing.loadpars and parameters.loadpars """
-      filename=self.parent.opener.show(title="File containing indexing parameters")
-      self.parent.guicommander.execute("indexer","loadpars",filename)
-
-   def saveparameters(self):
-      """ see indexing.savepars and parameters.savepars """
-      filename=self.parent.saver.show(title="File to save indexing parameters")
-      self.parent.guicommander.execute("indexer","savepars",filename)
+    def histogram_drlv_fit(self):
+        """
+        Calls indexer.histogram_drlv_fit
+        Plots indexer.bins versus indexer.histogram
+        """
+        self.parent.guicommander.execute("indexer","histogram_drlv_fit")
+        x=self.parent.guicommander.getdata("indexer","bins")
+        y=self.parent.guicommander.getdata("indexer","histogram")
+        self.parent.twodplotter.plotitems={} # clears plot
+        from ImageD11 import twodplot
+        for yline in range(y.shape[0]):
+            self.parent.twodplotter.plotitems["drlv histogram"+str(yline)]=twodplot.data(
+                     x[1:],y[yline,:],
+                   {"xlabel" : "drlv",
+                    "ylabel" : "freq",
+                    "title"  : "drlv histogram",
+                    "pointtype" : "-"
+                    }
+                   ) # data
+        self.parent.twodplotter.replot()
 
 
-   def editparameters(self):
-      """ 
-      Has the indexing object update its parameter object 
-             eg : savepars(None)
-      gets a copy of the parameter object
-      Allows user to edit parameters
-      Has the indexing object update itself from the parameter object 
-             eg : loadpars(None)
-      """
-      # First make the indexer update its parameters object
-      self.parent.guicommander.execute("indexer","savepars") # no filename arg
-      # Now borrow a copy to read them and edit
-      pars = self.parent.guicommander.getdata("indexer","parameterobj")
-      mydict = pars.get_parameters()
-      print mydict
-      d=listdialog(self.parent,items=mydict,title="Indexing parameters")
-      # Now send the results back
-      pars.set_parameters(d.result)
-      self.parent.guicommander.execute("indexer","loadpars") # no filename arg
-      
-      
-   def plotxyz(self):
-      """
-      Gets gv from indexing object
-      Plots the x,y,z (gv) array in a 3D opengl window
-      """
-      import plot3d
-      gv = self.parent.guicommander.getdata("indexer","gv")
-      if gv is not None:
-         if self.plot3d==None:
-            self.plot3d = plot3d.plot3d(self.parent,gv)
-            self.plot3d.go()
-            print self.plot3d
-         else:
-            self.plot3d.changedata(gv)
+    def assignpeaks(self):
+        """ see indexing.assigntorings """
+        self.parent.guicommander.execute("indexer","assigntorings")
 
-   def find(self):
-      """ see indexing.find """
-      self.parent.guicommander.execute("indexer","find")
+    def loadfileparameters(self):
+        """ see indexing.loadpars and parameters.loadpars """
+        filename=self.parent.opener.show(title="File containing indexing parameters")
+        self.parent.guicommander.execute("indexer","loadpars",filename)
 
-   def saveindexing(self):
-      """ see indexing.saveindexing """
-      filename=self.parent.saver.show(title="File to save indexing output")
-      self.parent.guicommander.execute("indexer","saveindexing",filename)
+    def saveparameters(self):
+        """ see indexing.savepars and parameters.savepars """
+        filename=self.parent.saver.show(title="File to save indexing parameters")
+        self.parent.guicommander.execute("indexer","savepars",filename)
 
-      
+
+    def editparameters(self):
+        """
+        Has the indexing object update its parameter object
+               eg : savepars(None)
+        gets a copy of the parameter object
+        Allows user to edit parameters
+        Has the indexing object update itself from the parameter object
+               eg : loadpars(None)
+        """
+        # First make the indexer update its parameters object
+        self.parent.guicommander.execute("indexer","savepars") # no filename arg
+        # Now borrow a copy to read them and edit
+        pars = self.parent.guicommander.getdata("indexer","parameterobj")
+        mydict = pars.get_parameters()
+        print mydict
+        d=listdialog(self.parent,items=mydict,title="Indexing parameters")
+        # Now send the results back
+        pars.set_parameters(d.result)
+        self.parent.guicommander.execute("indexer","loadpars") # no filename arg
+
+
+    def plotxyz(self):
+        """
+        Gets gv from indexing object
+        Plots the x,y,z (gv) array in a 3D opengl window
+        """
+        import plot3d
+        gv = self.parent.guicommander.getdata("indexer","gv")
+        if gv is not None:
+            if self.plot3d==None:
+                self.plot3d = plot3d.plot3d(self.parent,gv)
+                self.plot3d.go()
+                print self.plot3d
+            else:
+                self.plot3d.changedata(gv)
+
+    def find(self):
+        """ see indexing.find """
+        self.parent.guicommander.execute("indexer","find")
+
+    def saveindexing(self):
+        """ see indexing.saveindexing """
+        filename=self.parent.saver.show(title="File to save indexing output")
+        self.parent.guicommander.execute("indexer","saveindexing",filename)

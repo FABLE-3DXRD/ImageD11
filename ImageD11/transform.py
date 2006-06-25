@@ -26,12 +26,12 @@ from math import pi
 
 
 def degrees(x):
-   """Convenience function"""
-   return x*180.0/pi
+    """Convenience function"""
+    return x*180.0/pi
 
 def radians(x):
-   """Convenience function"""
-   return x*pi/180.0
+    """Convenience function"""
+    return x*pi/180.0
 
 
 def compute_tth_eta(peaks,
@@ -44,440 +44,439 @@ def compute_tth_eta(peaks,
                     axis_orientation1=0.0, # Wedge == theta on 4circ
                     axis_orientation2=0.0 #       == chi - 90
                     ):
-   """
-   Peaks is a 2 d array of x,y
-   yc is the centre in y
-   ys is the y pixel size 
-   ty is the tilt around y
-   zc is the centre in z
-   zs is the z pixel size
-   tz is the tilt around z
-   dist is the sample - detector distance
-   detector_orientation is a matrix to apply to peaks arg to get ImageD11 convention
-        (( 0, 1),( 1, 0)) for ( y, x)
-        ((-1, 0),( 0, 1)) for (-x, y)
-        (( 0,-1),(-1, 0)) for (-y,-x)
-     etc...
-   crystal_translation is the position of the grain giving rise to a diffraction spot
-                in x,y,z ImageD11 co-ordinates
-                x,y with respect to axis of rotation and or beam centre ??
-                z with respect to beam height, z centre
-   omega data needed if crystal translations used
-   """
-   # Matrices for the tilt rotations
-   r1 = array( [ [  cos(tz) , sin(tz) , 0 ],
-                 [ -sin(tz) , cos(tz) , 0 ],
-                 [    0     ,    0    , 1 ]],Float)
-   r2 = array( [ [ cos(ty) , 0 , sin(ty) ],
-                 [       0 , 1 ,   0     ],
-                 [-sin(ty) , 0 , cos(ty) ]],Float)
-   r2r1=matrixmultiply(r1,r2)
-   # Peak positions in 3D space
-   #  - apply detector orientation
-   mypeaks = matrixmultiply(array(detector_orientation,Float),peaks)
-   vec =array( [ zeros(mypeaks.shape[1])     , # place detector at zero, sample at -dist
-                   (mypeaks[0,:]-yc)*ys      ,            # x in search
-                   (mypeaks[1,:]-zc)*zs ]    , Float)     # y in search
-   #print vec.shape
-   # Position of diffraction spots in 3d space after detector tilts is:
-   rotvec=matrixmultiply(r2r1,vec)
-   # Scattering vectors
-   if crystal_translation is None:
-      magrotvec=sqrt(sum(rotvec*rotvec,0))
-      #print magrotvec.shape
-   
-      eta=degrees(arctan2(rotvec[2,:],rotvec[1,:])) # bugger this one for tilts
-      # cosine rule a2 = b2+c2-2bccos(A)
-      # a is distance from (0,0,0) to rotvec => magrotvec
-      # b is distance from sample to detector
-      # c is distance from sample to pixel
-      a=magrotvec  # 1D
-      b=dist       # 0D
-      c=rotvec     # 3D
-      #print c.shape
-      c[0,:]=c[0,:]+dist# 3D
-      # print c
-      c=sqrt(sum(c*c,0))# 1D
-      #print a.shape,c.shape
-      #   print a.shape,c.shape
-      costwotheta = (b*b + c*c - a*a)/2/b/c
-      #print costwotheta
-      twothetarad=arccos(costwotheta)
-      twotheta=degrees(twothetarad)
-      return twotheta, eta
-   else:
-      # Compute positions of grains
-      # expecting tx, ty, tz for each diffraction spot
-      origin =  array([ -dist, 0, 0 ], Float)
-                      
-      # 
-      # g =  R . W . k
-      #  g - is g-vector w.r.t crystal
-      #  k is scattering vector in lab
-      #  so we want displacement in lab from displacement in sample
-      #  shift =  W-1  R-1 crystal_translation
-      #
-      # R = ( cos(omega) , sin(omega), 0 )
-      #     (-sin(omega) , cos(omega), 0 )
-      #     (         0  ,         0 , 1 )
-      #
-      # W = ( cos(wedge) ,  0  ,  sin(wedge) )
-      #     (         0  ,  1  ,          0  )
-      #     (-sin(wedge) ,  0  ,  cos(wedge) ) 
-      #
-      # C = (         1  ,          0  ,       0     ) ??? Use eta0 instead
-      #     (         0  ,   cos(chi)  ,  sin(chi)   )  ??? Use eta0 instead
-      #     (         0  ,  -sin(chi)  ,  cos(chi)   )  ??? Use eta0 instead
-      w=radians(axis_orientation1)
-      WI = array( [ [ cos(w),         0, -sin(w)],
-                    [      0,         1,       0],
-                    [ sin(w),         0,  cos(w)] ] , Float)
-      c=radians(axis_orientation2)
-      CI = array( [ [      1,          0,       0],
-                    [      0,     cos(c), -sin(c)],
-                    [      0,     sin(c),  cos(c)] ] , Float)
-      if omega.shape[0] != peaks.shape[1]:
-         raise Exception("omega and peaks arrays must have same number of peaks")
-      eta=zeros(omega.shape[0],Float)
-      tth=zeros(omega.shape[0],Float)
-      
-      for i in range(omega.shape[0]):
-         om = radians(omega[i])
-         RI = array( [ [ cos(om), -sin(om), 0],
-                       [ sin(om),  cos(om), 0],
-                       [       0,        0, 1] ] , Float)
-         rotate = matrixmultiply(WI,matrixmultiply(CI,RI))
-         #print rotate.shape,origin.shape,crystal_translation.shape
-         myorigin = origin + matrixmultiply(rotate , crystal_translation)
-         scattering_vectors = s = rotvec[:,i] - myorigin
-         #print i,s,
-         eta[i]=degrees(arctan2(s[2],s[1]))
-         mag_s=sqrt(sum(s*s,0))
-         costth = s[0] / mag_s
-         #print costth
-         tth[i] = degrees(arccos(costth))
+    """
+    Peaks is a 2 d array of x,y
+    yc is the centre in y
+    ys is the y pixel size
+    ty is the tilt around y
+    zc is the centre in z
+    zs is the z pixel size
+    tz is the tilt around z
+    dist is the sample - detector distance
+    detector_orientation is a matrix to apply to peaks arg to get ImageD11 convention
+         (( 0, 1),( 1, 0)) for ( y, x)
+         ((-1, 0),( 0, 1)) for (-x, y)
+         (( 0,-1),(-1, 0)) for (-y,-x)
+      etc...
+    crystal_translation is the position of the grain giving rise to a diffraction spot
+                 in x,y,z ImageD11 co-ordinates
+                 x,y with respect to axis of rotation and or beam centre ??
+                 z with respect to beam height, z centre
+    omega data needed if crystal translations used
+    """
+    # Matrices for the tilt rotations
+    r1 = array( [ [  cos(tz) , sin(tz) , 0 ],
+                  [ -sin(tz) , cos(tz) , 0 ],
+                  [    0     ,    0    , 1 ]],Float)
+    r2 = array( [ [ cos(ty) , 0 , sin(ty) ],
+                  [       0 , 1 ,   0     ],
+                  [-sin(ty) , 0 , cos(ty) ]],Float)
+    r2r1=matrixmultiply(r1,r2)
+    # Peak positions in 3D space
+    #  - apply detector orientation
+    mypeaks = matrixmultiply(array(detector_orientation,Float),peaks)
+    vec =array( [ zeros(mypeaks.shape[1])     , # place detector at zero, sample at -dist
+                    (mypeaks[0,:]-yc)*ys      ,            # x in search
+                    (mypeaks[1,:]-zc)*zs ]    , Float)     # y in search
+    #print vec.shape
+    # Position of diffraction spots in 3d space after detector tilts is:
+    rotvec=matrixmultiply(r2r1,vec)
+    # Scattering vectors
+    if crystal_translation is None:
+        magrotvec=sqrt(sum(rotvec*rotvec,0))
+        #print magrotvec.shape
 
-      return tth, eta
+        eta=degrees(arctan2(rotvec[2,:],rotvec[1,:])) # bugger this one for tilts
+        # cosine rule a2 = b2+c2-2bccos(A)
+        # a is distance from (0,0,0) to rotvec => magrotvec
+        # b is distance from sample to detector
+        # c is distance from sample to pixel
+        a=magrotvec  # 1D
+        b=dist       # 0D
+        c=rotvec     # 3D
+        #print c.shape
+        c[0,:]=c[0,:]+dist# 3D
+        # print c
+        c=sqrt(sum(c*c,0))# 1D
+        #print a.shape,c.shape
+        #   print a.shape,c.shape
+        costwotheta = (b*b + c*c - a*a)/2/b/c
+        #print costwotheta
+        twothetarad=arccos(costwotheta)
+        twotheta=degrees(twothetarad)
+        return twotheta, eta
+    else:
+        # Compute positions of grains
+        # expecting tx, ty, tz for each diffraction spot
+        origin =  array([ -dist, 0, 0 ], Float)
+
+        #
+        # g =  R . W . k
+        #  g - is g-vector w.r.t crystal
+        #  k is scattering vector in lab
+        #  so we want displacement in lab from displacement in sample
+        #  shift =  W-1  R-1 crystal_translation
+        #
+        # R = ( cos(omega) , sin(omega), 0 )
+        #     (-sin(omega) , cos(omega), 0 )
+        #     (         0  ,         0 , 1 )
+        #
+        # W = ( cos(wedge) ,  0  ,  sin(wedge) )
+        #     (         0  ,  1  ,          0  )
+        #     (-sin(wedge) ,  0  ,  cos(wedge) )
+        #
+        # C = (         1  ,          0  ,       0     ) ??? Use eta0 instead
+        #     (         0  ,   cos(chi)  ,  sin(chi)   )  ??? Use eta0 instead
+        #     (         0  ,  -sin(chi)  ,  cos(chi)   )  ??? Use eta0 instead
+        w=radians(axis_orientation1)
+        WI = array( [ [ cos(w),         0, -sin(w)],
+                      [      0,         1,       0],
+                      [ sin(w),         0,  cos(w)] ] , Float)
+        c=radians(axis_orientation2)
+        CI = array( [ [      1,          0,       0],
+                      [      0,     cos(c), -sin(c)],
+                      [      0,     sin(c),  cos(c)] ] , Float)
+        if omega.shape[0] != peaks.shape[1]:
+            raise Exception("omega and peaks arrays must have same number of peaks")
+        eta=zeros(omega.shape[0],Float)
+        tth=zeros(omega.shape[0],Float)
+
+        for i in range(omega.shape[0]):
+            om = radians(omega[i])
+            RI = array( [ [ cos(om), -sin(om), 0],
+                          [ sin(om),  cos(om), 0],
+                          [       0,        0, 1] ] , Float)
+            rotate = matrixmultiply(WI,matrixmultiply(CI,RI))
+            #print rotate.shape,origin.shape,crystal_translation.shape
+            myorigin = origin + matrixmultiply(rotate , crystal_translation)
+            scattering_vectors = s = rotvec[:,i] - myorigin
+            #print i,s,
+            eta[i]=degrees(arctan2(s[2],s[1]))
+            mag_s=sqrt(sum(s*s,0))
+            costth = s[0] / mag_s
+            #print costth
+            tth[i] = degrees(arccos(costth))
+
+        return tth, eta
 
 def compute_g_vectors(tth,eta,omega,wavelength, wedge = 0.0):
-   """
-   Generates spot positions in reciprocal space from twotheta, wavelength, omega and eta
-   Assumes single axis vertical
-   ... unless a wedge angle is specified
-   """
-   if wedge != 0.:
-      print "Using a wedge angle of ",wedge
-   tth=radians(tth)
-   eta=radians(eta)
+    """
+    Generates spot positions in reciprocal space from twotheta, wavelength, omega and eta
+    Assumes single axis vertical
+    ... unless a wedge angle is specified
+    """
+    if wedge != 0.:
+        print "Using a wedge angle of ",wedge
+    tth=radians(tth)
+    eta=radians(eta)
 
-   om =radians(omega)
-   # Compute k vector - the scattering in the laboratory
-   c=cos(tth/2) # cos theta
-   s=sin(tth/2) # sin theta
-   ds=2*s/wavelength
-   k=zeros((3,tth.shape[0]),Float)
-   # x - along incident beam
-   k[0,:] = -ds*s
-   # y - towards door
-   k[1,:] = -ds*c*sin(eta) # plus or minus sin or cos
-   # z - towards roof
-   k[2,:] =  ds*c*cos(eta)
-   # G-vectors - rotate k onto the crystal axes
-   g=zeros((3,ds.shape[0]),Float)
-   t=zeros((3,ds.shape[0]),Float)
-   # 
-   # g =  R . W . k where:
-   # R = ( cos(omega) , sin(omega), 0 )
-   #     (-sin(omega) , cos(omega), 0 )
-   #     (         0  ,         0 , 1 )
-   #
-   # W = ( cos(wedge) ,  0  ,  sin(wedge) )
-   #     (         0  ,  1  ,          0  )
-   #     (-sin(wedge) ,  0  ,  cos(wedge) )
-   #
-   if wedge != 0.0:
-      c = cos(radians(wedge))
-      s = sin(radians(wedge))
-      t[0,:]= c * k[0,:]           + s * k[2,:]
-      t[1,:]=            k[1,:]
-      t[2,:]=-s * k[0,:]           + c * k[2,:]
-      k=t
-   g[0,:] = cos(om)*k[0,:]+sin(om)*k[1,:]
-   g[1,:] =-sin(om)*k[0,:]+cos(om)*k[1,:]
-   g[2,:] =                               k[2,:]
-   return g
+    om =radians(omega)
+    # Compute k vector - the scattering in the laboratory
+    c=cos(tth/2) # cos theta
+    s=sin(tth/2) # sin theta
+    ds=2*s/wavelength
+    k=zeros((3,tth.shape[0]),Float)
+    # x - along incident beam
+    k[0,:] = -ds*s
+    # y - towards door
+    k[1,:] = -ds*c*sin(eta) # plus or minus sin or cos
+    # z - towards roof
+    k[2,:] =  ds*c*cos(eta)
+    # G-vectors - rotate k onto the crystal axes
+    g=zeros((3,ds.shape[0]),Float)
+    t=zeros((3,ds.shape[0]),Float)
+    #
+    # g =  R . W . k where:
+    # R = ( cos(omega) , sin(omega), 0 )
+    #     (-sin(omega) , cos(omega), 0 )
+    #     (         0  ,         0 , 1 )
+    #
+    # W = ( cos(wedge) ,  0  ,  sin(wedge) )
+    #     (         0  ,  1  ,          0  )
+    #     (-sin(wedge) ,  0  ,  cos(wedge) )
+    #
+    if wedge != 0.0:
+        c = cos(radians(wedge))
+        s = sin(radians(wedge))
+        t[0,:]= c * k[0,:]           + s * k[2,:]
+        t[1,:]=            k[1,:]
+        t[2,:]=-s * k[0,:]           + c * k[2,:]
+        k=t
+    g[0,:] = cos(om)*k[0,:]+sin(om)*k[1,:]
+    g[1,:] =-sin(om)*k[0,:]+cos(om)*k[1,:]
+    g[2,:] =                               k[2,:]
+    return g
 
 
 def uncompute_g_vectors(g,wavelength, wedge=0.0):
-   """
-   Given g-vectors compute tth,eta,omega
-   assert uncompute_g_vectors(compute_g_vector(tth,eta,omega))==tth,eta,omega
-   """
-   # print "new uncompute using wavelength",wavelength,"and wedge",wedge
-   # k = W-1 R-1 g    ...or...      g = R W k
-   #
-   # |g| = 1 / d
-   # sin(theta) = wavelength / 2 d = |g| wavelength / 2
-   #
-   ds = sqrt(sum(g*g,0))
-   s = ds*wavelength/2.0 # sin theta
-   #
-   #     k0 = projection of scattering vector along x in lab
-   #          must satisfy laue condition 
-   #        =  - sin(theta)/d
-   #
-   k0 = zeros(g.shape[0],Float)
-   k0 = -ds*s 
-   #
-   # this component: k = W-1 R-1 g
-   # k = W-1 ( g0 cos(omega) - g1 sin(omega)  + 0  )
-   #         ( g0 sin(omega) + g1 cos(omega)  + 0  )
-   #         (       0       +      0         + g2 )
-   #
-   # k0 = cos(wedge)[g0 cos(omega) - g1 sin(omega)] - sin(wedge) g2
-   #                   
-   cw = cos(radians(wedge))
-   sw = sin(radians(wedge))
-   #
-   # k0 = cw[g0 cos(omega) - g1 sin(omega)] - sw g2
-   # (k0 + sw g2) / cw = g0 cos(omega) - g1 sin(omega)
-   #
-   lhs = ( k0 + sw * g[2,:] ) / cw
-   #
-   #      lhs = g0 cos(omega) - g1 sin(omega) 
-   #      lhs + g1 sin(omega) = g0 cos(omega)
-   #      lhs^2 + 2 g1 lhs sin(omega) + g1^2 sin^2(omega) = g0^2 cos^2(omega) 
-   #      - g0^2 + lhs^2 + 2 g1 lhs sin(omega) + g1^2 sin^2(omega) + g0^2 sin^2(omega)  = 0 
-   #
-   # Finally - solve the quadratic for sin(omega)
-   # axx + bx + c = 0
-   # x = {- b +/- sqrt(b*b-4ac) } / 2a
-   #
-   c = lhs * lhs - g[0,:]*g[0,:]
-   b = 2. * g[1,:] * lhs
-   a = g[1,:]*g[1,:] + g[0,:]*g[0,:]
-   t = b*b - 4*a*c
-   valid = where(t>0.0 , 1, 0)
-   t = t * valid
-   another_valid = where(a < 1e-12, 1, 0)
-   a = where(another_valid == 1, 1, a)
-   sinomega1 = (- b - sqrt(t)) / (a * 2.)   # a can clearly be zero
-   sinomega2 = (- b + sqrt(t)) / (a * 2.)   # a can clearly be zero
-   sinomega1 = sinomega1*(1-another_valid)
-   sinomega2 = sinomega2*(1-another_valid)   
-   #
-   # Now we need also cosomega to isolate the two choices of arcsin
-   #
-   #      lhs = g0 cos(omega) - g1 sin(omega)
-   #      g0 cos(omega) - lhs =  g1 sin(omega) 
-   #      g0^2 cos^2(omega) - 2 lhs g0 cos(omega) + lhs^2 =  g1^2 sin^2(omega)
-   #      (g0^2+g1^2) cos^2(omega) - 2 lhs g0 cos(omega) + lhs^2 - g1^2  = 0
-   #
-   c = lhs * lhs - g[1,:]*g[1,:]
-   b = -2. * g[0,:] * lhs
-   t = b*b - 4*a*c
-   valid = where(t>0.0 , 1., 0.)
-   t = t * valid
-   another_valid = where(a < 1e-12, 1, 0)
-   a = where(another_valid == 1, 1, a)
-   cosomega1 = (- b - sqrt(t)) / (a * 2.)   # a can clearly be zero
-   cosomega2 = (- b + sqrt(t)) / (a * 2.)   # a can clearly be zero
-   cosomega1 = cosomega1*(1-another_valid)
-   cosomega2 = cosomega2*(1-another_valid)   
-      
-   #
-   # Now we need to find out which solutions go together via sin^2 + cos^2 = 1
-   # ... turns out it could be arctan2(sin1,cos1) or arctan2(sin1,cos2)
-   # 
-   hypothesis_1 = abs(sinomega1*sinomega1+cosomega1*cosomega1 - 1.)
-   hypothesis_2 = abs(sinomega1*sinomega1+cosomega2*cosomega2 - 1.)
-   same_sign = where(abs(hypothesis_1 < hypothesis_2 ), 1, 0)
-   omega1 = same_sign * arctan2(sinomega1,cosomega1) + (1.-same_sign) * arctan2(sinomega1,cosomega2)
-   omega2 = same_sign * arctan2(sinomega2,cosomega2) + (1.-same_sign) * arctan2(sinomega2,cosomega1)
-   #
-   # Finally re-compute cosomega and sinomega due to the flipping possibility for getting eta
-   cosomega1 = cos(omega1)
-   sinomega1 = sin(omega1)
-   cosomega2 = cos(omega2)
-   sinomega2 = sin(omega2)
-   #
-   # Now we know R-1 and W-1 , so compute k = W-1 R-1 g
-   #
-   R1g1 = zeros(g.shape,Float)
-   R1g2 = zeros(g.shape,Float)
-   #
-   R1g1[0,:] = cosomega1*g[0,:] - sinomega1*g[1,:]
-   R1g1[1,:] = sinomega1*g[0,:] + cosomega1*g[1,:]
-   R1g1[2,:] =                                     g[2,:]
-   #
-   R1g2[0,:] = cosomega2*g[0,:] - sinomega2*g[1,:]
-   R1g2[1,:] = sinomega2*g[0,:] + cosomega2*g[1,:]
-   R1g2[2,:] =                                     g[2,:]
-   #
-   #
-   k_one =  zeros(g.shape,Float)
-   k_two =  zeros(g.shape,Float)
-   #
-   # W-1 = ( cos(wedge) ,  0  , -sin(wedge) )
-   #       (         0  ,  1  ,          0  )
-   #       ( sin(wedge) ,  0  ,  cos(wedge) )
-   #
-   k_one[0,:] = cw * R1g1[0,:]                 - sw * R1g1[2,:]
-   k_one[1,:] =                    R1g1[1,:]
-   k_one[2,:] = sw * R1g1[0,:]                 + cw * R1g1[2,:]
-   #
-   k_two[0,:] = cw * R1g2[0,:]                 - sw * R1g2[2,:]
-   k_two[1,:] =                    R1g2[1,:]
-   k_two[2,:] = sw * R1g2[0,:]                 + cw * R1g2[2,:]
-   #
-   # k[1,:] = -ds*c*sin(eta)
-   # ------    -------------   .... tan(eta) = -k1/k2
-   # k[2,:] =  ds*c*cos(eta)
-   #
-   eta_one = arctan2(-k_one[1,:],k_one[2,:])
-   eta_two = arctan2(-k_two[1,:],k_two[2,:])
-   #
-   #
-   tth = degrees(arcsin(s)*2.) * valid
-   eta1 = degrees(eta_one)*valid
-   eta2 = degrees(eta_two)*valid
-   omega1 = degrees(omega1)*valid
-   omega2 = degrees(omega2)*valid
-   return tth,[eta1,eta2],[omega1,omega2]
+    """
+    Given g-vectors compute tth,eta,omega
+    assert uncompute_g_vectors(compute_g_vector(tth,eta,omega))==tth,eta,omega
+    """
+    # print "new uncompute using wavelength",wavelength,"and wedge",wedge
+    # k = W-1 R-1 g    ...or...      g = R W k
+    #
+    # |g| = 1 / d
+    # sin(theta) = wavelength / 2 d = |g| wavelength / 2
+    #
+    ds = sqrt(sum(g*g,0))
+    s = ds*wavelength/2.0 # sin theta
+    #
+    #     k0 = projection of scattering vector along x in lab
+    #          must satisfy laue condition
+    #        =  - sin(theta)/d
+    #
+    k0 = zeros(g.shape[0],Float)
+    k0 = -ds*s
+    #
+    # this component: k = W-1 R-1 g
+    # k = W-1 ( g0 cos(omega) - g1 sin(omega)  + 0  )
+    #         ( g0 sin(omega) + g1 cos(omega)  + 0  )
+    #         (       0       +      0         + g2 )
+    #
+    # k0 = cos(wedge)[g0 cos(omega) - g1 sin(omega)] - sin(wedge) g2
+    #
+    cw = cos(radians(wedge))
+    sw = sin(radians(wedge))
+    #
+    # k0 = cw[g0 cos(omega) - g1 sin(omega)] - sw g2
+    # (k0 + sw g2) / cw = g0 cos(omega) - g1 sin(omega)
+    #
+    lhs = ( k0 + sw * g[2,:] ) / cw
+    #
+    #      lhs = g0 cos(omega) - g1 sin(omega)
+    #      lhs + g1 sin(omega) = g0 cos(omega)
+    #      lhs^2 + 2 g1 lhs sin(omega) + g1^2 sin^2(omega) = g0^2 cos^2(omega)
+    #      - g0^2 + lhs^2 + 2 g1 lhs sin(omega) + g1^2 sin^2(omega) + g0^2 sin^2(omega)  = 0
+    #
+    # Finally - solve the quadratic for sin(omega)
+    # axx + bx + c = 0
+    # x = {- b +/- sqrt(b*b-4ac) } / 2a
+    #
+    c = lhs * lhs - g[0,:]*g[0,:]
+    b = 2. * g[1,:] * lhs
+    a = g[1,:]*g[1,:] + g[0,:]*g[0,:]
+    t = b*b - 4*a*c
+    valid = where(t>0.0 , 1, 0)
+    t = t * valid
+    another_valid = where(a < 1e-12, 1, 0)
+    a = where(another_valid == 1, 1, a)
+    sinomega1 = (- b - sqrt(t)) / (a * 2.)   # a can clearly be zero
+    sinomega2 = (- b + sqrt(t)) / (a * 2.)   # a can clearly be zero
+    sinomega1 = sinomega1*(1-another_valid)
+    sinomega2 = sinomega2*(1-another_valid)
+    #
+    # Now we need also cosomega to isolate the two choices of arcsin
+    #
+    #      lhs = g0 cos(omega) - g1 sin(omega)
+    #      g0 cos(omega) - lhs =  g1 sin(omega)
+    #      g0^2 cos^2(omega) - 2 lhs g0 cos(omega) + lhs^2 =  g1^2 sin^2(omega)
+    #      (g0^2+g1^2) cos^2(omega) - 2 lhs g0 cos(omega) + lhs^2 - g1^2  = 0
+    #
+    c = lhs * lhs - g[1,:]*g[1,:]
+    b = -2. * g[0,:] * lhs
+    t = b*b - 4*a*c
+    valid = where(t>0.0 , 1., 0.)
+    t = t * valid
+    another_valid = where(a < 1e-12, 1, 0)
+    a = where(another_valid == 1, 1, a)
+    cosomega1 = (- b - sqrt(t)) / (a * 2.)   # a can clearly be zero
+    cosomega2 = (- b + sqrt(t)) / (a * 2.)   # a can clearly be zero
+    cosomega1 = cosomega1*(1-another_valid)
+    cosomega2 = cosomega2*(1-another_valid)
+
+    #
+    # Now we need to find out which solutions go together via sin^2 + cos^2 = 1
+    # ... turns out it could be arctan2(sin1,cos1) or arctan2(sin1,cos2)
+    #
+    hypothesis_1 = abs(sinomega1*sinomega1+cosomega1*cosomega1 - 1.)
+    hypothesis_2 = abs(sinomega1*sinomega1+cosomega2*cosomega2 - 1.)
+    same_sign = where(abs(hypothesis_1 < hypothesis_2 ), 1, 0)
+    omega1 = same_sign * arctan2(sinomega1,cosomega1) + (1.-same_sign) * arctan2(sinomega1,cosomega2)
+    omega2 = same_sign * arctan2(sinomega2,cosomega2) + (1.-same_sign) * arctan2(sinomega2,cosomega1)
+    #
+    # Finally re-compute cosomega and sinomega due to the flipping possibility for getting eta
+    cosomega1 = cos(omega1)
+    sinomega1 = sin(omega1)
+    cosomega2 = cos(omega2)
+    sinomega2 = sin(omega2)
+    #
+    # Now we know R-1 and W-1 , so compute k = W-1 R-1 g
+    #
+    R1g1 = zeros(g.shape,Float)
+    R1g2 = zeros(g.shape,Float)
+    #
+    R1g1[0,:] = cosomega1*g[0,:] - sinomega1*g[1,:]
+    R1g1[1,:] = sinomega1*g[0,:] + cosomega1*g[1,:]
+    R1g1[2,:] =                                     g[2,:]
+    #
+    R1g2[0,:] = cosomega2*g[0,:] - sinomega2*g[1,:]
+    R1g2[1,:] = sinomega2*g[0,:] + cosomega2*g[1,:]
+    R1g2[2,:] =                                     g[2,:]
+    #
+    #
+    k_one =  zeros(g.shape,Float)
+    k_two =  zeros(g.shape,Float)
+    #
+    # W-1 = ( cos(wedge) ,  0  , -sin(wedge) )
+    #       (         0  ,  1  ,          0  )
+    #       ( sin(wedge) ,  0  ,  cos(wedge) )
+    #
+    k_one[0,:] = cw * R1g1[0,:]                 - sw * R1g1[2,:]
+    k_one[1,:] =                    R1g1[1,:]
+    k_one[2,:] = sw * R1g1[0,:]                 + cw * R1g1[2,:]
+    #
+    k_two[0,:] = cw * R1g2[0,:]                 - sw * R1g2[2,:]
+    k_two[1,:] =                    R1g2[1,:]
+    k_two[2,:] = sw * R1g2[0,:]                 + cw * R1g2[2,:]
+    #
+    # k[1,:] = -ds*c*sin(eta)
+    # ------    -------------   .... tan(eta) = -k1/k2
+    # k[2,:] =  ds*c*cos(eta)
+    #
+    eta_one = arctan2(-k_one[1,:],k_one[2,:])
+    eta_two = arctan2(-k_two[1,:],k_two[2,:])
+    #
+    #
+    tth = degrees(arcsin(s)*2.) * valid
+    eta1 = degrees(eta_one)*valid
+    eta2 = degrees(eta_two)*valid
+    omega1 = degrees(omega1)*valid
+    omega2 = degrees(omega2)*valid
+    return tth,[eta1,eta2],[omega1,omega2]
 
 def old_uncompute_g_vectors(gv,wavelength, wedge=0.0):
-   """
-   Given g-vectors compute tth,eta,omega
-   assert uncompute_g_vectors(compute_g_vector(tth,eta,omega))==tth,eta,omega
-   """
-   # k=array(g.shape,Float)
-   # k[2,:]=g[2,:] # Z component in laboratory
-   # Length gives two-theta
-   #
-   # Deal with wedge ... we had           g = W . R . k
-   #                    now get     W-1 . g =     R . k
-   # and proceed as before for R
-   g=zeros(gv.shape,Float)
-   c = cos(radians(wedge))
-   s = sin(radians(wedge))
-   g[0,:]= c * gv[0,:]           - s * gv[2,:]
-   g[1,:]=            gv[1,:]
-   g[2,:]= s * gv[0,:]           + c * gv[2,:]
-   gv = g
-   ds = sqrt(sum(gv*gv,0))
-   s = ds*wavelength/2 # sin theta
-   # Two theta from Bragg's law
-   try:
-      th = arcsin(s)
-   except:
-      print "Problem getting theta from sin(theta)"
-      print "Maximum and minimum in sin(theta)=",maximum.reduce(s),minimum.reduce(s)
-   c = cos(th) # cos theta
-   # Two theta in degrees
-   k=zeros(gv.shape,Float)
-   k[2,:]=gv[2,:] # Last line above  == ds*c*cos(eta)
-   k[0,:] = -ds*s # From above
-   # Should check if this is true or not?
-   bottom=ds*c
-   try:
-      coseta = gv[2,:]/bottom
-   except: # Either a (0,0,0) peak or cos(theta) = 0 -> 90 degrees
-      ind=compress(bottom<1e-6,range(ds.shape[0]))
-      put(bottom,ind,1)
-      coseta = gv[2,:]/bottom
-      put(coseta,ind,1.)
-   #print "max and min in coseta",maximum.reduce(coseta),minimum.reduce(coseta)
-   coseta=clip(coseta,-1,1)
-   tth = degrees(2*th)
-   eta1 = degrees(arccos(coseta))
-   eta2 = -eta1
-   k[1,:] = -ds*c*sin(radians(eta1)) # Known also
-   # Know k and g for each peak - need to solve for omega
-   omega_crystal = arctan2(gv[0,:],gv[1,:])
-   omega_laboratory = arctan2(k[0,:],k[1,:])
-   omega1 = degrees(  omega_crystal - omega_laboratory )
-   k[1,:] = -ds*c*sin(radians(eta2)) # Known also
-   # Know k and g for each peak - need to solve for omega
-   omega_crystal = arctan2(gv[0,:],gv[1,:])
-   omega_laboratory = arctan2(k[0,:],k[1,:])
-   omega2 = degrees(  omega_crystal - omega_laboratory )
-   return tth,[eta1,eta2],[omega1,omega2]       
+    """
+    Given g-vectors compute tth,eta,omega
+    assert uncompute_g_vectors(compute_g_vector(tth,eta,omega))==tth,eta,omega
+    """
+    # k=array(g.shape,Float)
+    # k[2,:]=g[2,:] # Z component in laboratory
+    # Length gives two-theta
+    #
+    # Deal with wedge ... we had           g = W . R . k
+    #                    now get     W-1 . g =     R . k
+    # and proceed as before for R
+    g=zeros(gv.shape,Float)
+    c = cos(radians(wedge))
+    s = sin(radians(wedge))
+    g[0,:]= c * gv[0,:]           - s * gv[2,:]
+    g[1,:]=            gv[1,:]
+    g[2,:]= s * gv[0,:]           + c * gv[2,:]
+    gv = g
+    ds = sqrt(sum(gv*gv,0))
+    s = ds*wavelength/2 # sin theta
+    # Two theta from Bragg's law
+    try:
+        th = arcsin(s)
+    except:
+        print "Problem getting theta from sin(theta)"
+        print "Maximum and minimum in sin(theta)=",maximum.reduce(s),minimum.reduce(s)
+    c = cos(th) # cos theta
+    # Two theta in degrees
+    k=zeros(gv.shape,Float)
+    k[2,:]=gv[2,:] # Last line above  == ds*c*cos(eta)
+    k[0,:] = -ds*s # From above
+    # Should check if this is true or not?
+    bottom=ds*c
+    try:
+        coseta = gv[2,:]/bottom
+    except: # Either a (0,0,0) peak or cos(theta) = 0 -> 90 degrees
+        ind=compress(bottom<1e-6,range(ds.shape[0]))
+        put(bottom,ind,1)
+        coseta = gv[2,:]/bottom
+        put(coseta,ind,1.)
+    #print "max and min in coseta",maximum.reduce(coseta),minimum.reduce(coseta)
+    coseta=clip(coseta,-1,1)
+    tth = degrees(2*th)
+    eta1 = degrees(arccos(coseta))
+    eta2 = -eta1
+    k[1,:] = -ds*c*sin(radians(eta1)) # Known also
+    # Know k and g for each peak - need to solve for omega
+    omega_crystal = arctan2(gv[0,:],gv[1,:])
+    omega_laboratory = arctan2(k[0,:],k[1,:])
+    omega1 = degrees(  omega_crystal - omega_laboratory )
+    k[1,:] = -ds*c*sin(radians(eta2)) # Known also
+    # Know k and g for each peak - need to solve for omega
+    omega_crystal = arctan2(gv[0,:],gv[1,:])
+    omega_laboratory = arctan2(k[0,:],k[1,:])
+    omega2 = degrees(  omega_crystal - omega_laboratory )
+    return tth,[eta1,eta2],[omega1,omega2]
 
 def uncompute_one_g_vector(gv,wavelength, wedge=0.0):
-   """
-   Given g-vectors compute tth,eta,omega
-   assert uncompute_g_vectors(compute_g_vector(tth,eta,omega))==tth,eta,omega
-   """
-   t,e,o=uncompute_g_vectors(transpose(array([gv,gv])),wavelength,wedge=wedge)
-   return t[0],[e[0][0],e[1][0]],[o[0][0],o[1][0]]       
+    """
+    Given g-vectors compute tth,eta,omega
+    assert uncompute_g_vectors(compute_g_vector(tth,eta,omega))==tth,eta,omega
+    """
+    t,e,o=uncompute_g_vectors(transpose(array([gv,gv])),wavelength,wedge=wedge)
+    return t[0],[e[0][0],e[1][0]],[o[0][0],o[1][0]]
 
 
 
 def compute_lorentz_factors(args):
-   """
-   From Kabsch 1988 J. Appl. Cryst. 21 619
+    """
+    From Kabsch 1988 J. Appl. Cryst. 21 619
 
-   Multiply the intensities by:
-   Lorentz = | S.(u x S_0)| / |S|.|S_0|
-   S = scattered vector
-   S_0 = incident vector
-   u = unit vector along rotation axis
-   """
-   pass
+    Multiply the intensities by:
+    Lorentz = | S.(u x S_0)| / |S|.|S_0|
+    S = scattered vector
+    S_0 = incident vector
+    u = unit vector along rotation axis
+    """
+    pass
 
 def compute_polarisation_factors(args):
-   """
-   From Kabsch 1988 J. Appl. Cryst. 21 619
+    """
+    From Kabsch 1988 J. Appl. Cryst. 21 619
 
-   DIVIDE the intensities by:
-   <sin2 psi> = ( 1 - 2p) [ 1 - (n.S/|S|^2) ] + p { 1 + [S.S_0/(|S||S_0|)^2]^2}
-   
-   p = degree of polarisation (sync = 1, tube = 0.5 , mono + tube in between)
-       or "probability of finding electric field vector in plane having normal, n"
-   S = scattered vector
-   S_0 = incident vector
-   n = normal to polarisation plane, typically perpendicular to S_0
-   """
-   pass
+    DIVIDE the intensities by:
+    <sin2 psi> = ( 1 - 2p) [ 1 - (n.S/|S|^2) ] + p { 1 + [S.S_0/(|S||S_0|)^2]^2}
+
+    p = degree of polarisation (sync = 1, tube = 0.5 , mono + tube in between)
+        or "probability of finding electric field vector in plane having normal, n"
+    S = scattered vector
+    S_0 = incident vector
+    n = normal to polarisation plane, typically perpendicular to S_0
+    """
+    pass
 
 if __name__=="__main__":
-   # from indexing import mod_360
-   def mod_360(theta, target):
-      """
-      Find multiple of 360 to add to theta to be closest to target
-      """
-      diff=theta-target
-      while diff < -180:
-         theta=theta+360
-         diff=theta-target
-      while diff > 180:
-         theta=theta-360
-         diff=theta-target
-      return theta
+    # from indexing import mod_360
+    def mod_360(theta, target):
+        """
+        Find multiple of 360 to add to theta to be closest to target
+        """
+        diff=theta-target
+        while diff < -180:
+            theta=theta+360
+            diff=theta-target
+        while diff > 180:
+            theta=theta-360
+            diff=theta-target
+        return theta
 
-   tth = array([   1,  2,  3,  4,  5,  6,  7,  8,  9, 10], Float)
-   eta = array([  10, 40, 70,100,130,160,190,220,270,340], Float)
-   om  = array([   0, 20, 40,100, 60,240,300, 20, 42, 99], Float)
+    tth = array([   1,  2,  3,  4,  5,  6,  7,  8,  9, 10], Float)
+    eta = array([  10, 40, 70,100,130,160,190,220,270,340], Float)
+    om  = array([   0, 20, 40,100, 60,240,300, 20, 42, 99], Float)
 #   tth = array([    4, 5, 7], Float)
 #   eta = array([  100, 5, 190], Float)
 #   om  = array([  100, 5, 300], Float)
-   
-   for wavelength in [ 0.1, 0.2, 0.3]:
-      for wedge in [-10. , -5., 0., 5., 10.]:
-         print "Wavelength",wavelength,"wedge",wedge
-         print "tth, eta, omega   ...   tth, eta, omega   ... tth, eta, omega"
-         gv = compute_g_vectors(tth,eta,om,wavelength,wedge)
-         t,e,o = new_uncompute_g_vectors(gv,wavelength, wedge)
-         for i in range(tth.shape[0]):
-            print "%9.3f %9.3f %9.3f  "%(tth[i],eta[i],om[i]),
-            print "%9.3f %9.3f %9.3f  "%(t[i],mod_360(e[0][i],eta[i]),mod_360(o[0][i],om[i])),
-            print "%9.3f %9.3f %9.3f  "%(t[i],mod_360(e[1][i],eta[i]),mod_360(o[1][i],om[i])),
-            # Choose best fitting
-            e_eta1 = mod_360(e[0][i],eta[i]) - eta[i]
-            e_om1  = mod_360(o[0][i], om[i]) -  om[i]
-            score_1 = e_eta1*e_eta1 + e_om1*e_om1
-            e_eta2 = mod_360(e[1][i],eta[i]) - eta[i]
-            e_om2  = mod_360(o[1][i], om[i]) -  om[i]
-            score_2 = e_eta2*e_eta2 + e_om2*e_om2
-            print "%.5g %.5g"%(score_1,score_2)
-         
+
+    for wavelength in [ 0.1, 0.2, 0.3]:
+        for wedge in [-10. , -5., 0., 5., 10.]:
+            print "Wavelength",wavelength,"wedge",wedge
+            print "tth, eta, omega   ...   tth, eta, omega   ... tth, eta, omega"
+            gv = compute_g_vectors(tth,eta,om,wavelength,wedge)
+            t,e,o = new_uncompute_g_vectors(gv,wavelength, wedge)
+            for i in range(tth.shape[0]):
+                print "%9.3f %9.3f %9.3f  "%(tth[i],eta[i],om[i]),
+                print "%9.3f %9.3f %9.3f  "%(t[i],mod_360(e[0][i],eta[i]),mod_360(o[0][i],om[i])),
+                print "%9.3f %9.3f %9.3f  "%(t[i],mod_360(e[1][i],eta[i]),mod_360(o[1][i],om[i])),
+                # Choose best fitting
+                e_eta1 = mod_360(e[0][i],eta[i]) - eta[i]
+                e_om1  = mod_360(o[0][i], om[i]) -  om[i]
+                score_1 = e_eta1*e_eta1 + e_om1*e_om1
+                e_eta2 = mod_360(e[1][i],eta[i]) - eta[i]
+                e_om2  = mod_360(o[1][i], om[i]) -  om[i]
+                score_2 = e_eta2*e_eta2 + e_om2*e_om2
+                print "%.5g %.5g"%(score_1,score_2)

@@ -32,14 +32,9 @@
 <font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
     
 <tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="copy.html">copy</a><br>
-<a href="copy_reg.html">copy_reg</a><br>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="Numeric.html">Numeric</a><br>
 </td><td width="25%" valign=top><a href="math.html">math</a><br>
-<a href="multiarray.html">multiarray</a><br>
-</td><td width="25%" valign=top><a href="pickle.html">pickle</a><br>
-<a href="string.html">string</a><br>
-</td><td width="25%" valign=top><a href="types.html">types</a><br>
-</td></tr></table></td></tr></table><p>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ee77aa">
 <td colspan=3 valign=bottom>&nbsp;<br>
@@ -63,11 +58,13 @@ optionally&nbsp;a&nbsp;symmetry,&nbsp;one&nbsp;of&nbsp;"P","A","B","C","I","F"</
 
 <dl><dt><a name="unitcell-anglehkls"><strong>anglehkls</strong></a>(self, h1, h2)</dt><dd><tt>Compute&nbsp;the&nbsp;angle&nbsp;between&nbsp;reciprocal&nbsp;lattice&nbsp;vectors&nbsp;h1,&nbsp;h2</tt></dd></dl>
 
-<dl><dt><a name="unitcell-ds"><strong>ds</strong></a>(self, h)</dt></dl>
+<dl><dt><a name="unitcell-ds"><strong>ds</strong></a>(self, h)</dt><dd><tt>computes&nbsp;1/d&nbsp;for&nbsp;this&nbsp;hkl&nbsp;=&nbsp;hgh</tt></dd></dl>
 
 <dl><dt><a name="unitcell-gethkls"><strong>gethkls</strong></a>(self, dsmax)</dt><dd><tt>Generate&nbsp;hkl&nbsp;list<br>
 Argument&nbsp;dsmax&nbsp;is&nbsp;the&nbsp;d*&nbsp;limit&nbsp;(eg&nbsp;1/d)<br>
-Default&nbsp;of&nbsp;zero&nbsp;gives&nbsp;only&nbsp;the&nbsp;(000)&nbsp;reflection</tt></dd></dl>
+Default&nbsp;of&nbsp;zero&nbsp;gives&nbsp;only&nbsp;the&nbsp;(000)&nbsp;reflection<br>
+&nbsp;<br>
+assumes&nbsp;[h|k|l]&nbsp;&lt;&nbsp;20</tt></dd></dl>
 
 <dl><dt><a name="unitcell-makerings"><strong>makerings</strong></a>(self, limit, tol<font color="#909090">=0.001</font>)</dt><dd><tt>Makes&nbsp;a&nbsp;list&nbsp;of&nbsp;computed&nbsp;powder&nbsp;rings<br>
 The&nbsp;tolerance&nbsp;is&nbsp;the&nbsp;difference&nbsp;in&nbsp;d*&nbsp;to&nbsp;decide<br>
@@ -98,30 +95,11 @@ t3&nbsp;is&nbsp;perpendicular&nbsp;to&nbsp;both&nbsp;&nbsp;(unit&nbsp;vector&nbs
  <dl><dt><a name="-F"><strong>F</strong></a>(h, k, l)</dt></dl>
  <dl><dt><a name="-I"><strong>I</strong></a>(h, k, l)</dt></dl>
  <dl><dt><a name="-P"><strong>P</strong></a>(h, k, l)</dt></dl>
- <dl><dt><a name="-arange"><strong>arange</strong></a>(...)</dt><dd><tt><a href="#-arange">arange</a>(start,&nbsp;stop=None,&nbsp;step=1,&nbsp;typecode=None)<br>
-&nbsp;<br>
-&nbsp;Just&nbsp;like&nbsp;range()&nbsp;except&nbsp;it&nbsp;returns&nbsp;an&nbsp;array&nbsp;whose&nbsp;type&nbsp;can&nbsp;be<br>
-specified&nbsp;by&nbsp;the&nbsp;keyword&nbsp;argument&nbsp;typecode.</tt></dd></dl>
- <dl><dt><a name="-array"><strong>array</strong></a>(...)</dt><dd><tt><a href="#-array">array</a>(sequence,&nbsp;typecode=None,&nbsp;copy=1,&nbsp;savespace=0)&nbsp;will&nbsp;return&nbsp;a&nbsp;new&nbsp;array&nbsp;formed&nbsp;from&nbsp;the&nbsp;given&nbsp;(potentially&nbsp;nested)&nbsp;sequence&nbsp;with&nbsp;type&nbsp;given&nbsp;by&nbsp;typecode.&nbsp;&nbsp;If&nbsp;no&nbsp;typecode&nbsp;is&nbsp;given,&nbsp;then&nbsp;the&nbsp;type&nbsp;will&nbsp;be&nbsp;determined&nbsp;as&nbsp;the&nbsp;minimum&nbsp;type&nbsp;required&nbsp;to&nbsp;hold&nbsp;the&nbsp;objects&nbsp;in&nbsp;sequence.&nbsp;&nbsp;If&nbsp;copy&nbsp;is&nbsp;zero&nbsp;and&nbsp;sequence&nbsp;is&nbsp;already&nbsp;an&nbsp;array,&nbsp;a&nbsp;reference&nbsp;will&nbsp;be&nbsp;returned.&nbsp;&nbsp;If&nbsp;savespace&nbsp;is&nbsp;nonzero,&nbsp;the&nbsp;new&nbsp;array&nbsp;will&nbsp;maintain&nbsp;its&nbsp;precision&nbsp;in&nbsp;operations.</tt></dd></dl>
- <dl><dt><a name="-arrayrange"><strong>arrayrange</strong></a> = arange(...)</dt><dd><tt><a href="#-arange">arange</a>(start,&nbsp;stop=None,&nbsp;step=1,&nbsp;typecode=None)<br>
-&nbsp;<br>
-&nbsp;Just&nbsp;like&nbsp;range()&nbsp;except&nbsp;it&nbsp;returns&nbsp;an&nbsp;array&nbsp;whose&nbsp;type&nbsp;can&nbsp;be<br>
-specified&nbsp;by&nbsp;the&nbsp;keyword&nbsp;argument&nbsp;typecode.</tt></dd></dl>
  <dl><dt><a name="-cellfromstring"><strong>cellfromstring</strong></a>(s)</dt></dl>
- <dl><dt><a name="-choose"><strong>choose</strong></a>(...)</dt><dd><tt><a href="#-choose">choose</a>(a,&nbsp;(b1,b2,...))</tt></dd></dl>
  <dl><dt><a name="-cross"><strong>cross</strong></a>(a, b)</dt><dd><tt>a&nbsp;x&nbsp;b&nbsp;has&nbsp;length&nbsp;|a||b|sin(theta)</tt></dd></dl>
- <dl><dt><a name="-cross_correlate"><strong>cross_correlate</strong></a>(...)</dt><dd><tt><a href="#-cross_correlate">cross_correlate</a>(a,v,&nbsp;mode=0)</tt></dd></dl>
  <dl><dt><a name="-degrees"><strong>degrees</strong></a>(x)</dt></dl>
- <dl><dt><a name="-empty"><strong>empty</strong></a>(...)</dt><dd><tt><a href="#-empty">empty</a>((d1,...,dn),typecode='l',savespace=0)&nbsp;will&nbsp;return&nbsp;a&nbsp;new&nbsp;array<br>
-of&nbsp;shape&nbsp;(d1,...,dn)&nbsp;and&nbsp;given&nbsp;type&nbsp;with&nbsp;all&nbsp;its&nbsp;entries&nbsp;uninitialized.&nbsp;&nbsp;If&nbsp;savespace&nbsp;is<br>
-nonzero,&nbsp;the&nbsp;array&nbsp;will&nbsp;be&nbsp;a&nbsp;spacesaver&nbsp;array.&nbsp;&nbsp;This&nbsp;can&nbsp;be&nbsp;faster&nbsp;than&nbsp;zeros.</tt></dd></dl>
- <dl><dt><a name="-fromstring"><strong>fromstring</strong></a>(...)</dt><dd><tt><a href="#-fromstring">fromstring</a>(string,&nbsp;typecode='l',&nbsp;count=-1)&nbsp;returns&nbsp;a&nbsp;new&nbsp;1d&nbsp;array&nbsp;initialized&nbsp;from&nbsp;the&nbsp;raw&nbsp;binary&nbsp;data&nbsp;in&nbsp;string.&nbsp;&nbsp;If&nbsp;count&nbsp;is&nbsp;positive,&nbsp;the&nbsp;new&nbsp;array&nbsp;will&nbsp;have&nbsp;count&nbsp;elements,&nbsp;otherwise&nbsp;it's&nbsp;size&nbsp;is&nbsp;determined&nbsp;by&nbsp;the&nbsp;size&nbsp;of&nbsp;string.</tt></dd></dl>
  <dl><dt><a name="-radians"><strong>radians</strong></a>(x)</dt></dl>
- <dl><dt><a name="-reshape"><strong>reshape</strong></a>(...)</dt><dd><tt><a href="#-reshape">reshape</a>(a,&nbsp;(d1,&nbsp;d2,&nbsp;...,&nbsp;dn)).&nbsp;&nbsp;Change&nbsp;the&nbsp;shape&nbsp;of&nbsp;a&nbsp;to&nbsp;be&nbsp;an&nbsp;n-dimensional&nbsp;array&nbsp;with&nbsp;dimensions&nbsp;given&nbsp;by&nbsp;d1...dn.&nbsp;&nbsp;Note:&nbsp;the&nbsp;size&nbsp;specified&nbsp;for&nbsp;the&nbsp;new&nbsp;array&nbsp;must&nbsp;be&nbsp;exactly&nbsp;equal&nbsp;to&nbsp;the&nbsp;size&nbsp;of&nbsp;the&nbsp;&nbsp;old&nbsp;one&nbsp;or&nbsp;an&nbsp;error&nbsp;will&nbsp;occur.</tt></dd></dl>
- <dl><dt><a name="-searchsorted"><strong>searchsorted</strong></a> = binarysearch(...)</dt><dd><tt>binarysearch(a,v)</tt></dd></dl>
- <dl><dt><a name="-take"><strong>take</strong></a>(...)</dt><dd><tt><a href="#-take">take</a>(a,&nbsp;indices,&nbsp;axis=0).&nbsp;&nbsp;Selects&nbsp;the&nbsp;elements&nbsp;in&nbsp;indices&nbsp;from&nbsp;array&nbsp;a&nbsp;along&nbsp;the&nbsp;given&nbsp;axis.</tt></dd></dl>
  <dl><dt><a name="-unit"><strong>unit</strong></a>(a)</dt><dd><tt>Normalise&nbsp;vector&nbsp;a&nbsp;to&nbsp;unit&nbsp;length</tt></dd></dl>
- <dl><dt><a name="-zeros"><strong>zeros</strong></a>(...)</dt><dd><tt><a href="#-zeros">zeros</a>((d1,...,dn),typecode='l',savespace=0)&nbsp;will&nbsp;return&nbsp;a&nbsp;new&nbsp;array&nbsp;of&nbsp;shape&nbsp;(d1,...,dn)&nbsp;and&nbsp;type&nbsp;typecode&nbsp;with&nbsp;all&nbsp;it's&nbsp;entries&nbsp;initialized&nbsp;to&nbsp;zero.&nbsp;&nbsp;If&nbsp;savespace&nbsp;is&nbsp;nonzero&nbsp;the&nbsp;array&nbsp;will&nbsp;be&nbsp;a&nbsp;spacesaver&nbsp;array.</tt></dd></dl>
 </td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#55aa55">
@@ -129,89 +107,5 @@ nonzero,&nbsp;the&nbsp;array&nbsp;will&nbsp;be&nbsp;a&nbsp;spacesaver&nbsp;array
 <font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
     
 <tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><strong>Character</strong> = 'c'<br>
-<strong>Complex</strong> = 'D'<br>
-<strong>Complex0</strong> = 'F'<br>
-<strong>Complex16</strong> = 'F'<br>
-<strong>Complex32</strong> = 'F'<br>
-<strong>Complex64</strong> = 'D'<br>
-<strong>Complex8</strong> = 'F'<br>
-<strong>Float</strong> = 'd'<br>
-<strong>Float0</strong> = 'f'<br>
-<strong>Float16</strong> = 'f'<br>
-<strong>Float32</strong> = 'f'<br>
-<strong>Float64</strong> = 'd'<br>
-<strong>Float8</strong> = 'f'<br>
-<strong>Int</strong> = 'l'<br>
-<strong>Int0</strong> = '1'<br>
-<strong>Int16</strong> = 's'<br>
-<strong>Int32</strong> = 'i'<br>
-<strong>Int8</strong> = '1'<br>
-<strong>LittleEndian</strong> = True<br>
-<strong>NewAxis</strong> = None<br>
-<strong>PyObject</strong> = 'O'<br>
-<strong>UInt</strong> = 'u'<br>
-<strong>UInt16</strong> = 'w'<br>
-<strong>UInt32</strong> = 'u'<br>
-<strong>UInt8</strong> = 'b'<br>
-<strong>UnsignedInt16</strong> = 'w'<br>
-<strong>UnsignedInt32</strong> = 'u'<br>
-<strong>UnsignedInt8</strong> = 'b'<br>
-<strong>UnsignedInteger</strong> = 'u'<br>
-<strong>absolute</strong> = &lt;ufunc 'absolute'&gt;<br>
-<strong>add</strong> = &lt;ufunc 'add'&gt;<br>
-<strong>arccos</strong> = &lt;ufunc 'arccos'&gt;<br>
-<strong>arccosh</strong> = &lt;ufunc 'arccosh'&gt;<br>
-<strong>arcsin</strong> = &lt;ufunc 'arcsin'&gt;<br>
-<strong>arcsinh</strong> = &lt;ufunc 'arcsinh'&gt;<br>
-<strong>arctan</strong> = &lt;ufunc 'arctan'&gt;<br>
-<strong>arctan2</strong> = &lt;ufunc 'arctan2'&gt;<br>
-<strong>arctanh</strong> = &lt;ufunc 'arctanh'&gt;<br>
-<strong>bitwise_and</strong> = &lt;ufunc 'bitwise_and'&gt;<br>
-<strong>bitwise_or</strong> = &lt;ufunc 'bitwise_or'&gt;<br>
-<strong>bitwise_xor</strong> = &lt;ufunc 'bitwise_xor'&gt;<br>
-<strong>ceil</strong> = &lt;ufunc 'ceil'&gt;<br>
-<strong>conjugate</strong> = &lt;ufunc 'conjugate'&gt;<br>
-<strong>cos</strong> = &lt;ufunc 'cos'&gt;<br>
-<strong>cosh</strong> = &lt;ufunc 'cosh'&gt;<br>
-<strong>divide</strong> = &lt;ufunc 'divide'&gt;<br>
-<strong>divide_safe</strong> = &lt;ufunc 'divide_safe'&gt;<br>
-<strong>e</strong> = 2.7182818284590451<br>
-<strong>equal</strong> = &lt;ufunc 'equal'&gt;<br>
-<strong>exp</strong> = &lt;ufunc 'exp'&gt;<br>
-<strong>fabs</strong> = &lt;ufunc 'fabs'&gt;<br>
-<strong>floor</strong> = &lt;ufunc 'floor'&gt;<br>
-<strong>floor_divide</strong> = &lt;ufunc 'floor_divide'&gt;<br>
-<strong>fmod</strong> = &lt;ufunc 'fmod'&gt;<br>
-<strong>greater</strong> = &lt;ufunc 'greater'&gt;<br>
-<strong>greater_equal</strong> = &lt;ufunc 'greater_equal'&gt;<br>
-<strong>hypot</strong> = &lt;ufunc 'hypot'&gt;<br>
-<strong>invert</strong> = &lt;ufunc 'invert'&gt;<br>
-<strong>left_shift</strong> = &lt;ufunc 'left_shift'&gt;<br>
-<strong>less</strong> = &lt;ufunc 'less'&gt;<br>
-<strong>less_equal</strong> = &lt;ufunc 'less_equal'&gt;<br>
-<strong>log</strong> = &lt;ufunc 'log'&gt;<br>
-<strong>log10</strong> = &lt;ufunc 'log10'&gt;<br>
-<strong>logical_and</strong> = &lt;ufunc 'logical_and'&gt;<br>
-<strong>logical_not</strong> = &lt;ufunc 'logical_not'&gt;<br>
-<strong>logical_or</strong> = &lt;ufunc 'logical_or'&gt;<br>
-<strong>logical_xor</strong> = &lt;ufunc 'logical_xor'&gt;<br>
-<strong>maximum</strong> = &lt;ufunc 'maximum'&gt;<br>
-<strong>minimum</strong> = &lt;ufunc 'minimum'&gt;<br>
-<strong>multiply</strong> = &lt;ufunc 'multiply'&gt;<br>
-<strong>negative</strong> = &lt;ufunc 'negative'&gt;<br>
-<strong>not_equal</strong> = &lt;ufunc 'not_equal'&gt;<br>
-<strong>outif</strong> = {'A': &lt;function I&gt;, 'B': &lt;function B&gt;, 'C': &lt;function C&gt;, 'F': &lt;function F&gt;, 'I': &lt;function I&gt;, 'P': &lt;function P&gt;}<br>
-<strong>pi</strong> = 3.1415926535897931<br>
-<strong>power</strong> = &lt;ufunc 'power'&gt;<br>
-<strong>remainder</strong> = &lt;ufunc 'remainder'&gt;<br>
-<strong>right_shift</strong> = &lt;ufunc 'right_shift'&gt;<br>
-<strong>sin</strong> = &lt;ufunc 'sin'&gt;<br>
-<strong>sinh</strong> = &lt;ufunc 'sinh'&gt;<br>
-<strong>sqrt</strong> = &lt;ufunc 'sqrt'&gt;<br>
-<strong>subtract</strong> = &lt;ufunc 'subtract'&gt;<br>
-<strong>tan</strong> = &lt;ufunc 'tan'&gt;<br>
-<strong>tanh</strong> = &lt;ufunc 'tanh'&gt;<br>
-<strong>true_divide</strong> = &lt;ufunc 'true_divide'&gt;<br>
-<strong>typecodes</strong> = {'Character': 'c', 'Complex': 'FD', 'Float': 'fd', 'Integer': '1sil', 'UnsignedInteger': 'bwu'}</td></tr></table>
+<td width="100%"><strong>outif</strong> = {'A': &lt;function I&gt;, 'B': &lt;function B&gt;, 'C': &lt;function C&gt;, 'F': &lt;function F&gt;, 'I': &lt;function I&gt;, 'P': &lt;function P&gt;}</td></tr></table>
 </body></html>

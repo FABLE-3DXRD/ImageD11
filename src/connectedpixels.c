@@ -23,6 +23,12 @@
 */
 
 
+static char moduledocs[] =\
+"   C extensions for image analysis, part of ImageD11\n"\
+"   ";
+
+
+
 #include <Python.h>                  /* To talk to python */
 #include "Numeric/arrayobject.h"     /* Access to Numeric */
 #include "dset.h"   /* Disjoint sets thing for blob finding */
@@ -85,6 +91,13 @@ void ptype(int type){
 }
 
 
+static char roisum_doc [] =\
+"  (float) roisum ( Numeric.array(2D), xl , xh , yl , yh , verbose=0 ) \n"\
+"   sum( array[xl:xh , yl:yh] ) where x,y refer to SLOW/FAST indices   \n"\
+"   ... NOT Numeric indices, but slow/fast \n"\
+"   Unsure why this was written - can be done with Numeric anyway     ";
+   
+
 /* Fill in an image of peak assignments for pixels */
 static PyObject * roisum (PyObject *self, PyObject *args,  PyObject *keywds)
 {
@@ -146,9 +159,18 @@ static PyObject * roisum (PyObject *self, PyObject *args,  PyObject *keywds)
    return Py_BuildValue("f", sum/np); 
 }
 
+static char connectedpixels_doc[] =\
+"   nblobs = connectedpixels ( Numeric.array(data, 2D)  , \n"\
+"                              Numeric.array(blob, 2D, Int)  ,\n"\
+"                              float threshold ,\n"\
+"                              Int verbose )\n"\
+"   data is normally an image \n"\
+"   blob is an array to receive pixel -> blob assignments\n"\
+"   threshold is the value above which a pixel is considered to be in a blob\n"\
+"   verbose flags printing on stdout";
 
-
-/* Fill in an image of peak assignments for pixels */
+                              
+                              /* Fill in an image of peak assignments for pixels */
 static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *keywds)
 {
    PyArrayObject *dataarray=NULL,*results=NULL; /* in (not modified) and out (modified) */
@@ -390,7 +412,31 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
 /* std dev of intensity in blob */
 /* ...? */
 
+static char blobproperties_doc[] =\
+"   res = blobproperties ( Numeric.array(data, 2D)  , \n"\
+"                          Numeric.array(blob, 2D, Int)  ,\n"\
+"                          Int np , \n"\
+"                          Int verbose )\n"\
+"\n"\
+"   Computes various properties of a blob image (created by connectedpixels)\n"\
+"   data  = image data \n"\
+"   blob  = integer peak assignments from connectedpixels \n"\
+"   np    = number of peaks to treat \n"\
+"   verbose  - flag about whether to print\n"\
+"  \n"\
+"   res = tuple (npix , sum , sumsq , com0 , com1 , com00 , com01 ,  com11 ) \n"\
+"   ...where  fval = intensity in pixel and sum over pixels in blob of\n"\
+"             anpix[peak]  =anpix[peak]  + 1       ;    // # of pixels\n"\
+"             asum[peak]   =asum[peak]   +     fval;    // total intensity\n"\
+"             asumsq[peak] =asumsq[peak] +fval*fval;    // total intensity^2\n"\
+"             acom0[peak]  =acom0[peak]  +   i*fval;    // etc\n"\
+"             acom1[peak]  =acom1[peak]  +   j*fval;\n"\
+"             acom00[peak] =acom00[peak] + i*i*fval;\n"\
+"             acom01[peak] =acom01[peak] + i*j*fval;\n"\
+"             acom11[peak] =acom11[peak] + j*j*fval;";
 
+
+   
 static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *keywds)
 {
    PyArrayObject *dataarray=NULL,*blobarray=NULL; /* in (not modified) */
@@ -526,11 +572,11 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
 
 static PyMethodDef connectedpixelsMethods[] = {
    {"connectedpixels", (PyCFunction) connectedpixels, METH_VARARGS | METH_KEYWORDS,
-   "Assign connected pixels in image (first arg) above threshold (float second arg) to return image of peak number.Optional arguement verbose!=0 prints some info as it runs"},
+     connectedpixels_doc},
    {"blobproperties", (PyCFunction) blobproperties, METH_VARARGS | METH_KEYWORDS,
-   "Computes various properties of a blob image (created by connectedpixels)"},
+     blobproperties_doc},
    {"roisum", (PyCFunction) roisum, METH_VARARGS | METH_KEYWORDS,
-   "Computes average in roi"},
+     roisum_doc},
    {NULL, NULL, 0, NULL} /* setinel */
 };
 

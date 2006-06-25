@@ -51,7 +51,7 @@ class polygon:
             area+=x1*y2-x2*y1
         area=area/2.
         return area
-    
+
     def walkaroundintegervertices(self):
         """
         Generate a list of points along the edges of integers
@@ -92,7 +92,7 @@ class polygon:
                     path.append(point)
 
         self.path=path
-                
+
 
 
 def testpolywalkandplot(vertices):
@@ -121,7 +121,6 @@ def main():
     from matplotlib.pylab import show
     show()
 
-                        
+
 if __name__=="__main__":
     main()
-

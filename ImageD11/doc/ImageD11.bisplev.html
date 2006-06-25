@@ -9,11 +9,33 @@
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.bisplev</strong></big></big></font></td
 ><td align=right valign=bottom
 ><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python24/lib/site-packages/imaged11/bisplev.py">c:\python24\lib\site-packages\imaged11\bisplev.py</a></font></td></tr></table>
-    <p><tt>#&nbsp;THIS&nbsp;CODE&nbsp;COMES&nbsp;FROM&nbsp;THE&nbsp;SCIPY&nbsp;PACKAGE&nbsp;AT&nbsp;www.scipy.org<br>
-#<br>
-#&nbsp;IT&nbsp;HAS&nbsp;BEEN&nbsp;COPIED&nbsp;TO&nbsp;SAVE&nbsp;YOU&nbsp;HAVING&nbsp;TO&nbsp;INSTALL&nbsp;ALL&nbsp;THE&nbsp;<br>
-#&nbsp;OTHER&nbsp;STUFF&nbsp;FROM&nbsp;THERE.&nbsp;<br>
-#</tt></p>
+    <p><tt>Interface&nbsp;to&nbsp;the&nbsp;bispev&nbsp;bit&nbsp;of&nbsp;fitpack.<br>
+&nbsp;<br>
+&nbsp;<br>
+fitpack&nbsp;(dierckx&nbsp;in&nbsp;netlib)&nbsp;---&nbsp;A&nbsp;Python-C&nbsp;wrapper&nbsp;to&nbsp;FITPACK&nbsp;(by&nbsp;P.&nbsp;Dierckx).<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FITPACK&nbsp;is&nbsp;a&nbsp;collection&nbsp;of&nbsp;FORTRAN&nbsp;programs&nbsp;for&nbsp;CURVE&nbsp;and&nbsp;SURFACE<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FITTING&nbsp;with&nbsp;SPLINES&nbsp;and&nbsp;TENSOR&nbsp;PRODUCT&nbsp;SPLINES.<br>
+&nbsp;<br>
+See<br>
+&nbsp;<a href="http://www.cs.kuleuven.ac.be/cwis/research/nalag/research/topics/fitpack.html">http://www.cs.kuleuven.ac.be/cwis/research/nalag/research/topics/fitpack.html</a><br>
+or<br>
+&nbsp;<a href="http://www.netlib.org/dierckx/index.html">http://www.netlib.org/dierckx/index.html</a><br>
+&nbsp;<br>
+&nbsp;<br>
+(I&nbsp;think)&nbsp;This&nbsp;code&nbsp;was&nbsp;copied&nbsp;from&nbsp;fitpack.py&nbsp;and&nbsp;modified&nbsp;by&nbsp;J.&nbsp;P.&nbsp;Wright<br>
+so&nbsp;as&nbsp;to&nbsp;avoid&nbsp;having&nbsp;to&nbsp;install&nbsp;all&nbsp;of&nbsp;scipy.&nbsp;Hence&nbsp;the&nbsp;following&nbsp;notice:<br>
+&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Copyright&nbsp;2002&nbsp;Pearu&nbsp;Peterson&nbsp;all&nbsp;rights&nbsp;reserved,<br>
+Pearu&nbsp;Peterson&nbsp;&lt;pearu@cens.ioc.ee&gt;<br>
+Permission&nbsp;to&nbsp;use,&nbsp;modify,&nbsp;and&nbsp;distribute&nbsp;this&nbsp;software&nbsp;is&nbsp;given&nbsp;under&nbsp;the<br>
+terms&nbsp;of&nbsp;the&nbsp;SciPy&nbsp;(BSD&nbsp;style)&nbsp;license.&nbsp;&nbsp;See&nbsp;LICENSE.txt&nbsp;that&nbsp;came&nbsp;with<br>
+scipy&nbsp;for&nbsp;specifics.<br>
+&nbsp;<br>
+NO&nbsp;WARRANTY&nbsp;IS&nbsp;EXPRESSED&nbsp;OR&nbsp;IMPLIED.&nbsp;&nbsp;USE&nbsp;AT&nbsp;YOUR&nbsp;OWN&nbsp;RISK.<br>
+&nbsp;<br>
+Pearu&nbsp;Peterson</tt></p>
 <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#aa55cc">
@@ -57,7 +79,7 @@ Inputs:<br>
 &nbsp;<br>
 &nbsp;&nbsp;x,&nbsp;y,&nbsp;z&nbsp;--&nbsp;Rank-1&nbsp;arrays&nbsp;of&nbsp;data&nbsp;points.<br>
 &nbsp;&nbsp;w&nbsp;--&nbsp;Rank-1&nbsp;array&nbsp;of&nbsp;weights.&nbsp;By&nbsp;default&nbsp;w=ones(len(x)).<br>
-&nbsp;&nbsp;xb,&nbsp;xe&nbsp;--&nbsp;End&nbsp;points&nbsp;of&nbsp;approximation&nbsp;interval&nbsp;in&nbsp;x.&nbsp;<br>
+&nbsp;&nbsp;xb,&nbsp;xe&nbsp;--&nbsp;End&nbsp;points&nbsp;of&nbsp;approximation&nbsp;interval&nbsp;in&nbsp;x.<br>
 &nbsp;&nbsp;yb,&nbsp;ye&nbsp;--&nbsp;End&nbsp;points&nbsp;of&nbsp;approximation&nbsp;interval&nbsp;in&nbsp;y.<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;By&nbsp;default&nbsp;xb,&nbsp;xe,&nbsp;yb,&nbsp;ye&nbsp;=&nbsp;x[0],&nbsp;x[-1],&nbsp;y[0],&nbsp;y[-1]<br>
 &nbsp;&nbsp;kx,&nbsp;ky&nbsp;--&nbsp;The&nbsp;degrees&nbsp;of&nbsp;the&nbsp;spline&nbsp;(1&nbsp;&lt;=&nbsp;kx,&nbsp;ky&nbsp;&lt;=&nbsp;5).&nbsp;&nbsp;Third&nbsp;order<br>

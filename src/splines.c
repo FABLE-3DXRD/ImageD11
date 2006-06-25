@@ -1,9 +1,11 @@
-
-/* These were Copyrighted by Enthought Inc */
-/* They  seemed  to  give permission  for  me to copy out the 
-   parts I wanted. I promise that if it goes wrong it was not
-   their fault.  They are nice people and not responsible for
-   errors I might have introduced                  - JPW 2005  */
+static char moduledocs [] =\
+"/* These were Copyrighted by Enthought Inc */\n"\
+" It is an interface to bispev from fitpack (Dierckx/netlib) \n"\
+" see bisplev.py \n"\
+"/* They  seemed  to  give permission  for  me to copy out the \n"\
+"   parts I wanted. I promise that if it goes wrong it was not\n"\
+"   their fault.  They are not responsible for\n"\
+"   errors I might have introduced                  - JPW 2005  */";
 
 #include <Python.h>
 #include "Numeric/arrayobject.h"  

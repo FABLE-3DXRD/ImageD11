@@ -27,50 +27,49 @@ import factors
 
 
 class guifactors:
-                           
-   def __init__(self,parent):
-      """
-      Parent is a hook to features of the parent gui
-      """
-      self.parent=parent
+
+    def __init__(self,parent):
+        """
+        Parent is a hook to features of the parent gui
+        """
+        self.parent=parent
 # peaks are in      self.parent.finalpeaks
-      self.menuitems = ( "Factors", 0,
-                         [ ( "Load chi files", 0, self.loadchis),
-                           ( "Save obsdata in binary",0,self.saveobsdata),
-                           ( "Read obsdata in binary",0,self.readobsdata),
-                           ( "Plot a 1D", 0, self.plotchi     ),
-                           ( "Plot obs colormap",0,self.plotsurf ),
-			   ( "Generate SVD", 0, self.factorsvd ),
-                           ( "Save SVD",1,self.savesvd),
-                           ( "Load SVD",0,self.loadsvd),
-			   ( "Select number of factors", 0, self.setnfactors),
-			   ( "Generate differences", 9, self.dataminuscalc)
-                         ] ) 
-      self.factors=factors.factors()
-	
-   def loadchis(self):
-      filename=self.parent.opener.show(title="Name of a chi file")
-      # globs by default
-      self.factors.loadchis(filename)
+        self.menuitems = ( "Factors", 0,
+                           [ ( "Load chi files", 0, self.loadchis),
+                             ( "Save obsdata in binary",0,self.saveobsdata),
+                             ( "Read obsdata in binary",0,self.readobsdata),
+                             ( "Plot a 1D", 0, self.plotchi     ),
+                             ( "Plot obs colormap",0,self.plotsurf ),
+                             ( "Generate SVD", 0, self.factorsvd ),
+                             ( "Save SVD",1,self.savesvd),
+                             ( "Load SVD",0,self.loadsvd),
+                             ( "Select number of factors", 0, self.setnfactors),
+                             ( "Generate differences", 9, self.dataminuscalc)
+                           ] )
+        self.factors=factors.factors()
 
-   def saveobsdata(self):
-      pass      
+    def loadchis(self):
+        filename=self.parent.opener.show(title="Name of a chi file")
+        # globs by default
+        self.factors.loadchis(filename)
 
-   def plotchi(self):
-      # which one?
-      self.parent.twodplotter.adddata(
-      	 "Chi file", twodplot.data(self.factors.x,self.factors.y[i],
-	{ "xlabel":"probably 2theta",
-	  "ylabel":"probably intensity",
-	  "title":"chifile %d"%(i) } ) )
+    def saveobsdata(self):
+        pass
 
-   def factorsvd(self):
-      self.factors.factorsvd()
-      # Give scree plot
+    def plotchi(self):
+        # which one?
+        self.parent.twodplotter.adddata(
+           "Chi file", twodplot.data(self.factors.x,self.factors.y[i],
+          { "xlabel":"probably 2theta",
+            "ylabel":"probably intensity",
+            "title":"chifile %d"%(i) } ) )
 
-   def setnfactors(self):
-      self.factors.setnfactors(i)
+    def factorsvd(self):
+        self.factors.factorsvd()
+        # Give scree plot
 
-   def dataminuscalc(self):
-      self.factors.generate()
-      
+    def setnfactors(self):
+        self.factors.setnfactors(i)
+
+    def dataminuscalc(self):
+        self.factors.generate()

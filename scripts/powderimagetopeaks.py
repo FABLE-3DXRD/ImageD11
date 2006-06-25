@@ -45,5 +45,3 @@ if __name__=="__main__":
 
     outputfile.write(inputdata.header["headerstring"])
     outputfile.write(inputdata.data.tostring())
-
-    

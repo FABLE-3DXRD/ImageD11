@@ -22,6 +22,14 @@
 
 */
 
+static char moduledocs [] =\
+"   _hist( data=Numeric.array(2D,UInt16) , hist=Numeric.array(1D,Int) , [Verbose=0] )\n"\
+"   nothing returned (None)\n"\
+"   Computes histogram (overwriting hist arg) of data \n"\
+"   Assumes hist is dimensioned to hold all necessary bins (checks only with verbose)\n"\
+"   \n"\
+"   Good chance of dumping core, so use ImageD11/hist.py for interface ";
+   
 
 #include <Python.h>                  /* To talk to python */
 #include "Numeric/arrayobject.h"     /* Access to Numeric */
@@ -116,7 +124,7 @@ static PyObject * _hist (PyObject *self, PyObject *args,  PyObject *keywds)
 
 static PyMethodDef _histMethods[] = {
    {"_hist", (PyCFunction) _hist, METH_VARARGS | METH_KEYWORDS,
-    "Return a histogram"},
+    moduledocs},
    {NULL, NULL, 0, NULL} /* setinel */
 };
 

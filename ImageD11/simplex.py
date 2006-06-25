@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# 
+#
 
 
 """ Simplex - a regression method for arbitrary nonlinear function minimization
@@ -17,7 +17,7 @@ depending on the initial guess used as a starting point.
 
 
 # Copyright (c) 2001 Vivake Gupta (v@omniscia.org).  All rights reserved.
-# 
+#
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
 # published by the Free Software Foundation; either version 2 of the
@@ -78,7 +78,7 @@ class Simplex:
         #     the other N vertices are the initial guess plus the individual increments
         #     the last two vertices will store the centroid and the reflected point
         #     the compute errors at the ... vertices
-        
+
         for vertex in range(0, self.numvars + 3):
             self.simplex.append(copy.copy(self.guess))
 
@@ -95,7 +95,7 @@ class Simplex:
         ------
         epsilon       convergence requirement
         maxiters      maximum number of iterations
-        monitor       if non-zero, progress info is output to stdout  
+        monitor       if non-zero, progress info is output to stdout
 
         OUTPUTS
         -------
@@ -103,12 +103,12 @@ class Simplex:
         lowest value of the error function
         number of iterations taken to get here
         """
-        
+
         iter = 0
-        
+
         for iter in range(0, maxiters):
             # Identify highest and lowest vertices
-            
+
             self.highest = 0
             self.lowest = 0
             for vertex in range(1, self.numvars + 1):
@@ -142,7 +142,7 @@ class Simplex:
             for vertex in range(0, self.numvars + 1):
                 S1 = S1 + (self.errors[vertex] - F2)**2
             T = math.sqrt(S1 / self.numvars)
-            
+
             # Optionally, print progress information
 
             if monitor:
@@ -150,14 +150,14 @@ class Simplex:
                 print '\rIteration = %d   Best = %f   Worst = %f' % \
                       (iter,self.errors[self.lowest],self.errors[self.highest]),
                 sys.stdout.flush()
-                
+
             if T <= epsilon:
                 # We converged!  Break out of loop!
-                
+
                 break;
             else:
                 # Didn't converge.  Keep crunching.
-                
+
                 # Calculate centroid of simplex, excluding highest vertex
                 # store centroid in element N+1
 
@@ -172,7 +172,7 @@ class Simplex:
 
                 # reflect the simplex across the centroid
                 # store reflected point in elem. N + 2 (and self.guess)
-                
+
                 self.reflect_simplex()
                 self.currenterror = self.testfunc(self.guess)
 
@@ -198,7 +198,7 @@ class Simplex:
                         self.accept_contracted_point()
                     else:
                         self.multiple_contract_simplex()
-                        
+
         # Either converged or reached the maximum number of iterations.
         # Return the lowest vertex and the currenterror.
 
@@ -283,5 +283,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-

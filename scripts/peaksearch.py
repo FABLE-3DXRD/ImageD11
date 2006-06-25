@@ -40,7 +40,7 @@ from ImageD11 import opendata
 from ImageD11 import connectedpixels
 import Numeric
 
-def peaksearch(filename, outputfile, corrector, blobim , thresholds, 
+def peaksearch(filename, outputfile, corrector, blobim , thresholds,
                dark=None, flood=None):
     """
     Searches for peaks, arguments are:
@@ -89,7 +89,7 @@ def peaksearch(filename, outputfile, corrector, blobim , thresholds,
     #
     # Now peaksearch at each threshold level
     for threshold in thresholds:
-        # 
+        #
         npks = 0
         #
         # Call the c extension to do the peaksearch, on entry:
@@ -102,7 +102,7 @@ def peaksearch(filename, outputfile, corrector, blobim , thresholds,
         np = connectedpixels.connectedpixels(picture, blobim, threshold,
                                              verbose=0)
         #
-        # One return - np is the number of peaks found (number of 
+        # One return - np is the number of peaks found (number of
         # connnected objects) picture should be unchanged
         # blobim should be overwritten with integers giving the peak number for
         # that pixel
@@ -120,36 +120,36 @@ def peaksearch(filename, outputfile, corrector, blobim , thresholds,
         # This returns a series of 1D Numeric arrays:
         #  npi = Number of pixels in objects ...  for each blob pixel
         #          sum 1
-        #  isum =  sum of intensity in blobs 
+        #  isum =  sum of intensity in blobs
         #          sum data[i][j]
-        #  sumsq = sum of intensity squared 
+        #  sumsq = sum of intensity squared
         #          sum data[i][j] * data[i][j]
         #  com0  = sum of intensity multiplied by fast index:
         #          sum i*data[i][j]
-        #  com1  = sum of intensity multiplied by slow index:        
+        #  com1  = sum of intensity multiplied by slow index:
         #          sum j*data[i][j]
-        #  com00 = sum of intensity multiplied by fast index squared: 
+        #  com00 = sum of intensity multiplied by fast index squared:
         #          sum i*i*data[i][j]
-        #  com01 = sum of intensity multiplied by fast index and slow index: 
+        #  com01 = sum of intensity multiplied by fast index and slow index:
         #          sum i*j*data[i][j]
-        #  com00 = sum of intensity multiplied by slow index squared:    
+        #  com00 = sum of intensity multiplied by slow index squared:
         #          sum j*j*data[i][j]
         #
         # Now write results out for this threshold level
         f.write("\n#Threshold level %f\n" % (threshold))
-        f.write( "# Number_of_pixels Average_counts    x   y     xc   yc      sig_x sig_y cov_xy\n") 
+        f.write( "# Number_of_pixels Average_counts    x   y     xc   yc      sig_x sig_y cov_xy\n")
         outstrfmt = "%d  %f    %f %f    %f %f    %f %f %f\n"
         for  i in range(len(npi)): # Loop over peaks
             if npi[i]>1:    # Throw out one pixel peaks (div zero)
                 npks = npks+1
                 n    = npi[i]
-                # Average intensity 
-                avg  = isum[i]/n                             
-                si   = sqrt((sumsq[i] - n*avg*avg)/(n-1.))  
+                # Average intensity
+                avg  = isum[i]/n
+                si   = sqrt((sumsq[i] - n*avg*avg)/(n-1.))
                 # Standard dev on intensity
-                c0   = com0[i]/isum[i]                       
+                c0   = com0[i]/isum[i]
                 # Centre of mass in index 0
-                c1   = com1[i]/isum[i]                       
+                c1   = com1[i]/isum[i]
                 # Centre of mass in index 1
                 # Covariances - try except to allow for zeros
                 try:
@@ -164,7 +164,7 @@ def peaksearch(filename, outputfile, corrector, blobim , thresholds,
                     c01 = (com01[i]/isum[i] - c0*c1)/c00/c11
                 except:
                     c01 = 0.
-                # Spatial corrections, 
+                # Spatial corrections,
                 # c0c and c1c are the distortion corrected centre of mass :
                 try:
                     c0c, c1c = corrector.correct(c0, c1)
@@ -185,30 +185,30 @@ if __name__=="__main__":
         from optparse import OptionParser
         parser = OptionParser()
         parser.add_option("-n", "--namestem", action="store",
-            dest="stem", type="string", 
+            dest="stem", type="string",
             help="Name of the files up the digits part  "+\
                  "eg mydata in mydata0000.edf" )
         parser.add_option("-F", "--format", action="store",
-            dest="format",default="edf", type="string", 
+            dest="format",default="edf", type="string",
             help="Image File format, eg edf or bruker" )
         parser.add_option("-f", "--first", action="store",
-            dest="first", default=0, type="int", 
+            dest="first", default=0, type="int",
             help="Number of first file to process, default=0")
-        parser.add_option("-l", "--last", action="store", 
-            dest="last", type="int", 
+        parser.add_option("-l", "--last", action="store",
+            dest="last", type="int",
             help="Number of last file to process")
         parser.add_option("-o", "--outfile", action="store",
-            dest="outfile",default="peaks.out", type="string", 
+            dest="outfile",default="peaks.out", type="string",
             help="Output filename, default=peaks.out")
         parser.add_option("-d", "--darkfile", action="store",
-            dest="dark", default=None,  type="string", 
+            dest="dark", default=None,  type="string",
             help="Dark current filename, to be subtracted, default=None")
         parser.add_option("-D", "--darkfileoffset", action="store",
-            dest="darkoffset", default=100, type="int", 
+            dest="darkoffset", default=100, type="int",
             help="Constant to subtract from dark to avoid overflows, default=100")
         s="/data/opid11/inhouse/Frelon2K/spatial2k.spline"
         parser.add_option("-s", "--splinefile", action="store",
-            dest="spline", default=s, type="string", 
+            dest="spline", default=s, type="string",
             help="Spline file for spatial distortion, default=%s" % (s))
         parser.add_option("-p", "--perfect_images", action="store",
                type="choice", choices=["Y","N"], default="N", dest="perfect",
@@ -216,7 +216,7 @@ if __name__=="__main__":
         parser.add_option("-O", "--flood", action="store", type="string",
                           default=None, dest="flood",
                           help="Flood file, default=None")
-        parser.add_option("-t", "--threshold", action="append", type="float", 
+        parser.add_option("-t", "--threshold", action="append", type="float",
              dest="thresholds", default=None,
              help="Threshold level, you can have several")
         options , args = parser.parse_args()
@@ -237,7 +237,7 @@ if __name__=="__main__":
         if options.format == "edf":
             files = ["%s%04d%s" % (stem,i,".edf") for i in range(first,last+1)]
         if options.format == "bruker":
-            files = ["%s.%04d" % (stem,i) for i in range(first,last+1)]         
+            files = ["%s.%04d" % (stem,i) for i in range(first,last+1)]
         # Make a blobimage the same size as the first image to process
         if len(files)==0:
             raise "No files found for stem %s" % (stem)

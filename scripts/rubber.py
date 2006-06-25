@@ -57,20 +57,20 @@ def preprocess(image, (scalex,scaley),maxi=None,mini=None):
 
 
 def NumerictoImage( data, (scalex,scaley),maxi=None,mini=None):
-        image, (scalesx,scalesy) = preprocess(data, (scalex,scaley),maxi,mini)
-        width, height = image.shape[:2]
-        if len(image.shape) == 3:
-           mode = rawmode = 'RGB'
-           bits = transpose(image, (1,0,2)).tostring()
-        else:
-           mode = rawmode = 'L'
-           bits = transpose(image, (1,0)).tostring()
-        image2 = Image.fromstring(mode, (width, height),
-                                          bits, "raw", rawmode)
-        image2=image2.resize((scalesx,scalesy))
-        return image2,(scalesx,scalesy)
+    image, (scalesx,scalesy) = preprocess(data, (scalex,scaley),maxi,mini)
+    width, height = image.shape[:2]
+    if len(image.shape) == 3:
+        mode = rawmode = 'RGB'
+        bits = transpose(image, (1,0,2)).tostring()
+    else:
+        mode = rawmode = 'L'
+        bits = transpose(image, (1,0)).tostring()
+    image2 = Image.fromstring(mode, (width, height),
+                                      bits, "raw", rawmode)
+    image2=image2.resize((scalesx,scalesy))
+    return image2,(scalesx,scalesy)
 
-      
+
 
 
 
@@ -79,7 +79,7 @@ class rubber(Frame):
 
     def __init__(self, datafile=None, master=None):
         self.master=master
-	Frame.__init__(self, master)
+        Frame.__init__(self, master)
         if datafile==None:
             datafile=tkFileDialog.askopenfilename(initialdir=os.getcwd())
         if type(datafile)==type("string"):
@@ -92,10 +92,10 @@ class rubber(Frame):
                 self.omega = None
         else:
             if type(datafile)==type(array([10,11,12])):
-                    self.data=datafile
-                    self.datafile="unknown0000.edf"
-        
-	Pack.config(self,expand=1,fill=BOTH)
+                self.data=datafile
+                self.datafile="unknown0000.edf"
+
+        Pack.config(self,expand=1,fill=BOTH)
         self.b=Frame(self)
         Button(self.b,text="Quit",command=self.close).pack(side=RIGHT)
         Button(self.b,text="Toggle log scaled",command=self.togglelog).pack(side=RIGHT)
@@ -120,9 +120,9 @@ class rubber(Frame):
         Button(self.b1,text="UBIS",command=self.rdubis).pack(side=LEFT)
         self.b1.pack(side=BOTTOM)
         try:
-           self.filenum.set("%d"%(int(self.datafile[-8:-4])))
+            self.filenum.set("%d"%(int(self.datafile[-8:-4])))
         except:
-           self.filenum.set("%d"%(int(self.datafile[-9:-5])))
+            self.filenum.set("%d"%(int(self.datafile[-9:-5])))
 
         self.status=Label(self,text=self.datafile)
         self.status.pack(side=BOTTOM)
@@ -150,8 +150,8 @@ class rubber(Frame):
         self.xscrollbar.config(command=self.canvasObject.xview)
         self.yscrollbar.config(command=self.canvasObject.yview)
 
-	# this is a "tagOrId" for the rectangle we draw on the canvas
-	self.rubberbandBox = None
+        # this is a "tagOrId" for the rectangle we draw on the canvas
+        self.rubberbandBox = None
         self.piccy=None
         self.startx = None
         self.mini=self.maxi=None
@@ -160,13 +160,13 @@ class rubber(Frame):
         while self.scale[0]*self.zoom > 512:
             self.zoom/=2.
         self.autorange()
-	self.viewinself()
+        self.viewinself()
         step=float(self.maxi-self.mini)/self.scale[0]
         l=[]
         x=float(self.mini)
         while x <= self.maxi:
-           l.append(x)
-           x+=step
+            l.append(x)
+            x+=step
         self.legend=transpose(array([l],Float))
         self.legendimage,(scalesx,scalesy)=NumerictoImage(self.legend,(self.scale[0],10))
         self.legendimage=ImageTk.PhotoImage(self.legendimage)
@@ -181,10 +181,10 @@ class rubber(Frame):
         self.bind_all("<Prior>", lambda e : self.zoomout())
         self.bind_all("<Next>" ,  lambda e : self.zoomin())
         self.bind("q", self.printkey )
-	Widget.bind(self.canvasObject, "<Button-1>", self.mouseDown)
-	Widget.bind(self.canvasObject, "<Button1-Motion>", self.mouseMotion)
-	Widget.bind(self.canvasObject, "<Button1-ButtonRelease>", self.mouseUp)
-	Widget.bind(self.canvasObject, "<Button-3>", self.get_hkl)
+        Widget.bind(self.canvasObject, "<Button-1>", self.mouseDown)
+        Widget.bind(self.canvasObject, "<Button1-Motion>", self.mouseMotion)
+        Widget.bind(self.canvasObject, "<Button1-ButtonRelease>", self.mouseUp)
+        Widget.bind(self.canvasObject, "<Button-3>", self.get_hkl)
         self.parameters={}
 
     def file(self):
@@ -226,23 +226,23 @@ class rubber(Frame):
         number=int(self.filenum.get())
         self.datafile="%s%04d.edf"%(self.datafile[:-8],number)
         self.readdata()
-        
+
     def name(self,num):
         try:
-           current=int(self.datafile[-8:-4])
+            current=int(self.datafile[-8:-4])
         except:
-           current=int(self.datafile[-9:-5])
+            current=int(self.datafile[-9:-5])
         print "current is",current
         return "%s%04d%s"%(self.datafile[:-8],current+num,".edf")
 
     def next(self):
         self.datafile=self.name(1)
         self.readdata()
-        
+
     def prev(self):
         self.datafile=self.name(-1)
         self.readdata()
-        
+
     def readdata(self):
         dataobj=opendata(self.datafile)
         self.status.config(text=self.datafile)
@@ -253,15 +253,15 @@ class rubber(Frame):
             self.omega = None
         self.statistics.configure(text=self.getstats())
         try:
-           self.filenum.set("%d"%(int(self.datafile[-8:-4])))
+            self.filenum.set("%d"%(int(self.datafile[-8:-4])))
         except:
-           self.filenum.set("%d"%(int(self.datafile[-9:-5])))
+            self.filenum.set("%d"%(int(self.datafile[-9:-5])))
         self.viewinself()
-        
+
     def printkey(self,event):
         print "Got a key"
         print event.char
-        
+
     def setmax(self):
         try:
             self.maxi=int(tkSimpleDialog.askinteger("Maximum data value?","Maximum data value?"))
@@ -293,7 +293,7 @@ class rubber(Frame):
         self.maxdata=maximum.reduce(ravel(self.data))
         return "%d Pixels, Average = %f, Variance = %f, Min = %f, Max = %f"%(
             npixels,self.average,self.variance,self.mindata,self.maxdata)
-        
+
     def autorange(self):
         newmin=max(minimum.reduce(ravel(self.data)),self.average-self.variance)
         newmax=min(maximum.reduce(ravel(self.data)),self.average+self.variance)
@@ -301,53 +301,53 @@ class rubber(Frame):
             self.mini=newmin
             self.maxi=newmax
             self.viewinself()
-        
+
     def close(self):
         if self.master==None:
             self.destroy()
         else:
             self.master.destroy()
 
-            
+
     def zoomin(self):
-      if self.scale[0]*2 > 2050:
-        print "Zoom limit of ",self.zoom,"reached"
-      else:
-        self.zoom*=2       
-        print "Zooming in to scale ",self.zoom,self.zoom*self.data.shape[0]
-        self.viewinself()
-        
+        if self.scale[0]*2 > 2050:
+            print "Zoom limit of ",self.zoom,"reached"
+        else:
+            self.zoom*=2
+            print "Zooming in to scale ",self.zoom,self.zoom*self.data.shape[0]
+            self.viewinself()
+
     def zoomout(self):
-       if self.zoom < 0.02:
-        print "Zoom out limit of",self.zoom, "reached"
-       else:
-        self.zoom/=2       
-        print "Zooming out to scale ",self.zoom
-        self.viewinself()
+        if self.zoom < 0.02:
+            print "Zoom out limit of",self.zoom, "reached"
+        else:
+            self.zoom/=2
+            print "Zooming out to scale ",self.zoom
+            self.viewinself()
 
     def viewinself(self):
         print self.maxi,self.mini
         if self.log==0:
-           self.image,(self.scale[0],self.scale[1])=NumerictoImage(self.data,self.data.shape,self.maxi,self.mini)
+            self.image,(self.scale[0],self.scale[1])=NumerictoImage(self.data,self.data.shape,self.maxi,self.mini)
         else:
-           self.image,(self.scale[0],self.scale[1])=NumerictoImage(log(self.data+1),self.data.shape,self.maxi,self.mini)    
+            self.image,(self.scale[0],self.scale[1])=NumerictoImage(log(self.data+1),self.data.shape,self.maxi,self.mini)
         self.scale[0]*=self.zoom
         self.scale[1]*=self.zoom
         print "Image size",self.scale
         self.displayimage = ImageTk.PhotoImage(self.image.resize(self.scale))
         if self.piccy==None:
-                self.piccy=self.canvasObject.create_image(2,2,image=self.displayimage,
-                                                 anchor=NW,tags="picture")
+            self.piccy=self.canvasObject.create_image(2,2,image=self.displayimage,
+                                             anchor=NW,tags="picture")
         self.canvasObject.itemconfig(self.piccy,image=self.displayimage)
         self.canvasObject.config(scrollregion=(0,0,self.scale[0],self.scale[1]))
-	self.canvasObject.delete(self.rubberbandBox)
+        self.canvasObject.delete(self.rubberbandBox)
         stri="<---%f          %f--->"%(self.mini,self.maxi)
         self.keyt.configure(text=stri)
         self.keyt.update()
         if self.rubberbandBox!=None:
-           z=self.zoom
-           self.rubberbandBox = self.canvasObject.create_rectangle(
-             z*self.startx, z*self.starty, z*self.endx, z*self.endy, outline='green')
+            z=self.zoom
+            self.rubberbandBox = self.canvasObject.create_rectangle(
+              z*self.startx, z*self.starty, z*self.endx, z*self.endy, outline='green')
 
     def getbox(self):
         print self.startx*self.zoom,self.endx*self.zoom
@@ -369,35 +369,35 @@ class rubber(Frame):
     def togglelog(self):
         self.keyt.update()
         if self.log==0:
-           self.log=1
-           self.legendimage,(scalesx,scalesy)=NumerictoImage(log(self.legend+1),(self.scale[0],10))
-           self.legendimage=ImageTk.PhotoImage(self.legendimage)
-           self.key.configure(image=self.legendimage)
-           self.key.update()
-           stri="<---%f          %f--->"%(self.mini,self.maxi)
-           self.keyt.configure(text=stri)
-           self.maxi=log(self.maxi+1)
-           self.mini=log(self.mini+1)
-           print self.maxi,self.mini
-           self.viewinself()
+            self.log=1
+            self.legendimage,(scalesx,scalesy)=NumerictoImage(log(self.legend+1),(self.scale[0],10))
+            self.legendimage=ImageTk.PhotoImage(self.legendimage)
+            self.key.configure(image=self.legendimage)
+            self.key.update()
+            stri="<---%f          %f--->"%(self.mini,self.maxi)
+            self.keyt.configure(text=stri)
+            self.maxi=log(self.maxi+1)
+            self.mini=log(self.mini+1)
+            print self.maxi,self.mini
+            self.viewinself()
         else:
-           self.log=0
-           self.legendimage,(scalesx,scalesy)=NumerictoImage(self.legend,(self.scale[0],10))
-           self.legendimage=ImageTk.PhotoImage(self.legendimage)
-           self.key.configure(image=self.legendimage)
-           self.key.update()
-           stri="<---%f          %f--->"%(self.mini,self.maxi)
-           self.keyt.configure(text=stri)
-           self.maxi=exp(self.maxi)-1
-           self.mini=exp(self.mini)-1
-           print self.maxi,self.mini
-           self.viewinself()
+            self.log=0
+            self.legendimage,(scalesx,scalesy)=NumerictoImage(self.legend,(self.scale[0],10))
+            self.legendimage=ImageTk.PhotoImage(self.legendimage)
+            self.key.configure(image=self.legendimage)
+            self.key.update()
+            stri="<---%f          %f--->"%(self.mini,self.maxi)
+            self.keyt.configure(text=stri)
+            self.maxi=exp(self.maxi)-1
+            self.mini=exp(self.mini)-1
+            print self.maxi,self.mini
+            self.viewinself()
 
     def get_hkl(self, event):
-	# canvas x and y take the screen coords from the event and translate
-	# them into the coordinate system of the canvas object
-	xpos = self.canvasObject.canvasx(event.x)/self.zoom
-	ypos = self.canvasObject.canvasy(event.y)/self.zoom
+        # canvas x and y take the screen coords from the event and translate
+        # them into the coordinate system of the canvas object
+        xpos = self.canvasObject.canvasx(event.x)/self.zoom
+        ypos = self.canvasObject.canvasy(event.y)/self.zoom
         print "xpos,ypos",xpos,ypos
         from ImageD11 import transform
         tth,eta = transform.compute_tth_eta( array([[xpos], [ypos ]]) ,
@@ -426,33 +426,33 @@ class rubber(Frame):
             s+="grain %3d\n h = %.3f k=%.3f l = %.3f\n"%(i,h[0],h[1],h[2])
         showinfo("Right clicked",
                  "You click at %f %f, tth=%f eta=%f omega=%f\n %s"%(xpos,ypos,tth,eta,om,s))
-        
+
 
     def mouseDown(self, event):
-	# canvas x and y take the screen coords from the event and translate
-	# them into the coordinate system of the canvas object
-	self.canvasObject.delete(self.rubberbandBox)
-	self.startx = self.canvasObject.canvasx(event.x)/self.zoom
-	self.starty = self.canvasObject.canvasy(event.y)/self.zoom
+        # canvas x and y take the screen coords from the event and translate
+        # them into the coordinate system of the canvas object
+        self.canvasObject.delete(self.rubberbandBox)
+        self.startx = self.canvasObject.canvasx(event.x)/self.zoom
+        self.starty = self.canvasObject.canvasy(event.y)/self.zoom
 
     def mouseMotion(self, event):
-	# canvas x and y take the screen coords from the event and translate
-	# them into the coordinate system of the canvas object
-	x = self.canvasObject.canvasx(event.x)/self.zoom
-	y = self.canvasObject.canvasy(event.y)/self.zoom
+        # canvas x and y take the screen coords from the event and translate
+        # them into the coordinate system of the canvas object
+        x = self.canvasObject.canvasx(event.x)/self.zoom
+        y = self.canvasObject.canvasy(event.y)/self.zoom
 
-	if (self.startx != event.x)  and (self.starty != event.y) : 
-	    self.canvasObject.delete(self.rubberbandBox)
+        if (self.startx != event.x)  and (self.starty != event.y) :
+            self.canvasObject.delete(self.rubberbandBox)
             z=self.zoom
-	    self.rubberbandBox = self.canvasObject.create_rectangle(self.startx*z, self.starty*z, x*z, y*z, outline='green')
-	    # this flushes the output, making sure that 
-	    # the rectangle makes it to the screen 
-	    # before the next event is handled
-	    self.update_idletasks()
+            self.rubberbandBox = self.canvasObject.create_rectangle(self.startx*z, self.starty*z, x*z, y*z, outline='green')
+            # this flushes the output, making sure that
+            # the rectangle makes it to the screen
+            # before the next event is handled
+            self.update_idletasks()
 
     def mouseUp(self, event):
-	self.endx = self.canvasObject.canvasx(event.x)/self.zoom
-	self.endy = self.canvasObject.canvasy(event.y)/self.zoom
+        self.endx = self.canvasObject.canvasx(event.x)/self.zoom
+        self.endy = self.canvasObject.canvasy(event.y)/self.zoom
         print self.startx,self.endx,self.starty,self.endy
 
     def makerockingcurve(self):
@@ -490,7 +490,7 @@ class rubber(Frame):
             else:
                 print "What a waste of time that was!"
 
-            
+
 
 import sys
 from ImageD11.opendata import opendata
@@ -500,5 +500,3 @@ else:
     test = rubber()
 
 test.mainloop()
-
-

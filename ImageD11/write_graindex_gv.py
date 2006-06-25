@@ -58,7 +58,7 @@ def make_ds_list(cell,limit=2.):
 
 def get_ds_string(g,ds_list):
     """
-    Attempt to emulate the graindex (hkl) syntax. 
+    Attempt to emulate the graindex (hkl) syntax.
     Obviously you would not want a (10,0,0) peak!
     """
     length = sqrt(g[0]*g[0]+g[1]*g[1]+g[2]*g[2])
@@ -73,7 +73,7 @@ def get_ds_string(g,ds_list):
             ptype = item[1]
             ds_string = item[2]
     return ds_string, ptype
-            
+
 
 def write_graindex_gv(outfilename,gv,tth,eta,omega,intensity,unitcell):
     """
@@ -91,7 +91,7 @@ def write_graindex_gv(outfilename,gv,tth,eta,omega,intensity,unitcell):
         ds_string,ptype = get_ds_string(gv[:,i],ds_list)
         outputfile.write("%i %f %f %f %s %i 0 0 0 %f %f %f 0 0 1 %.2f\n"%(
            nr,           # line number
-           omega[i],    # Omega angle 
+           omega[i],    # Omega angle
            eta[i],      # eta angle
            tth[i],      # two_theta angle
            ds_string,   # hkl in format (111) or (222) etc
@@ -102,5 +102,3 @@ def write_graindex_gv(outfilename,gv,tth,eta,omega,intensity,unitcell):
            intensity[i]
            ))
     outputfile.close()
-        
-           

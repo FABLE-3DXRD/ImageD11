@@ -41,7 +41,7 @@ def getheader(filename):
     h=h+filename+";\n"
     s=fp.read(1024)
     if s.find("{")==-1:
-        raise Exception("Not an edf file") 
+        raise Exception("Not an edf file")
     while 1:
         if s.find("}")>=0:
             h=h+s[0:s.find("}")+2]
@@ -67,4 +67,3 @@ if __name__=="__main__":
         else:
             sys.stdout.write(h)
         sys.stdout.write("\n")
-                       

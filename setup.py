@@ -44,7 +44,7 @@ from distutils.core import setup, Extension
 
 # Compiled extensions:
 
-# closest is for indexing grains 
+# closest is for indexing grains
 cl = Extension("closest", sources=['src/closest.c'])
 
 # connectedpixels is for peaksearching images
@@ -60,7 +60,7 @@ ch = Extension("_hist", sources = ['src/hist.c'])
 
 # _splines is for correcting peak positions for spatial distortion
 bl = Extension("_splines", sources = ['src/splines.c', 'src/bispev.c'] )
-#, 
+#,
 #                     libraries = ["splines"], library_dirs = ["src"] )
 
 
@@ -74,7 +74,7 @@ setup(name='ImageD11',
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
       ext_modules = [cl,cp,bl,ch],
       packages = ["ImageD11"],
-      scripts = ["scripts/peaksearch.py", 
+      scripts = ["scripts/peaksearch.py",
                  "scripts/fit2dcake.py",
                  "scripts/edfheader.py",
                  "scripts/recoveromega.py",
@@ -85,5 +85,3 @@ setup(name='ImageD11',
                  "scripts/rubber.py",
                  "scripts/edf2bruker.py",
                  "scripts/powderimagetopeaks.py"])
-
-      

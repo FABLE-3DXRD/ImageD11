@@ -13,7 +13,7 @@ example usage:
         eg: fit2dcake.py -cmypars.pars
   3) Have a look at the file mypars.pars in a text editor, fix it as you like
   4) Process your data using the parameter file you have generated
-        eg: fit2dcake.py 
+        eg: fit2dcake.py
 """
 import Numeric
 
@@ -39,10 +39,10 @@ def spr_to_median(filename,outputfilename):
     EX = sum(d,1)/d.shape[1]
     VAR = EX2 - EX*EX
     try:
-       err = Numeric.sqrt(VAR)
+        err = Numeric.sqrt(VAR)
     except:
-       err = Numeric.sqrt(Numeric.where(VAR>0.,VAR,1))
-    #print sum(data[:,2:-2],1).shape, 
+        err = Numeric.sqrt(Numeric.where(VAR>0.,VAR,1))
+    #print sum(data[:,2:-2],1).shape,
     #print sum(data[:,2:-2],0).shape
     for i in range(len(x_axis)):
         o.write("%f   %f    %f\n"%(x_axis[i],med[i],err[i]))
@@ -53,7 +53,7 @@ class cakemacrogenerator:
     Generates a macro to run fit2d to cake some images
     """
 
-    # String to be used on the first time through the caking menu 
+    # String to be used on the first time through the caking menu
     first_time_run_string = """GRAPHICAL COORDINATE
            1
  1.0E+00
@@ -91,7 +91,7 @@ class cakemacrogenerator:
         }
 
     # First caking menu parameters
-    image_pars_names=[    
+    image_pars_names=[
         "X-PIXEL SIZE",
         "Y-PIXEL SIZE",
         "DISTANCE",
@@ -101,16 +101,16 @@ class cakemacrogenerator:
         "TILT ROTATION",
         "ANGLE OF TILT"
         ]
-    
+
     image_pars_values = {
-        "X-PIXEL SIZE" : 46.77648 ,      
+        "X-PIXEL SIZE" : 46.77648 ,
         "Y-PIXEL SIZE" : 48.08150 ,
         "DISTANCE"     : 975.0000 ,
         "WAVELENGTH"   : 0.154981 ,
         "X-BEAM CENTRE": 2905.198 ,
         "Y-BEAM CENTRE": 1033.436 ,
         "TILT ROTATION": 154.3416 ,
-        "ANGLE OF TILT": 0.899907 } 
+        "ANGLE OF TILT": 0.899907 }
 
 
     # Second caking menu parameters
@@ -127,7 +127,7 @@ class cakemacrogenerator:
         "POLARISATION",
         "GEOMETRY COR."
         ]
-    
+
     integrate_pars_values= {
         "START AZIMUTH" :  160.0   ,
         "END AZIMUTH"   : -160.0   ,
@@ -154,7 +154,7 @@ class cakemacrogenerator:
         "DIM1_DATA"    : "2048",
         "DIM2_DATA"    : "2048"
         }
-        
+
 
     # Parameters for writing out results
     input_extn = "edf"
@@ -173,7 +173,7 @@ class cakemacrogenerator:
     def writepars(self,parfile):
         # Dump all dictionaries to a file as name value
         pf=open(parfile,"w")
-        
+
         d = self.input_options_values
         keys = self.input_options_names
         pf.write("\n# Image correction parameters\n")
@@ -187,13 +187,13 @@ class cakemacrogenerator:
             pf.write("%s = %s\n"%(k,d[k]))
 
         d = self.image_pars_values
-        keys = self.image_pars_names 
+        keys = self.image_pars_names
         pf.write("\n# Experiment geometry parameters\n")
         for k in keys:
             pf.write("%s = %s\n"%(k,d[k]))
 
         d = self.mask_pars_values
-        keys = self.mask_pars_names 
+        keys = self.mask_pars_names
         pf.write("\n# Mask and dimensions\n")
         for k in keys:
             pf.write("%s = %s\n"%(k,d[k]))
@@ -241,13 +241,13 @@ class cakemacrogenerator:
             print "DIM2_DATA",self.mask_pars_values["DIM2_DATA"]
             sys.exit()
 
-           
+
 
 
     def setparameter(self,key,value):
 #        print "Trying to set",key,value
         if key in self.integrate_pars_values.keys():
-            self.integrate_pars_values[key]=value  
+            self.integrate_pars_values[key]=value
         elif key in self.image_pars_values.keys():
             self.image_pars_values[key]=value
         elif key in self.input_options_values.keys():
@@ -284,7 +284,7 @@ class cakemacrogenerator:
         #"CAKE_OUTER_LIMIT"        : "OUTER RADIUS",
         #"DETECTOR_ROTATION"       : "???",
         "X_BEAM_CENTRE"           : "X-BEAM CENTRE", # pixels, I think
-        "Y_BEAM_CENTRE"           : "Y-BEAM CENTRE", # 
+        "Y_BEAM_CENTRE"           : "Y-BEAM CENTRE", #
         "WAVELENGTH"              : "WAVELENGTH",    # meters
         "SAMPLE_DISTANCE"         : "DISTANCE",      # meters
         "TILT_ROTATION"           : "TILT ROTATION", # radians
@@ -302,10 +302,10 @@ class cakemacrogenerator:
         return degrees(float(x))
 
     # Convert units from .fit2d.def file to macro units
-    
+
     fit2d_def_to_macro_converters = {
         "X_PIXEL_SIZE"          : lambda x : float(x)*1e6     , # to microns
-        "Y_PIXEL_SIZE"          : lambda x : float(x)*1e6     , # to microns 
+        "Y_PIXEL_SIZE"          : lambda x : float(x)*1e6     , # to microns
         "CAKE_START_AZIMUTH"    : deg                         , # to degrees
         "CAKE_END_AZIMUTH"      : deg                         , #
         "WAVELENGTH"            : lambda x : float(x)*1e10    , # to angstrom
@@ -314,7 +314,7 @@ class cakemacrogenerator:
         "SAMPLE_DISTANCE"       : lambda x : float(x)*1000.     # to mm
         }
 
-        
+
     def generate_pars_from_def_file(self,def_file):
         """
         Attempt to generate parameters from a .fit2d.def file
@@ -340,7 +340,7 @@ class cakemacrogenerator:
                     self.setparameter(mykey,myvalue)
             except StopIteration:
                 break
-            
+
     def inputfile(self,filein):
         """
         Read in a file on the powder menu in fit2d
@@ -368,8 +368,8 @@ class cakemacrogenerator:
             self.macro=self.macro+"MASK\nLOAD MASK\n"+\
                         self.mask_pars_values["MASK FILE"]+\
                         "\nEXIT\n"
-            
-        
+
+
     def imagepars(self):
         """
         Set the image parameters after cake -> integrate
@@ -407,14 +407,14 @@ class cakemacrogenerator:
             self.macro=self.macro+"OUTPUT ROWS\nYES\nO.K.\n"
             self.macro=self.macro+"OUTPUT\nCHIPLOT\nFILE NAME\n"+file+"_y\n"
             self.macro=self.macro+"OUTPUT ROWS\nNO\nO.K.\n"
-            
+
         else:
             self.macro=self.macro+"EXIT\nOUTPUT\n%s\n"%(self.saving_format)
             self.macro=self.macro+"FILE NAME\n"
             self.macro=self.macro+file+"\n"
             self.macro=self.macro+"O.K.\n"
 
-        
+
     def cakeafile(self,filein,fileout):
         """
         Take one input file and convert it to one output file
@@ -422,12 +422,12 @@ class cakemacrogenerator:
         if not self.parsread:
             raise Exception("Trying to process data with no parameters, give up!!")
         mac = self.macro # local copy
-        self.macro=""    
+        self.macro=""
         # Read data in (assumes you are in powder diffraction menu)
         self.inputfile(filein)
         # Add mask
         self.addmask()
-        # Select cake -> integrate 
+        # Select cake -> integrate
         self.macro=self.macro+"CAKE\n"
         if self.first_time_run:
             # Give annoying clicks
@@ -458,7 +458,7 @@ class cakemacrogenerator:
             if outputfilelist[i] not in alreadydone:
                 print "%s %s"%(filelist[i],outputfilelist[i])
                 self.cakeafile(filelist[i],outputfilelist[i])
-                
+
 
 
 
@@ -535,7 +535,7 @@ if __name__=="__main__":
     parser.add_option("-o","--outstem",action="store",type="string",dest="outstem",
                       help="Output file stem, if different from input")
     options , args = parser.parse_args()
-    
+
     caker=cakemacrogenerator()
 
     if options.cpars != None:
@@ -555,7 +555,7 @@ if __name__=="__main__":
         caker.cakefileglob(options.glob,options.forceoverwrite is not None,options.outstem)
         caker.run(show=options.show)
         sys.exit()
-        
+
     try:
         stem = args[0]
         first = int(args[1])
@@ -573,6 +573,3 @@ if __name__=="__main__":
         caker.run(show=options.show)
     else:
         open(options.debug,"w").write(caker.macro)
-    
-        
-    

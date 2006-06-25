@@ -20,58 +20,57 @@
 """
 ImageD11 data object
 
-Try not to blown away, it is just a Numeric array with a 
+Try not to blown away, it is just a Numeric array with a
 dictionary tagged on so that pseudodata (eg motor positions etc)
 can follow around together. Throw whatever it is that you need
 in the dictionary
 """
 
 class data:
-   """ Generic datatype for handling 2D images 
-       Just a wrapper for Numeric arrays now, so that information
-       from file headers can be transported around in a dict
-   """
-   def __init__(self,array,header=None):
-      """ Minimal things - dimensions and a numeric array """
-      self.rows=array.shape[0]
-      self.columns=array.shape[1]
-      self.data=array
-      if header==None:
-         self.header={}
-         self.header["rows"]=array.shape[0]
-         self.header["columns"]=array.shape[1]
-      else:
-         self.header=header
-   def __add__(self,other):
-      if type(other) in [type(1),type(1.0)]:
-         return data(self.header,self.data+other)
-      if self.header["rows"]==other.header["rows"] and \
-         self.header["columns"]==other.header["columns"]:
+    """ Generic datatype for handling 2D images
+        Just a wrapper for Numeric arrays now, so that information
+        from file headers can be transported around in a dict
+    """
+    def __init__(self,array,header=None):
+        """ Minimal things - dimensions and a numeric array """
+        self.rows=array.shape[0]
+        self.columns=array.shape[1]
+        self.data=array
+        if header==None:
+            self.header={}
+            self.header["rows"]=array.shape[0]
+            self.header["columns"]=array.shape[1]
+        else:
+            self.header=header
+    def __add__(self,other):
+        if type(other) in [type(1),type(1.0)]:
+            return data(self.header,self.data+other)
+        if self.header["rows"]==other.header["rows"] and \
+           self.header["columns"]==other.header["columns"]:
             return data(self.header,self.data+other.data)
-      else:
-         raise Exception("Dimensions not compatible")
-   def __subtract__(self,other):
-      if type(other) in [type(1),type(1.0)]:
-         return data(self.header,self.data-other)
-      if self.header["rows"]==other.header["rows"] and \
-         self.header["columns"]==other.header["columns"]:
+        else:
+            raise Exception("Dimensions not compatible")
+    def __subtract__(self,other):
+        if type(other) in [type(1),type(1.0)]:
+            return data(self.header,self.data-other)
+        if self.header["rows"]==other.header["rows"] and \
+           self.header["columns"]==other.header["columns"]:
             return data(self.header,self.data-other.data)
-      else:
-         raise Exception("Dimensions not compatible")
-   def __multiply__(self,other):
-      if type(other) in [type(1),type(1.0)]:
-         return data(self.header,self.data*other)
-      if self.header["rows"]==other.header["rows"] and \
-         self.header["columns"]==other.header["columns"]:
+        else:
+            raise Exception("Dimensions not compatible")
+    def __multiply__(self,other):
+        if type(other) in [type(1),type(1.0)]:
+            return data(self.header,self.data*other)
+        if self.header["rows"]==other.header["rows"] and \
+           self.header["columns"]==other.header["columns"]:
             return data(self.header,self.data*other.data)
-      else:
-         raise Exception("Dimensions not compatible")
-   def __divide__(self,other):
-      if type(other) in [type(1),type(1.0)]:
-         return data(self.header,self.data/other)
-      if self.header["rows"]==other.header["rows"] and \
-         self.header["columns"]==other.header["columns"]:
+        else:
+            raise Exception("Dimensions not compatible")
+    def __divide__(self,other):
+        if type(other) in [type(1),type(1.0)]:
+            return data(self.header,self.data/other)
+        if self.header["rows"]==other.header["rows"] and \
+           self.header["columns"]==other.header["columns"]:
             return data(self.header,self.data/other.data)
-      else:
-         raise Exception("Dimensions not compatible")
-      
+        else:
+            raise Exception("Dimensions not compatible")

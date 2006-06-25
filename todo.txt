@@ -1,9 +1,15 @@
 
 
-Put authorship and license into bisplev properly
-
 Module docs and functions and function docs from compiled extensions
 
 
 run makedocs in doc subdir as part of setup.py build ??
+
+
+Separation of gui from useful code to be completed:
+
+"Some people are  naturally  more  comfortable with point-n-shoot 
+GUI interfaces.  Some of us old retrograde dinosaurs imagine GUIs 
+to be a place to run  multiple xterms  so we can use the keyboard 
+even more."        Tim Daneliuk, in comp.lang.python, 16 Jun 2006 
 

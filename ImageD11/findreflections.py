@@ -2,22 +2,22 @@
 import sys
 
 def loadfiltered(filename):
-        """
-        Read in file containing filtered and merged peak positions
-        """
-        f=open(filename,"r")
-        #                   0123456789012
-        line=f.readline()
-        if line[0:12] !="# xc yc omega"[0:12]:
-            print line
-            raise Exception("Sorry That does not seem to be a filter peaks file, output from the peaksearching menu option")
-        titles = line.replace("#","").split()
-        bigarray=[]
-        for line in f.readlines():
-            v=[float(z) for z in line.split()]
-            bigarray.append(v)
-        f.close()
-        return bigarray
+    """
+    Read in file containing filtered and merged peak positions
+    """
+    f=open(filename,"r")
+    #                   0123456789012
+    line=f.readline()
+    if line[0:12] !="# xc yc omega"[0:12]:
+        print line
+        raise Exception("Sorry That does not seem to be a filter peaks file, output from the peaksearching menu option")
+    titles = line.replace("#","").split()
+    bigarray=[]
+    for line in f.readlines():
+        v=[float(z) for z in line.split()]
+        bigarray.append(v)
+    f.close()
+    return bigarray
 
 import math
 def findclosest(x,y,omega,data):
@@ -39,7 +39,7 @@ for f in open(sys.argv[1]).readlines():
     scans.append(name)
     loads[name]=float(load)
 
-    
+
 scandata = {}
 
 for scan in scans:
@@ -63,5 +63,3 @@ for line in open(sys.argv[2],"r"):
                 results.write("%6g "%(item))
         results.write("\n")
     results.write("\n\n\n")
-
-    
