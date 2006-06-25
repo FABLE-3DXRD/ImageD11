@@ -338,7 +338,7 @@ class guitransformer:
         except:
             omegasign = 1.
         self.gv = transform.compute_g_vectors(self.twotheta,self.eta,self.omega*omegasign
-                                              ,float(self.parameters['wavelength']),wedge=self.wedge)
+                                              ,float(self.parameters['wavelength']),wedge=self.wedge,chi=self.chi)
         tthnew,etanew,omeganew=transform.uncompute_g_vectors(self.gv,float(self.parameters['wavelength']),wedge=self.wedge)
         self.parent.gv=self.gv
         print "Testing reverse transformations"

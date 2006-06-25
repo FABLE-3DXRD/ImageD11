@@ -159,7 +159,7 @@ def compute_tth_eta(peaks,
 
         return tth, eta
 
-def compute_g_vectors(tth,eta,omega,wavelength, wedge = 0.0):
+def compute_g_vectors(tth,eta,omega,wavelength, wedge = 0.0, chi=0.0):
     """
     Generates spot positions in reciprocal space from twotheta, wavelength, omega and eta
     Assumes single axis vertical
@@ -195,6 +195,10 @@ def compute_g_vectors(tth,eta,omega,wavelength, wedge = 0.0):
     #     (         0  ,  1  ,          0  )
     #     (-sin(wedge) ,  0  ,  cos(wedge) )
     #
+    # C = (         1  ,         0  ,      0     )
+    #     (         0  ,  cos(chi)  , sin(chi)   )
+    #     (         0  , -sin(chi)  , cos(chi)   )
+    #
     if wedge != 0.0:
         c = cos(radians(wedge))
         s = sin(radians(wedge))
@@ -202,13 +206,20 @@ def compute_g_vectors(tth,eta,omega,wavelength, wedge = 0.0):
         t[1,:]=            k[1,:]
         t[2,:]=-s * k[0,:]           + c * k[2,:]
         k=t
+    if chi != 0.0:
+        c = cos(radians(chi))
+        s = sin(radians(chi))
+        t[0,:]= k[0,:]  
+        t[1,:]=        c * k[1,:]    + s * k[2,:]
+        t[2,:]=       -s * k[1,:]    + c * k[2,:]
+        k=t
     g[0,:] = cos(om)*k[0,:]+sin(om)*k[1,:]
     g[1,:] =-sin(om)*k[0,:]+cos(om)*k[1,:]
     g[2,:] =                               k[2,:]
     return g
 
 
-def uncompute_g_vectors(g,wavelength, wedge=0.0):
+def uncompute_g_vectors(g,wavelength, wedge=0.0, chi=0.0):
     """
     Given g-vectors compute tth,eta,omega
     assert uncompute_g_vectors(compute_g_vector(tth,eta,omega))==tth,eta,omega
