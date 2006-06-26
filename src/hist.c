@@ -22,7 +22,7 @@
 
 */
 
-static char moduledocs [] =\
+static char histdocs [] =\
 "   _hist( data=Numeric.array(2D,UInt16) , hist=Numeric.array(1D,Int) , [Verbose=0] )\n"\
 "   nothing returned (None)\n"\
 "   Computes histogram (overwriting hist arg) of data \n"\
@@ -122,9 +122,133 @@ static PyObject * _hist (PyObject *self, PyObject *args,  PyObject *keywds)
 }
 
 
+
+
+
+static char dvhistdocs [] =\
+"   _dvhist( data=Numeric.array(3D,Float) , hist=Numeric.array(3D,Int) , \n"\
+"             xmin, xmax, ymin, ymax, zmin, zmax [Verbose=0] )\n"\
+"   nothing returned (None)\n"\
+"   Computes histogram (overwriting hist arg) of difference vectors of data \n"\
+"   Assumes hist is dimensioned to hold all necessary bins (checks only with verbose)\n"\
+"   \n"\
+"   Good chance of dumping core, so use ImageD11/hist.py for interface ";
+   
+
+/* Fill in a histogram of pixels */
+
+static PyObject * _dvhist (PyObject *self, PyObject *args,  PyObject *keywds)
+{
+   PyArrayObject *dat=NULL; /* in (not modified) */
+   PyArrayObject *hst=NULL; /* out ( modified) */
+   static char *kwlist[] = {"data","hist",
+                "xlow", "xhigh", "ylow", "yhigh", "zlow", "zhigh",
+			    "verbose", NULL};
+   float xlow, xhigh, ylow, yhigh, zlow, zhigh, dx, dy, dz, xsize, ysize, zsize;
+   int verbose,i,j,k,f,s,poff;
+   verbose = 0;
+   xlow = 0.;   ylow = 0.;   zlow = 0.;   xhigh = 0.;   yhigh = 0.;   xhigh = 0.;
+   if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!ffffff|i",kwlist,      
+				   &PyArray_Type, &dat,   /* array arg */
+				   &PyArray_Type, &hst,   /* array arg */
+				   &xlow, &xhigh, &ylow, &yhigh, &zlow, &zhigh,
+				   &verbose))        /* optional verbosity */
+     return NULL;
+
+   if(verbose!=0){
+     printf("\n\nHello there from _dvhist, you wanted the verbose output...\n");
+     printf("Ranges: xlow %f xhigh %f ylow %f yhigh %f zlow %f zhigh %f\n",xlow,xhigh,
+	    ylow,yhigh,zlow,xhigh);
+      }
+
+   /* Check array is two dimensional and Float */
+   if(dat->nd != 2 ){    
+     PyErr_SetString(PyExc_ValueError,
+		     "Data array must be 2d,first arg problem");
+     return NULL;
+   }
+   if(dat->descr->type_num != PyArray_DOUBLE){
+     PyErr_SetString(PyExc_ValueError,
+		     "Data array must have type Float (sorry for now)");
+     return NULL;
+   }
+   if((dat->dimensions[0] != 3)&&(dat->dimensions[1] != 3)){
+     PyErr_SetString(PyExc_ValueError,
+		     "Data array must have a dimension equal to 3 (gvectors!)");
+     return NULL;
+   }
+
+
+   /* Check hst is 3 dimensional and Int */
+   if(hst->nd != 3 && hst->descr->type_num != PyArray_INT){    
+     PyErr_SetString(PyExc_ValueError,
+		     "Hist array must be 3d, Int,first arg problem");
+     return NULL;
+   }
+   /* Zero the histogram */
+   for(i=0;i<hst->dimensions[0];i++)
+      for(j=0;j<hst->dimensions[0];j++)
+         for(k=0;k<hst->dimensions[0];k++)
+            (*(int *)(hst->data + i*hst->strides[0] + j*hst->strides[1] + k*hst->strides[2])) = 0 ;
+
+   /* Decide on gvindex loop - inner versus outer */
+   if(dat->dimensions[0] != 3){
+      f=1;  s=0;
+   } else {
+      f=0;  s=1;
+   }
+   if (verbose!=0){
+        printf("Fast index is %d, slow index is %d, ",f,s);
+        printf("strides[0]=%d, strides[1]=%d\n",dat->strides[0],dat->strides[1]);
+   }
+
+
+   xsize = (-xlow + xhigh) / hst->dimensions[0] ;
+   ysize = (-ylow + yhigh) / hst->dimensions[1] ;
+   zsize = (-zlow + zhigh) / hst->dimensions[2] ;
+
+   for( i = 0 ; i < dat->dimensions[s] ; i++ ){    /* i first peak */
+      for( j = i+1 ; j < dat->dimensions[s] ; j++ ){
+	dx = (*(double *)(dat->data + i*dat->strides[s]                     ) ) - 
+	     (*(double *)(dat->data + j*dat->strides[s]                     ) );
+	dy = (*(double *)(dat->data + i*dat->strides[s] +   dat->strides[f] ) ) - 
+	     (*(double *)(dat->data + j*dat->strides[s] +   dat->strides[f] ) );
+	dz = (*(double *)(dat->data + i*dat->strides[s] + 2*dat->strides[f] ) ) - 
+	     (*(double *)(dat->data + j*dat->strides[s] + 2*dat->strides[f] ) );
+	if(verbose){
+	  printf("i= %d j=%d dx=%f dy=%f dz=%f",i,j,dx,dy,dz);
+	}
+	if ( dx > xlow && dx < xhigh &&
+	     dy > ylow && dy < yhigh &&
+	     dz > zlow && dz < zhigh ){ /* it is in the histogram */
+	  poff = floor((dx-xlow)/xsize+0.49999)*hst->strides[0] +
+	         floor((dy-ylow)/ysize+0.49999)*hst->strides[1] +
+	         floor((dz-zlow)/zsize+0.49999)*hst->strides[2];
+
+	  (*(int *)(hst->data + poff)) =  (*(int *)(hst->data + poff)) + 1;
+	  if(verbose)printf(" in hist!");
+	}
+	if(verbose)printf("\n");
+
+       }
+     }
+
+   /* Arg modified so nothing to give back */
+    Py_INCREF(Py_None);
+    return Py_None;
+
+
+}
+
+
+
+
+
 static PyMethodDef _histMethods[] = {
    {"_hist", (PyCFunction) _hist, METH_VARARGS | METH_KEYWORDS,
-    moduledocs},
+    histdocs},
+   {"_dvhist", (PyCFunction) _dvhist, METH_VARARGS | METH_KEYWORDS,
+    dvhistdocs},
    {NULL, NULL, 0, NULL} /* setinel */
 };
 

@@ -42,6 +42,15 @@ def hist(data,verbose=0):
     raise Exception("Sorry, not implemented")
 
 
+def test_dvhist():
+   from Numeric import *
+   import _hist
+   gv= zeros((10,3),Float)
+   h = zeros((10,10,10),Int)
+   _hist._dvhist(gv,h,-1,1,-1,1,-1,1,1)
+   print maximum.reduce(h)
+
+
 if __name__=="__main__":
     import sys
     from ImageD11 import opendata
