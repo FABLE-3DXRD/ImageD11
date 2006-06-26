@@ -52,7 +52,7 @@ class minimum_image:
         """
         Include another file
         """
-        data_object = opendata.openedf(filename)
+        data_object = opendata.opendata(filename)
         picture = data_object.data
         if self.minimum_image is None:
             self.minimum_image = picture.copy()
@@ -74,8 +74,10 @@ if __name__=="__main__":
                           help="Number of first file to process, default=0")
         parser.add_option("-l","--last",action="store", type="int", dest="last",
                           help="Number of last file to process")
-        parser.add_option("-o","--outfile",action="store", type="string", dest="outfile",default="bkg.edf",
+        parser.add_option("-o","--outfile",action="store", type="string", dest="outfile",default="bkg.edf",                         
                           help="Output filename, default=bkg.edf")
+        parser.add_option("-F","--Format",action="store", type="string", dest="format",default="edf",
+                          help="File format [edf|bruker]")
         parser.add_option("-s","--step",action="store", type="int", dest="step",default=1,
                           help="step - every nth image")
         options , args = parser.parse_args()
@@ -85,7 +87,12 @@ if __name__=="__main__":
         last =        options.last
         step = options.step
         # Generate list of files to proces
-        files = ["%s%04d%s"%(stem,i,".edf") for i in range(first,last+1,step)]
+        if options.format == 'edf':
+           files = ["%s%04d%s"%(stem,i,".edf") for i in range(first,last+1,step)]
+        elif options.format == 'bruker':
+           files = ["%s.%04d"%(stem,i) for i in range(first,last+1,step)]
+        else:
+            raise Exception("Do not know format "+options.format)
         outputfile = open(outfile,"wb")
         if len(files)==0:
             raise "No files found for stem %s"%(stem)
@@ -96,12 +103,8 @@ if __name__=="__main__":
             mi.add_file(filein)
         # finally write out the answer
         # model header + data
-        f=open(files[0],"rb")
-        fh=f.read(1024)
-        while fh.find("}\n")<0:
-            fh+=f.read(1024)
-        f.close()
-        outputfile.write(fh)
+        o=opendata.opendata(files[0])
+        outputfile.write(o.header['headerstring'])
         outputfile.write(mi.minimum_image.astype(Numeric.UInt16).tostring())
         outputfile.close()
     except:

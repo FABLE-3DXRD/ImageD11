@@ -250,12 +250,12 @@ if __name__=="__main__":
         # Not sure why that was there (I think if glob was used)
         # files.sort()
         if options.dark!=None:
-            darkimage=(opendata.openedf(options.dark).data - \
+            darkimage=(opendata.opendata(options.dark).data - \
                        options.darkoffset).astype(Numeric.UInt16)
         else:
             darkimage=None
         if options.flood!=None:
-            floodimage=opendata.openedf(options.flood).data
+            floodimage=opendata.opendata(options.flood).data
             # Check flood normalisation
             m1 = floodimage.shape[0]/6
             m2 = floodimage.shape[1]/6

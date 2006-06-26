@@ -142,7 +142,9 @@ class refinegrains:
                                              omega = om,
                                              axis_orientation1 = self.parameters['wedge'],
                                              axis_orientation2 = self.parameters['chi'])
-        self.gv = transform.compute_g_vectors(tth,eta,om,float(self.parameters['wavelength']), self.wedge)
+        self.gv = transform.compute_g_vectors(tth,eta,om,float(self.parameters['wavelength']),
+                                              self.parameters['wedge'],
+                                              self.parameters['chi'])
         self.gv = Numeric.transpose(self.gv)
 
 
@@ -212,8 +214,8 @@ class refinegrains:
         'distance'   : 0.1,
         'tilt-y'     : transform.radians(0.1),
         'tilt-z'     : transform.radians(0.1),
-        'wedge'      : transform.radians(0.01),
-        'chi'        : transform.radians(0.01),
+        'wedge'      : transform.radians(0.1),
+        'chi'        : transform.radians(0.1),
         'translation' : 0.1
         }
 

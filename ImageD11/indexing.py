@@ -202,7 +202,7 @@ class indexer:
         # rings are in self.unitcell
         limit = maximum.reduce(self.ds)
         print "Maximum d-spacing considered",limit
-        self.unitcell.makerings(limit)
+        self.unitcell.makerings(limit,tol=self.ds_tol)
         dsr=self.unitcell.ringds
         self.ra=zeros(self.gv.shape[0],Int)-1
         self.na=zeros(len(dsr),Int)
@@ -477,7 +477,10 @@ class indexer:
             diff=h-hint
             drlv2=sum(diff*diff,0)
             ind = compress( less(drlv2,tol*tol) , arange(self.gv.shape[0]) )
-            mdrlv=  sum(sqrt(take(drlv2,ind)))/ind.shape[0]
+            try:
+                mdrlv=  sum(sqrt(take(drlv2,ind)))/ind.shape[0]
+            except:
+                mdrlv= 1.0
             f.write("Grain: %d   Npeaks=%d   <drlv>=%f\n"%(i,ind.shape[0],mdrlv))
             i=i+1
             f.write("UBI:\n"+str(ubi)+"\n")

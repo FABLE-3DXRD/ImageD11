@@ -42,7 +42,7 @@ class edfFile:
         #self.rows=rows
         #self.cols=cols
         #self.data=array(fromstring(f.read(rows*cols*2),UInt16),savespace=1)
-        self.data=opendata.openedf(filename).data
+        self.data=opendata.opendata(filename).data
         self.rows=self.data.shape[0]
         self.cols=self.data.shape[1]
         self.data=ravel(self.data)
