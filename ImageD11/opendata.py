@@ -223,7 +223,13 @@ def readbruker(file):
         f=file
         opened=0
     Header=readbrukerheader(f) # pass in the file pointer, it stays open
-    npixelb=int(Header['NPIXELB'])   # you had to read the Bruker docs to know this!
+    try:
+        npixelb=int(Header['NPIXELB'])   # you had to read the Bruker docs to know this!
+    except:
+        print "length",len(Header['NPIXELB'])
+        for c in Header['NPIXELB']:
+            print "char:",c,ord(c)
+        raise
     rows   =int(Header['NROWS'])
     cols   =int(Header['NCOLS'])
     # We are now at the start of the image - assuming readbrukerheader worked
@@ -354,31 +360,57 @@ def openedf(filename):
 
 
 def writebruker(filename,dataobject):
+    """
+    Writes 16-bit + overflow bruker images based on the headerstring
+    Assumes you've got a good bruker headerstring in the data
+    object
+    """
     try:
         hs = dataobject.header["headerstring"]
-        o = hs.find("NOVERFL")
-        b = hs.find("NPIXELB")
-        assert dataobject.header["NROWS"] == dataobject.data.shape[0], "dimensions must match!"
-        assert dataobject.header["NCOLS"] == dataobject.data.shape[1], "dimensions must match!"
-        if dataobject.data.typecode() == Numeric.UInt16:
-            # 2 bytes per pixel, no overflows needed
-            noverfl = 0
-            bytespp = 2
-        else:
-            # data must be positive
-            assert Numeric.minimum.reduce(Numeric.ravel(dataobject.data)) > 0. , "data must be positive!"
-        hs = hs.replace(hs[o:o+80],"NOVERFL:%10d"%(noverfl)+" "*(80-10-8))
-        hs = hs.replace(hs[o:o+80],"NPIXELB:%10d"%(bytespp)+" "*(80-10-8))
-        
-        
     except:
         raise Exception("Sorry, no headerstring in your bruker dataobject")
+    assert int(dataobject.header["NROWS"]) == dataobject.data.shape[0], "dimensions must match!"
+    assert int(dataobject.header["NCOLS"]) == dataobject.data.shape[1], "dimensions must match!"
+    minval = Numeric.minimum.reduce(Numeric.ravel(dataobject.data))
+    assert minval >= 0 , "data must be positive! "+str(minval)
+    r = Numeric.ravel(dataobject.data)
+    d = Numeric.ravel(dataobject.data)
+    bytespp = 2
+    if dataobject.data.typecode() == Numeric.UInt16:
+        # 2 bytes per pixel, no overflows needed
+        noverfl = 0
+    else:
+        # data must be positive
+        twobytes = pow(2,16)-1
+        indices = Numeric.compress( r > twobytes , range(r.shape[0]) )
+        r = Numeric.where(r < twobytes, r, twobytes)
+        noverfl = indices.shape[0]
+    o = hs.find("NOVERFL")
+    b = hs.find("NPIXELB")
+    hs = hs.replace(hs[o:o+80],"%-80s"%("NOVERFL:%10d"%(noverfl)))
+    hs = hs.replace(hs[b:b+80],"%-80s"%("NPIXELB:%10d"%(bytespp)))
+    # for i in range(b,b+80):
+    #     print "char:",hs[i],ord(hs[i]),
+    # print
+    out = open(filename,"wb")
+    out.write(hs)
+    out.write(r.astype(Numeric.UInt16).tostring())
+    if noverfl > 0 :
+        r = Numeric.ravel(dataobject.data)
+        length = 0
+        for i in indices:
+            s = "%9d%7d"%(r[i],i)
+            length += 16
+            out.write(s)
+        out.write(" "*(512-length%512)) # pad to 512 multiple
+    out.close()
 
 def writedata(filename,dataobject):
     # identify type of dataobject
-    if dataobject.has_key("FORMAT") and int(dataobject["FORMAT"]) == 86:
+    if dataobject.header.has_key("FORMAT") and int(dataobject.header["FORMAT"]) == 86:
         writebruker(filename,dataobject)
-    raise Exception("Not implemented yet, sorry")
+    else:
+        raise Exception("Not implemented yet, I can only write bruker files, sorry")
 
 
 

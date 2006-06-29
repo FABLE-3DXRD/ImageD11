@@ -56,16 +56,24 @@ class scale:
         self.threshold = threshold
         if threshold is None:
             self.indices = None
+            self.notindices = None
         if threshold is not None:
             self.indices = Numeric.compress(dyda > threshold,
-                                            Numeric.arrayrange(0,dyda.shape[0],
-                                                               typecode=Numeric.Int))
+                                            Numeric.arange(dyda.shape[0]))
+            self.notindices = Numeric.compress(dyda <= threshold,
+                                            Numeric.arange(dyda.shape[0]))
+            assert self.indices.shape[0] + self.notindices.shape[0] == \
+                   dyda.shape[0], 'problem with threshold'
             dyda = Numeric.take(dyda,self.indices)
         LsqMat[0,0] = Numeric.sum(dyda*dyda)
         LsqMat[1,0] = LsqMat[0,1] = Numeric.sum(dyda)
         LsqMat[1,1] = dyda.shape[0]
         self.dyda = dyda
-        self.Inverse = LinearAlgebra.inverse(LsqMat)
+        try:
+            self.Inverse = LinearAlgebra.inverse(LsqMat)
+        except:
+            print LsqMat
+            raise
         
 
     def scaleimage(self,im2):
@@ -73,7 +81,12 @@ class scale:
         Return a copy of the image scaled to match the class
         """
         a,b = self.scale(im2)
-        return im2/a - b/a
+        new = im2/a - b/a
+        if self.notindices is None: 
+            return new
+        else:
+            Numeric.put(new, self.notindices, 0. )
+            return new
     
     def scale(self, im2):
         """
@@ -154,3 +167,5 @@ if __name__=="__main__":
             # write out the file
             dataobj = data.data(newdata, secondimage.header)
             opendata.writedata(newname,dataobj)
+            print name," -> ",newname
+            sys.stdout.flush()
