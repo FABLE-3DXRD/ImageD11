@@ -78,8 +78,11 @@ int * dset_new( int ** pS){
       printf("Memory allocation error in dset_new\n");
       exit(1);
       }
-/*      printf("Realloced S to %d in dset_new\n",length*2); */
-      (int *) pS = S;
+      /*      printf("Realloced S to %d in dset_new\n",length*2); */
+      /* Fails on gcc 4 but worked on gcc 3.x
+	 dont actually what it does or why it is there
+	 hence commented it out
+      (int *) pS = S; */
       S[0]=length*2;
       S[length-1]=0;
       for(i=length-1;i<length*2;i++)S[i]=0;

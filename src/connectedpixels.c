@@ -328,7 +328,7 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
      printf("\nFinished scanning image, now make unique list and sums\n");
      printf("Number of pixels over threshold was : %d\n",npover);
      time=(tv2-tv1)/CLOCKS_PER_SEC;
-     printf("That took %f seconds and %f in total being aware that the clock is only good to ~0.015 seconds\n",(tv2-tv1point5)/CLOCKS_PER_SEC,time);
+     printf("That took %f seconds and %f in total being aware that the clock is only good to ~0.015 seconds\n",1.*(tv2-tv1point5)/CLOCKS_PER_SEC,time*1.);
      }
    /* First, count independent peaks */
 
@@ -362,7 +362,7 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
    if(verbose!=0)printf("\n");
    tv3=clock();
    if(verbose!=0){
-     printf("Compressing list, time=%g, total time=%g\n",(tv3-tv2)/CLOCKS_PER_SEC,(tv3-tv1)/CLOCKS_PER_SEC);
+     printf("Compressing list, time=%g, total time=%g\n",1.*(tv3-tv2)/CLOCKS_PER_SEC,1.*(tv3-tv1)/CLOCKS_PER_SEC);
      }
 
    if(verbose)printf("Found %d peaks\nNow assigning unique identifiers\n",np);
@@ -395,8 +395,8 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
      printf("Finished assigning unique values and tidied up, now returning");
      tv4=clock();
      time=(tv4-tv3)/CLOCKS_PER_SEC;
-     printf("\nThat took %g seconds, being aware that the clock is only good to ~0.015 seconds\n",time);
-     printf("The total time in this routine was about %f\n",(tv4-tv1)/CLOCKS_PER_SEC); 
+     printf("\nThat took %g seconds, being aware that the clock is only good to ~0.015 seconds\n",1.*time);
+     printf("The total time in this routine was about %f\n",1.*(tv4-tv1)/CLOCKS_PER_SEC); 
      }
    
 /*   return PyArray_Return(results); */
@@ -583,9 +583,14 @@ static PyMethodDef connectedpixelsMethods[] = {
 void 
 initconnectedpixels(void)
 {
-   PyObject *m, *d;
+   PyObject *m, *d, *s;
 
    m=Py_InitModule("connectedpixels", connectedpixelsMethods);
    import_array();
    d=PyModule_GetDict(m);
+   s=PyString_FromString(moduledocs);
+   PyDict_SetItemString(d,"__doc__",s);
+   Py_DECREF(s);
+   if(PyErr_Occurred())
+     Py_FatalError("cant initialise connectedpixels");
 }
