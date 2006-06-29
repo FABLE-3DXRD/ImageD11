@@ -110,8 +110,8 @@ def testscaleimage():
 
 if __name__=="__main__":
     import sys, time, glob
-    testscaleimage()
-    sys.exit()
+#    testscaleimage()
+#    sys.exit()
 
     firstimage = opendata.opendata(sys.argv[1])
     stem = sys.argv[2]
@@ -121,21 +121,36 @@ if __name__=="__main__":
         threshold = float(sys.argv[5])
     except:
         threshold = None
+    try:
+        write = sys.argv[6]
+    except:
+        write = None
     d0 = Numeric.ravel(firstimage.data.astype(Numeric.Float))
     scaler = scale(firstimage.data,threshold)
-    scaler2 = scale(firstimage.data,threshold=None)
     print "# Scaling with respect to:",sys.argv[1]
     if threshold is not None:
         print "# Using",scaler.indices.shape[0],"pixels above threshold"
     else:
         print "# Using all pixels"
     print "# Number Filename multiplier(t="+str(threshold)+") offset multiplier(all) offset"
-    for i in range(first,last+1):
-        start = time.clock()
-        name = "%s.%04d"%(stem,i)
-        secondimage = opendata.opendata(name)
-        a, b = scaler.scale(secondimage.data)
-        print i, name , a, b,
-        # Second go with no threshold
-        a2, b2 = scaler2.scale(secondimage.data)
-        print  a2, b2
+    if write is None:
+        # we only look to see
+        for i in range(first,last+1):
+            start = time.clock()
+            name = "%s.%04d"%(stem,i)
+            secondimage = opendata.opendata(name)
+            a, b = scaler.scale(secondimage.data)
+            print i, name , a, b,
+            # Second go with no threshold
+            a2, b2 = scaler2.scale(secondimage.data)
+            print  a2, b2
+    else: # we correct the image
+        from ImageD11 import data
+        for i in range(first,last+1):
+            name = "%s.%04d"%(stem,i)
+            newname = "cor_%s.%04d"%(stem.split("/")[-1],i)
+            secondimage = opendata.opendata(name)
+            newdata = scaler.scaleimage(secondimage.data)
+            # write out the file
+            dataobj = data.data(newdata, secondimage.header)
+            opendata.writedata(newname,dataobj)

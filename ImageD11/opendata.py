@@ -353,6 +353,35 @@ def openedf(filename):
     return data(ar,hd)
 
 
+def writebruker(filename,dataobject):
+    try:
+        hs = dataobject.header["headerstring"]
+        o = hs.find("NOVERFL")
+        b = hs.find("NPIXELB")
+        assert dataobject.header["NROWS"] == dataobject.data.shape[0], "dimensions must match!"
+        assert dataobject.header["NCOLS"] == dataobject.data.shape[1], "dimensions must match!"
+        if dataobject.data.typecode() == Numeric.UInt16:
+            # 2 bytes per pixel, no overflows needed
+            noverfl = 0
+            bytespp = 2
+        else:
+            # data must be positive
+            assert Numeric.minimum.reduce(Numeric.ravel(dataobject.data)) > 0. , "data must be positive!"
+        hs = hs.replace(hs[o:o+80],"NOVERFL:%10d"%(noverfl)+" "*(80-10-8))
+        hs = hs.replace(hs[o:o+80],"NPIXELB:%10d"%(bytespp)+" "*(80-10-8))
+        
+        
+    except:
+        raise Exception("Sorry, no headerstring in your bruker dataobject")
+
+def writedata(filename,dataobject):
+    # identify type of dataobject
+    if dataobject.has_key("FORMAT") and int(dataobject["FORMAT"]) == 86:
+        writebruker(filename,dataobject)
+    raise Exception("Not implemented yet, sorry")
+
+
+
 if __name__=="__main__":
     import sys,time
     if len(sys.argv)!=2:

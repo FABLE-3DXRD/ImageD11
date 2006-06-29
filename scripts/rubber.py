@@ -122,7 +122,13 @@ class rubber(Frame):
         try:
             self.filenum.set("%d"%(int(self.datafile[-8:-4])))
         except:
-            self.filenum.set("%d"%(int(self.datafile[-9:-5])))
+            try:
+                self.filenum.set("%d"%(int(self.datafile[-9:-5])))
+            except:
+                try:
+                    self.filenum.set("%d"%(int(self.datafile[-4:])))
+                except:
+                    self.filenum.set("0")
 
         self.status=Label(self,text=self.datafile)
         self.status.pack(side=BOTTOM)
