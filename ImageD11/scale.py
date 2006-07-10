@@ -82,6 +82,7 @@ class scale:
         """
         a,b = self.scale(im2)
         new = im2/a - b/a
+        new = Numeric.where(new<0, 0, new)
         if self.notindices is None: 
             return new
         else:

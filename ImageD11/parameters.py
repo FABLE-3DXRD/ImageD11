@@ -85,7 +85,12 @@ class parameters:
         Load parameters from a file
         """
         lines = open(filename,"r").readlines()
-        self.parameters[name]=value
+        for line in lines:
+            try:
+                [name, value] = line.split(" ") 
+                self.parameters[name]=value
+            except:
+                print "Failed to read:",line
         self.dumbtypecheck()
 
     def dumbtypecheck(self):
@@ -94,7 +99,7 @@ class parameters:
         specifieable
         For now it just tries to coerce to int, then float, then does nothing
         """
-        for name,value in self.parameters.items():
+        for name, value in self.parameters.items():
             try:
                 value = int(value)
                 self.parameters[name]=value
