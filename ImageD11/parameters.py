@@ -97,16 +97,33 @@ class parameters:
         """
         Eventually parameter types (and units and fixed/varied to be
         specifieable
-        For now it just tries to coerce to int, then float, then does nothing
+        For now it just tries to coerce to float, then does nothing
         """
         for name, value in self.parameters.items():
-            try:
-                value = int(value)
-                self.parameters[name]=value
-            except:
+            if type(value) == type("string"):
                 try:
-                    value = float(value)
-                    self.parameters[name]=value
+                    vf = float(value)
                 except:
-                    # Hope it is a string?
-                    pass
+                    # it really is a string
+                    self.parameters[name] = value
+                    continue
+                # here if float worked
+                try:
+                    vi = int(value)
+                except:
+                    # it really is a float
+                    self.parameters[name] = vf
+                    continue
+                    
+                # here if float and int worked
+                if abs(vi - vf) < 1e-9:
+                    # use int
+                    self.parameters[name] = vi
+                    continue
+                else:
+                    self.parameters[name] = vf
+                    continue
+            else:
+                # int/float preserve type
+                self.parameters[name] = value
+                
