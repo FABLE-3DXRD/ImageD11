@@ -71,8 +71,8 @@ def peaksearch(filename, outputfile, corrector, blobim , thresholds,
     f.write("# Processed on %s\n" % (time.asctime()))
     try:
         f.write("# Spatial correction from %s\n" % (corrector.splinefile))
-        f.write("# SPLINE X-PIXEL-SIZE %f\n" % (corrector.xsize))
-        f.write("# SPLINE Y-PIXEL-SIZE %f\n" % (corrector.ysize))
+        f.write("# SPLINE X-PIXEL-SIZE %s\n" % (str(corrector.xsize)))
+        f.write("# SPLINE Y-PIXEL-SIZE %s\n" % (str(corrector.ysize)))
     except:
         pass
     for item in data_object.header.keys():
@@ -229,7 +229,13 @@ if __name__=="__main__":
             corrfunc = blobcorrector.correctorclass(options.spline)
         else:
             print "Avoiding spatial correction"
-            corrfunc = None
+            class dummy:
+                splinefile = "NO_CORRECTION_APPLIED"
+                xsize = "UNKNOWN"
+                ysize = "UNKNOWN"
+                def correct(x,y):
+                    return x, y
+            corrfunc = dummy()
         # List comprehension - convert remaining args to floats
         thresholds_list = [float(t) for t in options.thresholds]
         # Generate list of files to process
