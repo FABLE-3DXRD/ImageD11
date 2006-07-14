@@ -267,7 +267,7 @@ def edfheader(file):
     file can be fileobject or filename
     """
     if type(file)==type("string"):
-        f=open(filename,"rb")
+        f=open(file,"rb")
         opened=1
     else:
         f=file
