@@ -29,7 +29,7 @@ and the blobcorrector(+splines) for correcting them for spatial distortion
 Defines one function (peaksearch) which might be reused
 """
 
-import time
+import time, sys
 # For benchmarking
 reallystart = time.time()
 
@@ -176,6 +176,7 @@ def peaksearch(filename, outputfile, corrector, blobim , thresholds,
     f.close()
     # Finish progress indicator for this file
     print " time %f/s" % (time.time()-t0)
+    sys.stdout.flush()
     return npks # Number of peaks found
 
 
