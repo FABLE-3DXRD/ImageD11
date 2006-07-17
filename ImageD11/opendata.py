@@ -274,13 +274,13 @@ def edfheader(file):
         opened=0
     # Header comes in 1024 byte blocks, terminated by "}"
     fh=f.read(1024)
-    if len(fh!=1024):
+    if len(fh)!=1024:
         raise Exception("File too small")
     i=1023
     j=0
     while fh.find("}\n")<0 and j<10:
         extra = f.read(1024)
-        if len(extra!=1024):
+        if len(extra)!=1024:
             raise Exception("File too small")
         fh+=extra
         j=j+1
