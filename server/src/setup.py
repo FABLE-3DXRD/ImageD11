@@ -65,13 +65,14 @@ cl = Extension("closest", sources=['Imaged11Functions/closest.c'])
 
 
 # See the distutils docs...
-setup(name='ImageD11Gui',
+setup(name='ImageD11d',
       version='0.0.1',
       author='Jon Wright, Jaroslaw Butanowicz',
       author_email='wright@esrf.fr jaroslaw.butanowicz@esrf.fr',
-      description='ImageD11Gui',
+      description='Imaged11Functions',
       license = "GPL",
-      ext_package = "ImageD11Gui",   # Puts extensions in the ImageD11 directory
+      ext_package = "ImageD11d",   # Puts extensions in the ImageD11 directory
       ext_modules = [cl],
-      packages = ["example.xmlrpc.sum.pyserver"],
-      scripts = ["sumserver.py"])
+      packages = ["Imaged11Functions"],
+      scripts = ["ImageD11Server.py",
+                 "guicommand.py"])
