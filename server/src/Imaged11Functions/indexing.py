@@ -19,7 +19,7 @@
 
 
 from Numeric import *
-#from Imaged11Functions import closest
+import closest
 
 
 import math,time,sys
@@ -412,11 +412,11 @@ class indexer:
         #for i in range(bins.shape[0]-1):
         #   print "%10.7f - %10.7f   %10d"%(bins[i],bins[i+1],hist[i])
         #print sum(hist),hist.shape,bins.shape
+        print "hello hello"
         bins=bins.tolist()
         hist=hist.tolist()
         self.histogram=hist
         self.bins=bins
-        print "ulula",self.bins[0],self.bins[1],self.bins[2],len(self.bins)
         return "OK"
         
     def scorethem(self):
@@ -488,7 +488,7 @@ class indexer:
             #self.histogram(self.ubis[bestfitting])
         else:
             print "Try again, either with larger tolerance or fewer minimum peaks"
-        return len(self.ubis)
+        return "OK"    
     
 
     def saveindexing(self,filename,tol=None):
