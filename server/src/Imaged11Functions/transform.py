@@ -528,12 +528,21 @@ class transformer:
         return "OK"
 
     def savepars(self,filename=None):
-        self.parameterobj.update_yourself(self)
-        if filename is not None:
-            self.parameterobj.saveparameters(filename)
+    #    self.parameterobj.update_yourself(self)
+    #    if filename is not None:
+    #        self.parameterobj.saveparameters(filename)
+    #    return "OK"
+        f=open(filename,"w")
+        keys=self.parameters.keys()
+        keys.sort()
+        for key in keys:
+            try:
+                f.write("%s %f\n"%(key,self.parameters[key]))
+            except:
+                f.write("%s %s\n"%(key,self.parameters[key]))
+        f.close()
         return "OK"
-
-
+        
     def loadfiltered(self,filename=None):
         #      if self.parent.finalpeaks!=None:
         #         from tkMessageBox import askyesno
