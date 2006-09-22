@@ -136,10 +136,10 @@ class indexer:
     """
     def __init__(self,unitcell=None,gv=None,
           cosine_tol = 0.002,
-          minpks = 10 ,
+          minpks = 2 ,
           hkl_tol=0.01,
-          ring_1=1,
-          ring_2=2,
+          ring_1=11,
+          ring_2=5,
           ds_tol=0.005,
           wavelength=-1,
           uniqueness=0.5,
@@ -177,8 +177,8 @@ class indexer:
               minpks=self.minpks, uniqueness=self.uniqueness, ds_tol=self.ds_tol,
               wavelength=self.wavelength, eta_range=self.eta_range)
         
-        import plot3d
-        self.plot3d=None
+    #    import plot3d
+    #    self.plot3d=None
 
     def updatepars(self, cosine_tol, ds_tol, eta_range, hkl_tol, minpks, ring_1,
                     ring_2, uniqueness, wavelength, max_grains):
@@ -376,7 +376,7 @@ class indexer:
         print "Number of trial orientations generated",len(hits)
         print "Time taken",time.time()-start
         self.hits=hits
-        return len(self.hits)
+        return "OK"
         
     def histogram_drlv_fit(self,UBI=None,bins=None):
         """
@@ -412,12 +412,23 @@ class indexer:
         #for i in range(bins.shape[0]-1):
         #   print "%10.7f - %10.7f   %10d"%(bins[i],bins[i+1],hist[i])
         #print sum(hist),hist.shape,bins.shape
-        print "hello hello"
-        bins=bins.tolist()
-        hist=hist.tolist()
         self.histogram=hist
         self.bins=bins
         return "OK"
+    
+    def getbins(self):
+        """
+        Sends x values to plot the x,y arrays
+        """
+        return self.bins[0:].tolist()
+
+    def gethistogram(self):
+        """
+        Sends x values to plot the x,y arrays
+        """
+    #    print "shape ",self.histogram.shape[0]   
+        return self.histogram[0,:].tolist()
+            
         
     def scorethem(self):
         start=time.time()
@@ -441,7 +452,7 @@ class indexer:
                 continue
             try:
                 t0=time.time()
-#            print "\n\n",diff,i,j,self.gv[i,:],self.gv[j,:]
+#            print "\n\n",diff,i,j,self.gv[i,:],self.gv[j,:] 
                 self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],verbose=0)
                 UBI=self.unitcell.UBI
                 t1=time.time()
