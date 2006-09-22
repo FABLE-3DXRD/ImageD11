@@ -135,6 +135,7 @@ class guipeaksearcher:
                          "ylabel" : "y",
                          "title"  : "Peak positions on detector"}
                          ) ) )
+        return "nothing"
         # Need to filter based on x,y
         # also based on intensity
         # also based on shape
