@@ -243,6 +243,7 @@ class indexer:
                         best=diff
         # Report on assignments
         ds=array(self.ds)
+        rings = ""
         print "Ring     (  h,  k,  l) Mult  total indexed to_index  "
         for j in range(len(dsr)):
             ind = compress( equal(self.ra,j), arange(self.ra.shape[0]) )
@@ -253,6 +254,8 @@ class indexer:
             h=self.unitcell.ringhkls[dsr[j]][0]
             print "Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d"%(j,h[0],h[1],h[2],len(self.unitcell.ringhkls[dsr[j]]),
                      self.na[j],n_indexed,n_to_index)
+            rings=rings+"Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d \n"%(j,h[0],h[1],h[2],len(self.unitcell.ringhkls[dsr[j]]),
+                     self.na[j],n_indexed,n_to_index)
         # We will only attempt to index g-vectors which have been assigned to hkl rings (this gives a speedup if there
         # are a lot of spare peaks
         ind = compress( greater(self.ra,-1) , arange(self.ra.shape[0]) )
@@ -260,7 +263,7 @@ class indexer:
         print "Using only those peaks which are assigned to rings for scoring trial matrices"
         print "Shape of scoring matrix",self.gvr.shape
         self.gvflat=reshape(fromstring(self.gvr.tostring(),Float),self.gvr.shape) # Makes it contiguous in memory, hkl fast index
-        return "OK"
+        return rings
 
     def friedelpairs(self,filename):
         """
@@ -422,13 +425,28 @@ class indexer:
         """
         return self.bins[0:].tolist()
 
-    def gethistogram(self):
+    def gethistogram(self, grainindex):
         """
         Sends x values to plot the x,y arrays
         """
     #    print "shape ",self.histogram.shape[0]   
-        return self.histogram[0,:].tolist()
-            
+        return self.histogram[grainindex,:].tolist()
+ 
+    def getgvx(self):
+        """
+        Sends x values to plot the x,y arrays
+        """
+    #    print "shape ",self.histogram.shape[0]
+        print self.gv.tolist()
+        return self.gv.tolist() 
+ 
+         
+    def getgrainsnumber(self):
+         """
+         Sends number of grains stored in histogram array. 
+         """   
+         return self.histogram.shape[0]    
+     
         
     def scorethem(self):
         start=time.time()
