@@ -156,7 +156,10 @@ static PyObject * roisum (PyObject *self, PyObject *args,  PyObject *keywds)
        }
      }
    }
-   return Py_BuildValue("f", sum/np); 
+   if(verbose!=0){
+	   printf("Sum %f np %d\n",sum,np);
+   }
+   return Py_BuildValue("d", sum/np); 
 }
 
 static char connectedpixels_doc[] =\
