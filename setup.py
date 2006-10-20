@@ -48,7 +48,7 @@ from distutils.core import setup, Extension
 cl = Extension("closest", sources=['src/closest.c'])
 
 # connectedpixels is for peaksearching images
-cp = Extension("connectedpixels", sources = ['src/connectedpixels.c'])
+cp = Extension("connectedpixels", sources = ['src/connectedpixels.c','src/dset.h'])
 
 # histogramming thing
 ch = Extension("_hist", sources = ['src/hist.c'])
@@ -59,7 +59,7 @@ ch = Extension("_hist", sources = ['src/hist.c'])
 #os.system("ar -cr src/libsplines.a src/bispev.o")
 
 # _splines is for correcting peak positions for spatial distortion
-bl = Extension("_splines", sources = ['src/splines.c', 'src/bispev.c'] )
+bl = Extension("_splines", sources = ['src/splines.c', 'src/bispev.c', 'src/f2c.h'] )
 #,
 #                     libraries = ["splines"], library_dirs = ["src"] )
 
