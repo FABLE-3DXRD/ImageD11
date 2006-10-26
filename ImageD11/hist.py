@@ -43,7 +43,7 @@ def hist(data,verbose=0):
 
 
 def test_dvhist():
-   from Numeric import *
+   from Numeric import zeros, Float, Int, maximum
    import _hist
    gv= zeros((10,3),Float)
    h = zeros((10,10,10),Int)
