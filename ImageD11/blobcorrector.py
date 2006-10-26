@@ -60,6 +60,40 @@ class correctorclass:
             ynew = y + bisplev.bisplev(y,xpos,self.tck1)
         return xnew, ynew
 
+    def make_pixel_lut(self,dims):
+        """
+        Generate an x and y image which maps the array indices into
+        floating point array indices (to be corrected for pixel size later)
+
+        returns (FIXME - get them the right way around!)
+        """
+        if hasattr(self,pixel_lut):
+            # Cache the value in case of multiple calls
+            return self.pixel_lut
+        x_im = n.outerproduct(range(dims[0]),n.ones(dims[1]))
+        y_im = n.outerproduct(n.ones(dims[1]),range(dims[0]))  
+        self.pixel_lut = self.correct(x_im,y_im)
+        return self.pixel_lut
+
+
+    def make_pos_lut(self,dims):
+        """
+        Generate a look up table of pixel positions in microns
+        returns ...
+        """
+        if hasattr(self,pos_lut):
+            # Cache the value in case of multiple calls
+            return self.pos_lut
+        if hasattr(self,pixel_lut):
+            self.pos_lut = ( self.pixel_lut[0] * self.xsize, 
+                             self.pixel_lut[1] * self.ysize )
+            return self.pos_lut
+        self.make_pixel_lut(dims)
+        # Make a recursive call which will be caught on lines above
+        # ... might hurt your brain but it means xsize and ysize
+        #     are only in one place 
+        return self.make_pos_lut(dims)
+
     def distort(self,xnew,ynew):
         """
         Distort a pair of points xnew, ynew to find where they
