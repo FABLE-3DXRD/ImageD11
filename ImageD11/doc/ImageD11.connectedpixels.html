@@ -9,7 +9,7 @@
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.connectedpixels</strong></big></big></font></td
 ><td align=right valign=bottom
 ><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python24/lib/site-packages/imaged11/connectedpixels.pyd">c:\python24\lib\site-packages\imaged11\connectedpixels.pyd</a></font></td></tr></table>
-    <p></p>
+    <p><tt>C&nbsp;extensions&nbsp;for&nbsp;image&nbsp;analysis,&nbsp;part&nbsp;of&nbsp;ImageD11</tt></p>
 <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#eeaa77">
@@ -17,8 +17,44 @@
 <font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
     
 <tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><dl><dt><a name="-blobproperties"><strong>blobproperties</strong></a>(...)</dt><dd><tt>Computes&nbsp;various&nbsp;properties&nbsp;of&nbsp;a&nbsp;blob&nbsp;image&nbsp;(created&nbsp;by&nbsp;connectedpixels)</tt></dd></dl>
- <dl><dt><a name="-connectedpixels"><strong>connectedpixels</strong></a>(...)</dt><dd><tt>Assign&nbsp;connected&nbsp;pixels&nbsp;in&nbsp;image&nbsp;(first&nbsp;arg)&nbsp;above&nbsp;threshold&nbsp;(float&nbsp;second&nbsp;arg)&nbsp;to&nbsp;return&nbsp;image&nbsp;of&nbsp;peak&nbsp;number.Optional&nbsp;arguement&nbsp;verbose!=0&nbsp;prints&nbsp;some&nbsp;info&nbsp;as&nbsp;it&nbsp;runs</tt></dd></dl>
- <dl><dt><a name="-roisum"><strong>roisum</strong></a>(...)</dt><dd><tt>Computes&nbsp;average&nbsp;in&nbsp;roi</tt></dd></dl>
+<td width="100%"><dl><dt><a name="-bloboverlaps"><strong>bloboverlaps</strong></a>(...)</dt><dd><tt>res&nbsp;=&nbsp;bloboverlaps&nbsp;(&nbsp;&nbsp;&nbsp;Numeric.array(blob1,&nbsp;2D,&nbsp;Int),&nbsp;n1&nbsp;&nbsp;,&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Numeric.array(blob2,&nbsp;2D,&nbsp;Int),&nbsp;n2&nbsp;&nbsp;,&nbsp;verbose=0)&nbsp;<br>
+&nbsp;<br>
+returns&nbsp;a&nbsp;disjoint&nbsp;set&nbsp;making&nbsp;the&nbsp;overlaps&nbsp;between&nbsp;blob1&nbsp;and&nbsp;blob2&nbsp;<br>
+res[0-&gt;n1]&nbsp;=&nbsp;peaks&nbsp;in&nbsp;image&nbsp;1&nbsp;<br>
+res[n2-&gt;n2+n1+1]&nbsp;=&nbsp;peaks&nbsp;in&nbsp;image&nbsp;2</tt></dd></dl>
+ <dl><dt><a name="-blobproperties"><strong>blobproperties</strong></a>(...)</dt><dd><tt>res&nbsp;=&nbsp;blobproperties&nbsp;(&nbsp;Numeric.array(data,&nbsp;2D)&nbsp;&nbsp;,&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Numeric.array(blob,&nbsp;2D,&nbsp;Int)&nbsp;&nbsp;,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Int&nbsp;np&nbsp;,&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Int&nbsp;verbose&nbsp;)<br>
+&nbsp;<br>
+Computes&nbsp;various&nbsp;properties&nbsp;of&nbsp;a&nbsp;blob&nbsp;image&nbsp;(created&nbsp;by&nbsp;connectedpixels)<br>
+data&nbsp;&nbsp;=&nbsp;image&nbsp;data&nbsp;<br>
+blob&nbsp;&nbsp;=&nbsp;integer&nbsp;peak&nbsp;assignments&nbsp;from&nbsp;connectedpixels&nbsp;<br>
+np&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;number&nbsp;of&nbsp;peaks&nbsp;to&nbsp;treat&nbsp;<br>
+verbose&nbsp;&nbsp;-&nbsp;flag&nbsp;about&nbsp;whether&nbsp;to&nbsp;print<br>
+&nbsp;<br>
+res&nbsp;=&nbsp;tuple&nbsp;(npix&nbsp;,&nbsp;sum&nbsp;,&nbsp;sumsq&nbsp;,&nbsp;com0&nbsp;,&nbsp;com1&nbsp;,&nbsp;com00&nbsp;,&nbsp;com01&nbsp;,&nbsp;&nbsp;com11&nbsp;)&nbsp;<br>
+...where&nbsp;&nbsp;fval&nbsp;=&nbsp;intensity&nbsp;in&nbsp;pixel&nbsp;and&nbsp;sum&nbsp;over&nbsp;pixels&nbsp;in&nbsp;blob&nbsp;of<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;anpix[peak]&nbsp;&nbsp;=anpix[peak]&nbsp;&nbsp;+&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;#&nbsp;of&nbsp;pixels<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;asum[peak]&nbsp;&nbsp;&nbsp;=asum[peak]&nbsp;&nbsp;&nbsp;+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fval;&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;total&nbsp;intensity<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;asumsq[peak]&nbsp;=asumsq[peak]&nbsp;+fval*fval;&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;total&nbsp;intensity^2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acom0[peak]&nbsp;&nbsp;=acom0[peak]&nbsp;&nbsp;+&nbsp;&nbsp;&nbsp;i*fval;&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;etc<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acom1[peak]&nbsp;&nbsp;=acom1[peak]&nbsp;&nbsp;+&nbsp;&nbsp;&nbsp;j*fval;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acom00[peak]&nbsp;=acom00[peak]&nbsp;+&nbsp;i*i*fval;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acom01[peak]&nbsp;=acom01[peak]&nbsp;+&nbsp;i*j*fval;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acom11[peak]&nbsp;=acom11[peak]&nbsp;+&nbsp;j*j*fval;</tt></dd></dl>
+ <dl><dt><a name="-connectedpixels"><strong>connectedpixels</strong></a>(...)</dt><dd><tt>nblobs&nbsp;=&nbsp;connectedpixels&nbsp;(&nbsp;Numeric.array(data,&nbsp;2D)&nbsp;&nbsp;,&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Numeric.array(blob,&nbsp;2D,&nbsp;Int)&nbsp;&nbsp;,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;float&nbsp;threshold&nbsp;,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Int&nbsp;verbose&nbsp;)<br>
+data&nbsp;is&nbsp;normally&nbsp;an&nbsp;image&nbsp;<br>
+blob&nbsp;is&nbsp;an&nbsp;array&nbsp;to&nbsp;receive&nbsp;pixel&nbsp;-&gt;&nbsp;blob&nbsp;assignments<br>
+threshold&nbsp;is&nbsp;the&nbsp;value&nbsp;above&nbsp;which&nbsp;a&nbsp;pixel&nbsp;is&nbsp;considered&nbsp;to&nbsp;be&nbsp;in&nbsp;a&nbsp;blob<br>
+verbose&nbsp;flags&nbsp;printing&nbsp;on&nbsp;stdout</tt></dd></dl>
+ <dl><dt><a name="-roisum"><strong>roisum</strong></a>(...)</dt><dd><tt>(float)&nbsp;roisum&nbsp;(&nbsp;Numeric.array(2D),&nbsp;xl&nbsp;,&nbsp;xh&nbsp;,&nbsp;yl&nbsp;,&nbsp;yh&nbsp;,&nbsp;verbose=0&nbsp;)&nbsp;<br>
+sum(&nbsp;array[xl:xh&nbsp;,&nbsp;yl:yh]&nbsp;)&nbsp;where&nbsp;x,y&nbsp;refer&nbsp;to&nbsp;SLOW/FAST&nbsp;indices&nbsp;&nbsp;&nbsp;<br>
+...&nbsp;NOT&nbsp;Numeric&nbsp;indices,&nbsp;but&nbsp;slow/fast&nbsp;<br>
+Unsure&nbsp;why&nbsp;this&nbsp;was&nbsp;written&nbsp;-&nbsp;can&nbsp;be&nbsp;done&nbsp;with&nbsp;Numeric&nbsp;anyway</tt></dd></dl>
 </td></tr></table>
 </body></html>

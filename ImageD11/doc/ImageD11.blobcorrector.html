@@ -33,6 +33,7 @@ file&nbsp;for&nbsp;a&nbsp;2K&nbsp;image&nbsp;etc?</tt></p>
 <tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><dl>
 <dt><font face="helvetica, arial"><a href="ImageD11.blobcorrector.html#correctorclass">correctorclass</a>
+</font></dt><dt><font face="helvetica, arial"><a href="ImageD11.blobcorrector.html#perfect">perfect</a>
 </font></dt></dl>
  <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
@@ -44,7 +45,7 @@ file&nbsp;for&nbsp;a&nbsp;2K&nbsp;image&nbsp;etc?</tt></p>
 <td colspan=2><tt>Applies&nbsp;a&nbsp;spatial&nbsp;distortion&nbsp;to&nbsp;a&nbsp;peak&nbsp;position&nbsp;using&nbsp;a&nbsp;fit2d&nbsp;splinefile<br>&nbsp;</tt></td></tr>
 <tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
-<dl><dt><a name="correctorclass-__init__"><strong>__init__</strong></a>(self, splinefile)</dt><dd><tt>Argument&nbsp;is&nbsp;the&nbsp;name&nbsp;of&nbsp;a&nbsp;fit2d&nbsp;spline&nbsp;file</tt></dd></dl>
+<dl><dt><a name="correctorclass-__init__"><strong>__init__</strong></a>(self, splinefile, orientation<font color="#909090">='edf'</font>)</dt><dd><tt>Argument&nbsp;is&nbsp;the&nbsp;name&nbsp;of&nbsp;a&nbsp;fit2d&nbsp;spline&nbsp;file</tt></dd></dl>
 
 <dl><dt><a name="correctorclass-correct"><strong>correct</strong></a>(self, x, y)</dt><dd><tt>Transform&nbsp;x,y&nbsp;in&nbsp;raw&nbsp;image&nbsp;coordinates&nbsp;into&nbsp;x,y&nbsp;of&nbsp;an<br>
 idealised&nbsp;image.&nbsp;Returns&nbsp;a&nbsp;tuple&nbsp;(x,y),&nbsp;expects&nbsp;a<br>
@@ -55,6 +56,14 @@ would&nbsp;be&nbsp;in&nbsp;a&nbsp;raw&nbsp;image<br>
 &nbsp;<br>
 Iterative&nbsp;algorithm...</tt></dd></dl>
 
+<dl><dt><a name="correctorclass-make_pixel_lut"><strong>make_pixel_lut</strong></a>(self, dims)</dt><dd><tt>Generate&nbsp;an&nbsp;x&nbsp;and&nbsp;y&nbsp;image&nbsp;which&nbsp;maps&nbsp;the&nbsp;array&nbsp;indices&nbsp;into<br>
+floating&nbsp;point&nbsp;array&nbsp;indices&nbsp;(to&nbsp;be&nbsp;corrected&nbsp;for&nbsp;pixel&nbsp;size&nbsp;later)<br>
+&nbsp;<br>
+returns&nbsp;(FIXME&nbsp;-&nbsp;get&nbsp;them&nbsp;the&nbsp;right&nbsp;way&nbsp;around!)</tt></dd></dl>
+
+<dl><dt><a name="correctorclass-make_pos_lut"><strong>make_pos_lut</strong></a>(self, dims)</dt><dd><tt>Generate&nbsp;a&nbsp;look&nbsp;up&nbsp;table&nbsp;of&nbsp;pixel&nbsp;positions&nbsp;in&nbsp;microns<br>
+returns&nbsp;...</tt></dd></dl>
+
 <dl><dt><a name="correctorclass-readfit2dfloats"><strong>readfit2dfloats</strong></a>(self, fp, n, debug<font color="#909090">=0</font>)</dt><dd><tt>Interprets&nbsp;a&nbsp;5E14.7&nbsp;formatted&nbsp;fortran&nbsp;line</tt></dd></dl>
 
 <dl><dt><a name="correctorclass-readfit2dspline"><strong>readfit2dspline</strong></a>(self, name)</dt><dd><tt>Reads&nbsp;a&nbsp;fit2d&nbsp;spline&nbsp;file&nbsp;into&nbsp;a&nbsp;scipy/fitpack&nbsp;tuple,&nbsp;tck<br>
@@ -62,6 +71,26 @@ A&nbsp;fairly&nbsp;long&nbsp;and&nbsp;dull&nbsp;routine...</tt></dd></dl>
 
 <dl><dt><a name="correctorclass-test"><strong>test</strong></a>(self, x, y)</dt><dd><tt>Checks&nbsp;that&nbsp;the&nbsp;correct&nbsp;and&nbsp;distort&nbsp;functions&nbsp;are&nbsp;indeed<br>
 inversely&nbsp;related&nbsp;to&nbsp;each&nbsp;other</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="perfect">class <strong>perfect</strong></a></font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>To&nbsp;use&nbsp;on&nbsp;previously&nbsp;corrected&nbsp;images<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="perfect-correct"><strong>correct</strong></a>(x, y)</dt></dl>
+
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>splinefile</strong> = 'NO_CORRECTION_APPLIED'</dl>
+
+<dl><dt><strong>xsize</strong> = 'UNKNOWN'</dl>
+
+<dl><dt><strong>ysize</strong> = 'UNKNOWN'</dl>
 
 </td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">

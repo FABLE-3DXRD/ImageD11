@@ -1,0 +1,80 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module ImageD11.scale</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.scale</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python24/lib/site-packages/imaged11/scale.py">c:\python24\lib\site-packages\imaged11\scale.py</a></font></td></tr></table>
+    <p><tt>Class&nbsp;for&nbsp;scaling&nbsp;images&nbsp;with&nbsp;respect&nbsp;to&nbsp;each&nbsp;other&nbsp;due&nbsp;to&nbsp;moco<br>
+style&nbsp;instabilities.<br>
+&nbsp;<br>
+Depends&nbsp;on&nbsp;there&nbsp;being&nbsp;a&nbsp;large&nbsp;background&nbsp;contribution&nbsp;to&nbsp;work&nbsp;with<br>
+&nbsp;<br>
+&nbsp;<br>
+Mathematically:<br>
+&nbsp;&nbsp;&nbsp;y&nbsp;&nbsp;=&nbsp;&nbsp;a&nbsp;*&nbsp;x&nbsp;+&nbsp;b<br>
+&nbsp;&nbsp;&nbsp;dy/da&nbsp;=&nbsp;x<br>
+&nbsp;&nbsp;&nbsp;dy/db&nbsp;=&nbsp;1<br>
+&nbsp;&nbsp;&nbsp;Least&nbsp;squares&nbsp;problem&nbsp;with:<br>
+&nbsp;&nbsp;&nbsp;matrix&nbsp;=&nbsp;(&nbsp;dy/da*dy/da&nbsp;,&nbsp;dy/da*dy/db)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(&nbsp;dy/da*dy/db&nbsp;,&nbsp;dy/db*dy/db)<br>
+&nbsp;&nbsp;&nbsp;rhs&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;(&nbsp;dy/da*y&nbsp;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(&nbsp;dy/db*y&nbsp;)<br>
+&nbsp;<br>
+Has&nbsp;the&nbsp;option&nbsp;to&nbsp;use&nbsp;only&nbsp;pixels&nbsp;in&nbsp;the&nbsp;image&nbsp;to&nbsp;<a href="#scale">scale</a>&nbsp;to&nbsp;which<br>
+are&nbsp;above&nbsp;a&nbsp;threshold&nbsp;(eg&nbsp;the&nbsp;central&nbsp;circle&nbsp;on&nbsp;the&nbsp;bruker)</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="LinearAlgebra.html">LinearAlgebra</a><br>
+</td><td width="25%" valign=top><a href="Numeric.html">Numeric</a><br>
+</td><td width="25%" valign=top><a href="ImageD11.opendata.html">ImageD11.opendata</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="ImageD11.scale.html#scale">scale</a>
+</font></dt></dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="scale">class <strong>scale</strong></a></font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="scale-__init__"><strong>__init__</strong></a>(self, im1, threshold<font color="#909090">=None</font>)</dt><dd><tt>Determines&nbsp;<a href="#scale">scale</a>&nbsp;and&nbsp;offset&nbsp;values&nbsp;for&nbsp;images<br>
+with&nbsp;respect&nbsp;to&nbsp;each&nbsp;other<br>
+im1&nbsp;=&nbsp;a&nbsp;*&nbsp;im2&nbsp;+&nbsp;b<br>
+returns&nbsp;a,&nbsp;b</tt></dd></dl>
+
+<dl><dt><a name="scale-scale"><strong>scale</strong></a>(self, im2)</dt><dd><tt>Fill&nbsp;out&nbsp;RHS&nbsp;and&nbsp;solve<br>
+returns&nbsp;the&nbsp;<a href="#scale">scale</a>&nbsp;to&nbsp;apply&nbsp;to&nbsp;the&nbsp;image&nbsp;stored&nbsp;in&nbsp;the&nbsp;class<br>
+&nbsp;<br>
+You&nbsp;probably&nbsp;want&nbsp;the&nbsp;<a href="#scale">scale</a>&nbsp;to&nbsp;apply&nbsp;to&nbsp;the&nbsp;image&nbsp;you&nbsp;supply<br>
+...use&nbsp;<a href="#scale">scale</a>&nbsp;image&nbsp;for&nbsp;that</tt></dd></dl>
+
+<dl><dt><a name="scale-scaleimage"><strong>scaleimage</strong></a>(self, im2)</dt><dd><tt>Return&nbsp;a&nbsp;copy&nbsp;of&nbsp;the&nbsp;image&nbsp;scaled&nbsp;to&nbsp;match&nbsp;the&nbsp;class</tt></dd></dl>
+
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-testscaleimage"><strong>testscaleimage</strong></a>()</dt></dl>
+</td></tr></table>
+</body></html>
