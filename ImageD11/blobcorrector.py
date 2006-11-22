@@ -30,6 +30,18 @@ file for a 2K image etc?
 import Numeric as n
 import bisplev, math
 
+
+class perfect:
+    """
+    To use on previously corrected images
+    """
+    splinefile = "NO_CORRECTION_APPLIED"
+    xsize = "UNKNOWN"
+    ysize = "UNKNOWN"
+    def correct(x,y):
+        return x, y
+
+
 class correctorclass:
     """
     Applies a spatial distortion to a peak position using a fit2d splinefile

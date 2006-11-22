@@ -5,6 +5,7 @@ ImageD11/blobcorrector.py
 ImageD11/data.py
 ImageD11/factors.py
 ImageD11/findreflections.py
+ImageD11/fitgrainxy.py
 ImageD11/grain.py
 ImageD11/guicommand.py
 ImageD11/guifactors.py
@@ -36,12 +37,15 @@ scripts/edf2bruker.py
 scripts/edfheader.py
 scripts/fit2dcake.py
 scripts/peaksearch.py
+scripts/mar2bruker.py
 scripts/plotedf.py
+scripts/rubber.py
 scripts/powderimagetopeaks.py
 scripts/recoveromega.py
 scripts/rubber.py
 scripts/scriptable_gui.py
 src/bispev.c
+src/bispev.f
 src/closest.c
 src/connectedpixels.c
 src/hist.c

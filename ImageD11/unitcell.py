@@ -45,7 +45,12 @@ def unit(a):
     """
     Normalise vector a to unit length
     """
-    return a/Numeric.sqrt(Numeric.dot(a,a))
+    try:
+        return a/Numeric.sqrt(Numeric.dot(a,a))
+    except:
+        l=Numeric.dot(a,a)
+        print "Length of a is",l
+        raise
 
 
 
@@ -178,7 +183,7 @@ class unitcell:
         Argument dsmax is the d* limit (eg 1/d)
         Default of zero gives only the (000) reflection
 
-        assumes [h|k|l] < 20
+        assumes [h|k|l] < 200
         """
         if dsmax == self.limit and self.peaks!=None:
             return self.peaks
@@ -187,9 +192,9 @@ class unitcell:
         hs=ks=ls=1
         b=0
         peaks=[]
-        while abs(h)<20: # H
-            while abs(k)<20: # K
-                while abs(l)<20: #L
+        while abs(h)<200: # H
+            while abs(k)<200: # K
+                while abs(l)<200: #L
                     ds=self.ds([h,k,l])
                     if ds < dsmax:
                         if not self.absent(h,k,l):

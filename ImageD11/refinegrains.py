@@ -142,7 +142,13 @@ class refinegrains:
                                              omega = om,
                                              axis_orientation1 = self.parameters['wedge'],
                                              axis_orientation2 = self.parameters['chi'])
-        self.gv = transform.compute_g_vectors(tth,eta,om,float(self.parameters['wavelength']),
+        try:
+            sign = self.parameters['omegasign']
+        except:
+            sign = 1.0
+        # print "Using omegasign=",sign
+        self.gv = transform.compute_g_vectors(tth,eta,om*sign,
+                                              float(self.parameters['wavelength']),
                                               self.parameters['wedge'],
                                               self.parameters['chi'])
         self.gv = Numeric.transpose(self.gv)
@@ -151,11 +157,12 @@ class refinegrains:
     def refine(self,ubi,quiet=True):
         from ImageD11 import closest
         mat=ubi.copy()
+        #print self.tolerance
         npks = closest.score_and_refine(mat, self.gv, self.tolerance)
         if not quiet:
             print npks
-        #mat = indexing.refine(ubi,self.gv,self.tolerance,quiet=quiet)
-        #print ubi, testmatrix,ubi-testmatrix,mat-testmatrix
+        #tm = indexing.refine(ubi,self.gv,self.tolerance,quiet=quiet)
+        #print ubi, tm,ubi-tm,mat-tm
         return mat
 
     def gof(self,args):
@@ -269,7 +276,7 @@ class refinegrains:
         self.printresult(newguess)
 
     def refineubis(self,quiet=True):
-
+        #print quiet
         for key in self.grains.keys():
             g = self.grains[key]
             grainname = key[0]

@@ -153,6 +153,7 @@ def readbytestream(file,offset,x,y,nbytespp,datatype='int',signed='n',
     else:
         ar=Numeric.array(Numeric.reshape(
                                Numeric.fromstring(f.read(len),tin) ,(x,y)),typeout)
+    ar.savespace(1)
     if(opened):f.close()
     return(ar)
 
@@ -365,6 +366,7 @@ def openedf(filename):
         ar=Numeric.reshape(
               Numeric.fromstring(datastring,numerictype).byteswapped(),
               (hd["columns"],hd["rows"]) )
+    ar.savespace(1)
     return data(ar,hd)
 
 

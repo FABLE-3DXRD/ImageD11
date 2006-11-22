@@ -424,17 +424,58 @@ def uncompute_one_g_vector(gv,wavelength, wedge=0.0):
 
 
 
-def compute_lorentz_factors(args):
+def compute_lorentz_factors(tth,eta,omega,wavelength,wedge=0.,chi=0.):
     """
     From Kabsch 1988 J. Appl. Cryst. 21 619
 
     Multiply the intensities by:
-    Lorentz = | S.(u x S_0)| / |S|.|S_0|
+    Lorentz = | S.(u x So)| / |S|.|So|
     S = scattered vector
-    S_0 = incident vector
+    So = incident vector
     u = unit vector along rotation axis
     """
-    pass
+    # So is along +x, the incident beam defines the co-ordinates in ImageD11
+    # length is in reciprocal space units, 1/lambda
+    So = [1./wavelength,0,0]
+    #
+    # u vector along rotation axis
+    # starts as along z
+    u = [0,0,1]
+    # rotate by 
+    # g =  R . W . k where:
+    # R = ( cos(omega) , sin(omega), 0 )
+    #     (-sin(omega) , cos(omega), 0 )
+    #     (         0  ,         0 , 1 )
+    #
+    W =  [[ cos(wedge) ,  0  ,  sin(wedge) ],
+          [         0  ,  1  ,          0  ],
+          [-sin(wedge) ,  0  ,  cos(wedge) ]]
+    #
+    C =  [[         1  ,         0  ,      0     ],
+          [         0  ,  cos(chi)  , sin(chi)   ],
+          [         0  , -sin(chi)  , cos(chi)   ]]
+    u = matrixmultiply(C,matrixmultiply(W,u))
+    u_x_So = cross_product(u,So)
+    # if DEBUG: print "axis orientation",u
+    #
+    # S = scattered vectors. Length 1/lambda.
+    S = [ cos(radians(tth)/2.)*sin(radians(eta))/wavelength,
+          cos(radians(tth)/2.)*cos(radians(eta))/wavelength,
+          sin(radians(tth)/2.)/wavelength]
+    S_dot_u_x_So = dot(S,u_x_So)
+    mod_S = sqrt(dot(S,S))
+    mod_So = sqrt(dot(So,So))
+    try:
+        lorentz = abs(S_dot_u_x_So)/mod_S/mod_So
+    except:
+        raise Exception("Please fix this div0 crap in lorentz")
+    return lorentz
+
+def cross_product(a,b):
+    assert len(a)==len(b)==3
+    return array([a[1]*b[2]-a[2]*b[1],
+                  a[2]*b[0]-a[0]*b[2],
+                  a[0]*b[1]-a[1]*b[0]])
 
 def compute_polarisation_factors(args):
     """
@@ -448,8 +489,13 @@ def compute_polarisation_factors(args):
     S = scattered vector
     S_0 = incident vector
     n = normal to polarisation plane, typically perpendicular to S_0
+
+    In ImageD11 we normally expect to find:
+    x axis along the beam
+    z axis being up, and parallel to the normal n mentioned above
     """
-    pass
+    n = [0,0,1]
+    
 
 if __name__=="__main__":
     # from indexing import mod_360

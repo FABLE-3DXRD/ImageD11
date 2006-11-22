@@ -405,7 +405,7 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
 /*   return PyArray_Return(results); */
 /*   Py_DECREF(results);*/
      /*   Py_DECREF(dataarray);*/
-   return Py_BuildValue("i", np); 
+   return Py_BuildValue("i", np+1);/* why the plus one?? */ 
 }
 
 
@@ -571,6 +571,121 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
 }
 
 
+static char bloboverlaps_doc[] =\
+"   res = bloboverlaps (   Numeric.array(blob1, 2D, Int), n1  , \n"\
+"                          Numeric.array(blob2, 2D, Int), n2  , verbose=0) \n"\
+" \n"\
+" returns a disjoint set making the overlaps between blob1 and blob2 \n"\
+" res[0->n1] = peaks in image 1 \n"\
+" res[n2->n2+n1+1] = peaks in image 2 \n";
+    
+
+   
+static PyObject * bloboverlaps (PyObject *self, PyObject *args,  PyObject *keywds)
+{
+   PyArrayObject *b1=NULL,*b2=NULL, *res=NULL; /* in (not modified) */
+   int i,j,s,f, verbose ; /* loop vars, flag */
+   int p1,p2,n1,n2; /* peak num and npeaks in each */
+   int *link , percent, safelyneed;
+   static char *kwlist[] = {"blob1","n1","blob2","n2","verbose", NULL};
+   if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!iO!i|i",kwlist,      
+                        &PyArray_Type, &b1,   /* blobs */
+                        &n1,
+                        &PyArray_Type, &b2,   /* blobs */
+                        &n2,
+                        &verbose))        /* threshold and optional verbosity */
+      return NULL;
+   if(verbose!=0)printf("Welcome to bloboverlaps\n");
+   
+   /* Check array is two dimensional and int - results from connectedpixels above */
+   
+   if(b1->nd != 2 && b1->descr->type_num != PyArray_INT){     
+      PyErr_SetString(PyExc_ValueError,
+                       "Blob1 array must be 2d and integer, first arg problem");
+      return NULL;
+      }
+   if(b2->nd != 2 && b2->descr->type_num != PyArray_INT){     
+      PyErr_SetString(PyExc_ValueError,"Blob2 array must be 2d and integer, second arg problem");
+      return NULL;
+      }
+   if (b1->strides[0]!=b2->strides[0] ||
+       b1->strides[1]!=b2->strides[1] ||
+       b1->dimensions[0]!=b2->dimensions[0] ||
+       b1->dimensions[1]!=b2->dimensions[1] ){
+      PyErr_SetString(PyExc_ValueError,
+                       "Blob1 and Blob2 array be similar (dims & strides)");
+      return NULL;
+   }       
+   /* Decide on fast/slow loop - inner versus outer */
+   if(b1->strides[0] > b1->strides[1]) {
+      f=1;  s=0;}
+   else {
+      f=0;  s=1;
+   }
+   if (verbose!=0){
+        printf("Fast index is %d, slow index is %d, ",f,s);
+        printf("strides[0]=%d, strides[1]=%d\n",b1->strides[0],b2->strides[1]);
+   }
+
+   /* Initialise a disjoint set in link 
+    * image 1 has peak[i]=i ; i=1->n1
+    * image 2 has peak[i]=i+n1 ; i=1->n2
+    * link to hold 0->n1-1 ; n1->n2+n2-1 */
+   safelyneed=n1+n2+1;
+   res  = (PyArrayObject *)PyArray_FromDims(1,&safelyneed,PyArray_INT);
+   link =  (int   *)   res->data;
+   if(!res){  /* max length */
+      PyErr_SetString(PyExc_ValueError,
+                       "Failed to malloc link array");
+      return NULL;
+   }
+
+   for(i=0;i<n1+n2+1;i++){link[i]=i;} /* first image */
+   /* flag the start of image number 2 */
+   link[n1]=-99999; /* Should never be touched by anyone */
+   
+  /* results lists of pairs of numbers */
+   if(verbose!=0){
+       printf("Scanning image, n1=%d n2=%d\n",n1,n2);
+   }
+   percent = b1->dimensions[s] / 100.;
+   for( i = 0 ; i <= (b1->dimensions[s]-1) ; i++ ){    /* i,j is looping along the indices data array */
+      if(verbose!=0 && (i%percent == 0) )printf(".");
+      for( j = 0 ; j <= (b1->dimensions[f]-1) ; j++ ){
+         p1=* (int *) (b1->data + i*b1->strides[s] + j*b1->strides[f]);
+         if (p1==0){ continue; } 
+         p2=* (int *) (b2->data + i*b2->strides[s] + j*b2->strides[f]);
+         if (p2==0){ continue; } 
+         /* Link contains the peak that this peak is */
+	 if(link[p1]<0 || link[p2+n1]<0){
+	   printf("Whoops p1=%d p2=%d p2+n1=%d link[p1]=%d link[p2+n1]=%d",p1,p2,p2+n1,link[p1],link[p2+n1]);
+	   return NULL;
+	 }
+         /* printf("link[60]=%d %d %d ",link[60],p1,p2+n1);*/
+         dset_makeunion(link,p1,p2+n1);
+	 /* printf("link[60]=%d ",link[60]); */
+	 if(verbose>2)printf("link[p1=%d]=%d link[p2+n1=%d]=%d\n",p1,link[p1],p2+n1,link[p2+n1]);
+      } /* j */
+   } /* i */
+   if(verbose!=0){
+      printf("\n");
+      for(i=0;i<n1+n2;i++){
+          if(i!=link[i]){
+             printf("Link found!! %d %d\n",i,link[i]);
+          }
+      }
+   }
+   return Py_BuildValue("O", PyArray_Return(res));
+}
+
+
+
+
+
+
+
+
+
 
 
 static PyMethodDef connectedpixelsMethods[] = {
@@ -578,6 +693,8 @@ static PyMethodDef connectedpixelsMethods[] = {
      connectedpixels_doc},
    {"blobproperties", (PyCFunction) blobproperties, METH_VARARGS | METH_KEYWORDS,
      blobproperties_doc},
+   {"bloboverlaps", (PyCFunction) bloboverlaps,  METH_VARARGS | METH_KEYWORDS,
+     bloboverlaps_doc},     
    {"roisum", (PyCFunction) roisum, METH_VARARGS | METH_KEYWORDS,
      roisum_doc},
    {NULL, NULL, 0, NULL} /* setinel */

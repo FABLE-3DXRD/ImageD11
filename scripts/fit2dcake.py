@@ -502,7 +502,7 @@ class cakemacrogenerator:
             except:
                 os.environ["DISPLAY"]=":1"
         array=str(self.mask_pars_values["DIM1_DATA"])+"x"+str(self.mask_pars_values["DIM2_DATA"])
-        os.system("fit2d_12_081_i686_linux2.4.20 -dim%s -mac%s"%(array,tmpfilename))
+        os.system("/users/wright/bin/fit2d_12_081_i686_linux2.4.20 -dim%s -mac%s"%(array,tmpfilename))
         os.system("rm -f %s"%(tmpfilename))
         if show is None:
             os.environ["DISPLAY"]=displaywas

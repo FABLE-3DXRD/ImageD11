@@ -39,7 +39,11 @@ def preprocess(image, (scalex,scaley),maxi=None,mini=None):
             image[DEFAULT_HEIGHT-1-ys[x],len_x-x-1] = 0
         image = transpose(image)
     elif image.typecode() != 'b':
-        image = 255 * (image - themin) / (themax-themin)
+        try:
+            image.savespace(0)
+            image = 255 * (image - themin) / (themax-themin)
+        except:
+            print "Exception",themax,themin
         image = where(image<256,image,255)
         image = where(image>0,image,0).astype('b')
 
@@ -77,7 +81,7 @@ def NumerictoImage( data, (scalex,scaley),maxi=None,mini=None):
 
 class rubber(Frame):
 
-    def __init__(self, datafile=None, master=None):
+    def __init__(self, datafile=None, bkgfile=None, master=None):
         self.master=master
         Frame.__init__(self, master)
         if datafile==None:
@@ -94,6 +98,14 @@ class rubber(Frame):
             if type(datafile)==type(array([10,11,12])):
                 self.data=datafile
                 self.datafile="unknown0000.edf"
+        self.data.savespace(0)
+        if type(bkgfile)==type("string"):
+            self.bkgfile=bkgfile
+            bkgobj=opendata(bkgfile)
+            self.bkg=bkgobj.data
+            self.data=self.data-self.bkg
+            print "Got your background from",bkgfile,self.bkg.shape
+
 
         Pack.config(self,expand=1,fill=BOTH)
         self.b=Frame(self)
@@ -253,6 +265,12 @@ class rubber(Frame):
         dataobj=opendata(self.datafile)
         self.status.config(text=self.datafile)
         self.data=dataobj.data
+        self.data.savespace(0)
+        try:
+            self.data=self.data-self.bkg
+        except:
+            print "Failed to subtract bkg",self.bkg.shape,self.data.shape
+            pass
         try:
             self.omega=float(dataobj.header["Omega"])
         except:
@@ -500,7 +518,9 @@ class rubber(Frame):
 
 import sys
 from ImageD11.opendata import opendata
-if len(sys.argv)>1:
+if len(sys.argv)>2:
+    test = rubber(sys.argv[1],bkgfile=sys.argv[2])
+elif len(sys.argv)>2:
     test = rubber(sys.argv[1])
 else:
     test = rubber()
