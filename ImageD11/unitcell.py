@@ -74,6 +74,10 @@ def I(h,k,l):
 
 def F(h,k,l):
     return (h+k)%2!=0 or (h+l)%2!=0 or (k+l)%2!=0
+                                                                                
+def R(h,k,l):
+    return (-h+k+l)%3 != 0
+
 
 outif = {
     "P" : P ,
@@ -81,7 +85,8 @@ outif = {
     "B" : B ,
     "C" : C ,
     "I" : I ,
-    "F" : F }
+    "F" : F ,
+    "R" : R}
 
 def cellfromstring(s):
     items=s.split()
@@ -100,13 +105,13 @@ class unitcell:
         """
         Unit cell class
         supply a list (tuple etc) of a,b,c,alpha,beta,gamma
-        optionally a symmetry, one of "P","A","B","C","I","F"
+        optionally a symmetry, one of "P","A","B","C","I","F","R"
         """
         self.lattice_parameters=Numeric.array(lattice_parameters)
         if self.lattice_parameters.shape[0]!=6:
             raise "You must supply 6 lattice parameters, a,b,c,alpha,beta,gamma"
         self.symmetry=symmetry
-        if self.symmetry not in ["P","A","B","C","I","F"]:
+        if self.symmetry not in ["P","A","B","C","I","F","R"]:
             raise "Your symmetry "+self.symmetry+" was not recognised"
         # assigning a function here!
         self.absent=outif[self.symmetry]

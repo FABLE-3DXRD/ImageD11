@@ -104,7 +104,7 @@ class guitransformer:
             self.parameters['cell_alpha']=90.0
             self.parameters['cell_beta']=90.0
             self.parameters['cell_gamma']=120.0
-            self.parameters['cell_lattice_[P,A,B,C,I,F]']="P"
+            self.parameters['cell_lattice_[P,A,B,C,I,F,R]']="P"
         else:
             try:
                 lines = open(filename,"r").readlines()
@@ -282,7 +282,7 @@ class guitransformer:
         alpha  =float(self.parameters['cell_alpha'])
         beta   =float(self.parameters['cell_beta'])
         gamma  =float(self.parameters['cell_gamma'])
-        lattice=self.parameters['cell_lattice_[P,A,B,C,I,F]']
+        lattice=self.parameters['cell_lattice_[P,A,B,C,I,F,R]']
         self.unitcell=unitcell.unitcell( [a,b,c,alpha,beta,gamma] ,  lattice)
         self.parent.unitcell=self.unitcell
         if self.twotheta==None:
