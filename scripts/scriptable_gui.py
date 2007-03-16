@@ -95,13 +95,14 @@ if 1:
             Then build the actual gui
             """
             from tkMessageBox import showinfo
+            import ImageD11
             startmessage = """
-  ImageD11 version 0.4, Copyright (C) 2005 Jon Wright
+  ImageD11 version %s, Copyright (C) 2005 Jon Wright
   ImageD11 comes with ABSOLUTELY NO WARRANTY; for details select help, license.
   This is free software, and you are welcome to redistribute it under certain conditions
 
   Please send useful feedback to wright@esrf.fr
-  """
+  """%(ImageD11.__version__)
 
             startmessage += """
   Stuff to do:
