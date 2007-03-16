@@ -42,9 +42,15 @@ if __name__=="__main__":
         o.loadfiltered(flt)
         o.readubis(ubi)
         o.generate_grains()
-        o.tolerance = 0.1  # to command line arg
+        o.tolerance = 0.05  # to command line arg
         o.refineubis(False)
-
+        o.varylist=['y-center','z-center','distance','tilt-y','tilt-z',
+                    'wedge','chi']
+        o.fit()
+        o.refineubis(False)
+        # Now get integrated intensities
+        for g in o.getgrains():
+            o.getpeaks(g)
 
     except:
         print "Usage: %s fltfile ubifile parfile outfile"

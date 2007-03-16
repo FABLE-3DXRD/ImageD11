@@ -127,11 +127,13 @@ specified&nbsp;by&nbsp;the&nbsp;keyword&nbsp;argument&nbsp;typecode.</tt></dd></
 specified&nbsp;by&nbsp;the&nbsp;keyword&nbsp;argument&nbsp;typecode.</tt></dd></dl>
  <dl><dt><a name="-choose"><strong>choose</strong></a>(...)</dt><dd><tt><a href="#-choose">choose</a>(a,&nbsp;(b1,b2,...))</tt></dd></dl>
  <dl><dt><a name="-cross_correlate"><strong>cross_correlate</strong></a>(...)</dt><dd><tt><a href="#-cross_correlate">cross_correlate</a>(a,v,&nbsp;mode=0)</tt></dd></dl>
+ <dl><dt><a name="-drlv"><strong>drlv</strong></a>(UBI, gv)</dt><dd><tt>Get&nbsp;the&nbsp;difference&nbsp;from&nbsp;being&nbsp;integer&nbsp;hkls</tt></dd></dl>
  <dl><dt><a name="-empty"><strong>empty</strong></a>(...)</dt><dd><tt><a href="#-empty">empty</a>((d1,...,dn),typecode='l',savespace=0)&nbsp;will&nbsp;return&nbsp;a&nbsp;new&nbsp;array<br>
 of&nbsp;shape&nbsp;(d1,...,dn)&nbsp;and&nbsp;given&nbsp;type&nbsp;with&nbsp;all&nbsp;its&nbsp;entries&nbsp;uninitialized.&nbsp;&nbsp;If&nbsp;savespace&nbsp;is<br>
 nonzero,&nbsp;the&nbsp;array&nbsp;will&nbsp;be&nbsp;a&nbsp;spacesaver&nbsp;array.&nbsp;&nbsp;This&nbsp;can&nbsp;be&nbsp;faster&nbsp;than&nbsp;zeros.</tt></dd></dl>
  <dl><dt><a name="-fromstring"><strong>fromstring</strong></a>(...)</dt><dd><tt><a href="#-fromstring">fromstring</a>(string,&nbsp;typecode='l',&nbsp;count=-1)&nbsp;returns&nbsp;a&nbsp;new&nbsp;1d&nbsp;array&nbsp;initialized&nbsp;from&nbsp;the&nbsp;raw&nbsp;binary&nbsp;data&nbsp;in&nbsp;string.&nbsp;&nbsp;If&nbsp;count&nbsp;is&nbsp;positive,&nbsp;the&nbsp;new&nbsp;array&nbsp;will&nbsp;have&nbsp;count&nbsp;elements,&nbsp;otherwise&nbsp;it's&nbsp;size&nbsp;is&nbsp;determined&nbsp;by&nbsp;the&nbsp;size&nbsp;of&nbsp;string.</tt></dd></dl>
  <dl><dt><a name="-mod_360"><strong>mod_360</strong></a>(theta, target)</dt><dd><tt>Find&nbsp;multiple&nbsp;of&nbsp;360&nbsp;to&nbsp;add&nbsp;to&nbsp;theta&nbsp;to&nbsp;be&nbsp;closest&nbsp;to&nbsp;target</tt></dd></dl>
+ <dl><dt><a name="-readubis"><strong>readubis</strong></a>(ubifile<font color="#909090">=None</font>)</dt><dd><tt>returns&nbsp;a&nbsp;list&nbsp;of&nbsp;ubi&nbsp;arrays</tt></dd></dl>
  <dl><dt><a name="-refine"><strong>refine</strong></a>(UBI, gv, tol, quiet<font color="#909090">=True</font>)</dt><dd><tt>Refine&nbsp;an&nbsp;orientation&nbsp;matrix&nbsp;and&nbsp;rescore&nbsp;it.<br>
 &nbsp;<br>
 From&nbsp;Paciorek&nbsp;et&nbsp;al&nbsp;Acta&nbsp;A55&nbsp;543&nbsp;(1999)<br>

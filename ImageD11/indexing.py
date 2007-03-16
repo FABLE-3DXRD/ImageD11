@@ -23,6 +23,33 @@ from ImageD11 import closest
 
 
 import math,time,sys
+
+def readubis(ubifile=None):
+	"""
+	returns a list of ubi arrays
+	"""
+        try:
+            import tkFileDialog,os
+            if ubifile==None:
+               ubifile=tkFileDialog.askopenfilename(initialdir=os.getcwd())
+        except:
+            pass
+	if ubifile is None:
+            raise Exception("No ubi filename supplied")
+        f=open(ubifile,"r")
+        ubisread=[]
+        u = []
+        for line in f:
+            vals = [ float(x) for x in line.split() ]
+            if len(vals) == 3:
+                u = u + [vals]
+            if len(u)==3:
+                ubisread.append(array(u))
+                u = []
+        f.close()
+        return ubisread
+
+
 def ubitocellpars(ubi):
     """
     convert ubi matrix to unit cell
@@ -50,6 +77,18 @@ def mod_360(theta, target):
         diff=theta-target
     return theta
 
+def drlv(UBI,gv):
+    """
+    Get the difference from being integer hkls
+    """
+    h=matrixmultiply(UBI,transpose(gv))
+    hint=floor(h+0.5).astype(Int) # rounds down
+    diff=h-hint
+    drlv2=sum(diff*diff,0)
+    return drlv2
+
+
+
 def refine(UBI,gv,tol,quiet=True):
     """
     Refine an orientation matrix and rescore it.
@@ -74,7 +113,7 @@ def refine(UBI,gv,tol,quiet=True):
     tol = tol*tol
     # Only use peaks which are assigned to rings for refinement
     ind = compress( less(drlv2,tol) , arange(gv.shape[0]) )
-    scoreb4=ind.shape[0]
+    # scoreb4=ind.shape[0]
     contribs = take(drlv2,ind)
     try:
         fitb4=math.sqrt(sum(contribs)/contribs.shape[0])
@@ -83,7 +122,7 @@ def refine(UBI,gv,tol,quiet=True):
     except:
         print "No contributing reflections for\n",UBI
         raise
-    drlv2_old=drlv2
+    # drlv2_old=drlv2
     R=zeros((3,3),Float)
     H=zeros((3,3),Float)
     for i in ind:
@@ -105,7 +144,7 @@ def refine(UBI,gv,tol,quiet=True):
     diff=h-hint
     drlv2=sum(diff*diff,0)
     ind = compress( less(drlv2,tol), arange(gv.shape[0]) )
-    scorelastrefined=ind.shape[0]
+    # scorelastrefined=ind.shape[0]
     contribs = take(drlv2,ind)
     try:
         fitlastrefined=math.sqrt(sum(contribs)/contribs.shape[0])
@@ -134,20 +173,23 @@ class indexer:
     """
     A class for searching for orientation matrices
     """
-    def __init__(self,unitcell=None,gv=None,
-          cosine_tol = 0.002,
-          minpks = 10 ,
-          hkl_tol=0.01,
-          ring_1=1,
-          ring_2=2,
-          ds_tol=0.005,
-          wavelength=-1,
-          uniqueness=0.5,
-          eta_range=0.,
-          max_grains=100):
+    def __init__(self,
+            unitcell=None,
+            gv=None,
+            cosine_tol = 0.002,
+            minpks = 10 ,
+            hkl_tol=0.01,
+            ring_1=1,
+            ring_2=2,
+            ds_tol=0.005,
+            wavelength=-1,
+            uniqueness=0.5,
+            eta_range=0.,
+            max_grains=100):
         """
         Unitcell would be a unitcell object for generating hkls peaks
         gv would be a 3*n array of points in reciprocal space
+        The rest of the arguments are parameters.
         """
         self.unitcell=unitcell
         self.gv=gv
@@ -227,7 +269,7 @@ class indexer:
             self.na[j]=ind.shape[0]
             n_indexed  = sum(where( take(self.ga,ind) >  -1, 1, 0))
             n_to_index = sum(where( take(self.ga,ind) == -1, 1, 0))
-            diffs = abs(take(ds,ind) - dsr[j])
+            # diffs = abs(take(ds,ind) - dsr[j])
             h=self.unitcell.ringhkls[dsr[j]][0]
             print "Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d"%(j,h[0],h[1],h[2],len(self.unitcell.ringhkls[dsr[j]]),
                      self.na[j],n_indexed,n_to_index)
@@ -315,11 +357,11 @@ class indexer:
         print "Number of peaks in ring 2:",len(i2)
         print "Minimum number of peaks to identify a grain",self.minpks
         # print self.gv.shape
-        ntry=0
-        nhits=0
+        # ntry=0
+        # nhits=0
         self.hits=[]
         tol=float(self.cosine_tol)
-        ng=0
+        # ng=0
         mp=sqrt(sum(self.gv*self.gv,1))
         # print mp.shape
         ps1 = take(self.gv,i1,0)
@@ -334,7 +376,7 @@ class indexer:
             n1[:,i]=n1[:,i]/mp1
             n2[:,i]=n2[:,i]/mp2
         cs = array(coses,Float)
-        found=0
+        # found=0
         hits=[]
         start = time.time()
         onepercent=len(i1)/100
@@ -463,10 +505,13 @@ class indexer:
     def saveindexing(self,filename,tol=None):
         """
         Save orientation matrices
+
+        FIXME : refactor this into something to do 
+            grain by grain }
+            peak by peak   }
         """
         f=open(filename,"w")
         i=0
-        import math
         from ImageD11 import transform
         from LinearAlgebra import inverse
         for ubi in self.ubis:
@@ -598,24 +643,25 @@ class indexer:
             return closest.score(UBI,self.gvflat,self.hkl_tol)
         else:
             return closest.score(UBI,self.gvflat,tol)
-        t1=time.time()
-        h=matrixmultiply(UBI,transpose(self.gv))
-        hint=floor(h+0.5).astype(Int) # rounds down
-        diff=h-hint
-        drlv2=sum(diff*diff,0)
-        tol = float(self.hkl_tol)
-        tol = tol*tol
-#      print "%e"%(tol)
-#      for i in range(10):
-#         print h[:,i],hint[:,i],drlv2[i]
-        ind = compress( less(drlv2,tol) , arange(self.gv.shape[0]) )
-#      ind = compress( less(drlv2[:npks],tol) , arange(npks) )
-        t2=time.time()
-        print n-len(ind),"Time in c",t1-t0,"Time in python",t2-t1
-#      print "Grain UBI"
-#      print UBI
-#      print "Number of peaks",ind.shape[0]
-        return ind
+        # NONE OF THIS FOLLOWING CODE IS EXECUTED, EVER!
+#        t1=time.time()
+#        h=matrixmultiply(UBI,transpose(self.gv))
+#        hint=floor(h+0.5).astype(Int) # rounds down
+#        diff=h-hint
+#        drlv2=sum(diff*diff,0)
+#        tol = float(self.hkl_tol)
+#        tol = tol*tol
+#        print "%e"%(tol)
+#        for i in range(10):
+#            print h[:,i],hint[:,i],drlv2[i]
+#        ind = compress( less(drlv2,tol) , arange(self.gv.shape[0]) )
+#        ind = compress( less(drlv2[:npks],tol) , arange(npks) )
+#        t2=time.time()
+#        print n-len(ind),"Time in c",t1-t0,"Time in python",t2-t1
+#        print "Grain UBI"
+#        print UBI
+#        print "Number of peaks",ind.shape[0]
+#        return ind
 
     def refine(self,UBI):
         """
@@ -641,14 +687,16 @@ class indexer:
         tol = tol*tol
         # Only use peaks which are assigned to rings for refinement
         ind = compress( logical_and(less(drlv2,tol),greater(self.ra,-1)) , arange(self.gv.shape[0]) )
-        scoreb4=ind.shape[0]
+        #scoreb4=ind.shape[0]
         contribs = take(drlv2,ind)
-        try:
-            fitb4=sum(contribs)/contribs.shape[0]
-        except:
-            print "No contributing reflections for\n",UBI
-            raise
-        drlv2_old=drlv2
+        if len(contribs)==0:
+            raise Exception("No contributing reflections for"+str(UBI))
+        #try:
+        #    fitb4=sum(contribs)/contribs.shape[0]
+        #except:
+        #    print "No contributing reflections for\n",UBI
+        #    raise
+        #drlv2_old=drlv2
         R=zeros((3,3),Float)
         H=zeros((3,3),Float)
         for i in ind:

@@ -1,6 +1,5 @@
 
 
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -54,7 +53,10 @@ def opendata(filename):
     s = "\n\nUnrecognised filename: %s\n"%(f)
     raise Exception(s)
 
-
+def getnum(name):
+    # try to figure out the file number
+    parts=name.split(".")
+    
 
 def makename(stem,num,extn,width=4):
     """
@@ -416,12 +418,75 @@ def writebruker(filename,dataobject):
         out.write(" "*(512-length%512)) # pad to 512 multiple
     out.close()
 
+def makeedfheader(dataobject):
+    """
+    Writes the FLOAT edf subset a la fit2d
+    Feel free to improve me!
+    """
+    h =     """HeaderID       = %s ;
+Image          = %s ;
+ByteOrder      = %s ;
+DataType       = %s ;
+Dim_1          = %s ;
+Dim_2          = %s ;
+Size           = %s ;
+count_time     = %s ;
+point_no       = %s ;
+preset         = %s ;
+col_end        = %s ;
+col_beg        = %s ;
+row_end        = %s ;
+row_beg        = %s ;
+col_bin        = %s ;
+row_bin        = %s ;
+time           = %s ;
+time_of_day    = %s ;
+dir            = %s ;
+suffix         = %s ;
+prefix         = %s ;
+run            = %s ;
+title          = %s ;
+DATE (scan begin)= %s ;"""
+    hd = dataobject.header
+    hd["DataType"]="FLOAT"
+    hd["Size"]=str(Numeric.ravel(dataobject.data).shape[0]*4)
+    keys = [s.split("=")[0].lstrip().rstrip() for s in h.split(";")]
+    keys.pop()
+    args = tuple([str(hd[k.lstrip().rstrip()]) for k in keys])
+    s = "{\n"+h%args
+    keys = keys + ["headerstring","rows","columns"]
+    ok = hd.keys()
+    ok.sort()
+    for k in ok:
+        if k not in keys:
+            s = "%s\n%-12s = %s ;"%(s,k,hd[k])
+    return "%-3070s}\n"%(s)
+    
+    
+
+def writeedf(filename,dataobject):
+    """
+    """
+    h=makeedfheader(dataobject)
+    assert(len(h)==3072) , "bad edf header size"
+    f=open(filename,"wb")
+    f.write(h)
+    f.write(dataobject.data.astype(Numeric.Float32).tostring())
+    f.close()
+
 def writedata(filename,dataobject):
     # identify type of dataobject
-    if dataobject.header.has_key("FORMAT") and int(dataobject.header["FORMAT"]) == 86:
-        writebruker(filename,dataobject)
-    else:
-        raise Exception("Not implemented yet, I can only write bruker files, sorry")
+    if dataobject.header.has_key("FORMAT"):
+        if int(dataobject.header["FORMAT"]) == 86:
+            writebruker(filename,dataobject)
+            return
+    if dataobject.header.has_key("HeaderID"):
+        if dataobject.header["HeaderID"] == "EH:000001:000000:000000":
+            writeedf(filename,dataobject)
+            return
+    raise Exception("Not implemented yet, I can only write bruker files, sorry")
+
+
 
 
 

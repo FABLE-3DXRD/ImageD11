@@ -155,9 +155,6 @@ if __name__=="__main__":
             secondimage = opendata.opendata(name)
             a, b = scaler.scale(secondimage.data)
             print i, name , a, b,
-            # Second go with no threshold
-            a2, b2 = scaler2.scale(secondimage.data)
-            print  a2, b2
     else: # we correct the image
         from ImageD11 import data
         for i in range(first,last+1):

@@ -89,7 +89,7 @@ class rubber(Frame):
         if type(datafile)==type("string"):
             self.datafile=datafile
             dataobj=opendata(datafile)
-            self.data=dataobj.data
+            self.data=dataobj.data.astype(Int)
             try:
                 self.omega=float(dataobj.header["Omega"])
             except:
@@ -102,8 +102,8 @@ class rubber(Frame):
         if type(bkgfile)==type("string"):
             self.bkgfile=bkgfile
             bkgobj=opendata(bkgfile)
-            self.bkg=bkgobj.data
-            self.data=self.data-self.bkg
+            self.bkg=bkgobj.data.astype(Int)
+            self.data=self.data.astype(Int)-self.bkg
             print "Got your background from",bkgfile,self.bkg.shape
 
 
@@ -213,32 +213,11 @@ class rubber(Frame):
     def rdpars(self,parfile=None):
         if parfile==None:
             parfile=tkFileDialog.askopenfilename(initialdir=os.getcwd())
-        lines = open(parfile,"r").readlines()
-        for line in lines:
-            name,value=line.split()
-            try:
-                self.parameters[name]=float(value)
-            except:
-                self.parameters[name]=value
-        for key in self.parameters.keys():
-            print key,self.parameters[key]
-
+        self.parameters=transform.rdpars(parfile)
 
     def rdubis(self,ubifile=None):
-        if ubifile==None:
-            ubifile=tkFileDialog.askopenfilename(initialdir=os.getcwd())
-        f=open(ubifile,"r")
-        self.ubisread=[]
-        u = []
-        for line in f:
-            vals = [ float(x) for x in line.split() ]
-            if len(vals) == 3:
-                u = u + [vals]
-            if len(u)==3:
-                self.ubisread.append(array(u))
-                u = []
-        f.close()
-        print self.ubisread
+        from ImageD11 import indexing
+        return indexing.readubis(ubifile)
 
     def jump(self):
         number=int(self.filenum.get())
@@ -264,10 +243,10 @@ class rubber(Frame):
     def readdata(self):
         dataobj=opendata(self.datafile)
         self.status.config(text=self.datafile)
-        self.data=dataobj.data
+        self.data=dataobj.data.astype(Int)
         self.data.savespace(0)
         try:
-            self.data=self.data-self.bkg
+            self.data=self.data.astype(Int)-self.bkg
         except:
             print "Failed to subtract bkg",self.bkg.shape,self.data.shape
             pass

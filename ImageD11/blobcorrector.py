@@ -38,7 +38,7 @@ class perfect:
     splinefile = "NO_CORRECTION_APPLIED"
     xsize = "UNKNOWN"
     ysize = "UNKNOWN"
-    def correct(x,y):
+    def correct(self,x,y):
         return x, y
 
 
@@ -79,7 +79,7 @@ class correctorclass:
 
         returns (FIXME - get them the right way around!)
         """
-        if hasattr(self,pixel_lut):
+        if hasattr(self,"pixel_lut"):
             # Cache the value in case of multiple calls
             return self.pixel_lut
         x_im = n.outerproduct(range(dims[0]),n.ones(dims[1]))
@@ -93,10 +93,10 @@ class correctorclass:
         Generate a look up table of pixel positions in microns
         returns ...
         """
-        if hasattr(self,pos_lut):
+        if hasattr(self,"pos_lut"):
             # Cache the value in case of multiple calls
             return self.pos_lut
-        if hasattr(self,pixel_lut):
+        if hasattr(self,"pixel_lut"):
             self.pos_lut = ( self.pixel_lut[0] * self.xsize, 
                              self.pixel_lut[1] * self.ysize )
             return self.pos_lut
@@ -130,7 +130,7 @@ class correctorclass:
             error=math.sqrt((x-xold)*(x-xold)+(y-yold)*(y-yold))
             # print error,xold,x,yold,y
             if ntries == 10:
-                raise "Error getting the inverse spline to converge"
+                raise Exception("Error getting the inverse spline to converge")
         return x,y
 
     def test(self,x,y):
@@ -143,7 +143,7 @@ class correctorclass:
         error = math.sqrt( (x-xold)*(x-xold) + (y-yold)*(y-yold))
         if error > self.tolerance:
             print "Failed!"
-            raise "Problem in correctorclass"
+            raise Exception("Problem in correctorclass")
 
 
 
@@ -261,13 +261,13 @@ def unwarpimage(image, xpositions, ypositions):
 
 if __name__=="__main__":
     import sys,time
-    from Numeric import *
     start=time.time()
     splinefile=sys.argv[1]
     infile=sys.argv[2]
     outfile=sys.argv[3]
     out=open(outfile,"w")
     npks=0
+    # THIS IS BROKEN
     tck1,tck2,xmin,xmax,ymin,ymax=readfit2dspline(splinefile)
     print "Time to read fit2d splinefile %f/s"%(time.time()-start)
     start=time.time()

@@ -11,10 +11,14 @@ from this I think
 # probably programming python or maybe cookbook.
 # Most probably programming python by Mark Lutz
 """
-import sys
+
 import Tkinter as Tk
 
 class GuiMaker(Tk.Frame):   # Inherit from Tk frame
+    """
+    You must inherit from this class and implement the start and makeWidgets
+    methods
+    """
     menuBar=[]
     def __init__(self,parent=None):
         Tk.Frame.__init__(self,parent)

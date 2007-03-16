@@ -16,7 +16,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-from Numeric import transpose, matrixmultiply, Float, Int, floor, sum, zeros
+from Numeric import transpose, matrixmultiply, Float, Int, floor, sum, zeros,\
+        array, sqrt, arange, compress, less, take, outerproduct
+import math
 
 class grain:
     def __init__(self,ubi,translation=None):
@@ -64,16 +66,16 @@ class grain:
         tol = tol*tol
         # Only use peaks which are assigned to rings for refinement
         ind = compress( less(drlv2,tol) , arange(gv.shape[0]) )
-        scoreb4=ind.shape[0]
+        # scoreb4=ind.shape[0]
         contribs = take(drlv2,ind)
         try:
             fitb4=math.sqrt(sum(contribs)/contribs.shape[0])
             if not quiet:
                 print "Fit before refinement %.8f %5d"%(fitb4,contribs.shape[0]),
         except:
-            print "No contributing reflections for\n",UBI
+            print "No contributing reflections for\n",self.ubi
             raise
-        drlv2_old=drlv2
+        #drlv2_old=drlv2
         R=zeros((3,3),Float)
         H=zeros((3,3),Float)
         for i in ind:
@@ -89,13 +91,13 @@ class grain:
             UBIo=inverse(UBoptimal)
         except:
             # A singular matrix - this sucks.
-            UBIo=UBI
+            UBIo=self.ubi
         h=matrixmultiply(UBIo,transpose(gv))
         hint=floor(h+0.5).astype(Int) # rounds down
         diff=h-hint
         drlv2=sum(diff*diff,0)
         ind = compress( less(drlv2,tol), arange(gv.shape[0]) )
-        scorelastrefined=ind.shape[0]
+        # scorelastrefined=ind.shape[0]
         contribs = take(drlv2,ind)
         try:
             fitlastrefined=math.sqrt(sum(contribs)/contribs.shape[0])

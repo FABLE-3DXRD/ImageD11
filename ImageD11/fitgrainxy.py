@@ -43,10 +43,10 @@ class fitgrainxy:
         keys.sort()
         for k in keys:
             try:
-                out.write("%s %f\n"%(key,self.parameters[key]))
+                out.write("%s %f\n"%(k,self.parameters[k]))
             except:
-                out.write("%s %s\n"%(key,self.parameters[key]))
-        f.close()
+                out.write("%s %s\n"%(k,self.parameters[k]))
+        out.close()
         
     def readubis(self,filename):
         """
@@ -60,7 +60,7 @@ class fitgrainxy:
             if len(vals) == 3:
                 u = u + [vals]
             if len(u)==3:
-                name=filename + " " + str(i)
+                # name=filename + " " + str(i)
                 self.ubisread.append(Numeric.array(u))
                 i=i+1
                 u = []
@@ -93,7 +93,7 @@ class fitgrainxy:
         try:
             xc      = self.scantitles.index("xc")
         except:
-            print self.scantitles[scanname]
+            print self.scantitles
             raise
 #        print self.scandata[scanname].shape
         x  = self.scandata[:,xc]

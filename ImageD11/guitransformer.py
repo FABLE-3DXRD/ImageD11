@@ -20,7 +20,7 @@
 from Numeric import *
 from Tkinter import *
 
-import time,math,unitcell,sys
+import math,unitcell,sys
 
 import transform
 
@@ -217,7 +217,7 @@ class guitransformer:
                 float(self.parameters['tilt-z']) ]
         inc=[ .1 , .1 , .1 , transform.radians(0.1) , transform.radians(0.1) ]
         s=simplex.Simplex(self.gof,guess,inc)
-        newguess,error,iter=s.minimize()
+        newguess,error,niter=s.minimize()
         self.parameters['y-center']=newguess[0]
         self.parameters['z-center']=newguess[1]
         self.parameters['distance']=newguess[2]
@@ -227,7 +227,7 @@ class guitransformer:
         inc=[ .01 , .01 , .01 , 0.0001 , transform.radians(0.01) , transform.radians(0.01) ]
         guess=newguess
         s=simplex.Simplex(self.gof,guess,inc)
-        newguess,error,iter=s.minimize()
+        newguess,error,niter=s.minimize()
         self.parameters['y-center']=newguess[0]
         self.parameters['z-center']=newguess[1]
         self.parameters['distance']=newguess[2]

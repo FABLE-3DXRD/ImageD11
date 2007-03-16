@@ -163,10 +163,12 @@ static PyObject * roisum (PyObject *self, PyObject *args,  PyObject *keywds)
 }
 
 static char connectedpixels_doc[] =\
-"   nblobs = connectedpixels ( Numeric.array(data, 2D)  , \n"\
-"                              Numeric.array(blob, 2D, Int)  ,\n"\
-"                              float threshold ,\n"\
-"                              Int verbose )\n"\
+"   nblobs = connectedpixels ( data=Numeric.array(data, 2D)  , \n"\
+"                              results=Numeric.array(blob, 2D, Int)  ,\n"\
+"                              threshold=float threshold ,\n"\
+"                              dark=Numeric.array(dark, 2D)  , \n"\
+"                              flood=Numeric.array(flood, 2D)  , \n"\
+"                              verbose=Int verbose )\n"\
 "   data is normally an image \n"\
 "   blob is an array to receive pixel -> blob assignments\n"\
 "   threshold is the value above which a pixel is considered to be in a blob\n"\
@@ -177,19 +179,22 @@ static char connectedpixels_doc[] =\
 static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *keywds)
 {
    PyArrayObject *dataarray=NULL,*results=NULL; /* in (not modified) and out (modified) */
-
+   PyArrayObject *dark=NULL,*flood=NULL; /* in (not modified)  */
    int i,j,k,l,f,s,np,ival;        
    int *T;                            /* for the disjoint set copy */
-   int verbose=0,type;                /* whether to print stuff and the type of the input array */
+   int verbose=0,type,dktype=0,fltype=0;   /* whether to print stuff and the type of the input array */
    int percent,npover;                       /* for the progress indicator in verbose mode */
-   static char *kwlist[] = {"data","results","threshold","verbose", NULL};
+   static char *kwlist[] = {"data","results","threshold","dark","flood","verbose", NULL};
    clock_t tv1,tv1point5,tv2,tv3,tv4;
-   double time,val;
+   double time,val,fl,dk;
    float threshold;
-   if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!f|i",kwlist,      
-                        &PyArray_Type, &dataarray,   /* array args */
-                        &PyArray_Type, &results,   /* array args */
-                        &threshold, &verbose))        /* threshold and optional verbosity */
+   if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!f|O!O!i",kwlist,      
+				   &PyArray_Type, &dataarray,   /* array args */
+				   &PyArray_Type, &results,   /* array args */
+				   &threshold,
+				   &PyArray_Type, &dark,   /* array args */
+				   &PyArray_Type, &flood,   /* array args */				   
+				   &verbose))        /* threshold and optional verbosity */
       return NULL;
    if(verbose!=0){
       printf("\n\nHello there from connected pixels, you wanted the verbose output...\n");
@@ -231,12 +236,44 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
                        "Array must be 2d, second arg problem");
       return NULL;
       }
+
    if( results->dimensions[0] != dataarray->dimensions[0] ||
        results->dimensions[1] != dataarray->dimensions[1] ){    
       PyErr_SetString(PyExc_ValueError,
                        "Arrays must have same shape");
       return NULL;
       }
+
+   if(flood!=NULL){
+     if(flood->nd != 2){    
+      PyErr_SetString(PyExc_ValueError,
+                      "Array must be 2d, flood problem");
+      return NULL;
+      }
+     if( flood->dimensions[0] != dataarray->dimensions[0] ||
+	 flood->dimensions[1] != dataarray->dimensions[1] ){    
+       PyErr_SetString(PyExc_ValueError,
+                       "Arrays must have same shape - flood doesnt match data");
+       return NULL;
+     }
+     fltype=flood->descr->type_num;
+     if(verbose!=0){printf("Using a flood image");}
+   }
+   if(dark!=NULL){
+     if(dark->nd != 2){    
+      PyErr_SetString(PyExc_ValueError,
+                       "Array must be 2d, dark problem");
+      return NULL;
+      }
+     if( dark->dimensions[0] != dataarray->dimensions[0] ||
+	 dark->dimensions[1] != dataarray->dimensions[1] ){    
+       PyErr_SetString(PyExc_ValueError,
+                       "Arrays must have same shape - dark doesnt match data");
+       return NULL;
+     }
+     dktype=dark->descr->type_num;
+     if(verbose!=0){printf("Using a dark image");}
+   }
 
    S = dset_initialise(16384); /* Default number before reallocation, rather large */
    if(verbose!=0)printf("Initialised the disjoint set\n");
@@ -276,7 +313,17 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
 	/* ival= (* (unsigned short *) (dataarray->data + i*dataarray->strides[s] + j*dataarray->strides[f])) ;*/
 
 	val=getval((dataarray->data + i*dataarray->strides[s] + j*dataarray->strides[f]),type); 
-         if( val > threshold) {
+
+	if(dark!=NULL){
+	  dk=getval((dark->data + i*dark->strides[s] + j*dark->strides[f]),dktype); 
+	  val=val-dk;
+	}
+	if(flood!=NULL){
+	  fl=getval((flood->data + i*flood->strides[s] + j*flood->strides[f]),fltype); 
+	  val=val/fl;
+	}
+	
+	if( val > threshold) {
              npover++;
              k=0;l=0;
              /* peak needs to be assigned */
@@ -419,6 +466,8 @@ static char blobproperties_doc[] =\
 "   res = blobproperties ( Numeric.array(data, 2D)  , \n"\
 "                          Numeric.array(blob, 2D, Int)  ,\n"\
 "                          Int np , \n"\
+"                          dark=Numeric.array(dark, 2D)  , \n"\
+"                          flood=Numeric.array(flood, 2D)  , \n"\
 "                          Int verbose )\n"\
 "\n"\
 "   Computes various properties of a blob image (created by connectedpixels)\n"\
@@ -443,16 +492,19 @@ static char blobproperties_doc[] =\
 static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *keywds)
 {
    PyArrayObject *dataarray=NULL,*blobarray=NULL; /* in (not modified) */
-   static char *kwlist[] = {"data","blob","npeaks","verbose", NULL};
+   PyArrayObject *dark=NULL,*flood=NULL; /* in (not modified) */
+   static char *kwlist[] = {"data","blob","npeaks","dark","flood","verbose", NULL};
    PyArrayObject *sum,*sumsq,*com0,*com1,*npix, *com00, *com11, *com01;
    double *asum,*asumsq,*acom0,*acom1, *acom00, *acom11, *acom01 ;
-   double fval;
-   int np,verbose=0,type,f,s,peak,bad;
+   double fval,dk,fl;
+   int np,verbose=0,type,f,s,peak,bad,fltype=0,dktype=0;
    int i,j,safelyneed,*anpix, percent;
-   if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!i|i",kwlist,      
+   if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!i|O!O!i",kwlist,      
                         &PyArray_Type, &dataarray,   /* array args - data */
                         &PyArray_Type, &blobarray,   /* blobs */
                         &np,              /* Number of peaks to treat */
+                        &PyArray_Type, &dark,   /* array args */
+                        &PyArray_Type, &flood,   /* array args */				   
                         &verbose))        /* threshold and optional verbosity */
       return NULL;
 
@@ -476,6 +528,41 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
    else {
       f=0;  s=1;
    }
+
+   if(flood!=NULL){
+     if(flood->nd != 2){    
+      PyErr_SetString(PyExc_ValueError,
+                      "Array must be 2d, flood problem");
+      return NULL;
+      }
+     if( flood->dimensions[0] != dataarray->dimensions[0] ||
+	 flood->dimensions[1] != dataarray->dimensions[1] ){    
+       PyErr_SetString(PyExc_ValueError,
+                       "Arrays must have same shape - flood doesnt match data");
+       return NULL;
+     }
+     fltype=flood->descr->type_num;
+     if(verbose!=0){printf("Using a flood image");}
+   }
+   if(dark!=NULL){
+     if(dark->nd != 2){    
+      PyErr_SetString(PyExc_ValueError,
+                       "Array must be 2d, dark problem");
+      return NULL;
+      }
+     if( dark->dimensions[0] != dataarray->dimensions[0] ||
+	 dark->dimensions[1] != dataarray->dimensions[1] ){    
+       PyErr_SetString(PyExc_ValueError,
+                       "Arrays must have same shape - dark doesnt match data");
+       return NULL;
+     }
+     dktype=dark->descr->type_num;
+     if(verbose!=0){printf("Using a dark image");}
+   }
+
+
+
+
    if (verbose!=0){
         printf("Fast index is %d, slow index is %d, ",f,s);
    printf("strides[0]=%d, strides[1]=%d\n",dataarray->strides[0],dataarray->strides[1]);
@@ -523,7 +610,18 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
       for( j = 0 ; j <= (blobarray->dimensions[f]-1) ; j++ ){
          peak=* (int *) (blobarray->data + i*blobarray->strides[s] + j*blobarray->strides[f]);
          if( peak > 0  && peak <=np ) {
-             fval=(double)(getval((dataarray->data + i*dataarray->strides[s] + j*dataarray->strides[f]),type));
+
+	     fval=getval((dataarray->data + i*dataarray->strides[s] + j*dataarray->strides[f]),type); 
+
+	     if(dark!=NULL){
+	       dk=getval((dark->data + i*dark->strides[s] + j*dark->strides[f]),dktype); 
+	       fval=fval-dk;
+	     }
+	     if(flood!=NULL){
+	       fl=getval((flood->data + i*flood->strides[s] + j*flood->strides[f]),fltype); 
+	       fval=fval/fl;
+	     }
+	
              asum[peak]   =asum[peak]   +     fval;
              asumsq[peak] =asumsq[peak] +fval*fval;
              acom0[peak]  =acom0[peak]  +   i*fval;

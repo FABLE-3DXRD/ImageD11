@@ -446,9 +446,11 @@ class cakemacrogenerator:
     def cakefileglob(self,stem,replace=False,outstem=None):
         import glob,os
         filelist=glob.glob("%s????.%s"%(stem,self.input_extn))
-        if stem==None: outstem=stem
+        if outstem is None: outstem=stem
         outputfilelist = [s.replace(self.input_extn,self.output_extn) for s in filelist ]
         outputfilelist = [s.replace(stem,outstem) for s in outputfilelist ]
+        print filelist
+        print outputfilelist
         if not replace:
             alreadydone = glob.glob(outstem+"*"+self.output_extn)
             # 1:1 mapping of input to output
@@ -527,7 +529,7 @@ if __name__=="__main__":
     parser.add_option("-s","--show",action="store",type="string",dest="show",# default="SHOW",
                       help="Show the flickering blue window")
     parser.add_option("-g","--glob",action="store",type="string",dest="glob",
-                      help="Ignore numbers and glob for files")
+                      help="Ignore numbers and glob for files, eg -g lab6_")
     parser.add_option("-b","--debug",action="store",type="string",dest="debug",
                       help="Debugging - write macro to file and stop")
     parser.add_option("-f","--forceoverwrite",action="store",type="string",dest="forceoverwrite",

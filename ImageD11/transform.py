@@ -23,6 +23,17 @@ from Numeric import *
 
 from math import pi
 
+def rdpars(parfile):
+        lines = open(parfile,"r").readlines()
+        p={}
+        for line in lines:
+            name,value=line.split()
+            name=name.replace("-","_")
+            try:
+                p[name]=float(value)
+            except:
+                p[name]=value
+        return p
 
 
 def degrees(x):
@@ -34,16 +45,15 @@ def radians(x):
     return x*pi/180.0
 
 
-def compute_tth_eta(peaks,
-                    yc,ys,ty,
-                    zc,zs,tz,
-                    dist,
+def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
+                    z_center=0.,z_size=0.,tilt_z=0.,
+                    distance=0.,
                     detector_orientation=((1,0),(0,1)),
                     crystal_translation = None,
                     omega = None,         #       == phi at chi=90
                     axis_orientation1=0.0, # Wedge == theta on 4circ
-                    axis_orientation2=0.0 #       == chi - 90
-                    ):
+                    axis_orientation2=0.0, #       == chi - 90
+                    **kwds): # last line is for laziness - pass any crap you like to be ignored
     """
     Peaks is a 2 d array of x,y
     yc is the centre in y
@@ -64,6 +74,8 @@ def compute_tth_eta(peaks,
                  z with respect to beam height, z centre
     omega data needed if crystal translations used
     """
+    yc=y_center;ys=y_size; ty=tilt_y
+    zc=z_center;zs=z_size; tz=tilt_z
     # Matrices for the tilt rotations
     r1 = array( [ [  cos(tz) , sin(tz) , 0 ],
                   [ -sin(tz) , cos(tz) , 0 ],
@@ -92,10 +104,10 @@ def compute_tth_eta(peaks,
         # b is distance from sample to detector
         # c is distance from sample to pixel
         a=magrotvec  # 1D
-        b=dist       # 0D
+        b=distance   # 0D
         c=rotvec     # 3D
         #print c.shape
-        c[0,:]=c[0,:]+dist# 3D
+        c[0,:]=c[0,:]+distance# 3D
         # print c
         c=sqrt(sum(c*c,0))# 1D
         #print a.shape,c.shape
@@ -108,7 +120,7 @@ def compute_tth_eta(peaks,
     else:
         # Compute positions of grains
         # expecting tx, ty, tz for each diffraction spot
-        origin =  array([ -dist, 0, 0 ], Float)
+        origin =  array([ -distance, 0, 0 ], Float)
 
         #
         # g =  R . W . k

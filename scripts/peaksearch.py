@@ -39,6 +39,17 @@ from ImageD11 import blobcorrector
 from ImageD11 import opendata
 from ImageD11 import connectedpixels
 import Numeric
+class timer:
+    def __init__(self):
+        self.start = time.time()
+        self.now = self.start
+    def tick(self,msg=""):
+        now = time.time()
+        print msg,"%.2f/s"%(now-self.now),
+        self.now = now
+    def tock(self,msg=""):
+        self.tick(msg)
+        print "%.2f/s"%(self.now-self.start)
 
 class labelimage:
     def __init__(self,shape,fileout=sys.stdout,spatial=blobcorrector.perfect):
@@ -51,13 +62,13 @@ class labelimage:
         self.lastnp=-1
         self.verbose=0
         self.nprop = 9 # number of accumulating properties
-        self.corrector=corrfunc
+        self.corrector=spatial
         self.closed =None
         self.finalpeaks=[]
         self.outfile=open(fileout,"w")
         self.outfile.write("# xc yc omega npixels avg_intensity x_raw y_raw sigx sigy covxy\n")
 
-    def peaksearch(self,data,threshold):
+    def peaksearch(self,data,threshold,dark=None,flood=None):
         """
         # Call the c extension to do the peaksearch, on entry:
         #
@@ -76,11 +87,14 @@ class labelimage:
         """
         self.bl = Numeric.zeros(self.shape,Numeric.Int)
         # print "labelimage.peaksearch",data[0,0],threshold
-        self.np = connectedpixels.connectedpixels(data, self.bl, threshold,
-                                                   self.verbose)
+        optarg = {"verbose":self.verbose}
+        if dark is not None: optarg["dark"]=dark
+        if flood is not None: optarg["flood"]=flood
+        self.np = connectedpixels.connectedpixels(data, self.bl, threshold,**optarg)
         return self.np
+        
 
-    def properties(self,data,omega=0.):
+    def properties(self,data,omega=0.,dark=None,flood=None):
         """
         # Now get the properties of the identified objects, on entry:
         # picture = data, as before
@@ -112,7 +126,10 @@ class labelimage:
         
         """
         if self.np>0:
-            res = connectedpixels.blobproperties(data, self.bl, self.np, self.verbose)
+            optarg = {"verbose":self.verbose}
+            if dark is not None: optarg["dark"]=dark
+            if flood is not None: optarg["flood"]=flood
+            res = connectedpixels.blobproperties(data, self.bl, self.np,**optarg)
             try:
                 self.res = res + (Numeric.ones(res[1].shape[0],Numeric.Float)*omega * res[1],)
             except:
@@ -306,16 +323,16 @@ def peaksearch(filename, outputfile, corrector, labims , thresholds,
     picture = data_object.data
     # picture is (hopefully) a 2D Numeric array of type UInt16
     # t.tick("read")
-    if dark != None:
+    #if dark != None:
         # Slows down timing but avoid overflows
         # print "Subtracting dark,",picture[0,0]
         # print picture.shape,picture.typecode(),dark.shape,dark.typecode()
-        picture.savespace(0) # avoid overflows - very slow and silly
-        picture = picture.astype(Numeric.Int)-dark  
+        #picture.savespace(0) # avoid overflows - very slow and silly
+        #picture = picture.astype(Numeric.Int)-dark  
         # print "Subtracted dark,",picture[0,0]
     # t.tick("dark")
-    if flood != None:
-        picture = picture/flood
+    #if flood != None:
+        #picture = picture/flood
     t.tick(filename+" io/cor") # Progress indicator
     #print "datatype for searching", picture.typecode()    #
     # Transfer header information to output file
@@ -346,7 +363,7 @@ def peaksearch(filename, outputfile, corrector, labims , thresholds,
         npks = 0
         #
         # Do the peaksearch
-        np = labelim.peaksearch(picture,threshold)
+        np = labelim.peaksearch(picture,threshold,dark=dark,flood=flood)
         #
         try:
             omega = float(data_object.header["Omega"])
@@ -454,10 +471,14 @@ if __name__=="__main__":
             corrfunc = blobcorrector.correctorclass(options.spline)
         else:
             print "Avoiding spatial correction"
-            corfunc = blobcorrector.perfect()
+            corrfunc = blobcorrector.perfect()
 
-        # List comprehension - convert remaining args to floats
+        # List comprehension - convert remaining args to floats - must be unique list        
         thresholds_list = [float(t) for t in options.thresholds]
+        import sets
+        thresholds_list = list(sets.Set(thresholds_list))
+        thresholds_list.sort()
+        
         # Generate list of files to process
         print "Input format is",options.format
         if options.format == "edf":
@@ -493,6 +514,7 @@ if __name__=="__main__":
             m2 = floodimage.shape[1]/6
             middle = Numeric.ravel(floodimage[m1:-m1,m2:-m2])
             floodavg =  Numeric.sum(middle)/middle.shape[0]
+            print "Using flood",options.flood,"average value",floodavg
             if floodavg < 0.7 or floodavg > 1.3:
                 print "Your flood image does not seem to be normalised!!!"
         else:

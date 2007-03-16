@@ -26,6 +26,8 @@ res[n2-&gt;n2+n1+1]&nbsp;=&nbsp;peaks&nbsp;in&nbsp;image&nbsp;2</tt></dd></dl>
  <dl><dt><a name="-blobproperties"><strong>blobproperties</strong></a>(...)</dt><dd><tt>res&nbsp;=&nbsp;blobproperties&nbsp;(&nbsp;Numeric.array(data,&nbsp;2D)&nbsp;&nbsp;,&nbsp;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Numeric.array(blob,&nbsp;2D,&nbsp;Int)&nbsp;&nbsp;,<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Int&nbsp;np&nbsp;,&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dark=Numeric.array(dark,&nbsp;2D)&nbsp;&nbsp;,&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;flood=Numeric.array(flood,&nbsp;2D)&nbsp;&nbsp;,&nbsp;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Int&nbsp;verbose&nbsp;)<br>
 &nbsp;<br>
 Computes&nbsp;various&nbsp;properties&nbsp;of&nbsp;a&nbsp;blob&nbsp;image&nbsp;(created&nbsp;by&nbsp;connectedpixels)<br>
@@ -44,10 +46,12 @@ res&nbsp;=&nbsp;tuple&nbsp;(npix&nbsp;,&nbsp;sum&nbsp;,&nbsp;sumsq&nbsp;,&nbsp;c
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acom00[peak]&nbsp;=acom00[peak]&nbsp;+&nbsp;i*i*fval;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acom01[peak]&nbsp;=acom01[peak]&nbsp;+&nbsp;i*j*fval;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acom11[peak]&nbsp;=acom11[peak]&nbsp;+&nbsp;j*j*fval;</tt></dd></dl>
- <dl><dt><a name="-connectedpixels"><strong>connectedpixels</strong></a>(...)</dt><dd><tt>nblobs&nbsp;=&nbsp;connectedpixels&nbsp;(&nbsp;Numeric.array(data,&nbsp;2D)&nbsp;&nbsp;,&nbsp;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Numeric.array(blob,&nbsp;2D,&nbsp;Int)&nbsp;&nbsp;,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;float&nbsp;threshold&nbsp;,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Int&nbsp;verbose&nbsp;)<br>
+ <dl><dt><a name="-connectedpixels"><strong>connectedpixels</strong></a>(...)</dt><dd><tt>nblobs&nbsp;=&nbsp;connectedpixels&nbsp;(&nbsp;data=Numeric.array(data,&nbsp;2D)&nbsp;&nbsp;,&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;results=Numeric.array(blob,&nbsp;2D,&nbsp;Int)&nbsp;&nbsp;,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;threshold=float&nbsp;threshold&nbsp;,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dark=Numeric.array(dark,&nbsp;2D)&nbsp;&nbsp;,&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;flood=Numeric.array(flood,&nbsp;2D)&nbsp;&nbsp;,&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;verbose=Int&nbsp;verbose&nbsp;)<br>
 data&nbsp;is&nbsp;normally&nbsp;an&nbsp;image&nbsp;<br>
 blob&nbsp;is&nbsp;an&nbsp;array&nbsp;to&nbsp;receive&nbsp;pixel&nbsp;-&gt;&nbsp;blob&nbsp;assignments<br>
 threshold&nbsp;is&nbsp;the&nbsp;value&nbsp;above&nbsp;which&nbsp;a&nbsp;pixel&nbsp;is&nbsp;considered&nbsp;to&nbsp;be&nbsp;in&nbsp;a&nbsp;blob<br>

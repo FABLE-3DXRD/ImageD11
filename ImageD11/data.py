@@ -50,7 +50,7 @@ class data:
             return data(self.header,self.data+other.data)
         else:
             raise Exception("Dimensions not compatible")
-    def __subtract__(self,other):
+    def __sub__(self,other):
         if type(other) in [type(1),type(1.0)]:
             return data(self.header,self.data-other)
         if self.header["rows"]==other.header["rows"] and \
@@ -58,7 +58,7 @@ class data:
             return data(self.header,self.data-other.data)
         else:
             raise Exception("Dimensions not compatible")
-    def __multiply__(self,other):
+    def __mul__(self,other):
         if type(other) in [type(1),type(1.0)]:
             return data(self.header,self.data*other)
         if self.header["rows"]==other.header["rows"] and \
@@ -66,7 +66,7 @@ class data:
             return data(self.header,self.data*other.data)
         else:
             raise Exception("Dimensions not compatible")
-    def __divide__(self,other):
+    def __div__(self,other):
         if type(other) in [type(1),type(1.0)]:
             return data(self.header,self.data/other)
         if self.header["rows"]==other.header["rows"] and \

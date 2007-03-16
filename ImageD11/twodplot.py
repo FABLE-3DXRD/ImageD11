@@ -91,7 +91,7 @@ class twodplot(Tk.Frame):
         Tk.Button(master=self.bf2,text='Autoscale' ,
                     command=lambda  : self.keypress(self.autoscale)   ).pack(side=Tk.LEFT)
         Tk.Button(master=self.bf2,text='Autoscale Y',
-                    command=lambda  : self.keypress(self.autoscaley, e )  ).pack(side=Tk.LEFT)
+                    command=lambda  : self.keypress(self.autoscaley, None )  ).pack(side=Tk.LEFT)
         self.bf2.pack(side=Tk.BOTTOM)
         self.label=Tk.Label(self,text="Plot window messages")
         self.label.pack(side=Tk.BOTTOM,fill=Tk.X, expand=0)
@@ -292,8 +292,10 @@ class twodplot(Tk.Frame):
 if __name__=="__main__":
     import epffile, powbase, mcadata, ciidata
     if len(sys.argv)<3:
+        from Numeric import arange, sin, sqrt
+        from math import pi
         print "Usage: %s filename format"%(sys.argv[0])
-        x=arange(0.0,3.0,0.01)
+        x=Numeric.arange(0.0,3.0,0.01)
         dat=epffile.powderdata(x,sin(2*pi*x)+5,sqrt(sin(2*pi*x)+5),{ "title":"sin x" } )
     else:
         try:

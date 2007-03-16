@@ -29,12 +29,13 @@ import sys
 
 
 class plot3d(Tk.Toplevel):
-    def __init__(self,parent,data=None,lines=None):
+    def __init__(self,parent,data=None,lines=None,ubis=None,image=None,pars=None,spline=None):
         """
         Data would be your observed g-vectors. Lines will
         be a computed lattice
         """
         Tk.Toplevel.__init__(self,parent)
+        self.parent=parent
         if data!=None:
             xyz=data.copy()
         else:
@@ -53,8 +54,10 @@ class plot3d(Tk.Toplevel):
         import math
         self.o.distance=Numeric.maximum.reduce(Numeric.ravel(xyz))*4/math.tan(self.o.fovy*math.pi/180)
         print type(xyz),xyz.typecode(),xyz.shape
-        GL.glVertexPointerd(xyz)
-        GL.glEnableClientState(GL.GL_VERTEX_ARRAY)
+        self.xyz=xyz
+#        GL.glVertexPointerd(xyz)
+#   GL.glColorPointerd(xyz)
+#        GL.glEnableClientState(GL.GL_VERTEX_ARRAY|GL.GL_COLOR_ARRAY)
         f=Tk.Frame(self)
         Tk.Button(f,text="Help",command=self.o.help).pack(side=Tk.LEFT)
         Tk.Button(f,text="Reset",command=self.o.reset).pack(side=Tk.LEFT)
@@ -65,7 +68,110 @@ class plot3d(Tk.Toplevel):
         self.o.pack(side = 'top', expand = 1, fill = 'both')
         f.pack(side=Tk.BOTTOM,expand=Tk.NO,fill=Tk.X)
         Tk.Label(self,text="Red=[1,0,0] Green=[0,1,0] Blue=[0,0,1]").pack(side=Tk.BOTTOM,expand=Tk.NO,fill=Tk.X)
+        self.ubis=ubis
+        self.color=Numeric.ones((xyz.shape[0],3),Numeric.Float)
+        print self.color.shape
+        self.tex=False
+        if ubis is not None:
+           self.ubis = self.readubis(ubis)
+           self.scorecolor(0)
+        if pars is not None:
+           self.tex=True
+           self.readspline(spline)
+           self.readprms(pars)
+           self.readimage(image)
+        self.changedata(xyz)
 
+    def readspline(self,spline):
+        from ImageD11 import blobcorrector
+        self.corrector = blobcorrector.correctorclass(spline)
+
+    def readubis(self,ubis):
+        from ImageD11 import indexing
+        return indexing.readubis(ubis)
+
+    def readprms(self,prms):
+        from ImageD11 import transform
+        self.pars=transform.rdpars(prms)
+
+    def readimage(self,image):
+        from ImageD11 import opendata, transform
+        self.imageobj=opendata.opendata(image)
+        # map from 2048x2048 to 1024x1024
+        mi=1000
+        mx=1500
+        shape=self.imageobj.data.shape
+        d=Numeric.reshape(Numeric.clip(self.imageobj.data,mi,mx),shape) # makes a clipped copy
+        d=(255.*(d-mi)/(mx-mi)) # scale intensity
+        self.image=Numeric.zeros((1024,1024),Numeric.UInt8)
+        if d.shape==(2048,2048):
+            im=(d[::2,::2]+d[::2,1::2]+d[1::2,::2]+d[1::2,1::2])/4
+            self.image=(255-im).astype(Numeric.UInt8).tostring()
+        self.imageWidth=1024
+        self.imageHeight=1024
+        # make a 2D array of x,y
+        p=[]
+        pk=[]
+        step = 64
+        r=[ [ 0,0 ], [0,step], [step,step], [step,0] ]
+        for i in range(0,1024,step):
+            for j in range(0,1024,step):
+                # i,j 1024x1024 texture coords
+                # x,y spatially corrected
+                for v in r:
+                    pk.append([i+v[0],j+v[1]])
+                    x,y = self.corrector.correct((i+v[0])*2 , (j+v[1])*2) # corrected
+                    p.append([x,y])
+        p=Numeric.transpose(Numeric.array(p)) 
+        pk=Numeric.transpose(Numeric.array(pk)) # 1024 crap
+        omega=float(self.imageobj.header['Omega'])
+        self.pars['distance']=float(self.pars['distance'])*1000
+        tth,eta=transform.compute_tth_eta(p,**self.pars)
+        gve = transform.compute_g_vectors(tth,eta,omega*self.pars['omegasign'],self.pars['wavelength'])
+        self.pts = []
+        print "Setting up image mapping",p.shape,gve.shape
+        for i in range(pk.shape[1]):
+            self.pts.append([pk[1,i]/1024.,pk[0,i]/1024.,gve[0,i],gve[1,i],gve[2,i]])
+        #for p in self.pts:
+        #    print p
+        self.setupTexture()
+
+    def setupTexture(self):
+        GL.glDisable(GL.GL_TEXTURE_2D)
+        GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
+        GL.glTexImage2D(GL.GL_TEXTURE_2D,#target
+                    0,#level
+                    3,#internalformat
+                    self.imageWidth, self.imageHeight,
+                    0,#border
+                    GL.GL_LUMINANCE,#format
+                    GL.GL_UNSIGNED_BYTE,# type
+                    self.image)
+        GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP)
+        GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP)
+        GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT)
+        GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT)
+        GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST)
+        GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST)
+        GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_DECAL)
+        GL.glEnable(GL.GL_TEXTURE_2D)
+        GL.glEnable(GL.GL_NORMALIZE)
+        GL.glShadeModel(GL.GL_FLAT)
+
+
+
+    def scorecolor(self,i=0):
+        cc = [ [ 1,0,0] , [0,1,0] , [0,0,1], [1,1,0], [1,0,1], [0,1,1]]
+        if self.ubis is not None:
+            from ImageD11 import indexing
+            for u,i in zip(self.ubis,range(len(self.ubis))):
+                scores=indexing.drlv(self.ubis[i],self.xyz)
+                ind = Numeric.compress( Numeric.less(scores,0.02) , Numeric.arange(self.xyz.shape[0]) )
+                print "Grain",i,scores.shape,ind.shape
+                for j in range(3):
+                    c=Numeric.ones(self.color.shape[0])
+                    Numeric.put(c,ind,cc[i%len(cc)][j])
+                    self.color[:,j]*=c
 
     def go(self):
         """
@@ -77,14 +183,18 @@ class plot3d(Tk.Toplevel):
         print "Called goaway"
         self.o.destroy()
         self.destroy()
+        if self.parent is None: sys.exit()
         print "Ought to be gone now..."
 
     def changedata(self,xyz):
         self.xyz=xyz.copy()
         self.npeaks=xyz.shape[0]
         GL.glDisableClientState(GL.GL_VERTEX_ARRAY)
+        GL.glDisableClientState(GL.GL_COLOR_ARRAY)
         GL.glVertexPointerd(self.xyz)
+        GL.glColorPointerd(self.color)
         GL.glEnableClientState(GL.GL_VERTEX_ARRAY)
+        GL.glEnableClientState(GL.GL_COLOR_ARRAY)
         self.o.tkRedraw()
 
     def setps(self):
@@ -93,13 +203,13 @@ class plot3d(Tk.Toplevel):
 
 
     def redraw(self,o):
+        
+        GL.glDisable(GL.GL_LIGHTING)
         GL.glClearColor(0., 0., 0., 0)
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
         GL.glOrtho(-1,1,-1,1,-1,1)
-        GL.glDisable(GL.GL_LIGHTING)
         GL.glColor3f(1.0, 1.0, 1.0) # white
         GL.glPointSize(self.pointsize)
-#       GL.glEnable(GL.GL_POINT_SMOOTH)
         GL.glDrawArrays(GL.GL_POINTS, 0, self.npeaks )
         GL.glBegin(GL.GL_LINE_LOOP)
         GL.glColor3f(1.0, 0.0, 0.0) # red
@@ -116,6 +226,21 @@ class plot3d(Tk.Toplevel):
         GL.glVertex3f(0.,0.,0.)
         GL.glVertex3f(0.,0.,1.)
         GL.glEnd()
+        if self.tex:
+#            print "drawing images"
+            GL.glEnable(GL.GL_TEXTURE_2D)
+            GL.glColor4f(.0, 1.0, .0, 1.0) # red        
+            GL.glBegin(GL.GL_QUADS)
+            # generate a grid of squares to map the texture in 3D
+            # opengl has better "map" methods to do this
+            for i,j,g1,g2,g3 in self.pts:
+#                print i,j,g1,g2,g3
+                GL.glTexCoord2f(i,j)
+                GL.glVertex3f(g1, g2, g3) 
+            GL.glEnd()
+            GL.glDisable(GL.GL_TEXTURE_2D)
+            
+        GL.glFlush()
         GL.glEnable(GL.GL_LIGHTING)
 
 
@@ -129,9 +254,9 @@ if __name__=="__main__":
     try:
         lines=open(sys.argv[1],"r").readlines()
     except:
-        print "Usage %s gvector_file"%(sys.argv[0])
+        print "Usage %s gvector_file [ubifile] [image parfile]"%(sys.argv[0])
         sys.exit()
-
+   
     on=0
     xyz=[]
     for line in lines:
@@ -143,8 +268,13 @@ if __name__=="__main__":
                 pass
         if line.find("xr yr zr")>0:
             on=1
-
+   
     npeaks = len(xyz)
     xyz=Numeric.array(xyz)
-    o=plot3d(None,data=xyz)
+    if len(sys.argv)==3:
+       o=plot3d(None,data=xyz,ubis=sys.argv[2])
+    elif len(sys.argv)==6:
+       o=plot3d(None,data=xyz,ubis=sys.argv[2],image=sys.argv[3],pars=sys.argv[4],spline=sys.argv[5])
+    else:
+       o=plot3d(None,data=xyz,ubis=None)
     o.mainloop()

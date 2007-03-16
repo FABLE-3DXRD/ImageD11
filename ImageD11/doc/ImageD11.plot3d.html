@@ -6,7 +6,7 @@
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
 <tr bgcolor="#7799ee">
 <td valign=bottom>&nbsp;<br>
-<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.plot3d</strong></big></big> (version 1.6, 2006/06/25 10:05:10)</font></td
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.plot3d</strong></big></big> (version 1.10, 2007/02/12 10:24:59)</font></td
 ><td align=right valign=bottom
 ><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python24/lib/site-packages/imaged11/plot3d.py">c:\python24\lib\site-packages\imaged11\plot3d.py</a></font></td></tr></table>
     <p><tt>from&nbsp;example&nbsp;by&nbsp;Tarn&nbsp;Weisner&nbsp;Burton&nbsp;&lt;twburton@users.sourceforge.net&gt;&nbsp;in&nbsp;pyopengl</tt></p>
@@ -53,7 +53,7 @@
 </dl>
 <hr>
 Methods defined here:<br>
-<dl><dt><a name="plot3d-__init__"><strong>__init__</strong></a>(self, parent, data<font color="#909090">=None</font>, lines<font color="#909090">=None</font>)</dt><dd><tt>Data&nbsp;would&nbsp;be&nbsp;your&nbsp;observed&nbsp;g-vectors.&nbsp;Lines&nbsp;will<br>
+<dl><dt><a name="plot3d-__init__"><strong>__init__</strong></a>(self, parent, data<font color="#909090">=None</font>, lines<font color="#909090">=None</font>, ubis<font color="#909090">=None</font>, image<font color="#909090">=None</font>, pars<font color="#909090">=None</font>, spline<font color="#909090">=None</font>)</dt><dd><tt>Data&nbsp;would&nbsp;be&nbsp;your&nbsp;observed&nbsp;g-vectors.&nbsp;Lines&nbsp;will<br>
 be&nbsp;a&nbsp;computed&nbsp;lattice</tt></dd></dl>
 
 <dl><dt><a name="plot3d-changedata"><strong>changedata</strong></a>(self, xyz)</dt></dl>
@@ -62,9 +62,21 @@ be&nbsp;a&nbsp;computed&nbsp;lattice</tt></dd></dl>
 
 <dl><dt><a name="plot3d-goaway"><strong>goaway</strong></a>(self)</dt></dl>
 
+<dl><dt><a name="plot3d-readimage"><strong>readimage</strong></a>(self, image)</dt></dl>
+
+<dl><dt><a name="plot3d-readprms"><strong>readprms</strong></a>(self, prms)</dt></dl>
+
+<dl><dt><a name="plot3d-readspline"><strong>readspline</strong></a>(self, spline)</dt></dl>
+
+<dl><dt><a name="plot3d-readubis"><strong>readubis</strong></a>(self, ubis)</dt></dl>
+
 <dl><dt><a name="plot3d-redraw"><strong>redraw</strong></a>(self, o)</dt></dl>
 
+<dl><dt><a name="plot3d-scorecolor"><strong>scorecolor</strong></a>(self, i<font color="#909090">=0</font>)</dt></dl>
+
 <dl><dt><a name="plot3d-setps"><strong>setps</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="plot3d-setupTexture"><strong>setupTexture</strong></a>(self)</dt></dl>
 
 <hr>
 Methods inherited from <a href="Tkinter.html#BaseWidget">Tkinter.BaseWidget</a>:<br>
@@ -851,8 +863,8 @@ and&nbsp;forgotten&nbsp;by&nbsp;the&nbsp;window&nbsp;manager.&nbsp;Re-draw&nbsp;
     
 <tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><strong>__author__</strong> = 'Jon Wright &lt;jpwright@users.sourceforge.net&gt; from...n Weisner Burton &lt;twburton@users.sourceforge.net&gt;'<br>
-<strong>__date__</strong> = '2006/06/25 10:05:10'<br>
-<strong>__version__</strong> = '1.6'</td></tr></table><p>
+<strong>__date__</strong> = '2007/02/12 10:24:59'<br>
+<strong>__version__</strong> = '1.10'</td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#7799ee">
 <td colspan=3 valign=bottom>&nbsp;<br>

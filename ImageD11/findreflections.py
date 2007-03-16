@@ -1,4 +1,9 @@
 
+"""
+Goes looking for peaks...
+"""
+
+
 import sys
 
 def loadfiltered(filename):
@@ -11,7 +16,7 @@ def loadfiltered(filename):
     if line[0:12] !="# xc yc omega"[0:12]:
         print line
         raise Exception("Sorry That does not seem to be a filter peaks file, output from the peaksearching menu option")
-    titles = line.replace("#","").split()
+    # titles = line.replace("#","").split()
     bigarray=[]
     for line in f.readlines():
         v=[float(z) for z in line.split()]
@@ -31,35 +36,37 @@ def findclosest(x,y,omega,data):
             dmin = dist
     return vmin
 
-scans=[]
-loads={}
 
-for f in open(sys.argv[1]).readlines():
-    name,load = f.split()
-    scans.append(name)
-    loads[name]=float(load)
+if __name__=="__main__":
+    scans=[]
+    loads={}
+
+    for f in open(sys.argv[1]).readlines():
+        name,load = f.split()
+        scans.append(name)
+        loads[name]=float(load)
 
 
-scandata = {}
+    scandata = {}
 
-for scan in scans:
-    scandata[scan] = loadfiltered(scan)
-
-results = open(sys.argv[3],"w")
-
-for line in open(sys.argv[2],"r"):
-    items = line.split()
-    h,k,l = [float(v) for v in items[2:5]]
-    results.write("# hkl %f %f %f\n"%(h,k,l))
-    x,y,omega =  [float(v) for v in items[7:10]]
-    print h,k,l,x,y,omega
     for scan in scans:
-        line = findclosest(x,y,omega,scandata[scan])
-        results.write("%f %s "%(loads[scan],scan))
-        if line is None:
-            results.write(" Nothing found within tolerance ")
-        else:
-            for item in line:
-                results.write("%6g "%(item))
-        results.write("\n")
-    results.write("\n\n\n")
+        scandata[scan] = loadfiltered(scan)
+
+    results = open(sys.argv[3],"w")
+
+    for line in open(sys.argv[2],"r"):
+        items = line.split()
+        h,k,l = [float(v) for v in items[2:5]]
+        results.write("# hkl %f %f %f\n"%(h,k,l))
+        x,y,omega =  [float(v) for v in items[7:10]]
+        print h,k,l,x,y,omega
+        for scan in scans:
+           line = findclosest(x,y,omega,scandata[scan])
+           results.write("%f %s "%(loads[scan],scan))
+           if line is None:
+               results.write(" Nothing found within tolerance ")
+           else:
+               for item in line:
+                   results.write("%6g "%(item))
+           results.write("\n")
+        results.write("\n\n\n")

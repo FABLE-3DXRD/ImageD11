@@ -80,7 +80,7 @@ n&nbsp;=&nbsp;normal&nbsp;to&nbsp;polarisation&nbsp;plane,&nbsp;typically&nbsp;p
 In&nbsp;ImageD11&nbsp;we&nbsp;normally&nbsp;expect&nbsp;to&nbsp;find:<br>
 x&nbsp;axis&nbsp;along&nbsp;the&nbsp;beam<br>
 z&nbsp;axis&nbsp;being&nbsp;up,&nbsp;and&nbsp;parallel&nbsp;to&nbsp;the&nbsp;normal&nbsp;n&nbsp;mentioned&nbsp;above</tt></dd></dl>
- <dl><dt><a name="-compute_tth_eta"><strong>compute_tth_eta</strong></a>(peaks, yc, ys, ty, zc, zs, tz, dist, detector_orientation<font color="#909090">=((1, 0), (0, 1))</font>, crystal_translation<font color="#909090">=None</font>, omega<font color="#909090">=None</font>, axis_orientation1<font color="#909090">=0.0</font>, axis_orientation2<font color="#909090">=0.0</font>)</dt><dd><tt>Peaks&nbsp;is&nbsp;a&nbsp;2&nbsp;d&nbsp;array&nbsp;of&nbsp;x,y<br>
+ <dl><dt><a name="-compute_tth_eta"><strong>compute_tth_eta</strong></a>(peaks, y_center<font color="#909090">=0.0</font>, y_size<font color="#909090">=0.0</font>, tilt_y<font color="#909090">=0.0</font>, z_center<font color="#909090">=0.0</font>, z_size<font color="#909090">=0.0</font>, tilt_z<font color="#909090">=0.0</font>, distance<font color="#909090">=0.0</font>, detector_orientation<font color="#909090">=((1, 0), (0, 1))</font>, crystal_translation<font color="#909090">=None</font>, omega<font color="#909090">=None</font>, axis_orientation1<font color="#909090">=0.0</font>, axis_orientation2<font color="#909090">=0.0</font>, **kwds)</dt><dd><tt>Peaks&nbsp;is&nbsp;a&nbsp;2&nbsp;d&nbsp;array&nbsp;of&nbsp;x,y<br>
 yc&nbsp;is&nbsp;the&nbsp;centre&nbsp;in&nbsp;y<br>
 ys&nbsp;is&nbsp;the&nbsp;y&nbsp;pixel&nbsp;size<br>
 ty&nbsp;is&nbsp;the&nbsp;tilt&nbsp;around&nbsp;y<br>
@@ -108,6 +108,7 @@ nonzero,&nbsp;the&nbsp;array&nbsp;will&nbsp;be&nbsp;a&nbsp;spacesaver&nbsp;array
  <dl><dt><a name="-old_uncompute_g_vectors"><strong>old_uncompute_g_vectors</strong></a>(gv, wavelength, wedge<font color="#909090">=0.0</font>)</dt><dd><tt>Given&nbsp;g-vectors&nbsp;compute&nbsp;tth,eta,omega<br>
 assert&nbsp;<a href="#-uncompute_g_vectors">uncompute_g_vectors</a>(compute_g_vector(tth,eta,omega))==tth,eta,omega</tt></dd></dl>
  <dl><dt><a name="-radians"><strong>radians</strong></a>(x)</dt><dd><tt>Convenience&nbsp;function</tt></dd></dl>
+ <dl><dt><a name="-rdpars"><strong>rdpars</strong></a>(parfile)</dt></dl>
  <dl><dt><a name="-reshape"><strong>reshape</strong></a>(...)</dt><dd><tt><a href="#-reshape">reshape</a>(a,&nbsp;(d1,&nbsp;d2,&nbsp;...,&nbsp;dn)).&nbsp;&nbsp;Change&nbsp;the&nbsp;shape&nbsp;of&nbsp;a&nbsp;to&nbsp;be&nbsp;an&nbsp;n-dimensional&nbsp;array&nbsp;with&nbsp;dimensions&nbsp;given&nbsp;by&nbsp;d1...dn.&nbsp;&nbsp;Note:&nbsp;the&nbsp;size&nbsp;specified&nbsp;for&nbsp;the&nbsp;new&nbsp;array&nbsp;must&nbsp;be&nbsp;exactly&nbsp;equal&nbsp;to&nbsp;the&nbsp;size&nbsp;of&nbsp;the&nbsp;&nbsp;old&nbsp;one&nbsp;or&nbsp;an&nbsp;error&nbsp;will&nbsp;occur.</tt></dd></dl>
  <dl><dt><a name="-searchsorted"><strong>searchsorted</strong></a> = binarysearch(...)</dt><dd><tt>binarysearch(a,v)</tt></dd></dl>
  <dl><dt><a name="-take"><strong>take</strong></a>(...)</dt><dd><tt><a href="#-take">take</a>(a,&nbsp;indices,&nbsp;axis=0).&nbsp;&nbsp;Selects&nbsp;the&nbsp;elements&nbsp;in&nbsp;indices&nbsp;from&nbsp;array&nbsp;a&nbsp;along&nbsp;the&nbsp;given&nbsp;axis.</tt></dd></dl>

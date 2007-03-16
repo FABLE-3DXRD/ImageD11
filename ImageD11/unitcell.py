@@ -109,10 +109,12 @@ class unitcell:
         """
         self.lattice_parameters=Numeric.array(lattice_parameters)
         if self.lattice_parameters.shape[0]!=6:
-            raise "You must supply 6 lattice parameters, a,b,c,alpha,beta,gamma"
+            raise Exception("You must supply 6 lattice parameters\n"+\
+                            "      a,b,c,alpha,beta,gamma")
         self.symmetry=symmetry
         if self.symmetry not in ["P","A","B","C","I","F","R"]:
-            raise "Your symmetry "+self.symmetry+" was not recognised"
+            raise Exception("Your symmetry "+self.symmetry+\
+                            " was not recognised")
         # assigning a function here!
         self.absent=outif[self.symmetry]
         a = self.lattice_parameters[0]
@@ -130,7 +132,8 @@ class unitcell:
         try:
             self.gi = inverse(self.g)
         except:
-            raise "Unit cell was degenerate, could not determine reciprocal metric tensor"
+            raise Exception("Unit cell was degenerate, could not determine"+\
+                    "reciprocal metric tensor")
         if verbose==1: print "Reciprocal Metric tensor\n",self.gi
         self.as=Numeric.sqrt(self.gi[0,0])
         self.bs=Numeric.sqrt(self.gi[1,1])
@@ -283,8 +286,6 @@ class unitcell:
         t2 is in the plane of both   (unit vector along g1x(g1xg2))
         t3 is perpendicular to both  (unit vector along g1xg2)
         """
-        from Numeric import dot
-        from math import sqrt
         costheta = Numeric.dot(g1,g2)/math.sqrt(Numeric.dot(g2,g2))/math.sqrt(Numeric.dot(g1,g1))
         if verbose==1: print "observed costheta",costheta
         best=5.
@@ -296,8 +297,8 @@ class unitcell:
                     h2=hb
                     best=ca[1]
         if verbose==1:
-            print "Assigning h1",h1,g1,self.ds(h1),math.sqrt(dot(g1,g1)),self.ds(h1)-math.sqrt(dot(g1,g1))
-            print "Assigning h2",h2,g2,self.ds(h2),math.sqrt(dot(g2,g2)),self.ds(h1)-math.sqrt(dot(g1,g1))
+            print "Assigning h1",h1,g1,self.ds(h1),math.sqrt(Numeric.dot(g1,g1)),self.ds(h1)-math.sqrt(Numeric.dot(g1,g1))
+            print "Assigning h2",h2,g2,self.ds(h2),math.sqrt(Numeric.dot(g2,g2)),self.ds(h1)-math.sqrt(Numeric.dot(g1,g1))
             print "Cos angle calc",self.anglehkls(h1,h2),"obs",costheta
         h1c=Numeric.matrixmultiply(self.B,h1)
         h2c=Numeric.matrixmultiply(self.B,h2)

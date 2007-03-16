@@ -1,0 +1,16 @@
+cell__a 4.8192
+cell__b 7.6983
+cell__c 8.5156
+cell_alpha 90
+cell_beta 90
+cell_gamma 90
+cell_lattice_[P,A,B,C,I,F,R] I
+distance 302.287142
+fit_tolerance 0.02
+tilt-y -0.002322
+tilt-z 0.001618
+wavelength 0.153684
+y-center 502.618176
+y-size 96.14045
+z-center 502.192120
+z-size 93.54977

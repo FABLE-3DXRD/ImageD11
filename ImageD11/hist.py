@@ -43,10 +43,9 @@ def hist(data,verbose=0):
 
 
 def test_dvhist():
-   from Numeric import zeros, Float, Int, maximum
    import _hist
-   gv= zeros((10,3),Float)
-   h = zeros((10,10,10),Int)
+   gv= Numeric.zeros((10,3),Numeric.Float)
+   h = Numeric.zeros((10,10,10),Numeric.Int)
    _hist._dvhist(gv,h,-1,1,-1,1,-1,1,1)
    print maximum.reduce(h)
 
@@ -75,7 +74,7 @@ if __name__=="__main__":
         h1=hist(d)
 
     print "Histogram",time.time()-start
-    from matplotlib.pylab import *
+    from matplotlib.pylab import plot,show
     plot(h1)
     plot(h2)
     show()

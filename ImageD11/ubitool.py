@@ -28,7 +28,7 @@ Mostly unimplemented dummies - see also refinegrains
 
 """
 
-
+import Numeric
 
 class ubitool:
     def __init__(self,ubilist=None,ubifile=None,obsdata=None):
@@ -73,7 +73,7 @@ class ubitool:
         """
         Get ubi matrices from a file
         """
-        i=0; u = Numeric.zeros((3,3),Float)
+        i=0; u = Numeric.zeros((3,3),Numeric.Float)
         for line in open(filename,"r").readlines():
             uij = [float(x) for x in line.split()]
             if len(uij)==3:

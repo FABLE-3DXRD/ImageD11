@@ -55,10 +55,10 @@ class refinegrains:
         keys.sort()
         for k in keys:
             try:
-                out.write("%s %f\n"%(key,self.parameters[key]))
+                out.write("%s %f\n"%(k,self.parameters[k]))
             except:
-                out.write("%s %s\n"%(key,self.parameters[key]))
-        f.close()
+                out.write("%s %s\n"%(k,self.parameters[k]))
+        out.close()
 
 
     def readubis(self,filename):
@@ -169,13 +169,11 @@ class refinegrains:
         """
         <drlv> for all of the grains in all of the scans
         """
-
         self.applyargs(args)
         diffs = 0.
         contribs = 0.
         sumdrlv = 0.
         goodpks = 0
-
 
         first = True
         for key in self.grains.keys():
@@ -204,12 +202,12 @@ class refinegrains:
             goodpks += n_ind
 
 
-            if n_ind>300:
-                print g.ubi
-                print diff.shape
-                print diff[:,:40]
-                print drlv[:40]
-                raise Exception("")
+            #if n_ind>300:
+            #    print g.ubi
+            #    print diff.shape
+            #    print diff[:,:40]
+            #    print drlv[:40]
+            #    raise Exception("")
         #print "indexed %10d with mean error %f"%(goodpks,sumdrlv/goodpks)
 
         return 1e6*diffs/contribs
@@ -274,6 +272,23 @@ class refinegrains:
         print
         print "End of simplex"
         self.printresult(newguess)
+
+    def getgrains(self):
+        return self.grains.keys()
+
+    def getpeaks(self,g):
+        grainname,scanname = g
+        self.compute_gv(grainname,scanname)
+        g = self.grains[g]
+        h =Numeric.matrixmultiply(g.ubi,Numeric.transpose(self.gv))
+        print h.shape
+        hint=Numeric.floor(h+0.5).astype(Numeric.Int) # rounds down
+        diff=h-hint
+        drlv=Numeric.sqrt(Numeric.sum(diff*diff,0))
+        t=self.tolerance
+        ind = Numeric.compress(drlv<t,range(h.shape[1]))
+        
+        
 
     def refineubis(self,quiet=True):
         #print quiet

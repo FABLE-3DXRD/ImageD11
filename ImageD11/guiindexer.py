@@ -52,8 +52,13 @@ class guiindexer:
                              ( "Save UBI matrices", 5, self.saveubis),
                              ( "Write out indexed peaks",0,self.saveindexing)
                            ] )
-        import plot3d
-        self.plot3d=None
+        try:
+            import plot3d
+            self.plot3d=None
+        except:
+            import traceback
+            traceback.print_last()
+            print "You might have a PyOpenGl problem??"
 
     def loadgv(self):
         """ see indexing.readgvfile """
@@ -137,7 +142,13 @@ class guiindexer:
         Gets gv from indexing object
         Plots the x,y,z (gv) array in a 3D opengl window
         """
-        import plot3d
+        try:
+            import plot3d
+        except:
+            import traceback
+            traceback.print_last()
+            print "You might have a PyOpenGl problem??"
+            return
         gv = self.parent.guicommander.getdata("indexer","gv")
         if gv is not None:
             if self.plot3d==None:

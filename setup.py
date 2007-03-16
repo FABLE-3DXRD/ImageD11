@@ -48,8 +48,12 @@ from distutils.core import setup, Extension
 cl = Extension("closest", sources=['src/closest.c'])
 
 # connectedpixels is for peaksearching images
+
+
+
 cp = Extension("connectedpixels", sources = ['src/connectedpixels.c'])
 # No header files for distutils as sources 'src/dset.h'])
+
 
 # histogramming thing
 ch = Extension("_hist", sources = ['src/hist.c'])
@@ -68,7 +72,7 @@ bl = Extension("_splines", sources = ['src/splines.c', 'src/bispev.c'])
 
 # See the distutils docs...
 setup(name='ImageD11',
-      version='0.7.1',
+      version='0.8.1',
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',
@@ -76,6 +80,8 @@ setup(name='ImageD11',
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
       ext_modules = [cl,cp,bl,ch],
       packages = ["ImageD11"],
+      package_dir = {"ImageD11":"ImageD11"},
+      package_data = {"ImageD11" : ["doc/*.html"]},
       scripts = ["scripts/peaksearch.py",
                  "scripts/ImageD11_2_shelx.py",
                  "scripts/fit2dcake.py",
