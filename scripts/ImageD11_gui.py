@@ -129,7 +129,7 @@ if __name__=="__main__":
 
      Sort out a file format which tracks all information properly?
   """
-            showinfo("Welcome to ImageD11_v0.4",startmessage)
+            showinfo("Welcome to ImageD11 "+ImageD11.__version__,startmessage)
 
 
             # For the peaksearch menu
