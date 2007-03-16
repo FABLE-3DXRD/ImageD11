@@ -96,7 +96,7 @@ if __name__=="__main__":
     class TestGuiMaker(GuiMaker):
         from ImageD11 import guicommand
         guicommander = guicommand.guicommand()
-        import ImageD11
+
         def start(self):
             """
             Override the GuiMaker start
@@ -105,6 +105,7 @@ if __name__=="__main__":
             Then build the actual gui
             """
             from tkMessageBox import showinfo
+            import ImageD11
             startmessage = """
   ImageD11 version %s, Copyright (C) 2005 Jon Wright
   ImageD11 comes with ABSOLUTELY NO WARRANTY; for details select help, license.
