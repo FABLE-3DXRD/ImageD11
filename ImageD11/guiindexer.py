@@ -52,13 +52,8 @@ class guiindexer:
                              ( "Save UBI matrices", 5, self.saveubis),
                              ( "Write out indexed peaks",0,self.saveindexing)
                            ] )
-        try:
-            import plot3d
-            self.plot3d=None
-        except:
-            import traceback
-            traceback.print_last()
-            print "You might have a PyOpenGl problem??"
+        import plot3d
+        self.plot3d=None
 
     def loadgv(self):
         """ see indexing.readgvfile """
