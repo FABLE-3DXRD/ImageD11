@@ -52,6 +52,7 @@ class guitransformer:
                              ( "Write graindex finalpeaks.log",0, self.write_graindex_gv)
                            ] )
         self.twotheta=None
+	self.theoryds=None	
         self.parameters={}
         self.wedge=0.0
         self.chi=0.0
@@ -181,7 +182,7 @@ class guitransformer:
         import simplex
         if self.theoryds==None:
             from tkMessageBox import showinfo
-            showinfo("Try again","You need to have added the unitcell peaks already")
+            showinfo("Try again","You need to have added the unitcell peaks before fit")
             return
         # Assign observed peaks to rings
         w=float(self.parameters['wavelength'])
