@@ -73,8 +73,8 @@ bl = Extension("_splines", sources = ['src/splines.c', 'src/bispev.c'])
 # See the distutils docs...
 setup(name='ImageD11',
       version='0.8.1',
-      author='Jon Wright',
-      author_email='wright@esrf.fr',
+      author='Jon Wright, Jaroslaw Butanowicz',
+      author_email='wright@esrf.fr,  jaroslaw.butanowicz@esrf.fr',
       description='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
@@ -93,4 +93,5 @@ setup(name='ImageD11',
                  "scripts/plotedf.py",
                  "scripts/rubber.py",
                  "scripts/edf2bruker.py",
+                 "scripts/ImageD11Server.py",
                  "scripts/powderimagetopeaks.py"])

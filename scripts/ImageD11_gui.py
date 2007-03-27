@@ -61,6 +61,8 @@ if __name__=="__main__":
                         Benoit Mallard for his assistance with some extreme
                         programming to debug the transformation module.
 
+                        Henning O. Sorensen for the R lattice and other help.
+
                         John Hunter for the matplotlib plotting.
 
                         All of the pyopengl, Numeric and python teams
@@ -69,6 +71,7 @@ if __name__=="__main__":
 
                         Jon Wright, for writing me!
                        """
+
 
     def credits():
         from tkMessageBox import showinfo
@@ -115,17 +118,16 @@ if __name__=="__main__":
   """%(ImageD11.__version__)
 
             startmessage += """
+  !!! IMPORTANT CHANGE !!!
+  sample - detector distance now has the same units as pixel size
+
   Stuff to do:
 
-     Implement the image peaksearching in the gui (maybe display opengl images??)
-     Separate the peak merging/reading from the gui for standalone scripting
-     Same for the transformations - once parameters are known gui is not needed
-     Tidy the mulitple threshold consequences
-     Implement those filters based in intensity etc
+     Implement filters based in intensity etc
 
      Sort peaks in output file by integer hkl
-     Allow merging algorith to be more flexible in tolerance, perhaps decide
-     overlap as a multiple of FWHM observed.
+     Allow merging algorithm to be more flexible in tolerance, perhaps decide
+     overlap as a multiple of FWHM observed?
 
      Sort out a file format which tracks all information properly?
   """
@@ -134,29 +136,18 @@ if __name__=="__main__":
 
             # For the peaksearch menu
             from ImageD11 import guipeaksearch
-            self.peaksearcher = guipeaksearch.guipeaksearcher(self)
 
-            # self.finalpeaks is what the peaksearchmenu is meant to generate
-            # and what the transformer should transform
-            self.finalpeaks=None
+            self.peaksearcher = guipeaksearch.guipeaksearcher(self)
 
             # For the transformation menu
             from ImageD11 import guitransformer
 
-            # Unit cell is for generating theoretical peak positions
-            self.unitcell=None
-
-            # self.gv holds the g-vectors, after they are generated
-            self.gv=None
             self.transformer  = guitransformer.guitransformer(self)
 
             # For the indexing - supposed to generate orientations from the
             # unitcell and g-vectors
             from ImageD11 import guiindexer
             self.indexer = guiindexer.guiindexer(self)
-
-            #from ImageD11 import guifactors
-            #self.factors=guifactors.guifactors(self)
 
             # sys is for sys.exit
             import sys
@@ -176,12 +167,23 @@ if __name__=="__main__":
 
                              ( "Help", 0,
                                 [ ( "Help Me!", 0, help) ,
+                                  ( "History" , 1, self.history) ,
                                   ( "Credits" , 0, credits) ,
                                   ( "License" , 0, showlicense)
                                   ] ) ]
 
         # The twodplot object should be taking care of it's own menu
         # Stop doing it here - TODO
+        def history(self):
+            from ScrolledText import ScrolledText
+            win = ScrolledText(Toplevel(),width=100)
+            history = self.guicommander.gethistory()
+            win.insert(END,history)
+            win.pack(expand=1,fill=BOTH)
+            win.focus_set()
+
+
+
         def printplot(self):
             """
             Print the 2D plot (probably to a file?)

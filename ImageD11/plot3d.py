@@ -91,8 +91,10 @@ class plot3d(Tk.Toplevel):
         return indexing.readubis(ubis)
 
     def readprms(self,prms):
-        from ImageD11 import transform
-        self.pars=transform.rdpars(prms)
+        from ImageD11 import parameters
+        o = parameters.parameters()
+        o.loadparameters(prms)
+        self.pars=o.get_parameters()
 
     def readimage(self,image):
         from ImageD11 import opendata, transform

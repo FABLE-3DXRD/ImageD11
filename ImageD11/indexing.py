@@ -225,10 +225,16 @@ class indexer:
             self.parameterobj.loadparameters(filename)
         self.parameterobj.update_other(self)
 
+    def updateparameters(self):
+        self.savepars()
+        self.pars=self.parameterobj.parameters
+
     def savepars(self,filename=None):
         self.parameterobj.update_yourself(self)
         if filename is not None:
             self.parameterobj.saveparameters(filename)
+
+    
 
     def out_of_eta_range(self,e):
 

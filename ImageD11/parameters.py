@@ -31,6 +31,19 @@ class parameters:
         name=value style arg list
         """
         self.parameters = kwds
+        self.varylist = []
+        self.stepsizes = {}
+
+    def get_variable_values(self):
+        return [self.parameters[name] for name in self.varylist]
+
+    def get_variable_stepsizes(self):
+        return [self.stepsizes[name] for name in self.varylist]
+
+    def set_variable_values(self,values):
+        assert len(values)==len(self.varylist)
+        for name, value in zip(self.varylist,values):
+            self.parameters[name]=value
 
     def set_parameters(self,d):
         """
@@ -64,10 +77,10 @@ class parameters:
         for k,v in self.parameters.items():
             if hasattr(other,k):
                 var = getattr(other,k)
-                print "setting: %s.%s from %s to %s"%(other,k,var,v)
+                # print "setting: %s.%s from %s to %s"%(other,k,var,v)
                 setattr(other,k,v)
-            else:
-                print "error: %s has no attribute %s, ignoring"%(other,k)
+            # else:
+            #    print "error: %s has no attribute %s, ignoring"%(other,k)
 
     def saveparameters(self,filename):
         """
@@ -88,6 +101,7 @@ class parameters:
         for line in lines:
             try:
                 [name, value] = line.split(" ") 
+                name=name.replace("-","_")
                 self.parameters[name]=value
             except:
                 print "Failed to read:",line
@@ -105,7 +119,7 @@ class parameters:
                     vf = float(value)
                 except:
                     # it really is a string
-                    self.parameters[name] = value
+                    self.parameters[name] = value.lstrip().rstrip()
                     continue
                 # here if float worked
                 try:

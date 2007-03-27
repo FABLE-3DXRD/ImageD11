@@ -28,7 +28,7 @@ This class will eventually offer macro recording capability.
 
 
 # Things to offer from gui
-from ImageD11 import peakmerge, indexing, transform
+from ImageD11 import peakmerge, indexing, transformer
 
 
 class guicommand:
@@ -38,16 +38,20 @@ class guicommand:
     """
     def __init__(self):
         self.objects = { "peakmerger" : peakmerge.peakmerger(),
-                         "transformer": None,
+                         "transformer": transformer.transformer(),
                          "indexer"    : indexing.indexer()
                          }
 
-        self.commandscript = """
-  from ImageD11 import peakmerger, indexing, transform
-  mypeakmerger = peakmerger.peakmerger()
-  mytransformer = transform.transformer()
-  myindexer = indexing.indexer()
-  """
+        self.commandscript = """# Create objects to manipulate - they hold your data
+#
+from ImageD11 import peakmerge, indexing, transformer
+mypeakmerger = peakmerge.peakmerger()
+mytransformer = transformer.transformer()
+myindexer = indexing.indexer()
+#
+# Your work starts here:
+#    
+"""
 
     def execute(self,object,command,*args,**kwds):
         """
@@ -64,9 +68,14 @@ class guicommand:
         if object not in self.objects.keys():
             raise Exception("ERROR! Unknown command object")
         o = self.objects[object]
+        ran = "my%s.%s("%(object,command)
+        if command.find("."):
+            subobjs = command.split(".")[:-1]
+            for s in subobjs:
+                o = getattr(o,s)
+            command = command.split(".")[-1]
         func = getattr(o,command)
         try:
-            ran = "my%s.%s("%(object,command)
             addedcomma = ""
             for a in args:
                 ran="%s %s %s"%(ran,addedcomma,repr(a))
@@ -74,8 +83,9 @@ class guicommand:
             for k,v in kwds.items():
                 ran="%s %s %s=%s "%(ran,addedcomma,k,v)
                 addedcomma=","
-            ran+=" )"
+            ran+=" )\n"
             ret = func(*args, **kwds)
+
         except:
             print self
             print object
@@ -101,3 +111,6 @@ class guicommand:
             raise Exception("ERROR! Unknown command object")
         attribute = getattr(self.objects[object],name)
         return attribute
+
+    def gethistory(self):
+        return self.commandscript

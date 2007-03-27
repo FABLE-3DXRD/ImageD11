@@ -23,19 +23,6 @@ from Numeric import *
 
 from math import pi
 
-def rdpars(parfile):
-        lines = open(parfile,"r").readlines()
-        p={}
-        for line in lines:
-            name,value=line.split()
-            name=name.replace("-","_")
-            try:
-                p[name]=float(value)
-            except:
-                p[name]=value
-        return p
-
-
 def degrees(x):
     """Convenience function"""
     return x*180.0/pi

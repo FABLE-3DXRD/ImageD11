@@ -213,7 +213,10 @@ class rubber(Frame):
     def rdpars(self,parfile=None):
         if parfile==None:
             parfile=tkFileDialog.askopenfilename(initialdir=os.getcwd())
-        self.parameters=transform.rdpars(parfile)
+        from ImageD11 import parameters
+        o=parameters.parameters()
+        o.loadparameters(parfile)
+        self.parameters=o.getparameters()
 
     def rdubis(self,ubifile=None):
         from ImageD11 import indexing

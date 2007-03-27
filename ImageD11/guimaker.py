@@ -23,7 +23,8 @@ class GuiMaker(Tk.Frame):   # Inherit from Tk frame
     def __init__(self,parent=None):
         Tk.Frame.__init__(self,parent)
         self.pack(expand=Tk.YES, fill=Tk.BOTH)
-        self.statusbar=Tk.Label(self,text="Welcome to ImageD11_v0.4")
+        import ImageD11
+        self.statusbar=Tk.Label(self,text="Welcome to ImageD11 version "+ImageD11.__version__)
         self.statusbar.pack(side=Tk.BOTTOM)
         self.start()
         self.makeWidgets()

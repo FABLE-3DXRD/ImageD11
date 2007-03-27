@@ -24,6 +24,7 @@ scripts/recoveromega.py
 scripts/rubber.py
 scripts/peaksearch.py
 scripts/edfheader.py
+scripts/ImageD11Server.py
 src/f2c.h
 src/dset.h
 src/connectedpixels.c
@@ -34,6 +35,7 @@ src/closest.c
 src/splines.c
 ImageD11/__init__.py
 ImageD11/guifactors.py
+ImageD11/transformer.py
 ImageD11/write_graindex_gv.py
 ImageD11/guipeaksearch.py
 ImageD11/simplex.py

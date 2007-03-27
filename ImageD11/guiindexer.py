@@ -121,15 +121,14 @@ class guiindexer:
                eg : loadpars(None)
         """
         # First make the indexer update its parameters object
-        self.parent.guicommander.execute("indexer","savepars") # no filename arg
+        self.parent.guicommander.execute("indexer","updateparameters") # no filename arg
         # Now borrow a copy to read them and edit
-        pars = self.parent.guicommander.getdata("indexer","parameterobj")
-        mydict = pars.get_parameters()
-        print mydict
-        d=listdialog(self.parent,items=mydict,title="Indexing parameters")
-        # Now send the results back
-        pars.set_parameters(d.result)
-        self.parent.guicommander.execute("indexer","loadpars") # no filename arg
+        pars = self.parent.guicommander.getdata("indexer","pars")
+        d=listdialog(self.parent,items=pars,title="Indexing parameters")
+        self.parent.guicommander.execute("indexer","parameterobj.set_parameters",d.result) 
+        self.parent.guicommander.execute("indexer","loadpars") # and use them 
+        
+
 
 
     def plotxyz(self):
