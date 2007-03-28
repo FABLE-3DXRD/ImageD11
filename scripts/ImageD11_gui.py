@@ -98,6 +98,7 @@ if __name__=="__main__":
     # Inherits from the GuiMaker and uses functions defined above
     class TestGuiMaker(GuiMaker):
         from ImageD11 import guicommand
+        guicommand.RETURN_NUMERICS = True
         guicommander = guicommand.guicommand()
 
         def start(self):

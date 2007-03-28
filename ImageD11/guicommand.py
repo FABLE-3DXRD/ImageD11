@@ -31,6 +31,11 @@ This class will eventually offer macro recording capability.
 from ImageD11 import peakmerge, indexing, transformer
 
 
+# To autoconvert arrays to lists for Java XMLRPC
+RETURN_NUMERICS = False
+import Numeric
+TYPE_NUMERIC = type(Numeric.zeros(1)) 
+
 class guicommand:
     """
     Keeps a log of all commands issued - separates gui code from
@@ -110,6 +115,14 @@ myindexer = indexing.indexer()
         if object not in self.objects.keys():
             raise Exception("ERROR! Unknown command object")
         attribute = getattr(self.objects[object],name)
+        if RETURN_NUMERICS:
+            # Normally python will get this
+            print "python return array"
+            return attribute
+        if type(attribute) == TYPE_NUMERIC:
+            # Java gets this for arrays
+            print "Java return list"
+            return attribute.tolist()
         return attribute
 
     def gethistory(self):
