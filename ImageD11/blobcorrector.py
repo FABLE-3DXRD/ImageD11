@@ -1,6 +1,6 @@
 
 
-
+ 
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -22,125 +22,139 @@
 """
 Defines a class for correcting peak positions for spatial distortion
 via a fit2d spline file
-
+ 
 To think about doing - valid regions? What if someone uses a 1K spline
 file for a 2K image etc?
 """
-
+import logging
 import Numeric as n
 import bisplev, math
 
-
-class perfect:
+def readfit2dfloats(fp, nfl):
     """
-    To use on previously corrected images
+    Interprets a 5E14.7 formatted fortran line
     """
-    splinefile = "NO_CORRECTION_APPLIED"
-    xsize = "UNKNOWN"
-    ysize = "UNKNOWN"
-    def correct(self,x,y):
-        return x, y
+    ret = []
+    j = 0
+    while j < nfl:
+        i = 0
+        thisline = fp.readline()
+        # logging.debug("readfit2dfloats:"+thisline)
+        while i < 5 * 14:
+            # logging.debug(str(i)+ thisline[i:i+14])
+            ret.append(float(thisline[i:i+14]) )
+            j = j + 1
+            i = i + 14
+            if j == nfl: 
+                break
+        i = i + 1
+    return ret
 
-
-class correctorclass:
+class correctorclass: #IGNORE:R0902
     """
     Applies a spatial distortion to a peak position using a fit2d splinefile
     """
-    def __init__(self,splinefile,orientation="edf"):
+    def __init__(self, argsplinefile, orientation="edf"):
         """
         Argument is the name of a fit2d spline file
         """
-        self.splinefile=splinefile
-        self.readfit2dspline(splinefile)
-        self.tolerance=1e-5
-        self.orientation=orientation
+        self.splinefile = argsplinefile
+        self.tolerance = 1e-5
+        self.orientation = orientation
+        self.pos_lut = None
+        self.pixel_lut = None
+        self.xmin = self.ymin = self.xmax = self.ymax = 0.0
+        self.xsize = self.ysize = 1.0
+        self.gridspacing = 0.0
+        self.tck1 = None
+        self.tck2 = None
+        if self.splinefile is not None:
+            self.readfit2dspline(self.splinefile)
+        
 
 
-    def correct(self,x,y):
+    def correct(self, xin, yin):
         """
         Transform x,y in raw image coordinates into x,y of an
         idealised image. Returns a tuple (x,y), expects a
         pair of floats as arguments
         """
         if self.orientation == "edf":
-            xnew = x + bisplev.bisplev(y,x,self.tck2)
-            ynew = y + bisplev.bisplev(y,x,self.tck1)
+            xcor = xin + bisplev.bisplev(yin, xin, self.tck2)
+            ycor = yin + bisplev.bisplev(yin, xin, self.tck1)
         elif self.orientation == "bruker":
             # fit2d does a flip
-            xpos = self.xmax - x
-            xnew = x - bisplev.bisplev(y,xpos,self.tck2)
-            ynew = y + bisplev.bisplev(y,xpos,self.tck1)
-        return xnew, ynew
+            xpos = self.xmax - xin
+            xcor = xin - bisplev.bisplev(yin, xpos, self.tck2)
+            ycor = yin + bisplev.bisplev(yin, xpos, self.tck1)
+        return xcor, ycor
 
-    def make_pixel_lut(self,dims):
+    def make_pixel_lut(self, dims):
         """
         Generate an x and y image which maps the array indices into
         floating point array indices (to be corrected for pixel size later)
 
-        returns (FIXME - get them the right way around!)
+        returns 
+        FIXME - check they are the right way around
+                add some sort of known splinefile testcase
         """
-        if hasattr(self,"pixel_lut"):
-            # Cache the value in case of multiple calls
-            return self.pixel_lut
-        x_im = n.outerproduct(range(dims[0]),n.ones(dims[1]))
-        y_im = n.outerproduct(n.ones(dims[1]),range(dims[0]))  
-        self.pixel_lut = self.correct(x_im,y_im)
+        # Cache the value in case of multiple calls
+        if self.pixel_lut is None:
+            x_im = n.outerproduct(range(dims[0]), n.ones(dims[1]))
+            y_im = n.outerproduct(n.ones(dims[1]), range(dims[0]))  
+            self.pixel_lut = self.correct(x_im, y_im)
         return self.pixel_lut
 
-
-    def make_pos_lut(self,dims):
+    def make_pos_lut(self, dims):
         """
         Generate a look up table of pixel positions in microns
+        # Cache the value in case of multiple calls
         returns ...
         """
-        if hasattr(self,"pos_lut"):
-            # Cache the value in case of multiple calls
-            return self.pos_lut
-        if hasattr(self,"pixel_lut"):
+        if self.pos_lut is None:
+            if self.pixel_lut is None:
+                self.make_pixel_lut(dims)                
             self.pos_lut = ( self.pixel_lut[0] * self.xsize, 
                              self.pixel_lut[1] * self.ysize )
-            return self.pos_lut
-        self.make_pixel_lut(dims)
-        # Make a recursive call which will be caught on lines above
-        # ... might hurt your brain but it means xsize and ysize
-        #     are only in one place 
-        return self.make_pos_lut(dims)
+        return self.pos_lut
 
-    def distort(self,xnew,ynew):
+    def distort(self, xin, yin):
         """
         Distort a pair of points xnew, ynew to find where they
         would be in a raw image
 
         Iterative algorithm...
         """
-        yold=ynew-bisplev.bisplev(ynew,xnew,self.tck1)
-        xold=xnew-bisplev.bisplev(ynew,xnew,self.tck2)
+        yold = yin - bisplev.bisplev(yin, xin, self.tck1)
+        xold = xin - bisplev.bisplev(yin, xin, self.tck2)
         # First guess, assumes distortion is constant
-        y=ynew-bisplev.bisplev(yold,xold,self.tck1)
-        x=xnew-bisplev.bisplev(yold,xold,self.tck2)
+        yt = yin - bisplev.bisplev(yold, xold, self.tck1)
+        xt = xin - bisplev.bisplev(yold, xold, self.tck2)
         # Second guess should be better
-        error=math.sqrt((x-xold)*(x-xold)+(y-yold)*(y-yold))
-        ntries=0
+        error = math.sqrt((xt - xold) * (xt - xold) + (yt - yold) * (yt - yold))
+        ntries = 0
         while error > self.tolerance:
-            ntries=ntries+1
-            xold=x
-            yold=y
-            y=ynew-bisplev.bisplev(yold,xold,self.tck1)
-            x=xnew-bisplev.bisplev(yold,xold,self.tck2)
-            error=math.sqrt((x-xold)*(x-xold)+(y-yold)*(y-yold))
+            ntries = ntries + 1
+            xold = xt
+            yold = yt
+            yt = yin - bisplev.bisplev(yold, xold, self.tck1)
+            xt = xin - bisplev.bisplev(yold, xold, self.tck2)
+            error = math.sqrt((xt - xold) * (xt - xold) + 
+                              (yt - yold) * (yt - yold)   )
             # print error,xold,x,yold,y
             if ntries == 10:
                 raise Exception("Error getting the inverse spline to converge")
-        return x,y
+        return xt, yt
 
-    def test(self,x,y):
+    def test(self, xin, yin):
         """
         Checks that the correct and distort functions are indeed
         inversely related to each other
         """
-        xnew,ynew = self.correct(x,y)
-        xold,yold = self.distort(xnew,ynew)
-        error = math.sqrt( (x-xold)*(x-xold) + (y-yold)*(y-yold))
+        xtes, ytes = self.correct(xin, yin)
+        xold, yold = self.distort(xtes, ytes)
+        error = math.sqrt( (xin - xold) * (xin - xold) + 
+                           (yin - yold) * (yin - yold))
         if error > self.tolerance:
             print "Failed!"
             raise Exception("Problem in correctorclass")
@@ -148,144 +162,119 @@ class correctorclass:
 
 
 
-    def readfit2dfloats(self,fp,n,debug=0):
-        """
-        Interprets a 5E14.7 formatted fortran line
-        """
-        vals=[]
-        j=0
-        while j < n:
-            i=0
-            line=fp.readline()
-            while i < 5*14:
-                if(debug):print line
-                if(debug):print i,line[i:i+14]
-                vals.append(float(line[i:i+14]) )
-                j=j+1
-                i=i+14
-                if j == n: break
-            i=i+1
-        return vals
 
 
             # read the fit2d array into a tck tuple
-    def readfit2dspline(self,name):
+    def readfit2dspline(self, name):
         """
         Reads a fit2d spline file into a scipy/fitpack tuple, tck
         A fairly long and dull routine...
         """
-        kx=3
-        ky=3
-        fp=open(name,"r")
-        line=fp.readline() # SPATIAL DISTORTION SPLINE INTERPOLATION COEFFICIENTS
-        if line[:7] != "SPATIAL":
-            raise SyntaxError, name+": file does not seem to be a fit2d spline file"
-        line=fp.readline() # BLANK LINE
-        line=fp.readline() # VALID REGION
-        line=fp.readline() # the actual valid region, assume xmin,ymin,xmax,ymax
-        vals=line.split()
-        self.xmin=float(vals[0])
-        self.ymin=float(vals[1])
-        self.xmax=float(vals[2])
-        self.ymax=float(vals[3])
-        line=fp.readline() # BLANK
-        line=fp.readline() # GRID SPACING, X-PIXEL SIZE, Y-PIXEL SIZE
-        line=fp.readline()
-        vals=line.split()
-        self.gridspacing=float(vals[0])
-        self.xsize=float(vals[1])
-        self.ysize=float(vals[2])
-        line=fp.readline() # BLANK
-        line=fp.readline() # X-DISTORTION
-        line=fp.readline() # two integers nx1,ny1
-        vals=line.split()
-        nx1=int(vals[0])
-        ny1=int(vals[1])
+        fp = open(name, "r")
+        # SPATIAL DISTORTION SPLINE INTERPOLATION COEFFICIENTS
+        myline = fp.readline() 
+        if myline[:7] != "SPATIAL":
+            raise SyntaxError, name + \
+                ": file does not seem to be a fit2d spline file"
+        myline = fp.readline() # BLANK LINE
+        myline = fp.readline() # VALID REGION
+        myline = fp.readline() # the actual valid region, 
+                               # assuming xmin,ymin,xmax,ymax
+        logging.debug("xmin,ymin,xmax,ymax, read: "+myline)
+        self.xmin, self.ymin, self.xmax, self.ymax = \
+         [float(z) for z in myline.split()]
+        myline = fp.readline() # BLANK
+        myline = fp.readline() # GRID SPACING, X-PIXEL SIZE, Y-PIXEL SIZE
+        myline = fp.readline()
+        logging.debug("gridspace, xsize, ysize: "+myline)
+        self.gridspacing, self.xsize, self.ysize = \
+         [float(z) for z in  myline.split()]
+        myline = fp.readline() # BLANK
+        myline = fp.readline() # X-DISTORTION
+        myline = fp.readline() # two integers nx1,ny1
+        logging.debug("nx1, ny1 read: "+myline)
+        nx1, ny1 = [int(z) for z in myline.split()]
         # Now follow fit2d formatted line 5E14.7
-        tx1=n.array(self.readfit2dfloats(fp,nx1),n.Float32)
-        ty1=n.array(self.readfit2dfloats(fp,ny1),n.Float32)
-        c1 =n.array(self.readfit2dfloats(fp,(nx1-4)*(ny1-4)),n.Float32)
-        line=fp.readline() #BLANK
-        line=fp.readline() # Y-DISTORTION
-        line=fp.readline() # two integers nx2, ny2
-        vals=line.split()
-        nx2=int(vals[0])
-        ny2=int(vals[1])
-        tx2=n.array(self.readfit2dfloats(fp,nx2),n.Float32)
-        ty2=n.array(self.readfit2dfloats(fp,ny2),n.Float32)
-        c2 =n.array(self.readfit2dfloats(fp,(nx2-4)*(ny2-4)),n.Float32)
+        tx1 = n.array(readfit2dfloats(fp, nx1), n.Float32)
+        ty1 = n.array(readfit2dfloats(fp, ny1), n.Float32)
+        c1 = n.array(readfit2dfloats(fp, (nx1 - 4) * (ny1 - 4)),  
+                     n.Float32)
+        myline = fp.readline() #BLANK
+        myline = fp.readline() # Y-DISTORTION
+        myline = fp.readline() # two integers nx2, ny2
+        nx2 , ny2 = [int(z) for z in myline.split()]
+        tx2 = n.array(readfit2dfloats(fp, nx2), n.Float32)
+        ty2 = n.array(readfit2dfloats(fp, ny2), n.Float32)
+        c2 = n.array(readfit2dfloats(fp, (nx2 - 4) * (ny2 - 4)), 
+                     n.Float32)
         fp.close()
-        self.tck1=(tx1,ty1,c1,kx,ky)
-        self.tck2=(tx2,ty2,c2,kx,ky)
-
-"""
-http://homepages.inf.ed.ac.uk/rbf/CVonline/LOCAL_COPIES/OWENS/LECT5/node5.html
-
-Various interpolation schemes can be used. A common one is bilinear interpolation, given by
-
-v(x,y) = c1x + c2y + c3xy + c4,
-
-where v(x,y) is the grey value at position (x,y).
-Thus we have four coefficients to solve for. We use the known grey values of the 4 pixels
-surrounding the `come from' location to solve for the coefficients.
-
-We need to solve the equation
-
-v1   ( x1 y1 x1y1 1 ) c1
-v2 = ( x2 y2 x2y2 1 ) c2
-v3   ( x3 y3 x3y3 1 ) c3
-v4   ( x4 y4 x4y4 1 ) c4
+        # The 3 ,3 is the number of knots
+        self.tck1 = (tx1, ty1, c1, 3, 3)
+        self.tck2 = (tx2, ty2, c2, 3, 3)
 
 
-or, in short,
-[V] = [M][C],
 
-which implies
-[C] = [M]-1[V].
 
-This has to be done for every pixel location in the output image and is thus a lot of computation!
-Alternatively one could simply use the integer pixel position closest to the `come from location'.
-This is adequate for most cases.
-
-"""
-
-def unwarpimage(image, xpositions, ypositions):
+class perfect(correctorclass):
     """
-    xpositions/ypositions are floats giving pixel co-ords of the input image.
-
-    We need the positions of the pixels in the output image, on the input image.
-
-    Hence, for now,
+    To use on previously corrected when there is no splinefile
+    Allows pixel size etc to be set
     """
-    pass
+    splinefile = "NO_CORRECTION_APPLIED"
+    xsize = "UNKNOWN"
+    ysize = "UNKNOWN"
+    def __init__(self):
+        correctorclass.__init__(self, None)
+    def correct(self, xin, yin):
+        """
+        Do nothing - just return the same values
+        """
+        return xin, yin
 
-if __name__=="__main__":
-    import sys,time
-    start=time.time()
-    splinefile=sys.argv[1]
-    infile=sys.argv[2]
-    outfile=sys.argv[3]
-    out=open(outfile,"w")
-    npks=0
-    # THIS IS BROKEN
-    tck1,tck2,xmin,xmax,ymin,ymax=readfit2dspline(splinefile)
-    print "Time to read fit2d splinefile %f/s"%(time.time()-start)
-    start=time.time()
-    for line in open(infile,"r").readlines():
-        try:
-            vals = [float(v) for v in line.split()]
-            if vals[0]>3:
-                x=vals[2]
-                y=vals[3]
-                out.write(line[:-1])
-                ynew=bisplev.bisplev(y,x,tck1)+y
-                xnew=bisplev.bisplev(y,x,tck2)+x
-                out.write(" ---> %f %f\n"%(xnew,ynew))
-                npks=npks+1
-        except ValueError:
-            pass
-        except:
-            raise
+#
+#"""
+#http://homepages.inf.ed.ac.uk/rbf/CVonline/LOCAL_COPIES/OWENS/LECT5/node5.html
+#
+#Various interpolation schemes can be used. 
+# A common one is bilinear interpolation, given by
+#
+#v(x,y) = c1x + c2y + c3xy + c4,
+#
+#where v(x,y) is the grey value at position (x,y).
+#Thus we have four coefficients to solve for. We use the known grey values 
+# of the 4 pixels
+#surrounding the `come from' location to solve for the coefficients.
+#
+#We need to solve the equation
+#
+#v1   ( x1 y1 x1y1 1 ) c1
+#v2 = ( x2 y2 x2y2 1 ) c2
+#v3   ( x3 y3 x3y3 1 ) c3
+#v4   ( x4 y4 x4y4 1 ) c4
+#
+#
+#or, in short,
+#[V] = [M][C],
+#
+#which implies
+#[C] = [M]-1[V].
+#
+# This has to be done for every pixel location in the output image and 
+# is thus a lot of computation!
+# Alternatively one could simply use the integer pixel position closest 
+# to the `come from location'.
+# This is adequate for most cases.
+#
+#"""
 
-    out.close()
-    print "That took %f/s for %d peaks"%(time.time()-start,npks)
+#def unwarpimage(image, xpositions, ypositions):
+#    """
+#    xpositions/ypositions are floats giving pixel co-ords of the input image.
+#
+#    We need the positions of the pixels in the output image,
+#     on the input image.
+#
+#    Hence, for now,
+#    """
+#    pass
+
