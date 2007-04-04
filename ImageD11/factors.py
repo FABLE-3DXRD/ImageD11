@@ -21,32 +21,42 @@
 """
 Some routines for factor analysis, a bit slow, via the SVD
 """
-import glob, Numeric, LinearAlgebra, struct
+import glob, Numeric, LinearAlgebra, struct, logging
 
-import opendata
+from ImageD11 import opendata
+
 class factors:
+    """
+    Class for factor analysis
+    """
     def __init__(self):
-        self.obsdata=None
-        self.svd=None
+        self.obsdata = None
+        self.svd = None
+        self.gendata = None
+        self.x = None 
         self.nfactors=0
-        pass
-
 
     def generatedata(self):
+        """
+        compute the data from our svd
+        """
         if self.svd is not None:
             l,s,r=self.svd # left , singularvals, right
             nf=self.nfactors
             I=Numeric.identity(nf,Numeric.Float)
             suse=I*s[:nf]
-            ls = Numeric.matrixmultiply(l[:,:nf],suse)
+            ls = Numeric.matrixmultiply(l[:,:nf], suse)
             self.gendata=Numeric.matrixmultiply(ls,r[:nf,:])
-            print self.gendata.shape
+            logging.debug("generated data.shape"+str(self.gendata.shape))
 
 
     def factorsvd(self):
-        print "In svd"
+        """
+        compute the svd
+        """
+        logging.debug("In svd")
         if self.obsdata is not None:
-            print "Calling svd"
+            logging.debug("Calling svd")
             self.svd = LinearAlgebra.singular_value_decomposition(self.obsdata)
 
     def savesvd(self,filename):
@@ -56,7 +66,12 @@ class factors:
         if self.svd is not None:
             l,s,r=self.svd
             out=open(filename,"wb")
-            out.write(struct.pack("lllll",l.shape[0],l.shape[1],s.shape[0],r.shape[0],r.shape[1]))
+            out.write(struct.pack("lllll",
+                                  l.shape[0],
+                                  l.shape[1],
+                                  s.shape[0],
+                                  r.shape[0],
+                                  r.shape[1]))
             print len(l.astype(Numeric.Float).tostring())
             out.write(l.astype(Numeric.Float).tostring())
             out.write(s.astype(Numeric.Float).tostring())
@@ -81,6 +96,7 @@ class factors:
 
 
     def setnfactors(self,n):
+        """Decide on the number of factors in the data"""
         self.nfactors=n
         print "Number of factors set to",self.nfactors
 
@@ -109,12 +125,14 @@ class factors:
         out.close()
 
     def readobsdata(self,filename):
+        """ Reads observed data from a binary format """
         infile=open(filename,"rb")
         sizes=struct.unpack("lll",infile.read(struct.calcsize("lll")))
         # Type is Float therefore 8 bytes per item
         print sizes
         self.x=Numeric.fromstring(infile.read(sizes[0]*8),Numeric.Float)
-        self.obsdata=Numeric.fromstring(infile.read(8*sizes[1]*sizes[2]),Numeric.Float)
+        self.obsdata=Numeric.fromstring(infile.read(8*sizes[1]*sizes[2]),
+                                        Numeric.Float)
         print self.obsdata.shape
         self.obsdata=Numeric.reshape(self.obsdata,(sizes[1],sizes[2]))
         print self.x.shape,self.obsdata.shape
@@ -124,7 +142,7 @@ if __name__=="__main__":
     o=factors()
     import sys
     if sys.argv[1].find("chi")>-1:
-        o.readchis(sys.argv[1])
+        o.loadchis(sys.argv[1])
     else:
         o.readobsdata(sys.argv[1])
     print dir(o)
