@@ -51,7 +51,7 @@ if __name__=="__main__":
     ImageD11credits = """Thanks to:
 
                         All of the Fable team, which includes at least:
-                           Andy Goetz, Gavin Vaughan,
+                           Andy Gotz, Gavin Vaughan,
                            Soren Schmidt, Henning Poulsen, Larry Margulies
                         ...and others who should remind me to mention them
 
