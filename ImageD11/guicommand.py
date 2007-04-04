@@ -44,8 +44,7 @@ class guicommand:
     def __init__(self):
         self.objects = { "peakmerger" : peakmerge.peakmerger(),
                          "transformer": transformer.transformer(),
-                         "indexer"    : indexing.indexer(),
-                         "imaged11"   : imaged11.imaged11(),
+                         "indexer"    : indexing.indexer()
                          }
 
         self.commandscript = """# Create objects to manipulate - they hold your data
