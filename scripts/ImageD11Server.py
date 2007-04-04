@@ -68,12 +68,19 @@ class Server(SimpleXMLRPCServer):
             self.wfile.flush()
             self.connection.shutdown(1)
 
+    def serve_forever(self):
+        self.quit = 0
+        while not self.quit:
+            self.handle_request()
 
-
+def shutdown():
+    print "ImageD11Server(): called shutdown()"
+    server.quit = 1
+    
 if __name__=="__main__":
 
-    logger = logging.getLogger('xmlrpcserver')
-    hdlr = logging.FileHandler('xmlrpcserver.log')
+    logger = logging.getLogger('/tmp/xmlrpcserver')
+    hdlr = logging.FileHandler('/tmp/xmlrpcserver.log')
     formatter = logging.Formatter("%(asctime)s  %(levelname)s  %(message)s")
     hdlr.setFormatter(formatter)
     logger.addHandler(hdlr)
@@ -91,6 +98,7 @@ if __name__=="__main__":
             print "usage: %s [portnumber]"%(sys.argv[0])
 
     server = Server( ("localhost", port ), logRequests=1 )
+    server.register_function(shutdown)
     server.register_instance(guicommander)
 
     #Go into the main listener loop
