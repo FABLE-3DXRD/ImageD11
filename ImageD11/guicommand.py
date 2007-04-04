@@ -28,7 +28,7 @@ This class will eventually offer macro recording capability.
 
 
 # Things to offer from gui
-from ImageD11 import peakmerge, indexing, transformer
+from ImageD11 import peakmerge, indexing, transformer, imaged11
 
 
 # To autoconvert arrays to lists for Java XMLRPC
@@ -44,7 +44,8 @@ class guicommand:
     def __init__(self):
         self.objects = { "peakmerger" : peakmerge.peakmerger(),
                          "transformer": transformer.transformer(),
-                         "indexer"    : indexing.indexer()
+                         "indexer"    : indexing.indexer(),
+                         "imaged11"   : imaged11.imaged11(),
                          }
 
         self.commandscript = """# Create objects to manipulate - they hold your data
