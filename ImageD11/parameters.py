@@ -24,8 +24,11 @@
 Class to handle groups of parameters to be saved in and out
 of files and edited in guis with the fixed/varied info etc
 """
-
+import logging 
 class parameters:
+    """
+    Class to hold a set of named parameters
+    """
     def __init__(self,**kwds):
         """
         name=value style arg list
@@ -35,12 +38,15 @@ class parameters:
         self.stepsizes = {}
 
     def get_variable_values(self):
+        """ values of the parameters """
         return [self.parameters[name] for name in self.varylist]
 
     def get_variable_stepsizes(self):
+        """ stepsizes for optimisers """
         return [self.stepsizes[name] for name in self.varylist]
 
     def set_variable_values(self,values):
+        """ set values of the parameters"""
         assert len(values)==len(self.varylist)
         for name, value in zip(self.varylist,values):
             self.parameters[name]=value
@@ -77,10 +83,11 @@ class parameters:
         for k,v in self.parameters.items():
             if hasattr(other,k):
                 var = getattr(other,k)
-                # print "setting: %s.%s from %s to %s"%(other,k,var,v)
+                logging.debug("setting: %s.%s from %s to %s"%(other,k,var,v))
                 setattr(other,k,v)
-            # else:
-            #    print "error: %s has no attribute %s, ignoring"%(other,k)
+            else:
+                logging.debug("error: %s has no attribute %s, ignoring"%
+                              (other,k))
 
     def saveparameters(self,filename):
         """
@@ -103,7 +110,7 @@ class parameters:
                 [name, value] = line.split(" ") 
                 name=name.replace("-","_")
                 self.parameters[name]=value
-            except:
+            except ValueError:
                 print "Failed to read:",line
         self.dumbtypecheck()
 
@@ -117,19 +124,20 @@ class parameters:
             if type(value) == type("string"):
                 try:
                     vf = float(value)
-                except:
+                except ValueError:
                     # it really is a string
                     self.parameters[name] = value.lstrip().rstrip()
                     continue
                 # here if float worked
                 try:
                     vi = int(value)
-                except:
+                except ValueError:
                     # it really is a float
                     self.parameters[name] = vf
                     continue
                     
                 # here if float and int worked
+                # should not be needed, depends on int valueerror
                 if abs(vi - vf) < 1e-9:
                     # use int
                     self.parameters[name] = vi
