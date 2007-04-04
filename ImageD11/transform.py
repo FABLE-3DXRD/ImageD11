@@ -18,6 +18,17 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+"""
+Functions for transforming peaks
+"""
+
+
+def cross_product(a,b):
+    """ returns axb for two len(3) vectors a,b"""
+    assert len(a)==len(b)==3
+    return array([a[1]*b[2]-a[2]*b[1],
+                  a[2]*b[0]-a[0]*b[2],
+                  a[0]*b[1]-a[1]*b[0]])
 
 from Numeric import *
 
@@ -31,7 +42,6 @@ def radians(x):
     """Convenience function"""
     return x*pi/180.0
 
-
 def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
                     z_center=0.,z_size=0.,tilt_z=0.,
                     distance=0.,
@@ -40,7 +50,8 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
                     omega = None,         #       == phi at chi=90
                     axis_orientation1=0.0, # Wedge == theta on 4circ
                     axis_orientation2=0.0, #       == chi - 90
-                    **kwds): # last line is for laziness - pass any crap you like to be ignored
+                    **kwds): # last line is for laziness - 
+                             # pass kwds you'd like to be ignored
     """
     Peaks is a 2 d array of x,y
     yc is the centre in y
@@ -61,8 +72,12 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
                  z with respect to beam height, z centre
     omega data needed if crystal translations used
     """
-    yc=y_center;ys=y_size; ty=tilt_y
-    zc=z_center;zs=z_size; tz=tilt_z
+    yc=y_center
+    ys=y_size
+    ty=tilt_y
+    zc=z_center
+    zs=z_size
+    tz=tilt_z
     # Matrices for the tilt rotations
     r1 = array( [ [  cos(tz) , sin(tz) , 0 ],
                   [ -sin(tz) , cos(tz) , 0 ],
@@ -74,7 +89,8 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
     # Peak positions in 3D space
     #  - apply detector orientation
     mypeaks = matrixmultiply(array(detector_orientation,Float),peaks)
-    vec =array( [ zeros(mypeaks.shape[1])     , # place detector at zero, sample at -dist
+    vec =array( [ zeros(mypeaks.shape[1])     , # place detector at zero, 
+                                                # sample at -dist
                     (mypeaks[0,:]-yc)*ys      ,            # x in search
                     (mypeaks[1,:]-zc)*zs ]    , Float)     # y in search
     #print vec.shape
@@ -84,8 +100,8 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
     if crystal_translation is None:
         magrotvec=sqrt(sum(rotvec*rotvec,0))
         #print magrotvec.shape
-
-        eta=degrees(arctan2(rotvec[2,:],rotvec[1,:])) # bugger this one for tilts
+        # bugger this one for tilts
+        eta=degrees(arctan2(rotvec[2,:],rotvec[1,:])) 
         # cosine rule a2 = b2+c2-2bccos(A)
         # a is distance from (0,0,0) to rotvec => magrotvec
         # b is distance from sample to detector
@@ -136,7 +152,8 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
                       [      0,     cos(c), -sin(c)],
                       [      0,     sin(c),  cos(c)] ] , Float)
         if omega.shape[0] != peaks.shape[1]:
-            raise Exception("omega and peaks arrays must have same number of peaks")
+            raise Exception(
+                "omega and peaks arrays must have same number of peaks")
         eta=zeros(omega.shape[0],Float)
         tth=zeros(omega.shape[0],Float)
 
@@ -158,9 +175,10 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
 
         return tth, eta
 
-def compute_g_vectors(tth,eta,omega,wavelength, wedge = 0.0, chi=0.0):
+def compute_g_vectors(tth, eta, omega, wavelength, wedge = 0.0, chi=0.0):
     """
-    Generates spot positions in reciprocal space from twotheta, wavelength, omega and eta
+    Generates spot positions in reciprocal space from 
+      twotheta, wavelength, omega and eta
     Assumes single axis vertical
     ... unless a wedge angle is specified
     """
@@ -257,7 +275,11 @@ def uncompute_g_vectors(g,wavelength, wedge=0.0, chi=0.0):
     #      lhs = g0 cos(omega) - g1 sin(omega)
     #      lhs + g1 sin(omega) = g0 cos(omega)
     #      lhs^2 + 2 g1 lhs sin(omega) + g1^2 sin^2(omega) = g0^2 cos^2(omega)
-    #      - g0^2 + lhs^2 + 2 g1 lhs sin(omega) + g1^2 sin^2(omega) + g0^2 sin^2(omega)  = 0
+    #
+    #
+    #      - g0^2 + lhs^2 + 
+    #        2 g1 lhs sin(omega) + 
+    #          g1^2 sin^2(omega) + g0^2 sin^2(omega)  = 0
     #
     # Finally - solve the quadratic for sin(omega)
     # axx + bx + c = 0
@@ -302,10 +324,13 @@ def uncompute_g_vectors(g,wavelength, wedge=0.0, chi=0.0):
     hypothesis_1 = abs(sinomega1*sinomega1+cosomega1*cosomega1 - 1.)
     hypothesis_2 = abs(sinomega1*sinomega1+cosomega2*cosomega2 - 1.)
     same_sign = where(abs(hypothesis_1 < hypothesis_2 ), 1, 0)
-    omega1 = same_sign * arctan2(sinomega1,cosomega1) + (1.-same_sign) * arctan2(sinomega1,cosomega2)
-    omega2 = same_sign * arctan2(sinomega2,cosomega2) + (1.-same_sign) * arctan2(sinomega2,cosomega1)
+    omega1 = same_sign * arctan2(sinomega1,cosomega1) + \
+        (1.-same_sign) * arctan2(sinomega1,cosomega2)
+    omega2 = same_sign * arctan2(sinomega2,cosomega2) + \
+        (1.-same_sign) * arctan2(sinomega2,cosomega1)
     #
-    # Finally re-compute cosomega and sinomega due to the flipping possibility for getting eta
+    # Finally re-compute cosomega and sinomega due to the 
+    # flipping possibility for getting eta
     cosomega1 = cos(omega1)
     sinomega1 = sin(omega1)
     cosomega2 = cos(omega2)
@@ -381,7 +406,8 @@ def old_uncompute_g_vectors(gv,wavelength, wedge=0.0):
         th = arcsin(s)
     except:
         print "Problem getting theta from sin(theta)"
-        print "Maximum and minimum in sin(theta)=",maximum.reduce(s),minimum.reduce(s)
+        print "Maximum and minimum in sin(theta)=",\
+                 maximum.reduce(s),minimum.reduce(s)
     c = cos(th) # cos theta
     # Two theta in degrees
     k=zeros(gv.shape,Float)
@@ -423,7 +449,7 @@ def uncompute_one_g_vector(gv,wavelength, wedge=0.0):
 
 
 
-def compute_lorentz_factors(tth,eta,omega,wavelength,wedge=0.,chi=0.):
+def compute_lorentz_factors(tth, eta, omega, wavelength, wedge=0., chi=0.):
     """
     From Kabsch 1988 J. Appl. Cryst. 21 619
 
@@ -470,11 +496,6 @@ def compute_lorentz_factors(tth,eta,omega,wavelength,wedge=0.,chi=0.):
         raise Exception("Please fix this div0 crap in lorentz")
     return lorentz
 
-def cross_product(a,b):
-    assert len(a)==len(b)==3
-    return array([a[1]*b[2]-a[2]*b[1],
-                  a[2]*b[0]-a[0]*b[2],
-                  a[0]*b[1]-a[1]*b[0]])
 
 def compute_polarisation_factors(args):
     """
@@ -521,13 +542,19 @@ if __name__=="__main__":
     for wavelength in [ 0.1, 0.2, 0.3]:
         for wedge in [-10. , -5., 0., 5., 10.]:
             print "Wavelength",wavelength,"wedge",wedge
-            print "tth, eta, omega   ...   tth, eta, omega   ... tth, eta, omega"
+            print "tth, eta, omega   ...   " +\
+                  "tth, eta, omega   ...   " +\
+                  "tth, eta, omega"
             gv = compute_g_vectors(tth,eta,om,wavelength,wedge)
-            t,e,o = new_uncompute_g_vectors(gv,wavelength, wedge)
+            t,e,o = uncompute_g_vectors(gv,wavelength, wedge)
             for i in range(tth.shape[0]):
                 print "%9.3f %9.3f %9.3f  "%(tth[i],eta[i],om[i]),
-                print "%9.3f %9.3f %9.3f  "%(t[i],mod_360(e[0][i],eta[i]),mod_360(o[0][i],om[i])),
-                print "%9.3f %9.3f %9.3f  "%(t[i],mod_360(e[1][i],eta[i]),mod_360(o[1][i],om[i])),
+                print "%9.3f %9.3f %9.3f  "%(t[i],
+                             mod_360(e[0][i],eta[i]),
+                             mod_360(o[0][i],om[i])),
+                print "%9.3f %9.3f %9.3f  "%(t[i],
+                             mod_360(e[1][i],eta[i]),
+                             mod_360(o[1][i],om[i])),
                 # Choose best fitting
                 e_eta1 = mod_360(e[0][i],eta[i]) - eta[i]
                 e_om1  = mod_360(o[0][i], om[i]) -  om[i]
