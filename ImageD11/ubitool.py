@@ -81,4 +81,4 @@ class ubitool:
                 i=i+1
             else:
                 self.ubilist.append(u)
-                u = Numeric.zeros((3,3),Float)
+                u = Numeric.zeros((3,3),Numeric.Float)
