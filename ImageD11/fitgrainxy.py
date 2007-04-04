@@ -17,6 +17,11 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+
+"""
+ Class to attempt to fit the position of a grain
+"""
+
 import Numeric
 
 from ImageD11 import transform, indexing, closest
@@ -24,27 +29,36 @@ from ImageD11 import transform, indexing, closest
 from ImageD11.grain import grain
 
 class fitgrainxy:
-    def __init__(self):
-        self.parameters={'wedge':0.0 , 'chi':0.0}
-        self.ubisread=[]
+    """
+    Class to attempt to fit the position of a grain
     
+    TODO: finish off and put in gui
+    """
+    def __init__(self):
+        """ no args? """
+        self.parameters = {'wedge':0.0 , 'chi':0.0} # FIXME
+        self.ubisread = []
+        self.gv = None
+        
     def loadparameters(self,filename):
+        """ FIXME This needs the parameters object interface """
         lines = open(filename,"r").readlines()
         for line in lines:
             name,value=line.split()
             try:
                 self.parameters[name]=float(value)
-            except:
+            except KeyError:
                 self.parameters[name]=value
 
     def saveparameters(self,filename):
+        """ Save the parameters """
         out = open(filename,"w")
         keys=self.parameters.keys()
         keys.sort()
         for k in keys:
             try:
                 out.write("%s %f\n"%(k,self.parameters[k]))
-            except:
+            except TypeError:
                 out.write("%s %s\n"%(k,self.parameters[k]))
         out.close()
         
@@ -75,7 +89,8 @@ class fitgrainxy:
         line=f.readline()
         if line[0:12] !="# xc yc omega"[0:12]:
             print line
-            raise Exception("Sorry That does not seem to be a filter peaks file, output from the peaksearching menu option")
+            raise Exception("Sorry That does not seem to be a filter peaks file,"\
+                            " output from the peaksearching menu option")
         self.scantitles = line.replace("#","").split()
         bigarray=[]
         for line in f.readlines():
@@ -103,58 +118,68 @@ class fitgrainxy:
         om = self.scandata[:,om]
 
         tth,eta = transform.compute_tth_eta( Numeric.array([x, y]) ,
-                                             self.parameters['y-center'],
-                                             self.parameters['y-size'],
-                                             self.parameters['tilt-y'],
-                                             self.parameters['z-center'],
-                                             self.parameters['z-size'],
-                                             self.parameters['tilt-z'],
-                                             self.parameters['distance']*1.0e3,
-                                             crystal_translation = g.translation,
-                                             omega = om,
-                                             axis_orientation1 = self.parameters['wedge'],
-                                             axis_orientation2 = self.parameters['chi'])
-        self.gv = transform.compute_g_vectors(tth,eta,om,float(self.parameters['wavelength']), self.parameters['wedge'])
+                             self.parameters['y-center'],
+                             self.parameters['y-size'],
+                             self.parameters['tilt-y'],
+                             self.parameters['z-center'],
+                             self.parameters['z-size'],
+                             self.parameters['tilt-z'],
+                             self.parameters['distance']*1.0e3,
+                             crystal_translation = g.translation,
+                             omega = om,
+                             axis_orientation1 = self.parameters['wedge'],
+                             axis_orientation2 = self.parameters['chi'])
+        self.gv = transform.compute_g_vectors(tth,eta,om,
+                              float(self.parameters['wavelength']),
+                              self.parameters['wedge'])
         self.gv = Numeric.transpose(self.gv)
 
 
 
-    def map(self):
+    def makemap(self):
+        """
+        Generate a map fit versus position - no args?
+        """
         for m in self.ubisread:
-           g = grain(m)
-           self.scandata=self.allscandata.copy()
-           self.compute_gv(g)
-           h=Numeric.matrixmultiply(g.ubi,Numeric.transpose(self.gv))
-           hint=Numeric.floor(h+0.5).astype(Numeric.Int) # rounds down
-           diff=h-hint
-           drlv=Numeric.sqrt(Numeric.sum(diff*diff,0))
-           indices = Numeric.compress(drlv < 0.05, range(self.scandata.shape[0]))
-           print indices.shape,"hello"
-           self.scandata = Numeric.take(self.allscandata,indices)
-           npts = 10
-           for i in range(npts):
-               for j in range(npts):
-                   x=(i-npts*0.5)*1000/npts
-                   y=(j-npts*0.5)*1000/npts
-                   g.translation[0]=x
-                   g.translation[1]=y
-                   self.compute_gv(g)
-                   for tol in [ 0.1]:
-                       mat = g.ubi.copy()
-                       npks = closest.score_and_refine(mat, self.gv, tol)
-                       # 2nd time with refined
-                       npks = closest.score_and_refine(mat, self.gv, tol)
-                       h=Numeric.matrixmultiply(mat,Numeric.transpose(self.gv))
-                       hint=Numeric.floor(h+0.5).astype(Numeric.Int) # rounds down
-                       diff=h-hint
-                       drlv=Numeric.sqrt(Numeric.sum(diff*diff,0))
-                       tthscore = Numeric.sum(Numeric.sum(hint*diff)*Numeric.sum(hint*diff)/Numeric.sum(h*h))
-                       print x,y, tol, "%5d"%(npks),sum(drlv)/drlv.shape[0],tthscore/drlv.shape[0],indexing.ubitocellpars(mat),
-                   print
-               sys.stdout.flush()
-           print
-           print
-           print
+            g = grain(m)
+            self.scandata=self.allscandata.copy()
+            self.compute_gv(g)
+            h=Numeric.matrixmultiply(g.ubi,Numeric.transpose(self.gv))
+            hint=Numeric.floor(h+0.5).astype(Numeric.Int) # rounds down
+            diff=h-hint
+            drlv=Numeric.sqrt(Numeric.sum(diff*diff,0))
+            indices = Numeric.compress(drlv < 0.05, 
+                                       range(self.scandata.shape[0]))
+            print indices.shape,"hello"
+            self.scandata = Numeric.take(self.allscandata,indices)
+            npts = 10
+            for i in range(npts):
+                for j in range(npts):
+                    x=(i-npts*0.5)*1000/npts
+                    y=(j-npts*0.5)*1000/npts
+                    g.translation[0]=x
+                    g.translation[1]=y
+                    self.compute_gv(g)
+                    for tol in [ 0.1]:
+                        mat = g.ubi.copy()
+                        npks = closest.score_and_refine(mat, self.gv, tol)
+                        # 2nd time with refined
+                        npks = closest.score_and_refine(mat, self.gv, tol)
+                        h=Numeric.matrixmultiply(mat,Numeric.transpose(self.gv))
+                        hint=Numeric.floor(h+0.5).astype(Numeric.Int) 
+                        # rounds down
+                        diff=h-hint
+                        drlv=Numeric.sqrt(Numeric.sum(diff*diff,0))
+                        tthscore = Numeric.sum(Numeric.sum(hint*diff) *
+                                               Numeric.sum(hint*diff) /
+                                               Numeric.sum(h*h))
+                        print x,y, tol, "%5d"%(npks),sum(drlv)/drlv.shape[0],\
+                        tthscore/drlv.shape[0],indexing.ubitocellpars(mat),
+                    print
+                sys.stdout.flush()
+            print
+            print
+            print
 
 if __name__=="__main__":
     import sys
@@ -163,4 +188,4 @@ if __name__=="__main__":
     o.readubis(sys.argv[2])
     o.loadfiltered(sys.argv[3])
     o.compute_gv(grain(o.ubisread[0]))
-    o.map()
+    o.makemap()
