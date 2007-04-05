@@ -15,38 +15,52 @@ example usage:
   4) Process your data using the parameter file you have generated
         eg: fit2dcake.py
 """
-import Numeric
+import Numeric, logging, sys, os
 
-def spr_to_median(filename,outputfilename):
+def spr_to_median(filename, outputfilename):
+    """
+    Takes the median accross rows of an spr file.
+    Intention is to do radial transform.
+    Write out radially transformed as spr and take median.
+    """
     data = []
     for line in open(filename,"r").readlines()[1:]:
-        data.append([float(x) for x in line.split()])
+        data.append([float(x) for x in  line.split()])
     data = Numeric.array(data)
     # print data[512,:]
-    data = Numeric.sort(data,1)
+    data = Numeric.sort(data, 1)
     # print data[512,:]
     x_axis = []
     for line in open(filename+"_y","r").readlines()[4:]:
         x_axis.append(float(line.split()[0]))
     # print len(x_axis)
     # Final result
-    o=open(outputfilename,"w")
-    med = data[:,data.shape[1]/2]
-    sum=Numeric.sum
-    d = data[:,2:-2]
+    o = open(outputfilename, "w")
+    med = data[:, data.shape[1]/2]
+    nsum = Numeric.sum
+    d = data[:, 2:-2]
     # VAR = E(X^2) - E(X)*E(X)
-    EX2 = sum(d*d,1)/d.shape[1]
-    EX = sum(d,1)/d.shape[1]
-    VAR = EX2 - EX*EX
+    EX2 = nsum(d*d, 1) / d.shape[1]
+    EX = nsum(d, 1) / d.shape[1]
+    VAR = EX2 - EX * EX
     try:
         err = Numeric.sqrt(VAR)
-    except:
-        err = Numeric.sqrt(Numeric.where(VAR>0.,VAR,1))
+    except ValueError:
+        err = Numeric.sqrt(Numeric.where(VAR > 0. , VAR , 1))
     #print sum(data[:,2:-2],1).shape,
     #print sum(data[:,2:-2],0).shape
     for i in range(len(x_axis)):
-        o.write("%f   %f    %f\n"%(x_axis[i],med[i],err[i]))
-    print "converted",filename,outputfilename
+        o.write("%f   %f    %f\n"%(x_axis[i], med[i], err[i]))
+    logging.info("converted %s %s"%(filename, outputfilename))
+
+
+def deg(x):
+    """
+    Convert string of radians to degrees helper function
+    """
+    from math import degrees
+    return degrees(float(x))
+
 
 class cakemacrogenerator:
     """
@@ -67,9 +81,12 @@ class cakemacrogenerator:
  3.0E00
  3.0E00
 """
+
+    # list of jobs to process after fit2d finishes
     do_when_finished = []
+    
     # Options when reading in an image on the powder diffraction menu
-    input_options_names=[
+    input_options_names = [
         "DARK CURRENT",
         "DC FILE",
         "FLAT-FIELD",
@@ -79,7 +96,8 @@ class cakemacrogenerator:
         "SPATIAL DIS.",
         "SD FILE"
         ]
-    input_options_values={
+    
+    input_options_values = {
         "DARK CURRENT" : "NO",
         "DC FILE"      : None,
         "FLAT-FIELD"   : "NO",
@@ -91,7 +109,7 @@ class cakemacrogenerator:
         }
 
     # First caking menu parameters
-    image_pars_names=[
+    image_pars_names = [
         "X-PIXEL SIZE",
         "Y-PIXEL SIZE",
         "DISTANCE",
@@ -113,7 +131,7 @@ class cakemacrogenerator:
         "ANGLE OF TILT": 0.899907 }
 
 
-    # Second caking menu parameters
+    # Second fit2d caking menu parameters
     integrate_pars_names = [
         "START AZIMUTH",
         "END AZIMUTH",
@@ -128,7 +146,7 @@ class cakemacrogenerator:
         "GEOMETRY COR."
         ]
 
-    integrate_pars_values= {
+    integrate_pars_values = {
         "START AZIMUTH" :  160.0   ,
         "END AZIMUTH"   : -160.0   ,
         "INNER RADIUS"  :  928.0   ,
@@ -163,40 +181,42 @@ class cakemacrogenerator:
 
     def __init__(self):
         # Object holds a macro in a string
-        self.macro="I ACCEPT\n"
-        self.macro=self.macro+"POWDER DIFFRACTION (2-D)\n"
+        self.macro = "I ACCEPT\n"
+        self.macro = self.macro + "POWDER DIFFRACTION (2-D)\n"
         # Flag to see if you have been through the caking menu yet
-        self.first_time_run=True
+        self.first_time_run = True
         # Flag to check parameters have been read in
-        self.parsread=False
+        self.parsread = False
 
-    def writepars(self,parfile):
+    def writepars(self, outparfile):
+        """
         # Dump all dictionaries to a file as name value
-        pf=open(parfile,"w")
+        """
+        pf = open(outparfile, "w")
 
         d = self.input_options_values
         keys = self.input_options_names
         pf.write("\n# Image correction parameters\n")
         for k in keys:
-            pf.write("%s = %s\n"%(k,d[k]))
+            pf.write("%s = %s\n"%(k, d[k]))
 
         d = self.integrate_pars_values
         keys = self.integrate_pars_names
         pf.write("\n# Integration parameters\n")
         for k in keys:
-            pf.write("%s = %s\n"%(k,d[k]))
+            pf.write("%s = %s\n"%(k, d[k]))
 
         d = self.image_pars_values
         keys = self.image_pars_names
         pf.write("\n# Experiment geometry parameters\n")
         for k in keys:
-            pf.write("%s = %s\n"%(k,d[k]))
+            pf.write("%s = %s\n"%(k, d[k]))
 
         d = self.mask_pars_values
         keys = self.mask_pars_names
         pf.write("\n# Mask and dimensions\n")
         for k in keys:
-            pf.write("%s = %s\n"%(k,d[k]))
+            pf.write("%s = %s\n"%(k, d[k]))
 
         pf.write("\n# I/O parameters\n")
         pf.write("input_extn = %s\n"%(self.input_extn))
@@ -204,28 +224,32 @@ class cakemacrogenerator:
         pf.write("output_extn = %s\n"%(self.output_extn))
         pf.close()
 
-    def readpars(self,parfile):
+    def readpars(self, inparfile):
+        """
         # Read in the parameters for image processing
-        pf=open(parfile,"r").readlines()
+        """
+        pf = open(inparfile, "r").readlines()
         for line in pf:
-            if line[0]=="#" or len(line)<3 or line.find("=")<0:
+            if line[0] == "#" or \
+               len(line) < 3 or \
+               line.find("=") < 0 :
                 continue
             try:
-                key,value = line.split(" = ")
-                value=value.rstrip() # get rid of trailing \n
+                key, value = line.split(" = ")
+                value = value.rstrip() # get rid of trailing \n
             except:
-                print "$$$%s$$$"%(line)
+                print "$$$%s$$$"% (line)
                 raise
             if value == "None":
-                value=None
-            self.setparameter(key,value)
-        self.parsread=True
+                value = None
+            self.setparameter(key, value)
+        self.parsread = True
         self.checkpars()
 
     def checkpars(self):
         """
         Try to catch some (potentially fatal) errors
-        """
+        """ 
         if int(self.mask_pars_values["DIM1_DATA"]) < \
            int(self.integrate_pars_values["RADIAL BINS"]) or \
            int(self.mask_pars_values["DIM2_DATA"]) < \
@@ -235,33 +259,35 @@ class cakemacrogenerator:
            int(self.mask_pars_values["DIM2_DATA"]) < \
            int(self.integrate_pars_values["AZIMUTH BINS"]):
             print "Problem with array dimensions, check your input pars"
-            print "RADIAL BINS",self.integrate_pars_values["RADIAL BINS"]
-            print "AZIMUTH BINS",self.integrate_pars_values["AZIMUTH BINS"]
-            print "DIM1_DATA",self.mask_pars_values["DIM1_DATA"]
-            print "DIM2_DATA",self.mask_pars_values["DIM2_DATA"]
+            print "RADIAL BINS", self.integrate_pars_values["RADIAL BINS"]
+            print "AZIMUTH BINS", self.integrate_pars_values["AZIMUTH BINS"]
+            print "DIM1_DATA", self.mask_pars_values["DIM1_DATA"]
+            print "DIM2_DATA", self.mask_pars_values["DIM2_DATA"]
             sys.exit()
 
 
 
 
-    def setparameter(self,key,value):
-#        print "Trying to set",key,value
+    def setparameter(self, key, value):
+        """
+        #        print "Trying to set",key,value
+        """
         if key in self.integrate_pars_values.keys():
-            self.integrate_pars_values[key]=value
+            self.integrate_pars_values[key] = value
         elif key in self.image_pars_values.keys():
-            self.image_pars_values[key]=value
+            self.image_pars_values[key] = value
         elif key in self.input_options_values.keys():
-            self.input_options_values[key]=value
+            self.input_options_values[key] = value
         elif key in self.mask_pars_values.keys():
-            self.mask_pars_values[key]=value
+            self.mask_pars_values[key] = value
         elif key == "input_extn":
-            self.input_extn=value
+            self.input_extn = value
         elif key == "output_extn":
-            self.output_extn=value
+            self.output_extn = value
         elif key == "saving_format":
-            self.saving_format=value
+            self.saving_format = value
         else:
-            print "Failure to set",key,value
+            print "Failure to set", key, value
 
     # Dictionary to translate .fit2d.def file syntax into macro syntax
 
@@ -276,7 +302,8 @@ class cakemacrogenerator:
         "SD_FILE"                 : "SD FILE",
         "X_PIXEL_SIZE"            : "X-PIXEL SIZE",  # meters
         "Y_PIXEL_SIZE"            : "Y-PIXEL SIZE",  #
-        # "SCAN_TYPE"              : "SCAN TYPE",     # Need to figure out how to interpret
+        # "SCAN_TYPE"              : "SCAN TYPE",     
+             # Need to figure out how to interpret
         "CAKE_DEFAULT_1_DEGREE"   : "1 DEGREE AZ",
         "CAKE_START_AZIMUTH"      : "START AZIMUTH", # radians
         "CAKE_END_AZIMUTH"        : "END AZIMUTH",   # radians
@@ -294,12 +321,6 @@ class cakemacrogenerator:
         }
 
 
-    def deg(x):
-        """
-        Convert string of radians to degrees helper function
-        """
-        from math import degrees
-        return degrees(float(x))
 
     # Convert units from .fit2d.def file to macro units
 
@@ -315,58 +336,60 @@ class cakemacrogenerator:
         }
 
 
-    def generate_pars_from_def_file(self,def_file):
+    def generate_pars_from_def_file(self, def_file):
         """
         Attempt to generate parameters from a .fit2d.def file
         So you have run fit2d, all worked and you cleanly exited to generate the def file
         This function picks up the parameters
         """
-        f=open(def_file,"r")
+        def_file_obj = open(def_file, "r")
         while 1:
             try:
-                key=f.next().rstrip()
-                value=f.next().rstrip()
+                key = def_file_obj.next().rstrip()
+                value = def_file_obj.next().rstrip()
                 if key in self.fit2d_def_names_to_macro_names.keys():
-                    mykey=self.fit2d_def_names_to_macro_names[key]
+                    mykey = self.fit2d_def_names_to_macro_names[key]
                     if key in self.fit2d_def_to_macro_converters.keys():
                         # We have a conversion factor to apply
-                        myvalue =  self.fit2d_def_to_macro_converters[key](value)
+                        myvalue = self.fit2d_def_to_macro_converters[key](value)
                     elif value == "FALSE":
                         myvalue = "NO"
                     elif value == "TRUE":
                         myvalue = "YES"
                     else:
                         myvalue = value
-                    self.setparameter(mykey,myvalue)
+                    self.setparameter(mykey, myvalue)
             except StopIteration:
                 break
 
-    def inputfile(self,filein):
+    def inputfile(self, filein):
         """
         Read in a file on the powder menu in fit2d
         """
-        self.macro=self.macro+"INPUT\n"+filein+"\n"
-        if self.input_extn.find("mccd")>-1:
-            self.macro+="O.K.\n"
+        self.macro = self.macro + "INPUT\n" + filein + "\n"
+        if self.input_extn.find("mccd") > -1:
+            self.macro += "O.K.\n"
         for name in self.input_options_names:
-            value=self.input_options_values[name]
-            if name.find("MASK")>=0:
+            value = self.input_options_values[name]
+            if name.find("MASK") >= 0:
                 continue
-            if value!=None:
-                self.macro=self.macro+name+"\n"+str(value)+"\n"
-        self.macro=self.macro+"O.K.\n"
+            if value != None:
+                self.macro = self.macro + name + "\n" + str(value) + "\n"
+        self.macro = self.macro + "O.K.\n"
 
     def addmask(self):
         """
         Read in a mask file if requested in input file
         """
         #print "Trying to add mask"
-        #print self.mask_pars_values["USE MASK"], self.mask_pars_values["MASK FILE"]
-        #print self.mask_pars_values["USE MASK"] == "YES", self.mask_pars_values["MASK FILE"] is not None
+        #print self.mask_pars_values["USE MASK"], 
+        # self.mask_pars_values["MASK FILE"]
+        #print self.mask_pars_values["USE MASK"] == "YES", 
+        # self.mask_pars_values["MASK FILE"] is not None
         if self.mask_pars_values["USE MASK"] == "YES" and \
            self.mask_pars_values["MASK FILE"] is not None:
-            self.macro=self.macro+"MASK\nLOAD MASK\n"+\
-                        self.mask_pars_values["MASK FILE"]+\
+            self.macro = self.macro + "MASK\nLOAD MASK\n" +\
+                        self.mask_pars_values["MASK FILE"] +\
                         "\nEXIT\n"
 
 
@@ -375,47 +398,56 @@ class cakemacrogenerator:
         Set the image parameters after cake -> integrate
         """
         for name in self.image_pars_names:
-            value=self.image_pars_values[name]
-            if value!=None:
-                self.macro=self.macro+name+"\n"+str(value)+"\n"
-        self.macro=self.macro+"O.K.\n"
+            value = self.image_pars_values[name]
+            if value != None:
+                self.macro = self.macro + name + "\n" + str(value) + "\n"
+        self.macro = self.macro + "O.K.\n"
 
     def cakepars(self):
         """
         Set the caking parameters (second part of cake -> integrate)
         """
         for name in self.integrate_pars_names:
-            value=self.integrate_pars_values[name]
-            if value!=None:
-                self.macro=self.macro+name+"\n"+str(value)+"\n"
-        self.macro=self.macro+"O.K.\n"
+            value = self.integrate_pars_values[name]
+            if value != None:
+                self.macro = self.macro + name + "\n" + str(value) + "\n"
+        self.macro = self.macro + "O.K.\n"
 
-    def outputfile(self,file):
+    def ap(self, *args):
+        """
+        append to macro
+        """
+        for a in args:
+            self.macro = self.macro + a
+
+    def outputfile(self, filename):
         """
         Save the memory from fit2d (probably your results)
-        TODO Make this format friendly - deal with other formats
+        TODO Make this format friendly - deal with other formats that have special options
         """
         if self.saving_format.find("SPREAD SHEET")>-1:
-            self.do_when_finished.append([spr_to_median,file,file[:-3]+"med"])
-            self.macro=self.macro+"EXIT\nEXIT\nIMAGE PROCESSING\nGEOMETRIC\nTRANSPOSE\n"
-            self.macro=self.macro+"EXIT\nEXIT\nPOWDER DIFFRACTION\nOUTPUT\n"+self.saving_format
-            self.macro=self.macro+"\nYES\n"
-            self.macro=self.macro+file+"\n"
-            self.macro=self.macro+"O.K.\n"
+            self.do_when_finished.append(
+                  [spr_to_median, filename, filename[:-3] + "med"]
+                  )
+            self.ap("EXIT\nEXIT\nIMAGE PROCESSING\nGEOMETRIC\nTRANSPOSE\n")
+            self.ap("EXIT\nEXIT\nPOWDER DIFFRACTION\nOUTPUT\n") 
+            self.ap(self.saving_format)
+            self.ap("\nYES\n", filename, "\n")
+            self.ap("O.K.\n")
             # Now output a chi files to get the x axis and y axis
-            self.macro=self.macro+"OUTPUT\nCHIPLOT\nFILE NAME\n"+file+"_x\n"
+            self.macro=self.macro+"OUTPUT\nCHIPLOT\nFILE NAME\n"+filename+"_x\n"
             self.macro=self.macro+"OUTPUT ROWS\nYES\nO.K.\n"
-            self.macro=self.macro+"OUTPUT\nCHIPLOT\nFILE NAME\n"+file+"_y\n"
+            self.macro=self.macro+"OUTPUT\nCHIPLOT\nFILE NAME\n"+filename+"_y\n"
             self.macro=self.macro+"OUTPUT ROWS\nNO\nO.K.\n"
 
         else:
             self.macro=self.macro+"EXIT\nOUTPUT\n%s\n"%(self.saving_format)
             self.macro=self.macro+"FILE NAME\n"
-            self.macro=self.macro+file+"\n"
+            self.macro=self.macro+filename+"\n"
             self.macro=self.macro+"O.K.\n"
 
 
-    def cakeafile(self,filein,fileout):
+    def cakeafile(self, filein, fileout):
         """
         Take one input file and convert it to one output file
         """
@@ -443,12 +475,12 @@ class cakemacrogenerator:
         # Conventionally exchange and put previous back in
         self.macro=mac+self.macro+"EXCHANGE\n"
 
-    def cakefileglob(self,stem,replace=False,outstem=None):
-        import glob,os
-        filelist=glob.glob("%s????.%s"%(stem,self.input_extn))
-        if outstem is None: outstem=stem
+    def cakefileglob(self,stem_arg,replace=False,outstem=None):
+        import glob
+        filelist=glob.glob("%s????.%s"%(stem_arg,self.input_extn))
+        if outstem is None: outstem=stem_arg
         outputfilelist = [s.replace(self.input_extn,self.output_extn) for s in filelist ]
-        outputfilelist = [s.replace(stem,outstem) for s in outputfilelist ]
+        outputfilelist = [s.replace(stem_arg,outstem) for s in outputfilelist ]
         print filelist
         print outputfilelist
         if not replace:
@@ -464,17 +496,16 @@ class cakemacrogenerator:
 
 
 
-    def cakefileseries(self,stem,first,last,outstem=None):
+    def cakefileseries(self,stem_arg,first_arg,last_arg,outstem=None):
         """
         Cake a file sequence - eventually emulating fit2d run sequence command
         """
-        import sys
-        for i in range(first,last+1):
+        for i in range(first_arg,last_arg+1):
             if self.input_extn.lstrip() == "":
-                filein ="%s.%04d%s"%(stem,i,self.input_extn)
+                filein ="%s.%04d%s"%(stem_arg,i,self.input_extn)
             else:
-                filein ="%s%04d.%s"%(stem,i,self.input_extn)
-            if outstem == None: outstem=stem
+                filein ="%s%04d.%s"%(stem_arg,i,self.input_extn)
+            if outstem == None: outstem=stem_arg
             fileout="%s%04d.%s"%(outstem,i,self.output_extn)
             self.cakeafile(filein,fileout)
             if i%100 == 0:
@@ -486,7 +517,7 @@ class cakemacrogenerator:
         Run the generated macro
         """
         self.macro=self.macro+"EXIT\nEXIT FIT2d\nYES\n"
-        import os, time, tempfile
+        import time, tempfile
         tmpfilename=tempfile.mkstemp(dir=".")[1]
         tmpfile=open(tmpfilename,"w")
         tmpfile.write(self.macro)
@@ -497,11 +528,11 @@ class cakemacrogenerator:
             time.sleep(1)
             try:
                 displaywas=os.environ["DISPLAY"]
-            except:
+            except KeyError:
                 displaywas=":0"
             try:
                 os.environ["DISPLAY"]=os.environ["HOST"]+":1"
-            except:
+            except KeyError:
                 os.environ["DISPLAY"]=":1"
         array=str(self.mask_pars_values["DIM1_DATA"])+"x"+str(self.mask_pars_values["DIM2_DATA"])
         os.system("/users/wright/bin/fit2d_12_081_i686_linux2.4.20 -dim%s -mac%s"%(array,tmpfilename))
@@ -516,36 +547,44 @@ class cakemacrogenerator:
 
 if __name__=="__main__":
 
-    import sys
+    # already imported sys
 
     from optparse import OptionParser
     parser=OptionParser(usage="%prog stem_name first last parfile")
-    parser.add_option("-c","--create-parameters",action="store",type="string",dest="cpars",
-                      help="Generate parameter file from DEFFILE file to save in CPARS")
-    parser.add_option("-d","--def-file",action="store",type="string",dest="deffile",
-                      help="The fit2d .fit2d.def to read, defaults to $HOME/.fit2d.def")
-    parser.add_option("-p","--pars",action="store",type="string",dest="parfile",
+    parser.add_option("-c", "--create-parameters", action="store", 
+          type="string", dest="cpars",
+          help="Generate parameter file from DEFFILE file to save in CPARS")
+    parser.add_option("-d", "--def-file", action="store", type="string",
+                      dest="deffile",
+          help="The fit2d .fit2d.def to read, defaults to $HOME/.fit2d.def")
+    parser.add_option("-p", "--pars", action="store", type="string",
+                      dest="parfile",
                       help="Input parameter file")
-    parser.add_option("-s","--show",action="store",type="string",dest="show",# default="SHOW",
+    parser.add_option("-s", "--show", action="store", type="string",
+                      dest="show",# default="SHOW",
                       help="Show the flickering blue window")
-    parser.add_option("-g","--glob",action="store",type="string",dest="glob",
+    parser.add_option("-g", "--glob", action="store", type="string",
+                      dest="glob",
                       help="Ignore numbers and glob for files, eg -g lab6_")
-    parser.add_option("-b","--debug",action="store",type="string",dest="debug",
+    parser.add_option("-b", "--debug", action="store", type="string",
+                      dest="debug",
                       help="Debugging - write macro to file and stop")
-    parser.add_option("-f","--forceoverwrite",action="store",type="string",dest="forceoverwrite",
+    parser.add_option("-f", "--forceoverwrite", action="store", type="string",
+                      dest="forceoverwrite",
                       help="Force overwrite when globbing")
-    parser.add_option("-o","--outstem",action="store",type="string",dest="outstem",
+    parser.add_option("-o", "--outstem", action="store", type="string",
+                      dest="outstem",
                       help="Output file stem, if different from input")
-    options , args = parser.parse_args()
+    options , userargs = parser.parse_args()
 
     caker=cakemacrogenerator()
 
     if options.cpars != None:
-        import os
+        # already imported os
         if options.deffile == None:
             f = os.path.join( os.environ["HOME"] , ".fit2d.def" )
         else:
-            f=options.deffile
+            f = options.deffile
         caker.generate_pars_from_def_file( f )
         caker.writepars(options.cpars)
         sys.exit()
@@ -559,11 +598,11 @@ if __name__=="__main__":
         sys.exit()
 
     try:
-        stem = args[0]
-        first = int(args[1])
-        last = int(args[2])
-        parfile = args[3]
-    except:
+        stem = userargs[0]
+        first = int(userargs[1])
+        last = int(userargs[2])
+        parfile = userargs[3]
+    except IndexError:
         parser.print_usage()
         sys.exit()
 
