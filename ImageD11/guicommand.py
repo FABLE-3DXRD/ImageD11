@@ -28,7 +28,9 @@ This class will eventually offer macro recording capability.
 
 
 # Things to offer from gui
-from ImageD11 import peakmerge, indexing, transformer, imaged11
+from ImageD11 import peakmerge, indexing, transformer
+
+# import imaged11 # breaks the code for esrf/fable
 
 
 # To autoconvert arrays to lists for Java XMLRPC

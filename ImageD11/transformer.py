@@ -61,7 +61,7 @@ class transformer:
         # this sets defaults according to class dict.
         self.parameterobj=parameters.parameters(**self.pars)
         vars = ['y_center','z_center','distance','tilt_y','tilt_z']
-        incs = [ .1 , .1 , 100 , transform.radians(0.1) , transform.radians(0.1) ]
+        incs = [ .1 , .1 , 1000.0 , transform.radians(0.1) , transform.radians(0.1) ]
         self.parameterobj.varylist=vars
         for v,i in zip(vars,incs):
             self.parameterobj.stepsizes[v] = i

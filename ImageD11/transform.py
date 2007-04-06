@@ -21,7 +21,18 @@
 """
 Functions for transforming peaks
 """
+import logging
 
+from Numeric import *
+
+try:
+    # crazy debug 
+    test = arccos(zeros(10,Float))
+except:
+    print dir()
+    raise
+
+from math import pi
 
 def cross_product(a,b):
     """ returns axb for two len(3) vectors a,b"""
@@ -29,10 +40,6 @@ def cross_product(a,b):
     return array([a[1]*b[2]-a[2]*b[1],
                   a[2]*b[0]-a[0]*b[2],
                   a[0]*b[1]-a[1]*b[0]])
-
-from Numeric import *
-
-from math import pi
 
 def degrees(x):
     """Convenience function"""
@@ -116,7 +123,6 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
         #print a.shape,c.shape
         #   print a.shape,c.shape
         costwotheta = (b*b + c*c - a*a)/2/b/c
-        #print costwotheta
         twothetarad=arccos(costwotheta)
         twotheta=degrees(twothetarad)
         return twotheta, eta
