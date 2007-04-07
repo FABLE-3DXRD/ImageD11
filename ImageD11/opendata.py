@@ -55,9 +55,18 @@ def opendata(filename):
 
 def getnum(name):
     # try to figure out the file number
-    parts=name.split(".")
-    
-
+    # guess it starts at the back
+    nl = []
+    first = False
+    for c in name[::-1]: # this means iterate backwards through the string
+        if c.isdigit():
+            first = True
+            nl.append(c)
+            continue
+        if first: break
+    num = "".join(nl[::-1])
+    return int(num)
+            
 def makename(stem,num,extn,width=4):
     """
     Filename creation mydata1234.edf etc
