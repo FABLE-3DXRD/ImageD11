@@ -9,6 +9,8 @@
 
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 import logging 
+import sys
+logger = logging.getLogger()
 
 class Server(SimpleXMLRPCServer):
     """
@@ -72,19 +74,55 @@ class Server(SimpleXMLRPCServer):
         self.quit = 0
         while not self.quit:
             self.handle_request()
+            # try to help out the reads of stderr/stdout in the java gui
+            sys.stdout.flush()
+            sys.stderr.flush()
 
-def shutdown():
-    print "ImageD11Server(): called shutdown()"
-    server.quit = 1
+
+
+
+
+def RunXMLRPCServer(port):
+        """Run the XMLRPCServer, but do so in a different thread.
+        The main thread simply sleeps so that it can respond to Ctrl+Break
+        http://mail.python.org/pipermail/python-list/2003-July/212751.html
+        """
+        def XMLRPCThread():
+            server = Server( ("localhost", port ), logRequests=0 )
+            def shutdown():
+                logging.info( "ImageD11Server(): called shutdown()" ) 
+                server.quit = 1
+            server.register_function(shutdown)
+            server.register_instance(logger.setLevel)
+            server.register_instance(guicommander)
     
+            #Go into the main listener loop
+            logging.info("Listening on port "+str(port))
+            server.serve_forever()
+
+        import threading, signal, time
+        th = threading.Thread(target=XMLRPCThread)
+        th.setDaemon(1)
+        th.start()
+        # Make ctrl+break raise a KeyboardInterrupt exception.
+        signal.signal(signal.SIGBREAK, signal.default_int_handler)
+        try:
+            while th.isAlive():
+                time.sleep(1)
+        except:
+            logging.info("Break pressed.")
+            sys.stdout.flush()
+        
+
 if __name__=="__main__":
 
-    logger = logging.getLogger('/tmp/xmlrpcserver')
-    hdlr = logging.FileHandler('/tmp/xmlrpcserver.log')
-    formatter = logging.Formatter("%(asctime)s  %(levelname)s  %(message)s")
-    hdlr.setFormatter(formatter)
-    logger.addHandler(hdlr)
-    logger.setLevel(logging.INFO)
+    logger = logging.getLogger()
+# drop everything on stdin/stdout
+#    hdlr = logging.FileHandler('/tmp/xmlrpcserver.log')
+#    formatter = logging.Formatter("%(asctime)s  %(levelname)s  %(message)s")
+#    hdlr.setFormatter(formatter)
+#    logger.addHandler(hdlr)
+    logger.setLevel(logging.DEBUG)
 
     from ImageD11 import guicommand
     guicommander = guicommand.guicommand()
@@ -96,11 +134,7 @@ if __name__=="__main__":
             port = int(sys.argv[1])
         except:
             print "usage: %s [portnumber]"%(sys.argv[0])
+    RunXMLRPCServer(port)
 
-    server = Server( ("localhost", port ), logRequests=1 )
-    server.register_function(shutdown)
-    server.register_instance(guicommander)
 
-    #Go into the main listener loop
-    print "Listening on port ",port
-    server.serve_forever()
+
