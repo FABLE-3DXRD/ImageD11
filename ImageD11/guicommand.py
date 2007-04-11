@@ -26,7 +26,7 @@ the gui side of this class.
 This class will eventually offer macro recording capability.
 """
 
-
+import logging, sys
 # Things to offer from gui
 from ImageD11 import peakmerge, indexing, transformer
 
@@ -91,6 +91,8 @@ myindexer = indexing.indexer()
                 ran="%s %s %s=%s "%(ran,addedcomma,k,v)
                 addedcomma=","
             ran+=" )\n"
+            print "Running:",ran,
+            sys.stdout.flush()
             ret = func(*args, **kwds)
 
         except:
@@ -100,8 +102,11 @@ myindexer = indexing.indexer()
             print func
             print args
             print kwds
-            raise
-        print "Ran:",ran
+            print "Exception occured"
+            import traceback
+            traceback.print_exc()
+            return "Exception occured in the python " + ran
+        print " OK!"
         self.commandscript+=ran
         return ret
 
