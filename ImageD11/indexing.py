@@ -18,78 +18,76 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
-from Numeric import *
+import Numeric as n
 from ImageD11 import closest
 
+import math, time, sys, logging
 
-import math,time,sys
+def readubis(ubifile):
+    """read ubifile and return a list of ubi arrays """
+    f = open(ubifile, "r")
+    ubisread = []
+    u = []
+    for line in f:
+        vals = [ float(x) for x in line.split() ]
+        if len(vals) == 3:
+            u = u + [vals]
+        if len(u)==3:
+            ubisread.append(n.array(u))
+            u = []
+    f.close()
+    return ubisread
 
-def readubis(ubifile=None):
-	"""
-	returns a list of ubi arrays
-	"""
-        try:
-            import tkFileDialog,os
-            if ubifile==None:
-               ubifile=tkFileDialog.askopenfilename(initialdir=os.getcwd())
-        except:
-            pass
-	if ubifile is None:
-            raise Exception("No ubi filename supplied")
-        f=open(ubifile,"r")
-        ubisread=[]
-        u = []
-        for line in f:
-            vals = [ float(x) for x in line.split() ]
-            if len(vals) == 3:
-                u = u + [vals]
-            if len(u)==3:
-                ubisread.append(array(u))
-                u = []
-        f.close()
-        return ubisread
-
+def write_ubi_file(filename, ubilist):
+    """ save 3x3 matrices into file """
+    f=open(filename,"w")
+    for u in ubilist:
+        f.write("%f %f %f\n"  %(u[0,0],u[0,1],u[0,2]))
+        f.write("%f %f %f\n"  %(u[1,0],u[1,1],u[1,2]))
+        f.write("%f %f %f\n\n"%(u[2,0],u[2,1],u[2,2]))
+    f.close()
 
 def ubitocellpars(ubi):
-    """
-    convert ubi matrix to unit cell
-    """
-    g=matrixmultiply(ubi,transpose(ubi))
-    a=sqrt(g[0,0])
-    b=sqrt(g[1,1])
-    c=sqrt(g[2,2])
-    from math import acos, degrees
-    alpha=degrees(acos(g[1,2]/b/c))
-    beta =degrees(acos(g[0,2]/a/c))
-    gamma=degrees(acos(g[0,1]/a/b))
-    return a,b,c,alpha,beta,gamma
+    """ convert ubi matrix to unit cell """
+    g = n.matrixmultiply(ubi, n.transpose(ubi))
+    from math import acos, degrees, sqrt
+    a = sqrt(g[0,0])
+    b = sqrt(g[1,1])
+    c = sqrt(g[2,2])
+    alpha = degrees( acos(g[1,2]/b/c))
+    beta  = degrees( acos(g[0,2]/a/c))
+    gamma = degrees( acos(g[0,1]/a/b))
+    return a, b, c, alpha, beta, gamma
 
 def mod_360(theta, target):
     """
     Find multiple of 360 to add to theta to be closest to target
     """
-    diff=theta-target
+    diff = theta - target
     while diff < -180:
-        theta=theta+360
-        diff=theta-target
+        theta = theta + 360
+        diff = theta - target
     while diff > 180:
-        theta=theta-360
-        diff=theta-target
+        theta = theta - 360
+        diff = theta - target
     return theta
 
-def drlv(UBI,gv):
+def calc_drlv2(UBI, gv):
     """
     Get the difference from being integer hkls
+    UBI: ubi matrix
+    gv: list of g-vectors
+    returns drlv2 = (h_calc - h_int)^2
     """
-    h=matrixmultiply(UBI,transpose(gv))
-    hint=floor(h+0.5).astype(Int) # rounds down
-    diff=h-hint
-    drlv2=sum(diff*diff,0)
+    h = n.matrixmultiply(UBI, n.transpose(gv))
+    hint = n.floor(h + 0.5).astype(n.Int) # rounds down
+    diff = h - hint
+    drlv2 = n.sum(diff * diff,0)
     return drlv2
 
 
 
-def refine(UBI,gv,tol,quiet=True):
+def refine(UBI, gv, tol, quiet=True):
     """
     Refine an orientation matrix and rescore it.
 
@@ -105,49 +103,50 @@ def refine(UBI,gv,tol,quiet=True):
     #      print "UBI\n",UBI
     #      print "Scores before",self.score(UBI)
     # Need to find hkl indices for all of the peaks which are indexed
-    h=matrixmultiply(UBI,transpose(gv))
-    hint=floor(h+0.5).astype(Int) # rounds down
-    diff=h-hint
-    drlv2=sum(diff*diff,0)
+    h = n.matrixmultiply(UBI, n.transpose(gv))
+    hint = n.floor(h+0.5).astype(n.Int) # rounds down
+    diff = h - hint
+    drlv2 = n.sum( diff * diff, 0)
     tol = float(tol)
-    tol = tol*tol
+    tol = tol * tol
     # Only use peaks which are assigned to rings for refinement
-    ind = compress( less(drlv2,tol) , arange(gv.shape[0]) )
+    ind = n.compress( n.less(drlv2,tol) , n.arange(gv.shape[0]) )
     # scoreb4=ind.shape[0]
-    contribs = take(drlv2,ind)
+    contribs = n.take(drlv2,ind)
     try:
-        fitb4=math.sqrt(sum(contribs)/contribs.shape[0])
+        fitb4=math.sqrt(n.sum(contribs)/contribs.shape[0])
         if not quiet:
-            print "Fit before refinement %.8f %5d"%(fitb4,contribs.shape[0]),
+            logging.debug("Fit before refinement %.8f %5d"% (
+                                             fitb4, contribs.shape[0]))
     except:
-        print "No contributing reflections for\n",UBI
+        logging.error("No contributing reflections for \n%s"%(str(UBI)))
         raise
     # drlv2_old=drlv2
-    R=zeros((3,3),Float)
-    H=zeros((3,3),Float)
+    R=n.zeros((3,3),n.Float)
+    H=n.zeros((3,3),n.Float)
     for i in ind:
         r = gv[i,:]
-        k = hint[:,i].astype(Float)
+        k = hint[:,i].astype(n.Float)
         #           print r,k
-        R = R + outerproduct(r,k)
-        H = H + outerproduct(k,k)
+        R = R + n.outerproduct(r,k)
+        H = H + n.outerproduct(k,k)
     from LinearAlgebra import inverse
     try:
         HI=inverse(H)
-        UBoptimal=matrixmultiply(R,HI)
+        UBoptimal=n.matrixmultiply(R,HI)
         UBIo=inverse(UBoptimal)
     except:
         # A singular matrix - this sucks.
         UBIo=UBI
-    h=matrixmultiply(UBIo,transpose(gv))
-    hint=floor(h+0.5).astype(Int) # rounds down
+    h=n.matrixmultiply(UBIo,n.transpose(gv))
+    hint=n.floor(h+0.5).astype(n.Int) # rounds down
     diff=h-hint
-    drlv2=sum(diff*diff,0)
-    ind = compress( less(drlv2,tol), arange(gv.shape[0]) )
+    drlv2=n.sum(diff*diff,0)
+    ind = n.compress( n.less(drlv2,tol), n.arange(gv.shape[0]) )
     # scorelastrefined=ind.shape[0]
-    contribs = take(drlv2,ind)
+    contribs = n.take(drlv2,ind)
     try:
-        fitlastrefined=math.sqrt(sum(contribs)/contribs.shape[0])
+        fitlastrefined=math.sqrt(n.sum(contribs)/contribs.shape[0])
         if not quiet:
             print "after %.8f %5d"%(fitlastrefined,contribs.shape[0])
     except:
@@ -195,7 +194,7 @@ class indexer:
         self.gv=gv
         self.wedge=0.0 # Default
         if gv !=None:
-            self.gvflat=reshape(fromstring(self.gv.tostring(),Float),self.gv.shape) # Makes it contiguous in memory, hkl fast index
+            self.gvflat=n.reshape(n.fromstring(self.gv.tostring(),n.Float),self.gv.shape) # Makes it contiguous in memory, hkl fast index
 
         self.cosine_tol=cosine_tol
         self.wavelength=wavelength
@@ -237,7 +236,7 @@ class indexer:
     
 
     def out_of_eta_range(self,e):
-
+        """ decide if an eta is going to be kept """
         if e < abs(self.eta_range) and e > -abs(self.eta_range):
             return True
         if e < -180.+abs(self.eta_range) or e > 180.-abs(self.eta_range):
@@ -249,43 +248,43 @@ class indexer:
         Assign the g-vectors to hkl rings
         """
         # rings are in self.unitcell
-        limit = maximum.reduce(self.ds)
+        limit = n.maximum.reduce(self.ds)
         print "Maximum d-spacing considered",limit
-        self.unitcell.makerings(limit,tol=self.ds_tol)
-        dsr=self.unitcell.ringds
-        self.ra=zeros(self.gv.shape[0],Int)-1
-        self.na=zeros(len(dsr),Int)
+        self.unitcell.makerings(limit, tol = self.ds_tol)
+        dsr = self.unitcell.ringds
+        self.ra = n.zeros(self.gv.shape[0],n.Int)-1
+        self.na = n.zeros(len(dsr),n.Int)
         print "Ring assignment array shape",self.ra.shape
-        tol=float(self.ds_tol)
+        tol = float(self.ds_tol)
         for i in range(self.ra.shape[0]):
             # Assign the peak to a ring (or no ring)
-            ds=self.ds[i]
-            best=999.
+            ds = self.ds[i]
+            best = 999.
             for j in range(len(dsr)):
-                diff=abs(ds-dsr[j])
+                diff = abs(ds-dsr[j])
                 if diff < tol:
                     if diff < best:
                         self.ra[i]=j
                         best=diff
         # Report on assignments
-        ds=array(self.ds)
+        ds=n.array(self.ds)
         print "Ring     (  h,  k,  l) Mult  total indexed to_index  "
         for j in range(len(dsr)):
-            ind = compress( equal(self.ra,j), arange(self.ra.shape[0]) )
+            ind = n.compress( n.equal(self.ra,j), n.arange(self.ra.shape[0]) )
             self.na[j]=ind.shape[0]
-            n_indexed  = sum(where( take(self.ga,ind) >  -1, 1, 0))
-            n_to_index = sum(where( take(self.ga,ind) == -1, 1, 0))
+            n_indexed  = n.sum(n.where( n.take(self.ga,ind) >  -1, 1, 0))
+            n_to_index = n.sum(n.where( n.take(self.ga,ind) == -1, 1, 0))
             # diffs = abs(take(ds,ind) - dsr[j])
             h=self.unitcell.ringhkls[dsr[j]][0]
             print "Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d"%(j,h[0],h[1],h[2],len(self.unitcell.ringhkls[dsr[j]]),
                      self.na[j],n_indexed,n_to_index)
         # We will only attempt to index g-vectors which have been assigned to hkl rings (this gives a speedup if there
         # are a lot of spare peaks
-        ind = compress( greater(self.ra,-1) , arange(self.ra.shape[0]) )
-        self.gvr = take(self.gv , ind)
+        ind = n.compress( n.greater(self.ra,-1) , n.arange(self.ra.shape[0]) )
+        self.gvr = n.take(self.gv , ind)
         print "Using only those peaks which are assigned to rings for scoring trial matrices"
         print "Shape of scoring matrix",self.gvr.shape
-        self.gvflat=reshape(fromstring(self.gvr.tostring(),Float),self.gvr.shape) # Makes it contiguous in memory, hkl fast index
+        self.gvflat=n.reshape(n.fromstring(self.gvr.tostring(),n.Float),self.gvr.shape) # Makes it contiguous in memory, hkl fast index
 
     def friedelpairs(self,filename):
         """
@@ -298,12 +297,12 @@ class indexer:
         dsr=self.unitcell.ringds
         nring = len(dsr)
         for j in range( nring ):
-            ind = compress( equal(self.ra,j), arange(self.ra.shape[0]) )
+            ind = n.compress( n.equal(self.ra,j), n.arange(self.ra.shape[0]) )
             # ind is the indices of the ring assigment array - eg which hkl is this gv
             #
             if len(ind)==0:
                 continue
-            thesepeaks = take(self.gv,ind)
+            thesepeaks = n.take(self.gv,ind)
             #
             h=self.unitcell.ringhkls[dsr[j]][0]
             #
@@ -314,10 +313,10 @@ class indexer:
             out.write("# score eta1 omega1 tth1 gv1_x gv1_y gv1_z eta2 omega2 tth2 gv2_x gv2_y gv2_z\n")
             for k in range(thesepeaks.shape[0]):
                 nearlyzero = thesepeaks + thesepeaks[k]
-                mag = sum(nearlyzero*nearlyzero,1)
-                b = argmin(mag)
+                mag = n.sum(nearlyzero*nearlyzero,1)
+                b = n.argmin(mag)
                 if b > k:
-                    out.write("%f "%( sqrt(mag[b]) ) )
+                    out.write("%f "%( n.sqrt(mag[b]) ) )
                     out.write("%f %f %f %f %f %f    "%(self.eta[k],self.omega[k],self.tth[k],self.gv[k][0],self.gv[k][1],self.gv[k][2]))
                     out.write("%f %f %f %f %f %f\n"%(self.eta[b],self.omega[b],self.tth[b],self.gv[b][0],self.gv[b][1],self.gv[b][2]))
 
@@ -354,11 +353,11 @@ class indexer:
             print math.acos(c)*180/math.pi,c
         #
         # Need indices of gvectors to test
-        iall = arange(self.gv.shape[0])
+        iall = n.arange(self.gv.shape[0])
         #
         # Optionally only used unindexed peaks here? Make this obligatory
-        i1 = compress(logical_and(equal(self.ra,self.ring_1), self.ga==-1  ) , iall).tolist()
-        i2 = compress(logical_and(equal(self.ra,self.ring_2), self.ga==-1  ) , iall).tolist()
+        i1 = n.compress(n.logical_and(n.equal(self.ra,self.ring_1), self.ga==-1  ) , iall).tolist()
+        i2 = n.compress(n.logical_and(n.equal(self.ra,self.ring_2), self.ga==-1  ) , iall).tolist()
         print "Number of peaks in ring 1:",len(i1)
         print "Number of peaks in ring 2:",len(i2)
         print "Minimum number of peaks to identify a grain",self.minpks
@@ -368,20 +367,20 @@ class indexer:
         self.hits=[]
         tol=float(self.cosine_tol)
         # ng=0
-        mp=sqrt(sum(self.gv*self.gv,1))
+        mp=n.sqrt(n.sum(self.gv*self.gv,1))
         # print mp.shape
-        ps1 = take(self.gv,i1,0)
-        mp1 = take(mp,i1,0)
+        ps1 = n.take(self.gv,i1,0)
+        mp1 = n.take(mp,i1,0)
         n1 = ps1.copy()
-        ps2 = take(self.gv,i2,0)
-        mp2 = take(mp,i2,0)
+        ps2 = n.take(self.gv,i2,0)
+        mp2 = n.take(mp,i2,0)
         n2 = ps2.copy()
         # print "mp1.shape",mp1.shape
         # print "n1[:,1].shape",n1[:,1].shape
         for i in range(3):
             n1[:,i]=n1[:,i]/mp1
             n2[:,i]=n2[:,i]/mp2
-        cs = array(coses,Float)
+        cs = n.array(coses,n.Float)
         # found=0
         hits=[]
         start = time.time()
@@ -391,7 +390,7 @@ class indexer:
         for i in range(len(i1)):
             if i%onepercent == 0:
                 print "Percent done %6.3f%%   ... potential hits %-6d \r"%(i*100./len(i1),len(hits)),
-            costheta=matrixmultiply(n2,n1[i])
+            costheta=n.matrixmultiply(n2,n1[i])
             best,diff = closest.closest(costheta,cs)
             if diff < tol:
                 hits.append( [ diff, i1[i], i2[best] ])
@@ -419,17 +418,15 @@ class indexer:
                 bins.append(start)
             bins.append(-start)
             bins.reverse()
-            bins=array(bins)
-        hist = zeros((len(ubilist),bins.shape[0]-1),Int)
+            bins=n.array(bins)
+        hist = n.zeros((len(ubilist),bins.shape[0]-1),n.Int)
         j=0
         for UBI in ubilist:
-            h=matrixmultiply(UBI,transpose(self.gv))
-            hint=floor(h+0.5).astype(Int) # rounds down
-            diff=h-hint
-            drlv=sort(sqrt(sum(diff*diff,0))) # always +ve
+            drlv2 = calc_drlv2(UBI, self.gv)
+            drlv = n.sort(n.sqrt(drlv2)) # always +ve
             if drlv[-1]>0.866:
                 print "drlv of greater than 0.866!!!",drlv[-1]
-            positions =  searchsorted(drlv,bins)
+            positions =  n.searchsorted(drlv,bins)
             hist[j,:] =  positions[1:]-positions[:-1]
             j=j+1
         #for i in range(bins.shape[0]-1):
@@ -466,7 +463,7 @@ class indexer:
                 t1=time.time()
                 # n=self.score(UBI)
                 # Function call overhead actually makes a big difference here
-                n=closest.score(UBI,gv,tol)
+                npk=closest.score(UBI,gv,tol)
                 t2=time.time()
                 tor=tor+t1-t0
                 ts=ts+t2-t1
@@ -476,17 +473,17 @@ class indexer:
                 print self.gv[i]
                 print self.gv[j]
                 raise
-            if n > self.minpks:
+            if npk > self.minpks:
                 # See if we already have this grain...
                 try:
                     ubio=self.refine(self.unitcell.UBI.copy()) # refine the orientation
                     ind=self.getind(ubio) # indices of peaks indexed
-                    ga=take(self.ga,ind)  # previous grain assignments
-                    uniqueness=sum(where(ga==-1,1,0))*1.0/ga.shape[0]
+                    ga=n.take(self.ga,ind)  # previous grain assignments
+                    uniqueness=n.sum(n.where(ga==-1,1,0))*1.0/ga.shape[0]
                     if uniqueness > self.uniqueness:
-                        put(self.ga,ind,len(self.scores)+1)
+                        n.put(self.ga,ind,len(self.scores)+1)
                         self.ubis.append(ubio)
-                        self.scores.append(n)
+                        self.scores.append(npk)
                         ng=ng+1
                     else:
                         nuniq=nuniq+1
@@ -497,12 +494,12 @@ class indexer:
         print "Number of orientations with more than",self.minpks,"peaks is",len(self.ubis)
         print "Time taken",time.time()-start
         if len(self.ubis)>0:
-            bestfitting=argmax(self.scores)
+            bestfitting=n.argmax(self.scores)
             print "UBI for best fitting\n",self.ubis[bestfitting]
             print "Unit cell\n",ubitocellpars(self.ubis[bestfitting])
             print "Indexes",self.scorelastrefined,"peaks, with <drlv2>=",self.fitlastrefined
             print "That was the best thing I found so far"
-            notaccountedfor = sum(where( logical_and(self.ga==-1, self.ra!=-1),1,0))
+            notaccountedfor = n.sum(n.where( n.logical_and(self.ga==-1, self.ra!=-1),1,0))
             print "Number of peaks assigned to rings but not indexed = ",notaccountedfor
             #self.histogram(self.ubis[bestfitting])
         else:
@@ -523,14 +520,14 @@ class indexer:
         for ubi in self.ubis:
             if tol==None:
                 tol=self.hkl_tol
-            h=matrixmultiply(ubi,transpose(self.gv))
-            hint=floor(h+0.5).astype(Int) # rounds down
-            gint=matrixmultiply(inverse(ubi),hint)
+            h=n.matrixmultiply(ubi,n.transpose(self.gv))
+            hint=n.floor(h+0.5).astype(n.Int) # rounds down
+            gint=n.matrixmultiply(inverse(ubi),hint)
             diff=h-hint
-            drlv2=sum(diff*diff,0)
-            ind = compress( less(drlv2,tol*tol) , arange(self.gv.shape[0]) )
+            drlv2=n.sum(diff*diff,0)
+            ind = n.compress( n.less(drlv2,tol*tol) , n.arange(self.gv.shape[0]) )
             try:
-                mdrlv=  sum(sqrt(take(drlv2,ind)))/ind.shape[0]
+                mdrlv=  n.sum(n.sqrt(n.take(drlv2,ind)))/ind.shape[0]
             except:
                 mdrlv= 1.0
             f.write("Grain: %d   Npeaks=%d   <drlv>=%f\n"%(i,ind.shape[0],mdrlv))
@@ -548,7 +545,7 @@ class indexer:
                 f.write("   Omega_obs Omega_calc   Eta_obs Eta_calc   tth_obs tth_calc\n")
                 tc,ec,oc =  transform.uncompute_g_vectors(gint,self.wavelength,wedge=self.wedge)
             for j in ind:
-                f.write("%-6d ( % 6.4f % 6.4f % 6.4f ) % 12.8f "%(j,h[0,j],h[1,j],h[2,j],sqrt(drlv2[j])) )
+                f.write("%-6d ( % 6.4f % 6.4f % 6.4f ) % 12.8f "%(j,h[0,j],h[1,j],h[2,j],n.sqrt(drlv2[j])) )
                 f.write(" % 7.1f % 7.1f "%(self.xp[j],self.yp[j]) )
                 if self.wavelength < 0:
                     f.write("\n")
@@ -559,7 +556,7 @@ class indexer:
                     oo=self.omega[j]
                     tc1=tc[j]
                     # Choose which is closest in eta/omega, there are two choices, {eta,omega}, {-eta,omega+180}
-                    w=argmin( [ abs(ec[0][j] - eo) , abs(ec[1][j] - eo) ] )
+                    w=n.argmin( [ abs(ec[0][j] - eo) , abs(ec[1][j] - eo) ] )
                     ec1=ec[w][j]
                     oc1=oc[w][j]
                     # Now find best omega within 360 degree intervals
@@ -571,7 +568,7 @@ class indexer:
                     f.write("\n")
             f.write("\n\n")
         # peaks assigned to rings
-        in_rings = compress(greater(self.ra,-1),arange(self.gv.shape[0]))
+        in_rings = n.compress(n.greater(self.ra,-1),n.arange(self.gv.shape[0]))
         f.write("\n\nAnd now listing via peaks which were assigned to rings\n")
         nleft=0
         nfitted=0
@@ -581,14 +578,14 @@ class indexer:
             f.write("\nPeak= %-5d Ring= %-5d gv=[ % -6.4f % -6.4f % -6.4f ]   omega= % 9.4f   eta= % 9.4f   tth= % 9.4f\n"%(peak,self.ra[peak],h[0],h[1],h[2],
                   self.omega[peak],self.eta[peak],self.tth[peak]))
             m=0
-            n=0
+            npk=0
             bestubi=999.
             for ubi in self.ubis:
-                hi = matrixmultiply(ubi,h)
-                hint = floor(hi+0.5).astype(Int)
-                gint = matrixmultiply(inverse(ubi),hint)
+                hi = n.matrixmultiply(ubi,h)
+                hint = n.floor(hi+0.5).astype(n.Int)
+                gint = n.matrixmultiply(inverse(ubi),hint)
                 diff=hi-hint
-                drlv2 = sum(diff*diff,0)
+                drlv2 = n.sum(diff*diff,0)
                 if drlv2 < bestubi:
                     bestubi=drlv2
                     besthi =hi
@@ -601,15 +598,15 @@ class indexer:
 #               print "obs",self.omega[peak],self.eta[peak],self.tth[peak]
 #               print "calc",tt,e,o
                     w=[ abs(e[0] - self.eta[peak]) , abs(e[1] - self.eta[peak]) ]
-                    w=argmin( w )
+                    w=n.argmin( w )
                     et=e[w]
                     om=o[w]
                     # Now find best omega within 360 degree intervals
                     om=mod_360(om,self.omega[peak])
                     f.write(" omega= % 9.4f   eta= %9.4f   tth= %9.4f\n"%(om,et,tt) )
-                    n=n+1
+                    npk=npk+1
                 m=m+1
-            if n==0:
+            if npk==0:
                 f.write("Peak not assigned, closest=[ % -6.4f % -6.4f % -6.4f ] for grain %d\n"%(besthi[0],besthi[1],besthi[2],bestm))
                 nleft=nleft+1
             else:
@@ -619,7 +616,7 @@ class indexer:
         f.write("Peaks assigned to grains %d\n"%(nfitted))
         f.write("Peaks assigned to rings but remaining unindexed %d\n"%(nleft))
 
-        f.write("Peaks not assigned to rings at all %d\n"%(sum(where(self.ra==-1,1,0))))
+        f.write("Peaks not assigned to rings at all %d\n"%(n.sum(n.where(self.ra==-1,1,0))))
         f.close()
 
 
@@ -631,12 +628,9 @@ class indexer:
         """
         if tol==None:
             tol=self.hkl_tol
-        h=matrixmultiply(UBI,transpose(self.gv))
-        hint=floor(h+0.5).astype(Int) # rounds down
-        diff=h-hint
-        drlv2=sum(diff*diff,0)
-        drlv2=where(self.ra==-1,tol+1,drlv2)
-        ind = compress( less(drlv2,tol) , arange(self.gv.shape[0]) )
+        drlv2=calc_drlv2(UBI,self.gv)
+        drlv2=n.where(self.ra==-1,tol+1,drlv2)
+        ind = n.compress( n.less(drlv2,tol) , n.arange(self.gv.shape[0]) )
         return ind
 
 
@@ -685,16 +679,15 @@ class indexer:
 #      print "UBI\n",UBI
 #      print "Scores before",self.score(UBI)
         # Need to find hkl indices for all of the peaks which are indexed
-        h=matrixmultiply(UBI,transpose(self.gv))
-        hint=floor(h+0.5).astype(Int) # rounds down
-        diff=h-hint
-        drlv2=sum(diff*diff,0)
+        drlv2=calc_drlv2(UBI,self.gv)
+        h = n.matrixmultiply(UBI, n.transpose(self.gv))
+        hint = n.floor(h + 0.5).astype(n.Int) # rounds down
         tol = float(self.hkl_tol)
         tol = tol*tol
         # Only use peaks which are assigned to rings for refinement
-        ind = compress( logical_and(less(drlv2,tol),greater(self.ra,-1)) , arange(self.gv.shape[0]) )
+        ind = n.compress( n.logical_and(n.less(drlv2,tol),n.greater(self.ra,-1)) , n.arange(self.gv.shape[0]) )
         #scoreb4=ind.shape[0]
-        contribs = take(drlv2,ind)
+        contribs = n.take(drlv2,ind)
         if len(contribs)==0:
             raise Exception("No contributing reflections for"+str(UBI))
         #try:
@@ -703,31 +696,28 @@ class indexer:
         #    print "No contributing reflections for\n",UBI
         #    raise
         #drlv2_old=drlv2
-        R=zeros((3,3),Float)
-        H=zeros((3,3),Float)
+        R=n.zeros((3,3),n.Float)
+        H=n.zeros((3,3),n.Float)
         for i in ind:
             r = self.gv[i,:]
-            k = hint[:,i].astype(Float)
+            k = hint[:,i].astype(n.Float)
 #           print r,k
-            R = R + outerproduct(r,k)
-            H = H + outerproduct(k,k)
+            R = R + n.outerproduct(r,k)
+            H = H + n.outerproduct(k,k)
         from LinearAlgebra import inverse
         try:
             HI=inverse(H)
-            UBoptimal=matrixmultiply(R,HI)
+            UBoptimal=n.matrixmultiply(R,HI)
             UBIo=inverse(UBoptimal)
         except:
             # A singular matrix - this sucks.
             UBIo=UBI
-        h=matrixmultiply(UBIo,transpose(self.gv))
-        hint=floor(h+0.5).astype(Int) # rounds down
-        diff=h-hint
-        drlv2=sum(diff*diff,0)
-        ind = compress( logical_and(less(drlv2,tol),greater(self.ra,-1)), arange(self.gv.shape[0]) )
+        drlv2 = calc_drlv2(UBIo,self.gv)
+        ind = n.compress( n.logical_and(n.less(drlv2,tol),n.greater(self.ra,-1)), n.arange(self.gv.shape[0]) )
         self.scorelastrefined=ind.shape[0]
-        contribs = take(drlv2,ind)
+        contribs = n.take(drlv2,ind)
         try:
-            self.fitlastrefined=math.sqrt(sum(contribs)/contribs.shape[0])
+            self.fitlastrefined=math.sqrt(n.sum(contribs)/contribs.shape[0])
         except:
             print "\n\n\n"
             print "No contributing reflections for\n",UBI
@@ -747,12 +737,8 @@ class indexer:
         """
         Save the generated ubi matrices into a text file
         """
-        f=open(filename,"w")
-        for u in self.ubis:
-            f.write("%f %f %f\n"  %(u[0,0],u[0,1],u[0,2]))
-            f.write("%f %f %f\n"  %(u[1,0],u[1,1],u[1,2]))
-            f.write("%f %f %f\n\n"%(u[2,0],u[2,1],u[2,2]))
-        f.close()
+        write_ubi_file(filename, self.ubis)
+
 
     def coverage(self):
         """
@@ -810,14 +796,14 @@ class indexer:
 #            raise "Problem interpreting the last thing I printed"
         f.close()
         if self.wavelength > 0:
-            self.tth=arcsin(array(self.ds)*self.wavelength/2)*360/math.pi
+            self.tth=n.arcsin(n.array(self.ds)*self.wavelength/2)*360/math.pi
         else:
-            self.tth=zeros(len(self.ds))
-        self.gv=transpose(array( [ self.xr , self.yr, self.zr ] ,Float))
+            self.tth=n.zeros(len(self.ds))
+        self.gv=n.transpose(n.array( [ self.xr , self.yr, self.zr ] ,n.Float))
         self.allgv = self.gv.copy()
-        self.ga=zeros(len(self.ds),Int)-1 # Grain assignments
+        self.ga=n.zeros(len(self.ds),n.Int)-1 # Grain assignments
 
-        self.gvflat=reshape(fromstring(self.gv.tostring(),Float),self.gv.shape) # Makes it contiguous in memory, hkl fast index
+        self.gvflat=n.reshape(n.fromstring(self.gv.tostring(),n.Float),self.gv.shape) # Makes it contiguous in memory, hkl fast index
         print "Read your gv file containing",self.gv.shape
 #      if self.wavelength>0:
 #         print "First ten peaks"

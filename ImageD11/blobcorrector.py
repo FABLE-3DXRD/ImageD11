@@ -156,7 +156,7 @@ class correctorclass: #IGNORE:R0902
         error = math.sqrt( (xin - xold) * (xin - xold) + 
                            (yin - yold) * (yin - yold))
         if error > self.tolerance:
-            print "Failed!"
+            logging.error("Blobcorrector Test Failed!")
             raise Exception("Problem in correctorclass")
 
 

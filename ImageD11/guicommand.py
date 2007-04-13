@@ -27,11 +27,9 @@ This class will eventually offer macro recording capability.
 """
 
 import logging, sys
+
 # Things to offer from gui
 from ImageD11 import peakmerge, indexing, transformer
-
-# import imaged11 # breaks the code for esrf/fable
-
 
 # To autoconvert arrays to lists for Java XMLRPC
 RETURN_NUMERICS = False
@@ -49,7 +47,8 @@ class guicommand:
                          "indexer"    : indexing.indexer()
                          }
 
-        self.commandscript = """# Create objects to manipulate - they hold your data
+        self.commandscript = \
+"""# Create objects to manipulate - they hold your data
 #
 from ImageD11 import peakmerge, indexing, transformer
 mypeakmerger = peakmerge.peakmerger()
@@ -60,7 +59,7 @@ myindexer = indexing.indexer()
 #    
 """
 
-    def execute(self,object,command,*args,**kwds):
+    def execute(self, obj, command, *args, **kwds):
         """
         Pass in object as string [peakmerger|transformer|indexer]
         Pass in command as string, getattr(command) will be used
@@ -72,10 +71,10 @@ myindexer = indexing.indexer()
                   fails - returns False
                           you look for self.lasttraceback
         """
-        if object not in self.objects.keys():
+        if obj not in self.objects.keys():
             raise Exception("ERROR! Unknown command object")
-        o = self.objects[object]
-        ran = "my%s.%s("%(object,command)
+        o = self.objects[obj]
+        ran = "my%s.%s("% (obj, command)
         if command.find("."):
             subobjs = command.split(".")[:-1]
             for s in subobjs:
@@ -91,26 +90,21 @@ myindexer = indexing.indexer()
                 ran="%s %s %s=%s "%(ran,addedcomma,k,v)
                 addedcomma=","
             ran+=" )\n"
-            print "Running:",ran,
+            logging.debug("Running: "+ran)
             sys.stdout.flush()
             ret = func(*args, **kwds)
 
         except:
-            print self
-            print object
-            print command
-            print func
-            print args
-            print kwds
-            print "Exception occured"
+            logging.error("Exception occurred " + "self" + str(self) +
+                "obj" + str(obj)+ "command" + str(command) + 
+                "func" + str(func) + "args" + str(args) + "kwds" + str(kwds))
             import traceback
             traceback.print_exc()
             return "Exception occured in the python " + ran
-        print " OK!"
         self.commandscript+=ran
         return ret
 
-    def getdata(self,object,name):
+    def getdata(self, obj, name):
         """
         Allows access to "live" data in the objects wrapped
 
@@ -119,18 +113,21 @@ myindexer = indexing.indexer()
 
         Returns object.name
         """
-        if object not in self.objects.keys():
+        if obj not in self.objects.keys():
             raise Exception("ERROR! Unknown command object")
-        attribute = getattr(self.objects[object],name)
+        attribute = getattr(self.objects[obj],name)
         if RETURN_NUMERICS:
             # Normally python will get this
-            print "python return array"
+            logging.debug("python return array")
             return attribute
         if type(attribute) == TYPE_NUMERIC:
             # Java gets this for arrays
-            print "Java return list"
+            logging.debug("Java return list")
             return attribute.tolist()
         return attribute
 
     def gethistory(self):
+        """
+        Returns the history of commands run by the gui commander
+        """
         return self.commandscript

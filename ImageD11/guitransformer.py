@@ -73,7 +73,8 @@ class guitransformer:
         """
         self.parent.guicommander.execute("transformer","updateparameters")
         pars = self.parent.guicommander.getdata("transformer","pars")
-        print pars
+        import logging
+        logging.debug("transformer pars:"% (str(pars)))
         d=listdialog(self.parent,items=pars,title="Detector parameters")
         self.parent.guicommander.execute("transformer",
                 "parameterobj.set_parameters",d.result)

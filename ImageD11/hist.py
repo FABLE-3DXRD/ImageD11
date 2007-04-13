@@ -29,6 +29,7 @@ Also try to do a fast median filter based on pixel histograms
 
 from ImageD11 import _hist
 import Numeric
+import logging
 
 def hist(data,verbose=0):
     """
@@ -43,20 +44,22 @@ def hist(data,verbose=0):
 
 
 def test_dvhist():
-   import _hist
-   gv= Numeric.zeros((10,3),Numeric.Float)
-   h = Numeric.zeros((10,10,10),Numeric.Int)
-   _hist._dvhist(gv,h,-1,1,-1,1,-1,1,1)
-   print maximum.reduce(h)
+    import _hist
+    gv= Numeric.zeros((10,3),Numeric.Float)
+    h = Numeric.zeros((10,10,10),Numeric.Int)
+    _hist._dvhist(gv,h,-1,1,-1,1,-1,1,1)
+
+    logging.info("test_dvhist maximum.reduce(h)"% Numeric.maximum.reduce(h))
 
 
 if __name__=="__main__":
     import sys
     from ImageD11 import opendata
     import time
+    import logging
     start = time.time()
     d=opendata.openedf(sys.argv[1]).data
-    print "Opening",time.time()-start
+    logging.info("Opening time %f"% (time.time() - start))
     start=time.time()
     l1 = d.shape[0]/4
     l2 = d.shape[1]/4
@@ -73,7 +76,7 @@ if __name__=="__main__":
     else:
         h1=hist(d)
 
-    print "Histogram",time.time()-start
+    logging.info("Histogram time %f"% (time.time()-start))
     from matplotlib.pylab import plot,show
     plot(h1)
     plot(h2)

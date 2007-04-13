@@ -149,10 +149,10 @@ def bisplrep(x,y,z,w=None,xb=None,xe=None,yb=None,ye=None,kx=3,ky=3,task=0,s=Non
     if not (-1<=task<=1): raise TypeError, 'task must be either -1,0, or 1'
     if s is None: s=m-n.sqrt(2*m)
     if tx is None and task==-1: raise TypeError, 'Knots_x must be given for task=-1'
-    if tx is not None: _curfit_cache['tx']=myasarray(tx)
+    if tx is not None: _surfit_cache['tx']=myasarray(tx)
     nx=len(_surfit_cache['tx'])
     if ty is None and task==-1: raise TypeError, 'Knots_y must be given for task=-1'
-    if ty is not None: _curfit_cache['ty']=myasarray(ty)
+    if ty is not None: _surfit_cache['ty']=myasarray(ty)
     ny=len(_surfit_cache['ty'])
     if task==-1 and nx<2*kx+2:
         raise TypeError, 'There must be at least 2*kx+2 knots_x for task=-1'
@@ -180,27 +180,31 @@ def bisplrep(x,y,z,w=None,xb=None,xe=None,yb=None,ye=None,kx=3,ky=3,task=0,s=Non
     if bx>by: b1,b2=by,by+u-kx
     lwrk1=u*v*(2+b1+b2)+2*(u+v+km*(m+ne)+ne-kx-ky)+b2+1
     lwrk2=u*v*(b2+1)+b2
-    tx,ty,c,o = _fitpack._surfit(x,y,z,w,xb,xe,yb,ye,kx,ky,task,s,eps,
+    tx,ty,c,o = _splines._surfit(x,y,z,w,xb,xe,yb,ye,kx,ky,task,s,eps,
                                    tx,ty,nxest,nyest,wrk,lwrk1,lwrk2)
-    _curfit_cache['tx']=tx
-    _curfit_cache['ty']=ty
-    _curfit_cache['wrk']=o['wrk']
+    _surfit_cache['tx']=tx
+    _surfit_cache['ty']=ty
+    _surfit_cache['wrk']=o['wrk']
     ier,fp=o['ier'],o['fp']
     tck=[tx,ty,c,kx,ky]
     if ier<=0 and not quiet:
-        print _iermess2[ier][0]
-        print "\tkx,ky=%d,%d nx,ny=%d,%d m=%d fp=%f s=%f"%(kx,ky,len(tx),
-                                                           len(ty),m,fp,s)
+        import logging
+        logging.debug("_surfit "+ str(_iermess2[ier][0]))
+        logging.debug("\tkx,ky=%d,%d nx,ny=%d,%d m=%d fp=%f s=%f"%(kx,ky,len(tx),
+                                                           len(ty),m,fp,s))
     ierm=min(11,max(-3,ier))
     if ierm>0 and not full_output:
         if ier in [1,2,3,4,5]:
-            print "Warning: "+_iermess2[ierm][0]
-            print "\tkx,ky=%d,%d nx,ny=%d,%d m=%d fp=%f s=%f"%(kx,ky,len(tx),
-                                                           len(ty),m,fp,s)
+            import logging
+            logging.debug("_surfit Warning: "+str(_iermess2[ierm][0]))
+            logging.debug("\tkx,ky=%d,%d nx,ny=%d,%d m=%d fp=%f s=%f"%(kx,ky,len(tx),
+                                                           len(ty),m,fp,s))
         else:
             try:
+                logging.error(str((_iermess2[ierm][1],_iermess2[ierm][0])))
                 raise _iermess2[ierm][1],_iermess2[ierm][0]
             except KeyError:
+                logging.error(str((_iermess2['unknown'][1],_iermess2['unknown'][0])))
                 raise _iermess2['unknown'][1],_iermess2['unknown'][0]
     if full_output:
         try:

@@ -136,19 +136,20 @@ class guiindexer:
         Gets gv from indexing object
         Plots the x,y,z (gv) array in a 3D opengl window
         """
+        import logging
         try:
             import plot3d
         except:
             import traceback
             traceback.print_last()
-            print "You might have a PyOpenGl problem??"
+            logging.warning("You might have a PyOpenGl problem??")
             return
         gv = self.parent.guicommander.getdata("indexer","gv")
         if gv is not None:
             if self.plot3d==None:
                 self.plot3d = plot3d.plot3d(self.parent,gv)
                 self.plot3d.go()
-                print self.plot3d
+                logging.debug("self.plot3d " + str(self.plot3d))
             else:
                 self.plot3d.changedata(gv)
 
