@@ -219,8 +219,6 @@ class peakmerger:
         self.merged=None
         self.final=None
         self.tolerance=4.0
-        self.logger = logging.getLogger()
-        self.logger.setLevel(logging.DEBUG)
 
 
     def setpixeltolerance(self,tolerance=2):
@@ -412,7 +410,7 @@ class peakmerger:
             om=keys[i]
             #print "Setting %-5d  %8f with %-6d peaks on this and %-5d peaks on next, %-5d in buffer"%(i,om,last-first,nextlast-last,ncarry)
             debug="Setting %-5d  %8f with %-6d peaks on this and %-5d peaks on next, %-5d in buffer"%(i,om,last-first,nextlast-last,ncarry)
-            self.logger.debug(debug)
+            logging.debug(debug)
             #sys.stdout.flush()
             for peak1 in active:
                 m=0
