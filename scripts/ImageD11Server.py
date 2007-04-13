@@ -11,6 +11,7 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer
 import logging 
 import sys
 logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 class Server(SimpleXMLRPCServer):
     """
@@ -71,6 +72,7 @@ class Server(SimpleXMLRPCServer):
             self.connection.shutdown(1)
 
     def serve_forever(self):
+        logger.debug("debugging serve_forever")
         self.quit = 0
         while not self.quit:
             self.handle_request()
@@ -105,12 +107,15 @@ def RunXMLRPCServer(port):
         th.setDaemon(1)
         th.start()
         # Make ctrl+break raise a KeyboardInterrupt exception.
-        signal.signal(signal.SIGBREAK, signal.default_int_handler)
+        try:
+            signal.signal(signal.SIGBREAK, signal.default_int_handler)
+        except:
+            print "signal.SIGBREAK not supported on this platform"
         try:
             while th.isAlive():
                 time.sleep(1)
         except:
-            logging.info("Break pressed.")
+            logger.info("Break pressed.")
             sys.stdout.flush()
         
 
