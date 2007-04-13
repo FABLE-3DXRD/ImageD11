@@ -28,6 +28,7 @@ of memory
 
 import Numeric
 import time,sys
+import logging 
 
 
 def roundfloat(x,tol):
@@ -66,6 +67,9 @@ class peak:
         self.sigy=v[7]
         self.covxy=v[8]
         self.forgotten=False
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.INFO)
+
 
     def combine(self,other):
         """
@@ -215,6 +219,9 @@ class peakmerger:
         self.merged=None
         self.final=None
         self.tolerance=4.0
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.INFO)
+
 
     def setpixeltolerance(self,tolerance=2):
         """ ah... if only """
@@ -403,8 +410,10 @@ class peakmerger:
             nextlast =uniq[keys[i+2]]
             nextframe=peaks[last:nextlast]
             om=keys[i]
-            print "Setting %-5d  %8f with %-6d peaks on this and %-5d peaks on next, %-5d in buffer\r"%(i,om,last-first,nextlast-last,ncarry),
-            sys.stdout.flush()
+            #print "Setting %-5d  %8f with %-6d peaks on this and %-5d peaks on next, %-5d in buffer"%(i,om,last-first,nextlast-last,ncarry)
+            debug="Setting %-5d  %8f with %-6d peaks on this and %-5d peaks on next, %-5d in buffer"%(i,om,last-first,nextlast-last,ncarry)
+            self.logger.debug(debug)
+            #sys.stdout.flush()
             for peak1 in active:
                 m=0
                 if peak1.forgotten:
