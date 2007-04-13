@@ -27,6 +27,8 @@ import Numeric
 from LinearAlgebra import inverse
 import math
 
+import logging
+
 def radians(x):
     return x*math.pi/180.
 
@@ -48,8 +50,7 @@ def unit(a):
     try:
         return a/Numeric.sqrt(Numeric.dot(a,a))
     except:
-        l=Numeric.dot(a,a)
-        print "Length of a is",l
+        logging.error("cannot normalise to unit length a=%s"%(str(a)))
         raise
 
 
@@ -292,27 +293,35 @@ class unitcell:
         for ha in self.ringhkls[self.ringds[ring1]]:
             for hb in self.ringhkls[self.ringds[ring2]]:
                 ca=self.anglehkls(ha,hb)
+                print "%6.3f %.3f"% ca,ha,hb,best,ha,hb
                 if abs(ca[1]-costheta) < best and ha!=hb:
                     h1=ha
                     h2=hb
-                    best=ca[1]
+                    # This was a serious bug!!! Best was assigned to ca[1]!!!
+                    best=abs(ca[1]-costheta)
         if verbose==1:
             print "Assigning h1",h1,g1,self.ds(h1),math.sqrt(Numeric.dot(g1,g1)),self.ds(h1)-math.sqrt(Numeric.dot(g1,g1))
             print "Assigning h2",h2,g2,self.ds(h2),math.sqrt(Numeric.dot(g2,g2)),self.ds(h1)-math.sqrt(Numeric.dot(g1,g1))
             print "Cos angle calc",self.anglehkls(h1,h2),"obs",costheta
-        h1c=Numeric.matrixmultiply(self.B,h1)
-        h2c=Numeric.matrixmultiply(self.B,h2)
-        t1c=unit(h1c)
-        t3c=unit(cross(h1c,h2c))
-        t2c=unit(cross(h1c,t3c))
-        t1g=unit(g1)
-        t3g=unit(cross(g1,g2))
-        t2g=unit(cross(g1,t3g))
-        T_g = Numeric.transpose(Numeric.array([t1g,t2g,t3g]))  # Array are stored by rows and
-        T_c = Numeric.transpose(Numeric.array([t1c,t2c,t3c]))  # these are columns
-        U=Numeric.matrixmultiply(T_g , inverse(T_c))
-        UB=Numeric.matrixmultiply(U,self.B)
-        UBI=inverse(UB)
+        try:
+            h1c=Numeric.matrixmultiply(self.B,h1)    
+            h2c=Numeric.matrixmultiply(self.B,h2)
+            t1c=unit(h1c)
+            t3c=unit(cross(h1c,h2c))
+            t2c=unit(cross(h1c,t3c))
+            t1g=unit(g1)
+            t3g=unit(cross(g1,g2))
+            t2g=unit(cross(g1,t3g))
+            T_g = Numeric.transpose(Numeric.array([t1g,t2g,t3g]))  # Array are stored by rows and
+            T_c = Numeric.transpose(Numeric.array([t1c,t2c,t3c]))  # these are columns
+            U=Numeric.matrixmultiply(T_g , inverse(T_c))
+            UB=Numeric.matrixmultiply(U,self.B)
+            UBI=inverse(UB)
+        except:
+            logging.error("unitcell.orient h1 %s g1 %s h2 %s g2 %s self.B %s"%(
+                     str(h1), str(g1), str(h2), str(g2), str(self.B)))
+            import traceback
+            traceback.print_exc()
         if verbose==1:
             print "UBI"
             print UBI
