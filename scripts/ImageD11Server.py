@@ -11,7 +11,7 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer
 import logging 
 import sys
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class Server(SimpleXMLRPCServer):
     """
