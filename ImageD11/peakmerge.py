@@ -68,7 +68,7 @@ class peak:
         self.covxy=v[8]
         self.forgotten=False
         self.logger = logging.getLogger()
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging.DEBUG)
 
 
     def combine(self,other):
@@ -220,7 +220,7 @@ class peakmerger:
         self.final=None
         self.tolerance=4.0
         self.logger = logging.getLogger()
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging.DEBUG)
 
 
     def setpixeltolerance(self,tolerance=2):
