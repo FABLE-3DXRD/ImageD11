@@ -26,6 +26,9 @@ TODO : Replace with the 3D blobsearchers - this algorithm uses a lot
 of memory
 """
 
+# for filename -> number interpretion
+from ImageD11 import opendata
+
 import Numeric
 import time,sys
 import logging 
@@ -242,16 +245,7 @@ class peakmerger:
                 name = line.split()[-1]
                 currentimage=pkimage(name)
                 self.images.append(currentimage)
-                if name.find("edf")>-1:
-                    try:
-                        imagenumber = int(name[-8:-4])
-                    except:
-                        imagenumber = -1
-                else:
-                    try:
-                        imagenumber = int(name.split(".")[-1])
-                    except:
-                        imagenumber=-1
+                imagenumber = opendata.getnum(name)
                 currentimage.linestart=i
                 currentimage.imagenumber=imagenumber
                 continue
@@ -274,6 +268,33 @@ class peakmerger:
             i=i+1
         print "Found",len(self.images),"images"
 
+    def getheaderkeys(self):
+        """
+        things in the headers
+        """
+        return self.images[0].header.keys()
+
+    def getheaderinfo(self,key):
+        """
+        try to find "key" in the headers and return it
+        """
+        ret = []       
+        for im  in self.images:
+            try:
+                ret.append(im.header[key])
+            except:
+                raise Exception("key %s not found"%(key))
+        try:
+        	# make into numbers if possible
+            fret = [float(v) for v in ret]
+            return fret
+        except:
+            # otherwise strings
+            return ret
+            
+            
+            
+            
     def harvestpeaks(self, numlim=None, omlim=None, thresholds=None):
         """
         Harvests the peaks from the images within a range of
