@@ -8,10 +8,7 @@
 
 
 from SimpleXMLRPCServer import SimpleXMLRPCServer
-import logging 
-import sys
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+import sys, logging
 
 class Server(SimpleXMLRPCServer):
     """
@@ -42,18 +39,18 @@ class Server(SimpleXMLRPCServer):
     def do_POST(self):
         clientIP, port = self.client_address
 	    # Log client IP and Port
-        logger.info('Client IP: %s - Port: %s' % (clientIP, port))
+        logging.info('Client IP: %s - Port: %s' % (clientIP, port))
         try:
             # get arguments
             data = self.rfile.read(int(self.headers["content-length"]))
             # Log client request
-            logger.info('Client request: \n%s\n' % data)
+            logging.info('Client request: \n%s\n' % data)
         
             response = self.server._marshaled_dispatch(
                     data, getattr(self, '_dispatch', None)
                 )
 	        # Log server response
-            logger.info('Server response: \n%s\n' % response)
+            logging.info('Server response: \n%s\n' % response)
         
         except: # This should only happen if the module is buggy
             # internal error, report as HTTP server error
@@ -72,7 +69,7 @@ class Server(SimpleXMLRPCServer):
             self.connection.shutdown(1)
 
     def serve_forever(self):
-        logger.debug("debugging serve_forever")
+        logging.debug("debugging serve_forever")
         self.quit = 0
         while not self.quit:
             self.handle_request()
@@ -90,12 +87,34 @@ def RunXMLRPCServer(port):
         http://mail.python.org/pipermail/python-list/2003-July/212751.html
         """
         def XMLRPCThread():
+            """ Things appear to be thread local in this namespace here
+            """        	
             server = Server( ("localhost", port ), logRequests=0 )
             def shutdown():
                 logging.info( "ImageD11Server(): called shutdown()" ) 
                 server.quit = 1
             server.register_function(shutdown)
-            server.register_instance(logger.setLevel)
+            
+            import logging 
+            
+            # define a Handler which writes INFO messages or higher to the sys.stdout
+            console = logging.StreamHandler(sys.stdout)
+            console.setLevel(logging.INFO)
+            # set a format which is simpler for console use
+            formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+            # tell the handler to use this format
+            console.setFormatter(formatter)
+            # add the handler to the root logger
+            logging.getLogger('').addHandler(console)
+            
+            def setLevel(level):
+                logging.info( "ImageD11Server(): called setLevel "+str(level) ) 
+                console.setLevel(level)
+                
+            server.register_function(setLevel)
+
+            from ImageD11 import guicommand
+            guicommander = guicommand.guicommand()            
             server.register_instance(guicommander)
     
             #Go into the main listener loop
@@ -115,22 +134,18 @@ def RunXMLRPCServer(port):
             while th.isAlive():
                 time.sleep(1)
         except:
-            logger.info("Break pressed.")
+            logging.info("Break pressed.")
             sys.stdout.flush()
         
 
 if __name__=="__main__":
 
-    logger = logging.getLogger()
 # drop everything on stdin/stdout
 #    hdlr = logging.FileHandler('/tmp/xmlrpcserver.log')
 #    formatter = logging.Formatter("%(asctime)s  %(levelname)s  %(message)s")
 #    hdlr.setFormatter(formatter)
 #    logger.addHandler(hdlr)
-    logger.setLevel(logging.DEBUG)
 
-    from ImageD11 import guicommand
-    guicommander = guicommand.guicommand()
 
     import sys
     port = 51234
