@@ -97,9 +97,9 @@ def RunXMLRPCServer(port):
             
             import logging 
             
-            # define a Handler which writes INFO messages or higher to the sys.stdout
+            # define a Handler which writes DEBUG messages or higher to the sys.stdout
             console = logging.StreamHandler(sys.stdout)
-            console.setLevel(logging.INFO)
+            console.setLevel(logging.DEBUG)
             # set a format which is simpler for console use
             formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
             # tell the handler to use this format
