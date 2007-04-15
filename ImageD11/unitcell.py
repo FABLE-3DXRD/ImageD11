@@ -293,7 +293,7 @@ class unitcell:
         for ha in self.ringhkls[self.ringds[ring1]]:
             for hb in self.ringhkls[self.ringds[ring2]]:
                 ca=self.anglehkls(ha,hb)
-                print "%6.3f %.3f"% ca,ha,hb,best,ha,hb
+                if verbose==1: print "%6.3f %.3f"% ca,ha,hb,best,ha,hb
                 if abs(ca[1]-costheta) < best and ha!=hb:
                     h1=ha
                     h2=hb
