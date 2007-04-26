@@ -1,5 +1,3 @@
-
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -32,7 +30,7 @@ class transformer:
     pars = {'omegasign':1,
             'z_center':  1024.0,
             'y_center':  1024.0,
-            'distance':   100.0,
+            'distance':   50000.0,
             'z_size':   46.77648,
             'y_size':   48.08150,
             'tilt_z':    0.0,
@@ -105,7 +103,17 @@ class transformer:
         """ Compute the twotheta and eta for peaks previous read in """
         self.twotheta, self.eta = transform.compute_tth_eta( self.peaks_xy,
                  **self.parameterobj.get_parameters() ) 
-        #self.ds = 
+        #self.ds =
+        
+    def compute_tth_histo(self):
+        """ Compute the histogram over twotheta for peaks previous read in
+        and filter peaks out falling in bins with less than min_bin_ratio """
+        self.finalpeaks = transform.compute_tth_histo(self.finalpeaks,self.twotheta,**self.parameterobj.get_parameters())
+        self.peaks_xy = self.finalpeaks[0:2,:]
+        self.x = self.finalpeaks[0,:]
+        self.y = self.finalpeaks[1,:]
+        self.omega = self.finalpeaks[2,:]
+
 
     def gof(self,args):
         """ Compute how good is the fit of obs/calc peak positions in tth """
@@ -272,3 +280,4 @@ class transformer:
                                             self.omega*self.omegasign,
                                             self.intensity,
                                             self.unitcell)
+        

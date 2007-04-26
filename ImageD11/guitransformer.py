@@ -32,6 +32,8 @@ class guitransformer:
         """
         self.quiet=quiet
         self.parent=parent
+        self.nbins = 10000
+        self.min_bin_ratio = 0.10
         self.menuitems = ( "Transformation", 0,
                            [ ( "Load filtered peaks", 0, self.loadfiltered),
                              ( "Plot y/z", 5, self.plotyz     ),
@@ -41,6 +43,9 @@ class guitransformer:
                              ( "Add unit cell peaks",0, self.addcellpeaks),
                              ( "Fit",0, self.fit),
                              ( "Save parameters", 0, self.saveparameters),
+                             ( "Plot tth histogram", 0, self.plothisto ),
+                             ( "Filter peaks based on tth histogram", 0, self.filterhisto ),
+
 #                             ( "Set axis orientation", 0, self.setaxisorientation),
                              ( "Compute g-vectors", 0, self.computegv),
                              ( "Save g-vectors", 0, self.savegv),
@@ -114,6 +119,28 @@ class guitransformer:
                      "ylabel":"Azimuth / degrees",
                      "title" :"Peak positions"}
                      )))
+
+    def plothisto(self):
+        d=listdialog(self.parent,items={"no_bins": self.nbins},title="Histogram - no of bins")
+        self.nbins = d.result['no_bins']
+        self.parent.guicommander.execute("transformer","parameterobj.set_parameters",d.result)
+        tth = self.parent.guicommander.getdata("transformer","twotheta")
+        self.parent.twodplotter.adddata(
+              ( "2Theta/Eta",
+                 twodplot.data(
+                    None,
+                    tth,
+                    #self.histogram,
+                    {"xlabel":"TwoTheta / degrees",
+                     "ylabel":"No in bin",
+                     "title" :"TwoTheta histogram",
+                     "plottype" :"hist"}
+                     )))
+
+    def filterhisto(self):
+        d=listdialog(self.parent,items={"no_bins": self.nbins, "min_bin_ratio": self.min_bin_ratio},title="Histogram filter")
+        self.parent.guicommander.execute("transformer","parameterobj.set_parameters",d.result)
+        self.parent.guicommander.execute("transformer","compute_tth_histo")
 
 
     def addcellpeaks(self):

@@ -180,7 +180,32 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
             tth[i] = degrees(arccos(costth))
 
         return tth, eta
+    
+def compute_tth_histo(finalpeaks,tth,no_bins=0,min_bin_ratio=1,
+                    **kwds): # last line is for laziness - 
+                             # pass kwds you'd like to be ignored
+          tthsort = sort(tth)
+          maxtth = tthsort[-1]
+          print maxtth
+          binsize = (maxtth+0.001)/no_bins
+          histogram = zeros(no_bins,Float)
+          tthbin = array(range(no_bins))*binsize
 
+          for t in tthsort:
+              n= int(floor(t/binsize))
+              histogram[n] = histogram[n] +1
+          print max(histogram)
+          histogram=histogram/max(histogram)
+
+          keeppeaks = [] 
+          for t in range(tth.shape[0]):
+              n= int(floor(tth[t]/binsize)) 
+              if histogram[n]> min_bin_ratio:
+                  keeppeaks.append(t)
+          keeppeaks =tuple(keeppeaks)
+          finalpeaks = take(finalpeaks,keeppeaks,1)
+          return finalpeaks
+                             
 def compute_g_vectors(tth, eta, omega, wavelength, wedge = 0.0, chi=0.0):
     """
     Generates spot positions in reciprocal space from 
