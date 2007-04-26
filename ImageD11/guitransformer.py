@@ -122,15 +122,14 @@ class guitransformer:
 
     def plothisto(self):
         d=listdialog(self.parent,items={"no_bins": self.nbins},title="Histogram - no of bins")
-        self.nbins = d.result['no_bins']
+        self.nbins = int(d.result['no_bins'])
         self.parent.guicommander.execute("transformer","parameterobj.set_parameters",d.result)
         tth = self.parent.guicommander.getdata("transformer","twotheta")
         self.parent.twodplotter.adddata(
               ( "2Theta/Eta",
                  twodplot.data(
-                    None,
+                    self.nbins,
                     tth,
-                    #self.histogram,
                     {"xlabel":"TwoTheta / degrees",
                      "ylabel":"No in bin",
                      "title" :"TwoTheta histogram",

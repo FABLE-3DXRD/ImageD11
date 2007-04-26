@@ -178,6 +178,9 @@ class twodplot(Tk.Frame):
             if name in self.hidden:
                 continue
             item=self.plotitems[name]
+            print 'x ', item.x
+            print 'y ', item.y
+            print 'd ', item.d
             print self.plotitems[name].d
             if item.d.has_key('color'):
                 pc=item.d['color']
@@ -196,7 +199,7 @@ class twodplot(Tk.Frame):
                 self.a.set_title(item.d["title"])
             try:
                 if  item.d.has_key("plottype"):
-                    ret = self.a.hist(item.y,10000)
+                    ret = self.a.hist(item.y,item.x)
                 elif item.x.shape[0]>self.maxpoints:
                     if self.quiet=="No":
                         if tkMessageBox.askyesno("Slow plotting workaround","Shall I plot only the first %d points for increased speed?"%(self.maxpoints)):
