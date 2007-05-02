@@ -24,6 +24,29 @@
 Class to handle groups of parameters to be saved in and out
 of files and edited in guis with the fixed/varied info etc
 """
+
+class par:
+    def __init__(self, name, value, helpstring = None,
+                 vary=False, can_vary=False ):
+        self.name = name
+        self.value = value
+        self.helpstring = helpstring
+        self.vary = vary
+        self.can_vary = can_vary
+    def fromstringlist(self,sl):
+        [self.name,
+        self.value,
+        self.helpstring,
+        self.vary,
+        self.can_vary]=sl
+        
+    def tostringlist(self):
+        return [self.name ,
+        self.value ,
+        self.helpstring ,
+        self.vary ,
+        self.can_vary ]
+
 import logging 
 class parameters:
     """
@@ -34,6 +57,10 @@ class parameters:
         name=value style arg list
         """
         self.parameters = kwds
+        self.logic = None
+        self.pars = []
+        for name,value in self.parameters.items():
+            self.pars.append(par(name,value))
         self.varylist = []
         self.stepsizes = {}
 
