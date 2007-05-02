@@ -107,7 +107,7 @@ class grain:
                 print "after %.8f %5d"%(fitlastrefined,contribs.shape[0])
         except:
             print "\n\n\n"
-            print "No contributing reflections for\n",UBI
+            print "No contributing reflections for\n",self.ubi
             print "After refinement, it was OK before ???"
             print "\n\n\n"
             return self.ubi
