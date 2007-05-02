@@ -51,12 +51,15 @@ def radians(x):
 
 def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
                     z_center=0.,z_size=0.,tilt_z=0.,
+                    tilt_x = 0.,
                     distance=0.,
-                    detector_orientation=((1,0),(0,1)),
-                    crystal_translation = None,
+                    # detector_orientation=((1,0),(0,1)),
+                    o11 = 1.0 , o12 = 0.0, o21 = 0.0 , o22 = -1.0,
+                    # crystal_translation = None,
+                    t_x = 0.0, t_y = 0.0 , t_z = 0.0,
                     omega = None,         #       == phi at chi=90
-                    axis_orientation1=0.0, # Wedge == theta on 4circ
-                    axis_orientation2=0.0, #       == chi - 90
+                    wedge = 0.0, # Wedge == theta on 4circ
+                    chi = 0.0, #       == chi - 90
                     **kwds): # last line is for laziness - 
                              # pass kwds you'd like to be ignored
     """
@@ -79,36 +82,40 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
                  z with respect to beam height, z centre
     omega data needed if crystal translations used
     """
-    yc=y_center
-    ys=y_size
-    ty=tilt_y
-    zc=z_center
-    zs=z_size
-    tz=tilt_z
     # Matrices for the tilt rotations
-    r1 = array( [ [  cos(tz) , sin(tz) , 0 ],
-                  [ -sin(tz) , cos(tz) , 0 ],
-                  [    0     ,    0    , 1 ]],Float)
-    r2 = array( [ [ cos(ty) , 0 , sin(ty) ],
-                  [       0 , 1 ,   0     ],
-                  [-sin(ty) , 0 , cos(ty) ]],Float)
-    r2r1=matrixmultiply(r1,r2)
+    r1 = array( [ [  cos(tilt_z) ,-sin(tilt_z) , 0 ], # note this is r.h.
+                  [  sin(tilt_z) , cos(tilt_z) , 0 ],
+                  [    0         ,    0        , 1 ]],Float)
+    r2 = array( [ [ cos(tilt_y) , 0 , sin(tilt_y) ],
+                  [       0     , 1 ,   0     ],
+                  [-sin(tilt_y) , 0 , cos(tilt_y) ]],Float)
+    r3 = array( [ [  1 ,          0  ,       0     ],
+                  [  0 ,  cos(tilt_x), sin(tilt_x) ],
+                  [  0 , -sin(tilt_x), cos(tilt_x) ]],Float)
+    r2r1=matrixmultiply(matrixmultiply(r1,r2),r3)
     # Peak positions in 3D space
     #  - apply detector orientation
-    mypeaks = matrixmultiply(array(detector_orientation,Float),peaks)
-    vec =array( [ zeros(mypeaks.shape[1])     , # place detector at zero, 
+    peaks_on_detector = array(peaks)
+    peaks_on_detector[0,:] =  (peaks_on_detector[0,:]-z_center)*z_size
+    peaks_on_detector[1,:] =  (peaks_on_detector[1,:]-y_center)*y_size
+    # 
+    detector_orientation = [[o11,o12],[o21,o22]]
+    logging.debug("detector_orientation = "+str(detector_orientation))
+    flipped = matrixmultiply(array(detector_orientation,Float),
+                             peaks_on_detector)   
+    # 
+    vec =array( [ zeros(flipped.shape[1])     , # place detector at zero, 
                                                 # sample at -dist
-                    (mypeaks[0,:]-yc)*ys      ,            # x in search
-                    (mypeaks[1,:]-zc)*zs ]    , Float)     # y in search
+                    flipped[1,:]      ,        # x in search, frelon +z
+                    flipped[0,:]]    , Float) # y in search, frelon -y 
     #print vec.shape
     # Position of diffraction spots in 3d space after detector tilts is:
     rotvec=matrixmultiply(r2r1,vec)
     # Scattering vectors
-    if crystal_translation is None:
+    if omega is None or ( t_x == 0. and t_y == 0 and t_z == 0):
         magrotvec=sqrt(sum(rotvec*rotvec,0))
-        #print magrotvec.shape
-        # bugger this one for tilts
-        eta=degrees(arctan2(rotvec[2,:],rotvec[1,:])) 
+        # tan(eta) = y/z
+        eta=degrees(arctan2(rotvec[1,:],rotvec[2,:])) 
         # cosine rule a2 = b2+c2-2bccos(A)
         # a is distance from (0,0,0) to rotvec => magrotvec
         # b is distance from sample to detector
@@ -125,12 +132,13 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
         costwotheta = (b*b + c*c - a*a)/2/b/c
         twothetarad=arccos(costwotheta)
         twotheta=degrees(twothetarad)
+
         return twotheta, eta
     else:
+        print "Using translations t_x %f t_y %f t_z %f"%(t_x,t_y,t_z)
         # Compute positions of grains
         # expecting tx, ty, tz for each diffraction spot
         origin =  array([ -distance, 0, 0 ], Float)
-
         #
         # g =  R . W . k
         #  g - is g-vector w.r.t crystal
@@ -149,11 +157,11 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
         # C = (         1  ,          0  ,       0     ) ??? Use eta0 instead
         #     (         0  ,   cos(chi)  ,  sin(chi)   )  ??? Use eta0 instead
         #     (         0  ,  -sin(chi)  ,  cos(chi)   )  ??? Use eta0 instead
-        w=radians(axis_orientation1)
+        w=radians(wedge)
         WI = array( [ [ cos(w),         0, -sin(w)],
                       [      0,         1,       0],
                       [ sin(w),         0,  cos(w)] ] , Float)
-        c=radians(axis_orientation2)
+        c=radians(chi)
         CI = array( [ [      1,          0,       0],
                       [      0,     cos(c), -sin(c)],
                       [      0,     sin(c),  cos(c)] ] , Float)
@@ -170,10 +178,10 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
                           [       0,        0, 1] ] , Float)
             rotate = matrixmultiply(WI,matrixmultiply(CI,RI))
             #print rotate.shape,origin.shape,crystal_translation.shape
-            myorigin = origin + matrixmultiply(rotate , crystal_translation)
+            myorigin = origin + matrixmultiply(rotate , [t_x, t_y, t_z] )
             scattering_vectors = s = rotvec[:,i] - myorigin
             #print i,s,
-            eta[i]=degrees(arctan2(s[2],s[1]))
+            eta[i]=degrees(arctan2(s[1],s[2]))
             mag_s=sqrt(sum(s*s,0))
             costth = s[0] / mag_s
             #print costth
@@ -186,15 +194,15 @@ def compute_tth_histo(finalpeaks,tth,no_bins=0,min_bin_ratio=1,
                              # pass kwds you'd like to be ignored
           tthsort = sort(tth)
           maxtth = tthsort[-1]
-          print maxtth
+          logging.debug("maxtth=%f"%(maxtth))
           binsize = (maxtth+0.001)/no_bins
           histogram = zeros(no_bins,Float)
           tthbin = array(range(no_bins))*binsize
-
+          # TODO - look up the histogram idiom
           for t in tthsort:
               n= int(floor(t/binsize))
               histogram[n] = histogram[n] +1
-          print max(histogram)
+          logging.debug("max(histogram) = %d"%(max(histogram)))
           histogram=histogram/max(histogram)
 
           keeppeaks = [] 
@@ -213,8 +221,8 @@ def compute_g_vectors(tth, eta, omega, wavelength, wedge = 0.0, chi=0.0):
     Assumes single axis vertical
     ... unless a wedge angle is specified
     """
-    if wedge != 0.:
-        print "Using a wedge angle of ",wedge
+    #if wedge != 0.:
+    #    print "Using a wedge angle of ",wedge
     tth=radians(tth)
     eta=radians(eta)
 
@@ -225,9 +233,9 @@ def compute_g_vectors(tth, eta, omega, wavelength, wedge = 0.0, chi=0.0):
     ds=2*s/wavelength
     k=zeros((3,tth.shape[0]),Float)
     # x - along incident beam
-    k[0,:] = -ds*s
+    k[0,:] = -ds*s # this is negative x
     # y - towards door
-    k[1,:] = -ds*c*sin(eta) # plus or minus sin or cos
+    k[1,:] =  ds*c*sin(eta) # y direction
     # z - towards roof
     k[2,:] =  ds*c*cos(eta)
     # G-vectors - rotate k onto the crystal axes
@@ -261,7 +269,8 @@ def compute_g_vectors(tth, eta, omega, wavelength, wedge = 0.0, chi=0.0):
         t[1,:]=        c * k[1,:]    + s * k[2,:]
         t[2,:]=       -s * k[1,:]    + c * k[2,:]
         k=t
-    g[0,:] = cos(om)*k[0,:]+sin(om)*k[1,:]
+    # This is the reverse rotation (left handed, k back to g)
+    g[0,:] = cos(om)*k[0,:]+sin(om)*k[1,:]    
     g[1,:] =-sin(om)*k[0,:]+cos(om)*k[1,:]
     g[2,:] =                               k[2,:]
     return g
