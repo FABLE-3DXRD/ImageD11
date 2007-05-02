@@ -469,7 +469,7 @@ DATE (scan begin)= %s ;"""
     for k in ok:
         if k not in keys:
             s = "%s\n%-12s = %s ;"%(s,k,hd[k])
-    return "%-3070s}\n"%(s)
+    return "%-4094s}\n"%(s)
     
     
 
@@ -477,7 +477,7 @@ def writeedf(filename,dataobject):
     """
     """
     h=makeedfheader(dataobject)
-    assert(len(h)==3072) , "bad edf header size"
+    assert(len(h)==4096) , "bad edf header size "+str(len(h))
     f=open(filename,"wb")
     f.write(h)
     f.write(dataobject.data.astype(Numeric.Float32).tostring())
