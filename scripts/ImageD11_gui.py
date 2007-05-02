@@ -36,11 +36,23 @@ from Tkinter import *
 
 
 
+import logging, sys
 
 # This does not do anything unless you call it as a program:
 
 if __name__=="__main__":
-
+    # get the output!
+    # Set up the logging stuff
+    console = logging.StreamHandler(sys.stdout)
+    # set a format which is simpler for console use
+    formatter = logging.Formatter('%(levelname)-8s : %(message)s')
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    console.setLevel(logging.DEBUG)
+    root = logging.getLogger('')
+    root.addHandler(console)
+    root.setLevel(logging.DEBUG) # sh
     # Help message - TODO - proper online help
     def help():
         from tkMessageBox import showinfo
