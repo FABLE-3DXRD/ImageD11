@@ -18,11 +18,55 @@
 
 import Numeric
 
-import transform
-import indexing
-from grain import grain
+from ImageD11 import transform
+from ImageD11 import indexing
+from ImageD11 import parameters
+from ImageD11.grain import grain
 
 class refinegrains:
+    
+    pars = {"cell__a" : 4.1569162,
+        "cell__b" :  4.1569162,
+        "cell__c" : 4.1569162,
+        "cell_alpha" : 90.0,
+        "cell_beta" : 90.0,
+        "cell_gamma" : 90.0,
+        "cell_lattice_[P,A,B,C,I,F,R]" : 'P',
+        "chi" : 0.0,
+        "distance" : 7367.8452302,
+        "fit_tolerance" : 0.5,
+        "o11" : 1,
+        "o12" : 0,
+        "o21" : 0,
+        "o22" : 1,
+        "omegasign" : 1,
+        "t_x" : 33.0198146824,
+        "t_y" : 14.6384893741,
+        "t_z" : 0.0 ,
+        "tilt_x" : 0.0,
+        "tilt_y" : 0.0623952920101,
+        "tilt_z" : 0.00995011461696,
+        "wavelength" : 0.2646,
+        "wedge" : 0.0,
+        "y_center" : 732.950204632,
+        "y_size" : 4.6,
+        "z_center" : 517.007049626,
+        "z_size" : 4.6 }
+    stepsizes = {
+        "wavelength" : 0.001,
+        'y_center'   : 0.1,
+        'z_center'   : 0.1,
+        'distance'   : 0.1,
+        'tilt_y'     : transform.radians(0.1),
+        'tilt_z'     : transform.radians(0.1),
+        'tilt_x'     : transform.radians(0.1),
+        'wedge'      : transform.radians(0.1),
+        'chi'        : transform.radians(0.1),
+        't_x' : 0.1,
+        't_y' : 0.1,
+        't_z' : 0.1,
+        }
+
     def __init__(self,tolerance=0.01):
         self.tolerance=tolerance
         # list of ubi matrices (1 for each grain in each scan)
@@ -37,29 +81,16 @@ class refinegrains:
         self.grains = {}
         self.wedge = 0.0
         self.chi = 0.0
-        self.parameters = {}
-        self.varyingtranslations=False
+        self.drlv = None
+        self.parameterobj = parameters.parameters(**self.pars)
+        for k,s in self.stepsizes.items():
+            self.parameterobj.stepsizes[k]=s
 
     def loadparameters(self,filename):
-        lines = open(filename,"r").readlines()
-        for line in lines:
-            name,value=line.split()
-            try:
-                self.parameters[name]=float(value)
-            except:
-                self.parameters[name]=value
-
+        self.parameterobj.loadparameters(filename)
+        
     def saveparameters(self,filename):
-        out = open(filename,"w")
-        keys=self.parameters.keys()
-        keys.sort()
-        for k in keys:
-            try:
-                out.write("%s %f\n"%(k,self.parameters[k]))
-            except:
-                out.write("%s %s\n"%(k,self.parameters[k]))
-        out.close()
-
+        self.parameterobj.saveparameters(filename)
 
     def readubis(self,filename):
         """
@@ -129,28 +160,19 @@ class refinegrains:
         om      = self.scantitles[scanname].index("omega")
         om = self.scandata[scanname][:,om]
         g = self.grains[(grainname,scanname)]
-
-        tth,eta = transform.compute_tth_eta( Numeric.array([x, y]) ,
-                                             self.parameters['y-center'],
-                                             self.parameters['y-size'],
-                                             self.parameters['tilt-y'],
-                                             self.parameters['z-center'],
-                                             self.parameters['z-size'],
-                                             self.parameters['tilt-z'],
-                                             self.parameters['distance']*1.0e3,
-                                             crystal_translation = g.translation,
-                                             omega = om,
-                                             axis_orientation1 = self.parameters['wedge'],
-                                             axis_orientation2 = self.parameters['chi'])
         try:
-            sign = self.parameters['omegasign']
+            sign = self.parameterobj.parameters['omegasign']
         except:
             sign = 1.0
+        tth,eta = transform.compute_tth_eta( Numeric.array([x, y]),
+                                             omega = om * sign,
+                                             **self.parameterobj.parameters)
+        
         # print "Using omegasign=",sign
         self.gv = transform.compute_g_vectors(tth,eta,om*sign,
-                                              float(self.parameters['wavelength']),
-                                              self.parameters['wedge'],
-                                              self.parameters['chi'])
+                                              float(self.parameterobj.parameters['wavelength']),
+                                              self.parameterobj.parameters['wedge'],
+                                              self.parameterobj.parameters['chi'])
         self.gv = Numeric.transpose(self.gv)
 
 
@@ -180,7 +202,7 @@ class refinegrains:
             g = self.grains[key]
             grainname = key[0]
             scanname = key[1]
-            if self.varyingtranslations or first:
+            if True: #""" : self.varyingtranslations or first: """
                 first = False
                 # Compute gv using current parameters
                 self.compute_gv(grainname,scanname)
@@ -193,6 +215,7 @@ class refinegrains:
             hint=Numeric.floor(h+0.5).astype(Numeric.Int) # rounds down
             diff=h-hint
             drlv=Numeric.sqrt(Numeric.sum(diff*diff,0))
+            self.drlv = drlv
             t=self.tolerance
             n_ind = Numeric.sum(Numeric.where(drlv<t,1,0)) # drlv
             drlv = Numeric.where(drlv<t,drlv,0)
@@ -212,29 +235,12 @@ class refinegrains:
 
         return 1e6*diffs/contribs
 
-    stepsizes = {
-        "wavelength" : 0.001,
-        'y-center'   : 0.1,
-        'z-center'   : 0.1,
-        'distance'   : 0.1,
-        'tilt-y'     : transform.radians(0.1),
-        'tilt-z'     : transform.radians(0.1),
-        'wedge'      : transform.radians(0.1),
-        'chi'        : transform.radians(0.1),
-        'translation' : 0.1
-        }
-
-    def applyargs(self,arg):
-        for i in range(len(self.varylist)):
-            item = self.varylist[i]
-            value = arg[i]
-            try:
-                self.parameters[item]=value
-            except:
-                # Hopefully a crystal translation
-                pass
+    def applyargs(self,args):
+        self.parameterobj.set_variable_values(args)
 
     def printresult(self,arg):
+        print self.parameterobj.parameters
+        return
         for i in range(len(self.varylist)):
             item = self.varylist[i]
             value = arg[i]
@@ -246,28 +252,17 @@ class refinegrains:
                 pass
 
 
-    def fit(self):
+    def fit(self, maxiters=100):
         import simplex
-        guess = []
-        inc = []
-        for item in self.varylist:
-            try:
-                guess.append( float(self.parameters[item]) )
-            except:
-                # Hopefully a crystal translation
-                print item
-            try:
-                inc.append(self.stepsizes[item])
-            except:
-                pass
-
+        guess = self.parameterobj.get_variable_values()
+        inc = self.parameterobj.get_variable_stepsizes()
         print "Start of simplex:"
         self.printresult(guess)
         print
 
         s=simplex.Simplex(self.gof,guess,inc)
 
-        newguess,error,iter=s.minimize(maxiters=100)
+        newguess,error,iter=s.minimize(maxiters=maxiters)
 
         print
         print "End of simplex"
