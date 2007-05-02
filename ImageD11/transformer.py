@@ -47,7 +47,7 @@ class transformer:
             'cell_gamma':120.0,
             'cell_lattice_[P,A,B,C,I,F,R]':"P",
             # Frelon defaults
-            'o11' : 1, 'o12' : 0, 'o21' : 0, 'o22' -1,
+            'o11' : 1, 'o12' : 0, 'o21' : 0, 'o22' : -1,
             # crystal translations
             't_x' : 0,
             't_y' : 0,
