@@ -178,10 +178,10 @@ class twodplot(Tk.Frame):
             if name in self.hidden:
                 continue
             item=self.plotitems[name]
-            print 'x ', item.x
-            print 'y ', item.y
-            print 'd ', item.d
-            print self.plotitems[name].d
+            #print 'x ', item.x
+            #print 'y ', item.y
+            #print 'd ', item.d
+            #print self.plotitems[name].d
             if item.d.has_key('color'):
                 pc=item.d['color']
             else:
