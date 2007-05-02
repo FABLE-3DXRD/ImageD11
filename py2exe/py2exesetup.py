@@ -18,7 +18,8 @@ for f in matplotlibdata:
 
         
 setup(
-     console = ["../scripts/ImageD11_gui.py","../scripts/peaksearch.py"],
+     console = ["../scripts/ImageD11_gui.py","../scripts/peaksearch.py",
+                "../scripts/ImageD11Server.py" ],
      options={
              'py2exe': {
                         'excludes' : ['numpy','wx'],
