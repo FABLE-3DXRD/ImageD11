@@ -24,6 +24,9 @@ from listdialog import listdialog
 
 from ImageD11 import twodplot
 
+
+import logging
+
 class guitransformer:
 
     def __init__(self,parent,quiet="No"):
@@ -78,11 +81,30 @@ class guitransformer:
         """
         self.parent.guicommander.execute("transformer","updateparameters")
         pars = self.parent.guicommander.getdata("transformer","pars")
-        import logging
+        vars = self.parent.guicommander.execute("transformer","getvars")
+        possvars = self.parent.guicommander.execute("transformer","get_variable_list")
+        logging.debug("possible variables "+str(possvars))
+        logic = {}
+        for v in possvars:
+            if v in vars:
+                logic[v]=1
+            else:
+                logic[v]=0
         logging.debug("transformer pars: %s"% (str(pars)))
-        d=listdialog(self.parent,items=pars,title="Detector parameters")
+        d=listdialog(self.parent,items=pars,title="Detector parameters",
+                     logic=logic)
         self.parent.guicommander.execute("transformer",
                 "parameterobj.set_parameters",d.result)
+        d.fv
+        vars = []
+        print "d.fv",d.fv
+        for v in possvars:
+            logging.debug(str(v)+" "+str(d.fv[v]))
+            if d.fv[v]==1:
+                vars.append(v)
+        logging.debug("vars: "+str(vars))
+        self.parent.guicommander.execute("transformer",
+                "parameterobj.set_varylist",vars)
         
     def plotyz(self):
         """

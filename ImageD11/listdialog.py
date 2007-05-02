@@ -22,6 +22,7 @@ class listdialog(Tk.Toplevel):
         if title:
             self.title(title)
         self.logic = logic
+        self.logicvars = {}
         self.parent = parent
         self.result = items
         body = Tk.Frame(self)
@@ -36,6 +37,7 @@ class listdialog(Tk.Toplevel):
                                   parent.winfo_rooty()+50))
         self.initial_focus.focus_set()
         self.wait_window(self)
+        
     def body(self, master, items, logic=None):
         # create dialog body.  return widget that should have
         # initial focus.  this method should be overridden
@@ -97,9 +99,10 @@ class listdialog(Tk.Toplevel):
         i=0
         self.fv = {}
         for item in self.e:
-            retdict[self.keys[i]]=item.get()
-            if self.logic != None and self.logic.has_key(keys[i]):
-                self.fv[key]=self.logicvars[key].get()
+            k = self.keys[i]
+            retdict[k]=item.get()
+            if self.logic != None and self.logic.has_key(k):
+                self.fv[k]=self.logicvars[k].get()
             i=i+1
         self.result=retdict
         print self.result

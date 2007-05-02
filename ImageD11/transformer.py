@@ -17,8 +17,137 @@
 
 from Numeric import *
 import math
-from ImageD11 import transform, parameters, unitcell
+from ImageD11 import transform, unitcell
+from ImageD11.parameters import par, parameters
 
+PARAMETERS = [
+     par( "omegasign", 1.0, 
+          helpstring = "Sign of the rotation about z (normally +1 for right handed)",
+          vary=False, 
+          can_vary=False),
+     par('z_center',  1024.0,
+          helpstring = "Beam centre in vertical, pixels",
+          vary=True, 
+          can_vary=True,
+          stepsize = 1.0),
+     par('y_center',  1024.0,
+          helpstring = "Beam centre in horizontal, pixels",
+          vary=True, 
+          can_vary=True,
+          stepsize = 1.0),
+     par('distance',   50000.0,
+          helpstring = "sample detector distance, same units as pixel size",
+          vary=True, 
+          can_vary=True,
+          stepsize = 1.0),
+     par('z_size',   46.77648,
+          helpstring = "pixel size in vertical, same units distance",
+          vary=False, 
+          can_vary=False), # this could actually vary - a bit crazy?
+     par('y_size',   48.08150,
+          helpstring = "pixel size in horizontal, same units as distance",
+          vary=False, 
+          can_vary=False), # this could actually vary - a bit crazy?
+     par('tilt_z',    0.0,
+          helpstring = "detector tilt, right handed around z",
+          vary=True, 
+          can_vary=True,
+          stepsize = transform.radians(0.1) ),
+     par('tilt_y',    0.0,
+          helpstring = "detector tilt, right handed around y",
+          vary=True, 
+          can_vary=True,
+          stepsize = transform.radians(0.1) ),
+     par('tilt_x',    0.0,
+          helpstring = "detector tilt, right handed around x",
+          vary=False, 
+          can_vary=True,
+          stepsize = transform.radians(0.1) ),
+     par('fit_tolerance', 0.05,
+          helpstring = "tolerance to decide which peaks to use",
+          vary=False, 
+          can_vary=False),
+     par('wavelength', 0.155,
+          helpstring = "wavelength, normally angstrom, same as units unit cell ",
+          vary=False, 
+          can_vary=True,# but you'll be lucky!
+          stepsize = 0.0001 ),
+     par('wedge',0.0,
+          helpstring = "wedge, rotation around y under omega",
+          vary=False, 
+          can_vary=True,
+          stepsize = transform.radians(0.1) ),
+     par('chi', 0.0,
+          helpstring = "wedge, rotation around x under omega",
+          vary=False, 
+          can_vary=True,
+          stepsize = transform.radians(0.1) ),
+     par('cell__a' , 4.1569,
+          helpstring = "unit cell par, same units as wavelength",
+          vary=False, 
+          can_vary=True,
+          stepsize = 0.01 ),
+     par('cell__b' , 4.1569,
+          helpstring = "unit cell par, same units as wavelength",
+          vary=False, 
+          can_vary=True,
+          stepsize = 0.01 ),
+     par('cell__c' , 4.1569,
+          helpstring = "unit cell par, same units as wavelength",
+          vary=False, 
+          can_vary=True,
+          stepsize = 0.01 ),
+     par('cell__alpha' , 90.0,
+          helpstring = "unit cell par, degrees",
+          vary=False, 
+          can_vary=True,
+          stepsize = 0.01 ),
+     par('cell__beta' , 90.0,
+          helpstring = "unit cell par, degrees",
+          vary=False, 
+          can_vary=True,
+          stepsize = 0.01 ),
+     par('cell__gamma' , 90.0,
+          helpstring = "unit cell par, degrees",
+          vary=False, 
+          can_vary=True,
+          stepsize = 0.01 ),
+     par('cell_lattice_[P,A,B,C,I,F,R]', "P",
+          helpstring = "lattice centering type. Try P if you are not sure",
+          vary=False, 
+          can_vary=False),
+     par('o11' , 1, 
+          helpstring = "detector flip element +1 for frelon & quantix",
+          vary=False, 
+          can_vary=False ),
+     par('o12' , 0, 
+          helpstring = "detector flip element 0 for frelon & quantix",
+          vary=False, 
+          can_vary=False),
+     par('o21' , 1, 
+          helpstring = "detector flip element 0 for frelon & quantix",
+          vary=False, 
+          can_vary=False),
+     par('o22' , -1, 
+          helpstring = "detector flip element -1 for frelon & +1 for quantix",
+          vary=False, 
+          can_vary=False),
+     par('t_x' , 0,
+          helpstring = "crystal translation, units as distance/pixels",
+          vary=False, 
+          can_vary=True,
+          stepsize = 1.),
+     par('t_y' , 0,
+          helpstring = "crystal translation, units as distance/pixels",
+          vary=False, 
+          can_vary=True,
+          stepsize = 1.),
+     par('t_z' , 0,
+          helpstring = "crystal translation, units as distance/pixels",
+          vary=False, 
+          can_vary=True,
+          stepsize = 1.),
+     ]
 
 
 
@@ -27,32 +156,6 @@ class transformer:
     Handles the algorithmic, fitting and state information for 
     fitting parameters to give experimental calibrations
     """
-    pars = {'omegasign':1,
-            'z_center':  1024.0,
-            'y_center':  1024.0,
-            'distance':   50000.0,
-            'z_size':   46.77648,
-            'y_size':   48.08150,
-            'tilt_z':    0.0,
-            'tilt_y':    0.0,
-            'fit_tolerance':0.05,
-            'wavelength':0.155,
-            'wedge':0.0,
-            'chi':0.0,
-            'cell__a':2.9508,
-            'cell__b':2.9508,
-            'cell__c':4.6855,
-            'cell_alpha':90.0,
-            'cell_beta':90.0,
-            'cell_gamma':120.0,
-            'cell_lattice_[P,A,B,C,I,F,R]':"P",
-            # Frelon defaults
-            'o11' : 1, 'o12' : 0, 'o21' : 0, 'o22' : -1,
-            # crystal translations
-            't_x' : 0,
-            't_y' : 0,
-            't_z' : 0 }
-
     def __init__(self):
         """
         Nothing passed in ?
@@ -63,15 +166,16 @@ class transformer:
         self.gv=None
         self.unitcell=None
         # this sets defaults according to class dict.
-        self.parameterobj=parameters.parameters(**self.pars)
-        vars = ['y_center','z_center','distance','tilt_y','tilt_z']
-        incs = [ .1 , .1 , 1000.0 , transform.radians(0.1) , transform.radians(0.1) ]
-        self.parameterobj.varylist = vars
-        for v,i in zip(vars,incs):
-            self.parameterobj.stepsizes[v] = i
+        self.parameterobj = parameters()
+        for p in PARAMETERS:
+            self.parameterobj.addpar(p)
+        self.pars = self.parameterobj.get_parameters()
    
     def updateparameters(self):
-        self.pars.update(self.parameterobj.parameters)
+        self.pars = self.parameterobj.get_parameters()
+
+    def get_variable_list(self):
+        return self.parameterobj.get_variable_list()
 
     def getvars(self):
         """ decide what is refinable """
@@ -122,7 +226,9 @@ class transformer:
     def compute_tth_histo(self):
         """ Compute the histogram over twotheta for peaks previous read in
         and filter peaks out falling in bins with less than min_bin_ratio """
-        self.finalpeaks = transform.compute_tth_histo(self.finalpeaks,self.twotheta,**self.parameterobj.get_parameters())
+        self.finalpeaks = transform.compute_tth_histo(self.finalpeaks,
+                                                      self.twotheta , 
+                                  **self.parameterobj.get_parameters())
         self.peaks_xy = self.finalpeaks[0:2,:]
         self.x = self.finalpeaks[0,:]
         self.y = self.finalpeaks[1,:]
@@ -157,8 +263,10 @@ class transformer:
         self.tthc=[]     # computed two theta values
         self.fitds=[]    # hmm?
         self.fit_tolerance=1.
-        self.parameterobj.update_other(self)
-        w = self.wavelength
+        pars = self.parameterobj.get_parameters()
+        w = float(pars['wavelength'])
+        self.wavelength = w
+        self.fit_tolerance = float(pars['fit_tolerance'])
         print "Tolerance for assigning peaks to rings",self.fit_tolerance,"max tth",tthmax
         for i in range(len(self.theoryds)):
             dsc=self.theoryds[i]
@@ -217,27 +325,31 @@ class transformer:
             highest = maximum.reduce(self.twotheta)
         else:
             highest = limit
-        self.wavelength=None
-        self.parameterobj.update_other(self)
+        self.wavelength=pars['wavelength']
         ds = 2*sin(transform.radians(highest)/2.)/self.wavelength
-        self.dslimit=ds
+        self.dslimit = ds
         #print "highest peak",highest,"corresponding d*",ds
-        self.theorypeaks=self.unitcell.gethkls(ds)
+        self.theorypeaks = self.unitcell.gethkls(ds)
         self.unitcell.makerings(ds)
-        self.theoryds=self.unitcell.ringds
-        tths = [arcsin(self.wavelength*dstar/2)*2 for dstar in self.unitcell.ringds]
-        self.theorytth=transform.degrees(array(tths))
+        self.theoryds = self.unitcell.ringds
+        tths = [arcsin(self.wavelength*dstar/2)*2 
+                 for dstar in self.unitcell.ringds]
+        self.theorytth = transform.degrees(array(tths))
 
     def computegv(self):
         """
         Using self.twotheta, self.eta and omega angles, compute x,y,z of spot
         in reciprocal space
         """
-        self.omegasign = 1.
-        self.wavelength= 1.
+        pars = self.parameterobj.get_parameters()
+        self.wavelength = 1.0 # dumb
+        self.omegasign = 1.0
         self.wedge=0.
         self.chi=0.
-        self.parameterobj.update_other(self) # get sign etc
+        for a in ['wavelength','omegasign','wedge','chi']:
+            if pars.has_key(a):
+                setattr(self,a,pars[a])
+        
         if self.twotheta is None:
             self.compute_tth_eta()
         self.gv = transform.compute_g_vectors(self.twotheta,
@@ -259,7 +371,7 @@ class transformer:
         Save g-vectors into a file
         Use crappy .ass format from previous for now (testing)
         """
-        self.parameterobj.update_other(self)
+        #        self.parameterobj.update_other(self)
         if self.gv is None:
             self.computegv()
         if self.unitcell is None:

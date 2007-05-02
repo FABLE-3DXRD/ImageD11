@@ -8,10 +8,10 @@ ubifile = sys.argv[2]
 fltfile = sys.argv[3]
 newpars = sys.argv[4]
 
-if os.path.exists(newpars):
-    ok = raw_input("OK to overwrite %s ? [y/n]"%(newpars))
-    if ok not in ["y","Y","Yes","yes","YES"]:
-        sys.exit()
+#if os.path.exists(newpars):
+#    ok = raw_input("OK to overwrite %s ? [y/n]"%(newpars))
+#    if ok not in ["y","Y","Yes","yes","YES"]:
+#        sys.exit()
 
 o = refinegrains.refinegrains(tolerance=0.5)
 o.loadparameters(parfile)
@@ -29,7 +29,7 @@ o.refineubis(quiet=False)
 
 o.saveparameters(newpars)
 
-from matplotlib.pylab import plot, show
-plot(o.drlv)
-show()
+#from matplotlib.pylab import plot, show
+#plot(o.drlv)
+#show()
 

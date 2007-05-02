@@ -100,7 +100,7 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
     peaks_on_detector[1,:] =  (peaks_on_detector[1,:]-y_center)*y_size
     # 
     detector_orientation = [[o11,o12],[o21,o22]]
-    logging.debug("detector_orientation = "+str(detector_orientation))
+    #logging.debug("detector_orientation = "+str(detector_orientation))
     flipped = matrixmultiply(array(detector_orientation,Float),
                              peaks_on_detector)   
     # 
