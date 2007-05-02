@@ -45,7 +45,13 @@ class transformer:
             'cell_alpha':90.0,
             'cell_beta':90.0,
             'cell_gamma':120.0,
-            'cell_lattice_[P,A,B,C,I,F,R]':"P"}
+            'cell_lattice_[P,A,B,C,I,F,R]':"P",
+            # Frelon defaults
+            'o11' : 1, 'o12' : 0, 'o21' : 0, 'o22' -1,
+            # crystal translations
+            't_x' : 0,
+            't_y' : 0,
+            't_z' : 0 }
 
     def __init__(self):
         """
@@ -60,13 +66,20 @@ class transformer:
         self.parameterobj=parameters.parameters(**self.pars)
         vars = ['y_center','z_center','distance','tilt_y','tilt_z']
         incs = [ .1 , .1 , 1000.0 , transform.radians(0.1) , transform.radians(0.1) ]
-        self.parameterobj.varylist=vars
+        self.parameterobj.varylist = vars
         for v,i in zip(vars,incs):
             self.parameterobj.stepsizes[v] = i
    
     def updateparameters(self):
         self.pars.update(self.parameterobj.parameters)
 
+    def getvars(self):
+        """ decide what is refinable """
+        return self.parameterobj.varylist
+    
+    def setvars(self,varlist):
+        """ set the things to refine """
+        self.parameterobj.varylist = varlist
 
     def loadfiltered(self,filename):
         f=open(filename,"r")
@@ -102,6 +115,7 @@ class transformer:
     def compute_tth_eta(self):
         """ Compute the twotheta and eta for peaks previous read in """
         self.twotheta, self.eta = transform.compute_tth_eta( self.peaks_xy,
+                                                             omega=self.omega,
                  **self.parameterobj.get_parameters() ) 
         #self.ds =
         
