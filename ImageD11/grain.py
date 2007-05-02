@@ -18,11 +18,13 @@
 
 from Numeric import transpose, matrixmultiply, Float, Int, floor, sum, zeros,\
         array, sqrt, arange, compress, less, take, outerproduct
+from LinearAlgebra import inverse
 import math
 
 class grain:
     def __init__(self,ubi,translation=None):
-        self.ubi=ubi
+        self.ubi = ubi
+        self.ub = inverse(ubi)
         if translation==None:
             self.translation = zeros(3,Float)
         else:
