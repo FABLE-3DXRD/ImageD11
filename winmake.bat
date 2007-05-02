@@ -5,7 +5,11 @@ cd test
 cd demo
 test.py
 cd ..
+cd quantix
+fitgrain.py g3.pars g3.ubi g3.flt new.pars
 cd ..
+cd ..
+pause
 
 goto END 
 
