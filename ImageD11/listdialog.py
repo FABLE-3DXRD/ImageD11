@@ -16,15 +16,16 @@ class listdialog(Tk.Toplevel):
     Dialog box for setting detector parameters
     Takes a list of strings and numbers
     """
-    def __init__(self, parent, title = None, items=None):
+    def __init__(self, parent, title = None, items=None, logic = None):
         Tk.Toplevel.__init__(self, parent)
         self.transient(parent)
         if title:
             self.title(title)
+        self.logic = logic
         self.parent = parent
         self.result = items
         body = Tk.Frame(self)
-        self.initial_focus = self.body(body,items)
+        self.initial_focus = self.body(body,items,logic)
         body.pack(padx=5, pady=5)
         self.buttonbox()
         self.grab_set()
@@ -35,7 +36,7 @@ class listdialog(Tk.Toplevel):
                                   parent.winfo_rooty()+50))
         self.initial_focus.focus_set()
         self.wait_window(self)
-    def body(self, master, items):
+    def body(self, master, items, logic=None):
         # create dialog body.  return widget that should have
         # initial focus.  this method should be overridden
         self.e=[]
@@ -50,6 +51,13 @@ class listdialog(Tk.Toplevel):
                 el.insert(Tk.END,items[key])
                 el.grid(row=i,column=1)
                 self.e.append(el)
+                if logic != None and logic.has_key(key):
+                    val = logic[key]
+                    self.logicvars[key] = Tk.IntVar()
+                    self.logicvars[key].set(val)
+                    b=Tk.Checkbutton(master,text="Vary?",
+                                     variable=self.logicvars[key])
+                    b.grid(row=i,column=2)
                 i=i+1
             return self.e[0]
 
@@ -87,8 +95,11 @@ class listdialog(Tk.Toplevel):
     def apply(self):
         retdict={}
         i=0
+        self.fv = {}
         for item in self.e:
             retdict[self.keys[i]]=item.get()
+            if self.logic != None and self.logic.has_key(keys[i]):
+                self.fv[key]=self.logicvars[key].get()
             i=i+1
         self.result=retdict
         print self.result
