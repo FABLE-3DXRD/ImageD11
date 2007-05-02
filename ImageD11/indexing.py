@@ -607,7 +607,10 @@ class indexer:
                     npk=npk+1
                 m=m+1
             if npk==0:
-                f.write("Peak not assigned, closest=[ % -6.4f % -6.4f % -6.4f ] for grain %d\n"%(besthi[0],besthi[1],besthi[2],bestm))
+                if len(self.ubis)>0:
+                    f.write("Peak not assigned, closest=[ % -6.4f % -6.4f % -6.4f ] for grain %d\n"%(besthi[0],besthi[1],besthi[2],bestm))
+                else:
+                    f.write("Peak not assigned, no grains found\n")
                 nleft=nleft+1
             else:
                 nfitted=nfitted+1
