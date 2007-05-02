@@ -135,10 +135,9 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
 
         return twotheta, eta
     else:
-        print "Using translations t_x %f t_y %f t_z %f"%(t_x,t_y,t_z)
+        # print "Using translations t_x %f t_y %f t_z %f"%(t_x,t_y,t_z)
         # Compute positions of grains
         # expecting tx, ty, tz for each diffraction spot
-        origin =  array([ -distance, 0, 0 ], Float)
         #
         # g =  R . W . k
         #  g - is g-vector w.r.t crystal
@@ -170,49 +169,76 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
                 "omega and peaks arrays must have same number of peaks")
         eta=zeros(omega.shape[0],Float)
         tth=zeros(omega.shape[0],Float)
-
-        for i in range(omega.shape[0]):
-            om = radians(omega[i])
-            RI = array( [ [ cos(om), -sin(om), 0],
-                          [ sin(om),  cos(om), 0],
-                          [       0,        0, 1] ] , Float)
-            rotate = matrixmultiply(WI,matrixmultiply(CI,RI))
-            #print rotate.shape,origin.shape,crystal_translation.shape
-            myorigin = origin + matrixmultiply(rotate , [t_x, t_y, t_z] )
-            scattering_vectors = s = rotvec[:,i] - myorigin
-            #print i,s,
-            eta[i]=degrees(arctan2(s[1],s[2]))
-            mag_s=sqrt(sum(s*s,0))
-            costth = s[0] / mag_s
-            #print costth
-            tth[i] = degrees(arccos(costth))
-
-        return tth, eta
+        t = zeros((3,omega.shape[0]),Float) # crystal translations
+        # Rotations in reverse order compared to making g-vector
+        # also reverse directions. this is trans at all zero to
+        # current setting. gv is scattering vector to all zero
+        om_r = radians(omega)
+                # This is the real rotation (right handed, g back to k)
+        t[0,:] = cos(om_r)*t_x - sin(om_r)*t_y
+        t[1,:] = sin(om_r)*t_x + cos(om_r)*t_y
+        t[2,:] =                                  t_z
+        if wedge != 0.0:
+            c = cos(radians(wedge))
+            s = sin(radians(wedge))
+            u = zeros(t.shape,Float)
+            u[0,:]= c * t[0,:]           + -s * t[2,:]
+            u[1,:]=            t[1,:]
+            u[2,:]= s * t[0,:]           + c * t[2,:]
+            t = u
+        if chi != 0.0:
+            c = cos(radians(chi))
+            s = sin(radians(chi))
+            u = zeros(t.shape,Float)
+            u[0,:]= t[0,:]  
+            u[1,:]=        c * t[1,:]    + -s * t[2,:]
+            u[2,:]=        s * t[1,:]    + c * t[2,:]
+            t = u
+        myorigins = t.copy()
+        myorigins[0,:] = myorigins[0,:] - distance
+        # origin =  array([ -distance, 0, 0 ], Float)
+        # scattering_vectors 
+        s = rotvec - myorigins
+        eta = degrees(arctan2(s[1],s[2]))
+        mag_s = sqrt(sum(s*s,0))
+        costth = s[0] / mag_s
+        tth = degrees( arccos(costth) )
+        return tth , eta
+                      
     
 def compute_tth_histo(finalpeaks,tth,no_bins=0,min_bin_ratio=1,
                     **kwds): # last line is for laziness - 
                              # pass kwds you'd like to be ignored
-          tthsort = sort(tth)
-          maxtth = tthsort[-1]
-          logging.debug("maxtth=%f"%(maxtth))
-          binsize = (maxtth+0.001)/no_bins
-          histogram = zeros(no_bins,Float)
-          tthbin = array(range(no_bins))*binsize
-          # TODO - look up the histogram idiom
-          for t in tthsort:
-              n= int(floor(t/binsize))
-              histogram[n] = histogram[n] +1
-          logging.debug("max(histogram) = %d"%(max(histogram)))
-          histogram=histogram/max(histogram)
+    tthsort = sort(tth)
+    maxtth = tthsort[-1]
+    logging.debug("maxtth=%f"%(maxtth))
+    binsize = (maxtth+0.001)/no_bins
+    tthbin = array(range(no_bins))*binsize # runs from 0->maxtth
+    # vectorise this loop below from old Numeric manual
+    #for t in tthsort:
+    #    n= int(floor(t/binsize))
+    #    histogram[n] = histogram[n] +1
+    n = searchsorted(tthsort,tthbin) # position of bin in sorted
+    n = concatenate([n,[len(tthsort)]])   # add on last position
+    histogram = (n[1:] - n[:-1])*1.0        # this would otherwise be integer
+    logging.debug("max(histogram) = %d"%(max(histogram)))
+    histogram=histogram/max(histogram)
+    
+    # keeppeaks = [] 
+    #for t in range(tth.shape[0]):
+    #    if histogram[bins[t]]> min_bin_ratio:
+    #        keeppeaks.append(t)
+    #keeppeaks = tuple(keeppeaks)
+    #finalpeaks = take(finalpeaks,keeppeaks,1)
+    
+    # Vectorised version
+    bins = floor(tth/binsize).astype(Int) # bin for each two theta
+    hpk = take(histogram, bins) # hist for each peak
+    keepind = compress( hpk > float(min_bin_ratio) , range(tth.shape[0]) )
+    print len(keepind),tth.shape[0]
+    filteredpeaks = take(finalpeaks, keepind, 1) # beware of modifying array arg...
 
-          keeppeaks = [] 
-          for t in range(tth.shape[0]):
-              n= int(floor(tth[t]/binsize)) 
-              if histogram[n]> min_bin_ratio:
-                  keeppeaks.append(t)
-          keeppeaks =tuple(keeppeaks)
-          finalpeaks = take(finalpeaks,keeppeaks,1)
-          return finalpeaks
+    return filteredpeaks
                              
 def compute_g_vectors(tth, eta, omega, wavelength, wedge = 0.0, chi=0.0):
     """
