@@ -107,6 +107,7 @@ class plot3d(Tk.Toplevel):
         d=(255.*(d-mi)/(mx-mi)) # scale intensity
         self.image=Numeric.zeros((1024,1024),Numeric.UInt8)
         if d.shape==(2048,2048):
+            # rebin 2x2
             im=(d[::2,::2]+d[::2,1::2]+d[1::2,::2]+d[1::2,1::2])/4
             self.image=(255-im).astype(Numeric.UInt8).tostring()
         self.imageWidth=1024
