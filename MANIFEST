@@ -13,6 +13,7 @@ test/demo/notes.pdf
 test/demo/eu2.pars
 scripts/filtergrain.py
 scripts/fitgrain.py
+scripts/pars_2_sweeper.py
 scripts/bgmaker.py
 scripts/powderimagetopeaks.py
 scripts/edf2bruker.py

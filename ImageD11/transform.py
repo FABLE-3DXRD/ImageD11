@@ -60,6 +60,7 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
                     omega = None,         #       == phi at chi=90
                     wedge = 0.0, # Wedge == theta on 4circ
                     chi = 0.0, #       == chi - 90
+                    return_pixel_xyz = False,
                     **kwds): # last line is for laziness - 
                              # pass kwds you'd like to be ignored
     """
@@ -90,9 +91,9 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
                   [       0     , 1 ,   0     ],
                   [-sin(tilt_y) , 0 , cos(tilt_y) ]],Float)
     r3 = array( [ [  1 ,          0  ,       0     ],
-                  [  0 ,  cos(tilt_x), sin(tilt_x) ],
-                  [  0 , -sin(tilt_x), cos(tilt_x) ]],Float)
-    r2r1=matrixmultiply(matrixmultiply(r1,r2),r3)
+                  [  0 ,  cos(tilt_x), -sin(tilt_x) ],
+                  [  0 ,  sin(tilt_x), cos(tilt_x) ]],Float)
+    r2r1=matrixmultiply(matrixmultiply(r3,r2),r1)
     # Peak positions in 3D space
     #  - apply detector orientation
     peaks_on_detector = array(peaks)
@@ -111,6 +112,8 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
     #print vec.shape
     # Position of diffraction spots in 3d space after detector tilts is:
     rotvec=matrixmultiply(r2r1,vec)
+    if return_pixel_xyz:
+        return rotvec
     # Scattering vectors
     if omega is None or ( t_x == 0. and t_y == 0 and t_z == 0):
         magrotvec=sqrt(sum(rotvec*rotvec,0))
@@ -237,8 +240,39 @@ def compute_tth_histo(finalpeaks,tth,no_bins=0,min_bin_ratio=1,
     keepind = compress( hpk > float(min_bin_ratio) , range(tth.shape[0]) )
     print len(keepind),tth.shape[0]
     filteredpeaks = take(finalpeaks, keepind, 1) # beware of modifying array arg...
-
     return filteredpeaks
+
+
+
+
+
+def not_compute_tth_histo(finalpeaks,tth,no_bins=0,min_bin_ratio=1,
+                    **kwds): # last line is for laziness - 
+                             # pass kwds you'd like to be ignored
+          import time
+          start = time.time()
+          tthsort = sort(tth)
+          maxtth = tthsort[-1]
+          print maxtth
+          binsize = (maxtth+0.001)/no_bins
+          histogram = zeros(no_bins,Float)
+          tthbin = array(range(no_bins))*binsize
+
+          for t in tthsort:
+              n= int(floor(t/binsize))
+              histogram[n] = histogram[n] +1
+          print max(histogram)
+          histogram=histogram/max(histogram)
+
+          keeppeaks = [] 
+          for t in range(tth.shape[0]):
+              n= int(floor(tth[t]/binsize)) 
+              if histogram[n]> min_bin_ratio:
+                  keeppeaks.append(t)
+          keeppeaks =tuple(keeppeaks)
+          finalpeaks = take(finalpeaks,keeppeaks,1)
+          print "histo",time.time()-start
+          return finalpeaks
                              
 def compute_g_vectors(tth, eta, omega, wavelength, wedge = 0.0, chi=0.0):
     """

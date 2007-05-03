@@ -233,7 +233,7 @@ class transformer:
         self.x = self.finalpeaks[0,:]
         self.y = self.finalpeaks[1,:]
         self.omega = self.finalpeaks[2,:]
-
+        self.compute_tth_eta()
 
     def gof(self,args):
         """ Compute how good is the fit of obs/calc peak positions in tth """
