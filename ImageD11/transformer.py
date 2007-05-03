@@ -315,7 +315,7 @@ class transformer:
         #
         pars = self.parameterobj.get_parameters()
         cell = [ pars[name] for name in ['cell__a','cell__b','cell__c',
-                                        'cell_alpha','cell_beta','cell_gamma']]
+                                        'cell__alpha','cell__beta','cell__gamma']]
         lattice=pars['cell_lattice_[P,A,B,C,I,F,R]']
         self.unitcell=unitcell.unitcell( cell ,  lattice)
         if self.twotheta==None:
