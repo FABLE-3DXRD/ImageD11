@@ -124,7 +124,7 @@ PARAMETERS = [
           helpstring = "detector flip element 0 for frelon & quantix",
           vary=False, 
           can_vary=False),
-     par('o21' , 1, 
+     par('o21' , 0, 
           helpstring = "detector flip element 0 for frelon & quantix",
           vary=False, 
           can_vary=False),
