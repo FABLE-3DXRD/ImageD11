@@ -2,12 +2,14 @@
 from ImageD11 import refinegrains
 import Numeric
 import sys
-fltfile = "peaks.out_merge_t100"
-
+fltfile = sys.argv[1] #"peaks.out_merge_t100"
+parfile = sys.argv[2]
+ubifile = sys.argv[3]
+outfile = sys.argv[4]
 o = refinegrains.refinegrains(tolerance=0.02)
 
-o.loadparameters("g3.pars")
-o.readubis("g3.ubi")
+o.loadparameters(parfile)
+o.readubis(ubifile)
 o.loadfiltered(fltfile)
 o.generate_grains()
 for tol in range(1,11):
@@ -27,7 +29,7 @@ diff=h-hint
 drlv=Numeric.sqrt(Numeric.sum(diff*diff,0))
 
 print o.scandata[fltfile].shape
-out = open(sys.argv[2],"w")
+out = open(outfile,"w")
 out.write("# xc yc omega npixels avg_intensity x_raw y_raw sigx sigy covxy\n")
 for i in range(o.scandata[fltfile].shape[0]):
     if drlv[i] < o.tolerance:
