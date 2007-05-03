@@ -1,4 +1,4 @@
-#!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
+#! /bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 
 # ImageD11_v0.4 Software for beamline ID11

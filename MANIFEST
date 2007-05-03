@@ -11,6 +11,8 @@ test/demo/eu.pks
 test/demo/notes.doc
 test/demo/notes.pdf
 test/demo/eu2.pars
+scripts/filtergrain.py
+scripts/fitgrain.py
 scripts/bgmaker.py
 scripts/powderimagetopeaks.py
 scripts/edf2bruker.py

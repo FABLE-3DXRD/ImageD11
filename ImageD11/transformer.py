@@ -97,17 +97,17 @@ PARAMETERS = [
           vary=False, 
           can_vary=True,
           stepsize = 0.01 ),
-     par('cell__alpha' , 90.0,
+     par('cell_alpha' , 90.0,
           helpstring = "unit cell par, degrees",
           vary=False, 
           can_vary=True,
           stepsize = 0.01 ),
-     par('cell__beta' , 90.0,
+     par('cell_beta' , 90.0,
           helpstring = "unit cell par, degrees",
           vary=False, 
           can_vary=True,
           stepsize = 0.01 ),
-     par('cell__gamma' , 90.0,
+     par('cell_gamma' , 90.0,
           helpstring = "unit cell par, degrees",
           vary=False, 
           can_vary=True,
@@ -315,7 +315,7 @@ class transformer:
         #
         pars = self.parameterobj.get_parameters()
         cell = [ pars[name] for name in ['cell__a','cell__b','cell__c',
-                                        'cell__alpha','cell__beta','cell__gamma']]
+                                        'cell_alpha','cell_beta','cell_gamma']]
         lattice=pars['cell_lattice_[P,A,B,C,I,F,R]']
         self.unitcell=unitcell.unitcell( cell ,  lattice)
         if self.twotheta==None:
