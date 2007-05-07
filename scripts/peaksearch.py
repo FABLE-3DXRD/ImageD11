@@ -202,12 +202,16 @@ class labelimage:
                         raise                    
                 self.outputpeak(peak)
         # Now get the overlaps on the current frame
-        # 
+        #
+        nbad =0
         for i in range(1,self.np):
                 if ds[i]!=i :
                     # propose to link these two spots on the current active frame
+                    nbad += 1
+                    continue
                     # print "linking on current not implemented",i,ds[i]
                     peak1=[]; peak2=[]
+                    
                     # write the correct number in the blob image
                     # ... expensive - could be done in C??
                     self.bl = Numeric.where(self.bl == i, ds[i], self.bl)
@@ -219,6 +223,8 @@ class labelimage:
                             print j,i,ds[i]
                             print ds
                             raise Exception("You should not be seeing this error!!")
+        if nbad != 0:
+            print "unlinked pks",nbad,
         temp = self.lastbl
         self.lastbl = self.bl
         self.bl=temp
