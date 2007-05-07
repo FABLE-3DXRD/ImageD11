@@ -33,17 +33,17 @@ class testtransform(unittest.TestCase):
         # Check translation of 0,0,0 has no effect
         yc = 49. ; ys=0.05 ; ty = 0.001
         zc = 51. ; zs=0.04 ; tz =-0.002
-        dist = 1.12345
+        dist = 112.345
         not_trans = transform.compute_tth_eta(self.peaks,
-                                              yc, ys, ty,
-                                              zc, zs, tz,
-                                              dist)
+                                              y_center=yc, y_size=ys, tilt_y=ty,
+                                              z_center=zc, z_size=zs, tilt_z=tz,
+                                              distance=dist)
         om = Numeric.ones(self.peaks.shape[1],Numeric.Float)
         trans =  transform.compute_tth_eta(self.peaks,
-                                           yc, ys, ty,
-                                           zc, zs, tz,
-                                           dist,
-                                           crystal_translation=[0.,0.,0.],
+                                              y_center=yc, y_size=ys, tilt_y=ty,
+                                              z_center=zc, z_size=zs, tilt_z=tz,
+                                              distance=dist,
+                                           t_x=0.,t_y=0.,t_z=0.,
                                            omega=om,
                                            axis_orientation1=10.,
                                            axis_orientation2=-11.)
