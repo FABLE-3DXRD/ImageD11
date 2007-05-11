@@ -214,6 +214,7 @@ class labelimage:
                     
                     # write the correct number in the blob image
                     # ... expensive - could be done in C??
+                    connectedpixels.update_blobs(self.bl, ds)
                     self.bl = Numeric.where(self.bl == i, ds[i], self.bl)
                     for j in range(self.nprop): # loop over properties
                         try:
