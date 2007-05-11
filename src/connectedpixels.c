@@ -776,10 +776,82 @@ static PyObject * bloboverlaps (PyObject *self, PyObject *args,  PyObject *keywd
    return Py_BuildValue("O", PyArray_Return(res));
 }
 
+static char update_blobs_doc[] =\
+"   update_blobs (   Numeric.array(blob, 2D, Int), \n"\
+"                    Numeric.array(set  , 2D, Int) , verbose=0) \n"\
+" \n"\
+" updates blob image such that : \n"\
+" if blob[i,j] > 0: \n"\
+"     blob[i,j] = set[blob[i,j]]\n"\
+"\n"\
+" Used to update a blob image merging peaks which have overlapped due\n"
+" to the third dimension.\n";
 
 
-
-
+static PyObject * update_blobs (PyObject *self, PyObject *args,  PyObject *keywds)
+{
+   PyArrayObject *bl=NULL,*set=NULL; /* in  */
+   int i,j,s,f, verbose, p1, v ; /* loop vars, flag */
+   static char *kwlist[] = {"blobim","set","verbose", NULL};
+   if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!|i",kwlist,      
+                        &PyArray_Type, &bl,   /* blobs */
+                        &PyArray_Type, &set,   /* disjoint set array */
+                        &verbose))        /* threshold and optional verbosity */
+      return NULL;
+   if(verbose!=0)printf("Welcome to update blobs\n");
+   /* Check and validate args */
+   if(bl->nd != 2 && bl->descr->type_num != PyArray_INT){     
+      PyErr_SetString(PyExc_ValueError,
+                       "Blob array must be 2d and integer, first arg problem");
+      return NULL;
+      }
+   if(set->nd != 1 && bl->descr->type_num != PyArray_INT){     
+      PyErr_SetString(PyExc_ValueError,
+                       "Set array must be 1d and integer, second arg problem");
+      return NULL;
+      }
+   /* Decide on fast/slow loop - inner versus outer */
+   if(bl->strides[0] > bl->strides[1]) {
+      f=1;  s=0;}
+   else {
+      f=0;  s=1;
+   }
+   if (verbose!=0){
+        printf("Fast index is %d, slow index is %d, ",f,s);
+        printf("strides[0]=%d, strides[1]=%d\n",bl->strides[0],bl->strides[1]);
+   }
+   for( i = 0 ; i <= (bl->dimensions[s]-1) ; i++ ){    /* i,j is looping along the indices data array */
+      for( j = 0 ; j <= (bl->dimensions[f]-1) ; j++ ){
+         p1 = * (int *) (bl->data + i*bl->strides[s] + j*bl->strides[f]);
+         if (p1==0){ continue; }
+         if (p1 < 0){
+     		PyErr_SetString(PyExc_ValueError,
+                       "Blob image contains negative number! Not allowed");
+                       return NULL;
+         }
+         if (p1 < set->dimensions[0]){
+         	/* Write in the value */
+         	v = *(int *)(set->data + p1*set->strides[0]);
+         	if (v > 0 && v < set->dimensions[0]){
+           	     (* (int *)(bl->data + i*bl->strides[s] + j*bl->strides[f])) =  p1;
+         	} else {
+       		      PyErr_SetString(PyExc_ValueError,
+                       "Set contains a bad value");
+                       return NULL;
+         	}         		
+         }else{
+      		PyErr_SetString(PyExc_ValueError,
+                       "Blob image references overflows set array element");
+                       return NULL;
+         }
+      }
+   }
+/* http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52309 */
+/* return None - side effect was on arg */
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+	
 
 
 
@@ -793,6 +865,8 @@ static PyMethodDef connectedpixelsMethods[] = {
      blobproperties_doc},
    {"bloboverlaps", (PyCFunction) bloboverlaps,  METH_VARARGS | METH_KEYWORDS,
      bloboverlaps_doc},     
+   {"update_blobs", (PyCFunction) update_blobs,  METH_VARARGS | METH_KEYWORDS,
+     update_blobs_doc},     
    {"roisum", (PyCFunction) roisum, METH_VARARGS | METH_KEYWORDS,
      roisum_doc},
    {NULL, NULL, 0, NULL} /* setinel */
