@@ -791,7 +791,7 @@ static char update_blobs_doc[] =\
 static PyObject * update_blobs (PyObject *self, PyObject *args,  PyObject *keywds)
 {
    PyArrayObject *bl=NULL,*set=NULL; /* in  */
-   int i,j,s,f, verbose, p1, v ; /* loop vars, flag */
+   int i,j,s,f, verbose = 0, p1, v ; /* loop vars, flag */
    static char *kwlist[] = {"blobim","set","verbose", NULL};
    if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!|i",kwlist,      
                         &PyArray_Type, &bl,   /* blobs */
