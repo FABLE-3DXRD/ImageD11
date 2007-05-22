@@ -51,6 +51,7 @@ class timer:
         self.tick(msg)
         print "%.2f/s"%(self.now-self.start)
 
+ 
 class labelimage:
     def __init__(self,shape,fileout=sys.stdout,spatial=blobcorrector.perfect):
         self.shape=shape
@@ -203,27 +204,29 @@ class labelimage:
                 self.outputpeak(peak)
         # Now get the overlaps on the current frame
         #
-        nbad =0
+        nbad = 0
         for i in range(1,self.np):
-                if ds[i]!=i :
-                    # propose to link these two spots on the current active frame
-                    nbad += 1
-                    continue
-                    # print "linking on current not implemented",i,ds[i]
-                    peak1=[]; peak2=[]
-                    
-                    # write the correct number in the blob image
-                    # ... expensive - could be done in C??
-                    connectedpixels.update_blobs(self.bl, ds)
-                    self.bl = Numeric.where(self.bl == i, ds[i], self.bl)
-                    for j in range(self.nprop): # loop over properties
-                        try:
-                            self.res[j][ds[i]]=self.res[j][ds[i]]+self.res[j][i]
-                            self.res[j][i]=0
-                        except:
-                            print j,i,ds[i]
-                            print ds
-                            raise Exception("You should not be seeing this error!!")
+            if ds[i] != i :
+                # propose to link these two spots on the current active frame
+                # print "linking on current not implemented",i,ds[i]
+                peak1 = [] 
+                peak2 = []
+                # write the correct number in the blob image
+                # ... expensive - could be done in C??
+                # ... self.bl = Numeric.where(self.bl == i, ds[i], self.bl)
+                # DONE: 
+                connectedpixels.update_blobs(self.bl, ds)
+                for j in range(self.nprop): # loop over properties
+                    # FIXME - are all properties always additive
+                    #       - min/max when implemented won't be
+                    try:
+                        self.res[j][ds[i]]=self.res[j][ds[i]] + self.res[j][i]
+                        self.res[j][i]=0
+                    except:
+                        nbad += 1
+                        print j,i,ds[i]
+                        print ds
+                        raise Exception("You should not be seeing this error!!")
         if nbad != 0:
             print "unlinked pks",nbad,
         temp = self.lastbl
@@ -299,18 +302,7 @@ class labelimage:
             self.outputpeak(peak)
         self.outfile.close()
 
-class timer:
-    def __init__(self):
-        self.start = time.time()
-        self.now = self.start
-    def tick(self,msg=""):
-        now = time.time()
-        print msg,"%.2f/s"%(now-self.now),
-        self.now = now
-    def tock(self,msg=""):
-        self.tick(msg)
-        print "%.2f/s"%(self.now-self.start)
-        
+
 def peaksearch(filename, outputfile, corrector, labims , thresholds,
                dark=None, flood=None):
     """
