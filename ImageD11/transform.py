@@ -19,12 +19,12 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 """
-Functions for transforming peaks
+Functions for transforming peaks 
 """
 import logging
 
 from Numeric import *
-
+ 
 try:
     # crazy debug 
     test = arccos(zeros(10,Float))
@@ -34,7 +34,7 @@ except:
 
 from math import pi
 
-def cross_product(a,b):
+def cross_product_2x2(a,b):
     """ returns axb for two len(3) vectors a,b"""
     assert len(a)==len(b)==3
     return array([a[1]*b[2]-a[2]*b[1],
@@ -580,7 +580,7 @@ def compute_lorentz_factors(tth, eta, omega, wavelength, wedge=0., chi=0.):
           [         0  ,  cos(chi)  , sin(chi)   ],
           [         0  , -sin(chi)  , cos(chi)   ]]
     u = matrixmultiply(C,matrixmultiply(W,u))
-    u_x_So = cross_product(u,So)
+    u_x_So = cross_product_2x2(u,So)
     # if DEBUG: print "axis orientation",u
     #
     # S = scattered vectors. Length 1/lambda.
