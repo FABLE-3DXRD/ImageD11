@@ -28,6 +28,10 @@ and on OpenGl for plotting things in 3D (reciprocal space)
 Hopefully the gui and the gruntwork can be completely separated, eventually.
 """
 
+raise Exception("""depreciated script 
+Use the normal ImageD11_gui.py script and click help -> history to get a script""")
+
+
 
 from ImageD11.guimaker import GuiMaker
 # GuiMaker is for building up the windows etc
@@ -217,7 +221,7 @@ if __name__=="__main__":
     o.peaksearcher.mergepeaks()
     o.peaksearcher.filter()
     o.peaksearcher.savepeaks(sys.argv[1][:-3]+"pks")
-    o.transformer.loadparameters(sys.argv[2])
+    #o.transformer.parameterobj.loadparameters(sys.argv[2])
     o.clearplot()
     o.transformer.plotreta()
     o.transformer.addcellpeaks()
