@@ -27,6 +27,11 @@ From the matplotlib examples - modified for mouse
 """
 import matplotlib
 matplotlib.use('TkAgg')
+try:
+    matplotlib.rcParams['numerix'] = 'Numeric'
+except:
+    print "Might have a problem with matplotlib configuration"
+    
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
