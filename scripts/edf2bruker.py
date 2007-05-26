@@ -44,8 +44,12 @@ class darkflood:
             if self.darkoffset is None:
                 self.dataoffset = 100.0
         except:
-            print "problem, darkfile was",darkfile
-            raise
+            print "No dark file"
+            self.darkdata = None
+            self.darkimage= None
+            self.darkfile = None
+        if self.darkoffset is None:
+            self.dataoffset = 100.0
 
     def readflood(self,floodfile):
         try:
@@ -57,16 +61,18 @@ class darkflood:
                 npix = centre.shape[0]*centre.shape[1]
                 self.floodmultiplier = sum(ravel(centre).astype(Float32))/npix
         except:
-            print "problem, floodfile was",floodfile
-            raise
-
+            print "No flood file"
+            self.flooddata = None
+            self.floodimage= None
+            self.floodfile = None
+            self.floodmultiplier = None
+            
     def correct(self,data):
         tin = data.typecode()
-        # c0 = data.shape[0]/2
-        # c1 = data.shape[1]/2
-        # print data[c0,c1]
+        # Start by copying
+        cor = data.astype(Float32).copy()
         if self.darkimage is not None:
-            cor = data.astype(Float32) - self.darkimage
+            cor = cor - self.darkimage
             # print cor[c0,c1]
         if self.floodimage is not None:
             cor = cor / self.floodimage
@@ -151,6 +157,9 @@ if __name__=="__main__":
     try:
         from optparse import OptionParser
         parser = OptionParser()
+        parser.add_option("-e","--extn",action="store",type="string",dest="extn",
+                          default="edf",
+                          help="Filename extension, probably edf, might be cor")
         parser.add_option("-n","--namestem",action="store", type="string", dest="stem",
                           help="Name of the files up the digits part, eg mydata in mydata0000.edf" )
         parser.add_option("-f","--first",action="store", type="int", dest="first",default=0,
@@ -158,9 +167,10 @@ if __name__=="__main__":
         parser.add_option("-l","--last",action="store", type="int", dest="last",default=0,
                           help="Number of last file to process, default=0")
         parser.add_option("-d","--dark",action="store", type="string", dest="dark",
+             
                           help="Dark current")
         parser.add_option("-F","--Flood",action="store", type="string", dest="flood",
-                          default="/data/opid11/inhouse/Frelon2K/Ags_mask0000.edf",
+#                         default="/data/opid11/inhouse/Frelon2K/Ags_mask0000.edf",
                           help="Flood field")
         parser.add_option("-D","--distance",action="store",type="float", dest="distance",default=5.0,help="Sample to detector distance")
 
@@ -173,7 +183,7 @@ if __name__=="__main__":
         converter = edf2bruker(options.dark , options.flood , options.template, distance=options.distance)
 
         for i in range(options.first, options.last+1):
-            filein = opendata.makename( options.stem, i, ".edf" )
+            filein = opendata.makename( options.stem, i, "."+options.extn )
             fileout = opendata.makename( options.stem+"_bruker_0.", i, "" )
             print filein,
             converter.convert(filein,fileout)
@@ -185,3 +195,4 @@ if __name__=="__main__":
         parser.print_help()
 
         raise
+

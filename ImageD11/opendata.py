@@ -38,7 +38,8 @@ def opendata(filename):
      ... otherwise tries bruker
     """
     f = filename.rstrip()
-    if f[-3:]in ["edf", "EDF"] :
+    # add spd file extensions
+    if f[-3:]in ["edf", "EDF","cor","COR"] :
         return openedf(filename)
     if f[-7:] in [".edf.gz"]:
         return openedf(filename)
@@ -367,8 +368,9 @@ def openedf(filename):
     numerictype = "dunno"
     if hd["DataType"]=="UnsignedShort": numerictype=Numeric.UInt16
     if hd["DataType"]=="FLOAT": numerictype=Numeric.Float32
+    if hd["DataType"]=="FloatValue": numerictype=Numeric.Float32
     if numerictype == "dunno":
-        raise TypeError("Unimplemented edf filetype")
+        raise TypeError("Unimplemented edf filetype"+hd["DataType"])
     if hd["ByteOrder"]=="LowByteFirst":
         ar=Numeric.reshape(
               Numeric.fromstring(datastring,numerictype),
