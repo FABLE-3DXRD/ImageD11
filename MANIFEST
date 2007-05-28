@@ -11,6 +11,7 @@ test/demo/eu.pks
 test/demo/notes.doc
 test/demo/notes.pdf
 test/demo/eu2.pars
+scripts/id11_summarize.py
 scripts/filtergrain.py
 scripts/fitgrain.py
 scripts/pars_2_sweeper.py

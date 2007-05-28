@@ -14,19 +14,7 @@ def getnumerics(d):
     return ret
 
 import sys
-class progress:
-    def __init__(self):
-        self.whirl = [ "-\r", "\\\r", "|\r", "/\r" ]
-        self.i = 0
-        self.l = len(self.whirl)
-    def update(self):
-        self.i += 1
-        self.i %= self.l
-        sys.stdout.write(self.whirl[self.i])
-        sys.stdout.flush()
         
-    
-
 class headerfollower:
     
     # Header items we choose to ignore changes in for printing
@@ -40,7 +28,6 @@ class headerfollower:
         """
         Initialise on a filename
         """
-        self.progress = progress()
         self.header = opendata.edfheader(filename)
         self.numerics = getnumerics(self.header)
         self.headeritems = set(self.header)
@@ -75,12 +62,12 @@ class headerfollower:
             for k, v in sr:
                 print "\t",k,v
             print
+        print "Last was",self.filename
                                        
     def nextfile(self,filename):
         """
         process the next file
         """
-        self.progress.update()
         h = opendata.edfheader(filename)
         hks = set(h.keys())
         changes = hks.symmetric_difference(self.headeritems)
@@ -108,12 +95,14 @@ class headerfollower:
         
             
 
+print "listing edf files"
 filelist = glob.glob("*.edf")
 
 filelist = [ (opendata.getnum(name), name) for name in filelist ]
 
 filelist.sort()
 
+print "processing, please wait"
 obj = headerfollower(filelist[0][1])
 
 for n,f in filelist[1:]:
