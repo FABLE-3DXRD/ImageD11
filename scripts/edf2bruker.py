@@ -27,10 +27,11 @@ from Numeric import *
 from ImageD11 import opendata
 
 class darkflood:
-    def __init__(self,darkfile=None,darkoffset=None,floodfile=None,floodmultiplier=None):
+    def __init__(self,darkfile=None,darkoffset=None,floodfile=None,floodmultiplier=None,border=None):
         self.darkfile=darkfile
         self.darkoffset=darkoffset
         self.floodfile=floodfile
+        self.border=border
         self.floodmultiplier=None
         #
         self.darkimage = None
@@ -83,7 +84,15 @@ class darkflood:
         if self.darkoffset is not None:
             cor = cor + self.darkoffset
             # print cor[c0,c1]
+        if self.border is not None:
+            # set the edges to zero
+            b=self.border
+            cor[:b,:]=0
+            cor[:,:b]=0
+            cor[-b:,:]=0
+            cor[:,-b:]=0
         cor =  where(cor>0.1,cor,0.) # truncate zero
+        
         # print cor[c0,c1]
         return cor.astype(tin)
 
@@ -95,9 +104,11 @@ class darkflood:
 
 class edf2bruker:
 
-    def __init__(self,dark,flood,template, darkoffset=100,distance=5.0):
+    def __init__(self,dark,flood,template, darkoffset=100,distance=5.0, border=None, wvln=0.5,omegasign=1.):
         self.distance=distance
-        self.darkflood=darkflood(darkoffset=darkoffset)
+        self.omegasign=omegasign
+        self.wvln=wvln
+        self.darkflood=darkflood(darkoffset=darkoffset,border=border)
         self.darkflood.readdark(dark)
         self.darkflood.readflood(flood)
         self.templatefile=template
@@ -123,11 +134,14 @@ class edf2bruker:
         corrected_image = self.darkflood.correct(data_in.data)
         # make new header
         try:
-            om = -float(data_in.header["Omega"])
-            oms= -float(data_in.header["OmegaStep"])
+            sgn = self.omegasign
+            om =  float(data_in.header["Omega"])*sgn
+            oms=  float(data_in.header["OmegaStep"])*sgn
         except:
             om = 0.
             oms = 0.
+        self.putitem("WAVELEN",
+                     "WAVELEN:%14.7f%14.7f%14.7f"%(self.wvln,0,0)+" "*(80-14*3-8))
         self.putitem("ANGLES",
                      "ANGLES :%14f%14f%14f%14f"%(0,0,om,90)+" "*(80-14*4-8))
         self.putitem("DISTANC",
@@ -167,12 +181,20 @@ if __name__=="__main__":
         parser.add_option("-l","--last",action="store", type="int", dest="last",default=0,
                           help="Number of last file to process, default=0")
         parser.add_option("-d","--dark",action="store", type="string", dest="dark",
-             
                           help="Dark current")
+        parser.add_option("-w","--wavelength",action="store", type="float", dest="wvln",
+                          default = 0.5,
+                          help="Wavelength")
+        parser.add_option("-s","--sign of omega",action="store", type="float", dest="omegasign",
+                          default = 1.0,
+                          help="Sign of ID11 omega rotation, +1 is right handed")
         parser.add_option("-F","--Flood",action="store", type="string", dest="flood",
 #                         default="/data/opid11/inhouse/Frelon2K/Ags_mask0000.edf",
                           help="Flood field")
-        parser.add_option("-D","--distance",action="store",type="float", dest="distance",default=5.0,help="Sample to detector distance")
+        parser.add_option("-D","--distance",action="store",type="float", dest="distance",
+                          default=5.0,help="Sample to detector distance")
+        parser.add_option("-b","--border",action="store",type="int", dest="border",
+                          default=0,help="Border of image to zero out")
 
         parser.add_option("-t","--template",action="store", type="string", dest="template",
                           default = "/data/opid11/inhouse/Frelon2K/brukertemplate.0000")
@@ -180,7 +202,11 @@ if __name__=="__main__":
         options, args = parser.parse_args()
 
 
-        converter = edf2bruker(options.dark , options.flood , options.template, distance=options.distance)
+        converter = edf2bruker(options.dark , options.flood , options.template,
+                               distance=options.distance,
+                               border=options.border,
+                               wvln=options.wvln,
+                               omegasign=options.omegasign)
 
         for i in range(options.first, options.last+1):
             filein = opendata.makename( options.stem, i, "."+options.extn )
