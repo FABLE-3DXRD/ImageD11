@@ -51,6 +51,10 @@ class timer:
         self.tick(msg)
         print "%.2f/s"%(self.now-self.start)
 
+
+OMEGA = 0
+OMEGASTEP = 1.0
+
  
 class labelimage:
     def __init__(self,shape,fileout=sys.stdout,spatial=blobcorrector.perfect):
@@ -365,10 +369,12 @@ def peaksearch(filename, outputfile, corrector, labims , thresholds,
         np = labelim.peaksearch(picture,threshold,dark=dark,flood=flood)
         #
         try:
-            omega = float(data_object.header["Omega"])
+            ome = float(data_object.header["Omega"])
         except: # Might have imagenumber or something??
-            omega = 0.
-        props = labelim.properties(picture,omega)
+            global OMEGA
+            ome = OMEGA
+            OMEGA += OMEGASTEP
+        props = labelim.properties(picture,ome)
         npi, isum, sumsq, com0, com1, com00, com01, com11, omisum = props
         # omisum is omega * isum
         # Now write results out for this threshold level
@@ -432,6 +438,12 @@ if __name__=="__main__":
         parser.add_option("-F", "--format", action="store",
             dest="format",default="edf", type="string",
             help="Image File format, eg edf or bruker" )
+        parser.add_option("-S","--step", action="store",
+                          dest="OMEGASTEP", default=1.0, type="float",
+                          help="Step size in Omega when you have no header info")
+        parser.add_option("-T","--start", action="store",
+                          dest="OMEGA", default=0.0, type="float",
+                          help="Start position in Omega when you have no header info")
         parser.add_option("-f", "--first", action="store",
             dest="first", default=0, type="int",
             help="Number of first file to process, default=0")
@@ -465,6 +477,8 @@ if __name__=="__main__":
         outfile =     options.outfile
         first =       options.first
         last =        options.last
+        OMEGA = options.OMEGA
+        OMEGASTEP = options.OMEGASTEP
         if options.perfect=="N":
             print "Using spatial from",options.spline
             corrfunc = blobcorrector.correctorclass(options.spline)

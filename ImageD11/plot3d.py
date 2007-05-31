@@ -170,7 +170,7 @@ class plot3d(Tk.Toplevel):
             for u,i in zip(self.ubis,range(len(self.ubis))):
                 scores=indexing.calc_drlv2(self.ubis[i],self.xyz)
                 print self.xyz.shape,scores.shape
-                ind = Numeric.compress( Numeric.less(scores,0.05) , Numeric.arange(self.xyz.shape[0]) )
+                ind = Numeric.compress( Numeric.less(scores,0.02) , Numeric.arange(self.xyz.shape[0]) )
                 print "Grain",i,scores.shape,ind.shape
                 for j in range(3):
                     c=Numeric.ones(self.color.shape[0])
