@@ -68,6 +68,8 @@ class twodplot(Tk.Frame):
         self.tkc.bind("<Button1-Motion>",self.on_move)
         self.tkc.bind("<ButtonPress-2>",self.on_2)
         self.tkc.bind("<ButtonPress-3>",self.on_3)
+        self.when_down = -1
+        self.time_down = 0.1
         self.bindkeys()
         self.rubberbandbox=None
         self.bf1=Tk.Frame(self)
@@ -256,6 +258,7 @@ class twodplot(Tk.Frame):
     # Callback functions for mouse
     def on_down(self,event):
         # get the x and y coords, flip y from top to bottom
+        self.when_down = time.time()
         height = self.f.bbox.height()
         x, y = event.x, height-event.y
         # transData transforms data coords to display coords.  Use the
@@ -281,6 +284,8 @@ class twodplot(Tk.Frame):
     def on_up(self,event):
         # get the x and y coords, flip y from top to bottom
         if self.xd==None:
+            return
+        if time.time()-self.when_down < self.time_down and self.when_down>0:
             return
         self.tkc.delete(self.rubberbandbox)
         height = self.f.bbox.height()
