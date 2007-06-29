@@ -21,7 +21,7 @@
 """
 Find a generalised way to compute g-vectors backwards and forwards
 """
-import math
+import math, logging
 import Numeric as n
 
 class rotation_axis:
@@ -39,6 +39,10 @@ class rotation_axis:
         """
         self.direction = n.array(direction)
         assert self.direction.shape == (3,) , "direction.shape != 3, is it a vector??"
+        mag = n.dot(self.direction, self.direction)
+        if abs(mag - 1.0) > 1e-5 :
+            self.direction = self.direction / mag
+            logging.warning("Non-normalised direction vector "+str(direction))
         self.angle = angle
         self.matrix = self.to_matrix()
 
@@ -47,6 +51,11 @@ class rotation_axis:
         Given a list of vectors, rotate them to new ones
         Angle is either self.angle, or 1 per vector, in degrees
         
+        http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/rotation.html
+        p' = a . p a + (p - a . p a) cos q + a × p sin q
+           = p cos q + a . p a (1-cos q) + a × p sin q 
+           
+           
         http://mathworld.wolfram.com/RotationFormula.html
         r' = r cos(t) + n(n.r)(1-cos(t)) + rxn sin(t)
         """
