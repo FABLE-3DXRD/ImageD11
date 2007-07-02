@@ -54,10 +54,17 @@ def getheader(filename):
 
 if __name__=="__main__":
     keys=[]
+    args = []
     for arg in sys.argv[1:]:
         if arg.find("key=")>=0:
             keys.append(arg.split("=")[-1])
             continue
+        if arg.find("*")>-1 or arg.find("?")>-1:
+            import glob
+            args += glob.glob(arg)
+        else:
+            args.append(arg)
+    for arg in args:
         h=getheader(arg)
         sys.stdout.write(arg+" ")
         if len(keys)>0:
