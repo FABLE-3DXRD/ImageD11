@@ -273,21 +273,14 @@ def not_compute_tth_histo(finalpeaks,tth,no_bins=0,min_bin_ratio=1,
           finalpeaks = take(finalpeaks,keeppeaks,1)
           print "histo",time.time()-start
           return finalpeaks
-                             
-def compute_g_vectors(tth, eta, omega, wavelength, wedge = 0.0, chi=0.0):
+      
+      
+def compute_k_vectors(tth, eta, wavelength):
     """
-    Generates spot positions in reciprocal space from 
-      twotheta, wavelength, omega and eta
-    Assumes single axis vertical
-    ... unless a wedge angle is specified
+    generate k vectors - scattering vectors in laboratory frame
     """
-    #if wedge != 0.:
-    #    print "Using a wedge angle of ",wedge
     tth=radians(tth)
     eta=radians(eta)
-
-    om =radians(omega)
-    # Compute k vector - the scattering in the laboratory
     c=cos(tth/2) # cos theta
     s=sin(tth/2) # sin theta
     ds=2*s/wavelength
@@ -298,9 +291,20 @@ def compute_g_vectors(tth, eta, omega, wavelength, wedge = 0.0, chi=0.0):
     k[1,:] =  ds*c*sin(eta) # y direction
     # z - towards roof
     k[2,:] =  ds*c*cos(eta)
+    return k
+                             
+def compute_g_vectors(tth, eta, omega, wavelength, wedge = 0.0, chi=0.0):
+    """
+    Generates spot positions in reciprocal space from 
+      twotheta, wavelength, omega and eta
+    Assumes single axis vertical
+    ... unless a wedge angle is specified
+    """
+    om =radians(omega)
+    k = compute_k_vectors(tth, eta, wavelength)
     # G-vectors - rotate k onto the crystal axes
-    g=zeros((3,ds.shape[0]),Float)
-    t=zeros((3,ds.shape[0]),Float)
+    g=zeros((3,om.shape[0]),Float)
+    t=zeros((3,om.shape[0]),Float)
     #
     # g =  R . W . k where:
     # R = ( cos(omega) , sin(omega), 0 )
@@ -336,7 +340,7 @@ def compute_g_vectors(tth, eta, omega, wavelength, wedge = 0.0, chi=0.0):
     return g
 
 
-def uncompute_g_vectors(g,wavelength, wedge=0.0, chi=0.0):
+def uncompute_g_vectors(g, wavelength, wedge=0.0, chi=0.0):
     """
     Given g-vectors compute tth,eta,omega
     assert uncompute_g_vectors(compute_g_vector(tth,eta,omega))==tth,eta,omega
@@ -584,10 +588,13 @@ def compute_lorentz_factors(tth, eta, omega, wavelength, wedge=0., chi=0.):
     # if DEBUG: print "axis orientation",u
     #
     # S = scattered vectors. Length 1/lambda.
-    S = [ cos(radians(tth)/2.)*sin(radians(eta))/wavelength,
-          cos(radians(tth)/2.)*cos(radians(eta))/wavelength,
-          sin(radians(tth)/2.)/wavelength]
-    S_dot_u_x_So = dot(S,u_x_So)
+    S = array([ cos(radians(tth)/2.)*sin(radians(eta))/wavelength,
+                cos(radians(tth)/2.)*cos(radians(eta))/wavelength,
+                sin(radians(tth)/2.)/wavelength])
+    try:    
+        S_dot_u_x_So = dot(S,u_x_So)
+    except:
+        print S.shape, u_x_So.shape
     mod_S = sqrt(dot(S,S))
     mod_So = sqrt(dot(So,So))
     try:
