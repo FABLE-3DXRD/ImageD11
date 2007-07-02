@@ -1,43 +1,101 @@
 
 
 from ImageD11 import gv_general
+from ImageD11 import transform
+
 import unittest
 
 import Numeric as n
+import RandomArray
 import math
 
 def array_diff(a1,a2):
     if a1.shape != a2.shape:
         raise Exception("Shape mismatch")
     diff = n.ravel(a1) - n.ravel(a2)
-    return n.dot(diff, diff)
+    err = n.dot(diff, diff)
+    #    print "array_diff",err
+    return err
 
+class test_k_to_g(unittest.TestCase):
+    
+    def setUp(self):
+        self.np = 2
+        self.tth = RandomArray.random(self.np)*20
+        self.wvln = 0.154
+        self.eta = (RandomArray.random(self.np)-0.5)*180.
+        self.omega = n.array([90,180],n.Float)
+        # print "Called setup"
+        
+    def donttest_0_0_0(self):
+        """ wedge, chi = 0 """
+        SANITY = False
+        om = n.zeros(self.np,n.Float)
+        g_old = transform.compute_g_vectors(self.tth, 
+                                            self.eta, 
+                                            om, 
+                                            self.wvln, 
+                                            wedge=0.0, 
+                                            chi=0.0 )
+        if SANITY: print g_old.shape, g_old[:,0]
+        k = transform.compute_k_vectors(self.tth, 
+                                        self.eta, 
+                                        self.wvln)
+        if SANITY: print "k=",k[:,0]
+        g_new = gv_general.k_to_g(k, om)
+        if SANITY: print g_new.shape,g_new[:,0]
+        if SANITY: print "end routine"
+        self.assertAlmostEqual( array_diff( g_new, g_old ), 0, 6)
+        
+    def test_0_0(self):
+        """ wedge, chi = 0 """
+        SANITY = False
+        if SANITY: print "*"*80
+        om = n.zeros(self.np,n.Float)
+        g_old = transform.compute_g_vectors(self.tth, 
+                                            self.eta, 
+                                            self.omega, 
+                                            self.wvln, 
+                                            wedge=0.0, 
+                                            chi=0.0 )
+        if SANITY: print g_old.shape, g_old[:,:3]
+        k = transform.compute_k_vectors(self.tth, 
+                                        self.eta, 
+                                        self.wvln)
+        if SANITY: print "k=",k[:,:3]
+        g_new = gv_general.k_to_g(k, self.omega)
+        if SANITY: print g_new.shape,g_new[:,:3]
+        if SANITY: print "end routine"
+        if SANITY: print "*"*80
+        self.assertAlmostEqual( array_diff( g_new, g_old ), 0, 6)
+        
 class test_rotation_axis(unittest.TestCase):
     def test_Rz0(self):
         """ zero rotation around z give identity"""
         o = gv_general.rotation_axis( [ 0, 0, 1] , 0 )
         self.assertAlmostEqual( array_diff( o.to_matrix() , 
                                             n.identity(3, n.Float) ) ,
-                                0.0, 6)
+                                            0.0, 6)
 
     def test_Rz30(self):
         """ right handed, 30 degrees around z """
         o = gv_general.rotation_axis( [ 0, 0, 1], 30 )
         c30 = math.sqrt(3)/2. # cos(30)
         s30 = 0.5 # sin(30)
-        e = array_diff( o.to_matrix() ,n.array( [[ c30, s30, 0 ],
-                                                 [-s30, c30, 0 ],
-                                                 [ 0  , 0  , 1 ]] ) ) 
+        r = n.transpose(n.array( [[ c30, s30, 0 ],
+                                  [-s30, c30, 0 ],
+                                  [ 0  , 0  , 1 ]]) )
+        e = array_diff( o.to_matrix() , r ) 
         self.assertAlmostEqual(  e , 0.0 , 6)
         
 
     def test_from_matrix(self):
-        """Check matrix construction"""
+        """test_from_matrix: Check matrix construction"""
         c30 = math.sqrt(3)/2.
         s30 = math.sin(math.radians(30.))
-        m =  n.array( [[ c30, s30, 0 ],
-                       [-s30, c30, 0 ],
-                       [ 0  , 0  , 1 ]] )    
+        m = n.transpose( n.array( [[ c30, s30, 0 ],
+                                   [-s30, c30, 0 ],
+                                   [ 0  , 0  , 1 ]] )    )
         o = gv_general.axis_from_matrix(m)
         self.assertAlmostEqual( array_diff (o.to_matrix(), m) , 0, 6 )
         self.assertAlmostEqual( array_diff (o.direction , n.array([0,0,1])), 0, 6 )
@@ -47,42 +105,50 @@ class test_rotation_axis(unittest.TestCase):
 
 
     def test_rotate_vectors(self):
-        """rotate 3x3 vectors"""
+        """rotate 3x3 vectors, angs or not"""
         o = gv_general.rotation_axis( [0,0,1] , 90.0 )
-        vecs = [[ 0, 0, 1 ], 
-                [ 0, 1, 0 ],
-                [ 1, 0, 0 ],
-                [ 1, 0, 0 ]]
-        res =  n.array([[ 0, 0, 1 ], 
-                        [-1, 0, 0 ],
-                        [ 0, 1, 0 ],
-                        [ 0, 1, 0 ]])
-        m1, m2 = o.rotate_vectors(vecs), res 
+        vecs = n.transpose(n.array([[ 0, 0, 1 ], 
+                                    [ 0, 1, 0 ],
+                                    [ 1, 0, 0 ],
+                                    [ 1, 0, 0 ]], n.Float))
+        res =  n.transpose(n.array([[ 0, 0, 1 ], 
+                                    [-1, 0, 0 ],
+                                    [ 0, 1, 0 ],
+                                    [ 0, 1, 0 ]], n.Float))
+        m1, m2 = o.rotate_vectors(vecs), res
+        self.assertEqual(m1.shape, m2.shape)
         err = "\n\n"+str(m1.astype(n.Int))+" != \n\n"+str(m2)
-        self.assertAlmostEqual(array_diff(m1,m2),0,6,err)
+        self.assertAlmostEqual(array_diff(m1, m2),0,6,err)
+        angs = n.array([90.]*4,n.Float)
+        m3, m4 = o.rotate_vectors(vecs,angs), res
+        err = "\n\n"+str(m3.astype(n.Int))+" != \n\n"+str(m4)
+        self.assertAlmostEqual(array_diff(m3, m4),0,6,err)
         
         
     def test_rotate_vectors_a(self):
         """rotate again 3x3, with different angles"""
         o = gv_general.rotation_axis( [0,0,1] , 90 )
-        vecs = [[ 0, 0, 1 ], 
-                [ 0, 1, 0 ],
-                [ 1, 0, 0 ]]
-        res =  n.array([[ 0, 0, 1 ], 
-                        [-1, 0, 0 ],
-                        [ 0, 1, 0 ]])
+        vecs = n.transpose(n.array([[ 0, 0, 1 ], 
+                                    [ 0, 1, 0 ],
+                                    [ 1, 0, 0 ]]))
+        res =  n.transpose(n.array([[ 0, 0, 1 ], 
+                                    [-1, 0, 0 ],
+                                    [ 0, 1, 0 ]]))
         self.assertAlmostEqual(array_diff(
              o.rotate_vectors(vecs), res ),0,6)
+        r2 = o.rotate_vectors(vecs, [90,90,90] )
+        #print "\n",n.array_str(r2, suppress_small=1)
+        #print res
         self.assertAlmostEqual(array_diff(
-             o.rotate_vectors(vecs, [90,90,90] ), res ),0,6)
+            r2 , res ),0,6)
         self.assertNotAlmostEqual(array_diff(
              o.rotate_vectors(vecs, [90,91,90] ), res ),0,6)
         
     def test_rotate_vectors1(self):
         """ rotate a single vector """
         o = gv_general.rotation_axis( [0,0,1] , 180 )
-        vecs = [[ 1, 1, 0 ]]
-        res =  n.array([[-1, -1, 0 ]])
+        vecs = n.transpose(n.array([[ 1, 1, 0 ]]))
+        res =  n.transpose(n.array([[-1, -1, 0 ]]))
         self.assertAlmostEqual(array_diff(
           o.rotate_vectors(vecs), res ),0,6)
         self.assertAlmostEqual(array_diff(
@@ -93,20 +159,30 @@ class test_rotation_axis(unittest.TestCase):
         
         
     def test_rotate_vectors2(self):
-        """ rotate 5 vectors """
-        o = gv_general.rotation_axis( [0,0,1] , 180 )
-        vecs = [[ 0, 0, 1 ], 
-                [ 0, 1, 0 ],
-                [ 1, 1, 0 ],
-                [-1, 1, 0 ],
-                [ 1, 0, 0 ]]
-        res =  n.array([[ 0, 0, 1 ], 
-                        [ 0, -1, 0 ],
-                        [-1, -1, 0 ],
-                        [ 1, -1, 0 ],
-                        [-1, 0 , 0 ]])
-        self.assertEqual(o.rotate_vectors(vecs), res )
-        self.assertEqual(o.rotate_vectors(vecs, [180,180,180,180,180] ), res )
+        """ rotate more vectors """
+        o = gv_general.rotation_axis( [0,0,1] , 180 )        
+        vecs = n.transpose(n.array([[ 0, 0, 1 ], #1
+                                    [ 0, 1, 0 ], #2
+                                    [ 0, 1, 1 ], #3
+                                    [ 1, 1, 0 ], #4
+                                    [-1, 1, 0 ], #5
+                                    [ 1, 0, 0 ], #6
+                                    [ 0, 1, 1 ]],n.Float))
+        res =  n.transpose(n.array([[ 0, 0, 1 ],  #1
+                                    [ 0, -1, 0 ], #2
+                                    [ 0, -1, 1 ], #3
+                                    [-1, -1, 0 ], #4
+                                    [ 1, -1, 0 ], #5
+                                    [-1, 0 , 0 ], #6
+                                    [0, -1 , 1]],n.Float))
+        r1 = o.rotate_vectors(vecs)
+        #print n.array_str(r1,precision=1,suppress_small=1)
+        #print res
+        #print n.array_str(r1-res,precision=1,suppress_small=0)
+        self.assertAlmostEqual(array_diff( r1 , res) ,0 ,6 )
+        self.assertAlmostEqual(array_diff( o.rotate_vectors(vecs, 
+                               #1  2    3   4   5   6   7
+                                 [180,180,180,180,180,180,180] ), res ), 0,5)
 
 
 if __name__ ==  "__main__":
