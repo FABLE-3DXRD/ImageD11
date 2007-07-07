@@ -11,7 +11,7 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
@@ -322,7 +322,11 @@ def peaksearch(filename, outputfile, corrector, labims , thresholds,
     t = timer()
     f = open(outputfile,"aq") # Open the output file for appending
     # Assumes an edf file for now - TODO - should be independent
-    data_object = opendata.opendata(filename)
+    try:
+        data_object = opendata.opendata(filename)
+    except:
+        sys.stdout.write(filename+" not found\n")
+        return 0
     picture = data_object.data
     # picture is (hopefully) a 2D Numeric array of type UInt16
     # t.tick("read")
