@@ -378,7 +378,7 @@ def peaksearch(filename, outputfile, corrector, labims , thresholds,
             global OMEGA
             ome = OMEGA
             OMEGA += OMEGASTEP
-        props = labelim.properties(picture,ome)
+        props = labelim.properties(picture,ome,dark=dark,flood=flood)
         npi, isum, sumsq, com0, com1, com00, com01, com11, omisum = props
         # omisum is omega * isum
         # Now write results out for this threshold level
