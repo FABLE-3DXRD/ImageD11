@@ -52,7 +52,11 @@ class minimum_image:
         """
         Include another file
         """
-        data_object = opendata.opendata(filename)
+        try:
+            data_object = opendata.opendata(filename)
+        except:
+            print filename,"not found"
+            return
         picture = data_object.data
         if self.minimum_image is None:
             self.minimum_image = picture.copy()
