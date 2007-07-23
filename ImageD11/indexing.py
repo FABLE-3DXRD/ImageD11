@@ -23,6 +23,8 @@ from ImageD11 import closest
 
 import math, time, sys, logging
 
+import LinearAlgebra
+
 def readubis(ubifile):
     """read ubifile and return a list of ubi arrays """
     f = open(ubifile, "r")
@@ -58,6 +60,20 @@ def ubitocellpars(ubi):
     beta  = degrees( acos(g[0,2]/a/c))
     gamma = degrees( acos(g[0,1]/a/b))
     return a, b, c, alpha, beta, gamma
+
+def ubitoU(ubi):
+    """
+    (try) to convert ubi to Grainspotter style U
+    The convention is B as being triangular, hopefully as Busing and Levy
+    TODO / FIXME - make some testcases please!!
+    """
+    return n.transpose(n.matrixmultiply(ubi, LinearAlgebra.inverse(ubitoB(ubi))))
+
+def ubitoB(ubi):
+    """ give the B matrix from ubi """
+    g = n.matrixmultiply(ubi, n.transpose(ubi))
+    return LinearAlgebra.cholesky_decomposition(g)
+    
 
 def mod_360(theta, target):
     """

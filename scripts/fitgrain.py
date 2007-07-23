@@ -32,4 +32,5 @@ o.saveparameters(newpars)
 #from matplotlib.pylab import plot, show
 #plot(o.drlv)
 #show()
-
+for g in o.grains.values():
+    print g.ubi
