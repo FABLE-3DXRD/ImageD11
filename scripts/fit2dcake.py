@@ -519,12 +519,13 @@ class cakemacrogenerator:
         self.macro=self.macro+"EXIT\nEXIT FIT2d\nYES\n"
         import time, tempfile
         tmpfilename=tempfile.mkstemp(dir=".")[1]
+        tmpfilename=os.path.split(tmpfilename)[-1]
         tmpfile=open(tmpfilename,"w")
         tmpfile.write(self.macro)
         tmpfile.close()
         # Send the display to a local black hole
         if show!="SHOW":
-            os.system("/users/wright/bin/Xvfb :1 &")
+            os.system("/sware/exp/fable/standalone/bin/Xvfb :1 &")
             time.sleep(1)
             try:
                 displaywas=os.environ["DISPLAY"]
@@ -535,7 +536,7 @@ class cakemacrogenerator:
             except KeyError:
                 os.environ["DISPLAY"]=":1"
         array=str(self.mask_pars_values["DIM1_DATA"])+"x"+str(self.mask_pars_values["DIM2_DATA"])
-        os.system("/users/wright/bin/fit2d_12_081_i686_linux2.4.20 -dim%s -mac%s"%(array,tmpfilename))
+        os.system("/sware/exp/fable/standalone/bin/fit2d_12_081_i686_linux2.4.20 -dim%s -mac%s"%(array,tmpfilename))
         os.system("rm -f %s"%(tmpfilename))
         if show is None:
             os.environ["DISPLAY"]=displaywas
