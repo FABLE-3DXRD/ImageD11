@@ -478,7 +478,8 @@ class cakemacrogenerator:
     def cakefileglob(self,stem_arg,replace=False,outstem=None):
         import glob
         filelist=glob.glob("%s????.%s"%(stem_arg,self.input_extn))
-        if outstem is None: outstem=stem_arg
+        if outstem is None: 
+            outstem = stem_arg
         outputfilelist = [s.replace(self.input_extn,self.output_extn) for s in filelist ]
         outputfilelist = [s.replace(stem_arg,outstem) for s in outputfilelist ]
         print filelist
@@ -490,7 +491,7 @@ class cakemacrogenerator:
             alreadydone = []
         for i in range(len(filelist)):
             if outputfilelist[i] not in alreadydone:
-                print "%s %s"%(filelist[i],outputfilelist[i])
+                print "%s %s" % (filelist[i], outputfilelist[i])
                 self.cakeafile(filelist[i],outputfilelist[i])
 
 
@@ -502,11 +503,12 @@ class cakemacrogenerator:
         """
         for i in range(first_arg,last_arg+1):
             if self.input_extn.lstrip() == "":
-                filein ="%s.%04d%s"%(stem_arg,i,self.input_extn)
+                filein = "%s.%04d%s" % (stem_arg, i, self.input_extn)
             else:
-                filein ="%s%04d.%s"%(stem_arg,i,self.input_extn)
-            if outstem == None: outstem=stem_arg
-            fileout="%s%04d.%s"%(outstem,i,self.output_extn)
+                filein = "%s%04d.%s" % (stem_arg, i, self.input_extn)
+            if outstem == None: 
+                outstem = stem_arg
+            fileout = "%s%04d.%s" % (outstem, i, self.output_extn)
             self.cakeafile(filein,fileout)
             if i%100 == 0:
                 print i,

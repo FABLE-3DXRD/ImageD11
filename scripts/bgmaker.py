@@ -30,7 +30,7 @@ import time
 # For benchmarking
 reallystart=time.time()
 
-import sys,glob,os.path
+
 from ImageD11 import opendata
 import Numeric
 
@@ -54,8 +54,8 @@ class minimum_image:
         """
         try:
             data_object = opendata.opendata(filename)
-        except:
-            print filename,"not found"
+        except IOError:
+            print filename, "not found"
             return
         picture = data_object.data
         if self.minimum_image is None:
@@ -92,14 +92,14 @@ if __name__=="__main__":
         step = options.step
         # Generate list of files to proces
         if options.format == 'edf':
-           files = ["%s%04d%s"%(stem,i,".edf") for i in range(first,last+1,step)]
+            files = ["%s%04d%s"%(stem,i,".edf") for i in range(first,last+1,step)]
         elif options.format == 'bruker':
-           files = ["%s.%04d"%(stem,i) for i in range(first,last+1,step)]
+            files = ["%s.%04d"%(stem,i) for i in range(first,last+1,step)]
         else:
             raise Exception("Do not know format "+options.format)
         outputfile = open(outfile,"wb")
         if len(files)==0:
-            raise "No files found for stem %s"%(stem)
+            raise Exception("No files found for stem %s"% (stem))
         start = time.time()
         mi = minimum_image(files[0])
         for filein in files[1:]:

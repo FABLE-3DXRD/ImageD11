@@ -28,7 +28,7 @@ def getheader(filename):
     Returns string enclosed
     Adds a filename key at the top
     """
-    h="filename = "
+    h = "filename = "
     if filename[-3:]==".gz":
         fp=gzip.GzipFile(filename,"rb")
     elif filename [-4:]==".bz2":
@@ -36,7 +36,7 @@ def getheader(filename):
     else:
         try:
             fp=open(filename,"rb")
-        except:
+        except IOError:
             return ""
     h=h+filename+";\n"
     s=fp.read(1024)
@@ -65,12 +65,12 @@ if __name__=="__main__":
         else:
             args.append(arg)
     for arg in args:
-        h=getheader(arg)
+        hd = getheader(arg)
         sys.stdout.write(arg+" ")
         if len(keys)>0:
             for key in keys:
-                item=h[h.find(key):].split(";")[0]
+                item=hd[hd.find(key):].split(";")[0]
                 sys.stdout.write(" "+item+" ")
         else:
-            sys.stdout.write(h)
+            sys.stdout.write(hd)
         sys.stdout.write("\n")

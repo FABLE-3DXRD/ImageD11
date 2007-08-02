@@ -29,7 +29,7 @@ and the blobcorrector(+splines) for correcting them for spatial distortion
 Defines one function (peaksearch) which might be reused
 """
 
-import time, sys
+import time
 # For benchmarking
 reallystart = time.time()
 
@@ -49,7 +49,7 @@ class timer:
         self.now = now
     def tock(self,msg=""):
         self.tick(msg)
-        print "%.2f/s"%(self.now-self.start)
+        print "%.2f/s"% (self.now-self.start)
 
 
 OMEGA = 0
@@ -68,7 +68,7 @@ class labelimage:
         self.verbose=0
         self.nprop = 9 # number of accumulating properties
         self.corrector=spatial
-        self.closed =None
+        self.closed = None
         self.finalpeaks=[]
         self.outfile=open(fileout,"w")
         self.outfile.write("# xc yc omega npixels avg_intensity x_raw y_raw sigx sigy covxy\n")
@@ -93,9 +93,14 @@ class labelimage:
         self.bl = Numeric.zeros(self.shape,Numeric.Int)
         # print "labelimage.peaksearch",data[0,0],threshold
         optarg = {"verbose":self.verbose}
-        if dark is not None: optarg["dark"]=dark
-        if flood is not None: optarg["flood"]=flood
-        self.np = connectedpixels.connectedpixels(data, self.bl, threshold,**optarg)
+        if dark is not None: 
+            optarg["dark"]=dark
+        if flood is not None: 
+            optarg["flood"]=flood
+        self.np = connectedpixels.connectedpixels(data, 
+                                                  self.bl, 
+                                                  threshold,
+                                                  **optarg)
         return self.np
         
 
@@ -132,11 +137,17 @@ class labelimage:
         """
         if self.np>0:
             optarg = {"verbose":self.verbose}
-            if dark is not None: optarg["dark"]=dark
-            if flood is not None: optarg["flood"]=flood
-            res = connectedpixels.blobproperties(data, self.bl, self.np,**optarg)
+            if dark is not None: 
+                optarg["dark"] = dark
+            if flood is not None: 
+                optarg["flood"] = flood
+            res = connectedpixels.blobproperties(data, 
+                                                 self.bl, 
+                                                 self.np,
+                                                 **optarg)
             try:
-                self.res = res + (Numeric.ones(res[1].shape[0],Numeric.Float)*omega * res[1],)
+                self.res = res + (Numeric.ones(res[1].shape[0],
+                                               Numeric.Float)*omega * res[1],)
             except:
 #                print res,self.np
                 raise
@@ -155,7 +166,11 @@ class labelimage:
             self.lastres = self.res
             return
         # print "Calling bloboverlaps",self.verbose
-        ds = connectedpixels.bloboverlaps(self.bl, self.np, self.lastbl, self.lastnp, self.verbose)
+        ds = connectedpixels.bloboverlaps(self.bl, 
+                                          self.np, 
+                                          self.lastbl, 
+                                          self.lastnp, 
+                                          self.verbose)
         # ds is a disjoint set. 
         # print ds
         # already filled out self.res, self.lastres
@@ -167,12 +182,12 @@ class labelimage:
             print len(ds),self.np,self.lastnp,ds
             print "np",self.np,"len(self.res[0])",len(self.res[0])
             print "lastnp",self.lastnp,"len(self.lastres[0])",len(self.lastres[0])
-        for i in range(self.np+1,len(ds)):
+        for i in range(self.np+1, len(ds)):
 #            print i
 #            if ds[i]==i and i<self.np:
 #                # this peak is on res and not overlapped, it will, eventually, move to lastres
 #                continue
-            if ds[i]!=i:
+            if ds[i] != i:
                 if three_d_debug:
                     print "linking ds[i],i",ds[i],i,
                 assert ds[i] < self.np, "Link on the same image"
@@ -252,13 +267,13 @@ class labelimage:
         if npi < 1:
             return ""
         else:
-            n    = npi
+            n    = npi 
             # Average intensity
             avg  = isum/n
-            if n==1:
-                si   = sqrt(sumsq - n*avg*avg)
-            else:
-                si   = sqrt((sumsq - n*avg*avg)/(n-1.))
+#            if n==1:
+#                si   = sqrt(sumsq - n*avg*avg)
+#            else:
+#                si   = sqrt((sumsq - n*avg*avg)/(n-1.))
             # Standard dev on intensity
             c0   = com0/isum
             # Centre of mass in index 0
@@ -284,9 +299,11 @@ class labelimage:
             if False:# abs(c0c-1229)<2 and abs(c1c-1486)<2:
                 print "c0c,c1c",c0c,c1c
                 print peak
-                print "%f %f %f %d %f %f %f %f %f %f\n"%(c0c, c1c, om, n, avg, c0, c1, c00, c11, c01)
+                print "%f %f %f %d %f %f %f %f %f %f\n"% (
+                  c0c, c1c, om, n, avg, c0, c1, c00, c11, c01)
                 raise Exception("who are you??")
-            return "%f %f %f %d %f %f %f %f %f %f\n"%(c0c, c1c, om, n, avg, c0, c1, c00, c11, c01)
+            return "%f %f %f %d %f %f %f %f %f %f\n"% (
+                  c0c, c1c, om, n, avg, c0, c1, c00, c11, c01)
 
 
     def finalize(self):
