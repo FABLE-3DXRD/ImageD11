@@ -118,7 +118,8 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
     if omega is None or ( t_x == 0. and t_y == 0 and t_z == 0):
         magrotvec=sqrt(sum(rotvec*rotvec,0))
         # tan(eta) = y/z
-        eta=degrees(arctan2(rotvec[1,:],rotvec[2,:])) 
+        # CHANGED to match HFP definition 4-9-2007 
+        eta=degrees(arctan2(-rotvec[1,:],rotvec[2,:])) 
         # cosine rule a2 = b2+c2-2bccos(A)
         # a is distance from (0,0,0) to rotvec => magrotvec
         # b is distance from sample to detector
@@ -202,7 +203,8 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
         # origin =  array([ -distance, 0, 0 ], Float)
         # scattering_vectors 
         s = rotvec - myorigins
-        eta = degrees(arctan2(s[1],s[2]))
+        # CHANGED to HFP convention 4-9-2007
+        eta = degrees(arctan2(-s[1],s[2]))
         mag_s = sqrt(sum(s*s,0))
         costth = s[0] / mag_s
         tth = degrees( arccos(costth) )
@@ -288,7 +290,7 @@ def compute_k_vectors(tth, eta, wavelength):
     # x - along incident beam
     k[0,:] = -ds*s # this is negative x
     # y - towards door
-    k[1,:] =  ds*c*sin(eta) # y direction
+    k[1,:] = -ds*c*sin(eta) # CHANGED eta to HFP convention 4-9-2007
     # z - towards roof
     k[2,:] =  ds*c*cos(eta)
     return k

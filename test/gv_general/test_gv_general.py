@@ -17,17 +17,65 @@ def array_diff(a1,a2):
     #    print "array_diff",err
     return err
 
+class test_g_to_k(unittest.TestCase):
+    
+    def setUp(self):
+        self.np = 5
+        self.tth = n.array([60,10,15,20,25],n.Float)
+        self.wvln = 0.5
+        self.eta = n.array([90,10,120,-20,340],n.Float)
+        self.omega = n.array([60,90,180,60,97],n.Float)
+        
+    def test_0_0(self):
+        """ wedge,chi = 0 """
+        g = transform.compute_g_vectors(self.tth, 
+                                            self.eta, 
+                                            self.omega, 
+                                            self.wvln, 
+                                            wedge=0.0, 
+                                            chi=0.0 )
+        sol1, sol2, valid = gv_general.g_to_k( g,  #
+                                               self.wvln,
+                                               axis = n.array([0,0,-1], n.Float),
+                                               pre = None,
+                                               post = None )
+
+        c0 = n.cos(transform.radians(self.omega))
+        c1 = n.cos(transform.radians(sol1))
+        c2 = n.cos(transform.radians(sol2))
+
+        s0 = n.sin(transform.radians(self.omega))
+        s1 = n.sin(transform.radians(sol1))
+        s2 = n.sin(transform.radians(sol2))
+
+        err1 = n.absolute(c1-c0) + n.absolute(s1-s0)
+        err2 = n.absolute(c2-c0) + n.absolute(s2-s0)
+        err = n.minimum(err1,err2)
+        self.assertAlmostEqual( array_diff( err, n.zeros(self.np)), 0, 6)
+
+# if False:
+class dont_test_g_to_k_many(test_g_to_k):
+    
+    def setUp(self):
+        self.np = 5
+        self.tth = RandomArray.random(self.np)*2+1
+        self.wvln = 0.154
+        self.eta = RandomArray.random(self.np)*360.
+        self.omega = RandomArray.random(self.np)*360.
+        
+
+
 class test_k_to_g(unittest.TestCase):
     
     def setUp(self):
-        self.np = 2
+        self.np = 6
         self.tth = RandomArray.random(self.np)*20
         self.wvln = 0.154
         self.eta = (RandomArray.random(self.np)-0.5)*180.
-        self.omega = n.array([90,180],n.Float)
+        self.omega = n.array([90,180,12,97,230,199],n.Float)
         # print "Called setup"
         
-    def donttest_0_0_0(self):
+    def test_0_0_0(self):
         """ wedge, chi = 0 """
         SANITY = False
         om = n.zeros(self.np,n.Float)

@@ -23,6 +23,7 @@ Find a generalised way to compute g-vectors backwards and forwards
 """
 import math, logging, LinearAlgebra
 import Numeric as n
+from ImageD11.transform import degrees
 
 class rotation_axis:
     """
@@ -60,27 +61,33 @@ class rotation_axis:
         http://mathworld.wolfram.com/RotationFormula.html
         r' = r cos(t) + n(n.r)(1-cos(t)) + rxn sin(t)
         """
-        p = n.array(vectors,n.Float)
+        p = n.array(vectors, n.Float)
         assert p.shape[0] == 3
         if angles is None:
             self.to_matrix()
             return n.matrixmultiply(self.matrix, p)
-        #print "in rotate_vectors",angles
         q = n.array(angles)*math.pi/180.
-        #print "rotating",self.direction, q
         assert q.shape[0] == p.shape[1]
         rp = p * n.cos(q)
         assert rp.shape == p.shape
         a_dot_p = n.matrixmultiply( self.direction, p)
-        #print "a_dot_p=",a_dot_p
-        #                         1xn                              3
         apa = n.outerproduct(self.direction, a_dot_p)
-        #print "apa",apa,apa.shape     
-        #print a_dot_p.shape, a_dot_p
         rp += apa*(1-n.cos(q))
         rp += n.sin(q)*n.transpose( n.cross_product( self.direction, n.transpose(p)) )
         return rp
-        
+    
+    def rotate_vectors_inverse(self, vectors, angles = None):
+        """
+        Same as rotate vectors, but opposing sense
+        """
+        p = n.array(vectors, n.Float)
+        assert p.shape[0] == 3
+        if angles is None:
+            self.to_matrix()
+            return n.matrixmultiply(self.inversematrix, p)
+        # Just reverse the angles here
+        return self.rotate_vectors(vectors, -angles)
+
     def to_matrix(self):
         """
         Returns a 3x3 rotation matrix
@@ -100,6 +107,7 @@ class rotation_axis:
         ct = math.cos( math.radians( self.angle ))
         self.matrix = n.identity(3, n.Float)*ct - st * w  + \
                       (1 - ct)*e*n.transpose(e)
+	self.inversematrix = LinearAlgebra.inverse(self.matrix)
         return self.matrix
 
 def axis_from_matrix( m ):
@@ -129,7 +137,7 @@ rotate_identity = rotation_axis( n.array([0,0,1],n.Float) , 0.0 )
 
 def k_to_g( k , # scattering vectors in the laboratory
             angles , # eg samome in degrees
-            axis = rotation_axis( n.array([0,0,-1],n.Float) , 0.0 ) , # eg z axis 
+            axis = rotation_axis( n.array([0,0,1],n.Float) , 0.0 ) , # eg z axis 
             pre = rotate_identity , 
             post = rotate_identity ):
     """
@@ -140,21 +148,97 @@ def k_to_g( k , # scattering vectors in the laboratory
     assert k.shape[0] == 3 , "k must be a [:,3] array"
     #print "angles=",angles[0]
     #print "k.shape\n",k.shape,k[:,0]
-    pk =  post.rotate_vectors( k )
+    pk =  post.rotate_vectors_inverse( k )
     #print "pk.shape\n" ,pk.shape,pk[:,0]
-    rpk = axis.rotate_vectors(pk , angles)
+    rpk = axis.rotate_vectors_inverse(pk , angles)
     #print "rpk.shape\n",rpk.shape,rpk[:,0]
-    g =   pre.rotate_vectors( rpk )
+    g =   pre.rotate_vectors_inverse( rpk )
     #print "g.shape\n",g.shape,g[:,0]
     return g
     
     
-def g_to_k( g,  # 
+def g_to_k( g,  # g-vectors [3,:]
+            wavelength, # Needed - depends on curve of Ewald sphere!
             axis = n.array([0,0,1], n.Float),
-            pre = rotate_identity,
-            post = rotate_identity ):
+            pre = None,
+            post = None ):
     """
     Get the k and angles given the g in 
-    Computes g = pre . rot(axis, angle) . post . k
+         g = pre . rot(axis, angle) . post . k
+    ...where k will satisfy the Laue equations
+    
+    The recipe is:
+        Find the components of g along and perpendicular to the rotation axis
+            co-ords are a0 = axis, a1 = axis x g, a2 = a1 x axis = ( axis x g ) x axis
+        Rotated vector will be a0 + a1 sin(angle) + a2 cos(angle)
+        Laue condition says that [incident beam].[k] = k.sin(theta)
+                                                     = 2 sin^2(theta) / lambda 
+                                                     = sin(t)/d = |g|.sin(t)
+                                                     = |g|*|g|*lambda / 2
+        Apply any post rotations to the incident beam 
+        Apply any pre-rotations to the g vector
+        |g| = [a0 + a1 sin(angle) + a2 cos(angle) ] . [incident beam]
+        => solve for angle
+
+        http://www.ping.be/~ping1339/gonio.htm
+        a sin(u) + b cos(u) = c
+        let: tan(u') = -b/a
+        and: A = a / cos(u')
+        Finally you'll find:
+             A.sin(u-u') = c
+             A.cos(pi/2 - u - u') = c
     """
-    pass
+    assert g.shape[0] == 3
+    npeaks = g.shape[1]
+    # First deal with the pre and post rotations
+    if pre is not None:
+        rg = pre.rotate_vectors_inverse(g)
+    else:
+        rg = g
+    assert rg.shape == g.shape
+    beam = n.zeros(rg.shape, n.Float)
+    beam[0,:] = -1.
+    beam[1,:] = 0.
+    beam[2,:] = 0.
+    if post is not None:
+        rb = post.rotate_vectors(beam)
+    else:
+        rb = beam
+    assert rb.shape == g.shape
+    # Find the components of g with respect to our rotation axis
+    # a1 = perpendicular to both axis and g
+    a1 = n.transpose(n.cross_product(axis, g, axis1=0, axis2=0))
+    # a2 perpendicular to axis, along g
+    a2 = n.transpose(n.cross_product(a1, axis, axis1=0, axis2=0))
+    # projection of g along axis
+    a0 = g - a2
+    assert a0.shape == a1.shape == a2.shape == g.shape
+    # Dot product with incident beam
+    rbda0 = n.sum(rb * a0, 0) 
+    rbda1 = n.sum(rb * a1, 0) 
+    rbda2 = n.sum(rb * a2, 0)
+    assert rbda0.shape == rbda1.shape == rbda2.shape == (g.shape[1],)
+    modg = n.sqrt(n.sum(g * g, 0))
+    sin_theta = modg*wavelength/2.
+    kdotbeam = -sin_theta*modg
+    # k.b = rbda0 + rbda1.sin(t) + rbda2.cos(t)
+    a = rbda1
+    b = rbda2
+    c = kdotbeam - rbda0
+    # From wikipedia: 
+    # http://en.wikipedia.org/wiki/List_of_trigonometric_identities#Linear_combinations
+    # a.sin(x) + b.cos(x) = sqrt(a*a+b*b) sin(x+p)
+    # with p = atan(b/a)
+    p = n.arctan2(b,a)
+    k = n.sqrt(a*a+b*b)
+    quot = c/k
+    valid = n.logical_and( n.greater_equal( quot, -1) ,
+                           n.less_equal(    quot,  1) )
+    quot = n.where( valid, quot, 0 ) 
+    x_plus_p = n.arcsin(quot)
+    sol1 = x_plus_p + p
+    sol2 = math.pi - x_plus_p + p
+
+    return degrees(sol1), degrees(sol2), valid
+    
+    
