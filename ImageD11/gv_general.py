@@ -197,7 +197,7 @@ def g_to_k( g,  # g-vectors [3,:]
         rg = g
     assert rg.shape == g.shape
     beam = n.zeros(rg.shape, n.Float)
-    beam[0,:] = -1.
+    beam[0,:] = -1./wavelength
     beam[1,:] = 0.
     beam[2,:] = 0.
     if post is not None:
@@ -219,8 +219,8 @@ def g_to_k( g,  # g-vectors [3,:]
     rbda2 = n.sum(rb * a2, 0)
     assert rbda0.shape == rbda1.shape == rbda2.shape == (g.shape[1],)
     modg = n.sqrt(n.sum(g * g, 0))
-    sin_theta = modg*wavelength/2.
-    kdotbeam = -sin_theta*modg
+    kdotbeam = -modg*modg/2.
+    print kdotbeam,"uyou"
     # k.b = rbda0 + rbda1.sin(t) + rbda2.cos(t)
     a = rbda1
     b = rbda2

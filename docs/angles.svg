@@ -1,0 +1,1194 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="744.09448819"
+   height="1052.3622047"
+   id="svg2"
+   sodipodi:version="0.32"
+   inkscape:version="0.45.1"
+   sodipodi:docbase="/home/wright/workspace/ImageD11-trunk/docs"
+   sodipodi:docname="angles.svg"
+   inkscape:output_extension="org.inkscape.output.svg.inkscape"
+   inkscape:export-filename="/home/wright/workspace/ImageD11-trunk/docs/angles.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     gridtolerance="10000"
+     guidetolerance="10"
+     objecttolerance="10"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.60670699"
+     inkscape:cx="348.94521"
+     inkscape:cy="514.94191"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="true"
+     showguides="false"
+     inkscape:window-width="1455"
+     inkscape:window-height="964"
+     inkscape:window-x="0"
+     inkscape:window-y="25" />
+  <defs
+     id="defs4">
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1Mend"
+       style="overflow:visible;">
+      <path
+         id="path10416"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;marker-start:none;"
+         transform="scale(0.4) rotate(180) translate(10,0)" />
+    </marker>
+    <linearGradient
+       id="linearGradient16740">
+      <stop
+         style="stop-color:#00ff00;stop-opacity:1;"
+         offset="0"
+         id="stop16742" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1;"
+         offset="1"
+         id="stop16744" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient15616">
+      <stop
+         offset="0"
+         style="stop-color:#00ff00;stop-opacity:0;"
+         id="stop15618" />
+      <stop
+         offset="0.5"
+         style="stop-color:#00ff00;stop-opacity:0.49803922;"
+         id="stop15622" />
+      <stop
+         offset="1"
+         style="stop-color:#00ff00;stop-opacity:0;"
+         id="stop15620" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient15610">
+      <stop
+         offset="0"
+         style="stop-color:#ffffff;stop-opacity:1;"
+         id="stop15612" />
+      <stop
+         offset="1"
+         style="stop-color:#00ff00;stop-opacity:1;"
+         id="stop15614" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient15604">
+      <stop
+         offset="0"
+         style="stop-color:#00ff00;stop-opacity:1;"
+         id="stop15606" />
+      <stop
+         offset="1"
+         style="stop-color:#00ff00;stop-opacity:0;"
+         id="stop15608" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient15594">
+      <stop
+         offset="0"
+         style="stop-color:#00ff00;stop-opacity:1;"
+         id="stop15596" />
+      <stop
+         offset="1"
+         style="stop-color:#00ff00;stop-opacity:0;"
+         id="stop15598" />
+    </linearGradient>
+    <marker
+       refY="0.0"
+       id="Arrow2Lend"
+       refX="0.0"
+       style="overflow:visible;"
+       orient="auto"
+       inkscape:stockid="Arrow2Lend">
+      <path
+         d="M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z "
+         style="font-size:12.0;fill-rule:evenodd;stroke-width:0.62500000;stroke-linejoin:round;"
+         transform="scale(1.1) rotate(180) translate(1,0)"
+         id="path10428" />
+    </marker>
+    <marker
+       refY="0.0"
+       id="Arrow2Mstart"
+       refX="0.0"
+       style="overflow:visible"
+       orient="auto"
+       inkscape:stockid="Arrow2Mstart">
+      <path
+         d="M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z "
+         style="font-size:12.0;fill-rule:evenodd;stroke-width:0.62500000;stroke-linejoin:round"
+         transform="scale(0.6) translate(0,0)"
+         id="path3203" />
+    </marker>
+    <marker
+       refY="0.0"
+       id="Arrow2Sstart"
+       refX="0.0"
+       style="overflow:visible"
+       orient="auto"
+       inkscape:stockid="Arrow2Sstart">
+      <path
+         d="M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z "
+         style="font-size:12.0;fill-rule:evenodd;stroke-width:0.62500000;stroke-linejoin:round"
+         transform="scale(0.3) translate(-2.3,0)"
+         id="path3209" />
+    </marker>
+    <marker
+       refY="0.0"
+       id="Arrow1Lstart"
+       refX="0.0"
+       style="overflow:visible"
+       orient="auto"
+       inkscape:stockid="Arrow1Lstart">
+      <path
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;marker-start:none"
+         transform="scale(0.8) translate(12.5,0)"
+         id="path3179" />
+    </marker>
+    <marker
+       refY="0.0"
+       id="Arrow2Lstart"
+       refX="0.0"
+       style="overflow:visible"
+       orient="auto"
+       inkscape:stockid="Arrow2Lstart">
+      <path
+         d="M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z "
+         style="font-size:12.0;fill-rule:evenodd;stroke-width:0.62500000;stroke-linejoin:round"
+         transform="scale(1.1) translate(1,0)"
+         id="path4555" />
+    </marker>
+    <marker
+       refY="0.0"
+       id="Arrow2Lendz"
+       refX="0.0"
+       style="overflow:visible;"
+       orient="auto"
+       inkscape:stockid="Arrow2Lendz">
+      <path
+         d="M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z "
+         style="stroke-linejoin:round;font-size:12.0;fill-rule:evenodd;stroke:#ff0000;stroke-width:0.62500000;fill:#ff0000"
+         transform="scale(1.1) rotate(180) translate(1,0)"
+         id="path11962" />
+    </marker>
+    <marker
+       refY="0.0"
+       id="Arrow2Lendzm"
+       refX="0.0"
+       style="overflow:visible;"
+       orient="auto"
+       inkscape:stockid="Arrow2Lendzm">
+      <path
+         d="M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z "
+         style="stroke-linejoin:round;font-size:12.0;fill-rule:evenodd;stroke:#00ff00;stroke-width:0.62500000;fill:#00ff00"
+         transform="scale(1.1) rotate(180) translate(1,0)"
+         id="path12466" />
+    </marker>
+    <marker
+       refY="0.0"
+       id="Arrow2Lendzmv"
+       refX="0.0"
+       style="overflow:visible;"
+       orient="auto"
+       inkscape:stockid="Arrow2Lendzmv">
+      <path
+         d="M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z "
+         style="stroke-linejoin:round;font-size:12.0;fill-rule:evenodd;stroke:#0000ff;stroke-width:0.62500000;fill:#0000ff"
+         transform="scale(1.1) rotate(180) translate(1,0)"
+         id="path15668" />
+    </marker>
+    <marker
+       refY="0.0"
+       id="Arrow2Lendz6"
+       refX="0.0"
+       style="overflow:visible;"
+       orient="auto"
+       inkscape:stockid="Arrow2Lendz6">
+      <path
+         d="M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z "
+         style="stroke-linejoin:round;font-size:12.0;fill-rule:evenodd;stroke:#808000;stroke-width:0.62500000;fill:#808000"
+         transform="scale(1.1) rotate(180) translate(1,0)"
+         id="path16209" />
+    </marker>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient16740"
+       id="linearGradient16746"
+       x1="89.5"
+       y1="851.08069"
+       x2="263.39461"
+       y2="851.08069"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-29.5,-0.8746924)" />
+  </defs>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     id="layer1"
+     inkscape:groupmode="layer">
+    <path
+       style="fill:url(#linearGradient16746);fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+       d="M 101.53525,758.92452 L 60.5,941.48749 L 233.39461,852.87432"
+       id="path16738" />
+    <text
+       style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana"
+       y="39.866089"
+       x="239.08594"
+       sodipodi:linespacing="125%"
+       id="text4357"
+       xml:space="preserve"><tspan
+         sodipodi:role="line"
+         id="tspan4359"
+         y="39.866089"
+         x="239.08594"
+         style="font-weight:bold">3DXRD Setup, viewed from above, z out of page</tspan></text>
+    <text
+       style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana"
+       y="51.47937"
+       x="32.091797"
+       sodipodi:linespacing="125%"
+       id="text5340"
+       xml:space="preserve"><tspan
+         sodipodi:role="line"
+         id="tspan5342"
+         y="51.47937"
+         x="32.091797"><tspan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="tspan8997">k</tspan> = <tspan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="tspan8995">S</tspan> - <tspan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="tspan8999">S</tspan>o</tspan><tspan
+         sodipodi:role="line"
+         id="tspan5344"
+         y="66.47937"
+         x="32.091797" /><tspan
+         sodipodi:role="line"
+         id="tspan5348"
+         y="81.47937"
+         x="32.091797">Length of |<tspan
+   style="font-weight:bold"
+   id="tspan17845">S</tspan>| = |<tspan
+   style="font-weight:bold"
+   id="tspan17843">S</tspan>o| = 1/λ</tspan><tspan
+         sodipodi:role="line"
+         id="tspan6864"
+         y="96.47937"
+         x="32.091797" /><tspan
+         sodipodi:role="line"
+         id="tspan6885"
+         y="111.47937"
+         x="32.091797">Length of |<tspan
+   style="font-weight:bold"
+   id="tspan17847">k</tspan>| = 2 sinθ |<tspan
+   style="font-weight:bold"
+   id="tspan17849">S</tspan>|</tspan><tspan
+         sodipodi:role="line"
+         id="tspan8869"
+         y="126.47937"
+         x="32.091797">                    = 2 sinθ / λ</tspan><tspan
+         sodipodi:role="line"
+         id="tspan8881"
+         y="141.47937"
+         x="32.091797">                    = 1/d</tspan><tspan
+         sodipodi:role="line"
+         id="tspan8885"
+         y="156.47937"
+         x="32.091797">...where d is the d-spacing </tspan><tspan
+         sodipodi:role="line"
+         id="tspan8889"
+         y="171.47937"
+         x="32.091797">of the diffracting planes.</tspan><tspan
+         sodipodi:role="line"
+         id="tspan8871"
+         y="186.47937"
+         x="32.091797" /><tspan
+         sodipodi:role="line"
+         id="tspan8873"
+         y="201.47937"
+         x="32.091797">Components:</tspan><tspan
+         sodipodi:role="line"
+         id="tspan8875"
+         y="216.47937"
+         x="32.091797" /><tspan
+         sodipodi:role="line"
+         id="tspan8877"
+         y="231.47937"
+         x="32.091797">kx = -|<tspan
+   style="font-weight:bold"
+   id="tspan17851">k</tspan>| sinθ </tspan><tspan
+         sodipodi:role="line"
+         id="tspan8879"
+         y="246.47937"
+         x="32.091797">ky = -|<tspan
+   style="font-weight:bold"
+   id="tspan17853">k</tspan>| cosθ sinη</tspan><tspan
+         sodipodi:role="line"
+         id="tspan6840"
+         y="261.47937"
+         x="32.091797">kz = |<tspan
+   style="font-weight:bold"
+   id="tspan17855">k</tspan>| cosθ cosη</tspan><tspan
+         sodipodi:role="line"
+         id="tspan8893"
+         y="276.47937"
+         x="32.091797" /><tspan
+         sodipodi:role="line"
+         id="tspan8897"
+         y="291.47937"
+         x="32.091797">...η measures from z towards</tspan><tspan
+         sodipodi:role="line"
+         id="tspan8899"
+         y="306.47937"
+         x="32.091797">negative y.</tspan></text>
+    <g
+       id="g9267"
+       transform="translate(92.16688,-53.477412)"
+       style="font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%">
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Arrow2Lstart);stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         id="path5440"
+         d="M 381.9683,441.82007 L 601.9683,441.82007" />
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Arrow2Lstart);stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         id="path5442"
+         d="M 188.97441,552.86218 L 379.5,442.86218" />
+      <flowRoot
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+         transform="translate(71.099271,319.90752)"
+         xml:space="preserve"
+         id="flowRoot5446"><flowRegion
+           id="flowRegion5448"><rect
+             style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+             y="100.231"
+             x="408.76465"
+             height="42.13118"
+             width="121.23535"
+             id="rect5450" /></flowRegion><flowPara
+           id="flowPara5452">Incident beam, <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17877">S</flowSpan>o</flowPara></flowRoot>      <flowRoot
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+         transform="translate(0.6402871,293.895)"
+         xml:space="preserve"
+         id="flowRoot5454"><flowRegion
+           id="flowRegion5456"><rect
+             style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+             y="214.28839"
+             x="264.24475"
+             height="53.13232"
+             width="102.72249"
+             id="rect5458" /></flowRegion><flowPara
+           id="flowPara5460">Diffracted</flowPara><flowPara
+           id="flowPara5462">Beam, <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17881">S</flowSpan></flowPara></flowRoot>      <flowRoot
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+         transform="translate(-30.294922,260.00437)"
+         xml:space="preserve"
+         id="flowRoot5464"><flowRegion
+           id="flowRegion5466"><rect
+             style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+             y="222.78955"
+             x="439.93561"
+             height="50.298595"
+             width="140.97775"
+             id="rect5468" /></flowRegion><flowPara
+           id="flowPara5470">Scattering </flowPara><flowPara
+           id="flowPara5472">vector in lab, <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17879">k</flowSpan></flowPara></flowRoot>      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Arrow2Mstart);stroke-miterlimit:4;stroke-dasharray:6, 1;stroke-dashoffset:0;stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         id="path5474"
+         d="M 270.64028,442.25718 C 370.64028,442.25718 370.64028,442.25718 370.64028,442.25718" />
+      <text
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana"
+         y="438.50656"
+         x="279.05365"
+         sodipodi:linespacing="125%"
+         id="text5476"
+         xml:space="preserve"><tspan
+           sodipodi:role="line"
+           id="tspan5478"
+           y="438.50656"
+           x="279.05365">x</tspan></text>
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Arrow2Mstart);stroke-miterlimit:4;stroke-dasharray:6, 1;stroke-dashoffset:0;stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         id="path5480"
+         d="M 380.22004,550.75718 C 380.22004,450.75718 380.22004,450.75718 380.22004,450.75718" />
+      <text
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana"
+         y="552.2572"
+         x="370.29459"
+         sodipodi:linespacing="125%"
+         id="text5482"
+         xml:space="preserve"><tspan
+           sodipodi:role="line"
+           id="tspan5484"
+           y="552.2572"
+           x="370.29459">y</tspan></text>
+      <flowRoot
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+         transform="translate(-119.64648,459.55319)"
+         xml:space="preserve"
+         id="flowRoot5488"><flowRegion
+           id="flowRegion5490"><rect
+             style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+             y="100.231"
+             x="408.76465"
+             height="22.13118"
+             width="71.235352"
+             id="rect5492" /></flowRegion><flowPara
+           id="flowPara5494">-<flowSpan
+   style="font-weight:bold"
+   id="flowSpan17883">S</flowSpan>o</flowPara></flowRoot>      <flowRoot
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+         transform="translate(-93.289062,283.97702)"
+         xml:space="preserve"
+         id="flowRoot5496"><flowRegion
+           id="flowRegion5498"><rect
+             style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+             y="115.10806"
+             x="356.34076"
+             height="27.25412"
+             width="273.65924"
+             id="rect5500" /></flowRegion><flowPara
+           id="flowPara5502">2θ = 30° ; |<flowSpan
+   style="font-weight:bold"
+   id="flowSpan17875">k</flowSpan>| = |<flowSpan
+   style="font-weight:bold"
+   id="flowSpan17873">S</flowSpan>|.2.sinθ  ~ 0.517</flowPara></flowRoot>      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Arrow2Mstart);stroke-miterlimit:4;stroke-dasharray:1, 3;stroke-dashoffset:0;stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         id="path2247"
+         d="M 410.67563,554.78242 L 190.67563,554.78242" />
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Arrow2Lstart);stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         d="M 412.35393,555.07857 L 380.5,440.6953"
+         sodipodi:nodetypes="cc"
+         id="path2249" />
+      <path
+         sodipodi:type="arc"
+         sodipodi:cx="175.32771"
+         sodipodi:cy="316.98767"
+         sodipodi:open="true"
+         transform="matrix(3.430282,0,0,3.4758606,-4.4168399,-659.32624)"
+         sodipodi:start="2.4324255"
+         sodipodi:end="3.2249403"
+         d="M 127.4272,358.09022 A 63.117977,63.117977 0 0 1 112.42884,311.73302"
+         style="fill:none;stroke:#008000;stroke-width:0.28621322;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:3.47524285px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         sodipodi:rx="63.117977"
+         id="path5857"
+         sodipodi:ry="63.117977" />
+      <text
+         xml:space="preserve"
+         style="font-size:12px;font-style:normal;font-weight:normal;fill:#008000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana;font-stretch:normal;font-variant:normal;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         id="text5865"
+         y="551.47937"
+         x="428.33398"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan5867"
+           y="551.47937"
+           x="428.33398">Ewald</tspan><tspan
+           sodipodi:role="line"
+           id="tspan5869"
+           y="566.47937"
+           x="428.33398">Sphere</tspan></text>
+      <path
+         sodipodi:type="arc"
+         sodipodi:cx="378.70786"
+         sodipodi:cy="151.67868"
+         sodipodi:open="true"
+         transform="translate(0.8141979,291.12611)"
+         sodipodi:start="2.6140611"
+         sodipodi:end="3.1401954"
+         d="M 343.21537,172.35681 A 41.076778,41.076778 0 0 1 337.63112,151.73608"
+         style="fill:none;stroke:#800000;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         sodipodi:rx="41.076778"
+         id="path6901"
+         sodipodi:ry="41.076778" />
+      <flowRoot
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;fill:#800000;font-family:Verdana"
+         transform="translate(-38.669922,329.97702)"
+         xml:space="preserve"
+         id="flowRoot6903"><flowRegion
+           id="flowRegion6905"><rect
+             style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;fill:#800000;font-family:Verdana"
+             y="115.10806"
+             x="356.34076"
+             height="17.25412"
+             width="193.65924"
+             id="rect6907" /></flowRegion><flowPara
+           id="flowPara6909">2θ</flowPara></flowRoot>      <flowRoot
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;fill:#000080;font-family:Verdana"
+         transform="translate(29.853516,366.67819)"
+         xml:space="preserve"
+         id="flowRoot6911"><flowRegion
+           id="flowRegion6913"><rect
+             style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;fill:#000080;font-family:Verdana"
+             y="115.10806"
+             x="356.34076"
+             height="27.25412"
+             width="13.659241"
+             id="rect6915" /></flowRegion><flowPara
+           id="flowPara6917">θ</flowPara></flowRoot>      <path
+         sodipodi:type="arc"
+         sodipodi:cx="378.70786"
+         sodipodi:cy="151.67868"
+         sodipodi:open="true"
+         transform="translate(2.5445428,291.44366)"
+         sodipodi:start="1.3037974"
+         sodipodi:end="1.5902319"
+         d="M 389.54547,191.29999 A 41.076778,41.076778 0 0 1 377.90955,192.7477"
+         style="fill:none;stroke:#000080;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         sodipodi:rx="41.076778"
+         id="path6929"
+         sodipodi:ry="41.076778" />
+    </g>
+    <g
+       id="g9215"
+       transform="translate(-0.3284912,-48.022978)"
+       style="font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%">
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Arrow2Lstart);stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         id="path3563"
+         d="M 381.32802,151.92507 L 601.32802,151.92507" />
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Arrow2Lstart);stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         id="path4732"
+         d="M 269.5,343.38777 L 379.5,152.86218" />
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Arrow2Lstart);stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         id="path4734"
+         d="M 489.32074,343.38777 L 379.32074,152.86218" />
+      <flowRoot
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+         transform="translate(70.458984,30.012521)"
+         xml:space="preserve"
+         id="flowRoot2170"><flowRegion
+           id="flowRegion2172"><rect
+             style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+             y="100.231"
+             x="408.76465"
+             height="42.13118"
+             width="121.23535"
+             id="rect2174" /></flowRegion><flowPara
+           id="flowPara2176">Incident beam, <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17863">S</flowSpan>o</flowPara></flowRoot>      <flowRoot
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+         id="flowRoot2178"
+         xml:space="preserve"><flowRegion
+           id="flowRegion2180"><rect
+             style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+             y="214.28839"
+             x="264.24475"
+             height="53.13232"
+             width="102.72249"
+             id="rect2182" /></flowRegion><flowPara
+           id="flowPara2184">Diffracted</flowPara><flowPara
+           id="flowPara2186">Beam, <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17865">S</flowSpan></flowPara></flowRoot>      <flowRoot
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+         id="flowRoot2188"
+         xml:space="preserve"><flowRegion
+           id="flowRegion2190"><rect
+             style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+             y="222.78955"
+             x="439.93561"
+             height="50.298595"
+             width="140.97775"
+             id="rect2192" /></flowRegion><flowPara
+           id="flowPara2194">Scattering </flowPara><flowPara
+           id="flowPara2198">vector in lab, <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17867">k</flowSpan></flowPara></flowRoot>      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Arrow2Mstart);stroke-miterlimit:4;stroke-dasharray:6, 1;stroke-dashoffset:0;stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         id="path2202"
+         d="M 270,152.36218 C 370,152.36218 370,152.36218 370,152.36218" />
+      <text
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana"
+         y="148.61157"
+         x="278.41336"
+         sodipodi:linespacing="125%"
+         id="text4347"
+         xml:space="preserve"><tspan
+           sodipodi:role="line"
+           id="tspan4349"
+           y="148.61157"
+           x="278.41336">x</tspan></text>
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Arrow2Mstart);stroke-miterlimit:4;stroke-dasharray:6, 1;stroke-dashoffset:0;stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         id="path4351"
+         d="M 379.57976,260.86218 C 379.57976,160.86218 379.57976,160.86218 379.57976,160.86218" />
+      <text
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana"
+         y="262.36218"
+         x="369.6543"
+         sodipodi:linespacing="125%"
+         id="text4353"
+         xml:space="preserve"><tspan
+           sodipodi:role="line"
+           id="tspan4355"
+           y="262.36218"
+           x="369.6543">y</tspan></text>
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Arrow2Mstart);stroke-miterlimit:4;stroke-dasharray:1, 3;stroke-dashoffset:0;stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         id="path4361"
+         d="M 490.5,343.9603 L 270.5,343.9603" />
+      <flowRoot
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+         transform="translate(-39.335938,250.01252)"
+         xml:space="preserve"
+         id="flowRoot5332"><flowRegion
+           id="flowRegion5334"><rect
+             style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+             y="100.231"
+             x="408.76465"
+             height="32.13118"
+             width="41.235352"
+             id="rect5336" /></flowRegion><flowPara
+           id="flowPara5338">-<flowSpan
+   style="font-weight:bold"
+   id="flowSpan17871">S</flowSpan>o</flowPara></flowRoot>      <flowRoot
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+         transform="translate(-44,-8)"
+         xml:space="preserve"
+         id="flowRoot5368"><flowRegion
+           id="flowRegion5370"><rect
+             style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;font-family:Verdana"
+             y="115.10806"
+             x="356.34076"
+             height="17.25412"
+             width="193.65924"
+             id="rect5372" /></flowRegion><flowPara
+           id="flowPara5374">2θ = 60° ; |<flowSpan
+   style="font-weight:bold"
+   id="flowSpan17859">k</flowSpan>| = |<flowSpan
+   style="font-weight:bold"
+   id="flowSpan17861">S</flowSpan>| = |<flowSpan
+   style="font-weight:bold"
+   id="flowSpan17857">S</flowSpan>o|</flowPara></flowRoot>      <path
+         sodipodi:type="arc"
+         sodipodi:cx="175.32771"
+         sodipodi:cy="316.98767"
+         sodipodi:open="true"
+         transform="matrix(3.430282,0,0,3.4758606,-5.164636,-949.32625)"
+         sodipodi:start="1.5670991"
+         sodipodi:end="3.236679"
+         d="M 175.56107,380.10522 A 63.117977,63.117977 0 0 1 112.49486,310.99505"
+         style="fill:none;stroke:#008000;stroke-width:0.28621322;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:3.47524285px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         sodipodi:rx="63.117977"
+         id="path4884"
+         sodipodi:ry="63.117977" />
+      <text
+         xml:space="preserve"
+         style="font-size:12px;font-style:normal;font-weight:normal;fill:#008000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana;font-stretch:normal;font-variant:normal;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         id="text5859"
+         y="334.86609"
+         x="519.20898"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan5861"
+           y="334.86609"
+           x="519.20898">Ewald</tspan><tspan
+           sodipodi:role="line"
+           id="tspan5863"
+           y="349.86609"
+           x="519.20898">Sphere</tspan></text>
+      <path
+         sodipodi:type="arc"
+         sodipodi:cy="151.67868"
+         sodipodi:open="true"
+         sodipodi:cx="378.70786"
+         sodipodi:start="2.0799403"
+         sodipodi:end="3.1401954"
+         d="M 358.6858,187.54537 A 41.076778,41.076778 0 0 1 337.63112,151.73608"
+         style="fill:none;stroke:#800000;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         sodipodi:rx="41.076778"
+         id="path6883"
+         sodipodi:ry="41.076778" />
+      <flowRoot
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;fill:#800000;font-family:Verdana"
+         transform="translate(-35.287109,48.678194)"
+         xml:space="preserve"
+         id="flowRoot6893"><flowRegion
+           id="flowRegion6895"><rect
+             style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;fill:#800000;font-family:Verdana"
+             y="115.10806"
+             x="356.34076"
+             height="17.25412"
+             width="193.65924"
+             id="rect6897" /></flowRegion><flowPara
+           id="flowPara6899">2θ</flowPara></flowRoot>      <flowRoot
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;fill:#000080;font-family:Verdana"
+         transform="translate(32.853516,74.678194)"
+         xml:space="preserve"
+         id="flowRoot6919"><flowRegion
+           id="flowRegion6921"><rect
+             style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr;text-anchor:start;fill:#000080;font-family:Verdana"
+             y="115.10806"
+             x="356.34076"
+             height="27.25412"
+             width="13.659241"
+             id="rect6923" /></flowRegion><flowPara
+           id="flowPara6925">θ</flowPara></flowRoot>      <path
+         sodipodi:type="arc"
+         sodipodi:cx="378.70786"
+         sodipodi:cy="151.67868"
+         sodipodi:open="true"
+         transform="translate(-0.5086536,9.4139e-2)"
+         sodipodi:start="1.0553527"
+         sodipodi:end="1.5414413"
+         d="M 398.95546,187.41852 A 41.076778,41.076778 0 0 1 379.91349,192.73776"
+         style="fill:none;stroke:#000080;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         sodipodi:rx="41.076778"
+         id="path6927"
+         sodipodi:ry="41.076778" />
+      <text
+         xml:space="preserve"
+         style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana;font-stretch:normal;font-variant:normal;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+         id="text8901"
+         y="215.87933"
+         x="590.07068"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan8903"
+           y="215.87933"
+           x="590.07068">η = -90°</tspan><tspan
+           sodipodi:role="line"
+           id="tspan8905"
+           y="230.87933"
+           x="590.07068">diffraction</tspan><tspan
+           sodipodi:role="line"
+           id="tspan8907"
+           y="245.87933"
+           x="590.07068">in plane</tspan></text>
+    </g>
+    <flowRoot
+       id="flowRoot8909"
+       xml:space="preserve"
+       transform="translate(11.351562,-58.29412)"
+       style="font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"><flowRegion
+         id="flowRegion8911"><rect
+           height="354.53845"
+           id="rect8913"
+           y="597.82373"
+           width="675.03552"
+           x="34.964493"
+           style="font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%" /></flowRegion><flowPara
+         id="flowPara8917">g-vector is the scattering vector rotated into the frame of reference of the crystal.</flowPara><flowPara
+         id="flowPara8921">When the sample rotations are zero <flowSpan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="flowSpan8923">g</flowSpan> = <flowSpan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="flowSpan8925">k</flowSpan>. Otherwise:</flowPara><flowPara
+         id="flowPara8969" /><flowPara
+         id="flowPara8971"><flowSpan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="flowSpan8973">k</flowSpan> = <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17895">R</flowSpan>a <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17893">R</flowSpan>b <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17891">R</flowSpan>c [...] <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17889">R</flowSpan>n <flowSpan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="flowSpan8975">g</flowSpan></flowPara><flowPara
+         id="flowPara8977" /><flowPara
+         id="flowPara8981">eg: <flowSpan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="flowSpan8991">g</flowSpan> is rotated by a series of matrices to give <flowSpan
+   style="font-weight:normal;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="flowSpan8993">k</flowSpan> which fulfills the diffraction condition, which is </flowPara><flowPara
+         id="flowPara9003"><flowSpan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="flowSpan9005">k</flowSpan>.<flowSpan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="flowSpan9007">S</flowSpan>o = |<flowSpan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="flowSpan9009">k</flowSpan>|.|<flowSpan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="flowSpan9011">S</flowSpan>o| cos(π-θ) = -|<flowSpan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="flowSpan9013">k</flowSpan>|sinθ/λ = -|<flowSpan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="flowSpan9015">g</flowSpan>|sinθ/λ = -|<flowSpan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="flowSpan9017">g</flowSpan>|.|<flowSpan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="flowSpan9019">g</flowSpan>|/2</flowPara><flowPara
+         id="flowPara9021">Last line substituted for sinθ. This equation is relating the length of the scattering vector to the angle the planes make with the incident beam.</flowPara><flowPara
+         id="flowPara8927" /><flowPara
+         id="flowPara8929">3DXRD has a single vertical rotation axis, Ω which rotates in an anti-clockwise sense when viewed from above (eg it is a right handed rotation around z).</flowPara><flowPara
+         id="flowPara9001" /><flowPara
+         id="flowPara8961" /><flowPara
+         id="flowPara8959" /><flowPara
+         id="flowPara8937" /><flowPara
+         id="flowPara8941" /></flowRoot>    <flowRoot
+       id="flowRoot9023"
+       xml:space="preserve"
+       transform="translate(11.351562,-59.45037)"
+       style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"><flowRegion
+         id="flowRegion9025"><rect
+           height="303.39917"
+           id="rect9027"
+           y="788.96301"
+           width="479.91046"
+           x="240.08952"
+           style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana" /></flowRegion><flowPara
+         id="flowPara9051">Finding the right angle to get a diffraction spot for an arbitrary   rotation:</flowPara><flowPara
+         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+         id="flowPara9061">Identify the rotation axis/ angle which is being moved as <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17921">R</flowSpan>. Any post rotations are applied to <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9077">g</flowSpan>. </flowPara><flowPara
+         id="flowPara9063"><flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9067">k</flowSpan> = [<flowSpan
+   style="font-weight:bold"
+   id="flowSpan17945">R</flowSpan>a <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17943">R</flowSpan>b <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17941">R</flowSpan>c]  [<flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9069">R</flowSpan>]   [<flowSpan
+   style="font-weight:bold"
+   id="flowSpan17923">R<flowSpan
+   style="font-weight:normal"
+   id="flowSpan17931">d</flowSpan> R<flowSpan
+   style="font-weight:normal"
+   id="flowSpan17939">e</flowSpan> R</flowSpan>f]  <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9065">g</flowSpan></flowPara><flowPara
+         id="flowPara9057">   = [<flowSpan
+   style="font-weight:bold"
+   id="flowSpan17947">R</flowSpan>k]  [<flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9143">R</flowSpan>] <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan17797"><flowSpan
+   style="font-weight:bold"
+   id="flowSpan17959">gr</flowSpan>      ...      <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17961">gr</flowSpan> = [<flowSpan
+   style="font-weight:bold"
+   id="flowSpan17963">R<flowSpan
+   style="font-weight:normal"
+   id="flowSpan17971">d</flowSpan> R</flowSpan>e <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17967">R</flowSpan>f] <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17965">g </flowSpan></flowSpan></flowPara><flowPara
+         id="flowPara9169">The inverse of the pre-rotations are applied to the incident beam, <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9153">S</flowSpan>o, and then we take the dot product of the rotated <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9157">S</flowSpan>o and <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9155">k</flowSpan>. This remains numerically as <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan17793">k</flowSpan>.<flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9173">S</flowSpan>o = |<flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9161">g</flowSpan>||<flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9159">g</flowSpan>|/2.</flowPara><flowPara
+         id="flowPara9177">The component of <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9181">gr</flowSpan> along the rotation axis is invarient under rotation. Components perpendicular to the axis, <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9183">a</flowSpan>, are computed as </flowPara><flowPara
+         id="flowPara17815"><flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan17817">a1</flowSpan> = <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9193"><flowSpan
+   style="font-weight:bold"
+   id="flowSpan17987">a </flowSpan>x <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17989">g</flowSpan> ; <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17993">a2</flowSpan> = <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17995">a1</flowSpan> x <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17997">a</flowSpan> ; <flowSpan
+   style="font-weight:bold"
+   id="flowSpan17999">a3</flowSpan> = <flowSpan
+   style="font-weight:bold"
+   id="flowSpan18001">g </flowSpan>- <flowSpan
+   style="font-weight:bold"
+   id="flowSpan18003">a2</flowSpan></flowSpan>.</flowPara><flowPara
+         id="flowPara9209">Our rotated vector is then given by:</flowPara><flowPara
+         id="flowPara9387"><flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9391">a1</flowSpan>sinφ + <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9393">a2</flowSpan>cosφ + <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9399"><flowSpan
+     style="font-weight:bold"
+     id="flowSpan18011">a3</flowSpan></flowSpan>; where φ is the rotation angle </flowPara><flowPara
+         id="flowPara9395">A dot product of this with the rotated incident beam allows us to solve for φ.</flowPara><flowPara
+         id="flowPara9397">(<flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9407">a1</flowSpan>sinφ + <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9409">a2</flowSpan>cosφ + <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9411">a3</flowSpan>).[<flowSpan
+   style="font-weight:bold"
+   id="flowSpan18019">R</flowSpan>k']<flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9401">S</flowSpan>o = |<flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9403">g</flowSpan>||<flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan9405">g</flowSpan>|/2</flowPara><flowPara
+         id="flowPara17783" /><flowPara
+         id="flowPara9413"><flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan17768">[<flowSpan
+   style="font-weight:bold"
+   id="flowSpan18027">a1</flowSpan>.<flowSpan
+   style="font-weight:bold"
+   id="flowSpan18029">R</flowSpan>k' <flowSpan
+   style="font-weight:bold"
+   id="flowSpan18037">S</flowSpan></flowSpan>o<flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan17770">]</flowSpan> sinφ + <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan17772">[<flowSpan
+   style="font-weight:bold"
+   id="flowSpan18041">a2</flowSpan>.<flowSpan
+   style="font-weight:bold"
+   id="flowSpan18043">R</flowSpan>k' <flowSpan
+   style="font-weight:bold"
+   id="flowSpan18045">S</flowSpan>o]</flowSpan>cosφ + <flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan17780">[<flowSpan
+   style="font-weight:bold"
+   id="flowSpan18047">a3</flowSpan>.<flowSpan
+   style="font-weight:bold"
+   id="flowSpan18049">R</flowSpan>k <flowSpan
+   style="font-weight:bold"
+   id="flowSpan18051">S</flowSpan>o]</flowSpan> = |<flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan17833">g</flowSpan>||<flowSpan
+   style="font-size:12px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Verdana"
+   id="flowSpan17835">g</flowSpan>|/2</flowPara><flowPara
+         id="flowPara17766">All quantities are now scalars and we solve using the identity:</flowPara><flowPara
+         id="flowPara9179">a.sin(x) + b.cos(x) = sqrt(a*a+b*b) sin(x+p)    </flowPara><flowPara
+         id="flowPara17757">with tan(p) = b/a </flowPara><flowPara
+         id="flowPara9167" /><flowPara
+         id="flowPara9163" /><flowPara
+         id="flowPara9095" /><flowPara
+         id="flowPara9115" /><flowPara
+         id="flowPara9059" /><flowPara
+         id="flowPara9047" /><flowPara
+         id="flowPara9049" /><flowPara
+         id="flowPara9389" /><flowPara
+         id="flowPara17753" /><flowPara
+         id="flowPara17755" /></flowRoot>    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana;font-stretch:normal;font-variant:normal;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+       id="text9367"
+       y="376.47937"
+       x="48.3125"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan9369"
+         y="376.47937"
+         x="48.3125" /><tspan
+         sodipodi:role="line"
+         id="tspan9371"
+         y="391.47937"
+         x="48.3125">Test case g-vectors for 3DXRD </tspan><tspan
+         sodipodi:role="line"
+         id="tspan9373"
+         y="406.47937"
+         x="48.3125">along +y: Ω = θ ; η = - 90 </tspan><tspan
+         sodipodi:role="line"
+         id="tspan9375"
+         y="421.47937"
+         x="48.3125">along -y:  Ω = -θ ; η = 90 </tspan><tspan
+         sodipodi:role="line"
+         id="tspan9377"
+         y="436.47937"
+         x="48.3125">along x: Ω = 90+θ ; η = - 90 </tspan><tspan
+         sodipodi:role="line"
+         id="tspan9379"
+         y="451.47937"
+         x="48.3125">along -x: Ω = 90-θ ; η = - 90 </tspan><tspan
+         sodipodi:role="line"
+         id="tspan9381"
+         y="466.47937"
+         x="48.3125">z positive : -90 &lt; η &lt; 90</tspan><tspan
+         sodipodi:role="line"
+         id="tspan9383"
+         y="481.47937"
+         x="48.3125">z negative : 180 &gt; η &gt; 90  or  </tspan><tspan
+         sodipodi:role="line"
+         id="tspan9385"
+         y="496.47937"
+         x="48.3125">                  -180 &lt; η &lt; -90</tspan></text>
+    <path
+       sodipodi:type="arc"
+       sodipodi:cx="145.45737"
+       sodipodi:cy="811.71881"
+       sodipodi:open="true"
+       transform="matrix(0.8179348,0.575311,-0.575311,0.8179348,517.06139,56.658376)"
+       sodipodi:start="1.6000913"
+       sodipodi:end="7.8734172"
+       d="M 143.1038,843.02197 A 80.351799,31.316599 0 1 1 143.89578,843.0295"
+       style="fill:#d5d5d5;fill-opacity:1;fill-rule:nonzero;stroke:#000080;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:11.9999995px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+       sodipodi:rx="80.351799"
+       id="path9415"
+       sodipodi:ry="31.316599" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+       id="path9421"
+       sodipodi:nodetypes="cc"
+       d="M 209.23369,756.16083 L 60.5,941.48749" />
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana;font-stretch:normal;font-variant:normal;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+       id="text9429"
+       y="965.48749"
+       x="109.91406"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan9431"
+         y="965.48749"
+         x="109.91406">Beam, <tspan
+   style="font-weight:bold;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+   id="tspan16754">S</tspan>o</tspan><tspan
+         sodipodi:role="line"
+         y="980.48749"
+         x="109.91406"
+         id="tspan16756">-x for 3DXRD</tspan></text>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow2Lend);stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+       d="M 60.5,941.48749 L 120.5,801.48749"
+       id="path9433" />
+    <path
+       style="opacity:1;fill:#ff0000;fill-opacity:1;fill-rule:evenodd;stroke:#ff0000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow2Lendz);stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+       id="path10602"
+       sodipodi:nodetypes="cc"
+       d="M 61.420553,943.3099 L 172.51606,807.07875" />
+    <path
+       style="opacity:1;fill:#00ff00;fill-opacity:1;fill-rule:evenodd;stroke:#0000ff;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow2Lendzmv);stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+       id="path12448"
+       sodipodi:nodetypes="cc"
+       d="M 170.9192,804.40674 L 123.78346,801.6832" />
+    <path
+       style="opacity:1;fill:#ffff00;fill-opacity:1;fill-rule:evenodd;stroke:#808000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow2Lendz6);stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+       id="path16173"
+       sodipodi:nodetypes="cc"
+       d="M 170.9192,804.40674 L 135.32116,755.53242" />
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana;font-stretch:normal;font-variant:normal;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+       x="85.052818"
+       y="851.22607"
+       id="text16718"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan16720"
+         x="85.052818"
+         y="851.22607"
+         style="font-weight:normal;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%">g</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana;font-stretch:normal;font-variant:normal;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+       x="125.55536"
+       y="879.24615"
+       id="text16722"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan16724"
+         x="125.55536"
+         y="879.24615"
+         style="font-weight:normal;fill:#ff0000;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%">a3</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana;font-stretch:normal;font-variant:normal;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+       x="138.6207"
+       y="799.6582"
+       id="text16726"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan16728"
+         x="138.6207"
+         y="799.6582"
+         style="font-weight:normal;fill:#0000ff;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%">a2</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana;font-stretch:normal;font-variant:normal;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+       x="153.57549"
+       y="778.70343"
+       id="text16730"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan16732"
+         x="153.57549"
+         y="778.70343"
+         style="font-weight:normal;fill:#808000;font-family:Verdana;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%">a1</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Verdana"
+       x="169.5293"
+       y="751.14539"
+       id="text16734"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan16736"
+         x="169.5293"
+         y="751.14539">Axis, <tspan
+   style="font-weight:bold"
+   id="tspan17991">a</tspan></tspan></text>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Mend);stroke-opacity:1;font-family:Verdana;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:12px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%"
+       d="M 20.5,911.48749 L 120.5,991.48749"
+       id="path16752" />
+  </g>
+</svg>
