@@ -20,6 +20,10 @@ example usage:
 """
 import numpy.oldnumeric as Numeric, logging, sys, os
 
+
+XVFB = "Xvfb :1 -ac &"
+FIT2D = "fit2d_12_081_i686_linux2.4.20"
+
 def spr_to_median(filename, outputfilename):
     """
     Takes the median accross rows of an spr file.
@@ -530,7 +534,7 @@ class cakemacrogenerator:
         tmpfile.close()
         # Send the display to a local black hole
         if show!="SHOW":
-            os.system("/sware/exp/fable/standalone/bin/Xvfb :1 &")
+            os.system(XVFB)
             time.sleep(1)
             try:
                 displaywas=os.environ["DISPLAY"]
@@ -541,7 +545,7 @@ class cakemacrogenerator:
             except KeyError:
                 os.environ["DISPLAY"]=":1"
         array=str(self.mask_pars_values["DIM1_DATA"])+"x"+str(self.mask_pars_values["DIM2_DATA"])
-        os.system("/sware/exp/fable/standalone/bin/fit2d_12_081_i686_linux2.4.20 -dim%s -mac%s"%(array,tmpfilename))
+        os.system(FIT2D + " -dim%s -mac%s"%(array,tmpfilename))
         os.system("rm -f %s"%(tmpfilename))
         if show is None:
             os.environ["DISPLAY"]=displaywas
