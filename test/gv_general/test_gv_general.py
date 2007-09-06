@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 
 
@@ -6,8 +8,8 @@ from ImageD11 import transform
 
 import unittest
 
-import Numeric as n
-import RandomArray
+import numpy.oldnumeric as n
+import numpy.oldnumeric.random_array as RandomArray
 import math
 
 def array_diff(a1,a2):

@@ -1,3 +1,4 @@
+
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 
@@ -30,7 +31,7 @@ From the matplotlib examples - modified for mouse
 import matplotlib
 matplotlib.use('TkAgg')
 try:
-    matplotlib.rcParams['numerix'] = 'Numeric'
+    matplotlib.rcParams['numerix'] = 'numpy'
 except:
     print "Might have a problem with matplotlib configuration"
     

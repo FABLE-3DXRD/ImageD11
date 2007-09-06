@@ -1,3 +1,4 @@
+
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -15,7 +16,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-from Numeric import *
+import numpy.oldnumeric as n
+
 import math
 from ImageD11 import transform, unitcell
 from ImageD11.parameters import par, parameters
@@ -198,7 +200,7 @@ class transformer:
             v=[float(z) for z in line.split()]
             bigarray.append(v)
         f.close()
-        self.finalpeaks=transpose(array(bigarray))
+        self.finalpeaks=n.transpose(n.array(bigarray))
         self.peaks_xy = self.finalpeaks[0:2,:]
         self.x = self.finalpeaks[0,:]
         self.y = self.finalpeaks[1,:]
@@ -245,9 +247,9 @@ class transformer:
         npeaks=0
         for i in range(len(self.tthc)):# (twotheta_rad_cell.shape[0]):
             self.tthc[i]=transform.degrees(math.asin(self.fitds[i]*w/2)*2)
-            diff=take(self.twotheta,self.indices[i]) - self.tthc[i]
+            diff=n.take(self.twotheta,self.indices[i]) - self.tthc[i]
 #         print "peak",i,"diff",maximum.reduce(diff),minimum.reduce(diff)
-            gof=gof+dot(diff,diff)
+            gof=gof+n.sum(diff*diff)
             npeaks=npeaks+len(diff)
         gof=gof/npeaks
         return gof*1e3
@@ -274,14 +276,14 @@ class transformer:
             if tthcalc>tthmax:
                 break
 #         print tthcalc
-            logicals= logical_and( greater(self.twotheta, tthcalc-self.fit_tolerance),
-                                      less(self.twotheta, tthcalc+self.fit_tolerance)  )
+            logicals= n.logical_and( n.greater(self.twotheta, tthcalc-self.fit_tolerance),
+                                     n.less(self.twotheta, tthcalc+self.fit_tolerance)  )
 
             if sum(logicals)>0:
 #            print maximum.reduce(compress(logicals,self.twotheta)),minimum.reduce(compress(logicals,self.twotheta))
                 self.tthc.append(tthcalc)
                 self.fitds.append(dsc)
-                ind=compress(logicals,range(self.twotheta.shape[0]))
+                ind=n.compress(logicals,range(self.twotheta.shape[0]))
                 self.indices.append(ind)
 #            print "Ring",i,tthcalc,maximum.reduce(take(self.twotheta,ind)),minimum.reduce(take(self.twotheta,ind))
 #      if raw_input("OK?")[0] not in ["Y","y"]:
@@ -322,19 +324,19 @@ class transformer:
             self.compute_tth_eta()
         # Find last peak in radius
         if limit is None:
-            highest = maximum.reduce(self.twotheta)
+            highest = n.maximum.reduce(self.twotheta)
         else:
             highest = limit
         self.wavelength=pars['wavelength']
-        ds = 2*sin(transform.radians(highest)/2.)/self.wavelength
+        ds = 2*n.sin(transform.radians(highest)/2.)/self.wavelength
         self.dslimit = ds
         #print "highest peak",highest,"corresponding d*",ds
         self.theorypeaks = self.unitcell.gethkls(ds)
         self.unitcell.makerings(ds)
         self.theoryds = self.unitcell.ringds
-        tths = [arcsin(self.wavelength*dstar/2)*2 
+        tths = [n.arcsin(self.wavelength*dstar/2)*2 
                  for dstar in self.unitcell.ringds]
-        self.theorytth = transform.degrees(array(tths))
+        self.theorytth = transform.degrees(n.array(tths))
 
     def computegv(self):
         """
@@ -384,10 +386,10 @@ class transformer:
         f.write("# ds h k l\n")
         for peak in self.theorypeaks:
             f.write("%10.7f %4d %4d %4d\n"%(peak[0],peak[1][0],peak[1][1],peak[1][2]))
-        order = argsort(self.twotheta)
+        order = n.argsort(self.twotheta)
         f.write("# xr yr zr xc yc ds phi omega\n")
-        print maximum.reduce(self.omega),minimum.reduce(self.omega)
-        ds = 2*sin(transform.radians(self.twotheta/2))/self.wavelength
+        print n.maximum.reduce(self.omega),n.minimum.reduce(self.omega)
+        ds = 2*n.sin(transform.radians(self.twotheta/2))/self.wavelength
         for i in order:
             f.write("%f %f %f %f %f %f %f %f \n"%(self.gv[0,i],self.gv[1,i],self.gv[2,i],
                 self.x[i],self.y[i],ds[i],self.eta[i],self.omega[i]*self.omegasign))

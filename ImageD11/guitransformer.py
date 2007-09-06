@@ -1,5 +1,7 @@
 
 
+
+
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -17,7 +19,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-from Numeric import *
+
+import numpy.oldnumeric as n
 from Tkinter import *
 
 from listdialog import listdialog
@@ -84,6 +87,7 @@ class guitransformer:
         vars = self.parent.guicommander.execute("transformer","getvars")
         possvars = self.parent.guicommander.execute("transformer","get_variable_list")
         logging.debug("possible variables "+str(possvars))
+        # wtf?
         logic = {}
         for v in possvars:
             if v in vars:
@@ -171,7 +175,7 @@ class guitransformer:
               ( "HKL peaks",
                  twodplot.data(
                          tth,
-                         zeros(tth.shape[0]),
+                         n.zeros(tth.shape[0]),
                          {'color':'r',
                           'pointtype':'|'
                           }

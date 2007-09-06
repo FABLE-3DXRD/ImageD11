@@ -1,3 +1,4 @@
+#!/usr/bin/python
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 #!/usr/bin/env python

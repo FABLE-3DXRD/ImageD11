@@ -1,3 +1,7 @@
+#!/usr/bin/python
+
+
+
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 #! /bliss/users/blissadm/python/bliss_python/suse82/bin/python
@@ -353,7 +357,7 @@ def peaksearch(filename, outputfile, corrector, labims , thresholds,
         # Slows down timing but avoid overflows
         # print "Subtracting dark,",picture[0,0]
         # print picture.shape,picture.dtype.char,dark.shape,dark.dtype.char
-        pass  ## #picture.savespace(0) # avoid overflows - very slow and silly
+        # pass  ## #picture.savespace(0) # avoid overflows - very slow and silly
         #picture = picture.astype(Numeric.Int)-dark  
         # print "Subtracted dark,",picture[0,0]
     # t.tick("dark")

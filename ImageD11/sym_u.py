@@ -1,17 +1,19 @@
+
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 
 
-from Numeric import *
+
+import numpy.oldnumeric as n
 from numpy.oldnumeric.linear_algebra import determinant
 
 def m_from_string(s):
     m = []
-    t = array(eval("lambda x,y,z: ( %s )"%(s))(0,0,0))
+    t = n.array(eval("lambda x,y,z: ( %s )"%(s))(0,0,0))
     for v1,v2,v3 in [ [ 1,0,0] , [ 0,1,0], [0,0,1] ]:
         r = eval("lambda x,y,z: ( %s )"%(s))(v1,v2,v3)
-        m.append(array(r)-t)
-    return array(m)
+        m.append(n.array(r)-t)
+    return n.array(m)
 
 
 
@@ -20,12 +22,12 @@ class group:
         """
         Basic group is identity
         """
-        self.group = [ identity(3,Float) ]
+        self.group = [ n.identity(3, n.Float) ]
     def op(self, x, y):
         """
         Means of generating new thing from two others
         """
-        m = matrixmultiply(x,y)
+        m = n.matrixmultiply(x,y)
         d = determinant(m)
         assert abs(d-1)<1e-6, (str((d,m,x,y)))
         return m
@@ -33,7 +35,7 @@ class group:
         """
         Compare two things for equality
         """
-        return allclose(x,y)
+        return n.allclose(x,y)
     def isMember(self,item):
         """
         Decide if item is already in the group
@@ -99,25 +101,25 @@ def triclinic():
 
 def find_uniq_u(u,grp,debug=0):
     uniq = u
-    tmax = trace(uniq)
+    tmax = n.trace(uniq)
     for o in grp.group:
         cand = grp.op(o,u)
-        t = trace(cand)
+        t = n.trace(cand)
         if debug: print t
-        if trace(cand) > tmax:
+        if n.trace(cand) > tmax:
             uniq = cand
             tmax = t
-    return array(uniq)
+    return n.array(uniq)
 
 
 def test():
-    assert allclose( m_from_string( "x,y,z" ), identity(3))
-    assert allclose( m_from_string( "-y,x,z" ), array([ [ 0,1,0],
-                                                        [-1,0,0],
-                                                        [ 0,0,1]] ))
-    assert allclose( m_from_string( "-y,y-x,z" ), array([[ 0,-1,0],
-                                                         [ -1, 1,0],
-                                                         [ 0, 0,1]] ))
+    assert n.allclose( m_from_string( "x,y,z" ), n.identity(3))
+    assert n.allclose( m_from_string( "-y,x,z" ), n.array([ [ 0,1,0],
+                                                          [-1,0,0],
+                                                          [ 0,0,1]] ))
+    assert n.allclose( m_from_string( "-y,y-x,z" ), n.array([[ 0,-1,0],
+                                                             [ -1, 1,0],
+                                                             [ 0, 0,1]] ))
     
     for op in [ "x,y,z", "-y,x-y,z", "-y,x,z"]:
         d = determinant(m_from_string(op)) 
@@ -132,17 +134,19 @@ def test():
         r = f().group
         assert len(r) == 2, " not 2 ops for monoclinic "
 
-    assert allclose( find_uniq_u( array( [[0,1,0],[-1,0,0],[0,0,1]]),cubic()),
-                     identity(3) ), "Should easily get this unique choice"
+    assert n.allclose( 
+        find_uniq_u( n.array( 
+                [[0,1,0],[-1,0,0],[0,0,1]]),cubic()),
+                     n.identity(3) ), "Should easily get this unique choice"
     
 
 if __name__=="__main__":
     test()
     
 
-    u = array([[ 0.71850787 , 0.69517833,  0.02176059],
-               [-0.62925889 , 0.66306714, -0.40543213],
-               [-0.29627636 , 0.27761313 , 0.91386611]])
+    u = n.array([[ 0.71850787 , 0.69517833,  0.02176059],
+                 [-0.62925889 , 0.66306714, -0.40543213],
+                 [-0.29627636 , 0.27761313 , 0.91386611]])
 
     find_uniq_u(u,cubic(),debug=1)
 

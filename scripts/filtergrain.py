@@ -1,3 +1,4 @@
+#!/usr/bin/python
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 #!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
@@ -34,7 +35,7 @@ diff=h-hint
 drlv=Numeric.sqrt(Numeric.sum(diff*diff,0))
 
 print o.scandata[fltfile].shape
-out = open(outfile,"H")
+out = open(outfile,"w")
 out.write("# xc yc omega npixels avg_intensity x_raw y_raw sigx sigy covxy\n")
 out2 = open(notfile,"w")
 out2.write("# xc yc omega npixels avg_intensity x_raw y_raw sigx sigy covxy\n")

@@ -1,9 +1,10 @@
+#!/usr/bin/python
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 #!/bliss/users/blissadm/bin/python
 
 from Tkinter import *
-from Numeric import *
+import numpy.oldnumeric as n
 import ImageTk,Image,tkSimpleDialog,tkFileDialog,os,sys
 from tkMessageBox import showinfo
 
@@ -28,8 +29,8 @@ def preprocess(image, (scalex,scaley),maxi=None,mini=None):
            len(image.shape) == 3 and image.shape[2] == 3, \
            "image not correct format"
     if maxi==None:
-        themin = float(minimum.reduce(ravel(image)))
-        themax = float(maximum.reduce(ravel(image)))
+        themin = float(n.minimum.reduce(n.ravel(image)))
+        themax = float(n.maximum.reduce(n.ravel(image)))
     else:
         themin = float(mini)
         themax = float(maxi)
@@ -39,15 +40,15 @@ def preprocess(image, (scalex,scaley),maxi=None,mini=None):
         image = (zeros((DEFAULT_HEIGHT, len_x))+255).astype('B')
         for x in range(len_x):
             image[DEFAULT_HEIGHT-1-ys[x],len_x-x-1] = 0
-        image = transpose(image)
+        image = n.transpose(image)
     elif image.dtype.char != 'b':
         try:
             pass  ## image.savespace(0)
             image = 255 * (image - themin) / (themax-themin)
         except:
             print "Exception",themax,themin
-        image = where(image<256,image,255)
-        image = where(image>0,image,0).astype('B')
+        image = n.where(image<256,image,255)
+        image = n.where(image>0,image,0).astype('B')
 
     len_x, len_y = image.shape[:2]
 #    print "Image dimensions...  x=",len_x,"  y=",len_y
@@ -67,10 +68,10 @@ def NumerictoImage( data, (scalex,scaley),maxi=None,mini=None):
     width, height = image.shape[:2]
     if len(image.shape) == 3:
         mode = rawmode = 'RGB'
-        bits = transpose(image, (1,0,2)).tostring()
+        bits = n.transpose(image, (1,0,2)).tostring()
     else:
         mode = rawmode = 'L'
-        bits = transpose(image, (1,0)).tostring()
+        bits = n.transpose(image, (1,0)).tostring()
     image2 = Image.fromstring(mode, (width, height),
                                       bits, "raw", rawmode)
     image2=image2.resize((scalesx,scalesy))
@@ -292,19 +293,19 @@ class rubber(Frame):
     def getstats(self):
         # Convert to float to avoid overflow issues
         t=self.data.astype(Float)
-        sumi=sum(ravel(t))
-        sumisq=sum(ravel(t*t))
+        sumi=n.sum(n.ravel(t))
+        sumisq=n.sum(n.ravel(t*t))
         npixels=t.shape[0]*t.shape[1]
         self.average=sumi/npixels
-        self.variance=sqrt(sumisq/npixels - self.average*self.average)
-        self.mindata=minimum.reduce(ravel(self.data))
-        self.maxdata=maximum.reduce(ravel(self.data))
+        self.variance=n.sqrt(sumisq/npixels - self.average*self.average)
+        self.mindata=n.minimum.reduce(n.ravel(self.data))
+        self.maxdata=n.maximum.reduce(n.ravel(self.data))
         return "%d Pixels, Average = %f, Variance = %f, Min = %f, Max = %f"%(
             npixels,self.average,self.variance,self.mindata,self.maxdata)
 
     def autorange(self):
-        newmin=max(minimum.reduce(ravel(self.data)),self.average-self.variance)
-        newmax=min(maximum.reduce(ravel(self.data)),self.average+self.variance)
+        newmin=max(n.minimum.reduce(n.ravel(self.data)),self.average-self.variance)
+        newmax=min(n.maximum.reduce(n.ravel(self.data)),self.average+self.variance)
         if self.mini!=newmin or self.maxi != newmax:
             self.mini=newmin
             self.maxi=newmax
@@ -421,7 +422,7 @@ class rubber(Frame):
                                              #axis_orientation1 = self.parameters['wedge'],
                                              #axis_orientation2 = self.parameters['chi'])
         print "omega:",self.omega,type(self.omega)
-        om = array([float(self.omega)])
+        om = n.array([float(self.omega)])
         print "tth,eta,om",tth,eta,om
         self.gv = transform.compute_g_vectors(tth,eta,om,float(self.parameters['wavelength']), self.parameters['wedge'])
         self.gv = transpose(self.gv)

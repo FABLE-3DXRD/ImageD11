@@ -1,12 +1,13 @@
 
 
+
 #
 # Look up where this comes from.
 # It was copied from somewhere and modified slightly
 
 
 
-# from Numeric import *
+
 import Tkinter as Tk
 
 

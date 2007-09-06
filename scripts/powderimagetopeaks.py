@@ -1,8 +1,10 @@
-#!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
+#!/usr/bin/python
 
 
-# ImageD11_v0.4 Software for beamline ID11
-# Copyright (C) 2005  Jon Wright
+
+
+# ImageD11_v1.0 Software for beamline ID11
+# Copyright (C) 2005-2007  Jon Wright
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

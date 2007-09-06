@@ -22,7 +22,6 @@ scripts/ImageD11_2_shelx.py
 scripts/ImageD11_gui.py
 scripts/fit2dcake.py
 scripts/mar2bruker.py
-scripts/scriptable_gui.py
 scripts/plotedf.py
 scripts/recoveromega.py
 scripts/rubber.py
@@ -38,7 +37,6 @@ src/bispev.f
 src/closest.c
 src/splines.c
 ImageD11/__init__.py
-ImageD11/guifactors.py
 ImageD11/transformer.py
 ImageD11/write_graindex_gv.py
 ImageD11/guipeaksearch.py

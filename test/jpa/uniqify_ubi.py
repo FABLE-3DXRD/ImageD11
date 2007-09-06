@@ -1,7 +1,9 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 
 from ImageD11 import indexing
-from LinearAlgebra import inverse
+from numpy.oldnumeric.linear_algebra import inverse
 from ImageD11 import closest
 import glob, sys, Numeric
 
@@ -84,7 +86,7 @@ def get_z(name):
     return j,z[j]
 
 from ImageD11 import transformer
-import Numeric as n
+import numpy.oldnumeric as n
 for entry in uniq_ubis:
     print "\n\n"
     for i in range(3):

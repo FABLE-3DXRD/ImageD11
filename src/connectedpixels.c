@@ -54,19 +54,18 @@ double getval(char *p,int type){
     * universal c type of double */
 
   switch (type){
-     case    PyArray_CHAR   : return *(char          *)p*1.;
-     case    PyArray_SHORT  : return *(short         *)p*1.;
-     case    PyArray_INT    : return *(int           *)p*1.;
-     case    PyArray_LONG   : return *(long          *)p*1.;
-     case    PyArray_FLOAT  : return *(float         *)p*1.;
-     case    PyArray_DOUBLE : return *(double        *)p*1.;
-#ifdef PyArray_UNSIGNED_TYPES
-     case    PyArray_UBYTE  : return *(unsigned char *)p*1.;
-     case    PyArray_USHORT : return *(unsigned short*)p*1.;
-     case    PyArray_UINT   : return *(unsigned int  *)p*1.;
-#endif
+     case    NPY_BYTE   : return *(signed char   *)p*1.;
+     case    NPY_UBYTE  : return *(unsigned char   *)p*1.;
+     case    NPY_SHORT  : return *(short         *)p*1.;
+     case    NPY_USHORT  : return *(unsigned short         *)p*1.;
+     case    NPY_INT    : return *(int           *)p*1.;
+     case    NPY_LONG   : return *(long          *)p*1.;
+     case    NPY_FLOAT  : return *(float         *)p*1.;
+     case    NPY_DOUBLE : return *(double        *)p*1.;
+     case    NPY_UINT   : return *(unsigned int  *)p*1.;
      }
    printf("Oh bugger in getval - unrecongnised numeric type\n");
+   printf("type = %d ",type);
    exit(1);
    return 0;
 }

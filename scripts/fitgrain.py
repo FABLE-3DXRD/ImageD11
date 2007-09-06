@@ -1,3 +1,4 @@
+#!/usr/bin/python
 #! /bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 from ImageD11 import refinegrains

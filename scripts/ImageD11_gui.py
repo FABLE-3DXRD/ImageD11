@@ -1,7 +1,8 @@
-#!/bliss/users/blissadm/bin/python
+#!/usr/bin/python
 
-# ImageD11_v0.4 Software for beamline ID11
-# Copyright (C) 2005  Jon Wright
+
+# ImageD11_v1.0 Software for beamline ID11
+# Copyright (C) 2005-2007  Jon Wright
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -63,8 +64,9 @@ if __name__=="__main__":
     ImageD11credits = """Thanks to:
 
                         All of the Fable team, which includes at least:
-                           Andy Gotz, Gavin Vaughan,
+                           Andy Gotz, Gavin Vaughan, Henning O. Sorensen,
                            Soren Schmidt, Henning Poulsen, Larry Margulies
+                           Erik Knudsen,
                         ...and others who should remind me to mention them
 
                         Tine Knudsen who bravely helped commission the
@@ -73,11 +75,9 @@ if __name__=="__main__":
                         Benoit Mallard for his assistance with some extreme
                         programming to debug the transformation module.
 
-                        Henning O. Sorensen for the R lattice and other help.
-
                         John Hunter for the matplotlib plotting.
 
-                        All of the pyopengl, Numeric and python teams
+                        All of the pyopengl, Numeric, numpy and python teams
 
                         Anyone who tests me and gives useful feedback
 
@@ -123,7 +123,7 @@ if __name__=="__main__":
             from tkMessageBox import showinfo
             import ImageD11
             startmessage = """
-  ImageD11 version %s, Copyright (C) 2005 Jon Wright
+  ImageD11 version %s, Copyright (C) 2005-2007 Jon Wright
   ImageD11 comes with ABSOLUTELY NO WARRANTY; for details select help, license.
   This is free software, and you are welcome to redistribute it under certain conditions
 
@@ -131,18 +131,9 @@ if __name__=="__main__":
   """%(ImageD11.__version__)
 
             startmessage += """
-  !!! IMPORTANT CHANGE !!!
-  sample - detector distance now has the same units as pixel size
+  You are using version 1.x
 
-  Stuff to do:
-
-     Implement filters based in intensity etc
-
-     Sort peaks in output file by integer hkl
-     Allow merging algorithm to be more flexible in tolerance, perhaps decide
-     overlap as a multiple of FWHM observed?
-
-     Sort out a file format which tracks all information properly?
+  That means you must know what you are doing!
   """
             showinfo("Welcome to ImageD11 "+ImageD11.__version__,startmessage)
 

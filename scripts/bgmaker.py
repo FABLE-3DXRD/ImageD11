@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 #!/bliss/users/blissadm/python/bliss_python/suse82/bin/python

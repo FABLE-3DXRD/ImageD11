@@ -1,11 +1,16 @@
 
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
+
+
+
 
 # testing for the peaksearch command line script
 
 # These are not really unit tests
 
 def w(name,image,omega=0):
-    import Numeric
+    import numpy.oldnumeric as Numeric
     f=open(name,"wb")
     f.write("{%1021s}\n"%("""Omega = %.2f ;\n Dim_1 = 256 ;\n Dim_2 = 256 ; 
     DataType = UnsignedShort ;
@@ -18,7 +23,7 @@ def w(name,image,omega=0):
     f.close()
 
 def makedata():
-    import Numeric
+    import numpy.oldnumeric as Numeric
     image=Numeric.ones((256,256),Numeric.UInt16)*20
     image[20:53,56:99]=20000 # big spot
     w("data0000.edf",image,0)
@@ -46,9 +51,17 @@ def losedata():
 # FIXME - fit this into unit tests and kill the combinatorial explosion
 #       - add checks to see if the answers are OK or not.
 
-cmds = ["""..\scripts\peaksearch.py -n data -f 0 """]
+import os
+ps = os.path.join("..","scripts")
+ps = os.path.join(ps,"peaksearch.py")
 
+print ps
+
+cmds = [ ps + " -n data -f 0 "]
+
+    
 cmds = [cmd + "-l %d "%(last) for last in [0,1,3] for cmd in cmds]
+
 
 thresholds = ["0","5500"]
 
@@ -80,7 +93,7 @@ def testcmdlines(clist):
 if __name__=="__main__":
     # takes ages
     # FIXME testcmdlines(clist)
-    testcmdlines(['..\scripts\peaksearch.py -n data -f 0 -l 3 -t 15000 -t 1000 -p Y -t 0'])
+    testcmdlines(['python '+ ps + ' -n data -f 0 -l 3 -t 15000 -t 1000 -p Y -t 0'])
     assert len(open("peaks.out_merge_t0").readlines())==2
     assert len(open("peaks.out_merge_t1000").readlines())==2
     assert len(open("peaks.out_merge_t15000").readlines())==3

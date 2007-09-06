@@ -1,3 +1,4 @@
+#!/usr/bin/python
 #!C:\Python24\python.exe
 """
 Docstring
@@ -5,7 +6,7 @@ Docstring
 # summer 2006
 # modified by JPW from Activestate python recipies
 #  - limited to localhost access for security
-#  
+# Thanks also to AG..
 """
 
 from SimpleXMLRPCServer import SimpleXMLRPCServer
@@ -111,10 +112,10 @@ def RunXMLRPCServer(port):
     th.setDaemon(1)
     th.start()
     # Make ctrl+break raise a KeyboardInterrupt exception.
-    try:
+    if sys.platform == "win32":
         signal.signal(signal.SIGBREAK, signal.default_int_handler)
-    except:
-        logging.debug("signal.SIGBREAK not supported on this platform")
+    else:
+        logging.debug("signal.SIGBREAK not needed on this platform")
     try:
         while th.isAlive():
             time.sleep(1)
