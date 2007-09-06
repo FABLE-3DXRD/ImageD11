@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 
 
@@ -22,7 +24,7 @@
 
 import unittest
 
-import transform, Numeric
+import transform, numpy.oldnumeric as Numeric
 
 class testtransform(unittest.TestCase):
     def setUp(self):

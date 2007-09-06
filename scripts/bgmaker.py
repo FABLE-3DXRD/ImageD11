@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 #!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 
@@ -32,7 +34,7 @@ reallystart=time.time()
 
 
 from ImageD11 import opendata
-import Numeric
+import numpy.oldnumeric as Numeric
 
 class minimum_image:
     """

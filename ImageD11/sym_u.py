@@ -1,7 +1,9 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 
 from Numeric import *
-from LinearAlgebra import determinant
+from numpy.oldnumeric.linear_algebra import determinant
 
 def m_from_string(s):
     m = []

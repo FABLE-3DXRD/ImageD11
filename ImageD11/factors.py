@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 
 # ImageD11_v0.4 Software for beamline ID11
@@ -21,7 +23,7 @@
 """
 Some routines for factor analysis, a bit slow, via the SVD
 """
-import glob, Numeric, LinearAlgebra, struct, logging
+import glob, numpy.oldnumeric as Numeric, LinearAlgebra, struct, logging
 
 from ImageD11 import opendata
 

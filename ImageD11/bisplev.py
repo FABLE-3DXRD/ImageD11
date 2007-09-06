@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 """
 Interface to the bispev bit of fitpack.
@@ -33,12 +35,12 @@ Pearu Peterson
 
 
 from ImageD11 import _splines
-import Numeric as n
+import numpy.oldnumeric as n
 
 def myasarray(a):
     if type(a) in [type(1.0),type(1L),type(1),type(1j)]:
         return n.asarray([a])
-    elif type(a) is n.ArrayType and len(a)==1:
+    elif isinstance(a, n.ArrayType) and len(a)==1:
         # Takes care of mapping array(number) to array([number])
         return n.asarray([a[0]])
     else:

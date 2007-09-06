@@ -1,8 +1,10 @@
 
 
+
+
 /* 
-# ImageD11_v0.4 Software for beamline ID11
-# Copyright (C) 2005  Jon Wright
+# ImageD11_v1.0 Software for beamline ID11
+# Copyright (C) 2005-2007  Jon Wright
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -57,10 +59,13 @@ static char moduledocs[] = "/* *************************************************
 " * ****************************************************************** */ ";
 
 #include <Python.h>                  /* To talk to python */
-#include "Numeric/arrayobject.h"     /* Access to Numeric */
+/* #include "Numeric/arrayobject.h"      Access to Numeric */
+#include "numpy/arrayobject.h"     /*  upgrade to numpy */
 
 inline int conv_double_to_int_fast(double);
+
 inline int conv_double_to_int_safe(double);
+
 int inverse3x3(double A[3][3]);
 
 static PyObject *closest( PyObject *self, PyObject *args, PyObject *keywds){

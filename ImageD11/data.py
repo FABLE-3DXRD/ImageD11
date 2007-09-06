@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
@@ -40,7 +42,7 @@ Authors: Henning O. Sorensen & Erik Knudsen
          email:erik.knudsen@risoe.dk
 """
 
-import Numeric as n
+import numpy.oldnumeric as n
 import logging 
 
 class data: #IGNORE:R0902

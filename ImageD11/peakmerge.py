@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 
 # ImageD11_v0.4 Software for beamline ID11
@@ -30,7 +32,7 @@ of memory
 # for filename -> number interpretion
 from ImageD11 import opendata
 
-import Numeric
+import numpy.oldnumeric as Numeric
 import time, sys
 import logging 
 

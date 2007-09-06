@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 
 # ImageD11_v0.4 Software for beamline ID11
@@ -23,7 +25,7 @@ Conversion of Soren's matlab script for making the file final.log
 which is suitable for input into graindex
 """
 
-import Numeric
+import numpy.oldnumeric as Numeric
 
 from math import sqrt, pi
 

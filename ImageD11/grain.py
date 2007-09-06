@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
@@ -16,9 +18,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-from Numeric import transpose, matrixmultiply, Float, Int, floor, sum, zeros,\
+from numpy.oldnumeric import transpose, matrixmultiply, Float, Int, floor, sum, zeros,\
         array, sqrt, arange, compress, less, take, outerproduct
-from LinearAlgebra import inverse
+from numpy.oldnumeric.linear_algebra import inverse
 import math
 
 class grain:
@@ -86,7 +88,7 @@ class grain:
             #           print r,k
             R = R + outerproduct(r,k)
             H = H + outerproduct(k,k)
-        from LinearAlgebra import inverse
+        from numpy.oldnumeric.linear_algebra import inverse
         try:
             HI=inverse(H)
             UBoptimal=matrixmultiply(R,HI)

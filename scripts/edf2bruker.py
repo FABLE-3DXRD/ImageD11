@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 #!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 
@@ -69,7 +71,7 @@ class darkflood:
             self.floodmultiplier = None
             
     def correct(self,data):
-        tin = data.typecode()
+        tin = data.dtype.char
         # Start by copying
         cor = data.astype(Float32).copy()
         if self.darkimage is not None:

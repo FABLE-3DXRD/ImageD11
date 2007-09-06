@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 
 
@@ -97,7 +99,7 @@ class polygon:
 
 def testpolywalkandplot(vertices):
     from matplotlib.pylab import plot
-    import Numeric
+    import numpy.oldnumeric as Numeric
     obj = polygon(vertices)
     obj.walkaroundintegervertices()
     plot(Numeric.array(vertices)[:,0],Numeric.array(vertices)[:,1],"o")

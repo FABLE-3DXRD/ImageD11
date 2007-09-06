@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 
 # ImageD11_v0.4 Software for beamline ID11
@@ -18,12 +20,12 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
-import Numeric as n
+import numpy.oldnumeric as n
 from ImageD11 import closest
 
 import math, time, sys, logging
 
-import LinearAlgebra
+import numpy.oldnumeric.linear_algebra as LinearAlgebra
 
 def readubis(ubifile):
     """read ubifile and return a list of ubi arrays """
@@ -146,7 +148,7 @@ def refine(UBI, gv, tol, quiet=True):
         #           print r,k
         R = R + n.outerproduct(r,k)
         H = H + n.outerproduct(k,k)
-    from LinearAlgebra import inverse
+    from numpy.oldnumeric.linear_algebra import inverse
     try:
         HI=inverse(H)
         UBoptimal=n.matrixmultiply(R,HI)
@@ -532,7 +534,7 @@ class indexer:
         f=open(filename,"w")
         i=0
         from ImageD11 import transform
-        from LinearAlgebra import inverse
+        from numpy.oldnumeric.linear_algebra import inverse
         for ubi in self.ubis:
             if tol==None:
                 tol=self.hkl_tol
@@ -723,7 +725,7 @@ class indexer:
 #           print r,k
             R = R + n.outerproduct(r,k)
             H = H + n.outerproduct(k,k)
-        from LinearAlgebra import inverse
+        from numpy.oldnumeric.linear_algebra import inverse
         try:
             HI=inverse(H)
             UBoptimal=n.matrixmultiply(R,HI)

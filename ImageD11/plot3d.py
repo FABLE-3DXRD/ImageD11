@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 #!
 
 """
@@ -14,7 +16,7 @@ __date__ = string.join(string.split('$Date$')[1:3], ' ')
 __author__ = 'Jon Wright <jpwright@users.sourceforge.net> from example by Tarn Weisner Burton <twburton@users.sourceforge.net>'
 
 try:
-    import Numeric
+    import numpy.oldnumeric as Numeric
 except:
     import sys
     print "This demo requires the Numeric extension, sorry."
@@ -53,7 +55,7 @@ class plot3d(Tk.Toplevel):
         self.o.far=1e-6
         import math
         self.o.distance=Numeric.maximum.reduce(Numeric.ravel(xyz))*4/math.tan(self.o.fovy*math.pi/180)
-        print type(xyz),xyz.typecode(),xyz.shape
+        print type(xyz),xyz.dtype.char,xyz.shape
         self.xyz=xyz
 #        GL.glVertexPointerd(xyz)
 #   GL.glColorPointerd(xyz)

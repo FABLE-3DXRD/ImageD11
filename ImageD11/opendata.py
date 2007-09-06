@@ -1,4 +1,7 @@
 
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
+
 
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
@@ -28,7 +31,7 @@ bytes???
 
 from data import data
 import gzip, bz2
-import Numeric 
+import numpy.oldnumeric as Numeric 
 
 def opendata(filename):
     """
@@ -153,7 +156,7 @@ def readbytestream(file,offset,x,y,nbytespp,datatype='int',signed='n',
     if tin=="dunno" :
         raise SyntaxError, "Did not understand what type to try to read"
     opened=0
-    if type(tin) == type(file):  # Did we get a string or a file pointer?
+    if isinstance(tin, type(file)):  # Did we get a string or a file point)er?
         f=open(file,'rb')
         opened=1
     else:
@@ -165,7 +168,7 @@ def readbytestream(file,offset,x,y,nbytespp,datatype='int',signed='n',
     else:
         ar=Numeric.array(Numeric.reshape(
                                Numeric.fromstring(f.read(len),tin) ,(x,y)),typeout)
-    ar.savespace(1)
+    pass  ## ar.savespace(1)
     if(opened):f.close()
     return(ar)
 
@@ -377,9 +380,9 @@ def openedf(filename):
               (hd["columns"],hd["rows"]) )
     else:
         ar=Numeric.reshape(
-              Numeric.fromstring(datastring,numerictype).byteswapped(),
+              Numeric.fromstring(datastring,numerictype).byteswap(),
               (hd["columns"],hd["rows"]) )
-    ar.savespace(1)
+    pass  ## ar.savespace(1)
     return data(ar,hd)
 
 
@@ -400,7 +403,7 @@ def writebruker(filename,dataobject):
     r = Numeric.ravel(dataobject.data)
     d = Numeric.ravel(dataobject.data)
     bytespp = 2
-    if dataobject.data.typecode() == Numeric.UInt16:
+    if dataobject.data.dtype.char == Numeric.UInt16:
         # 2 bytes per pixel, no overflows needed
         noverfl = 0
     else:

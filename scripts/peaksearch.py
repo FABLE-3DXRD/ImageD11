@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 #! /bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 
@@ -38,7 +40,7 @@ import sys , glob , os.path
 from ImageD11 import blobcorrector
 from ImageD11 import opendata
 from ImageD11 import connectedpixels
-import Numeric
+import numpy.oldnumeric as Numeric
 class timer:
     def __init__(self):
         self.start = time.time()
@@ -350,15 +352,15 @@ def peaksearch(filename, outputfile, corrector, labims , thresholds,
     #if dark != None:
         # Slows down timing but avoid overflows
         # print "Subtracting dark,",picture[0,0]
-        # print picture.shape,picture.typecode(),dark.shape,dark.typecode()
-        #picture.savespace(0) # avoid overflows - very slow and silly
+        # print picture.shape,picture.dtype.char,dark.shape,dark.dtype.char
+        pass  ## #picture.savespace(0) # avoid overflows - very slow and silly
         #picture = picture.astype(Numeric.Int)-dark  
         # print "Subtracted dark,",picture[0,0]
     # t.tick("dark")
     #if flood != None:
         #picture = picture/flood
     t.tick(filename+" io/cor") # Progress indicator
-    #print "datatype for searching", picture.typecode()    #
+    #print "datatype for searching", picture.dtype.char    #
     # Transfer header information to output file
     # Also information on spatial correction applied
     f.write("\n\n# File %s\n" % (filename))

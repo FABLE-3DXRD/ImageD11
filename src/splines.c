@@ -1,3 +1,5 @@
+
+
 static char moduledocs [] =\
 "/* These were Copyrighted by Enthought Inc */\n"\
 " It is an interface to bispev from fitpack (Dierckx/netlib) \n"\
@@ -5,10 +7,13 @@ static char moduledocs [] =\
 "/* They  seemed  to  give permission  for  me to copy out the \n"\
 "   parts I wanted. I promise that if it goes wrong it was not\n"\
 "   their fault.  They are not responsible for\n"\
-"   errors I might have introduced                  - JPW 2005  */";
+"   errors I might have introduced                  - JPW 2005  */"\
+  " Adpated to numpy (change of include file), JPW 2007 ";
 
 #include <Python.h>
-#include "Numeric/arrayobject.h"  
+/* upgrade to numpy
+   #include "Numeric/arrayobject.h"  */
+#include "numpy/arrayobject.h"  
 
 #define BISPEV bispev_
 #define PARDER parder_
@@ -208,13 +213,17 @@ static struct PyMethodDef splines_methods[] = {
    };
 
 void init_splines(void) {
-  PyObject *m, *d, *s;
+  PyObject *m, *d, *s, *ms;
   m = Py_InitModule("_splines", splines_methods);
   import_array();
   d = PyModule_GetDict(m);
   s = PyString_FromString(" 0.1 ");
   PyDict_SetItemString(d, "__version__", s);
+  ms=PyString_FromString(moduledocs);
+  PyDict_SetItemString(d,"__doc__",ms);
+
   Py_DECREF(s);
+  Py_DECREF(ms);
   if (PyErr_Occurred())
     Py_FatalError("can't initialize module splines");
 }

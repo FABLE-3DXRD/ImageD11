@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 #!/usr/bin/env python
 
 """
@@ -15,7 +17,7 @@ example usage:
   4) Process your data using the parameter file you have generated
         eg: fit2dcake.py
 """
-import Numeric, logging, sys, os
+import numpy.oldnumeric as Numeric, logging, sys, os
 
 def spr_to_median(filename, outputfilename):
     """

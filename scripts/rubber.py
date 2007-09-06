@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 #!/bliss/users/blissadm/bin/python
 
 from Tkinter import *
@@ -33,19 +35,19 @@ def preprocess(image, (scalex,scaley),maxi=None,mini=None):
         themax = float(maxi)
     if len(image.shape) == 1:
         len_x = image.shape[0]
-        ys = ((image - themin)/(themax-themin)*(DEFAULT_HEIGHT-1)).astype('b')
-        image = (zeros((DEFAULT_HEIGHT, len_x))+255).astype('b')
+        ys = ((image - themin)/(themax-themin)*(DEFAULT_HEIGHT-1)).astype('B')
+        image = (zeros((DEFAULT_HEIGHT, len_x))+255).astype('B')
         for x in range(len_x):
             image[DEFAULT_HEIGHT-1-ys[x],len_x-x-1] = 0
         image = transpose(image)
-    elif image.typecode() != 'b':
+    elif image.dtype.char != 'b':
         try:
-            image.savespace(0)
+            pass  ## image.savespace(0)
             image = 255 * (image - themin) / (themax-themin)
         except:
             print "Exception",themax,themin
         image = where(image<256,image,255)
-        image = where(image>0,image,0).astype('b')
+        image = where(image>0,image,0).astype('B')
 
     len_x, len_y = image.shape[:2]
 #    print "Image dimensions...  x=",len_x,"  y=",len_y
@@ -98,7 +100,7 @@ class rubber(Frame):
             if type(datafile)==type(array([10,11,12])):
                 self.data=datafile
                 self.datafile="unknown0000.edf"
-        self.data.savespace(0)
+        pass  ## self.data.savespace(0)
         if type(bkgfile)==type("string"):
             self.bkgfile=bkgfile
             bkgobj=opendata(bkgfile)
@@ -247,7 +249,7 @@ class rubber(Frame):
         dataobj=opendata(self.datafile)
         self.status.config(text=self.datafile)
         self.data=dataobj.data.astype(Int)
-        self.data.savespace(0)
+        pass  ## self.data.savespace(0)
         try:
             self.data=self.data.astype(Int)-self.bkg
         except:

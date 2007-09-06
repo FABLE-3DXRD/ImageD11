@@ -1,8 +1,10 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 #!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 from ImageD11 import transform, parameters
 
-import sys, Numeric
+import sys, numpy.oldnumeric as Numeric
 
 try:
     parfile = sys.argv[1]

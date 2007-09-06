@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 #!/usr/bin/env fable.python
 
 # Now for the c definition (found on mar webpage)
@@ -332,7 +334,7 @@ def openmarccd(filename):
     
     d = fp.read(nb)
     assert h['depth'] == 2
-    import Numeric
+    import numpy.oldnumeric as Numeric
     d = Numeric.reshape(Numeric.fromstring(d),(h['nslow'],h['nfast']))
     from ImageD11 import data
     return data.data(d, h)

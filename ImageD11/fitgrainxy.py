@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 #!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 # ImageD11_v0.4 Software for beamline ID11
@@ -22,7 +24,7 @@
  Class to attempt to fit the position of a grain
 """
 
-import Numeric
+import numpy.oldnumeric as Numeric
 
 from ImageD11 import transform, indexing, closest
 

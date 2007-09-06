@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 
 
@@ -40,7 +42,7 @@ Mathematically:
 """
 
 
-import Numeric, LinearAlgebra
+import numpy.oldnumeric as Numeric, numpy.oldnumeric.linear_algebra as LinearAlgebra
 from ImageD11 import opendata
 
 class linearity:
@@ -128,18 +130,18 @@ def lsq(diff, gradients):
     lsqmat = Numeric.zeros((nvar,nvar),Numeric.Float)
     rhs = Numeric.zeros((nvar),Numeric.Float)
     for i in range(nvar):
-        logging.debug(" lsq shapes: %d %d"%(gradients[i].flat.shape[0],
-                                            diff.flat.shape[0]))
+        logging.debug(" lsq shapes: %d %d"%(gradients[i].ravel().shape[0],
+                                            diff.ravel().shape[0]))
         try:
-            rhs[i] = Numeric.dot(gradients[i].flat, diff.flat)
+            rhs[i] = Numeric.dot(gradients[i].ravel(), diff.ravel())
         except:
-            print gradients[i].flat.shape
-            print diff.flat.shape
+            print gradients[i].ravel().shape
+            print diff.ravel().shape
             raise
         for j in range(i):
             lsqmat[i,j] = lsqmat[j,i] = \
-                          Numeric.dot(gradients[i].flat,
-                                      gradients[j].flat)
+                          Numeric.dot(gradients[i].ravel(),
+                                      gradients[j].ravel())
     inverse = LinearAlgebra.inverse(lsqmat)
     shifts = Numeric.matrixmultiply(inverse, rhs)
     return shifts

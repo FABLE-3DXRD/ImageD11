@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 #!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 
@@ -100,7 +102,7 @@ class checker:
             mx=self.edfFile.maxI
         shape=(self.edfFile.rows,self.edfFile.cols)
         d=reshape(clip(self.edfFile.data,mi,mx),shape) # makes a clipped copy
-        print "makeImage",mx,mi,maximum.reduce(ravel(d)),minimum.reduce(ravel(d)),d.typecode(),
+        print "makeImage",mx,mi,maximum.reduce(ravel(d)),minimum.reduce(ravel(d)),d.dtype.char,
         newshape = []
         for i in shape:
             j=4

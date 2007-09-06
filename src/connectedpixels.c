@@ -3,8 +3,8 @@
 
 
 /*
-# ImageD11_v0.4 Software for beamline ID11
-# Copyright (C) 2005  Jon Wright
+# ImageD11_v1.0 Software for beamline ID11
+# Copyright (C) 2005-2007  Jon Wright
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,7 +30,8 @@ static char moduledocs[] =\
 
 
 #include <Python.h>                  /* To talk to python */
-#include "Numeric/arrayobject.h"     /* Access to Numeric */
+/* #include "Numeric/arrayobject.h"      Access to Numeric */
+#include "numpy/arrayobject.h"    /* Upgrade numpy */
 #include "dset.h"   /* Disjoint sets thing for blob finding */
 #include <time.h>  /* Benchmarking */
 #include <unistd.h> /* ??? */
@@ -54,7 +55,6 @@ double getval(char *p,int type){
 
   switch (type){
      case    PyArray_CHAR   : return *(char          *)p*1.;
-     case    PyArray_SBYTE  : return *(signed char   *)p*1.;
      case    PyArray_SHORT  : return *(short         *)p*1.;
      case    PyArray_INT    : return *(int           *)p*1.;
      case    PyArray_LONG   : return *(long          *)p*1.;
@@ -76,7 +76,6 @@ void ptype(int type){
   printf("Your input type was ");
   switch (type){
      case    PyArray_CHAR   : printf("PyArray_CHAR *(char *)\n");break;
-     case    PyArray_SBYTE  : printf("PyArray_SBYTE *(signed char *)\n");break;
      case    PyArray_SHORT  : printf("PyArray_SHORT *(short *)\n");break;
      case    PyArray_INT    : printf("PyArray_INT *(int  *)\n");break;
      case    PyArray_LONG   : printf("PyArray_LONG *(long *)\n");break;

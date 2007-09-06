@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 
 # ImageD11_v0.4 Software for beamline ID11
@@ -307,7 +309,7 @@ class twodplot(Tk.Frame):
 if __name__=="__main__":
     import epffile, powbase, mcadata, ciidata
     if len(sys.argv)<3:
-        from Numeric import arange, sin, sqrt
+        from numpy.oldnumeric import arange, sin, sqrt
         from math import pi
         print "Usage: %s filename format"%(sys.argv[0])
         x=Numeric.arange(0.0,3.0,0.01)

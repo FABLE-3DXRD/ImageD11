@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 
 
@@ -40,7 +42,7 @@ are above a threshold (eg the central circle on the bruker)
 """
 
 
-import Numeric, LinearAlgebra
+import numpy.oldnumeric as Numeric, numpy.oldnumeric.linear_algebra as LinearAlgebra
 from ImageD11 import opendata
 
 class scale:

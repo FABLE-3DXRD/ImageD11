@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 
 
@@ -23,8 +25,8 @@
 #
 
 
-import Numeric
-from LinearAlgebra import inverse
+import numpy.oldnumeric as Numeric
+from numpy.oldnumeric.linear_algebra import inverse
 import math
 
 import logging

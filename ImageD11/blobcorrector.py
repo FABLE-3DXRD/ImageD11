@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 
  
@@ -27,7 +29,7 @@ To think about doing - valid regions? What if someone uses a 1K spline
 file for a 2K image etc?
 """
 import logging
-import Numeric as n
+import numpy.oldnumeric as n
 import bisplev, math
 
 def readfit2dfloats(fp, nfl):

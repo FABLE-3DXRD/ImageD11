@@ -1,3 +1,5 @@
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
 
 
 
@@ -28,7 +30,7 @@ Mostly unimplemented dummies - see also refinegrains
 
 """
 
-import Numeric
+import numpy.oldnumeric as Numeric
 
 class ubitool:
     def __init__(self,ubilist=None,ubifile=None,obsdata=None):

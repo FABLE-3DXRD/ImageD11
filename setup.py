@@ -1,8 +1,8 @@
 
 
 
-# ImageD11_v0.4 Software for beamline ID11
-# Copyright (C) 2005  Jon Wright
+# ImageD11_v1.0 Software for beamline ID11
+# Copyright (C) 2005-2007  Jon Wright
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,39 +42,45 @@ work ??
 from distutils.core import setup, Extension
 
 
+from numpy.distutils.misc_util import get_numpy_include_dirs
+
+nid = get_numpy_include_dirs()
+
+
 # Compiled extensions:
 
 # closest is for indexing grains
-cl = Extension("closest", sources=['src/closest.c'])
+cl = Extension("closest", 
+               sources=['src/closest.c'], 
+               include_dirs = nid )
 
 # connectedpixels is for peaksearching images
 
 
 
-cp = Extension("connectedpixels", sources = ['src/connectedpixels.c'])
+cp = Extension("connectedpixels", 
+               sources = ['src/connectedpixels.c'], 
+               include_dirs = nid)
 # No header files for distutils as sources 'src/dset.h'])
 
 
 # histogramming thing
-ch = Extension("_hist", sources = ['src/hist.c'])
+ch = Extension("_hist", 
+               sources = ['src/hist.c'],
+               include_dirs = nid )
 
-# Fortran hack - just need to have libsplines.a available for linking
-#import os
-#os.system("g77 -c src/bispev.f -o src/bispev.o")
-#os.system("ar -cr src/libsplines.a src/bispev.o")
 
 # _splines is for correcting peak positions for spatial distortion
-bl = Extension("_splines", sources = ['src/splines.c', 'src/bispev.c'])
-# No header files for distutils as sources , 'src/f2c.h'] )
-#,
-#                     libraries = ["splines"], library_dirs = ["src"] )
+bl = Extension("_splines", 
+               sources = ['src/splines.c', 'src/bispev.c'],
+               include_dirs = nid)
 
 
 # See the distutils docs...
 setup(name='ImageD11',
       version='1.0.1',
-      author='Jon Wright, Jaroslaw Butanowicz',
-      author_email='wright@esrf.fr,  jaroslaw.butanowicz@esrf.fr',
+      author='Jon Wright',
+      author_email='wright@esrf.fr',
       description='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory

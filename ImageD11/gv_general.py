@@ -1,8 +1,13 @@
 
 
 
+## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+
+
+
+
 # ImageD11 Software for beamline ID11
-# Copyright (C) 2005  Jon Wright
+# Copyright (C) 2005-2007  Jon Wright
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,8 +26,9 @@
 """
 Find a generalised way to compute g-vectors backwards and forwards
 """
-import math, logging, LinearAlgebra
-import Numeric as n
+import math, logging
+import numpy.oldnumeric.linear_algebra as LinearAlgebra
+import numpy.oldnumeric as n
 from ImageD11.transform import degrees
 
 class rotation_axis:
@@ -129,7 +135,7 @@ def axis_from_matrix( m ):
                        m[0,2] - m[2,0],
                        m[1,0] - m[0,1] ], n.Float )
     o = rotation_axis( dir , math.degrees( angle_rad ) )
-    assert o.matrix == m
+    assert (o.matrix == m).all()
     return o
 
 rotate_identity = rotation_axis( n.array([0,0,1],n.Float) , 0.0 )
