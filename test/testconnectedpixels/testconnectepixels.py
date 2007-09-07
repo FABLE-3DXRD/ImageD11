@@ -114,6 +114,7 @@ class test_blobproperties(unittest.TestCase):
             res = connectedpixels.blobproperties(data, bl, np)
             # print res
                 
+            print res, res.shape,n.ravel(res)
                                            
     
 
