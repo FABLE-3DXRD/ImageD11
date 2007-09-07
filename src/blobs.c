@@ -24,6 +24,7 @@
 #include <stdio.h>
 
 void new_blob(blob2d *b, int f, int s, double I){
+  /* printf("hello, %p,\n",b);  */
   b->s_1   = 0;       /* Npix*/
   b->s_I   = 0;       /* Sum intensity */
   b->s_I2  = 0;       /* Sum intensity^2 */

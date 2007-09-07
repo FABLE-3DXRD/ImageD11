@@ -2,6 +2,7 @@
 
 
 
+
 /*
 # ImageD11_v1.0 Software for beamline ID11
 # Copyright (C) 2005-2007  Jon Wright
@@ -54,7 +55,7 @@ typedef struct {
   double bb_mn_s;      /* 15 min of s */ 
 } blob2d;
 
-#define NPROPERTY 15;
+#define NPROPERTY 15
 
 void new_blob(blob2d*, int , int , double);
 

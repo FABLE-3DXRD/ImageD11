@@ -231,8 +231,9 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
   
   double time;
   double val; /* data, flood and dark values */
+
   float threshold;
-  if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!f|O!O!i",kwlist,      
+  if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!f|i",kwlist,      
 				  &PyArray_Type, &dataarray,   /* array args */
 				  &PyArray_Type, &results,   /* array args */
 				  &threshold,
@@ -307,10 +308,11 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
 
       /* Set result for this pixel to zero - Not needed here? */
       curr = (int *) getptr(results,f,s,i,j);
-      curr = 0;
+      *curr = 0;
       
       val = getval( getptr(dataarray,f,s,i,j),type);
 	
+      /* printf("curr %d val=%f",*curr,val); */
       if( val > threshold) {
 	npover++;
 	k = 0;
@@ -452,7 +454,7 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
 	    1.*(tv4-tv1)/CLOCKS_PER_SEC); 
    }
    
-   return Py_BuildValue("i", np+1);/* why the plus one?? */ 
+   return Py_BuildValue("i", np);/* why the plus one?? */ 
 }
 
 /* ============================================================== */
@@ -491,11 +493,12 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
    blob2d *res;
    double fval;
    
-   int np,verbose=0,type,f,s,peak,bad;
+   int np=0,verbose=0,type,f,s,peak,bad;
 
-   int i,j,safelyneed, nprop, percent;
+   int i,j, percent;
+   int safelyneed[3];
    
-   if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!i|O!O!i",kwlist,      
+   if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!i|i",kwlist,      
                         &PyArray_Type, &dataarray,   /* array args - data */
                         &PyArray_Type, &blobarray,   /* blobs */
                         &np,              /* Number of peaks to treat */
@@ -530,10 +533,22 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
 	    dataarray->strides[1]);
    }
    /* results arrays */
-   safelyneed=np+3;
-   res = malloc( safelyneed * sizeof(blob2d));
+   safelyneed[0]=NPROPERTY;
+   safelyneed[1]=np;
+   res = (blob2d*) malloc( safelyneed[1] * sizeof(blob2d) );
+
+   if( res == NULL){
+     PyErr_SetString(PyExc_ValueError,
+		     "Malloc failed fo results");
+     return NULL;
+   }
+   if(verbose>0)printf("malloc'ed the structs\n");
    
-   for ( i=0 ; i<safelyneed ; i++) new_blob(&res[i],0,0,0.0);  
+   for ( i=0 ; i<safelyneed[1] ; i++) {
+     if(verbose>2)printf("i=%d \n",i);
+     new_blob((blob2d*)&res[i],0,0,0.0);  
+   }
+   
    
    if(verbose!=0)printf("Got some space to put the results in\n");
 
@@ -547,12 +562,12 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
      if(verbose!=0 && (i%percent == 0) )printf(".");
      for( j = 0 ; j <= (blobarray->dimensions[f]-1) ; j++ ){
 
-       peak = * (int *) getptr(blobarray,f,s,i,j);
-
+       peak =  *(int *) getptr(blobarray,f,s,i,j);
+       
        if( peak > 0  && peak <=np ) {
 	 fval = getval(getptr(dataarray,f,s,i,j),type);
-	 add_pixel(&res[peak],i,j,fval);
-	
+	 /* printf("i,j,f,s,fval,peak %d %d %d %d %f %d\n",i,j,f,s,fval,peak); */
+	 add_pixel((blob2d*)&res[peak-1],i,j,fval);
        }
        else{
 	 if(peak!=0){
@@ -567,30 +582,33 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
    if(verbose){
      printf("\nFound %d bad pixels in the blob image\n",bad);
    }
-   nprop = NPROPERTY;
-   results = (PyArrayObject *) PyArray_FromDims(nprop, &safelyneed, PyArray_DOUBLE);
+
+   
+   results = (PyArrayObject *) PyArray_FromDims(2, safelyneed, PyArray_DOUBLE);
    if (results == NULL){
      free(res);
      return NULL;
    }
-   for(i=0; i < safelyneed; i++){
-     *(double*)getptr(results,0,1, 0,i)  = res[i].s_1;
-     *(double*)getptr(results,0,1, 1,i)  = res[i].s_I;
-     *(double*)getptr(results,0,1, 2,i)  = res[i].s_I2;
-     *(double*)getptr(results,0,1, 3,i)  = res[i].s_fI;
-     *(double*)getptr(results,0,1, 4,i)  = res[i].s_ffI;
-     *(double*)getptr(results,0,1, 5,i)  = res[i].s_sI;
-     *(double*)getptr(results,0,1, 6,i)  = res[i].s_ssI;
-     *(double*)getptr(results,0,1, 7,i)  = res[i].s_sfI;
-     *(double*)getptr(results,0,1, 8,i)  = res[i].mx_I;
-     *(double*)getptr(results,0,1, 9,i)  = res[i].mx_I_f;
-     *(double*)getptr(results,0,1, 10,i) = res[i].mx_I_s;
-     *(double*)getptr(results,0,1, 11,i) = res[i].bb_mx_f;
-     *(double*)getptr(results,0,1, 12,i) = res[i].bb_mx_s;
-     *(double*)getptr(results,0,1, 13,i) = res[i].bb_mn_f;
-     *(double*)getptr(results,0,1, 14,i) = res[i].bb_mn_s;
+   for(i=0; i < safelyneed[1]; i++){
+     *(double*)getptr(results,0,1,i, 0)  = (res[i]).s_1;
+     *(double*)getptr(results,0,1,i, 1)  = (res[i]).s_I;
+     *(double*)getptr(results,0,1,i, 2)  = (res[i]).s_I2;
+     *(double*)getptr(results,0,1,i, 3)  = (res[i]).s_fI;
+     *(double*)getptr(results,0,1,i, 4)  = (res[i]).s_ffI;
+     *(double*)getptr(results,0,1,i, 5)  = (res[i]).s_sI;
+     *(double*)getptr(results,0,1,i, 6)  = (res[i]).s_ssI;
+     *(double*)getptr(results,0,1,i, 7)  = (res[i]).s_sfI;
+     *(double*)getptr(results,0,1,i, 8)  = (res[i]).mx_I;
+     *(double*)getptr(results,0,1,i, 9)  = (res[i]).mx_I_f;
+     *(double*)getptr(results,0,1,i, 10) = (res[i]).mx_I_s;
+     *(double*)getptr(results,0,1,i, 11) = (res[i]).bb_mx_f;
+     *(double*)getptr(results,0,1,i, 12) = (res[i]).bb_mx_s;
+     *(double*)getptr(results,0,1,i, 13) = (res[i]).bb_mn_f;
+     *(double*)getptr(results,0,1,i, 14) = (res[i]).bb_mn_s;
    }
+   
    free(res);
+   
    return Py_BuildValue("O", PyArray_Return(results) ); 
 }
 
@@ -604,7 +622,7 @@ static char bloboverlaps_doc[] =\
 " res[0->n1] = peaks in image 1 \n"\
 " res[n2->n2+n1+1] = peaks in image 2 \n";
     
-
+ 
    
 static PyObject * bloboverlaps (PyObject *self, PyObject *args,  PyObject *keywds)
 {

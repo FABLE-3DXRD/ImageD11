@@ -1,6 +1,7 @@
 
 
 
+
 # ImageD11_v1.0 Software for beamline ID11
 # Copyright (C) 2005-2007  Jon Wright
 #
@@ -59,7 +60,7 @@ cl = Extension("closest",
 
 
 cp = Extension("connectedpixels", 
-               sources = ['src/connectedpixels.c'], 
+               sources = ['src/connectedpixels.c','src/blobs.c'], 
                include_dirs = nid)
 # No header files for distutils as sources 'src/dset.h'])
 
