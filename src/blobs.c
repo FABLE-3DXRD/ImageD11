@@ -24,7 +24,7 @@
 #include <stdio.h>
 
 
-void add_pixel( double b[], int s, int f, double I){
+void add_pixel( double b[], int s, int f, double I, double o){
   b[s_1]   += 1;       /* Npix*/
   b[s_I]   += I;       /* Sum intensity */
   b[s_I2]  += I*I;     /* Sum intensity^2 */
@@ -33,19 +33,27 @@ void add_pixel( double b[], int s, int f, double I){
   b[s_sI]  += s*I;     /* Sum s * intensity */
   b[s_ssI] += s*s*I;   /* Sum s * s * intensity */
   b[s_sfI] += s*f*I;   /* Sum f * s * intensity */
+  b[s_oI]  += o*I;     /* Sum o * intensity */
+  b[s_soI] += s*o*I;   /* Sum s * o * intensity */
+  b[s_foI] += f*o*I;   /* Sum f * o * intensity */
+
+
 
   if(I > b[mx_I]){
     b[mx_I]   = I;     /* Max intensity */
     b[mx_I_f] = f;     /* fast at Max intensity */
     b[mx_I_s] = s;     /* slow at Max intensity */
+    b[mx_I_o] = o;
   }
 
   
   /* Bounding box */
   b[bb_mx_f] = ((f > b[bb_mx_f])? f :  b[bb_mx_f] );  
   b[bb_mx_s] = ((s > b[bb_mx_s])? s :  b[bb_mx_s] );  
+  b[bb_mx_o] = ((o > b[bb_mx_o])? o :  b[bb_mx_o] );  
   b[bb_mn_f] = ((f < b[bb_mn_f])? f :  b[bb_mn_f] );  
   b[bb_mn_s] = ((s < b[bb_mn_s])? s :  b[bb_mn_s] );  
+  b[bb_mn_o] = ((o < b[bb_mn_o])? o :  b[bb_mn_o] );  
 
 }
 
@@ -62,23 +70,27 @@ void merge(double b1[], double b2[]){
   b1[s_sI]  += b2[s_sI];        /* Sum s * intensity */
   b1[s_ssI] += b2[s_ssI];       /* Sum s * s * intensity */
   b1[s_sfI] += b2[s_sfI];       /* Sum f * s * intensity */
-
+  b1[s_oI]  += b2[s_oI];        /* Sum o * intensity */
+  b1[s_soI] += b2[s_soI];       /* Sum s * o * intensity */
+  b1[s_foI] += b2[s_foI];       /* Sum f * o * intensity */
+  
   if(b2[mx_I] > b1[mx_I]){
     b1[mx_I]   = b2[mx_I];      /* Max intensity */
     b1[mx_I_f] = b2[mx_I_f];    /* fast at Max intensity */
     b1[mx_I_s] = b2[mx_I_s];    /* slow at Max intensity */
+    b1[mx_I_o] = b2[mx_I_o];    /* slow at Max intensity */
   }
 
-  
   /* Bounding box */
   b1[bb_mx_f] = ((b2[bb_mx_f] > b1[bb_mx_f])? b2[bb_mx_f] :  b1[bb_mx_f] );  
   b1[bb_mx_s] = ((b2[bb_mx_s] > b1[bb_mx_s])? b2[bb_mx_s] :  b1[bb_mx_s] );  
+  b1[bb_mx_o] = ((b2[bb_mx_o] > b1[bb_mx_o])? b2[bb_mx_o] :  b1[bb_mx_o] );  
+  b1[bb_mn_o] = ((b2[bb_mn_o] < b1[bb_mn_o])? b2[bb_mn_o] :  b1[bb_mn_o] );  
   b1[bb_mn_f] = ((b2[bb_mn_f] < b1[bb_mn_f])? b2[bb_mn_f] :  b1[bb_mn_f] );  
   b1[bb_mn_s] = ((b2[bb_mn_s] < b1[bb_mn_s])? b2[bb_mn_s] :  b1[bb_mn_s] );  
 
   /* Trash b2 to be on the safe side */
   for(i=0;i<NPROPERTY;i++)b2[i]=0;
-
 
 }
 
@@ -112,7 +124,6 @@ int *S;
 
 int * dset_initialise(int size){
    int i;
-   /* printf("Initialising the disjoint set at size %d, S=%x\n",size,S); */
    S=(int *) ( malloc(size*sizeof(int) ) );
    if (S==NULL){
    printf("Memory allocation error in dset_initialise\n");
@@ -165,8 +176,14 @@ void dset_makeunion(int * S, int r1, int r2){
 
 
 void dset_link(int * S, int r2, int r1){
-   if(r1>r2){S[r1]=r2;}
-   if(r1<r2){S[r2]=r1;}
+   if (r1 > r2){
+     /* The higher # r1 is changed to point to the lower */
+     S[r1] = r2;
+   } 
+   if(r1 < r2){
+     /* Again, the higher number, r2 is the one to point to lower */
+     S[r2] = r1;
+   } 
    /* if r1==r2 then they are already a union */
 }
 

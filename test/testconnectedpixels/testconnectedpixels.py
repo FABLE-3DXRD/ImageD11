@@ -83,29 +83,34 @@ class test_connectedpixels(unittest.TestCase):
 class test_blobproperties(unittest.TestCase):
 
     def test_prop_names(self):
-        names="""s_1,       /* 1 Npix */ 
-                 s_I,       /* 2 Sum intensity */
-                 s_I2,      /* 3 Sum intensity^2 */
-                 s_fI,      /* 4 Sum f * intensity */
-                 s_ffI,     /* 5 Sum f * f* intensity */
-                 s_sI,      /* 6 Sum s * intensity */
-                 s_ssI,     /* 7 Sum s * s * intensity */
-                 s_sfI,     /* 8 Sum f * s * intensity */
-                 mx_I,      /* 9  Max intensity */
-                 mx_I_f,    /* 10 fast at Max intensity */
-                 mx_I_s,    /* 11 slow at Max intensity */
-                 bb_mx_f,      /* 12 max of f */
-                 bb_mx_s,      /* 13 max of s */
-                 bb_mn_f,      /* 14 min of f */
-                 bb_mn_s,       /* 15 min of s */ 
-                 NPROPERTY ,    /* Number of properties if starting at 0 */ """
-        namelist = [n.split(",")[0] for n in names.split("\n:")]
+        names="""  s_1,       /* 1 Npix */
+  s_I,       /* 2 Sum intensity */
+  s_I2,      /* 3 Sum intensity^2 */
+  s_fI,      /* 4 Sum f * intensity */
+  s_ffI,     /* 5 Sum f * f* intensity */
+  s_sI,      /* 6 Sum s * intensity */
+  s_ssI,     /* 7 Sum s * s * intensity */
+  s_sfI,     /* 8 Sum f * s * intensity */
+  s_oI,         /* 9 sum omega * intensity */ 
+  s_soI,        /* 10 sum omega * s * intensity */
+  s_foI,        /* 11 sum omega * f * intensity */
+  mx_I,      /* 12  Max intensity */
+  mx_I_f,    /* 13 fast at Max intensity */
+  mx_I_s,    /* 14 slow at Max intensity */
+  mx_I_o,    /* 15 omega at max I */
+  bb_mx_f,      /* 16 max of f */
+  bb_mx_s,      /* 17 max of s */
+  bb_mx_o,      /* 18 max of omega */
+  bb_mn_f,      /* 19 min of f */
+  bb_mn_s,      /* 20 min of s */
+  bb_mn_o,      /* 21 min of o */  
+  NPROPERTY,     /* Number of properties if starting at 0 */ """
+        namelist = [n.split(",")[0].lstrip().rstrip() 
+                    for n in names.split("\n")]
         i = 0
-        # print namelist
         while i < len(namelist):
             self.assertEqual(i,getattr(connectedpixels,namelist[i]))
             i += 1 
-        # print namelist
 
     def test_find_max(self):
         for t in [n.UInt8, n.Int8, n.UInt16, n.Int16,
@@ -197,8 +202,35 @@ class test_blobproperties(unittest.TestCase):
             self.assertAlmostEqual(res[1][bb_mx_s],3)
 
             
-            
-            
+class testbloboverlaps(unittest.TestCase):
+    def test1(self):
+        data1 =  n.array([[ 1, 0, 1, 0, 0, 0, 0],
+                          [ 1, 0, 1, 0, 0, 0, 0],
+                          [ 1, 0, 1, 1, 0, 0, 0],
+                          [ 1, 1, 1, 0, 0, 0, 0]])
+        bl1 = n.zeros(data1.shape)
+        np1 = connectedpixels.connectedpixels(data1,bl1,0.1)
+        data2 =  n.array([[ 0, 0, 0, 0, 2, 0, 2],
+                          [ 0, 0, 0, 0, 2, 0, 2],
+                          [ 0, 0, 0, 2, 0, 2, 0],
+                          [ 0, 0, 0, 0, 2, 0, 2]])
+        bl2 = n.zeros(data2.shape)
+        np2 = connectedpixels.connectedpixels(data2,bl2,0.1)
+
+        r1 = connectedpixels.blobproperties(data1, bl1, np1)
+
+        r2 = connectedpixels.blobproperties(data2, bl2, np2)
+        
+        print r1
+        print r2
+        connectedpixels.bloboverlaps(bl1,np1,r1, 
+                                     bl2,np2,r2, verbose=0)
+        err = n.sum(n.ravel(r2))
+        print r1
+        print r2
+        self.assertAlmostEqual(err,0.,6)
+        
+        
 
     
     

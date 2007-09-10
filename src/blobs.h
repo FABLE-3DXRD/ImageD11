@@ -42,15 +42,22 @@ enum {
   s_sI,      /* 6 Sum s * intensity */
   s_ssI,     /* 7 Sum s * s * intensity */
   s_sfI,     /* 8 Sum f * s * intensity */
+  s_oI,         /* 9 sum omega * intensity */ 
+  s_soI,        /* 10 sum omega * s * intensity */
+  s_foI,        /* 11 sum omega * f * intensity */
 
-  mx_I,      /* 9  Max intensity */
-  mx_I_f,    /* 10 fast at Max intensity */
-  mx_I_s,    /* 11 slow at Max intensity */
+  mx_I,      /* 12  Max intensity */
+  mx_I_f,    /* 13 fast at Max intensity */
+  mx_I_s,    /* 14 slow at Max intensity */
+  mx_I_o,    /* 15 omega at max I */
 
-  bb_mx_f,      /* 12 max of f */
-  bb_mx_s,      /* 13 max of s */
-  bb_mn_f,      /* 14 min of f */
-  bb_mn_s,      /* 15 min of s */ 
+  bb_mx_f,      /* 16 max of f */
+  bb_mx_s,      /* 17 max of s */
+  bb_mx_o,      /* 18 max of omega */
+  bb_mn_f,      /* 19 min of f */
+  bb_mn_s,      /* 20 min of s */
+  bb_mn_o,      /* 21 min of o */  
+
   NPROPERTY     /* Number of properties if starting at 0 */
 } ;
 
@@ -58,7 +65,7 @@ enum {
 
 /*void new_blob(double blob[], int i, int j, double val);*/
 
-void add_pixel(double blob[], int i, int j, double val);
+void add_pixel(double blob[], int i, int j, double val, double omega);
 
 void merge(double blob1[], double blob2[]);
 

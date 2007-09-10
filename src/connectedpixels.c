@@ -520,21 +520,26 @@ static PyObject * blobproperties (PyObject *self,
      "data",
      "blob",
      "npeaks",
+     "omega",
      "verbose", 
      NULL};
    double *res;
    double fval;
+   double omega=0;
    
    int np=0,verbose=0,type,f,s,peak,bad;
 
    int i,j, percent;
    int safelyneed[3];
    
-   if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!i|i",kwlist,      
-                        &PyArray_Type, &dataarray,   /* array args - data */
-                        &PyArray_Type, &blobarray,   /* blobs */
-                        &np,           /* Number of peaks to treat */
-                        &verbose))     /* optional verbosity */
+   if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!i|fi",kwlist,      
+				   &PyArray_Type, 
+				   &dataarray,   /* array args - data */
+				   &PyArray_Type, 
+				   &blobarray,   /* blobs */
+				   &np,  /* Number of peaks to treat */	   
+				   &omega, /* omega angle - put 0 if unknown */
+				   &verbose))     /* optional verbosity */
       return NULL;
    
    /* Check array is two dimensional */
@@ -542,7 +547,7 @@ static PyObject * blobproperties (PyObject *self,
      PyErr_SetString(PyExc_ValueError,
 		     "data array must be 2d, first arg problem");
      return NULL;
-   }
+   } 
    if(verbose!=0)printf("Welcome to blobproperties\n");
    /* Check array is two dimensional and int - 
       results from connectedpixels above */
@@ -609,7 +614,7 @@ static PyObject * blobproperties (PyObject *self,
        if( peak > 0  && peak <=np ) {
 	 fval = getval(getptr(dataarray,f,s,i,j),type);
 	 /* printf("i,j,f,s,fval,peak %d %d %d %d %f %d\n",i,j,f,s,fval,peak); */
-	 add_pixel( &res[NPROPERTY*(peak-1)] ,i,j,fval);
+	 add_pixel( &res[NPROPERTY*(peak-1)] ,i,j,fval, omega);
        }
        else{
 	 if(peak!=0){
@@ -632,32 +637,49 @@ static PyObject * blobproperties (PyObject *self,
 /* ==============================================================================*/ 
 
 static char bloboverlaps_doc[] =\
-"   res = bloboverlaps (   Numeric.array(blob1, 2D, Int), n1  , \n"\
-"                          Numeric.array(blob2, 2D, Int), n2  , verbose=0) \n"\
+"   success = bloboverlaps (   Numeric.array(blob1, 2D, Int), n1  , res1 \n"\
+"                              Numeric.array(blob2, 2D, Int), n2  , res2, verbose=0) \n"\
 " \n"\
-" returns a disjoint set making the overlaps between blob1 and blob2 \n"\
-" res[0->n1] = peaks in image 1 \n"\
-" res[n2->n2+n1+1] = peaks in image 2 \n";
-    
+" merges the results from blob1/res1 into blob2/res2\n"\
+" blob1 would be the previous image from the series, with its results\n"\
+"   if it does not overlap it will stay untouched in res\n"\
+"   if it overlaps with next image it is passed into that ones res\n";
+
+
  
    
-static PyObject * bloboverlaps (PyObject *self, PyObject *args,  PyObject *keywds)
+static PyObject * bloboverlaps (PyObject *self, 
+				PyObject *args,  
+				PyObject *keywds)
 {
-  PyArrayObject *b1=NULL,*b2=NULL, *res=NULL; /* in (not modified) */
+  PyArrayObject *b1=NULL,*b2=NULL; /* in */
+  PyArrayObject *r1=NULL, *r2=NULL; /* in/out */
   int i,j,s,f, verbose ; /* loop vars, flag */
   int p1,p2,n1,n2; /* peak num and npeaks in each */
   int *link , percent, safelyneed;
-  static char *kwlist[] = {"blob1","n1","blob2","n2","verbose", NULL};
-  if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!iO!i|i",kwlist,      
-				  &PyArray_Type, &b1,   /* blobs */
-				  &n1,
-				  &PyArray_Type, &b2,   /* blobs */
-				  &n2,
-				  &verbose))        /* threshold and optional verbosity */
+  double *res1, *res2;
+  static char *kwlist[] = {
+    "blob1",
+    "n1",
+    "res1",
+    "blob2",
+    "n2",
+    "res2",
+    "verbose", NULL};                      /*   b nr b nr */
+  if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!iO!O!iO!|i",kwlist,      
+				  &PyArray_Type, &b1,   /* blobs 1 */
+				  &n1,                  /* npeaks 1 */
+				  &PyArray_Type, &r1,    /* results 1 */
+				  &PyArray_Type, &b2,   /* blobs 2 */
+				  &n2,                  /* npeaks 2 */
+				  &PyArray_Type, &r2,   /*results 2 */
+				  &verbose))        /* optional verbosity */
     return NULL;
+
   if(verbose!=0)printf("Welcome to bloboverlaps\n");
   
-  /* Check array is two dimensional and int - results from connectedpixels above */
+  /* Check array is two dimensional and int - 
+     results from connectedpixels above */
   
   if(b1->nd != 2 && b1->descr->type_num != PyArray_INT){     
     PyErr_SetString(PyExc_ValueError,
@@ -665,7 +687,8 @@ static PyObject * bloboverlaps (PyObject *self, PyObject *args,  PyObject *keywd
     return NULL;
   }
   if(b2->nd != 2 && b2->descr->type_num != PyArray_INT){     
-    PyErr_SetString(PyExc_ValueError,"Blob2 array must be 2d and integer, second arg problem");
+    PyErr_SetString(PyExc_ValueError,
+		    "Blob2 array must be 2d and integer, second arg problem");
     return NULL;
   }
   if (b1->strides[0]!=b2->strides[0] ||
@@ -676,6 +699,20 @@ static PyObject * bloboverlaps (PyObject *self, PyObject *args,  PyObject *keywd
 		    "Blob1 and Blob2 array be similar (dims & strides)");
     return NULL;
   }       
+  /* check results args */
+  if (r1->dimensions[0] != n1 ||
+      r1->dimensions[1] != NPROPERTY ||
+      r2->dimensions[0] != n2 ||
+      r2->dimensions[1] != NPROPERTY ||
+      r1->descr->type_num != PyArray_DOUBLE ||
+      r2->descr->type_num != PyArray_DOUBLE ){
+    PyErr_SetString(PyExc_ValueError,
+		    "Results arrays look corrupt\n");
+    return NULL;
+  }
+  res1 = (double *)r1->data;
+  res2 = (double *)r2->data;
+
   /* Decide on fast/slow loop - inner versus outer */
   if(b1->strides[0] > b1->strides[1]) {
     f=1;  s=0;}
@@ -691,18 +728,13 @@ static PyObject * bloboverlaps (PyObject *self, PyObject *args,  PyObject *keywd
    * image 1 has peak[i]=i ; i=1->n1
    * image 2 has peak[i]=i+n1 ; i=1->n2
    * link to hold 0->n1-1 ; n1->n2+n2-1 */
-  safelyneed=n1+n2+1;
-  res  = (PyArrayObject *)PyArray_FromDims(1,&safelyneed,PyArray_INT);
-  link =  (int   *)   res->data;
-  if(!res){  /* max length */
-    PyErr_SetString(PyExc_ValueError,
-		    "Failed to malloc link array");
-    return NULL;
-  }
+
+  safelyneed=n1+n2+3;
+  link =  (int *)malloc(safelyneed*sizeof(int));
   
-  for(i=0;i<n1+n2+1;i++){link[i]=i;} /* first image */
+  for(i=0;i<safelyneed;i++){link[i]=i;} /* first image */
   /* flag the start of image number 2 */
-  link[n1]=-99999; /* Should never be touched by anyone */
+  link[n1+1]=-99999; /* ==n2=0 Should never be touched by anyone */
   
   /* results lists of pairs of numbers */
   if(verbose!=0){
@@ -712,25 +744,44 @@ static PyObject * bloboverlaps (PyObject *self, PyObject *args,  PyObject *keywd
   for( i = 0 ; i <= (b1->dimensions[s]-1) ; i++ ){    /* i,j is looping 
 							 along the indices 
 							 of the data array */
-    if(verbose!=0 && (i%percent == 0) )printf(".");
     for( j = 0 ; j <= (b1->dimensions[f]-1) ; j++ ){
-      p1=* (int *) (b1->data + i*b1->strides[s] + j*b1->strides[f]);
-      if (p1==0){ continue; } 
-      p2=* (int *) (b2->data + i*b2->strides[s] + j*b2->strides[f]);
-      if (p2==0){ continue; } 
+      p1 = * (int *) getptr(b1,f,s,i,j);
+      if ( p1 == 0 ){ continue; } 
+      p2 = * (int *) getptr(b2,f,s,i,j);
+      if ( p2 == 0 ){ continue; } 
       /* Link contains the peak that this peak is */
-      if(link[p1]<0 || link[p2+n1]<0){
-	printf("Whoops p1=%d p2=%d p2+n1=%d link[p1]=%d link[p2+n1]=%d",
-	       p1,p2,p2+n1,link[p1],link[p2+n1]);
+      if(link[p1]<0 || link[p2+n1+1]<0){
+	printf("Whoops p1=%d p2=%d p2+n1=%d link[p1]=%d link[p2+n1]=%d\n",
+	       p1,p2,p2+n1,link[p1],link[p2+n1+1]);
 	return NULL;
       }
       /* printf("link[60]=%d %d %d ",link[60],p1,p2+n1);*/
-      dset_makeunion(link,p1,p2+n1);
+      dset_makeunion(link, p1, p2+n1+1);
       /* printf("link[60]=%d ",link[60]); */
       if(verbose>2)printf("link[p1=%d]=%d link[p2+n1=%d]=%d\n",
-			  p1,link[p1],p2+n1,link[p2+n1]);
+			  p1,link[p1],p2+n1+1,link[p2+n1+1]);
     } /* j */
   } /* i */
+  
+  for(i=1; i < safelyneed; i++){
+    if(link[i] != i && i != n1+1){
+      j = dset_find(i, link);
+      if(verbose>1){
+	printf("i= %d link[i]= %d j= %d\n",i,link[i],j);
+      }
+      if( i < (n1+n2+3) && j < (n2+1) && i>0 && j>0 ){
+	/* i from first image - j on second */
+	  merge( &res2[NPROPERTY*(j-1)], &res1[NPROPERTY*(i-1)] );
+      }
+      else{
+	printf("bad logic in bloboverlaps\n");
+	return NULL;
+      }  
+    }
+  }
+  
+
+
   if(verbose!=0){
     printf("\n");
     for(i=0;i<n1+n2;i++){
@@ -739,12 +790,15 @@ static PyObject * bloboverlaps (PyObject *self, PyObject *args,  PyObject *keywd
       }
     }
   }
-  return Py_BuildValue("O", PyArray_Return(res));
+
+  Py_INCREF(Py_None);
+  return Py_None;
 }
+
 
 static char update_blobs_doc[] =\
   "   update_blobs (   Numeric.array(blob, 2D, Int), \n"		\
-  "                    Numeric.array(set  , 2D, Int) , verbose=0) \n"	\
+  "                    Numeric.array(set , 2D, Int) , verbose=0) \n"	\
   " \n"									\
   " updates blob image such that : \n"					\
   " if blob[i,j] > 0: \n"						\
@@ -860,13 +914,20 @@ void initconnectedpixels(void) {
    PyDict_SetItemString(d,str(s_sI)   ,PyInt_FromLong(s_sI));
    PyDict_SetItemString(d,str(s_ssI)  ,PyInt_FromLong(s_ssI));
    PyDict_SetItemString(d,str(s_sfI)  ,PyInt_FromLong(s_sfI));
+   PyDict_SetItemString(d,str(s_oI)   ,PyInt_FromLong(s_oI));
+   PyDict_SetItemString(d,str(s_soI)  ,PyInt_FromLong(s_soI));
+   PyDict_SetItemString(d,str(s_foI)  ,PyInt_FromLong(s_foI));
    PyDict_SetItemString(d,str(mx_I)   ,PyInt_FromLong(mx_I));
    PyDict_SetItemString(d,str(mx_I_f) ,PyInt_FromLong(mx_I_f));
    PyDict_SetItemString(d,str(mx_I_s) ,PyInt_FromLong(mx_I_s));
+   PyDict_SetItemString(d,str(mx_I_o) ,PyInt_FromLong(mx_I_o));
    PyDict_SetItemString(d,str(bb_mx_f),PyInt_FromLong(bb_mx_f));
    PyDict_SetItemString(d,str(bb_mx_s),PyInt_FromLong(bb_mx_s));
+   PyDict_SetItemString(d,str(bb_mx_o),PyInt_FromLong(bb_mx_o));
    PyDict_SetItemString(d,str(bb_mn_f),PyInt_FromLong(bb_mn_f));
    PyDict_SetItemString(d,str(bb_mn_s),PyInt_FromLong(bb_mn_s));
+   PyDict_SetItemString(d,str(bb_mn_o),PyInt_FromLong(bb_mn_o));
+   
    PyDict_SetItemString(d,str(NPROPERTY),PyInt_FromLong(NPROPERTY));
    Py_DECREF(s);
    if(PyErr_Occurred())

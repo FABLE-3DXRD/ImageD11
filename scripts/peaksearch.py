@@ -7,8 +7,8 @@
 #! /bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 
-# ImageD11_v0.4 Software for beamline ID11
-# Copyright (C) 2005  Jon Wright
+# ImageD11_v1.0 Software for beamline ID11
+# Copyright (C) 2005-2007  Jon Wright
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ Defines one function (peaksearch) which might be reused
 """
 
 import time
+
 # For benchmarking
 reallystart = time.time()
 
@@ -45,6 +46,8 @@ from ImageD11 import blobcorrector
 from ImageD11 import opendata
 from ImageD11 import connectedpixels
 import numpy.oldnumeric as Numeric
+
+
 class timer:
     def __init__(self):
         self.start = time.time()
@@ -191,7 +194,8 @@ class labelimage:
         for i in range(self.np+1, len(ds)):
 #            print i
 #            if ds[i]==i and i<self.np:
-#                # this peak is on res and not overlapped, it will, eventually, move to lastres
+#                # this peak is on res and not overlapped, 
+#                # it will, eventually, move to lastres
 #                continue
             if ds[i] != i:
                 if three_d_debug:
