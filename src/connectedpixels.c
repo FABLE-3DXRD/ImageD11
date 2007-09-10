@@ -75,16 +75,34 @@ void ptype(int type){
    /* Print out the type of a Numeric array from the C point of view */
   printf("Your input type was ");
   switch (type){
-     case    PyArray_CHAR   : printf("PyArray_CHAR *(char *)\n");break;
-     case    PyArray_SHORT  : printf("PyArray_SHORT *(short *)\n");break;
-     case    PyArray_INT    : printf("PyArray_INT *(int  *)\n");break;
-     case    PyArray_LONG   : printf("PyArray_LONG *(long *)\n");break;
-     case    PyArray_FLOAT  : printf("PyArray_FLOAT *(float *)\n");break;
-     case    PyArray_DOUBLE : printf("PyArray_DOUBLE *(double *)\n");break;
+  case    PyArray_CHAR   : 
+    printf("PyArray_CHAR *(char *)\n");
+    break;
+  case    PyArray_SHORT  : 
+    printf("PyArray_SHORT *(short *)\n");
+    break;
+  case    PyArray_INT    : 
+    printf("PyArray_INT *(int  *)\n");
+    break;
+  case    PyArray_LONG   : 
+    printf("PyArray_LONG *(long *)\n");
+    break;
+  case    PyArray_FLOAT  : 
+    printf("PyArray_FLOAT *(float *)\n");
+    break;
+  case    PyArray_DOUBLE : 
+    printf("PyArray_DOUBLE *(double *)\n");
+    break;
 #ifdef PyArray_UNSIGNED_TYPES
-     case    PyArray_UBYTE  : printf("PyArray_UBYTE *(unsigned char *)\n");break;
-     case    PyArray_USHORT : printf("PyArray_USHORT *(unsigned short*)\n");break;
-     case    PyArray_UINT   : printf("PyArray_UINT *(unsigned int *)\n");break;
+  case    PyArray_UBYTE  : 
+    printf("PyArray_UBYTE *(unsigned char *)\n");
+    break;
+  case    PyArray_USHORT : 
+    printf("PyArray_USHORT *(unsigned short*)\n");
+    break;
+  case    PyArray_UINT   : 
+    printf("PyArray_UINT *(unsigned int *)\n");
+    break;
 #endif
      }
 }
@@ -109,8 +127,9 @@ static PyObject * roisum (PyObject *self, PyObject *args,  PyObject *keywds)
    int i,j,f,s,np;
    int xl,xh,yl,yh;
 
-   int verbose=0,type; /* whether to print stuff and the type of the input array */
-
+   int verbose=0,type; /* whether to print stuff and 
+			  the type of the input array */
+   
    static char *kwlist[] = {"data","xl","xh","yl","yh","verbose", NULL};
 
    double sum;
@@ -165,7 +184,8 @@ static PyObject * roisum (PyObject *self, PyObject *args,  PyObject *keywds)
 
    np=0;
 
-   for( i = xl ; i < xh ; i++ ){    /* i,j is looping along the indices data array */
+   for( i = xl ; i < xh ; i++ ){    /* i,j is looping along the 
+				       indices data array */
      for( j = yl ; j < yh ; j++ ){
 
        sum+=getval( getptr(dat,f,s,i,j),type); 
@@ -205,9 +225,12 @@ static char connectedpixels_doc[] =\
                               
 /* Fill in an image of peak assignments for pixels */
 
-static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *keywds)
+static PyObject * connectedpixels (PyObject *self, 
+				   PyObject *args,  
+				   PyObject *keywds)
 {
-  PyArrayObject *dataarray=NULL,*results=NULL; /* in (not modified) and out (modified) */
+  PyArrayObject *dataarray=NULL,*results=NULL; /* in (not modified) 
+						  and out (modified) */
 
   int i, j,  /* looping over pixels */
     k,       /* used in looping neighouring pixels */
@@ -218,7 +241,8 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
     ival; 
   int *T; /* for the disjoint set copy */
 
-  int verbose=0,type;   /* whether to print stuff and the type of the input array */
+  int verbose=0,type;   /* whether to print stuff and the 
+			   type of the input array */
   int percent,npover;    /* for the progress indicator in verbose mode */
   static char *kwlist[] = {
     "data",
@@ -237,10 +261,12 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
 				  &PyArray_Type, &dataarray,   /* array args */
 				  &PyArray_Type, &results,   /* array args */
 				  &threshold,
-				  &verbose))        /* threshold and optional verbosity */
+				  &verbose))        /* threshold and 
+						       optional verbosity */
     return NULL;
   if(verbose!=0){
-    printf("\n\nHello there from connected pixels, you wanted the verbose output...\n");
+    printf("\n\nHello there from connected pixels,"\
+	   "you wanted the verbose output...\n");
   }
 
   tv1=clock();  
@@ -285,7 +311,9 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
   }
   if (verbose!=0){
     printf("Fast index is %d, slow index is %d, ",f,s);
-    printf("strides[0]=%d, strides[1]=%d\n",dataarray->strides[0],dataarray->strides[1]);
+    printf("strides[0]=%d, strides[1]=%d\n",
+	   dataarray->strides[0],
+	   dataarray->strides[1]);
   }
 
   percent=(results->dimensions[s]-1)/80.0;
@@ -295,7 +323,8 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
   tv1point5=clock();   
   if(verbose!=0){
     time=(tv1point5-tv1)/CLOCKS_PER_SEC;
-    printf("Ready to scan image, setup took %g and clock is only good to ~0.015 seconds\n",time);
+    printf("Ready to scan image, setup took %g and "\
+	   "clock is only good to ~0.015 seconds\n",time);
   }
 
   if(verbose!=0)printf("Scanning image\n");
@@ -310,7 +339,7 @@ static PyObject * connectedpixels (PyObject *self, PyObject *args,  PyObject *ke
       curr = (int *) getptr(results,f,s,i,j);
       *curr = 0;
       
-      val = getval( getptr(dataarray,f,s,i,j),type);
+      val = getval( getptr(dataarray,f,s,i,j), type);
 	
       /* printf("curr %d val=%f",*curr,val); */
       if( val > threshold) {
@@ -470,7 +499,8 @@ static char blobproperties_doc[] =\
   "                          Int np , \n" \
   "                          Int verbose )\n"				\
   "\n"									\
-  "   Computes various properties of a blob image (created by connectedpixels)\n" \
+  "   Computes various properties of a blob image "\
+  "           (created by connectedpixels)\n" \
   "   data  = image data \n"						\
   "   blob  = integer peak assignments from connectedpixels \n"		\
   "   np    = number of peaks to treat \n"				\
@@ -479,7 +509,9 @@ static char blobproperties_doc[] =\
 
 
    
-static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *keywds)
+static PyObject * blobproperties (PyObject *self, 
+				  PyObject *args,  
+				  PyObject *keywds)
 {
    PyArrayObject *dataarray=NULL,*blobarray=NULL; /* in (not modified) */
 
@@ -490,7 +522,7 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
      "npeaks",
      "verbose", 
      NULL};
-   blob2d *res;
+   double *res;
    double fval;
    
    int np=0,verbose=0,type,f,s,peak,bad;
@@ -501,8 +533,8 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
    if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!i|i",kwlist,      
                         &PyArray_Type, &dataarray,   /* array args - data */
                         &PyArray_Type, &blobarray,   /* blobs */
-                        &np,              /* Number of peaks to treat */
-                        &verbose))        /* threshold and optional verbosity */
+                        &np,           /* Number of peaks to treat */
+                        &verbose))     /* optional verbosity */
       return NULL;
    
    /* Check array is two dimensional */
@@ -512,7 +544,8 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
      return NULL;
    }
    if(verbose!=0)printf("Welcome to blobproperties\n");
-   /* Check array is two dimensional and int - results from connectedpixels above */
+   /* Check array is two dimensional and int - 
+      results from connectedpixels above */
    if(blobarray->nd != 2 && blobarray->descr->type_num != PyArray_INT){     
      PyErr_SetString(PyExc_ValueError,
 		     "Blob array must be 2d and integer, second arg problem");
@@ -533,23 +566,32 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
 	    dataarray->strides[1]);
    }
    /* results arrays */
-   safelyneed[0]=NPROPERTY;
-   safelyneed[1]=np;
-   res = (blob2d*) malloc( safelyneed[1] * sizeof(blob2d) );
+   safelyneed[0]=np;
+   safelyneed[1]=NPROPERTY;
 
-   if( res == NULL){
+   results = (PyArrayObject *) PyArray_FromDims(2, 
+						safelyneed, 
+						PyArray_DOUBLE);
+
+   if( results == NULL){
      PyErr_SetString(PyExc_ValueError,
 		     "Malloc failed fo results");
      return NULL;
    }
-   if(verbose>0)printf("malloc'ed the structs\n");
-   
-   for ( i=0 ; i<safelyneed[1] ; i++) {
-     if(verbose>2)printf("i=%d \n",i);
-     new_blob((blob2d*)&res[i],0,0,0.0);  
+
+   if(verbose>0)printf("malloc'ed the results\n");
+
+   res = (double*)results->data;
+
+   /* Initialise the results */
+   for ( i=0 ; i<safelyneed[0] ; i++) {
+     for ( j=0 ; j<NPROPERTY; j++){
+       res[i*NPROPERTY+j]=0.;
+       res[i*NPROPERTY+bb_mn_f]=1.e9;
+       res[i*NPROPERTY+bb_mn_s]=1.e9;
+     }
    }
-   
-   
+      
    if(verbose!=0)printf("Got some space to put the results in\n");
 
    percent=(blobarray->dimensions[s]-1)/80.0;
@@ -567,7 +609,7 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
        if( peak > 0  && peak <=np ) {
 	 fval = getval(getptr(dataarray,f,s,i,j),type);
 	 /* printf("i,j,f,s,fval,peak %d %d %d %d %f %d\n",i,j,f,s,fval,peak); */
-	 add_pixel((blob2d*)&res[peak-1],i,j,fval);
+	 add_pixel( &res[NPROPERTY*(peak-1)] ,i,j,fval);
        }
        else{
 	 if(peak!=0){
@@ -583,31 +625,6 @@ static PyObject * blobproperties (PyObject *self, PyObject *args,  PyObject *key
      printf("\nFound %d bad pixels in the blob image\n",bad);
    }
 
-   
-   results = (PyArrayObject *) PyArray_FromDims(2, safelyneed, PyArray_DOUBLE);
-   if (results == NULL){
-     free(res);
-     return NULL;
-   }
-   for(i=0; i < safelyneed[1]; i++){
-     *(double*)getptr(results,0,1,i, 0)  = (res[i]).s_1;
-     *(double*)getptr(results,0,1,i, 1)  = (res[i]).s_I;
-     *(double*)getptr(results,0,1,i, 2)  = (res[i]).s_I2;
-     *(double*)getptr(results,0,1,i, 3)  = (res[i]).s_fI;
-     *(double*)getptr(results,0,1,i, 4)  = (res[i]).s_ffI;
-     *(double*)getptr(results,0,1,i, 5)  = (res[i]).s_sI;
-     *(double*)getptr(results,0,1,i, 6)  = (res[i]).s_ssI;
-     *(double*)getptr(results,0,1,i, 7)  = (res[i]).s_sfI;
-     *(double*)getptr(results,0,1,i, 8)  = (res[i]).mx_I;
-     *(double*)getptr(results,0,1,i, 9)  = (res[i]).mx_I_f;
-     *(double*)getptr(results,0,1,i, 10) = (res[i]).mx_I_s;
-     *(double*)getptr(results,0,1,i, 11) = (res[i]).bb_mx_f;
-     *(double*)getptr(results,0,1,i, 12) = (res[i]).bb_mx_s;
-     *(double*)getptr(results,0,1,i, 13) = (res[i]).bb_mn_f;
-     *(double*)getptr(results,0,1,i, 14) = (res[i]).bb_mn_s;
-   }
-   
-   free(res);
    
    return Py_BuildValue("O", PyArray_Return(results) ); 
 }
@@ -692,7 +709,9 @@ static PyObject * bloboverlaps (PyObject *self, PyObject *args,  PyObject *keywd
     printf("Scanning image, n1=%d n2=%d\n",n1,n2);
   }
   percent = b1->dimensions[s] / 100.;
-  for( i = 0 ; i <= (b1->dimensions[s]-1) ; i++ ){    /* i,j is looping along the indices data array */
+  for( i = 0 ; i <= (b1->dimensions[s]-1) ; i++ ){    /* i,j is looping 
+							 along the indices 
+							 of the data array */
     if(verbose!=0 && (i%percent == 0) )printf(".");
     for( j = 0 ; j <= (b1->dimensions[f]-1) ; j++ ){
       p1=* (int *) (b1->data + i*b1->strides[s] + j*b1->strides[f]);
@@ -701,13 +720,15 @@ static PyObject * bloboverlaps (PyObject *self, PyObject *args,  PyObject *keywd
       if (p2==0){ continue; } 
       /* Link contains the peak that this peak is */
       if(link[p1]<0 || link[p2+n1]<0){
-	printf("Whoops p1=%d p2=%d p2+n1=%d link[p1]=%d link[p2+n1]=%d",p1,p2,p2+n1,link[p1],link[p2+n1]);
+	printf("Whoops p1=%d p2=%d p2+n1=%d link[p1]=%d link[p2+n1]=%d",
+	       p1,p2,p2+n1,link[p1],link[p2+n1]);
 	return NULL;
       }
       /* printf("link[60]=%d %d %d ",link[60],p1,p2+n1);*/
       dset_makeunion(link,p1,p2+n1);
       /* printf("link[60]=%d ",link[60]); */
-      if(verbose>2)printf("link[p1=%d]=%d link[p2+n1=%d]=%d\n",p1,link[p1],p2+n1,link[p2+n1]);
+      if(verbose>2)printf("link[p1=%d]=%d link[p2+n1=%d]=%d\n",
+			  p1,link[p1],p2+n1,link[p2+n1]);
     } /* j */
   } /* i */
   if(verbose!=0){
@@ -830,7 +851,25 @@ void initconnectedpixels(void) {
    d=PyModule_GetDict(m);
    s=PyString_FromString(moduledocs);
    PyDict_SetItemString(d,"__doc__",s);
+#define str(x) (#x)
+   PyDict_SetItemString(d,str(s_1)    ,PyInt_FromLong(s_1));
+   PyDict_SetItemString(d,str(s_I)    ,PyInt_FromLong(s_I));
+   PyDict_SetItemString(d,str(s_I2)   ,PyInt_FromLong(s_I2));
+   PyDict_SetItemString(d,str(s_fI)   ,PyInt_FromLong(s_fI));
+   PyDict_SetItemString(d,str(s_ffI)  ,PyInt_FromLong(s_ffI));
+   PyDict_SetItemString(d,str(s_sI)   ,PyInt_FromLong(s_sI));
+   PyDict_SetItemString(d,str(s_ssI)  ,PyInt_FromLong(s_ssI));
+   PyDict_SetItemString(d,str(s_sfI)  ,PyInt_FromLong(s_sfI));
+   PyDict_SetItemString(d,str(mx_I)   ,PyInt_FromLong(mx_I));
+   PyDict_SetItemString(d,str(mx_I_f) ,PyInt_FromLong(mx_I_f));
+   PyDict_SetItemString(d,str(mx_I_s) ,PyInt_FromLong(mx_I_s));
+   PyDict_SetItemString(d,str(bb_mx_f),PyInt_FromLong(bb_mx_f));
+   PyDict_SetItemString(d,str(bb_mx_s),PyInt_FromLong(bb_mx_s));
+   PyDict_SetItemString(d,str(bb_mn_f),PyInt_FromLong(bb_mn_f));
+   PyDict_SetItemString(d,str(bb_mn_s),PyInt_FromLong(bb_mn_s));
+   PyDict_SetItemString(d,str(NPROPERTY),PyInt_FromLong(NPROPERTY));
    Py_DECREF(s);
    if(PyErr_Occurred())
      Py_FatalError("cant initialise connectedpixels");
 }
+

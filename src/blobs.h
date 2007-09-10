@@ -32,36 +32,35 @@ int dset_find(int x, int * S);
 
 int *S;
 
-typedef struct {
-
   /* Spot_ID - to be generated when writing out */
+enum {
+  s_1=0,       /* 1 Npix */
+  s_I,       /* 2 Sum intensity */
+  s_I2,      /* 3 Sum intensity^2 */
+  s_fI,      /* 4 Sum f * intensity */
+  s_ffI,     /* 5 Sum f * f* intensity */
+  s_sI,      /* 6 Sum s * intensity */
+  s_ssI,     /* 7 Sum s * s * intensity */
+  s_sfI,     /* 8 Sum f * s * intensity */
 
-  double s_1;       /* 1 Npix */
-  double s_I;       /* 2 Sum intensity */
-  double s_I2;      /* 3 Sum intensity^2 */
-  double s_fI;      /* 4 Sum f * intensity */
-  double s_ffI;     /* 5 Sum f * f* intensity */
-  double s_sI;      /* 6 Sum s * intensity */
-  double s_ssI;     /* 7 Sum s * s * intensity */
-  double s_sfI;     /* 8 Sum f * s * intensity */
+  mx_I,      /* 9  Max intensity */
+  mx_I_f,    /* 10 fast at Max intensity */
+  mx_I_s,    /* 11 slow at Max intensity */
 
-  double mx_I;      /* 9  Max intensity */
-  double mx_I_f;    /* 10 fast at Max intensity */
-  double mx_I_s;    /* 11 slow at Max intensity */
+  bb_mx_f,      /* 12 max of f */
+  bb_mx_s,      /* 13 max of s */
+  bb_mn_f,      /* 14 min of f */
+  bb_mn_s,      /* 15 min of s */ 
+  NPROPERTY     /* Number of properties if starting at 0 */
+} ;
 
-  double bb_mx_f;      /* 12 max of f */
-  double bb_mx_s;      /* 13 max of s */
-  double bb_mn_f;      /* 14 min of f */
-  double bb_mn_s;      /* 15 min of s */ 
-} blob2d;
 
-#define NPROPERTY 15
 
-void new_blob(blob2d*, int , int , double);
+/*void new_blob(double blob[], int i, int j, double val);*/
 
-void add_pixel(blob2d*, int , int , double);
+void add_pixel(double blob[], int i, int j, double val);
 
-void merge(blob2d*, blob2d *);
+void merge(double blob1[], double blob2[]);
 
 #endif /* _blobs_h */
 

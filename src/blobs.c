@@ -23,82 +23,62 @@
 #include <stdlib.h> /* malloc */
 #include <stdio.h>
 
-void new_blob(blob2d *b, int f, int s, double I){
-  /* printf("hello, %p,\n",b);  */
-  b->s_1   = 0;       /* Npix*/
-  b->s_I   = 0;       /* Sum intensity */
-  b->s_I2  = 0;       /* Sum intensity^2 */
-  b->s_fI  = 0;       /* Sum f * intensity */
-  b->s_ffI = 0;       /* Sum f * f* intensity */
-  b->s_sI  = 0;       /* Sum s * intensity */
-  b->s_ssI = 0;       /* Sum s * s * intensity */
-  b->s_sfI = 0;       /* Sum f * s * intensity */
 
-  
-  b->mx_I   = -1e9;    /* Max intensity */
-  b->mx_I_f = -1;      /* fast at Max intensity */
-  b->mx_I_s = -1;      /* slow at Max intensity */
+void add_pixel( double b[], int s, int f, double I){
+  b[s_1]   += 1;       /* Npix*/
+  b[s_I]   += I;       /* Sum intensity */
+  b[s_I2]  += I*I;     /* Sum intensity^2 */
+  b[s_fI]  += f*I;     /* Sum f * intensity */
+  b[s_ffI] += f*f*I;   /* Sum f * f* intensity */
+  b[s_sI]  += s*I;     /* Sum s * intensity */
+  b[s_ssI] += s*s*I;   /* Sum s * s * intensity */
+  b[s_sfI] += s*f*I;   /* Sum f * s * intensity */
 
-  b->bb_mx_f = -1;     /* max of f */
-  b->bb_mx_s = -1;     /* max of s */
-  b->bb_mn_f = 1e9;    /* min of f */
-  b->bb_mn_s = 1e9;    /* min of s */
-
-}
-
-void add_pixel( blob2d *b, int f, int s, double I){
-  b->s_1   += 1;       /* Npix*/
-  b->s_I   += I;       /* Sum intensity */
-  b->s_I2  += I*I;     /* Sum intensity^2 */
-  b->s_fI  += f*I;     /* Sum f * intensity */
-  b->s_ffI += f*f*I;   /* Sum f * f* intensity */
-  b->s_sI  += s*I;     /* Sum s * intensity */
-  b->s_ssI += s*s*I;   /* Sum s * s * intensity */
-  b->s_sfI += s*f*I;   /* Sum f * s * intensity */
-
-  if(I > b->mx_I){
-    b->mx_I   = I;     /* Max intensity */
-    b->mx_I_f = f;     /* fast at Max intensity */
-    b->mx_I_s = s;     /* slow at Max intensity */
+  if(I > b[mx_I]){
+    b[mx_I]   = I;     /* Max intensity */
+    b[mx_I_f] = f;     /* fast at Max intensity */
+    b[mx_I_s] = s;     /* slow at Max intensity */
   }
 
   
   /* Bounding box */
-  b->bb_mx_f = ((f > b->bb_mx_f)? f :  b->bb_mx_f );  
-  b->bb_mx_s = ((s > b->bb_mx_s)? s :  b->bb_mx_s );  
-  b->bb_mn_f = ((f < b->bb_mn_f)? f :  b->bb_mn_f );  
-  b->bb_mn_s = ((s < b->bb_mn_s)? s :  b->bb_mn_s );  
+  b[bb_mx_f] = ((f > b[bb_mx_f])? f :  b[bb_mx_f] );  
+  b[bb_mx_s] = ((s > b[bb_mx_s])? s :  b[bb_mx_s] );  
+  b[bb_mn_f] = ((f < b[bb_mn_f])? f :  b[bb_mn_f] );  
+  b[bb_mn_s] = ((s < b[bb_mn_s])? s :  b[bb_mn_s] );  
 
 }
 
 
-void merge(blob2d *b1, blob2d *b2){
+void merge(double b1[], double b2[]){
   /* b2 is killed, b1 is kept */ 
+  int i;
 
-  b1->s_1   += b2->s_1;         /* Npix*/
-  b1->s_I   += b2->s_I;         /* Sum intensity */
-  b1->s_I2  += b2->s_I2;        /* Sum intensity^2 */
-  b1->s_fI  += b2->s_fI;        /* Sum f * intensity */
-  b1->s_ffI += b2->s_ffI;       /* Sum f * f* intensity */
-  b1->s_sI  += b2->s_sI;        /* Sum s * intensity */
-  b1->s_ssI += b2->s_ssI;       /* Sum s * s * intensity */
-  b1->s_sfI += b2->s_sfI;       /* Sum f * s * intensity */
+  b1[s_1]   += b2[s_1];         /* Npix*/
+  b1[s_I]   += b2[s_I];         /* Sum intensity */
+  b1[s_I2]  += b2[s_I2];        /* Sum intensity^2 */
+  b1[s_fI]  += b2[s_fI];        /* Sum f * intensity */
+  b1[s_ffI] += b2[s_ffI];       /* Sum f * f* intensity */
+  b1[s_sI]  += b2[s_sI];        /* Sum s * intensity */
+  b1[s_ssI] += b2[s_ssI];       /* Sum s * s * intensity */
+  b1[s_sfI] += b2[s_sfI];       /* Sum f * s * intensity */
 
-  if(b2->mx_I > b1->mx_I){
-    b1->mx_I   = b2->mx_I;      /* Max intensity */
-    b1->mx_I_f = b2->mx_I_f;    /* fast at Max intensity */
-    b1->mx_I_s = b2->mx_I_s;    /* slow at Max intensity */
+  if(b2[mx_I] > b1[mx_I]){
+    b1[mx_I]   = b2[mx_I];      /* Max intensity */
+    b1[mx_I_f] = b2[mx_I_f];    /* fast at Max intensity */
+    b1[mx_I_s] = b2[mx_I_s];    /* slow at Max intensity */
   }
 
   
   /* Bounding box */
-  b1->bb_mx_f = ((b2->bb_mx_f > b1->bb_mx_f)? b2->bb_mx_f :  b1->bb_mx_f );  
-  b1->bb_mx_s = ((b2->bb_mx_s > b1->bb_mx_s)? b2->bb_mx_s :  b1->bb_mx_s );  
-  b1->bb_mn_f = ((b2->bb_mn_f < b1->bb_mn_f)? b2->bb_mn_f :  b1->bb_mn_f );  
-  b1->bb_mn_s = ((b2->bb_mn_s < b1->bb_mn_s)? b2->bb_mn_s :  b1->bb_mn_s );  
+  b1[bb_mx_f] = ((b2[bb_mx_f] > b1[bb_mx_f])? b2[bb_mx_f] :  b1[bb_mx_f] );  
+  b1[bb_mx_s] = ((b2[bb_mx_s] > b1[bb_mx_s])? b2[bb_mx_s] :  b1[bb_mx_s] );  
+  b1[bb_mn_f] = ((b2[bb_mn_f] < b1[bb_mn_f])? b2[bb_mn_f] :  b1[bb_mn_f] );  
+  b1[bb_mn_s] = ((b2[bb_mn_s] < b1[bb_mn_s])? b2[bb_mn_s] :  b1[bb_mn_s] );  
 
   /* Trash b2 to be on the safe side */
-  new_blob(b2,0,0,0.0);
+  for(i=0;i<NPROPERTY;i++)b2[i]=0;
+
 
 }
 
