@@ -204,6 +204,7 @@ class test_blobproperties(unittest.TestCase):
             
 class testbloboverlaps(unittest.TestCase):
     def test1(self):
+        import sys
         data1 =  n.array([[ 1, 0, 1, 0, 0, 0, 0],
                           [ 1, 0, 1, 0, 0, 0, 0],
                           [ 1, 0, 1, 1, 0, 0, 0],
@@ -216,20 +217,90 @@ class testbloboverlaps(unittest.TestCase):
                           [ 0, 0, 0, 0, 2, 0, 2]])
         bl2 = n.zeros(data2.shape)
         np2 = connectedpixels.connectedpixels(data2,bl2,0.1)
-
         r1 = connectedpixels.blobproperties(data1, bl1, np1)
-
         r2 = connectedpixels.blobproperties(data2, bl2, np2)
-        
-        print r1
-        print r2
+
         connectedpixels.bloboverlaps(bl1,np1,r1, 
                                      bl2,np2,r2, verbose=0)
-        err = n.sum(n.ravel(r2))
-        print r1
-        print r2
+        # check r1 is zeroed
+        err = n.sum(n.ravel(r1))
         self.assertAlmostEqual(err,0.,6)
+        from ImageD11.connectedpixels import s_1, s_I, s_I2, \
+            s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
+            bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
+            mx_I, mx_I_f, mx_I_s 
+        # check total pixels
+        self.assertAlmostEqual(r2[0,s_1], 18.0, 6)
+        self.assertAlmostEqual(r2[0,s_I], 26.0, 6)
+        self.assertAlmostEqual(r2[0,bb_mn_f], 0.0, 6)
+        self.assertAlmostEqual(r2[0,bb_mx_f], 6.0, 6)
+        self.assertAlmostEqual(r2[0,bb_mn_s], 0.0, 6)
+        self.assertAlmostEqual(r2[0,bb_mx_s], 3.0, 6)
         
+    def test2(self):
+        import sys
+        data1 =  n.array([[ 1, 0, 0, 0, 0, 1, 1],
+                          [ 1, 0, 2, 0, 0, 1, 1],
+                          [ 1, 0, 2, 2, 0, 0, 0],
+                          [ 0, 0, 2, 0, 0, 0, 0]])
+        bl1 = n.zeros(data1.shape)
+        np1 = connectedpixels.connectedpixels(data1,bl1,0.1)
+        data2 =  n.array([[ 0, 0, 0, 0, 2, 0, 0],
+                          [ 0, 0, 0, 0, 2, 2, 0],
+                          [ 0, 0, 0, 2, 0, 0, 0],
+                          [ 0, 0, 0, 0, 0, 0, 0]])
+        bl2 = n.zeros(data2.shape)
+        np2 = connectedpixels.connectedpixels(data2,bl2,0.1)
+        r1 = connectedpixels.blobproperties(data1, bl1, np1)
+        r2 = connectedpixels.blobproperties(data2, bl2, np2)
+
+        connectedpixels.bloboverlaps(bl1,np1,r1, 
+                                     bl2,np2,r2, verbose=0)
+        # check which peaks are zeroed
+        self.assertAlmostEqual(n.sum(r1[1]),0.,6)
+        self.assertAlmostEqual(n.sum(r1[2]),0.,6)
+
+        from ImageD11.connectedpixels import s_1, s_I, s_I2, \
+            s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
+            bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
+            mx_I, mx_I_f, mx_I_s 
+        self.assertAlmostEqual(r1[0,s_1], 3, 6)
+        self.assertAlmostEqual(r1[0,s_I], 3, 6)
+        
+        # check total pixels
+        self.assertAlmostEqual(r2[0,s_1], 12.0, 6)
+        self.assertAlmostEqual(r2[0,s_I], 20.0, 6)
+        
+    def test3(self):
+        import sys
+        data1 =  n.array([[ 0, 0, 0, 0, 0, 0, 0],
+                          [ 0, 0, 0, 0, 0, 0, 0],
+                          [ 0, 1, 1, 1, 1, 1, 0],
+                          [ 0, 0, 0, 0, 0, 0, 0]])
+        bl1 = n.zeros(data1.shape)
+        np1 = connectedpixels.connectedpixels(data1,bl1,0.1)
+        data2 =  n.array([[ 0, 0, 0, 0, 0, 0, 0],
+                          [ 0, 2, 0, 0, 0, 2, 0],
+                          [ 0, 2, 0, 0, 0, 2, 0],
+                          [ 0, 2, 0, 0, 0, 2, 0]])
+        bl2 = n.zeros(data2.shape)
+        np2 = connectedpixels.connectedpixels(data2,bl2,0.1)
+        r1 = connectedpixels.blobproperties(data1, bl1, np1)
+        r2 = connectedpixels.blobproperties(data2, bl2, np2)
+
+        connectedpixels.bloboverlaps(bl1,np1,r1, 
+                                     bl2,np2,r2, verbose=0)
+
+        # check which peaks are zeroed
+        self.assertAlmostEqual(n.sum(r1[0]),0.,6)
+        # Results pile up all in r2[0]
+        self.assertAlmostEqual(n.sum(r2[1]),0.,6)
+        from ImageD11.connectedpixels import s_1, s_I, s_I2, \
+            s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
+            bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
+            mx_I, mx_I_f, mx_I_s 
+        self.assertAlmostEqual(r2[0,s_1],11, 6)
+        self.assertAlmostEqual(r2[0,s_I],17, 6)
         
 
     

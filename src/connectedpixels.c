@@ -638,7 +638,8 @@ static PyObject * blobproperties (PyObject *self,
 
 static char bloboverlaps_doc[] =\
 "   success = bloboverlaps (   Numeric.array(blob1, 2D, Int), n1  , res1 \n"\
-"                              Numeric.array(blob2, 2D, Int), n2  , res2, verbose=0) \n"\
+"                              Numeric.array(blob2, 2D, Int), n2  , res2,\n"\
+"                               verbose=0) \n"\
 " \n"\
 " merges the results from blob1/res1 into blob2/res2\n"\
 " blob1 would be the previous image from the series, with its results\n"\
@@ -657,6 +658,7 @@ static PyObject * bloboverlaps (PyObject *self,
   int i,j,s,f, verbose ; /* loop vars, flag */
   int p1,p2,n1,n2; /* peak num and npeaks in each */
   int *link , percent, safelyneed;
+  int ipk, jpk;
   double *res1, *res2;
   static char *kwlist[] = {
     "blob1",
@@ -734,7 +736,7 @@ static PyObject * bloboverlaps (PyObject *self,
   
   for(i=0;i<safelyneed;i++){link[i]=i;} /* first image */
   /* flag the start of image number 2 */
-  link[n1+1]=-99999; /* ==n2=0 Should never be touched by anyone */
+  link[n2+1]=-99999; /* ==n2=0 Should never be touched by anyone */
   
   /* results lists of pairs of numbers */
   if(verbose!=0){
@@ -750,36 +752,61 @@ static PyObject * bloboverlaps (PyObject *self,
       p2 = * (int *) getptr(b2,f,s,i,j);
       if ( p2 == 0 ){ continue; } 
       /* Link contains the peak that this peak is */
-      if(link[p1]<0 || link[p2+n1+1]<0){
+      if(link[p2] < 0 || link[p1+n2+1]<0){
 	printf("Whoops p1=%d p2=%d p2+n1=%d link[p1]=%d link[p2+n1]=%d\n",
 	       p1,p2,p2+n1,link[p1],link[p2+n1+1]);
 	return NULL;
       }
-      /* printf("link[60]=%d %d %d ",link[60],p1,p2+n1);*/
-      dset_makeunion(link, p1, p2+n1+1);
+      if(verbose>2)printf("p1 %d p2 %d\n",p1,p2);
+      dset_makeunion(link, p2, p1+n2+1);
       /* printf("link[60]=%d ",link[60]); */
-      if(verbose>2)printf("link[p1=%d]=%d link[p2+n1=%d]=%d\n",
-			  p1,link[p1],p2+n1+1,link[p2+n1+1]);
+      if(verbose>2)printf("link[p2=%d]=%d link[p1+n2=%d]=%d\n",
+			  p2,link[p2],p2+n1+1,link[p1+n2+1]);
     } /* j */
   } /* i */
-  
+  if(verbose)printf("Finished scanning blob images\n");
   for(i=1; i < safelyneed; i++){
-    if(link[i] != i && i != n1+1){
+    if(link[i] != i && i != n2+1){
       j = dset_find(i, link);
       if(verbose>1){
-	printf("i= %d link[i]= %d j= %d\n",i,link[i],j);
+	printf("i= %d link[i]= %d j= %d n1= %d n2=%d \n",i,link[i],j, n1,n2);
       }
-      if( i < (n1+n2+3) && j < (n2+1) && i>0 && j>0 ){
-	/* i from first image - j on second */
-	  merge( &res2[NPROPERTY*(j-1)], &res1[NPROPERTY*(i-1)] );
+      if(i > n2+1 && j<n2+1){
+	/* linking between images */
+	jpk = j-1;
+	ipk = i-n2-2;
+	if(jpk<0 || jpk>r2->dimensions[0])printf("bounds jpk %d",jpk);
+	if(ipk<0 || ipk>r1->dimensions[0])printf("bounds ipk %d",ipk);
+	merge( &res2[NPROPERTY*jpk], &res1[NPROPERTY*ipk] );
+	if(verbose>2)printf("merged ipk %d jpk %d\n",ipk,jpk);
+	continue;
       }
-      else{
-	printf("bad logic in bloboverlaps\n");
-	return NULL;
-      }  
+      if(i > n2+1 && j>n2+1){
+	/* linking on same image */
+	jpk = j-n2-2;
+	ipk = i-n2-2;
+	if(jpk<0 || jpk>r1->dimensions[0])printf("bounds jpk %d",jpk);
+	if(ipk<0 || ipk>r1->dimensions[0])printf("bounds ipk %d",ipk);
+	merge( &res1[NPROPERTY*jpk], &res1[NPROPERTY*ipk] );
+	if(verbose>2)printf("merged ipk %d jpk %d\n",ipk,jpk);
+	continue;
+      }
+      if(i < n2+1 && j < n2+1){
+	/* linking on same image */
+	jpk = j-1;
+	ipk = i-1;
+	if(jpk<0 || jpk>r2->dimensions[0])printf("bounds jpk %d",jpk);
+	if(ipk<0 || ipk>r1->dimensions[0])printf("bounds ipk %d",ipk);
+	merge( &res2[NPROPERTY*jpk], &res2[NPROPERTY*ipk] );
+	if(verbose>2)printf("merged check ipk %d jpk %d\n",ipk,jpk);
+	continue;
+      }
+      printf("bad logic in bloboverlaps\n");
+      return NULL;
+      
     }
   }
-  
+
 
 
   if(verbose!=0){
@@ -790,7 +817,8 @@ static PyObject * bloboverlaps (PyObject *self,
       }
     }
   }
-
+  free(link);
+  if(verbose)printf("returning from bloboverlaps\n");
   Py_INCREF(Py_None);
   return Py_None;
 }
