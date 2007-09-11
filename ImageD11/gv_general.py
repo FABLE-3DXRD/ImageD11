@@ -1,6 +1,7 @@
 
 
 
+
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 
@@ -226,7 +227,7 @@ def g_to_k( g,  # g-vectors [3,:]
     assert rbda0.shape == rbda1.shape == rbda2.shape == (g.shape[1],)
     modg = n.sqrt(n.sum(g * g, 0))
     kdotbeam = -modg*modg/2.
-    print kdotbeam,"uyou"
+    # print kdotbeam,"uyou"
     # k.b = rbda0 + rbda1.sin(t) + rbda2.cos(t)
     a = rbda1
     b = rbda2

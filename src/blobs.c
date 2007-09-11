@@ -25,6 +25,8 @@
 
 
 void add_pixel( double b[], int s, int f, double I, double o){
+
+
   b[s_1]   += 1;       /* Npix*/
   b[s_I]   += I;       /* Sum intensity */
   b[s_I2]  += I*I;     /* Sum intensity^2 */
@@ -34,6 +36,7 @@ void add_pixel( double b[], int s, int f, double I, double o){
   b[s_ssI] += s*s*I;   /* Sum s * s * intensity */
   b[s_sfI] += s*f*I;   /* Sum f * s * intensity */
   b[s_oI]  += o*I;     /* Sum o * intensity */
+  b[s_ooI] += o*o*I;   /* Sum o * intensity */
   b[s_soI] += s*o*I;   /* Sum s * o * intensity */
   b[s_foI] += f*o*I;   /* Sum f * o * intensity */
 
@@ -71,6 +74,7 @@ void merge(double b1[], double b2[]){
   b1[s_ssI] += b2[s_ssI];       /* Sum s * s * intensity */
   b1[s_sfI] += b2[s_sfI];       /* Sum f * s * intensity */
   b1[s_oI]  += b2[s_oI];        /* Sum o * intensity */
+  b1[s_ooI] += b2[s_ooI];       /* Sum o * intensity */
   b1[s_soI] += b2[s_soI];       /* Sum s * o * intensity */
   b1[s_foI] += b2[s_foI];       /* Sum f * o * intensity */
   

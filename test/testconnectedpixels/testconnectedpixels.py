@@ -1,4 +1,5 @@
 
+
 from ImageD11 import connectedpixels
 
 
@@ -92,6 +93,7 @@ class test_blobproperties(unittest.TestCase):
   s_ssI,     /* 7 Sum s * s * intensity */
   s_sfI,     /* 8 Sum f * s * intensity */
   s_oI,         /* 9 sum omega * intensity */ 
+  s_ooI,        /*  */
   s_soI,        /* 10 sum omega * s * intensity */
   s_foI,        /* 11 sum omega * f * intensity */
   mx_I,      /* 12  Max intensity */
@@ -128,16 +130,20 @@ class test_blobproperties(unittest.TestCase):
             self.assertEqual(np,1)
             err = n.sum(n.ravel(data-bl))
             self.assertEqual(err, 7) # 8-1
-            res = connectedpixels.blobproperties(data, bl, np)
+            res = connectedpixels.blobproperties(data, 
+                                                 bl, 
+                                                 np, 
+                                                 omega=22.)
             from ImageD11.connectedpixels import s_1, s_I, s_I2, \
                 s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
                 bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
-                mx_I, mx_I_f, mx_I_s 
+                mx_I, mx_I_f, mx_I_s, mx_I_o
             #            print res,res.shape
             self.assertAlmostEqual(res[0][s_1],10)
             self.assertAlmostEqual(res[0][mx_I],8)
             self.assertAlmostEqual(res[0][mx_I_f],1)
             self.assertAlmostEqual(res[0][mx_I_s],2)
+            self.assertAlmostEqual(res[0][mx_I_o],22)
 
 
 

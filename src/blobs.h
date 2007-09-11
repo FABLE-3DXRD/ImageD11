@@ -43,20 +43,21 @@ enum {
   s_ssI,     /* 7 Sum s * s * intensity */
   s_sfI,     /* 8 Sum f * s * intensity */
   s_oI,         /* 9 sum omega * intensity */ 
-  s_soI,        /* 10 sum omega * s * intensity */
-  s_foI,        /* 11 sum omega * f * intensity */
+  s_ooI,        /* 10 sum omega2 * intensity */ 
+  s_soI,        /* 11 sum omega * s * intensity */
+  s_foI,        /* 12 sum omega * f * intensity */
 
-  mx_I,      /* 12  Max intensity */
-  mx_I_f,    /* 13 fast at Max intensity */
-  mx_I_s,    /* 14 slow at Max intensity */
-  mx_I_o,    /* 15 omega at max I */
+  mx_I,      /* 13  Max intensity */
+  mx_I_f,    /* 14 fast at Max intensity */
+  mx_I_s,    /* 15 slow at Max intensity */
+  mx_I_o,    /* 16 omega at max I */
 
-  bb_mx_f,      /* 16 max of f */
-  bb_mx_s,      /* 17 max of s */
-  bb_mx_o,      /* 18 max of omega */
-  bb_mn_f,      /* 19 min of f */
-  bb_mn_s,      /* 20 min of s */
-  bb_mn_o,      /* 21 min of o */  
+  bb_mx_f,      /* 17 max of f */
+  bb_mx_s,      /* 18 max of s */
+  bb_mx_o,      /* 19 max of omega */
+  bb_mn_f,      /* 20 min of f */
+  bb_mn_s,      /* 21 min of s */
+  bb_mn_o,      /* 22 min of o */  
 
   NPROPERTY     /* Number of properties if starting at 0 */
 } ;

@@ -1,6 +1,7 @@
 
 
 
+
 /*
 # ImageD11_v1.0 Software for beamline ID11
 # Copyright (C) 2005-2007  Jon Wright
@@ -532,7 +533,7 @@ static PyObject * blobproperties (PyObject *self,
    int i,j, percent;
    int safelyneed[3];
    
-   if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!i|fi",kwlist,      
+   if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!i|di",kwlist,      
 				   &PyArray_Type, 
 				   &dataarray,   /* array args - data */
 				   &PyArray_Type, 
@@ -541,7 +542,9 @@ static PyObject * blobproperties (PyObject *self,
 				   &omega, /* omega angle - put 0 if unknown */
 				   &verbose))     /* optional verbosity */
       return NULL;
-   
+
+   if(verbose)printf("omega = %f",omega);
+
    /* Check array is two dimensional */
    if(dataarray->nd != 2){     
      PyErr_SetString(PyExc_ValueError,
@@ -614,7 +617,7 @@ static PyObject * blobproperties (PyObject *self,
        if( peak > 0  && peak <=np ) {
 	 fval = getval(getptr(dataarray,f,s,i,j),type);
 	 /* printf("i,j,f,s,fval,peak %d %d %d %d %f %d\n",i,j,f,s,fval,peak); */
-	 add_pixel( &res[NPROPERTY*(peak-1)] ,i,j,fval, omega);
+	 add_pixel( &res[NPROPERTY*(peak-1)] ,i , j ,fval , omega);
        }
        else{
 	 if(peak!=0){
@@ -943,6 +946,7 @@ void initconnectedpixels(void) {
    PyDict_SetItemString(d,str(s_ssI)  ,PyInt_FromLong(s_ssI));
    PyDict_SetItemString(d,str(s_sfI)  ,PyInt_FromLong(s_sfI));
    PyDict_SetItemString(d,str(s_oI)   ,PyInt_FromLong(s_oI));
+   PyDict_SetItemString(d,str(s_ooI)  ,PyInt_FromLong(s_ooI));
    PyDict_SetItemString(d,str(s_soI)  ,PyInt_FromLong(s_soI));
    PyDict_SetItemString(d,str(s_foI)  ,PyInt_FromLong(s_foI));
    PyDict_SetItemString(d,str(mx_I)   ,PyInt_FromLong(mx_I));
