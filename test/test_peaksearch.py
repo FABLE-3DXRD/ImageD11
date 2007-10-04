@@ -15,7 +15,7 @@ def w(name,image,omega=0):
     f.write("{%1021s}\n"%("""Omega = %.2f ;\n Dim_1 = 256 ;\n Dim_2 = 256 ; 
     DataType = UnsignedShort ;
     ByteOrder = LowByteFirst ;
-    
+    Image = 1 ;
     
     
     \n\n"""%(omega)))

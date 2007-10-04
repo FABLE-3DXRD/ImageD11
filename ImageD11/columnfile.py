@@ -1,4 +1,11 @@
 
+"""
+columnfile represents an ascii file with titles begining "#"
+and multiple lines of data
+
+An equals sign "=" on a "#" line implies a parameter = value pair
+"""
+
 
 # ImageD11_v1.0 Software for beamline ID11
 # Copyright (C) 2005-2007  Jon Wright
@@ -58,38 +65,48 @@ FORMATS = {}
 
 # Make a dictionary for formatstrings when writing files
 for f in FLOATS: 
-    FORMATS[f] = "%.4f"
+    FORMATS[f] = "%.4f" 
 for f in INTS:
     FORMATS[f] = "%.0f"
 
-def clean(sl): 
+def clean(str_lst): 
     """ trim whitespace from titles """
-    return [s.lstrip().rstrip() for s in sl]
+    return [s.lstrip().rstrip() for s in str_lst] 
 
 class columnfile:
+    """
+    Class to represent an ascii file containing multiple named columns
+    """
     def __init__(self, filename):
         self.filename = filename
+        self.bigarray = None
+        self.titles = []
+        self.parameters = parameters.parameters(filename=filename)
+        self.ncols = 0
+        self.nrows = 0
         self.readfile(filename)
+
+
 
     def writefile(self, filename):
         """
         write an ascii columned file
         """
         self.parameters.saveparameters(filename)
-        fo = open(filename,"w+") # appending
-        fo.write("#")
-        fs = ""
-        for t in self.titles:
-            fo.write("  %s"%(t))
+        fout = open(filename,"w+") # appending
+        fout.write("#")
+        format_str = ""
+        for title in self.titles:
+            fout.write("  %s"%(title))
             try:
-                fs += "  %s"%(FORMATS[t])
+                format_str += "  %s" % (FORMATS[title])
             except KeyError:
-                fs += "  %f"
-        fo.write("\n")
-        fs += "\n"
+                format_str += "  %f"
+        fout.write("\n")
+        format_str += "\n"
         for i in range(self.nrows):
-            fo.write(fs % tuple(self.bigarray[:,i]))
-        fo.close()
+            fout.write(format_str % tuple( self.bigarray[:, i]) )
+        fout.close()
 
     def readfile(self, filename):
         """
@@ -97,9 +114,9 @@ class columnfile:
         """
         self.titles = []
         self.bigarray = None
+        self.parameters = parameters.parameters(filename=filename)
         self.ncols = 0
         self.nrows = 0
-        self.parameters = parameters.parameters(filename=filename)
         data = []
         i = 0
         try:
@@ -131,11 +148,11 @@ class columnfile:
                 raise Exception("Badly formatted column file\n"\
                                     "expecting %d columns, got %d\n"\
                                     " line %d in file %s"%
-                                (self.nvalues,len(vals),
-                                 i,self.filename))
+                                (self.ncols, len(vals),
+                                 i, self.filename))
             self.nrows += 1
             data.append(vals)
-        self.bigarray=n.transpose(n.array(data))
+        self.bigarray = n.transpose(n.array(data))
         assert self.bigarray.shape == (self.ncols, self.nrows)
         self.set_attributes()
 
@@ -143,9 +160,9 @@ class columnfile:
         """
         Set object vars to point into the big array
         """
-        for t,i in zip(self.titles,range(len(self.titles))):
-            setattr(self, t, self.bigarray[i])
-            assert getattr(self,t).shape == (self.nrows,)
+        for title, i in zip(self.titles, range(len(self.titles))):
+            setattr(self, title, self.bigarray[i])
+            assert getattr(self, title).shape == (self.nrows,)
 
     def filter(self, mask):
         """

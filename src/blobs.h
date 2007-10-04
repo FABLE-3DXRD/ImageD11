@@ -59,8 +59,24 @@ enum {
   bb_mn_s,      /* 21 min of s */
   bb_mn_o,      /* 22 min of o */  
 
+
+  avg_i,   /* Average intensity */   
+  f_raw,       /* fast centre of mass */
+  s_raw,       /* slow centre of mass */
+  o_raw,       /* omega centre of mass */
+  f_cen,  /* Filled in elsewhere */
+  s_cen,  /* ditto */
+  m_ss,   /* moments */
+  m_ff,
+  m_oo,
+  m_sf,
+  m_so,
+  m_fo,
+
   NPROPERTY     /* Number of properties if starting at 0 */
 } ;
+
+
 
 
 
@@ -70,5 +86,6 @@ void add_pixel(double blob[], int i, int j, double val, double omega);
 
 void merge(double blob1[], double blob2[]);
 
+void compute_moments(double blobs[], int nblobs);
 #endif /* _blobs_h */
 

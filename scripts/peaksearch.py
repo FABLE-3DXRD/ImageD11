@@ -42,11 +42,16 @@ reallystart = time.time()
 
 from math import sqrt
 import sys , glob , os.path
+
 from ImageD11 import blobcorrector
-from ImageD11 import opendata
-from ImageD11 import connectedpixels
-from ImageD11 import labelimage
+from ImageD11.labelimage import labelimage
 import numpy.oldnumeric as Numeric
+
+
+# Generic file format opener from fabio
+from fabio.openimage import openimage
+from fabio import file_series
+
 
 
 class timer:
@@ -65,10 +70,7 @@ class timer:
 OMEGA = 0
 OMEGASTEP = 1.0
 
-def peaksearch( filename    ,
-                corrector   ,
-                thresholds  ,
-                outputfile  ):
+def localpeaksearch( filename , corrector , thresholds , outputfile , dark = None, flood = None):
     """
     file_series : fabio file series object, supports iteration
     
@@ -79,31 +81,25 @@ def peaksearch( filename    ,
     outputfile : the 2d output file, name+".spt"
                : the 3d output files name+"_threshold.flt"
     """
+    print "dark,flood,",dark,flood
     t = timer()
     f = open(outputfile,"aq") # Open the output file for appending
     # Assumes an edf file for now - TODO - should be independent
-    
     try:
-        data_object = fabio.
-opendata.opendata(filename)
+        data_object = openimage(filename)
     except:
         sys.stdout.write(filename+" not found\n")
         return 0
+
     picture = data_object.data
-    # picture is (hopefully) a 2D Numeric array of type UInt16
-    # t.tick("read")
-    #if dark != None:
-        # Slows down timing but avoid overflows
-        # print "Subtracting dark,",picture[0,0]
-        # print picture.shape,picture.dtype.char,dark.shape,dark.dtype.char
-        # pass  ## #picture.savespace(0) # avoid overflows - very slow and silly
-        #picture = picture.astype(Numeric.Int)-dark  
-        # print "Subtracted dark,",picture[0,0]
-    # t.tick("dark")
-    #if flood != None:
-        #picture = picture/flood
+    # picture is a 2D array
+    t.tick("read")
+    if dark != None:
+        picture = picture - dark  
+    t.tick("dark")
+    if flood != None:
+        picture = picture/flood
     t.tick(filename+" io/cor") # Progress indicator
-    #print "datatype for searching", picture.dtype.char    #
     # Transfer header information to output file
     # Also information on spatial correction applied
     f.write("\n\n# File %s\n" % (filename))
@@ -129,23 +125,23 @@ opendata.opendata(filename)
         if labelim.shape != picture.shape:
             raise "Incompatible blobimage buffer for file %s" %(filename)
         #
-        npks = 0
-        #
-        # Do the peaksearch
-        np = labelim.peaksearch(picture,threshold,dark=dark,flood=flood)
-        #
         try:
             ome = float(data_object.header["Omega"])
         except: # Might have imagenumber or something??
             global OMEGA
             ome = OMEGA
             OMEGA += OMEGASTEP
-        props = labelim.properties(picture,ome,dark=dark,flood=flood)
-        npi, isum, sumsq, com0, com1, com00, com01, com11, omisum = props
+        npks = 0
+        #
+        # Do the peaksearch
+        labelim.peaksearch(picture, threshold, ome)
+        #
+        props = labelim.properties(picture,ome)
         # omisum is omega * isum
         # Now write results out for this threshold level
         f.write("\n#Threshold level %f\n" % (threshold))
         f.write( "# Number_of_pixels Average_counts    x   y     xc   yc      sig_x sig_y cov_xy\n")
+
         outstrfmt = "%d  %f    %f %f    %f %f    %f %f %f\n"
         for  i in range(len(npi)): # Loop over peaks
             if npi[i]>=1:    # Throw out one pixel peaks (div zero)
@@ -273,7 +269,7 @@ if __name__=="__main__":
         if len(files)==0:
             raise "No files found for stem %s" % (stem)
         li_objs={} # label image objects, dict of
-        s = opendata.opendata(files[0]).data.shape # data array shape
+        s = openimage(files[0]).data.shape # data array shape
         # Create label images
         for t in thresholds_list:
             mergefile="%s_merge_t%d"%(options.outfile,t)
@@ -301,8 +297,11 @@ if __name__=="__main__":
         start = time.time()
         print "File being treated in -> out, elapsed time"
         for filein in files:
-            peaksearch(filein, outfile, corrfunc, li_objs, \
-                       thresholds_list,dark=darkimage,flood=floodimage)
+            print "hello jon, me talking",darkimage, floodimage
+            print thresholds_list,li_objs,corrfunc,outfile,filein
+
+            localpeaksearch(filein, outfile, corrfunc, li_objs, \
+                        thresholds_list,flood=floodimage)
         for t in thresholds_list:
             li_objs[t].finalize()
     except:

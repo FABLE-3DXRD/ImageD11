@@ -106,6 +106,18 @@ class test_blobproperties(unittest.TestCase):
   bb_mn_f,      /* 19 min of f */
   bb_mn_s,      /* 20 min of s */
   bb_mn_o,      /* 21 min of o */  
+  avg_i,   /* Average intensity */   
+  f_raw,       /* fast centre of mass */
+  s_raw,       /* slow centre of mass */
+  o_raw,       /* omega centre of mass */
+  f_cen,  /* Filled in elsewhere */
+  s_cen,  /* ditto */
+  m_ss,   /* moments */
+  m_ff,
+  m_oo,
+  m_sf,
+  m_so,
+  m_fo,
   NPROPERTY,     /* Number of properties if starting at 0 */ """
         namelist = [n.split(",")[0].lstrip().rstrip() 
                     for n in names.split("\n")]

@@ -230,7 +230,7 @@ static PyObject * connectedpixels (PyObject *self,
 				   PyObject *args,  
 				   PyObject *keywds)
 {
-  PyArrayObject *dataarray=NULL,*results=NULL; /* in (not modified) 
+  PyArrayObject *dataarray=NULL, *results=NULL; /* in (not modified) 
 						  and out (modified) */
 
   int i, j,  /* looping over pixels */
@@ -637,6 +637,52 @@ static PyObject * blobproperties (PyObject *self,
    return Py_BuildValue("O", PyArray_Return(results) ); 
 }
 
+/* ===  res2human     ==========================================================*/ 
+
+static char blob_moments_doc [] =			\
+  "   None = blob_moments(Numeric.array(peaks1))\n"	\
+  "   \n"						\
+  "   Loop over array filling out moments from sums\n";
+
+static PyObject * blob_moments( PyObject *self,
+				PyObject *args,
+				PyObject *kwds){
+  PyArrayObject *r = NULL;
+  int verbose = 0 ;
+  static char *kwlist[] = {
+    "res",
+    "verbose",
+    NULL
+  };
+  if(!PyArg_ParseTupleAndKeywords(args, kwds, "O!|i", kwlist,
+				  &PyArray_Type, &r,
+				  &verbose))
+     return NULL;
+
+  if (r->dimensions[1] != NPROPERTY ||
+      r->descr->type_num != PyArray_DOUBLE ){
+    PyErr_SetString(PyExc_ValueError,
+		    "Results array looks corrupt\n");
+    return NULL;
+  }
+  if(verbose){
+    printf("Welcome to blob_moments\n");
+    printf("%p r->data\n\n",r->data);
+    printf("dim[0] = %d dim[1] = %d\n",r->dimensions[0], r->dimensions[1]);
+  }
+  compute_moments( (double *) r->data, r->dimensions[0] );
+
+  Py_INCREF(Py_None);
+  return Py_None;
+
+}
+
+
+/* ==============================================================================*/ 
+
+
+
+
 /* ==============================================================================*/ 
 
 static char bloboverlaps_doc[] =\
@@ -922,6 +968,9 @@ static PyMethodDef connectedpixelsMethods[] = {
   {"update_blobs", (PyCFunction) update_blobs,  
    METH_VARARGS | METH_KEYWORDS,
    update_blobs_doc},     
+  {"blob_moments", (PyCFunction) blob_moments,  
+   METH_VARARGS | METH_KEYWORDS,
+   blob_moments_doc},     
   {"roisum", (PyCFunction) roisum, 
    METH_VARARGS | METH_KEYWORDS,
    roisum_doc},
@@ -959,6 +1008,19 @@ void initconnectedpixels(void) {
    PyDict_SetItemString(d,str(bb_mn_f),PyInt_FromLong(bb_mn_f));
    PyDict_SetItemString(d,str(bb_mn_s),PyInt_FromLong(bb_mn_s));
    PyDict_SetItemString(d,str(bb_mn_o),PyInt_FromLong(bb_mn_o));
+
+   PyDict_SetItemString(d,str(avg_i),PyInt_FromLong(avg_i));
+   PyDict_SetItemString(d,str(f_raw),PyInt_FromLong(f_raw));
+   PyDict_SetItemString(d,str(s_raw),PyInt_FromLong(s_raw));
+   PyDict_SetItemString(d,str(f_cen),PyInt_FromLong(f_cen));
+   PyDict_SetItemString(d,str(s_cen),PyInt_FromLong(s_cen));
+   PyDict_SetItemString(d,str(o_raw),PyInt_FromLong(o_raw));
+   PyDict_SetItemString(d,str(m_ff),PyInt_FromLong(m_ff));
+   PyDict_SetItemString(d,str(m_ss),PyInt_FromLong(m_ss));
+   PyDict_SetItemString(d,str(m_oo),PyInt_FromLong(m_oo));
+   PyDict_SetItemString(d,str(m_sf),PyInt_FromLong(m_sf));
+   PyDict_SetItemString(d,str(m_so),PyInt_FromLong(m_so));
+   PyDict_SetItemString(d,str(m_fo),PyInt_FromLong(m_fo));
    
    PyDict_SetItemString(d,str(NPROPERTY),PyInt_FromLong(NPROPERTY));
    Py_DECREF(s);

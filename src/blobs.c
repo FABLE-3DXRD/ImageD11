@@ -22,6 +22,65 @@
 #include "blobs.h"
 #include <stdlib.h> /* malloc */
 #include <stdio.h>
+#include <math.h> /* sqrt */
+
+void compute_moments( double b[], int nb  ){
+  /* Convert the blob (summing) representation to a human readable form */
+  int i, off;
+  double ts,to,tf,us,uo,uf,vs,vo,vf, tc;
+
+  /* loop over a set of blobs in a flat array */
+
+  for(i=0; i < nb ; i++){
+    /* avg_i */
+    
+    off = i*NPROPERTY;
+
+    if( b[s_1 + off] == 0){
+      /* Zero pixels - skip this fella! */
+      /* printf("Skipped %d\n",i);*/
+      continue;
+    }
+
+    tc = b[ s_I + off ]; /* tc = total counts */
+
+    b[avg_i + off] =  b[ s_I  + off ]/b[s_1 + off]; 
+
+    /* First and second moments */
+
+
+    uf =  b[ s_fI  + off ]/tc;
+    tf =  b[ s_ffI + off ]/tc;
+    b[f_raw + off] = uf;
+    vf = tf - uf*uf;
+    if (( vf + 1.0) > 0.0) b[m_ff + off] = sqrt(vf+1.);
+    else b[m_ff + off] = 1.0;
+
+    
+    us =  b[ s_sI  + off ]/tc;
+    ts =  b[ s_ssI + off ]/tc;
+    b[s_raw + off] = us;
+    vs = ts - us*us;
+    if (( vs + 1.0) > 0.0) b[m_ss + off] = sqrt(vs+1.);
+    else b[m_ss + off] = 1.0;
+
+    uo =  b[ s_oI  + off ]/tc;
+    to =  b[ s_ooI + off ]/tc;
+    b[o_raw + off] = uo;
+    vo = to - uo*uo;
+    if (( vo + 1.0) > 0.0) b[m_oo + off] = sqrt(vo+1.);
+    else b[m_oo + off] = 1.;
+
+    b[m_so + off] = (b[s_soI + off] / tc - us*uo )/b[m_ss + off]/b[m_oo + off] ;
+
+    b[m_fo + off] = (b[s_foI + off] / tc - uf*uo )/b[m_ff + off]/b[m_oo + off] ;
+
+    b[m_sf + off] = (b[s_sfI + off] / tc - us*uf )/b[m_ss + off]/b[m_ff + off] ;
+
+  }
+
+  
+}
 
 
 void add_pixel( double b[], int s, int f, double I, double o){
