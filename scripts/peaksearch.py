@@ -217,8 +217,9 @@ if __name__=="__main__":
         
         # Generate list of files to process
         print "Input format is",options.format
-        if options.format == "edf":
-            files = ["%s%04d%s" % (stem,i,".edf") for i in range(first,last+1)]
+        if options.format in [".edf",".edf.gz",".tif",".tif.gz",".mccd"]:
+            files = ["%s%04d%s" % (stem, i, options.format
+                                   ) for i in range(first,last+1)]
             corrfunc.orientation = "edf"
         if options.format == "bruker":
             files = ["%s.%04d" % (stem,i) for i in range(first,last+1)]
