@@ -269,7 +269,7 @@ if __name__=="__main__":
 #      print "Usage: %s filename  outputfile first last spline threshold [threshold...]" % (sys.argv[0])
         print
         # Raise the exception to find out in more detail where we went wrong
-        raise
+        raise  
         sys.exit()
 
 end = time.time()
