@@ -30,9 +30,9 @@ from ImageD11 import blobcorrector, connectedpixels
 from ImageD11.connectedpixels import s_1, s_I, s_I2,\
     s_fI, s_ffI, s_sI, s_ssI, s_sfI, s_oI, s_ooI, s_foI, s_soI, \
     bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s, bb_mn_o, bb_mx_o, \
-    mx_I, mx_I_f, mx_I_s, mx_I_o
-#    avg_i, f_raw, s_raw, o_raw, f_cen, s_cen, \
-#    m_ss, m_ff, m_oo, m_sf, m_so, m_fo
+    mx_I, mx_I_f, mx_I_s, mx_I_o, dety, detz, \
+    avg_i, f_raw, s_raw, o_raw, f_cen, s_cen, \
+    m_ss, m_ff, m_oo, m_sf, m_so, m_fo
 
 
 from math import sqrt
@@ -156,6 +156,7 @@ class labelimage:
                                                       self.npk,
                                                       omega=omega)
         else:
+            # What to do?
             self.res = None
 
     def mergelast(self):
@@ -168,20 +169,21 @@ class labelimage:
             self.lastbl, self.blim = self.blim, self.lastbl
             self.lastnp = self.npk
             self.lastres = self.res
-            return
-        ret = connectedpixels.bloboverlaps(self.lastbl,
-                                           self.lastnp,
-                                           self.lastres,
-                                           self.blim,
-                                           self.npk,
-                                           self.res,
-                                           self.verbose)
-
-        # Fill out the moments of the "closed" peaks
-        # print "calling blobmoments with",self.lastres
-        ret = connectedpixels.blob_moments(self.lastres)
-        # Write them to file
-        self.outputpeaks(self.lastres)
+            return            
+        if self.npk > 0 and self.lastnp > 0:
+            ret = connectedpixels.bloboverlaps(self.lastbl,
+                                               self.lastnp,
+                                               self.lastres,
+                                               self.blim,
+                                               self.npk,
+                                               self.res,
+                                               self.verbose)
+        if self.lastnp > 0:
+            # Fill out the moments of the "closed" peaks
+            # print "calling blobmoments with",self.lastres
+            ret = connectedpixels.blob_moments(self.lastres)
+            # Write them to file
+            self.outputpeaks(self.lastres)
         # lastres is now moved forward into res
         self.lastnp = self.npk   # This is array dim
         self.lastres = self.res  # free old lastres I hope
@@ -209,32 +211,20 @@ class labelimage:
             if i[s_1] < 0.1:
                 # Merged with another
                 continue
-            avg_i = i[s_I]/i[s_1]
-            # first moments
-            fraw = i[s_fI]/i[s_I]
-            sraw = i[s_sI]/i[s_I]
-            oraw = i[s_oI]/i[s_I]
-            # Spline correction
-            fcen, scen = self.corrector.correct(fraw, sraw)
-            # second moments - the plus 1 is the zero width = 1 pixel
-            mss = sqrt( i[s_ssI]/i[s_I] - sraw*sraw + 1 ) 
-            mff = sqrt( i[s_ffI]/i[s_I] - fraw*fraw + 1 ) 
-            moo = sqrt( i[s_ooI]/i[s_I] - oraw*oraw + 1 ) 
-            msf = ( i[s_sfI]/i[s_I] - sraw*fraw )/mss/mff   
-            mso = ( i[s_soI]/i[s_I] - sraw*oraw )/mss/moo   
-            mfo = ( i[s_foI]/i[s_I] - fraw*oraw )/mff/moo   
 
-            dety, detz = self.fs2yz(fraw, sraw)
+            # Spline correction
+            i[f_cen], i[s_cen] = self.corrector.correct(i[f_raw], i[s_raw])
+            i[dety], i[detz] = self.fs2yz(i[f_raw], i[s_raw])
             self.outfile.write(self.format % (
-                    fcen, scen, oraw, 
-                    i[s_1], avg_i,    
-                    fraw, sraw,
-                    mss, mff, moo, msf, mso, mfo,
+                    i[f_cen], i[s_cen], i[o_raw], 
+                    i[s_1], i[avg_i],
+                    i[f_raw], i[s_raw],
+                    i[m_ss], i[m_ff], i[m_oo], i[m_sf], i[m_so], i[m_fo],
                     i[s_I],i[s_I2],  
                     i[mx_I],i[mx_I_f],i[mx_I_s],i[mx_I_o], 
                     i[bb_mn_f],i[bb_mx_f],i[bb_mn_s],i[bb_mx_s],
                     i[bb_mn_o],i[bb_mx_o],
-                    dety, detz,
+                    i[dety], i[detz],
                     self.onfirst, self.onlast ))
             self.spot3d_id += 1
         if self.onfirst > 0:
@@ -248,8 +238,9 @@ class labelimage:
         Write out the last frame
         """
         self.onlast = 1
-        ret = connectedpixels.blob_moments(self.lastres)
-        self.outputpeaks(self.lastres)
+        if self.lastres is not None:
+            ret = connectedpixels.blob_moments(self.lastres)
+            self.outputpeaks(self.lastres)
 
 
 

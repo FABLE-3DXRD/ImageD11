@@ -70,7 +70,12 @@ class timer:
 OMEGA = 0
 OMEGASTEP = 1.0
 
-def localpeaksearch( filename , corrector , thresholds , outputfile , dark = None, flood = None):
+def peaksearch( filename , 
+                corrector , 
+                thresholds , 
+                outputfile , 
+                labims, 
+                dark = None, flood = None):
     """
     file_series : fabio file series object, supports iteration
     
@@ -81,7 +86,6 @@ def localpeaksearch( filename , corrector , thresholds , outputfile , dark = Non
     outputfile : the 2d output file, name+".spt"
                : the 3d output files name+"_threshold.flt"
     """
-    print "dark,flood,",dark,flood
     t = timer()
     f = open(outputfile,"aq") # Open the output file for appending
     # Assumes an edf file for now - TODO - should be independent
@@ -93,10 +97,10 @@ def localpeaksearch( filename , corrector , thresholds , outputfile , dark = Non
 
     picture = data_object.data
     # picture is a 2D array
-    t.tick("read")
+    #t.tick("read")
     if dark != None:
         picture = picture - dark  
-    t.tick("dark")
+    #t.tick("dark")
     if flood != None:
         picture = picture/flood
     t.tick(filename+" io/cor") # Progress indicator
@@ -131,61 +135,18 @@ def localpeaksearch( filename , corrector , thresholds , outputfile , dark = Non
             global OMEGA
             ome = OMEGA
             OMEGA += OMEGASTEP
-        npks = 0
         #
         # Do the peaksearch
         labelim.peaksearch(picture, threshold, ome)
         #
-        props = labelim.properties(picture,ome)
-        # omisum is omega * isum
-        # Now write results out for this threshold level
-        f.write("\n#Threshold level %f\n" % (threshold))
-        f.write( "# Number_of_pixels Average_counts    x   y     xc   yc      sig_x sig_y cov_xy\n")
-
-        outstrfmt = "%d  %f    %f %f    %f %f    %f %f %f\n"
-        for  i in range(len(npi)): # Loop over peaks
-            if npi[i]>=1:    # Throw out one pixel peaks (div zero)
-                npks = npks+1
-                n    = npi[i]
-                # Average intensity
-                avg  = isum[i]/n
-                if n>2:
-                    si   = sqrt((sumsq[i] - n*avg*avg)/(n-1.))
-                else:
-                    si   = sqrt((sumsq[i] - n*avg*avg)/n)
-                # Standard dev on intensity
-                c0   = com0[i]/isum[i]
-                # Centre of mass in index 0
-                c1   = com1[i]/isum[i]
-                # Centre of mass in index 1
-                # Covariances - try except to allow for zeros
-                try:
-                    c00 = sqrt((com00[i]/isum[i] - c0*c0))
-                except:
-                    c00 = 0. # this means a line of pixels and rounding errors
-                try:
-                    c11 = sqrt((com11[i]/isum[i] - c1*c1))
-                except:
-                    c11 = 0.
-                try:
-                    c01 = (com01[i]/isum[i] - c0*c1)/c00/c11
-                except:
-                    c01 = 0.
-                # Spatial corrections,
-                # c0c and c1c are the distortion corrected centre of mass :
-                try:
-                    c0c, c1c = corrector.correct(c0, c1)
-                except:
-                    c0c, c1c = c0, c1
-                f.write(outstrfmt % (n, avg, c0, c1, c0c, c1c,  c00, c11, c01))
-        labelim.mergelast() # called here!!!
-        print "T=%-5d n=%-5d;" % (int(threshold),npks),
+        labelim.mergelast() 
+        print "T=%-5d n=%-5d;" % (int(threshold),labelim.npk),
         # Close the output file
     f.close()
     # Finish progress indicator for this file
     t.tock()
     sys.stdout.flush()
-    return npks # Number of peaks found
+    return None 
 
 
 if __name__=="__main__":
@@ -278,32 +239,31 @@ if __name__=="__main__":
         # files.sort()
         if options.dark!=None:
             print "Using dark (background)",options.dark,"with added offset",options.darkoffset
-            darkimage= (opendata.opendata(options.dark).data.astype(Numeric.Int)-\
-                       options.darkoffset).astype(Numeric.UInt16)
+            darkimage= openimage(options.dark).data - options.darkoffset
         else:
             darkimage=None
         if options.flood!=None:
-            floodimage=opendata.opendata(options.flood).data.astype(Numeric.Float32)
-            # Check flood normalisation
-            m1 = floodimage.shape[0]/6
-            m2 = floodimage.shape[1]/6
-            middle = Numeric.ravel(floodimage[m1:-m1,m2:-m2])
-            floodavg =  Numeric.sum(middle)/middle.shape[0]
+            floodimage=openimage(options.flood).data
+            cen0 = floodimage.shape[0]/6
+            cen1 = floodimage.shape[0]/6
+            middle = floodimage[cen0:-cen0, cen1:-cen1]
+            nmid = middle.shape[0]*middle.shape[1]
+            floodavg = Numeric.sum(
+                Numeric.ravel(middle).astype(Numeric.Float32))/nmid
             print "Using flood",options.flood,"average value",floodavg
             if floodavg < 0.7 or floodavg > 1.3:
                 print "Your flood image does not seem to be normalised!!!"
+            
         else:
             floodimage=None
         start = time.time()
         print "File being treated in -> out, elapsed time"
         for filein in files:
-            print "hello jon, me talking",darkimage, floodimage
-            print thresholds_list,li_objs,corrfunc,outfile,filein
+            peaksearch( filein , corrfunc , thresholds_list , outfile , li_objs,
+                     dark = None, flood = None)
 
-            localpeaksearch(filein, outfile, corrfunc, li_objs, \
-                        thresholds_list,flood=floodimage)
         for t in thresholds_list:
-            li_objs[t].finalize()
+            li_objs[t].finalise()
     except:
 #      print "Usage: %s filename  outputfile first last spline threshold [threshold...]" % (sys.argv[0])
         print

@@ -1021,6 +1021,8 @@ void initconnectedpixels(void) {
    PyDict_SetItemString(d,str(m_sf),PyInt_FromLong(m_sf));
    PyDict_SetItemString(d,str(m_so),PyInt_FromLong(m_so));
    PyDict_SetItemString(d,str(m_fo),PyInt_FromLong(m_fo));
+   PyDict_SetItemString(d,str(dety),PyInt_FromLong(dety));
+   PyDict_SetItemString(d,str(detz),PyInt_FromLong(detz));
    
    PyDict_SetItemString(d,str(NPROPERTY),PyInt_FromLong(NPROPERTY));
    Py_DECREF(s);

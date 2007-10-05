@@ -87,12 +87,17 @@ def testcmdlines(clist):
     print len(clist)
     for c in clist:
         print c
-        os.system(c)
+        ret = os.system(c)
+        if ret != 0:
+            raise Exception("Bombed")
     losedata()
 
 if __name__=="__main__":
     # takes ages
-    # FIXME testcmdlines(clist)
+    # FIXME 
+    import sys
+    if len(sys.argv)>1 and sys.argv[1] == "ALL":
+        testcmdlines(clist)
     testcmdlines(['python '+ ps + ' -n data -f 0 -l 3 -t 15000 -t 1000 -p Y -t 0'])
     assert len(open("peaks.out_merge_t0").readlines())==2
     assert len(open("peaks.out_merge_t1000").readlines())==2

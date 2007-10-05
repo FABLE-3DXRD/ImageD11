@@ -40,9 +40,9 @@ import numpy.oldnumeric as n
 def myasarray(a):
     if type(a) in [type(1.0),type(1L),type(1),type(1j)]:
         return n.asarray([a])
-    elif isinstance(a, n.ArrayType) and len(a)==1:
+    elif hasattr(a, "shape") and len(a.shape)==0:
         # Takes care of mapping array(number) to array([number])
-        return n.asarray([a[0]])
+        return n.asarray([a])
     else:
         return n.asarray(a)
 

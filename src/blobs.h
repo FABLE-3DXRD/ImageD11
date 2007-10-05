@@ -64,14 +64,18 @@ enum {
   f_raw,       /* fast centre of mass */
   s_raw,       /* slow centre of mass */
   o_raw,       /* omega centre of mass */
-  f_cen,  /* Filled in elsewhere */
-  s_cen,  /* ditto */
   m_ss,   /* moments */
   m_ff,
   m_oo,
   m_sf,
   m_so,
   m_fo,
+
+  f_cen,  /* Filled in elsewhere  - spatial correction */
+  s_cen,  /* ditto */
+
+  dety, /*Filled in elsewhere  - flip to HFPO book */
+  detz, /*Filled in elsewhere  - flip to HFPO book */
 
   NPROPERTY     /* Number of properties if starting at 0 */
 } ;
