@@ -13,23 +13,57 @@
 of&nbsp;files&nbsp;and&nbsp;edited&nbsp;in&nbsp;guis&nbsp;with&nbsp;the&nbsp;fixed/varied&nbsp;info&nbsp;etc</tt></p>
 <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="logging.html">logging</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ee77aa">
 <td colspan=3 valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
     
 <tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><dl>
-<dt><font face="helvetica, arial"><a href="ImageD11.parameters.html#parameters">parameters</a>
+<dt><font face="helvetica, arial"><a href="ImageD11.parameters.html#par">par</a>
+</font></dt><dt><font face="helvetica, arial"><a href="ImageD11.parameters.html#parameters">parameters</a>
 </font></dt></dl>
  <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ffc8d8">
 <td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="par">class <strong>par</strong></a></font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Represents&nbsp;a&nbsp;thing&nbsp;which&nbsp;can&nbsp;vary<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="par-__init__"><strong>__init__</strong></a>(self, name, value, helpstring<font color="#909090">=None</font>, vary<font color="#909090">=False</font>, can_vary<font color="#909090">=False</font>, stepsize<font color="#909090">=None</font>)</dt><dd><tt>name&nbsp;:&nbsp;unique&nbsp;key&nbsp;used&nbsp;as&nbsp;keyword&nbsp;arg&nbsp;to&nbsp;some&nbsp;functions<br>
+value&nbsp;:&nbsp;value&nbsp;of&nbsp;the&nbsp;parameter<br>
+helpstring&nbsp;:&nbsp;optional&nbsp;string&nbsp;to&nbsp;help&nbsp;user<br>
+vary&nbsp;:&nbsp;value&nbsp;should&nbsp;be&nbsp;optimised<br>
+can_vary&nbsp;:&nbsp;value&nbsp;is&nbsp;not&nbsp;fixed<br>
+stepsize&nbsp;:&nbsp;guessestimated&nbsp;ball&nbsp;park&nbsp;step&nbsp;size&nbsp;(eg&nbsp;not&nbsp;1e99!)</tt></dd></dl>
+
+<dl><dt><a name="par-fromstringlist"><strong>fromstringlist</strong></a>(self, sl)</dt><dd><tt>to&nbsp;send&nbsp;to&nbsp;Java</tt></dd></dl>
+
+<dl><dt><a name="par-tostringlist"><strong>tostringlist</strong></a>(self)</dt><dd><tt>to&nbsp;catch&nbsp;from&nbsp;Java</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
 <font color="#000000" face="helvetica, arial"><a name="parameters">class <strong>parameters</strong></a></font></td></tr>
     
-<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Class&nbsp;to&nbsp;hold&nbsp;a&nbsp;set&nbsp;of&nbsp;named&nbsp;<a href="#parameters">parameters</a><br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
 <dl><dt><a name="parameters-__init__"><strong>__init__</strong></a>(self, **kwds)</dt><dd><tt>name=value&nbsp;style&nbsp;arg&nbsp;list</tt></dd></dl>
+
+<dl><dt><a name="parameters-addpar"><strong>addpar</strong></a>(self, par)</dt><dd><tt>add&nbsp;a&nbsp;parameter&nbsp;object</tt></dd></dl>
 
 <dl><dt><a name="parameters-dumbtypecheck"><strong>dumbtypecheck</strong></a>(self)</dt><dd><tt>Eventually&nbsp;parameter&nbsp;types&nbsp;(and&nbsp;units&nbsp;and&nbsp;fixed/varied&nbsp;to&nbsp;be<br>
 specifieable<br>
@@ -37,11 +71,21 @@ For&nbsp;now&nbsp;it&nbsp;just&nbsp;tries&nbsp;to&nbsp;coerce&nbsp;to&nbsp;float
 
 <dl><dt><a name="parameters-get_parameters"><strong>get_parameters</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;dictionary&nbsp;of&nbsp;<a href="#parameters">parameters</a></tt></dd></dl>
 
+<dl><dt><a name="parameters-get_variable_list"><strong>get_variable_list</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="parameters-get_variable_stepsizes"><strong>get_variable_stepsizes</strong></a>(self)</dt><dd><tt>stepsizes&nbsp;for&nbsp;optimisers</tt></dd></dl>
+
+<dl><dt><a name="parameters-get_variable_values"><strong>get_variable_values</strong></a>(self)</dt><dd><tt>values&nbsp;of&nbsp;the&nbsp;<a href="#parameters">parameters</a></tt></dd></dl>
+
 <dl><dt><a name="parameters-loadparameters"><strong>loadparameters</strong></a>(self, filename)</dt><dd><tt>Load&nbsp;<a href="#parameters">parameters</a>&nbsp;from&nbsp;a&nbsp;file</tt></dd></dl>
 
 <dl><dt><a name="parameters-saveparameters"><strong>saveparameters</strong></a>(self, filename)</dt><dd><tt>Write&nbsp;<a href="#parameters">parameters</a>&nbsp;to&nbsp;a&nbsp;file</tt></dd></dl>
 
 <dl><dt><a name="parameters-set_parameters"><strong>set_parameters</strong></a>(self, d)</dt><dd><tt>Updates&nbsp;the&nbsp;values&nbsp;of&nbsp;<a href="#parameters">parameters</a></tt></dd></dl>
+
+<dl><dt><a name="parameters-set_variable_values"><strong>set_variable_values</strong></a>(self, values)</dt><dd><tt>set&nbsp;values&nbsp;of&nbsp;the&nbsp;<a href="#parameters">parameters</a></tt></dd></dl>
+
+<dl><dt><a name="parameters-set_varylist"><strong>set_varylist</strong></a>(self, vl)</dt></dl>
 
 <dl><dt><a name="parameters-update_other"><strong>update_other</strong></a>(self, other)</dt><dd><tt>Synchronise&nbsp;an&nbsp;object&nbsp;with&nbsp;the&nbsp;values&nbsp;in&nbsp;this&nbsp;object</tt></dd></dl>
 

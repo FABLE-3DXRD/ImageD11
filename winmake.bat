@@ -1,16 +1,12 @@
-
-cd "\documents and settings\wright\eclipse_new\imaged11"
+d:
+cd "\wright\eclipse_workspaces\fabulous\imaged11\trunk"
 setup.py build --compiler=mingw32 install 
 cd test
 cd demo
 test.py
 cd ..
-cd quantix
-fitgrain.py g3.pars g3.ubi g3.flt new.pars
-cd ..
 cd ..
 pause
-
 goto END 
 
 setup.py build --comiler=mingw32 sdist --formats=gztar,zip bdist_wininst

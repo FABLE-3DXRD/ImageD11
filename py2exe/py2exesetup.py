@@ -18,13 +18,21 @@ for f in matplotlibdata:
 
         
 setup(
-     console = ["../scripts/ImageD11_gui.py","../scripts/peaksearch.py",
-                "../scripts/ImageD11Server.py" ,"../scripts/edfheader.py",
-                "../scripts/fitgrain.py", "../scripts/filtergrain.py",
-                "../scripts/bgmaker.py" ]  ,
+     console = ["../scripts/peaksearch.py",
+    "../scripts/fitgrain.py",
+    "../scripts/filtergrain.py",
+    "../scripts/pars_2_sweeper.py",
+    "../scripts/fit2dcake.py",
+    "../scripts/edfheader.py",
+    "../scripts/ImageD11_gui.py",
+    "../scripts/bgmaker.py",
+    "../scripts/rubber.py",
+    "../scripts/edfheader.py",
+    "../scripts/ImageD11Server.py",
+    "../scripts/powderimagetopeaks.py" ]  ,
      options={
              'py2exe': {
-                        'excludes' : ['numpy','wx'],
+                        'excludes' : ['Numeric','wx'],
                         'includes' : ['OpenGL.GL', 'OpenGL.Tk'],
                         'packages' : ['matplotlib', 'pytz'],
                         'dll_excludes':['libgdk-win32-2.0-0.dll',

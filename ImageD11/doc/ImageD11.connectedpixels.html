@@ -17,40 +17,30 @@
 <font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
     
 <tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><dl><dt><a name="-bloboverlaps"><strong>bloboverlaps</strong></a>(...)</dt><dd><tt>res&nbsp;=&nbsp;bloboverlaps&nbsp;(&nbsp;&nbsp;&nbsp;Numeric.array(blob1,&nbsp;2D,&nbsp;Int),&nbsp;n1&nbsp;&nbsp;,&nbsp;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Numeric.array(blob2,&nbsp;2D,&nbsp;Int),&nbsp;n2&nbsp;&nbsp;,&nbsp;verbose=0)&nbsp;<br>
+<td width="100%"><dl><dt><a name="-blob_moments"><strong>blob_moments</strong></a>(...)</dt><dd><tt>None&nbsp;=&nbsp;<a href="#-blob_moments">blob_moments</a>(Numeric.array(peaks1))<br>
 &nbsp;<br>
-returns&nbsp;a&nbsp;disjoint&nbsp;set&nbsp;making&nbsp;the&nbsp;overlaps&nbsp;between&nbsp;blob1&nbsp;and&nbsp;blob2&nbsp;<br>
-res[0-&gt;n1]&nbsp;=&nbsp;peaks&nbsp;in&nbsp;image&nbsp;1&nbsp;<br>
-res[n2-&gt;n2+n1+1]&nbsp;=&nbsp;peaks&nbsp;in&nbsp;image&nbsp;2</tt></dd></dl>
+Loop&nbsp;over&nbsp;array&nbsp;filling&nbsp;out&nbsp;moments&nbsp;from&nbsp;sums</tt></dd></dl>
+ <dl><dt><a name="-bloboverlaps"><strong>bloboverlaps</strong></a>(...)</dt><dd><tt>success&nbsp;=&nbsp;bloboverlaps&nbsp;(&nbsp;&nbsp;&nbsp;Numeric.array(blob1,&nbsp;2D,&nbsp;Int),&nbsp;n1&nbsp;&nbsp;,&nbsp;res1&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Numeric.array(blob2,&nbsp;2D,&nbsp;Int),&nbsp;n2&nbsp;&nbsp;,&nbsp;res2,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;verbose=0)&nbsp;<br>
+&nbsp;<br>
+merges&nbsp;the&nbsp;results&nbsp;from&nbsp;blob1/res1&nbsp;into&nbsp;blob2/res2<br>
+blob1&nbsp;would&nbsp;be&nbsp;the&nbsp;previous&nbsp;image&nbsp;from&nbsp;the&nbsp;series,&nbsp;with&nbsp;its&nbsp;results<br>
+&nbsp;&nbsp;if&nbsp;it&nbsp;does&nbsp;not&nbsp;overlap&nbsp;it&nbsp;will&nbsp;stay&nbsp;untouched&nbsp;in&nbsp;res<br>
+&nbsp;&nbsp;if&nbsp;it&nbsp;overlaps&nbsp;with&nbsp;next&nbsp;image&nbsp;it&nbsp;is&nbsp;passed&nbsp;into&nbsp;that&nbsp;ones&nbsp;res</tt></dd></dl>
  <dl><dt><a name="-blobproperties"><strong>blobproperties</strong></a>(...)</dt><dd><tt>res&nbsp;=&nbsp;blobproperties&nbsp;(&nbsp;Numeric.array(data,&nbsp;2D)&nbsp;&nbsp;,&nbsp;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Numeric.array(blob,&nbsp;2D,&nbsp;Int)&nbsp;&nbsp;,<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Int&nbsp;np&nbsp;,&nbsp;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dark=Numeric.array(dark,&nbsp;2D)&nbsp;&nbsp;,&nbsp;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;flood=Numeric.array(flood,&nbsp;2D)&nbsp;&nbsp;,&nbsp;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Int&nbsp;verbose&nbsp;)<br>
 &nbsp;<br>
-Computes&nbsp;various&nbsp;properties&nbsp;of&nbsp;a&nbsp;blob&nbsp;image&nbsp;(created&nbsp;by&nbsp;connectedpixels)<br>
+Computes&nbsp;various&nbsp;properties&nbsp;of&nbsp;a&nbsp;blob&nbsp;image&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(created&nbsp;by&nbsp;connectedpixels)<br>
 data&nbsp;&nbsp;=&nbsp;image&nbsp;data&nbsp;<br>
 blob&nbsp;&nbsp;=&nbsp;integer&nbsp;peak&nbsp;assignments&nbsp;from&nbsp;connectedpixels&nbsp;<br>
 np&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;number&nbsp;of&nbsp;peaks&nbsp;to&nbsp;treat&nbsp;<br>
-verbose&nbsp;&nbsp;-&nbsp;flag&nbsp;about&nbsp;whether&nbsp;to&nbsp;print<br>
-&nbsp;<br>
-res&nbsp;=&nbsp;tuple&nbsp;(npix&nbsp;,&nbsp;sum&nbsp;,&nbsp;sumsq&nbsp;,&nbsp;com0&nbsp;,&nbsp;com1&nbsp;,&nbsp;com00&nbsp;,&nbsp;com01&nbsp;,&nbsp;&nbsp;com11&nbsp;)&nbsp;<br>
-...where&nbsp;&nbsp;fval&nbsp;=&nbsp;intensity&nbsp;in&nbsp;pixel&nbsp;and&nbsp;sum&nbsp;over&nbsp;pixels&nbsp;in&nbsp;blob&nbsp;of<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;anpix[peak]&nbsp;&nbsp;=anpix[peak]&nbsp;&nbsp;+&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;#&nbsp;of&nbsp;pixels<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;asum[peak]&nbsp;&nbsp;&nbsp;=asum[peak]&nbsp;&nbsp;&nbsp;+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fval;&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;total&nbsp;intensity<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;asumsq[peak]&nbsp;=asumsq[peak]&nbsp;+fval*fval;&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;total&nbsp;intensity^2<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acom0[peak]&nbsp;&nbsp;=acom0[peak]&nbsp;&nbsp;+&nbsp;&nbsp;&nbsp;i*fval;&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;etc<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acom1[peak]&nbsp;&nbsp;=acom1[peak]&nbsp;&nbsp;+&nbsp;&nbsp;&nbsp;j*fval;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acom00[peak]&nbsp;=acom00[peak]&nbsp;+&nbsp;i*i*fval;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acom01[peak]&nbsp;=acom01[peak]&nbsp;+&nbsp;i*j*fval;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acom11[peak]&nbsp;=acom11[peak]&nbsp;+&nbsp;j*j*fval;</tt></dd></dl>
+verbose&nbsp;&nbsp;-&nbsp;flag&nbsp;about&nbsp;whether&nbsp;to&nbsp;print</tt></dd></dl>
  <dl><dt><a name="-connectedpixels"><strong>connectedpixels</strong></a>(...)</dt><dd><tt>nblobs&nbsp;=&nbsp;connectedpixels&nbsp;(&nbsp;data=Numeric.array(data,&nbsp;2D)&nbsp;&nbsp;,&nbsp;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;results=Numeric.array(blob,&nbsp;2D,&nbsp;Int)&nbsp;&nbsp;,<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;threshold=float&nbsp;threshold&nbsp;,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dark=Numeric.array(dark,&nbsp;2D)&nbsp;&nbsp;,&nbsp;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;flood=Numeric.array(flood,&nbsp;2D)&nbsp;&nbsp;,&nbsp;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;verbose=Int&nbsp;verbose&nbsp;)<br>
 data&nbsp;is&nbsp;normally&nbsp;an&nbsp;image&nbsp;<br>
 blob&nbsp;is&nbsp;an&nbsp;array&nbsp;to&nbsp;receive&nbsp;pixel&nbsp;-&gt;&nbsp;blob&nbsp;assignments<br>
@@ -60,5 +50,57 @@ verbose&nbsp;flags&nbsp;printing&nbsp;on&nbsp;stdout</tt></dd></dl>
 sum(&nbsp;array[xl:xh&nbsp;,&nbsp;yl:yh]&nbsp;)&nbsp;where&nbsp;x,y&nbsp;refer&nbsp;to&nbsp;SLOW/FAST&nbsp;indices&nbsp;&nbsp;&nbsp;<br>
 ...&nbsp;NOT&nbsp;Numeric&nbsp;indices,&nbsp;but&nbsp;slow/fast&nbsp;<br>
 Unsure&nbsp;why&nbsp;this&nbsp;was&nbsp;written&nbsp;-&nbsp;can&nbsp;be&nbsp;done&nbsp;with&nbsp;Numeric&nbsp;anyway</tt></dd></dl>
-</td></tr></table>
+ <dl><dt><a name="-update_blobs"><strong>update_blobs</strong></a>(...)</dt><dd><tt>update_blobs&nbsp;(&nbsp;&nbsp;&nbsp;Numeric.array(blob,&nbsp;2D,&nbsp;Int),&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Numeric.array(set&nbsp;,&nbsp;2D,&nbsp;Int)&nbsp;,&nbsp;verbose=0)&nbsp;<br>
+&nbsp;<br>
+updates&nbsp;blob&nbsp;image&nbsp;such&nbsp;that&nbsp;:&nbsp;<br>
+if&nbsp;blob[i,j]&nbsp;&gt;&nbsp;0:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;blob[i,j]&nbsp;=&nbsp;set[blob[i,j]]<br>
+&nbsp;<br>
+Used&nbsp;to&nbsp;update&nbsp;a&nbsp;blob&nbsp;image&nbsp;merging&nbsp;peaks&nbsp;which&nbsp;have&nbsp;overlapped&nbsp;due<br>
+to&nbsp;the&nbsp;third&nbsp;dimension.</tt></dd></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>NPROPERTY</strong> = 36<br>
+<strong>avg_i</strong> = 22<br>
+<strong>bb_mn_f</strong> = 19<br>
+<strong>bb_mn_o</strong> = 21<br>
+<strong>bb_mn_s</strong> = 20<br>
+<strong>bb_mx_f</strong> = 16<br>
+<strong>bb_mx_o</strong> = 18<br>
+<strong>bb_mx_s</strong> = 17<br>
+<strong>dety</strong> = 34<br>
+<strong>detz</strong> = 35<br>
+<strong>f_cen</strong> = 32<br>
+<strong>f_raw</strong> = 23<br>
+<strong>m_ff</strong> = 27<br>
+<strong>m_fo</strong> = 31<br>
+<strong>m_oo</strong> = 28<br>
+<strong>m_sf</strong> = 29<br>
+<strong>m_so</strong> = 30<br>
+<strong>m_ss</strong> = 26<br>
+<strong>mx_I</strong> = 12<br>
+<strong>mx_I_f</strong> = 13<br>
+<strong>mx_I_o</strong> = 15<br>
+<strong>mx_I_s</strong> = 14<br>
+<strong>o_raw</strong> = 25<br>
+<strong>s_1</strong> = 0<br>
+<strong>s_I</strong> = 1<br>
+<strong>s_I2</strong> = 2<br>
+<strong>s_cen</strong> = 33<br>
+<strong>s_fI</strong> = 3<br>
+<strong>s_ffI</strong> = 4<br>
+<strong>s_foI</strong> = 11<br>
+<strong>s_oI</strong> = 8<br>
+<strong>s_ooI</strong> = 9<br>
+<strong>s_raw</strong> = 24<br>
+<strong>s_sI</strong> = 5<br>
+<strong>s_sfI</strong> = 7<br>
+<strong>s_soI</strong> = 10<br>
+<strong>s_ssI</strong> = 6</td></tr></table>
 </body></html>

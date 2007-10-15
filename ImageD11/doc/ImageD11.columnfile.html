@@ -1,0 +1,74 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module ImageD11.columnfile</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.columnfile</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python24/lib/site-packages/imaged11/columnfile.py">c:\python24\lib\site-packages\imaged11\columnfile.py</a></font></td></tr></table>
+    <p><tt><a href="#columnfile">columnfile</a>&nbsp;represents&nbsp;an&nbsp;ascii&nbsp;file&nbsp;with&nbsp;titles&nbsp;begining&nbsp;"#"<br>
+and&nbsp;multiple&nbsp;lines&nbsp;of&nbsp;data<br>
+&nbsp;<br>
+An&nbsp;equals&nbsp;sign&nbsp;"="&nbsp;on&nbsp;a&nbsp;"#"&nbsp;line&nbsp;implies&nbsp;a&nbsp;parameter&nbsp;=&nbsp;value&nbsp;pair</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="numpy.oldnumeric.html">numpy.oldnumeric</a><br>
+</td><td width="25%" valign=top><a href="ImageD11.parameters.html">ImageD11.parameters</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="ImageD11.columnfile.html#columnfile">columnfile</a>
+</font></dt></dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="columnfile">class <strong>columnfile</strong></a></font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Class&nbsp;to&nbsp;represent&nbsp;an&nbsp;ascii&nbsp;file&nbsp;containing&nbsp;multiple&nbsp;named&nbsp;columns<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="columnfile-__init__"><strong>__init__</strong></a>(self, filename)</dt></dl>
+
+<dl><dt><a name="columnfile-filter"><strong>filter</strong></a>(self, mask)</dt><dd><tt>mask&nbsp;is&nbsp;an&nbsp;nrows&nbsp;long&nbsp;array&nbsp;of&nbsp;true/false</tt></dd></dl>
+
+<dl><dt><a name="columnfile-readfile"><strong>readfile</strong></a>(self, filename)</dt><dd><tt>Reads&nbsp;in&nbsp;an&nbsp;ascii&nbsp;columned&nbsp;file</tt></dd></dl>
+
+<dl><dt><a name="columnfile-set_attributes"><strong>set_attributes</strong></a>(self)</dt><dd><tt>Set&nbsp;object&nbsp;vars&nbsp;to&nbsp;point&nbsp;into&nbsp;the&nbsp;big&nbsp;array</tt></dd></dl>
+
+<dl><dt><a name="columnfile-writefile"><strong>writefile</strong></a>(self, filename)</dt><dd><tt>write&nbsp;an&nbsp;ascii&nbsp;columned&nbsp;file</tt></dd></dl>
+
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-clean"><strong>clean</strong></a>(str_lst)</dt><dd><tt>trim&nbsp;whitespace&nbsp;from&nbsp;titles</tt></dd></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>FLOATS</strong> = ['fc', 'sc', 'omega', 'f_raw', 's_raw', 'sigf', 'sigs', 'covsf', 'sigo', 'covso', 'covfo', 'sum_intensity', 'IMax_int', 'IMax_o', 'avg_intensity', 'Min_o', 'Max_o', 'dety', 'detz']<br>
+<strong>FORMATS</strong> = {'IMax_f': '%.0f', 'IMax_int': '%.4f', 'IMax_o': '%.4f', 'IMax_s': '%.0f', 'Max_f': '%.0f', 'Max_o': '%.4f', 'Max_s': '%.0f', 'Min_f': '%.0f', 'Min_o': '%.4f', 'Min_s': '%.0f', ...}<br>
+<strong>INTS</strong> = ['Number_of_pixels', 'IMax_f', 'IMax_s', 'Min_f', 'Max_f', 'Min_s', 'Max_s']<br>
+<strong>f</strong> = 'Max_s'</td></tr></table>
+</body></html>

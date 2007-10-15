@@ -9,22 +9,7 @@
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.refinegrains</strong></big></big></font></td
 ><td align=right valign=bottom
 ><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python24/lib/site-packages/imaged11/refinegrains.py">c:\python24\lib\site-packages\imaged11\refinegrains.py</a></font></td></tr></table>
-    <p><tt>#&nbsp;ImageD11_v0.4&nbsp;Software&nbsp;for&nbsp;beamline&nbsp;ID11<br>
-#&nbsp;Copyright&nbsp;(C)&nbsp;2005&nbsp;&nbsp;Jon&nbsp;Wright<br>
-#<br>
-#&nbsp;This&nbsp;program&nbsp;is&nbsp;free&nbsp;software;&nbsp;you&nbsp;can&nbsp;redistribute&nbsp;it&nbsp;and/or&nbsp;modify<br>
-#&nbsp;it&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;GNU&nbsp;General&nbsp;Public&nbsp;License&nbsp;as&nbsp;published&nbsp;by<br>
-#&nbsp;the&nbsp;Free&nbsp;Software&nbsp;Foundation;&nbsp;either&nbsp;version&nbsp;2&nbsp;of&nbsp;the&nbsp;License,&nbsp;or<br>
-#&nbsp;(at&nbsp;your&nbsp;option)&nbsp;any&nbsp;later&nbsp;version.<br>
-#<br>
-#&nbsp;This&nbsp;program&nbsp;is&nbsp;distributed&nbsp;in&nbsp;the&nbsp;hope&nbsp;that&nbsp;it&nbsp;will&nbsp;be&nbsp;useful,<br>
-#&nbsp;but&nbsp;WITHOUT&nbsp;ANY&nbsp;WARRANTY;&nbsp;without&nbsp;even&nbsp;the&nbsp;implied&nbsp;warranty&nbsp;of<br>
-#&nbsp;MERCHANTABILITY&nbsp;or&nbsp;FITNESS&nbsp;FOR&nbsp;A&nbsp;PARTICULAR&nbsp;PURPOSE.&nbsp;&nbsp;See&nbsp;the<br>
-#&nbsp;GNU&nbsp;General&nbsp;Public&nbsp;License&nbsp;for&nbsp;more&nbsp;details.<br>
-#<br>
-#&nbsp;You&nbsp;should&nbsp;have&nbsp;received&nbsp;a&nbsp;copy&nbsp;of&nbsp;the&nbsp;GNU&nbsp;General&nbsp;Public&nbsp;License<br>
-#&nbsp;along&nbsp;with&nbsp;this&nbsp;program;&nbsp;if&nbsp;not,&nbsp;write&nbsp;to&nbsp;the&nbsp;Free&nbsp;Software<br>
-#&nbsp;Foundation,&nbsp;Inc.,&nbsp;59&nbsp;Temple&nbsp;Place,&nbsp;Suite&nbsp;330,&nbsp;Boston,&nbsp;MA&nbsp;&nbsp;02111-1307&nbsp;&nbsp;USA</tt></p>
+    <p><tt>##&nbsp;Automatically&nbsp;adapted&nbsp;for&nbsp;numpy.oldnumeric&nbsp;Sep&nbsp;06,&nbsp;2007&nbsp;by&nbsp;alter_code1.py</tt></p>
 <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#aa55cc">
@@ -32,10 +17,11 @@
 <font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
     
 <tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="Numeric.html">Numeric</a><br>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="numpy.oldnumeric.html">numpy.oldnumeric</a><br>
 </td><td width="25%" valign=top><a href="ImageD11.indexing.html">ImageD11.indexing</a><br>
+</td><td width="25%" valign=top><a href="ImageD11.parameters.html">ImageD11.parameters</a><br>
 </td><td width="25%" valign=top><a href="ImageD11.transform.html">ImageD11.transform</a><br>
-</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+</td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ee77aa">
 <td colspan=3 valign=bottom>&nbsp;<br>
@@ -55,11 +41,11 @@
 <td width="100%">Methods defined here:<br>
 <dl><dt><a name="refinegrains-__init__"><strong>__init__</strong></a>(self, tolerance<font color="#909090">=0.01</font>)</dt></dl>
 
-<dl><dt><a name="refinegrains-applyargs"><strong>applyargs</strong></a>(self, arg)</dt></dl>
+<dl><dt><a name="refinegrains-applyargs"><strong>applyargs</strong></a>(self, args)</dt></dl>
 
 <dl><dt><a name="refinegrains-compute_gv"><strong>compute_gv</strong></a>(self, grainname, scanname)</dt><dd><tt>Makes&nbsp;self.<strong>gv</strong>&nbsp;refer&nbsp;be&nbsp;g-vectors&nbsp;computed&nbsp;for&nbsp;this&nbsp;grain&nbsp;in&nbsp;this&nbsp;scan</tt></dd></dl>
 
-<dl><dt><a name="refinegrains-fit"><strong>fit</strong></a>(self)</dt></dl>
+<dl><dt><a name="refinegrains-fit"><strong>fit</strong></a>(self, maxiters<font color="#909090">=100</font>)</dt></dl>
 
 <dl><dt><a name="refinegrains-generate_grains"><strong>generate_grains</strong></a>(self)</dt></dl>
 
@@ -85,7 +71,9 @@
 
 <hr>
 Data and other attributes defined here:<br>
-<dl><dt><strong>stepsizes</strong> = {'chi': 0.0017453292519943296, 'distance': 0.10000000000000001, 'tilt-y': 0.0017453292519943296, 'tilt-z': 0.0017453292519943296, 'translation': 0.10000000000000001, 'wavelength': 0.001, 'wedge': 0.0017453292519943296, 'y-center': 0.10000000000000001, 'z-center': 0.10000000000000001}</dl>
+<dl><dt><strong>pars</strong> = {'cell__a': 4.1569162000000004, 'cell__b': 4.1569162000000004, 'cell__c': 4.1569162000000004, 'cell_alpha': 90.0, 'cell_beta': 90.0, 'cell_gamma': 90.0, 'cell_lattice_[P,A,B,C,I,F,R]': 'P', 'chi': 0.0, 'distance': 7367.8452301999996, 'fit_tolerance': 0.5, ...}</dl>
+
+<dl><dt><strong>stepsizes</strong> = {'chi': 0.0017453292519943296, 'distance': 0.10000000000000001, 't_x': 0.10000000000000001, 't_y': 0.10000000000000001, 't_z': 0.10000000000000001, 'tilt_x': 0.0017453292519943296, 'tilt_y': 0.0017453292519943296, 'tilt_z': 0.0017453292519943296, 'wavelength': 0.001, 'wedge': 0.0017453292519943296, ...}</dl>
 
 </td></tr></table></td></tr></table>
 </body></html>

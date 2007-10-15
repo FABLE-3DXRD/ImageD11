@@ -22,9 +22,10 @@ file&nbsp;for&nbsp;a&nbsp;2K&nbsp;image&nbsp;etc?</tt></p>
     
 <tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="ImageD11.bisplev.html">ImageD11.bisplev</a><br>
+</td><td width="25%" valign=top><a href="logging.html">logging</a><br>
 </td><td width="25%" valign=top><a href="math.html">math</a><br>
-</td><td width="25%" valign=top><a href="Numeric.html">Numeric</a><br>
-</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+</td><td width="25%" valign=top><a href="numpy.oldnumeric.html">numpy.oldnumeric</a><br>
+</td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ee77aa">
 <td colspan=3 valign=bottom>&nbsp;<br>
@@ -33,8 +34,12 @@ file&nbsp;for&nbsp;a&nbsp;2K&nbsp;image&nbsp;etc?</tt></p>
 <tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%"><dl>
 <dt><font face="helvetica, arial"><a href="ImageD11.blobcorrector.html#correctorclass">correctorclass</a>
-</font></dt><dt><font face="helvetica, arial"><a href="ImageD11.blobcorrector.html#perfect">perfect</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="ImageD11.blobcorrector.html#perfect">perfect</a>
 </font></dt></dl>
+</dd>
+</dl>
  <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ffc8d8">
@@ -45,13 +50,13 @@ file&nbsp;for&nbsp;a&nbsp;2K&nbsp;image&nbsp;etc?</tt></p>
 <td colspan=2><tt>Applies&nbsp;a&nbsp;spatial&nbsp;distortion&nbsp;to&nbsp;a&nbsp;peak&nbsp;position&nbsp;using&nbsp;a&nbsp;fit2d&nbsp;splinefile<br>&nbsp;</tt></td></tr>
 <tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
-<dl><dt><a name="correctorclass-__init__"><strong>__init__</strong></a>(self, splinefile, orientation<font color="#909090">='edf'</font>)</dt><dd><tt>Argument&nbsp;is&nbsp;the&nbsp;name&nbsp;of&nbsp;a&nbsp;fit2d&nbsp;spline&nbsp;file</tt></dd></dl>
+<dl><dt><a name="correctorclass-__init__"><strong>__init__</strong></a>(self, argsplinefile, orientation<font color="#909090">='edf'</font>)</dt><dd><tt>Argument&nbsp;is&nbsp;the&nbsp;name&nbsp;of&nbsp;a&nbsp;fit2d&nbsp;spline&nbsp;file</tt></dd></dl>
 
-<dl><dt><a name="correctorclass-correct"><strong>correct</strong></a>(self, x, y)</dt><dd><tt>Transform&nbsp;x,y&nbsp;in&nbsp;raw&nbsp;image&nbsp;coordinates&nbsp;into&nbsp;x,y&nbsp;of&nbsp;an<br>
+<dl><dt><a name="correctorclass-correct"><strong>correct</strong></a>(self, xin, yin)</dt><dd><tt>Transform&nbsp;x,y&nbsp;in&nbsp;raw&nbsp;image&nbsp;coordinates&nbsp;into&nbsp;x,y&nbsp;of&nbsp;an<br>
 idealised&nbsp;image.&nbsp;Returns&nbsp;a&nbsp;tuple&nbsp;(x,y),&nbsp;expects&nbsp;a<br>
 pair&nbsp;of&nbsp;floats&nbsp;as&nbsp;arguments</tt></dd></dl>
 
-<dl><dt><a name="correctorclass-distort"><strong>distort</strong></a>(self, xnew, ynew)</dt><dd><tt>Distort&nbsp;a&nbsp;pair&nbsp;of&nbsp;points&nbsp;xnew,&nbsp;ynew&nbsp;to&nbsp;find&nbsp;where&nbsp;they<br>
+<dl><dt><a name="correctorclass-distort"><strong>distort</strong></a>(self, xin, yin)</dt><dd><tt>Distort&nbsp;a&nbsp;pair&nbsp;of&nbsp;points&nbsp;xnew,&nbsp;ynew&nbsp;to&nbsp;find&nbsp;where&nbsp;they<br>
 would&nbsp;be&nbsp;in&nbsp;a&nbsp;raw&nbsp;image<br>
 &nbsp;<br>
 Iterative&nbsp;algorithm...</tt></dd></dl>
@@ -59,30 +64,34 @@ Iterative&nbsp;algorithm...</tt></dd></dl>
 <dl><dt><a name="correctorclass-make_pixel_lut"><strong>make_pixel_lut</strong></a>(self, dims)</dt><dd><tt>Generate&nbsp;an&nbsp;x&nbsp;and&nbsp;y&nbsp;image&nbsp;which&nbsp;maps&nbsp;the&nbsp;array&nbsp;indices&nbsp;into<br>
 floating&nbsp;point&nbsp;array&nbsp;indices&nbsp;(to&nbsp;be&nbsp;corrected&nbsp;for&nbsp;pixel&nbsp;size&nbsp;later)<br>
 &nbsp;<br>
-returns&nbsp;(FIXME&nbsp;-&nbsp;get&nbsp;them&nbsp;the&nbsp;right&nbsp;way&nbsp;around!)</tt></dd></dl>
+returns&nbsp;<br>
+FIXME&nbsp;-&nbsp;check&nbsp;they&nbsp;are&nbsp;the&nbsp;right&nbsp;way&nbsp;around<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;add&nbsp;some&nbsp;sort&nbsp;of&nbsp;known&nbsp;splinefile&nbsp;testcase</tt></dd></dl>
 
 <dl><dt><a name="correctorclass-make_pos_lut"><strong>make_pos_lut</strong></a>(self, dims)</dt><dd><tt>Generate&nbsp;a&nbsp;look&nbsp;up&nbsp;table&nbsp;of&nbsp;pixel&nbsp;positions&nbsp;in&nbsp;microns<br>
+#&nbsp;Cache&nbsp;the&nbsp;value&nbsp;in&nbsp;case&nbsp;of&nbsp;multiple&nbsp;calls<br>
 returns&nbsp;...</tt></dd></dl>
-
-<dl><dt><a name="correctorclass-readfit2dfloats"><strong>readfit2dfloats</strong></a>(self, fp, n, debug<font color="#909090">=0</font>)</dt><dd><tt>Interprets&nbsp;a&nbsp;5E14.7&nbsp;formatted&nbsp;fortran&nbsp;line</tt></dd></dl>
 
 <dl><dt><a name="correctorclass-readfit2dspline"><strong>readfit2dspline</strong></a>(self, name)</dt><dd><tt>Reads&nbsp;a&nbsp;fit2d&nbsp;spline&nbsp;file&nbsp;into&nbsp;a&nbsp;scipy/fitpack&nbsp;tuple,&nbsp;tck<br>
 A&nbsp;fairly&nbsp;long&nbsp;and&nbsp;dull&nbsp;routine...</tt></dd></dl>
 
-<dl><dt><a name="correctorclass-test"><strong>test</strong></a>(self, x, y)</dt><dd><tt>Checks&nbsp;that&nbsp;the&nbsp;correct&nbsp;and&nbsp;distort&nbsp;functions&nbsp;are&nbsp;indeed<br>
+<dl><dt><a name="correctorclass-test"><strong>test</strong></a>(self, xin, yin)</dt><dd><tt>Checks&nbsp;that&nbsp;the&nbsp;correct&nbsp;and&nbsp;distort&nbsp;functions&nbsp;are&nbsp;indeed<br>
 inversely&nbsp;related&nbsp;to&nbsp;each&nbsp;other</tt></dd></dl>
 
 </td></tr></table> <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ffc8d8">
 <td colspan=3 valign=bottom>&nbsp;<br>
-<font color="#000000" face="helvetica, arial"><a name="perfect">class <strong>perfect</strong></a></font></td></tr>
+<font color="#000000" face="helvetica, arial"><a name="perfect">class <strong>perfect</strong></a>(<a href="ImageD11.blobcorrector.html#correctorclass">correctorclass</a>)</font></td></tr>
     
 <tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
-<td colspan=2><tt>To&nbsp;use&nbsp;on&nbsp;previously&nbsp;corrected&nbsp;images<br>&nbsp;</tt></td></tr>
+<td colspan=2><tt>To&nbsp;use&nbsp;on&nbsp;previously&nbsp;corrected&nbsp;when&nbsp;there&nbsp;is&nbsp;no&nbsp;splinefile<br>
+Allows&nbsp;pixel&nbsp;size&nbsp;etc&nbsp;to&nbsp;be&nbsp;set<br>&nbsp;</tt></td></tr>
 <tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
-<dl><dt><a name="perfect-correct"><strong>correct</strong></a>(self, x, y)</dt></dl>
+<dl><dt><a name="perfect-__init__"><strong>__init__</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="perfect-correct"><strong>correct</strong></a>(self, xin, yin)</dt><dd><tt>Do&nbsp;nothing&nbsp;-&nbsp;just&nbsp;return&nbsp;the&nbsp;same&nbsp;values</tt></dd></dl>
 
 <hr>
 Data and other attributes defined here:<br>
@@ -92,6 +101,30 @@ Data and other attributes defined here:<br>
 
 <dl><dt><strong>ysize</strong> = 'UNKNOWN'</dl>
 
+<hr>
+Methods inherited from <a href="ImageD11.blobcorrector.html#correctorclass">correctorclass</a>:<br>
+<dl><dt><a name="perfect-distort"><strong>distort</strong></a>(self, xin, yin)</dt><dd><tt>Distort&nbsp;a&nbsp;pair&nbsp;of&nbsp;points&nbsp;xnew,&nbsp;ynew&nbsp;to&nbsp;find&nbsp;where&nbsp;they<br>
+would&nbsp;be&nbsp;in&nbsp;a&nbsp;raw&nbsp;image<br>
+&nbsp;<br>
+Iterative&nbsp;algorithm...</tt></dd></dl>
+
+<dl><dt><a name="perfect-make_pixel_lut"><strong>make_pixel_lut</strong></a>(self, dims)</dt><dd><tt>Generate&nbsp;an&nbsp;x&nbsp;and&nbsp;y&nbsp;image&nbsp;which&nbsp;maps&nbsp;the&nbsp;array&nbsp;indices&nbsp;into<br>
+floating&nbsp;point&nbsp;array&nbsp;indices&nbsp;(to&nbsp;be&nbsp;corrected&nbsp;for&nbsp;pixel&nbsp;size&nbsp;later)<br>
+&nbsp;<br>
+returns&nbsp;<br>
+FIXME&nbsp;-&nbsp;check&nbsp;they&nbsp;are&nbsp;the&nbsp;right&nbsp;way&nbsp;around<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;add&nbsp;some&nbsp;sort&nbsp;of&nbsp;known&nbsp;splinefile&nbsp;testcase</tt></dd></dl>
+
+<dl><dt><a name="perfect-make_pos_lut"><strong>make_pos_lut</strong></a>(self, dims)</dt><dd><tt>Generate&nbsp;a&nbsp;look&nbsp;up&nbsp;table&nbsp;of&nbsp;pixel&nbsp;positions&nbsp;in&nbsp;microns<br>
+#&nbsp;Cache&nbsp;the&nbsp;value&nbsp;in&nbsp;case&nbsp;of&nbsp;multiple&nbsp;calls<br>
+returns&nbsp;...</tt></dd></dl>
+
+<dl><dt><a name="perfect-readfit2dspline"><strong>readfit2dspline</strong></a>(self, name)</dt><dd><tt>Reads&nbsp;a&nbsp;fit2d&nbsp;spline&nbsp;file&nbsp;into&nbsp;a&nbsp;scipy/fitpack&nbsp;tuple,&nbsp;tck<br>
+A&nbsp;fairly&nbsp;long&nbsp;and&nbsp;dull&nbsp;routine...</tt></dd></dl>
+
+<dl><dt><a name="perfect-test"><strong>test</strong></a>(self, xin, yin)</dt><dd><tt>Checks&nbsp;that&nbsp;the&nbsp;correct&nbsp;and&nbsp;distort&nbsp;functions&nbsp;are&nbsp;indeed<br>
+inversely&nbsp;related&nbsp;to&nbsp;each&nbsp;other</tt></dd></dl>
+
 </td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#eeaa77">
@@ -99,10 +132,6 @@ Data and other attributes defined here:<br>
 <font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
     
 <tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><dl><dt><a name="-unwarpimage"><strong>unwarpimage</strong></a>(image, xpositions, ypositions)</dt><dd><tt>xpositions/ypositions&nbsp;are&nbsp;floats&nbsp;giving&nbsp;pixel&nbsp;co-ords&nbsp;of&nbsp;the&nbsp;input&nbsp;image.<br>
-&nbsp;<br>
-We&nbsp;need&nbsp;the&nbsp;positions&nbsp;of&nbsp;the&nbsp;pixels&nbsp;in&nbsp;the&nbsp;output&nbsp;image,&nbsp;on&nbsp;the&nbsp;input&nbsp;image.<br>
-&nbsp;<br>
-Hence,&nbsp;for&nbsp;now,</tt></dd></dl>
+<td width="100%"><dl><dt><a name="-readfit2dfloats"><strong>readfit2dfloats</strong></a>(fp, nfl)</dt><dd><tt>Interprets&nbsp;a&nbsp;5E14.7&nbsp;formatted&nbsp;fortran&nbsp;line</tt></dd></dl>
 </td></tr></table>
 </body></html>

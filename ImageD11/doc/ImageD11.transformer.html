@@ -1,0 +1,113 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module ImageD11.transformer</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.transformer</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python24/lib/site-packages/imaged11/transformer.py">c:\python24\lib\site-packages\imaged11\transformer.py</a></font></td></tr></table>
+    <p><tt>#&nbsp;ImageD11_v0.4&nbsp;Software&nbsp;for&nbsp;beamline&nbsp;ID11<br>
+#&nbsp;Copyright&nbsp;(C)&nbsp;2005&nbsp;&nbsp;Jon&nbsp;Wright<br>
+#<br>
+#&nbsp;This&nbsp;program&nbsp;is&nbsp;free&nbsp;software;&nbsp;you&nbsp;can&nbsp;redistribute&nbsp;it&nbsp;and/or&nbsp;modify<br>
+#&nbsp;it&nbsp;under&nbsp;the&nbsp;terms&nbsp;of&nbsp;the&nbsp;GNU&nbsp;General&nbsp;Public&nbsp;License&nbsp;as&nbsp;published&nbsp;by<br>
+#&nbsp;the&nbsp;Free&nbsp;Software&nbsp;Foundation;&nbsp;either&nbsp;version&nbsp;2&nbsp;of&nbsp;the&nbsp;License,&nbsp;or<br>
+#&nbsp;(at&nbsp;your&nbsp;option)&nbsp;any&nbsp;later&nbsp;version.<br>
+#<br>
+#&nbsp;This&nbsp;program&nbsp;is&nbsp;distributed&nbsp;in&nbsp;the&nbsp;hope&nbsp;that&nbsp;it&nbsp;will&nbsp;be&nbsp;useful,<br>
+#&nbsp;but&nbsp;WITHOUT&nbsp;ANY&nbsp;WARRANTY;&nbsp;without&nbsp;even&nbsp;the&nbsp;implied&nbsp;warranty&nbsp;of<br>
+#&nbsp;MERCHANTABILITY&nbsp;or&nbsp;FITNESS&nbsp;FOR&nbsp;A&nbsp;PARTICULAR&nbsp;PURPOSE.&nbsp;&nbsp;See&nbsp;the<br>
+#&nbsp;GNU&nbsp;General&nbsp;Public&nbsp;License&nbsp;for&nbsp;more&nbsp;details.<br>
+#<br>
+#&nbsp;You&nbsp;should&nbsp;have&nbsp;received&nbsp;a&nbsp;copy&nbsp;of&nbsp;the&nbsp;GNU&nbsp;General&nbsp;Public&nbsp;License<br>
+#&nbsp;along&nbsp;with&nbsp;this&nbsp;program;&nbsp;if&nbsp;not,&nbsp;write&nbsp;to&nbsp;the&nbsp;Free&nbsp;Software<br>
+#&nbsp;Foundation,&nbsp;Inc.,&nbsp;59&nbsp;Temple&nbsp;Place,&nbsp;Suite&nbsp;330,&nbsp;Boston,&nbsp;MA&nbsp;&nbsp;02111-1307&nbsp;&nbsp;USA</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="ImageD11.columnfile.html">ImageD11.columnfile</a><br>
+<a href="math.html">math</a><br>
+</td><td width="25%" valign=top><a href="numpy.oldnumeric.html">numpy.oldnumeric</a><br>
+<a href="ImageD11.transform.html">ImageD11.transform</a><br>
+</td><td width="25%" valign=top><a href="ImageD11.unitcell.html">ImageD11.unitcell</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="ImageD11.transformer.html#transformer">transformer</a>
+</font></dt></dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="transformer">class <strong>transformer</strong></a></font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Handles&nbsp;the&nbsp;algorithmic,&nbsp;fitting&nbsp;and&nbsp;state&nbsp;information&nbsp;for&nbsp;<br>
+fitting&nbsp;parameters&nbsp;to&nbsp;give&nbsp;experimental&nbsp;calibrations<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="transformer-__init__"><strong>__init__</strong></a>(self)</dt><dd><tt>Nothing&nbsp;passed&nbsp;in&nbsp;?<br>
+It&nbsp;should&nbsp;really&nbsp;be&nbsp;inheriting&nbsp;from&nbsp;the&nbsp;parameter&nbsp;object.</tt></dd></dl>
+
+<dl><dt><a name="transformer-addcellpeaks"><strong>addcellpeaks</strong></a>(self, limit<font color="#909090">=None</font>)</dt><dd><tt>Adds&nbsp;unit&nbsp;cell&nbsp;predicted&nbsp;peaks&nbsp;for&nbsp;fitting&nbsp;against<br>
+Optional&nbsp;arg&nbsp;limit&nbsp;gives&nbsp;highest&nbsp;angle&nbsp;to&nbsp;use<br>
+&nbsp;<br>
+Depends&nbsp;on&nbsp;parameters:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;'cell__a','cell__b','cell__c',&nbsp;'wavelength'&nbsp;#&nbsp;in&nbsp;angstrom<br>
+&nbsp;&nbsp;&nbsp;&nbsp;'cell_alpha','cell_beta','cell_gamma'&nbsp;#&nbsp;in&nbsp;degrees<br>
+&nbsp;&nbsp;&nbsp;&nbsp;'cell_lattice_[P,A,B,C,I,F,R]'</tt></dd></dl>
+
+<dl><dt><a name="transformer-applyargs"><strong>applyargs</strong></a>(self, args)</dt><dd><tt>for&nbsp;use&nbsp;with&nbsp;simplex/gof&nbsp;function,&nbsp;alter&nbsp;parameters</tt></dd></dl>
+
+<dl><dt><a name="transformer-compute_tth_eta"><strong>compute_tth_eta</strong></a>(self)</dt><dd><tt>Compute&nbsp;the&nbsp;twotheta&nbsp;and&nbsp;eta&nbsp;for&nbsp;peaks&nbsp;previous&nbsp;read&nbsp;in</tt></dd></dl>
+
+<dl><dt><a name="transformer-compute_tth_histo"><strong>compute_tth_histo</strong></a>(self)</dt><dd><tt>Compute&nbsp;the&nbsp;histogram&nbsp;over&nbsp;twotheta&nbsp;for&nbsp;peaks&nbsp;previous&nbsp;read&nbsp;in<br>
+and&nbsp;filter&nbsp;peaks&nbsp;out&nbsp;falling&nbsp;in&nbsp;bins&nbsp;with&nbsp;less&nbsp;than&nbsp;min_bin_ratio</tt></dd></dl>
+
+<dl><dt><a name="transformer-computegv"><strong>computegv</strong></a>(self)</dt><dd><tt>Using&nbsp;self.<strong>twotheta</strong>,&nbsp;self.<strong>eta</strong>&nbsp;and&nbsp;omega&nbsp;angles,&nbsp;compute&nbsp;x,y,z&nbsp;of&nbsp;spot<br>
+in&nbsp;reciprocal&nbsp;space</tt></dd></dl>
+
+<dl><dt><a name="transformer-fit"><strong>fit</strong></a>(self, tthmax<font color="#909090">=180</font>)</dt><dd><tt>Apply&nbsp;simplex&nbsp;to&nbsp;improve&nbsp;fit&nbsp;of&nbsp;obs/calc&nbsp;tth</tt></dd></dl>
+
+<dl><dt><a name="transformer-get_variable_list"><strong>get_variable_list</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="transformer-getvars"><strong>getvars</strong></a>(self)</dt><dd><tt>decide&nbsp;what&nbsp;is&nbsp;refinable</tt></dd></dl>
+
+<dl><dt><a name="transformer-gof"><strong>gof</strong></a>(self, args)</dt><dd><tt>Compute&nbsp;how&nbsp;good&nbsp;is&nbsp;the&nbsp;fit&nbsp;of&nbsp;obs/calc&nbsp;peak&nbsp;positions&nbsp;in&nbsp;tth</tt></dd></dl>
+
+<dl><dt><a name="transformer-loadfileparameters"><strong>loadfileparameters</strong></a>(self, filename)</dt><dd><tt>Read&nbsp;in&nbsp;beam&nbsp;center&nbsp;etc&nbsp;from&nbsp;file</tt></dd></dl>
+
+<dl><dt><a name="transformer-loadfiltered"><strong>loadfiltered</strong></a>(self, filename)</dt><dd><tt>Read&nbsp;in&nbsp;3D&nbsp;peaks&nbsp;from&nbsp;peaksearch</tt></dd></dl>
+
+<dl><dt><a name="transformer-savegv"><strong>savegv</strong></a>(self, filename)</dt><dd><tt>Save&nbsp;g-vectors&nbsp;into&nbsp;a&nbsp;file<br>
+Use&nbsp;crappy&nbsp;.ass&nbsp;format&nbsp;from&nbsp;previous&nbsp;for&nbsp;now&nbsp;(testing)</tt></dd></dl>
+
+<dl><dt><a name="transformer-saveparameters"><strong>saveparameters</strong></a>(self, filename)</dt><dd><tt>Save&nbsp;beam&nbsp;center&nbsp;etc&nbsp;to&nbsp;file</tt></dd></dl>
+
+<dl><dt><a name="transformer-setvars"><strong>setvars</strong></a>(self, varlist)</dt><dd><tt>set&nbsp;the&nbsp;things&nbsp;to&nbsp;refine</tt></dd></dl>
+
+<dl><dt><a name="transformer-updateparameters"><strong>updateparameters</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="transformer-write_graindex_gv"><strong>write_graindex_gv</strong></a>(self, filename)</dt></dl>
+
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>PARAMETERS</strong> = [&lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, &lt;ImageD11.parameters.par instance&gt;, ...]</td></tr></table>
+</body></html>
