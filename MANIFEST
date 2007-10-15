@@ -10,7 +10,6 @@ setup.py
 bld_test_linux.sh
 winmake.bat
 test/demo
-test/nac_demo
 test/spatial2k.spline
 test/quantix
 test/gv_general
@@ -32,11 +31,6 @@ test/demo/new.pars
 test/demo/eu3.pars
 test/demo/test.flt
 test/demo/test.gve
-test/nac_demo/peaks.out_merge_t200
-test/nac_demo/peaks.out
-test/nac_demo/peaks.flt
-test/nac_demo/nac.prm
-test/nac_demo/peaks.out_merge_t200.gve
 test/quantix/g2.flt
 test/quantix/g2.pars
 test/quantix/test.py

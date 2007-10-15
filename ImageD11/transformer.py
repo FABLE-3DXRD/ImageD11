@@ -386,11 +386,11 @@ class transformer:
         for peak in self.theorypeaks:
             f.write("%10.7f %4d %4d %4d\n"%(peak[0],peak[1][0],peak[1][1],peak[1][2]))
         order = n.argsort(self.twotheta)
-        f.write("# xr yr zr xc yc ds phi omega\n")
+        f.write("# xr yr zr xc yc ds phi omega spot3d_id\n")
         print n.maximum.reduce(self.omega),n.minimum.reduce(self.omega)
         ds = 2*n.sin(transform.radians(self.twotheta/2))/self.wavelength
         for i in order:
-            f.write("%f %f %f %f %f %f %f %f %f \n"%(self.gv[0,i],self.gv[1,i],self.gv[2,i],
+            f.write("%f %f %f %f %f %f %f %f %d \n"%(self.gv[0,i],self.gv[1,i],self.gv[2,i],
                 self.x[i],self.y[i],ds[i],self.eta[i],self.omega[i]*self.omegasign, 
                 self.spot3d_id[i]))
         f.close()
