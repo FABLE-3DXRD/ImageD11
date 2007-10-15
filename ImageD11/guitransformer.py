@@ -121,9 +121,9 @@ class guitransformer:
                  twodplot.data(
                     d[0,:],
                     d[1,:],
-                    { "xlabel" : "y", 
-                      "ylabel" : "z", 
-                      "title"  : "Peak positions on detector"} ) ) )
+                    { "xlabel" : "slow", 
+                      "ylabel" : "fast", 
+                      "title"  : "Peak positions in array"} ) ) )
 
 
     def fit(self):
