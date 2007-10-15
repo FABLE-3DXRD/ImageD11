@@ -19,7 +19,7 @@
 import numpy.oldnumeric as n
 
 import math
-from ImageD11 import transform, unitcell
+from ImageD11 import transform, unitcell, columnfile
 from ImageD11.parameters import par, parameters
 
 PARAMETERS = [
@@ -172,6 +172,7 @@ class transformer:
         for p in PARAMETERS:
             self.parameterobj.addpar(p)
         self.pars = self.parameterobj.get_parameters()
+        self.colfile = None
    
     def updateparameters(self):
         self.pars = self.parameterobj.get_parameters()
@@ -183,24 +184,18 @@ class transformer:
         """ decide what is refinable """
         return self.parameterobj.varylist
     
-    def setvars(self,varlist):
+    def setvars(self, varlist):
         """ set the things to refine """
         self.parameterobj.varylist = varlist
 
-    def loadfiltered(self,filename):
-        f=open(filename,"r")
-        #                0123456789012
-        line=f.readline()
-        if line[0:12] !="# xc yc omega"[0:12]:
-            print line
-            return "Sorry, That does not seem to be a filter peaks file, output from the peaksearching menu option"
-        titles=line.replace("#","").split() # to find others eventually
-        bigarray=[]
-        for line in f.readlines():
-            v=[float(z) for z in line.split()]
-            bigarray.append(v)
-        f.close()
-        self.finalpeaks=n.transpose(n.array(bigarray))
+    def loadfiltered(self, filename):
+        """
+        Read in 3D peaks from peaksearch
+        """
+        self.colfile = columnfile.columnfile(filename)
+        self.finalpeaks = self.colfile.bigarray
+        assert ((self.colfile.titles[0:3] == ["fc","sc","omega"]) or
+                (self.colfile.titles[0:3] == ["xc","yc","omega"])) 
         self.peaks_xy = self.finalpeaks[0:2,:]
         self.x = self.finalpeaks[0,:]
         self.y = self.finalpeaks[1,:]

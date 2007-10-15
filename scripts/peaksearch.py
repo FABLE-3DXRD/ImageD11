@@ -137,7 +137,10 @@ def peaksearch( filename ,
             OMEGA += OMEGASTEP
         #
         # Do the peaksearch
+        f.write("# Omega = %f\n"%(ome))
         labelim.peaksearch(picture, threshold, ome)
+        f.write("# Threshold = %f\n"%(threshold))
+        f.write("# npks = %d\n"%(labelim.npk))
         #
         labelim.mergelast() 
         print "T=%-5d n=%-5d;" % (int(threshold),labelim.npk),
@@ -217,6 +220,7 @@ if __name__=="__main__":
         
         # Generate list of files to process
         print "Input format is",options.format
+        files = []
         if options.format in [".edf",".edf.gz",".tif",".tif.gz",".mccd"]:
             files = ["%s%04d%s" % (stem, i, options.format
                                    ) for i in range(first,last+1)]
@@ -229,7 +233,8 @@ if __name__=="__main__":
                     sys.exit()
         # Make a blobimage the same size as the first image to process
         if len(files)==0:
-            raise "No files found for stem %s" % (stem)
+            raise "No files found for stem %s and format" % (stem, 
+                                                             options.format)
         li_objs={} # label image objects, dict of
         s = openimage(files[0]).data.shape # data array shape
         # Create label images

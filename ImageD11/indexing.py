@@ -383,6 +383,9 @@ class indexer:
         # ntry=0
         # nhits=0
         self.hits=[]
+        if len(i1)==0 or len(i2)==0:
+            # return without crashing please
+            return
         tol=float(self.cosine_tol)
         # ng=0
         mp=n.sqrt(n.sum(self.gv*self.gv,1))
