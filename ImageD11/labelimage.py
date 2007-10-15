@@ -94,8 +94,8 @@ class labelimage:
     format += "  %.0f"*4 + "  %.4f"*2
     titles += "  dety  detz"
     format += "  %.4f"*2
-    titles += "  onfirst  onlast"
-    format += "  %d  %d"
+    titles += "  onfirst  onlast  spot3d_id"
+    format += "  %d  %d  %d"
     titles += "\n"
     format += "\n"
 
@@ -119,6 +119,8 @@ class labelimage:
         self.blim = n.zeros(shape, n.Int)  # 'current' blob image 
         self.npk = 0        #  Number of peaks on current
         self.res = None     #  properties of current
+        
+        self.threshold = None # cache for writing files
 
         self.lastbl = n.zeros(shape, n.Int)# 'previous' blob image
         self.lastres = None
@@ -146,6 +148,7 @@ class labelimage:
         # data = 2D Numeric array (of your data)
         # threshold = float - pixels above this number are put into objects
         """
+        self.threshold = threshold
         self.npk = connectedpixels.connectedpixels(data, 
                                                   self.blim, 
                                                   threshold,
@@ -190,23 +193,32 @@ class labelimage:
         # Also swap the blob images
         self.lastbl, self.blim = self.blim, self.lastbl
 
-    def output2dpeaks(self):
+    def output2dpeaks(self, file_obj):
         """
         Write something compatible with the old ImageD11 format
         which fabian is reading.
         This is called before mergelast, so we write self.npk/self.res
         """
+        
+        file_obj.write("#Threshold level %f\n", self.threshold)
+        file_obj.write("# Number_of_pixels Average_counts    f   s     fc   sc      sig_f sig_s cov_fs\n")
+        ret = connectedpixels.blob_moments(self.res)
+        i[f_cen], i[s_cen] = self.corrector.correct(i[f_raw], i[s_raw])
+        fs = "%d  "+ "%f  "*8 + "\n"
         for i in self.res:
             if i[s_1] < 0.1:
                 raise Exception("Empty peak on current frame")
-            
-
+            file_obj.write(fs % (i[s_1],  i[avg_i], i[f_raw], i[s_raw],
+                                 i[f_cen], i[s_cen],
+                                 i[m_ff], i[m_ss], i[m_fs]))
+        file_obj.write("\n")
         
     def outputpeaks(self, peaks):
         """
         Peaks are in Numeric arrays nowadays
         """
-
+        if file_obj is None:
+            file_obj = self.outfile
         for i in peaks:
             if i[s_1] < 0.1:
                 # Merged with another
@@ -219,13 +231,14 @@ class labelimage:
                     i[f_cen], i[s_cen], i[o_raw], 
                     i[s_1], i[avg_i],
                     i[f_raw], i[s_raw],
-                    i[m_ss], i[m_ff], i[m_oo], i[m_sf], i[m_so], i[m_fo],
+                    i[m_ff], i[m_ss], i[m_sf],
+                    i[m_oo], i[m_so], i[m_fo],
                     i[s_I],i[s_I2],  
                     i[mx_I],i[mx_I_f],i[mx_I_s],i[mx_I_o], 
                     i[bb_mn_f],i[bb_mx_f],i[bb_mn_s],i[bb_mx_s],
                     i[bb_mn_o],i[bb_mx_o],
                     i[dety], i[detz],
-                    self.onfirst, self.onlast ))
+                    self.onfirst, self.onlast, self.spot3d_id ))
             self.spot3d_id += 1
         if self.onfirst > 0:
             self.onfirst = 0
