@@ -42,11 +42,11 @@ PARAMETERS = [
           vary=True, 
           can_vary=True,
           stepsize = 1.0),
-     par('z_size',   46.77648,
+     par('z_size',   48.08150,
           helpstring = "pixel size in vertical, same units distance",
           vary=False, 
           can_vary=False), # this could actually vary - a bit crazy?
-     par('y_size',   48.08150,
+     par('y_size',   46.77648,
           helpstring = "pixel size in horizontal, same units as distance",
           vary=False, 
           can_vary=False), # this could actually vary - a bit crazy?
