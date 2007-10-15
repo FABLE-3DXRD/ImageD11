@@ -57,7 +57,12 @@ if __name__=="__main__":
     # Help message - TODO - proper online help
     def help():
         from tkMessageBox import showinfo
-        showinfo("Help","Sorry, no help for you!\nPlease try harder")
+        hlp = """Try pointing your web browser at:
+   http://fable.sourceforge.net/index.php/ImageD11
+   See also the html documentation for programmers, somewhere like:
+   file:///c:/python24/Lib/site-packages/ImageD11/doc/ImageD11.html
+"""
+        showinfo("Help","Please try harder\n"+hlp)
 
 
     # Credits message
@@ -131,10 +136,12 @@ if __name__=="__main__":
   """%(ImageD11.__version__)
 
             startmessage += """
-  You are using version 1.x
+  You are using version %s
 
-  That means you must know what you are doing!
-  """
+  There have been lots of changes recently!
+
+  I would also be happily surprised if it is currently working.
+  """%(ImageD11.__version__)
             showinfo("Welcome to ImageD11 "+ImageD11.__version__,startmessage)
 
 

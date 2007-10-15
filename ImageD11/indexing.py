@@ -538,6 +538,10 @@ class indexer:
         i=0
         from ImageD11 import transform
         from numpy.oldnumeric.linear_algebra import inverse
+        # grain assignment
+        self.ga = -1*n.ones(self.ra.shape,n.Int)
+        # grain assignment scores
+        self.gas = n.ones(self.ra.shape,n.Float)
         for ubi in self.ubis:
             if tol==None:
                 tol=self.hkl_tol
@@ -546,6 +550,8 @@ class indexer:
             gint=n.matrixmultiply(inverse(ubi),hint)
             diff=h-hint
             drlv2=n.sum(diff*diff,0)
+            self.ga  = n.where(drlv2 < self.gas, i, -1)
+            self.gas = n.where(drlv2 < self.gas, drlv2, self.gas)
             ind = n.compress( n.less(drlv2,tol*tol) , n.arange(self.gv.shape[0]) )
             try:
                 mdrlv=  n.sum(n.sqrt(n.take(drlv2,ind)))/ind.shape[0]
@@ -559,6 +565,9 @@ class indexer:
             for abc in cellpars[:3]: f.write("%10.6f "%(abc))
             for abc in cellpars[3:]: f.write("%10.3f "%(abc))
             f.write("\n")
+            # Grainspotter U
+            f.write("U:\n"+str( ubitoU(ubi) ) + "\n")
+            f.write("B:\n"+str( ubitoB(ubi) ) + "\n")
             f.write("Peak   (  h       k       l      )   drlv             x       y ")
             if self.wavelength < 0:
                 f.write("\n")
@@ -600,41 +609,35 @@ class indexer:
                   self.omega[peak],self.eta[peak],self.tth[peak]))
             m=0
             npk=0
-            bestubi=999.
-            for ubi in self.ubis:
-                hi = n.matrixmultiply(ubi,h)
-                hint = n.floor(hi+0.5).astype(n.Int)
-                gint = n.matrixmultiply(inverse(ubi),hint)
-                diff=hi-hint
-                drlv2 = n.sum(diff*diff,0)
-                if drlv2 < bestubi:
-                    bestubi=drlv2
-                    besthi =hi
-                    bestm=m
-                if drlv2 < tol*tol:
-                    f.write("Grain %-5d (%3d,%3d,%3d)"%(m,hint[0],hint[1],hint[2]))
-                    f.write("  ( % -6.4f % -6.4f % -6.4f )  "%(hi[0],hi[1],hi[2]))
-                    # hint
-                    tt,e,o=transform.uncompute_one_g_vector(gint,self.wavelength,self.wedge)
+            bestubi=999. # in ga / gsa
+            drlv2 = self.gas[i]
+            m = self.ga[9]
+            hi = n.matrixmultiply(ubi,h)
+            hint = n.floor(hi+0.5).astype(n.Int)
+            gint = n.matrixmultiply(inverse(ubi),hint)
+            diff=hi-hint
+            drlv2 = n.sum(diff*diff,0)
+            if drlv2 < tol*tol:
+                f.write("Grain %-5d (%3d,%3d,%3d)"%(m,hint[0],hint[1],hint[2]))
+                f.write("  ( % -6.4f % -6.4f % -6.4f )  "%(hi[0],hi[1],hi[2]))
+                # hint
+                tt,e,o=transform.uncompute_one_g_vector(gint,self.wavelength,self.wedge)
 #               print "obs",self.omega[peak],self.eta[peak],self.tth[peak]
 #               print "calc",tt,e,o
-                    w=[ abs(e[0] - self.eta[peak]) , abs(e[1] - self.eta[peak]) ]
-                    w=n.argmin( w )
-                    et=e[w]
-                    om=o[w]
+                w=[ abs(e[0] - self.eta[peak]) , abs(e[1] - self.eta[peak]) ]
+                w=n.argmin( w )
+                et=e[w]
+                om=o[w]
                     # Now find best omega within 360 degree intervals
-                    om=mod_360(om,self.omega[peak])
-                    f.write(" omega= % 9.4f   eta= %9.4f   tth= %9.4f\n"%(om,et,tt) )
-                    npk=npk+1
-                m=m+1
-            if npk==0:
+                om=mod_360(om,self.omega[peak])
+                f.write(" omega= % 9.4f   eta= %9.4f   tth= %9.4f\n"%(om,et,tt) )
+                npk=npk+1
+            else:
                 if len(self.ubis)>0:
-                    f.write("Peak not assigned, closest=[ % -6.4f % -6.4f % -6.4f ] for grain %d\n"%(besthi[0],besthi[1],besthi[2],bestm))
+                    f.write("Peak not assigned, closest=[ % -6.4f % -6.4f % -6.4f ] for grain %d\n"%(hi[0],hi[1],hi[2],m))
                 else:
                     f.write("Peak not assigned, no grains found\n")
                 nleft=nleft+1
-            else:
-                nfitted=nfitted+1
 
         f.write("\n\nTotal number of peaks was %d\n"%(self.gv.shape[0]))
         f.write("Peaks assigned to grains %d\n"%(nfitted))

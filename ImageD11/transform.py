@@ -211,7 +211,7 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
         return tth , eta
                       
     
-def compute_tth_histo(finalpeaks,tth,no_bins=0,min_bin_ratio=1,
+def compute_tth_histo(finalpeaks, tth, no_bins = 0, min_bin_ratio = 1,
                     **kwds): # last line is for laziness - 
                              # pass kwds you'd like to be ignored
     tthsort = sort(tth)
@@ -227,7 +227,7 @@ def compute_tth_histo(finalpeaks,tth,no_bins=0,min_bin_ratio=1,
     n = n.concatenate([n,[len(tthsort)]])   # add on last position
     histogram = (n[1:] - n[:-1])*1.0        # this would otherwise be integer
     logging.debug("max(histogram) = %d"%(max(histogram)))
-    histogram=histogram/max(histogram)
+    histogram = histogram/max(histogram)
     
     # keeppeaks = [] 
     #for t in range(tth.shape[0]):

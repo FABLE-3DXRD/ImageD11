@@ -163,10 +163,10 @@ class transformer:
         Nothing passed in ?
         It should really be inheriting from the parameter object.
         """
-        self.twotheta=None
-        self.finalpeaks=None
-        self.gv=None
-        self.unitcell=None
+        self.twotheta = None
+        self.finalpeaks = None
+        self.gv = None
+        self.unitcell = None
         # this sets defaults according to class dict.
         self.parameterobj = parameters()
         for p in PARAMETERS:
@@ -200,6 +200,10 @@ class transformer:
         self.x = self.finalpeaks[0,:]
         self.y = self.finalpeaks[1,:]
         self.omega = self.finalpeaks[2,:]
+        if hasattr(self.colfile, "spot3d_id"):
+            self.spot3d_id = self.colfile.spot3d_id
+        else:
+            self.spot3d_id = range(len(self.x))
 
     def loadfileparameters(self,filename):
         """ Read in beam center etc from file """
@@ -386,8 +390,9 @@ class transformer:
         print n.maximum.reduce(self.omega),n.minimum.reduce(self.omega)
         ds = 2*n.sin(transform.radians(self.twotheta/2))/self.wavelength
         for i in order:
-            f.write("%f %f %f %f %f %f %f %f \n"%(self.gv[0,i],self.gv[1,i],self.gv[2,i],
-                self.x[i],self.y[i],ds[i],self.eta[i],self.omega[i]*self.omegasign))
+            f.write("%f %f %f %f %f %f %f %f %f \n"%(self.gv[0,i],self.gv[1,i],self.gv[2,i],
+                self.x[i],self.y[i],ds[i],self.eta[i],self.omega[i]*self.omegasign, 
+                self.spot3d_id[i]))
         f.close()
 
 
