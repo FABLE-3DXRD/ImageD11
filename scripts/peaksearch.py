@@ -142,6 +142,8 @@ def peaksearch( filename ,
         f.write("# Threshold = %f\n"%(threshold))
         f.write("# npks = %d\n"%(labelim.npk))
         #
+        if labelim.npk > 0:
+            labelim.output2dpeaks(f)
         labelim.mergelast() 
         print "T=%-5d n=%-5d;" % (int(threshold),labelim.npk),
         # Close the output file
@@ -177,8 +179,8 @@ if __name__=="__main__":
             dest="last", type="int",
             help="Number of last file to process")
         parser.add_option("-o", "--outfile", action="store",
-            dest="outfile",default="peaks.out", type="string",
-            help="Output filename, default=peaks.out")
+            dest="outfile",default="peaks.spt", type="string",
+            help="Output filename, default=peaks.spt")
         parser.add_option("-d", "--darkfile", action="store",
             dest="dark", default=None,  type="string",
             help="Dark current filename, to be subtracted, default=None")
@@ -201,6 +203,9 @@ if __name__=="__main__":
         options , args = parser.parse_args()
         stem =        options.stem
         outfile =     options.outfile
+        if outfile [:-4] != ".spt":
+            outfile = outfile + ".spt"
+            print "Your output file must end with .spt, changing to ",outfile
         first =       options.first
         last =        options.last
         OMEGA = options.OMEGA
@@ -239,8 +244,9 @@ if __name__=="__main__":
         s = openimage(files[0]).data.shape # data array shape
         # Create label images
         for t in thresholds_list:
-            mergefile="%s_merge_t%d"%(options.outfile,t)
-            li_objs[t]=labelimage(shape=s,fileout=mergefile,spatial=corrfunc) 
+            # the last 4 chars are guaranteed to be .spt above
+            mergefile="%s_t%d.flt"%(outfile[:-4], t)
+            li_objs[t]=labelimage(shape = s, fileout = mergefile, spatial = corrfunc) 
         # Not sure why that was there (I think if glob was used)
         # files.sort()
         if options.dark!=None:
