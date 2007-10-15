@@ -23,9 +23,9 @@ python2.5 fitgrain.py g3.pars g3.ubi g3.flt new.pars
 cd $SRC/test
 python2.5 test_peaksearch.py
 
-#cd $SRC/test
+cd $SRC/test
 ## takes really ages
-#python2.5 test_peaksearch.py ALL
+python2.5 test_peaksearch.py ALL
 
 
 cd $SRC/test/gv_general

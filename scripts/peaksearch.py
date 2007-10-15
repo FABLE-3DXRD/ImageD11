@@ -164,7 +164,7 @@ if __name__=="__main__":
             help="Name of the files up the digits part  "+\
                  "eg mydata in mydata0000.edf" )
         parser.add_option("-F", "--format", action="store",
-            dest="format",default="edf", type="string",
+            dest="format",default=".edf", type="string",
             help="Image File format, eg edf or bruker" )
         parser.add_option("-S","--step", action="store",
                           dest="OMEGASTEP", default=1.0, type="float",
@@ -241,8 +241,8 @@ if __name__=="__main__":
                     sys.exit()
         # Make a blobimage the same size as the first image to process
         if len(files)==0:
-            raise "No files found for stem %s and format %s" % (stem, 
-                                                             options.format)
+            raise Exception("No files found for stem %s and format %s" % (stem, 
+                                                             options.format))
         li_objs={} # label image objects, dict of
         s = openimage(files[0]).data.shape # data array shape
         # Create label images

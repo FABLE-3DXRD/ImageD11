@@ -78,7 +78,7 @@ class labelimage:
     For labelling spots in diffraction images
     """
 
-    titles = "#  fc  sc  omega" 
+    titles = "#  sc  fc  omega" 
     format = "  %.4f"*3
     titles += "  Number_of_pixels"
     format += "  %.0f"

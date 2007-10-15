@@ -1,10 +1,10 @@
 Metadata-Version: 1.0
 Name: ImageD11
-Version: 0.8.1
+Version: 1.0.1
 Summary: ImageD11
 Home-page: UNKNOWN
-Author: Jon Wright, Jaroslaw Butanowicz
-Author-email: wright@esrf.fr,  jaroslaw.butanowicz@esrf.fr
+Author: Jon Wright
+Author-email: wright@esrf.fr
 License: GPL
 Description: UNKNOWN
 Platform: UNKNOWN
