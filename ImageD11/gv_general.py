@@ -136,7 +136,10 @@ def axis_from_matrix( m ):
                        m[0,2] - m[2,0],
                        m[1,0] - m[0,1] ], n.Float )
     o = rotation_axis( dir , math.degrees( angle_rad ) )
-    assert (o.matrix == m).all()
+    if not (abs(o.matrix - m) < 1e-5).all():
+        print "o.matrix\n",o.matrix
+        print "m\n",m
+        raise Exception("error in axis_from_matrix")
     return o
 
 rotate_identity = rotation_axis( n.array([0,0,1],n.Float) , 0.0 )
