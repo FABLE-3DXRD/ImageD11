@@ -226,7 +226,10 @@ if __name__=="__main__":
         # Generate list of files to process
         print "Input format is",options.format
         files = []
-        if options.format in [".edf",".edf.gz",".tif",".tif.gz",".mccd"]:
+        if options.format in [".edf",".edf.gz",".edf.bz2",
+                              ".tif",".tif.gz",".tif.bz2",
+                              ".mccd",".mccd.gz",".mccd.bz2"
+                              ]:
             files = ["%s%04d%s" % (stem, i, options.format
                                    ) for i in range(first,last+1)]
             corrfunc.orientation = "edf"
@@ -238,7 +241,7 @@ if __name__=="__main__":
                     sys.exit()
         # Make a blobimage the same size as the first image to process
         if len(files)==0:
-            raise "No files found for stem %s and format" % (stem, 
+            raise "No files found for stem %s and format %s" % (stem, 
                                                              options.format)
         li_objs={} # label image objects, dict of
         s = openimage(files[0]).data.shape # data array shape
@@ -272,7 +275,7 @@ if __name__=="__main__":
         print "File being treated in -> out, elapsed time"
         for filein in files:
             peaksearch( filein , corrfunc , thresholds_list , outfile , li_objs,
-                     dark = None, flood = None)
+                     dark = darkimage, flood = floodimage)
 
         for t in thresholds_list:
             li_objs[t].finalise()

@@ -200,25 +200,24 @@ class labelimage:
         This is called before mergelast, so we write self.npk/self.res
         """
         
-        file_obj.write("#Threshold level %f\n", self.threshold)
+        file_obj.write("# Threshold level %f\n"%( self.threshold))
         file_obj.write("# Number_of_pixels Average_counts    f   s     fc   sc      sig_f sig_s cov_fs\n")
         ret = connectedpixels.blob_moments(self.res)
-        i[f_cen], i[s_cen] = self.corrector.correct(i[f_raw], i[s_raw])
+
         fs = "%d  "+ "%f  "*8 + "\n"
         for i in self.res:
             if i[s_1] < 0.1:
                 raise Exception("Empty peak on current frame")
+            i[f_cen], i[s_cen] = self.corrector.correct(i[f_raw], i[s_raw])
             file_obj.write(fs % (i[s_1],  i[avg_i], i[f_raw], i[s_raw],
                                  i[f_cen], i[s_cen],
-                                 i[m_ff], i[m_ss], i[m_fs]))
+                                 i[m_ff], i[m_ss], i[m_sf]))
         file_obj.write("\n")
         
     def outputpeaks(self, peaks):
         """
         Peaks are in Numeric arrays nowadays
         """
-        if file_obj is None:
-            file_obj = self.outfile
         for i in peaks:
             if i[s_1] < 0.1:
                 # Merged with another
