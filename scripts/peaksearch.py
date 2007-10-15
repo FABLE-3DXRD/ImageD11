@@ -203,7 +203,7 @@ if __name__=="__main__":
         options , args = parser.parse_args()
         stem =        options.stem
         outfile =     options.outfile
-        if outfile [:-4] != ".spt":
+        if outfile [-4:] != ".spt":
             outfile = outfile + ".spt"
             print "Your output file must end with .spt, changing to ",outfile
         first =       options.first
