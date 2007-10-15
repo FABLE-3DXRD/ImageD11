@@ -82,15 +82,15 @@ class labelimage:
     format = "  %.4f"*3
     titles += "  Number_of_pixels"
     format += "  %.0f"
-    titles += "  avg_intensity  f_raw  s_raw  sigf  sigs  covsf"
+    titles += "  avg_intensity  s_raw  f_raw  sigs  sigs  covsf"
     format += "  %.4f"*6
     titles += "  sigo  covso  covfo"
     format += "  %.4f"*3
     titles += "  sum_intensity  sum_intensity^2"
     format += "  %.4f  %.4f"
-    titles += "  IMax_int  IMax_f  IMax_s  IMax_o"
+    titles += "  IMax_int  IMax_s  IMax_f  IMax_o"
     format += "  %.4f  %.0f  %.0f  %.4f"
-    titles += "  Min_f  Max_f  Min_s  Max_s  Min_o  Max_o"
+    titles += "  Min_s  Max_s  Min_f  Max_f  Min_o  Max_o"
     format += "  %.0f"*4 + "  %.4f"*2
     titles += "  dety  detz"
     format += "  %.4f"*2
@@ -208,10 +208,10 @@ class labelimage:
         for i in self.res:
             if i[s_1] < 0.1:
                 raise Exception("Empty peak on current frame")
-            i[f_cen], i[s_cen] = self.corrector.correct(i[f_raw], i[s_raw])
-            file_obj.write(fs % (i[s_1],  i[avg_i], i[f_raw], i[s_raw],
-                                 i[f_cen], i[s_cen],
-                                 i[m_ff], i[m_ss], i[m_sf]))
+            i[s_cen], i[f_cen] = self.corrector.correct(i[s_raw], i[f_raw])
+            file_obj.write(fs % (i[s_1],  i[avg_i], i[s_raw], i[f_raw],
+                                 i[s_cen], i[f_cen],
+                                 i[m_ss], i[m_ff], i[m_sf]))
         file_obj.write("\n")
         
     def outputpeaks(self, peaks):
@@ -224,17 +224,17 @@ class labelimage:
                 continue
 
             # Spline correction
-            i[f_cen], i[s_cen] = self.corrector.correct(i[f_raw], i[s_raw])
+            i[s_cen], i[f_cen] = self.corrector.correct(i[s_raw], i[f_raw])
             i[dety], i[detz] = self.fs2yz(i[f_raw], i[s_raw])
             self.outfile.write(self.format % (
-                    i[f_cen], i[s_cen], i[o_raw], 
+                    i[s_cen], i[f_cen], i[o_raw], 
                     i[s_1], i[avg_i],
-                    i[f_raw], i[s_raw],
-                    i[m_ff], i[m_ss], i[m_sf],
+                    i[s_raw], i[f_raw],
+                    i[m_ss], i[m_ff], i[m_sf],
                     i[m_oo], i[m_so], i[m_fo],
                     i[s_I],i[s_I2],  
-                    i[mx_I],i[mx_I_f],i[mx_I_s],i[mx_I_o], 
-                    i[bb_mn_f],i[bb_mx_f],i[bb_mn_s],i[bb_mx_s],
+                    i[mx_I],i[mx_I_s],i[mx_I_f],i[mx_I_o], 
+                    i[bb_mn_s],i[bb_mx_s],i[bb_mn_f],i[bb_mx_f],
                     i[bb_mn_o],i[bb_mx_o],
                     i[dety], i[detz],
                     self.onfirst, self.onlast, self.spot3d_id ))

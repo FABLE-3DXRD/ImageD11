@@ -845,7 +845,7 @@ static PyObject * bloboverlaps (PyObject *self,
 	jpk = j-1;
 	ipk = i-1;
 	if(jpk<0 || jpk>r2->dimensions[0])printf("bounds jpk %d",jpk);
-	if(ipk<0 || ipk>r1->dimensions[0])printf("bounds ipk %d",ipk);
+	if(ipk<0 || ipk>r2->dimensions[0])printf("bounds ipk %d",ipk);
 	merge( &res2[NPROPERTY*jpk], &res2[NPROPERTY*ipk] );
 	if(verbose>2)printf("merged check ipk %d jpk %d\n",ipk,jpk);
 	continue;
