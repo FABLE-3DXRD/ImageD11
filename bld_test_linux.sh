@@ -25,7 +25,7 @@ python2.5 test_peaksearch.py
 
 cd $SRC/test
 ## takes really ages
-python2.5 test_peaksearch.py ALL
+#python2.5 test_peaksearch.py ALL
 
 
 cd $SRC/test/gv_general

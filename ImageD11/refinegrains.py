@@ -123,7 +123,7 @@ class refinegrains:
         f=open(filename,"r")
         #                   0123456789012
         line=f.readline()
-        if line[0:12] !="# xc yc omega"[0:12]:
+        if line[0:12] not in ["# xc yc omega"[0:12] ,"#  sc  fc  omega  "[0:12] ]:
             print line
             raise Exception("Sorry That does not seem to be a filter peaks file, output from the peaksearching menu option")
         titles = line.replace("#","").split()
@@ -154,10 +154,16 @@ class refinegrains:
         try:
             xc      = self.scantitles[scanname].index("xc")
         except:
-            print self.scantitles[scanname]
+            try:
+                xc      = self.scantitles[scanname].index("sc")
+            except:
+                print self.scantitles[scanname]
 #        print self.scandata[scanname].shape
         x  = self.scandata[scanname][:,xc]
-        yc      = self.scantitles[scanname].index("yc")
+        try:
+            yc      = self.scantitles[scanname].index("yc")
+        except:
+            yc      = self.scantitles[scanname].index("fc")
         y  = self.scandata[scanname][:,yc]
         om      = self.scantitles[scanname].index("omega")
         om = self.scandata[scanname][:,om]
