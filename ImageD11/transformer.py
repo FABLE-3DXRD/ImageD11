@@ -194,7 +194,7 @@ class transformer:
         """
         self.colfile = columnfile.columnfile(filename)
         self.finalpeaks = self.colfile.bigarray
-        assert ((self.colfile.titles[0:3] == ["fc","sc","omega"]) or
+        assert ((self.colfile.titles[0:3] == ["sc","fc","omega"]) or
                 (self.colfile.titles[0:3] == ["xc","yc","omega"])) 
         self.peaks_xy = self.finalpeaks[0:2,:]
         self.x = self.finalpeaks[0,:]
