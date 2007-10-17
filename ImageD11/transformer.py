@@ -16,7 +16,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import numpy.oldnumeric as n
-
+import logging
 import math
 from ImageD11 import transform, unitcell, columnfile
 from ImageD11.parameters import par, parameters
@@ -193,8 +193,9 @@ class transformer:
         """
         self.colfile = columnfile.columnfile(filename)
         self.finalpeaks = self.colfile.bigarray
-        assert ((self.colfile.titles[0:3] == ["sc","fc","omega"]) or
-                (self.colfile.titles[0:3] == ["xc","yc","omega"])) 
+        if   ((self.colfile.titles[0:3] == ["sc","fc","omega"]) or
+              (self.colfile.titles[0:3] == ["xc","yc","omega"])):
+            logging.warning("titles are %s"%(str(self.colfile.titles[0:3])))
         self.peaks_xy = self.finalpeaks[0:2,:]
         self.x = self.finalpeaks[0,:]
         self.y = self.finalpeaks[1,:]
