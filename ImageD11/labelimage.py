@@ -82,7 +82,7 @@ class labelimage:
     format = "  %.4f"*3
     titles += "  Number_of_pixels"
     format += "  %.0f"
-    titles += "  avg_intensity  s_raw  f_raw  sigs  sigs  covsf"
+    titles += "  avg_intensity  s_raw  f_raw  sigs  sigf  covsf"
     format += "  %.4f"*6
     titles += "  sigo  covso  covfo"
     format += "  %.4f"*3
