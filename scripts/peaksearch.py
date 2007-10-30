@@ -69,6 +69,7 @@ class timer:
 
 OMEGA = 0
 OMEGASTEP = 1.0
+OMEGAOVERRIDE = False
 
 def peaksearch( filename , 
                 corrector , 
@@ -129,9 +130,9 @@ def peaksearch( filename ,
         if labelim.shape != picture.shape:
             raise "Incompatible blobimage buffer for file %s" %(filename)
         #
-        try:
+        if not data_object.header.has_key("Omega") or OMEGAOVERRIDE:
             ome = float(data_object.header["Omega"])
-        except: # Might have imagenumber or something??
+        else: # Might have imagenumber or something??
             global OMEGA
             ome = OMEGA
             OMEGA += OMEGASTEP
@@ -166,17 +167,11 @@ if __name__=="__main__":
         parser.add_option("-F", "--format", action="store",
             dest="format",default=".edf", type="string",
             help="Image File format, eg edf or bruker" )
-        parser.add_option("-S","--step", action="store",
-                          dest="OMEGASTEP", default=1.0, type="float",
-                          help="Step size in Omega when you have no header info")
-        parser.add_option("-T","--start", action="store",
-                          dest="OMEGA", default=0.0, type="float",
-                          help="Start position in Omega when you have no header info")
         parser.add_option("-f", "--first", action="store",
             dest="first", default=0, type="int",
             help="Number of first file to process, default=0")
         parser.add_option("-l", "--last", action="store",
-            dest="last", type="int",
+            dest="last", type="int",default =0,
             help="Number of last file to process")
         parser.add_option("-o", "--outfile", action="store",
             dest="outfile",default="peaks.spt", type="string",
@@ -200,22 +195,78 @@ if __name__=="__main__":
         parser.add_option("-t", "--threshold", action="append", type="float",
              dest="thresholds", default=None,
              help="Threshold level, you can have several")
+        parser.add_option("--OmegaFromHeader", action="store_false",
+                          dest="OMEGAOVERRIDE", default=True, 
+                          help="Read Omega values from headers [default]")
+        parser.add_option("--OmegaOverRide", action="store_true",
+                          dest="OMEGAOVERRIDE", default=True, 
+                          help="Override Omega values from headers")
+        parser.add_option("-S","--step", action="store",
+                          dest="OMEGASTEP", default=1.0, type="float",
+                          help="Step size in Omega when you have no header info")
+        parser.add_option("-T","--start", action="store",
+                          dest="OMEGA", default=0.0, type="float",
+                          help="Start position in Omega when you have no header info")
+
+        parser.add_option("--ndigits", action="store", type="int",
+                dest = "ndigits", default = 4,
+                help = "Number of digits in file numbering [4]")
         options , args = parser.parse_args()
-        stem =        options.stem
-        outfile =     options.outfile
-        if outfile [-4:] != ".spt":
-            outfile = outfile + ".spt"
-            print "Your output file must end with .spt, changing to ",outfile
-        first =       options.first
-        last =        options.last
-        OMEGA = options.OMEGA
-        OMEGASTEP = options.OMEGASTEP
-        if options.perfect=="N":
+
+
+        if options.thresholds is None:
+            parser.print_help()
+            print "\nNo thresholds supplied [-t 1234]\n"
+            sys.exit()
+
+        if len(args) == 0  and options.stem is None:
+            parser.print_help()
+            print "\nNo files to process?\n"        
+            sys.exit()
+
+        # What to do about spatial
+ 
+        if options.perfect=="N" and os.path.exists(options.spline):
             print "Using spatial from",options.spline
             corrfunc = blobcorrector.correctorclass(options.spline)
         else:
             print "Avoiding spatial correction"
             corrfunc = blobcorrector.perfect()
+
+
+
+        # Get list of filenames to process
+        if len(args) > 0 :
+            # We assume unlabelled arguments are filenames 
+            file_series_object = file_series.file_series(args)
+        else:
+            if options.format in ['bruker', 'BRUKER', 'Bruker']:
+                extn = ""
+                corrfunc.orientation = "bruker"
+            else:
+                extn = options.format
+                corrfunc.orientation = "edf"
+            file_series_object = file_series.numbered_file_series(
+                    options.stem,
+                    options.first,
+                    options.last,
+                    extn,
+                    options.ndigits )
+
+        # Output files:
+
+        outfile =     options.outfile
+        if outfile [-4:] != ".spt":
+            outfile = outfile + ".spt"
+            print "Your output file must end with .spt, changing to ",outfile
+
+        # Omega overrides
+
+        OMEGA = options.OMEGA
+        OMEGASTEP = options.OMEGASTEP
+        OMEGAOVERRIDE = options.OMEGAOVERRIDE 
+        # Make a blobimage the same size as the first image to process
+
 
         # List comprehension - convert remaining args to floats - must be unique list        
         thresholds_list = [float(t) for t in options.thresholds]
@@ -223,28 +274,8 @@ if __name__=="__main__":
         thresholds_list = list(sets.Set(thresholds_list))
         thresholds_list.sort()
         
-        # Generate list of files to process
-        print "Input format is",options.format
-        files = []
-        if options.format in [".edf",".edf.gz",".edf.bz2",
-                              ".tif",".tif.gz",".tif.bz2",
-                              ".mccd",".mccd.gz",".mccd.bz2"
-                              ]:
-            files = ["%s%04d%s" % (stem, i, options.format
-                                   ) for i in range(first,last+1)]
-            corrfunc.orientation = "edf"
-        if options.format == "bruker":
-            files = ["%s.%04d" % (stem,i) for i in range(first,last+1)]
-            corrfunc.orientation = "bruker"
-            if options.spline.find("spatial2k.spline")>0:
-                if raw_input("Are you sure about the spline??")!="y":
-                    sys.exit()
-        # Make a blobimage the same size as the first image to process
-        if len(files)==0:
-            raise Exception("No files found for stem %s and format %s" % (stem, 
-                                                             options.format))
         li_objs={} # label image objects, dict of
-        s = openimage(files[0]).data.shape # data array shape
+        s = openimage(file_series_object.current()).data.shape # data array shape
         # Create label images
         for t in thresholds_list:
             # the last 4 chars are guaranteed to be .spt above
@@ -273,20 +304,25 @@ if __name__=="__main__":
             floodimage=None
         start = time.time()
         print "File being treated in -> out, elapsed time"
-        for filein in files:
+        for filein in file_series_object:
             peaksearch( filein , corrfunc , thresholds_list , outfile , li_objs,
                      dark = darkimage, flood = floodimage)
 
         for t in thresholds_list:
             li_objs[t].finalise()
+    # Catch --help exiting
+    except SystemExit:
+        sys.exit()
     except:
 #      print "Usage: %s filename  outputfile first last spline threshold [threshold...]" % (sys.argv[0])
-        print
+        parser.print_help()
+        print "\n\nGot an error:"
         # Raise the exception to find out in more detail where we went wrong
-        raise  
+        import traceback
+        traceback.print_exc()
         sys.exit()
 
 end = time.time()
 t = end-reallystart
-print "Total time = %f /s, per image = %f /s" % (t,t/len(files))
+print "Total time = %f /s, per image = %f /s" % (t,t/len(file_series_object))
 
