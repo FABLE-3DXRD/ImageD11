@@ -214,7 +214,7 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
 def compute_tth_histo(finalpeaks, tth, no_bins = 0, min_bin_ratio = 1,
                     **kwds): # last line is for laziness - 
                              # pass kwds you'd like to be ignored
-    tthsort = sort(tth)
+    tthsort = n.sort(tth)
     maxtth = tthsort[-1]
     logging.debug("maxtth=%f"%(maxtth))
     binsize = (maxtth+0.001)/no_bins
@@ -223,9 +223,9 @@ def compute_tth_histo(finalpeaks, tth, no_bins = 0, min_bin_ratio = 1,
     #for t in tthsort:
     #    n= int(floor(t/binsize))
     #    histogram[n] = histogram[n] +1
-    n = n.searchsorted(tthsort,tthbin) # position of bin in sorted
-    n = n.concatenate([n,[len(tthsort)]])   # add on last position
-    histogram = (n[1:] - n[:-1])*1.0        # this would otherwise be integer
+    nn = n.searchsorted(tthsort,tthbin) # position of bin in sorted
+    nn = n.concatenate([nn,[len(tthsort)]])   # add on last position
+    histogram = (nn[1:] - nn[:-1])*1.0        # this would otherwise be integer
     logging.debug("max(histogram) = %d"%(max(histogram)))
     histogram = histogram/max(histogram)
     
@@ -241,7 +241,7 @@ def compute_tth_histo(finalpeaks, tth, no_bins = 0, min_bin_ratio = 1,
     hpk = n.take(histogram, bins) # hist for each peak
     keepind = n.compress( hpk > float(min_bin_ratio) , range(tth.shape[0]) )
     print len(keepind),tth.shape[0]
-    filteredpeaks = take(finalpeaks, keepind, 1) # beware of modifying array arg...
+    filteredpeaks = n.take(finalpeaks, keepind, 1) # beware of modifying array arg...
     return filteredpeaks
 
   
