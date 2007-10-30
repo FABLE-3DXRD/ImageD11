@@ -131,11 +131,12 @@ def peaksearch( filename ,
             raise "Incompatible blobimage buffer for file %s" %(filename)
         #
         if not data_object.header.has_key("Omega") or OMEGAOVERRIDE:
-            ome = float(data_object.header["Omega"])
-        else: # Might have imagenumber or something??
+            # Might have imagenumber or something??
             global OMEGA
             ome = OMEGA
             OMEGA += OMEGASTEP
+        else: # Might have imagenumber or something??
+            ome = float(data_object.header["Omega"])
         #
         # Do the peaksearch
         f.write("# Omega = %f\n"%(ome))
