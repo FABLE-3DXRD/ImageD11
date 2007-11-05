@@ -20,10 +20,8 @@
 
 import numpy.oldnumeric as Numeric
 
-from ImageD11 import transform
-from ImageD11 import indexing
-from ImageD11 import parameters
-from ImageD11.grain import grain
+from ImageD11 import transform, indexing, parameters
+from ImageD11 import grain, columnfile
 
 class refinegrains:
     
@@ -81,6 +79,7 @@ class refinegrains:
         self.scandata={}
         # grains in each scan
         self.grains = {}
+        self.npks = 0
         self.wedge = 0.0
         self.chi = 0.0
         self.drlv = None
@@ -96,46 +95,23 @@ class refinegrains:
 
     def readubis(self,filename):
         """
-        Save the generated ubi matrices into a text file
+        Read ubi matrices from a text file
         """
-        f=open(filename,"r")
-        u = []
-        i=0
-        for line in f:
-            vals = [ float(x) for x in line.split() ]
-            if len(vals) == 3:
-                u = u + [vals]
-            if len(u)==3:
-                name=filename + " " + str(i)
-                self.grainnames.append(name)
-                self.ubisread[name]=Numeric.array(u)
-                i=i+1
-                u = []
-        f.close()
-        #for key in self.ubisread.keys():
-        #   print self.ubisread[key]
+        ul = indexing.readubis(filename)
+        for i, u in enumerate(ul):
+            name = filename + " " + str(i)
+            self.grainnames.append(name)
+            self.ubisread[name] = u
 
 
-    def loadfiltered(self,filename):
+    def loadfiltered(self, filename):
         """
         Read in file containing filtered and merged peak positions
         """
-        f=open(filename,"r")
-        #                   0123456789012
-        line=f.readline()
-        if line[0:12] not in ["# xc yc omega"[0:12] ,"#  sc  fc  omega  "[0:12] ]:
-            print line
-            raise Exception("Sorry That does not seem to be a filter peaks file, output from the peaksearching menu option")
-        titles = line.replace("#","").split()
-        bigarray=[]
-        for line in f.readlines():
-            v=[float(z) for z in line.split()]
-            bigarray.append(v)
-        f.close()
+        col = columnfile.columnfile(filename)
         self.scannames.append(filename)
-        self.scantitles[filename]=titles
-        self.scandata[filename]=Numeric.array(bigarray)
-
+        self.scantitles[filename] = col.titles
+        self.scandata[filename] = col
 
     def generate_grains(self):
         for grainname in self.grainnames:
@@ -143,7 +119,7 @@ class refinegrains:
                 try:
                     gr = self.grains[(grainname,scanname)]
                 except KeyError:
-                    self.grains[(grainname,scanname)] = grain(self.ubisread[grainname])
+                    self.grains[(grainname,scanname)] = grain.grain(self.ubisread[grainname])
         #for key in self.grains.keys():
         #    print key,":",self.grains[key].ubi
 
@@ -152,21 +128,12 @@ class refinegrains:
         Makes self.gv refer be g-vectors computed for this grain in this scan
         """
         try:
-            xc      = self.scantitles[scanname].index("xc")
-        except:
-            try:
-                xc      = self.scantitles[scanname].index("sc")
-            except:
-                print self.scantitles[scanname]
-#        print self.scandata[scanname].shape
-        x  = self.scandata[scanname][:,xc]
-        try:
-            yc      = self.scantitles[scanname].index("yc")
-        except:
-            yc      = self.scantitles[scanname].index("fc")
-        y  = self.scandata[scanname][:,yc]
-        om      = self.scantitles[scanname].index("omega")
-        om = self.scandata[scanname][:,om]
+            x = self.scandata[scanname].xc
+            y = self.scandata[scanname].yc
+        except AttributeError:
+            x = self.scandata[scanname].sc
+            y = self.scandata[scanname].fc
+        om = self.scandata[scanname].omega
         g = self.grains[(grainname,scanname)]
         try:
             sign = self.parameterobj.parameters['omegasign']
@@ -175,22 +142,21 @@ class refinegrains:
         tth,eta = transform.compute_tth_eta( Numeric.array([x, y]),
                                              omega = om * sign,
                                              **self.parameterobj.parameters)
-        
-        # print "Using omegasign=",sign
-        self.gv = transform.compute_g_vectors(tth,eta,om*sign,
+        self.gv = transform.compute_g_vectors(tth, eta, om*sign,
                                               float(self.parameterobj.parameters['wavelength']),
                                               self.parameterobj.parameters['wedge'],
                                               self.parameterobj.parameters['chi'])
         self.gv = Numeric.transpose(self.gv)
-
+        
+        
 
     def refine(self,ubi,quiet=True):
         from ImageD11 import closest
         mat=ubi.copy()
         #print self.tolerance
-        npks = closest.score_and_refine(mat, self.gv, self.tolerance)
+        self.npks = closest.score_and_refine(mat, self.gv, self.tolerance)
         if not quiet:
-            print npks
+            print self.npks
         #tm = indexing.refine(ubi,self.gv,self.tolerance,quiet=quiet)
         #print ubi, tm,ubi-tm,mat-tm
         return mat
@@ -219,7 +185,7 @@ class refinegrains:
 
             g.ubi = self.refine(g.ubi)
 
-            h=Numeric.matrixmultiply(g.ubi,Numeric.transpose(self.gv))
+            h=Numeric.dot(g.ubi,Numeric.transpose(self.gv))
             hint=Numeric.floor(h+0.5).astype(Numeric.Int) # rounds down
             diff=h-hint
             drlv=Numeric.sqrt(Numeric.sum(diff*diff,0))
@@ -283,7 +249,7 @@ class refinegrains:
         grainname,scanname = g
         self.compute_gv(grainname,scanname)
         g = self.grains[g]
-        h =Numeric.matrixmultiply(g.ubi,Numeric.transpose(self.gv))
+        h =Numeric.dot(g.ubi,Numeric.transpose(self.gv))
         print h.shape
         hint=Numeric.floor(h+0.5).astype(Numeric.Int) # rounds down
         diff=h-hint
@@ -293,7 +259,7 @@ class refinegrains:
         
         
 
-    def refineubis(self,quiet=True):
+    def refineubis(self,quiet=True,scoreonly=False):
         #print quiet
         for key in self.grains.keys():
             g = self.grains[key]
@@ -305,8 +271,9 @@ class refinegrains:
             self.compute_gv(grainname,scanname)
             #print self.gv.shape
             #print self.gv[0:10,:]
-            g.ubi = self.refine(g.ubi,quiet=quiet)
-
+            res = self.refine(g.ubi,quiet=quiet)
+            if not scoreonly:
+                g.ubi = res
 
 
 
