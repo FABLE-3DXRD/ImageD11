@@ -194,9 +194,14 @@ static PyObject *score( PyObject *self, PyObject *args, PyObject *keywds){
       t0=h0-conv_double_to_int_fast(h0);
       t1=h1-conv_double_to_int_fast(h1);
       t2=h2-conv_double_to_int_fast(h2);
-/*    assert(t[0]<0.501);
-      assert(t[1]<0.501);
-      assert(t[2]<0.501);      */
+      if ( (t0 > 0.501) ||
+	       (t1 > 0.501) ||
+	       (t2 > 0.501) ){
+	        printf("Error in conv\nh0 = %f h1 = %f h2=%f \nt0 = %f t1 = %f t2=%f\n",
+	        t0,t1,t2,h0,h1,h2);
+	        return NULL;
+	        }       
+	        
       sumsq = t0*t0+t1*t1+t2*t2;
       if (sumsq < tol)
          n=n+1;
@@ -222,19 +227,19 @@ static PyObject *score_and_refine( PyObject *self, PyObject *args, PyObject *key
    PyArrayObject *ubi=NULL, *gv=NULL;
    double u00,u11,u22,u01,u02,u10,u12,u20,u21;
    double g0,g1,g2,h0,h1,h2,t0,t1,t2;
-   double tol,sumsq;
+   double tol,sumsq,tolsq;
    double R[3][3],H[3][3],ih[3],rh[3], UB[3][3];
-   int n,k,i,j,l;
+   int n,k,i,j,l, verbose=0;
 
    for(i=0;i<3;i++){
-     ih[i]=0.;
-     rh[i]=0.;
-     for(j=0;j<3;j++){
-       R[i][j] = 0.;
-       H[i][j] = 0.;
-       UB[i][j] = 0.;
-     }
-   }
+   		ih[i]=0.;
+     	rh[i]=0.;
+     	for(j=0;j<3;j++){
+       		R[i][j] = 0.;
+       		H[i][j] = 0.;
+       		UB[i][j] = 0.;
+     	}
+   	}
 
    
    if(!PyArg_ParseTuple(args,"O!O!d",
@@ -292,9 +297,7 @@ static PyObject *score_and_refine( PyObject *self, PyObject *args, PyObject *key
    u22=* (double *) (ubi->data + 2*ubi->strides[0] + 2*ubi->strides[1]);
 
    n=0;
-   tol=tol*tol;
-
-
+   tolsq=tol*tol;
 
    for(k=0;k<gv->dimensions[0];k++){ /* Loop over observed peaks */
       /* Compute hkls of this peak as h = UBI g */
@@ -304,35 +307,45 @@ static PyObject *score_and_refine( PyObject *self, PyObject *args, PyObject *key
       h0 = u00*g0 + u01*g1 + u02*g2;
       h1 = u10*g0 + u11*g1 + u12*g2;
       h2 = u20*g0 + u21*g1 + u22*g2;
+      
       t0=h0-conv_double_to_int_fast(h0);
       t1=h1-conv_double_to_int_fast(h1);
       t2=h2-conv_double_to_int_fast(h2);
       sumsq = t0*t0+t1*t1+t2*t2;
 
-      if (sumsq < tol){
+      if ( (t0 > 0.501) ||
+	       (t1 > 0.501) ||
+	       (t2 > 0.501) ){
+	        printf("Error in conv\nh0 = %f h1 = %f h2=%f \nt0 = %f t1 = %f t2=%f\n",
+	        t0,t1,t2,h0,h1,h2);
+	        return NULL;
+	        }       
+	  
+      
+      if (sumsq < tolsq){
          n=n+1;
-	 /* 	    From Paciorek et al Acta A55 543 (1999)
-	    UB = R H-1
-	    where:
-	    R = sum_n r_n h_n^t
-	    H = sum_n h_n h_n^t
-	    r = g-vectors
-	    h = hkl indices
-	    The hkl integer indices are: */
-	 ih[0] = conv_double_to_int_fast(h0);
-	 ih[1] = conv_double_to_int_fast(h1);
-	 ih[2] = conv_double_to_int_fast(h2);
-	 /* The g-vector was: */
-	 rh[0] = g0; rh[1] = g1 ; rh[2] = g2;
-	 for(i=0;i<3;i++){
-	   for(j=0;j<3;j++){
-	     /* Robust weight factor, fn(tol), would go here */
-	     R[i][j] = R[i][j] + ih[j] * rh[i];
-	     H[i][j] = H[i][j] + ih[j] * ih[i];
-	   }
-	 }
-      }
-   }
+		 /* 	    From Paciorek et al Acta A55 543 (1999)
+		    UB = R H-1
+	    	where:
+		    R = sum_n r_n h_n^t
+	    	H = sum_n h_n h_n^t
+	    	r = g-vectors
+	    	h = hkl indices
+	    	The hkl integer indices are: */
+	 	ih[0] = conv_double_to_int_fast(h0);
+	 	ih[1] = conv_double_to_int_fast(h1);
+	 	ih[2] = conv_double_to_int_fast(h2);
+	 	/* The g-vector was: */
+	 	rh[0] = g0; rh[1] = g1 ; rh[2] = g2;
+	 	for(i=0;i<3;i++){
+	   		for(j=0;j<3;j++){
+	     		/* Robust weight factor, fn(tol), would go here */
+	     		R[i][j] = R[i][j] + ih[j] * rh[i];
+	     		H[i][j] = H[i][j] + ih[j] * ih[i];
+	   			}
+	 		}
+		}
+   	}
 
 
    if (inverse3x3(H)==0){
@@ -384,20 +397,30 @@ inline int conv_double_to_int_safe(double x){
    return a;
 }
 
-
-
+typedef union {
+	int i;
+	double d;
+	} a_union;
+	
 inline int conv_double_to_int_fast(double x){
+	/*return conv_double_to_int_safe(x);*/
    /* This was benched as about eight times faster than the safe mode!! */
-
    /* Put in the reference for where this was found on the web TODO */
    const int p=52;
    const double c_p1 = (1L << (p/2));
    const double c_p2 = (1L << (p-p/2));
    const double c_mul = c_p1 * c_p2;
    const double cs = 1.5*c_mul;
-   x+=cs;
-   const int a = *(int *)(&x);
-   return (a);
+   /* Hopefully this notes the aliasing
+    * perhaps better to just return the safe version
+    * not clear it is really faster any more?
+    */
+   a_union t;
+   t.d = x + cs;
+   return t.i;
+   /* x += cs
+   // const int a = *(int *)(&x);
+   // return (a); */
 }
 
 
