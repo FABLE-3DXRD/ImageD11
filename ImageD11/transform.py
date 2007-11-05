@@ -93,7 +93,7 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
     r3 = n.array( [ [  1 ,          0  ,       0     ],
                     [  0 ,  n.cos(tilt_x), -n.sin(tilt_x) ],
                     [  0 ,  n.sin(tilt_x), n.cos(tilt_x) ]],n.Float)
-    r2r1 = n.matrixmultiply(n.matrixmultiply(r3,r2),r1)
+    r2r1 = n.dot(n.dot(r3,r2),r1)
     # Peak positions in 3D space
     #  - apply detector orientation
     peaks_on_detector = n.array(peaks)
@@ -102,7 +102,7 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
     # 
     detector_orientation = [[o11,o12],[o21,o22]]
     #logging.debug("detector_orientation = "+str(detector_orientation))
-    flipped = n.matrixmultiply(n.array(detector_orientation, n.Float),
+    flipped = n.dot(n.array(detector_orientation, n.Float),
                              peaks_on_detector)   
     # 
     vec =n.array( [ n.zeros(flipped.shape[1])     , # place detector at zero, 
@@ -111,7 +111,7 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
                     flipped[0,:]]    , n.Float) # y in search, frelon -y 
     #print vec.shape
     # Position of diffraction spots in 3d space after detector tilts is:
-    rotvec=n.matrixmultiply(r2r1,vec)
+    rotvec=n.dot(r2r1,vec)
     if return_pixel_xyz:
         return rotvec
     # Scattering vectors

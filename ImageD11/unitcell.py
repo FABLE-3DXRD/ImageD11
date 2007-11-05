@@ -152,7 +152,7 @@ class unitcell:
                            [       0 , self.bs*math.sin(radians(self.gammas)) , -self.cs*math.sin(radians(self.betas))*ca ],
                            [       0 ,                       0  ,      1./c ] ] , Numeric.Float)
         if verbose==1: print self.B
-        if verbose==1: print Numeric.matrixmultiply(Numeric.transpose(self.B),self.B)-self.gi # this should be zero
+        if verbose==1: print Numeric.dot(Numeric.transpose(self.B),self.B)-self.gi # this should be zero
         self.hkls=None
         self.peaks=None
         self.limit=0
@@ -173,9 +173,9 @@ class unitcell:
         """
         Compute the angle between reciprocal lattice vectors h1, h2
         """
-        g1 = Numeric.dot(h1,Numeric.matrixmultiply(self.gi,h1))
-        g2 = Numeric.dot(h2,Numeric.matrixmultiply(self.gi,h2))
-        g12= Numeric.dot(h1,Numeric.matrixmultiply(self.gi,h2))
+        g1 = Numeric.dot(h1,Numeric.dot(self.gi,h1))
+        g2 = Numeric.dot(h2,Numeric.dot(self.gi,h2))
+        g12= Numeric.dot(h1,Numeric.dot(self.gi,h2))
         costheta = g12/math.sqrt(g1*g2)
         try:
             return degrees(math.acos(costheta)),costheta
@@ -253,7 +253,7 @@ class unitcell:
 
     def ds(self,h):
         """ computes 1/d for this hkl = hgh """
-        return math.sqrt(Numeric.dot(h,Numeric.matrixmultiply(self.gi,h))) # 1/d or d*
+        return math.sqrt(Numeric.dot(h,Numeric.dot(self.gi,h))) # 1/d or d*
 
 
     def makerings(self,limit,tol=0.001):
@@ -306,8 +306,8 @@ class unitcell:
             print "Assigning h2",h2,g2,self.ds(h2),math.sqrt(Numeric.dot(g2,g2)),self.ds(h1)-math.sqrt(Numeric.dot(g1,g1))
             print "Cos angle calc",self.anglehkls(h1,h2),"obs",costheta
         try:
-            h1c=Numeric.matrixmultiply(self.B,h1)    
-            h2c=Numeric.matrixmultiply(self.B,h2)
+            h1c=Numeric.dot(self.B,h1)    
+            h2c=Numeric.dot(self.B,h2)
             t1c=unit(h1c)
             t3c=unit(cross(h1c,h2c))
             t2c=unit(cross(h1c,t3c))
@@ -316,8 +316,8 @@ class unitcell:
             t2g=unit(cross(g1,t3g))
             T_g = Numeric.transpose(Numeric.array([t1g,t2g,t3g]))  # Array are stored by rows and
             T_c = Numeric.transpose(Numeric.array([t1c,t2c,t3c]))  # these are columns
-            U=Numeric.matrixmultiply(T_g , inverse(T_c))
-            UB=Numeric.matrixmultiply(U,self.B)
+            U=Numeric.dot(T_g , inverse(T_c))
+            UB=Numeric.dot(U,self.B)
             UBI=inverse(UB)
         except:
             logging.error("unitcell.orient h1 %s g1 %s h2 %s g2 %s self.B %s"%(
@@ -328,12 +328,12 @@ class unitcell:
             print "UBI"
             print UBI
             print "Grain gi"
-            print Numeric.matrixmultiply(Numeric.transpose(UB),UB)
+            print Numeric.dot(Numeric.transpose(UB),UB)
             print "Cell gi"
             print self.gi
-            h=Numeric.matrixmultiply(UBI,g1)
+            h=Numeric.dot(UBI,g1)
             print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
-            h=Numeric.matrixmultiply(UBI,g2)
+            h=Numeric.dot(UBI,g2)
             print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
         self.UBI=UBI
         self.UB=UB

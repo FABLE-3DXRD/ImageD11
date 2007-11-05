@@ -183,7 +183,7 @@ for p in pks[:40]:
 sys.exit()
 for g in io.gv:
     for i in g: print "%6.4f "%(i),
-    h = matrixmultiply(true_orientation,g)
+    h = dot(true_orientation,g)
     hint = floor(h+0.5).astype(Int)
     drlv = sqrt(dot(h-hint,h-hint))
     print "%8.4f "%(drlv),

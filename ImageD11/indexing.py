@@ -53,7 +53,7 @@ def write_ubi_file(filename, ubilist):
 
 def ubitocellpars(ubi):
     """ convert ubi matrix to unit cell """
-    g = n.matrixmultiply(ubi, n.transpose(ubi))
+    g = n.dot(ubi, n.transpose(ubi))
     from math import acos, degrees, sqrt
     a = sqrt(g[0,0])
     b = sqrt(g[1,1])
@@ -69,11 +69,11 @@ def ubitoU(ubi):
     The convention is B as being triangular, hopefully as Busing and Levy
     TODO / FIXME - make some testcases please!!
     """
-    return n.transpose(n.matrixmultiply(ubi, LinearAlgebra.inverse(ubitoB(ubi))))
+    return n.transpose(n.dot(ubi, LinearAlgebra.inverse(ubitoB(ubi))))
 
 def ubitoB(ubi):
     """ give the B matrix from ubi """
-    g = n.matrixmultiply(ubi, n.transpose(ubi))
+    g = n.dot(ubi, n.transpose(ubi))
     return LinearAlgebra.cholesky_decomposition(g)
     
 
@@ -97,7 +97,7 @@ def calc_drlv2(UBI, gv):
     gv: list of g-vectors
     returns drlv2 = (h_calc - h_int)^2
     """
-    h = n.matrixmultiply(UBI, n.transpose(gv))
+    h = n.dot(UBI, n.transpose(gv))
     hint = n.floor(h + 0.5).astype(n.Int) # rounds down
     diff = h - hint
     drlv2 = n.sum(diff * diff,0)
@@ -121,7 +121,7 @@ def refine(UBI, gv, tol, quiet=True):
     #      print "UBI\n",UBI
     #      print "Scores before",self.score(UBI)
     # Need to find hkl indices for all of the peaks which are indexed
-    h = n.matrixmultiply(UBI, n.transpose(gv))
+    h = n.dot(UBI, n.transpose(gv))
     hint = n.floor(h+0.5).astype(n.Int) # rounds down
     diff = h - hint
     drlv2 = n.sum( diff * diff, 0)
@@ -151,12 +151,12 @@ def refine(UBI, gv, tol, quiet=True):
     from numpy.oldnumeric.linear_algebra import inverse
     try:
         HI=inverse(H)
-        UBoptimal=n.matrixmultiply(R,HI)
+        UBoptimal=n.dot(R,HI)
         UBIo=inverse(UBoptimal)
     except:
         # A singular matrix - this sucks.
         UBIo=UBI
-    h=n.matrixmultiply(UBIo,n.transpose(gv))
+    h=n.dot(UBIo,n.transpose(gv))
     hint=n.floor(h+0.5).astype(n.Int) # rounds down
     diff=h-hint
     drlv2=n.sum(diff*diff,0)
@@ -411,7 +411,7 @@ class indexer:
         for i in range(len(i1)):
             if i%onepercent == 0:
                 print "Percent done %6.3f%%   ... potential hits %-6d \r"%(i*100./len(i1),len(hits)),
-            costheta=n.matrixmultiply(n2,n1[i])
+            costheta=n.dot(n2,n1[i])
             best,diff = closest.closest(costheta,cs)
             if diff < tol:
                 hits.append( [ diff, i1[i], i2[best] ])
@@ -545,9 +545,9 @@ class indexer:
         for ubi in self.ubis:
             if tol==None:
                 tol=self.hkl_tol
-            h=n.matrixmultiply(ubi,n.transpose(self.gv))
+            h=n.dot(ubi,n.transpose(self.gv))
             hint=n.floor(h+0.5).astype(n.Int) # rounds down
-            gint=n.matrixmultiply(inverse(ubi),hint)
+            gint=n.dot(inverse(ubi),hint)
             diff=h-hint
             drlv2=n.sum(diff*diff,0)
             self.ga  = n.where(drlv2 < self.gas, i, -1)
@@ -612,9 +612,9 @@ class indexer:
             bestubi=999. # in ga / gsa
             drlv2 = self.gas[i]
             m = self.ga[9]
-            hi = n.matrixmultiply(ubi,h)
+            hi = n.dot(ubi,h)
             hint = n.floor(hi+0.5).astype(n.Int)
-            gint = n.matrixmultiply(inverse(ubi),hint)
+            gint = n.dot(inverse(ubi),hint)
             diff=hi-hint
             drlv2 = n.sum(diff*diff,0)
             if drlv2 < tol*tol:
@@ -707,7 +707,7 @@ class indexer:
 #      print "Scores before",self.score(UBI)
         # Need to find hkl indices for all of the peaks which are indexed
         drlv2=calc_drlv2(UBI,self.gv)
-        h = n.matrixmultiply(UBI, n.transpose(self.gv))
+        h = n.dot(UBI, n.transpose(self.gv))
         hint = n.floor(h + 0.5).astype(n.Int) # rounds down
         tol = float(self.hkl_tol)
         tol = tol*tol
@@ -734,7 +734,7 @@ class indexer:
         from numpy.oldnumeric.linear_algebra import inverse
         try:
             HI=inverse(H)
-            UBoptimal=n.matrixmultiply(R,HI)
+            UBoptimal=n.dot(R,HI)
             UBIo=inverse(UBoptimal)
         except:
             # A singular matrix - this sucks.

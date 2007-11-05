@@ -47,8 +47,8 @@ class factors:
             nf=self.nfactors
             I=Numeric.identity(nf,Numeric.Float)
             suse=I*s[:nf]
-            ls = Numeric.matrixmultiply(l[:,:nf], suse)
-            self.gendata=Numeric.matrixmultiply(ls,r[:nf,:])
+            ls = Numeric.dot(l[:,:nf], suse)
+            self.gendata=Numeric.dot(ls,r[:nf,:])
             logging.debug("generated data.shape"+str(self.gendata.shape))
 
 

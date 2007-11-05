@@ -27,7 +27,7 @@ class group:
         """
         Means of generating new thing from two others
         """
-        m = n.matrixmultiply(x,y)
+        m = n.dot(x,y)
         d = determinant(m)
         assert abs(d-1)<1e-6, (str((d,m,x,y)))
         return m
