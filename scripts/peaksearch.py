@@ -244,6 +244,8 @@ if __name__=="__main__":
             if options.format in ['bruker', 'BRUKER', 'Bruker']:
                 extn = ""
                 corrfunc.orientation = "bruker"
+            elif options.format == 'GE':
+                extn = ""
             else:
                 extn = options.format
                 corrfunc.orientation = "edf"
