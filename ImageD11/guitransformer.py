@@ -59,17 +59,18 @@ class guitransformer:
                            ] )
 
     def loadfiltered(self):
-        filename=self.parent.opener.show(title= \
-                "File containing filtered peaks",\
-                filetypes=[("filtered peaks", "*.flt"),\
+        filename=self.parent.opener.show(title=
+                "File containing filtered peaks",
+                filetypes=[("filtered peaks", "*.flt"),
                            ("All Files ", "*")])
         self.parent.guicommander.execute("transformer",
                 "loadfiltered",filename)
 
     def loadfileparameters(self):
-        filename=self.parent.opener.show(title= \
-                "File containing detector parameters",\
-                filetypes=[("parameter files", "*.par"),\
+        filename=self.parent.opener.show(title= 
+                "File containing detector parameters",
+                filetypes=[("parameter files", "*.par"),
+                           ("parameter files", "*.prm"),
                            ("All Files ", "*")])
         self.parent.guicommander.execute("transformer",
                 "loadfileparameters",filename)

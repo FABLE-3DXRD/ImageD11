@@ -57,7 +57,10 @@ class guiindexer:
 
     def loadgv(self):
         """ see indexing.readgvfile """
-        filename=self.parent.opener.show(title="File containing g-vectors")
+        filename=self.parent.opener.show(
+            title="File containing g-vectors",
+            filetypes=[ ("Gvector files", "*.gve"),
+                        ("Gvector files", "*.gv") ] )
         self.parent.guicommander.execute("indexer","readgvfile",filename)
 
     def saveubis(self):
@@ -102,7 +105,10 @@ class guiindexer:
 
     def loadfileparameters(self):
         """ see indexing.loadpars and parameters.loadpars """
-        filename=self.parent.opener.show(title="File containing indexing parameters")
+        filename=self.parent.opener.show(
+            title="File containing indexing parameters",
+            filetypes = [ ("Parameter files", "*.prm"),
+                          ("Parameter files", "*.par") ] )
         self.parent.guicommander.execute("indexer","loadpars",filename)
 
     def saveparameters(self):
