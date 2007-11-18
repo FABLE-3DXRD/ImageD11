@@ -34,8 +34,7 @@ import time
 # For benchmarking
 reallystart=time.time()
 
-
-from ImageD11 import opendata
+from fabio.openimage import openimage
 import numpy.oldnumeric as Numeric
 
 class minimum_image:
@@ -57,7 +56,7 @@ class minimum_image:
         Include another file
         """
         try:
-            data_object = opendata.opendata(filename)
+            data_object = openimage(filename)
         except IOError:
             print filename, "not found"
             return
@@ -101,7 +100,6 @@ if __name__=="__main__":
             files = ["%s.%04d"%(stem,i) for i in range(first,last+1,step)]
         else:
             raise Exception("Do not know format "+options.format)
-        outputfile = open(outfile,"wb")
         if len(files)==0:
             raise Exception("No files found for stem %s"% (stem))
         start = time.time()
@@ -111,10 +109,9 @@ if __name__=="__main__":
             mi.add_file(filein)
         # finally write out the answer
         # model header + data
-        o=opendata.opendata(files[0])
-        outputfile.write(o.header['headerstring'])
-        outputfile.write(mi.minimum_image.astype(Numeric.UInt16).tostring())
-        outputfile.close()
+        o=openimage(files[0])
+        o.data = mi.minimum_image.astype(Numeric.UInt16)
+        o.write(options.outfile)
     except:
         parser.print_help()
         raise
