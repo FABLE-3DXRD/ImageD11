@@ -87,6 +87,9 @@ if __name__=="__main__":
                           help="File format [edf|bruker]")
         parser.add_option("-s","--step",action="store", type="int", dest="step",default=1,
                           help="step - every nth image")
+        parser.add_option("--ndigits", action="store", type="int",
+                          dest = "ndigits", default = 4,
+                          help = "Number of digits in file numbering [4]")
         options , args = parser.parse_args()
         stem =        options.stem
         outfile =     options.outfile
@@ -94,22 +97,29 @@ if __name__=="__main__":
         last =        options.last
         step = options.step
         # Generate list of files to proces
-        if options.format == 'edf':
-            files = ["%s%04d%s"%(stem,i,".edf") for i in range(first,last+1,step)]
-        elif options.format == 'bruker':
-            files = ["%s.%04d"%(stem,i) for i in range(first,last+1,step)]
+        from fabio import file_series
+        if options.format in ['bruker', 'BRUKER', 'Bruker']:
+            extn = ""
+            corrfunc.orientation = "bruker"
+        elif options.format == 'GE':
+            extn = ""
         else:
-            raise Exception("Do not know format "+options.format)
-        if len(files)==0:
-            raise Exception("No files found for stem %s"% (stem))
+            extn = options.format
+        file_series_object = file_series.numbered_file_series(
+            options.stem,
+            options.first,
+            options.last,
+            extn,
+            options.ndigits,
+            step = options.step)
         start = time.time()
-        mi = minimum_image(files[0])
-        for filein in files[1:]:
+        mi = minimum_image(file_series_object[0])
+        for filein in file_series_object:
             print filein
             mi.add_file(filein)
         # finally write out the answer
         # model header + data
-        o=openimage(files[0])
+        o=openimage(file_series_object[0])
         o.data = mi.minimum_image.astype(Numeric.UInt16)
         o.write(options.outfile)
     except:
@@ -117,4 +127,4 @@ if __name__=="__main__":
         raise
 end=time.time()
 t=end-reallystart
-print "Total time = %f /s, per image = %f /s"%(t,t/len(files))
+print "Total time = %f /s"%(t)

@@ -26,7 +26,7 @@ A script to convert edf images into bruker format
 """
 
 
-from Numeric import *
+from numpy.oldnumeric import *
 from ImageD11 import opendata
 
 class darkflood:
