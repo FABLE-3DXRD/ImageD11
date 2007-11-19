@@ -92,6 +92,8 @@ def peaksearch( filename ,
     # Assumes an edf file for now - TODO - should be independent
     try:
         data_object = openimage(filename)
+    except KeyboardInterrupt:
+        raise
     except:
         sys.stdout.write(filename+" not found\n")
         return 0
