@@ -76,7 +76,9 @@ def peaksearch( filename ,
                 thresholds , 
                 outputfile , 
                 labims, 
-                dark = None, flood = None):
+                dark = None,
+                flood = None,
+                darkoffset = 10):
     """
     file_series : fabio file series object, supports iteration
     
@@ -98,14 +100,24 @@ def peaksearch( filename ,
         sys.stdout.write(filename+" not found\n")
         return 0
 
-    picture = data_object.data
+    picture = data_object.data.astype(Numeric.Float32)
+    # print picture[512,512]
     # picture is a 2D array
     #t.tick("read")
     if dark != None:
-        picture = picture - dark  
+        picture = picture - dark
+        #print dark[512,512]
+        #print picture[512,512]
     #t.tick("dark")
     if flood != None:
+        #print picture[512,512]
         picture = picture/flood
+        #print picture[512,512]
+    if darkoffset != None:
+        picture = picture + darkoffset
+    #fd=open("debug.bin","wb")
+    #fd.write(picture.tostring())
+    #fd.close()
     t.tick(filename+" io/cor") # Progress indicator
     # Transfer header information to output file
     # Also information on spatial correction applied
@@ -137,8 +149,10 @@ def peaksearch( filename ,
             global OMEGA
             ome = OMEGA
             OMEGA += OMEGASTEP
+            # print "Overriding the OMEGA"
         else: # Might have imagenumber or something??
             ome = float(data_object.header["Omega"])
+            # print "Reading from header"
         #
         # Do the peaksearch
         f.write("# Omega = %f\n"%(ome))
@@ -183,7 +197,7 @@ if __name__=="__main__":
             dest="dark", default=None,  type="string",
             help="Dark current filename, to be subtracted, default=None")
         parser.add_option("-D", "--darkfileoffset", action="store",
-            dest="darkoffset", default=100, type="int",
+            dest="darkoffset", default=10, type="int",
             help="Constant to subtract from dark to avoid overflows, default=100")
         s="/data/opid11/inhouse/Frelon2K/spatial2k.spline"
         parser.add_option("-s", "--splinefile", action="store",
@@ -199,10 +213,10 @@ if __name__=="__main__":
              dest="thresholds", default=None,
              help="Threshold level, you can have several")
         parser.add_option("--OmegaFromHeader", action="store_false",
-                          dest="OMEGAOVERRIDE", default=True, 
+                          dest="OMEGAOVERRIDE", default=False, 
                           help="Read Omega values from headers [default]")
         parser.add_option("--OmegaOverRide", action="store_true",
-                          dest="OMEGAOVERRIDE", default=True, 
+                          dest="OMEGAOVERRIDE", default=False, 
                           help="Override Omega values from headers")
         parser.add_option("-S","--step", action="store",
                           dest="OMEGASTEP", default=1.0, type="float",
@@ -290,7 +304,7 @@ if __name__=="__main__":
         # files.sort()
         if options.dark!=None:
             print "Using dark (background)",options.dark,"with added offset",options.darkoffset
-            darkimage= openimage(options.dark).data - options.darkoffset
+            darkimage= openimage(options.dark).data 
         else:
             darkimage=None
         if options.flood!=None:
@@ -311,7 +325,7 @@ if __name__=="__main__":
         print "File being treated in -> out, elapsed time"
         for filein in file_series_object:
             peaksearch( filein , corrfunc , thresholds_list , outfile , li_objs,
-                     dark = darkimage, flood = floodimage)
+                     dark = darkimage, flood = floodimage , darkoffset = options.darkoffset)
 
         for t in thresholds_list:
             li_objs[t].finalise()
