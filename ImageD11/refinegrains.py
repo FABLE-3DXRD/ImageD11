@@ -139,10 +139,10 @@ class refinegrains:
             sign = self.parameterobj.parameters['omegasign']
         except:
             sign = 1.0
-        tth,eta = transform.compute_tth_eta( Numeric.array([x, y]),
-                                             omega = om * sign,
-                                             **self.parameterobj.parameters)
-        self.gv = transform.compute_g_vectors(tth, eta, om*sign,
+        self.tth,self.eta = transform.compute_tth_eta( Numeric.array([x, y]),
+                                      omega = om * sign,
+                                      **self.parameterobj.parameters)
+        self.gv = transform.compute_g_vectors(self.tth, self.eta, om*sign,
                                               float(self.parameterobj.parameters['wavelength']),
                                               self.parameterobj.parameters['wedge'],
                                               self.parameterobj.parameters['chi'])

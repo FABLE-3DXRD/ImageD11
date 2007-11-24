@@ -101,8 +101,8 @@ class darkflood:
             cor[:,:b]=0
             cor[-b:,:]=0
             cor[:,-b:]=0
-        # Should we bother with this???
-        # cor =  n.where(n.cor>0.1, n.cor, 0.) # truncate zero
+        # Should we bother with this - yes please - noisy pixels overflow
+        cor =  n.where(n.cor>0.1, n.cor, 0.) # truncate zero
         
         # print cor[c0,c1]
         return cor.astype(tin)
