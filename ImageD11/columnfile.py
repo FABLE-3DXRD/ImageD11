@@ -49,6 +49,9 @@ FLOATS = [
     "Max_o",
     "dety",
     "detz",
+    "gx", "gy", "gz",
+    "hr", "kr", "zr",
+    "drlv2"
     ]
 
 INTS = [
@@ -58,7 +61,9 @@ INTS = [
     "Min_f",
     "Max_f",
     "Min_s",
-    "Max_s"
+    "Max_s",
+    "spot3d_id",
+    "h", "k", "l",
     ]
 FORMATS = {}
 
@@ -184,6 +189,19 @@ class columnfile:
         (cn.ncols, cn.nrows) = cn.bigarray.shape
         cn.set_attributes()
         return cn
+
+    def addcolumn(self, col, name):
+        if len(col) != self.nrows:
+            raise Exception("Wrong length column")
+        if name in self.titles:
+            raise Exception("Already got a column called "+name)
+        self.titles.append(name)
+        self.ncols += 1
+        setattr(self, name, col)
+        lis = list(self.bigarray)
+        lis.append(col)
+        self.bigarray = n.array( lis )
+        assert self.bigarray.shape == (self.ncols, self.nrows)
     
 class newcolumnfile(columnfile):
     """ Just like a columnfile, but for creating new

@@ -49,6 +49,22 @@ def filtergrain(options):
     logging.info("Total peaks before filtering %d"%
                      o.scandata[options.fltfile].nrows)    
     gotpks = o.scandata[options.fltfile].copy()
+    # Output some derived information (h,k,l etc)
+    gotpks.addcolumn(o.tth, "tth")
+    gotpks.addcolumn(o.eta, "eta")
+    gotpks.addcolumn(o.gv[:,0] , "gx")
+    gotpks.addcolumn(o.gv[:,1] , "gy")
+    gotpks.addcolumn(o.gv[:,2] , "gz")
+    # Should these calcs go to refinegrains...?
+    hkl = Numeric.dot(matrix, Numeric.transpose(o.gv))
+    gotpks.addcolumn(hkl[0,:] , "hr")
+    gotpks.addcolumn(hkl[1,:] , "kr")
+    gotpks.addcolumn(hkl[2,:] , "lr")
+    hkli = (hkl+0.5).astype(Numeric.Int)
+    gotpks.addcolumn(hkli[0,:] , "h")
+    gotpks.addcolumn(hkli[1,:] , "k")
+    gotpks.addcolumn(hkli[2,:] , "l")
+    gotpks.addcolumn(drlv2, "drlv2")
     gotpks.filter(drlv2 < o.tolerance*o.tolerance)
     gotpks.writefile(options.newfltfile)
     logging.info("Peaks which were indexed %d written to %s"%(
