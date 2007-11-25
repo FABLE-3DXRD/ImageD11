@@ -34,7 +34,10 @@ use or performance of this software.
 #ifndef F2C_INCLUDE
 #define F2C_INCLUDE
 
-typedef long int integer;
+/* typedef long int integer; */
+/* JPW - 25-11-2007 - needed for ESRF coral x86_64 ,matching numpy */
+typedef int integer;
+
 typedef unsigned long int uinteger;
 typedef char *address;
 typedef short int shortint;
