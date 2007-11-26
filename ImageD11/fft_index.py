@@ -27,18 +27,22 @@ print "FFT cell size is 128*mr/2",cell_size
 
 n_use = 0
 n_ignore = 0
+import time
+start = time.time()
 for p in io.gv:
     # compute hkl indices in g grid
     # units start for a 1x1x1 unit cell
     hrkrlr= cell_size * p
     hkl = floor(cell_size * p+0.5).astype(Int)
     assert maximum.reduce(abs(hrkrlr - hkl)) <= 0.5, str(hrkrlr)+" "+str(hkl)
+    
     if maximum.reduce(hkl)<s/2-2 and minimum.reduce(hkl)>-s/2+2:
         # use the peak
         n_use += 1
         np =0
         sm = 0.
-#        print hrkrlr
+        #        print hrkrlr
+        
         for hs in [0,1]:
             h=int(floor(hrkrlr[0]))+hs
             hfac = 1-abs(hrkrlr[0] - h)
@@ -58,7 +62,7 @@ for p in io.gv:
         assert abs(sm-1)<1e-5, "total peak, hkl "+str(hrkrlr)+" "+str(sm)
     else:
         n_ignore +=1
-
+print "grid filling takes",time.time()-start
 print "Used",n_use,"peaks and ignored",n_ignore,"peaks"
 print "Starting FFT",g.shape, g.typecode()
 
