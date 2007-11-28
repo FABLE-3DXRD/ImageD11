@@ -228,6 +228,9 @@ if __name__=="__main__":
         parser.add_option("--ndigits", action="store", type="int",
                 dest = "ndigits", default = 4,
                 help = "Number of digits in file numbering [4]")
+        parser.add_option("-P", "--padding", action="store",
+               type="choice", choices=["Y","N"], default="Y", dest="padding",
+                          help="Is the image number to padded Y|N, e.g. should no. 1 be 0001 or just 1 in image name, default=Y")
         options , args = parser.parse_args()
 
 
@@ -270,7 +273,8 @@ if __name__=="__main__":
                     options.first,
                     options.last,
                     extn,
-                    options.ndigits )
+                    options.ndigits,
+                    options.padding )
 
         # Output files:
 
