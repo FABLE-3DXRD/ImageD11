@@ -8,7 +8,7 @@
 <td valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.listdialog</strong></big></big></font></td
 ><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python24/lib/site-packages/imaged11/listdialog.py">c:\python24\lib\site-packages\imaged11\listdialog.py</a></font></td></tr></table>
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python25/lib/site-packages/imaged11/listdialog.py">c:\python25\lib\site-packages\imaged11\listdialog.py</a></font></td></tr></table>
     <p><tt>#&nbsp;Look&nbsp;up&nbsp;where&nbsp;this&nbsp;comes&nbsp;from.<br>
 #&nbsp;It&nbsp;was&nbsp;copied&nbsp;from&nbsp;somewhere&nbsp;and&nbsp;modified&nbsp;slightly</tt></p>
 <p>
@@ -179,6 +179,19 @@ can&nbsp;be&nbsp;retrieved&nbsp;with&nbsp;selection_get.</tt></dd></dl>
 &nbsp;<br>
 A&nbsp;widget&nbsp;specified&nbsp;for&nbsp;the&nbsp;optional&nbsp;displayof&nbsp;keyword<br>
 argument&nbsp;specifies&nbsp;the&nbsp;target&nbsp;display.</tt></dd></dl>
+
+<dl><dt><a name="listdialog-clipboard_get"><strong>clipboard_get</strong></a>(self, **kw)</dt><dd><tt>Retrieve&nbsp;data&nbsp;from&nbsp;the&nbsp;clipboard&nbsp;on&nbsp;window's&nbsp;display.<br>
+&nbsp;<br>
+The&nbsp;window&nbsp;keyword&nbsp;defaults&nbsp;to&nbsp;the&nbsp;root&nbsp;window&nbsp;of&nbsp;the&nbsp;Tkinter<br>
+application.<br>
+&nbsp;<br>
+The&nbsp;type&nbsp;keyword&nbsp;specifies&nbsp;the&nbsp;form&nbsp;in&nbsp;which&nbsp;the&nbsp;data&nbsp;is<br>
+to&nbsp;be&nbsp;returned&nbsp;and&nbsp;should&nbsp;be&nbsp;an&nbsp;atom&nbsp;name&nbsp;such&nbsp;as&nbsp;STRING<br>
+or&nbsp;FILE_NAME.&nbsp;&nbsp;Type&nbsp;defaults&nbsp;to&nbsp;STRING.<br>
+&nbsp;<br>
+This&nbsp;command&nbsp;is&nbsp;equivalent&nbsp;to:<br>
+&nbsp;<br>
+<a href="#listdialog-selection_get">selection_get</a>(CLIPBOARD)</tt></dd></dl>
 
 <dl><dt><a name="listdialog-colormodel"><strong>colormodel</strong></a>(self, value<font color="#909090">=None</font>)</dt><dd><tt>Useless.&nbsp;Not&nbsp;implemented&nbsp;in&nbsp;Tk.</tt></dd></dl>
 
@@ -682,8 +695,14 @@ number&nbsp;of&nbsp;grid&nbsp;units&nbsp;requested&nbsp;in&nbsp;Tk_GeometryReque
 <dl><dt><a name="listdialog-group"><strong>group</strong></a> = wm_group(self, pathName<font color="#909090">=None</font>)</dt><dd><tt>Set&nbsp;the&nbsp;group&nbsp;leader&nbsp;widgets&nbsp;for&nbsp;related&nbsp;widgets&nbsp;to&nbsp;PATHNAME.&nbsp;Return<br>
 the&nbsp;group&nbsp;leader&nbsp;of&nbsp;this&nbsp;widget&nbsp;if&nbsp;None&nbsp;is&nbsp;given.</tt></dd></dl>
 
-<dl><dt><a name="listdialog-iconbitmap"><strong>iconbitmap</strong></a> = wm_iconbitmap(self, bitmap<font color="#909090">=None</font>)</dt><dd><tt>Set&nbsp;bitmap&nbsp;for&nbsp;the&nbsp;iconified&nbsp;widget&nbsp;to&nbsp;BITMAP.&nbsp;Return<br>
-the&nbsp;bitmap&nbsp;if&nbsp;None&nbsp;is&nbsp;given.</tt></dd></dl>
+<dl><dt><a name="listdialog-iconbitmap"><strong>iconbitmap</strong></a> = wm_iconbitmap(self, bitmap<font color="#909090">=None</font>, default<font color="#909090">=None</font>)</dt><dd><tt>Set&nbsp;bitmap&nbsp;for&nbsp;the&nbsp;iconified&nbsp;widget&nbsp;to&nbsp;BITMAP.&nbsp;Return<br>
+the&nbsp;bitmap&nbsp;if&nbsp;None&nbsp;is&nbsp;given.<br>
+&nbsp;<br>
+Under&nbsp;Windows,&nbsp;the&nbsp;DEFAULT&nbsp;parameter&nbsp;can&nbsp;be&nbsp;used&nbsp;to&nbsp;set&nbsp;the&nbsp;icon<br>
+for&nbsp;the&nbsp;widget&nbsp;and&nbsp;any&nbsp;descendents&nbsp;that&nbsp;don't&nbsp;have&nbsp;an&nbsp;icon&nbsp;set<br>
+explicitly.&nbsp;&nbsp;DEFAULT&nbsp;can&nbsp;be&nbsp;the&nbsp;relative&nbsp;path&nbsp;to&nbsp;a&nbsp;.ico&nbsp;file<br>
+(example:&nbsp;root.<a href="#listdialog-iconbitmap">iconbitmap</a>(default='myicon.ico')&nbsp;).&nbsp;&nbsp;See&nbsp;Tk<br>
+documentation&nbsp;for&nbsp;more&nbsp;information.</tt></dd></dl>
 
 <dl><dt><a name="listdialog-iconify"><strong>iconify</strong></a> = wm_iconify(self)</dt><dd><tt>Display&nbsp;widget&nbsp;as&nbsp;icon.</tt></dd></dl>
 
@@ -789,8 +808,14 @@ number&nbsp;of&nbsp;grid&nbsp;units&nbsp;requested&nbsp;in&nbsp;Tk_GeometryReque
 <dl><dt><a name="listdialog-wm_group"><strong>wm_group</strong></a>(self, pathName<font color="#909090">=None</font>)</dt><dd><tt>Set&nbsp;the&nbsp;group&nbsp;leader&nbsp;widgets&nbsp;for&nbsp;related&nbsp;widgets&nbsp;to&nbsp;PATHNAME.&nbsp;Return<br>
 the&nbsp;group&nbsp;leader&nbsp;of&nbsp;this&nbsp;widget&nbsp;if&nbsp;None&nbsp;is&nbsp;given.</tt></dd></dl>
 
-<dl><dt><a name="listdialog-wm_iconbitmap"><strong>wm_iconbitmap</strong></a>(self, bitmap<font color="#909090">=None</font>)</dt><dd><tt>Set&nbsp;bitmap&nbsp;for&nbsp;the&nbsp;iconified&nbsp;widget&nbsp;to&nbsp;BITMAP.&nbsp;Return<br>
-the&nbsp;bitmap&nbsp;if&nbsp;None&nbsp;is&nbsp;given.</tt></dd></dl>
+<dl><dt><a name="listdialog-wm_iconbitmap"><strong>wm_iconbitmap</strong></a>(self, bitmap<font color="#909090">=None</font>, default<font color="#909090">=None</font>)</dt><dd><tt>Set&nbsp;bitmap&nbsp;for&nbsp;the&nbsp;iconified&nbsp;widget&nbsp;to&nbsp;BITMAP.&nbsp;Return<br>
+the&nbsp;bitmap&nbsp;if&nbsp;None&nbsp;is&nbsp;given.<br>
+&nbsp;<br>
+Under&nbsp;Windows,&nbsp;the&nbsp;DEFAULT&nbsp;parameter&nbsp;can&nbsp;be&nbsp;used&nbsp;to&nbsp;set&nbsp;the&nbsp;icon<br>
+for&nbsp;the&nbsp;widget&nbsp;and&nbsp;any&nbsp;descendents&nbsp;that&nbsp;don't&nbsp;have&nbsp;an&nbsp;icon&nbsp;set<br>
+explicitly.&nbsp;&nbsp;DEFAULT&nbsp;can&nbsp;be&nbsp;the&nbsp;relative&nbsp;path&nbsp;to&nbsp;a&nbsp;.ico&nbsp;file<br>
+(example:&nbsp;root.<a href="#listdialog-iconbitmap">iconbitmap</a>(default='myicon.ico')&nbsp;).&nbsp;&nbsp;See&nbsp;Tk<br>
+documentation&nbsp;for&nbsp;more&nbsp;information.</tt></dd></dl>
 
 <dl><dt><a name="listdialog-wm_iconify"><strong>wm_iconify</strong></a>(self)</dt><dd><tt>Display&nbsp;widget&nbsp;as&nbsp;icon.</tt></dd></dl>
 

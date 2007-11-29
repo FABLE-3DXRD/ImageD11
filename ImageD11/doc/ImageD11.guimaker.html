@@ -8,7 +8,7 @@
 <td valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.guimaker</strong></big></big></font></td
 ><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python24/lib/site-packages/imaged11/guimaker.py">c:\python24\lib\site-packages\imaged11\guimaker.py</a></font></td></tr></table>
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python25/lib/site-packages/imaged11/guimaker.py">c:\python25\lib\site-packages\imaged11\guimaker.py</a></font></td></tr></table>
     <p><tt>Script&nbsp;to&nbsp;put&nbsp;the&nbsp;menus&nbsp;together&nbsp;and&nbsp;build&nbsp;an&nbsp;appli&nbsp;with&nbsp;each&nbsp;bit<br>
 being&nbsp;relatively&nbsp;clutterfree<br>
 &nbsp;<br>
@@ -186,6 +186,19 @@ can&nbsp;be&nbsp;retrieved&nbsp;with&nbsp;selection_get.</tt></dd></dl>
 &nbsp;<br>
 A&nbsp;widget&nbsp;specified&nbsp;for&nbsp;the&nbsp;optional&nbsp;displayof&nbsp;keyword<br>
 argument&nbsp;specifies&nbsp;the&nbsp;target&nbsp;display.</tt></dd></dl>
+
+<dl><dt><a name="GuiMaker-clipboard_get"><strong>clipboard_get</strong></a>(self, **kw)</dt><dd><tt>Retrieve&nbsp;data&nbsp;from&nbsp;the&nbsp;clipboard&nbsp;on&nbsp;window's&nbsp;display.<br>
+&nbsp;<br>
+The&nbsp;window&nbsp;keyword&nbsp;defaults&nbsp;to&nbsp;the&nbsp;root&nbsp;window&nbsp;of&nbsp;the&nbsp;Tkinter<br>
+application.<br>
+&nbsp;<br>
+The&nbsp;type&nbsp;keyword&nbsp;specifies&nbsp;the&nbsp;form&nbsp;in&nbsp;which&nbsp;the&nbsp;data&nbsp;is<br>
+to&nbsp;be&nbsp;returned&nbsp;and&nbsp;should&nbsp;be&nbsp;an&nbsp;atom&nbsp;name&nbsp;such&nbsp;as&nbsp;STRING<br>
+or&nbsp;FILE_NAME.&nbsp;&nbsp;Type&nbsp;defaults&nbsp;to&nbsp;STRING.<br>
+&nbsp;<br>
+This&nbsp;command&nbsp;is&nbsp;equivalent&nbsp;to:<br>
+&nbsp;<br>
+<a href="#GuiMaker-selection_get">selection_get</a>(CLIPBOARD)</tt></dd></dl>
 
 <dl><dt><a name="GuiMaker-colormodel"><strong>colormodel</strong></a>(self, value<font color="#909090">=None</font>)</dt><dd><tt>Useless.&nbsp;Not&nbsp;implemented&nbsp;in&nbsp;Tk.</tt></dd></dl>
 
