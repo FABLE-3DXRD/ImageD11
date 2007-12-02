@@ -10,7 +10,7 @@ These will be real space vectors
 """
 
 import numpy.oldnumeric as n
-import logging, time
+import logging, time, sys
 from numpy.oldnumeric.fft import fftnd , inverse_fftnd
 
 from ImageD11 import labelimage
@@ -38,6 +38,7 @@ class grid:
         """
         # Compute hkl indices in the fft unit cell
         print "Gridding data"
+        self.gv = gv
         hrkrlr = self.cell_size * gv
         hkl = n.floor(hrkrlr + 0.5).astype(n.Int)
         # Filter to have the peaks in asym unit
@@ -80,52 +81,13 @@ class grid:
             vals = vals + vol
             # print "vol",vol
             # print "ind",ind
+            # FIXME
             # This is wrong - if ind repeats several times we only take the last value
             n.put(grid, ind, vals)
             # print n.argmax(n.argmax(n.argmax(grid)))
             # print grid[0:3,-13:-9,-4:]
         logging.warn("Grid filling loop takes "+str(time.time()-start)+" /s")
 
-        
-    def gv_to_grid_old(self, gv):
-        g = self.old_grid
-        n_use = 0
-        from math import floor
-        for p in gv:
-            # compute hkl indices in g grid
-            # units start for a 1x1x1 unit cell
-            hrkrlr= self.cell_size * p
-            hkl = n.floor(self.cell_size * p+0.5).astype(n.Int)
-            assert n.maximum.reduce(abs(hrkrlr - hkl)) <= 0.5, str(hrkrlr)+" "+str(hkl)
-    
-            if n.maximum.reduce(hkl)<self.np/2-2 and n.minimum.reduce(hkl)>-self.np/2+2:
-                # use the peak
-                n_use += 1
-    
-                sm = 0.
-                # print "oldhrkrlr",hrkrlr
-                
-                for hs in [0,1]:
-                    h=int(floor(hrkrlr[0]))+hs
-                    hfac = 1-abs(hrkrlr[0] - h)
-                    for ks in [0,1]:
-                        k=int(floor(hrkrlr[1]))+ks    
-                        kfac = 1-abs(hrkrlr[1] - k)
-                        for ls in [0,1]:
-                            l=int(floor(hrkrlr[2]))+ls
-                            lfac = 1-abs(hrkrlr[2] - l)
-
-                            v = hfac*kfac*lfac
-                            #                    print v,h,k,l,hfac,kfac,lfac
-                            sm += v
-                            # print h,k,l,v
-                            g[h,k,l] = g[h,k,l] +  v
-                            # print h,k,l,v
-                            # g[-h,-k,-l] = g[-h,-k,-l] + v
-                            #                assert np == 8, "np"
-                assert abs(sm-1)<1e-5, "total peak, hkl "+str(hrkrlr)+" "+str(sm)
-            else:
-                pass # n_ignore +=1
 
 
     def fft(self):
@@ -167,6 +129,92 @@ class grid:
         lio.finalise()
                                      
 
+    def read_peaks(self, peaksfile):
+        """ Read in the peaks from a peaksearch """
+        from ImageD11.columnfile import columnfile
+        import time
+        start = time.time()
+        self.colfile = columnfile(peaksfile)
+        print "reading file",time.time()-start
+        # hmm - is this the right way around?
+        self.rlgrid = 1.0*self.cell_size/self.np
+        self.px = self.colfile.omega
+        self.px = n.where(self.px > self.np/2 ,
+                          self.px - self.np  ,
+                          self.px)*self.rlgrid
+        self.py = self.colfile.sc
+        self.py = n.where(self.py > self.np/2 ,
+                          self.py - self.np  ,
+                          self.py)*self.rlgrid
+        self.pz = self.colfile.fc
+        self.pz = n.where(self.pz > self.np/2 ,
+                          self.pz - self.np   ,
+                          self.pz)*self.rlgrid
+        self.UBIALL = n.transpose(n.array( [self.px, self.py, self.pz] ))
+        print "Number of peaks found",self.px.shape[0]
+        #        print self.UBIALL.shape, self.gv.shape
+        scores = n.dot( self.UBIALL, n.transpose( self.gv ) )
+        scores_int = n.floor( scores + 0.5).astype(n.Int)
+        diff = scores - scores_int
+        scores = n.average(diff, axis = 1)
+        order = n.argsort(scores*scores)
+        mag_v = n.sqrt( self.px * self.px +
+                        self.py * self.py +
+                        self.pz * self.pz )
+        f = open("fft.pks","w")
+        for i in range(len(self.px)):
+            j = order[i]
+            f.write("%f %f %f %f %f %f\n"%(self.px[j],
+                                  self.py[j],
+                                  self.pz[j],
+                                  mag_v[j],
+                                  scores[j],
+                                  self.colfile.sum_intensity[j]
+                                  ))
+        f.close()
+        print diff.shape
+        return diff
+###################################################
+## sum_sq_x = 0
+## sum_sq_y = 0
+## sum_coproduct = 0
+## mean_x = x[1]
+## mean_y = y[1]
+## for i in 2 to N:
+##     sweep = (i - 1.0) / i
+##     delta_x = x[i] - mean_x
+##     delta_y = y[i] - mean_y
+##     sum_sq_x += delta_x * delta_x * sweep
+##     sum_sq_y += delta_y * delta_y * sweep
+##     sum_coproduct += delta_x * delta_y * sweep
+##     mean_x += delta_x / i
+##     mean_y += delta_y / i 
+## pop_sd_x = sqrt( sum_sq_x / N )
+## pop_sd_y = sqrt( sum_sq_y / N )
+## cov_x_y = sum_coproduct / N
+## correlation = cov_x_y / (pop_sd_x * pop_sd_y)
+###################################################
+
+
+
+
+
+        
+        sm = n.zeros( (len(diff), len(diff)), n.Float)
+        for k in range(len(diff)):
+            i = order[k]
+            sm[i,i] = n.dot(diff[i], diff[i])
+        for k in range(len(diff)-1):
+            i = order[k]
+            for l in range(i+1, len(diff)):
+                j = order[l]
+                sm[i,j] = n.dot(diff[i],diff[j])/sm[i,i]/sm[j,j]
+                sm[j,i] = sm[i,j]
+        for i in range(len(diff)):
+            sm[i,i] = 1.
+        print sm[:5,:5]
+        print "Scoring takes",time.time()-start
+        return sm
 
 #####
 #        To Do
@@ -179,13 +227,13 @@ class grid:
 #                         - which gvecs does it make integers of w.r.t others        
 #             ngvecs * npeaks == 175 * 200,000 K - 10^7 = 10Mpixel image ?
 #
-
 def test(options):
     gvfile = options.gvfile
     mr = options.max_res
     np = options.np
     nsig = options.nsig
     from ImageD11 import indexing
+    print np, mr, nsig
     go = grid(np = np , mr = mr , nsig = nsig)
     io = indexing.indexer()
     io.readgvfile(gvfile)
@@ -193,6 +241,11 @@ def test(options):
     go.fft()
     go.props()
     go.peaksearch(open(gvfile+".patterson_pks","w"))
+    im = go.read_peaks(gvfile+".patterson_pks")
+    #from matplotlib.pylab import imshow, show
+    #imshow(im)
+    #show()
+    #return im, go
     sys.exit()
 
     
