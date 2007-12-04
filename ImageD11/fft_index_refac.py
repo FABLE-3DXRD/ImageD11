@@ -151,26 +151,39 @@ class grid:
                           self.pz - self.np   ,
                           self.pz)*self.rlgrid
         self.UBIALL = n.transpose(n.array( [self.px, self.py, self.pz] ))
-        print "Number of peaks found",self.px.shape[0]
+        print "Number of peaks found",self.px.shape[0],time.time()-start
         #        print self.UBIALL.shape, self.gv.shape
         scores = n.dot( self.UBIALL, n.transpose( self.gv ) )
         scores_int = n.floor( scores + 0.5).astype(n.Int)
         diff = scores - scores_int
-        scores = n.average(diff, axis = 1)
-        order = n.argsort(scores*scores)
+        print "scoring",self.px.shape[0],time.time()-start
+        self.tol = 0.1
+        scores = n.sqrt(n.average(diff*diff, axis = 1))
+        n_ind = n.where(n.absolute(diff)< self.tol, 1 , 0)
+        nind = n.sum(n_ind, axis=1)
+        order = n.argsort(nind)[::-1]
         mag_v = n.sqrt( self.px * self.px +
                         self.py * self.py +
                         self.pz * self.pz )
         f = open("fft.pks","w")
         for i in range(len(self.px)):
             j = order[i]
-            f.write("%f %f %f %f %f %f\n"%(self.px[j],
-                                  self.py[j],
-                                  self.pz[j],
-                                  mag_v[j],
-                                  scores[j],
-                                  self.colfile.sum_intensity[j]
-                                  ))
+            f.write("%d %9.5f %9.5f %9.5f %9.5f %9.5f %9.5f %7d "%(
+                i,
+                self.px[j],
+                self.py[j],
+                self.pz[j],
+                mag_v[j],
+                scores[j],
+                self.colfile.sum_intensity[j],
+                nind[j]
+                ))
+            for k in range(i+1,len(self.px)):
+                l = order[k]
+                nij = n.sum( n_ind[j] * n_ind[l] )
+                f.write("%4d : %-7d "%(k,nij))
+            f.write("\n")
+                
         f.close()
         print diff.shape
         return diff
