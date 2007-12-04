@@ -77,7 +77,6 @@ if __name__=="__main__":
                       help="Parameters to vary"  )
     parser.add_option("-x", "--fiX", action="append",
                       dest="fixlist", type="string",
-                      default =     [ "chi","t_z" ],
                       help="Parameters to fix (overrides vary)")
     parser.add_option("-t", "--tol", action="store",
                       dest="tol", type="float",

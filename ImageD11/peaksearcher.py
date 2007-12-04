@@ -212,8 +212,8 @@ def peaksearch_driver(options, args):
                 options.first,
                 options.last,
                 extn,
-                options.ndigits,
-                options.padding )
+                digits = options.ndigits,
+                padding = options.padding )
     # Output files:
 
     outfile =     options.outfile

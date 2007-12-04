@@ -102,7 +102,7 @@ class darkflood:
             cor[-b:,:]=0
             cor[:,-b:]=0
         # Should we bother with this - yes please - noisy pixels overflow
-        cor =  n.where(n.cor>0.1, n.cor, 0.) # truncate zero
+        cor =  n.where(cor>0.1, cor, 0.) # truncate zero
         
         # print cor[c0,c1]
         return cor.astype(tin)
@@ -239,7 +239,8 @@ if __name__=="__main__":
                           default=5.0,help="Sample to detector distance")
         parser.add_option("-b","--border",action="store",type="int", 
                           dest="border",
-                          default=0,help="Border of image to zero out")
+                          default=None,
+                          help="Border of image to zero out")
 
         parser.add_option("-t","--template",action="store", type="string", 
                           dest="template",

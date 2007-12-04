@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!python
 
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
@@ -83,7 +83,8 @@ if __name__=="__main__":
                           help="Number of last file to process")
         parser.add_option("-o","--outfile",action="store", type="string", dest="outfile",default="bkg.edf",                         
                           help="Output filename, default=bkg.edf")
-        parser.add_option("-F","--Format",action="store", type="string", dest="format",default="edf",
+        parser.add_option("-F","--Format",action="store", 
+                          type="string", dest="format",default=".edf",
                           help="File format [edf|bruker]")
         parser.add_option("-s","--step",action="store", type="int", dest="step",default=1,
                           help="step - every nth image")
