@@ -71,12 +71,13 @@ if __name__=="__main__":
                       help="Name of new ubi file")
     parser.add_option("-v", "--vary", action="append",
                       dest="varylist", type="string",
-                      default =     [ "y_center","z_center",
+                      default =    [ "y_center","z_center",
                                      "tilt_y","tilt_x","tilt_z","wedge",
                                      "t_x","t_y","distance"],
                       help="Parameters to vary"  )
     parser.add_option("-x", "--fiX", action="append",
                       dest="fixlist", type="string",
+                      default = ['chi'],
                       help="Parameters to fix (overrides vary)")
     parser.add_option("-t", "--tol", action="store",
                       dest="tol", type="float",
