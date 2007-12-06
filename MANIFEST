@@ -82,6 +82,10 @@ src/blobs.c
 src/blobs.h
 src/connectedpixels.c
 ImageD11/doc
+ImageD11/fft_index.py
+ImageD11/fft_index_refac.py
+ImageD11/peaksearcher.py
+ImageD11/colfile2db.py
 ImageD11/guimaker.py
 ImageD11/GE_script.py
 ImageD11/simplex.py
