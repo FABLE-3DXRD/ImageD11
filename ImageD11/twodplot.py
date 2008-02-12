@@ -75,33 +75,35 @@ class twodplot(Tk.Frame):
         self.time_down = 0.1
         self.bindkeys()
         self.rubberbandbox=None
+        self.pack_opts={'side':Tk.LEFT, 'padx':'2', 'pady':'2'}
         self.bf1=Tk.Frame(self)
-        Tk.Button(master=self.bf1, text='Save Plot', command=self.printplot).pack(side=Tk.LEFT)
-        Tk.Button(master=self.bf1, text='LogY', command=self.logy).pack(side=Tk.LEFT)
-        Tk.Button(master=self.bf1, text='LogX', command=self.logx).pack(side=Tk.LEFT)
+        Tk.Button(master=self.bf1, text='Clear', command=self.clear).pack(self.pack_opts)
+        Tk.Button(master=self.bf1, text='Save Plot', command=self.printplot).pack(self.pack_opts)
+        Tk.Button(master=self.bf1, text='LogY', command=self.logy).pack(self.pack_opts)
+        Tk.Button(master=self.bf1, text='LogX', command=self.logx).pack(self.pack_opts)
 # FIXME - buttons for panx/y and zoomx/y
         Tk.Button(master=self.bf1,text='>' ,
-                    command=lambda : self.keypress(self.a.panx,1 )  ).pack(side=Tk.LEFT)
+                    command=lambda : self.keypress(self.a.panx,1 )  ).pack(self.pack_opts)
         Tk.Button(master=self.bf1,text='<',
-                    command=lambda : self.keypress(self.a.panx,-1)  ).pack(side=Tk.LEFT)
+                    command=lambda : self.keypress(self.a.panx,-1)  ).pack(self.pack_opts)
         Tk.Button(master=self.bf1,text='^'   ,
-                    command=lambda : self.keypress(self.a.pany,-1 ) ).pack(side=Tk.LEFT)
+                    command=lambda : self.keypress(self.a.pany,-1 ) ).pack(self.pack_opts)
         Tk.Button(master=self.bf1,text='v' ,
-                    command=lambda : self.keypress(self.a.pany,1)   ).pack(side=Tk.LEFT)
+                    command=lambda : self.keypress(self.a.pany,1)   ).pack(self.pack_opts)
         self.bf1.pack(side=Tk.BOTTOM)
         self.bf2=Tk.Frame(self)
         Tk.Button(master=self.bf2,text='UnZoomX' ,
-                    command=lambda : self.keypress(self.a.zoomx,-1 )  ).pack(side=Tk.LEFT)
+                    command=lambda : self.keypress(self.a.zoomx,-1 )  ).pack(self.pack_opts)
         Tk.Button(master=self.bf2,text='ZoomX',
-                    command=lambda : self.keypress(self.a.zoomx,1)  ).pack(side=Tk.LEFT)
+                    command=lambda : self.keypress(self.a.zoomx,1)  ).pack(self.pack_opts)
         Tk.Button(master=self.bf2,text='ZoomY'   ,
-                    command=lambda : self.keypress(self.a.zoomy,1 ) ).pack(side=Tk.LEFT)
+                    command=lambda : self.keypress(self.a.zoomy,1 ) ).pack(self.pack_opts)
         Tk.Button(master=self.bf2,text='UnZoomY' ,
-                    command=lambda : self.keypress(self.a.zoomy,-1)   ).pack(side=Tk.LEFT)
+                    command=lambda : self.keypress(self.a.zoomy,-1)   ).pack(self.pack_opts)
         Tk.Button(master=self.bf2,text='Autoscale' ,
-                    command=lambda  : self.keypress(self.autoscale)   ).pack(side=Tk.LEFT)
+                    command=lambda  : self.keypress(self.autoscale)   ).pack(self.pack_opts)
         Tk.Button(master=self.bf2,text='Autoscale Y',
-                    command=lambda  : self.keypress(self.autoscaley, None )  ).pack(side=Tk.LEFT)
+                    command=lambda  : self.keypress(self.autoscaley, None )  ).pack(self.pack_opts)
         self.bf2.pack(side=Tk.BOTTOM)
         self.label=Tk.Label(self,text="Plot window messages")
         self.label.pack(side=Tk.BOTTOM,fill=Tk.X, expand=0)
@@ -250,6 +252,10 @@ class twodplot(Tk.Frame):
     def autoscale(self):
         self.a.cla()
         self.xr = self.yr = None
+        self.replot()
+
+    def clear(self):
+        self.plotitems={}
         self.replot()
 
     def on_2(self,event):

@@ -211,8 +211,7 @@ if __name__=="__main__":
             """
             Clear out the twodplot
             """
-            self.twodplotter.plotitems={}
-            self.twodplotter.replot()
+            self.twodplotter.clear()
 
         def makeWidgets(self):
             """
