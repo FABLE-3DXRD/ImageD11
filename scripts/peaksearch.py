@@ -43,6 +43,7 @@ reallystart = time.time()
 
 if __name__=="__main__":
     # If we are running from a command line:
+    myparser = None
     try:
         from optparse import OptionParser
         from ImageD11 import peaksearcher
@@ -51,7 +52,8 @@ if __name__=="__main__":
         options , args = myparser.parse_args()
         peaksearcher.peaksearch_driver(options, args)
     except:
-        myparser.print_help()
+        if myparser != None:
+            myparser.print_help()
         print "\n\n And here is the problem:\n"
         raise
 end = time.time()
