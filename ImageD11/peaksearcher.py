@@ -52,7 +52,10 @@ import numpy.oldnumeric as Numeric
 from fabio.openimage import openimage
 from fabio import file_series
 
-
+# Global variables
+OMEGA = 0
+OMEGASTEP = 1.0
+OMEGAOVERRIDE = False
 
 class timer:
     def __init__(self):
@@ -66,10 +69,6 @@ class timer:
         self.tick(msg)
         print "%.2f/s"% (self.now-self.start)
 
-
-OMEGA = 0
-OMEGASTEP = 1.0
-OMEGAOVERRIDE = False
 
 def peaksearch( filename , 
                 corrector , 
@@ -92,6 +91,7 @@ def peaksearch( filename ,
     t = timer()
     f = open(outputfile,"aq") # Open the output file for appending
     # Assumes an edf file for now - TODO - should be independent
+
     try:
         data_object = openimage(filename)
     except KeyboardInterrupt:
@@ -146,7 +146,7 @@ def peaksearch( filename ,
         #
         if not data_object.header.has_key("Omega") or OMEGAOVERRIDE:
             # Might have imagenumber or something??
-            global OMEGA
+            global OMEGA, OMEGASTEP, OMEGAOVERRIDE
             ome = OMEGA
             OMEGA += OMEGASTEP
             # print "Overriding the OMEGA"
@@ -223,6 +223,7 @@ def peaksearch_driver(options, args):
 
     # Omega overrides
 
+    global OMEGA, OMEGASTEP, OMEGAOVERRIDE
     OMEGA = options.OMEGA
     OMEGASTEP = options.OMEGASTEP
     OMEGAOVERRIDE = options.OMEGAOVERRIDE 
