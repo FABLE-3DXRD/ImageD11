@@ -60,7 +60,7 @@ def filtergrain(options):
     gotpks.addcolumn(hkl[0,:] , "hr")
     gotpks.addcolumn(hkl[1,:] , "kr")
     gotpks.addcolumn(hkl[2,:] , "lr")
-    hkli = (hkl+0.5).astype(Numeric.Int)
+    hkli = Numeric.floor(hkl+0.5).astype(Numeric.Int)
     gotpks.addcolumn(hkli[0,:] , "h")
     gotpks.addcolumn(hkli[1,:] , "k")
     gotpks.addcolumn(hkli[2,:] , "l")

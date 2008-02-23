@@ -39,6 +39,7 @@ setup(
      console = ["../scripts/peaksearch.py",
     "../ImageD11/plot3d.py",
     "../scripts/fitgrain.py",
+    "../scripts/ubi2cellpars.py",
     "../scripts/filtergrain.py",
     "../scripts/pars_2_sweeper.py",
     "../scripts/fit2dcake.py",
