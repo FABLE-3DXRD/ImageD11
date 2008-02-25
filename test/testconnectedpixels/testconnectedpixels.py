@@ -151,6 +151,7 @@ class test_blobproperties(unittest.TestCase):
             from ImageD11.connectedpixels import s_1, s_I, s_I2, \
                 s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
                 bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
+                bb_mn_o, bb_mx_o, \
                 mx_I, mx_I_f, mx_I_s, mx_I_o
             #            print res,res.shape
             self.assertAlmostEqual(res[0][s_1],10)
@@ -181,6 +182,7 @@ class test_blobproperties(unittest.TestCase):
             from ImageD11.connectedpixels import s_1, s_I, s_I2, \
                 s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
                 bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
+                bb_mn_o, bb_mx_o, \
                 mx_I, mx_I_f, mx_I_s 
             #            print res,res.shape
             self.assertAlmostEqual(res[0][s_1],9)
@@ -220,6 +222,8 @@ class test_blobproperties(unittest.TestCase):
             self.assertAlmostEqual(res[1][bb_mn_s],0)
             self.assertAlmostEqual(res[0][bb_mx_s],3)
             self.assertAlmostEqual(res[1][bb_mx_s],3)
+            self.assertAlmostEqual(res[1][bb_mn_o],0)
+            self.assertAlmostEqual(res[0][bb_mx_o],0)
 
             
 class testbloboverlaps(unittest.TestCase):
@@ -237,8 +241,8 @@ class testbloboverlaps(unittest.TestCase):
                           [ 0, 0, 0, 0, 2, 0, 2]])
         bl2 = n.zeros(data2.shape)
         np2 = connectedpixels.connectedpixels(data2,bl2,0.1)
-        r1 = connectedpixels.blobproperties(data1, bl1, np1)
-        r2 = connectedpixels.blobproperties(data2, bl2, np2)
+        r1 = connectedpixels.blobproperties(data1, bl1, np1, omega=-10.0)
+        r2 = connectedpixels.blobproperties(data2, bl2, np2, omega=10.0)
 
         connectedpixels.bloboverlaps(bl1,np1,r1, 
                                      bl2,np2,r2, verbose=0)
@@ -248,6 +252,7 @@ class testbloboverlaps(unittest.TestCase):
         from ImageD11.connectedpixels import s_1, s_I, s_I2, \
             s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
             bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
+            bb_mn_o, bb_mx_o,\
             mx_I, mx_I_f, mx_I_s 
         # check total pixels
         self.assertAlmostEqual(r2[0,s_1], 18.0, 6)
@@ -256,6 +261,8 @@ class testbloboverlaps(unittest.TestCase):
         self.assertAlmostEqual(r2[0,bb_mx_f], 6.0, 6)
         self.assertAlmostEqual(r2[0,bb_mn_s], 0.0, 6)
         self.assertAlmostEqual(r2[0,bb_mx_s], 3.0, 6)
+        self.assertAlmostEqual(r2[0,bb_mn_o], -10.0, 6)
+        self.assertAlmostEqual(r2[0,bb_mx_o],  10.0, 6)
         
     def test2(self):
         import sys
@@ -283,6 +290,7 @@ class testbloboverlaps(unittest.TestCase):
         from ImageD11.connectedpixels import s_1, s_I, s_I2, \
             s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
             bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
+            bb_mn_o, bb_mn_f,\
             mx_I, mx_I_f, mx_I_s 
         self.assertAlmostEqual(r1[0,s_1], 3, 6)
         self.assertAlmostEqual(r1[0,s_I], 3, 6)

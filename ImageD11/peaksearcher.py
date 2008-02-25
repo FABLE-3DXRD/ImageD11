@@ -144,9 +144,9 @@ def peaksearch( filename ,
         if labelim.shape != picture.shape:
             raise "Incompatible blobimage buffer for file %s" %(filename)
         #
+        global OMEGA, OMEGASTEP, OMEGAOVERRIDE
         if not data_object.header.has_key("Omega") or OMEGAOVERRIDE:
             # Might have imagenumber or something??
-            global OMEGA, OMEGASTEP, OMEGAOVERRIDE
             ome = OMEGA
             OMEGA += OMEGASTEP
             # print "Overriding the OMEGA"

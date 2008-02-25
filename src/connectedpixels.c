@@ -594,10 +594,14 @@ static PyObject * blobproperties (PyObject *self,
    /* Initialise the results */
    for ( i=0 ; i<safelyneed[0] ; i++) {
      for ( j=0 ; j<NPROPERTY; j++){
-       res[i*NPROPERTY+j]=0.;
-       res[i*NPROPERTY+bb_mn_f]=1.e9;
-       res[i*NPROPERTY+bb_mn_s]=1.e9;
-     }
+           res[i*NPROPERTY+j]=0.;
+        } 
+     res[i*NPROPERTY+bb_mx_f]=-1.e20;
+     res[i*NPROPERTY+bb_mx_s]=-1.e20;
+     res[i*NPROPERTY+bb_mx_o]=-1.e20;
+     res[i*NPROPERTY+bb_mn_f]= 1.e20;
+     res[i*NPROPERTY+bb_mn_s]= 1.e20;
+     res[i*NPROPERTY+bb_mn_o]= 1.e20;
    }
       
    if(verbose!=0)printf("Got some space to put the results in\n");
