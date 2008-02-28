@@ -29,7 +29,8 @@ class group:
         """
         m = n.dot(x,y)
         d = determinant(m)
-        assert abs(d-1)<1e-6, (str((d,m,x,y)))
+        # Only appears to make sense for pure rotations
+        # assert abs(d-1)<1e-6, (str((d,m,x,y)))
         return m
     def comp(self,x,y):
         """
