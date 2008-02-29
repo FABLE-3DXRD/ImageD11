@@ -1,5 +1,4 @@
 
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -52,7 +51,6 @@ class guiindexer:
                              ( "Save UBI matrices", 5, self.saveubis),
                              ( "Write out indexed peaks",0,self.saveindexing)
                            ] )
-        import plot3d
         self.plot3d=None
 
     def loadgv(self):
