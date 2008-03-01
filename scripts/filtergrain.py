@@ -72,7 +72,7 @@ def filtergrain(options):
     # don't bother to copy here as we can overwrite
     if options.notindexed is not None:
         notpks = o.scandata[options.fltfile]
-        notpks.filter(drlv2 > o.tolerance)
+        notpks.filter(drlv2 > o.tolerance*o.tolerance)
         notpks.writefile(options.notindexed)
         logging.info("Peaks which were not indexed %d written to %s"%(
                 notpks.nrows, options.notindexed))
