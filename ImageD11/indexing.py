@@ -657,7 +657,7 @@ class indexer:
             tol=self.hkl_tol
         drlv2=calc_drlv2(UBI,self.gv)
         drlv2=n.where(self.ra==-1,tol+1,drlv2)
-        ind = n.compress( n.less(drlv2,tol) , n.arange(self.gv.shape[0]) )
+        ind = n.compress( n.less(drlv2,tol*tol) , n.arange(self.gv.shape[0]) )
         return ind
 
 
