@@ -176,6 +176,13 @@ def peaksearch_driver(options, args):
     """
     To be called with options from command line
     """
+    ################## debugging still
+    for a in args:
+        print "arg:"+str(a)
+    for o in options.__dict__.keys():
+        print "option:",str(o),str(getattr(options,o))
+    ###################
+
 
     if options.thresholds is None:
         raise ValueError("No thresholds supplied [-t 1234]")

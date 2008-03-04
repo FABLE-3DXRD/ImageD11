@@ -174,22 +174,27 @@ class labelimage:
             self.lastres = self.res
             return            
         if self.npk > 0 and self.lastnp > 0:
-            ret = connectedpixels.bloboverlaps(self.lastbl,
-                                               self.lastnp,
-                                               self.lastres,
-                                               self.blim,
-                                               self.npk,
-                                               self.res,
-                                               self.verbose)
+            # Thanks to Stine West for finding a bug here
+            # 
+            self.npk = connectedpixels.bloboverlaps(self.lastbl,
+                                                    self.lastnp,
+                                                    self.lastres,
+                                                    self.blim,
+                                                    self.npk,
+                                                    self.res,
+                                                    self.verbose)
         if self.lastnp > 0:
             # Fill out the moments of the "closed" peaks
             # print "calling blobmoments with",self.lastres
-            ret = connectedpixels.blob_moments(self.lastres)
+            ret = connectedpixels.blob_moments(self.lastres[:self.lastnp])
             # Write them to file
-            self.outputpeaks(self.lastres)
+            self.outputpeaks(self.lastres[:self.lastnp])
         # lastres is now moved forward into res
         self.lastnp = self.npk   # This is array dim
-        self.lastres = self.res  # free old lastres I hope
+        if self.npk > 0:
+            self.lastres = self.res[:self.npk]  # free old lastres I hope
+        else:
+            self.lastres = None
         # Also swap the blob images
         self.lastbl, self.blim = self.blim, self.lastbl
 
@@ -205,7 +210,7 @@ class labelimage:
         ret = connectedpixels.blob_moments(self.res)
 
         fs = "%d  "+ "%f  "*8 + "\n"
-        for i in self.res:
+        for i in self.res[:self.npk]:
             if i[s_1] < 0.1:
                 raise Exception("Empty peak on current frame")
             i[s_cen], i[f_cen] = self.corrector.correct(i[s_raw], i[f_raw])
