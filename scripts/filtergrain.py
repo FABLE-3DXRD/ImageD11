@@ -44,6 +44,7 @@ def filtergrain(options):
     else:
         o.tolerance = options.tol
     matrix = o.grains[(gn,options.fltfile)].ubi
+
     drlv2 = indexing.calc_drlv2( matrix, o.gv )    
     
     logging.info("Total peaks before filtering %d"%

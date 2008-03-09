@@ -24,9 +24,10 @@
 #
 #
 
+import numpy 
 
-import numpy.oldnumeric as Numeric
-from numpy.oldnumeric.linear_algebra import inverse
+from numpy.linalg import inv
+
 import math
 
 import logging
@@ -43,19 +44,28 @@ def cross(a,b):
     """
     a x b has length |a||b|sin(theta)
     """
-    return Numeric.array([ a[1]*b[2]-a[2]*b[1] ,a[2]*b[0]-b[2]*a[0], a[0]*b[1]-b[0]*a[1] ],Numeric.Float)
+    return numpy.array([ a[1]*b[2]-a[2]*b[1] ,
+                         a[2]*b[0]-b[2]*a[0] , 
+                         a[0]*b[1]-b[0]*a[1] ],numpy.float)
+
+
+
+def norm2(a):
+    """
+    Compute the unit 2 norm
+    """
+    return numpy.sqrt(numpy.dot(a,a))
+
 
 def unit(a):
     """
     Normalise vector a to unit length
     """
     try:
-        return a/Numeric.sqrt(Numeric.dot(a,a))
+        return a/norm2(a)
     except:
         logging.error("cannot normalise to unit length a=%s"%(str(a)))
         raise
-
-
 
 
 # Systematic absences
@@ -92,34 +102,34 @@ outif = {
     "R" : R}
 
 def cellfromstring(s):
-    items=s.split()
+    items = s.split()
     # print items
     latt = [float(x) for x in items[0:6]]
     try:
         symm = items[6]
     except IndexError:
         symm = 'P'
-    return unitcell(latt,symm)
+    return unitcell(latt, symm)
 
 class unitcell:
     # Unit cell stuff
     # Generate a list of peaks from a unit cell
-    def __init__(self,lattice_parameters,symmetry="P",verbose=0):
+    def __init__(self, lattice_parameters, symmetry = "P", verbose = 0 ):
         """
         Unit cell class
         supply a list (tuple etc) of a,b,c,alpha,beta,gamma
         optionally a symmetry, one of "P","A","B","C","I","F","R"
         """
-        self.lattice_parameters=Numeric.array(lattice_parameters)
+        self.lattice_parameters = numpy.array(lattice_parameters)
         if self.lattice_parameters.shape[0]!=6:
             raise Exception("You must supply 6 lattice parameters\n"+\
                             "      a,b,c,alpha,beta,gamma")
-        self.symmetry=symmetry
+        self.symmetry = symmetry
         if self.symmetry not in ["P","A","B","C","I","F","R"]:
             raise Exception("Your symmetry "+self.symmetry+\
                             " was not recognised")
         # assigning a function here!
-        self.absent=outif[self.symmetry]
+        self.absent = outif[self.symmetry]
         a = self.lattice_parameters[0]
         b = self.lattice_parameters[1]
         c = self.lattice_parameters[2]
@@ -128,34 +138,49 @@ class unitcell:
         cb= math.cos(radians(self.lattice_parameters[4]))
         cg= math.cos(radians(self.lattice_parameters[5]))
         if verbose==1: print "Unit cell",self.lattice_parameters
-        self.g = Numeric.array( [[ a*a    ,  a*b*cg, a*c*cb ],
-                                 [ a*b*cg ,  b*b   , b*c*ca ],
-                                 [ a*c*cb ,  b*c*ca, c*c    ]],Numeric.Float)
+        self.g = numpy.array( [[ a*a    ,  a*b*cg, a*c*cb ],
+                               [ a*b*cg ,  b*b   , b*c*ca ],
+                               [ a*c*cb ,  b*c*ca, c*c    ]],numpy.float)
         if verbose==1: print "Metric tensor\n",self.g
         try:
-            self.gi = inverse(self.g)
+            self.gi = inv(self.g)
         except:
             raise Exception("Unit cell was degenerate, could not determine"+\
                     "reciprocal metric tensor")
         if verbose==1: print "Reciprocal Metric tensor\n",self.gi
-        self.as=Numeric.sqrt(self.gi[0,0])
-        self.bs=Numeric.sqrt(self.gi[1,1])
-        self.cs=Numeric.sqrt(self.gi[2,2])
+        self.as=numpy.sqrt(self.gi[0,0])
+        self.bs=numpy.sqrt(self.gi[1,1])
+        self.cs=numpy.sqrt(self.gi[2,2])
 
         self.alphas=degrees(math.acos(self.gi[1,2]/self.bs/self.cs))
         self.betas =degrees(math.acos(self.gi[0,2]/self.as/self.cs))
         self.gammas=degrees(math.acos(self.gi[0,1]/self.as/self.bs))
         if verbose==1: print "Reciprocal cell"
-        if verbose==1: print self.as,self.bs,self.cs,self.alphas,self.betas,self.gammas
+        if verbose==1: 
+            print self.as, self.bs, self.cs, \
+                self.alphas, self.betas, self.gammas
         # Equation 3 from Busing and Levy
-        self.B = Numeric.array ( [ [ self.as , self.bs*math.cos(radians(self.gammas)) , self.cs*math.cos(radians(self.betas)) ] ,
-                           [       0 , self.bs*math.sin(radians(self.gammas)) , -self.cs*math.sin(radians(self.betas))*ca ],
-                           [       0 ,                       0  ,      1./c ] ] , Numeric.Float)
-        if verbose==1: print self.B
-        if verbose==1: print Numeric.dot(Numeric.transpose(self.B),self.B)-self.gi # this should be zero
-        self.hkls=None
-        self.peaks=None
-        self.limit=0
+        self.B = numpy.array ( 
+            [ [ self.as , 
+                self.bs*math.cos(radians(self.gammas)) , 
+                self.cs*math.cos(radians(self.betas)) ] ,
+              [ 0 , 
+                self.bs*math.sin(radians(self.gammas)) , 
+                -self.cs*math.sin(radians(self.betas))*ca ],
+              [ 0 , 0  ,
+                1./c ] ] , numpy.float)
+        if verbose == 1: print self.B
+        if verbose == 1: 
+            print numpy.dot( numpy.transpose(self.B),
+                               self.B)-self.gi # this should be zero
+        self.hkls = None
+        self.peaks = None
+        self.limit = 0
+        
+        # used for caching
+        self.anglehkl_rings = None
+        self.anglehkl_cache = None
+        
 
     def tostring(self):
         """
@@ -173,9 +198,9 @@ class unitcell:
         """
         Compute the angle between reciprocal lattice vectors h1, h2
         """
-        g1 = Numeric.dot(h1,Numeric.dot(self.gi,h1))
-        g2 = Numeric.dot(h2,Numeric.dot(self.gi,h2))
-        g12= Numeric.dot(h1,Numeric.dot(self.gi,h2))
+        g1 = numpy.dot(h1,numpy.dot(self.gi,h1))
+        g2 = numpy.dot(h2,numpy.dot(self.gi,h2))
+        g12= numpy.dot(h1,numpy.dot(self.gi,h2))
         costheta = g12/math.sqrt(g1*g2)
         try:
             return degrees(math.acos(costheta)),costheta
@@ -253,7 +278,7 @@ class unitcell:
 
     def ds(self,h):
         """ computes 1/d for this hkl = hgh """
-        return math.sqrt(Numeric.dot(h,Numeric.dot(self.gi,h))) # 1/d or d*
+        return math.sqrt(numpy.dot(h,numpy.dot(self.gi,h))) # 1/d or d*
 
 
     def makerings(self,limit,tol=0.001):
@@ -276,6 +301,25 @@ class unitcell:
                 self.ringds.append(peak[0])
                 self.ringhkls[self.ringds[-1]]= [peak[1]]
 
+    def getanglehkls(self, ring1, ring2):
+        """
+        Cache the last pair called for
+        """
+        if self.anglehkl_rings == (ring1, ring2):
+            return self.anglehkl_cache
+        else:
+            self.anglehkl_rings = (ring1, ring2)
+            cache = []
+            hcach = []
+            for ha in self.ringhkls[self.ringds[ring1]]:
+                for hb in self.ringhkls[self.ringds[ring2]]:
+                    if ha == hb:
+                        continue
+                    hcach.append( ( ha, hb) )
+                    cache.append( self.anglehkls(ha,hb) )
+            self.anglehkl_cache = [ hcach , numpy.array(cache) ]
+            return self.anglehkl_cache
+
 
     def orient(self,ring1,g1,ring2,g2,verbose=0):
         """
@@ -289,51 +333,56 @@ class unitcell:
         t2 is in the plane of both   (unit vector along g1x(g1xg2))
         t3 is perpendicular to both  (unit vector along g1xg2)
         """
-        costheta = Numeric.dot(g1,g2)/math.sqrt(Numeric.dot(g2,g2))/math.sqrt(Numeric.dot(g1,g1))
+        costheta = numpy.dot(g1,g2)/norm2(g2)/norm2(g1)
+
         if verbose==1: print "observed costheta",costheta
         best=5.
-        for ha in self.ringhkls[self.ringds[ring1]]:
-            for hb in self.ringhkls[self.ringds[ring2]]:
-                ca=self.anglehkls(ha,hb)
-                if verbose==1: print "%6.3f %.3f"% ca,ha,hb,best,ha,hb
-                if abs(ca[1]-costheta) < best and ha!=hb:
-                    h1=ha
-                    h2=hb
-                    # This was a serious bug!!! Best was assigned to ca[1]!!!
-                    best=abs(ca[1]-costheta)
+
+        hab , angles_ab = self.getanglehkls( ring1, ring2 )
+        best = numpy.argmin( abs( angles_ab - costheta ) )
+        h1, h2 = hab[best]
+
         if verbose==1:
-            print "Assigning h1",h1,g1,self.ds(h1),math.sqrt(Numeric.dot(g1,g1)),self.ds(h1)-math.sqrt(Numeric.dot(g1,g1))
-            print "Assigning h2",h2,g2,self.ds(h2),math.sqrt(Numeric.dot(g2,g2)),self.ds(h1)-math.sqrt(Numeric.dot(g1,g1))
+            print "Assigning h1",h1,g1,self.ds(h1),\
+                math.sqrt(numpy.dot(g1,g1)),\
+                self.ds(h1)-math.sqrt(numpy.dot(g1,g1))
+            print "Assigning h2",h2,g2,self.ds(h2),\
+                math.sqrt(numpy.dot(g2,g2)),\
+                self.ds(h1)-math.sqrt(numpy.dot(g1,g1))
             print "Cos angle calc",self.anglehkls(h1,h2),"obs",costheta
         try:
-            h1c=Numeric.dot(self.B,h1)    
-            h2c=Numeric.dot(self.B,h2)
+            h1c=numpy.dot(self.B,h1)    
+            h2c=numpy.dot(self.B,h2)
             t1c=unit(h1c)
             t3c=unit(cross(h1c,h2c))
             t2c=unit(cross(h1c,t3c))
             t1g=unit(g1)
             t3g=unit(cross(g1,g2))
             t2g=unit(cross(g1,t3g))
-            T_g = Numeric.transpose(Numeric.array([t1g,t2g,t3g]))  # Array are stored by rows and
-            T_c = Numeric.transpose(Numeric.array([t1c,t2c,t3c]))  # these are columns
-            U=Numeric.dot(T_g , inverse(T_c))
-            UB=Numeric.dot(U,self.B)
-            UBI=inverse(UB)
+            T_g = numpy.transpose(numpy.array([t1g,t2g,t3g]))  # Array are stored by rows and
+            T_c = numpy.transpose(numpy.array([t1c,t2c,t3c]))  # these are columns
+            U=numpy.dot(T_g , inv(T_c))
+            UB=numpy.dot(U,self.B)
+            UBI=inv(UB)
         except:
             logging.error("unitcell.orient h1 %s g1 %s h2 %s g2 %s self.B %s"%(
                      str(h1), str(g1), str(h2), str(g2), str(self.B)))
+            print "angles_ab = ",angles_ab
+            print "hab",hab
+            print "best",best
+            print "ring1",ring1,"ring2",ring2
             import traceback
             traceback.print_exc()
         if verbose==1:
             print "UBI"
             print UBI
             print "Grain gi"
-            print Numeric.dot(Numeric.transpose(UB),UB)
+            print numpy.dot(numpy.transpose(UB),UB)
             print "Cell gi"
             print self.gi
-            h=Numeric.dot(UBI,g1)
+            h=numpy.dot(UBI,g1)
             print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
-            h=Numeric.dot(UBI,g2)
+            h=numpy.dot(UBI,g2)
             print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
         self.UBI=UBI
         self.UB=UB

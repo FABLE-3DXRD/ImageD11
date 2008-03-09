@@ -72,20 +72,26 @@ def generate_group(*args):
         g.additem(m_from_string(a))
     return g
 
+
+
 def cubic():
     return generate_group( "z,x,y",  "-y,x,z" )
 
 def hexagonal():
-    return generate_group ( "x+y,-x,z", "x,-x-y,-z")
+    """ P6 168 """
+    return generate_group ( "-y,x-y,z", "-x,-y,z")
 
 def trigonal():
-    return generate_group ("z,x,y","-y,-x,-z")
+    """ P3 143 """
+    return generate_group ("y,-x-y,z")
 
 def tetragonal():
-    return generate_group ("-y,x,z", "x,-y,-z")
+    """ P4 75"""
+    return generate_group ("-y,x,z", "-x,-y,z")
     
 def orthorhombic():
-    return generate_group("-x,-y,z","x,-y,-z")
+    """ P222 16 """
+    return generate_group("-x,-y,z","-x,y,-z")
 
 def monoclinic_c():
     return generate_group("-x,-y,z")
@@ -121,16 +127,17 @@ def test():
     assert n.allclose( m_from_string( "-y,y-x,z" ), n.array([[ 0,-1,0],
                                                              [ -1, 1,0],
                                                              [ 0, 0,1]] ))
-    
+    print "testing1"
     for op in [ "x,y,z", "-y,x-y,z", "-y,x,z"]:
         d = determinant(m_from_string(op)) 
         assert d == 1.0, "Determinant = %f %s"%(d,op)
-    
+    print "testing2"    
     assert len(cubic().group) == 24, "not 24 ops found for cubic !"
-    assert len(hexagonal().group) == 12 ,"not 12 ops found for hexagonal !"
-    assert len(trigonal().group) == 6 ,"not 6 ops found for hexagonal !"
-    assert len(tetragonal().group) == 8 ,"not 8 ops found for tetragonal !"
+    assert len(hexagonal().group) == 6 ,"not 6 ops found for hexagonal !"
+    assert len(trigonal().group) == 3 ,"not 3 ops found for trigonal !"+str(trigonal().group)
+    assert len(tetragonal().group) == 4 ,"not 8 ops found for tetragonal !"
     assert len(orthorhombic().group) == 4 ,"not 4 ops found for orthorhombic !"
+    print "testing3"
     for f in [ monoclinic_a, monoclinic_b, monoclinic_c]:
         r = f().group
         assert len(r) == 2, " not 2 ops for monoclinic "
@@ -139,6 +146,19 @@ def test():
         find_uniq_u( n.array( 
                 [[0,1,0],[-1,0,0],[0,0,1]]),cubic()),
                      n.identity(3) ), "Should easily get this unique choice"
+    
+
+def getgroup(s):
+    """
+    convert a user supplied string to a group
+    ... a little vague still
+    """
+    if s in ['cubic', 'hexagonal','trigonal','tetragonal',
+             'orthorhombic','monoclinic_c','monoclinic_a',
+             'monoclinic_b','triclinic']:
+        import ImageD11.sym_u
+        return getattr(ImageD11.sym_u, s)
+
     
 
 if __name__=="__main__":

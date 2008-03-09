@@ -21,7 +21,6 @@ def fitgrain(options):
     o.loadfiltered(options.fltfile)
     o.generate_grains()
     o.refineubis(quiet = False)
-    print o.gv[:10,:]
     o.parameterobj.varylist = options.varylist
     for p in options.fixlist:
         try:

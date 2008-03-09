@@ -64,6 +64,7 @@ INTS = [
     "Max_s",
     "spot3d_id",
     "h", "k", "l",
+    "Grain"
     ]
 FORMATS = {}
 
@@ -194,14 +195,17 @@ class columnfile:
         if len(col) != self.nrows:
             raise Exception("Wrong length column")
         if name in self.titles:
-            raise Exception("Already got a column called "+name)
-        self.titles.append(name)
-        self.ncols += 1
-        setattr(self, name, col)
-        lis = list(self.bigarray)
-        lis.append(col)
-        self.bigarray = n.array( lis )
+            # Make this overwrite instead of throwing an exception
+            self.bigarray[self.titles.index(name)] = col
+            # raise Exception("Already got a column called "+name)
+        else:
+            self.titles.append(name)
+            self.ncols += 1
+            lis = list(self.bigarray)
+            lis.append(col)
+            self.bigarray = n.array( lis )
         assert self.bigarray.shape == (self.ncols, self.nrows)
+        self.set_attributes()
     
 class newcolumnfile(columnfile):
     """ Just like a columnfile, but for creating new

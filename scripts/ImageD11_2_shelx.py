@@ -29,32 +29,28 @@ from the command line
 """
 
 
+from ImageD11 import columnfile
+from math import cos, sin, radians
 
+def lf(pk,tth,eta):
+    """
+    3dxrd lorentz factor
+    """
+    return pk/abs(sin(radians(eta)))/abs(cos(radians(tth)))
 
 
 if __name__=="__main__":
     import sys
     try:
-        flt = sys.argv[1]
-        ubi = sys.argv[2]
-        par = sys.argv[3]
-        out = sys.argv[4]
-        from ImageD11.refinegrains import refinegrains
-        o=refinegrains()
-        o.loadparameters(par)
-        o.loadfiltered(flt)
-        o.readubis(ubi)
-        o.generate_grains()
-        o.tolerance = 0.05  # to command line arg
-        o.refineubis(False)
-        o.varylist=['y-center','z-center','distance','tilt-y','tilt-z',
-                    'wedge','chi']
-        o.fit()
-        o.refineubis(False)
-        # Now get integrated intensities
-        for g in o.getgrains():
-            o.getpeaks(g)
-
+        c = columnfile.columnfile(sys.argv[1])
+        assert "h" in c.titles
+        assert "sum_intensity" in c.titles
+        assert "tth" in c.titles
+        assert "eta" in c.titles
+        for i in range(c.nrows):
+            print ("%4d"*3)%(c.h[i],c.k[i],c.l[i])
+            print lf(c.sum_intensity[i], c.tth[i], c.eta[i])
+            # Should print the error here, if you know it
     except:
-        print "Usage: %s fltfile ubifile parfile outfile"
+        print "Usage: %s fltfile"
         raise
