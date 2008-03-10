@@ -21,8 +21,8 @@ def fitgrain(options):
     o.loadfiltered(options.fltfile)
     o.generate_grains()
     o.refineubis(quiet = False)
-    print o.grains.keys()
-    print "#pks",o.grains[(0,"0.flt")].x.shape
+    #print o.grains.keys()
+    #print "#pks",o.grains[(0,"0.flt")].x.shape
     o.parameterobj.varylist = options.varylist
     for p in options.fixlist:
         try:
@@ -30,9 +30,9 @@ def fitgrain(options):
         except:
             pass
     logging.info("Varying " + str(o.parameterobj.varylist))
-    print "#pks",o.grains[(0,"0.flt")].x.shape
+    #print "#pks",o.grains[(0,"0.flt")].x.shape
     o.fit(maxiters = options.steps)
-    print "#pks",o.grains[(0,"0.flt")].x.shape
+    #print "#pks",o.grains[(0,"0.flt")].x.shape
     o.refineubis(quiet = False)
     o.saveparameters(options.newparfile)
     ul = [g.ubi for g in o.grains.values()]

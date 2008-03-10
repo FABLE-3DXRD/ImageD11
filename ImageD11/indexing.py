@@ -33,6 +33,8 @@ def readubis(ubifile):
     ubisread = []
     u = []
     for line in f:
+        if line[0]=="#":
+            continue
         vals = [ float(x) for x in line.split() ]
         if len(vals) == 3:
             u = u + [vals]

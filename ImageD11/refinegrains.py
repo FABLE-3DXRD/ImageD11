@@ -1,4 +1,4 @@
-#
+
 
 # Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
@@ -88,6 +88,7 @@ class refinegrains:
         # list of ubi matrices (1 for each grain in each scan)
         self.grainnames = []
         self.ubisread = {}
+        self.translationsread = {}
         # list of scans and corresponding data
         self.scannames=[]
         self.scantitles={}
@@ -111,14 +112,32 @@ class refinegrains:
         """
         Read ubi matrices from a text file
         """
-        ul = indexing.readubis(filename)
-        for i, u in enumerate(ul):
+        try:
+            ul = grain.read_grain_file(filename)
+        except:
+            print filename, type(filename)
+            raise
+        for i, g in enumerate(ul):
             name = filename + "_" + str(i)
             # Hmmm .... multiple grain files?
             name = i
             self.grainnames.append(i)
-            self.ubisread[name] = u
+            self.ubisread[name] = g.ubi
+            self.translationsread[name] = g.translation
         #print "Grain names",self.grainnames
+
+    def savegrains(self, filename):
+        """
+        Save the refined grains
+        """
+        ks = self.grains.keys()
+        # sort by number of peaks indexed to write out
+        #      npks
+        gl = [ (len(self.grains[k].x), self.grains[k]) for k in ks ]
+        gl.sort()
+        gl = [ g[1] for g in gl[::-1] ]
+        grain.write_grain_file(filename, gl)
+
 
     def makeuniq(self, symmetry):
         """
@@ -128,7 +147,7 @@ class refinegrains:
         you might have problems...
         """
         from ImageD11.sym_u import find_uniq_u, getgroup
-        g = getgroup( symmetry )
+        g = getgroup( symmetry )()
         for k  in self.ubisread.keys():
             self.ubisread[k] = find_uniq_u(self.ubisread[k], g)
         for k in self.grains.keys():
@@ -150,6 +169,8 @@ class refinegrains:
                            "labels" )
         self.scandata[filename] = col
         
+        
+
 
     def generate_grains(self):
         t = numpy.array([ self.parameterobj.parameters[s]
@@ -159,8 +180,19 @@ class refinegrains:
                 try:
                     gr = self.grains[(grainname,scanname)]
                 except KeyError:
-                    self.grains[(grainname,scanname)] = grain.grain(self.ubisread[grainname],
-                                                                    translation=t)
+                    if (self.translationsread[grainname] == 0).all():
+                        self.grains[(grainname,scanname)] = grain.grain(
+                            self.ubisread[grainname],
+                            translation=t)
+                        self.grains[(grainname,scanname)].name = \
+                            (str(grainname)+":"+scanname).replace(" ","_")
+                    else:
+                        self.grains[(grainname,scanname)] = grain.grain(
+                            self.ubisread[grainname],
+                            translation = self.translationsread[grainname] )
+                        self.grains[(grainname,scanname)].name = \
+                            (str(grainname)+":"+scanname).replace(" ","_")
+
                     
 
         for scanname in self.scannames:
@@ -314,7 +346,7 @@ class refinegrains:
             g = key[0]
             self.grains_to_refine = [key]
             self.parameterobj.varylist = [ 't_x', 't_y', 't_z' ]
-            self.set_translation(k[0],k[1])
+            self.set_translation(key[0],key[1])
             guess = self.parameterobj.get_variable_values()
             inc =   self.parameterobj.get_variable_stepsizes()
 
@@ -335,7 +367,7 @@ class refinegrains:
         ks = self.grains.keys()
         ks.sort()
         if not quiet:
-            print "\n%10s %10s"%("grainname","scanname"),
+            print "%10s %10s"%("grainname","scanname"),
             print "npeak   <drlv> "
         for key in ks:
             g = self.grains[key]

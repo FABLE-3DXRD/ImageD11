@@ -27,9 +27,14 @@ def makemap(options):
     o.refinepositions()
     print "Done refining positions too"    
     o.refineubis(quiet = False , scoreonly = True)
-    ul = [ o.grains[(g,options.fltfile)].ubi for g in o.grainnames ]
-    write_ubi_file(options.newubifile, ul)
-
+    o.savegrains(options.newubifile)
+    if hasattr(options, "newfltfile") and options.newfltfile is not None:
+        col = o.scandata[options.fltfile]
+        print "Before filtering",col.nrows
+        col.filter(col.labels > -0.5)
+        # print col.labels[:10]
+        print "After filtering",col.nrows
+        col.writefile(options.newfltfile)
 
 if __name__ == "__main__":
     import logging, sys
@@ -62,6 +67,9 @@ if __name__ == "__main__":
     parser.add_option("-f",  "--fltfile", action="store",
                       dest="fltfile", type="string",
                       help="Name of flt file")
+    parser.add_option("-F",  "--newfltfile", action="store",
+                      dest="newfltfile", type="string",
+                      help="Name of flt file containing unindexed peaks")
     parser.add_option("-t", "--tol", action="store",
                       dest="tol", type="float",
                       default =   0.5,

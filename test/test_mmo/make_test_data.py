@@ -47,7 +47,13 @@ import os
 from ImageD11.columnfile import columnfile
 
 def test(start, step):
-    os.system("c:\python25\python c:\python25\scripts\peaksearch.py " +
+    import sys
+    if sys.platform == "win32":
+        pksh = "c:\python25\python c:\python25\scripts\peaksearch.py " 
+    else:
+        pksh = "peaksearch.py " 
+        
+    os.system(pksh + 
           "-n test -F .tif -f 0 -l 9 -t 1.0 -D 0 " + 
           "-T %f -S %f >> testpksearch.log"%(start,step))
     c = columnfile("peaks_t1.flt")
