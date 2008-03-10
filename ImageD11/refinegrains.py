@@ -92,7 +92,6 @@ class refinegrains:
         self.scannames=[]
         self.scantitles={}
         self.scandata={}
-        self.labels = {}
         # grains in each scan
         self.grains = {}
         self.grains_to_refine = []
@@ -119,6 +118,7 @@ class refinegrains:
             name = i
             self.grainnames.append(i)
             self.ubisread[name] = u
+        #print "Grain names",self.grainnames
 
     def makeuniq(self, symmetry):
         """
@@ -142,52 +142,50 @@ class refinegrains:
         col = columnfile.columnfile(filename)
         self.scannames.append(filename)
         self.scantitles[filename] = col.titles
-        self.labels[filename] =  numpy.ones(col.nrows, numpy.int)-2
         if not "drlv2" in col.titles:
             col.addcolumn( numpy.ones(col.nrows, numpy.float),
                            "drlv2" )
         if not "labels" in col.titles:
-            col.addcolumn( numpy.ones(col.nrows, numpy.float),
+            col.addcolumn( numpy.ones(col.nrows, numpy.float)-2,
                            "labels" )
         self.scandata[filename] = col
         
 
     def generate_grains(self):
+        t = numpy.array([ self.parameterobj.parameters[s]
+                          for s in ['t_x', 't_y','t_z']] )
         for grainname in self.grainnames:
             for scanname in self.scannames:
                 try:
                     gr = self.grains[(grainname,scanname)]
                 except KeyError:
-                    self.grains[(grainname,scanname)] = grain.grain(self.ubisread[grainname])
+                    self.grains[(grainname,scanname)] = grain.grain(self.ubisread[grainname],
+                                                                    translation=t)
+                    
+
+        for scanname in self.scannames:
+            self.reset_labels(scanname)
 
     def reset_labels(self, scanname):
         
-        if reset_labels:
-            # all data
-            try:
-                x = self.scandata[scanname].xc
-                y = self.scandata[scanname].yc
-            except AttributeError:
-                x = self.scandata[scanname].sc
-                y = self.scandata[scanname].fc
-            om = self.scandata[scanname].omega
-        else:
-            # only for this grain
-            x = self.grains[(grainname, scanname)].x
-            y = self.grains[(grainname, scanname)].y
-            om= self.grains[(grainname, scanname)].om
+        try:
+            x = self.scandata[scanname].xc
+            y = self.scandata[scanname].yc
+        except AttributeError:
+            x = self.scandata[scanname].sc
+            y = self.scandata[scanname].fc
+        om = self.scandata[scanname].omega
+        # only for this grain
+        self.scandata[scanname].labels = self.scandata[scanname].labels*0 - 2 
+        self.scandata[scanname].drlv2 = self.scandata[scanname].drlv2*0 + 1
+        for g in self.grainnames:
+            self.grains[(g,scanname)].x = x
+            self.grains[(g,scanname)].y = y
+            self.grains[(g,scanname)].om = om
 
-        if reset_labels:
-            # This would be the moment to set the labels
-            g = self.grains[(grainname,scanname)]
-            closest.score_and_assign( g.ubi,
-                                      self.gv,
-                                      self.tolerance,
-                                      self.scandata[scanname].drlv2,
-                                      self.labels[scanname],
-                                      int(grainname))
+            
 
-    def compute_gv(self, grainname, scanname)
+    def compute_gv(self, grainname, scanname):
         """
         Makes self.gv refer be g-vectors computed for this grain in this scan
         """
@@ -207,6 +205,7 @@ class refinegrains:
                                               self.parameterobj.parameters['wedge'],
                                               self.parameterobj.parameters['chi'])
         self.gv = self.gv.T
+        # print "in compute_gv",self.gv[0]
 
     def refine(self, ubi, quiet=True):
         """
@@ -214,6 +213,7 @@ class refinegrains:
         
         """
         mat=ubi.copy()
+        # print "In refine",self.tolerance, self.gv.shape
         self.npks, self.avg_drlv2 = closest.score_and_refine(mat, self.gv, 
                                                              self.tolerance)
 
@@ -263,7 +263,7 @@ class refinegrains:
 
             # Compute gv using current parameters
             # Keep labels fixed
-            self.compute_gv(grainname,scanname, reset_labels = False)
+            self.compute_gv(grainname,scanname)
             #print self.gv.shape
             #print self.gv[0:10,:]
 
@@ -275,6 +275,7 @@ class refinegrains:
         if contribs > 0:
             return 1e6*diffs/contribs
         else:
+            print "No contribs???"
             return 1e6
 
 
@@ -295,6 +296,12 @@ class refinegrains:
     def getgrains(self):
         return self.grains.keys()
 
+
+    def set_translation(self,gr,sc):
+        self.parameterobj.parameters['t_x'] = self.grains[(gr,sc)].translation[0]
+        self.parameterobj.parameters['t_y'] = self.grains[(gr,sc)].translation[1]
+        self.parameterobj.parameters['t_z'] = self.grains[(gr,sc)].translation[2]
+
         
     def refinepositions(self, quiet=True,maxiters=100):
         self.assignlabels()
@@ -307,10 +314,7 @@ class refinegrains:
             g = key[0]
             self.grains_to_refine = [key]
             self.parameterobj.varylist = [ 't_x', 't_y', 't_z' ]
-            self.parameterobj.parameters['t_x'] = self.grains[key].translation[0]
-            self.parameterobj.parameters['t_y'] = self.grains[key].translation[1]
-            self.parameterobj.parameters['t_z'] = self.grains[key].translation[2]
-
+            self.set_translation(k[0],k[1])
             guess = self.parameterobj.get_variable_values()
             inc =   self.parameterobj.get_variable_stepsizes()
 
@@ -349,26 +353,42 @@ class refinegrains:
         """
         Fill out the appropriate labels for the spots
         """
+        # print "Assigning labels"
         for s in self.scannames:
-            self.labels[s] = self.labels[s] * 0 - 2
+            self.scandata[s].labels = self.scandata[s].labels * 0 - 2 # == -1
+            self.scandata[s].drlv2 = self.scandata[s].drlv2*0 + 1  # == 1
+            nr = self.scandata[s].nrows
+            int_tmp = numpy.zeros(nr , numpy.int32 )-1
             for g in self.grainnames:
                 gr = self.grains[ ( g, s) ]
-                self.compute_gv( g, s, reset_labels = True )
-            self.scandata[s].labels = self.labels[s] * 1.0
-            # Cache data inside each grain
+                self.set_translation( g, s)
+                self.compute_gv( g, s )
+                #print "about to assign"
+                closest.score_and_assign( gr.ubi,
+                                          self.gv,
+                                          self.tolerance,
+                                          self.scandata[s].drlv2,
+                                          int_tmp,
+                                          int(g) )
+                #print "assigned"
+            # Second loop after checking all grains
+            self.scandata[s].labels = int_tmp * 1.
             for g in self.grainnames:
                 gr = self.grains[ ( g, s) ]
-                ind = numpy.compress(self.labels[s] == g, range(len(self.labels[s])))
+                ind = numpy.compress(int_tmp == g,
+                                     range(nr) )
+                #print 'x',gr.x[:10]
+                #print 'ind',ind[:10]
                 try:
                     gr.x = numpy.take(self.scandata[s].xc , ind)
                     gr.y = numpy.take(self.scandata[s].yc , ind)
                 except AttributeError:
-                    gr.x = numpy.take(self.scandata[s].fc , ind)
-                    gr.y = numpy.take(self.scandata[s].sc , ind)
+                    gr.x = numpy.take(self.scandata[s].sc , ind)
+                    gr.y = numpy.take(self.scandata[s].fc , ind)
                 gr.om = numpy.take(self.scandata[s].omega , ind)
                 self.grains[ ( g, s) ] = gr
                 print "Grain",g,"Scan",s,"npks=",len(ind)
-
+                #print 'x',gr.x[:10]
 
 
 

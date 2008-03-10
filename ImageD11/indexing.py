@@ -287,7 +287,8 @@ class indexer:
         # Report on assignments
         ds=n.array(self.ds)
         print "Ring     (  h,  k,  l) Mult  total indexed to_index  "
-        for j in range(len(dsr)):
+        # try reverse order instead
+        for j in range(len(dsr))[::-1]:
             ind = n.compress( n.equal(self.ra,j), n.arange(self.ra.shape[0]) )
             self.na[j]=ind.shape[0]
             n_indexed  = n.sum(n.where( n.take(self.ga,ind) >  -1, 1, 0))

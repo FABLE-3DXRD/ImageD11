@@ -16,10 +16,10 @@ __date__ = string.join(string.split('$Date$')[1:3], ' ')
 __author__ = 'Jon Wright <jpwright@users.sourceforge.net> from example by Tarn Weisner Burton <twburton@users.sourceforge.net>'
 
 try:
-    import numpy.oldnumeric as Numeric
+    import numpy
 except:
     import sys
-    print "This demo requires the Numeric extension, sorry."
+    print "This demo requires the numpy extension, sorry."
     sys.exit()
 
 
@@ -31,7 +31,8 @@ import sys
 
 
 class plot3d(Tk.Toplevel):
-    def __init__(self,parent,data=None,lines=None,ubis=None,image=None,pars=None,spline=None):
+    def __init__(self,parent,data=None,lines=None,
+                 ubis=None,image=None,pars=None,spline=None):
         """
         Data would be your observed g-vectors. Lines will
         be a computed lattice
@@ -41,7 +42,7 @@ class plot3d(Tk.Toplevel):
         if data!=None:
             xyz=data.copy()
         else:
-            xyz=Numeric.array([0,0,0])
+            xyz=numpy.array([0,0,0])
         self.ps=Tk.StringVar()
         self.ps.set('1.')
         self.pointsize=1.
@@ -54,12 +55,10 @@ class plot3d(Tk.Toplevel):
         self.o.near=1e6
         self.o.far=1e-6
         import math
-        self.o.distance=Numeric.maximum.reduce(Numeric.ravel(xyz))*4/math.tan(self.o.fovy*math.pi/180)
+        self.o.distance=numpy.maximum.reduce(numpy.ravel(xyz))*4 / \
+            math.tan(self.o.fovy*math.pi/180)
         print type(xyz),xyz.dtype.char,xyz.shape
         self.xyz=xyz
-#        GL.glVertexPointerd(xyz)
-#   GL.glColorPointerd(xyz)
-#        GL.glEnableClientState(GL.GL_VERTEX_ARRAY|GL.GL_COLOR_ARRAY)
         f=Tk.Frame(self)
         Tk.Button(f,text="Help",command=self.o.help).pack(side=Tk.LEFT)
         Tk.Button(f,text="Reset",command=self.o.reset).pack(side=Tk.LEFT)
@@ -69,9 +68,10 @@ class plot3d(Tk.Toplevel):
         self.dataoff=0
         self.o.pack(side = 'top', expand = 1, fill = 'both')
         f.pack(side=Tk.BOTTOM,expand=Tk.NO,fill=Tk.X)
-        Tk.Label(self,text="Red=[1,0,0] Green=[0,1,0] Blue=[0,0,1]").pack(side=Tk.BOTTOM,expand=Tk.NO,fill=Tk.X)
+        Tk.Label(self,text="Red=[1,0,0] Green=[0,1,0] Blue=[0,0,1]").pack(
+            side=Tk.BOTTOM,expand=Tk.NO,fill=Tk.X)
         self.ubis=ubis
-        self.color=Numeric.ones((xyz.shape[0],3),Numeric.Float)
+        self.color=numpy.ones((xyz.shape[0],3),numpy.float)
         print self.color.shape
         self.tex=False
         if ubis is not None:
@@ -105,13 +105,13 @@ class plot3d(Tk.Toplevel):
         mi=1000
         mx=1500
         shape=self.imageobj.data.shape
-        d=Numeric.reshape(Numeric.clip(self.imageobj.data,mi,mx),shape) # makes a clipped copy
+        d=numpy.reshape(numpy.clip(self.imageobj.data,mi,mx),shape) # makes a clipped copy
         d=(255.*(d-mi)/(mx-mi)) # scale intensity
-        self.image=Numeric.zeros((1024,1024),Numeric.UInt8)
+        self.image=numpy.zeros((1024,1024),numpy.UInt8)
         if d.shape==(2048,2048):
             # rebin 2x2
             im=(d[::2,::2]+d[::2,1::2]+d[1::2,::2]+d[1::2,1::2])/4
-            self.image=(255-im).astype(Numeric.UInt8).tostring()
+            self.image=(255-im).astype(numpy.UInt8).tostring()
         self.imageWidth=1024
         self.imageHeight=1024
         # make a 2D array of x,y
@@ -127,8 +127,8 @@ class plot3d(Tk.Toplevel):
                     pk.append([i+v[0],j+v[1]])
                     x,y = self.corrector.correct((i+v[0])*2 , (j+v[1])*2) # corrected
                     p.append([x,y])
-        p=Numeric.transpose(Numeric.array(p)) 
-        pk=Numeric.transpose(Numeric.array(pk)) # 1024 crap
+        p=numpy.array(p).T 
+        pk=numpy.array(pk).T
         omega=float(self.imageobj.header['Omega'])
         self.pars['distance']=float(self.pars['distance'])*1000
         tth,eta=transform.compute_tth_eta(p,**self.pars)
@@ -172,11 +172,12 @@ class plot3d(Tk.Toplevel):
             for u,i in zip(self.ubis,range(len(self.ubis))):
                 scores=indexing.calc_drlv2(self.ubis[i],self.xyz)
                 print self.xyz.shape,scores.shape
-                ind = Numeric.compress( Numeric.less(scores,0.02) , Numeric.arange(self.xyz.shape[0]) )
+                ind = numpy.compress( numpy.less(scores,0.02) , 
+                                      numpy.arange(self.xyz.shape[0]) )
                 print "Grain",i,scores.shape,ind.shape
                 for j in range(3):
-                    c=Numeric.ones(self.color.shape[0])
-                    Numeric.put(c,ind,cc[i%len(cc)][j])
+                    c=numpy.ones(self.color.shape[0])
+                    numpy.put(c,ind,cc[i%len(cc)][j])
                     self.color[:,j]*=c
 
     def go(self):
@@ -217,20 +218,30 @@ class plot3d(Tk.Toplevel):
         GL.glColor3f(1.0, 1.0, 1.0) # white
         GL.glPointSize(self.pointsize)
         GL.glDrawArrays(GL.GL_POINTS, 0, self.npeaks )
+
+        if self.ubis is not None and len(self.ubis)==1:
+            hkl = numpy.dot(numpy.linalg.inv(self.ubis[0]), 
+                            numpy.identity(3,numpy.float)).T
+            # print hkl
+        else:
+            hkl = numpy.identity(3,numpy.float)
+            # print hkl
+                            
         GL.glBegin(GL.GL_LINE_LOOP)
         GL.glColor3f(1.0, 0.0, 0.0) # red
         GL.glVertex3f(0.,0.,0.)
-        GL.glVertex3f(1.,0.,0.)
+        GL.glVertex3f(hkl[0][0],hkl[0][1],hkl[0][2])
         GL.glEnd()
         GL.glBegin(GL.GL_LINE_LOOP)
         GL.glColor3f(0.0, 1.0, 0.0) # green
         GL.glVertex3f(0.,0.,0.)
-        GL.glVertex3f(0.,1.,0.)
+        GL.glVertex3f(hkl[1][0],hkl[1][1],hkl[1][2])
         GL.glEnd()
         GL.glBegin(GL.GL_LINE_LOOP)
         GL.glColor3f(0.0, 0.0, 1.0) # blue
         GL.glVertex3f(0.,0.,0.)
-        GL.glVertex3f(0.,0.,1.)
+        GL.glVertex3f(hkl[2][0],hkl[2][1],hkl[2][2])
+
         GL.glEnd()
         if self.tex:
 #            print "drawing images"
@@ -276,7 +287,7 @@ if __name__=="__main__":
             on=1
    
     npeaks = len(xyz)
-    xyz=Numeric.array(xyz)
+    xyz=numpy.array(xyz)
     if len(sys.argv)==3:
        o=plot3d(None,data=xyz,ubis=sys.argv[2])
     elif len(sys.argv)==6:

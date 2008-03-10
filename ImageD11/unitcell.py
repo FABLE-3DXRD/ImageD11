@@ -180,7 +180,7 @@ class unitcell:
         # used for caching
         self.anglehkl_rings = None
         self.anglehkl_cache = None
-        
+        self.ringtol = 0.001        
 
     def tostring(self):
         """
@@ -194,24 +194,6 @@ class unitcell:
               self.lattice_parameters[5],
               self.symmetry)
 
-    def anglehkls(self,h1,h2):
-        """
-        Compute the angle between reciprocal lattice vectors h1, h2
-        """
-        g1 = numpy.dot(h1,numpy.dot(self.gi,h1))
-        g2 = numpy.dot(h2,numpy.dot(self.gi,h2))
-        g12= numpy.dot(h1,numpy.dot(self.gi,h2))
-        costheta = g12/math.sqrt(g1*g2)
-        try:
-            return degrees(math.acos(costheta)),costheta
-        except:
-            if abs(costheta-1) < 1e-6:
-                return 0.,1.0
-            if abs(costheta+1) < 1e-6:
-                return 180.,-1.0
-            print "Error in unit cell class determining angle"
-            print "h1",h1,"h2",h2,"Costheta=",costheta
-            raise
 
     def gethkls(self,dsmax):
         """
@@ -300,15 +282,35 @@ class unitcell:
             else:
                 self.ringds.append(peak[0])
                 self.ringhkls[self.ringds[-1]]= [peak[1]]
+        self.ringtol = tol
+
+    def anglehkls(self,h1,h2):
+        """
+        Compute the angle between reciprocal lattice vectors h1, h2
+        """
+        g1 = numpy.dot(h1,numpy.dot(self.gi,h1))
+        g2 = numpy.dot(h2,numpy.dot(self.gi,h2))
+        g12= numpy.dot(h1,numpy.dot(self.gi,h2))
+        costheta = g12/math.sqrt(g1*g2)
+        try:
+            return degrees(math.acos(costheta)),costheta
+        except:
+            if abs(costheta-1) < 1e-6:
+                return 0.,1.0
+            if abs(costheta+1) < 1e-6:
+                return 180.,-1.0
+            print "Error in unit cell class determining angle"
+            print "h1",h1,"h2",h2,"Costheta=",costheta
+            raise
 
     def getanglehkls(self, ring1, ring2):
         """
         Cache the last pair called for
         """
-        if self.anglehkl_rings == (ring1, ring2):
+        if self.anglehkl_rings == (ring1, ring2, self.ringtol):
             return self.anglehkl_cache
         else:
-            self.anglehkl_rings = (ring1, ring2)
+            self.anglehkl_rings = (ring1, ring2, self.ringtol)
             cache = []
             hcach = []
             for ha in self.ringhkls[self.ringds[ring1]]:
@@ -316,7 +318,8 @@ class unitcell:
                     if ha == hb:
                         continue
                     hcach.append( ( ha, hb) )
-                    cache.append( self.anglehkls(ha,hb) )
+                    # Note - returns angle, cosangle
+                    cache.append( self.anglehkls(ha,hb)[1] )
             self.anglehkl_cache = [ hcach , numpy.array(cache) ]
             return self.anglehkl_cache
 
@@ -340,7 +343,18 @@ class unitcell:
 
         hab , angles_ab = self.getanglehkls( ring1, ring2 )
         best = numpy.argmin( abs( angles_ab - costheta ) )
-        h1, h2 = hab[best]
+        try:
+            h1, h2 = hab[best]
+        except:
+            print "hab=",hab
+            print "best=",best
+            print "len(hab)",len(hab)
+            print "len(angles_ab)", len(angles_ab)
+            print "costheta",costheta
+            print "abs( angles_ab - costheta ) )",abs( angles_ab - costheta ) 
+            print "len(abs( angles_ab - costheta )) )",len(abs( angles_ab - costheta ) )
+            print numpy.argmin( abs( angles_ab - costheta ) )
+            raise
 
         if verbose==1:
             print "Assigning h1",h1,g1,self.ds(h1),\

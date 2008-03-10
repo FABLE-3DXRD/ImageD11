@@ -1,6 +1,6 @@
 
 #define DEBUG 0
-
+/* turn to 1 to debug */
 
 
 /* 
@@ -439,17 +439,19 @@ static PyObject *score_and_assign( PyObject *self, PyObject *args, PyObject *key
 		    "First array must be 3x3 2d and double");
     return NULL;
   }
+  if(DEBUG)printf("Got ubi\n");
   if(gv->nd != 2 || gv->descr->type_num!=PyArray_DOUBLE){
     PyErr_SetString(PyExc_ValueError,
 		    "Second array must be 3xn 2d and double");
     return NULL;
   }
-  
+  if(DEBUG)printf("Got gv\n");  
   if(gv->dimensions[1] != 3){
     PyErr_SetString(PyExc_ValueError,
 		    "Second array must be 3xn 2d and double");
     return NULL;
   }
+  if(DEBUG)printf("Got gv-dim3\n");
 
   if(drlv2->nd != 1 || drlv2->descr->type_num!=PyArray_DOUBLE ||
      drlv2->dimensions[0] != gv->dimensions[0] ){
@@ -457,9 +459,10 @@ static PyObject *score_and_assign( PyObject *self, PyObject *args, PyObject *key
 		    "drlv2 array must be double and same length as gv");
     return NULL;
   }
-
+  if(DEBUG)printf("Got drlv\n");
   if(labels->nd != 1 || labels->descr->type_num!=PyArray_INT32 ||
      labels->dimensions[0] != gv-> dimensions[0] ){
+    printf("Problem with labels\n");
     printf("nd %d typ %d dims[0] %d  gv_dims[0] %d\n",labels->nd,
 	   labels->descr->type_num,
 	   labels->dimensions[0],
@@ -468,7 +471,8 @@ static PyObject *score_and_assign( PyObject *self, PyObject *args, PyObject *key
 		    "Label array must be integer and same length as gv");
     return NULL;
   }
-
+  if(DEBUG)printf("Got labels\n");
+  if(DEBUG)printf("score_and_assign: copy UBI\n");
    /* for convenience */
    u00=* (double *) (ubi->data + 0*ubi->strides[0] + 0*ubi->strides[1]);
    u01=* (double *) (ubi->data + 0*ubi->strides[0] + 1*ubi->strides[1]);
