@@ -18,13 +18,16 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-import numpy
+import numpy, math
+import ImageD11.indexing
 
 
 class grain:
     def __init__(self,ubi,translation=None):
         self.ubi = numpy.array(ubi,numpy.float)
         self.ub = numpy.linalg.inv(ubi)
+        self.u = ImageD11.indexing.ubitoU(self.ubi)
+        self.Rod = ImageD11.indexing.ubitoRod(self.ubi)
         if translation==None:
             self.translation = numpy.zeros(3, numpy.float)
         else:
@@ -41,6 +44,8 @@ def write_grain_file(filename, list_of_grains):
             f.write("#name %s\n"%(g.name))
         if hasattr(g,"x"):
             f.write("#npks %d\n"%(len(g.x)))
+        if hasattr(g,"Rod"):
+            f.write("#Rod %f %f %f\n"%tuple(g.Rod))
         f.write("#UBI:\n")
         u = g.ubi
         f.write("%f %f %f\n"  %(u[0,0],u[0,1],u[0,2]))

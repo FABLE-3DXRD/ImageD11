@@ -106,14 +106,14 @@ def triclinic():
     return generate_group("-x,-y,-z")
 
 
-def find_uniq_u(u,grp,debug=0):
+def find_uniq_u(u,grp,debug=0,func=n.trace):
     uniq = u
-    tmax = n.trace(uniq)
+    tmax = func(uniq)
     for o in grp.group:
         cand = grp.op(o,u)
-        t = n.trace(cand)
+        t = func(cand)
         if debug: print t
-        if n.trace(cand) > tmax:
+        if func(cand) > tmax:
             uniq = cand
             tmax = t
     return n.array(uniq)

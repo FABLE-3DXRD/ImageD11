@@ -20,6 +20,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
+import numpy
 import numpy.oldnumeric as n
 from ImageD11 import closest
 
@@ -72,6 +73,21 @@ def ubitoU(ubi):
     TODO / FIXME - make some testcases please!!
     """
     return n.transpose(n.dot(ubi, LinearAlgebra.inverse(ubitoB(ubi))))
+
+
+def ubitoRod(ubi):
+    """
+    TODO Testcases!!!
+    """
+    u = ubitoU(ubi)
+    w, v = numpy.linalg.eig(u)
+    ehat = v[:,0]
+    angle = math.acos(w[1].real)
+    Rod = ehat * math.tan(angle/2)
+    return Rod
+    
+
+
 
 def ubitoB(ubi):
     """ give the B matrix from ubi """
