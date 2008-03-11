@@ -126,16 +126,21 @@ class refinegrains:
             self.translationsread[name] = g.translation
         #print "Grain names",self.grainnames
 
-    def savegrains(self, filename):
+    def savegrains(self, filename, sort_npks=True):
         """
         Save the refined grains
+        
         """
         ks = self.grains.keys()
         # sort by number of peaks indexed to write out
+        if sort_npks:
         #      npks
-        gl = [ (len(self.grains[k].x), self.grains[k]) for k in ks ]
-        gl.sort()
-        gl = [ g[1] for g in gl[::-1] ]
+            gl = [ (len(self.grains[k].x), self.grains[k]) for k in ks ]
+            gl.sort()
+            gl = [ g[1] for g in gl[::-1] ]
+        else:
+            ks.sort()
+            gl = [ self.grains[k] for k in ks ]
         grain.write_grain_file(filename, gl)
 
 

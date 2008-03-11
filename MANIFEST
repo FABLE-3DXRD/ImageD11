@@ -64,8 +64,10 @@ scripts/id11_summarize.py
 scripts/edf2bruker.py
 scripts/ImageD11_gui.py
 scripts/plotedf.py
+scripts/plotgrainhist.py
 scripts/fitgrain.py
 scripts/filtergrain.py
+scripts/filterout.py
 scripts/bgmaker.py
 scripts/ImageD11_2_shelx.py
 scripts/recoveromega.py

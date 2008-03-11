@@ -27,7 +27,7 @@ def makemap(options):
     o.refinepositions()
     print "Done refining positions too"    
     o.refineubis(quiet = False , scoreonly = True)
-    o.savegrains(options.newubifile)
+    o.savegrains(options.newubifile, sort_npks = options.sort_npks)
     if hasattr(options, "newfltfile") and options.newfltfile is not None:
         col = o.scandata[options.fltfile]
         print "Before filtering",col.nrows
@@ -74,6 +74,9 @@ if __name__ == "__main__":
                       dest="tol", type="float",
                       default =   0.5,
                       help="Tolerance to use in peak assignment")
+    parser.add_option("--no_sort", action="store_false",
+                      dest="sort_npks", default = True,
+                      help="Sort grains by number of peaks indexed")
     lattices = ["cubic", "hexagonal", "trigonal",
                 "tetragonal", "orthorhombic", "monoclinic_a",
                 "monoclinic_b","monoclinic_c","triclinic"]
