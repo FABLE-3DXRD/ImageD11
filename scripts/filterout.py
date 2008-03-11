@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from ImageD11 import refinegrains, indexing
 import numpy.oldnumeric as Numeric
 import sys, logging

@@ -30,8 +30,10 @@ try:
     par = sys.argv[2]
     ubi = sys.argv[3]
     tol = float(sys.argv[4])
+    if len(sys.argv)>5:
+        nbins = int(sys.argv[5])
 except:
-    print "Usage: %s flt par ubi tol"%(sys.argv[0])
+    print "Usage: %s flt par ubi tol [nbins=30]"%(sys.argv[0])
     sys.exit()
 
 o=refinegrains()
@@ -44,7 +46,7 @@ o.generate_grains()
 o.assignlabels()
 from matplotlib.pylab import *
 d = o.scandata[flt]
-bins = arange(0.0,tol*11./10,tol/30.0)
+bins = arange(0.0,tol*11./10,tol/nbins)
 ng = int(maximum.reduce(d.labels))+1
 drl = [ compress(d.labels==i, d.drlv2) for i in range(ng)]
 dp5 = [sqrt(di) for di in drl]
