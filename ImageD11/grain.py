@@ -28,6 +28,8 @@ class grain:
         self.ub = numpy.linalg.inv(ubi)
         self.u = ImageD11.indexing.ubitoU(self.ubi)
         self.Rod = ImageD11.indexing.ubitoRod(self.ubi)
+        self.mt = numpy.dot(self.ubi, self.ubi.T)
+        self.rmt = numpy.linalg.inv(self.mt)
         if translation==None:
             self.translation = numpy.zeros(3, numpy.float)
         else:
