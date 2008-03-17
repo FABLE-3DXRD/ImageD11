@@ -39,14 +39,15 @@ import time
 
 # For benchmarking
 reallystart = time.time()
+global stop_now
+stop_now = False
 
 from math import sqrt
 import sys , glob , os.path
 
 from ImageD11 import blobcorrector
 from ImageD11.labelimage import labelimage
-import numpy.oldnumeric as Numeric
-
+import numpy
 
 # Generic file format opener from fabio
 from fabio.openimage import openimage
@@ -69,15 +70,42 @@ class timer:
         self.tick(msg)
         print "%.2f/s"% (self.now-self.start)
 
+def read_and_correct(filename,
+                     dark = None,
+                     flood = None,
+                     darkoffset = 0):
+    """
+    Reads a file doing the dark and flood corrections
+    """
+    try:
+        data_object = openimage(filename)
+    except KeyboardInterrupt:
+        raise
+    except:
+        sys.stdout.write(filename+" not found\n")
+        return 0
+    picture = data_object.data.astype(numpy.float32)
+    if dark != None:
+        # This is meant to be quicker
+        picture = numpy.subtract( picture , dark, picture )
+        data_object.data = picture
+    if flood != None:
+        picture = numpy.divide( picture, flood, picture )
+        data_object.data = picture
+    if darkoffset != None:
+        picture = numpy.add( picture , darkoffset, picture )
+        data_object.data = picture
+        return data_object
 
-def peaksearch( filename , 
+
+
+
+
+def peaksearch( filename , data_object , 
                 corrector , 
                 thresholds , 
                 outputfile , 
-                labims, 
-                dark = None,
-                flood = None,
-                darkoffset = 10):
+                labims ):
     """
     file_series : fabio file series object, supports iteration
     
@@ -92,32 +120,11 @@ def peaksearch( filename ,
     f = open(outputfile,"aq") # Open the output file for appending
     # Assumes an edf file for now - TODO - should be independent
 
-    try:
-        data_object = openimage(filename)
-    except KeyboardInterrupt:
-        raise
-    except:
-        sys.stdout.write(filename+" not found\n")
-        return 0
+   
+    
+    picture = data_object.data.astype(numpy.float32)
 
-    picture = data_object.data.astype(Numeric.Float32)
-    # print picture[512,512]
-    # picture is a 2D array
-    #t.tick("read")
-    if dark != None:
-        picture = picture - dark
-        #print dark[512,512]
-        #print picture[512,512]
-    #t.tick("dark")
-    if flood != None:
-        #print picture[512,512]
-        picture = picture/flood
-        #print picture[512,512]
-    if darkoffset != None:
-        picture = picture + darkoffset
-    #fd=open("debug.bin","wb")
-    #fd.write(picture.tostring())
-    #fd.close()
+    
     t.tick(filename+" io/cor") # Progress indicator
     # Transfer header information to output file
     # Also information on spatial correction applied
@@ -263,8 +270,7 @@ def peaksearch_driver(options, args):
         cen1 = floodimage.shape[0]/6
         middle = floodimage[cen0:-cen0, cen1:-cen1]
         nmid = middle.shape[0]*middle.shape[1]
-        floodavg = Numeric.sum(
-            Numeric.ravel(middle).astype(Numeric.Float32))/nmid
+        floodavg = numpy.mean(middle)
         print "Using flood",options.flood,"average value",floodavg
         if floodavg < 0.7 or floodavg > 1.3:
             print "Your flood image does not seem to be normalised!!!"
@@ -273,12 +279,88 @@ def peaksearch_driver(options, args):
         floodimage=None
     start = time.time()
     print "File being treated in -> out, elapsed time"
-    for filein in file_series_object:
-        peaksearch( filein , corrfunc , thresholds_list , outfile , li_objs,
-                 dark = darkimage, flood = floodimage , darkoffset = options.darkoffset)
+    # If we want to do read-ahead threading we fill up a Queue object with data 
+    # objects
+    # THERE MUST BE ONLY ONE peaksearching thread for 3D merging to work
+    # there could be several read_and_correct threads, but they'll have to get the order right,
+    # for now only one
+    if options.oneThread:
+        for filein in file_series_object:
+            data_object = read_and_correct( filein, darkimage, floodimage,
+                                            options.darkoffset)
+            peaksearch( filein, data_object , corrfunc , 
+                         thresholds_list , outfile , li_objs )
+        for t in thresholds_list:
+            li_objs[t].finalise()
+    else:
+        print "Going to use threaded version!?!"
+        try:
+            import Queue, threading
+            class read_all(threading.Thread):
+                def __init__(self, q, file_series_obj, dark , flood, darkoffset):
+                    self.q = q 
+                    self.file_series_obj = file_series_obj
+                    self.dark = dark
+                    self.flood = flood
+                    self.darkoffset = darkoffset
+                    threading.Thread.__init__(self)
+                def run(self):
+                    global stop_now
+                    try:
+                        for filein in self.file_series_obj:
+                            if stop_now:
+                                break
+                            data_object = read_and_correct(  filein, self.dark, self.flood,
+                                                             self.darkoffset)
+                            self.q.put((filein, data_object) , block = True)
+                        self.q.put( (None, None) , block = True)
+                    except KeyboardInterrupt:
+                        print "Finishing from read_all"
+                        sys.stdout.flush()
+                        self.q.put( (None, None) , block = True)
+                        stop_now = True
+     
+            class peaksearch_all(threading.Thread):
+                def __init__(self, q, corrfunc, thresholds_list, outfile, li_objs ):
+                    self.q = q
+                    self.corrfunc = corrfunc
+                    self.thresholds_list = thresholds_list
+                    self.outfile = outfile
+                    self.li_objs = li_objs
+                    threading.Thread.__init__(self)
 
-    for t in thresholds_list:
-        li_objs[t].finalise()
+                def run(self):
+                    global stop_now
+                    try:
+                        while 1:
+                            if stop_now:
+                                break
+                            filein, data_object = self.q.get(block = True)
+                            if data_object is None:
+                                break
+                            peaksearch( filein, data_object , self.corrfunc , 
+                                        self.thresholds_list , self.outfile , self.li_objs )    
+                        for t in self.thresholds_list:
+                            self.li_objs[t].finalise()
+                    except KeyboardInterrupt:
+                        print "Finishing from peaksearcher"
+                        sys.stdout.flush()
+                        stop_now = True
+
+
+
+            q = Queue.Queue(5) # maximum size
+            reader = read_all(q, file_series_object, darkimage , floodimage, options.darkoffset)
+            searcher = peaksearch_all(q, corrfunc, thresholds_list, outfile, li_objs )
+            reader.start()
+            searcher.start()
+            reader.join()
+            searcher.join()
+
+        except ImportError:
+            print "Probably no threading module present"
+            raise
+    
 
 
 def get_options(parser):
@@ -324,6 +406,9 @@ def get_options(parser):
         parser.add_option("--OmegaOverRide", action="store_true",
                           dest="OMEGAOVERRIDE", default=False, 
                           help="Override Omega values from headers")
+        parser.add_option("--singleThread", action="store_true",
+                          dest="oneThread", default=False, 
+                          help="Do single threaded processing")
         parser.add_option("-S","--step", action="store",
                           dest="OMEGASTEP", default=1.0, type="float",
                           help="Step size in Omega when you have no header info")
