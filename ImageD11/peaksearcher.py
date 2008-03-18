@@ -101,7 +101,8 @@ def read_and_correct(filename,
 
 
 
-def peaksearch( filename , data_object , 
+def peaksearch( filename , 
+                data_object , 
                 corrector , 
                 thresholds , 
                 outputfile , 
@@ -144,22 +145,24 @@ def peaksearch( filename , data_object ,
                     str(data_object.header[item]).replace("\n"," ")))
         except KeyError:
             pass
+
+    # Get the rotaiton angle for this image
+    global OMEGA, OMEGASTEP, OMEGAOVERRIDE
+    if not data_object.header.has_key("Omega") or OMEGAOVERRIDE:
+        # Might have imagenumber or something??
+        ome = OMEGA
+        OMEGA += OMEGASTEP
+        # print "Overriding the OMEGA"
+    else: # Might have imagenumber or something??
+        ome = float(data_object.header["Omega"])
+    # print "Reading from header"
     #
-    # Now peaksearch at each threshold level
+    # Now peaksearch at each threshold level    
     for threshold in thresholds:
         labelim = labims[threshold]
         if labelim.shape != picture.shape:
             raise "Incompatible blobimage buffer for file %s" %(filename)
         #
-        global OMEGA, OMEGASTEP, OMEGAOVERRIDE
-        if not data_object.header.has_key("Omega") or OMEGAOVERRIDE:
-            # Might have imagenumber or something??
-            ome = OMEGA
-            OMEGA += OMEGASTEP
-            # print "Overriding the OMEGA"
-        else: # Might have imagenumber or something??
-            ome = float(data_object.header["Omega"])
-            # print "Reading from header"
         #
         # Do the peaksearch
         f.write("# Omega = %f\n"%(ome))
@@ -306,20 +309,15 @@ def peaksearch_driver(options, args):
                     threading.Thread.__init__(self)
                 def run(self):
                     global stop_now
-                    try:
-                        for filein in self.file_series_obj:
-                            if stop_now:
-                                break
-                            data_object = read_and_correct(  filein, self.dark, self.flood,
-                                                             self.darkoffset)
-                            self.q.put((filein, data_object) , block = True)
-                        self.q.put( (None, None) , block = True)
-                    except KeyboardInterrupt:
-                        print "Finishing from read_all"
-                        sys.stdout.flush()
-                        self.q.put( (None, None) , block = True)
-                        stop_now = True
-     
+                    for filein in self.file_series_obj:
+                        if stop_now:
+                            print "read_all is stopping"
+                            break
+                        data_object = read_and_correct(  filein, self.dark, self.flood,
+                                                         self.darkoffset)
+                        self.q.put((filein, data_object) , block = True)
+                    self.q.put( (None, None) , block = True)
+
             class peaksearch_all(threading.Thread):
                 def __init__(self, q, corrfunc, thresholds_list, outfile, li_objs ):
                     self.q = q
@@ -331,31 +329,47 @@ def peaksearch_driver(options, args):
 
                 def run(self):
                     global stop_now
-                    try:
-                        while 1:
-                            if stop_now:
-                                break
-                            filein, data_object = self.q.get(block = True)
-                            if data_object is None:
-                                break
-                            peaksearch( filein, data_object , self.corrfunc , 
-                                        self.thresholds_list , self.outfile , self.li_objs )    
-                        for t in self.thresholds_list:
-                            self.li_objs[t].finalise()
-                    except KeyboardInterrupt:
-                        print "Finishing from peaksearcher"
-                        sys.stdout.flush()
-                        stop_now = True
+                    while 1:
+                        if stop_now:
+                            print "Peaksearch is stopping"
+                            break
+                        filein, data_object = self.q.get(block = True)
+                        if data_object is None:
+                            break
+                        peaksearch( filein, data_object , self.corrfunc , 
+                                    self.thresholds_list , self.outfile , self.li_objs )  
+                    for t in self.thresholds_list:
+                        self.li_objs[t].finalise()
 
 
 
-            q = Queue.Queue(5) # maximum size
+            q = Queue.Queue(3) # maximum size
             reader = read_all(q, file_series_object, darkimage , floodimage, options.darkoffset)
+            # TODO:  Make each peaksearcher threshold be in a separate thread
             searcher = peaksearch_all(q, corrfunc, thresholds_list, outfile, li_objs )
             reader.start()
             searcher.start()
-            reader.join()
-            searcher.join()
+            looping = True
+            while looping:
+                try:
+                    if reader.isAlive():
+                        reader.join(timeout=1)
+                    if searcher.isAlive():
+                        searcher.join(timeout=1)
+                    looping = reader.isAlive() and searcher.isAlive()
+                except KeyboardInterrupt:
+                    global stop_now
+                    stop_now = True
+                    time.sleep(1)
+                    while 1:
+                        try:
+                            q.get(block=False, timeout=1)
+                        except:
+                            break
+                    print "finishing from waiting loop"
+                except:
+                    raise
+                    
 
         except ImportError:
             print "Probably no threading module present"
