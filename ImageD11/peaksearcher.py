@@ -111,14 +111,14 @@ def peaksearch( filename ,
                 thresholds ,  
                 labims ):
     """
-    file_series : fabio file series object, supports iteration
-    
+    filename  : The name of the image file for progress info 	
+    data_object : Fabio object containing data and header 
     corrector : spatial and dark/flood , linearity etc
     
     thresholds : [ float[1], float[2] etc]
+
+    labims : label image objects, one for each threshold
     
-    outputfile : the 2d output file, name+".spt"
-               : the 3d output files name+"_threshold.flt"
     """
     t = timer()
     picture = data_object.data.astype(numpy.float32)
@@ -154,7 +154,7 @@ def peaksearch( filename ,
     # print "Reading from header"
     #
     # Now peaksearch at each threshold level    
-    t.tick("init")
+    t.tick(filename)
     for threshold in thresholds:
         labelim = labims[threshold]
         f = labelim.sptfile
