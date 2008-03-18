@@ -101,7 +101,8 @@ class labelimage:
 
 
     def __init__(self,
-                 shape, 
+                 shape,
+                 sptfile = sys.stdout,
                  fileout = sys.stdout,
                  spatial = blobcorrector.perfect(),
                  flipper = flip2 ):
@@ -111,6 +112,10 @@ class labelimage:
         spatial - correction of of peak positions
         """
         self.shape = shape  # Array shape
+        if not hasattr(sptfile,"write"):
+            self.sptfile = open(sptfile, "w")
+        else:
+            self.sptfile = sptfile # place for peaksearch to print - file object
         self.corrector = spatial  # applies spatial distortion
         self.fs2yz = flipper # generates y/z
 
@@ -258,6 +263,9 @@ class labelimage:
         if self.lastres is not None:
             ret = connectedpixels.blob_moments(self.lastres)
             self.outputpeaks(self.lastres)
+        if hasattr(self.sptfile, "close"):
+            self.sptfile.close()
+            # wonder what that does to stdout  
 
 
 

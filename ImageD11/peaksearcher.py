@@ -51,7 +51,7 @@ import numpy
 
 # Generic file format opener from fabio
 from fabio.openimage import openimage
-from fabio import file_series
+from fabio import file_series, fabioimage
 
 # Global variables
 OMEGA = 0
@@ -62,13 +62,17 @@ class timer:
     def __init__(self):
         self.start = time.time()
         self.now = self.start
+        self.msgs = []
+    def msg(self,msg):
+        self.msgs.append(msg)
     def tick(self,msg=""):
         now = time.time()
-        print msg,"%.2f/s"%(now-self.now),
+        self.msgs.append("%s %.2f/s"%(msg,now-self.now))
         self.now = now
     def tock(self,msg=""):
         self.tick(msg)
-        print "%.2f/s"% (self.now-self.start)
+        print " ".join(self.msgs),"%.2f/s"% (self.now-self.start)
+        sys.stdout.flush()
 
 def read_and_correct(filename,
                      dark = None,
@@ -92,10 +96,10 @@ def read_and_correct(filename,
     if flood != None:
         picture = numpy.divide( picture, flood, picture )
         data_object.data = picture
-    if darkoffset != None:
+    if darkoffset != None and darkoffset != 0:
         picture = numpy.add( picture , darkoffset, picture )
         data_object.data = picture
-        return data_object
+    return data_object
 
 
 
@@ -104,8 +108,7 @@ def read_and_correct(filename,
 def peaksearch( filename , 
                 data_object , 
                 corrector , 
-                thresholds , 
-                outputfile , 
+                thresholds ,  
                 labims ):
     """
     file_series : fabio file series object, supports iteration
@@ -118,33 +121,26 @@ def peaksearch( filename ,
                : the 3d output files name+"_threshold.flt"
     """
     t = timer()
-    f = open(outputfile,"aq") # Open the output file for appending
-    # Assumes an edf file for now - TODO - should be independent
-
-   
-    
     picture = data_object.data.astype(numpy.float32)
 
-    
-    t.tick(filename+" io/cor") # Progress indicator
-    # Transfer header information to output file
-    # Also information on spatial correction applied
-    f.write("\n\n# File %s\n" % (filename))
-    f.write("# Processed on %s\n" % (time.asctime()))
-    try:
-        f.write("# Spatial correction from %s\n" % (corrector.splinefile))
-        f.write("# SPLINE X-PIXEL-SIZE %s\n" % (str(corrector.xsize)))
-        f.write("# SPLINE Y-PIXEL-SIZE %s\n" % (str(corrector.ysize)))
-    except:
-        pass
-    for item in data_object.header.keys():
-        if item == "headerstring": # skip
-            continue
+    for lio in labims.values():
+        f = lio.sptfile
+        f.write("\n\n# File %s\n" % (filename))
+        f.write("# Processed on %s\n" % (time.asctime()))
         try:
-            f.write("# %s = %s\n" % (item,
-                    str(data_object.header[item]).replace("\n"," ")))
-        except KeyError:
+            f.write("# Spatial correction from %s\n" % (corrector.splinefile))
+            f.write("# SPLINE X-PIXEL-SIZE %s\n" % (str(corrector.xsize)))
+            f.write("# SPLINE Y-PIXEL-SIZE %s\n" % (str(corrector.ysize)))
+        except:
             pass
+        for item in data_object.header.keys():
+            if item == "headerstring": # skip
+                continue
+            try:
+                f.write("# %s = %s\n" % (item,
+                        str(data_object.header[item]).replace("\n"," ")))
+            except KeyError:
+                pass
 
     # Get the rotaiton angle for this image
     global OMEGA, OMEGASTEP, OMEGAOVERRIDE
@@ -158,8 +154,10 @@ def peaksearch( filename ,
     # print "Reading from header"
     #
     # Now peaksearch at each threshold level    
+    t.tick("init")
     for threshold in thresholds:
         labelim = labims[threshold]
+        f = labelim.sptfile
         if labelim.shape != picture.shape:
             raise "Incompatible blobimage buffer for file %s" %(filename)
         #
@@ -172,10 +170,9 @@ def peaksearch( filename ,
         #
         if labelim.npk > 0:
             labelim.output2dpeaks(f)
-        labelim.mergelast() 
-        print "T=%-5d n=%-5d;" % (int(threshold),labelim.npk),
+        labelim.mergelast()
+        t.msg("T=%-5d n=%-5d;" % (int(threshold),labelim.npk)) 
         # Close the output file
-    f.close()
     # Finish progress indicator for this file
     t.tock()
     sys.stdout.flush()
@@ -233,10 +230,9 @@ def peaksearch_driver(options, args):
                 padding = options.padding )
     # Output files:
 
-    outfile =     options.outfile
-    if outfile [-4:] != ".spt":
-        outfile = outfile + ".spt"
-        print "Your output file must end with .spt, changing to ",outfile
+    if options.outfile[-4:] != ".spt":
+        options.outfile = options.outfile + ".spt"
+        print "Your output file must end with .spt, changing to ",options.outfile
 
     # Omega overrides
 
@@ -258,8 +254,10 @@ def peaksearch_driver(options, args):
     # Create label images
     for t in thresholds_list:
         # the last 4 chars are guaranteed to be .spt above
-        mergefile="%s_t%d.flt"%(outfile[:-4], t)
-        li_objs[t]=labelimage(shape = s, fileout = mergefile, spatial = corrfunc) 
+        mergefile="%s_t%d.flt"%(options.outfile[:-4], t)
+        spotfile = "%s_t%d.spt"%(options.outfile[:-4], t)
+        li_objs[t]=labelimage(shape = s, sptfile=spotfile, fileout = mergefile, spatial = corrfunc) 
+        print "make labelimage",mergefile,spotfile
     # Not sure why that was there (I think if glob was used)
     # files.sort()
     if options.dark!=None:
@@ -288,86 +286,163 @@ def peaksearch_driver(options, args):
     # there could be several read_and_correct threads, but they'll have to get the order right,
     # for now only one
     if options.oneThread:
-        for filein in file_series_object:
-            data_object = read_and_correct( filein, darkimage, floodimage,
-                                            options.darkoffset)
-            peaksearch( filein, data_object , corrfunc , 
-                         thresholds_list , outfile , li_objs )
-        for t in thresholds_list:
-            li_objs[t].finalise()
+        # Wrap in a function to allow profiling (perhaps? what about globals??)
+        def go_for_it(file_series_object, darkimage, floodimage, 
+                darkoffset, corrfunc , thresholds_list , li_objs ):
+            for filein in file_series_object:
+                t = timer()
+                data_object = read_and_correct( filein, darkimage, floodimage,
+                                                darkoffset)
+                t.tick(filein+" io/cor")
+                peaksearch( filein, data_object , corrfunc , 
+                             thresholds_list , li_objs )
+            for t in thresholds_list:
+                li_objs[t].finalise()
+        if options.profile_file is not None:
+            print "Profiling output"
+            try:
+                import cProfile as Prof
+            except ImportError:
+                try:
+                    import profile as Prof
+                except:
+                    print "Your package manager is having a laugh"
+                    print "install python-profile please"
+                    raise
+            doff = options.darkoffset
+            Prof.runctx( "go_for_it(file_series_object, darkimage, floodimage, \
+                doff, corrfunc , thresholds_list, li_objs )",
+                globals(),
+                locals(),
+                options.profile_file )
+            import pstats
+            try:
+                p = pstats.Stats(options.profile_file,
+                            stream = open(options.profile_file+".txt","w"))
+            except:
+                p = pstats.Stats(options.profile_file)
+            p.strip_dirs().sort_stats(-1).print_stats()
+
+        else:
+            go_for_it(file_series_object, darkimage, floodimage, 
+                options.darkoffset, corrfunc , thresholds_list, li_objs )
     else:
         print "Going to use threaded version!?!"
         try:
             import Queue, threading
             class read_all(threading.Thread):
-                def __init__(self, q, file_series_obj, dark , flood, darkoffset):
-                    self.q = q 
+                def __init__(self, queues, file_series_obj, dark , flood, darkoffset,
+                        thresholds_list):
+                    self.queues = queues 
                     self.file_series_obj = file_series_obj
                     self.dark = dark
                     self.flood = flood
                     self.darkoffset = darkoffset
+                    self.thresholds_list = thresholds_list
                     threading.Thread.__init__(self)
                 def run(self):
                     global stop_now
-                    for filein in self.file_series_obj:
-                        if stop_now:
-                            print "read_all is stopping"
-                            break
-                        data_object = read_and_correct(  filein, self.dark, self.flood,
-                                                         self.darkoffset)
-                        self.q.put((filein, data_object) , block = True)
-                    self.q.put( (None, None) , block = True)
+                    try:
+                        for filein in self.file_series_obj:
+                            if stop_now:
+                                print "read_all is stopping"
+                                break
+                            ti = timer()
+                            data_object = read_and_correct( filein, 
+                                                            self.dark, self.flood,
+                                                            self.darkoffset)
+                            ti.tick(filein)
+                            for t in self.thresholds_list:
+                                # Hope that data object is read only
+                                self.queues[t].put((filein, data_object) , block = True)
+                            ti.tock(" enqueue ")
+                        for t in self.thresholds_list:
+                            self.queues[t].put( (None, None) , block = True)
+                    except:
+                        print "Exception in read_all thread"
+                        stop_now = True
+                        raise
 
-            class peaksearch_all(threading.Thread):
-                def __init__(self, q, corrfunc, thresholds_list, outfile, li_objs ):
+            class peaksearch_one(threading.Thread):
+                def __init__(self, q, corrfunc, threshold, li_obj ):
+                    """ This will handle a single threshold and labelimage object """
                     self.q = q
                     self.corrfunc = corrfunc
-                    self.thresholds_list = thresholds_list
-                    self.outfile = outfile
-                    self.li_objs = li_objs
+                    self.threshold = threshold
+                    self.li_obj = li_obj
                     threading.Thread.__init__(self)
 
                 def run(self):
                     global stop_now
-                    while 1:
-                        if stop_now:
-                            print "Peaksearch is stopping"
-                            break
-                        filein, data_object = self.q.get(block = True)
-                        if data_object is None:
-                            break
-                        peaksearch( filein, data_object , self.corrfunc , 
-                                    self.thresholds_list , self.outfile , self.li_objs )  
-                    for t in self.thresholds_list:
-                        self.li_objs[t].finalise()
-
-
-
-            q = Queue.Queue(3) # maximum size
-            reader = read_all(q, file_series_object, darkimage , floodimage, options.darkoffset)
-            # TODO:  Make each peaksearcher threshold be in a separate thread
-            searcher = peaksearch_all(q, corrfunc, thresholds_list, outfile, li_objs )
+                    try:
+                        while 1:
+                            if stop_now:
+                                print "Peaksearch is stopping"
+                                break
+                            filein, data_object = self.q.get(block = True)
+                            if data_object is None:
+                                break
+                            peaksearch( filein, data_object , self.corrfunc , 
+                                        [self.threshold] , 
+                                        { self.threshold : self.li_obj } )  
+                        self.li_obj.finalise()
+                    except:
+                        print "Exception in peaksearch_one"
+                        stop_now = True
+                        raise
+            queues = {}
+            searchers = {}
+            for t in thresholds_list:
+                "Print make queue and peaksearch for threshold",t
+                queues[t] = Queue.Queue(5)
+                searchers[t] = peaksearch_one(queues[t], corrfunc, 
+                                              t, li_objs[t] )
+            reader = read_all(queues, file_series_object, darkimage , floodimage, 
+                    options.darkoffset, thresholds_list )
             reader.start()
-            searcher.start()
+            my_threads = [reader]
+            for t in thresholds_list[::-1]:
+                searchers[t].start()
+                my_threads.append(searchers[t])
             looping = True
-            while looping:
+            nalive = len(my_threads)
+            while nalive > 0:
+                global stop_now
                 try:
-                    if reader.isAlive():
+                    nalive = 0
+                    for thr in my_threads:
                         reader.join(timeout=1)
-                    if searcher.isAlive():
-                        searcher.join(timeout=1)
-                    looping = reader.isAlive() and searcher.isAlive()
+                        if thr.isAlive():
+                            nalive += 1
+                    time.sleep(0.1)
                 except KeyboardInterrupt:
-                    global stop_now
+                    print "Got keyboard interrupt in waiting loop"
                     stop_now = True
                     time.sleep(1)
-                    while 1:
-                        try:
-                            q.get(block=False, timeout=1)
-                        except:
-                            break
+                    for t in thresholds_list:
+                        q = queues[t]
+                        for i in range(10):
+                            # empty out the queues
+                            try:
+                                q.get(block=False, timeout=1)
+                            except:
+                                break
                     print "finishing from waiting loop"
                 except:
+                    print "Caught exception in waiting loop"
+                    stop_now = True
+                    time.sleep(1)
+                    for t in thresholds_list:
+                        q = queues[t]
+                        for i in range(10):
+                            # empty out the queues
+                            try:
+                                q.get(block=False, timeout=0.1)
+                            except:
+                                break
+                    for thr in my_threads:
+                        if thr.isAlive():
+                            thr.join(timeout=1)
                     raise
                     
 
@@ -423,13 +498,15 @@ def get_options(parser):
         parser.add_option("--singleThread", action="store_true",
                           dest="oneThread", default=False, 
                           help="Do single threaded processing")
+        parser.add_option("--profile", action="store", type="string",
+                          dest="profile_file", default=None, 
+                          help="Write profiling information (you will want singleThread too)")
         parser.add_option("-S","--step", action="store",
                           dest="OMEGASTEP", default=1.0, type="float",
                           help="Step size in Omega when you have no header info")
         parser.add_option("-T","--start", action="store",
                           dest="OMEGA", default=0.0, type="float",
                           help="Start position in Omega when you have no header info")
-
         parser.add_option("--ndigits", action="store", type="int",
                 dest = "ndigits", default = 4,
                 help = "Number of digits in file numbering [4]")
