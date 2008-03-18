@@ -239,7 +239,7 @@ static PyObject * connectedpixels (PyObject *self,
     f, s, /* fast and slow directions in image */
     np,   /* number of pixels */
     ival; 
-  int *T; /* for the disjoint set copy */
+  int *T, *S; /* for the disjoint set copy */
 
   int verbose=0,type;   /* whether to print stuff and the 
 			   type of the input array */
@@ -298,7 +298,7 @@ static PyObject * connectedpixels (PyObject *self,
   /* Default number before reallocation, rather large 
    * FIXME - can we pass this in and out?
    */
-  Py_BEGIN_ALLOW_THREADS;
+  Py_BEGIN_ALLOW_THREADS
 
   S = dset_initialise(16384); 
   if(verbose != 0)printf("Initialised the disjoint set\n");
@@ -471,6 +471,7 @@ static PyObject * connectedpixels (PyObject *self,
        }
      }
    }
+   Py_END_ALLOW_THREADS
 
    if(verbose!=0)printf("Freeing S=%p and T=%p\n",(void*)S,(void*)T);
    free(S);
@@ -485,7 +486,6 @@ static PyObject * connectedpixels (PyObject *self,
      printf("The total time in this routine was about %f\n",
 	    1.*(tv4-tv1)/CLOCKS_PER_SEC); 
    }
-   Py_END_ALLOW_THREADS;
 
    return Py_BuildValue("i", np);/* why the plus one?? */ 
 }
@@ -590,9 +590,9 @@ static PyObject * blobproperties (PyObject *self,
 		     "Malloc failed fo results");
      return NULL;
    }
+   Py_BEGIN_ALLOW_THREADS
 
    if(verbose>0)printf("malloc'ed the results\n");
-   Py_BEGIN_ALLOW_THREADS;
 
    res = (double*)results->data;
 
@@ -643,8 +643,8 @@ static PyObject * blobproperties (PyObject *self,
    if(verbose){
      printf("\nFound %d bad pixels in the blob image\n",bad);
    }
+  Py_END_ALLOW_THREADS
 
-   Py_END_ALLOW_THREADS;
    return Py_BuildValue("O", PyArray_Return(results) ); 
 }
 
@@ -776,7 +776,8 @@ static PyObject * bloboverlaps (PyObject *self,
 		    "Results arrays look corrupt\n");
     return NULL;
   }
-  Py_BEGIN_ALLOW_THREADS;
+  Py_BEGIN_ALLOW_THREADS
+
   res1 = (double *)r1->data;
   res2 = (double *)r2->data;
 
@@ -994,7 +995,7 @@ static PyObject * bloboverlaps (PyObject *self,
    *
    * Should return the new number of peaks in the results array
    * */ 
-   Py_END_ALLOW_THREADS;
+   Py_END_ALLOW_THREADS
 
    return Py_BuildValue("i", npk);
 
@@ -1047,7 +1048,6 @@ static PyObject * update_blobs (PyObject *self, PyObject *args,  PyObject *keywd
     printf("Fast index is %d, slow index is %d, ",f,s);
     printf("strides[0]=%d, strides[1]=%d\n",bl->strides[0],bl->strides[1]);
   }
-  Py_BEGIN_ALLOW_THREADS;
   for( i = 0 ; i <= (bl->dimensions[s]-1) ; i++ ){    /* i,j is looping along the indices data array */
     for( j = 0 ; j <= (bl->dimensions[f]-1) ; j++ ){
       p1 = * (int *) (bl->data + i*bl->strides[s] + j*bl->strides[f]);
@@ -1076,7 +1076,6 @@ static PyObject * update_blobs (PyObject *self, PyObject *args,  PyObject *keywd
   }
   /* http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52309 */
   /* return None - side effect was on arg */
-  Py_END_ALLOW_THREADS;
 
   Py_INCREF(Py_None);
   return Py_None;

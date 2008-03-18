@@ -183,10 +183,9 @@ void merge(double b1[], double b2[]){
  *
  * ********************************************************************  */
 
-int *S;
 
 int * dset_initialise(int size){
-   int i;
+   int i, *S;
    S=(int *) ( malloc(size*sizeof(int) ) );
    if (S==NULL){
    printf("Memory allocation error in dset_initialise\n");
