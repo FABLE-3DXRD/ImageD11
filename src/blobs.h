@@ -24,7 +24,7 @@
 
 #ifndef _blobs_h
 #define _blobs_h
-int * dset_initialise(int **S, int size); /* array to hold real values of each */
+int * dset_initialise(int size); /* array to hold real values of each */
 int * dset_new(int ** S);
 void dset_makeunion(int *S, int r1, int r2);
 void dset_link(int *S, int r1, int r2);
