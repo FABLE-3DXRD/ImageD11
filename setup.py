@@ -78,7 +78,7 @@ bl = Extension("_splines",
 
 
 # See the distutils docs...
-setup(name='ImageD11',
+setup(name='ImageD11', 
       version='1.1.0',
       author='Jon Wright',
       author_email='wright@esrf.fr',
