@@ -264,7 +264,7 @@ static PyObject * connectedpixels (PyObject *self,
 				  &verbose))        /* threshold and 
 						       optional verbosity */
     return NULL;
-  Py_BEGIN_ALLOW_THREADS;
+
   if(verbose!=0){
     printf("\n\nHello there from connected pixels,"\
 	   "you wanted the verbose output...\n");
@@ -298,6 +298,8 @@ static PyObject * connectedpixels (PyObject *self,
   /* Default number before reallocation, rather large 
    * FIXME - can we pass this in and out?
    */
+  Py_BEGIN_ALLOW_THREADS;
+
   S = dset_initialise(16384); 
   if(verbose != 0)printf("Initialised the disjoint set\n");
 
@@ -543,7 +545,7 @@ static PyObject * blobproperties (PyObject *self,
 				   &omega, /* omega angle - put 0 if unknown */
 				   &verbose))     /* optional verbosity */
       return NULL;
-   Py_BEGIN_ALLOW_THREADS;
+
    if(verbose)printf("omega = %f",omega);
 
    /* Check array is two dimensional */
@@ -560,6 +562,7 @@ static PyObject * blobproperties (PyObject *self,
 		     "Blob array must be 2d and integer, second arg problem");
      return NULL;
    }
+
    type=dataarray->descr->type_num;
    /* Decide on fast/slow loop - inner versus outer */
    if(blobarray->strides[0] > blobarray->strides[1]) {
@@ -589,6 +592,7 @@ static PyObject * blobproperties (PyObject *self,
    }
 
    if(verbose>0)printf("malloc'ed the results\n");
+   Py_BEGIN_ALLOW_THREADS;
 
    res = (double*)results->data;
 
@@ -665,13 +669,14 @@ static PyObject * blob_moments( PyObject *self,
 				  &PyArray_Type, &r,
 				  &verbose))
      return NULL;
-  Py_BEGIN_ALLOW_THREADS;
+
   if (r->dimensions[1] != NPROPERTY ||
       r->descr->type_num != PyArray_DOUBLE ){
     PyErr_SetString(PyExc_ValueError,
 		    "Results array looks corrupt\n");
     return NULL;
   }
+  Py_BEGIN_ALLOW_THREADS;
   if(verbose){
     printf("Welcome to blob_moments\n");
     printf("%p r->data\n\n",r->data);
@@ -736,7 +741,7 @@ static PyObject * bloboverlaps (PyObject *self,
 				  &PyArray_Type, &r2,   /*results 2 */
 				  &verbose))        /* optional verbosity */
     return NULL;
-  Py_BEGIN_ALLOW_THREADS;
+
   if(verbose!=0)printf("Welcome to bloboverlaps\n");
   
   /* Check array is two dimensional and int - 
@@ -771,6 +776,7 @@ static PyObject * bloboverlaps (PyObject *self,
 		    "Results arrays look corrupt\n");
     return NULL;
   }
+  Py_BEGIN_ALLOW_THREADS;
   res1 = (double *)r1->data;
   res2 = (double *)r2->data;
 
@@ -1017,7 +1023,7 @@ static PyObject * update_blobs (PyObject *self, PyObject *args,  PyObject *keywd
 				  &PyArray_Type, &set,   /* disjoint set array */
 				  &verbose))        /* threshold and optional verbosity */
     return NULL;
-  Py_BEGIN_ALLOW_THREADS;
+
 
   if(verbose!=0)printf("Welcome to update blobs\n");
   /* Check and validate args */
@@ -1041,6 +1047,7 @@ static PyObject * update_blobs (PyObject *self, PyObject *args,  PyObject *keywd
     printf("Fast index is %d, slow index is %d, ",f,s);
     printf("strides[0]=%d, strides[1]=%d\n",bl->strides[0],bl->strides[1]);
   }
+  Py_BEGIN_ALLOW_THREADS;
   for( i = 0 ; i <= (bl->dimensions[s]-1) ; i++ ){    /* i,j is looping along the indices data array */
     for( j = 0 ; j <= (bl->dimensions[f]-1) ; j++ ){
       p1 = * (int *) (bl->data + i*bl->strides[s] + j*bl->strides[f]);
