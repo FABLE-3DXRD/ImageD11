@@ -38,31 +38,28 @@ class guitransformer:
         """
         self.quiet=quiet
         self.parent=parent
-        self.nbins = 10000
         self.min_bin_ratio = 0.10
         self.menuitems = ( "Transformation", 0,
-                           [ ( "Load filtered peaks", 0, self.loadfiltered),
-                             ( "Plot y/z", 5, self.plotyz     ),
-                             ( "Load parameters", 1, self.loadfileparameters),
-                             ( "Edit parameters", 0, self.editparameters),
-                             ( "Plot tth/eta", 0, self.plotreta ),
-                             ( "Add unit cell peaks",0, self.addcellpeaks),
-                             ( "Fit",0, self.fit),
-                             ( "Save parameters", 0, self.saveparameters),
-                             ( "Plot tth histogram", 0, self.plothisto ),
-                             ( "Filter peaks based on tth histogram", 0, self.filterhisto ),
-
-#                             ( "Set axis orientation", 0, self.setaxisorientation),
-                             ( "Compute g-vectors", 0, self.computegv),
-                             ( "Save g-vectors", 0, self.savegv),
-                             ( "Write graindex finalpeaks.log",0, self.write_graindex_gv)
-                           ] )
+            [ ( "Load filtered peaks", 0, self.loadfiltered),
+              ( "Plot y/z", 5, self.plotyz     ),
+              ( "Load parameters", 1, self.loadfileparameters),
+              ( "Edit parameters", 0, self.editparameters),
+              ( "Plot tth/eta", 0, self.plotreta ),
+              ( "Add unit cell peaks",0, self.addcellpeaks),
+              ( "Fit",0, self.fit),
+              ( "Save parameters", 0, self.saveparameters),
+              ( "Plot tth histogram", 0, self.plothisto ),
+              ( "Filter peaks based on tth histogram", 0, self.filterhisto ),
+              ( "Compute g-vectors", 0, self.computegv),
+              ( "Save g-vectors", 0, self.savegv),
+              ( "Write graindex finalpeaks.log",0, self.write_graindex_gv)
+              ] )
 
     def loadfiltered(self):
         filename=self.parent.opener.show(title=
-                "File containing filtered peaks",
-                filetypes=[("filtered peaks", "*.flt"),
-                           ("All Files ", "*")])
+                 "File containing filtered peaks",
+                  filetypes=[("filtered peaks", "*.flt"),
+                             ("All Files ", "*")])
         self.parent.guicommander.execute("transformer",
                 "loadfiltered",filename)
 
@@ -70,6 +67,7 @@ class guitransformer:
         filename=self.parent.opener.show(title= 
                 "File containing detector parameters",
                 filetypes=[("parameter files", "*.par"),
+                           ("parameter files", "*.pars"),
                            ("parameter files", "*.prm"),
                            ("All Files ", "*")])
         self.parent.guicommander.execute("transformer",
@@ -77,7 +75,8 @@ class guitransformer:
 
     def saveparameters(self,filename=None):
         if filename==None:
-            filename=self.parent.saver.show(title="File to save detector parameters")
+            filename=self.parent.saver.show(title=
+                         "File to save detector parameters")
         self.parent.guicommander.execute("transformer",
                 "saveparameters",filename)
 
@@ -90,7 +89,8 @@ class guitransformer:
         self.parent.guicommander.execute("transformer","updateparameters")
         pars = self.parent.guicommander.getdata("transformer","pars")
         vars = self.parent.guicommander.execute("transformer","getvars")
-        possvars = self.parent.guicommander.execute("transformer","get_variable_list")
+        possvars = self.parent.guicommander.execute("transformer",
+                                                    "get_variable_list")
         logging.debug("possible variables "+str(possvars))
         # wtf?
         logic = {}
@@ -100,11 +100,12 @@ class guitransformer:
             else:
                 logic[v]=0
         logging.debug("transformer pars: %s"% (str(pars)))
-        d=listdialog(self.parent,items=pars,title="Detector parameters",
-                     logic=logic)
+        d = listdialog(self.parent,items=pars,title="Detector parameters",
+                       logic=logic)
         self.parent.guicommander.execute("transformer",
-                "parameterobj.set_parameters",d.result)
-        d.fv
+                                         "parameterobj.set_parameters",
+                                         d.result)
+        # wtf d.fv 
         vars = []
         print "d.fv",d.fv
         for v in possvars:
@@ -119,28 +120,42 @@ class guitransformer:
         """
         Plots the x,y arrays being used
         """
-        d=self.parent.guicommander.getdata("transformer","finalpeaks")
+        xname = self.parent.guicommander.getdata("transformer","xname")
+        yname = self.parent.guicommander.getdata("transformer","yname")
+        x = self.parent.guicommander.execute("transformer",
+                                             "getcolumn", xname )
+        y = self.parent.guicommander.execute("transformer",
+                                             "getcolumn", yname )
         self.parent.twodplotter.hideall()
         self.parent.twodplotter.adddata(
               ( "Filtered peaks",
                  twodplot.data(
-                    d[0,:],
-                    d[1,:],
-                    { "xlabel" : "slow", 
-                      "ylabel" : "fast", 
+                    x, y,
+                    { "xlabel" : xname, 
+                      "ylabel" : yname, 
                       "title"  : "Peak positions in array"} ) ) )
 
+    def chooseyz(self):
+        """
+        choose the columns to use for x / y on detector
+        """
+        pass
+
+    def plotcols(self):
+        names = self.parent.guicommander.execute("transformer",getcols)
+        d = columnchooser(self.parent, names)
+        print d.result
+                                                 
 
     def fit(self):
         tthmax = self.parent.twodplotter.a.get_xlim()[1]
         self.parent.guicommander.execute("transformer","fit",tthmax)
-        # maybe update plot?
+        self.plotreta()
 
     def plotreta(self):
         self.parent.guicommander.execute("transformer","compute_tth_eta")
-        tth = self.parent.guicommander.getdata("transformer","twotheta")
-        eta = self.parent.guicommander.getdata("transformer","eta")
-#       self.parent.twodplotter.hideall()
+        tth = self.parent.guicommander.execute("transformer","getcolumn","tth")
+        eta = self.parent.guicommander.execute("transformer","getcolumn","eta")
         self.parent.twodplotter.adddata(
               ( "2Theta/Eta",
                  twodplot.data(
@@ -151,26 +166,60 @@ class guitransformer:
                      "title" :"Peak positions"}
                      )))
 
-    def plothisto(self):
-        d=listdialog(self.parent,items={"no_bins": self.nbins},title="Histogram - no of bins")
-        self.nbins = int(d.result['no_bins'])
-        self.parent.guicommander.execute("transformer","parameterobj.set_parameters",d.result)
-        tth = self.parent.guicommander.getdata("transformer","twotheta")
+    def plothisto(self, nbins = None):
+        if nbins is None:
+            nbins = self.parent.guicommander.execute("transformer",
+                                                     "parameterobj.get",
+                                                     "no_bins")
+            d = listdialog( self.parent,
+                            items={"no_bins": nbins},
+                            title="Histogram - no of bins")
+            nbins = int(d.result['no_bins'])
+            self.parent.guicommander.execute("transformer",
+                                             "parameterobj.set_parameters",
+                                             d.result)
+        else:
+            self.parent.guicommander.execute("transformer",
+                                             "parameterobj.set",
+                                             "no_bins", nbins)
+            
+        bins, hist = self.parent.guicommander.execute("transformer",
+                                                      "compute_tth_histo")
         self.parent.twodplotter.adddata(
               ( "2Theta/Eta",
                  twodplot.data(
-                    self.nbins,
-                    tth,
+                    bins,
+                    hist,
                     {"xlabel":"TwoTheta / degrees",
                      "ylabel":"No in bin",
-                     "title" :"TwoTheta histogram",
-                     "plottype" :"hist"}
+                     "title" :"TwoTheta histogram"
+                     }
                      )))
 
     def filterhisto(self):
-        d=listdialog(self.parent,items={"no_bins": self.nbins, "min_bin_ratio": self.min_bin_ratio},title="Histogram filter")
-        self.parent.guicommander.execute("transformer","parameterobj.set_parameters",d.result)
-        self.parent.guicommander.execute("transformer","compute_tth_histo")
+        """ Call plot histo, then filter on it """
+        nbins = self.parent.guicommander.execute("transformer",
+                                                 "parameterobj.get",
+                                                 "no_bins")
+
+        nbins = self.parent.guicommander.execute("transformer",
+                                                 "parameterobj.get",
+                                                 "min_bin_prob")
+
+        min_bin_prob = 0.01
+        
+        d=listdialog(self.parent,items={
+                "no_bins": nbins, 
+                "min_bin_prob": min_bin_ratio},
+                     title="Histogram filter")
+        self.parent.guicommander.execute("transformer",
+                                         "parameterobj.set_parameters",
+                                         d.result)
+        self.plothisto(nbins)
+        self.parent.guicommander.execute("transformer",
+                                         "filter_min",
+                                         "tth_hist_prob",
+                                         min_bin_prob)
 
 
     def addcellpeaks(self):
