@@ -813,7 +813,7 @@ class indexer:
                     continue
                 if line.find("ds h k l")>-1:
                     continue   # reads up to comment line
-                if line.find("omega")>-1:
+                if line.find("omega")>-1 and line.find("xc")>-1:
                     break
         self.eta=[]   # Raw peak information
         self.omega=[]
@@ -823,7 +823,7 @@ class indexer:
         self.zr=[]
         self.xp=[]
         self.yp=[]
-        for line in f.xreadlines():
+        for line in f.readlines():
             try:
                 v=[float(x) for x in line.split()]
                 if self.out_of_eta_range(v[6]):
