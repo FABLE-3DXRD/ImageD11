@@ -135,6 +135,12 @@ class parameters:
         """
         return self.parameters
 
+    def get(self,name):
+        return self.parameters[name]
+    
+    def set(self,name,value):
+        self.parameters[name] = value
+
     def update_yourself(self,other):
         """
         Sychronise this parameter objects list of values with another object
