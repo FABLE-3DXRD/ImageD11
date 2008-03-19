@@ -23,11 +23,11 @@ Functions for transforming peaks
 """
 import logging
 
-import numpy.oldnumeric as n
+import numpy as n
  
 try:
     # crazy debug 
-    test = n.arccos(n.zeros(10,n.Float))
+    test = n.arccos(n.zeros(10,n.float))
 except:
     print dir()
     raise
@@ -49,20 +49,15 @@ def radians(x):
     """Convenience function"""
     return x*pi/180.0
 
-def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
+
+def compute_xyz_lab(peaks,
+                    y_center=0.,y_size=0.,tilt_y=0.,
                     z_center=0.,z_size=0.,tilt_z=0.,
                     tilt_x = 0.,
                     distance=0.,
                     # detector_orientation=((1,0),(0,1)),
                     o11 = 1.0 , o12 = 0.0, o21 = 0.0 , o22 = -1.0,
-                    # crystal_translation = None,
-                    t_x = 0.0, t_y = 0.0 , t_z = 0.0,
-                    omega = None,         #       == phi at chi=90
-                    wedge = 0.0, # Wedge == theta on 4circ
-                    chi = 0.0, #       == chi - 90
-                    return_pixel_xyz = False,
-                    **kwds): # last line is for laziness - 
-                             # pass kwds you'd like to be ignored
+                    **kwds ):
     """
     Peaks is a 2 d array of x,y
     yc is the centre in y
@@ -72,27 +67,24 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
     zs is the z pixel size
     tz is the tilt around z
     dist is the sample - detector distance
-    detector_orientation is a matrix to apply to peaks arg to get ImageD11 convention
+    detector_orientation is a matrix to apply to peaks arg to get 
+    ImageD11 convention
          (( 0, 1),( 1, 0)) for ( y, x)
          ((-1, 0),( 0, 1)) for (-x, y)
          (( 0,-1),(-1, 0)) for (-y,-x)
       etc...
-    crystal_translation is the position of the grain giving rise to a diffraction spot
-                 in x,y,z ImageD11 co-ordinates
-                 x,y with respect to axis of rotation and or beam centre ??
-                 z with respect to beam height, z centre
-    omega data needed if crystal translations used
     """
+    assert len(peaks)==2, "peaks must be a 2D array"
     # Matrices for the tilt rotations
     r1 = n.array( [ [  n.cos(tilt_z) ,-n.sin(tilt_z) , 0 ], # note this is r.h.
                     [  n.sin(tilt_z) , n.cos(tilt_z) , 0 ],
-                    [    0         ,    0        , 1 ]],n.Float)
+                    [    0         ,    0        , 1 ]],n.float)
     r2 = n.array( [ [ n.cos(tilt_y) , 0 , n.sin(tilt_y) ],
                     [       0     , 1 ,   0     ],
-                    [-n.sin(tilt_y) , 0 , n.cos(tilt_y) ]],n.Float)
+                    [-n.sin(tilt_y) , 0 , n.cos(tilt_y) ]],n.float)
     r3 = n.array( [ [  1 ,          0  ,       0     ],
                     [  0 ,  n.cos(tilt_x), -n.sin(tilt_x) ],
-                    [  0 ,  n.sin(tilt_x), n.cos(tilt_x) ]],n.Float)
+                    [  0 ,  n.sin(tilt_x), n.cos(tilt_x) ]],n.float)
     r2r1 = n.dot(n.dot(r3,r2),r1)
     # Peak positions in 3D space
     #  - apply detector orientation
@@ -102,148 +94,185 @@ def compute_tth_eta(peaks,y_center=0.,y_size=0.,tilt_y=0.,
     # 
     detector_orientation = [[o11,o12],[o21,o22]]
     #logging.debug("detector_orientation = "+str(detector_orientation))
-    flipped = n.dot(n.array(detector_orientation, n.Float),
+    flipped = n.dot(n.array(detector_orientation, n.float),
                              peaks_on_detector)   
     # 
-    vec =n.array( [ n.zeros(flipped.shape[1])     , # place detector at zero, 
-                                                # sample at -dist
-                    flipped[1,:]      ,        # x in search, frelon +z
-                    flipped[0,:]]    , n.Float) # y in search, frelon -y 
-    #print vec.shape
-    # Position of diffraction spots in 3d space after detector tilts is:
-    rotvec=n.dot(r2r1,vec)
-    if return_pixel_xyz:
-        return rotvec
-    # Scattering vectors
-    if omega is None or ( t_x == 0. and t_y == 0 and t_z == 0):
-        magrotvec=n.sqrt(n.sum(rotvec*rotvec,0))
-        # tan(eta) = y/z
-        # CHANGED to match HFP definition 4-9-2007 
-        eta=degrees(n.arctan2(-rotvec[1,:],rotvec[2,:])) 
-        # cosine rule a2 = b2+c2-2bccos(A)
-        # a is distance from (0,0,0) to rotvec => magrotvec
-        # b is distance from sample to detector
-        # c is distance from sample to pixel
-        a=magrotvec  # 1D
-        b=distance   # 0D
-        c=rotvec     # 3D
-        #print c.shape
-        c[0,:]=c[0,:]+distance# 3D
-        # print c
-        c=n.sqrt(n.sum(c*c,0))# 1D
-        #print a.shape,c.shape
-        #   print a.shape,c.shape
-        costwotheta = (b*b + c*c - a*a)/2/b/c
-        twothetarad=n.arccos(costwotheta)
-        twotheta=degrees(twothetarad)
+    vec = n.array( [ n.zeros(flipped.shape[1])     , # place detector at zero, 
+                                                     # sample at -dist
+                     flipped[1,:]      ,             # x in search, frelon +z
+                     flipped[0,:]]    , n.float)     # y in search, frelon -y 
+    # Position of diffraction spots in 3d space after detector tilts about
+    # the beam centre on the detector
+    rotvec = n.dot(r2r1, vec)
+    # Now add the distance (along x)
+    rotvec[0,:] = rotvec[0,:] + distance
+    return rotvec
 
-        return twotheta, eta
-    else:
-        # print "Using translations t_x %f t_y %f t_z %f"%(t_x,t_y,t_z)
-        # Compute positions of grains
-        # expecting tx, ty, tz for each diffraction spot
-        #
-        # g =  R . W . k
-        #  g - is g-vector w.r.t crystal
-        #  k is scattering vector in lab
-        #  so we want displacement in lab from displacement in sample
-        #  shift =  W-1  R-1 crystal_translation
-        #
-        # R = ( cos(omega) , sin(omega), 0 )
-        #     (-sin(omega) , cos(omega), 0 )
-        #     (         0  ,         0 , 1 )
-        #
-        # W = ( cos(wedge) ,  0  ,  sin(wedge) )
-        #     (         0  ,  1  ,          0  )
-        #     (-sin(wedge) ,  0  ,  cos(wedge) )
-        #
-        # C = (         1  ,          0  ,       0     ) ??? Use eta0 instead
-        #     (         0  ,   cos(chi)  ,  sin(chi)   )  ??? Use eta0 instead
-        #     (         0  ,  -sin(chi)  ,  cos(chi)   )  ??? Use eta0 instead
-        w=radians(wedge)
-        WI = n.array( [ [ n.cos(w),         0, -n.sin(w)],
-                        [      0,         1,       0],
-                        [ n.sin(w),         0,  n.cos(w)] ] , n.Float)
-        c=radians(chi)
-        CI = n.array( [ [      1,          0,       0],
-                        [      0,     n.cos(c), -n.sin(c)],
-                        [      0,     n.sin(c),  n.cos(c)] ] , n.Float)
-        if omega.shape[0] != peaks.shape[1]:
-            raise Exception(
-                "omega and peaks arrays must have same number of peaks")
-        eta=n.zeros(omega.shape[0],n.Float)
-        tth=n.zeros(omega.shape[0],n.Float)
-        t = n.zeros((3,omega.shape[0]),n.Float) # crystal translations
-        # Rotations in reverse order compared to making g-vector
-        # also reverse directions. this is trans at all zero to
-        # current setting. gv is scattering vector to all zero
-        om_r = radians(omega)
-                # This is the real rotation (right handed, g back to k)
-        t[0,:] = n.cos(om_r)*t_x - n.sin(om_r)*t_y
-        t[1,:] = n.sin(om_r)*t_x + n.cos(om_r)*t_y
-        t[2,:] =                                  t_z
-        if wedge != 0.0:
-            c = n.cos(radians(wedge))
-            s = n.sin(radians(wedge))
-            u = n.zeros(t.shape,n.Float)
-            u[0,:]= c * t[0,:]           + -s * t[2,:]
-            u[1,:]=            t[1,:]
-            u[2,:]= s * t[0,:]           + c * t[2,:]
-            t = u
-        if chi != 0.0:
-            c = n.cos(radians(chi))
-            s = n.sin(radians(chi))
-            u = n.zeros(t.shape,n.Float)
-            u[0,:]= t[0,:]  
-            u[1,:]=        c * t[1,:]    + -s * t[2,:]
-            u[2,:]=        s * t[1,:]    + c * t[2,:]
-            t = u
-        myorigins = t.copy()
-        myorigins[0,:] = myorigins[0,:] - distance
-        # origin =  array([ -distance, 0, 0 ], Float)
-        # scattering_vectors 
-        s = rotvec - myorigins
-        # CHANGED to HFP convention 4-9-2007
-        eta = degrees(n.arctan2(-s[1],s[2]))
-        mag_s = n.sqrt(n.sum(s*s,0))
-        costth = s[0] / mag_s
-        tth = degrees( n.arccos(costth) )
-        return tth , eta
-                      
-    
-def compute_tth_histo(finalpeaks, tth, no_bins = 0, min_bin_ratio = 1,
+
+def compute_tth_eta(peaks,
+                    y_center=0.,y_size=0.,tilt_y=0.,
+                    z_center=0.,z_size=0.,tilt_z=0.,
+                    tilt_x = 0.,
+                    distance=0.,
+                    # detector_orientation=((1,0),(0,1)),
+                    o11 = 1.0 , o12 = 0.0, o21 = 0.0 , o22 = -1.0,
+                    t_x = 0.0, t_y = 0.0 , t_z = 0.0,
+                    omega = None, #       == phi at chi=90
+                    wedge = 0.0,  # Wedge == theta on 4circ
+                    chi = 0.0,    #       == chi - 90
                     **kwds): # last line is for laziness - 
                              # pass kwds you'd like to be ignored
+    """
+    0/10 for style
+    """
+    peaks_xyz =  compute_xyz_lab( 
+        peaks,
+        y_center = y_center,y_size = y_size,tilt_y = tilt_y,
+        z_center = z_center,z_size = z_size,tilt_z = tilt_z,
+        tilt_x = tilt_x,
+        distance = distance,
+        # detector_orientation=((1,0),(0,1)),
+        o11 = o11 , o12 = o12, o21 = o21 , o22 = o22 )
+    
+    tth, eta = compute_tth_eta_from_xyz(
+        peaks_xyz ,
+        t_x = t_x, t_y = t_y , t_z = t_z,
+        omega = omega, 
+        wedge = wedge, 
+        chi = chi)   
+        
+    return tth, eta
+    
+
+def compute_tth_eta_from_xyz(peaks_xyz , omega , 
+                             t_x = 0.0, t_y = 0.0 , t_z = 0.0,
+                             #       == phi at chi=90
+                             wedge = 0.0,  # Wedge == theta on 4circ
+                             chi = 0.0,    #       == chi - 90
+                             **kwds): # last line is for laziness - 
+    """
+    Peaks is a 3 d array of x,y,z peak co-ordinates
+    crystal_translation is the position of the grain giving rise 
+    to a diffraction spot
+                 in x,y,z ImageD11 co-ordinates
+                 x,y with respect to axis of rotation and or beam centre ??
+                 z with respect to beam height, z centre
+    omega data needed if crystal translations used
+    """
+    assert len(peaks_xyz) == 3
+    # Scattering vectors
+    if omega is None or ( t_x == 0. and t_y == 0 and t_z == 0):
+        s1 = peaks_xyz
+    else:
+        # scattering_vectors 
+        if len(omega) != len(peaks_xyz[0]):
+            raise Exception(
+                "omega and peaks arrays must have same number of peaks")
+        s1 = peaks_xyz - compute_grain_origins( omega, wedge, chi,
+                                                t_x, t_y, t_z)
+    # CHANGED to HFP convention 4-9-2007
+    eta = degrees(n.arctan2(-s1[1,:],s1[2,:]))
+    s1_perp_x = n.sqrt(s1[1,:]*s1[1,:] + s1[2,:]*s1[2,:])
+    tth = degrees( n.arctan2( s1_perp_x, s1[0,:]) )
+    return tth , eta
+
+
+def compute_grain_origins(omega, wedge = 0.0, chi = 0.0,
+                          t_x = 0.0, t_y = 0.0, t_z = 0.0):
+    """
+    # print "Using translations t_x %f t_y %f t_z %f"%(t_x,t_y,t_z)
+    # Compute positions of grains
+    # expecting tx, ty, tz for each diffraction spot
+    #
+    # g =  R . W . k
+    #  g - is g-vector w.r.t crystal
+    #  k is scattering vector in lab
+    #  so we want displacement in lab from displacement in sample
+    #  shift =  W-1  R-1 crystal_translation
+    #
+    # R = ( cos(omega) , sin(omega), 0 )
+    #     (-sin(omega) , cos(omega), 0 )
+    #     (         0  ,         0 , 1 )
+    #
+    # W = ( cos(wedge) ,  0  ,  sin(wedge) )
+    #     (         0  ,  1  ,          0  )
+    #     (-sin(wedge) ,  0  ,  cos(wedge) )
+    #
+    # C = (         1  ,          0  ,       0     ) ??? Use eta0 instead
+    #     (         0  ,   cos(chi)  ,  sin(chi)   )  ??? Use eta0 instead
+    #     (         0  ,  -sin(chi)  ,  cos(chi)   )  ??? Use eta0 instead
+    """
+    w=radians(wedge)
+    WI = n.array( [ [ n.cos(w),         0, -n.sin(w)],
+                    [      0,           1,         0],
+                    [ n.sin(w),         0,  n.cos(w)] ] , n.float)
+    c=radians(chi)
+    CI = n.array( [ [      1,            0,         0],
+                    [      0,     n.cos(c), -n.sin(c)],
+                    [      0,     n.sin(c),  n.cos(c)] ] , n.float)
+    t   = n.zeros((3,omega.shape[0]),n.float) # crystal translations
+    # Rotations in reverse order compared to making g-vector
+    # also reverse directions. this is trans at all zero to
+    # current setting. gv is scattering vector to all zero
+    om_r = radians(omega)
+    # This is the real rotation (right handed, g back to k)
+    t[0,:] = n.cos(om_r)*t_x - n.sin(om_r)*t_y
+    t[1,:] = n.sin(om_r)*t_x + n.cos(om_r)*t_y
+    t[2,:] =                                  t_z
+    if wedge != 0.0:
+        c = n.cos(radians(wedge))
+        s = n.sin(radians(wedge))
+        u = n.zeros(t.shape,n.float)
+        u[0,:]= c * t[0,:]           + -s * t[2,:]
+        u[1,:]=            t[1,:]
+        u[2,:]= s * t[0,:]           +  c * t[2,:]
+        t = u
+    if chi != 0.0:
+        c = n.cos(radians(chi))
+        s = n.sin(radians(chi))
+        u = n.zeros(t.shape,n.float)
+        u[0,:]= t[0,:]  
+        u[1,:]=        c * t[1,:]    + -s * t[2,:]
+        u[2,:]=        s * t[1,:]    +  c * t[2,:]
+        t = u
+    return t
+
+
+                      
+    
+def compute_tth_histo(tth, no_bins = 100,
+                    **kwds):
+    """
+    Compute a histogram of tth values
+    
+    Returns a normalised histogram (should make this a probability
+    *and*
+     For each datapoint, the number of other points in the same bin
+    """
     tthsort = n.sort(tth)
     maxtth = tthsort[-1]
-    logging.debug("maxtth=%f"%(maxtth))
-    binsize = (maxtth+0.001)/no_bins
-    tthbin = n.array(range(no_bins))*binsize # runs from 0->maxtth
-    # vectorise this loop below from old Numeric manual
-    #for t in tthsort:
-    #    n= int(floor(t/binsize))
-    #    histogram[n] = histogram[n] +1
+    mintth = tthsort[0]
+    logging.debug("maxtth=%f , mintth=%f"%(maxtth, mintth))
+    binsize = (maxtth-mintth)/(no_bins+1)
+    tthbin = n.arange(mintth, maxtth+binsize, binsize)
+    # print len(tthbin),tthbin[:10]
     nn = n.searchsorted(tthsort,tthbin) # position of bin in sorted
     nn = n.concatenate([nn,[len(tthsort)]])   # add on last position
-    histogram = (nn[1:] - nn[:-1])*1.0        # this would otherwise be integer
+    histogram = (nn[1:] - nn[:-1]).astype(n.float32) 
+    # this would otherwise be integer
     logging.debug("max(histogram) = %d"%(max(histogram)))
-    histogram = histogram/max(histogram)
-    
-    # keeppeaks = [] 
-    #for t in range(tth.shape[0]):
-    #    if histogram[bins[t]]> min_bin_ratio:
-    #        keeppeaks.append(t)
-    #keeppeaks = tuple(keeppeaks)
-    #finalpeaks = take(finalpeaks,keeppeaks,1)
-    
+    # Change from max
+    # histogram = histogram/max(histogram)
+    histogram = histogram/len(tth)
     # Vectorised version
-    bins = n.floor(tth/binsize).astype(n.Int) # bin for each two theta
-    hpk = n.take(histogram, bins) # hist for each peak
-    keepind = n.compress( hpk > float(min_bin_ratio) , range(tth.shape[0]) )
-    print len(keepind),tth.shape[0]
-    filteredpeaks = n.take(finalpeaks, keepind, 1) # beware of modifying array arg...
-    return filteredpeaks
-
+    bins = n.floor((tth-mintth)/binsize).astype(n.int) # bin for each two theta
+    #print "got bins",len(bins),len(tth),len(histogram)
+    #print "bins",bins[:10]
+    #print "tth",tth[:10]
+    #print "histogram",histogram[:10]
+    hpk = n.take(histogram, bins) # histogram value for each peak
+    #print "hpk",hpk[:10]
+    return tthbin, histogram, hpk
   
 def compute_k_vectors(tth, eta, wavelength):
     """
@@ -254,7 +283,7 @@ def compute_k_vectors(tth, eta, wavelength):
     c=n.cos(tth/2) # cos theta
     s=n.sin(tth/2) # sin theta
     ds=2*s/wavelength
-    k=n.zeros((3,tth.shape[0]),n.Float)
+    k=n.zeros((3,tth.shape[0]),n.float)
     # x - along incident beam
     k[0,:] = -ds*s # this is negative x
     # y - towards door
@@ -263,7 +292,13 @@ def compute_k_vectors(tth, eta, wavelength):
     k[2,:] =  ds*c*n.cos(eta)
     return k
                              
-def compute_g_vectors(tth, eta, omega, wavelength, wedge = 0.0, chi=0.0):
+def compute_g_vectors(tth, 
+                      eta, 
+                      omega, 
+                      wavelength, 
+                      wedge = 0.0, 
+                      chi   = 0.0,
+                      **kwds):
     """
     Generates spot positions in reciprocal space from 
       twotheta, wavelength, omega and eta
@@ -273,8 +308,8 @@ def compute_g_vectors(tth, eta, omega, wavelength, wedge = 0.0, chi=0.0):
     om =radians(omega)
     k = compute_k_vectors(tth, eta, wavelength)
     # G-vectors - rotate k onto the crystal axes
-    g=n.zeros((3,om.shape[0]),n.Float)
-    t=n.zeros((3,om.shape[0]),n.Float)
+    g=n.zeros((3,om.shape[0]),n.float)
+    t=n.zeros((3,om.shape[0]),n.float)
     #
     # g =  R . W . k where:
     # R = ( cos(omega) , sin(omega), 0 )
@@ -328,7 +363,7 @@ def uncompute_g_vectors(g, wavelength, wedge=0.0, chi=0.0):
     #          must satisfy laue condition
     #        =  - sin(theta)/d
     #
-    k0 = n.zeros(g.shape[0],n.Float)
+    k0 = n.zeros(g.shape[0],n.float)
     k0 = -ds*s
     #
     # this component: k = W-1 R-1 g
@@ -412,8 +447,8 @@ def uncompute_g_vectors(g, wavelength, wedge=0.0, chi=0.0):
     #
     # Now we know R-1 and W-1 , so compute k = W-1 R-1 g
     #
-    R1g1 = n.zeros(g.shape,n.Float)
-    R1g2 = n.zeros(g.shape,n.Float)
+    R1g1 = n.zeros(g.shape,n.float)
+    R1g2 = n.zeros(g.shape,n.float)
     #
     R1g1[0,:] = cosomega1*g[0,:] - sinomega1*g[1,:]
     R1g1[1,:] = sinomega1*g[0,:] + cosomega1*g[1,:]
@@ -424,8 +459,8 @@ def uncompute_g_vectors(g, wavelength, wedge=0.0, chi=0.0):
     R1g2[2,:] =                                     g[2,:]
     #
     #
-    k_one =  n.zeros(g.shape,n.Float)
-    k_two =  n.zeros(g.shape,n.Float)
+    k_one =  n.zeros(g.shape,n.float)
+    k_two =  n.zeros(g.shape,n.float)
     #
     # W-1 = ( cos(wedge) ,  0  , -sin(wedge) )
     #       (         0  ,  1  ,          0  )
@@ -556,12 +591,9 @@ if __name__=="__main__":
             diff=theta-target
         return theta
 
-    tth = n.array([   1,  2,  3,  4,  5,  6,  7,  8,  9, 10], n.Float)
-    eta = n.array([  10, 40, 70,100,130,160,190,220,270,340], n.Float)
-    om  = n.array([   0, 20, 40,100, 60,240,300, 20, 42, 99], n.Float)
-#   tth = array([    4, 5, 7], Float)
-#   eta = array([  100, 5, 190], Float)
-#   om  = array([  100, 5, 300], Float)
+    tth = n.array([   1,  2,  3,  4,  5,  6,  7,  8,  9, 10], n.float)
+    eta = n.array([  10, 40, 70,100,130,160,190,220,270,340], n.float)
+    om  = n.array([   0, 20, 40,100, 60,240,300, 20, 42, 99], n.float)
 
     for wavelength in [ 0.1, 0.2, 0.3]:
         for wedge in [-10. , -5., 0., 5., 10.]:
