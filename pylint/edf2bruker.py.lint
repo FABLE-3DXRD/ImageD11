@@ -1,0 +1,271 @@
+************* Module edf2bruker
+C0301:198: Line too long (85/80)
+R0902: 34:darkflood: Too many instance attributes (10/7)
+R0913: 36:darkflood.__init__: Too many arguments (6/5)
+W0613: 36:darkflood.__init__: Unused argument 'floodmultiplier'
+C0324: 53:darkflood.readdark: Comma not followed by a space
+    def readdark(self,darkfile):
+                     ^^
+W0702: 60:darkflood.readdark: No exception's type specified
+C0322: 57:darkflood.readdark: Operator not preceded by a space
+            self.darkfile=darkfile
+                         ^
+C0322: 62:darkflood.readdark: Operator not preceded by a space
+            self.darkimage= None
+                          ^
+W0702: 78:darkflood.readflood: No exception's type specified
+E1101: 70:darkflood.readflood: Module 'numpy.oldnumeric' has no 'Float32' member
+C0324: 72:darkflood.readflood: Comma not followed by a space
+                centre = self.floodimage[100:-100,100:-100]
+                                                 ^^
+E1101: 75:darkflood.readflood: Module 'numpy.oldnumeric' has no 'Float32' member
+C0322: 80:darkflood.readflood: Operator not preceded by a space
+            self.floodimage= None
+                           ^
+C0324: 84:darkflood.correct: Comma not followed by a space
+    def correct(self,data):
+                    ^^
+E1101: 88:darkflood.correct: Module 'numpy.oldnumeric' has no 'Float32' member
+C0322: 99:darkflood.correct: Operator not preceded by a space
+            b=self.border
+             ^
+C0103: 99:darkflood.correct: Invalid name "b" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:100:darkflood.correct: Operator not preceded by a space
+            cor[:b,:]=0
+                     ^
+C0322:101:darkflood.correct: Operator not preceded by a space
+            cor[:,:b]=0
+                     ^
+C0322:102:darkflood.correct: Operator not preceded by a space
+            cor[-b:,:]=0
+                      ^
+C0322:103:darkflood.correct: Operator not preceded by a space
+            cor[:,-b:]=0
+                      ^
+W0201: 56:darkflood.readdark: Attribute 'darkdata' defined outside __init__
+W0201: 68:darkflood.readflood: Attribute 'flooddata' defined outside __init__
+C0111:110:edf2bruker: Missing docstring
+C0103:132:edf2bruker.__init__: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+R0902:110:edf2bruker: Too many instance attributes (8/7)
+R0913:112:edf2bruker.__init__: Too many arguments (9/5)
+C0103:129:edf2bruker.__init__: Invalid name "im" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:135:edf2bruker.putitem: Invalid name "TITLE" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:142:edf2bruker.putitem: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:143:edf2bruker.putitem: Invalid name "p" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:144:edf2bruker.putitem: Operator not preceded by a space
+        if p!=-1:
+            ^^
+W0621:150:edf2bruker.tlog: Redefining name 'time' from outer scope (line 28)
+C0111:149:edf2bruker.tlog: Missing docstring
+W0404:150:edf2bruker.tlog: Reimport 'time' (imported line 28)
+C0323:152:edf2bruker.tlog: Operator not followed by a space
+        print "%4.2f %s"%(new-self.last_time, msg),
+                        ^
+W0621:156:edf2bruker.convert: Redefining name 'fileout' from outer scope (line 271)
+W0621:156:edf2bruker.convert: Redefining name 'filein' from outer scope (line 271)
+C0324:156:edf2bruker.convert: Comma not followed by a space
+    def convert(self,filein,fileout):
+                    ^^
+W0702:170:edf2bruker.convert: No exception's type specified
+C0103:167:edf2bruker.convert: Invalid name "om" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:168:edf2bruker.convert: Operator not preceded by a space
+            oms=  float(data_in.header["OmegaStep"])*sgn
+               ^
+C0103:170:edf2bruker.convert: Invalid name "om" (should match [a-z_][a-z0-9_]{2,30}$)
+E1101:198:edf2bruker.convert: Module 'numpy.oldnumeric' has no 'UInt16' member
+C0322:204: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+C0103:208: Invalid name "parser" (should match (([A-Z_]*)|(__.*__))$)
+C0324:209: Comma not followed by a space
+        parser.add_option("-e","--extn",action="store",type="string",
+                              ^^
+                          dest="extn",
+                          default=".edf",
+                          help="Filename extension, probably edf, might be cor")
+C0324:213: Comma not followed by a space
+        parser.add_option("-n","--namestem",action="store",
+                              ^^
+                          type="string", dest="stem",
+    help="Name of the files up the digits part, eg mydata in mydata0000.edf" )
+C0324:216: Comma not followed by a space
+        parser.add_option("-f","--first",action="store",
+                              ^^
+                          type="int", dest="first",default=0,
+                          help="Number of first file to process, default=0")
+C0324:219: Comma not followed by a space
+        parser.add_option("-l","--last",action="store", type="int",
+                              ^^
+                          dest="last",default=0,
+                          help="Number of last file to process, default=0")
+C0324:222: Comma not followed by a space
+        parser.add_option("-d","--dark",action="store", type="string",
+                              ^^
+                          dest="dark",
+                          help="Dark current")
+C0324:225: Comma not followed by a space
+        parser.add_option("-w","--wavelength",action="store",
+                              ^^
+                          type="float", dest="wvln",
+                          default = 0.5,
+                          help="Wavelength")
+C0324:229: Comma not followed by a space
+        parser.add_option("-s","--sign of omega",action="store",
+                              ^^
+                          type="float", dest="omegasign",
+                          default = 1.0,
+                   help="Sign of ID11 omega rotation, +1 is right handed")
+C0324:233: Comma not followed by a space
+        parser.add_option("-F","--Flood",action="store",
+                              ^^
+                          type="string", dest="flood",
+
+                          help="Flood field")
+C0324:237: Comma not followed by a space
+        parser.add_option("-D","--distance",action="store",type="float",
+                              ^^
+                          dest="distance",
+                          default=5.0,help="Sample to detector distance")
+C0324:240: Comma not followed by a space
+        parser.add_option("-b","--border",action="store",type="int",
+                              ^^
+                          dest="border",
+                          default=None,
+                          help="Border of image to zero out")
+C0324:245: Comma not followed by a space
+        parser.add_option("-t","--template",action="store", type="string",
+                              ^^
+                          dest="template",
+             default = "/data/opid11/inhouse/Frelon2K/brukertemplate.0000")
+C0103:249: Invalid name "options" (should match (([A-Z_]*)|(__.*__))$)
+C0103:249: Invalid name "args" (should match (([A-Z_]*)|(__.*__))$)
+C0103:252: Invalid name "converter" (should match (([A-Z_]*)|(__.*__))$)
+C0103:259: Invalid name "files_in" (should match (([A-Z_]*)|(__.*__))$)
+C0103:265: Invalid name "files_out" (should match (([A-Z_]*)|(__.*__))$)
+C0324:273: Comma not followed by a space
+            converter.convert(filein,fileout)
+                                    ^^
+
+
+Report
+======
+134 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |0        |=          |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |0.000    |=          |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |191    |75.79 |150      |+41.00     |
++----------+-------+------+---------+-----------+
+|docstring |24     |9.52  |12       |+12.00     |
++----------+-------+------+---------+-----------+
+|comment   |25     |9.92  |22       |+3.00      |
++----------+-------+------+---------+-----------+
+|empty     |12     |4.76  |17       |-5.00      |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    fabio 
+      \-file_series (edf2bruker)
+      \-openimage (edf2bruker)
+      \-brukerimage (edf2bruker)
+    numpy 
+      \-oldnumeric (edf2bruker)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |1          |=          |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |2      |2          |=          |50.00       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |8      |7          |+1.00      |87.50       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |0      |0          |=          |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |45     |84       |-39.00     |
++-----------+-------+---------+-----------+
+|refactor   |4      |3        |+1.00      |
++-----------+-------+---------+-----------+
+|warning    |10     |178      |-168.00    |
++-----------+-------+---------+-----------+
+|error      |4      |0        |+4.00      |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0324      |16         |
++-----------+-----------+
+|C0103      |14         |
++-----------+-----------+
+|C0322      |11         |
++-----------+-----------+
+|E1101      |4          |
++-----------+-----------+
+|W0702      |3          |
++-----------+-----------+
+|W0621      |3          |
++-----------+-----------+
+|W0201      |2          |
++-----------+-----------+
+|R0913      |2          |
++-----------+-----------+
+|R0902      |2          |
++-----------+-----------+
+|C0111      |2          |
++-----------+-----------+
+|W0613      |1          |
++-----------+-----------+
+|W0404      |1          |
++-----------+-----------+
+|C0323      |1          |
++-----------+-----------+
+|C0301      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 4.10/10 (previous run: -11.03/10)
+

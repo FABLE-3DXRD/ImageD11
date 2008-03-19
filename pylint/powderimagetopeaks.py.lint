@@ -1,0 +1,128 @@
+************* Module powderimagetopeaks
+C: 34: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+W: 40: No exception's type specified
+C: 36: Invalid name "inputdata" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C: 37: Operator not preceded by a space
+        outputfile= open(sys.argv[2],"wb")
+                  ^
+C: 37: Invalid name "outputfile" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C: 38: Invalid name "step" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C: 40: Operator not followed by a space
+        print "Usage: %s infile outfile stepsize"%(sys.argv[0])
+                                                 ^
+C: 43: Comma not followed by a space
+    for i in range(0,inputdata.data.shape[0],step):
+                    ^^
+C: 44: Operator not preceded by a space
+        inputdata.data[i,:]=0
+                           ^
+C: 45: Comma not followed by a space
+    for i in range(0,inputdata.data.shape[1],step):
+                    ^^
+C: 46: Operator not preceded by a space
+        inputdata.data[:,i]=0
+                           ^
+
+
+Report
+======
+15 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |15     |31.25 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |7      |14.58 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |17     |35.42 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |9      |18.75 |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    ImageD11 
+      \-opendata (powderimagetopeaks)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |10     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |1      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0322      |4          |
++-----------+-----------+
+|C0103      |3          |
++-----------+-----------+
+|C0324      |2          |
++-----------+-----------+
+|W0702      |1          |
++-----------+-----------+
+|C0323      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 2.67/10
+

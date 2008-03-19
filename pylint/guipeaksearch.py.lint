@@ -1,0 +1,179 @@
+************* Module guipeaksearch
+C: 50: Line too long (116/80)
+C: 68: Line too long (84/80)
+C:103: Line too long (95/80)
+C:105: Line too long (82/80)
+C:114: Line too long (99/80)
+C:127: Line too long (89/80)
+W:121: TODO implement filters!!!
+C:  1: Missing docstring
+C: 24:guipeaksearcher: Invalid name "guipeaksearcher" (should match [A-Z_][a-zA-Z0-9]+$)
+C: 32:guipeaksearcher.__init__: Comma not followed by a space
+    def __init__(self,parent,quiet="No"):
+                     ^^
+C: 37:guipeaksearcher.__init__: Operator not preceded by a space
+        self.parent=parent
+                   ^
+C: 38:guipeaksearcher.__init__: Operator not preceded by a space
+        self.quiet=quiet
+                  ^
+R: 48:guipeaksearcher.searchraw: Method could be a function
+C: 52:guipeaksearcher.readpeaks: Comma not followed by a space
+    def readpeaks(self,filename=None):
+                      ^^
+C: 64:guipeaksearcher.readpeaks: Comma not followed by a space
+            self.parent.guicommander.execute("peakmerger","readpeaks",filename)
+                                                         ^^
+W: 67:guipeaksearcher.readpeaks: Relative import 'twodplot'
+C: 91:guipeaksearcher.harvestpeaks: Operator not preceded by a space
+        if self.quiet=="No":
+                     ^^
+C:101:guipeaksearcher.harvestpeaks: Operator not preceded by a space
+        numlim=self.parent.twodplotter.a.get_xlim()
+              ^
+C:102:guipeaksearcher.harvestpeaks: Operator not preceded by a space
+        omlim=self.parent.twodplotter.a.get_ylim()
+             ^
+C:103:guipeaksearcher.harvestpeaks: Comma not followed by a space
+        self.parent.guicommander.execute("peakmerger","harvestpeaks",numlim=numlim,omlim=omlim)
+                                                     ^^
+C:104:guipeaksearcher.harvestpeaks: Operator not preceded by a space
+        if self.quiet=="No":
+                     ^^
+C:106:guipeaksearcher.harvestpeaks: Comma not followed by a space
+            showinfo("Harvested peaks","You have a total of %d peaks,"%(npks)+
+                                      ^^
+               "no peaks have been merged")
+W: 92:guipeaksearcher.harvestpeaks: Unused variable 'ans'
+C:113:guipeaksearcher.mergepeaks: Operator not preceded by a space
+        if self.quiet=="No":
+                     ^^
+C:114:guipeaksearcher.mergepeaks: Comma not followed by a space
+            showinfo("Finished merging peaks","You have a total of "+str(nmerged)+" after merging")
+                                             ^^
+W:125:guipeaksearcher.filter: Relative import 'twodplot'
+C:126:guipeaksearcher.filter: Operator not preceded by a space
+        if self.quiet=="No":
+                     ^^
+C:142:guipeaksearcher.savepeaks: Comma not followed by a space
+    def savepeaks(self,filename=None):
+                      ^^
+C:144:guipeaksearcher.savepeaks: Operator not preceded by a space
+        if filename==None:
+                   ^^
+C:145:guipeaksearcher.savepeaks: Operator not preceded by a space
+            filename=self.parent.saver.show(title="Filtered peak positions")
+                    ^
+C:146:guipeaksearcher.savepeaks: Comma not followed by a space
+        self.parent.guicommander.execute("peakmerger","savepeaks",filename)
+                                                     ^^
+
+
+Report
+======
+50 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |78     |54.55 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |34     |23.78 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |20     |13.99 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |11     |7.69  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+     
+      \-twodplot (guipeaksearch)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |NC         |NC         |100.00      |100.00   |
++---------+-------+-----------+-----------+------------+---------+
+|method   |7      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |26     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |1      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |4      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0322      |10         |
++-----------+-----------+
+|C0324      |8          |
++-----------+-----------+
+|C0301      |6          |
++-----------+-----------+
+|W0403      |2          |
++-----------+-----------+
+|W0612      |1          |
++-----------+-----------+
+|W0511      |1          |
++-----------+-----------+
+|R0201      |1          |
++-----------+-----------+
+|C0111      |1          |
++-----------+-----------+
+|C0103      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 3.80/10
+

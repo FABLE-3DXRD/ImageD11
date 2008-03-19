@@ -1,0 +1,282 @@
+************* Module fft_index_refac
+C0301: 85: Line too long (86/80)
+C0301:240: Line too long (85/80)
+W0511: 84: FIXME
+C0111: 18:grid: Missing docstring
+C0103: 41:grid.gv_to_grid_new: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:149:grid.read_peaks: Invalid name "pz" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:145:grid.read_peaks: Invalid name "py" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:153:grid.read_peaks: Invalid name "UBIALL" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 25:grid.__init__: Invalid name "np" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:141:grid.read_peaks: Invalid name "px" (should match [a-z_][a-z0-9_]{2,30}$)
+R0902: 18:grid: Too many instance attributes (17/7)
+C0103: 19:grid.__init__: Invalid name "np" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 19:grid.__init__: Invalid name "mr" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 19:grid.__init__: Comma not followed by a space
+    def __init__(self, np=128, mr=1.0 ,nsig =5):
+                                      ^^
+C0324: 27:grid.__init__: Comma not followed by a space
+        self.grid = n.zeros((np,np,np),n.Float32)
+                               ^^
+E1101: 27:grid.__init__: Module 'numpy.oldnumeric' has no 'Float32' member
+C0324: 28:grid.__init__: Comma not followed by a space
+        self.old_grid = n.zeros((np,np,np),n.Float32)
+                                   ^^
+E1101: 28:grid.__init__: Module 'numpy.oldnumeric' has no 'Float32' member
+C0324: 30:grid.__init__: Comma not followed by a space
+        print "Using an FFT unit cell of ",self.cell_size
+                                          ^^
+W0621: 58:grid.gv_to_grid_new: Redefining name 'grid' from outer scope (line 18)
+W0621: 59:grid.gv_to_grid_new: Redefining name 'time' from outer scope (line 13)
+C0103: 34:grid.gv_to_grid_new: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
+R0914: 34:grid.gv_to_grid_new: Too many local variables (17/15)
+W0404: 59:grid.gv_to_grid_new: Reimport 'time' (imported line 13)
+C0324: 62:grid.gv_to_grid_new: Comma not followed by a space
+        for cor in [ (0,0,0),   #1
+                       ^^
+                     (1,0,0),   #2
+                     (0,1,0),   #3
+                     (0,0,1),   #4
+                     (1,1,0),   #5
+                     (1,0,1),   #6
+                     (0,1,1),   #7
+                     (1,1,1) ]: #8
+C0324: 73:grid.gv_to_grid_new: Comma not followed by a space
+            vol = n.absolute(fac[:,0]*fac[:,1]*fac[:,2])
+                                  ^^
+C0324: 75:grid.gv_to_grid_new: Comma not followed by a space
+            ind = thkl[:,0]*grid.shape[1]*grid.shape[2] + \
+                        ^^
+                  thkl[:,1]*grid.shape[1] + \
+                  thkl[:,2]
+W0612: 50:grid.gv_to_grid_new: Unused variable 'my_g'
+C0324: 98:grid.fft: Comma not followed by a space
+        self.origin = self.patty[0,0,0]
+                                  ^^
+C0103:105:grid.props: Invalid name "p" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:106:grid.props: Invalid name "m" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:107:grid.props: Comma not followed by a space
+        print "Average:",m
+                        ^^
+C0103:108:grid.props: Invalid name "p2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:110:grid.props: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:111:grid.props: Comma not followed by a space
+        print "Sigma",v
+                     ^^
+C0324:118:grid.peaksearch: Comma not followed by a space
+        print "Peaksearching at",self.nsig,"sigma"
+                                ^^
+C0322:125:grid.peaksearch: Operator not preceded by a space
+            if i%2 == 0:
+                ^
+W0621:135:grid.read_peaks: Redefining name 'time' from outer scope (line 13)
+R0914:132:grid.read_peaks: Too many local variables (19/15)
+W0404:135:grid.read_peaks: Reimport 'time' (imported line 13)
+C0324:138:grid.read_peaks: Comma not followed by a space
+        print "reading file",time.time()-start
+                            ^^
+E1101:141:grid.read_peaks: Instance of 'columnfile' has no 'omega' member
+E1101:145:grid.read_peaks: Instance of 'columnfile' has no 'sc' member
+E1101:149:grid.read_peaks: Instance of 'columnfile' has no 'fc' member
+C0324:154:grid.read_peaks: Comma not followed by a space
+        print "Number of peaks found",self.px.shape[0],time.time()-start
+                                     ^^
+C0324:159:grid.read_peaks: Comma not followed by a space
+        print "scoring",self.px.shape[0],time.time()-start
+                       ^^
+C0103:168:grid.read_peaks: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+E1101:178:grid.read_peaks: Instance of 'columnfile' has no 'sum_intensity' member
+C0324:181:grid.read_peaks: Comma not followed by a space
+            for k in range(i+1,len(self.px)):
+                              ^^
+C0103:182:grid.read_peaks: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:184:grid.read_peaks: Comma not followed by a space
+                f.write("%4d : %-7d "%(k,nij))
+                                        ^^
+W0101:216:grid.read_peaks: Unreachable code
+C0103:216:grid.read_peaks: Invalid name "sm" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:219:grid.read_peaks: Comma not followed by a space
+            sm[i,i] = n.dot(diff[i], diff[i])
+                ^^
+C0103:222:grid.read_peaks: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:224:grid.read_peaks: Comma not followed by a space
+                sm[i,j] = n.dot(diff[i],diff[j])/sm[i,i]/sm[j,j]
+                    ^^
+C0324:225:grid.read_peaks: Comma not followed by a space
+                sm[j,i] = sm[i,j]
+                    ^^
+C0324:227:grid.read_peaks: Comma not followed by a space
+            sm[i,i] = 1.
+                ^^
+C0324:228:grid.read_peaks: Comma not followed by a space
+        print sm[:5,:5]
+                   ^^
+C0324:229:grid.read_peaks: Comma not followed by a space
+        print "Scoring takes",time.time()-start
+                             ^^
+W0201: 98:grid.fft: Attribute 'origin' defined outside __init__
+W0201: 41:grid.gv_to_grid_new: Attribute 'gv' defined outside __init__
+W0201:149:grid.read_peaks: Attribute 'pz' defined outside __init__
+W0201:145:grid.read_peaks: Attribute 'py' defined outside __init__
+W0201:153:grid.read_peaks: Attribute 'UBIALL' defined outside __init__
+W0201:137:grid.read_peaks: Attribute 'colfile' defined outside __init__
+W0201:160:grid.read_peaks: Attribute 'tol' defined outside __init__
+W0201:140:grid.read_peaks: Attribute 'rlgrid' defined outside __init__
+W0201:109:grid.props: Attribute 'mean' defined outside __init__
+W0201:112:grid.props: Attribute 'sigma' defined outside __init__
+W0201:141:grid.read_peaks: Attribute 'px' defined outside __init__
+W0201: 96:grid.fft: Attribute 'patty' defined outside __init__
+W0621:243:test: Redefining name 'options' from outer scope (line 275)
+C0111:243:test: Missing docstring
+C0103:245:test: Invalid name "mr" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:246:test: Invalid name "np" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:250:test: Invalid name "go" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:251:test: Invalid name "io" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:257:test: Invalid name "im" (should match [a-z_][a-z0-9_]{2,30}$)
+E1101:265:test: Instance of 'grid' has no 'gv_to_grid_old' member
+C0324:268:test: Comma not followed by a space
+    print "All OK if this is zero",n.add.reduce(diff)
+                                  ^^
+C0324:269:test: Comma not followed by a space
+    print "error at",n.argmax(diff),diff.max(),n.argmin(diff),diff.min()
+                    ^^
+W0612:257:test: Unused variable 'im'
+C0322:272: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+W0404:274: Reimport 'sys' (imported line 13)
+C0111:275:options: Missing docstring
+W0232:275:options: Class has no __init__ method
+R0903:275:options: To few public methods (0/2)
+W0611: 14: Unused import inverse_fftnd
+
+
+Report
+======
+145 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |165    |63.95 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |32     |12.40 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |41     |15.89 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |20     |7.75  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy 
+      \-oldnumeric (fft_index_refac)
+        \-fft (fft_index_refac)
+    ImageD11 
+      \-labelimage (fft_index_refac)
+      \-indexing (fft_index_refac)
+      \-columnfile (fft_index_refac)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |2      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |6      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |1      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |53     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |4      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |25     |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |7      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0324      |24         |
++-----------+-----------+
+|C0103      |22         |
++-----------+-----------+
+|W0201      |12         |
++-----------+-----------+
+|E1101      |7          |
++-----------+-----------+
+|W0621      |4          |
++-----------+-----------+
+|W0404      |3          |
++-----------+-----------+
+|C0111      |3          |
++-----------+-----------+
+|W0612      |2          |
++-----------+-----------+
+|R0914      |2          |
++-----------+-----------+
+|C0322      |2          |
++-----------+-----------+
+|C0301      |2          |
++-----------+-----------+
+|W0611      |1          |
++-----------+-----------+
+|W0511      |1          |
++-----------+-----------+
+|W0232      |1          |
++-----------+-----------+
+|W0101      |1          |
++-----------+-----------+
+|R0903      |1          |
++-----------+-----------+
+|R0902      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 1.93/10
+

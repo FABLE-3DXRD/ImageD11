@@ -1,0 +1,623 @@
+************* Module plotgrainhist
+W0622: 47: Redefining built-in 'sum'
+W0622: 47: Redefining built-in 'max'
+W0622: 47: Redefining built-in 'enumerate'
+W0622: 47: Redefining built-in 'min'
+C0111:  1: Missing docstring
+W0401: 24: Wildcard import ImageD11.refinegrains
+W0702: 36: No exception's type specified
+C0103: 29: Invalid name "flt" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 30: Invalid name "par" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 31: Invalid name "ubi" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 32: Invalid name "tol" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 34: Invalid name "nbins" (should match (([A-Z_]*)|(__.*__))$)
+C0323: 36: Operator not followed by a space
+    print "Usage: %s flt par ubi tol [nbins=30]"%(sys.argv[0])
+                                                ^
+C0322: 39: Operator not preceded by a space
+o=refinegrains()
+ ^
+C0103: 39: Invalid name "o" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 44: Operator not preceded by a space
+o.tolerance=tol
+           ^
+W0401: 47: Wildcard import matplotlib.pylab
+C0103: 48: Invalid name "d" (should match (([A-Z_]*)|(__.*__))$)
+C0324: 49: Comma not followed by a space
+bins = arange(0.0,tol*11./10,tol/nbins)
+                 ^^
+C0103: 49: Invalid name "bins" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 50: Invalid name "ng" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 51: Invalid name "drl" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 52: Invalid name "dp5" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 53: Invalid name "hl" (should match (([A-Z_]*)|(__.*__))$)
+C0324: 57: Comma not followed by a space
+    plot(bins,hl[i],label=str(i))
+             ^^
+C0323: 64: Operator not followed by a space
+    print "%5d"%(j),
+               ^
+C0323: 67: Operator not followed by a space
+    print "%10.6f"%(bins[i]),
+                  ^
+C0323: 69: Operator not followed by a space
+        print "%5d"%(hl[j][i]),
+                   ^
+W0611: 47: Unused import WE
+W0611: 47: Unused import sci
+W0611: 47: Unused import Complex32
+W0611: 47: Unused import draw_if_interactive
+W0611: 47: Unused import popd
+W0611: 47: Unused import text
+W0611: 47: Unused import copy
+W0611: 47: Unused import Character
+W0611: 47: Unused import colors
+W0611: 47: Unused import entropy
+W0611: 47: Unused import rot90
+W0611: 47: Unused import LittleEndian
+W0611: 47: Unused import find
+W0611: 47: Unused import ptp
+W0611: 47: Unused import contourf
+W0611: 47: Unused import Int32
+W0611: 47: Unused import inverse
+W0611: 47: Unused import randn
+W0611: 24: Unused import parameters
+W0611: 47: Unused import title
+W0611: 47: Unused import copy_reg
+W0611: 47: Unused import prism
+W0611: 47: Unused import putmask
+W0611: 47: Unused import PolarAxes
+W0611: 47: Unused import swapaxes
+W0611: 47: Unused import blackman
+W0611: 47: Unused import center_matrix
+W0611: 47: Unused import Unpickler
+W0611: 47: Unused import norm
+W0611: 47: Unused import cov
+W0611: 47: Unused import MultipleLocator
+W0611: 47: Unused import mlab
+W0611: 47: Unused import rc
+W0611: 47: Unused import thetagrids
+W0611: 47: Unused import ceil
+W0611: 47: Unused import ones
+W0611: 47: Unused import window_none
+W0611: 47: Unused import ArrayType
+W0611: 47: Unused import ticker
+W0611: 47: Unused import cool
+W0611: 47: Unused import tri
+W0611: 47: Unused import arrayrange
+W0611: 47: Unused import FormatStrFormatter
+W0611: 47: Unused import median
+W0611: 47: Unused import get_plot_commands
+W0611: 47: Unused import UfuncType
+W0611: 47: Unused import convolve
+W0611: 47: Unused import loglog
+W0611: 47: Unused import indices
+W0611: 47: Unused import loads
+W0611: 47: Unused import where
+W0611: 47: Unused import rcParamsDefault
+W0611: 47: Unused import PrecisionError
+W0611: 47: Unused import Complex0
+W0611: 47: Unused import dump
+W0611: 47: Unused import argmax
+W0611: 47: Unused import Complex8
+W0611: 47: Unused import prctile
+W0611: 47: Unused import sign
+W0611: 47: Unused import ishold
+W0611: 47: Unused import SU
+W0611: 47: Unused import LogFormatterMathtext
+W0611: 47: Unused import imread
+W0611: 47: Unused import pickle_array
+W0611: 47: Unused import Circle
+W0611: 47: Unused import Formatter
+W0611: 47: Unused import is_string_like
+W0611: 47: Unused import contour
+W0611: 47: Unused import spectral
+W0611: 47: Unused import NullFormatter
+W0611: 47: Unused import power
+W0611: 47: Unused import YearLocator
+W0611: 47: Unused import diag
+W0611: 47: Unused import sum
+W0611: 47: Unused import axes
+W0611: 47: Unused import divide_safe
+W0611: 47: Unused import polyfit
+W0611: 47: Unused import bivariate_normal
+W0611: 47: Unused import bitwise_xor
+W0611: 47: Unused import Float8
+W0611: 47: Unused import axvline
+W0611: 47: Unused import twiny
+W0611: 47: Unused import twinx
+W0611: 47: Unused import concatenate
+W0611: 47: Unused import vdot
+W0611: 47: Unused import array2string
+W0611: 47: Unused import reshape
+W0611: 47: Unused import num2epoch
+W0611: 47: Unused import RandomArray
+W0611: 47: Unused import matplotlib
+W0611: 47: Unused import detrend_linear
+W0611: 47: Unused import corrcoef
+W0611: 47: Unused import l2norm
+W0611: 47: Unused import Complex64
+W0611: 47: Unused import sinh
+W0611: 47: Unused import less
+W0611: 47: Unused import AutoLocator
+W0611: 47: Unused import rgrids
+W0611: 47: Unused import sinc
+W0611: 47: Unused import WEEKLY
+W0611: 47: Unused import UInt64
+W0611: 47: Unused import ScalarFormatter
+W0611: 47: Unused import dates
+W0611: 47: Unused import StringIO
+W0611: 47: Unused import IndexDateFormatter
+W0611: 47: Unused import arccosh
+W0611: 47: Unused import MO
+W0611: 47: Unused import DateFormatter
+W0611: 47: Unused import equal
+W0611: 47: Unused import cumprod
+W0611: 47: Unused import blend_xy_sep_transform
+W0611: 47: Unused import broken_barh
+W0611: 47: Unused import DayLocator
+W0611: 47: Unused import HourLocator
+W0611: 47: Unused import less_equal
+W0611: 47: Unused import l1norm
+W0611: 47: Unused import clf
+W0611: 47: Unused import prepca
+W0611: 47: Unused import load
+W0611: 47: Unused import FR
+W0611: 47: Unused import divide
+W0611: 47: Unused import cm
+W0611: 47: Unused import binary_repr
+W0611: 47: Unused import silent_list
+W0611: 47: Unused import num2date
+W0611: 47: Unused import put
+W0611: 47: Unused import bitwise_and
+W0611: 47: Unused import TH
+W0611: 47: Unused import diff
+W0611: 47: Unused import cohere
+W0611: 47: Unused import normpdf
+W0611: 47: Unused import Rectangle
+W0611: 47: Unused import eye
+W0611: 47: Unused import conv
+W0611: 47: Unused import new_figure_manager
+W0611: 47: Unused import remainder
+W0611: 47: Unused import invert
+W0611: 47: Unused import negative
+W0611: 24: Unused import test_nac
+W0611: 47: Unused import xticks
+W0611: 47: Unused import quiver2
+W0611: 47: Unused import axis
+W0611: 47: Unused import Int0
+W0611: 47: Unused import pi
+W0611: 24: Unused import numpy
+W0611: 47: Unused import clabel
+W0611: 47: Unused import empty
+W0611: 47: Unused import rk4
+W0611: 47: Unused import box
+W0611: 47: Unused import LoadArray
+W0611: 47: Unused import vlines
+W0611: 47: Unused import Float64
+W0611: 47: Unused import multiarray
+W0611: 47: Unused import specgram
+W0611: 47: Unused import ylabel
+W0611: 47: Unused import cos
+W0611: 47: Unused import pie
+W0611: 47: Unused import sort
+W0611: 47: Unused import flag
+W0611: 47: Unused import UInt
+W0611: 47: Unused import linspace
+W0611: 47: Unused import Locator
+W0611: 47: Unused import hold
+W0611: 47: Unused import resize
+W0611: 47: Unused import cross_correlate
+W0611: 47: Unused import tanh
+W0611: 47: Unused import Int
+W0611: 47: Unused import Text
+W0611: 47: Unused import pymin
+W0611: 47: Unused import true_divide
+W0611: 24: Unused import columnfile
+W0611: 47: Unused import ravel
+W0611: 47: Unused import colorbar
+W0611: 47: Unused import DateLocator
+W0611: 47: Unused import raise_msg_to_str
+W0611: 47: Unused import minimum
+W0611: 47: Unused import dedent
+W0611: 47: Unused import eig
+W0611: 47: Unused import SA
+W0611: 47: Unused import pickle
+W0611: 47: Unused import scatter
+W0611: 47: Unused import Normalize
+W0611: 47: Unused import spy
+W0611: 47: Unused import MinuteLocator
+W0611: 47: Unused import quiver
+W0611: 47: Unused import Polygon
+W0611: 47: Unused import figure
+W0611: 47: Unused import floor
+W0611: 47: Unused import DAILY
+W0611: 47: Unused import autumn
+W0611: 47: Unused import logical_or
+W0611: 47: Unused import array_constructor
+W0611: 47: Unused import barh
+W0611: 47: Unused import tan
+W0611: 47: Unused import rms_flat
+W0611: 47: Unused import string
+W0611: 47: Unused import normalize
+W0611: 47: Unused import WeekdayLocator
+W0611: 47: Unused import winter
+W0611: 47: Unused import fabs
+W0611: 47: Unused import gcf
+W0611: 47: Unused import gci
+W0611: 47: Unused import array_repr
+W0611: 47: Unused import RRuleLocator
+W0611: 47: Unused import get
+W0611: 47: Unused import hot
+W0611: 47: Unused import UInt16
+W0611: 47: Unused import exception_to_str
+W0611: 47: Unused import getp
+W0611: 24: Unused import grain
+W0611: 47: Unused import array_str
+W0611: 47: Unused import absolute
+W0611: 47: Unused import sin
+W0611: 47: Unused import LinearLocator
+W0611: 47: Unused import LogFormatter
+W0611: 47: Unused import gca
+W0611: 47: Unused import product
+W0611: 47: Unused import vander
+W0611: 47: Unused import SubplotTool
+W0611: 47: Unused import flipud
+W0611: 47: Unused import max
+W0611: 47: Unused import UnsignedInteger
+W0611: 47: Unused import arccos
+W0611: 47: Unused import ion
+W0611: 47: Unused import UnsignedInt128
+W0611: 47: Unused import bartlett
+W0611: 47: Unused import colormaps
+W0611: 47: Unused import types
+W0611: 47: Unused import levypdf
+W0611: 47: Unused import eigenvectors
+W0611: 47: Unused import bar
+W0611: 47: Unused import amin
+W0611: 47: Unused import greater_equal
+W0611: 47: Unused import fromstring
+W0611: 47: Unused import pylab_setup
+W0611: 47: Unused import left_shift
+W0611: 47: Unused import TickHelper
+W0611: 47: Unused import searchsorted
+W0611: 47: Unused import UnsignedInt8
+W0611: 47: Unused import setp
+W0611: 47: Unused import csd
+W0611: 47: Unused import summer
+W0611: 47: Unused import quiverkey
+W0611: 47: Unused import xlim
+W0611: 47: Unused import copper
+W0611: 47: Unused import MONTHLY
+W0611: 47: Unused import over
+W0611: 47: Unused import fft
+W0611: 47: Unused import arraytype
+W0611: 47: Unused import errorbar
+W0611: 47: Unused import shape
+W0611: 47: Unused import Annotation
+W0611: 47: Unused import arctan
+W0611: 47: Unused import cumsum
+W0611: 47: Unused import roots
+W0611: 47: Unused import frange
+W0611: 47: Unused import Widget
+W0611: 47: Unused import disconnect
+W0611: 47: Unused import fix
+W0611: 47: Unused import stineman_interp
+W0611: 47: Unused import strpdate2num
+W0611: 47: Unused import add
+W0611: 47: Unused import subplot_tool
+W0611: 47: Unused import choose
+W0611: 47: Unused import NewAxis
+W0611: 47: Unused import hlines
+W0611: 47: Unused import save
+W0611: 47: Unused import UInt32
+W0611: 47: Unused import SECONDLY
+W0611: 47: Unused import greater
+W0611: 47: Unused import gray
+W0611: 47: Unused import PyObject
+W0611: 47: Unused import get_backend
+W0611: 24: Unused import indexing
+W0611: 47: Unused import drange
+W0611: 47: Unused import psd
+W0611: 47: Unused import datestr2num
+W0611: 24: Unused import test_benoit
+W0611: 47: Unused import grid
+W0611: 47: Unused import arctan2
+W0611: 47: Unused import Arrow
+W0611: 47: Unused import window_hanning
+W0611: 47: Unused import floor_divide
+W0611: 47: Unused import annotate
+W0611: 47: Unused import scatter_classic
+W0611: 47: Unused import UnsignedInt32
+W0611: 47: Unused import relativedelta
+W0611: 47: Unused import MonthLocator
+W0611: 47: Unused import dumps
+W0611: 47: Unused import fliplr
+W0611: 47: Unused import legend
+W0611: 47: Unused import pcolormesh
+W0611: 47: Unused import fmod
+W0611: 47: Unused import figtext
+W0611: 47: Unused import Pickler
+W0611: 47: Unused import e
+W0611: 47: Unused import bone
+W0611: 47: Unused import mean
+W0611: 47: Unused import FigureCanvasBase
+W0611: 47: Unused import get_current_fig_manager
+W0611: 47: Unused import ioff
+W0611: 47: Unused import NullLocator
+W0611: 47: Unused import draw
+W0611: 47: Unused import hanning
+W0611: 47: Unused import rcdefaults
+W0611: 47: Unused import Complex
+W0611: 47: Unused import logical_and
+W0611: 47: Unused import connect
+W0611: 47: Unused import table
+W0611: 47: Unused import matshow
+W0611: 47: Unused import allclose
+W0611: 47: Unused import MINUTELY
+W0611: 47: Unused import Float32
+W0611: 47: Unused import nonzero
+W0611: 47: Unused import kaiser
+W0611: 24: Unused import closest
+W0611: 47: Unused import colorbar_classic
+W0611: 47: Unused import asarray
+W0611: 47: Unused import IndexLocator
+W0611: 47: Unused import flatten
+W0611: 47: Unused import squeeze
+W0611: 47: Unused import detrend_mean
+W0611: 47: Unused import iterable
+W0611: 47: Unused import rem
+W0611: 47: Unused import prod
+W0611: 47: Unused import plotting
+W0611: 47: Unused import math
+W0611: 47: Unused import numeric_version
+W0611: 47: Unused import get_cmap
+W0611: 47: Unused import axhspan
+W0611: 47: Unused import log2
+W0611: 47: Unused import pcolor_classic
+W0611: 47: Unused import date2num
+W0611: 47: Unused import acorr
+W0611: 47: Unused import cumproduct
+W0611: 47: Unused import diagonal
+W0611: 47: Unused import stem
+W0611: 47: Unused import LogLocator
+W0611: 47: Unused import meshgrid
+W0611: 47: Unused import transpose
+W0611: 24: Unused import simplex
+W0611: 47: Unused import Complex16
+W0611: 47: Unused import Line2D
+W0611: 47: Unused import subtract
+W0611: 47: Unused import mx2num
+W0611: 47: Unused import semilogx
+W0611: 47: Unused import semilogy
+W0611: 47: Unused import argsort
+W0611: 47: Unused import rrule
+W0611: 47: Unused import yticks
+W0611: 47: Unused import epoch2num
+W0611: 47: Unused import Float16
+W0611: 47: Unused import rand
+W0611: 47: Unused import arcsinh
+W0611: 47: Unused import subplots_adjust
+W0611: 47: Unused import around
+W0611: 47: Unused import Axes
+W0611: 47: Unused import MaxNLocator
+W0611: 47: Unused import rank
+W0611: 47: Unused import exp_safe
+W0611: 47: Unused import triu
+W0611: 47: Unused import pink
+W0611: 47: Unused import figimage
+W0611: 47: Unused import sqrtm
+W0611: 47: Unused import enumerate
+W0611: 47: Unused import array
+W0611: 47: Unused import UnsignedInt64
+W0611: 47: Unused import size
+W0611: 47: Unused import logical_xor
+W0611: 47: Unused import HOURLY
+W0611: 47: Unused import arrow
+W0611: 47: Unused import fill
+W0611: 47: Unused import log
+W0611: 47: Unused import jet
+W0611: 47: Unused import figaspect
+W0611: 47: Unused import sometrue
+W0611: 47: Unused import nx
+W0611: 47: Unused import imshow
+W0611: 47: Unused import axhline
+W0611: 24: Unused import transform
+W0611: 47: Unused import msort
+W0611: 47: Unused import plot_date
+W0611: 47: Unused import alltrue
+W0611: 47: Unused import backends
+W0611: 47: Unused import zeros
+W0611: 47: Unused import identity
+W0611: 47: Unused import mean_flat
+W0611: 47: Unused import spring
+W0611: 47: Unused import LinearAlgebra
+W0611: 47: Unused import ispower2
+W0611: 47: Unused import log10
+W0611: 47: Unused import LogFormatterExponent
+W0611: 47: Unused import subplot
+W0611: 47: Unused import pcolor
+W0611: 47: Unused import bitwise_or
+W0611: 47: Unused import switch_backend
+W0611: 47: Unused import detrend_none
+W0611: 47: Unused import arctanh
+W0611: 47: Unused import Int8
+W0611: 47: Unused import typecodes
+W0611: 47: Unused import Int128
+W0611: 47: Unused import sum_flat
+W0611: 47: Unused import cosh
+W0611: 47: Unused import std
+W0611: 47: Unused import not_equal
+W0611: 47: Unused import fromfunction
+W0611: 47: Unused import Figure
+W0611: 47: Unused import argmin
+W0611: 47: Unused import cross_product
+W0611: 47: Unused import UInt128
+W0611: 47: Unused import hypot
+W0611: 47: Unused import xlabel
+W0611: 47: Unused import savefig
+W0611: 47: Unused import pymax
+W0611: 47: Unused import Float0
+W0611: 47: Unused import svd
+W0611: 47: Unused import xcorr
+W0611: 47: Unused import tril
+W0611: 47: Unused import colorbar_doc
+W0611: 47: Unused import clip
+W0611: 47: Unused import trapz
+W0611: 47: Unused import DumpArray
+W0611: 47: Unused import Complex128
+W0611: 47: Unused import isinteractive
+W0611: 47: Unused import conjugate
+W0611: 47: Unused import close
+W0611: 47: Unused import innerproduct
+W0611: 47: Unused import clim
+W0611: 47: Unused import ylim
+W0611: 47: Unused import matrixmultiply
+W0611: 47: Unused import polyval
+W0611: 47: Unused import Int16
+W0611: 47: Unused import angle
+W0611: 47: Unused import min
+W0611: 47: Unused import image
+W0611: 47: Unused import TU
+W0611: 47: Unused import base_repr
+W0611: 47: Unused import figlegend
+W0611: 47: Unused import Slider
+W0611: 47: Unused import YEARLY
+W0611: 47: Unused import right_shift
+W0611: 47: Unused import take
+W0611: 47: Unused import which
+W0611: 47: Unused import FixedFormatter
+W0611: 47: Unused import boxplot
+W0611: 47: Unused import SecondLocator
+W0611: 47: Unused import sarray
+W0611: 47: Unused import polar
+W0611: 47: Unused import outerproduct
+W0611: 47: Unused import repeat
+W0611: 47: Unused import diagonal_matrix
+W0611: 47: Unused import exp
+W0611: 47: Unused import trace
+W0611: 47: Unused import warnings
+W0611: 47: Unused import Button
+W0611: 47: Unused import rcParams
+W0611: 47: Unused import UInt8
+W0611: 47: Unused import amap
+W0611: 47: Unused import Float128
+W0611: 47: Unused import multiply
+W0611: 47: Unused import amax
+W0611: 47: Unused import delaxes
+W0611: 47: Unused import arcsin
+W0611: 47: Unused import logical_not
+W0611: 47: Unused import asum
+W0611: 47: Unused import UnsignedInt16
+W0611: 47: Unused import FixedLocator
+W0611: 47: Unused import average
+W0611: 47: Unused import Float
+W0611: 47: Unused import detrend
+W0611: 47: Unused import hsv
+W0611: 47: Unused import orth
+W0611: 47: Unused import hamming
+W0611: 47: Unused import Int64
+W0611: 47: Unused import axvspan
+W0611: 47: Unused import FuncFormatter
+W0611: 47: Unused import dot
+
+
+Report
+======
+38 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |39     |58.21 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |0      |0.00  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |17     |25.37 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |11     |16.42 |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |21     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |484    |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|W0611      |477        |
++-----------+-----------+
+|C0103      |12         |
++-----------+-----------+
+|W0622      |4          |
++-----------+-----------+
+|C0323      |4          |
++-----------+-----------+
+|W0401      |2          |
++-----------+-----------+
+|C0324      |2          |
++-----------+-----------+
+|C0322      |2          |
++-----------+-----------+
+|W0702      |1          |
++-----------+-----------+
+|C0111      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at -122.89/10
+

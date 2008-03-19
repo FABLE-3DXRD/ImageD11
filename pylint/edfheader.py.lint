@@ -1,0 +1,138 @@
+************* Module edfheader
+C:  1: Missing docstring
+C: 31:getheader: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 32:getheader: Operator not preceded by a space
+    if filename[-3:]==".gz":
+                    ^^
+C: 33:getheader: Operator not preceded by a space
+        fp=gzip.GzipFile(filename,"rb")
+          ^
+C: 33:getheader: Invalid name "fp" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 35:getheader: Operator not preceded by a space
+        fp=bz2.BZ2File(filename,"rb")
+          ^
+C: 35:getheader: Invalid name "fp" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 38:getheader: Operator not preceded by a space
+            fp=open(filename,"rb")
+              ^
+C: 38:getheader: Invalid name "fp" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 41:getheader: Operator not preceded by a space
+    h=h+filename+";\n"
+     ^
+C: 41:getheader: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 42:getheader: Operator not preceded by a space
+    s=fp.read(1024)
+     ^
+C: 42:getheader: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 47:getheader: Operator not preceded by a space
+            h=h+s[0:s.find("}")+2]
+             ^
+C: 47:getheader: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 50:getheader: Operator not preceded by a space
+            h=h+s
+             ^
+C: 50:getheader: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 51:getheader: Operator not preceded by a space
+        s=fp.read(1024)
+         ^
+C: 51:getheader: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 55: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+C: 56: Operator not preceded by a space
+    keys=[]
+        ^
+C: 56: Invalid name "keys" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C: 57: Invalid name "args" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C: 72: Operator not preceded by a space
+                item=hd[hd.find(key):].split(";")[0]
+                    ^
+
+
+Report
+======
+41 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |46     |60.53 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |6      |7.89  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |18     |23.68 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |6      |7.89  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |24     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0322      |12         |
++-----------+-----------+
+|C0103      |11         |
++-----------+-----------+
+|C0111      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 4.15/10
+

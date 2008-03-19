@@ -1,0 +1,764 @@
+************* Module GE_script
+C: 33: Line too long (86/80)
+C: 51: Line too long (90/80)
+C: 54: Line too long (94/80)
+C: 57: Line too long (82/80)
+C: 60: Line too long (86/80)
+C: 66: Line too long (84/80)
+C: 69: Line too long (84/80)
+C: 95: Line too long (84/80)
+C: 98: Line too long (90/80)
+C:101: Line too long (110/80)
+C:104: Line too long (110/80)
+C:143: Line too long (86/80)
+C:146: Line too long (96/80)
+C:149: Line too long (100/80)
+C:159: Line too long (94/80)
+C:162: Line too long (98/80)
+C:165: Line too long (94/80)
+C:186: Line too long (86/80)
+C:189: Line too long (100/80)
+C:198: Line too long (92/80)
+C:249: Line too long (86/80)
+C:252: Line too long (82/80)
+C:255: Line too long (88/80)
+C:258: Line too long (88/80)
+C:261: Line too long (84/80)
+C:267: Line too long (104/80)
+C:270: Line too long (100/80)
+C:276: Line too long (96/80)
+C:282: Line too long (90/80)
+C:302: Line too long (84/80)
+C:323: Line too long (82/80)
+C:341: Line too long (100/80)
+C:344: Line too long (96/80)
+C:350: Line too long (82/80)
+C:382: Line too long (90/80)
+C:385: Line too long (86/80)
+C:388: Line too long (82/80)
+C:391: Line too long (88/80)
+C:411: Line too long (98/80)
+C:414: Line too long (94/80)
+C:495: Line too long (86/80)
+C:504: Line too long (82/80)
+C:505: Line too long (114/80)
+C:508: Line too long (114/80)
+C:540: Line too long (94/80)
+C:551: Line too long (100/80)
+W: 18: Redefining built-in 'pow'
+C:  1: Invalid name "GE_script" (should match (([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$)
+C:  1: Missing docstring
+C: 17: Comma not followed by a space
+import os,sys,Numeric,struct,mmap
+         ^^
+W: 18: Wildcard import math
+C: 20:read_GEaSi_data: Invalid name "read_GEaSi_data" (should match [A-Z_][a-zA-Z0-9]+$)
+C: 88:read_GEaSi_data.__init__: Invalid name "CoreBundleRevision" (should match [a-z_][a-z0-9_]{2,30}$)
+C:179:read_GEaSi_data.__init__: Invalid name "SetAREF" (should match [a-z_][a-z0-9_]{2,30}$)
+C:296:read_GEaSi_data.__init__: Invalid name "FocalSpotInMM" (should match [a-z_][a-z0-9_]{2,30}$)
+C:221:read_GEaSi_data.__init__: Invalid name "EnableStretch" (should match [a-z_][a-z0-9_]{2,30}$)
+C:355:read_GEaSi_data.__init__: Invalid name "MaxLUTOut" (should match [a-z_][a-z0-9_]{2,30}$)
+C:293:read_GEaSi_data.__init__: Invalid name "mAs" (should match [a-z_][a-z0-9_]{2,30}$)
+C:139:read_GEaSi_data.__init__: Invalid name "FramesAfterExpose" (should match [a-z_][a-z0-9_]{2,30}$)
+C:457:read_GEaSi_data.__init__: Invalid name "ColumnBinning" (should match [a-z_][a-z0-9_]{2,30}$)
+C:239:read_GEaSi_data.__init__: Invalid name "AnalogTestSource" (should match [a-z_][a-z0-9_]{2,30}$)
+C:304:read_GEaSi_data.__init__: Invalid name "NDFilterSelection" (should match [a-z_][a-z0-9_]{2,30}$)
+C:358:read_GEaSi_data.__init__: Invalid name "MinLUTOut" (should match [a-z_][a-z0-9_]{2,30}$)
+C:396:read_GEaSi_data.__init__: Invalid name "ScanModeSelect" (should match [a-z_][a-z0-9_]{2,30}$)
+C:109:read_GEaSi_data.__init__: Invalid name "Reordered" (should match [a-z_][a-z0-9_]{2,30}$)
+C:224:read_GEaSi_data.__init__: Invalid name "CompEnable" (should match [a-z_][a-z0-9_]{2,30}$)
+C:301:read_GEaSi_data.__init__: Invalid name "StrobeIntensityInFtL" (should match [a-z_][a-z0-9_]{2,30}$)
+C:334:read_GEaSi_data.__init__: Invalid name "TargetLevelROIRow1" (should match [a-z_][a-z0-9_]{2,30}$)
+C:328:read_GEaSi_data.__init__: Invalid name "TargetLevelROIRow0" (should match [a-z_][a-z0-9_]{2,30}$)
+C:182:read_GEaSi_data.__init__: Invalid name "SetAREFTrim" (should match [a-z_][a-z0-9_]{2,30}$)
+C:379:read_GEaSi_data.__init__: Invalid name "LineRepairFileName" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 65:read_GEaSi_data.__init__: Invalid name "NumberOfRowsInFrame" (should match [a-z_][a-z0-9_]{2,30}$)
+C:384:read_GEaSi_data.__init__: Invalid name "CurrentTransverseInMM" (should match [a-z_][a-z0-9_]{2,30}$)
+C:413:read_GEaSi_data.__init__: Invalid name "FinalVoltageLevel_VCOMMON" (should match [a-z_][a-z0-9_]{2,30}$)
+C:420:read_GEaSi_data.__init__: Invalid name "DmrFilter" (should match [a-z_][a-z0-9_]{2,30}$)
+C:218:read_GEaSi_data.__init__: Invalid name "RowEnable" (should match [a-z_][a-z0-9_]{2,30}$)
+C:433:read_GEaSi_data.__init__: Invalid name "SetCompHighTime" (should match [a-z_][a-z0-9_]{2,30}$)
+C:352:read_GEaSi_data.__init__: Invalid name "LoadZero" (should match [a-z_][a-z0-9_]{2,30}$)
+C:337:read_GEaSi_data.__init__: Invalid name "TargetLevelROICol1" (should match [a-z_][a-z0-9_]{2,30}$)
+C:331:read_GEaSi_data.__init__: Invalid name "TargetLevelROICol0" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 97:read_GEaSi_data.__init__: Invalid name "OriginalNumberOfColumns" (should match [a-z_][a-z0-9_]{2,30}$)
+C:278:read_GEaSi_data.__init__: Invalid name "TestPatternSeed" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 50:read_GEaSi_data.__init__: Invalid name "VersionOfStandardHeader" (should match [a-z_][a-z0-9_]{2,30}$)
+C:242:read_GEaSi_data.__init__: Invalid name "VCommonSelect" (should match [a-z_][a-z0-9_]{2,30}$)
+C:100:read_GEaSi_data.__init__: Invalid name "RowNumberUpperLeftPointArchiveROI" (should match [a-z_][a-z0-9_]{2,30}$)
+C:284:read_GEaSi_data.__init__: Invalid name "FrameRateInFps" (should match [a-z_][a-z0-9_]{2,30}$)
+C:416:read_GEaSi_data.__init__: Invalid name "DmrCollimatorSpotSize" (should match [a-z_][a-z0-9_]{2,30}$)
+C:275:read_GEaSi_data.__init__: Invalid name "TestPatternSaturationValue" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 80:read_GEaSi_data.__init__: Invalid name "Operator" (should match [a-z_][a-z0-9_]{2,30}$)
+C:481:read_GEaSi_data.__init__: Invalid name "NumberOfRows128" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 94:read_GEaSi_data.__init__: Invalid name "OriginalNumberOfRows" (should match [a-z_][a-z0-9_]{2,30}$)
+C:124:read_GEaSi_data.__init__: Invalid name "AcquisitionMode" (should match [a-z_][a-z0-9_]{2,30}$)
+C:185:read_GEaSi_data.__init__: Invalid name "SetSpareVoltageSource" (should match [a-z_][a-z0-9_]{2,30}$)
+C:272:read_GEaSi_data.__init__: Invalid name "StoreAECROI" (should match [a-z_][a-z0-9_]{2,30}$)
+C:484:read_GEaSi_data.__init__: Invalid name "VFPAquisition" (should match [a-z_][a-z0-9_]{2,30}$)
+C:167:read_GEaSi_data.__init__: Invalid name "FOVSelect" (should match [a-z_][a-z0-9_]{2,30}$)
+C:442:read_GEaSi_data.__init__: Invalid name "SetConvertLowTime" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 62:read_GEaSi_data.__init__: Invalid name "NumberOfFrames" (should match [a-z_][a-z0-9_]{2,30}$)
+C:173:read_GEaSi_data.__init__: Invalid name "SetVCommon1" (should match [a-z_][a-z0-9_]{2,30}$)
+C:176:read_GEaSi_data.__init__: Invalid name "SetVCommon2" (should match [a-z_][a-z0-9_]{2,30}$)
+C:257:read_GEaSi_data.__init__: Invalid name "DetectorHorizontalFlip" (should match [a-z_][a-z0-9_]{2,30}$)
+C:269:read_GEaSi_data.__init__: Invalid name "DFNAutoScrubDelayInMicrosecs" (should match [a-z_][a-z0-9_]{2,30}$)
+C:227:read_GEaSi_data.__init__: Invalid name "CompStretch" (should match [a-z_][a-z0-9_]{2,30}$)
+C:197:read_GEaSi_data.__init__: Invalid name "StoreCompensationVoltage" (should match [a-z_][a-z0-9_]{2,30}$)
+C:188:read_GEaSi_data.__init__: Invalid name "SetCompensationVoltageSource" (should match [a-z_][a-z0-9_]{2,30}$)
+C:451:read_GEaSi_data.__init__: Invalid name "SetRampOffsetTime" (should match [a-z_][a-z0-9_]{2,30}$)
+C:245:read_GEaSi_data.__init__: Invalid name "DRCColumnSum" (should match [a-z_][a-z0-9_]{2,30}$)
+C:299:read_GEaSi_data.__init__: Invalid name "GeneratorType" (should match [a-z_][a-z0-9_]{2,30}$)
+C:370:read_GEaSi_data.__init__: Invalid name "ModeGain" (should match [a-z_][a-z0-9_]{2,30}$)
+C:203:read_GEaSi_data.__init__: Invalid name "TimingMode" (should match [a-z_][a-z0-9_]{2,30}$)
+C:407:read_GEaSi_data.__init__: Invalid name "PowerDown" (should match [a-z_][a-z0-9_]{2,30}$)
+C:127:read_GEaSi_data.__init__: Invalid name "AcquisitionType" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 92:read_GEaSi_data.__init__: Invalid name "AcquisitionParameterRevision" (should match [a-z_][a-z0-9_]{2,30}$)
+C:151:read_GEaSi_data.__init__: Invalid name "FramesToSkipExpose" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 59:read_GEaSi_data.__init__: Invalid name "UserHeaderSizeInBytes" (should match [a-z_][a-z0-9_]{2,30}$)
+C:403:read_GEaSi_data.__init__: Invalid name "DetectorPeripheralSetVersion" (should match [a-z_][a-z0-9_]{2,30}$)
+C:418:read_GEaSi_data.__init__: Invalid name "DmrTrack" (should match [a-z_][a-z0-9_]{2,30}$)
+C:486:read_GEaSi_data.__init__: Invalid name "Comment" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 74:read_GEaSi_data.__init__: Invalid name "AcquisitionDate" (should match [a-z_][a-z0-9_]{2,30}$)
+C:376:read_GEaSi_data.__init__: Invalid name "LineRepaired" (should match [a-z_][a-z0-9_]{2,30}$)
+C:248:read_GEaSi_data.__init__: Invalid name "TestPatternFrameDelta" (should match [a-z_][a-z0-9_]{2,30}$)
+C:142:read_GEaSi_data.__init__: Invalid name "IntervalBetweenFrames" (should match [a-z_][a-z0-9_]{2,30}$)
+C:145:read_GEaSi_data.__init__: Invalid name "ExposeTimeDelayInMicrosecs" (should match [a-z_][a-z0-9_]{2,30}$)
+C:460:read_GEaSi_data.__init__: Invalid name "RowBinning" (should match [a-z_][a-z0-9_]{2,30}$)
+C:436:read_GEaSi_data.__init__: Invalid name "SetCompLowTime" (should match [a-z_][a-z0-9_]{2,30}$)
+C:155:read_GEaSi_data.__init__: Invalid name "ExposureMode" (should match [a-z_][a-z0-9_]{2,30}$)
+C:161:read_GEaSi_data.__init__: Invalid name "ExposePresetTimeInMicrosecs" (should match [a-z_][a-z0-9_]{2,30}$)
+C:263:read_GEaSi_data.__init__: Invalid name "DFNAutoScrubOnOff" (should match [a-z_][a-z0-9_]{2,30}$)
+C:349:read_GEaSi_data.__init__: Invalid name "ComputedMedianValue" (should match [a-z_][a-z0-9_]{2,30}$)
+C:194:read_GEaSi_data.__init__: Invalid name "SetRowOnVoltage" (should match [a-z_][a-z0-9_]{2,30}$)
+C:236:read_GEaSi_data.__init__: Invalid name "TestModeSelect" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 82:read_GEaSi_data.__init__: Invalid name "DetectorSignature" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 90:read_GEaSi_data.__init__: Invalid name "AcquisitionName" (should match [a-z_][a-z0-9_]{2,30}$)
+C:164:read_GEaSi_data.__init__: Invalid name "AcquisitionFrameRateInFps" (should match [a-z_][a-z0-9_]{2,30}$)
+C:475:read_GEaSi_data.__init__: Invalid name "FOVStartRow128" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 56:read_GEaSi_data.__init__: Invalid name "VersionOfUserHeader" (should match [a-z_][a-z0-9_]{2,30}$)
+C:466:read_GEaSi_data.__init__: Invalid name "BorderRows64" (should match [a-z_][a-z0-9_]{2,30}$)
+C:322:read_GEaSi_data.__init__: Invalid name "DetectorControlTemp" (should match [a-z_][a-z0-9_]{2,30}$)
+C:316:read_GEaSi_data.__init__: Invalid name "Humidity1" (should match [a-z_][a-z0-9_]{2,30}$)
+C:319:read_GEaSi_data.__init__: Invalid name "Humidity2" (should match [a-z_][a-z0-9_]{2,30}$)
+C:393:read_GEaSi_data.__init__: Invalid name "DisableScrubAck" (should match [a-z_][a-z0-9_]{2,30}$)
+C:410:read_GEaSi_data.__init__: Invalid name "InitialVoltageLevel_VCOMMON" (should match [a-z_][a-z0-9_]{2,30}$)
+C:118:read_GEaSi_data.__init__: Invalid name "WindowValueDesired" (should match [a-z_][a-z0-9_]{2,30}$)
+C:287:read_GEaSi_data.__init__: Invalid name "kVp" (should match [a-z_][a-z0-9_]{2,30}$)
+C:445:read_GEaSi_data.__init__: Invalid name "SetSyncHighTime" (should match [a-z_][a-z0-9_]{2,30}$)
+C:290:read_GEaSi_data.__init__: Invalid name "mA" (should match [a-z_][a-z0-9_]{2,30}$)
+C:439:read_GEaSi_data.__init__: Invalid name "SetSyncLowTime" (should match [a-z_][a-z0-9_]{2,30}$)
+C:148:read_GEaSi_data.__init__: Invalid name "TimeBetweenFramesInMicrosecs" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 84:read_GEaSi_data.__init__: Invalid name "TestSystemName" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 76:read_GEaSi_data.__init__: Invalid name "AcquisitionTime" (should match [a-z_][a-z0-9_]{2,30}$)
+C:170:read_GEaSi_data.__init__: Invalid name "ExpertMode" (should match [a-z_][a-z0-9_]{2,30}$)
+C:454:read_GEaSi_data.__init__: Invalid name "FOVStartingValue" (should match [a-z_][a-z0-9_]{2,30}$)
+C:448:read_GEaSi_data.__init__: Invalid name "SetEOLTime" (should match [a-z_][a-z0-9_]{2,30}$)
+C:209:read_GEaSi_data.__init__: Invalid name "ARCIntegrator" (should match [a-z_][a-z0-9_]{2,30}$)
+C:427:read_GEaSi_data.__init__: Invalid name "SetEnableHighTime" (should match [a-z_][a-z0-9_]{2,30}$)
+C:361:read_GEaSi_data.__init__: Invalid name "MaxLinear" (should match [a-z_][a-z0-9_]{2,30}$)
+C:478:read_GEaSi_data.__init__: Invalid name "NumberOfColumns128" (should match [a-z_][a-z0-9_]{2,30}$)
+C:405:read_GEaSi_data.__init__: Invalid name "DetectorPhysicalAddress" (should match [a-z_][a-z0-9_]{2,30}$)
+C:367:read_GEaSi_data.__init__: Invalid name "ElectronsPerCount" (should match [a-z_][a-z0-9_]{2,30}$)
+C:425:read_GEaSi_data.__init__: Invalid name "Phantom" (should match [a-z_][a-z0-9_]{2,30}$)
+C:422:read_GEaSi_data.__init__: Invalid name "FilterCarousel" (should match [a-z_][a-z0-9_]{2,30}$)
+C:325:read_GEaSi_data.__init__: Invalid name "DoseValueInmR" (should match [a-z_][a-z0-9_]{2,30}$)
+C:307:read_GEaSi_data.__init__: Invalid name "RefRegTemp1" (should match [a-z_][a-z0-9_]{2,30}$)
+C:310:read_GEaSi_data.__init__: Invalid name "RefRegTemp2" (should match [a-z_][a-z0-9_]{2,30}$)
+C:313:read_GEaSi_data.__init__: Invalid name "RefRegTemp3" (should match [a-z_][a-z0-9_]{2,30}$)
+C:191:read_GEaSi_data.__init__: Invalid name "SetRowOffVoltage" (should match [a-z_][a-z0-9_]{2,30}$)
+C:233:read_GEaSi_data.__init__: Invalid name "RightOddTristate" (should match [a-z_][a-z0-9_]{2,30}$)
+C:130:read_GEaSi_data.__init__: Invalid name "UserAcquisitionCoffFileName1" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 44:read_GEaSi_data.__init__: Invalid name "ImageFormat" (should match [a-z_][a-z0-9_]{2,30}$)
+C:131:read_GEaSi_data.__init__: Invalid name "UserAcquisitionCoffFileName2" (should match [a-z_][a-z0-9_]{2,30}$)
+C:115:read_GEaSi_data.__init__: Invalid name "VerticalFlipped" (should match [a-z_][a-z0-9_]{2,30}$)
+C:463:read_GEaSi_data.__init__: Invalid name "BorderColumns64" (should match [a-z_][a-z0-9_]{2,30}$)
+C:260:read_GEaSi_data.__init__: Invalid name "DetectorVerticalFlip" (should match [a-z_][a-z0-9_]{2,30}$)
+C:158:read_GEaSi_data.__init__: Invalid name "PrepPresetTimeInMicrosecs" (should match [a-z_][a-z0-9_]{2,30}$)
+C:200:read_GEaSi_data.__init__: Invalid name "RampSelection" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 53:read_GEaSi_data.__init__: Invalid name "StandardHeaderSizeInBytes" (should match [a-z_][a-z0-9_]{2,30}$)
+C:136:read_GEaSi_data.__init__: Invalid name "FramesDuringExpose" (should match [a-z_][a-z0-9_]{2,30}$)
+C:340:read_GEaSi_data.__init__: Invalid name "FrameNumberForTargetLevelROI" (should match [a-z_][a-z0-9_]{2,30}$)
+C:472:read_GEaSi_data.__init__: Invalid name "FOVStartColumn128" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 33:read_GEaSi_data.__init__: Invalid name "fp" (should match [a-z_][a-z0-9_]{2,30}$)
+C:469:read_GEaSi_data.__init__: Invalid name "FETOffRows64" (should match [a-z_][a-z0-9_]{2,30}$)
+C:381:read_GEaSi_data.__init__: Invalid name "CurrentLongitudinalInMM" (should match [a-z_][a-z0-9_]{2,30}$)
+C:251:read_GEaSi_data.__init__: Invalid name "TestPatternRowDelta" (should match [a-z_][a-z0-9_]{2,30}$)
+C:387:read_GEaSi_data.__init__: Invalid name "CurrentCircularInMM" (should match [a-z_][a-z0-9_]{2,30}$)
+C:112:read_GEaSi_data.__init__: Invalid name "HorizontalFlipped" (should match [a-z_][a-z0-9_]{2,30}$)
+C:401:read_GEaSi_data.__init__: Invalid name "DetectorNIOSVersion" (should match [a-z_][a-z0-9_]{2,30}$)
+C:215:read_GEaSi_data.__init__: Invalid name "NumberOfRows" (should match [a-z_][a-z0-9_]{2,30}$)
+C:343:read_GEaSi_data.__init__: Invalid name "PercentRangeForTargetLevel" (should match [a-z_][a-z0-9_]{2,30}$)
+C:212:read_GEaSi_data.__init__: Invalid name "ARCPostIntegrator" (should match [a-z_][a-z0-9_]{2,30}$)
+C:133:read_GEaSi_data.__init__: Invalid name "FramesBeforeExpose" (should match [a-z_][a-z0-9_]{2,30}$)
+C:390:read_GEaSi_data.__init__: Invalid name "CurrentFilterSelection" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 68:read_GEaSi_data.__init__: Invalid name "NumberOfColsInFrame" (should match [a-z_][a-z0-9_]{2,30}$)
+C:346:read_GEaSi_data.__init__: Invalid name "TargetValue" (should match [a-z_][a-z0-9_]{2,30}$)
+C:364:read_GEaSi_data.__init__: Invalid name "Reserved" (should match [a-z_][a-z0-9_]{2,30}$)
+C:106:read_GEaSi_data.__init__: Invalid name "Swapped" (should match [a-z_][a-z0-9_]{2,30}$)
+C:281:read_GEaSi_data.__init__: Invalid name "ExposureTimeInMillisecs" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 71:read_GEaSi_data.__init__: Invalid name "ImageDepthInBits" (should match [a-z_][a-z0-9_]{2,30}$)
+C:373:read_GEaSi_data.__init__: Invalid name "TemperatureInDegC" (should match [a-z_][a-z0-9_]{2,30}$)
+C:121:read_GEaSi_data.__init__: Invalid name "LevelValueDesired" (should match [a-z_][a-z0-9_]{2,30}$)
+C:206:read_GEaSi_data.__init__: Invalid name "Bandwidth" (should match [a-z_][a-z0-9_]{2,30}$)
+C:399:read_GEaSi_data.__init__: Invalid name "DetectorAppSwVersion" (should match [a-z_][a-z0-9_]{2,30}$)
+C:266:read_GEaSi_data.__init__: Invalid name "FiberChannelTimeOutInMicrosecs" (should match [a-z_][a-z0-9_]{2,30}$)
+C:254:read_GEaSi_data.__init__: Invalid name "TestPatternColumnDelta" (should match [a-z_][a-z0-9_]{2,30}$)
+C:230:read_GEaSi_data.__init__: Invalid name "LeftEvenTristate" (should match [a-z_][a-z0-9_]{2,30}$)
+C:430:read_GEaSi_data.__init__: Invalid name "SetEnableLowTime" (should match [a-z_][a-z0-9_]{2,30}$)
+C:103:read_GEaSi_data.__init__: Invalid name "ColNumberUpperLeftPointArchiveROI" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 86:read_GEaSi_data.__init__: Invalid name "TestStationRevision" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 78:read_GEaSi_data.__init__: Invalid name "DUTID" (should match [a-z_][a-z0-9_]{2,30}$)
+R: 20:read_GEaSi_data: Too many instance attributes (159/7)
+C: 24:read_GEaSi_data.__init__: Comma not followed by a space
+    def __init__(self,image_filename):
+                     ^^
+C: 33:read_GEaSi_data.__init__: Comma not followed by a space
+            self.fp = mmap.mmap(self.file.fileno(), self.size,access=mmap.ACCESS_READ)
+                                                             ^^
+C: 51:read_GEaSi_data.__init__: Comma not followed by a space
+        self.VersionOfStandardHeader = struct.unpack("=H",self.VersionOfStandardHeader)[0]
+                                                         ^^
+C: 54:read_GEaSi_data.__init__: Comma not followed by a space
+        self.StandardHeaderSizeInBytes = struct.unpack("=L",self.StandardHeaderSizeInBytes)[0]
+                                                           ^^
+C: 57:read_GEaSi_data.__init__: Comma not followed by a space
+        self.VersionOfUserHeader = struct.unpack("=H",self.VersionOfUserHeader)[0]
+                                                     ^^
+C: 60:read_GEaSi_data.__init__: Comma not followed by a space
+        self.UserHeaderSizeInBytes = struct.unpack("=L",self.UserHeaderSizeInBytes)[0]
+                                                       ^^
+C: 63:read_GEaSi_data.__init__: Comma not followed by a space
+        self.NumberOfFrames =  struct.unpack("=H",self.NumberOfFrames)[0]
+                                                 ^^
+C: 66:read_GEaSi_data.__init__: Comma not followed by a space
+        self.NumberOfRowsInFrame  =  struct.unpack("=H",self.NumberOfRowsInFrame)[0]
+                                                       ^^
+C: 69:read_GEaSi_data.__init__: Comma not followed by a space
+        self.NumberOfColsInFrame  =  struct.unpack("=H",self.NumberOfColsInFrame)[0]
+                                                       ^^
+C: 72:read_GEaSi_data.__init__: Comma not followed by a space
+        self.ImageDepthInBits  = struct.unpack("=H",self.ImageDepthInBits)[0]
+                                                   ^^
+C: 95:read_GEaSi_data.__init__: Comma not followed by a space
+        self.OriginalNumberOfRows = struct.unpack("=H",self.OriginalNumberOfRows)[0]
+                                                      ^^
+C: 98:read_GEaSi_data.__init__: Comma not followed by a space
+        self.OriginalNumberOfColumns = struct.unpack("=H",self.OriginalNumberOfColumns)[0]
+                                                         ^^
+C:101:read_GEaSi_data.__init__: Comma not followed by a space
+        self.RowNumberUpperLeftPointArchiveROI = struct.unpack("=H",self.RowNumberUpperLeftPointArchiveROI)[0]
+                                                                   ^^
+C:104:read_GEaSi_data.__init__: Comma not followed by a space
+        self.ColNumberUpperLeftPointArchiveROI = struct.unpack("=H",self.ColNumberUpperLeftPointArchiveROI)[0]
+                                                                   ^^
+C:107:read_GEaSi_data.__init__: Comma not followed by a space
+        self.Swapped = struct.unpack("=H",self.Swapped)[0]
+                                         ^^
+C:110:read_GEaSi_data.__init__: Comma not followed by a space
+        self.Reordered = struct.unpack("=H",self.Reordered)[0]
+                                           ^^
+C:113:read_GEaSi_data.__init__: Comma not followed by a space
+        self.HorizontalFlipped = struct.unpack("=H",self.HorizontalFlipped)[0]
+                                                   ^^
+C:116:read_GEaSi_data.__init__: Comma not followed by a space
+        self.VerticalFlipped = struct.unpack("=H",self.VerticalFlipped)[0]
+                                                 ^^
+C:119:read_GEaSi_data.__init__: Comma not followed by a space
+        self.WindowValueDesired = struct.unpack("=H",self.WindowValueDesired)[0]
+                                                    ^^
+C:122:read_GEaSi_data.__init__: Comma not followed by a space
+        self.LevelValueDesired = struct.unpack("=H",self.LevelValueDesired)[0]
+                                                   ^^
+C:125:read_GEaSi_data.__init__: Comma not followed by a space
+        self.AcquisitionMode = struct.unpack("=H",self.AcquisitionMode)[0]
+                                                 ^^
+C:128:read_GEaSi_data.__init__: Comma not followed by a space
+        self.AcquisitionType = struct.unpack("=H",self.AcquisitionType)[0]
+                                                 ^^
+C:134:read_GEaSi_data.__init__: Comma not followed by a space
+        self.FramesBeforeExpose = struct.unpack("=H",self.FramesBeforeExpose)[0]
+                                                    ^^
+C:137:read_GEaSi_data.__init__: Comma not followed by a space
+        self.FramesDuringExpose = struct.unpack("=H",self.FramesDuringExpose)[0]
+                                                    ^^
+C:140:read_GEaSi_data.__init__: Comma not followed by a space
+        self.FramesAfterExpose = struct.unpack("=H",self.FramesAfterExpose)[0]
+                                                   ^^
+C:143:read_GEaSi_data.__init__: Comma not followed by a space
+        self.IntervalBetweenFrames = struct.unpack("=H",self.IntervalBetweenFrames)[0]
+                                                       ^^
+C:146:read_GEaSi_data.__init__: Comma not followed by a space
+        self.ExposeTimeDelayInMicrosecs = struct.unpack("=d",self.ExposeTimeDelayInMicrosecs)[0]
+                                                            ^^
+C:149:read_GEaSi_data.__init__: Comma not followed by a space
+        self.TimeBetweenFramesInMicrosecs = struct.unpack("=d",self.TimeBetweenFramesInMicrosecs)[0]
+                                                              ^^
+C:152:read_GEaSi_data.__init__: Comma not followed by a space
+        self.FramesToSkipExpose = struct.unpack("=H",self.FramesToSkipExpose)[0]
+                                                    ^^
+C:156:read_GEaSi_data.__init__: Comma not followed by a space
+        self.ExposureMode = struct.unpack("=H",self.ExposureMode)[0]
+                                              ^^
+C:159:read_GEaSi_data.__init__: Comma not followed by a space
+        self.PrepPresetTimeInMicrosecs = struct.unpack("=d",self.PrepPresetTimeInMicrosecs)[0]
+                                                           ^^
+C:162:read_GEaSi_data.__init__: Comma not followed by a space
+        self.ExposePresetTimeInMicrosecs = struct.unpack("=d",self.ExposePresetTimeInMicrosecs)[0]
+                                                             ^^
+C:165:read_GEaSi_data.__init__: Comma not followed by a space
+        self.AcquisitionFrameRateInFps = struct.unpack("=f",self.AcquisitionFrameRateInFps)[0]
+                                                           ^^
+C:168:read_GEaSi_data.__init__: Comma not followed by a space
+        self.FOVSelect = struct.unpack("=H",self.FOVSelect)[0]
+                                           ^^
+C:171:read_GEaSi_data.__init__: Comma not followed by a space
+        self.ExpertMode = struct.unpack("=H",self.ExpertMode)[0]
+                                            ^^
+C:174:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetVCommon1 = struct.unpack("=d",self.SetVCommon1)[0]
+                                             ^^
+C:177:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetVCommon2 = struct.unpack("=d",self.SetVCommon2)[0]
+                                             ^^
+C:180:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetAREF = struct.unpack("=d",self.SetAREF)[0]
+                                         ^^
+C:183:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetAREFTrim = struct.unpack("=L",self.SetAREFTrim)[0]
+                                             ^^
+C:186:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetSpareVoltageSource = struct.unpack("=d",self.SetSpareVoltageSource)[0]
+                                                       ^^
+C:189:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetCompensationVoltageSource = struct.unpack("=d",self.SetCompensationVoltageSource)[0]
+                                                              ^^
+C:192:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetRowOffVoltage = struct.unpack("=d",self.SetRowOffVoltage)[0]
+                                                  ^^
+C:195:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetRowOnVoltage = struct.unpack("=d",self.SetRowOnVoltage)[0]
+                                                 ^^
+C:198:read_GEaSi_data.__init__: Comma not followed by a space
+        self.StoreCompensationVoltage = struct.unpack("=L",self.StoreCompensationVoltage)[0]
+                                                          ^^
+C:201:read_GEaSi_data.__init__: Comma not followed by a space
+        self.RampSelection = struct.unpack("=H",self.RampSelection)[0]
+                                               ^^
+C:204:read_GEaSi_data.__init__: Comma not followed by a space
+        self.TimingMode = struct.unpack("=H",self.TimingMode)[0]
+                                            ^^
+C:207:read_GEaSi_data.__init__: Comma not followed by a space
+        self.Bandwidth = struct.unpack("=H",self.Bandwidth)[0]
+                                           ^^
+C:210:read_GEaSi_data.__init__: Comma not followed by a space
+        self.ARCIntegrator = struct.unpack("=H",self.ARCIntegrator)[0]
+                                               ^^
+C:213:read_GEaSi_data.__init__: Comma not followed by a space
+        self.ARCPostIntegrator = struct.unpack("=H",self.ARCPostIntegrator)[0]
+                                                   ^^
+C:216:read_GEaSi_data.__init__: Comma not followed by a space
+        self.NumberOfRows = struct.unpack("=L",self.NumberOfRows)[0]
+                                              ^^
+C:219:read_GEaSi_data.__init__: Comma not followed by a space
+        self.RowEnable = struct.unpack("=H",self.RowEnable)[0]
+                                           ^^
+C:222:read_GEaSi_data.__init__: Comma not followed by a space
+        self.EnableStretch = struct.unpack("=H",self.EnableStretch)[0]
+                                               ^^
+C:225:read_GEaSi_data.__init__: Comma not followed by a space
+        self.CompEnable = struct.unpack("=H",self.CompEnable)[0]
+                                            ^^
+C:228:read_GEaSi_data.__init__: Comma not followed by a space
+        self.CompStretch = struct.unpack("=H",self.CompStretch)[0]
+                                             ^^
+C:231:read_GEaSi_data.__init__: Comma not followed by a space
+        self.LeftEvenTristate = struct.unpack("=H",self.LeftEvenTristate)[0]
+                                                  ^^
+C:234:read_GEaSi_data.__init__: Comma not followed by a space
+        self.RightOddTristate = struct.unpack("=H",self.RightOddTristate)[0]
+                                                  ^^
+C:237:read_GEaSi_data.__init__: Comma not followed by a space
+        self.TestModeSelect = struct.unpack("=L",self.TestModeSelect)[0]
+                                                ^^
+C:240:read_GEaSi_data.__init__: Comma not followed by a space
+        self.AnalogTestSource = struct.unpack("=L",self.AnalogTestSource)[0]
+                                                  ^^
+C:243:read_GEaSi_data.__init__: Comma not followed by a space
+        self.VCommonSelect = struct.unpack("=L",self.VCommonSelect)[0]
+                                               ^^
+C:246:read_GEaSi_data.__init__: Comma not followed by a space
+        self.DRCColumnSum = struct.unpack("=L",self.DRCColumnSum)[0]
+                                              ^^
+C:249:read_GEaSi_data.__init__: Comma not followed by a space
+        self.TestPatternFrameDelta = struct.unpack("=L",self.TestPatternFrameDelta)[0]
+                                                       ^^
+C:252:read_GEaSi_data.__init__: Comma not followed by a space
+        self.TestPatternRowDelta = struct.unpack("=L",self.TestPatternRowDelta)[0]
+                                                     ^^
+C:255:read_GEaSi_data.__init__: Comma not followed by a space
+        self.TestPatternColumnDelta = struct.unpack("=L",self.TestPatternColumnDelta)[0]
+                                                        ^^
+C:258:read_GEaSi_data.__init__: Comma not followed by a space
+        self.DetectorHorizontalFlip = struct.unpack("=H",self.DetectorHorizontalFlip)[0]
+                                                        ^^
+C:261:read_GEaSi_data.__init__: Comma not followed by a space
+        self.DetectorVerticalFlip = struct.unpack("=H",self.DetectorVerticalFlip)[0]
+                                                      ^^
+C:264:read_GEaSi_data.__init__: Comma not followed by a space
+        self.DFNAutoScrubOnOff = struct.unpack("=H",self.DFNAutoScrubOnOff)[0]
+                                                   ^^
+C:267:read_GEaSi_data.__init__: Comma not followed by a space
+        self.FiberChannelTimeOutInMicrosecs = struct.unpack("=L",self.FiberChannelTimeOutInMicrosecs)[0]
+                                                                ^^
+C:270:read_GEaSi_data.__init__: Comma not followed by a space
+        self.DFNAutoScrubDelayInMicrosecs = struct.unpack("=L",self.DFNAutoScrubDelayInMicrosecs)[0]
+                                                              ^^
+C:273:read_GEaSi_data.__init__: Comma not followed by a space
+        self.StoreAECROI = struct.unpack("=H",self.StoreAECROI)[0]
+                                             ^^
+C:276:read_GEaSi_data.__init__: Comma not followed by a space
+        self.TestPatternSaturationValue = struct.unpack("=H",self.TestPatternSaturationValue)[0]
+                                                            ^^
+C:279:read_GEaSi_data.__init__: Comma not followed by a space
+        self.TestPatternSeed = struct.unpack("=L",self.TestPatternSeed)[0]
+                                                 ^^
+C:282:read_GEaSi_data.__init__: Comma not followed by a space
+        self.ExposureTimeInMillisecs = struct.unpack("=f",self.ExposureTimeInMillisecs)[0]
+                                                         ^^
+C:285:read_GEaSi_data.__init__: Comma not followed by a space
+        self.FrameRateInFps = struct.unpack("=f",self.FrameRateInFps)[0]
+                                                ^^
+C:288:read_GEaSi_data.__init__: Comma not followed by a space
+        self.kVp = struct.unpack("=f",self.kVp)[0]
+                                     ^^
+C:291:read_GEaSi_data.__init__: Comma not followed by a space
+        self.mA = struct.unpack("=f",self.mA)[0]
+                                    ^^
+C:294:read_GEaSi_data.__init__: Comma not followed by a space
+        self.mAs = struct.unpack("=f",self.mAs)[0]
+                                     ^^
+C:297:read_GEaSi_data.__init__: Comma not followed by a space
+        self.FocalSpotInMM = struct.unpack("=f",self.FocalSpotInMM)[0]
+                                               ^^
+C:302:read_GEaSi_data.__init__: Comma not followed by a space
+        self.StrobeIntensityInFtL = struct.unpack("=f",self.StrobeIntensityInFtL)[0]
+                                                      ^^
+C:305:read_GEaSi_data.__init__: Comma not followed by a space
+        self.NDFilterSelection = struct.unpack("=H",self.NDFilterSelection)[0]
+                                                   ^^
+C:308:read_GEaSi_data.__init__: Comma not followed by a space
+        self.RefRegTemp1 = struct.unpack("=d",self.RefRegTemp1)[0]
+                                             ^^
+C:311:read_GEaSi_data.__init__: Comma not followed by a space
+        self.RefRegTemp2 = struct.unpack("=d",self.RefRegTemp2)[0]
+                                             ^^
+C:314:read_GEaSi_data.__init__: Comma not followed by a space
+        self.RefRegTemp3 = struct.unpack("=d",self.RefRegTemp3)[0]
+                                             ^^
+C:317:read_GEaSi_data.__init__: Comma not followed by a space
+        self.Humidity1 = struct.unpack("=f",self.Humidity1)[0]
+                                           ^^
+C:320:read_GEaSi_data.__init__: Comma not followed by a space
+        self.Humidity2 = struct.unpack("=f",self.Humidity2)[0]
+                                           ^^
+C:323:read_GEaSi_data.__init__: Comma not followed by a space
+        self.DetectorControlTemp = struct.unpack("=d",self.DetectorControlTemp)[0]
+                                                     ^^
+C:326:read_GEaSi_data.__init__: Comma not followed by a space
+        self.DoseValueInmR = struct.unpack("=d",self.DoseValueInmR)[0]
+                                               ^^
+C:329:read_GEaSi_data.__init__: Comma not followed by a space
+        self.TargetLevelROIRow0 = struct.unpack("=H",self.TargetLevelROIRow0)[0]
+                                                    ^^
+C:332:read_GEaSi_data.__init__: Comma not followed by a space
+        self.TargetLevelROICol0 = struct.unpack("=H",self.TargetLevelROICol0)[0]
+                                                    ^^
+C:335:read_GEaSi_data.__init__: Comma not followed by a space
+        self.TargetLevelROIRow1 = struct.unpack("=H",self.TargetLevelROIRow1)[0]
+                                                    ^^
+C:338:read_GEaSi_data.__init__: Comma not followed by a space
+        self.TargetLevelROICol1 = struct.unpack("=H",self.TargetLevelROICol1)[0]
+                                                    ^^
+C:341:read_GEaSi_data.__init__: Comma not followed by a space
+        self.FrameNumberForTargetLevelROI = struct.unpack("=H",self.FrameNumberForTargetLevelROI)[0]
+                                                              ^^
+C:344:read_GEaSi_data.__init__: Comma not followed by a space
+        self.PercentRangeForTargetLevel = struct.unpack("=H",self.PercentRangeForTargetLevel)[0]
+                                                            ^^
+C:347:read_GEaSi_data.__init__: Comma not followed by a space
+        self.TargetValue = struct.unpack("=H",self.TargetValue)[0]
+                                             ^^
+C:350:read_GEaSi_data.__init__: Comma not followed by a space
+        self.ComputedMedianValue = struct.unpack("=H",self.ComputedMedianValue)[0]
+                                                     ^^
+C:353:read_GEaSi_data.__init__: Comma not followed by a space
+        self.LoadZero = struct.unpack("=H",self.LoadZero)[0]
+                                          ^^
+C:356:read_GEaSi_data.__init__: Comma not followed by a space
+        self.MaxLUTOut = struct.unpack("=H",self.MaxLUTOut)[0]
+                                           ^^
+C:359:read_GEaSi_data.__init__: Comma not followed by a space
+        self.MinLUTOut = struct.unpack("=H",self.MinLUTOut)[0]
+                                           ^^
+C:362:read_GEaSi_data.__init__: Comma not followed by a space
+        self.MaxLinear = struct.unpack("=H",self.MaxLinear)[0]
+                                           ^^
+C:365:read_GEaSi_data.__init__: Comma not followed by a space
+        self.Reserved = struct.unpack("=H",self.Reserved)[0]
+                                          ^^
+C:368:read_GEaSi_data.__init__: Comma not followed by a space
+        self.ElectronsPerCount = struct.unpack("=H",self.ElectronsPerCount)[0]
+                                                   ^^
+C:371:read_GEaSi_data.__init__: Comma not followed by a space
+        self.ModeGain = struct.unpack("=H",self.ModeGain)[0]
+                                          ^^
+C:374:read_GEaSi_data.__init__: Comma not followed by a space
+        self.TemperatureInDegC = struct.unpack("=d",self.TemperatureInDegC)[0]
+                                                   ^^
+C:377:read_GEaSi_data.__init__: Comma not followed by a space
+        self.LineRepaired = struct.unpack("=H",self.LineRepaired)[0]
+                                              ^^
+C:382:read_GEaSi_data.__init__: Comma not followed by a space
+        self.CurrentLongitudinalInMM = struct.unpack("=f",self.CurrentLongitudinalInMM)[0]
+                                                         ^^
+C:385:read_GEaSi_data.__init__: Comma not followed by a space
+        self.CurrentTransverseInMM = struct.unpack("=f",self.CurrentTransverseInMM)[0]
+                                                       ^^
+C:388:read_GEaSi_data.__init__: Comma not followed by a space
+        self.CurrentCircularInMM = struct.unpack("=f",self.CurrentCircularInMM)[0]
+                                                     ^^
+C:391:read_GEaSi_data.__init__: Comma not followed by a space
+        self.CurrentFilterSelection = struct.unpack("=L",self.CurrentFilterSelection)[0]
+                                                        ^^
+C:394:read_GEaSi_data.__init__: Comma not followed by a space
+        self.DisableScrubAck = struct.unpack("=H",self.DisableScrubAck)[0]
+                                                 ^^
+C:397:read_GEaSi_data.__init__: Comma not followed by a space
+        self.ScanModeSelect = struct.unpack("=H",self.ScanModeSelect)[0]
+                                                ^^
+C:408:read_GEaSi_data.__init__: Comma not followed by a space
+        self.PowerDown = struct.unpack("=H",self.PowerDown)[0]
+                                           ^^
+C:411:read_GEaSi_data.__init__: Comma not followed by a space
+        self.InitialVoltageLevel_VCOMMON = struct.unpack("=d",self.InitialVoltageLevel_VCOMMON)[0]
+                                                             ^^
+C:414:read_GEaSi_data.__init__: Comma not followed by a space
+        self.FinalVoltageLevel_VCOMMON = struct.unpack("=d",self.FinalVoltageLevel_VCOMMON)[0]
+                                                           ^^
+C:423:read_GEaSi_data.__init__: Comma not followed by a space
+        self.FilterCarousel = struct.unpack("=H",self.FilterCarousel)[0]
+                                                ^^
+C:428:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetEnableHighTime = struct.unpack("=H",self.SetEnableHighTime)[0]
+                                                   ^^
+C:431:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetEnableLowTime = struct.unpack("=H",self.SetEnableLowTime)[0]
+                                                  ^^
+C:434:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetCompHighTime = struct.unpack("=H",self.SetCompHighTime)[0]
+                                                 ^^
+C:437:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetCompLowTime = struct.unpack("=H",self.SetCompLowTime)[0]
+                                                ^^
+C:440:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetSyncLowTime = struct.unpack("=H",self.SetSyncLowTime)[0]
+                                                ^^
+C:443:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetConvertLowTime = struct.unpack("=H",self.SetConvertLowTime)[0]
+                                                   ^^
+C:446:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetSyncHighTime = struct.unpack("=H",self.SetSyncHighTime)[0]
+                                                 ^^
+C:449:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetEOLTime = struct.unpack("=H",self.SetEOLTime)[0]
+                                            ^^
+C:452:read_GEaSi_data.__init__: Comma not followed by a space
+        self.SetRampOffsetTime = struct.unpack("=H",self.SetRampOffsetTime)[0]
+                                                   ^^
+C:455:read_GEaSi_data.__init__: Comma not followed by a space
+        self.FOVStartingValue = struct.unpack("=H",self.FOVStartingValue)[0]
+                                                  ^^
+C:458:read_GEaSi_data.__init__: Comma not followed by a space
+        self.ColumnBinning = struct.unpack("=H",self.ColumnBinning)[0]
+                                               ^^
+C:461:read_GEaSi_data.__init__: Comma not followed by a space
+        self.RowBinning = struct.unpack("=H",self.RowBinning)[0]
+                                            ^^
+C:464:read_GEaSi_data.__init__: Comma not followed by a space
+        self.BorderColumns64 = struct.unpack("=H",self.BorderColumns64)[0]
+                                                 ^^
+C:467:read_GEaSi_data.__init__: Comma not followed by a space
+        self.BorderRows64 = struct.unpack("=H",self.BorderRows64)[0]
+                                              ^^
+C:470:read_GEaSi_data.__init__: Comma not followed by a space
+        self.FETOffRows64 = struct.unpack("=H",self.FETOffRows64)[0]
+                                              ^^
+C:473:read_GEaSi_data.__init__: Comma not followed by a space
+        self.FOVStartColumn128 = struct.unpack("=H",self.FOVStartColumn128)[0]
+                                                   ^^
+C:476:read_GEaSi_data.__init__: Comma not followed by a space
+        self.FOVStartRow128 = struct.unpack("=H",self.FOVStartRow128)[0]
+                                                ^^
+C:479:read_GEaSi_data.__init__: Comma not followed by a space
+        self.NumberOfColumns128 = struct.unpack("=H",self.NumberOfColumns128)[0]
+                                                    ^^
+C:482:read_GEaSi_data.__init__: Comma not followed by a space
+        self.NumberOfRows128 = struct.unpack("=H",self.NumberOfRows128)[0]
+                                                 ^^
+R: 24:read_GEaSi_data.__init__: Too many statements (295/50)
+C:492:read_GEaSi_data.load_image_from_seq: Missing docstring
+C:492:read_GEaSi_data.load_image_from_seq: Comma not followed by a space
+    def load_image_from_seq(self,img_num):
+                                ^^
+C:511:read_GEaSi_data.load_image_from_seq: Comma not followed by a space
+        image_tmp = struct.unpack(format,image_tmp)
+                                        ^^
+C:516:read_GEaSi_data.close: Missing docstring
+C:526: Invalid name "image_file" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:529: Invalid name "sequence1" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:537: Invalid name "image3" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:551: Comma not followed by a space
+    image3 = Numeric.reshape(image3, (sequence1.NumberOfRowsInFrame,sequence1.NumberOfColsInFrame))
+                                                                   ^^
+C:551: Invalid name "image3" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:552: Comma not followed by a space
+    print len(image3), image3[0][0], image3[1][1],image3[2047][2047]
+                                                 ^^
+W: 18: Unused import pow
+W: 18: Unused import cosh
+W: 18: Unused import ldexp
+W: 18: Unused import hypot
+W: 18: Unused import tan
+W: 18: Unused import asin
+W: 18: Unused import fabs
+W: 18: Unused import floor
+W: 18: Unused import sqrt
+W: 18: Unused import frexp
+W: 18: Unused import degrees
+W: 18: Unused import pi
+W: 18: Unused import log10
+W: 18: Unused import fmod
+W: 18: Unused import atan
+W: 18: Unused import ceil
+W: 18: Unused import sinh
+W: 18: Unused import log
+W: 18: Unused import cos
+W: 18: Unused import e
+W: 18: Unused import tanh
+W: 18: Unused import radians
+W: 18: Unused import sin
+W: 18: Unused import atan2
+W: 18: Unused import modf
+W: 18: Unused import exp
+W: 18: Unused import acos
+
+
+Report
+======
+337 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |333    |86.72 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |12     |3.12  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |21     |5.47  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |18     |4.69  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    scipy (GE_script)
+    Numeric (GE_script)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |0.00        |100.00   |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |NC         |NC         |100.00      |100.00   |
++---------+-------+-----------+-----------+------------+---------+
+|method   |3      |NC         |NC         |33.33       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |348    |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |2      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |29     |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |162        |
++-----------+-----------+
+|C0324      |137        |
++-----------+-----------+
+|C0301      |46         |
++-----------+-----------+
+|W0611      |27         |
++-----------+-----------+
+|C0111      |3          |
++-----------+-----------+
+|W0622      |1          |
++-----------+-----------+
+|W0401      |1          |
++-----------+-----------+
+|R0915      |1          |
++-----------+-----------+
+|R0902      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at -1.25/10
+

@@ -1,0 +1,141 @@
+************* Module ubi2cellpars
+C0111: 10:norm2: Missing docstring
+C0103: 10:norm2: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 10:norm2: Comma not followed by a space
+def norm2(v): return math.sqrt(numpy.dot(v,v))
+                                          ^^
+C0321: 10:norm2: More than one statement on a single line
+W0621: 15:try_to_reduce: Redefining name 'i' from outer scope (line 44)
+W0621: 12:try_to_reduce: Redefining name 'u' from outer scope (line 44)
+C0111: 12:try_to_reduce: Missing docstring
+C0103: 12:try_to_reduce: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 14:try_to_reduce: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 16:try_to_reduce: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 19:try_to_reduce: Comma not followed by a space
+        for j in range(i+1,3):
+                          ^^
+C0324: 20:try_to_reduce: Comma not followed by a space
+            for sign in [1,-1]:
+                          ^^
+C0103: 21:try_to_reduce: Invalid name "tv" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 22:try_to_reduce: Comma not followed by a space
+                ts = norm2(tv),tv
+                              ^^
+C0103: 22:try_to_reduce: Invalid name "ts" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 28:try_to_reduce: Invalid name "tv" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 29:try_to_reduce: Comma not followed by a space
+                    ts = norm2(tv),tv
+                                  ^^
+C0103: 29:try_to_reduce: Invalid name "ts" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 37: Comma not followed by a space
+    print "Reading",ubifile,
+                   ^^
+W0702: 41: No exception's type specified
+C0324: 44: Comma not followed by a space
+    for u,i  in zip(ul,range(len(ul))):
+         ^^
+
+
+Report
+======
+34 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |32     |71.11 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |5      |11.11 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |2      |4.44  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |6      |13.33 |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy (ubi2cellpars)
+    ImageD11 
+      \-indexing (ubi2cellpars)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |2      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |18     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |3      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |8          |
++-----------+-----------+
+|C0324      |7          |
++-----------+-----------+
+|W0621      |2          |
++-----------+-----------+
+|C0111      |2          |
++-----------+-----------+
+|W0702      |1          |
++-----------+-----------+
+|C0321      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 3.82/10
+

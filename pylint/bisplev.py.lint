@@ -1,0 +1,444 @@
+************* Module bisplev
+C0301: 86: Line too long (82/80)
+C0301: 87: Line too long (84/80)
+C0301:143: Line too long (84/80)
+C0301:146: Line too long (84/80)
+C0301:153: Line too long (84/80)
+C0301:156: Line too long (84/80)
+C0301:165: Line too long (85/80)
+C0301:195: Line too long (81/80)
+C0301:202: Line too long (85/80)
+C0301:209: Line too long (85/80)
+C0111: 40:myasarray: Missing docstring
+C0103: 40:myasarray: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 41:myasarray: Comma not followed by a space
+    if type(a) in [type(1.0),type(1L),type(1),type(1j)]:
+                            ^^
+C0103: 49:bisplev: Invalid name "dx" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 49:bisplev: Invalid name "dy" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 49:bisplev: Comma not followed by a space
+def bisplev(x,y,tck,dx=0,dy=0):
+             ^^
+C0322: 67:bisplev: Operator not preceded by a space
+    tx,ty,c,kx,ky=tck
+                 ^
+C0103: 67:bisplev: Invalid name "tx" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 67:bisplev: Invalid name "ty" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 67:bisplev: Invalid name "c" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 67:bisplev: Invalid name "kx" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 67:bisplev: Invalid name "ky" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 68:bisplev: Comma not followed by a space
+    if not (0<=dx<kx): raise ValueError,"0<=dx=%d<kx=%d must hold"%(dx,kx)
+                                       ^^
+C0321: 68:bisplev: More than one statement on a single line
+C0324: 69:bisplev: Comma not followed by a space
+    if not (0<=dy<ky): raise ValueError,"0<=dy=%d<ky=%d must hold"%(dy,ky)
+                                       ^^
+C0321: 69:bisplev: More than one statement on a single line
+C0322: 70:bisplev: Operator not preceded by a space
+    x,y=map(myasarray,[x,y])
+       ^
+W0141: 70:bisplev: Used builtin function 'map'
+C0322: 73:bisplev: Operator not preceded by a space
+    z,ier=_splines._bispev(tx,ty,c,kx,ky,x,y,dx,dy)
+         ^
+C0103: 73:bisplev: Invalid name "z" (should match [a-z_][a-z0-9_]{2,30}$)
+W0212: 73:bisplev: Access to a protected member _bispev of a client class
+C0322: 74:bisplev: Operator not preceded by a space
+    if ier==10: raise ValueError,"Invalid input data"
+          ^^
+C0321: 74:bisplev: More than one statement on a single line
+C0321: 75:bisplev: More than one statement on a single line
+C0322: 76:bisplev: Operator not preceded by a space
+    z.shape=len(x),len(y)
+           ^
+C0321: 77:bisplev: More than one statement on a single line
+C0321: 78:bisplev: More than one statement on a single line
+C0324: 83: Comma not followed by a space
+_surfit_cache = {'tx': n.array([],'d'),'ty': n.array([],'d'),
+                                 ^^
+                 'wrk': n.array([],'d'), 'iwrk':n.array([],'i')}
+C0103: 83: Invalid name "_surfit_cache" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 86:bisplrep: Invalid name "z" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 86:bisplrep: Invalid name "w" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 86:bisplrep: Invalid name "xb" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 86:bisplrep: Invalid name "xe" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 86:bisplrep: Invalid name "yb" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 86:bisplrep: Invalid name "ye" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 86:bisplrep: Invalid name "kx" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 86:bisplrep: Invalid name "ky" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 86:bisplrep: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 86:bisplrep: Invalid name "tx" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 86:bisplrep: Invalid name "ty" (should match [a-z_][a-z0-9_]{2,30}$)
+R0913: 86:bisplrep: Too many arguments (19/5)
+R0914: 86:bisplrep: Too many local variables (41/15)
+C0324: 86:bisplrep: Comma not followed by a space
+def bisplrep(x,y,z,w=None,xb=None,xe=None,yb=None,ye=None,kx=3,ky=3,task=0,s=None,
+              ^^
+             eps=1e-16,tx=None,ty=None,full_output=0,nxest=None,nyest=None,quiet=1):
+C0322:140:bisplrep: Operator not preceded by a space
+    x,y,z=map(myasarray,[x,y,z])
+         ^
+C0103:140:bisplrep: Invalid name "z" (should match [a-z_][a-z0-9_]{2,30}$)
+W0141:140:bisplrep: Used builtin function 'map'
+C0322:141:bisplrep: Operator not preceded by a space
+    x,y,z=map(n.ravel,[x,y,z])  # ensure 1-d arrays.
+         ^
+C0103:141:bisplrep: Invalid name "z" (should match [a-z_][a-z0-9_]{2,30}$)
+W0141:141:bisplrep: Used builtin function 'map'
+C0322:142:bisplrep: Operator not preceded by a space
+    m=len(x)
+     ^
+C0103:142:bisplrep: Invalid name "m" (should match [a-z_][a-z0-9_]{2,30}$)
+C0321:143:bisplrep: More than one statement on a single line
+C0322:144:bisplrep: Operator not preceded by a space
+    if w is None: w=n.ones(m,'d')
+                   ^
+C0321:144:bisplrep: More than one statement on a single line
+C0103:144:bisplrep: Invalid name "w" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:145:bisplrep: Operator not preceded by a space
+    else: w=myasarray(w)
+           ^
+C0103:145:bisplrep: Invalid name "w" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:146:bisplrep: Comma not followed by a space
+    if not len(w) == m: raise TypeError,' len(w)=%d is not equal to m=%d'%(len(w),m)
+                                       ^^
+C0321:146:bisplrep: More than one statement on a single line
+C0322:147:bisplrep: Operator not preceded by a space
+    if xb is None: xb=x[0]
+                     ^
+C0321:147:bisplrep: More than one statement on a single line
+C0103:147:bisplrep: Invalid name "xb" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:148:bisplrep: Operator not preceded by a space
+    if xe is None: xe=x[-1]
+                     ^
+C0321:148:bisplrep: More than one statement on a single line
+C0103:148:bisplrep: Invalid name "xe" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:149:bisplrep: Operator not preceded by a space
+    if yb is None: yb=y[0]
+                     ^
+C0321:149:bisplrep: More than one statement on a single line
+C0103:149:bisplrep: Invalid name "yb" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:150:bisplrep: Operator not preceded by a space
+    if ye is None: ye=y[-1]
+                     ^
+C0321:150:bisplrep: More than one statement on a single line
+C0103:150:bisplrep: Invalid name "ye" (should match [a-z_][a-z0-9_]{2,30}$)
+C0321:151:bisplrep: More than one statement on a single line
+C0322:152:bisplrep: Operator not preceded by a space
+    if s is None: s=m-n.sqrt(2*m)
+                   ^
+C0321:152:bisplrep: More than one statement on a single line
+C0103:152:bisplrep: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:153:bisplrep: Operator not preceded by a space
+    if tx is None and task==-1: raise TypeError, 'Knots_x must be given for task=-1'
+                          ^^
+C0321:153:bisplrep: More than one statement on a single line
+C0322:154:bisplrep: Operator not preceded by a space
+    if tx is not None: _surfit_cache['tx']=myasarray(tx)
+                                          ^
+C0321:154:bisplrep: More than one statement on a single line
+C0322:155:bisplrep: Operator not preceded by a space
+    nx=len(_surfit_cache['tx'])
+      ^
+C0103:155:bisplrep: Invalid name "nx" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:156:bisplrep: Operator not preceded by a space
+    if ty is None and task==-1: raise TypeError, 'Knots_y must be given for task=-1'
+                          ^^
+C0321:156:bisplrep: More than one statement on a single line
+C0322:157:bisplrep: Operator not preceded by a space
+    if ty is not None: _surfit_cache['ty']=myasarray(ty)
+                                          ^
+C0321:157:bisplrep: More than one statement on a single line
+C0322:158:bisplrep: Operator not preceded by a space
+    ny=len(_surfit_cache['ty'])
+      ^
+C0103:158:bisplrep: Invalid name "ny" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:159:bisplrep: Operator not preceded by a space
+    if task==-1 and nx<2*kx+2:
+           ^^
+C0322:161:bisplrep: Operator not preceded by a space
+    if task==-1 and ny<2*ky+2:
+           ^^
+C0323:164:bisplrep: Operator not followed by a space
+        raise TypeError, \
+       'Given degree of the spline (kx,ky=%d,%d) is not supported. (1<=k<=5)'%(kx,ky)
+                                                                             ^
+C0322:166:bisplrep: Operator not preceded by a space
+    if m<(kx+1)*(ky+1): raise TypeError, 'm>=(kx+1)(ky+1) must hold'
+        ^
+C0321:166:bisplrep: More than one statement on a single line
+C0322:167:bisplrep: Operator not preceded by a space
+    if nxest is None: nxest=kx+n.sqrt(m/2)
+                           ^
+C0321:167:bisplrep: More than one statement on a single line
+C0322:168:bisplrep: Operator not preceded by a space
+    if nyest is None: nyest=ky+n.sqrt(m/2)
+                           ^
+C0321:168:bisplrep: More than one statement on a single line
+C0322:169:bisplrep: Operator not preceded by a space
+    nxest,nyest=max(nxest,2*kx+3),max(nyest,2*ky+3)
+               ^
+C0322:170:bisplrep: Operator not preceded by a space
+    if task>=0 and s==0:
+           ^^
+C0322:171:bisplrep: Operator not preceded by a space
+        nxest=int(kx+n.sqrt(3*m))
+             ^
+C0322:172:bisplrep: Operator not preceded by a space
+        nyest=int(ky+n.sqrt(3*m))
+             ^
+C0322:173:bisplrep: Operator not preceded by a space
+    if task==-1:
+           ^^
+C0322:174:bisplrep: Operator not preceded by a space
+        _surfit_cache['tx']=myasarray(tx)
+                           ^
+C0322:175:bisplrep: Operator not preceded by a space
+        _surfit_cache['ty']=myasarray(ty)
+                           ^
+C0322:176:bisplrep: Operator not preceded by a space
+    tx,ty=_surfit_cache['tx'],_surfit_cache['ty']
+         ^
+C0103:176:bisplrep: Invalid name "tx" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:176:bisplrep: Invalid name "ty" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:177:bisplrep: Operator not preceded by a space
+    wrk=_surfit_cache['wrk']
+       ^
+C0322:178:bisplrep: Operator not preceded by a space
+    iwrk=_surfit_cache['iwrk']
+        ^
+C0322:179:bisplrep: Operator not preceded by a space
+    u,v,km,ne=nxest-kx-1,nyest-ky-1,max(kx,ky)+1,max(nxest,nyest)
+             ^
+C0103:179:bisplrep: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:179:bisplrep: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:179:bisplrep: Invalid name "km" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:179:bisplrep: Invalid name "ne" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:180:bisplrep: Operator not preceded by a space
+    bx,by=kx*v+ky+1,ky*u+kx+1
+         ^
+C0103:180:bisplrep: Invalid name "bx" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:180:bisplrep: Invalid name "by" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:181:bisplrep: Operator not preceded by a space
+    b1,b2=bx,bx+v-ky
+         ^
+C0103:181:bisplrep: Invalid name "b1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:181:bisplrep: Invalid name "b2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:182:bisplrep: Operator not preceded by a space
+    if bx>by: b1,b2=by,by+u-kx
+         ^
+C0321:182:bisplrep: More than one statement on a single line
+C0103:182:bisplrep: Invalid name "b1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:182:bisplrep: Invalid name "b2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:183:bisplrep: Operator not preceded by a space
+    lwrk1=u*v*(2+b1+b2)+2*(u+v+km*(m+ne)+ne-kx-ky)+b2+1
+         ^
+C0322:184:bisplrep: Operator not preceded by a space
+    lwrk2=u*v*(b2+1)+b2
+         ^
+C0324:185:bisplrep: Comma not followed by a space
+    tx,ty,c,o = _splines._surfit(x,y,z,w,xb,xe,yb,ye,kx,ky,task,s,eps,
+      ^^
+                                   tx,ty,nxest,nyest,wrk,lwrk1,lwrk2)
+C0103:185:bisplrep: Invalid name "tx" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:185:bisplrep: Invalid name "ty" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:185:bisplrep: Invalid name "c" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:185:bisplrep: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+W0212:185:bisplrep: Access to a protected member _surfit of a client class
+C0322:187:bisplrep: Operator not preceded by a space
+    _surfit_cache['tx']=tx
+                       ^
+C0322:188:bisplrep: Operator not preceded by a space
+    _surfit_cache['ty']=ty
+                       ^
+C0322:189:bisplrep: Operator not preceded by a space
+    _surfit_cache['wrk']=o['wrk']
+                        ^
+C0322:190:bisplrep: Operator not preceded by a space
+    ier,fp=o['ier'],o['fp']
+          ^
+C0103:190:bisplrep: Invalid name "fp" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:191:bisplrep: Operator not preceded by a space
+    tck=[tx,ty,c,kx,ky]
+       ^
+C0322:192:bisplrep: Operator not preceded by a space
+    if ier<=0 and not quiet:
+          ^^
+E0602:194:bisplrep: Undefined variable '_iermess2'
+C0324:195:bisplrep: Comma not followed by a space
+        logging.debug("\tkx,ky=%d,%d nx,ny=%d,%d m=%d fp=%f s=%f"%(kx,ky,len(tx),
+                                                                     ^^
+                                                           len(ty),m,fp,s))
+C0322:197:bisplrep: Operator not preceded by a space
+    ierm=min(11,max(-3,ier))
+        ^
+C0322:198:bisplrep: Operator not preceded by a space
+    if ierm>0 and not full_output:
+           ^
+C0324:199:bisplrep: Comma not followed by a space
+        if ier in [1,2,3,4,5]:
+                    ^^
+W0404:200:bisplrep: Reimport 'logging' (imported line 193)
+E0602:201:bisplrep: Undefined variable '_iermess2'
+C0324:202:bisplrep: Comma not followed by a space
+            logging.debug("\tkx,ky=%d,%d nx,ny=%d,%d m=%d fp=%f s=%f"%(kx,ky,len(tx),
+                                                                         ^^
+                                                           len(ty),m,fp,s))
+C0324:206:bisplrep: Comma not followed by a space
+                logging.error(str((_iermess2[ierm][1],_iermess2[ierm][0])))
+                                                     ^^
+E0602:206:bisplrep: Undefined variable '_iermess2'
+E0602:206:bisplrep: Undefined variable '_iermess2'
+C0324:207:bisplrep: Comma not followed by a space
+                raise _iermess2[ierm][1],_iermess2[ierm][0]
+                                        ^^
+E0602:207:bisplrep: Undefined variable '_iermess2'
+E0602:207:bisplrep: Undefined variable '_iermess2'
+C0324:209:bisplrep: Comma not followed by a space
+                logging.error(str((_iermess2['unknown'][1],_iermess2['unknown'][0])))
+                                                          ^^
+E0602:209:bisplrep: Undefined variable '_iermess2'
+E0602:209:bisplrep: Undefined variable '_iermess2'
+C0324:210:bisplrep: Comma not followed by a space
+                raise _iermess2['unknown'][1],_iermess2['unknown'][0]
+                                             ^^
+E0602:210:bisplrep: Undefined variable '_iermess2'
+E0602:210:bisplrep: Undefined variable '_iermess2'
+C0324:213:bisplrep: Comma not followed by a space
+            return tck,fp,ier,_iermess2[ierm][0]
+                      ^^
+E0602:213:bisplrep: Undefined variable '_iermess2'
+C0324:215:bisplrep: Comma not followed by a space
+            return tck,fp,ier,_iermess2['unknown'][0]
+                      ^^
+E0602:215:bisplrep: Undefined variable '_iermess2'
+R0912: 86:bisplrep: Too many branches (31/12)
+R0915: 86:bisplrep: Too many statements (88/50)
+W0612:178:bisplrep: Unused variable 'iwrk'
+
+
+Report
+======
+116 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |0        |=          |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |0.000    |=          |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |104    |48.15 |104      |=          |
++----------+-------+------+---------+-----------+
+|docstring |101    |46.76 |101      |=          |
++----------+-------+------+---------+-----------+
+|comment   |1      |0.46  |1        |=          |
++----------+-------+------+---------+-----------+
+|empty     |10     |4.63  |10       |=          |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy 
+      \-oldnumeric (bisplev)
+    ImageD11 
+      \-_splines (bisplev)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |1          |=          |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |0      |0          |=          |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |0      |0          |=          |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |3      |3          |=          |66.67       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |152    |162      |-10.00     |
++-----------+-------+---------+-----------+
+|refactor   |4      |4        |=          |
++-----------+-------+---------+-----------+
+|warning    |7      |7        |=          |
++-----------+-------+---------+-----------+
+|error      |12     |12       |=          |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0322      |50         |
++-----------+-----------+
+|C0103      |50         |
++-----------+-----------+
+|C0321      |23         |
++-----------+-----------+
+|C0324      |17         |
++-----------+-----------+
+|E0602      |12         |
++-----------+-----------+
+|C0301      |10         |
++-----------+-----------+
+|W0141      |3          |
++-----------+-----------+
+|W0212      |2          |
++-----------+-----------+
+|W0612      |1          |
++-----------+-----------+
+|W0404      |1          |
++-----------+-----------+
+|R0915      |1          |
++-----------+-----------+
+|R0914      |1          |
++-----------+-----------+
+|R0913      |1          |
++-----------+-----------+
+|R0912      |1          |
++-----------+-----------+
+|C0323      |1          |
++-----------+-----------+
+|C0111      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at -9.22/10 (previous run: -10.09/10)
+

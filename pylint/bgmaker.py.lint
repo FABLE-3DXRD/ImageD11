@@ -1,0 +1,198 @@
+************* Module bgmaker
+C0301: 69: Line too long (81/80)
+C0301: 78: Line too long (87/80)
+C0301: 79: Line too long (100/80)
+C0301: 80: Line too long (92/80)
+C0301: 84: Line too long (132/80)
+C0301: 89: Line too long (90/80)
+C0322: 35: Operator not preceded by a space
+reallystart=time.time()
+           ^
+C0103: 35: Invalid name "reallystart" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 40:minimum_image: Invalid name "minimum_image" (should match [a-z_][a-zA-Z0-9]+$)
+C0324: 44:minimum_image.__init__: Comma not followed by a space
+    def __init__(self,filename=None,image=None):
+                     ^^
+C0322: 45:minimum_image.__init__: Operator not preceded by a space
+        self.minimum_image=None
+                          ^
+C0322: 48:minimum_image.__init__: Operator not preceded by a space
+            self.minimum_image=image
+                              ^
+C0322: 49:minimum_image.__init__: Operator not preceded by a space
+        if filename!=None:
+                   ^^
+C0324: 54:minimum_image.add_file: Comma not followed by a space
+    def add_file(self,filename):
+                     ^^
+R0903: 40:minimum_image: To few public methods (1/2)
+C0322: 73: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+C0103: 77: Invalid name "parser" (should match (([A-Z_]*)|(__.*__))$)
+C0324: 78: Comma not followed by a space
+        parser.add_option("-n","--namestem",action="store", type="string", dest="stem",
+                              ^^
+                          help="Name of the files up the digits part, eg mydata in mydata0000.edf" )
+C0324: 80: Comma not followed by a space
+        parser.add_option("-f","--first",action="store", type="int", dest="first",default=0,
+                              ^^
+                          help="Number of first file to process, default=0")
+C0324: 82: Comma not followed by a space
+        parser.add_option("-l","--last",action="store", type="int", dest="last",
+                              ^^
+                          help="Number of last file to process")
+C0324: 84: Comma not followed by a space
+        parser.add_option("-o","--outfile",action="store", type="string", dest="outfile",default="bkg.edf",
+                              ^^
+                          help="Output filename, default=bkg.edf")
+C0324: 86: Comma not followed by a space
+        parser.add_option("-F","--Format",action="store",
+                              ^^
+                          type="string", dest="format",default=".edf",
+                          help="File format [edf|bruker]")
+C0324: 89: Comma not followed by a space
+        parser.add_option("-s","--step",action="store", type="int", dest="step",default=1,
+                              ^^
+                          help="step - every nth image")
+C0103: 94: Invalid name "options" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 94: Invalid name "args" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 95: Invalid name "stem" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 96: Invalid name "outfile" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 97: Invalid name "first" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 98: Invalid name "last" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 99: Invalid name "step" (should match (([A-Z_]*)|(__.*__))$)
+C0103:103: Invalid name "extn" (should match (([A-Z_]*)|(__.*__))$)
+E0602:104: Undefined variable 'corrfunc'
+C0103:106: Invalid name "extn" (should match (([A-Z_]*)|(__.*__))$)
+C0103:108: Invalid name "extn" (should match (([A-Z_]*)|(__.*__))$)
+C0103:109: Invalid name "file_series_object" (should match (([A-Z_]*)|(__.*__))$)
+C0103:116: Invalid name "start" (should match (([A-Z_]*)|(__.*__))$)
+C0103:117: Invalid name "mi" (should match (([A-Z_]*)|(__.*__))$)
+C0322:123: Operator not preceded by a space
+        o=openimage(file_series_object[0])
+         ^
+C0103:123: Invalid name "o" (should match (([A-Z_]*)|(__.*__))$)
+E1101:124: Module 'numpy.oldnumeric' has no 'UInt16' member
+C0322:129: Operator not preceded by a space
+end=time.time()
+   ^
+C0103:129: Invalid name "end" (should match (([A-Z_]*)|(__.*__))$)
+C0322:130: Operator not preceded by a space
+t=end-reallystart
+ ^
+C0103:130: Invalid name "t" (should match (([A-Z_]*)|(__.*__))$)
+C0323:131: Operator not followed by a space
+print "Total time = %f /s"%(t)
+                          ^
+
+
+Report
+======
+59 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |0        |=          |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |0.000    |=          |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |77     |62.60 |68       |+9.00      |
++----------+-------+------+---------+-----------+
+|docstring |12     |9.76  |12       |=          |
++----------+-------+------+---------+-----------+
+|comment   |21     |17.07 |21       |=          |
++----------+-------+------+---------+-----------+
+|empty     |13     |10.57 |14       |-1.00      |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    fabio 
+      \-file_series (bgmaker)
+      \-openimage (bgmaker)
+    numpy 
+      \-oldnumeric (bgmaker)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |1          |=          |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |1          |=          |100.00      |100.00   |
++---------+-------+-----------+-----------+------------+---------+
+|method   |2      |2          |=          |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |0      |0          |=          |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |42     |45       |-3.00      |
++-----------+-------+---------+-----------+
+|refactor   |1      |1        |=          |
++-----------+-------+---------+-----------+
+|warning    |0      |0        |=          |
++-----------+-------+---------+-----------+
+|error      |2      |1        |+1.00      |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |19         |
++-----------+-----------+
+|C0324      |8          |
++-----------+-----------+
+|C0322      |8          |
++-----------+-----------+
+|C0301      |6          |
++-----------+-----------+
+|R0903      |1          |
++-----------+-----------+
+|E1101      |1          |
++-----------+-----------+
+|E0602      |1          |
++-----------+-----------+
+|C0323      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 1.02/10 (previous run: 1.36/10)
+

@@ -1,0 +1,110 @@
+************* Module data
+W: 30: TODO : rebinning - is this generally useful??
+W: 31: TODO : PILimage methods ??
+W: 32: TODO : ROI integration - need to define the slice mapping better to
+C: 48:data: Invalid name "data" (should match [A-Z_][a-zA-Z0-9]+$)
+C: 58:data.__init__: Invalid name "m" (should match [a-z_][a-z0-9_]{2,30}$)
+R: 48:data: Too many instance attributes (9/7)
+C: 86:data.getmean: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+C:102:data.getstddev: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+C:104:data.getstddev: Invalid name "S" (should match [a-z_][a-z0-9_]{2,30}$)
+C:107:data.getstddev: Invalid name "N" (should match [a-z_][a-z0-9_]{2,30}$)
+C:108:data.getstddev: Invalid name "S2" (should match [a-z_][a-z0-9_]{2,30}$)
+
+
+Report
+======
+67 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |77     |54.61 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |33     |23.40 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |23     |16.31 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |8      |5.67  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy 
+      \-oldnumeric (data)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |NC         |NC         |100.00      |100.00   |
++---------+-------+-----------+-----------+------------+---------+
+|method   |11     |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |7      |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |1      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |3      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |7          |
++-----------+-----------+
+|W0511      |3          |
++-----------+-----------+
+|R0902      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 8.36/10
+

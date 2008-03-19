@@ -1,0 +1,648 @@
+************* Module unitcell
+C0301:355: Line too long (88/80)
+C0301:376: Line too long (93/80)
+C0301:377: Line too long (82/80)
+C0111:  1: Missing docstring
+W0621: 35:radians: Redefining name 'x' from outer scope (line 409)
+C0111: 35:radians: Missing docstring
+W0621: 38:degrees: Redefining name 'x' from outer scope (line 409)
+C0111: 38:degrees: Missing docstring
+C0103: 43:cross: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 43:cross: Invalid name "b" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 43:cross: Comma not followed by a space
+def cross(a,b):
+           ^^
+C0103: 53:norm2: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 57:norm2: Comma not followed by a space
+    return numpy.sqrt(numpy.dot(a,a))
+                                 ^^
+C0103: 60:unit: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+W0621: 73:P: Redefining name 'k' from outer scope (line 413)
+C0103: 73:P: Invalid name "P" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111: 73:P: Missing docstring
+C0103: 73:P: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 73:P: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 73:P: Comma not followed by a space
+def P(h,k,l):
+       ^^
+W0613: 73:P: Unused argument 'h'
+W0613: 73:P: Unused argument 'k'
+W0613: 73:P: Unused argument 'l'
+W0621: 76:A: Redefining name 'k' from outer scope (line 413)
+C0103: 76:A: Invalid name "A" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111: 76:A: Missing docstring
+C0103: 76:A: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 76:A: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 76:A: Comma not followed by a space
+def A(h,k,l):
+       ^^
+W0613: 76:A: Unused argument 'h'
+W0621: 79:B: Redefining name 'k' from outer scope (line 413)
+C0103: 79:B: Invalid name "B" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111: 79:B: Missing docstring
+C0103: 79:B: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 79:B: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 79:B: Comma not followed by a space
+def B(h,k,l):
+       ^^
+W0613: 79:B: Unused argument 'k'
+W0621: 82:C: Redefining name 'k' from outer scope (line 413)
+C0103: 82:C: Invalid name "C" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111: 82:C: Missing docstring
+C0103: 82:C: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 82:C: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 82:C: Comma not followed by a space
+def C(h,k,l):
+       ^^
+W0613: 82:C: Unused argument 'l'
+W0621: 85:I: Redefining name 'k' from outer scope (line 413)
+C0103: 85:I: Invalid name "I" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111: 85:I: Missing docstring
+C0103: 85:I: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 85:I: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 85:I: Comma not followed by a space
+def I(h,k,l):
+       ^^
+W0621: 88:F: Redefining name 'k' from outer scope (line 413)
+C0103: 88:F: Invalid name "F" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111: 88:F: Missing docstring
+C0103: 88:F: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 88:F: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 88:F: Comma not followed by a space
+def F(h,k,l):
+       ^^
+W0621: 91:R: Redefining name 'k' from outer scope (line 413)
+C0103: 91:R: Invalid name "R" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111: 91:R: Missing docstring
+C0103: 91:R: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 91:R: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 91:R: Comma not followed by a space
+def R(h,k,l):
+       ^^
+C0103: 95: Invalid name "outif" (should match (([A-Z_]*)|(__.*__))$)
+W0621:107:cellfromstring: Redefining name 'x' from outer scope (line 409)
+C0111:104:cellfromstring: Missing docstring
+C0103:104:cellfromstring: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111:114:unitcell: Missing docstring
+C0103:151:unitcell.__init__: Invalid name "as" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:153:unitcell.__init__: Invalid name "cs" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:146:unitcell.__init__: Invalid name "gi" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:163:unitcell.__init__: Invalid name "B" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:152:unitcell.__init__: Invalid name "bs" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:141:unitcell.__init__: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:401:unitcell.orient: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:402:unitcell.orient: Invalid name "UB" (should match [a-z_][a-z0-9_]{2,30}$)
+R0902:114:unitcell: Too many instance attributes (23/7)
+C0322:124:unitcell.__init__: Operator not preceded by a space
+        if self.lattice_parameters.shape[0]!=6:
+                                           ^^
+C0324:128:unitcell.__init__: Comma not followed by a space
+        if self.symmetry not in ["P","A","B","C","I","F","R"]:
+                                    ^^
+C0103:133:unitcell.__init__: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:134:unitcell.__init__: Invalid name "b" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:135:unitcell.__init__: Invalid name "c" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:136:unitcell.__init__: Operator not preceded by a space
+        self.alpha=radians(self.lattice_parameters[3])
+                  ^
+C0322:137:unitcell.__init__: Operator not preceded by a space
+        ca= math.cos(radians(self.lattice_parameters[3]))
+          ^
+C0103:137:unitcell.__init__: Invalid name "ca" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:138:unitcell.__init__: Operator not preceded by a space
+        cb= math.cos(radians(self.lattice_parameters[4]))
+          ^
+C0103:138:unitcell.__init__: Invalid name "cb" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:139:unitcell.__init__: Operator not preceded by a space
+        cg= math.cos(radians(self.lattice_parameters[5]))
+          ^
+C0103:139:unitcell.__init__: Invalid name "cg" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:140:unitcell.__init__: Operator not preceded by a space
+        if verbose==1: print "Unit cell",self.lattice_parameters
+                  ^^
+C0321:140:unitcell.__init__: More than one statement on a single line
+C0322:144:unitcell.__init__: Operator not preceded by a space
+        if verbose==1: print "Metric tensor\n",self.g
+                  ^^
+C0321:144:unitcell.__init__: More than one statement on a single line
+C0322:150:unitcell.__init__: Operator not preceded by a space
+        if verbose==1: print "Reciprocal Metric tensor\n",self.gi
+                  ^^
+C0321:150:unitcell.__init__: More than one statement on a single line
+C0322:151:unitcell.__init__: Operator not preceded by a space
+        self.as=numpy.sqrt(self.gi[0,0])
+               ^
+C0322:152:unitcell.__init__: Operator not preceded by a space
+        self.bs=numpy.sqrt(self.gi[1,1])
+               ^
+C0322:153:unitcell.__init__: Operator not preceded by a space
+        self.cs=numpy.sqrt(self.gi[2,2])
+               ^
+C0322:155:unitcell.__init__: Operator not preceded by a space
+        self.alphas=degrees(math.acos(self.gi[1,2]/self.bs/self.cs))
+                   ^
+C0323:156:unitcell.__init__: Operator not followed by a space
+        self.betas =degrees(math.acos(self.gi[0,2]/self.as/self.cs))
+                   ^
+C0322:157:unitcell.__init__: Operator not preceded by a space
+        self.gammas=degrees(math.acos(self.gi[0,1]/self.as/self.bs))
+                   ^
+C0322:158:unitcell.__init__: Operator not preceded by a space
+        if verbose==1: print "Reciprocal cell"
+                  ^^
+C0321:158:unitcell.__init__: More than one statement on a single line
+C0322:159:unitcell.__init__: Operator not preceded by a space
+        if verbose==1:
+                  ^^
+C0321:172:unitcell.__init__: More than one statement on a single line
+C0323:189:unitcell.tostring: Operator not followed by a space
+        return "%f %f %f %f %f %f %s"%(self.lattice_parameters[0],
+                                     ^
+              self.lattice_parameters[1],
+              self.lattice_parameters[2],
+              self.lattice_parameters[3],
+              self.lattice_parameters[4],
+              self.lattice_parameters[5],
+              self.symmetry)
+W0621:208:unitcell.gethkls: Redefining name 'k' from outer scope (line 413)
+C0324:198:unitcell.gethkls: Comma not followed by a space
+    def gethkls(self,dsmax):
+                    ^^
+C0322:206:unitcell.gethkls: Operator not preceded by a space
+        if dsmax == self.limit and self.peaks!=None:
+                                             ^^
+C0322:208:unitcell.gethkls: Operator not preceded by a space
+        h=k=0
+         ^
+C0103:208:unitcell.gethkls: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:209:unitcell.gethkls: Operator not preceded by a space
+        l=1 # skip 0,0,0
+         ^
+C0103:209:unitcell.gethkls: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:210:unitcell.gethkls: Operator not preceded by a space
+        hs=ks=ls=1
+          ^
+C0103:210:unitcell.gethkls: Invalid name "hs" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:210:unitcell.gethkls: Invalid name "ks" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:210:unitcell.gethkls: Invalid name "ls" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:211:unitcell.gethkls: Operator not preceded by a space
+        b=0
+         ^
+C0103:211:unitcell.gethkls: Invalid name "b" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:212:unitcell.gethkls: Operator not preceded by a space
+        peaks=[]
+             ^
+C0322:216:unitcell.gethkls: Operator not preceded by a space
+                    ds=self.ds([h,k,l])
+                      ^
+C0103:216:unitcell.gethkls: Invalid name "ds" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:218:unitcell.gethkls: Comma not followed by a space
+                        if not self.absent(h,k,l):
+                                            ^^
+C0324:219:unitcell.gethkls: Comma not followed by a space
+                            peaks.append([ds,(h,k,l)])
+                                            ^^
+C0322:222:unitcell.gethkls: Operator not preceded by a space
+                        b=0
+                         ^
+C0103:222:unitcell.gethkls: Invalid name "b" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:224:unitcell.gethkls: Operator not preceded by a space
+                        if ls==1:
+                             ^^
+C0322:225:unitcell.gethkls: Operator not preceded by a space
+                            ls=-1
+                              ^
+C0103:225:unitcell.gethkls: Invalid name "ls" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:226:unitcell.gethkls: Operator not preceded by a space
+                            l=0
+                             ^
+C0103:226:unitcell.gethkls: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:228:unitcell.gethkls: Operator not preceded by a space
+                            ls=1
+                              ^
+C0103:228:unitcell.gethkls: Invalid name "ls" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:229:unitcell.gethkls: Operator not preceded by a space
+                            l=0
+                             ^
+C0103:229:unitcell.gethkls: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:230:unitcell.gethkls: Operator not preceded by a space
+                            b=b+1
+                             ^
+C0103:230:unitcell.gethkls: Invalid name "b" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:232:unitcell.gethkls: Operator not preceded by a space
+                    l=l+ls
+                     ^
+C0103:232:unitcell.gethkls: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:233:unitcell.gethkls: Operator not preceded by a space
+                k=k+ks
+                 ^
+C0322:235:unitcell.gethkls: Operator not preceded by a space
+                if b>1:
+                    ^
+C0322:236:unitcell.gethkls: Operator not preceded by a space
+                    if ks==1:
+                         ^^
+C0322:237:unitcell.gethkls: Operator not preceded by a space
+                        ks=-1
+                          ^
+C0103:237:unitcell.gethkls: Invalid name "ks" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:238:unitcell.gethkls: Operator not preceded by a space
+                        k=-1
+                         ^
+C0322:240:unitcell.gethkls: Operator not preceded by a space
+                        ks=1
+                          ^
+C0103:240:unitcell.gethkls: Invalid name "ks" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:241:unitcell.gethkls: Operator not preceded by a space
+                        k=0
+                         ^
+C0322:242:unitcell.gethkls: Operator not preceded by a space
+                        b=b+1
+                         ^
+C0103:242:unitcell.gethkls: Invalid name "b" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:244:unitcell.gethkls: Operator not preceded by a space
+            h=h+hs
+             ^
+C0103:244:unitcell.gethkls: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:245:unitcell.gethkls: Operator not preceded by a space
+            if b>3:
+                ^
+C0322:246:unitcell.gethkls: Operator not preceded by a space
+                if hs==1:
+                     ^^
+C0322:247:unitcell.gethkls: Operator not preceded by a space
+                    hs=-1
+                      ^
+C0103:247:unitcell.gethkls: Invalid name "hs" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:248:unitcell.gethkls: Operator not preceded by a space
+                    h=-1
+                     ^
+C0103:248:unitcell.gethkls: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:250:unitcell.gethkls: Operator not preceded by a space
+                    hs=1
+                      ^
+C0103:250:unitcell.gethkls: Invalid name "hs" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:251:unitcell.gethkls: Operator not preceded by a space
+                    h=0
+                     ^
+C0103:251:unitcell.gethkls: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:257:unitcell.gethkls: Operator not preceded by a space
+        self.peaks=peaks
+                  ^
+C0322:258:unitcell.gethkls: Operator not preceded by a space
+        self.limit=dsmax
+                  ^
+R0912:198:unitcell.gethkls: Too many branches (16/12)
+C0103:261:unitcell.ds: Invalid name "ds" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:261:unitcell.ds: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:261:unitcell.ds: Comma not followed by a space
+    def ds(self,h):
+               ^^
+C0324:263:unitcell.ds: Comma not followed by a space
+        return math.sqrt(numpy.dot(h,numpy.dot(self.gi,h))) # 1/d or d*
+                                    ^^
+C0324:266:unitcell.makerings: Comma not followed by a space
+    def makerings(self,limit,tol=0.001):
+                      ^^
+C0322:272:unitcell.makerings: Operator not preceded by a space
+        self.peaks=self.gethkls(limit) # [ ds, [hkl] ]
+                  ^
+C0322:273:unitcell.makerings: Operator not preceded by a space
+        self.ringds=[]   # a list of floats
+                   ^
+C0322:274:unitcell.makerings: Operator not preceded by a space
+        self.ringhkls={} # a dict of lists of integer hkl
+                     ^
+C0322:284:unitcell.makerings: Operator not preceded by a space
+                self.ringhkls[self.ringds[-1]]= [peak[1]]
+                                              ^
+C0103:287:unitcell.anglehkls: Invalid name "h1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:287:unitcell.anglehkls: Invalid name "h2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:287:unitcell.anglehkls: Comma not followed by a space
+    def anglehkls(self,h1,h2):
+                      ^^
+C0324:291:unitcell.anglehkls: Comma not followed by a space
+        g1 = numpy.dot(h1,numpy.dot(self.gi,h1))
+                         ^^
+C0103:291:unitcell.anglehkls: Invalid name "g1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:292:unitcell.anglehkls: Comma not followed by a space
+        g2 = numpy.dot(h2,numpy.dot(self.gi,h2))
+                         ^^
+C0103:292:unitcell.anglehkls: Invalid name "g2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:293:unitcell.anglehkls: Operator not preceded by a space
+        g12= numpy.dot(h1,numpy.dot(self.gi,h2))
+           ^
+C0324:296:unitcell.anglehkls: Comma not followed by a space
+            return degrees(math.acos(costheta)),costheta
+                                               ^^
+C0324:299:unitcell.anglehkls: Comma not followed by a space
+                return 0.,1.0
+                         ^^
+C0324:301:unitcell.anglehkls: Comma not followed by a space
+                return 180.,-1.0
+                           ^^
+C0324:303:unitcell.anglehkls: Comma not followed by a space
+            print "h1",h1,"h2",h2,"Costheta=",costheta
+                      ^^
+C0103:316:unitcell.getanglehkls: Invalid name "ha" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:317:unitcell.getanglehkls: Invalid name "hb" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:322:unitcell.getanglehkls: Comma not followed by a space
+                    cache.append( self.anglehkls(ha,hb)[1] )
+                                                   ^^
+C0103:327:unitcell.orient: Invalid name "g1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:327:unitcell.orient: Invalid name "g2" (should match [a-z_][a-z0-9_]{2,30}$)
+R0913:327:unitcell.orient: Too many arguments (6/5)
+R0914:327:unitcell.orient: Too many local variables (27/15)
+C0324:327:unitcell.orient: Comma not followed by a space
+    def orient(self,ring1,g1,ring2,g2,verbose=0):
+                   ^^
+C0324:339:unitcell.orient: Comma not followed by a space
+        costheta = numpy.dot(g1,g2)/norm2(g2)/norm2(g1)
+                               ^^
+C0322:341:unitcell.orient: Operator not preceded by a space
+        if verbose==1: print "observed costheta",costheta
+                  ^^
+C0321:341:unitcell.orient: More than one statement on a single line
+C0322:342:unitcell.orient: Operator not preceded by a space
+        best=5.
+            ^
+C0103:347:unitcell.orient: Invalid name "h1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:347:unitcell.orient: Invalid name "h2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:349:unitcell.orient: Comma not followed by a space
+            print "hab=",hab
+                        ^^
+C0324:350:unitcell.orient: Comma not followed by a space
+            print "best=",best
+                         ^^
+C0324:351:unitcell.orient: Comma not followed by a space
+            print "len(hab)",len(hab)
+                            ^^
+C0324:353:unitcell.orient: Comma not followed by a space
+            print "costheta",costheta
+                            ^^
+C0324:354:unitcell.orient: Comma not followed by a space
+            print "abs( angles_ab - costheta ) )",abs( angles_ab - costheta )
+                                                 ^^
+C0324:355:unitcell.orient: Comma not followed by a space
+            print "len(abs( angles_ab - costheta )) )",len(abs( angles_ab - costheta ) )
+                                                      ^^
+C0322:359:unitcell.orient: Operator not preceded by a space
+        if verbose==1:
+                  ^^
+C0324:360:unitcell.orient: Comma not followed by a space
+            print "Assigning h1",h1,g1,self.ds(h1),\
+                                ^^
+                math.sqrt(numpy.dot(g1,g1)),\
+                self.ds(h1)-math.sqrt(numpy.dot(g1,g1))
+C0324:363:unitcell.orient: Comma not followed by a space
+            print "Assigning h2",h2,g2,self.ds(h2),\
+                                ^^
+                math.sqrt(numpy.dot(g2,g2)),\
+                self.ds(h1)-math.sqrt(numpy.dot(g1,g1))
+C0324:366:unitcell.orient: Comma not followed by a space
+            print "Cos angle calc",self.anglehkls(h1,h2),"obs",costheta
+                                  ^^
+W0702:382:unitcell.orient: No exception's type specified
+C0322:368:unitcell.orient: Operator not preceded by a space
+            h1c=numpy.dot(self.B,h1)
+               ^
+C0322:369:unitcell.orient: Operator not preceded by a space
+            h2c=numpy.dot(self.B,h2)
+               ^
+C0322:370:unitcell.orient: Operator not preceded by a space
+            t1c=unit(h1c)
+               ^
+C0322:371:unitcell.orient: Operator not preceded by a space
+            t3c=unit(cross(h1c,h2c))
+               ^
+C0322:372:unitcell.orient: Operator not preceded by a space
+            t2c=unit(cross(h1c,t3c))
+               ^
+C0322:373:unitcell.orient: Operator not preceded by a space
+            t1g=unit(g1)
+               ^
+C0322:374:unitcell.orient: Operator not preceded by a space
+            t3g=unit(cross(g1,g2))
+               ^
+C0322:375:unitcell.orient: Operator not preceded by a space
+            t2g=unit(cross(g1,t3g))
+               ^
+C0324:376:unitcell.orient: Comma not followed by a space
+            T_g = numpy.transpose(numpy.array([t1g,t2g,t3g]))  # Array are stored by rows and
+                                                  ^^
+C0103:376:unitcell.orient: Invalid name "T_g" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:377:unitcell.orient: Comma not followed by a space
+            T_c = numpy.transpose(numpy.array([t1c,t2c,t3c]))  # these are columns
+                                                  ^^
+C0103:377:unitcell.orient: Invalid name "T_c" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:378:unitcell.orient: Operator not preceded by a space
+            U=numpy.dot(T_g , inv(T_c))
+             ^
+C0103:378:unitcell.orient: Invalid name "U" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:379:unitcell.orient: Operator not preceded by a space
+            UB=numpy.dot(U,self.B)
+              ^
+C0103:379:unitcell.orient: Invalid name "UB" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:380:unitcell.orient: Operator not preceded by a space
+            UBI=inv(UB)
+               ^
+C0103:380:unitcell.orient: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:384:unitcell.orient: Comma not followed by a space
+            print "angles_ab = ",angles_ab
+                                ^^
+C0324:385:unitcell.orient: Comma not followed by a space
+            print "hab",hab
+                       ^^
+C0324:386:unitcell.orient: Comma not followed by a space
+            print "best",best
+                        ^^
+C0324:387:unitcell.orient: Comma not followed by a space
+            print "ring1",ring1,"ring2",ring2
+                         ^^
+C0322:390:unitcell.orient: Operator not preceded by a space
+        if verbose==1:
+                  ^^
+C0324:394:unitcell.orient: Comma not followed by a space
+            print numpy.dot(numpy.transpose(UB),UB)
+                                               ^^
+C0322:397:unitcell.orient: Operator not preceded by a space
+            h=numpy.dot(UBI,g1)
+             ^
+C0103:397:unitcell.orient: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0323:398:unitcell.orient: Operator not followed by a space
+            print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
+                                         ^
+C0322:399:unitcell.orient: Operator not preceded by a space
+            h=numpy.dot(UBI,g2)
+             ^
+C0103:399:unitcell.orient: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0323:400:unitcell.orient: Operator not followed by a space
+            print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
+                                         ^
+C0322:401:unitcell.orient: Operator not preceded by a space
+        self.UBI=UBI
+                ^
+C0322:402:unitcell.orient: Operator not preceded by a space
+        self.UB=UB
+               ^
+R0915:327:unitcell.orient: Too many statements (56/50)
+W0201:274:unitcell.makerings: Attribute 'ringhkls' defined outside __init__
+W0201:273:unitcell.makerings: Attribute 'ringds' defined outside __init__
+W0201:401:unitcell.orient: Attribute 'UBI' defined outside __init__
+W0201:402:unitcell.orient: Attribute 'UB' defined outside __init__
+C0322:406: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+C0324:407: Comma not followed by a space
+    import sys,time
+              ^^
+C0322:408: Operator not preceded by a space
+    start=time.time()
+         ^
+C0103:408: Invalid name "start" (should match (([A-Z_]*)|(__.*__))$)
+C0324:409: Comma not followed by a space
+    cell = unitcell([float(x) for x in sys.argv[1:7]],sys.argv[7])
+                                                     ^^
+C0103:409: Invalid name "cell" (should match (([A-Z_]*)|(__.*__))$)
+C0322:410: Operator not preceded by a space
+    p=cell.gethkls(float(sys.argv[8]))
+     ^
+C0103:410: Invalid name "p" (should match (([A-Z_]*)|(__.*__))$)
+C0322:411: Operator not preceded by a space
+    n=len(p)
+     ^
+C0103:411: Invalid name "n" (should match (([A-Z_]*)|(__.*__))$)
+C0324:412: Comma not followed by a space
+    print "Generated",n,"peaks in",time.time()-start,"/s"
+                     ^^
+W0704:416: Except doesn't do anything
+W0702:417: No exception's type specified
+C0324:415: Comma not followed by a space
+            print k[1],k[0],1/k[0],k[1]
+                      ^^
+
+
+Report
+======
+244 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |0        |=          |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |0.000    |=          |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |254    |64.80 |218      |+36.00     |
++----------+-------+------+---------+-----------+
+|docstring |75     |19.13 |59       |+16.00     |
++----------+-------+------+---------+-----------+
+|comment   |24     |6.12  |23       |+1.00      |
++----------+-------+------+---------+-----------+
+|empty     |39     |9.95  |34       |+5.00      |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy (unitcell)
+      \-linalg (unitcell)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |1          |=          |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |1          |=          |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |8      |7          |+1.00      |100.00      |12.50    |
++---------+-------+-----------+-----------+------------+---------+
+|function |13     |12         |+1.00      |23.08       |53.85    |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |232    |253      |-21.00     |
++-----------+-------+---------+-----------+
+|refactor   |5      |4        |+1.00      |
++-----------+-------+---------+-----------+
+|warning    |24     |24       |=          |
++-----------+-------+---------+-----------+
+|error      |0      |0        |=          |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |86         |
++-----------+-----------+
+|C0322      |75         |
++-----------+-----------+
+|C0324      |46         |
++-----------+-----------+
+|C0111      |12         |
++-----------+-----------+
+|W0621      |11         |
++-----------+-----------+
+|W0613      |6          |
++-----------+-----------+
+|C0321      |6          |
++-----------+-----------+
+|W0201      |4          |
++-----------+-----------+
+|C0323      |4          |
++-----------+-----------+
+|C0301      |3          |
++-----------+-----------+
+|W0702      |2          |
++-----------+-----------+
+|W0704      |1          |
++-----------+-----------+
+|R0915      |1          |
++-----------+-----------+
+|R0914      |1          |
++-----------+-----------+
+|R0913      |1          |
++-----------+-----------+
+|R0912      |1          |
++-----------+-----------+
+|R0902      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at -0.70/10 (previous run: -3.01/10)
+

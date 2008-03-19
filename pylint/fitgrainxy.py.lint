@@ -1,0 +1,287 @@
+************* Module fitgrainxy
+C: 94: Line too long (82/80)
+W: 37: TODO: finish off and put in gui
+W: 41: FIXME
+W: 46: FIXME This needs the parameters object interface """
+C: 33:fitgrainxy: Invalid name "fitgrainxy" (should match [A-Z_][a-zA-Z0-9]+$)
+C: 43:fitgrainxy.__init__: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 45:fitgrainxy.loadparameters: Comma not followed by a space
+    def loadparameters(self,filename):
+                           ^^
+C: 49:fitgrainxy.loadparameters: Operator not preceded by a space
+            name,value=line.split()
+                      ^
+C: 51:fitgrainxy.loadparameters: Operator not preceded by a space
+                self.parameters[name]=float(value)
+                                     ^
+C: 53:fitgrainxy.loadparameters: Operator not preceded by a space
+                self.parameters[name]=value
+                                     ^
+C: 55:fitgrainxy.saveparameters: Comma not followed by a space
+    def saveparameters(self,filename):
+                           ^^
+C: 58:fitgrainxy.saveparameters: Operator not preceded by a space
+        keys=self.parameters.keys()
+            ^
+C: 62:fitgrainxy.saveparameters: Comma not followed by a space
+                out.write("%s %f\n"%(k,self.parameters[k]))
+                                      ^^
+C: 64:fitgrainxy.saveparameters: Comma not followed by a space
+                out.write("%s %s\n"%(k,self.parameters[k]))
+                                      ^^
+C: 67:fitgrainxy.readubis: Comma not followed by a space
+    def readubis(self,filename):
+                     ^^
+C: 71:fitgrainxy.readubis: Operator not preceded by a space
+        f=open(filename,"r")
+         ^
+C: 71:fitgrainxy.readubis: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 72:fitgrainxy.readubis: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 73:fitgrainxy.readubis: Operator not preceded by a space
+        i=0
+         ^
+C: 77:fitgrainxy.readubis: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 81:fitgrainxy.readubis: Operator not preceded by a space
+                i=i+1
+                 ^
+C: 82:fitgrainxy.readubis: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 85:fitgrainxy.loadfiltered: Comma not followed by a space
+    def loadfiltered(self,filename):
+                         ^^
+C: 89:fitgrainxy.loadfiltered: Operator not preceded by a space
+        f=open(filename,"r")
+         ^
+C: 89:fitgrainxy.loadfiltered: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 91:fitgrainxy.loadfiltered: Operator not preceded by a space
+        line=f.readline()
+            ^
+C: 92:fitgrainxy.loadfiltered: Operator not followed by a space
+        if line[0:12] !="# xc yc omega"[0:12]:
+                      ^^
+C: 97:fitgrainxy.loadfiltered: Operator not preceded by a space
+        bigarray=[]
+                ^
+C: 99:fitgrainxy.loadfiltered: Operator not preceded by a space
+            v=[float(z) for z in line.split()]
+             ^
+C: 99:fitgrainxy.loadfiltered: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C:102:fitgrainxy.loadfiltered: Operator not preceded by a space
+        self.scandata=Numeric.array(bigarray)
+                     ^
+C:103:fitgrainxy.loadfiltered: Operator not preceded by a space
+        self.allscandata=self.scandata.copy()
+                        ^
+C:105:fitgrainxy.compute_gv: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C:105:fitgrainxy.compute_gv: Comma not followed by a space
+    def compute_gv(self,g):
+                       ^^
+C:111:fitgrainxy.compute_gv: Invalid name "xc" (should match [a-z_][a-z0-9_]{2,30}$)
+C:116:fitgrainxy.compute_gv: Comma not followed by a space
+        x  = self.scandata[:,xc]
+                            ^^
+C:116:fitgrainxy.compute_gv: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C:117:fitgrainxy.compute_gv: Invalid name "yc" (should match [a-z_][a-z0-9_]{2,30}$)
+C:118:fitgrainxy.compute_gv: Comma not followed by a space
+        y  = self.scandata[:,yc]
+                            ^^
+C:118:fitgrainxy.compute_gv: Invalid name "y" (should match [a-z_][a-z0-9_]{2,30}$)
+C:119:fitgrainxy.compute_gv: Invalid name "om" (should match [a-z_][a-z0-9_]{2,30}$)
+C:120:fitgrainxy.compute_gv: Comma not followed by a space
+        om = self.scandata[:,om]
+                            ^^
+C:120:fitgrainxy.compute_gv: Invalid name "om" (should match [a-z_][a-z0-9_]{2,30}$)
+C:122:fitgrainxy.compute_gv: Comma not followed by a space
+        tth,eta = transform.compute_tth_eta( Numeric.array([x, y]) ,
+           ^^
+                             self.parameters['y-center'],
+                             self.parameters['y-size'],
+                             self.parameters['tilt-y'],
+                             self.parameters['z-center'],
+                             self.parameters['z-size'],
+                             self.parameters['tilt-z'],
+                             self.parameters['distance']*1.0e3,
+                             crystal_translation = g.translation,
+                             omega = om,
+                             axis_orientation1 = self.parameters['wedge'],
+                             axis_orientation2 = self.parameters['chi'])
+C:134:fitgrainxy.compute_gv: Comma not followed by a space
+        self.gv = transform.compute_g_vectors(tth,eta,om,
+                                                 ^^
+                              float(self.parameters['wavelength']),
+                              self.parameters['wedge'])
+R:141:fitgrainxy.makemap: Too many local variables (17/15)
+C:145:fitgrainxy.makemap: Invalid name "m" (should match [a-z_][a-z0-9_]{2,30}$)
+C:146:fitgrainxy.makemap: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C:147:fitgrainxy.makemap: Operator not preceded by a space
+            self.scandata=self.allscandata.copy()
+                         ^
+C:149:fitgrainxy.makemap: Operator not preceded by a space
+            h=Numeric.matrixmultiply(g.ubi,Numeric.transpose(self.gv))
+             ^
+C:149:fitgrainxy.makemap: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C:150:fitgrainxy.makemap: Operator not preceded by a space
+            hint=Numeric.floor(h+0.5).astype(Numeric.Int) # rounds down
+                ^
+C:151:fitgrainxy.makemap: Operator not preceded by a space
+            diff=h-hint
+                ^
+C:152:fitgrainxy.makemap: Operator not preceded by a space
+            drlv=Numeric.sqrt(Numeric.sum(diff*diff,0))
+                ^
+C:156:fitgrainxy.makemap: Comma not followed by a space
+            self.scandata = Numeric.take(self.allscandata,indices)
+                                                         ^^
+C:160:fitgrainxy.makemap: Operator not preceded by a space
+                    x=(i-npts*0.5)*1000/npts
+                     ^
+C:160:fitgrainxy.makemap: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C:161:fitgrainxy.makemap: Operator not preceded by a space
+                    y=(j-npts*0.5)*1000/npts
+                     ^
+C:161:fitgrainxy.makemap: Invalid name "y" (should match [a-z_][a-z0-9_]{2,30}$)
+C:162:fitgrainxy.makemap: Operator not preceded by a space
+                    g.translation[0]=x
+                                    ^
+C:163:fitgrainxy.makemap: Operator not preceded by a space
+                    g.translation[1]=y
+                                    ^
+C:170:fitgrainxy.makemap: Operator not preceded by a space
+                        h=Numeric.matrixmultiply(mat,Numeric.transpose(self.gv))
+                         ^
+C:170:fitgrainxy.makemap: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C:171:fitgrainxy.makemap: Operator not preceded by a space
+                        hint=Numeric.floor(h+0.5).astype(Numeric.Int)
+                            ^
+C:173:fitgrainxy.makemap: Operator not preceded by a space
+                        diff=h-hint
+                            ^
+C:174:fitgrainxy.makemap: Operator not preceded by a space
+                        drlv=Numeric.sqrt(Numeric.sum(diff*diff,0))
+                            ^
+C:178:fitgrainxy.makemap: Operator not followed by a space
+                        print x,y, tol, "%5d"%(npks),sum(drlv)/drlv.shape[0],\
+                                             ^
+                        tthscore/drlv.shape[0],indexing.ubitocellpars(mat),
+W:103:fitgrainxy.loadfiltered: Attribute 'allscandata' defined outside __init__
+W:102:fitgrainxy.loadfiltered: Attribute 'scandata' defined outside __init__
+W: 96:fitgrainxy.loadfiltered: Attribute 'scantitles' defined outside __init__
+C:186: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+C:188: Operator not preceded by a space
+    o=fitgrainxy()
+     ^
+C:188: Invalid name "o" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+
+
+Report
+======
+107 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |125    |67.57 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |24     |12.97 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |19     |10.27 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |17     |9.19  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy 
+      \-oldnumeric (fitgrainxy)
+    ImageD11 
+      \-grain (fitgrainxy)
+      \-indexing (fitgrainxy)
+      \-transform (fitgrainxy)
+      \-closest (fitgrainxy)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |NC         |NC         |100.00      |100.00   |
++---------+-------+-----------+-----------+------------+---------+
+|method   |7      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |66     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |1      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |6      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0322      |28         |
++-----------+-----------+
+|C0103      |22         |
++-----------+-----------+
+|C0324      |13         |
++-----------+-----------+
+|W0511      |3          |
++-----------+-----------+
+|W0201      |3          |
++-----------+-----------+
+|C0323      |2          |
++-----------+-----------+
+|R0914      |1          |
++-----------+-----------+
+|C0301      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 3.18/10
+

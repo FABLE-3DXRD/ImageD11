@@ -1,0 +1,156 @@
+************* Module grain
+C0111:  1: Missing docstring
+C0111: 25:grain: Missing docstring
+C0103: 30:grain.__init__: Invalid name "Rod" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 31:grain.__init__: Invalid name "mt" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 29:grain.__init__: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 28:grain.__init__: Invalid name "ub" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 26:grain.__init__: Comma not followed by a space
+    def __init__(self,ubi,translation=None):
+                     ^^
+C0324: 27:grain.__init__: Comma not followed by a space
+        self.ubi = numpy.array(ubi,numpy.float)
+                                  ^^
+C0322: 33:grain.__init__: Operator not preceded by a space
+        if translation==None:
+                      ^^
+C0324: 36:grain.__init__: Comma not followed by a space
+            self.translation = numpy.array(translation,numpy.float)
+                                                      ^^
+R0903: 25:grain: To few public methods (0/2)
+C0111: 40:write_grain_file: Missing docstring
+C0103: 41:write_grain_file: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 42:write_grain_file: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 43:write_grain_file: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 44:write_grain_file: Comma not followed by a space
+        f.write("#translation: %f %f %f\n"%(t[0],t[1],t[2]))
+                                                ^^
+C0103: 52:write_grain_file: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 53:write_grain_file: Comma not followed by a space
+        f.write("%f %f %f\n"  %(u[0,0],u[0,1],u[0,2]))
+                                   ^^
+C0324: 54:write_grain_file: Comma not followed by a space
+        f.write("%f %f %f\n"  %(u[1,0],u[1,1],u[1,2]))
+                                   ^^
+C0324: 55:write_grain_file: Comma not followed by a space
+        f.write("%f %f %f\n\n"%(u[2,0],u[2,1],u[2,2]))
+                                   ^^
+C0103: 60:read_grain_file: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 62:read_grain_file: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 63:read_grain_file: Comma not followed by a space
+    t = [0,0,0]
+          ^^
+C0103: 63:read_grain_file: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 66:read_grain_file: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 72:read_grain_file: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 75:read_grain_file: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 76:read_grain_file: Comma not followed by a space
+            t = [0,0,0]
+                  ^^
+C0103: 76:read_grain_file: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+W0611: 21: Unused import math
+
+
+Report
+======
+50 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |0        |=          |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |0.000    |=          |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |50     |65.79 |66       |-16.00     |
++----------+-------+------+---------+-----------+
+|docstring |1      |1.32  |17       |-16.00     |
++----------+-------+------+---------+-----------+
+|comment   |17     |22.37 |29       |-12.00     |
++----------+-------+------+---------+-----------+
+|empty     |8      |10.53 |6        |+2.00      |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy (grain)
+    ImageD11 
+      \-indexing (grain)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |1          |=          |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |1          |=          |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |1      |3          |-2.00      |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |2      |0          |+2.00      |50.00       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |28     |64       |-36.00     |
++-----------+-------+---------+-----------+
+|refactor   |1      |1        |=          |
++-----------+-------+---------+-----------+
+|warning    |1      |5        |-4.00      |
++-----------+-------+---------+-----------+
+|error      |0      |0        |=          |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |15         |
++-----------+-----------+
+|C0324      |9          |
++-----------+-----------+
+|C0111      |3          |
++-----------+-----------+
+|W0611      |1          |
++-----------+-----------+
+|R0903      |1          |
++-----------+-----------+
+|C0322      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 4.00/10 (previous run: -0.94/10)
+

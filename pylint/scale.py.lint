@@ -1,0 +1,224 @@
+************* Module scale
+C: 45: Line too long (84/80)
+C:103: Line too long (84/80)
+C:151: Line too long (92/80)
+C: 48:scale: Invalid name "scale" (should match [A-Z_][a-zA-Z0-9]+$)
+C: 48:scale: Missing docstring
+C: 75:scale.__init__: Invalid name "Inverse" (should match [a-z_][a-z0-9_]{2,30}$)
+W: 49:scale.__init__: Redefining name 'threshold' from outer scope (line 137)
+C: 56:scale.__init__: Comma not followed by a space
+        LsqMat = Numeric.zeros((2,2),Numeric.Float)
+                                 ^^
+C: 56:scale.__init__: Invalid name "LsqMat" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 69:scale.__init__: Comma not followed by a space
+            dyda = Numeric.take(dyda,self.indices)
+                                    ^^
+C: 70:scale.__init__: Comma not followed by a space
+        LsqMat[0,0] = Numeric.sum(dyda*dyda)
+                ^^
+C: 71:scale.__init__: Comma not followed by a space
+        LsqMat[1,0] = LsqMat[0,1] = Numeric.sum(dyda)
+                ^^
+C: 72:scale.__init__: Comma not followed by a space
+        LsqMat[1,1] = dyda.shape[0]
+                ^^
+W: 85:scale.scaleimage: Redefining name 'a' from outer scope (line 158)
+W: 85:scale.scaleimage: Redefining name 'b' from outer scope (line 158)
+C: 81:scale.scaleimage: Comma not followed by a space
+    def scaleimage(self,im2):
+                       ^^
+C: 85:scale.scaleimage: Comma not followed by a space
+        a,b = self.scale(im2)
+         ^^
+C: 85:scale.scaleimage: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 85:scale.scaleimage: Invalid name "b" (should match [a-z_][a-z0-9_]{2,30}$)
+C:105:scale.scale: Comma not followed by a space
+            ans = Numeric.matrixmultiply(self.Inverse,[rhs0,rhs1])
+                                                     ^^
+C:106:scale.scale: Comma not followed by a space
+            return ans[0],ans[1]
+                         ^^
+C:108:scale.scale: Comma not followed by a space
+            usedata = Numeric.take(Numeric.ravel(im2),self.indices)
+                                                     ^^
+C:111:scale.scale: Comma not followed by a space
+            ans = Numeric.matrixmultiply(self.Inverse,[rhs0,rhs1])
+                                                     ^^
+C:112:scale.scale: Comma not followed by a space
+            return ans[0],ans[1]
+                         ^^
+W:121:testscaleimage: Redefining name 'a' from outer scope (line 158)
+W:121:testscaleimage: Redefining name 'b' from outer scope (line 158)
+C:115:testscaleimage: Missing docstring
+C:116:testscaleimage: Comma not followed by a space
+    im1 = Numeric.ones((10,10),Numeric.Float)
+                          ^^
+C:117:testscaleimage: Comma not followed by a space
+    im1[2:8,2:8] *= 2
+           ^^
+C:118:testscaleimage: Comma not followed by a space
+    im1[4:6,4:6] *= 2
+           ^^
+C:120:testscaleimage: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+C:121:testscaleimage: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C:121:testscaleimage: Invalid name "b" (should match [a-z_][a-z0-9_]{2,30}$)
+C:127: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+C:132: Invalid name "firstimage" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:133: Invalid name "stem" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:134: Invalid name "first" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:135: Invalid name "last" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+W:139: No exception's type specified
+C:137: Invalid name "threshold" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:139: Invalid name "threshold" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+W:143: No exception's type specified
+C:141: Invalid name "write" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:143: Invalid name "write" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:144: Invalid name "d0" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:145: Comma not followed by a space
+    scaler = scale(firstimage.data,threshold)
+                                  ^^
+C:145: Invalid name "scaler" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:146: Comma not followed by a space
+    print "# Scaling with respect to:",sys.argv[1]
+                                      ^^
+C:148: Comma not followed by a space
+        print "# Using",scaler.indices.shape[0],"pixels above threshold"
+                       ^^
+C:154: Comma not followed by a space
+        for i in range(first,last+1):
+                            ^^
+C:156: Operator not followed by a space
+            name = "%s.%04d"%(stem,i)
+                            ^
+C:162: Comma not followed by a space
+        for i in range(first,last+1):
+                            ^^
+C:163: Operator not followed by a space
+            name = "%s.%04d"%(stem,i)
+                            ^
+C:164: Operator not followed by a space
+            newname = "cor_%s.%04d"%(stem.split("/")[-1],i)
+                                   ^
+C:169: Comma not followed by a space
+            opendata.writedata(newname,dataobj)
+                                      ^^
+C:170: Comma not followed by a space
+            print name," -> ",newname
+                      ^^
+W:128: Unused import glob
+
+
+Report
+======
+89 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |98     |57.99 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |37     |21.89 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |18     |10.65 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |16     |9.47  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy 
+      \-oldnumeric (scale)
+        \-linear_algebra (scale)
+    ImageD11 
+      \-opendata (scale)
+      \-data (scale)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |NC         |NC         |0.00        |100.00   |
++---------+-------+-----------+-----------+------------+---------+
+|method   |3      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |1      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |49     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |8      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0324      |22         |
++-----------+-----------+
+|C0103      |18         |
++-----------+-----------+
+|W0621      |5          |
++-----------+-----------+
+|C0323      |3          |
++-----------+-----------+
+|C0301      |3          |
++-----------+-----------+
+|W0702      |2          |
++-----------+-----------+
+|C0111      |2          |
++-----------+-----------+
+|W0611      |1          |
++-----------+-----------+
+|C0322      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 3.60/10
+

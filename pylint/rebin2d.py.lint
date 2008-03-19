@@ -1,0 +1,219 @@
+************* Module rebin2d
+C: 31: Comma not followed by a space
+from math import ceil,floor,sqrt
+                     ^^
+C: 34:polygon: Invalid name "polygon" (should match [A-Z_][a-zA-Z0-9]+$)
+C: 42:polygon.__init__: Invalid name "xy" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 38:polygon.__init__: Invalid name "xy" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 38:polygon.__init__: Comma not followed by a space
+    def __init__(self,xy):
+                     ^^
+C: 42:polygon.__init__: Operator not preceded by a space
+        self.xy=xy
+               ^
+C: 49:polygon.area: Operator not preceded by a space
+        area=0.
+            ^
+C: 51:polygon.area: Operator not preceded by a space
+            x1,y1 = self.xy[i%len(self.xy)]
+                             ^
+C: 51:polygon.area: Invalid name "x1" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 51:polygon.area: Invalid name "y1" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 52:polygon.area: Comma not followed by a space
+            x2,y2 = self.xy[(i+1)%len(self.xy)]
+              ^^
+C: 52:polygon.area: Invalid name "x2" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 52:polygon.area: Invalid name "y2" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 53:polygon.area: Operator not preceded by a space
+            area+=x1*y2-x2*y1
+                ^^
+C: 54:polygon.area: Operator not preceded by a space
+        area=area/2.
+            ^
+C: 61:polygon.walkaroundintegervertices: Operator not preceded by a space
+        path=[]
+            ^
+C: 62:polygon.walkaroundintegervertices: Operator not preceded by a space
+        l=[ item for item in self.xy ]
+         ^
+C: 62:polygon.walkaroundintegervertices: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 65:polygon.walkaroundintegervertices: Invalid name "p1" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 66:polygon.walkaroundintegervertices: Invalid name "p2" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 69:polygon.walkaroundintegervertices: Operator not preceded by a space
+            intersects=[]
+                      ^
+C: 70:polygon.walkaroundintegervertices: Comma not followed by a space
+            for i in range(ceil(p1[0]),ceil(p2[0])):
+                                      ^^
+C: 72:polygon.walkaroundintegervertices: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 73:polygon.walkaroundintegervertices: Operator not preceded by a space
+                point=[i,p1[1]+g*(i-p1[0])]
+                     ^
+C: 74:polygon.walkaroundintegervertices: Comma not followed by a space
+                intersects.append( [distance(p1,point),point] )
+                                               ^^
+C: 75:polygon.walkaroundintegervertices: Comma not followed by a space
+            for i in range(ceil(p1[1]),ceil(p2[1])):
+                                      ^^
+C: 77:polygon.walkaroundintegervertices: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 78:polygon.walkaroundintegervertices: Operator not preceded by a space
+                point=[p1[0]+g*(i-p1[1]),i]
+                     ^
+C: 79:polygon.walkaroundintegervertices: Comma not followed by a space
+                intersects.append( [distance(p1,point),point] )
+                                               ^^
+C: 80:polygon.walkaroundintegervertices: Comma not followed by a space
+            for i in range(ceil(p2[0]),ceil(p1[0])):
+                                      ^^
+C: 82:polygon.walkaroundintegervertices: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 83:polygon.walkaroundintegervertices: Operator not preceded by a space
+                point=[i,p1[1]+g*(i-p1[0])]
+                     ^
+C: 84:polygon.walkaroundintegervertices: Comma not followed by a space
+                intersects.append( [distance(p1,point),point] )
+                                               ^^
+C: 85:polygon.walkaroundintegervertices: Comma not followed by a space
+            for i in range(ceil(p2[1]),ceil(p1[1])):
+                                      ^^
+C: 87:polygon.walkaroundintegervertices: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 88:polygon.walkaroundintegervertices: Operator not preceded by a space
+                point=[p1[0]+g*(i-p1[1]),i]
+                     ^
+C: 89:polygon.walkaroundintegervertices: Comma not followed by a space
+                intersects.append( [distance(p1,point),point] )
+                                               ^^
+C: 93:polygon.walkaroundintegervertices: Comma not followed by a space
+                for d,point in intersects:
+                     ^^
+C: 93:polygon.walkaroundintegervertices: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 96:polygon.walkaroundintegervertices: Operator not preceded by a space
+        self.path=path
+                 ^
+W: 93:polygon.walkaroundintegervertices: Unused variable 'd'
+W: 96:polygon.walkaroundintegervertices: Attribute 'path' defined outside __init__
+C:100:testpolywalkandplot: Missing docstring
+C:105:testpolywalkandplot: Comma not followed by a space
+    plot(Numeric.array(vertices)[:,0],Numeric.array(vertices)[:,1],"o")
+                                  ^^
+C:106:testpolywalkandplot: Comma not followed by a space
+    plot(Numeric.array(obj.path)[:,0],Numeric.array(obj.path)[:,1],"+-")
+                                  ^^
+C:109:distance: Missing docstring
+C:109:distance: Invalid name "p1" (should match [a-z_][a-z0-9_]{2,30}$)
+C:109:distance: Invalid name "p2" (should match [a-z_][a-z0-9_]{2,30}$)
+C:109:distance: Comma not followed by a space
+def distance(p1,p2):
+               ^^
+C:113:main: Missing docstring
+C:127: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+W: 31: Unused import floor
+
+
+Report
+======
+60 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |66     |55.00 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |19     |15.83 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |17     |14.17 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |18     |15.00 |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy 
+      \-oldnumeric (rebin2d)
+    matplotlib 
+      \-pylab (rebin2d)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |NC         |NC         |100.00      |100.00   |
++---------+-------+-----------+-----------+------------+---------+
+|method   |3      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |3      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |49     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |3      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |17         |
++-----------+-----------+
+|C0324      |15         |
++-----------+-----------+
+|C0322      |14         |
++-----------+-----------+
+|C0111      |3          |
++-----------+-----------+
+|W0612      |1          |
++-----------+-----------+
+|W0611      |1          |
++-----------+-----------+
+|W0201      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 1.33/10
+

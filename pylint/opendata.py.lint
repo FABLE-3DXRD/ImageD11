@@ -1,0 +1,823 @@
+************* Module opendata
+C:167: Line too long (83/80)
+C:170: Line too long (83/80)
+C:182: Line too long (89/80)
+C:187: Line too long (85/80)
+C:193: Line too long (87/80)
+C:201: Line too long (87/80)
+C:210: Line too long (83/80)
+C:219: Line too long (87/80)
+C:235: Line too long (89/80)
+C:243: Line too long (88/80)
+C:253: Line too long (88/80)
+C:258: Line too long (81/80)
+C:263: Line too long (84/80)
+C:311: Line too long (89/80)
+C:399: Line too long (96/80)
+C:400: Line too long (96/80)
+C:518: Line too long (84/80)
+C:519: Line too long (84/80)
+C:522: Line too long (86/80)
+W:138: TODO : Read in regions of interest
+W:232: TODO we should later modify to take ROI ranges somehow (xmin,xmax,ymin,ymax)
+W:362: TODO : USE READBYTESTREAM
+W: 32: Relative import 'data'
+W: 57:opendata: Redefining name 's' from outer scope (line 522)
+C: 43:opendata: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 45:opendata: Comma not followed by a space
+    if f[-3:]in ["edf", "EDF","cor","COR"] :
+                             ^^
+C: 51:opendata: Comma not followed by a space
+    if f[-3:] in ["xye","epf","inp"]:
+                       ^^
+C: 55:opendata: Operator not preceded by a space
+    if f[-5]=="." and f[-4:].isdigit():
+            ^^
+C: 57:opendata: Operator not followed by a space
+    s = "\n\nUnrecognised filename: %s\n"%(f)
+                                         ^
+C: 57:opendata: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 60:getnum: Missing docstring
+C: 63:getnum: Invalid name "nl" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 65:getnum: Invalid name "c" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 70:getnum: More than one statement on a single line
+C: 74:makename: Comma not followed by a space
+def makename(stem,num,extn,width=4):
+                 ^^
+C: 79:makename: Operator not preceded by a space
+    if width>0:
+            ^
+C: 80:makename: Operator not preceded by a space
+        fs="%s%0"+"%d"%(width)+"d%s"
+          ^
+C: 80:makename: Invalid name "fs" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 82:makename: Operator not preceded by a space
+        fs="%s%d%s"
+          ^
+C: 82:makename: Invalid name "fs" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 83:makename: Operator not preceded by a space
+    return fs%(stem,num,extn)
+             ^
+C: 91:openchi: Operator not preceded by a space
+    h={}
+     ^
+C: 91:openchi: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 92:openchi: Operator not preceded by a space
+    xy=[]
+      ^
+C: 92:openchi: Invalid name "xy" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 93:openchi: Operator not preceded by a space
+    h['columns']=2
+                ^
+W: 99:openchi: Except doesn't do anything
+W:100:openchi: No exception's type specified
+C: 96:openchi: Operator not preceded by a space
+            v=[float(x) for x in line.split()]
+             ^
+C: 96:openchi: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C:102:openchi: Operator not preceded by a space
+    a=Numeric.array(xy,Numeric.Float)
+     ^
+C:102:openchi: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C:103:openchi: Operator not preceded by a space
+    h['rows']=a.shape[1]
+             ^
+C:104:openchi: Comma not followed by a space
+    return data(a,h)
+                 ^^
+C:111:openxye: Operator not preceded by a space
+    h={}
+     ^
+C:111:openxye: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C:112:openxye: Operator not preceded by a space
+    xye=[]
+       ^
+C:113:openxye: Operator not preceded by a space
+    h['columns']=3
+                ^
+W:117:openxye: Except doesn't do anything
+W:118:openxye: No exception's type specified
+C:116:openxye: Comma not followed by a space
+            xye.append(map(float,line.split()))
+                                ^^
+W:116:openxye: Used builtin function 'map'
+C:119:openxye: Operator not preceded by a space
+    a=Numeric.array(xye)
+     ^
+C:119:openxye: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C:120:openxye: Operator not preceded by a space
+    h['rows']=a.shape[1]
+             ^
+C:121:openxye: Operator not preceded by a space
+    h['xye']=True
+            ^
+C:122:openxye: Comma not followed by a space
+    return data(a,h)
+                 ^^
+W:143:readbytestream: Redefining built-in 'len'
+W:124:readbytestream: Redefining built-in 'file'
+C:124:readbytestream: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C:124:readbytestream: Invalid name "y" (should match [a-z_][a-z0-9_]{2,30}$)
+R:124:readbytestream: Too many arguments (9/5)
+C:124:readbytestream: Comma not followed by a space
+def readbytestream(file,offset,x,y,nbytespp,datatype='int',signed='n',
+                       ^^
+                   swap='n',typeout=Numeric.UInt16):
+E:125:readbytestream: Module 'numpy.oldnumeric' has no 'UInt16' member
+C:142:readbytestream: Operator not preceded by a space
+    tin="dunno"
+       ^
+C:143:readbytestream: Operator not preceded by a space
+    len=nbytespp*x*y # bytes per pixel times number of pixels
+       ^
+C:144:readbytestream: Operator not preceded by a space
+    if datatype=='int' and signed=='n':
+               ^^
+C:145:readbytestream: Operator not preceded by a space
+        if nbytespp==1 : tin=Numeric.UInt8
+                   ^^
+C:145:readbytestream: More than one statement on a single line
+E:145:readbytestream: Module 'numpy.oldnumeric' has no 'UInt8' member
+C:146:readbytestream: Operator not preceded by a space
+        if nbytespp==2 : tin=Numeric.UInt16
+                   ^^
+C:146:readbytestream: More than one statement on a single line
+E:146:readbytestream: Module 'numpy.oldnumeric' has no 'UInt16' member
+C:147:readbytestream: Operator not preceded by a space
+        if nbytespp==4 : tin=Numeric.UInt32
+                   ^^
+C:147:readbytestream: More than one statement on a single line
+E:147:readbytestream: Module 'numpy.oldnumeric' has no 'UInt32' member
+C:148:readbytestream: Operator not preceded by a space
+    if datatype=='int' and signed=='y':
+               ^^
+C:149:readbytestream: Operator not preceded by a space
+        if nbytespp==1 : tin=Numeric.Int8
+                   ^^
+C:149:readbytestream: More than one statement on a single line
+E:149:readbytestream: Module 'numpy.oldnumeric' has no 'Int8' member
+C:150:readbytestream: Operator not preceded by a space
+        if nbytespp==2 : tin=Numeric.Int16
+                   ^^
+C:150:readbytestream: More than one statement on a single line
+E:150:readbytestream: Module 'numpy.oldnumeric' has no 'Int16' member
+C:151:readbytestream: Operator not preceded by a space
+        if nbytespp==4 : tin=Numeric.Int32
+                   ^^
+C:151:readbytestream: More than one statement on a single line
+E:151:readbytestream: Module 'numpy.oldnumeric' has no 'Int32' member
+C:152:readbytestream: Operator not preceded by a space
+    if datatype=='float':
+               ^^
+C:153:readbytestream: Operator not preceded by a space
+        tin=Numeric.Float32
+           ^
+E:153:readbytestream: Module 'numpy.oldnumeric' has no 'Float32' member
+C:154:readbytestream: Operator not preceded by a space
+    if datatype=='double' :
+               ^^
+C:155:readbytestream: Operator not preceded by a space
+        tin=Numeric.Float64
+           ^
+E:155:readbytestream: Module 'numpy.oldnumeric' has no 'Float64' member
+C:156:readbytestream: Operator not preceded by a space
+    if tin=="dunno" :
+          ^^
+C:158:readbytestream: Operator not preceded by a space
+    opened=0
+          ^
+C:160:readbytestream: Operator not preceded by a space
+        f=open(file,'rb')
+         ^
+C:160:readbytestream: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C:161:readbytestream: Operator not preceded by a space
+        opened=1
+              ^
+C:163:readbytestream: Operator not preceded by a space
+        f=file
+         ^
+C:163:readbytestream: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C:165:readbytestream: Operator not preceded by a space
+    if swap=='y':
+           ^^
+C:166:readbytestream: Operator not preceded by a space
+        ar=Numeric.array(Numeric.reshape(
+          ^
+           Numeric.byteswapped(Numeric.fromstring(f.read(len),tin)),(x,y)),typeout)
+C:166:readbytestream: Invalid name "ar" (should match [a-z_][a-z0-9_]{2,30}$)
+E:167:readbytestream: Module 'numpy.oldnumeric' has no 'byteswapped' member
+C:169:readbytestream: Operator not preceded by a space
+        ar=Numeric.array(Numeric.reshape(
+          ^
+                               Numeric.fromstring(f.read(len),tin) ,(x,y)),typeout)
+C:169:readbytestream: Invalid name "ar" (should match [a-z_][a-z0-9_]{2,30}$)
+C:172:readbytestream: More than one statement on a single line
+R:124:readbytestream: Too many branches (16/12)
+W:181:readbrukerheader: Redefining name 's' from outer scope (line 522)
+W:176:readbrukerheader: Redefining built-in 'file'
+C:181:readbrukerheader: Operator not preceded by a space
+    s="string"                 # s is a string
+     ^
+C:181:readbrukerheader: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C:183:readbrukerheader: Operator not preceded by a space
+        f=open(file,"rb")
+         ^
+C:183:readbrukerheader: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C:184:readbrukerheader: Operator not preceded by a space
+        opened=1
+              ^
+C:186:readbrukerheader: Operator not preceded by a space
+        f=file
+         ^
+C:186:readbrukerheader: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C:187:readbrukerheader: Operator not preceded by a space
+        opened=0                # opened var flags to close again if we open the file
+              ^
+C:188:readbrukerheader: Operator not preceded by a space
+    i=80
+     ^
+C:189:readbrukerheader: Operator not preceded by a space
+    hs=f.read(512)             # always start with a 512 byte header
+      ^
+C:189:readbrukerheader: Invalid name "hs" (should match [a-z_][a-z0-9_]{2,30}$)
+C:190:readbrukerheader: Operator not preceded by a space
+    block=hs
+         ^
+C:191:readbrukerheader: Operator not preceded by a space
+    Header={}                  # dict to take results
+          ^
+C:191:readbrukerheader: Invalid name "Header" (should match [a-z_][a-z0-9_]{2,30}$)
+C:193:readbrukerheader: Operator not preceded by a space
+        key,val=block[i-80:i].split(":",1)   # uses 80 char lines in key : value format
+               ^
+C:194:readbrukerheader: Operator not preceded by a space
+        key=key.strip()         # remove the whitespace (why?)
+           ^
+C:195:readbrukerheader: Operator not preceded by a space
+        val=val.strip()
+           ^
+C:197:readbrukerheader: Operator not preceded by a space
+            Header[key]=Header[key]+'\n'+val
+                       ^
+C:199:readbrukerheader: Operator not preceded by a space
+            Header[key]=val
+                       ^
+C:200:readbrukerheader: Operator not preceded by a space
+        i=i+80                  # next 80 characters
+         ^
+C:201:readbrukerheader: Operator not preceded by a space
+    nhdrblks=int(Header['HDRBLKS'])    # we must have read this in the first 512 bytes.
+            ^
+C:204:readbrukerheader: Operator not preceded by a space
+    rest=f.read(512*(nhdrblks-1))
+        ^
+C:206:readbrukerheader: Operator not preceded by a space
+    hs=hs+rest
+      ^
+C:206:readbrukerheader: Invalid name "hs" (should match [a-z_][a-z0-9_]{2,30}$)
+C:207:readbrukerheader: Operator not preceded by a space
+    j=512*nhdrblks
+     ^
+C:211:readbrukerheader: Operator not preceded by a space
+            key,val=block[i-80:i].split(":",1)
+                   ^
+C:212:readbrukerheader: Operator not preceded by a space
+            key=key.strip()
+               ^
+C:213:readbrukerheader: Operator not preceded by a space
+            val=val.strip()
+               ^
+C:215:readbrukerheader: Operator not preceded by a space
+                Header[key]=Header[key]+'\n'+val
+                           ^
+C:217:readbrukerheader: Operator not preceded by a space
+                Header[key]=val
+                           ^
+C:218:readbrukerheader: Operator not preceded by a space
+        i=i+80
+         ^
+C:219:readbrukerheader: Operator not preceded by a space
+    Header['datastart']=f.tell()                # make a header item called "datastart"
+                       ^
+C:220:readbrukerheader: More than one statement on a single line
+C:222:readbrukerheader: Operator not preceded by a space
+    Header['headerstring']=hs
+                          ^
+W:234:readbruker: Redefining name 's' from outer scope (line 522)
+W:228:readbruker: Redefining built-in 'file'
+W:253:readbruker: Redefining name 'data' from outer scope (line 32)
+R:228:readbruker: Too many local variables (17/15)
+C:234:readbruker: Operator not preceded by a space
+    s="string"                 # s is a string
+     ^
+C:234:readbruker: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C:236:readbruker: Operator not preceded by a space
+        f=open(file,"rb")
+         ^
+C:236:readbruker: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C:237:readbruker: Operator not preceded by a space
+        opened=1
+              ^
+C:239:readbruker: Operator not preceded by a space
+        f=file
+         ^
+C:239:readbruker: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C:240:readbruker: Operator not preceded by a space
+        opened=0
+              ^
+C:241:readbruker: Operator not preceded by a space
+    Header=readbrukerheader(f) # pass in the file pointer, it stays open
+          ^
+C:241:readbruker: Invalid name "Header" (should match [a-z_][a-z0-9_]{2,30}$)
+C:243:readbruker: Operator not preceded by a space
+        npixelb=int(Header['NPIXELB'])   # you had to read the Bruker docs to know this!
+               ^
+C:245:readbruker: Comma not followed by a space
+        print "length",len(Header['NPIXELB'])
+                      ^^
+C:246:readbruker: Invalid name "c" (should match [a-z_][a-z0-9_]{2,30}$)
+C:247:readbruker: Comma not followed by a space
+            print "char:",c,ord(c)
+                         ^^
+C:249:readbruker: Operator not followed by a space
+    rows   =int(Header['NROWS'])
+           ^
+C:250:readbruker: Operator not followed by a space
+    cols   =int(Header['NCOLS'])
+           ^
+C:252:readbruker: Operator not preceded by a space
+    size=rows*cols*npixelb
+        ^
+C:253:readbruker: Operator not preceded by a space
+    data=readbytestream(f,f.tell(),rows,cols,npixelb,datatype="int",signed='n',swap='n')
+        ^
+C:254:readbruker: Operator not preceded by a space
+    no=int(Header['NOVERFL'])        # now process the overflows
+      ^
+C:254:readbruker: Invalid name "no" (should match [a-z_][a-z0-9_]{2,30}$)
+C:255:readbruker: Operator not preceded by a space
+    if no>0:   # Read in the overflows
+         ^
+C:257:readbruker: Operator not preceded by a space
+        data=data.astype(Numeric.UInt32)
+            ^
+E:257:readbruker: Module 'numpy.oldnumeric' has no 'UInt32' member
+C:260:readbruker: Operator not preceded by a space
+            ov=f.read(16)
+              ^
+C:260:readbruker: Invalid name "ov" (should match [a-z_][a-z0-9_]{2,30}$)
+C:261:readbruker: Operator not preceded by a space
+            intensity=int(ov[0:9])
+                     ^
+C:262:readbruker: Operator not preceded by a space
+            position=int(ov[9:16])
+                    ^
+C:263:readbruker: Operator not preceded by a space
+            r=position%rows           # relies on python style modulo being always +
+             ^
+C:263:readbruker: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
+C:264:readbruker: Operator not preceded by a space
+            c=position/rows           # relies on truncation down
+             ^
+C:264:readbruker: Invalid name "c" (should match [a-z_][a-z0-9_]{2,30}$)
+C:266:readbruker: Operator not preceded by a space
+            data[c,r]=intensity
+                     ^
+C:268:readbruker: Operator not preceded by a space
+    Header["rows"]=rows
+                  ^
+C:269:readbruker: Operator not preceded by a space
+    Header["columns"]=cols
+                     ^
+C:270:readbruker: Comma not followed by a space
+    return Header,data
+                 ^^
+W:252:readbruker: Unused variable 'size'
+W:237:readbruker: Unused variable 'opened'
+W:259:readbruker: Unused variable 'i'
+C:277:openbruker: Operator not preceded by a space
+    h,d=readbruker(filename)
+       ^
+C:277:openbruker: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C:277:openbruker: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+C:278:openbruker: Comma not followed by a space
+    return data(d,h)
+                 ^^
+W:280:edfheader: Redefining built-in 'file'
+C:286:edfheader: Operator not preceded by a space
+        f=open(file,"rb")
+         ^
+C:286:edfheader: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C:287:edfheader: Operator not preceded by a space
+        opened=1
+              ^
+C:289:edfheader: Operator not preceded by a space
+        f=file
+         ^
+C:289:edfheader: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C:290:edfheader: Operator not preceded by a space
+        opened=0
+              ^
+C:292:edfheader: Operator not preceded by a space
+    fh=f.read(1024)
+      ^
+C:292:edfheader: Invalid name "fh" (should match [a-z_][a-z0-9_]{2,30}$)
+C:295:edfheader: Operator not preceded by a space
+    i=1023
+     ^
+C:296:edfheader: Operator not preceded by a space
+    j=0
+     ^
+C:301:edfheader: Operator not preceded by a space
+        fh+=extra
+          ^^
+C:302:edfheader: Operator not preceded by a space
+        j=j+1
+         ^
+C:303:edfheader: Operator not preceded by a space
+        if j==9:
+            ^^
+C:306:edfheader: Operator not preceded by a space
+    headeritems=fh[1:-1].split(";")
+               ^
+C:307:edfheader: Operator not preceded by a space
+    hd={}
+      ^
+C:307:edfheader: Invalid name "hd" (should match [a-z_][a-z0-9_]{2,30}$)
+C:308:edfheader: Operator not preceded by a space
+    hd["headerstring"]=fh
+                      ^
+C:312:edfheader: Operator not preceded by a space
+    hd["rows"]=int(hd["Dim_1"])
+              ^
+C:313:edfheader: Operator not preceded by a space
+    hd["columns"]=int(hd["Dim_2"])
+                 ^
+C:331:edfheader: Operator not preceded by a space
+        if hd["DataType"]=="UnsignedShort":
+                         ^^
+C:332:edfheader: Operator not preceded by a space
+            hd["Size"]=hd["rows"]*hd["columns"]*2
+                      ^
+C:333:edfheader: Operator not preceded by a space
+        if hd["DataType"]=="FLOAT":   # fit2d
+                         ^^
+C:334:edfheader: Operator not preceded by a space
+            hd["Size"]=hd["rows"]*hd["columns"]*4
+                      ^
+C:335:edfheader: More than one statement on a single line
+W:295:edfheader: Unused variable 'i'
+W:353:openedf: No exception's type specified
+C:347:openedf: Operator not preceded by a space
+            f=gzip.GzipFile(filename,"rb")
+             ^
+C:347:openedf: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C:349:openedf: Operator not preceded by a space
+            f=bz2.BZ2File(filename,"rb")
+             ^
+C:349:openedf: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C:351:openedf: Operator not preceded by a space
+            f=open(filename,"rb")
+             ^
+C:351:openedf: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+W:356:openedf: No exception's type specified
+C:354:openedf: Operator not preceded by a space
+            f=gzip.GzipFile(filename+".gz","rb")
+             ^
+C:354:openedf: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C:357:openedf: Operator not preceded by a space
+                f=bz2.BZ2File(filename+".bz2","rb")
+                 ^
+C:357:openedf: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C:359:openedf: Operator not followed by a space
+                print "Cannot manage to open %s"%(filename)
+                                                ^
+C:361:openedf: Operator not preceded by a space
+    hd=edfheader(f)
+      ^
+C:361:openedf: Invalid name "hd" (should match [a-z_][a-z0-9_]{2,30}$)
+C:365:openedf: Operator not preceded by a space
+        datastring=f.read()[-int(hd["Size"]):] # all of the data
+                  ^
+C:372:openedf: Operator not preceded by a space
+    if hd["DataType"]=="UnsignedShort": numerictype=Numeric.UInt16
+                     ^^
+C:372:openedf: More than one statement on a single line
+E:372:openedf: Module 'numpy.oldnumeric' has no 'UInt16' member
+C:373:openedf: Operator not preceded by a space
+    if hd["DataType"]=="FLOAT": numerictype=Numeric.Float32
+                     ^^
+C:373:openedf: More than one statement on a single line
+E:373:openedf: Module 'numpy.oldnumeric' has no 'Float32' member
+C:374:openedf: Operator not preceded by a space
+    if hd["DataType"]=="FloatValue": numerictype=Numeric.Float32
+                     ^^
+C:374:openedf: More than one statement on a single line
+E:374:openedf: Module 'numpy.oldnumeric' has no 'Float32' member
+C:377:openedf: Operator not preceded by a space
+    if hd["ByteOrder"]=="LowByteFirst":
+                      ^^
+C:378:openedf: Operator not preceded by a space
+        ar=Numeric.reshape(
+          ^
+              Numeric.fromstring(datastring,numerictype),
+              (hd["columns"],hd["rows"]) )
+C:378:openedf: Invalid name "ar" (should match [a-z_][a-z0-9_]{2,30}$)
+C:382:openedf: Operator not preceded by a space
+        ar=Numeric.reshape(
+          ^
+              Numeric.fromstring(datastring,numerictype).byteswap(),
+              (hd["columns"],hd["rows"]) )
+C:382:openedf: Invalid name "ar" (should match [a-z_][a-z0-9_]{2,30}$)
+C:386:openedf: Comma not followed by a space
+    return data(ar,hd)
+                  ^^
+R:338:openedf: Too many branches (13/12)
+W:429:writebruker: Redefining name 's' from outer scope (line 522)
+R:389:writebruker: Too many local variables (16/15)
+C:389:writebruker: Comma not followed by a space
+def writebruker(filename,dataobject):
+                        ^^
+C:396:writebruker: Invalid name "hs" (should match [a-z_][a-z0-9_]{2,30}$)
+C:403:writebruker: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
+C:404:writebruker: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+E:406:writebruker: Module 'numpy.oldnumeric' has no 'UInt16' member
+C:411:writebruker: Comma not followed by a space
+        twobytes = pow(2,16)-1
+                        ^^
+C:413:writebruker: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
+C:415:writebruker: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+C:416:writebruker: Invalid name "b" (should match [a-z_][a-z0-9_]{2,30}$)
+C:417:writebruker: Comma not followed by a space
+    hs = hs.replace(hs[o:o+80],"%-80s"%("NOVERFL:%10d"%(noverfl)))
+                              ^^
+C:417:writebruker: Invalid name "hs" (should match [a-z_][a-z0-9_]{2,30}$)
+C:418:writebruker: Comma not followed by a space
+    hs = hs.replace(hs[b:b+80],"%-80s"%("NPIXELB:%10d"%(bytespp)))
+                              ^^
+C:418:writebruker: Invalid name "hs" (should match [a-z_][a-z0-9_]{2,30}$)
+E:424:writebruker: Module 'numpy.oldnumeric' has no 'UInt16' member
+C:426:writebruker: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
+C:429:writebruker: Operator not followed by a space
+            s = "%9d%7d"%(r[i],i)
+                        ^
+C:429:writebruker: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+W:404:writebruker: Unused variable 'd'
+W:467:makeedfheader: Redefining name 's' from outer scope (line 522)
+C:440:makeedfheader: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C:464:makeedfheader: Invalid name "hd" (should match [a-z_][a-z0-9_]{2,30}$)
+C:465:makeedfheader: Operator not preceded by a space
+    hd["DataType"]="FLOAT"
+                  ^
+C:466:makeedfheader: Operator not preceded by a space
+    hd["Size"]=str(Numeric.ravel(dataobject.data).shape[0]*4)
+              ^
+C:470:makeedfheader: Operator not preceded by a space
+    s = "{\n"+h%args
+               ^
+C:470:makeedfheader: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C:471:makeedfheader: Comma not followed by a space
+    keys = keys + ["headerstring","rows","columns"]
+                                 ^^
+C:472:makeedfheader: Invalid name "ok" (should match [a-z_][a-z0-9_]{2,30}$)
+C:476:makeedfheader: Operator not followed by a space
+            s = "%s\n%-12s = %s ;"%(s,k,hd[k])
+                                  ^
+C:476:makeedfheader: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C:477:makeedfheader: Operator not followed by a space
+    return "%-4094s}\n"%(s)
+                       ^
+C:481:writeedf: Empty docstring
+C:481:writeedf: Comma not followed by a space
+def writeedf(filename,dataobject):
+                     ^^
+C:484:writeedf: Operator not preceded by a space
+    h=makeedfheader(dataobject)
+     ^
+C:484:writeedf: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C:486:writeedf: Operator not preceded by a space
+    f=open(filename,"wb")
+     ^
+C:486:writeedf: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+E:488:writeedf: Module 'numpy.oldnumeric' has no 'Float32' member
+C:491:writedata: Missing docstring
+C:491:writedata: Comma not followed by a space
+def writedata(filename,dataobject):
+                      ^^
+C:495:writedata: Comma not followed by a space
+            writebruker(filename,dataobject)
+                                ^^
+C:499:writedata: Comma not followed by a space
+            writeedf(filename,dataobject)
+                             ^^
+C:507: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+C:508: Comma not followed by a space
+    import sys,time
+              ^^
+C:512: Operator not preceded by a space
+    t1=time.time()
+      ^
+C:512: Invalid name "t1" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:513: Operator not preceded by a space
+    testdata=opendata(sys.argv[1])
+            ^
+C:513: Invalid name "testdata" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:514: Operator not preceded by a space
+    t2=time.time()
+      ^
+C:514: Invalid name "t2" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:515: Comma not followed by a space
+    print "Time to read file =",t2-t2,"/s"
+                               ^^
+C:516: Comma not followed by a space
+    print "Rows              =",testdata.header['rows']
+                               ^^
+C:517: Comma not followed by a space
+    print "Columns           =",testdata.header['columns']
+                               ^^
+C:518: Comma not followed by a space
+    print "Maximum           =",Numeric.maximum.reduce(Numeric.ravel(testdata.data))
+                               ^^
+C:519: Comma not followed by a space
+    print "Minimum           =",Numeric.minimum.reduce(Numeric.ravel(testdata.data))
+                               ^^
+C:520: Operator not preceded by a space
+    t3=time.time()
+      ^
+C:520: Invalid name "t3" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:521: Comma not followed by a space
+    print "Time native ops   =",t3-t2,"/s"
+                               ^^
+C:522: Operator not followed by a space
+    s =sum( Numeric.ravel(testdata.data).astype(Numeric.Float32) )  # 16 bit overflows
+      ^
+C:522: Invalid name "s" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+E:522: Module 'numpy.oldnumeric' has no 'Float32' member
+C:523: Operator not preceded by a space
+    sq=sum( Numeric.pow( ravel(testdata.data).astype(Numeric.Float32), 2) )
+      ^
+C:523: Invalid name "sq" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+E:523: Module 'numpy.oldnumeric' has no 'pow' member
+E:523: Undefined variable 'ravel'
+E:523: Module 'numpy.oldnumeric' has no 'Float32' member
+C:524: Operator not preceded by a space
+    n=testdata.header['rows']*testdata.header['columns']
+     ^
+C:524: Invalid name "n" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:525: Comma not followed by a space
+    print "Sum               =",s
+                               ^^
+C:526: Comma not followed by a space
+    print "Average           =",s/n
+                               ^^
+C:527: Comma not followed by a space
+    print "Variance          =",Numeric.sqrt(sq/n - (s/n)*(s/n))
+                               ^^
+C:528: Operator not preceded by a space
+    t4=time.time()
+      ^
+C:528: Invalid name "t4" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:529: Comma not followed by a space
+    print "Time float ops    =",t4-t3,"/s"
+                               ^^
+C:530: Comma not followed by a space
+    print "Total run time    =",t4-t1,"/s"
+                               ^^
+
+
+Report
+======
+327 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |348    |68.37 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |86     |16.90 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |36     |7.07  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |39     |7.66  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+     
+      \-data (opendata)
+    numpy 
+      \-oldnumeric (opendata)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |15     |NC         |NC         |80.00       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |280    |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |5      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |27     |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |21     |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0322      |132        |
++-----------+-----------+
+|C0103      |72         |
++-----------+-----------+
+|C0324      |33         |
++-----------+-----------+
+|E1101      |20         |
++-----------+-----------+
+|C0301      |19         |
++-----------+-----------+
+|C0321      |13         |
++-----------+-----------+
+|C0323      |8          |
++-----------+-----------+
+|W0621      |6          |
++-----------+-----------+
+|W0622      |5          |
++-----------+-----------+
+|W0612      |5          |
++-----------+-----------+
+|W0702      |4          |
++-----------+-----------+
+|W0511      |3          |
++-----------+-----------+
+|W0704      |2          |
++-----------+-----------+
+|R0914      |2          |
++-----------+-----------+
+|R0912      |2          |
++-----------+-----------+
+|C0111      |2          |
++-----------+-----------+
+|W0403      |1          |
++-----------+-----------+
+|W0141      |1          |
++-----------+-----------+
+|R0913      |1          |
++-----------+-----------+
+|E0602      |1          |
++-----------+-----------+
+|C0112      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at -2.75/10
+

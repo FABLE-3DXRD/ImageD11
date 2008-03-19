@@ -1,0 +1,121 @@
+************* Module ImageD11Server
+C: 21:Server: Operator not preceded by a space
+    accessList=('127.0.0.1')
+              ^
+W: 24:Server.__init__: Used * or ** magic
+W: 36:Server.verify_request: Unused argument 'request'
+C: 82:XMLRPCThread.run.setLevel: Invalid name "setLevel" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 85:XMLRPCThread.run.setLevel: Invalid name "rt" (should match [a-z_][a-z0-9_]{2,30}$)
+C:100:RunXMLRPCServer: Invalid name "RunXMLRPCServer" (should match [a-z_][a-z0-9_]{2,30}$)
+C:111:RunXMLRPCServer: Invalid name "th" (should match [a-z_][a-z0-9_]{2,30}$)
+E:116:RunXMLRPCServer: Module 'signal' has no 'SIGBREAK' member
+C:127: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+C:136: Invalid name "use_this_port" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:139: Invalid name "use_this_port" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:145: Invalid name "console" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:147: Invalid name "formatter" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:153: Invalid name "root" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+
+
+Report
+======
+68 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |74     |51.75 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |32     |22.38 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |19     |13.29 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |18     |12.59 |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    ImageD11 
+      \-guicommand (ImageD11Server)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |2      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |6      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |3      |NC         |NC         |100.00      |66.67    |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |11     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |2      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |1      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |9          |
++-----------+-----------+
+|C0322      |2          |
++-----------+-----------+
+|W0613      |1          |
++-----------+-----------+
+|W0142      |1          |
++-----------+-----------+
+|E1101      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 7.35/10
+

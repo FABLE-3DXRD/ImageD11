@@ -1,0 +1,345 @@
+************* Module refinegrains
+C0301:241: Line too long (96/80)
+C0301:242: Line too long (84/80)
+C0301:243: Line too long (82/80)
+C0301:338: Line too long (81/80)
+C0301:339: Line too long (81/80)
+C0301:340: Line too long (81/80)
+C0301:362: Line too long (81/80)
+C0301:363: Line too long (82/80)
+C0301:364: Line too long (82/80)
+C0301:446: Line too long (83/80)
+C0111:  1: Missing docstring
+W0403: 29: Relative import 'simplex'
+C0103:240:refinegrains.compute_gv: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
+R0902: 31:refinegrains: Too many instance attributes (16/7)
+C0322: 87:refinegrains.__init__: Operator not preceded by a space
+        self.tolerance=tolerance
+                      ^
+C0322: 93:refinegrains.__init__: Operator not preceded by a space
+        self.scannames=[]
+                      ^
+C0322: 94:refinegrains.__init__: Operator not preceded by a space
+        self.scantitles={}
+                       ^
+C0322: 95:refinegrains.__init__: Operator not preceded by a space
+        self.scandata={}
+                     ^
+W0142:101:refinegrains.__init__: Used * or ** magic
+C0324:102:refinegrains.__init__: Comma not followed by a space
+        for k,s in self.stepsizes.items():
+             ^^
+C0103:102:refinegrains.__init__: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:103:refinegrains.__init__: Operator not preceded by a space
+            self.parameterobj.stepsizes[k]=s
+                                          ^
+C0111:105:refinegrains.loadparameters: Missing docstring
+C0111:108:refinegrains.saveparameters: Missing docstring
+C0103:116:refinegrains.readubis: Invalid name "ul" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:120:refinegrains.readubis: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:134:refinegrains.savegrains: Invalid name "ks" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:138:refinegrains.savegrains: Invalid name "gl" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:140:refinegrains.savegrains: Invalid name "gl" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:143:refinegrains.savegrains: Invalid name "gl" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:155:refinegrains.makeuniq: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111:180:refinegrains.generate_grains: Missing docstring
+C0103:181:refinegrains.generate_grains: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:186:refinegrains.generate_grains: Comma not followed by a space
+                    gr = self.grains[(grainname,scanname)]
+                                               ^^
+C0103:186:refinegrains.generate_grains: Invalid name "gr" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:189:refinegrains.generate_grains: Comma not followed by a space
+                        self.grains[(grainname,scanname)] = grain.grain(
+                                              ^^
+                            self.ubisread[grainname],
+                            translation=t)
+C0324:192:refinegrains.generate_grains: Comma not followed by a space
+                        self.grains[(grainname,scanname)].name = \
+                                              ^^
+                            (str(grainname)+":"+scanname).replace(" ","_")
+C0324:195:refinegrains.generate_grains: Comma not followed by a space
+                        self.grains[(grainname,scanname)] = grain.grain(
+                                              ^^
+                            self.ubisread[grainname],
+                            translation = self.translationsread[grainname] )
+C0324:198:refinegrains.generate_grains: Comma not followed by a space
+                        self.grains[(grainname,scanname)].name = \
+                                              ^^
+                            (str(grainname)+":"+scanname).replace(" ","_")
+W0612:186:refinegrains.generate_grains: Unused variable 'gr'
+C0111:206:refinegrains.reset_labels: Missing docstring
+C0103:214:refinegrains.reset_labels: Invalid name "om" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:218:refinegrains.reset_labels: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:219:refinegrains.reset_labels: Comma not followed by a space
+            self.grains[(g,scanname)].x = x
+                          ^^
+C0324:220:refinegrains.reset_labels: Comma not followed by a space
+            self.grains[(g,scanname)].y = y
+                          ^^
+C0324:221:refinegrains.reset_labels: Comma not followed by a space
+            self.grains[(g,scanname)].om = om
+                          ^^
+C0103:231:refinegrains.compute_gv: Invalid name "om" (should match [a-z_][a-z0-9_]{2,30}$)
+W0702:235:refinegrains.compute_gv: No exception's type specified
+C0324:237:refinegrains.compute_gv: Comma not followed by a space
+        self.tth,self.eta = transform.compute_tth_eta( numpy.array([x, y]),
+                ^^
+                                      omega = om * sign,
+                                      **self.parameterobj.parameters)
+W0142:237:refinegrains.compute_gv: Used * or ** magic
+C0322:252:refinegrains.refine: Operator not preceded by a space
+        mat=ubi.copy()
+           ^
+C0323:259:refinegrains.refine: Operator not followed by a space
+            print "%-8d %.6f"%(self.npks,math.sqrt(self.avg_drlv2))
+                             ^
+C0111:268:refinegrains.applyargs: Missing docstring
+C0324:268:refinegrains.applyargs: Comma not followed by a space
+    def applyargs(self,args):
+                      ^^
+C0111:271:refinegrains.printresult: Missing docstring
+C0324:271:refinegrains.printresult: Comma not followed by a space
+    def printresult(self,arg):
+                        ^^
+W0704:280:refinegrains.printresult: Except doesn't do anything
+W0702:282:refinegrains.printresult: No exception's type specified
+C0322:278:refinegrains.printresult: Operator not preceded by a space
+                self.parameterobj.parameters[item]=value
+                                                  ^
+C0324:279:refinegrains.printresult: Comma not followed by a space
+                print item,value
+                          ^^
+C0324:285:refinegrains.gof: Comma not followed by a space
+    def gof(self,args):
+                ^^
+C0103:297:refinegrains.gof: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:303:refinegrains.gof: Comma not followed by a space
+            self.compute_gv(grainname,scanname)
+                                     ^^
+W0104:308:refinegrains.gof: Statement seems to have no effect
+C0322:311:refinegrains.gof: Operator not preceded by a space
+            contribs+= self.npks
+                    ^^
+W0622:329:refinegrains.fit: Redefining built-in 'iter'
+C0322:328:refinegrains.fit: Operator not preceded by a space
+        s=simplex.Simplex(self.gof, guess, inc)
+         ^
+C0103:328:refinegrains.fit: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:329:refinegrains.fit: Operator not preceded by a space
+        newguess,error,iter=s.minimize(maxiters=maxiters , monitor=1)
+                           ^
+W0612:329:refinegrains.fit: Unused variable 'iter'
+W0612:329:refinegrains.fit: Unused variable 'error'
+C0111:333:refinegrains.getgrains: Missing docstring
+C0111:337:refinegrains.set_translation: Missing docstring
+C0103:337:refinegrains.set_translation: Invalid name "gr" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:337:refinegrains.set_translation: Invalid name "sc" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:337:refinegrains.set_translation: Comma not followed by a space
+    def set_translation(self,gr,sc):
+                            ^^
+C0324:338:refinegrains.set_translation: Comma not followed by a space
+        self.parameterobj.parameters['t_x'] = self.grains[(gr,sc)].translation[0]
+                                                             ^^
+C0324:339:refinegrains.set_translation: Comma not followed by a space
+        self.parameterobj.parameters['t_y'] = self.grains[(gr,sc)].translation[1]
+                                                             ^^
+C0324:340:refinegrains.set_translation: Comma not followed by a space
+        self.parameterobj.parameters['t_z'] = self.grains[(gr,sc)].translation[2]
+                                                             ^^
+W0622:360:refinegrains.refinepositions: Redefining built-in 'iter'
+C0111:343:refinegrains.refinepositions: Missing docstring
+C0324:343:refinegrains.refinepositions: Comma not followed by a space
+    def refinepositions(self, quiet=True,maxiters=100):
+                                        ^^
+C0103:345:refinegrains.refinepositions: Invalid name "ks" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:351:refinegrains.refinepositions: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:354:refinegrains.refinepositions: Comma not followed by a space
+            self.set_translation(key[0],key[1])
+                                       ^^
+C0103:358:refinegrains.refinepositions: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:360:refinegrains.refinepositions: Comma not followed by a space
+            newguess, error, iter = s.minimize(maxiters=maxiters,monitor=1)
+                                                                ^^
+C0324:365:refinegrains.refinepositions: Comma not followed by a space
+            print key,self.grains[key].translation,
+                     ^^
+C0324:366:refinegrains.refinepositions: Comma not followed by a space
+            self.refine(self.grains[key].ubi,quiet=False)
+                                            ^^
+W0612:360:refinegrains.refinepositions: Unused variable 'newguess'
+W0612:351:refinegrains.refinepositions: Unused variable 'g'
+W0613:343:refinegrains.refinepositions: Unused argument 'quiet'
+W0612:360:refinegrains.refinepositions: Unused variable 'iter'
+W0612:360:refinegrains.refinepositions: Unused variable 'error'
+C0111:370:refinegrains.refineubis: Missing docstring
+C0103:372:refinegrains.refineubis: Invalid name "ks" (should match [a-z_][a-z0-9_]{2,30}$)
+C0323:375:refinegrains.refineubis: Operator not followed by a space
+            print "%10s %10s"%("grainname","scanname"),
+                             ^
+C0103:378:refinegrains.refineubis: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C0323:382:refinegrains.refineubis: Operator not followed by a space
+                print "%10s %10s"%(grainname,scanname),
+                                 ^
+C0103:394:refinegrains.assignlabels: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:397:refinegrains.assignlabels: Invalid name "nr" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:399:refinegrains.assignlabels: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:400:refinegrains.assignlabels: Invalid name "gr" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:413:refinegrains.assignlabels: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:414:refinegrains.assignlabels: Invalid name "gr" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:427:refinegrains.assignlabels: Comma not followed by a space
+                print "Grain",g,"Scan",s,"npks=",len(ind)
+                             ^^
+W0201:240:refinegrains.compute_gv: Attribute 'gv' defined outside __init__
+W0201:237:refinegrains.compute_gv: Attribute 'eta' defined outside __init__
+W0201:254:refinegrains.refine: Attribute 'npks' defined outside __init__
+W0201:237:refinegrains.compute_gv: Attribute 'tth' defined outside __init__
+W0201:254:refinegrains.refine: Attribute 'avg_drlv2' defined outside __init__
+C0111:432:test_benoit: Missing docstring
+C0322:433:test_benoit: Operator not preceded by a space
+    o=refinegrains()
+     ^
+C0103:433:test_benoit: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:442:test_benoit: Comma not followed by a space
+    for o.tolerance in [0.1,0.2,0.15,0.1,0.075,0.05]:
+                           ^^
+C0324:446:test_benoit: Comma not followed by a space
+    o.varylist = ['y-center','z-center','distance','tilt-y','tilt-z','wedge','chi']
+                            ^^
+C0111:451:test_nac: Missing docstring
+C0103:453:test_nac: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+W0611: 26: Unused import indexing
+
+
+Report
+======
+243 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |0        |=          |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |0.000    |=          |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |260    |60.89 |181      |+79.00     |
++----------+-------+------+---------+-----------+
+|docstring |89     |20.84 |52       |+37.00     |
++----------+-------+------+---------+-----------+
+|comment   |32     |7.49  |31       |+1.00      |
++----------+-------+------+---------+-----------+
+|empty     |46     |10.77 |27       |+19.00     |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+     
+      \-simplex (refinegrains)
+    numpy (refinegrains)
+    ImageD11 
+      \-closest (refinegrains)
+      \-parameters (refinegrains)
+      \-indexing (refinegrains)
+      \-transform (refinegrains)
+      \-columnfile (refinegrains)
+      \-grain (refinegrains)
+      \-sym_u (refinegrains)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |1          |=          |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |1          |=          |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |20     |15         |+5.00      |50.00       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |2      |0          |+2.00      |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |95     |112      |-17.00     |
++-----------+-------+---------+-----------+
+|refactor   |1      |2        |-1.00      |
++-----------+-------+---------+-----------+
+|warning    |23     |18       |+5.00      |
++-----------+-------+---------+-----------+
+|error      |0      |3        |-3.00      |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |31         |
++-----------+-----------+
+|C0324      |27         |
++-----------+-----------+
+|C0111      |13         |
++-----------+-----------+
+|C0322      |11         |
++-----------+-----------+
+|C0301      |10         |
++-----------+-----------+
+|W0612      |7          |
++-----------+-----------+
+|W0201      |5          |
++-----------+-----------+
+|C0323      |3          |
++-----------+-----------+
+|W0702      |2          |
++-----------+-----------+
+|W0622      |2          |
++-----------+-----------+
+|W0142      |2          |
++-----------+-----------+
+|W0704      |1          |
++-----------+-----------+
+|W0613      |1          |
++-----------+-----------+
+|W0611      |1          |
++-----------+-----------+
+|W0403      |1          |
++-----------+-----------+
+|W0104      |1          |
++-----------+-----------+
+|R0902      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 5.10/10 (previous run: 1.60/10)
+

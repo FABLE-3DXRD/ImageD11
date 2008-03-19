@@ -1,0 +1,397 @@
+************* Module ImageD11_gui
+C0301:166: Line too long (100/80)
+C0301:220: Line too long (81/80)
+C0301:222: Line too long (83/80)
+W0511: 57: TODO - proper online help
+W0511:187: TODO
+W0511:220: TODO Get size of TopLevels window and position it in a sensible way
+W0622: 58:help: Redefining built-in 'help'
+W0622: 93:credits: Redefining built-in 'credits'
+W0622:101: Redefining built-in 'license'
+C0103:  1: Invalid name "ImageD11_gui" (should match (([a-z_][a-z0-9_]*)|([a-z][a-zA-Z0-9]+))$)
+W0401: 36: Wildcard import Tkinter
+C0322: 44: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+C0103: 47: Invalid name "console" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 49: Invalid name "formatter" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 54: Invalid name "root" (should match (([A-Z_]*)|(__.*__))$)
+C0111: 58:help: Missing docstring
+C0324: 65:help: Comma not followed by a space
+        showinfo("Help","Please try harder\n"+hlp)
+                       ^^
+C0103: 69: Invalid name "ImageD11credits" (should match (([A-Z_]*)|(__.*__))$)
+C0111: 93:credits: Missing docstring
+C0324: 95:credits: Comma not followed by a space
+        showinfo("Credits",ImageD11credits)
+                          ^^
+C0103:102: Invalid name "license" (should match (([A-Z_]*)|(__.*__))$)
+C0111:104:showlicense: Missing docstring
+C0324:106:showlicense: Comma not followed by a space
+        win = ScrolledText(Toplevel(),width=100)
+                                     ^^
+C0324:107:showlicense: Comma not followed by a space
+        win.insert(END,license)
+                      ^^
+C0324:108:showlicense: Comma not followed by a space
+        win.pack(expand=1,fill=BOTH)
+                         ^^
+C0324:112: Comma not followed by a space
+    import tkFileDialog,os
+                       ^^
+C0103:116:TestGuiMaker: Invalid name "TestGuiMaker" (should match [a-z_][a-zA-Z0-9]+$)
+C0111:116:TestGuiMaker: Missing docstring
+C0103:167:TestGuiMaker.start: Invalid name "menuBar" (should match [a-z_][a-z0-9_]{2,30}$)
+R0901:116:TestGuiMaker: Too many ancestors (8/7)
+W0621:164:TestGuiMaker.start: Redefining name 'sys' from outer scope (line 36)
+C0323:130:TestGuiMaker.start: Operator not followed by a space
+            startmessage = """
+
+
+
+
+
+  """%(ImageD11.__version__)
+     ^
+C0323:138:TestGuiMaker.start: Operator not followed by a space
+            startmessage += """
+
+
+
+
+
+  """%(ImageD11.__version__)
+     ^
+C0324:145:TestGuiMaker.start: Comma not followed by a space
+            showinfo("Welcome to ImageD11 "+ImageD11.__version__,startmessage)
+                                                                ^^
+W0404:164:TestGuiMaker.start: Reimport 'sys' (imported line 40)
+C0111:188:TestGuiMaker.history: Missing docstring
+C0324:190:TestGuiMaker.history: Comma not followed by a space
+            win = ScrolledText(Toplevel(),width=100)
+                                         ^^
+C0324:192:TestGuiMaker.history: Comma not followed by a space
+            win.insert(END,history)
+                          ^^
+C0324:193:TestGuiMaker.history: Comma not followed by a space
+            win.pack(expand=1,fill=BOTH)
+                             ^^
+C0103:216:TestGuiMaker.makeWidgets: Invalid name "makeWidgets" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:224:TestGuiMaker.makeWidgets: Operator not preceded by a space
+            self.opener=tkFileDialog.Open()
+                       ^
+C0322:225:TestGuiMaker.makeWidgets: Operator not preceded by a space
+            self.saver=tkFileDialog.SaveAs()
+                      ^
+C0322:229:TestGuiMaker.makeWidgets: Operator not preceded by a space
+            self.twodplotter=twodplot.twodplot(self)
+                            ^
+W0201:156:TestGuiMaker.start: Attribute 'transformer' defined outside __init__
+W0201:151:TestGuiMaker.start: Attribute 'peaksearcher' defined outside __init__
+W0201:225:TestGuiMaker.makeWidgets: Attribute 'saver' defined outside __init__
+W0201:161:TestGuiMaker.start: Attribute 'indexer' defined outside __init__
+W0201:224:TestGuiMaker.makeWidgets: Attribute 'opener' defined outside __init__
+W0201:229:TestGuiMaker.makeWidgets: Attribute 'twodplotter' defined outside __init__
+R0904:116:TestGuiMaker: Too many public methods (143/20)
+C0103:233: Invalid name "root" (should match (([A-Z_]*)|(__.*__))$)
+W0611: 36: Unused import MacOS
+W0611: 36: Unused import MULTIPLE
+W0611: 36: Unused import TypeType
+W0611: 36: Unused import mainloop
+W0611: 36: Unused import SEL_LAST
+W0611: 36: Unused import getdouble
+W0611: 36: Unused import AtSelLast
+W0611: 36: Unused import CodeType
+W0611: 36: Unused import TRUE
+W0611: 36: Unused import getboolean
+W0611: 36: Unused import LAST
+W0611: 36: Unused import TclVersion
+W0611: 36: Unused import BOTTOM
+W0611: 36: Unused import Wm
+W0611: 36: Unused import NUMERIC
+W0611: 36: Unused import DictProxyType
+W0611: 36: Unused import Pack
+W0611: 36: Unused import ObjectType
+W0611: 36: Unused import DictType
+W0611: 36: Unused import OptionMenu
+W0611: 36: Unused import EXTENDED
+W0611: 36: Unused import OFF
+W0611: 36: Unused import ALL
+W0611: 36: Unused import CURRENT
+W0611: 36: Unused import CallWrapper
+W0611: 36: Unused import Scrollbar
+W0611: 36: Unused import ListType
+W0611: 36: Unused import X
+W0611: 36: Unused import ModuleType
+W0611: 36: Unused import FIRST
+W0611: 36: Unused import ON
+W0611: 36: Unused import TracebackType
+W0611: 36: Unused import image_names
+W0611: 36: Unused import INSIDE
+W0611: 36: Unused import Text
+W0611: 36: Unused import YES
+W0611: 36: Unused import LambdaType
+W0611: 36: Unused import GROOVE
+W0611: 36: Unused import XRangeType
+W0611: 36: Unused import Scale
+W0611: 36: Unused import NORMAL
+W0611: 36: Unused import Misc
+W0611: 36: Unused import BooleanType
+W0611: 36: Unused import Label
+W0611: 36: Unused import LabelFrame
+W0611: 36: Unused import ROUND
+W0611: 36: Unused import image_types
+W0611: 36: Unused import AtInsert
+W0611: 36: Unused import StringType
+W0611: 36: Unused import NONE
+W0611: 36: Unused import CENTER
+W0611: 36: Unused import FloatType
+W0611: 36: Unused import Spinbox
+W0611: 36: Unused import Radiobutton
+W0611: 36: Unused import Checkbutton
+W0611: 36: Unused import Grid
+W0611: 36: Unused import StringTypes
+W0611: 36: Unused import GeneratorType
+W0611: 36: Unused import Button
+W0611: 36: Unused import FLAT
+W0611: 36: Unused import Canvas
+W0611: 36: Unused import VERTICAL
+W0611: 36: Unused import MITER
+W0611: 36: Unused import Widget
+W0611: 36: Unused import DISABLED
+W0611: 36: Unused import S
+W0611: 36: Unused import COMMAND
+W0611: 36: Unused import EllipsisType
+W0611: 36: Unused import W
+W0611: 36: Unused import ACTIVE
+W0611: 36: Unused import EW
+W0611: 36: Unused import FrameType
+W0611: 36: Unused import BASELINE
+W0611: 36: Unused import CHORD
+W0611: 36: Unused import tkinter
+W0611: 36: Unused import FunctionType
+W0611: 36: Unused import Image
+W0611: 36: Unused import BitmapImage
+W0611: 36: Unused import Event
+W0611: 36: Unused import RADIOBUTTON
+W0611: 36: Unused import Place
+W0611: 36: Unused import HIDDEN
+W0611:112: Unused import os
+W0611: 36: Unused import PAGES
+W0611: 36: Unused import NoDefaultRoot
+W0611: 36: Unused import CHAR
+W0611: 36: Unused import SEPARATOR
+W0611: 36: Unused import BUTT
+W0611: 36: Unused import HORIZONTAL
+W0611: 36: Unused import TclError
+W0611: 36: Unused import MOVETO
+W0611: 36: Unused import WORD
+W0611: 36: Unused import SUNKEN
+W0611: 36: Unused import NO
+W0611: 36: Unused import DictionaryType
+W0611: 36: Unused import NotImplementedType
+W0611: 36: Unused import READABLE
+W0611: 36: Unused import NE
+W0611: 36: Unused import CHECKBUTTON
+W0611: 36: Unused import Variable
+W0611: 36: Unused import SEL
+W0611: 36: Unused import ANCHOR
+W0611: 36: Unused import NW
+W0611: 36: Unused import RAISED
+W0611: 36: Unused import DoubleVar
+W0611: 36: Unused import RIDGE
+W0611: 36: Unused import BooleanVar
+W0611: 36: Unused import Tributton
+W0611: 36: Unused import SOLID
+W0611: 36: Unused import N
+W0611: 36: Unused import msg
+W0611: 36: Unused import SEL_FIRST
+W0611: 36: Unused import TkVersion
+W0611: 36: Unused import UNDERLINE
+W0611: 36: Unused import UNITS
+W0611: 36: Unused import TupleType
+W0611: 36: Unused import LongType
+W0611: 36: Unused import NS
+W0611: 36: Unused import FALSE
+W0611: 36: Unused import ClassType
+W0611: 36: Unused import Frame
+W0611: 36: Unused import SW
+W0611: 36: Unused import SINGLE
+W0611: 36: Unused import MemberDescriptorType
+W0611: 36: Unused import UnicodeType
+W0611: 36: Unused import LEFT
+W0611: 36: Unused import wantobjects
+W0611: 36: Unused import SE
+W0611: 36: Unused import EXCEPTION
+W0611: 36: Unused import FixTk
+W0611: 36: Unused import IntType
+W0611: 36: Unused import Menu
+W0611: 36: Unused import TOP
+W0611: 36: Unused import GetSetDescriptorType
+W0611: 36: Unused import DOTBOX
+W0611: 36: Unused import OUTSIDE
+W0611: 36: Unused import IntVar
+W0611: 36: Unused import AtSelFirst
+W0611: 36: Unused import UnboundMethodType
+W0611: 36: Unused import PanedWindow
+W0611: 36: Unused import BuiltinMethodType
+W0611: 36: Unused import AtEnd
+W0611: 36: Unused import BROWSE
+W0611: 36: Unused import Tcl
+W0611: 36: Unused import BuiltinFunctionType
+W0611: 36: Unused import BaseWidget
+W0611: 36: Unused import ARC
+W0611: 36: Unused import MethodType
+W0611: 36: Unused import SliceType
+W0611: 36: Unused import BEVEL
+W0611: 36: Unused import E
+W0611: 36: Unused import InstanceType
+W0611: 36: Unused import INSERT
+W0611: 36: Unused import PIESLICE
+W0611: 36: Unused import FileType
+W0611: 36: Unused import Y
+W0611: 36: Unused import Entry
+W0611: 36: Unused import Message
+W0611: 36: Unused import Listbox
+W0611: 36: Unused import PhotoImage
+W0611: 36: Unused import BufferType
+W0611: 36: Unused import CASCADE
+W0611: 36: Unused import Studbutton
+W0611: 36: Unused import Menubutton
+W0611: 36: Unused import WRITABLE
+W0611: 36: Unused import StringVar
+W0611: 36: Unused import PROJECTING
+W0611: 36: Unused import At
+W0611: 36: Unused import ComplexType
+W0611: 36: Unused import NSEW
+W0611: 36: Unused import SCROLL
+W0611: 36: Unused import NoneType
+W0611: 36: Unused import getint
+
+
+Report
+======
+69 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |0        |=          |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |0.000    |=          |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |123    |56.42 |116      |+7.00      |
++----------+-------+------+---------+-----------+
+|docstring |27     |12.39 |27       |=          |
++----------+-------+------+---------+-----------+
+|comment   |38     |17.43 |38       |=          |
++----------+-------+------+---------+-----------+
+|empty     |30     |13.76 |30       |=          |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    ImageD11 (ImageD11_gui)
+      \-guicommand (ImageD11_gui)
+      \-guiindexer (ImageD11_gui)
+      \-license (ImageD11_gui)
+      \-twodplot (ImageD11_gui)
+      \-guimaker (ImageD11_gui)
+      \-guitransformer (ImageD11_gui)
+      \-guipeaksearch (ImageD11_gui)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |1          |=          |100.00      |100.00   |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |1          |=          |0.00        |100.00   |
++---------+-------+-----------+-----------+------------+---------+
+|method   |6      |6          |=          |83.33       |16.67    |
++---------+-------+-----------+-----------+------------+---------+
+|function |3      |3          |=          |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |34     |32       |+2.00      |
++-----------+-------+---------+-----------+
+|refactor   |2      |2        |=          |
++-----------+-------+---------+-----------+
+|warning    |188    |188      |=          |
++-----------+-------+---------+-----------+
+|error      |0      |0        |=          |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|W0611      |173        |
++-----------+-----------+
+|C0324      |10         |
++-----------+-----------+
+|C0103      |10         |
++-----------+-----------+
+|W0201      |6          |
++-----------+-----------+
+|C0111      |5          |
++-----------+-----------+
+|C0322      |4          |
++-----------+-----------+
+|W0622      |3          |
++-----------+-----------+
+|W0511      |3          |
++-----------+-----------+
+|C0301      |3          |
++-----------+-----------+
+|C0323      |2          |
++-----------+-----------+
+|W0621      |1          |
++-----------+-----------+
+|W0404      |1          |
++-----------+-----------+
+|W0401      |1          |
++-----------+-----------+
+|R0904      |1          |
++-----------+-----------+
+|R0901      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at -22.46/10 (previous run: -22.17/10)
+

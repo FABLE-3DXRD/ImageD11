@@ -1,0 +1,649 @@
+************* Module plotedf
+C:107: Line too long (95/80)
+C:120: Line too long (90/80)
+C:152: Line too long (88/80)
+C:192: Line too long (89/80)
+C:196: Line too long (95/80)
+C:205: Line too long (127/80)
+C:206: Line too long (119/80)
+C:226: Line too long (127/80)
+C:229: Line too long (129/80)
+C:231: Line too long (138/80)
+W: 21: Redefining built-in 'sum'
+C:  1: Missing docstring
+W: 18: Wildcard import OpenGL.GL
+W: 19: Wildcard import OpenGL.Tk
+W: 23: No exception's type specified
+W: 21: Wildcard import Numeric
+C: 27: Invalid name "const" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C: 31:edfFile: Invalid name "edfFile" (should match [A-Z_][a-zA-Z0-9]+$)
+C: 53:edfFile.__init__: Invalid name "minI" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 54:edfFile.__init__: Invalid name "maxI" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 35:edfFile.__init__: Comma not followed by a space
+    def __init__(self,filename):
+                     ^^
+C: 49:edfFile.__init__: Operator not preceded by a space
+        self.data=opendata.opendata(filename).data
+                 ^
+C: 50:edfFile.__init__: Operator not preceded by a space
+        self.rows=self.data.shape[0]
+                 ^
+C: 51:edfFile.__init__: Operator not preceded by a space
+        self.cols=self.data.shape[1]
+                 ^
+C: 52:edfFile.__init__: Operator not preceded by a space
+        self.data=ravel(self.data)
+                 ^
+C: 53:edfFile.__init__: Operator not preceded by a space
+        self.minI=minimum.reduce(ravel(self.data))
+                 ^
+C: 54:edfFile.__init__: Operator not preceded by a space
+        self.maxI=maximum.reduce(ravel(self.data))
+                 ^
+C: 55:edfFile.__init__: Comma not followed by a space
+        print "Opened",filename,"max=",self.maxI,"min=",self.minI
+                      ^^
+R: 31:edfFile: To few public methods (0/2)
+C: 57:myOpengl: Invalid name "myOpengl" (should match [A-Z_][a-zA-Z0-9]+$)
+C: 57:myOpengl: Missing docstring
+E: 57:myOpengl: Undefined variable 'Opengl'
+W: 59:myOpengl.__init__: Dangerous default value {} as argument
+C: 59:myOpengl.__init__: Invalid name "kw" (should match [a-z_][a-z0-9_]{2,30}$)
+W: 60:myOpengl.__init__: Used builtin function 'apply'
+E: 60:myOpengl.__init__: Undefined variable 'Opengl'
+C: 62:myOpengl.StartRotate: Invalid name "StartRotate" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 62:myOpengl.StartRotate: Comma not followed by a space
+    def StartRotate(self,event):
+                        ^^
+C: 71:myOpengl.tkRotate: Invalid name "tkRotate" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 75:myOpengl.tkRotate: Comma not followed by a space
+        win_height = max( 1,self.winfo_height() )
+                           ^^
+E: 75:myOpengl.tkRotate: Instance of 'myOpengl' has no 'winfo_height' member
+E: 78:myOpengl.tkRotate: Undefined variable 'gluProject'
+E: 79:myOpengl.tkRotate: Undefined variable 'gluUnProject'
+E: 80:myOpengl.tkRotate: Undefined variable 'v3distsq'
+E: 82:myOpengl.tkRotate: Instance of 'myOpengl' has no 'winfo_height' member
+C: 83:myOpengl.tkRotate: Invalid name "p1" (should match [a-z_][a-z0-9_]{2,30}$)
+E: 83:myOpengl.tkRotate: Undefined variable 'gluUnProject'
+C: 84:myOpengl.tkRotate: Invalid name "p2" (should match [a-z_][a-z0-9_]{2,30}$)
+E: 84:myOpengl.tkRotate: Undefined variable 'gluUnProject'
+C: 85:myOpengl.tkRotate: Comma not followed by a space
+        print p1[0],p1[1],p1[2]
+                   ^^
+W: 84:myOpengl.tkRotate: Unused variable 'p2'
+W: 81:myOpengl.tkRotate: Unused variable 'scale'
+C: 88:myOpengl.tkAutoSpin: Invalid name "tkAutoSpin" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 96:checker: Invalid name "checker" (should match [A-Z_][a-zA-Z0-9]+$)
+C: 96:checker: Missing docstring
+C:172:checker.SetupWindow: Invalid name "minI" (should match [a-z_][a-z0-9_]{2,30}$)
+C:166:checker.SetupWindow: Invalid name "bf" (should match [a-z_][a-z0-9_]{2,30}$)
+C:149:checker.SetupWindow: Invalid name "OglFrame" (should match [a-z_][a-z0-9_]{2,30}$)
+C:188:checker.SetupWindow: Invalid name "maxIentry" (should match [a-z_][a-z0-9_]{2,30}$)
+C:192:checker.SetupWindow: Invalid name "Update" (should match [a-z_][a-z0-9_]{2,30}$)
+C:167:checker.SetupWindow: Invalid name "QuitButton" (should match [a-z_][a-z0-9_]{2,30}$)
+C:182:checker.SetupWindow: Invalid name "maxI" (should match [a-z_][a-z0-9_]{2,30}$)
+C:253:checker.__init__: Invalid name "imageHeight" (should match [a-z_][a-z0-9_]{2,30}$)
+C:248:checker.__init__: Invalid name "edfFile" (should match [a-z_][a-z0-9_]{2,30}$)
+C:252:checker.__init__: Invalid name "imageWidth" (should match [a-z_][a-z0-9_]{2,30}$)
+C:177:checker.SetupWindow: Invalid name "minIentry" (should match [a-z_][a-z0-9_]{2,30}$)
+R: 96:checker: Too many instance attributes (13/7)
+W:105:checker.makeImage: Redefining name 'shape' from outer scope (line 21)
+C: 98:checker.makeImage: Invalid name "makeImage" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 98:checker.makeImage: Missing docstring
+W:103:checker.makeImage: No exception's type specified
+C:100:checker.makeImage: Operator not preceded by a space
+            mi=int(self.minI.get())
+              ^
+C:100:checker.makeImage: Invalid name "mi" (should match [a-z_][a-z0-9_]{2,30}$)
+C:101:checker.makeImage: Operator not preceded by a space
+            mx=int(self.maxI.get())
+              ^
+C:101:checker.makeImage: Invalid name "mx" (should match [a-z_][a-z0-9_]{2,30}$)
+C:103:checker.makeImage: Operator not preceded by a space
+            mi=self.edfFile.minI
+              ^
+C:103:checker.makeImage: Invalid name "mi" (should match [a-z_][a-z0-9_]{2,30}$)
+C:104:checker.makeImage: Operator not preceded by a space
+            mx=self.edfFile.maxI
+              ^
+C:104:checker.makeImage: Invalid name "mx" (should match [a-z_][a-z0-9_]{2,30}$)
+C:105:checker.makeImage: Operator not preceded by a space
+        shape=(self.edfFile.rows,self.edfFile.cols)
+             ^
+C:106:checker.makeImage: Operator not preceded by a space
+        d=reshape(clip(self.edfFile.data,mi,mx),shape) # makes a clipped copy
+         ^
+C:106:checker.makeImage: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+C:107:checker.makeImage: Comma not followed by a space
+        print "makeImage",mx,mi,maximum.reduce(ravel(d)),minimum.reduce(ravel(d)),d.dtype.char,
+                         ^^
+C:110:checker.makeImage: Operator not preceded by a space
+            j=4
+             ^
+C:111:checker.makeImage: Comma not followed by a space
+            print j,pow(2,j),i,i<pow(2,j)
+                   ^^
+C:112:checker.makeImage: Comma not followed by a space
+            while i > pow(2,j):
+                           ^^
+C:113:checker.makeImage: Operator not preceded by a space
+                j+=1
+                 ^^
+C:115:checker.makeImage: Comma not followed by a space
+        newshape = tuple([pow(2,v) for v in newshape])
+                               ^^
+C:116:checker.makeImage: Comma not followed by a space
+        print "newshape",newshape
+                        ^^
+C:117:checker.makeImage: Operator not preceded by a space
+        d=255.*(d-mi)/(mx-mi)
+         ^
+C:117:checker.makeImage: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+C:118:checker.makeImage: Operator not preceded by a space
+        self.image=zeros(newshape,UInt8)
+                  ^
+C:119:checker.makeImage: Comma not followed by a space
+        print self.image.shape,d.shape
+                              ^^
+C:120:checker.makeImage: Comma not followed by a space
+        self.image[:shape[0],:shape[1]] = self.image[:shape[0],:shape[1]]+ d.astype(UInt8)
+                            ^^
+C:128:checker.display: Missing docstring
+E:129:checker.display: Undefined variable 'glClearColor'
+E:130:checker.display: Undefined variable 'glClear'
+E:130:checker.display: Undefined variable 'GL_COLOR_BUFFER_BIT'
+E:130:checker.display: Undefined variable 'GL_DEPTH_BUFFER_BIT'
+E:131:checker.display: Undefined variable 'glBegin'
+E:131:checker.display: Undefined variable 'GL_QUADS'
+C:133:checker.display: Operator not preceded by a space
+        w=self.imageWidth/2
+         ^
+C:133:checker.display: Invalid name "w" (should match [a-z_][a-z0-9_]{2,30}$)
+C:134:checker.display: Operator not preceded by a space
+        h=self.imageHeight/2
+         ^
+C:134:checker.display: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+E:135:checker.display: Undefined variable 'glTexCoord2f'
+C:135:checker.display: More than one statement on a single line
+E:135:checker.display: Undefined variable 'glVertex3f'
+E:136:checker.display: Undefined variable 'glTexCoord2f'
+C:136:checker.display: More than one statement on a single line
+E:136:checker.display: Undefined variable 'glVertex3f'
+E:137:checker.display: Undefined variable 'glTexCoord2f'
+C:137:checker.display: More than one statement on a single line
+E:137:checker.display: Undefined variable 'glVertex3f'
+E:138:checker.display: Undefined variable 'glTexCoord2f'
+C:138:checker.display: More than one statement on a single line
+E:138:checker.display: Undefined variable 'glVertex3f'
+E:140:checker.display: Undefined variable 'glEnd'
+E:141:checker.display: Undefined variable 'glFlush'
+W:128:checker.display: Unused argument 'event'
+C:143:checker.change: Missing docstring
+C:143:checker.change: Comma not followed by a space
+    def change(self,event=None):
+                   ^^
+E:145:checker.change: Instance of 'myOpengl' has no 'tkRedraw' member
+W:143:checker.change: Unused argument 'event'
+C:147:checker.SetupWindow: Invalid name "SetupWindow" (should match [a-z_][a-z0-9_]{2,30}$)
+C:147:checker.SetupWindow: Missing docstring
+E:149:checker.SetupWindow: Undefined variable 'Frame'
+C:150:checker.SetupWindow: Comma not followed by a space
+        self.OglFrame.pack(side = 'top', expand=1 ,fill='both')
+                                                  ^^
+E:155:checker.SetupWindow: Instance of 'myOpengl' has no 'pack' member
+C:156:checker.SetupWindow: Operator not preceded by a space
+        self.ogl.distance=max(self.imageWidth+10,self.imageHeight+10)*10
+                         ^
+C:157:checker.SetupWindow: Operator not preceded by a space
+        self.ogl.near=max(self.imageWidth+10,self.imageHeight+10)*100.
+                     ^
+C:158:checker.SetupWindow: Operator not preceded by a space
+        self.ogl.far=max(self.imageWidth+10,self.imageHeight+10)/100.
+                    ^
+C:159:checker.SetupWindow: Operator not preceded by a space
+        self.ogl.fovy=10.
+                     ^
+C:161:checker.SetupWindow: Operator not preceded by a space
+        self.ogl.autospin_allowed=1
+                                 ^
+C:166:checker.SetupWindow: Operator not preceded by a space
+        self.bf=Frame()
+               ^
+E:166:checker.SetupWindow: Undefined variable 'Frame'
+E:167:checker.SetupWindow: Undefined variable 'Button'
+E:169:checker.SetupWindow: Undefined variable 'RIGHT'
+C:171:checker.SetupWindow: Comma not followed by a space
+        Label(self.bf,text="MIN:").pack(side=LEFT)
+                     ^^
+E:171:checker.SetupWindow: Undefined variable 'Label'
+E:171:checker.SetupWindow: Undefined variable 'LEFT'
+C:172:checker.SetupWindow: Operator not preceded by a space
+        self.minI=StringVar()
+                 ^
+E:172:checker.SetupWindow: Undefined variable 'StringVar'
+W:176:checker.SetupWindow: No exception's type specified
+C:177:checker.SetupWindow: Operator not preceded by a space
+        self.minIentry=Entry(self.bf, textvariable=self.minI)
+                      ^
+E:177:checker.SetupWindow: Undefined variable 'Entry'
+E:179:checker.SetupWindow: Undefined variable 'LEFT'
+C:181:checker.SetupWindow: Comma not followed by a space
+        Label(self.bf,text="   MAX:").pack(side=LEFT)
+                     ^^
+E:181:checker.SetupWindow: Undefined variable 'Label'
+E:181:checker.SetupWindow: Undefined variable 'LEFT'
+C:182:checker.SetupWindow: Operator not preceded by a space
+        self.maxI=StringVar()
+                 ^
+E:182:checker.SetupWindow: Undefined variable 'StringVar'
+W:186:checker.SetupWindow: No exception's type specified
+C:184:checker.SetupWindow: Operator not preceded by a space
+            top=int(sys.argv[3])
+               ^
+C:186:checker.SetupWindow: Operator not preceded by a space
+            top=self.edfFile.minI+(self.edfFile.maxI-self.edfFile.minI)/10.
+               ^
+C:188:checker.SetupWindow: Operator not preceded by a space
+        self.maxIentry=Entry(self.bf, textvariable=self.maxI)
+                      ^
+E:188:checker.SetupWindow: Undefined variable 'Entry'
+E:190:checker.SetupWindow: Undefined variable 'LEFT'
+E:192:checker.SetupWindow: Undefined variable 'Button'
+E:192:checker.SetupWindow: Undefined variable 'LEFT'
+E:193:checker.SetupWindow: Undefined variable 'Button'
+E:193:checker.SetupWindow: Instance of 'myOpengl' has no 'reset' member
+E:193:checker.SetupWindow: Undefined variable 'LEFT'
+C:194:checker.SetupWindow: Comma not followed by a space
+        self.bf.pack(side=TOP,expand=0,fill=X)
+                             ^^
+E:194:checker.SetupWindow: Undefined variable 'TOP'
+E:194:checker.SetupWindow: Undefined variable 'X'
+C:195:checker.SetupWindow: Operator not preceded by a space
+        helpframe=Frame()
+                 ^
+E:195:checker.SetupWindow: Undefined variable 'Frame'
+C:196:checker.SetupWindow: Comma not followed by a space
+        Label(helpframe,text="Left mouse button to translate, Right to zoom").pack(side=BOTTOM)
+                       ^^
+E:196:checker.SetupWindow: Undefined variable 'Label'
+E:196:checker.SetupWindow: Undefined variable 'BOTTOM'
+E:197:checker.SetupWindow: Undefined variable 'BOTTOM'
+C:202:checker.SetupTexture: Invalid name "SetupTexture" (should match [a-z_][a-z0-9_]{2,30}$)
+C:202:checker.SetupTexture: Missing docstring
+E:204:checker.SetupTexture: Undefined variable 'glPixelStorei'
+E:204:checker.SetupTexture: Undefined variable 'GL_UNPACK_ALIGNMENT'
+C:206:checker.SetupTexture: Comma not followed by a space
+        glTexImage2D(GL_TEXTURE_2D, 0, 3, self.imageWidth, self.imageHeight, 0, GL_RGBA ,GL_UNSIGNED_BYTE,  self.image)
+                                                                                        ^^
+E:206:checker.SetupTexture: Undefined variable 'glTexImage2D'
+E:206:checker.SetupTexture: Undefined variable 'GL_TEXTURE_2D'
+E:206:checker.SetupTexture: Undefined variable 'GL_RGBA'
+E:206:checker.SetupTexture: Undefined variable 'GL_UNSIGNED_BYTE'
+E:209:checker.SetupTexture: Undefined variable 'glTexParameterf'
+E:209:checker.SetupTexture: Undefined variable 'GL_TEXTURE_2D'
+E:209:checker.SetupTexture: Undefined variable 'GL_TEXTURE_WRAP_S'
+E:209:checker.SetupTexture: Undefined variable 'GL_REPEAT'
+E:210:checker.SetupTexture: Undefined variable 'glTexParameterf'
+E:210:checker.SetupTexture: Undefined variable 'GL_TEXTURE_2D'
+E:210:checker.SetupTexture: Undefined variable 'GL_TEXTURE_WRAP_T'
+E:210:checker.SetupTexture: Undefined variable 'GL_REPEAT'
+E:211:checker.SetupTexture: Undefined variable 'glTexParameterf'
+E:211:checker.SetupTexture: Undefined variable 'GL_TEXTURE_2D'
+E:211:checker.SetupTexture: Undefined variable 'GL_TEXTURE_MAG_FILTER'
+E:211:checker.SetupTexture: Undefined variable 'GL_NEAREST'
+E:212:checker.SetupTexture: Undefined variable 'glTexParameterf'
+E:212:checker.SetupTexture: Undefined variable 'GL_TEXTURE_2D'
+E:212:checker.SetupTexture: Undefined variable 'GL_TEXTURE_MIN_FILTER'
+E:212:checker.SetupTexture: Undefined variable 'GL_NEAREST'
+E:213:checker.SetupTexture: Undefined variable 'glTexEnvf'
+E:213:checker.SetupTexture: Undefined variable 'GL_TEXTURE_ENV'
+E:213:checker.SetupTexture: Undefined variable 'GL_TEXTURE_ENV_MODE'
+E:213:checker.SetupTexture: Undefined variable 'GL_DECAL'
+E:214:checker.SetupTexture: Undefined variable 'glEnable'
+E:214:checker.SetupTexture: Undefined variable 'GL_TEXTURE_2D'
+E:215:checker.SetupTexture: Undefined variable 'glShadeModel'
+E:215:checker.SetupTexture: Undefined variable 'GL_FLAT'
+C:220:checker.broken: Missing docstring
+E:225:checker.broken: Undefined variable 'glPixelStorei'
+E:225:checker.broken: Undefined variable 'GL_UNPACK_ALIGNMENT'
+W:231:checker.broken: No exception's type specified
+E:229:checker.broken: Undefined variable 'glTexImage2D'
+E:229:checker.broken: Undefined variable 'GL_TEXTURE_2D'
+E:229:checker.broken: Undefined variable 'GL_LUMINANCE'
+E:229:checker.broken: Undefined variable 'GL_UNSIGNED_BYTE'
+C:231:checker.broken: Comma not followed by a space
+            print self.imageWidth, self.imageHeight, type(self.image), len(self.image),len(self.image)*1./self.imageWidth/self.imageHeight
+                                                                                      ^^
+E:235:checker.broken: Undefined variable 'glTexParameterf'
+E:235:checker.broken: Undefined variable 'GL_TEXTURE_2D'
+E:235:checker.broken: Undefined variable 'GL_TEXTURE_WRAP_S'
+E:235:checker.broken: Undefined variable 'GL_REPEAT'
+E:236:checker.broken: Undefined variable 'glTexParameterf'
+E:236:checker.broken: Undefined variable 'GL_TEXTURE_2D'
+E:236:checker.broken: Undefined variable 'GL_TEXTURE_WRAP_T'
+E:236:checker.broken: Undefined variable 'GL_REPEAT'
+E:237:checker.broken: Undefined variable 'glTexParameterf'
+E:237:checker.broken: Undefined variable 'GL_TEXTURE_2D'
+E:237:checker.broken: Undefined variable 'GL_TEXTURE_MAG_FILTER'
+E:237:checker.broken: Undefined variable 'GL_NEAREST'
+E:238:checker.broken: Undefined variable 'glTexParameterf'
+E:238:checker.broken: Undefined variable 'GL_TEXTURE_2D'
+E:238:checker.broken: Undefined variable 'GL_TEXTURE_MIN_FILTER'
+E:238:checker.broken: Undefined variable 'GL_NEAREST'
+E:239:checker.broken: Undefined variable 'glTexEnvf'
+E:239:checker.broken: Undefined variable 'GL_TEXTURE_ENV'
+E:239:checker.broken: Undefined variable 'GL_TEXTURE_ENV_MODE'
+E:239:checker.broken: Undefined variable 'GL_DECAL'
+E:240:checker.broken: Undefined variable 'glEnable'
+E:240:checker.broken: Undefined variable 'GL_TEXTURE_2D'
+E:241:checker.broken: Undefined variable 'glShadeModel'
+E:241:checker.broken: Undefined variable 'GL_FLAT'
+E:257:checker.__init__: Instance of 'myOpengl' has no 'mainloop' member
+W:172:checker.SetupWindow: Attribute 'minI' defined outside __init__
+W:166:checker.SetupWindow: Attribute 'bf' defined outside __init__
+W:149:checker.SetupWindow: Attribute 'OglFrame' defined outside __init__
+W:188:checker.SetupWindow: Attribute 'maxIentry' defined outside __init__
+W:118:checker.makeImage: Attribute 'image' defined outside __init__
+W:192:checker.SetupWindow: Attribute 'Update' defined outside __init__
+W:167:checker.SetupWindow: Attribute 'QuitButton' defined outside __init__
+W:152:checker.SetupWindow: Attribute 'ogl' defined outside __init__
+W:182:checker.SetupWindow: Attribute 'maxI' defined outside __init__
+W:177:checker.SetupWindow: Attribute 'minIentry' defined outside __init__
+W: 21: Unused import load
+W: 21: Unused import less
+W: 21: Unused import putmask
+W: 21: Unused import Unpickler
+W: 21: Unused import Character
+W: 21: Unused import arraytype
+W: 21: Unused import shape
+W: 21: Unused import LittleEndian
+W: 21: Unused import cumsum
+W: 21: Unused import divide
+W: 21: Unused import Int32
+W: 21: Unused import Complex64
+W: 21: Unused import add
+W: 21: Unused import choose
+W: 21: Unused import NewAxis
+W: 21: Unused import string
+W: 21: Unused import PyObject
+W: 21: Unused import ceil
+W: 21: Unused import ones
+W: 21: Unused import arctan2
+W: 21: Unused import array_str
+W: 21: Unused import identity
+W: 21: Unused import arrayrange
+W: 21: Unused import UnsignedInt32
+W: 21: Unused import arange
+W: 21: Unused import dumps
+W: 21: Unused import convolve
+W: 21: Unused import divide_safe
+W: 21: Unused import fmod
+W: 21: Unused import indices
+W: 21: Unused import loads
+W: 21: Unused import Pickler
+W: 21: Unused import where
+W: 21: Unused import PrecisionError
+W: 21: Unused import Complex0
+W: 21: Unused import dump
+W: 21: Unused import argmax
+W: 21: Unused import Complex8
+W: 21: Unused import product
+W: 21: Unused import sign
+W: 21: Unused import Complex
+W: 21: Unused import logical_and
+W: 21: Unused import UfuncType
+W: 21: Unused import allclose
+W: 21: Unused import Float32
+W: 21: Unused import nonzero
+W: 21: Unused import asarray
+W: 21: Unused import sum
+W: 21: Unused import Complex16
+W: 21: Unused import alltrue
+W: 21: Unused import numeric_version
+W: 21: Unused import concatenate
+W: 21: Unused import pickle_array
+W: 21: Unused import power
+W: 21: Unused import vdot
+W: 21: Unused import transpose
+W: 21: Unused import array2string
+W: 21: Unused import diagonal
+W: 21: Unused import sinh
+W: 21: Unused import put
+W: 21: Unused import remainder
+W: 21: Unused import UInt64
+W: 21: Unused import cos
+W: 21: Unused import StringIO
+W: 21: Unused import Float0
+W: 21: Unused import equal
+W: 21: Unused import greater
+W: 21: Unused import argsort
+W: 21: Unused import arccos
+W: 21: Unused import less_equal
+W: 21: Unused import UInt
+W: 21: Unused import Float16
+W: 21: Unused import arcsinh
+W: 21: Unused import cosh
+W: 21: Unused import rank
+W: 21: Unused import bitwise_or
+W: 21: Unused import bitwise_and
+W: 21: Unused import array
+W: 21: Unused import UnsignedInt64
+W: 21: Unused import size
+W: 21: Unused import logical_xor
+W: 21: Unused import log
+W: 21: Unused import sometrue
+W: 21: Unused import subtract
+W: 21: Unused import invert
+W: 21: Unused import negative
+W: 21: Unused import cross_correlate
+W: 21: Unused import Int0
+W: 21: Unused import UnsignedInt8
+W: 21: Unused import pi
+W: 21: Unused import log10
+W: 21: Unused import empty
+W: 21: Unused import sort
+W: 21: Unused import LoadArray
+W: 21: Unused import cumproduct
+W: 21: Unused import swapaxes
+W: 21: Unused import Float64
+W: 21: Unused import arcsin
+W: 21: Unused import Int64
+W: 21: Unused import Complex32
+W: 21: Unused import typecodes
+W: 21: Unused import Int128
+W: 21: Unused import e
+W: 21: Unused import copy
+W: 21: Unused import resize
+W: 21: Unused import not_equal
+W: 21: Unused import fromfunction
+W: 21: Unused import greater_equal
+W: 21: Unused import argmin
+W: 21: Unused import tanh
+W: 21: Unused import Int
+W: 21: Unused import cross_product
+W: 21: Unused import true_divide
+W: 21: Unused import UInt128
+W: 21: Unused import Int8
+W: 21: Unused import hypot
+W: 21: Unused import Float8
+W: 21: Unused import arccosh
+W: 21: Unused import UInt32
+W: 21: Unused import copy_reg
+W: 21: Unused import DumpArray
+W: 21: Unused import Complex128
+W: 21: Unused import ArrayType
+W: 21: Unused import logical_or
+W: 21: Unused import array_constructor
+W: 21: Unused import conjugate
+W: 21: Unused import innerproduct
+W: 21: Unused import tan
+W: 21: Unused import around
+W: 21: Unused import bitwise_xor
+W: 21: Unused import Int16
+W: 21: Unused import fabs
+W: 21: Unused import floor
+W: 21: Unused import sqrt
+W: 21: Unused import arctan
+W: 21: Unused import multiarray
+W: 21: Unused import UInt16
+W: 21: Unused import right_shift
+W: 21: Unused import take
+W: 21: Unused import floor_divide
+W: 21: Unused import absolute
+W: 21: Unused import sin
+W: 21: Unused import sarray
+W: 21: Unused import outerproduct
+W: 21: Unused import repeat
+W: 21: Unused import trace
+W: 21: Unused import UnsignedInteger
+W: 21: Unused import compress
+W: 21: Unused import matrixmultiply
+W: 21: Unused import UnsignedInt128
+W: 21: Unused import Float128
+W: 21: Unused import multiply
+W: 21: Unused import pickle
+W: 21: Unused import types
+W: 21: Unused import logical_not
+W: 21: Unused import UnsignedInt16
+W: 21: Unused import fromstring
+W: 21: Unused import average
+W: 21: Unused import Float
+W: 21: Unused import left_shift
+W: 21: Unused import searchsorted
+W: 21: Unused import exp
+W: 21: Unused import array_repr
+W: 21: Unused import arctanh
+W: 21: Unused import dot
+
+
+Report
+======
+160 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |157    |69.16 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |17     |7.49  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |22     |9.69  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |31     |13.66 |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    ImageD11 
+      \-opendata (plotedf)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |3      |NC         |NC         |33.33       |100.00   |
++---------+-------+-----------+-----------+------------+---------+
+|method   |12     |NC         |NC         |50.00       |50.00    |
++---------+-------+-----------+-----------+------------+---------+
+|function |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |108    |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |2      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |191    |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |113    |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|W0611      |165        |
++-----------+-----------+
+|E0602      |107        |
++-----------+-----------+
+|C0103      |34         |
++-----------+-----------+
+|C0322      |31         |
++-----------+-----------+
+|C0324      |20         |
++-----------+-----------+
+|W0201      |10         |
++-----------+-----------+
+|C0301      |10         |
++-----------+-----------+
+|C0111      |9          |
++-----------+-----------+
+|E1101      |6          |
++-----------+-----------+
+|W0702      |5          |
++-----------+-----------+
+|C0321      |4          |
++-----------+-----------+
+|W0401      |3          |
++-----------+-----------+
+|W0613      |2          |
++-----------+-----------+
+|W0612      |2          |
++-----------+-----------+
+|W0622      |1          |
++-----------+-----------+
+|W0621      |1          |
++-----------+-----------+
+|W0141      |1          |
++-----------+-----------+
+|W0102      |1          |
++-----------+-----------+
+|R0903      |1          |
++-----------+-----------+
+|R0902      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at -44.12/10
+

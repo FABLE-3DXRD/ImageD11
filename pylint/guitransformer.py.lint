@@ -1,0 +1,404 @@
+************* Module guitransformer
+C0301:246: Line too long (86/80)
+C0301:247: Line too long (84/80)
+C0111:  1: Missing docstring
+W0401: 24: Wildcard import Tkinter
+W0403: 26: Relative import 'listdialog'
+C0111: 33:guitransformer: Missing docstring
+C0324: 35:guitransformer.__init__: Comma not followed by a space
+    def __init__(self,parent,quiet="No"):
+                     ^^
+C0322: 39:guitransformer.__init__: Operator not preceded by a space
+        self.quiet=quiet
+                  ^
+C0322: 40:guitransformer.__init__: Operator not preceded by a space
+        self.parent=parent
+                   ^
+C0111: 58:guitransformer.loadfiltered: Missing docstring
+C0322: 59:guitransformer.loadfiltered: Operator not preceded by a space
+        filename=self.parent.opener.show(title=
+                ^
+                 "File containing filtered peaks",
+                  filetypes=[("filtered peaks", "*.flt"),
+                             ("All Files ", "*")])
+C0111: 66:guitransformer.loadfileparameters: Missing docstring
+C0322: 67:guitransformer.loadfileparameters: Operator not preceded by a space
+        filename=self.parent.opener.show(title=
+                ^
+                "File containing detector parameters",
+                filetypes=[("parameter files", "*.par"),
+                           ("parameter files", "*.pars"),
+                           ("parameter files", "*.prm"),
+                           ("All Files ", "*")])
+C0111: 76:guitransformer.saveparameters: Missing docstring
+C0324: 76:guitransformer.saveparameters: Comma not followed by a space
+    def saveparameters(self,filename=None):
+                           ^^
+C0322: 77:guitransformer.saveparameters: Operator not preceded by a space
+        if filename==None:
+                   ^^
+C0322: 78:guitransformer.saveparameters: Operator not preceded by a space
+            filename=self.parent.saver.show(title=
+                    ^
+                         "File to save detector parameters")
+W0622: 91:guitransformer.editparameters: Redefining built-in 'vars'
+C0103: 97:guitransformer.editparameters: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 99:guitransformer.editparameters: Operator not preceded by a space
+                logic[v]=1
+                        ^
+C0322:101:guitransformer.editparameters: Operator not preceded by a space
+                logic[v]=0
+                        ^
+C0324:103:guitransformer.editparameters: Comma not followed by a space
+        d = listdialog(self.parent,items=pars,title="Detector parameters",
+                                  ^^
+                       logic=logic)
+C0103:103:guitransformer.editparameters: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:110:guitransformer.editparameters: Comma not followed by a space
+        print "d.fv",d.fv
+                    ^^
+C0103:111:guitransformer.editparameters: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:113:guitransformer.editparameters: Operator not preceded by a space
+            if d.fv[v]==1:
+                      ^^
+C0111:144:guitransformer.plotcols: Missing docstring
+C0324:145:guitransformer.plotcols: Comma not followed by a space
+        names = self.parent.guicommander.execute("transformer",getcols)
+                                                              ^^
+E0602:145:guitransformer.plotcols: Undefined variable 'getcols'
+C0103:146:guitransformer.plotcols: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+E0602:146:guitransformer.plotcols: Undefined variable 'columnchooser'
+C0111:150:guitransformer.fit: Missing docstring
+C0324:152:guitransformer.fit: Comma not followed by a space
+        self.parent.guicommander.execute("transformer","fit",tthmax)
+                                                      ^^
+C0111:155:guitransformer.plotreta: Missing docstring
+C0324:157:guitransformer.plotreta: Comma not followed by a space
+        tth = self.parent.guicommander.execute("transformer","getcolumn","tth")
+                                                            ^^
+C0324:158:guitransformer.plotreta: Comma not followed by a space
+        eta = self.parent.guicommander.execute("transformer","getcolumn","eta")
+                                                            ^^
+C0111:169:guitransformer.plothisto: Missing docstring
+C0103:174:guitransformer.plothisto: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:211:guitransformer.filterhisto: Operator not preceded by a space
+        d=listdialog(self.parent,items={
+         ^
+                "no_bins": nbins,
+                "min_bin_prob": min_bin_ratio},
+                     title="Histogram filter")
+C0103:211:guitransformer.filterhisto: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+E0602:213:guitransformer.filterhisto: Undefined variable 'min_bin_ratio'
+C0111:225:guitransformer.addcellpeaks: Missing docstring
+C0322:227:guitransformer.addcellpeaks: Operator not preceded by a space
+        tth=self.parent.guicommander.getdata("transformer","theorytth")
+           ^
+C0111:238:guitransformer.computegv: Missing docstring
+C0111:241:guitransformer.savegv: Missing docstring
+C0322:242:guitransformer.savegv: Operator not preceded by a space
+        filename=self.parent.saver.show(title="File to save gvectors")
+                ^
+C0324:243:guitransformer.savegv: Comma not followed by a space
+        self.parent.guicommander.execute("transformer","savegv",filename)
+                                                      ^^
+C0111:245:guitransformer.write_graindex_gv: Missing docstring
+C0322:246:guitransformer.write_graindex_gv: Operator not preceded by a space
+        filename=self.parent.saver.show(title="File for graindex, try finalpeaks.log")
+                ^
+C0324:247:guitransformer.write_graindex_gv: Comma not followed by a space
+        self.parent.guicommander.execute("transformer","write_graindex_gv",filename)
+                                                      ^^
+W0611: 24: Unused import MacOS
+W0611: 24: Unused import MULTIPLE
+W0611: 24: Unused import TypeType
+W0611: 24: Unused import mainloop
+W0611: 24: Unused import getdouble
+W0611: 24: Unused import AtSelLast
+W0611: 24: Unused import CodeType
+W0611: 24: Unused import TRUE
+W0611: 24: Unused import getboolean
+W0611: 24: Unused import LAST
+W0611: 24: Unused import TclVersion
+W0611: 24: Unused import BOTTOM
+W0611: 24: Unused import Wm
+W0611: 24: Unused import NUMERIC
+W0611: 24: Unused import Toplevel
+W0611: 24: Unused import DictProxyType
+W0611: 24: Unused import Pack
+W0611: 24: Unused import ObjectType
+W0611: 24: Unused import DictType
+W0611: 24: Unused import EXTENDED
+W0611: 24: Unused import OFF
+W0611: 24: Unused import ALL
+W0611: 24: Unused import CURRENT
+W0611: 24: Unused import CallWrapper
+W0611: 24: Unused import Scrollbar
+W0611: 24: Unused import ListType
+W0611: 24: Unused import X
+W0611: 24: Unused import ModuleType
+W0611: 24: Unused import FIRST
+W0611: 24: Unused import ON
+W0611: 24: Unused import TracebackType
+W0611: 24: Unused import image_names
+W0611: 24: Unused import Text
+W0611: 24: Unused import YES
+W0611: 24: Unused import LambdaType
+W0611: 24: Unused import GROOVE
+W0611: 24: Unused import XRangeType
+W0611: 24: Unused import Scale
+W0611: 24: Unused import NORMAL
+W0611: 24: Unused import Misc
+W0611: 24: Unused import BooleanType
+W0611: 24: Unused import Label
+W0611: 24: Unused import LabelFrame
+W0611: 24: Unused import ROUND
+W0611: 24: Unused import image_types
+W0611: 24: Unused import AtInsert
+W0611: 24: Unused import StringType
+W0611: 24: Unused import NONE
+W0611: 24: Unused import CENTER
+W0611: 24: Unused import FloatType
+W0611: 24: Unused import Spinbox
+W0611: 24: Unused import Radiobutton
+W0611: 24: Unused import Checkbutton
+W0611: 24: Unused import Grid
+W0611: 24: Unused import StringTypes
+W0611: 24: Unused import GeneratorType
+W0611: 24: Unused import Button
+W0611: 24: Unused import FLAT
+W0611: 24: Unused import Canvas
+W0611: 24: Unused import END
+W0611: 24: Unused import VERTICAL
+W0611: 24: Unused import MITER
+W0611: 24: Unused import Widget
+W0611: 24: Unused import DISABLED
+W0611: 24: Unused import S
+W0611: 24: Unused import COMMAND
+W0611: 24: Unused import EllipsisType
+W0611: 24: Unused import W
+W0611: 24: Unused import ACTIVE
+W0611: 24: Unused import EW
+W0611: 24: Unused import FrameType
+W0611: 24: Unused import BASELINE
+W0611: 24: Unused import CHORD
+W0611: 24: Unused import tkinter
+W0611: 24: Unused import Listbox
+W0611: 24: Unused import Image
+W0611: 24: Unused import BitmapImage
+W0611: 24: Unused import Event
+W0611: 24: Unused import RADIOBUTTON
+W0611: 24: Unused import Place
+W0611: 24: Unused import HIDDEN
+W0611: 24: Unused import PAGES
+W0611: 24: Unused import Menubutton
+W0611: 24: Unused import NoDefaultRoot
+W0611: 24: Unused import CHAR
+W0611: 24: Unused import SEPARATOR
+W0611: 24: Unused import BUTT
+W0611: 24: Unused import HORIZONTAL
+W0611: 24: Unused import TclError
+W0611: 24: Unused import MOVETO
+W0611: 24: Unused import WORD
+W0611: 24: Unused import SUNKEN
+W0611: 24: Unused import NO
+W0611: 24: Unused import DictionaryType
+W0611: 24: Unused import NotImplementedType
+W0611: 24: Unused import READABLE
+W0611: 24: Unused import NE
+W0611: 24: Unused import CHECKBUTTON
+W0611: 24: Unused import Variable
+W0611: 24: Unused import SEL
+W0611: 24: Unused import ANCHOR
+W0611: 24: Unused import NW
+W0611: 24: Unused import RAISED
+W0611: 24: Unused import DoubleVar
+W0611: 24: Unused import RIDGE
+W0611: 24: Unused import BooleanVar
+W0611: 24: Unused import Tributton
+W0611: 24: Unused import SOLID
+W0611: 24: Unused import N
+W0611: 24: Unused import msg
+W0611: 24: Unused import SEL_FIRST
+W0611: 24: Unused import TkVersion
+W0611: 24: Unused import UNITS
+W0611: 24: Unused import TupleType
+W0611: 24: Unused import OptionMenu
+W0611: 24: Unused import LongType
+W0611: 24: Unused import NS
+W0611: 24: Unused import FALSE
+W0611: 24: Unused import ClassType
+W0611: 24: Unused import Frame
+W0611: 24: Unused import SEL_LAST
+W0611: 24: Unused import SW
+W0611: 24: Unused import SINGLE
+W0611: 24: Unused import MemberDescriptorType
+W0611: 24: Unused import UnicodeType
+W0611: 24: Unused import LEFT
+W0611: 24: Unused import FunctionType
+W0611: 24: Unused import wantobjects
+W0611: 24: Unused import SE
+W0611: 24: Unused import EXCEPTION
+W0611: 24: Unused import FixTk
+W0611: 24: Unused import IntType
+W0611: 24: Unused import Menu
+W0611: 24: Unused import TOP
+W0611: 24: Unused import GetSetDescriptorType
+W0611: 24: Unused import DOTBOX
+W0611: 24: Unused import OUTSIDE
+W0611: 24: Unused import Tk
+W0611: 24: Unused import IntVar
+W0611: 24: Unused import AtSelFirst
+W0611: 24: Unused import UnboundMethodType
+W0611: 24: Unused import PanedWindow
+W0611: 24: Unused import BOTH
+W0611: 24: Unused import BuiltinMethodType
+W0611: 24: Unused import AtEnd
+W0611: 24: Unused import BROWSE
+W0611: 24: Unused import Tcl
+W0611: 24: Unused import BuiltinFunctionType
+W0611: 24: Unused import BaseWidget
+W0611: 24: Unused import ARC
+W0611: 24: Unused import MethodType
+W0611: 24: Unused import SliceType
+W0611: 24: Unused import BEVEL
+W0611: 24: Unused import E
+W0611: 24: Unused import InstanceType
+W0611: 24: Unused import INSERT
+W0611: 24: Unused import PIESLICE
+W0611: 24: Unused import FileType
+W0611: 24: Unused import sys
+W0611: 24: Unused import Y
+W0611: 24: Unused import Entry
+W0611: 24: Unused import Message
+W0611: 24: Unused import PhotoImage
+W0611: 24: Unused import RIGHT
+W0611: 24: Unused import BufferType
+W0611: 24: Unused import CASCADE
+W0611: 24: Unused import Studbutton
+W0611: 24: Unused import INSIDE
+W0611: 24: Unused import UNDERLINE
+W0611: 24: Unused import WRITABLE
+W0611: 24: Unused import StringVar
+W0611: 24: Unused import PROJECTING
+W0611: 24: Unused import At
+W0611: 24: Unused import ComplexType
+W0611: 24: Unused import NSEW
+W0611: 24: Unused import SCROLL
+W0611: 24: Unused import NoneType
+W0611: 24: Unused import getint
+
+
+Report
+======
+94 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |0        |=          |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |0.000    |=          |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |148    |65.49 |119      |+29.00     |
++----------+-------+------+---------+-----------+
+|docstring |48     |21.24 |26       |+22.00     |
++----------+-------+------+---------+-----------+
+|comment   |16     |7.08  |17       |-1.00      |
++----------+-------+------+---------+-----------+
+|empty     |14     |6.19  |15       |-1.00      |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+     
+      \-listdialog (guitransformer)
+    numpy 
+      \-oldnumeric (guitransformer)
+    ImageD11 
+      \-twodplot (guitransformer)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |1          |=          |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |1          |=          |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |16     |14         |+2.00      |31.25       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |0      |0          |=          |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |44     |55       |-11.00     |
++-----------+-------+---------+-----------+
+|refactor   |0      |0        |=          |
++-----------+-------+---------+-----------+
+|warning    |181    |182      |-1.00      |
++-----------+-------+---------+-----------+
+|error      |3      |0        |+3.00      |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|W0611      |178        |
++-----------+-----------+
+|C0322      |13         |
++-----------+-----------+
+|C0111      |13         |
++-----------+-----------+
+|C0324      |10         |
++-----------+-----------+
+|C0103      |6          |
++-----------+-----------+
+|E0602      |3          |
++-----------+-----------+
+|C0301      |2          |
++-----------+-----------+
+|W0622      |1          |
++-----------+-----------+
+|W0403      |1          |
++-----------+-----------+
+|W0401      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at -15.53/10 (previous run: -20.00/10)
+

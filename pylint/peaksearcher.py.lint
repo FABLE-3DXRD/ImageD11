@@ -1,0 +1,332 @@
+************* Module peaksearcher
+C0301:235: Line too long (81/80)
+C0301:246: Line too long (89/80)
+C0301:267: Line too long (91/80)
+C0301:289: Line too long (95/80)
+C0301:337: Line too long (85/80)
+C0301:355: Line too long (82/80)
+C0301:360: Line too long (88/80)
+C0301:371: Line too long (85/80)
+C0301:403: Line too long (82/80)
+W0311:459: Bad indentation. Found 8 spaces, expected 4
+W0311:460: Bad indentation. Found 8 spaces, expected 4
+W0311:464: Bad indentation. Found 8 spaces, expected 4
+W0311:467: Bad indentation. Found 8 spaces, expected 4
+W0311:470: Bad indentation. Found 8 spaces, expected 4
+W0311:473: Bad indentation. Found 8 spaces, expected 4
+W0311:476: Bad indentation. Found 8 spaces, expected 4
+W0311:479: Bad indentation. Found 8 spaces, expected 4
+C0301:481: Line too long (82/80)
+W0311:482: Bad indentation. Found 8 spaces, expected 4
+W0311:483: Bad indentation. Found 8 spaces, expected 4
+W0311:486: Bad indentation. Found 8 spaces, expected 4
+W0311:489: Bad indentation. Found 8 spaces, expected 4
+W0311:492: Bad indentation. Found 8 spaces, expected 4
+W0311:495: Bad indentation. Found 8 spaces, expected 4
+W0311:498: Bad indentation. Found 8 spaces, expected 4
+W0311:501: Bad indentation. Found 8 spaces, expected 4
+W0311:504: Bad indentation. Found 8 spaces, expected 4
+C0301:506: Line too long (94/80)
+W0311:507: Bad indentation. Found 8 spaces, expected 4
+C0301:509: Line too long (81/80)
+W0311:510: Bad indentation. Found 8 spaces, expected 4
+C0301:512: Line too long (86/80)
+W0311:513: Bad indentation. Found 8 spaces, expected 4
+W0311:516: Bad indentation. Found 8 spaces, expected 4
+W0311:520: Bad indentation. Found 8 spaces, expected 4
+C0103: 41: Invalid name "reallystart" (should match (([A-Z_]*)|(__.*__))$)
+W0604: 42: Using the global statement at the module level
+C0103: 43: Invalid name "stop_now" (should match (([A-Z_]*)|(__.*__))$)
+C0111: 61:timer: Missing docstring
+C0111: 66:timer.msg: Missing docstring
+C0324: 66:timer.msg: Comma not followed by a space
+    def msg(self,msg):
+                ^^
+C0111: 68:timer.tick: Missing docstring
+C0324: 68:timer.tick: Comma not followed by a space
+    def tick(self,msg=""):
+                 ^^
+C0324: 70:timer.tick: Comma not followed by a space
+        self.msgs.append("%s %.2f/s"%(msg,now-self.now))
+                                         ^^
+C0111: 72:timer.tock: Missing docstring
+C0324: 72:timer.tock: Comma not followed by a space
+    def tock(self,msg=""):
+                 ^^
+C0324: 74:timer.tock: Comma not followed by a space
+        print " ".join(self.msgs),"%.2f/s"% (self.now-self.start)
+                                 ^^
+C0103:123:peaksearch: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:127:peaksearch: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+W0704:134:peaksearch: Except doesn't do anything
+W0702:135:peaksearch: No exception's type specified
+W0704:142:peaksearch: Except doesn't do anything
+W0602:146:peaksearch: Using global for 'OMEGASTEP' but no assigment is done
+W0602:146:peaksearch: Using global for 'OMEGAOVERRIDE' but no assigment is done
+C0103:160:peaksearch: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+W0701:162:peaksearch: Raising a string exception
+C0323:162:peaksearch: Operator not followed by a space
+            raise "Incompatible blobimage buffer for file %s" %(filename)
+                                                              ^
+C0324:174:peaksearch: Comma not followed by a space
+        t.msg("T=%-5d n=%-5d;" % (int(threshold),labelim.npk))
+                                                ^^
+R0914:182:peaksearch_driver: Too many local variables (40/15)
+C0103:187:peaksearch_driver: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:189:peaksearch_driver: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:190:peaksearch_driver: Comma not followed by a space
+        print "option:",str(o),str(getattr(options,o))
+                       ^^
+C0322:202:peaksearch_driver: Operator not preceded by a space
+    if options.perfect=="N" and os.path.exists(options.spline):
+                      ^^
+C0324:203:peaksearch_driver: Comma not followed by a space
+        print "Using spatial from",options.spline
+                                  ^^
+C0324:235:peaksearch_driver: Comma not followed by a space
+        print "Your output file must end with .spt, changing to ",options.outfile
+                                                                 ^^
+W0603:239:peaksearch_driver: Using the global statement
+C0322:252:peaksearch_driver: Operator not preceded by a space
+    li_objs={} # label image objects, dict of
+           ^
+C0103:253:peaksearch_driver: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:255:peaksearch_driver: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:257:peaksearch_driver: Operator not preceded by a space
+        mergefile="%s_t%d.flt"%(options.outfile[:-4], t)
+                 ^
+C0323:258:peaksearch_driver: Operator not followed by a space
+        spotfile = "%s_t%d.spt"%(options.outfile[:-4], t)
+                               ^
+C0322:259:peaksearch_driver: Operator not preceded by a space
+        li_objs[t]=labelimage(shape = s,
+                  ^
+                              fileout = mergefile,
+                              spatial = corrfunc,
+                              sptfile=spotfile)
+C0324:263:peaksearch_driver: Comma not followed by a space
+        print "make labelimage",mergefile,spotfile
+                               ^^
+C0322:266:peaksearch_driver: Operator not preceded by a space
+    if options.dark!=None:
+                   ^^
+C0324:267:peaksearch_driver: Comma not followed by a space
+        print "Using dark (background)",options.dark,"with added offset",options.darkoffset
+                                       ^^
+C0322:268:peaksearch_driver: Operator not preceded by a space
+        darkimage= openimage(options.dark).data
+                 ^
+C0322:270:peaksearch_driver: Operator not preceded by a space
+        darkimage=None
+                 ^
+C0322:271:peaksearch_driver: Operator not preceded by a space
+    if options.flood!=None:
+                    ^^
+C0322:272:peaksearch_driver: Operator not preceded by a space
+        floodimage=openimage(options.flood).data
+                  ^
+C0324:278:peaksearch_driver: Comma not followed by a space
+        print "Using flood",options.flood,"average value",floodavg
+                           ^^
+C0322:283:peaksearch_driver: Operator not preceded by a space
+        floodimage=None
+                  ^
+C0111:293:peaksearch_driver.go_for_it: Missing docstring
+R0913:293:peaksearch_driver.go_for_it: Too many arguments (7/5)
+C0103:296:peaksearch_driver.go_for_it: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:302:peaksearch_driver.go_for_it: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+W0702:326:peaksearch_driver: No exception's type specified
+C0103:323:peaksearch_driver: Invalid name "p" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:326:peaksearch_driver: Invalid name "p" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:336:peaksearch_driver.read_all: Invalid name "read_all" (should match [a-z_][a-zA-Z0-9]+$)
+C0111:336:peaksearch_driver.read_all: Missing docstring
+R0913:337:peaksearch_driver.read_all.__init__: Too many arguments (7/5)
+C0111:346:peaksearch_driver.read_all.run: Missing docstring
+W0603:347:peaksearch_driver.read_all.run: Using the global statement
+C0103:353:peaksearch_driver.read_all.run: Invalid name "ti" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:358:peaksearch_driver.read_all.run: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:362:peaksearch_driver.read_all.run: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:369:peaksearch_driver.peaksearch_one: Invalid name "peaksearch_one" (should match [a-z_][a-zA-Z0-9]+$)
+C0111:369:peaksearch_driver.peaksearch_one: Missing docstring
+C0103:372:peaksearch_driver.peaksearch_one.__init__: Invalid name "q" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:370:peaksearch_driver.peaksearch_one.__init__: Invalid name "q" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111:378:peaksearch_driver.peaksearch_one.run: Missing docstring
+W0603:379:peaksearch_driver.peaksearch_one.run: Using the global statement
+C0103:398:peaksearch_driver: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+W0104:399:peaksearch_driver: Statement seems to have no effect
+C0324:399:peaksearch_driver: Comma not followed by a space
+                "Print make queue and peaksearch for threshold",t
+                                                               ^^
+C0103:407:peaksearch_driver: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+W0603:413:peaksearch_driver: Using the global statement
+C0103:425:peaksearch_driver: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:426:peaksearch_driver: Invalid name "q" (should match [a-z_][a-z0-9_]{2,30}$)
+W0702:432:peaksearch_driver: No exception's type specified
+C0103:438:peaksearch_driver: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:439:peaksearch_driver: Invalid name "q" (should match [a-z_][a-z0-9_]{2,30}$)
+W0702:445:peaksearch_driver: No exception's type specified
+R0912:182:peaksearch_driver: Too many branches (59/12)
+R0915:182:peaksearch_driver: Too many statements (54/50)
+W0612:284:peaksearch_driver: Unused variable 'start'
+W0612:410:peaksearch_driver: Unused variable 'looping'
+W0612:427:peaksearch_driver: Unused variable 'i'
+W0612:315:peaksearch_driver: Unused variable 'doff'
+W0612:276:peaksearch_driver: Unused variable 'nmid'
+C0322:482:get_options: Operator not preceded by a space
+        s="/data/opid11/inhouse/Frelon2K/spatial2k.spline"
+         ^
+C0103:482:get_options: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:507:get_options: Comma not followed by a space
+        parser.add_option("-S","--step", action="store",
+                              ^^
+                          dest="OMEGASTEP", default=1.0, type="float",
+                          help="Step size in Omega when you have no header info")
+C0324:510:get_options: Comma not followed by a space
+        parser.add_option("-T","--start", action="store",
+                              ^^
+                          dest="OMEGA", default=0.0, type="float",
+                          help="Start position in Omega when you have no header info")
+C0322:522: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+W0611: 46: Unused import glob
+W0611: 54: Unused import fabioimage
+W0611: 45: Unused import sqrt
+
+
+Report
+======
+294 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |377    |76.94 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |35     |7.14  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |39     |7.96  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |39     |7.96  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    fabio 
+      \-fabioimage (peaksearcher)
+      \-file_series (peaksearcher)
+      \-openimage (peaksearcher)
+    numpy (peaksearcher)
+    ImageD11 
+      \-labelimage (peaksearcher)
+      \-blobcorrector (peaksearcher)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |3      |NC         |NC         |0.00        |66.67    |
++---------+-------+-----------+-----------+------------+---------+
+|method   |8      |NC         |NC         |37.50       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |5      |NC         |NC         |80.00       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |78     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |5      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |45     |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |27         |
++-----------+-----------+
+|W0311      |22         |
++-----------+-----------+
+|C0324      |15         |
++-----------+-----------+
+|C0301      |13         |
++-----------+-----------+
+|C0322      |12         |
++-----------+-----------+
+|C0111      |9          |
++-----------+-----------+
+|W0612      |5          |
++-----------+-----------+
+|W0702      |4          |
++-----------+-----------+
+|W0603      |4          |
++-----------+-----------+
+|W0611      |3          |
++-----------+-----------+
+|W0704      |2          |
++-----------+-----------+
+|W0602      |2          |
++-----------+-----------+
+|R0913      |2          |
++-----------+-----------+
+|C0323      |2          |
++-----------+-----------+
+|W0701      |1          |
++-----------+-----------+
+|W0604      |1          |
++-----------+-----------+
+|W0104      |1          |
++-----------+-----------+
+|R0915      |1          |
++-----------+-----------+
+|R0914      |1          |
++-----------+-----------+
+|R0912      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 5.65/10
+

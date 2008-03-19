@@ -1,0 +1,252 @@
+************* Module factors
+C0322: 39:factors.__init__: Operator not preceded by a space
+        self.nfactors=0
+                     ^
+C0322: 46:factors.generatedata: Operator not preceded by a space
+            l,s,r=self.svd # left , singularvals, right
+                 ^
+C0103: 46:factors.generatedata: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 46:factors.generatedata: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 46:factors.generatedata: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 47:factors.generatedata: Operator not preceded by a space
+            nf=self.nfactors
+              ^
+C0103: 47:factors.generatedata: Invalid name "nf" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 48:factors.generatedata: Operator not preceded by a space
+            I=Numeric.identity(nf,Numeric.Float)
+             ^
+C0103: 48:factors.generatedata: Invalid name "I" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 49:factors.generatedata: Operator not preceded by a space
+            suse=I*s[:nf]
+                ^
+C0324: 50:factors.generatedata: Comma not followed by a space
+            ls = Numeric.dot(l[:,:nf], suse)
+                                ^^
+C0103: 50:factors.generatedata: Invalid name "ls" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 51:factors.generatedata: Operator not preceded by a space
+            self.gendata=Numeric.dot(ls,r[:nf,:])
+                        ^
+C0324: 64:factors.savesvd: Comma not followed by a space
+    def savesvd(self,filename):
+                    ^^
+C0322: 69:factors.savesvd: Operator not preceded by a space
+            l,s,r=self.svd
+                 ^
+C0103: 69:factors.savesvd: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 69:factors.savesvd: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 69:factors.savesvd: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 70:factors.savesvd: Operator not preceded by a space
+            out=open(filename,"wb")
+               ^
+C0324: 83:factors.loadsvd: Comma not followed by a space
+    def loadsvd(self,filename):
+                    ^^
+C0322: 87:factors.loadsvd: Operator not preceded by a space
+        out=open(filename,"rb")
+           ^
+C0322: 88:factors.loadsvd: Operator not preceded by a space
+        dims=struct.unpack("lllll",out.read(struct.calcsize("lllll")))
+            ^
+C0324: 89:factors.loadsvd: Comma not followed by a space
+        print dims,8*dims[0]*8*dims[1]
+                  ^^
+C0322: 90:factors.loadsvd: Operator not preceded by a space
+        l=Numeric.fromstring(out.read(8*dims[0]*dims[1]),Numeric.Float)
+         ^
+C0103: 90:factors.loadsvd: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 91:factors.loadsvd: Operator not preceded by a space
+        s=Numeric.fromstring(out.read(8*dims[2]          ),Numeric.Float)
+         ^
+C0103: 91:factors.loadsvd: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 92:factors.loadsvd: Operator not preceded by a space
+        r=Numeric.fromstring(out.read(8*dims[3]*dims[4]),Numeric.Float)
+         ^
+C0103: 92:factors.loadsvd: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 93:factors.loadsvd: Comma not followed by a space
+        print l.shape,s.shape,r.shape,dims
+                     ^^
+C0322: 94:factors.loadsvd: Operator not preceded by a space
+        l=Numeric.reshape(l,(dims[0],dims[1]))
+         ^
+C0103: 94:factors.loadsvd: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 95:factors.loadsvd: Operator not preceded by a space
+        r=Numeric.reshape(r,(dims[3],dims[4]))
+         ^
+C0103: 95:factors.loadsvd: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 96:factors.loadsvd: Operator not preceded by a space
+        self.svd=(l,s,r)
+                ^
+C0103:100:factors.setnfactors: Invalid name "n" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:100:factors.setnfactors: Comma not followed by a space
+    def setnfactors(self,n):
+                        ^^
+C0322:102:factors.setnfactors: Operator not preceded by a space
+        self.nfactors=n
+                     ^
+C0324:103:factors.setnfactors: Comma not followed by a space
+        print "Number of factors set to",self.nfactors
+                                        ^^
+C0324:105:factors.loadchis: Comma not followed by a space
+    def loadchis(self,filename):
+                     ^^
+C0322:109:factors.loadchis: Operator not preceded by a space
+        fl=glob.glob(filename[:-8]+"????"+".chi")
+          ^
+C0103:109:factors.loadchis: Invalid name "fl" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:111:factors.loadchis: Comma not followed by a space
+        print "Number of chi files is:",len(fl)
+                                       ^^
+C0322:112:factors.loadchis: Operator not preceded by a space
+        dl=[opendata.openchi(f).data[:,1] for f in fl]
+          ^
+C0103:112:factors.loadchis: Invalid name "dl" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:113:factors.loadchis: Operator not preceded by a space
+        self.obsdata=Numeric.array(dl)
+                    ^
+C0322:114:factors.loadchis: Operator not preceded by a space
+        self.x=opendata.openchi(fl[0]).data[:,0]
+              ^
+C0324:115:factors.loadchis: Comma not followed by a space
+        print self.x.shape,self.obsdata.shape
+                          ^^
+C0324:117:factors.saveobsdata: Comma not followed by a space
+    def saveobsdata(self,filename):
+                        ^^
+C0322:121:factors.saveobsdata: Operator not preceded by a space
+        out=open(filename,"wb")
+           ^
+C0324:122:factors.saveobsdata: Comma not followed by a space
+        out.write(struct.pack("lll",self.x.shape[0],
+                                   ^^
+                                    self.obsdata.shape[0],
+                                    self.obsdata.shape[1]))
+C0324:129:factors.readobsdata: Comma not followed by a space
+    def readobsdata(self,filename):
+                        ^^
+C0322:131:factors.readobsdata: Operator not preceded by a space
+        infile=open(filename,"rb")
+              ^
+C0322:132:factors.readobsdata: Operator not preceded by a space
+        sizes=struct.unpack("lll",infile.read(struct.calcsize("lll")))
+             ^
+C0322:135:factors.readobsdata: Operator not preceded by a space
+        self.x=Numeric.fromstring(infile.read(sizes[0]*8),Numeric.Float)
+              ^
+C0322:136:factors.readobsdata: Operator not preceded by a space
+        self.obsdata=Numeric.fromstring(infile.read(8*sizes[1]*sizes[2]),
+                    ^
+                                        Numeric.Float)
+C0322:139:factors.readobsdata: Operator not preceded by a space
+        self.obsdata=Numeric.reshape(self.obsdata,(sizes[1],sizes[2]))
+                    ^
+C0324:140:factors.readobsdata: Comma not followed by a space
+        print self.x.shape,self.obsdata.shape
+                          ^^
+C0322:143: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+C0322:144: Operator not preceded by a space
+    o=factors()
+     ^
+C0103:144: Invalid name "o" (should match (([A-Z_]*)|(__.*__))$)
+
+
+Report
+======
+80 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |0        |=          |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |0.000    |=          |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |87     |58.00 |87       |=          |
++----------+-------+------+---------+-----------+
+|docstring |28     |18.67 |28       |=          |
++----------+-------+------+---------+-----------+
+|comment   |17     |11.33 |17       |=          |
++----------+-------+------+---------+-----------+
+|empty     |18     |12.00 |18       |=          |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    LinearAlgebra (factors)
+    numpy 
+      \-oldnumeric (factors)
+    ImageD11 
+      \-opendata (factors)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |1          |=          |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |1          |=          |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |9      |9          |=          |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |0      |0          |=          |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |61     |63       |-2.00      |
++-----------+-------+---------+-----------+
+|refactor   |0      |0        |=          |
++-----------+-------+---------+-----------+
+|warning    |0      |0        |=          |
++-----------+-------+---------+-----------+
+|error      |0      |0        |=          |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0322      |29         |
++-----------+-----------+
+|C0103      |18         |
++-----------+-----------+
+|C0324      |14         |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 2.38/10 (previous run: 2.12/10)
+

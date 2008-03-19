@@ -1,0 +1,161 @@
+************* Module simplex
+C: 78: Line too long (87/80)
+C: 79: Line too long (83/80)
+C:214: Line too long (119/80)
+C:217: Line too long (83/80)
+C:221: Line too long (119/80)
+C:224: Line too long (82/80)
+C:229: Line too long (119/80)
+C:241: Line too long (104/80)
+C:275: Line too long (103/80)
+C: 48:Simplex: Missing docstring
+C: 65:Simplex.__init__: Invalid name "kC" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 64:Simplex.__init__: Invalid name "kE" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 63:Simplex.__init__: Invalid name "kR" (should match [a-z_][a-z0-9_]{2,30}$)
+R: 48:Simplex: Too many instance attributes (13/7)
+C: 49:Simplex.__init__: Invalid name "kR" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 49:Simplex.__init__: Invalid name "kE" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 49:Simplex.__init__: Invalid name "kC" (should match [a-z_][a-z0-9_]{2,30}$)
+R: 49:Simplex.__init__: Too many arguments (7/5)
+C: 86:Simplex.__init__: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+W:107:Simplex.minimize: Redefining built-in 'iter'
+C:134:Simplex.minimize: Invalid name "S" (should match [a-z_][a-z0-9_]{2,30}$)
+C:136:Simplex.minimize: Invalid name "S" (should match [a-z_][a-z0-9_]{2,30}$)
+C:137:Simplex.minimize: Invalid name "F2" (should match [a-z_][a-z0-9_]{2,30}$)
+C:141:Simplex.minimize: Invalid name "S1" (should match [a-z_][a-z0-9_]{2,30}$)
+C:143:Simplex.minimize: Invalid name "S1" (should match [a-z_][a-z0-9_]{2,30}$)
+C:144:Simplex.minimize: Invalid name "T" (should match [a-z_][a-z0-9_]{2,30}$)
+W:157:Simplex.minimize: Unreachable code
+W:157:Simplex.minimize: Unnecessary semi-column
+C:165:Simplex.minimize: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C:166:Simplex.minimize: Invalid name "S" (should match [a-z_][a-z0-9_]{2,30}$)
+C:170:Simplex.minimize: Invalid name "S" (should match [a-z_][a-z0-9_]{2,30}$)
+C:205:Simplex.minimize: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+W:208:Simplex.minimize: Using possibly undefined loop variable 'iter'
+R: 92:Simplex.minimize: Too many branches (23/12)
+R: 92:Simplex.minimize: Too many statements (52/50)
+C:212:Simplex.contract_simplex: Missing docstring
+C:213:Simplex.contract_simplex: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C:219:Simplex.expand_simplex: Missing docstring
+C:220:Simplex.expand_simplex: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C:226:Simplex.reflect_simplex: Missing docstring
+C:228:Simplex.reflect_simplex: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C:236:Simplex.multiple_contract_simplex: Missing docstring
+C:240:Simplex.multiple_contract_simplex: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C:245:Simplex.accept_contracted_point: Missing docstring
+C:247:Simplex.accept_contracted_point: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C:251:Simplex.accept_expanded_point: Missing docstring
+C:253:Simplex.accept_expanded_point: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C:257:Simplex.accept_reflected_point: Missing docstring
+C:259:Simplex.accept_reflected_point: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C:263:Simplex.calculate_errors_at_vertices: Missing docstring
+C:268:Simplex.calculate_errors_at_vertices: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C:274:myfunc: Missing docstring
+W:279:main: Redefining built-in 'iter'
+C:277:main: Missing docstring
+C:278:main: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+
+
+Report
+======
+137 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |137    |53.94 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |65     |25.59 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |28     |11.02 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |24     |9.45  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |10     |NC         |NC         |20.00       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |2      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |46     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |4      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |5      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |26         |
++-----------+-----------+
+|C0111      |11         |
++-----------+-----------+
+|C0301      |9          |
++-----------+-----------+
+|W0622      |2          |
++-----------+-----------+
+|W0631      |1          |
++-----------+-----------+
+|W0106      |1          |
++-----------+-----------+
+|W0101      |1          |
++-----------+-----------+
+|R0915      |1          |
++-----------+-----------+
+|R0913      |1          |
++-----------+-----------+
+|R0912      |1          |
++-----------+-----------+
+|R0902      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 5.99/10
+

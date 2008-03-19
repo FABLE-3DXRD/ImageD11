@@ -1,0 +1,280 @@
+************* Module filterfft
+W0311: 33: Bad indentation. Found 2 spaces, expected 4
+W0311: 51: Bad indentation. Found 2 spaces, expected 4
+W0311: 52: Bad indentation. Found 4 spaces, expected 8
+W0311: 53: Bad indentation. Found 4 spaces, expected 8
+W0311: 54: Bad indentation. Found 6 spaces, expected 12
+W0311: 55: Bad indentation. Found 4 spaces, expected 8
+W0311: 57: Bad indentation. Found 2 spaces, expected 4
+W0311: 58: Bad indentation. Found 2 spaces, expected 4
+W0311: 60: Bad indentation. Found 2 spaces, expected 4
+W0311: 61: Bad indentation. Found 4 spaces, expected 8
+W0311: 62: Bad indentation. Found 4 spaces, expected 8
+W0311: 63: Bad indentation. Found 4 spaces, expected 8
+W0311: 65: Bad indentation. Found 4 spaces, expected 8
+W0311: 66: Bad indentation. Found 2 spaces, expected 4
+W0311: 67: Bad indentation. Found 4 spaces, expected 8
+W0311: 68: Bad indentation. Found 2 spaces, expected 4
+W0311: 69: Bad indentation. Found 4 spaces, expected 8
+W0311: 71: Bad indentation. Found 2 spaces, expected 4
+W0311: 73: Bad indentation. Found 2 spaces, expected 4
+W0311: 74: Bad indentation. Found 2 spaces, expected 4
+W0311: 76: Bad indentation. Found 2 spaces, expected 4
+W0311: 77: Bad indentation. Found 4 spaces, expected 8
+W0311: 78: Bad indentation. Found 2 spaces, expected 4
+W0311: 79: Bad indentation. Found 4 spaces, expected 8
+W0311: 80: Bad indentation. Found 4 spaces, expected 8
+W0311: 81: Bad indentation. Found 4 spaces, expected 8
+W0311: 82: Bad indentation. Found 4 spaces, expected 8
+W0311: 83: Bad indentation. Found 6 spaces, expected 12
+W0311: 85: Bad indentation. Found 2 spaces, expected 4
+W0311: 86: Bad indentation. Found 2 spaces, expected 4
+W0311: 89: Bad indentation. Found 2 spaces, expected 4
+W0311: 90: Bad indentation. Found 2 spaces, expected 4
+W0311: 91: Bad indentation. Found 2 spaces, expected 4
+W0311: 92: Bad indentation. Found 2 spaces, expected 4
+W0311: 94: Bad indentation. Found 2 spaces, expected 4
+W0311: 96: Bad indentation. Found 2 spaces, expected 4
+W0311: 97: Bad indentation. Found 2 spaces, expected 4
+W0311: 98: Bad indentation. Found 2 spaces, expected 4
+W0311:100: Bad indentation. Found 2 spaces, expected 4
+W0311:102: Bad indentation. Found 2 spaces, expected 4
+W0311:103: Bad indentation. Found 2 spaces, expected 4
+W0311:105: Bad indentation. Found 2 spaces, expected 4
+W0311:109: Bad indentation. Found 2 spaces, expected 4
+W0311:114: Bad indentation. Found 2 spaces, expected 4
+W0311:115: Bad indentation. Found 2 spaces, expected 4
+W0311:116: Bad indentation. Found 4 spaces, expected 8
+W0311:117: Bad indentation. Found 2 spaces, expected 4
+W0311:118: Bad indentation. Found 4 spaces, expected 8
+W0311:119: Bad indentation. Found 2 spaces, expected 4
+W0311:120: Bad indentation. Found 2 spaces, expected 4
+W0311:121: Bad indentation. Found 2 spaces, expected 4
+W0311:122: Bad indentation. Found 2 spaces, expected 4
+W0311:123: Bad indentation. Found 2 spaces, expected 4
+W0311:124: Bad indentation. Found 2 spaces, expected 4
+W0311:128: Bad indentation. Found 2 spaces, expected 4
+W0311:129: Bad indentation. Found 2 spaces, expected 4
+W0311:130: Bad indentation. Found 4 spaces, expected 8
+W0311:131: Bad indentation. Found 2 spaces, expected 4
+W0311:132: Bad indentation. Found 2 spaces, expected 4
+W0311:133: Bad indentation. Found 2 spaces, expected 4
+W0311:135: Bad indentation. Found 2 spaces, expected 4
+W0311:137: Bad indentation. Found 2 spaces, expected 4
+W0311:139: Bad indentation. Found 2 spaces, expected 4
+W0311:141: Bad indentation. Found 2 spaces, expected 4
+W0311:142: Bad indentation. Found 2 spaces, expected 4
+W0311:143: Bad indentation. Found 2 spaces, expected 4
+W0311:145: Bad indentation. Found 2 spaces, expected 4
+W0311:147: Bad indentation. Found 2 spaces, expected 4
+W0311:149: Bad indentation. Found 2 spaces, expected 4
+W0311:150: Bad indentation. Found 2 spaces, expected 4
+W0311:151: Bad indentation. Found 2 spaces, expected 4
+W0311:152: Bad indentation. Found 2 spaces, expected 4
+W0311:155: Bad indentation. Found 2 spaces, expected 4
+W0311:156: Bad indentation. Found 2 spaces, expected 4
+W0311:157: Bad indentation. Found 2 spaces, expected 4
+W0311:158: Bad indentation. Found 2 spaces, expected 4
+W0311:159: Bad indentation. Found 2 spaces, expected 4
+W0311:160: Bad indentation. Found 2 spaces, expected 4
+W0311:161: Bad indentation. Found 2 spaces, expected 4
+W0311:162: Bad indentation. Found 2 spaces, expected 4
+W0311:166: Bad indentation. Found 2 spaces, expected 4
+W0622: 32:filter: Redefining built-in 'filter'
+C0103: 32:filter: Invalid name "I" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 32:filter: Invalid name "K" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111: 51:filter.roundup_pow2: Missing docstring
+C0103: 57:filter: Invalid name "I" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 58:filter: Invalid name "K" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 61:filter: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 62:filter: Invalid name "L" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 63:filter: Comma not followed by a space
+    ans = numpy.concatenate([filter(I[:,:,i], K, L).reshape(s+(1,))
+                                       ^^
+                             for i in range(I.shape[2])], 2)
+E1101: 63:filter: Instance of 'int' has no 'reshape' member
+C0103: 71:filter: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 73:filter: Invalid name "Ipad" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 77:filter: Invalid name "Kpad" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 79:filter: Invalid name "Kpad" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 81:filter: Invalid name "Kpad" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 85:filter: Comma not followed by a space
+  Ipad[I.shape[0]:I.shape[0]+(K.shape[0]-1)//2,:I.shape[1]] = I[I.shape[0]-1,:]
+                                              ^^
+C0324: 86:filter: Comma not followed by a space
+  Ipad[:I.shape[0],I.shape[1]:I.shape[1]+(K.shape[1]-1)//2] = \
+                  ^^
+                                      I[:,I.shape[1]-1].reshape((I.shape[0],1))
+C0324: 91:filter: Comma not followed by a space
+  Ipad[Ipad.shape[0]-xoff:,:I.shape[1]] = I[0,:]
+                          ^^
+C0324: 92:filter: Comma not followed by a space
+  Ipad[:I.shape[0],Ipad.shape[1]-yoff:] = I[:,0].reshape((I.shape[0],1))
+                  ^^
+C0324: 96:filter: Comma not followed by a space
+  Ipad[Ipad.shape[0]-xoff:,I.shape[1]:I.shape[1]+(K.shape[1]-1)//2] = I[0,-1]
+                          ^^
+C0324: 97:filter: Comma not followed by a space
+  Ipad[I.shape[0]:I.shape[0]+(K.shape[0]-1)//2,Ipad.shape[1]-yoff:] = I[-1,0]
+                                              ^^
+C0324: 98:filter: Comma not followed by a space
+  Ipad[Ipad.shape[0]-xoff:,Ipad.shape[1]-yoff:] = I[0,0]
+                          ^^
+C0324:103:filter: Comma not followed by a space
+  ans = ans[off[0]:off[0]+I.shape[0],off[1]:off[1]+I.shape[1]]
+                                    ^^
+C0103:121:gaussian: Invalid name "Kx" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:122:gaussian: Invalid name "Ky" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111:127:test: Missing docstring
+C0111:129:test.arrayeq: Missing docstring
+C0103:129:test.arrayeq: Invalid name "A" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:129:test.arrayeq: Invalid name "B" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:131:test: Comma not followed by a space
+  A = [[1,2],[3,4]]
+         ^^
+C0103:131:test: Invalid name "A" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:133:test: Comma not followed by a space
+  assert arrayeq(filter(A, [[0,1,0],[1,1,1],[0,1,0]]),
+                              ^^
+                           [[8,11],[14,17]])
+C0324:135:test: Comma not followed by a space
+  assert arrayeq(filter(A, [[1,1,1,1,1]]),
+                              ^^
+                           [[7,8],[17,18]])
+C0324:137:test: Comma not followed by a space
+  assert arrayeq(filter(A, [[1,1,1,1,1]]*5),
+                              ^^
+                           [[55,60],[65,70]])
+C0324:139:test: Comma not followed by a space
+  assert arrayeq(filter([[1]], [[0,1,0],[1,1,1],[0,1,0]]),
+                                  ^^
+                               [[5]])
+C0324:142:test: Comma not followed by a space
+  B = [[1,2,3],[4,5,6],[7,8,9]]
+         ^^
+C0103:142:test: Invalid name "B" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:143:test: Comma not followed by a space
+  assert arrayeq(filter(B, [[0,1,0],[1,1,1],[0,1,0]]),
+                              ^^
+                           [[9,13,17],[21,25,29],[33,37,41]])
+C0324:145:test: Comma not followed by a space
+  assert arrayeq(filter(A, A), [[10,16],[24,30]])
+                                   ^^
+C0324:156:test: Comma not followed by a space
+  assert abs(sum(sum(gaussian(3,(3,3))))-1)<1e-7
+                               ^^
+C0324:157:test: Comma not followed by a space
+  assert abs(sum(sum(gaussian(3,(1,30))))-1)<1e-7
+                               ^^
+C0324:158:test: Comma not followed by a space
+  assert gaussian(3,(3,3)).shape == (3,3)
+                   ^^
+C0324:159:test: Comma not followed by a space
+  assert gaussian(3,(1,30)).shape == (1,30)
+                   ^^
+C0324:160:test: Comma not followed by a space
+  assert gaussian(3,(30,1)).shape == (30,1)
+                   ^^
+
+
+Report
+======
+84 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |95     |62.09 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |50     |32.68 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |0      |0.00  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |8      |5.23  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy (filterfft)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |5      |NC         |NC         |40.00       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |42     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |82     |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |1      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|W0311      |81         |
++-----------+-----------+
+|C0324      |22         |
++-----------+-----------+
+|C0103      |17         |
++-----------+-----------+
+|C0111      |3          |
++-----------+-----------+
+|W0622      |1          |
++-----------+-----------+
+|E1101      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at -5.36/10
+

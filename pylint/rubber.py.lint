@@ -1,0 +1,1064 @@
+************* Module rubber
+C:116: Line too long (87/80)
+C:126: Line too long (81/80)
+C:168: Line too long (84/80)
+C:192: Line too long (89/80)
+C:276: Line too long (97/80)
+C:285: Line too long (97/80)
+C:307: Line too long (83/80)
+C:308: Line too long (83/80)
+C:340: Line too long (114/80)
+C:342: Line too long (121/80)
+C:348: Line too long (82/80)
+C:359: Line too long (86/80)
+C:364: Line too long (81/80)
+C:365: Line too long (81/80)
+C:382: Line too long (100/80)
+C:394: Line too long (93/80)
+C:420: Line too long (82/80)
+C:422: Line too long (91/80)
+C:423: Line too long (89/80)
+C:427: Line too long (120/80)
+C:437: Line too long (92/80)
+C:456: Line too long (124/80)
+C:472: Line too long (81/80)
+C:473: Line too long (81/80)
+C:477: Line too long (110/80)
+C:478: Line too long (90/80)
+C:479: Line too long (88/80)
+C:481: Line too long (117/80)
+C:  1: Missing docstring
+W:  6: Wildcard import Tkinter
+C:  8: Comma not followed by a space
+import ImageTk,Image,tkSimpleDialog,tkFileDialog,os,sys
+              ^^
+W: 18: String statement has no effect
+R: 21:preprocess: Too many local variables (16/15)
+C: 21:preprocess: Comma not followed by a space
+def preprocess(image, (scalex,scaley),maxi=None,mini=None):
+                             ^^
+C: 23:preprocess: Operator not preceded by a space
+    MAXW=4096
+        ^
+C: 23:preprocess: Invalid name "MAXW" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 24:preprocess: Operator not preceded by a space
+    MAXH=4096
+        ^
+C: 24:preprocess: Invalid name "MAXH" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 25:preprocess: Operator not preceded by a space
+    MINSIZE=1
+           ^
+C: 25:preprocess: Invalid name "MINSIZE" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 26:preprocess: Operator not preceded by a space
+    DEFAULT_HEIGHT=100
+                  ^
+C: 26:preprocess: Invalid name "DEFAULT_HEIGHT" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 27:preprocess: Operator not preceded by a space
+    MAXSIZE=max(MAXW,MAXH)
+           ^
+C: 27:preprocess: Invalid name "MAXSIZE" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 31:preprocess: Operator not preceded by a space
+    if maxi==None:
+           ^^
+C: 39:preprocess: Invalid name "ys" (should match [a-z_][a-z0-9_]{2,30}$)
+E: 40:preprocess: Undefined variable 'zeros'
+C: 41:preprocess: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 42:preprocess: Comma not followed by a space
+            image[DEFAULT_HEIGHT-1-ys[x],len_x-x-1] = 0
+                                        ^^
+W: 49:preprocess: No exception's type specified
+C: 49:preprocess: Comma not followed by a space
+            print "Exception",themax,themin
+                             ^^
+C: 50:preprocess: Comma not followed by a space
+        image = n.where(image<256,image,255)
+                                 ^^
+C: 51:preprocess: Comma not followed by a space
+        image = n.where(image>0,image,0).astype('B')
+                               ^^
+W: 53:preprocess: Unused variable 'len_y'
+C: 66:NumerictoImage: Invalid name "NumerictoImage" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 66:NumerictoImage: Missing docstring
+C: 66:NumerictoImage: Comma not followed by a space
+def NumerictoImage( data, (scalex,scaley),maxi=None,mini=None):
+                                 ^^
+C: 67:NumerictoImage: Comma not followed by a space
+    image, (scalesx,scalesy) = preprocess(data, (scalex,scaley),maxi,mini)
+                   ^^
+C: 71:NumerictoImage: Comma not followed by a space
+        bits = n.transpose(image, (1,0,2)).tostring()
+                                    ^^
+C: 74:NumerictoImage: Comma not followed by a space
+        bits = n.transpose(image, (1,0)).tostring()
+                                    ^^
+C: 77:NumerictoImage: Operator not preceded by a space
+    image2=image2.resize((scalesx,scalesy))
+          ^
+C: 78:NumerictoImage: Comma not followed by a space
+    return image2,(scalesx,scalesy)
+                 ^^
+C: 85:rubber: Invalid name "rubber" (should match [A-Z_][a-zA-Z0-9]+$)
+C: 85:rubber: Missing docstring
+C:427:rubber.get_hkl: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
+C:125:rubber.__init__: Invalid name "b1" (should match [a-z_][a-z0-9_]{2,30}$)
+C:175:rubber.__init__: Invalid name "rubberbandBox" (should match [a-z_][a-z0-9_]{2,30}$)
+C:167:rubber.__init__: Invalid name "canvasObject" (should match [a-z_][a-z0-9_]{2,30}$)
+C:114:rubber.__init__: Invalid name "b" (should match [a-z_][a-z0-9_]{2,30}$)
+R: 85:rubber: Too many instance attributes (37/7)
+C: 88:rubber.__init__: Operator not preceded by a space
+        self.master=master
+                   ^
+C: 90:rubber.__init__: Operator not preceded by a space
+        if datafile==None:
+                   ^^
+C: 91:rubber.__init__: Operator not preceded by a space
+            datafile=tkFileDialog.askopenfilename(initialdir=os.getcwd())
+                    ^
+C: 93:rubber.__init__: Operator not preceded by a space
+            self.datafile=datafile
+                         ^
+C: 94:rubber.__init__: Operator not preceded by a space
+            dataobj=opendata(datafile)
+                   ^
+C: 95:rubber.__init__: Operator not preceded by a space
+            self.data=dataobj.data.astype(Int)
+                     ^
+E: 95:rubber.__init__: Undefined variable 'Int'
+W: 99:rubber.__init__: No exception's type specified
+C: 97:rubber.__init__: Operator not preceded by a space
+                self.omega=float(dataobj.header["Omega"])
+                          ^
+C:101:rubber.__init__: Comma not followed by a space
+            if type(datafile)==type(array([10,11,12])):
+                                             ^^
+E:101:rubber.__init__: Undefined variable 'array'
+C:102:rubber.__init__: Operator not preceded by a space
+                self.data=datafile
+                         ^
+C:103:rubber.__init__: Operator not preceded by a space
+                self.datafile="unknown0000.edf"
+                             ^
+C:106:rubber.__init__: Operator not preceded by a space
+            self.bkgfile=bkgfile
+                        ^
+C:107:rubber.__init__: Operator not preceded by a space
+            bkgobj=opendata(bkgfile)
+                  ^
+C:108:rubber.__init__: Operator not preceded by a space
+            self.bkg=bkgobj.data.astype(Int)
+                    ^
+E:108:rubber.__init__: Undefined variable 'Int'
+C:109:rubber.__init__: Operator not preceded by a space
+            self.data=self.data.astype(Int)-self.bkg
+                     ^
+E:109:rubber.__init__: Undefined variable 'Int'
+C:110:rubber.__init__: Comma not followed by a space
+            print "Got your background from",bkgfile,self.bkg.shape
+                                            ^^
+C:113:rubber.__init__: Comma not followed by a space
+        Pack.config(self,expand=1,fill=BOTH)
+                        ^^
+C:114:rubber.__init__: Operator not preceded by a space
+        self.b=Frame(self)
+              ^
+C:115:rubber.__init__: Comma not followed by a space
+        Button(self.b,text="Quit",command=self.close).pack(side=RIGHT)
+                     ^^
+C:116:rubber.__init__: Comma not followed by a space
+        Button(self.b,text="Toggle log scaled",command=self.togglelog).pack(side=RIGHT)
+                     ^^
+C:117:rubber.__init__: Comma not followed by a space
+        Button(self.b,text="Set Maximum",command=self.setmax).pack(side=RIGHT)
+                     ^^
+C:118:rubber.__init__: Comma not followed by a space
+        Button(self.b,text="Set Minimum",command=self.setmin).pack(side=RIGHT)
+                     ^^
+C:119:rubber.__init__: Comma not followed by a space
+        Button(self.b,text="Autorange",command=self.autorange).pack(side=RIGHT)
+                     ^^
+C:120:rubber.__init__: Comma not followed by a space
+        Button(self.b,text="ZoomIn",command=self.zoomin).pack(side=LEFT)
+                     ^^
+C:121:rubber.__init__: Comma not followed by a space
+        Button(self.b,text="ZoomOut",command=self.zoomout).pack(side=LEFT)
+                     ^^
+C:122:rubber.__init__: Comma not followed by a space
+        Button(self.b,text="ShowROI",command=self.showroi).pack(side=LEFT)
+                     ^^
+C:125:rubber.__init__: Operator not preceded by a space
+        self.b1=Frame(self)
+               ^
+C:126:rubber.__init__: Comma not followed by a space
+        Button(self.b1,text="Rock",command=self.makerockingcurve).pack(side=LEFT)
+                      ^^
+C:127:rubber.__init__: Comma not followed by a space
+        Button(self.b1,text="Prev",command=self.prev).pack(side=LEFT)
+                      ^^
+C:128:rubber.__init__: Comma not followed by a space
+        Button(self.b1,text="Next",command=self.next).pack(side=LEFT)
+                      ^^
+C:129:rubber.__init__: Comma not followed by a space
+        Label(self.b1,text="File number=").pack(side=LEFT)
+                     ^^
+C:130:rubber.__init__: Operator not preceded by a space
+        self.filenum=StringVar()
+                    ^
+C:131:rubber.__init__: Comma not followed by a space
+        Entry(self.b1,textvariable=self.filenum).pack(side=LEFT)
+                     ^^
+C:132:rubber.__init__: Comma not followed by a space
+        Button(self.b1,text="Jump",command=self.jump).pack(side=LEFT)
+                      ^^
+C:133:rubber.__init__: Comma not followed by a space
+        Button(self.b1,text="Open",command=self.file).pack(side=LEFT)
+                      ^^
+C:134:rubber.__init__: Comma not followed by a space
+        Button(self.b1,text="Pars",command=self.rdpars).pack(side=LEFT)
+                      ^^
+C:135:rubber.__init__: Comma not followed by a space
+        Button(self.b1,text="UBIS",command=self.rdubis).pack(side=LEFT)
+                      ^^
+W:140:rubber.__init__: No exception's type specified
+W:143:rubber.__init__: No exception's type specified
+W:146:rubber.__init__: No exception's type specified
+C:148:rubber.__init__: Operator not preceded by a space
+        self.status=Label(self,text=self.datafile)
+                   ^
+C:150:rubber.__init__: Operator not preceded by a space
+        self.statistics=Label(self,text=self.getstats())
+                       ^
+C:153:rubber.__init__: Operator not preceded by a space
+        self.key=Label(self,bg='green',bd=0)
+                ^
+C:155:rubber.__init__: Operator not preceded by a space
+        self.keyt=Label(self,bd=0)
+                 ^
+C:156:rubber.__init__: Comma not followed by a space
+        self.keyt.pack(side=BOTTOM,fill=BOTH)
+                                  ^^
+C:158:rubber.__init__: Operator not preceded by a space
+        self.xscrollbar=Scrollbar(self,orient=HORIZONTAL)
+                       ^
+C:159:rubber.__init__: Comma not followed by a space
+        self.xscrollbar.pack(side=BOTTOM,fill=X)
+                                        ^^
+C:160:rubber.__init__: Operator not preceded by a space
+        self.yscrollbar=Scrollbar(self,orient=VERTICAL)
+                       ^
+C:161:rubber.__init__: Comma not followed by a space
+        self.yscrollbar.pack(side=RIGHT,fill=Y)
+                                       ^^
+C:164:rubber.__init__: Operator not preceded by a space
+        self.scale=[self.data.shape[0],self.data.shape[1]]
+                  ^
+C:165:rubber.__init__: Operator not preceded by a space
+        self.zoom=1.0
+                 ^
+C:166:rubber.__init__: Operator not preceded by a space
+        self.log=0
+                ^
+C:167:rubber.__init__: Comma not followed by a space
+        self.canvasObject = Canvas(self,width=512,height=512,
+                                       ^^
+              xscrollcommand=self.xscrollbar.set,yscrollcommand=self.yscrollbar.set,
+              scrollregion=(0, 0, self.data.shape[0], self.data.shape[1]))
+C:170:rubber.__init__: Comma not followed by a space
+        self.canvasObject.pack(side=LEFT,fill="both",expand=1)
+                                        ^^
+C:176:rubber.__init__: Operator not preceded by a space
+        self.piccy=None
+                  ^
+C:178:rubber.__init__: Operator not preceded by a space
+        self.mini=self.maxi=None
+                 ^
+C:180:rubber.__init__: Operator not preceded by a space
+            self.zoom*=2.
+                     ^^
+C:182:rubber.__init__: Operator not preceded by a space
+            self.zoom/=2.
+                     ^^
+C:185:rubber.__init__: Operator not preceded by a space
+        step=float(self.maxi-self.mini)/self.scale[0]
+            ^
+C:186:rubber.__init__: Operator not preceded by a space
+        l=[]
+         ^
+C:186:rubber.__init__: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C:187:rubber.__init__: Operator not preceded by a space
+        x=float(self.mini)
+         ^
+C:187:rubber.__init__: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C:190:rubber.__init__: Operator not preceded by a space
+            x+=step
+             ^^
+C:191:rubber.__init__: Operator not preceded by a space
+        self.legend=transpose(array([l],Float))
+                   ^
+E:191:rubber.__init__: Undefined variable 'transpose'
+E:191:rubber.__init__: Undefined variable 'array'
+E:191:rubber.__init__: Undefined variable 'Float'
+C:192:rubber.__init__: Comma not followed by a space
+        self.legendimage,(scalesx,scalesy)=NumerictoImage(self.legend,(self.scale[0],10))
+                        ^^
+C:193:rubber.__init__: Operator not preceded by a space
+        self.legendimage=ImageTk.PhotoImage(self.legendimage)
+                        ^
+C:196:rubber.__init__: Operator not preceded by a space
+        stri="<---%f          %f--->"%(self.mini,self.maxi)
+            ^
+C:209:rubber.__init__: Operator not preceded by a space
+        self.parameters={}
+                       ^
+R: 87:rubber.__init__: Too many statements (101/50)
+W:192:rubber.__init__: Unused variable 'scalesx'
+W:192:rubber.__init__: Unused variable 'scalesy'
+C:211:rubber.file: Missing docstring
+C:212:rubber.file: Operator not preceded by a space
+        self.datafile=tkFileDialog.askopenfilename(initialdir=os.getcwd())
+                     ^
+C:216:rubber.rdpars: Missing docstring
+C:216:rubber.rdpars: Comma not followed by a space
+    def rdpars(self,parfile=None):
+                   ^^
+C:217:rubber.rdpars: Operator not preceded by a space
+        if parfile==None:
+                  ^^
+C:218:rubber.rdpars: Operator not preceded by a space
+            parfile=tkFileDialog.askopenfilename(initialdir=os.getcwd())
+                   ^
+C:220:rubber.rdpars: Operator not preceded by a space
+        o=parameters.parameters()
+         ^
+C:220:rubber.rdpars: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+C:222:rubber.rdpars: Operator not preceded by a space
+        self.parameters=o.getparameters()
+                       ^
+E:222:rubber.rdpars: Instance of 'parameters' has no 'getparameters' member
+C:224:rubber.rdubis: Missing docstring
+C:224:rubber.rdubis: Comma not followed by a space
+    def rdubis(self,ubifile=None):
+                   ^^
+R:224:rubber.rdubis: Method could be a function
+C:228:rubber.jump: Missing docstring
+C:229:rubber.jump: Operator not preceded by a space
+        number=int(self.filenum.get())
+              ^
+C:230:rubber.jump: Operator not preceded by a space
+        self.datafile="%s%04d.edf"%(self.datafile[:-8],number)
+                     ^
+C:233:rubber.name: Missing docstring
+C:233:rubber.name: Comma not followed by a space
+    def name(self,num):
+                 ^^
+W:237:rubber.name: No exception's type specified
+C:235:rubber.name: Operator not preceded by a space
+            current=int(self.datafile[-8:-4])
+                   ^
+C:237:rubber.name: Operator not preceded by a space
+            current=int(self.datafile[-9:-5])
+                   ^
+C:238:rubber.name: Comma not followed by a space
+        print "current is",current
+                          ^^
+C:239:rubber.name: Operator not followed by a space
+        return "%s%04d%s"%(self.datafile[:-8],current+num,".edf")
+                         ^
+C:241:rubber.next: Missing docstring
+C:242:rubber.next: Operator not preceded by a space
+        self.datafile=self.name(1)
+                     ^
+C:245:rubber.prev: Missing docstring
+C:246:rubber.prev: Operator not preceded by a space
+        self.datafile=self.name(-1)
+                     ^
+C:249:rubber.readdata: Missing docstring
+C:250:rubber.readdata: Operator not preceded by a space
+        dataobj=opendata(self.datafile)
+               ^
+C:252:rubber.readdata: Operator not preceded by a space
+        self.data=dataobj.data.astype(Int)
+                 ^
+E:252:rubber.readdata: Undefined variable 'Int'
+W:257:rubber.readdata: No exception's type specified
+C:255:rubber.readdata: Operator not preceded by a space
+            self.data=self.data.astype(Int)-self.bkg
+                     ^
+E:255:rubber.readdata: Undefined variable 'Int'
+C:257:rubber.readdata: Comma not followed by a space
+            print "Failed to subtract bkg",self.bkg.shape,self.data.shape
+                                          ^^
+W:262:rubber.readdata: No exception's type specified
+C:260:rubber.readdata: Operator not preceded by a space
+            self.omega=float(dataobj.header["Omega"])
+                      ^
+W:267:rubber.readdata: No exception's type specified
+C:270:rubber.printkey: Missing docstring
+C:270:rubber.printkey: Comma not followed by a space
+    def printkey(self,event):
+                     ^^
+R:270:rubber.printkey: Method could be a function
+C:274:rubber.setmax: Missing docstring
+W:281:rubber.setmax: Except doesn't do anything
+W:282:rubber.setmax: No exception's type specified
+C:276:rubber.setmax: Operator not preceded by a space
+            self.maxi=int(tkSimpleDialog.askinteger("Maximum data value?","Maximum data value?"))
+                     ^
+C:278:rubber.setmax: Operator not preceded by a space
+            stri="<---%f          %f--->"%(self.mini,self.maxi)
+                ^
+C:283:rubber.setmin: Missing docstring
+W:290:rubber.setmin: Except doesn't do anything
+W:291:rubber.setmin: No exception's type specified
+C:285:rubber.setmin: Operator not preceded by a space
+            self.mini=int(tkSimpleDialog.askinteger("Minimum data value?","Minimum data value?"))
+                     ^
+C:287:rubber.setmin: Operator not preceded by a space
+            stri="<---%f          %f--->"%(self.mini,self.maxi)
+                ^
+C:293:rubber.getstats: Missing docstring
+C:295:rubber.getstats: Operator not preceded by a space
+        t=self.data.astype(Float)
+         ^
+C:295:rubber.getstats: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+E:295:rubber.getstats: Undefined variable 'Float'
+C:296:rubber.getstats: Operator not preceded by a space
+        sumi=n.sum(n.ravel(t))
+            ^
+C:297:rubber.getstats: Operator not preceded by a space
+        sumisq=n.sum(n.ravel(t*t))
+              ^
+C:298:rubber.getstats: Operator not preceded by a space
+        npixels=t.shape[0]*t.shape[1]
+               ^
+C:299:rubber.getstats: Operator not preceded by a space
+        self.average=sumi/npixels
+                    ^
+C:300:rubber.getstats: Operator not preceded by a space
+        self.variance=n.sqrt(sumisq/npixels - self.average*self.average)
+                     ^
+C:301:rubber.getstats: Operator not preceded by a space
+        self.mindata=n.minimum.reduce(n.ravel(self.data))
+                    ^
+C:302:rubber.getstats: Operator not preceded by a space
+        self.maxdata=n.maximum.reduce(n.ravel(self.data))
+                    ^
+C:303:rubber.getstats: Operator not followed by a space
+        return "%d Pixels, Average = %f, Variance = %f, Min = %f, Max = %f"%(
+                                                                           ^
+            npixels,self.average,self.variance,self.mindata,self.maxdata)
+C:306:rubber.autorange: Missing docstring
+C:307:rubber.autorange: Operator not preceded by a space
+        newmin=max(n.minimum.reduce(n.ravel(self.data)),self.average-self.variance)
+              ^
+C:308:rubber.autorange: Operator not preceded by a space
+        newmax=min(n.maximum.reduce(n.ravel(self.data)),self.average+self.variance)
+              ^
+C:309:rubber.autorange: Operator not preceded by a space
+        if self.mini!=newmin or self.maxi != newmax:
+                    ^^
+C:310:rubber.autorange: Operator not preceded by a space
+            self.mini=newmin
+                     ^
+C:311:rubber.autorange: Operator not preceded by a space
+            self.maxi=newmax
+                     ^
+C:314:rubber.close: Missing docstring
+C:315:rubber.close: Operator not preceded by a space
+        if self.master==None:
+                      ^^
+C:321:rubber.zoomin: Missing docstring
+C:323:rubber.zoomin: Comma not followed by a space
+            print "Zoom limit of ",self.zoom,"reached"
+                                  ^^
+C:325:rubber.zoomin: Operator not preceded by a space
+            self.zoom*=2
+                     ^^
+C:326:rubber.zoomin: Comma not followed by a space
+            print "Zooming in to scale ",self.zoom,self.zoom*self.data.shape[0]
+                                        ^^
+C:329:rubber.zoomout: Missing docstring
+C:331:rubber.zoomout: Comma not followed by a space
+            print "Zoom out limit of",self.zoom, "reached"
+                                     ^^
+C:333:rubber.zoomout: Operator not preceded by a space
+            self.zoom/=2
+                     ^^
+C:334:rubber.zoomout: Comma not followed by a space
+            print "Zooming out to scale ",self.zoom
+                                         ^^
+C:337:rubber.viewinself: Missing docstring
+C:338:rubber.viewinself: Comma not followed by a space
+        print self.maxi,self.mini
+                       ^^
+C:339:rubber.viewinself: Operator not preceded by a space
+        if self.log==0:
+                   ^^
+C:340:rubber.viewinself: Comma not followed by a space
+            self.image,(self.scale[0],self.scale[1])=NumerictoImage(self.data,self.data.shape,self.maxi,self.mini)
+                      ^^
+C:342:rubber.viewinself: Comma not followed by a space
+            self.image,(self.scale[0],self.scale[1])=NumerictoImage(log(self.data+1),self.data.shape,self.maxi,self.mini)
+                      ^^
+E:342:rubber.viewinself: Undefined variable 'log'
+C:343:rubber.viewinself: Operator not preceded by a space
+        self.scale[0]*=self.zoom
+                     ^^
+C:344:rubber.viewinself: Operator not preceded by a space
+        self.scale[1]*=self.zoom
+                     ^^
+C:345:rubber.viewinself: Comma not followed by a space
+        print "Image size",self.scale
+                          ^^
+C:347:rubber.viewinself: Operator not preceded by a space
+        if self.piccy==None:
+                     ^^
+C:348:rubber.viewinself: Operator not preceded by a space
+            self.piccy=self.canvasObject.create_image(2,2,image=self.displayimage,
+                      ^
+                                             anchor=NW,tags="picture")
+C:350:rubber.viewinself: Comma not followed by a space
+        self.canvasObject.itemconfig(self.piccy,image=self.displayimage)
+                                               ^^
+C:351:rubber.viewinself: Comma not followed by a space
+        self.canvasObject.config(scrollregion=(0,0,self.scale[0],self.scale[1]))
+                                                ^^
+C:353:rubber.viewinself: Operator not preceded by a space
+        stri="<---%f          %f--->"%(self.mini,self.maxi)
+            ^
+C:356:rubber.viewinself: Operator not preceded by a space
+        if self.rubberbandBox!=None:
+                             ^^
+C:357:rubber.viewinself: Operator not preceded by a space
+            z=self.zoom
+             ^
+C:357:rubber.viewinself: Invalid name "z" (should match [a-z_][a-z0-9_]{2,30}$)
+C:361:rubber.getbox: Missing docstring
+C:362:rubber.getbox: Comma not followed by a space
+        print self.startx*self.zoom,self.endx*self.zoom
+                                   ^^
+C:363:rubber.getbox: Comma not followed by a space
+        print self.starty*self.zoom,self.endy*self.zoom
+                                   ^^
+C:364:rubber.getbox: Operator not preceded by a space
+        xl=int(min(self.startx,self.endx)) ; xh = int(max(self.startx,self.endx))
+          ^
+C:364:rubber.getbox: Invalid name "xl" (should match [a-z_][a-z0-9_]{2,30}$)
+C:364:rubber.getbox: More than one statement on a single line
+C:364:rubber.getbox: Invalid name "xh" (should match [a-z_][a-z0-9_]{2,30}$)
+C:365:rubber.getbox: Operator not preceded by a space
+        yl=int(min(self.starty,self.endy)) ; yh = int(max(self.starty,self.endy))
+          ^
+C:365:rubber.getbox: Invalid name "yl" (should match [a-z_][a-z0-9_]{2,30}$)
+C:365:rubber.getbox: More than one statement on a single line
+C:365:rubber.getbox: Invalid name "yh" (should match [a-z_][a-z0-9_]{2,30}$)
+C:366:rubber.getbox: Comma not followed by a space
+        print "[",xl,":",xh,",",yl,":",yh,"]",self.data.shape
+                 ^^
+C:367:rubber.getbox: Operator not preceded by a space
+        if xl!=xh and yl!=yh :
+             ^^
+C:368:rubber.getbox: Comma not followed by a space
+            return self.data[xl:xh,yl:yh].copy()
+                                  ^^
+C:372:rubber.showroi: Missing docstring
+C:373:rubber.showroi: Operator not preceded by a space
+        selection=self.getbox()
+                 ^
+C:375:rubber.showroi: Operator not preceded by a space
+            junk=rubber(selection,Toplevel())
+                ^
+W:375:rubber.showroi: Unused variable 'junk'
+C:378:rubber.togglelog: Missing docstring
+C:380:rubber.togglelog: Operator not preceded by a space
+        if self.log==0:
+                   ^^
+C:381:rubber.togglelog: Operator not preceded by a space
+            self.log=1
+                    ^
+C:382:rubber.togglelog: Comma not followed by a space
+            self.legendimage,(scalesx,scalesy)=NumerictoImage(log(self.legend+1),(self.scale[0],10))
+                            ^^
+E:382:rubber.togglelog: Undefined variable 'log'
+C:383:rubber.togglelog: Operator not preceded by a space
+            self.legendimage=ImageTk.PhotoImage(self.legendimage)
+                            ^
+C:386:rubber.togglelog: Operator not preceded by a space
+            stri="<---%f          %f--->"%(self.mini,self.maxi)
+                ^
+C:388:rubber.togglelog: Operator not preceded by a space
+            self.maxi=log(self.maxi+1)
+                     ^
+E:388:rubber.togglelog: Undefined variable 'log'
+C:389:rubber.togglelog: Operator not preceded by a space
+            self.mini=log(self.mini+1)
+                     ^
+E:389:rubber.togglelog: Undefined variable 'log'
+C:390:rubber.togglelog: Comma not followed by a space
+            print self.maxi,self.mini
+                           ^^
+C:393:rubber.togglelog: Operator not preceded by a space
+            self.log=0
+                    ^
+C:394:rubber.togglelog: Comma not followed by a space
+            self.legendimage,(scalesx,scalesy)=NumerictoImage(self.legend,(self.scale[0],10))
+                            ^^
+C:395:rubber.togglelog: Operator not preceded by a space
+            self.legendimage=ImageTk.PhotoImage(self.legendimage)
+                            ^
+C:398:rubber.togglelog: Operator not preceded by a space
+            stri="<---%f          %f--->"%(self.mini,self.maxi)
+                ^
+C:400:rubber.togglelog: Operator not preceded by a space
+            self.maxi=exp(self.maxi)-1
+                     ^
+E:400:rubber.togglelog: Undefined variable 'exp'
+C:401:rubber.togglelog: Operator not preceded by a space
+            self.mini=exp(self.mini)-1
+                     ^
+E:401:rubber.togglelog: Undefined variable 'exp'
+C:402:rubber.togglelog: Comma not followed by a space
+            print self.maxi,self.mini
+                           ^^
+W:382:rubber.togglelog: Unused variable 'scalesx'
+W:382:rubber.togglelog: Unused variable 'scalesy'
+C:405:rubber.get_hkl: Missing docstring
+C:410:rubber.get_hkl: Comma not followed by a space
+        print "xpos,ypos",xpos,ypos
+                         ^^
+C:412:rubber.get_hkl: Comma not followed by a space
+        tth,eta = transform.compute_tth_eta( array([[xpos], [ypos ]]) ,
+           ^^
+                                             self.parameters['y-center'],
+                                             self.parameters['y-size'],
+                                             self.parameters['tilt-y'],
+                                             self.parameters['z-center'],
+                                             self.parameters['z-size'],
+                                             self.parameters['tilt-z'],
+                                             self.parameters['distance']*1.0e3)
+E:412:rubber.get_hkl: Undefined variable 'array'
+C:424:rubber.get_hkl: Comma not followed by a space
+        print "omega:",self.omega,type(self.omega)
+                      ^^
+C:425:rubber.get_hkl: Invalid name "om" (should match [a-z_][a-z0-9_]{2,30}$)
+C:426:rubber.get_hkl: Comma not followed by a space
+        print "tth,eta,om",tth,eta,om
+                          ^^
+C:427:rubber.get_hkl: Comma not followed by a space
+        self.gv = transform.compute_g_vectors(tth,eta,om,float(self.parameters['wavelength']), self.parameters['wedge'])
+                                                 ^^
+E:428:rubber.get_hkl: Undefined variable 'transpose'
+C:429:rubber.get_hkl: Operator not preceded by a space
+        s=""
+         ^
+C:429:rubber.get_hkl: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C:430:rubber.get_hkl: Operator not preceded by a space
+        i=0
+         ^
+E:431:rubber.get_hkl: Instance of 'rubber' has no 'ubisread' member
+C:432:rubber.get_hkl: Operator not preceded by a space
+            h=matrixmultiply(ubi,transpose(self.gv))
+             ^
+C:432:rubber.get_hkl: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+E:432:rubber.get_hkl: Undefined variable 'matrixmultiply'
+E:432:rubber.get_hkl: Undefined variable 'transpose'
+C:433:rubber.get_hkl: Comma not followed by a space
+            print ubi, "hkl=",h
+                             ^^
+C:434:rubber.get_hkl: Operator not preceded by a space
+            i+=1
+             ^^
+C:435:rubber.get_hkl: Operator not preceded by a space
+            s+="grain %3d\n h = %.3f k=%.3f l = %.3f\n"%(i,h[0],h[1],h[2])
+             ^^
+C:440:rubber.mouseDown: Invalid name "mouseDown" (should match [a-z_][a-z0-9_]{2,30}$)
+C:440:rubber.mouseDown: Missing docstring
+C:447:rubber.mouseMotion: Invalid name "mouseMotion" (should match [a-z_][a-z0-9_]{2,30}$)
+C:447:rubber.mouseMotion: Missing docstring
+C:450:rubber.mouseMotion: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C:451:rubber.mouseMotion: Invalid name "y" (should match [a-z_][a-z0-9_]{2,30}$)
+C:455:rubber.mouseMotion: Operator not preceded by a space
+            z=self.zoom
+             ^
+C:455:rubber.mouseMotion: Invalid name "z" (should match [a-z_][a-z0-9_]{2,30}$)
+C:462:rubber.mouseUp: Invalid name "mouseUp" (should match [a-z_][a-z0-9_]{2,30}$)
+C:462:rubber.mouseUp: Missing docstring
+C:465:rubber.mouseUp: Comma not followed by a space
+        print self.startx,self.endx,self.starty,self.endy
+                         ^^
+C:467:rubber.makerockingcurve: Missing docstring
+C:468:rubber.makerockingcurve: Operator not preceded by a space
+        if self.startx==None:
+                      ^^
+C:470:rubber.makerockingcurve: Comma not followed by a space
+        print self.startx*self.zoom,self.endx*self.zoom
+                                   ^^
+C:471:rubber.makerockingcurve: Comma not followed by a space
+        print self.starty*self.zoom,self.endy*self.zoom
+                                   ^^
+C:472:rubber.makerockingcurve: Operator not preceded by a space
+        xl=int(min(self.startx,self.endx)) ; xh = int(max(self.startx,self.endx))
+          ^
+C:472:rubber.makerockingcurve: Invalid name "xl" (should match [a-z_][a-z0-9_]{2,30}$)
+C:472:rubber.makerockingcurve: More than one statement on a single line
+C:472:rubber.makerockingcurve: Invalid name "xh" (should match [a-z_][a-z0-9_]{2,30}$)
+C:473:rubber.makerockingcurve: Operator not preceded by a space
+        yl=int(min(self.starty,self.endy)) ; yh = int(max(self.starty,self.endy))
+          ^
+C:473:rubber.makerockingcurve: Invalid name "yl" (should match [a-z_][a-z0-9_]{2,30}$)
+C:473:rubber.makerockingcurve: More than one statement on a single line
+C:473:rubber.makerockingcurve: Invalid name "yh" (should match [a-z_][a-z0-9_]{2,30}$)
+C:474:rubber.makerockingcurve: Comma not followed by a space
+        print "[",xl,":",xh,",",yl,":",yh,"]",self.data.shape
+                 ^^
+C:475:rubber.makerockingcurve: Operator not preceded by a space
+        if xl!=xh and yl!=yh :
+             ^^
+C:476:rubber.makerockingcurve: Comma not followed by a space
+            print "ROI = ",xl,xh,yl,yh
+                          ^^
+C:477:rubber.makerockingcurve: Comma not followed by a space
+            stem = tkSimpleDialog.askstring("Filename stem?","Filename stem?",initialvalue=self.datafile[:-8])
+                                                            ^^
+C:480:rubber.makerockingcurve: Operator not preceded by a space
+            extn=".edf"
+                ^
+C:481:rubber.makerockingcurve: Operator not preceded by a space
+            s='files %s%04d%s to %s%04d%s\nArea of interest %d %d %d %d'%(stem,first,extn,stem,last,extn,xl,xh,yl,yh)
+             ^
+C:481:rubber.makerockingcurve: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C:482:rubber.makerockingcurve: Comma not followed by a space
+            print "Making rocking curve for:",s
+                                             ^^
+C:485:rubber.makerockingcurve: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+W:492:rubber.makerockingcurve: Unreachable code
+C:493:rubber.makerockingcurve: Operator not preceded by a space
+            if d.num==0:
+                    ^^
+C:495:rubber.makerockingcurve: Operator not preceded by a space
+                line=rocker.rock(stem,first,last,extn,xl,xh,yl,yh)
+                    ^
+C:497:rubber.makerockingcurve: Comma not followed by a space
+                twodplotml.twodplot(parent=Toplevel(),data=line)
+                                                     ^^
+W:427:rubber.get_hkl: Attribute 'gv' defined outside __init__
+W:340:rubber.viewinself: Attribute 'image' defined outside __init__
+W:346:rubber.viewinself: Attribute 'displayimage' defined outside __init__
+W:302:rubber.getstats: Attribute 'maxdata' defined outside __init__
+W:445:rubber.mouseDown: Attribute 'starty' defined outside __init__
+W:301:rubber.getstats: Attribute 'mindata' defined outside __init__
+W:464:rubber.mouseUp: Attribute 'endy' defined outside __init__
+W:463:rubber.mouseUp: Attribute 'endx' defined outside __init__
+W:299:rubber.getstats: Attribute 'average' defined outside __init__
+W:300:rubber.getstats: Attribute 'variance' defined outside __init__
+R: 85:rubber: Too many public methods (160/20)
+W:504: Reimport 'sys' (imported line 8)
+C:507: Comma not followed by a space
+    test = rubber(sys.argv[1],bkgfile=sys.argv[2])
+                             ^^
+C:507: Invalid name "test" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:509: Invalid name "test" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:511: Invalid name "test" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+W:  6: Unused import MacOS
+W:  6: Unused import MULTIPLE
+W:  6: Unused import TypeType
+W:  6: Unused import mainloop
+W:  6: Unused import getdouble
+W:  6: Unused import AtSelLast
+W:  6: Unused import CodeType
+W:  6: Unused import TRUE
+W:  6: Unused import getboolean
+W:  6: Unused import LAST
+W:  6: Unused import TclVersion
+W:  6: Unused import Wm
+W:  6: Unused import NUMERIC
+W:  6: Unused import DictProxyType
+W:  6: Unused import ObjectType
+W:  6: Unused import DictType
+W:  6: Unused import EXTENDED
+W:  6: Unused import OFF
+W:  6: Unused import ALL
+W:  6: Unused import CURRENT
+W:  6: Unused import CallWrapper
+W:  6: Unused import ListType
+W:  6: Unused import ModuleType
+W:  6: Unused import FIRST
+W:  6: Unused import ON
+W:  6: Unused import TracebackType
+W:  6: Unused import image_names
+W:  6: Unused import Text
+W:  6: Unused import YES
+W:  6: Unused import LambdaType
+W:  6: Unused import GROOVE
+W:  6: Unused import XRangeType
+W:  6: Unused import Scale
+W:  6: Unused import NORMAL
+W:  6: Unused import Misc
+W:  6: Unused import BooleanType
+W:  6: Unused import LabelFrame
+W:  6: Unused import ROUND
+W:  6: Unused import image_types
+W:  6: Unused import AtInsert
+W:  6: Unused import StringType
+W:  6: Unused import NONE
+W:  6: Unused import CENTER
+W:  6: Unused import Spinbox
+W:  6: Unused import Radiobutton
+W:  6: Unused import Checkbutton
+W:  6: Unused import Grid
+W:  6: Unused import StringTypes
+W:  6: Unused import GeneratorType
+W:  6: Unused import FLAT
+W:  6: Unused import END
+W:  6: Unused import MITER
+W:  6: Unused import DISABLED
+W:  6: Unused import S
+W:  6: Unused import Place
+W:  6: Unused import EllipsisType
+W:  6: Unused import W
+W:  6: Unused import ACTIVE
+W:  6: Unused import EW
+W:  6: Unused import FrameType
+W:  6: Unused import BASELINE
+W:  6: Unused import CHORD
+W:  6: Unused import tkinter
+W:  6: Unused import Listbox
+W:  6: Unused import BitmapImage
+W:  6: Unused import Event
+W:  6: Unused import RADIOBUTTON
+W:  6: Unused import COMMAND
+W:  6: Unused import HIDDEN
+W:  6: Unused import PAGES
+W:  6: Unused import Menubutton
+W:  6: Unused import NoDefaultRoot
+W:  6: Unused import CHAR
+W:  6: Unused import NO
+W:  6: Unused import FixTk
+W:  6: Unused import SEPARATOR
+W:  6: Unused import BUTT
+W:  6: Unused import TclError
+W:  6: Unused import MOVETO
+W:  6: Unused import WORD
+W:  6: Unused import SUNKEN
+W:  6: Unused import DictionaryType
+W:  6: Unused import NotImplementedType
+W:  6: Unused import READABLE
+W:  6: Unused import NE
+W:  6: Unused import CHECKBUTTON
+W:  6: Unused import Variable
+W:  6: Unused import SEL
+W:  6: Unused import ANCHOR
+W:  6: Unused import RAISED
+W:  6: Unused import DoubleVar
+W:  6: Unused import RIDGE
+W:  6: Unused import BooleanVar
+W:  6: Unused import Tributton
+W:  6: Unused import SOLID
+W:  6: Unused import N
+W:  6: Unused import msg
+W:  6: Unused import SEL_FIRST
+W:  6: Unused import TkVersion
+W:  6: Unused import UNITS
+W:  6: Unused import TupleType
+W:  6: Unused import OptionMenu
+W:  6: Unused import LongType
+W:  6: Unused import NS
+W:  6: Unused import FALSE
+W:  6: Unused import ClassType
+W:  6: Unused import SEL_LAST
+W:  6: Unused import SW
+W:  6: Unused import SINGLE
+W:  6: Unused import MemberDescriptorType
+W:  6: Unused import UnicodeType
+W:  6: Unused import FunctionType
+W:  6: Unused import wantobjects
+W:  6: Unused import SE
+W:  6: Unused import EXCEPTION
+W:  6: Unused import IntType
+W:  6: Unused import Menu
+W:  6: Unused import TOP
+W:  6: Unused import GetSetDescriptorType
+W:  6: Unused import DOTBOX
+W:  6: Unused import OUTSIDE
+W:  6: Unused import Tk
+W:  6: Unused import IntVar
+W:  6: Unused import AtSelFirst
+W:  6: Unused import UnboundMethodType
+W:  6: Unused import PanedWindow
+W:  6: Unused import BuiltinMethodType
+W:  6: Unused import AtEnd
+W:  6: Unused import BROWSE
+W:  6: Unused import Tcl
+W:  6: Unused import BuiltinFunctionType
+W:  6: Unused import BaseWidget
+W:  6: Unused import UNDERLINE
+W:  6: Unused import ARC
+W:  6: Unused import MethodType
+W:  6: Unused import SliceType
+W:  6: Unused import BEVEL
+W:  6: Unused import E
+W:  6: Unused import InstanceType
+W:  6: Unused import INSERT
+W:  6: Unused import PIESLICE
+W:  6: Unused import FileType
+W:  6: Unused import Message
+W:  6: Unused import PhotoImage
+W:  6: Unused import BufferType
+W:  6: Unused import CASCADE
+W:  6: Unused import Studbutton
+W:  6: Unused import INSIDE
+W:  6: Unused import FloatType
+W:  6: Unused import WRITABLE
+W:  6: Unused import PROJECTING
+W:  6: Unused import At
+W:  6: Unused import ComplexType
+W:  6: Unused import NSEW
+W:  6: Unused import SCROLL
+W:  6: Unused import NoneType
+W:  6: Unused import getint
+
+
+Report
+======
+384 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |403    |86.48 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |27     |5.79  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |15     |3.22  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |21     |4.51  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    rocker (rubber)
+    twodplotml (rubber)
+    ImageD11 
+      \-opendata (rubber)
+      \-indexing (rubber)
+      \-transform (rubber)
+      \-parameters (rubber)
+    Image (rubber)
+    ImageTk (rubber)
+    numpy 
+      \-oldnumeric (rubber)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |NC         |NC         |0.00        |100.00   |
++---------+-------+-----------+-----------+------------+---------+
+|method   |26     |NC         |NC         |3.85        |11.54    |
++---------+-------+-----------+-----------+------------+---------+
+|function |2      |NC         |NC         |50.00       |50.00    |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |296    |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |6      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |190    |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |23     |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|W0611      |157        |
++-----------+-----------+
+|C0322      |117        |
++-----------+-----------+
+|C0324      |76         |
++-----------+-----------+
+|C0103      |41         |
++-----------+-----------+
+|C0301      |28         |
++-----------+-----------+
+|C0111      |28         |
++-----------+-----------+
+|E0602      |21         |
++-----------+-----------+
+|W0702      |11         |
++-----------+-----------+
+|W0201      |10         |
++-----------+-----------+
+|W0612      |6          |
++-----------+-----------+
+|C0321      |4          |
++-----------+-----------+
+|W0704      |2          |
++-----------+-----------+
+|R0201      |2          |
++-----------+-----------+
+|E1101      |2          |
++-----------+-----------+
+|C0323      |2          |
++-----------+-----------+
+|W0404      |1          |
++-----------+-----------+
+|W0401      |1          |
++-----------+-----------+
+|W0105      |1          |
++-----------+-----------+
+|W0101      |1          |
++-----------+-----------+
+|R0915      |1          |
++-----------+-----------+
+|R0914      |1          |
++-----------+-----------+
+|R0904      |1          |
++-----------+-----------+
+|R0902      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at -5.81/10
+

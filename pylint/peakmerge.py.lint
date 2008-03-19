@@ -1,0 +1,214 @@
+************* Module peakmerge
+W:247: TODO ah... if only """
+W:533: TODO: pass functions to filter/compress finalpeaks
+C: 40:roundfloat: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 40:roundfloat: Comma not followed by a space
+def roundfloat(x,tol):
+                ^^
+C: 48:peak: Invalid name "peak" (should match [A-Z_][a-zA-Z0-9]+$)
+C: 69:peak.__init__: Invalid name "y" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 59:peak.__init__: Invalid name "TOLERANCE" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 71:peak.__init__: Invalid name "yc" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 66:peak.__init__: Invalid name "np" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 70:peak.__init__: Invalid name "xc" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 68:peak.__init__: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+R: 48:peak: Too many instance attributes (16/7)
+R: 52:peak.__init__: Too many arguments (6/5)
+C: 65:peak.__init__: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+R: 78:peak.combine: Too many local variables (16/15)
+C: 96:peak.combine: Invalid name "np" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 98:peak.combine: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C:104:peak.combine: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
+C:106:peak.combine: Invalid name "y" (should match [a-z_][a-z0-9_]{2,30}$)
+C:108:peak.combine: Invalid name "xc" (should match [a-z_][a-z0-9_]{2,30}$)
+C:110:peak.combine: Invalid name "yc" (should match [a-z_][a-z0-9_]{2,30}$)
+C:118:peak.combine: Operator not preceded by a space
+                self.forgotten=True
+                              ^
+C:119:peak.combine: Operator not preceded by a space
+                other.forgotten=True
+                               ^
+R:125:peak.__cmp__: Too many return statements (7/6)
+R: 48:peak: To few public methods (1/2)
+C:171:pkimage: Invalid name "pkimage" (should match [A-Z_][a-zA-Z0-9]+$)
+C:190:pkimage.addtoheader: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C:190:pkimage.addtoheader: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+R:204:pkimage.otherheaderstuff: Method could be a function
+C:224:peakmerger: Invalid name "peakmerger" (should match [A-Z_][a-zA-Z0-9]+$)
+R:224:peakmerger: Too many instance attributes (10/7)
+C:284:peakmerger.readpeaks: Invalid name "om" (should match [a-z_][a-z0-9_]{2,30}$)
+C:287:peakmerger.readpeaks: Operator not preceded by a space
+            i=i+1
+             ^
+C:296:peakmerger.getheaderinfo: Comma not followed by a space
+    def getheaderinfo(self,key):
+                          ^^
+C:301:peakmerger.getheaderinfo: Invalid name "im" (should match [a-z_][a-z0-9_]{2,30}$)
+R:317:peakmerger.harvestpeaks: Too many local variables (19/15)
+C:347:peakmerger.harvestpeaks: Invalid name "om" (should match [a-z_][a-z0-9_]{2,30}$)
+C:361:peakmerger.harvestpeaks: Invalid name "p" (should match [a-z_][a-z0-9_]{2,30}$)
+R:317:peakmerger.harvestpeaks: Too many branches (13/12)
+R:384:peakmerger.mergepeaks: Too many local variables (26/15)
+C:390:peakmerger.mergepeaks: Operator not preceded by a space
+        if self.allpeaks==None:
+                        ^^
+C:392:peakmerger.mergepeaks: Operator not preceded by a space
+        if self.allpeaks==None:
+                        ^^
+C:465:peakmerger.mergepeaks: Invalid name "om" (should match [a-z_][a-z0-9_]{2,30}$)
+C:473:peakmerger.mergepeaks: Invalid name "m" (should match [a-z_][a-z0-9_]{2,30}$)
+C:481:peakmerger.mergepeaks: Invalid name "m" (should match [a-z_][a-z0-9_]{2,30}$)
+C:504:peakmerger.mergepeaks: Invalid name "m" (should match [a-z_][a-z0-9_]{2,30}$)
+C:512:peakmerger.mergepeaks: Invalid name "m" (should match [a-z_][a-z0-9_]{2,30}$)
+R:384:peakmerger.mergepeaks: Too many branches (29/12)
+R:384:peakmerger.mergepeaks: Too many statements (100/50)
+C:544:peakmerger.filter: Invalid name "p" (should match [a-z_][a-z0-9_]{2,30}$)
+C:555:peakmerger.savepeaks: Comma not followed by a space
+    def savepeaks(self,filename):
+                      ^^
+C:560:peakmerger.savepeaks: Operator not preceded by a space
+        f=open(filename,"w")
+         ^
+C:560:peakmerger.savepeaks: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C:563:peakmerger.savepeaks: Invalid name "p" (should match [a-z_][a-z0-9_]{2,30}$)
+C:566:peakmerger.savepeaks: Comma not followed by a space
+                f.write("%f "%(p[j,i]))
+                                  ^^
+C:574: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+C:575: Operator not preceded by a space
+    testfile=sys.argv[1]
+            ^
+C:575: Invalid name "testfile" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:576: Operator not preceded by a space
+    fltfile=sys.argv[2]
+           ^
+C:576: Invalid name "fltfile" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:578: Invalid name "obj" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:585: Operator not preceded by a space
+    start=time.time()
+         ^
+C:585: Invalid name "start" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
+C:589: Comma not followed by a space
+    print "That took",time.time()-start,"/s"
+                     ^^
+
+
+Report
+======
+339 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |377    |66.73 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |96     |16.99 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |42     |7.43  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |50     |8.85  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    profile (peakmerge)
+    numpy 
+      \-oldnumeric (peakmerge)
+    ImageD11 
+      \-opendata (peakmerge)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |3      |NC         |NC         |100.00      |100.00   |
++---------+-------+-----------+-----------+------------+---------+
+|method   |18     |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |50     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |12     |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |2      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |35         |
++-----------+-----------+
+|C0322      |10         |
++-----------+-----------+
+|C0324      |5          |
++-----------+-----------+
+|R0914      |3          |
++-----------+-----------+
+|W0511      |2          |
++-----------+-----------+
+|R0912      |2          |
++-----------+-----------+
+|R0902      |2          |
++-----------+-----------+
+|R0915      |1          |
++-----------+-----------+
+|R0913      |1          |
++-----------+-----------+
+|R0911      |1          |
++-----------+-----------+
+|R0903      |1          |
++-----------+-----------+
+|R0201      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 8.11/10
+

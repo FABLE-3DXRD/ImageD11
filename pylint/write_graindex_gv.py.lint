@@ -1,0 +1,158 @@
+************* Module write_graindex_gv
+C: 32:make_ds_list: Comma not followed by a space
+def make_ds_list(cell,limit=2.):
+                     ^^
+C: 38:make_ds_list: Operator not preceded by a space
+    ds_list=[]
+           ^
+C: 41:make_ds_list: Operator not preceded by a space
+    ptype=0
+         ^
+C: 42:make_ds_list: Invalid name "ky" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 43:make_ds_list: Operator not preceded by a space
+        ptype=ptype+1
+             ^
+C: 44:make_ds_list: Invalid name "ds" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 52:make_ds_list: Comma not followed by a space
+        for h,k,l in hkls_in_ring:
+             ^^
+C: 52:make_ds_list: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 52:make_ds_list: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 53:make_ds_list: Operator not preceded by a space
+            if h+k+l >= hklmax and h >= hmax and k>kmax:
+                                                  ^
+C: 57:make_ds_list: Operator not preceded by a space
+                ds_string="(%d%d%d)"%(h,k,l)
+                         ^
+C: 58:make_ds_list: Comma not followed by a space
+        ds_list.append([ky,ptype,ds_string])
+                          ^^
+W: 44:make_ds_list: Unused variable 'ds'
+C: 61:get_ds_string: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 61:get_ds_string: Comma not followed by a space
+def get_ds_string(g,ds_list):
+                   ^^
+C: 74:get_ds_string: Operator not preceded by a space
+            min_diff=diff
+                    ^
+C: 80:write_graindex_gv: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
+R: 80:write_graindex_gv: Too many arguments (7/5)
+C: 80:write_graindex_gv: Comma not followed by a space
+def write_graindex_gv(outfilename,gv,tth,eta,omega,intensity,unitcell):
+                                 ^^
+C: 87:write_graindex_gv: Operator not preceded by a space
+    ds_list=make_ds_list(unitcell) #
+           ^
+C: 90:write_graindex_gv: Operator not preceded by a space
+    nr=0
+      ^
+C: 90:write_graindex_gv: Invalid name "nr" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 92:write_graindex_gv: Operator not preceded by a space
+        nr=nr+1
+          ^
+C: 92:write_graindex_gv: Invalid name "nr" (should match [a-z_][a-z0-9_]{2,30}$)
+C: 93:write_graindex_gv: Comma not followed by a space
+        ds_string,ptype = get_ds_string(gv[:,i],ds_list)
+                 ^^
+
+
+Report
+======
+50 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |61     |57.55 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |16     |15.09 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |17     |16.04 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |12     |11.32 |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy 
+      \-oldnumeric (write_graindex_gv)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |3      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |23     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |1      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |1      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0322      |9          |
++-----------+-----------+
+|C0103      |8          |
++-----------+-----------+
+|C0324      |6          |
++-----------+-----------+
+|W0612      |1          |
++-----------+-----------+
+|R0913      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 5.00/10
+
