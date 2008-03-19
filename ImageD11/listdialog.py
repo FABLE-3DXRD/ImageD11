@@ -107,3 +107,32 @@ class listdialog(Tk.Toplevel):
             i=i+1
         self.result=retdict
         print self.result
+
+
+class columnchooser(listdialog):
+    """
+    Dialog box for setting detector parameters
+    Takes a list of strings and numbers
+    """
+    def __init__(self, parent, items, title="Choose two columns"):
+        Tk.Toplevel.__init__(self, parent)
+        self.transient(parent)
+        if title:
+            self.title(title)
+        body = Tk.Frame(self)
+        listbox1 = Listbox(body)
+        listbox2 = Listbox(body)
+        for i in items:
+            listbox1.insert(END,i)
+            listbox2.insert(END,i)
+        body.pack(padx=5, pady=5)
+        self.buttonbox()
+        self.grab_set()
+        if not self.initial_focus:
+            self.initial_focus = self
+        self.protocol("WM_DELETE_WINDOW", self.cancel)
+        self.geometry("+%d+%d" % (parent.winfo_rootx()+50,
+                                  parent.winfo_rooty()+50))
+        self.initial_focus.focus_set()
+        self.wait_window(self)
+        
