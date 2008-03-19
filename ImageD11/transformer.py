@@ -1,5 +1,5 @@
-# ImageD11_v0.4 Software for beamline ID11
-# Copyright (C) 2005  Jon Wright
+# ImageD11_v1.1 Software for beamline ID11
+# Copyright (C) 2005 - 2008  Jon Wright
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-import numpy.oldnumeric as n
+import numpy as n
 import logging
 import math
 from ImageD11 import transform, unitcell, columnfile
@@ -150,6 +150,14 @@ PARAMETERS = [
           vary=False, 
           can_vary=True,
           stepsize = 1.),
+     par('no_bins', 10000,
+         helpstring = "Number of bins to use in histogram based filters",
+         vary = False,
+         can_vary = False ),
+     par('min_bin_prob', 1e-5,
+         helpstring = "Number of bins to use in histogram based filters",
+         vary = False,
+         can_vary = False ),
      ]
 
 
@@ -159,21 +167,26 @@ class transformer:
     Handles the algorithmic, fitting and state information for 
     fitting parameters to give experimental calibrations
     """
-    def __init__(self):
+    def __init__(self, parfile = None, fltfile = None):
         """
-        Nothing passed in ?
-        It should really be inheriting from the parameter object.
+        Nothing is passed in
+        ...will need to loadfileparameters and also peaks
         """
-        self.twotheta = None
-        self.finalpeaks = None
-        self.gv = None
         self.unitcell = None
         # this sets defaults according to class dict.
         self.parameterobj = parameters()
         for p in PARAMETERS:
             self.parameterobj.addpar(p)
+        # Interesting - is this an alias for the dict?
         self.pars = self.parameterobj.get_parameters()
         self.colfile = None
+        self.xname = None
+        self.yname = None
+        self.omeganame = None
+        if parfile is not None:
+            self.loadfileparameters(parfile)
+        if fltfile is not None:
+            self.loadfiltered(fltfile)
    
     def updateparameters(self):
         self.pars = self.parameterobj.get_parameters()
@@ -194,18 +207,24 @@ class transformer:
         Read in 3D peaks from peaksearch
         """
         self.colfile = columnfile.columnfile(filename)
-        self.finalpeaks = self.colfile.bigarray
-        if   ((self.colfile.titles[0:3] == ["sc","fc","omega"]) or
-              (self.colfile.titles[0:3] == ["xc","yc","omega"])):
-            logging.warning("titles are %s"%(str(self.colfile.titles[0:3])))
-        self.peaks_xy = self.finalpeaks[0:2,:]
-        self.x = self.finalpeaks[0,:]
-        self.y = self.finalpeaks[1,:]
-        self.omega = self.finalpeaks[2,:]
-        if hasattr(self.colfile, "spot3d_id"):
-            self.spot3d_id = self.colfile.spot3d_id
-        else:
-            self.spot3d_id = range(len(self.x))
+        if (self.colfile.titles[0:3] == ["sc","fc","omega"]):
+            self.setxyomcols("sc","fc", "omega")
+        if (self.colfile.titles[0:3] == ["xc","yc","omega"]):
+            self.setxyomcols("xc","yc", "omega")
+        if "spot3d_id" not in self.colfile.titles:
+            self.colfile.addcolumn( range(self.colfile.nrows),
+                                    "spot3d_id")
+        
+    def setxyomcols(self, xname, yname, omeganame):
+        self.xname = xname
+        self.yname = yname
+        self.omeganame = omeganame
+        logging.warning("titles are %s  %s  %s"%(self.xname,
+                                                 self.yname,
+                                                 self.omeganame))
+
+    def getcols(self):
+        return self.colfile.titles
 
     def loadfileparameters(self,filename):
         """ Read in beam center etc from file """
@@ -219,46 +238,97 @@ class transformer:
         """ for use with simplex/gof function, alter parameters """
         self.parameterobj.set_variable_values(args)
 
+
+    def getcolumn(self, name):
+        """Return the data"""
+        return self.colfile.getcolumn(name)
+
+    def addcolumn(self, col, name):
+        """Return the data"""
+        return self.colfile.addcolumn(col, name)
+
     def compute_tth_eta(self):
         """ Compute the twotheta and eta for peaks previous read in """
-        self.twotheta, self.eta = transform.compute_tth_eta( self.peaks_xy,
-                                                             omega=self.omega,
-                 **self.parameterobj.get_parameters() ) 
-        #self.ds =
-        
-    def compute_tth_histo(self):
-        """ Compute the histogram over twotheta for peaks previous read in
-        and filter peaks out falling in bins with less than min_bin_ratio """
-        self.finalpeaks = transform.compute_tth_histo(self.finalpeaks,
-                                                      self.twotheta , 
-                                  **self.parameterobj.get_parameters())
-        self.peaks_xy = self.finalpeaks[0:2,:]
-        self.x = self.finalpeaks[0,:]
-        self.y = self.finalpeaks[1,:]
-        self.omega = self.finalpeaks[2,:]
-        self.compute_tth_eta()
+        if None in [self.xname, self.yname]:
+            raise Exception("No peaks loaded")
+        peaks = [self.getcolumn(self.xname),
+                 self.getcolumn(self.yname)]
+        peaks_xyz =  transform.compute_xyz_lab( peaks,
+                                                **self.parameterobj.get_parameters() ) 
+        # Store these in the columnfile
+        self.addcolumn( peaks_xyz[0], "xl" )
+        self.addcolumn( peaks_xyz[1], "yl" )
+        self.addcolumn( peaks_xyz[2], "zl" )
+        # Get the Omega name?
+        omega = self.getcolumn( self.omeganame )
+        tth, eta = transform.compute_tth_eta_from_xyz( 
+            peaks_xyz,
+            omega,
+            **self.parameterobj.get_parameters() ) 
+        self.addcolumn( tth , "tth" )
+        self.addcolumn( eta , "eta" )
+        return tth, eta
 
-    def gof(self,args):
+    def compute_histo(self, colname):
+        """ Compute the histogram over twotheta for peaks previous read in
+        Filtering is moved to a separate function """
+        if colname not in self.colfile.titles:
+            raise Exception("Cannot find column "+colname)
+        bins, hist, hpk = transform.compute_tth_histo( self.getcolumn(colname),
+                                             **self.parameterobj.get_parameters())
+        self.addcolumn(hpk, colname+"_hist_prob")
+        return bins, hist
+
+    def compute_tth_histo(self):
+        """ Give hardwire access to tth """
+        if "tth" not in self.colfile.titles:
+            self.compute_tth_eta()
+        return self.compute_histo("tth")
+
+    def filter_min(self, col, minval):
+        """
+        and filter peaks out falling in bins with less than min_prob
+        """
+        if "tth_hist_prob" not in self.colfile.titles:
+            self.compute_tth_histo()    
+        mask = self.colfile.getcolumn("tth_hist_prob") > minval
+        self.colfile.filter( mask )
+
+    def tth_entropy(self):
+        """
+        Compute the entropy of the two theta values
+        ... this may depend on the number of tth bins (perhaps?)
+        ... to be used for cell parameter free line straightening
+        S = \sum -p log p
+        """
+        if "tth_hist_prob" not in self.colfile.titles:
+            self.compute_tth_histo()
+        hpk = self.getcolumn("tth_hist_prob")
+        lp = n.log(hpk)
+        entropy = n.sum( - hpk * lp )
+        return entropy
+
+    def gof(self, args):
         """ Compute how good is the fit of obs/calc peak positions in tth """
         self.applyargs(args)
         # Here, pars is a dictionary of name/value pairs to pass to compute_tth_eta
-        self.compute_tth_eta()
-        w=self.wavelength
-        gof=0.
-        npeaks=0
+        tth, eta = self.compute_tth_eta()
+        w = self.wavelength
+        gof = 0.
+        npeaks = 0
         for i in range(len(self.tthc)):# (twotheta_rad_cell.shape[0]):
-            self.tthc[i]=transform.degrees(math.asin(self.fitds[i]*w/2)*2)
-            diff=n.take(self.twotheta,self.indices[i]) - self.tthc[i]
+            self.tthc[i]= transform.degrees(math.asin(self.fitds[i]*w/2)*2)
+            diff = n.take(tth, self.indices[i]) - self.tthc[i]
 #         print "peak",i,"diff",maximum.reduce(diff),minimum.reduce(diff)
-            gof=gof+n.sum(diff*diff)
-            npeaks=npeaks+len(diff)
-        gof=gof/npeaks
+            gof = gof + n.sum(diff*diff)
+            npeaks = npeaks + len(diff)
+        gof = gof / npeaks
         return gof*1e3
 
-    def fit(self,tthmax=180):
+    def fit(self, tthmax = 180):
         """ Apply simplex to improve fit of obs/calc tth """
         import simplex
-        if self.theoryds==None:
+        if self.theoryds == None:
             self.addcellpeaks()
         # Assign observed peaks to rings
         self.wavelength = None
@@ -272,20 +342,21 @@ class transformer:
         self.fit_tolerance = float(pars['fit_tolerance'])
         print "Tolerance for assigning peaks to rings",\
             self.fit_tolerance,"max tth",tthmax
+        tth, eta = self.compute_tth_eta()
         for i in range(len(self.theoryds)):
             dsc=self.theoryds[i]
             tthcalc=math.asin(dsc*w/2)*360./math.pi # degrees
             if tthcalc>tthmax:
                 break
-            logicals= n.logical_and( n.greater(self.twotheta, 
+            logicals= n.logical_and( n.greater(tth, 
                                                tthcalc-self.fit_tolerance),
-                                     n.less(self.twotheta, 
+                                     n.less(tth , 
                                             tthcalc+self.fit_tolerance)  )
 
             if sum(logicals)>0:
                 self.tthc.append(tthcalc)
                 self.fitds.append(dsc)
-                ind=n.compress(logicals,range(self.twotheta.shape[0]))
+                ind=n.compress(logicals,range(len(tth)))
                 self.indices.append(ind)
         guess = self.parameterobj.get_variable_values()
         inc = self.parameterobj.get_variable_stepsizes()
@@ -300,7 +371,7 @@ class transformer:
         print newguess
 
 
-    def addcellpeaks(self,limit=None):
+    def addcellpeaks(self, limit=None):
         """
         Adds unit cell predicted peaks for fitting against
         Optional arg limit gives highest angle to use
@@ -317,88 +388,116 @@ class transformer:
         pars = self.parameterobj.get_parameters()
         cell = [ pars[name] for name in ['cell__a','cell__b','cell__c',
                                         'cell_alpha','cell_beta','cell_gamma']]
-        lattice=pars['cell_lattice_[P,A,B,C,I,F,R]']
-        self.unitcell=unitcell.unitcell( cell ,  lattice)
-        if self.twotheta==None:
+        lattice = pars['cell_lattice_[P,A,B,C,I,F,R]']
+        self.unitcell = unitcell.unitcell(cell, lattice)
+        if "tth" not in self.colfile.titles:
             self.compute_tth_eta()
         # Find last peak in radius
         if limit is None:
-            highest = n.maximum.reduce(self.twotheta)
+            highest = n.maximum.reduce( self.getcolumn("tth") )
         else:
             highest = limit
-        self.wavelength=pars['wavelength']
-        ds = 2*n.sin(transform.radians(highest)/2.)/self.wavelength
+        w = pars['wavelength']
+        ds = 2*n.sin(transform.radians(highest)/2.) / w
         self.dslimit = ds
         self.theorypeaks = self.unitcell.gethkls(ds)
         self.unitcell.makerings(ds)
         self.theoryds = self.unitcell.ringds
-        tths = [n.arcsin(self.wavelength*dstar/2)*2 
-                 for dstar in self.unitcell.ringds]
+        tths = [n.arcsin(w*dstar/2)*2 
+                for dstar in self.unitcell.ringds]
         self.theorytth = transform.degrees(n.array(tths))
 
     def computegv(self):
         """
-        Using self.twotheta, self.eta and omega angles, compute x,y,z of spot
+        Using tth, eta and omega angles, compute x,y,z of spot
         in reciprocal space
         """
-        pars = self.parameterobj.get_parameters()
-        self.wavelength = 1.0 # dumb
-        self.omegasign = 1.0
-        self.wedge=0.
-        self.chi=0.
-        for a in ['wavelength','omegasign','wedge','chi']:
-            if pars.has_key(a):
-                setattr(self,a,pars[a])
-        if self.twotheta is None:
+        if "tth" not in self.colfile.titles:
             self.compute_tth_eta()
-        self.gv = transform.compute_g_vectors(self.twotheta,
-                self.eta, 
-                self.omega*self.omegasign, # eek
-                self.wavelength,
-                wedge=self.wedge,
-                chi=self.chi)
-        tthnew,etanew,omeganew=transform.uncompute_g_vectors(self.gv,
-                self.wavelength,wedge=self.wedge)
+        pars = self.parameterobj.get_parameters()
+        if pars.has_key("omegasign"):
+            om_sgn = pars["omegasign"]
+        else:
+            om_sgn = 1.0
+        gv = transform.compute_g_vectors(
+            self.getcolumn("tth"),
+            self.getcolumn("eta"),
+            self.getcolumn("omega")*om_sgn,           
+            **pars)
+        self.addcolumn(gv[0],"gx")
+        self.addcolumn(gv[1],"gy")
+        self.addcolumn(gv[2],"gz")
 
-
+    def getaxis(self):
+        """
+        Compute the rotation axis
+        This handles omegasign in a more elegant way
+        """
+        # unit vector along z
+        v = n.array([0,0,1],n.float)
+        p = self.parameterobj.get("omegasign")
+        return v*p
+        
     def savegv(self,filename):
         """
         Save g-vectors into a file
         Use crappy .ass format from previous for now (testing)
         """
         #        self.parameterobj.update_other(self)
-        if self.gv is None:
+        if "gz" not in self.colfile.titles:
             self.computegv()
         if self.unitcell is None:
-            self.addcellpeaks(0.)
-        f=open(filename,"w")
+            self.addcellpeaks()
+        f = open(filename,"w")
         f.write(self.unitcell.tostring())
         f.write("\n")
-        f.write("# wavelength = %f\n"%( float(self.wavelength) ) )
-        f.write("# wedge = %f\n"%( float(self.wedge) ))
+        pars = self.parameterobj.get_parameters()
+        f.write("# wavelength = %f\n"%( float(pars['wavelength']) ) )
+        f.write("# wedge = %f\n"%( float(pars['wedge']) ))
+        # Handle the axis direction somehow
+        f.write("# axis %f %f %f\n"%tuple(self.getaxis()))
+        # Put a copy of all the parameters in the gve file
+        pkl = pars.keys()
+        pkl.sort()
+        for k in pkl:
+            f.write("# %s = %s \n"%(k,pars[k]))
         f.write("# ds h k l\n")
         for peak in self.theorypeaks:
             f.write("%10.7f %4d %4d %4d\n"%(peak[0],
                                             peak[1][0],
                                             peak[1][1],
                                             peak[1][2]))
-        order = n.argsort(self.twotheta)
-        f.write("# xr yr zr xc yc ds phi omega spot3d_id\n")
-        print n.maximum.reduce(self.omega),n.minimum.reduce(self.omega)
-        ds = 2*n.sin(transform.radians(self.twotheta/2))/self.wavelength
-        fmt = "%f "*8+"%d \n"
+        tth = self.getcolumn("tth")
+        ome = self.getcolumn("omega")
+        eta = self.getcolumn("eta")
+        gx  = self.getcolumn("gx")
+        gy  = self.getcolumn("gy")
+        gz  = self.getcolumn("gz")
+        x = self.getcolumn(self.xname)
+        y = self.getcolumn(self.yname)
+        spot3d_id = self.getcolumn("spot3d_id")
+        xl = self.getcolumn("xl")
+        yl = self.getcolumn("yl")
+        zl = self.getcolumn("zl")
+        order = n.argsort(tth)
+        f.write("#  gx  gy  gz  xc  yc  ds  eta  omega  spot3d_id  xl  yl  zl\n")
+        print n.maximum.reduce(ome),n.minimum.reduce(ome)
+        ds = 2*n.sin(transform.radians(tth/2))/pars["wavelength"]
+        fmt = "%f "*8+"%d "+"%f "*3+"\n"
         for i in order:
-            f.write(fmt % (self.gv[0,i],
-                           self.gv[1,i],
-                           self.gv[2,i],
-                           self.x[i],
-                           self.y[i],
-                           ds[i],
-                           self.eta[i],
-                           self.omega[i]*self.omegasign, 
-                           self.spot3d_id[i]))
+            f.write(fmt % (gx[i], gy[i], gz[i],
+                           x[i], y[i],
+                           ds[i], eta[i], ome[i],
+                           spot3d_id[i],
+                           xl[i], yl[i], zl[i] ))
         f.close()
 
+    def write_colfile(self,filename):
+        """
+        Save out the column file (all info stored we hope)
+        """
+        self.colfile.parameters = self.parameterobj
+        self.colfile.writefile(filename)
 
     def write_graindex_gv(self,filename):
         from ImageD11 import write_graindex_gv
