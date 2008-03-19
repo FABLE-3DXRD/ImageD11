@@ -1,4 +1,5 @@
 
+
 """
 columnfile represents an ascii file with titles begining "#"
 and multiple lines of data
@@ -51,7 +52,11 @@ FLOATS = [
     "detz",
     "gx", "gy", "gz",
     "hr", "kr", "zr",
-    "drlv2"
+    "xl", "yl", "zl",
+    "drlv2",
+    "tth",
+    "eta",
+    "tth_hist_prob", 
     ]
 
 INTS = [
@@ -198,14 +203,27 @@ class columnfile:
             # Make this overwrite instead of throwing an exception
             self.bigarray[self.titles.index(name)] = col
             # raise Exception("Already got a column called "+name)
+            setattr(self, name,             
+                    self.bigarray[self.titles.index(name)] )
         else:
             self.titles.append(name)
             self.ncols += 1
             lis = list(self.bigarray)
             lis.append(col)
             self.bigarray = n.array( lis )
-        assert self.bigarray.shape == (self.ncols, self.nrows)
-        self.set_attributes()
+            assert self.bigarray.shape == (self.ncols, self.nrows)
+            self.set_attributes()
+
+    # Not obvious, but might be a useful alias
+    setcolumn = addcolumn
+
+    def getcolumn(self, name):
+        """
+        Gets data, if column exists
+        """
+        if name in self.titles:
+            return self.bigarray[self.titles.index(name)]
+        raise Exception("Name "+name+" not in file")
     
 class newcolumnfile(columnfile):
     """ Just like a columnfile, but for creating new
