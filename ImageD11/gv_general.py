@@ -1,7 +1,6 @@
 
 
 
-
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 
@@ -28,8 +27,8 @@
 Find a generalised way to compute g-vectors backwards and forwards
 """
 import math, logging
-import numpy.oldnumeric.linear_algebra as LinearAlgebra
-import numpy.oldnumeric as n
+from numpy.linalg import det, inv
+import numpy as n
 from ImageD11.transform import degrees
 
 class rotation_axis:
@@ -46,7 +45,8 @@ class rotation_axis:
         angle is the angle of rotation (degrees)
         """
         self.direction = n.array(direction)
-        assert self.direction.shape == (3,) , "direction.shape != 3, is it a vector??"
+        assert self.direction.shape == (3,) , \
+            "direction.shape != 3, is it a vector??"
         mag = n.dot(self.direction, self.direction)
         if abs(mag - 1.0) > 1e-5 :
             self.direction = self.direction / mag
@@ -68,30 +68,31 @@ class rotation_axis:
         http://mathworld.wolfram.com/RotationFormula.html
         r' = r cos(t) + n(n.r)(1-cos(t)) + rxn sin(t)
         """
-        p = n.array(vectors, n.Float)
+        p = n.array(vectors, n.float)
         assert p.shape[0] == 3
         if angles is None:
             self.to_matrix()
-            return n.matrixmultiply(self.matrix, p)
+            return n.dot(self.matrix, p)
         q = n.array(angles)*math.pi/180.
         assert q.shape[0] == p.shape[1]
         rp = p * n.cos(q)
         assert rp.shape == p.shape
-        a_dot_p = n.matrixmultiply( self.direction, p)
-        apa = n.outerproduct(self.direction, a_dot_p)
+        a_dot_p = n.dot( self.direction, p)
+        apa = n.outer(self.direction, a_dot_p)
         rp += apa*(1-n.cos(q))
-        rp += n.sin(q)*n.transpose( n.cross_product( self.direction, n.transpose(p)) )
+        rp += n.sin(q)*n.transpose( n.cross( 
+                self.direction, n.transpose(p)) )
         return rp
     
     def rotate_vectors_inverse(self, vectors, angles = None):
         """
         Same as rotate vectors, but opposing sense
         """
-        p = n.array(vectors, n.Float)
+        p = n.array(vectors, n.float)
         assert p.shape[0] == 3
         if angles is None:
             self.to_matrix()
-            return n.matrixmultiply(self.inversematrix, p)
+            return n.dot(self.inversematrix, p)
         # Just reverse the angles here
         return self.rotate_vectors(vectors, -angles)
 
@@ -109,32 +110,33 @@ class rotation_axis:
         e = n.array([self.direction]*3)
         w = n.transpose(n.array( [ [ 0, -dz, dy ] , 
                                    [dz, 0, -dx] , 
-                                   [-dy, dx, 0] ], n.Float))
+                                   [-dy, dx, 0] ], n.float))
         st = math.sin( math.radians( self.angle ))
         ct = math.cos( math.radians( self.angle ))
-        self.matrix = n.identity(3, n.Float)*ct - st * w  + \
+        self.matrix = n.identity(3, n.float)*ct - st * w  + \
                       (1 - ct)*e*n.transpose(e)
-	self.inversematrix = LinearAlgebra.inverse(self.matrix)
+	self.inversematrix = inv(self.matrix)
         return self.matrix
 
 def axis_from_matrix( m ):
     """
-    Factory method to create a rotation_axis object from a direction cosine matrix
+    Factory method to create a rotation_axis object from a 
+    direction cosine matrix
     http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29
     """
     # should check for m being a pure rotation
-    d = LinearAlgebra.determinant(m)
+    d = det(m)
     assert abs(d - 1.0)<1e-6, "pure rotation? det(m) = %f"%(d)
     arg = (m[0,0]+m[1,1]+m[2,2]-1.)/2.0
     if arg == 1:
         # identity matrix - oh bugger - direction is undefined
         angle_rad = 0.0
-        dir = n.array([0,0,1],n.Float)
+        dir = n.array([0,0,1],n.float)
     else:
         angle_rad = math.acos(arg)  
         dir = n.array([m[2,1] - m[1,2],
                        m[0,2] - m[2,0],
-                       m[1,0] - m[0,1] ], n.Float )
+                       m[1,0] - m[0,1] ], n.float )
     o = rotation_axis( dir , math.degrees( angle_rad ) )
     if not (abs(o.matrix - m) < 1e-5).all():
         print "o.matrix\n",o.matrix
@@ -142,19 +144,22 @@ def axis_from_matrix( m ):
         raise Exception("error in axis_from_matrix")
     return o
 
-rotate_identity = rotation_axis( n.array([0,0,1],n.Float) , 0.0 )
+rotate_identity = rotation_axis( n.array([0,0,1],n.float) , 0.0 )
 
 
 def k_to_g( k , # scattering vectors in the laboratory
             angles , # eg samome in degrees
-            axis = rotation_axis( n.array([0,0,1],n.Float) , 0.0 ) , # eg z axis 
+            axis = rotation_axis( n.array([0,0,1],n.float) , 0.0 ) , 
+            # eg z axis 
             pre = rotate_identity , 
             post = rotate_identity ):
     """
     Computes g = pre . rot(axis, angle) . post . k
     Typically in ImageD11 pre = [wedge][chi] and post = identity
     """
-    assert k.shape[1] == angles.shape[0] , "Number of vectors and scan axis must be same"+str(k.shape)+str(angles.shape)
+    assert k.shape[1] == angles.shape[0] , \
+        "Number of vectors and scan axis must be same"+\
+        str(k.shape)+str(angles.shape)
     assert k.shape[0] == 3 , "k must be a [:,3] array"
     #print "angles=",angles[0]
     #print "k.shape\n",k.shape,k[:,0]
@@ -169,7 +174,7 @@ def k_to_g( k , # scattering vectors in the laboratory
     
 def g_to_k( g,  # g-vectors [3,:]
             wavelength, # Needed - depends on curve of Ewald sphere!
-            axis = n.array([0,0,1], n.Float),
+            axis = n.array([0,0,1], n.float),
             pre = None,
             post = None ):
     """
@@ -179,7 +184,9 @@ def g_to_k( g,  # g-vectors [3,:]
     
     The recipe is:
         Find the components of g along and perpendicular to the rotation axis
-            co-ords are a0 = axis, a1 = axis x g, a2 = a1 x axis = ( axis x g ) x axis
+            co-ords are a0 = axis, 
+                        a1 = axis x g, 
+                        a2 = a1 x axis = ( axis x g ) x axis
         Rotated vector will be a0 + a1 sin(angle) + a2 cos(angle)
         Laue condition says that [incident beam].[k] = k.sin(theta)
                                                      = 2 sin^2(theta) / lambda 
@@ -206,7 +213,7 @@ def g_to_k( g,  # g-vectors [3,:]
     else:
         rg = g
     assert rg.shape == g.shape
-    beam = n.zeros(rg.shape, n.Float)
+    beam = n.zeros(rg.shape, n.float)
     beam[0,:] = -1./wavelength
     beam[1,:] = 0.
     beam[2,:] = 0.
@@ -217,9 +224,9 @@ def g_to_k( g,  # g-vectors [3,:]
     assert rb.shape == g.shape
     # Find the components of g with respect to our rotation axis
     # a1 = perpendicular to both axis and g
-    a1 = n.transpose(n.cross_product(axis, g, axis1=0, axis2=0))
+    a1 = n.transpose(n.cross(axis, g.T))
     # a2 perpendicular to axis, along g
-    a2 = n.transpose(n.cross_product(a1, axis, axis1=0, axis2=0))
+    a2 = n.transpose(n.cross(a1.T, axis))
     # projection of g along axis
     a0 = g - a2
     assert a0.shape == a1.shape == a2.shape == g.shape

@@ -102,10 +102,10 @@ class labelimage:
 
     def __init__(self,
                  shape,
-                 sptfile = sys.stdout,
                  fileout = sys.stdout,
                  spatial = blobcorrector.perfect(),
-                 flipper = flip2 ):
+                 flipper = flip2,
+                 sptfile = sys.stdout ):
         """
         Shape - image dimensions
         fileout - writeable stream for merged peaks
@@ -140,8 +140,11 @@ class labelimage:
             self.outfile = open(fileout,"w")
 
         self.spot3d_id = 0 # counter for printing
-
-        self.outfile.write(self.titles)
+        try:
+            self.outfile.write(self.titles)
+        except:
+            print type(self.outfile),self.outfile
+            raise
 
 
 

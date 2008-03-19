@@ -23,7 +23,8 @@ from ImageD11.parameters import par, parameters
 
 PARAMETERS = [
      par( "omegasign", 1.0, 
-          helpstring = "Sign of the rotation about z (normally +1 for right handed)",
+          helpstring = "Sign of the rotation about z "+\
+              "(normally +1 for right handed)",
           vary=False, 
           can_vary=False),
      par('z_center',  1024.0,
@@ -69,7 +70,8 @@ PARAMETERS = [
           vary=False, 
           can_vary=False),
      par('wavelength', 0.155,
-          helpstring = "wavelength, normally angstrom, same as units unit cell ",
+          helpstring = "wavelength, normally angstrom, "+\
+             "same as units unit cell ",
           vary=False, 
           can_vary=True,# but you'll be lucky!
           stepsize = 0.0001 ),
@@ -268,25 +270,23 @@ class transformer:
         w = float(pars['wavelength'])
         self.wavelength = w
         self.fit_tolerance = float(pars['fit_tolerance'])
-        print "Tolerance for assigning peaks to rings",self.fit_tolerance,"max tth",tthmax
+        print "Tolerance for assigning peaks to rings",\
+            self.fit_tolerance,"max tth",tthmax
         for i in range(len(self.theoryds)):
             dsc=self.theoryds[i]
             tthcalc=math.asin(dsc*w/2)*360./math.pi # degrees
             if tthcalc>tthmax:
                 break
-#         print tthcalc
-            logicals= n.logical_and( n.greater(self.twotheta, tthcalc-self.fit_tolerance),
-                                     n.less(self.twotheta, tthcalc+self.fit_tolerance)  )
+            logicals= n.logical_and( n.greater(self.twotheta, 
+                                               tthcalc-self.fit_tolerance),
+                                     n.less(self.twotheta, 
+                                            tthcalc+self.fit_tolerance)  )
 
             if sum(logicals)>0:
-#            print maximum.reduce(compress(logicals,self.twotheta)),minimum.reduce(compress(logicals,self.twotheta))
                 self.tthc.append(tthcalc)
                 self.fitds.append(dsc)
                 ind=n.compress(logicals,range(self.twotheta.shape[0]))
                 self.indices.append(ind)
-#            print "Ring",i,tthcalc,maximum.reduce(take(self.twotheta,ind)),minimum.reduce(take(self.twotheta,ind))
-#      if raw_input("OK?")[0] not in ["Y","y"]:
-#         return
         guess = self.parameterobj.get_variable_values()
         inc = self.parameterobj.get_variable_stepsizes()
         s=simplex.Simplex(self.gof,guess,inc)
@@ -329,7 +329,6 @@ class transformer:
         self.wavelength=pars['wavelength']
         ds = 2*n.sin(transform.radians(highest)/2.)/self.wavelength
         self.dslimit = ds
-        #print "highest peak",highest,"corresponding d*",ds
         self.theorypeaks = self.unitcell.gethkls(ds)
         self.unitcell.makerings(ds)
         self.theoryds = self.unitcell.ringds
@@ -350,7 +349,6 @@ class transformer:
         for a in ['wavelength','omegasign','wedge','chi']:
             if pars.has_key(a):
                 setattr(self,a,pars[a])
-        
         if self.twotheta is None:
             self.compute_tth_eta()
         self.gv = transform.compute_g_vectors(self.twotheta,
@@ -361,11 +359,7 @@ class transformer:
                 chi=self.chi)
         tthnew,etanew,omeganew=transform.uncompute_g_vectors(self.gv,
                 self.wavelength,wedge=self.wedge)
-        #
-        #print "Testing reverse transformations"
-        #for i in range(5):
-        #    print "tth %8.3f eta %8.3f om %8.3f in "%(self.twotheta[i],self.eta[i],self.omega[i]),
-        #    print "tth %8.3f [eta %8.3f om %8.3f or eta %8.3f om %8.3f]"%(tthnew[i],etanew[0][i],omeganew[0][i],etanew[1][i],omeganew[1][i])
+
 
     def savegv(self,filename):
         """
@@ -384,15 +378,25 @@ class transformer:
         f.write("# wedge = %f\n"%( float(self.wedge) ))
         f.write("# ds h k l\n")
         for peak in self.theorypeaks:
-            f.write("%10.7f %4d %4d %4d\n"%(peak[0],peak[1][0],peak[1][1],peak[1][2]))
+            f.write("%10.7f %4d %4d %4d\n"%(peak[0],
+                                            peak[1][0],
+                                            peak[1][1],
+                                            peak[1][2]))
         order = n.argsort(self.twotheta)
         f.write("# xr yr zr xc yc ds phi omega spot3d_id\n")
         print n.maximum.reduce(self.omega),n.minimum.reduce(self.omega)
         ds = 2*n.sin(transform.radians(self.twotheta/2))/self.wavelength
+        fmt = "%f "*8+"%d \n"
         for i in order:
-            f.write("%f %f %f %f %f %f %f %f %d \n"%(self.gv[0,i],self.gv[1,i],self.gv[2,i],
-                self.x[i],self.y[i],ds[i],self.eta[i],self.omega[i]*self.omegasign, 
-                self.spot3d_id[i]))
+            f.write(fmt % (self.gv[0,i],
+                           self.gv[1,i],
+                           self.gv[2,i],
+                           self.x[i],
+                           self.y[i],
+                           ds[i],
+                           self.eta[i],
+                           self.omega[i]*self.omegasign, 
+                           self.spot3d_id[i]))
         f.close()
 
 

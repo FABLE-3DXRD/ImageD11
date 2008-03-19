@@ -256,7 +256,10 @@ def peaksearch_driver(options, args):
         # the last 4 chars are guaranteed to be .spt above
         mergefile="%s_t%d.flt"%(options.outfile[:-4], t)
         spotfile = "%s_t%d.spt"%(options.outfile[:-4], t)
-        li_objs[t]=labelimage(shape = s, sptfile=spotfile, fileout = mergefile, spatial = corrfunc) 
+        li_objs[t]=labelimage(shape = s, 
+                              fileout = mergefile, 
+                              spatial = corrfunc,
+                              sptfile=spotfile) 
         print "make labelimage",mergefile,spotfile
     # Not sure why that was there (I think if glob was used)
     # files.sort()
