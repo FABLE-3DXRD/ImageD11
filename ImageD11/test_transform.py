@@ -47,10 +47,13 @@ class testtransform(unittest.TestCase):
                                               distance=dist,
                                            t_x=0.,t_y=0.,t_z=0.,
                                            omega=om,
-                                           axis_orientation1=10.,
-                                           axis_orientation2=-11.)
-        self.assertEqual(not_trans, trans)
-        self.assertEqual(not_trans, trans)
+                                           wedge=10.,
+                                           chi=-11.)
+
+        diff = not_trans[0] - trans[0]
+        self.assertAlmostEqual(Numeric.sum(diff*diff), 0 , 5 )
+        diff = not_trans[1] - trans[1]
+        self.assertAlmostEqual(Numeric.sum(diff*diff), 0 , 5 )
 
 
 if __name__=="__main__":
