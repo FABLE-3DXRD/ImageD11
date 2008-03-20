@@ -74,20 +74,10 @@ class timer:
         print " ".join(self.msgs),"%.2f/s"% (self.now-self.start)
         sys.stdout.flush()
 
-def read_and_correct(filename,
-                     dark = None,
-                     flood = None,
-                     darkoffset = 0):
+def correct(data_object, dark = None, flood = None ):
     """
-    Reads a file doing the dark and flood corrections
+    Does the dark and flood corrections
     """
-    try:
-        data_object = openimage(filename)
-    except KeyboardInterrupt:
-        raise
-    except:
-        sys.stdout.write(filename+" not found\n")
-        return 0
     picture = data_object.data.astype(numpy.float32)
     if dark != None:
         # This is meant to be quicker
@@ -95,9 +85,6 @@ def read_and_correct(filename,
         data_object.data = picture
     if flood != None:
         picture = numpy.divide( picture, flood, picture )
-        data_object.data = picture
-    if darkoffset != None and darkoffset != 0:
-        picture = numpy.add( picture , darkoffset, picture )
         data_object.data = picture
     return data_object
 
@@ -264,10 +251,16 @@ def peaksearch_driver(options, args):
     # Not sure why that was there (I think if glob was used)
     # files.sort()
     if options.dark!=None:
-        print "Using dark (background)",options.dark,"with added offset",options.darkoffset
+        print "Using dark (background)",options.dark
         darkimage= openimage(options.dark).data 
     else:
         darkimage=None
+    if options.darkoffset!=0:
+        print "Adding darkoffset",options.darkoffset
+        if darkimage is None:
+            darkimage = options.darkoffset
+        else:
+            darkimage += options.darkoffset
     if options.flood!=None:
         floodimage=openimage(options.flood).data
         cen0 = floodimage.shape[0]/6
@@ -291,14 +284,20 @@ def peaksearch_driver(options, args):
     if options.oneThread:
         # Wrap in a function to allow profiling (perhaps? what about globals??)
         def go_for_it(file_series_object, darkimage, floodimage, 
-                darkoffset, corrfunc , thresholds_list , li_objs ):
+                corrfunc , thresholds_list , li_objs ):
             for filein in file_series_object:
                 t = timer()
-                data_object = read_and_correct( filein, darkimage, floodimage,
-                                                darkoffset)
+                try:
+                    data_object = openimage(filein)
+                except KeyboardInterrupt:
+                    raise
+                except:
+                    sys.stdout.write(filename+" not found\n")
+                    continue
+                data_object = correct( data_object, darkimage, floodimage)
                 t.tick(filein+" io/cor")
                 peaksearch( filein, data_object , corrfunc , 
-                             thresholds_list , li_objs )
+                            thresholds_list , li_objs )
             for t in thresholds_list:
                 li_objs[t].finalise()
         if options.profile_file is not None:
@@ -312,9 +311,8 @@ def peaksearch_driver(options, args):
                     print "Your package manager is having a laugh"
                     print "install python-profile please"
                     raise
-            doff = options.darkoffset
             Prof.runctx( "go_for_it(file_series_object, darkimage, floodimage, \
-                doff, corrfunc , thresholds_list, li_objs )",
+                corrfunc , thresholds_list, li_objs )",
                 globals(),
                 locals(),
                 options.profile_file )
@@ -328,121 +326,166 @@ def peaksearch_driver(options, args):
 
         else:
             go_for_it(file_series_object, darkimage, floodimage, 
-                options.darkoffset, corrfunc , thresholds_list, li_objs )
+                 corrfunc , thresholds_list, li_objs )
+
+            
     else:
-        print "Going to use threaded version!?!"
+        print "Going to use threaded version!"
         try:
+            # TODO move this to a module ?
             import Queue, threading
-            class read_all(threading.Thread):
-                def __init__(self, queues, file_series_obj, dark , flood, darkoffset,
-                        thresholds_list):
-                    self.queues = queues 
-                    self.file_series_obj = file_series_obj
-                    self.dark = dark
-                    self.flood = flood
-                    self.darkoffset = darkoffset
-                    self.thresholds_list = thresholds_list
+            
+            class ImageD11_thread(threading.Thread):
+                """ Add a stopping mechanism for unhandled exceptions """
+                def __init__(self, name="ImageD11_thread"):
+                    self.name=name
                     threading.Thread.__init__(self)
                 def run(self):
                     global stop_now
                     try:
-                        for filein in self.file_series_obj:
-                            if stop_now:
-                                print "read_all is stopping"
-                                break
-                            ti = timer()
-                            data_object = read_and_correct( filein, 
-                                                            self.dark, self.flood,
-                                                            self.darkoffset)
-                            ti.tick(filein)
-                            for t in self.thresholds_list:
-                                # Hope that data object is read only
-                                self.queues[t].put((filein, data_object) , block = True)
-                            ti.tock(" enqueue ")
-                        for t in self.thresholds_list:
-                            self.queues[t].put( (None, None) , block = True)
+                        self.ImageD11_run()
                     except:
-                        print "Exception in read_all thread"
                         stop_now = True
                         raise
+                def ImageD11_stop_now(self):
+                    global stop_now
+                    if stop_now:
+                        print "Got a stop in",self.name
+                    return stop_now
+                
+            class read_only(ImageD11_thread):
+                def __init__(self, queue, file_series_obj , name="read_only"):
+                    """ Reads files in file_series_obj, writes to queue """
+                    self.queue = queue 
+                    self.file_series_obj = file_series_obj
+                    ImageD11_thread.__init__(self , name=name)
+                    
+                def ImageD11_run(self):
+                    """ Read images and copy them to self.queue """
+                    for filein in self.file_series_obj:
+                        if self.ImageD11_stop_now(): break
+                        ti = timer()
+                        try:
+                            data_object = openimage(filein)
+                        except KeyboardInterrupt:
+                            raise
+                        except:
+                            sys.stdout.write(filename+" not found\n")
+                            continue
+                        ti.tick(filein)
+                        self.queue.put((filein, data_object) , block = True)
+                        ti.tock(" enqueue ")
+                    # Flag the end of the series
+                    self.queue.put( (None, None) , block = True)
 
-            class peaksearch_one(threading.Thread):
-                def __init__(self, q, corrfunc, threshold, li_obj ):
+            class correct_one_to_many(ImageD11_thread):
+                def __init__(self, queue_read, queues_out,  thresholds_list,
+                             dark = None , flood = None, name="correct_one"):
+                    """ Using a single reading queue retains a global ordering
+                    corrects and copies images to output queues doing correction once """
+                    self.queue_read = queue_read
+                    self.queues_out = queues_out 
+                    self.dark = dark
+                    self.flood = flood
+                    self.thresholds_list = thresholds_list
+                    ImageD11_thread.__init__(self , name=name)
+                    
+                def ImageD11_run(self):
+                    while not self.ImageD11_stop_now():
+                        ti = timer()
+                        filein, data_object = self.queue_read.get(block = True)
+                        if filein is None:
+                            for t in self.thresholds_list:
+                                self.queues_out[t].put( (None, None) , block = True)
+                            # exit the while 1
+                            break 
+                        data_object = correct(data_object, self.dark, self.flood)
+                        ti.tick(filein+" correct ")
+                        for t in self.thresholds_list:
+                            # Hope that data object is read only
+                            self.queues_out[t].put((filein, data_object) , block = True)
+                        ti.tock(" enqueue ")
+
+
+
+            class peaksearch_one(ImageD11_thread):
+                def __init__(self, q, corrfunc, threshold, li_obj, name="peaksearch_one" ):
                     """ This will handle a single threshold and labelimage object """
                     self.q = q
                     self.corrfunc = corrfunc
                     self.threshold = threshold
                     self.li_obj = li_obj
-                    threading.Thread.__init__(self)
+                    ImageD11_thread.__init__(self, name=name+"_"+str(threshold))
+
 
                 def run(self):
-                    global stop_now
-                    try:
-                        while 1:
-                            if stop_now:
-                                print "Peaksearch is stopping"
-                                break
-                            filein, data_object = self.q.get(block = True)
-                            if data_object is None:
-                                break
-                            peaksearch( filein, data_object , self.corrfunc , 
-                                        [self.threshold] , 
-                                        { self.threshold : self.li_obj } )  
-                        self.li_obj.finalise()
-                    except:
-                        print "Exception in peaksearch_one"
-                        stop_now = True
-                        raise
+                    while not self.ImageD11_stop_now():
+                        filein, data_object = self.q.get(block = True)
+                        if data_object is None:
+                            break
+                        peaksearch( filein, data_object , self.corrfunc , 
+                                    [self.threshold] , 
+                                    { self.threshold : self.li_obj } )  
+                    self.li_obj.finalise()
+
+            # 8 MB images - max 40 MB in this queue
+            read_queue = Queue.Queue(5)
+            reader = read_only(read_queue, file_series_object)
+            reader.start()
             queues = {}
             searchers = {}
             for t in thresholds_list:
-                "Print make queue and peaksearch for threshold",t
-                queues[t] = Queue.Queue(5)
+                print "make queue and peaksearch for threshold",t
+                queues[t] = Queue.Queue(3)
                 searchers[t] = peaksearch_one(queues[t], corrfunc, 
                                               t, li_objs[t] )
-            reader = read_all(queues, file_series_object, darkimage , floodimage, 
-                    options.darkoffset, thresholds_list )
-            reader.start()
-            my_threads = [reader]
+            corrector = correct_one_to_many( read_queue,
+                                             queues,
+                                             thresholds_list,
+                                             dark=darkimage,
+                                             flood=floodimage)
+            corrector.start()
+            my_threads = [reader, corrector]
             for t in thresholds_list[::-1]:
                 searchers[t].start()
                 my_threads.append(searchers[t])
             looping = True
             nalive = len(my_threads)
+            def empty_queue(q):
+                while 1:
+                    try:
+                        q.get(block=False, timeout=1)
+                    except:
+                        break
+                q.put((None, None), block=False)
             while nalive > 0:
                 global stop_now
                 try:
                     nalive = 0
                     for thr in my_threads:
-                        reader.join(timeout=1)
                         if thr.isAlive():
                             nalive += 1
-                    time.sleep(0.1)
+                    time.sleep(1)
                 except KeyboardInterrupt:
                     print "Got keyboard interrupt in waiting loop"
                     stop_now = True
                     time.sleep(1)
+                    empty_queue(read_queue)
                     for t in thresholds_list:
                         q = queues[t]
-                        for i in range(10):
-                            # empty out the queues
-                            try:
-                                q.get(block=False, timeout=1)
-                            except:
-                                break
+                        empty_queue(q)
+                    for thr in my_threads:
+                        if thr.isAlive():
+                            thr.join(timeout=1)                        
                     print "finishing from waiting loop"
                 except:
                     print "Caught exception in waiting loop"
                     stop_now = True
                     time.sleep(1)
+                    empty_queue(read_queue)
                     for t in thresholds_list:
                         q = queues[t]
-                        for i in range(10):
-                            # empty out the queues
-                            try:
-                                q.get(block=False, timeout=0.1)
-                            except:
-                                break
+                        empty_queue(q)
                     for thr in my_threads:
                         if thr.isAlive():
                             thr.join(timeout=1)
@@ -477,7 +520,7 @@ def get_options(parser):
             dest="dark", default=None,  type="string",
             help="Dark current filename, to be subtracted, default=None")
         parser.add_option("-D", "--darkfileoffset", action="store",
-            dest="darkoffset", default=10, type="int",
+            dest="darkoffset", default=0, type="float",
             help="Constant to subtract from dark to avoid overflows, default=100")
         s="/data/opid11/inhouse/Frelon2K/spatial2k.spline"
         parser.add_option("-s", "--splinefile", action="store",

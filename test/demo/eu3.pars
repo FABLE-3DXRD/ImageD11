@@ -8,6 +8,7 @@ cell_lattice_[P,A,B,C,I,F,R] I
 chi 0.0
 distance 302401.674964
 fit_tolerance 0.02
+min_bin_prob 1e-05
 no_bins 10000
 o11 1
 o12 0

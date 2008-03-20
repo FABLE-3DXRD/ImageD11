@@ -1,27 +1,36 @@
+#!/usr/bin/env bash
 
 
 
+# Hmm - needs a switch case
 
-#!/usr/bin/env sh
+if [ `hostname` = "lapwright" ]; then
+    SRC="/home/wright/workspace/ImageD11-trunk"
+    PYT=python2.5
+else
+    if [ "$HOSTTYPE" = "x86_64" ]; then
+	SRC="/users/wright/fable/svn/ImageD11/trunk"
+	export LD_LIBRARY_PATH=/sware/exp/fable/standalone/redhate4-a64/lib
+	PYT=/sware/exp/fable/standalone/redhate4-a64/bin/python
+    fi
+fi
 
-SRC="/home/wright/workspace/ImageD11-trunk"
+
+
 
 cd $SRC
-
-
-python2.5 setup.py build
-
+$PYT setup.py build --force
 export PYTHONPATH=$SRC/build/lib.linux-i686-2.5/
+PYTHONPATH=$SRC/build/lib.linux-i686-2.5/
 
- 
 cd $SRC/test/demo
-python2.5 test.py
+$PYT test.py
 
 cd $SRC/test/quantix/
-python2.5 fitgrain.py g3.pars g3.ubi g3.flt new.pars
+$PYT fitgrain.py g3.pars g3.ubi g3.flt new.pars
 
 cd $SRC/test
-python2.5 test_peaksearch.py
+$PYT test_peaksearch.py
 
 cd $SRC/test
 ## takes really ages
@@ -29,13 +38,16 @@ cd $SRC/test
 
 
 cd $SRC/test/gv_general
-python2.5 test_gv_general.py
+$PYT test_gv_general.py
 
 cd $SRC/test/testconnectedpixels
-python2.5 testconnectedpixels.py
+$PYT testconnectedpixels.py
  
 cd $SRC/test/testlabelimage
-python2.5 testlabelimage.py
+$PYT testlabelimage.py
 
 
-python2.5 -c 'import ImageD11; print ImageD11.__version__'
+echo
+echo "Just finished testing ImageD11 from" $PYT
+echo "Using PYTHONPATH=" $PYTHONPATH
+$PYT -c "import ImageD11; print ImageD11.__version__"
