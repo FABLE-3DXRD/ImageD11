@@ -1,5 +1,16 @@
 
 
+# 3-3-08
+To Add with some cleaning: 
+   filterout.py	-  removes grains from flt files
+   makemap.py	-  fitgrain/filtergrain pairs
+   xyz_rod.py   -  convert map output
+   make_uniq.py  - flip ubifiles according to symmetry
+		 ... bugfix hexagonal case, etc
+
+
+
+
 Module docs and functions and function docs from compiled extensions
 
 

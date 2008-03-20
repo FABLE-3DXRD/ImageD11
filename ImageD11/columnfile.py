@@ -88,11 +88,12 @@ class columnfile:
     """
     Class to represent an ascii file containing multiple named columns
     """
-    def __init__(self, filename, new = False):
+    def __init__(self, filename = None, new = False):
         self.filename = filename
         self.bigarray = None
         self.titles = []
-        self.parameters = parameters.parameters(filename=filename)
+        if filename is not None:
+            self.parameters = parameters.parameters(filename=filename)
         self.ncols = 0
         self.nrows = 0
         if not new:
@@ -188,6 +189,9 @@ class columnfile:
         self.set_attributes()
  
     def copy(self):
+        """
+        Returns a (deep) copy of the columnfile
+        """
         cn = columnfile(self.filename, new = True)
         cn.bigarray = self.bigarray.copy()
         cn.titles = [t for t in self.titles ]
@@ -197,6 +201,10 @@ class columnfile:
         return cn
 
     def addcolumn(self, col, name):
+        """
+        Add a new column col to the object with name "name"
+        Overwrites in the case that the column already exists
+        """
         if len(col) != self.nrows:
             raise Exception("Wrong length column")
         if name in self.titles:
@@ -229,11 +237,7 @@ class newcolumnfile(columnfile):
     """ Just like a columnfile, but for creating new
     files """
     def __init__(self, titles):
-        self.filename = None
-        self.bigarray = None
+        columnfile.__init__(self, filename=None)
         self.titles = titles
-        self.parameters = parameters.parameters()
         self.ncols = len(titles)
-        self.nrows = 0
-        self.list = None
         
