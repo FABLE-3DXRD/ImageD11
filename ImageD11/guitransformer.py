@@ -148,8 +148,9 @@ class guitransformer:
                                                  
 
     def fit(self):
+        tthmin = self.parent.twodplotter.a.get_xlim()[0]
         tthmax = self.parent.twodplotter.a.get_xlim()[1]
-        self.parent.guicommander.execute("transformer","fit",tthmax)
+        self.parent.guicommander.execute("transformer","fit",tthmin,tthmax)
         self.plotreta()
 
     def plotreta(self):

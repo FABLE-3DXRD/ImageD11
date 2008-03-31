@@ -325,7 +325,7 @@ class transformer:
         gof = gof / npeaks
         return gof*1e3
 
-    def fit(self, tthmax = 180):
+    def fit(self,tthmin=0,tthmax=180):
         """ Apply simplex to improve fit of obs/calc tth """
         import simplex
         if self.theoryds == None:
@@ -341,13 +341,15 @@ class transformer:
         self.wavelength = w
         self.fit_tolerance = float(pars['fit_tolerance'])
         print "Tolerance for assigning peaks to rings",\
-            self.fit_tolerance,"max tth",tthmax
+            self.fit_tolerance,", min tth",tthmin,", max tth",tthmax
         tth, eta = self.compute_tth_eta()
         for i in range(len(self.theoryds)):
             dsc=self.theoryds[i]
             tthcalc=math.asin(dsc*w/2)*360./math.pi # degrees
             if tthcalc>tthmax:
                 break
+            elif tthcalc < tthmin:
+                continue
             logicals= n.logical_and( n.greater(tth, 
                                                tthcalc-self.fit_tolerance),
                                      n.less(tth , 
