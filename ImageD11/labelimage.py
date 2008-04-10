@@ -266,9 +266,9 @@ class labelimage:
         if self.lastres is not None:
             ret = connectedpixels.blob_moments(self.lastres)
             self.outputpeaks(self.lastres)
-        if hasattr(self.sptfile, "close"):
-            self.sptfile.close()
-            # wonder what that does to stdout  
+        #if hasattr(self.sptfile, "close"):
+        #    self.sptfile.close()
+        #     wonder what that does to stdout  
 
 
 
