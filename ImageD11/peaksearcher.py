@@ -252,7 +252,7 @@ def peaksearch_driver(options, args):
     # files.sort()
     if options.dark!=None:
         print "Using dark (background)",options.dark
-        darkimage= openimage(options.dark).data 
+        darkimage= openimage(options.dark).data.astype(numpy.float32)
     else:
         darkimage=None
     if options.darkoffset!=0:
