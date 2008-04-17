@@ -28,8 +28,7 @@ p.loadparameters(parfile)
 pars = p.get_parameters()
 
 xyz = Numeric.transpose(
-    transform.compute_tth_eta([[v],[h]],
-                          return_pixel_xyz=True,
+    transform.compute_xyz_lab([[v],[h]],
                           **pars))
 
 ks = pars.keys()
@@ -39,6 +38,5 @@ for k in ks:
 print
 print "central pixel position"
 print "detector vertical",v,"horizontal",h
-
-print "real space x, y, z = ", [pars['distance'],0,0] + xyz
+print "real space x, y, z = ", xyz
 
