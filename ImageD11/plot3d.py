@@ -283,7 +283,7 @@ if __name__=="__main__":
                 xyz.append( [ vals[0],vals[1],vals[2] ])
             except:
                 pass
-        if line.find("xr yr zr")>0:
+        if line.find("xr yr zr")>0 or line.find("gx  gy  gz  ")>0:
             on=1
    
     npeaks = len(xyz)
