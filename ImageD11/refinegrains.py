@@ -397,8 +397,15 @@ class refinegrains:
             nr = self.scandata[s].nrows
             int_tmp = numpy.zeros(nr , numpy.int32 )-1
             for g in self.grainnames:
-                gr = self.grains[ ( g, s) ]
+                gr = self.grains[ ( g, s) ]                
                 self.set_translation( g, s)
+                try:
+                    gr.x = self.scandata[s].xc
+                    gr.y = self.scandata[s].yc
+                except AttributeError:
+                    gr.x = self.scandata[s].sc
+                    gr.y = self.scandata[s].fc
+                gr.om = self.scandata[s].omega
                 self.compute_gv( g, s )
                 #print "about to assign"
                 closest.score_and_assign( gr.ubi,
@@ -406,7 +413,7 @@ class refinegrains:
                                           self.tolerance,
                                           self.scandata[s].drlv2,
                                           int_tmp,
-                                          int(g) )
+                                          int(g))
                 #print "assigned"
             # Second loop after checking all grains
             self.scandata[s].labels = int_tmp * 1.

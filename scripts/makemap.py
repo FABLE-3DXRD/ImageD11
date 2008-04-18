@@ -29,12 +29,16 @@ def makemap(options):
     o.refineubis(quiet = False , scoreonly = True)
     o.savegrains(options.newubifile, sort_npks = options.sort_npks)
     if hasattr(options, "newfltfile") and options.newfltfile is not None:
-        col = o.scandata[options.fltfile]
+        print "re-assignlabels"
+        o.assignlabels()
+        col = o.scandata[options.fltfile].copy()
         print "Before filtering",col.nrows
-        col.filter(col.labels > -0.5)
+        col.filter(col.labels < -0.5)
         # print col.labels[:10]
         print "After filtering",col.nrows
         col.writefile(options.newfltfile)
+
+
 
 if __name__ == "__main__":
     import logging, sys

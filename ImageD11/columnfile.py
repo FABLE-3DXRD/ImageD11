@@ -88,6 +88,7 @@ class columnfile:
     """
     Class to represent an ascii file containing multiple named columns
     """
+    
     def __init__(self, filename = None, new = False):
         self.filename = filename
         self.bigarray = None
@@ -99,12 +100,11 @@ class columnfile:
         if not new:
             self.readfile(filename)
 
-
-
     def writefile(self, filename):
         """
         write an ascii columned file
         """
+        self.chkarray()
         self.parameters.saveparameters(filename)
         fout = open(filename,"w+") # appending
         fout.write("#")
@@ -181,6 +181,7 @@ class columnfile:
         """
         mask is an nrows long array of true/false
         """
+        self.chkarray()
         if len(mask) != self.nrows:
             raise Exception("Mask is the wrong size")
         self.nrows = n.sum(n.compress(mask, n.ones(len(mask))))
@@ -193,12 +194,20 @@ class columnfile:
         Returns a (deep) copy of the columnfile
         """
         cn = columnfile(self.filename, new = True)
+        self.chkarray()
         cn.bigarray = self.bigarray.copy()
         cn.titles = [t for t in self.titles ]
         cn.parameters = self.parameters
         (cn.ncols, cn.nrows) = cn.bigarray.shape
         cn.set_attributes()
         return cn
+
+    def chkarray(self):
+        """
+        Ensure self.bigarray holds our attributes
+        """
+        for i,t in enumerate(self.titles):
+            self.bigarray[i] = getattr(self, t)
 
     def addcolumn(self, col, name):
         """
