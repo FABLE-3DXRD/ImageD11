@@ -292,7 +292,7 @@ def peaksearch_driver(options, args):
                 except KeyboardInterrupt:
                     raise
                 except:
-                    sys.stdout.write(filename+" not found\n")
+                    sys.stdout.write(filein+" not found\n")
                     continue
                 data_object = correct( data_object, darkimage, floodimage)
                 t.tick(filein+" io/cor")
@@ -370,7 +370,7 @@ def peaksearch_driver(options, args):
                         except KeyboardInterrupt:
                             raise
                         except:
-                            sys.stdout.write(filename+" not found\n")
+                            sys.stdout.write(filein+" not found\n")
                             continue
                         ti.tick(filein)
                         self.queue.put((filein, data_object) , block = True)
