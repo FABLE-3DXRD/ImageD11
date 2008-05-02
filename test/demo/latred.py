@@ -1,6 +1,6 @@
 
 from numpy import dot, round_, array, float, allclose, asarray, fabs,\
-        argmax, sqrt, argsort, take
+        argmax, sqrt, argsort, take, sum, where
 from numpy.linalg import inv
 
 DEBUG = False
@@ -126,12 +126,14 @@ class lattice(object):
         Give back the hkl indices 
         ... these are the nearest lattice point
         """
-        return round_(dot(self.vi, g))
+        return round_(dot(self.vi, asarray(g).T)).T
     def rem_hkls(self, g):
         """ 
         Remainder of x after removing closest lattice point in reciprocal space
         """
-        return g - dot(self.v, self.hkls(g))
+        h = dot(self.v, self.hkls(g).T).T
+        assert g.shape == h.shape, "bug!"
+        return g - h
     def withvec(self, x, space="reciprocal"):
         """ 
         Try to fit x into the lattice 
@@ -152,10 +154,21 @@ class lattice(object):
             v = list(self.vi)
             v[vd] = r
         return lattice( v[0], v[1], v[2] , space=space )
-        
+    def score_recip(self, g, tol=0.1):
+        """
+        How many peaks have rem less than tol
+        """
+        ga = asarray(g)
+        assert ga.shape[1] == 3, "gv shape"
+        #print ga.shape
+        r = self.rem_hkls(ga)
+        assert ga.shape == r.shape
+        r2 = sum( r*r, axis=1 )
+        s = sum( where( r2 < tol * tol, 1, 0) )
+        return s
 
 def get_eu_gv():
-    from ImageD11.indexing import indexer
+    from ImageD11.indexing import indexer, ubitocellpars
     o = indexer()
     o.readgvfile("eu3.gve" , quiet = True)
     return o.gv
@@ -163,6 +176,8 @@ def get_eu_gv():
 def test_fft():
     gv = get_eu_gv()
     from ImageD11.fft_index_refac import grid
+    from ImageD11.indexing import ubitocellpars, write_ubi_file,\
+        refine
     g = grid( np = 128,
               mr = 1.0,
               nsig = 20,
@@ -174,17 +189,35 @@ def test_fft():
     g.read_peaks("eu.patterson_pks")
     vecs = g.UBIALL
     order = argsort( g.colfile.sum_intensity )[::-1]
+    min_pks = 300
     try:
         for i in order:
             print vecs[i], g.colfile.sum_intensity[i]
             for j in order[i:]:
-                for k in order[j,:]:
+                for k in order[j:]:
+                    print i,j,k
                     try:
-                        l = lattice( vec[i], vecs[j], vecs[k] )
+                        l = lattice( vecs[i], vecs[j], vecs[k],
+                                     space='real')
+                        t = 0.1
+                        ref = refine( l.vi, gv, t)
+                        l = lattice( ref[0], ref[1], ref[2], space='real')
+                        print "UBI:"
+                        print l.vi
+                        print ubitocellpars(l.vi)
+                        s = l.score_recip( gv , t )
+                        print "Indexes",s ,"at tolerance",t
+                    
                     except:
-                        pass
-                    raise Exception("Really bad control structure")
+                        import traceback
+                        print traceback.print_exc()
+                        raise Exception("error")
+                    if s > min_pks:
+                        write_ubi_file( "trial.ubi", [ l.vi ] )
+                        raise Exception("Really bad control structure")
     except:
+        import traceback
+        print traceback.print_exc()
         print "Got something"
 
 def test_eu():
