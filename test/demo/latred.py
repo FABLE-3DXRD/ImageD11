@@ -132,6 +132,7 @@ class lattice(object):
         Remainder of x after removing closest lattice point in reciprocal space
         """
         h = dot(self.v, self.hkls(g).T).T
+        print 'h',h
         assert g.shape == h.shape, "bug!"
         return g - h
     def withvec(self, x, space="reciprocal"):
@@ -143,16 +144,24 @@ class lattice(object):
         remake the lattice with these 3 vectors
         """
         x = asarray(x)
+        print "withvec",x
+        print 'v',self.v
+        print 'vi',self.vi
         if space == 'reciprocal':
             r = self.rem_hkls(x)
+            print "r",r
             vd = argmax(fabs(dot(self.vi, x)))
+            print "vd", vd
             v = list(self.v.T)  # reciprocal space is columns
             v[vd] = r
         if space == 'real':
             r = self.rem_ijks(x)
+            print "r",r
             vd = argmax(fabs(dot(self.vi, x)))
+            print "vd",vd
             v = list(self.vi)
             v[vd] = r
+        print "v",v
         return lattice( v[0], v[1], v[2] , space=space )
     def score_recip(self, g, tol=0.1):
         """
@@ -278,7 +287,8 @@ def test1():
     o = lattice( array( [ 991, 990, 990] , float) ,
                  array( [ 990, 991, 990] , float) ,
                  array( [ 990, 990, 991] , float) )
-    # print "o.v",o.v
+    print "o.v",o.v
+    print o.hkls( [990,990,990] ) 
     o = o.withvec( [990,990,990] ) # Remove long
     assert allclose(o.v[:,0], array( [ 1, 0, 0] , float) )
     assert allclose(o.v[:,1], array( [ 0, 1, 0] , float) )
