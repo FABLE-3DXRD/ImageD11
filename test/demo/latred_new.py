@@ -9,6 +9,7 @@ DEBUG = False
 MIN_VEC2 = 1e-9*1e-9
 
 
+
 def fparl(x, y):
     """ fraction of x parallel to y """
     ly2 = dot(y ,y)
@@ -58,39 +59,42 @@ class BadVectors(Exception):
     pass
 
 
-def this_space_axis(space):
-    return ['real', 'reciprocal'].index(space)
+def this_direction_axis(direction):
+    return ['row', 'col'].index(direction)
 
-def other_space(space):
-    return ['real', 'reciprocal'][1 - this_space_axis(space)]
+def other_direction(direction):
+    return ['row', 'col'][1 - this_direction_axis(direction)]
 
 #  From http://www.scipy.org/Subclasses
 class rr_array(ndarray):
-    def __new__(subtype, data, space=None, dtype=None, copy=False):
+    def __new__(subtype, data, direction=None, dtype=None, copy=False):
         subarr = array(data, dtype=dtype, copy=copy)
         subarr = subarr.view(subtype)
-        if space is not None:
-            subarr.space = space
+        if direction is not None:
+            subarr.direction = direction
             # print "set it   ",
         elif hasattr(data, 'info'):
-            subarr.space = data.space
+            subarr.direction = data.direction
             # print "who knows",
-        # print "__new__ received space",space
+        # print "__new__ received direction",direction
         return subarr
     
     def __array_finalize__(self, obj):
-       self.space = getattr(obj, 'space', 'real' )
+        # 3rd argument is default 
+        self.direction = getattr(obj, 'direction', 'row' )
 
-    def __repr__(self):
-        desc = """\
-array(data=%(data)s, 
-  in %(space)s space)"""
-        return desc % { 'data': str(self), 
-                        'space' : self.space }
+    
 
-    def length_of_vectors(self):
+    def __str__(self):
+        desc = \
+"""{%(data)s in %(direction)s direction}"""
+        return desc % { 'data': super.__str__(self), 
+                        'direction' : self.direction }
+
+
+    def length_of_vectors2(self):
         # print type(self)
-        return sum( self*self, axis=this_space_axis(self.space))
+        return sum( self*self, axis=this_direction_axis(self.direction))
 
 
     
@@ -103,18 +107,24 @@ class flipper:
         self.ub = ub
         self.ubi = ubi
     def flip(self, v):
-        assert hasattr(v, 'space')
-        if v.space == 'real':
-            print "flipping",v,'real in so using ubi'
-            print "ubi",self.ubi
-            ra = dot(self.ubi, v.T)
-        elif v.space == 'reciprocal':
-            print "flipping",v,'recip in so using ub'
-            print "ub",self.ub
-            ra = dot(self.ub, v)
-        else:
-            raise Exception("Bad space")
-        return rr_array( ra, space=other_space(v.space))
+        assert hasattr(v, 'direction')
+        try:
+            if v.direction == 'row':
+                # print "flipping",v,'row in so using ubi'
+                # print "ubi",self.ubi
+                ra = dot(self.ub, v).T
+            elif v.direction == 'col':
+                # print "flipping",v,'recip in so using ub'
+                # print "ub",self.ub
+                ra = dot(self.ubi, v.T)
+            else:
+                raise Exception("Bad direction")
+        except:
+            print v.shape, v.direction
+            raise
+        assert ra.shape == v.shape[::-1], "Shape mismatch, %s %s %s"%(
+            str(v.shape), str(ra.shape), v.direction)
+        return rr_array( ra, direction=other_direction(v.direction))
 
 
 class lattice(object):
@@ -122,11 +132,11 @@ class lattice(object):
     Represents a 3D crystal lattice built from 3 vectors
     """
 
-    def __init__(self, v1, v2, v3, space='reciprocal', min_vec2=MIN_VEC2):
+    def __init__(self, v1, v2, v3, direction='col', min_vec2=MIN_VEC2):
         """ Make the lattice 
         Currently v1, v2, v3 are vectors - which gives 3D
-        space [ 'real' | 'reciprocal' ]
-        ... means they are real space lattice vectors or measured scattering
+        direction [ 'row' | 'col' ]
+        ... means they are row direction lattice vectors or measured scattering
             vectors from crystallography
         It will attempt to find a primitive basis from the supplied vectors
         """
@@ -164,44 +174,36 @@ class lattice(object):
         # print "vl:",vl
         vl = sortvec_xyz(vl)
         # print "vl",vl
-        if space == 'reciprocal':  
-            # We got column vectors
+        if direction == 'col':  
+            # We got g-vectors
+            # print "Supplied col direction vectors"
             self.ub  = array(vl).T 
             self.ubi = inv(self.ub)
-        elif space == 'real':
-            # We got row vectors
+        elif direction == 'row':
+            # We were supplied with peaks from patterson peaksearch
+            # print "Supplied row direction vectors"
             self.ubi = array(vl)
             self.ub  = inv(self.ubi) 
         else:
-            raise Exception("Space must be real or reciprocal "+str(space))
+            raise Exception("Direction must be row or col "+str(direction))
         self.flipper = flipper( ub=self.ub, ubi=self.ubi )
+        self.flip = self.flipper.flip
 
     def nearest(self, vecs):
-        """ Give back the nearest lattice point indices, in the same space """
-        assert hasattr(vecs, 'space')
-        print 'vecs',vecs
-        print "ubi",self.ubi
-        print "ub",self.ub
-        print "Going to flip"
-        new_vecs = self.flipper.flip( vecs )
-        assert hasattr(new_vecs, 'space')
-        print "new_vecs",new_vecs
+        """ Give back the nearest lattice point indices, 
+        in the same direction """
+        assert hasattr(vecs, 'direction')
+        new_vecs = self.flip( vecs )
         int_vecs = round_(new_vecs)
-        print 'int_vecs',int_vecs
-        int_vecs.space = new_vecs.space
-
-        return self.flipper.flip( int_vecs )
+        return self.flip( int_vecs )
         
     def remainders(self, vecs):
         """ Difference between vecs and closest lattice points """
-        assert hasattr(vecs, 'space')
-        int_in_other_space = self.nearest(vecs)
-        # print "ints",int_in_other_space
-        computed_in_this_space = self.flipper.flip( int_in_other_space )
-        err = vecs - computed_in_this_space
-        return err
+        assert hasattr(vecs, 'direction')
+        
+        return vecs - self.nearest(vecs)
 
-    def withvec(self, x, space="reciprocal"):
+    def withvec(self, x, direction="col"):
         """ 
         Try to fit x into the lattice 
         Make the remainder together with current vectors
@@ -210,30 +212,27 @@ class lattice(object):
         remake the lattice with these 3 vectors
         """
         #print self.ubi
-        assert hasattr(x, 'space')
+        assert hasattr(x, 'direction')
         #print "x",x
         r = self.remainders( x )
         #print "r",r
         worst = argmax(r)
-        if r.space == 'reciprocal':
+        if r.direction == 'col':
             # r is g-vector errors
             v = list(self.ub.T)
-        if r.space == 'real':
+        if r.direction == 'row':
             # r is hkl errors
             v = list(self.ubi)
         v[worst]=r
-        print v
-        l_new = lattice( v[0], v[1], v[2] , space=r.space )
-        print l_new.ubi
-        print l_new.ub
+        l_new = lattice( v[0], v[1], v[2] , direction=r.direction )
         return l_new
 
     def score(self, vecs, tol=0.1):
         """
         How many peaks have rem less than tol
         """
-        assert hasattr(vecs, 'space')
-        r2 = self.remainders( vecs, tol ).length_of_vectors2()
+        assert hasattr(vecs, 'direction')
+        r2 = self.remainders( vecs ).length_of_vectors2()
         s = sum( where( r2 < tol * tol, 1, 0) )
         return s
 
@@ -250,39 +249,29 @@ def iter3d(n):
 
 
 def find_lattice(vecs, 
-                 space='reciprocal', 
                  min_vec2=1,
                  n_try=None, 
                  test_vecs = None, 
-                 testspace=None,
-                 tol= 0.1,
+                 tol = 0.1,
                  fraction_indexed=0.9):
     """
     vecs - vectors to use to generate the lattice
-    space - whether vecs are real space or reciprocal
     min_vec2 - squared length of min_vec (units as vec)
     n_try - max number of vecs to test (clips vecs for generating)
-    test_on - vectors to index with the unit cell
-    testspace - real/recip for test set
+    test_vecs - vectors to index with the unit cell (else use vecs)
     fraction_indexed  - whether or not to return cells
     """
+    assert hasattr( vecs, 'direction' )
     if n_try is None:
         n_try = len(vecs)
     if test_vecs is None:
-        assert testspace is None, "testspace arg implies test_on arg"
         test_vecs = vecs
-    if testspace is None:
-        testspace = space
-    assert testspace in ['real' , 'reciprocal' ], 'space must be real or reciprocal'
-    for i,j,k in iter3d(len(vecs)):
+    assert hasattr( test_vecs, 'direction' )
+    gen_dir = vecs[0].direction
+    for i,j,k in iter3d(n_try):
         try:
-            l = lattice(vecs[i], vecs[j], vecs[k], space=space)
-            if testspace == 'real':
-                scor = l.score_real( test_vecs, tol )
-            elif testspace == 'reciprocal':
-                scor = l.score_reciprocal( test_vecs, tol )
-            else:
-                raise Exception("Logic error")
+            l = lattice(vecs[i], vecs[j], vecs[k], direction=vecs.direction)
+            scor = l.score( test_vecs, tol )
             frac = 1.0 * scor / len(test_vecs)
             if frac > fraction_indexed:
                 return l
@@ -310,21 +299,18 @@ def test_fft():
     g.props()
     g.peaksearch(open("eu.patterson_pks","w"))
     g.read_peaks("eu.patterson_pks")
-
-    vecs = rr_array(g.UBIALL, space='real')
-    assert vecs.shape == (g.colfile.nrows, 3)
+    vecs = rr_array(g.UBIALL.T , direction='row')
+    assert vecs.shape == (3, g.colfile.nrows)
     order = argsort( g.colfile.sum_intensity )[::-1]
     vecs = take( vecs, order, axis = 1)
     min_pks = 300
     ntry = 0
     print ""
     l1 = find_lattice( vecs,
-                       space='real',
                        min_vec2 = 1,
                        n_try = 20 )
                   
     l2 = find_lattice( vecs,
-                       space='real',
                        min_vec2 = 1,
                        n_try = 20 )
                   
@@ -336,10 +322,10 @@ def test_fft():
         # if ntry> 10: break
         try:
             l = lattice( vecs[order[i]], vecs[order[j]], vecs[order[k]],
-                         space='real', min_vec2=1)
+                         direction='row', min_vec2=1)
             t = 0.1
             ref = refine( l.vi, gv, t)
-            l = lattice( ref[0], ref[1], ref[2], space='real')
+            l = lattice( ref[0], ref[1], ref[2], direction='row')
             print "i,j,k",i,j,k
             print "UBI:"
             print l.vi
@@ -366,23 +352,33 @@ def test_eu():
     v1 = gv[0]
     v2 = gv[1]
     v3 = gv[6]
-    l = lattice ( v1, v2, v3)
+    # G-vectors are in row direction
+    l = lattice ( v1, v2, v3, direction='col')
     esum = 0.0
+    gv = rr_array( gv, direction='col' )
+    #print v1, v2, v3
+    #print l.ubi
+    #print l.ub
     for v in gv:
-        # print ("%8.5f "*3+"%4d "*3)%tuple( list(v)+list(l.hkls(v))),
-        err   = l.rem_hkls(v)
+        # print ("%8.5f "*3+"%8.5f "*3)%tuple( list(v)+list(l.flip(v))),
+        err   = l.remainders( v )
         esum += sqrt(dot(err,err))
         # print "%.5f"%(sqrt(dot(err,err)))
-    # print esum / len(o.gv)
+    #import sys
+    #sys.exit()
+    #print "Average",esum / len(gv)
+    # print 
     assert esum / len(gv) < 0.0102, "Did not fit"
+    assert l.score(gv, tol = 0.1) == 602, "Expecting to index 602 peaks" 
 
 def test2():
     """ Adding a fourth vector """
     o = lattice( array( [ 1, 0, 0] , float) ,
                  array( [ 0, 1, 0] , float) ,
-                 array( [ 0, 0, 2] , float) )
+                 array( [ 0, 0, 2] , float) , direction = 'row')
     # ... how to do it?
-    r  = o.rem_hkls( array( [ 0, 0, 1] , float) ) 
+    u = rr_array( [ 0, 0, 1] , dtype=float, direction = 'row') 
+    r  = o.remainders( u )
     assert ( r == array( [ 0, 0, 1] , float) ).all()
     o = o.withvec( r )
     assert allclose(o.ub[0], array( [ 1, 0, 0] , float) )
@@ -401,25 +397,98 @@ def test1():
     o = lattice( array( [ 1, 0, 1] , float) ,
                  array( [ 0, 1, 0] , float) ,
                  array( [ 0, 0, 1] , float) )
-    assert allclose(o.ub[:,0], array( [ 1, 0, 0] , float) )
-    assert allclose(o.ub[:,1], array( [ 0, 1, 0] , float) )
-    assert allclose(o.ub[:,2], array( [ 0, 0, 1] , float) )
+    assert allclose(o.ub[:,0], array( [ 1, 0, 0] , float) ), str(o.ub)
+    assert allclose(o.ub[:,1], array( [ 0, 1, 0] , float) ), str(o.ub)
+    assert allclose(o.ub[:,2], array( [ 0, 0, 1] , float) ), str(o.ub)
 
+
+    """ 3 shorter vectors """
+    # print '3 short'
+    o = lattice( array( [1e-2,  0,  0] , float) ,
+                 array( [  0,1e-2,  0] , float) ,
+                 array( [  0,  0,1e-2] , float) , direction='col' )
+    # Consider those as 3 g-vectors
+    assert allclose(o.ubi[:,0], array( [ 100, 0, 0] , float) ), str(o.ubi)
+    assert allclose(o.ubi[:,1], array( [ 0, 100, 0] , float) ), str(o.ubi)
+    assert allclose(o.ubi[:,2], array( [ 0, 0, 100] , float) ), str(o.ubi)
+    g = rr_array([1e-2,0.,0.], direction='col') 
+    hkl = o.flip( g ) 
+    assert hkl.direction == 'row', hkl.direction
+    # print g,"\nFlips to give\n",hkl
+    assert allclose(hkl, 
+                    rr_array([1.,0.,0.], direction='row') ), str(hkl)
+
+
+    # print '3 long'
+    """ 3 longer vectors """
+    o = lattice( array( [ 10,  0,  0] , float) ,
+                 array( [  0, 10,  0] , float) ,
+                 array( [  0,  0, 10] , float) , direction='row' )
+    assert allclose(o.ubi[:,0], array( [ 10, 0, 0] , float) ), str(o.ubi)
+    assert allclose(o.ubi[:,1], array( [ 0, 10, 0] , float) ), str(o.ubi)
+    assert allclose(o.ubi[:,2], array( [ 0, 0, 10] , float) ), str(o.ubi)
+    hkl = o.flip( rr_array([10.,10.,10.], direction='row') )
+    assert hkl.direction == 'col'
+    assert allclose(hkl,
+                    rr_array([1.,1.,1.], direction='col') ), str(hkl)
+
+    """ 3 shorter vectors row"""
+    # print '3 short'
+    o = lattice( array( [1e-2,  0,  0] , float) ,
+                 array( [  0,1e-2,  0] , float) ,
+                 array( [  0,  0,1e-2] , float) , direction='row' )
+    # Consider those as 3 g-vectors
+    assert allclose(o.ub[:,0], array( [ 100, 0, 0] , float) ), str(o.ub)
+    assert allclose(o.ub[:,1], array( [ 0, 100, 0] , float) ), str(o.ub)
+    assert allclose(o.ub[:,2], array( [ 0, 0, 100] , float) ), str(o.ub)
+    g = rr_array([1e-2,0.,0.], direction='row') 
+    hkl = o.flip( g ) 
+    # print g,"\nFlips to give\n",hkl
+    assert allclose(hkl, 
+                    rr_array([1.,0.,0.], direction='row') ), str(hkl)
+    assert hkl.direction == 'col'
+
+
+    # print '3 long'
+    """ 3 longer vectors """
+    o = lattice( array( [ 10,  0,  0] , float) ,
+                 array( [  0, 10,  0] , float) ,
+                 array( [  0,  0, 10] , float) , direction='col' )
+    assert allclose(o.ub[:,0], array( [ 10, 0, 0] , float) ), str(o.ub)
+    assert allclose(o.ub[:,1], array( [ 0, 10, 0] , float) ), str(o.ub)
+    assert allclose(o.ub[:,2], array( [ 0, 0, 10] , float) ), str(o.ub)
+    hkl = o.flip( rr_array([10.,10.,10.], direction='col') )
+    assert allclose(hkl,
+                    rr_array([1.,1.,1.], direction='row') ), str(hkl)
+
+    
+    # FIXME - check is transpose of row is OK or not 
+    # this break the row / col symmetry?
+    
+    # TODO - think on whether h / g are really col pairs
+    #        Find the Sands book.
+
+
+
+    # print hkl
     """ 3 really hard vectors """
     global DEBUG
     DEBUG = True
     o = lattice( array( [ 991, 990, 990] , float) ,
                  array( [ 990, 991, 990] , float) ,
-                 array( [ 990, 990, 991] , float) ,space='reciprocal')
+                 array( [ 990, 990, 991] , float) ,direction='col')
+    # Eg, these were long g-vectors far from origin but making a basis
+    # Anticipate them making a ubi matrix with 990
     assert ( o.ub  == array( [[ 990. ,   1. ,   1.],
                               [ 990. ,  -0. ,  -1.],
-                              [ 991. ,  -1. ,  -0.],] )).all(), str(o.ub)
-
-    u = rr_array([990.,990.,990.], space='reciprocal') 
-    assert (o.nearest( u ) == rr_array([991.,990.,000.], 
-                                       space='reciprocal')).all(),\
+                              [ 991. ,  -1. ,  -0.],] )).all(), str(o.ubi)
+    # OK
+    u = rr_array([992.,990.,990.], direction='col') 
+    assert (o.nearest( u ) == rr_array([991.,990.,990], 
+                                       direction='col')).all(),\
         str(o.nearest( u ))+" "+str( u )
-    
+
+
     o = o.withvec( u ) # Remove long
     assert allclose(o.ub[:,0], array( [ 1, 0, 0] , float) )
     assert allclose(o.ub[:,1], array( [ 0, 1, 0] , float) )

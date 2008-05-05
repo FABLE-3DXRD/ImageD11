@@ -239,12 +239,14 @@ def test_eu():
     v2 = gv[1]
     v3 = gv[6]
     l = lattice ( v1, v2, v3)
+    print l.v, l.vi
     esum = 0.0
     for v in gv:
-        # print ("%8.5f "*3+"%4d "*3)%tuple( list(v)+list(l.hkls(v))),
+        print ("%8.5f "*3+"%4f "*3)%tuple( list(v)+list( 
+                dot(l.vi,v.T))),
         err   = l.rem_hkls(v)
         esum += sqrt(dot(err,err))
-        # print "%.5f"%(sqrt(dot(err,err)))
+        print "%.5f"%(sqrt(dot(err,err)))
     # print esum / len(o.gv)
     assert esum / len(gv) < 0.0102, "Did not fit"
 
