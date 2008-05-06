@@ -16,7 +16,7 @@ from numpy.oldnumeric.fft import fftnd , inverse_fftnd
 from ImageD11 import labelimage
 
 class grid:
-    def __init__(self, np=128, mr=1.0 ,nsig =5):
+    def __init__(self, np=128, mr=1.0 ,nsig =5, minlen = 3.):
         """
         Set up the grid to use (the large unit cell)
         np - number of points in the grid
@@ -24,6 +24,7 @@ class grid:
         """
         self.np = np
         self.nsig = nsig
+        self.minlen = minlen
         self.grid = n.zeros((np,np,np),n.Float32)
         self.old_grid = n.zeros((np,np,np),n.Float32)
         self.cell_size = np*mr/2.
@@ -82,7 +83,8 @@ class grid:
             # print "vol",vol
             # print "ind",ind
             # FIXME
-            # This is wrong - if ind repeats several times we only take the last value
+            # This is wrong - if ind repeats several times we 
+            # only take the last value
             n.put(grid, ind, vals)
             # print n.argmax(n.argmax(n.argmax(grid)))
             # print grid[0:3,-13:-9,-4:]
@@ -128,6 +130,27 @@ class grid:
         print
         lio.finalise()
                                      
+    def pv(self, v): return ("%8.4f "*3)%tuple(v)
+
+    def reduce(self, vecs):
+        from ImageD11 import sym_u
+        g =  sym_u.trans_group(tol = self.rlgrid*2) 
+        print self.rlgrid, len(vecs)
+        for i in range(len(vecs)):
+            print self.pv(vecs[i]),
+            assert len(vecs[i]) == 3
+            t = g.reduce(vecs[i])
+            if n.dot(t, t) < self.minlen * self.minlen:
+                print "Short ",self.pv(vecs[i]), i, self.pv(t)
+                continue
+            if not g.isMember(t):
+                g.additem(t)
+                print "Adding",self.pv(vecs[i]), i, self.pv(t)
+                print len(g.group), g.group
+            else:
+                print "Got   ",self.pv(vecs[i]), i , self.pv(t)
+        print g.group
+        return g.group[1:]
 
     def read_peaks(self, peaksfile):
         """ Read in the peaks from a peaksearch """
@@ -151,12 +174,18 @@ class grid:
                           self.pz - self.np   ,
                           self.pz)*self.rlgrid
         self.UBIALL = n.transpose(n.array( [self.px, self.py, self.pz] ))
+        # self.UBIALL = self.reduce(self.UBIALL)
         print "Number of peaks found",self.px.shape[0],time.time()-start
         #        print self.UBIALL.shape, self.gv.shape
+
+    def slow_score(self):
+        import time
+        start = time.time()
         scores = n.dot( self.UBIALL, n.transpose( self.gv ) )
         scores_int = n.floor( scores + 0.5).astype(n.Int)
         diff = scores - scores_int
-        print "scoring",self.px.shape[0],time.time()-start
+        nv = len(self.UBIALL)
+        print "scoring",nv,time.time()-start
         self.tol = 0.1
         scores = n.sqrt(n.average(diff*diff, axis = 1))
         n_ind = n.where(n.absolute(diff)< self.tol, 1 , 0)
@@ -166,7 +195,7 @@ class grid:
                         self.py * self.py +
                         self.pz * self.pz )
         f = open("fft.pks","w")
-        for i in range(len(self.px)):
+        for i in range(nv):
             j = order[i]
             f.write("%d %9.5f %9.5f %9.5f %9.5f %9.5f %9.5f %7d "%(
                 i,
@@ -178,7 +207,7 @@ class grid:
                 self.colfile.sum_intensity[j],
                 nind[j]
                 ))
-            for k in range(i+1,len(self.px)):
+            for k in range(i+1,nv):
                 l = order[k]
                 nij = n.sum( n_ind[j] * n_ind[l] )
                 f.write("%4d : %-7d "%(k,nij))
@@ -240,6 +269,7 @@ class grid:
 #                         - which gvecs does it make integers of w.r.t others        
 #             ngvecs * npeaks == 175 * 200,000 K - 10^7 = 10Mpixel image ?
 #
+
 def test(options):
     gvfile = options.gvfile
     mr = options.max_res
@@ -255,6 +285,12 @@ def test(options):
     go.props()
     go.peaksearch(open(gvfile+".patterson_pks","w"))
     im = go.read_peaks(gvfile+".patterson_pks")
+    print "Before reduction", len(go.UBIALL)
+    sys.stdout.flush()
+    ubinew = go.reduce(go.UBIALL)
+    print "After reduction", len(ubinew)
+    go.UBIALL = ubinew
+    go.slow_score()
     #from matplotlib.pylab import imshow, show
     #imshow(im)
     #show()
@@ -269,11 +305,14 @@ def test(options):
     print "error at",n.argmax(diff),diff.max(),n.argmin(diff),diff.min()
 
 
+
+
+
 if __name__=="__main__":
     
     import sys
     class options:
-        max_res = 3.0
+        max_res = 0.7
         np = 128
         nsig = 10
     
