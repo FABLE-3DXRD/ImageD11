@@ -795,7 +795,7 @@ class indexer:
         pass
 
 
-    def readgvfile(self,filename):
+    def readgvfile(self,filename, quiet=False):
         f=open(filename,"r")
         import unitcell,math
         # Lattice!!!
@@ -805,11 +805,13 @@ class indexer:
             if line[0]=="#":
                 if line.find("wavelength")>-1:
                     self.wavelength = float(line.split()[-1])
-                    print "Got wavelength from gv file of ",self.wavelength
+                    if not quiet:
+                        print "Got wavelength from gv file of ",self.wavelength
                     continue
                 if line.find("wedge")>-1:
                     self.wedge = float(line.split()[-1])
-                    print "Got wedge from gv file of ",self.wedge
+                    if not quiet:
+                        print "Got wedge from gv file of ",self.wedge
                     continue
                 if line.find("ds h k l")>-1:
                     continue   # reads up to comment line
@@ -850,7 +852,8 @@ class indexer:
         self.ga=n.zeros(len(self.ds),n.Int)-1 # Grain assignments
 
         self.gvflat=n.reshape(n.fromstring(self.gv.tostring(),n.Float),self.gv.shape) # Makes it contiguous in memory, hkl fast index
-        print "Read your gv file containing",self.gv.shape
+        if not quiet:
+            print "Read your gv file containing",self.gv.shape
 #      if self.wavelength>0:
 #         print "First ten peaks"
 #         from ImageD11 import transform
