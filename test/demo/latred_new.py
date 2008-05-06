@@ -1,10 +1,11 @@
 
+
 from numpy import dot, round_, array, float, allclose, asarray, fabs,\
     argmin, argmax, sqrt, argsort, take, sum, where, ndarray, eye,\
     zeros, cross
 from numpy.linalg import inv, LinAlgError
 
-# Confirm that dot'ing a 3x3 matrix with a 3x10 gives a 3x10
+# Confirm that dot'ting a 3x3 matrix with a 3x10 gives a 3x10
 assert dot(eye(3), zeros( (3, 10) ) ).shape == (3, 10), \
     "Numpy dot insanity problem"
            
@@ -72,16 +73,17 @@ def sortvec_xyz( vl ):
     return [ asarray(v) for v in ul[::-1] ]
 
 class BadVectors(Exception):
+    """ Raised by lattice class when vectors are coplanar or colinear"""
     pass
 
+def checkvol(v1, v2, v3):
+    """ Check whether vectors are singular """
+    v = dot(v1, cross(v2,v3))
+    assert abs(v)>0., "Volume problem"
+    return True
 
-def this_direction_axis(direction):
-    """ The axis which has the 3 on it """
-    return ['col', 'row'].index(direction)
 
-def other_direction(direction):
-    """ The axis having the 'n' on it """
-    return ['col', 'row'][1 - this_direction_axis(direction)]
+# TODO move this rc stuff to it's own module
 
 #  From http://www.scipy.org/Subclasses
 class rc_array(ndarray):
@@ -121,137 +123,49 @@ class rc_array(ndarray):
         else:
             raise Exception("rc_array with direction not in row|col")
 
+def this_direction_axis(direction):
+    """ The axis which has the 3 on it """
+    return ['col', 'row'].index(direction)
+
+def other_direction(direction):
+    """ The axis having the 'n' on it """
+    return ['col', 'row'][1 - this_direction_axis(direction)]
 
 def rc_norm2(v):
     """ len(v*v) for row or col """
     # print type(self)
     return sum( v*v, axis=this_direction_axis(v.direction))
 
-def checkvol(v1, v2, v3):
-    v = dot(v1, cross(v2,v3))
-    assert abs(v)>0., "Volume problem"
-    return True
 
-def remove(vec, other1, other2, min_vec2):
+def rsweep( vl ):
+    """ 
+    One sweep subtracting each from other two 
+    This idea comes from Knuth TAOCP sec 3.3.4C 
     """
-    Remove other1 and other2 from vec to give 
-    shortest NON-COPLANAR reduced
-    Try to manage to do this in a stable way (not oscillating)
-    """
-    # All must be vectors len(3)
-    assert vec.shape == (3,)
-    assert other1.shape == (3,)
-    assert other2.shape == (3,)
-    # check other1 and other2 are not parallel
-    # ... eg length_2 of cross product > 0
-    assert checkvol(vec, other1, other2)
-    # this was equivalent to triple product non zero
-    # Could also check handedness by removing the fabs
-    trials = array([ zeros(3),
-                     other1, 
-                     -other1,
-                     other2, 
-                     -other2,
-                     other1+other2, 
-                     -other1-other2,
-                     other1-other2,
-                     -other1+other2 ])
-    # New vectors to check (shape is broadcast)
-    res =  vec + trials
-    # Lengths thereof
-    len2= sum(res * res, axis=1)
-    assert len2.shape == (len(trials),), len2.shape
-    # Check these are non-coplanar with other1, other2
-    x = cross(other1, other2)
-    valid = fabs( dot(res, x) )
-    assert valid.shape == (len(trials),), valid.shape
-    longest = argmax(len2)
-    try:
-        len2 = where( valid > min_vec2/100., len2, len2+longest)
-    except:
-        print valid.shape,valid
-        print len2.shape,len2
-        print longest
-        raise
-    shortest = argmin(len2)
-    assert checkvol(res[shortest], other1, other2),"Bad reduction"
-    if len2[shortest] < min_vec2:
-        print vec, other1, other2
-        print res
-        print len2
-        raise BadVectors()
-    if len2[shortest] < dot(vec,vec):
-        # Test for a second removal recursively
-        return remove(res[shortest], other1, other2, min_vec2)
-    # Here if |shortest| == |vec|
-    # try to return the input for stability
-    return vec
+    vn = asarray(vl).copy()
+    for i in range(3):
+        for j in range(i+1,i+3):
+            k = j%3
+            assert i!=k
+            vn[k] = mod(vn[k], vn[i])
+    return vn
+
 
 def reduce(v1, v2, v3, min_vec2):
-    """
-    Reduce the three vectors making sums and differences 
-    to give the 3 shortest
-    """
-    # 3 supplied vectors (these are lattice vectors)
-    try:
-        vl = [v1, v2, v3] 
-        for v in vl:
-            assert v.shape == (3,)
-        va,vb,vc = vl
-        for i in range(3):
-            for j in range(3):
-                if i == j: continue
-                vn
-                    
-        vn = [ remove(va,vb,vc,min_vec2),
-               remove(vb,vc,va,min_vec2),
-               remove(vc,va,vb,min_vec2) ]
-        while not allclose( array(vl), array(vn) ):
-            vl = vn
-            va,vb,vc = vl
-            vn = [ remove(va,vb,vc,min_vec2),
-                   remove(vb,vc,va,min_vec2),
-                   remove(vc,va,vb,min_vec2) ]
-
-    except:
-        print v1, v2, v3
-        print va, vb, vc
-        raise
-    vl = sortvec_xyz(vl)
-    # print "vl",vl
-    return vl
-
-    # 9 difference vectors (these are also lattice vectors)
-    # Assuming : We can always add or subtract integer amounts of any
-    #            lattice vector to get another lattice vector.
-    #            We look for the 3 shortest which are non-coplanar
-    #
-    # We could do this recursively adding and subtracting
-    # ... We *need* to do it only until the solution is stable 
-    # one would hope this is enough, but more testcases should be added?
-    # ... currently the algorith is vague
-    dsu = sortvec_len( vl + [  vi - vj for vi in vl for vj in vl ] +
-                            [  vi + vj for vi in vl for vj in vl ]  )
-    # Sort by length
-    # Take shortest as first vector
-    vl = []
-    for i in range(len(dsu)):
-        t = dsu[i]
-        for v in vl: # remove previous vectors
-            t = mod( t, v )
-        if len(vl) == 2: # And try to catch hexagonal planes too
-            t = mod( t, vl[0] + vl[1] )
-            t = mod( t, vl[0] - vl[1] )
-        if dot(t,t) < min_vec2: # Skip if zeroed out
-            continue
-        vl.append( t )
-        if len(vl) == 3: break
-        # Remove this from future vectors ???
-        dsu = [ mod( d , t ) for d in dsu]
-    if len(vl) != 3:
-        raise BadVectors()
-    # print "vl:",vl
-
+    assert checkvol(v1,v2,v3)
+    vl = array([v1, v2, v3])
+    vn = rsweep(vl)
+    i = 0
+    while not allclose(vn ,vl) :
+        vl = [ v.copy() for v in vn ]
+        vn = rsweep( vl )
+        i += 1
+        if i>10:
+            raise Exception("Algorithmic flaw")
+    # choose the "bigger" compared to -v
+    for i in range(3):
+        vn[i] = sortvec_xyz( [vn[i], -vn[i]] )[0]
+    return vn
 
 
 def check(v):
@@ -513,46 +427,34 @@ def test_fft():
     min_pks = 300
     ntry = 0
 
-    test_vecs = rc_array( g.gv.T, direction='row' )
-
+    assert g.gv.shape[1] == 3
+    tv = rc_array( g.gv, direction='row' )
+    print "Finding lattice l1 from patterson"
     l1 = find_lattice( vecs,
                        min_vec2 = 1,
                        n_try = 20 )
-
+    print "r2c == ubi matrix"
     print l1.r2c 
-    print l1.score( test_vecs)
+    print "scores", l1.score( tv )
+    print "cell",ubitocellpars(l1.r2c)
+    l1.r2c = refine( l1.r2c, g.gv, tol=0.1)
+    l1.c2r = inv(l1.r2c)
+    print "With refine",l1.score( tv )
+    print "cell",ubitocellpars(l1.r2c)
+    print "Finding lattice l2 with gvectors to test"
     l2 = find_lattice( vecs,
                        min_vec2 = 1,
-                       n_try = 20 )
+                       n_try = 20,
+                       test_vecs = tv)
+    print "r2c == ubi matrix"
     print l2.r2c       
-                  
-    sys.exit()
-
-    for i,j,k in iter3d( min(len(vecs),50)):
-        ntry += 1
-        # if ntry> 10: break
-        try:
-            l = lattice( vecs[order[i]], vecs[order[j]], vecs[order[k]],
-                         direction='row', min_vec2=1)
-            t = 0.1
-            ref = refine( l.vi, gv, t)
-            l = lattice( ref[0], ref[1], ref[2], direction='row')
-            print "i,j,k",i,j,k
-            print "UBI:"
-            print l.vi
-            print ubitocellpars(l.vi)
-            s = l.score_recip( gv , t )
-            print "Indexes",s ,"at tolerance",t
-        except BadVectors:
-            continue
-        except:
-            import traceback
-            print traceback.print_exc()
-            raise Exception("error")
-        if s > min_pks:
-            write_ubi_file( "trial.ubi", [ l.vi ] )
-            break
-
+    print "scores", l2.score (tv)
+    print "cell",ubitocellpars(l2.r2c)
+    l2.r2c = refine( l2.r2c, g.gv, tol=0.1)
+    l2.c2r = inv(l2.r2c)
+    print "With refine",l2.score( tv )
+    print "cell",ubitocellpars(l2.r2c)
+    return
 
 def test_eu():
     #Conventional cell gives:
@@ -572,12 +474,12 @@ def test_eu():
     print "ubi/r2c",l.r2c
     print "ub /c2r",l.c2r
     print "dot(l.r2c, gv[0])",dot(l.r2c.T, gv[0])
-    for v in gv[:10]:
-        print ("%8.5f "*3+"%8.5f "*3)%tuple( list(v)+list(l.flip(v))),
+    for v in gv:
+        #print ("%8.5f "*3+"%8.5f "*3)%tuple( list(v)+list(l.flip(v))),
         assert len(v) == 3
         err   = l.remainders( v )
         esum += sqrt(dot(err,err))
-        print "%.5f"%(sqrt(dot(err,err)))
+        #print "%.5f"%(sqrt(dot(err,err)))
     #import sys
     #sys.exit()
     # print 
@@ -732,9 +634,9 @@ def test1():
                  array( [ 990, 990, 991] , float) ,direction='row')
     # Eg, these were long g-vectors far from origin but making a basis
     # Anticipate them making a ubi matrix with 990
-    assert ( o.c2r  == array( [[ 990. ,   1. ,   1.],
-                               [ 990. ,  -0. ,  -1.],
-                               [ 991. ,  -1. ,  -0.],] )).all(), str(o.c2r)
+    assert allclose( o.c2r , array( [[ 991. ,   1. ,   1.],
+                                     [ 990. ,  -1. ,   0.],
+                                     [ 990. ,   0. ,  -1.],] )), str(o.c2r)
     # OK
     u = rc_array([990.,990.,990.], direction='row') 
     assert (o.nearest( u ) == rc_array([991.,990.,990], 
