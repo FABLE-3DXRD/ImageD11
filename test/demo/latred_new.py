@@ -1,7 +1,23 @@
 
 from numpy import dot, round_, array, float, allclose, asarray, fabs,\
-        argmax, sqrt, argsort, take, sum, where, ndarray
-from numpy.linalg import inv
+    argmin, argmax, sqrt, argsort, take, sum, where, ndarray, eye,\
+    zeros, cross
+from numpy.linalg import inv, LinAlgError
+
+# Confirm that dot'ing a 3x3 matrix with a 3x10 gives a 3x10
+assert dot(eye(3), zeros( (3, 10) ) ).shape == (3, 10), \
+    "Numpy dot insanity problem"
+           
+# It is unclear why it is not a 10x3 result (row/col vectors)
+
+try:
+    dot(eye(3), zeros( (10, 3) ) )
+    raise Exception("Numpy dot insanity problem")
+except ValueError: 
+    pass
+except:
+    print "Unexpected exception when checking numpy behaviour"
+    raise
 
 DEBUG = False
 
@@ -60,13 +76,15 @@ class BadVectors(Exception):
 
 
 def this_direction_axis(direction):
-    return ['row', 'col'].index(direction)
+    """ The axis which has the 3 on it """
+    return ['col', 'row'].index(direction)
 
 def other_direction(direction):
-    return ['row', 'col'][1 - this_direction_axis(direction)]
+    """ The axis having the 'n' on it """
+    return ['col', 'row'][1 - this_direction_axis(direction)]
 
 #  From http://www.scipy.org/Subclasses
-class rr_array(ndarray):
+class rc_array(ndarray):
     def __new__(subtype, data, direction=None, dtype=None, copy=False):
         subarr = array(data, dtype=dtype, copy=copy)
         subarr = subarr.view(subtype)
@@ -82,8 +100,8 @@ class rr_array(ndarray):
     def __array_finalize__(self, obj):
         # 3rd argument is default 
         self.direction = getattr(obj, 'direction', 'row' )
-
-    
+        # print "called __array_finalize__",self.shape
+        # assert check(self)
 
     def __str__(self):
         desc = \
@@ -91,40 +109,169 @@ class rr_array(ndarray):
         return desc % { 'data': super.__str__(self), 
                         'direction' : self.direction }
 
+    def __iter__(self):
+        """
+        Iterate depending on rows columns
+        """
+        # print "iter called"
+        if self.direction == 'row':
+            return ndarray.__iter__(self)
+        elif self.direction == 'col':
+            return ndarray.__iter__(self.T)
+        else:
+            raise Exception("rc_array with direction not in row|col")
 
-    def length_of_vectors2(self):
-        # print type(self)
-        return sum( self*self, axis=this_direction_axis(self.direction))
+
+def rc_norm2(v):
+    """ len(v*v) for row or col """
+    # print type(self)
+    return sum( v*v, axis=this_direction_axis(v.direction))
+
+def checkvol(v1, v2, v3):
+    v = dot(v1, cross(v2,v3))
+    assert abs(v)>0., "Volume problem"
+    return True
+
+def remove(vec, other1, other2, min_vec2):
+    """
+    Remove other1 and other2 from vec to give 
+    shortest NON-COPLANAR reduced
+    Try to manage to do this in a stable way (not oscillating)
+    """
+    # All must be vectors len(3)
+    assert vec.shape == (3,)
+    assert other1.shape == (3,)
+    assert other2.shape == (3,)
+    # check other1 and other2 are not parallel
+    # ... eg length_2 of cross product > 0
+    assert checkvol(vec, other1, other2)
+    # this was equivalent to triple product non zero
+    # Could also check handedness by removing the fabs
+    trials = array([ zeros(3),
+                     other1, 
+                     -other1,
+                     other2, 
+                     -other2,
+                     other1+other2, 
+                     -other1-other2,
+                     other1-other2,
+                     -other1+other2 ])
+    # New vectors to check (shape is broadcast)
+    res =  vec + trials
+    # Lengths thereof
+    len2= sum(res * res, axis=1)
+    assert len2.shape == (len(trials),), len2.shape
+    # Check these are non-coplanar with other1, other2
+    x = cross(other1, other2)
+    valid = fabs( dot(res, x) )
+    assert valid.shape == (len(trials),), valid.shape
+    longest = argmax(len2)
+    try:
+        len2 = where( valid > min_vec2/100., len2, len2+longest)
+    except:
+        print valid.shape,valid
+        print len2.shape,len2
+        print longest
+        raise
+    shortest = argmin(len2)
+    assert checkvol(res[shortest], other1, other2),"Bad reduction"
+    if len2[shortest] < min_vec2:
+        print vec, other1, other2
+        print res
+        print len2
+        raise BadVectors()
+    if len2[shortest] < dot(vec,vec):
+        # Test for a second removal recursively
+        return remove(res[shortest], other1, other2, min_vec2)
+    # Here if |shortest| == |vec|
+    # try to return the input for stability
+    return vec
+
+def reduce(v1, v2, v3, min_vec2):
+    """
+    Reduce the three vectors making sums and differences 
+    to give the 3 shortest
+    """
+    # 3 supplied vectors (these are lattice vectors)
+    try:
+        vl = [v1, v2, v3] 
+        for v in vl:
+            assert v.shape == (3,)
+        va,vb,vc = vl
+        for i in range(3):
+            for j in range(3):
+                if i == j: continue
+                vn
+                    
+        vn = [ remove(va,vb,vc,min_vec2),
+               remove(vb,vc,va,min_vec2),
+               remove(vc,va,vb,min_vec2) ]
+        while not allclose( array(vl), array(vn) ):
+            vl = vn
+            va,vb,vc = vl
+            vn = [ remove(va,vb,vc,min_vec2),
+                   remove(vb,vc,va,min_vec2),
+                   remove(vc,va,vb,min_vec2) ]
+
+    except:
+        print v1, v2, v3
+        print va, vb, vc
+        raise
+    vl = sortvec_xyz(vl)
+    # print "vl",vl
+    return vl
+
+    # 9 difference vectors (these are also lattice vectors)
+    # Assuming : We can always add or subtract integer amounts of any
+    #            lattice vector to get another lattice vector.
+    #            We look for the 3 shortest which are non-coplanar
+    #
+    # We could do this recursively adding and subtracting
+    # ... We *need* to do it only until the solution is stable 
+    # one would hope this is enough, but more testcases should be added?
+    # ... currently the algorith is vague
+    dsu = sortvec_len( vl + [  vi - vj for vi in vl for vj in vl ] +
+                            [  vi + vj for vi in vl for vj in vl ]  )
+    # Sort by length
+    # Take shortest as first vector
+    vl = []
+    for i in range(len(dsu)):
+        t = dsu[i]
+        for v in vl: # remove previous vectors
+            t = mod( t, v )
+        if len(vl) == 2: # And try to catch hexagonal planes too
+            t = mod( t, vl[0] + vl[1] )
+            t = mod( t, vl[0] - vl[1] )
+        if dot(t,t) < min_vec2: # Skip if zeroed out
+            continue
+        vl.append( t )
+        if len(vl) == 3: break
+        # Remove this from future vectors ???
+        dsu = [ mod( d , t ) for d in dsu]
+    if len(vl) != 3:
+        raise BadVectors()
+    # print "vl:",vl
 
 
-    
 
+def check(v):
+    """ 
+    Ensure we have an rc_array which is well behaved 
+    Pattern assert(check(v)) should disappear in optimiser
+    """
+    assert hasattr(v, 'direction')
+    assert v.direction in ['row', 'col']
+    if len(v.shape) == 1:
+        assert v.shape[0] == 3
+    elif len(v.shape) == 2:
+        if v.direction == 'row':
+            assert v.shape[1] == 3
+        if v.direction == 'col':
+            assert v.shape[0] == 3
+    else:
+        raise Exception("Only 1D or 2D rc_arrays allowed so far")
+    return True
 
-class flipper:
-    def __init__(self, ub=None, ubi=None):
-        assert ub.shape == (3, 3)
-        assert ubi.shape == (3, 3)
-        self.ub = ub
-        self.ubi = ubi
-    def flip(self, v):
-        assert hasattr(v, 'direction')
-        try:
-            if v.direction == 'row':
-                # print "flipping",v,'row in so using ubi'
-                # print "ubi",self.ubi
-                ra = dot(self.ub, v).T
-            elif v.direction == 'col':
-                # print "flipping",v,'recip in so using ub'
-                # print "ub",self.ub
-                ra = dot(self.ubi, v.T)
-            else:
-                raise Exception("Bad direction")
-        except:
-            print v.shape, v.direction
-            raise
-        assert ra.shape == v.shape[::-1], "Shape mismatch, %s %s %s"%(
-            str(v.shape), str(ra.shape), v.direction)
-        return rr_array( ra, direction=other_direction(v.direction))
 
 
 class lattice(object):
@@ -132,75 +279,123 @@ class lattice(object):
     Represents a 3D crystal lattice built from 3 vectors
     """
 
-    def __init__(self, v1, v2, v3, direction='col', min_vec2=MIN_VEC2):
+    def __init__(self, v1, v2, v3, direction=None, min_vec2=MIN_VEC2):
         """ Make the lattice 
         Currently v1, v2, v3 are vectors - which gives 3D
-        direction [ 'row' | 'col' ]
+        direction [ 'row' | 'col' ] - if none read from v1, v2, v3
         ... means they are row direction lattice vectors or measured scattering
             vectors from crystallography
         It will attempt to find a primitive basis from the supplied vectors
+
+        These are put together in the following way:
+
+           gv = [ [ g0x , g0y, g0z ],
+                  [ g1x , g1y, g1z ],     <-- g is a row vector
+                  [ g2x , g2y, g2z ],
+                  [ g3x , g3y, g3z ],
+                  [ g4x , g4y, g4z ] ]
+
+        [ h, k, l ]  = [ [ col0x  col0y  col0z ] ] [ gx ]
+                       |   -------------------   | [    ]
+                       | [ col1x  col1y  col1z ] | [ gy ]
+                       |   -------------------   | [    ]
+                       [ [ col2x  col2y  col2z ] ] [ gz ]
+
+        This matrix of column vectors is often called 
+
+        or ...  h.T  =  dot(r2c, g.T)
+           ...  since h is column vector - appears here as a row vecot
+           ...  Note that numpy.dot transposes its result
+                eg:   s = (3,4) ; 
+                assert dot(zeros( (3,3) ), zeros( s )).shape == s
+                This is a double head screwing up error. 
+                            
+        [ gx  gy  gz ]  = [  -------   -------   -------      [ hx ]
+                          [ [ row0x ] [ row1y ] [ row2z ] ]   [    ]
+                          [ | row0y | [ row1y ] [ row2z ] ]   [ hy ]
+                          [ [ row0z ] [ row1y ] [ row2z ] ]   [    ]
+                          [  -------   -------   -------      [ hz ]
+
+        ... due to the double head screwing (dot transposes its result)
+            we then have to transpose this too
+        
+        
+
         """
-        # 3 supplied vectors (these are lattice vectors)
-        vl=[v1, v2, v3] 
-        # 9 difference vectors (these are also lattice vectors)
-        # Assuming : We can always add or subtract integer amounts of any
-        #            lattice vector to get another lattice vector.
-        #            We look for the 3 shortest which are non-coplanar
-        #
-        # We could do this recursively adding and subtracting
-        # ... We *need* to do it only until the solution is stable 
-        # one would hope this is enough, but more testcases should be added?
-        # ... currently the algorith is vague
-        dsu = sortvec_len( vl + [  vi - vj for vi in vl for vj in vl ] +
-                                [  vi + vj for vi in vl for vj in vl ]  )
-        # Sort by length
-        # Take shortest as first vector
-        vl = []
-        for i in range(len(dsu)):
-            t = dsu[i]
-            for v in vl: # remove previous vectors
-                t = mod( t, v )
-            if len(vl) == 2: # And try to catch hexagonal planes too
-                t = mod( t, vl[0] + vl[1] )
-                t = mod( t, vl[0] - vl[1] )
-            if dot(t,t) < min_vec2: # Skip if zeroed out
-                continue
-            vl.append( t )
-            if len(vl) == 3: break
-            # Remove this from future vectors ???
-            dsu = [ mod( d , t ) for d in dsu]
-        if len(vl) != 3:
-            raise BadVectors()
-        # print "vl:",vl
-        vl = sortvec_xyz(vl)
-        # print "vl",vl
-        if direction == 'col':  
-            # We got g-vectors
-            # print "Supplied col direction vectors"
-            self.ub  = array(vl).T 
-            self.ubi = inv(self.ub)
-        elif direction == 'row':
-            # We were supplied with peaks from patterson peaksearch
-            # print "Supplied row direction vectors"
-            self.ubi = array(vl)
-            self.ub  = inv(self.ubi) 
-        else:
-            raise Exception("Direction must be row or col "+str(direction))
-        self.flipper = flipper( ub=self.ub, ubi=self.ubi )
-        self.flip = self.flipper.flip
+        if direction is None:
+            assert hasattr(v1, 'direction')
+            assert hasattr(v2, 'direction')
+            assert hasattr(v3, 'direction')
+            assert v1.direction == v2.direction
+            assert v1.direction == v3.direction
+            direction = v1.direction
+        # Direction is irrelevant for reduction to shortest 3
+        vl =    reduce( v1   ,    v2,    v3, min_vec2 )
+        again = reduce( vl[0], vl[1], vl[2], min_vec2 )  
+        # Check reduction is stable
+        assert allclose( array(vl),array(again) ), "Bad reduction %s %s"%(
+                str(vl), str(again))
+        try:
+            if direction == 'col':  
+                # print "Supplied col direction vectors"
+                self.r2c  = array(vl)
+                self.c2r = inv(self.r2c)
+            elif direction == 'row':
+                # Supplied with g-vectors
+                # print "Supplied row direction vectors"
+                self.c2r = array(vl).T
+                self.r2c  = inv(self.c2r) 
+            else:
+                raise Exception("Direction must be row or col "+str(direction))
+        except LinAlgError:
+            print "problem with vectors"
+            print v1,v2,v3
+            print "Reduced to"
+            print vl
+            raise
+        assert self.c2r.shape == (3, 3)
+        assert self.r2c.shape == (3, 3)
+        
+
+
+    def flip(self, v):
+        """
+        See also __init__.__doc__
+        """
+        assert check(v)
+        # Case of many vectors, shape == (n, 3) 
+        if v.direction == 'row':
+            # print "flipping",v,'row in so using r2c'
+            # print "r2c",self.r2c
+            ra = dot(self.r2c, v.T)
+            # Note that ra here has the same shape as v.T
+            # This appears to be a nonsensical behaviour of dot
+        elif v.direction == 'col':
+            # print "flipping",v,'recip in so using c2r'
+            # print "c2r",self.c2r
+            ra = dot(self.c2r, v).T
+            # The .T is because dot doesn't when it should (mathematically)
+        # This implies transposing
+        # single vector is also OK
+        ret = rc_array( ra, direction = other_direction(v.direction))
+        assert check(ret)
+        assert ret.shape == v.shape[::-1], "Shape mismatch, %s %s %s %s"%(
+            str(v.shape[::-1]),str(v.shape), str(ra.shape), v.direction)
+        return ret
+
+
+
 
     def nearest(self, vecs):
         """ Give back the nearest lattice point indices, 
         in the same direction """
-        assert hasattr(vecs, 'direction')
         new_vecs = self.flip( vecs )
         int_vecs = round_(new_vecs)
         return self.flip( int_vecs )
         
     def remainders(self, vecs):
         """ Difference between vecs and closest lattice points """
-        assert hasattr(vecs, 'direction')
-        
+        check(vecs)
         return vecs - self.nearest(vecs)
 
     def withvec(self, x, direction="col"):
@@ -211,19 +406,21 @@ class lattice(object):
         whichever vector has the biggest projection is replaced
         remake the lattice with these 3 vectors
         """
-        #print self.ubi
+        #print self.r2c
         assert hasattr(x, 'direction')
         #print "x",x
         r = self.remainders( x )
         #print "r",r
-        worst = argmax(r)
+        worst = argmax(fabs(r))
         if r.direction == 'col':
             # r is g-vector errors
-            v = list(self.ub.T)
+            v = list(self.r2c.T)
         if r.direction == 'row':
             # r is hkl errors
-            v = list(self.ubi)
+            v = list(self.c2r)
+        #print 'v',v
         v[worst]=r
+        #print 'worst',worst
         l_new = lattice( v[0], v[1], v[2] , direction=r.direction )
         return l_new
 
@@ -231,8 +428,13 @@ class lattice(object):
         """
         How many peaks have rem less than tol
         """
-        assert hasattr(vecs, 'direction')
-        r2 = self.remainders( vecs ).length_of_vectors2()
+        assert check(vecs)
+        # print "In score, tol=",tol
+        diffs = self.remainders(vecs)
+        r2 = rc_norm2( diffs )
+        #for i in range(10):
+        #    print vecs[i], diffs[i], r2[i]
+        #print r2.shape, diffs.shape
         s = sum( where( r2 < tol * tol, 1, 0) )
         return s
 
@@ -270,7 +472,12 @@ def find_lattice(vecs,
     gen_dir = vecs[0].direction
     for i,j,k in iter3d(n_try):
         try:
-            l = lattice(vecs[i], vecs[j], vecs[k], direction=vecs.direction)
+            if gen_dir == 'row':
+                l = lattice(vecs[i], vecs[j], vecs[k], direction=gen_dir)
+            elif gen_dir == 'col':
+                l = lattice(vecs[:,i], vecs[:,j], vecs[:,k], direction=gen_dir)
+            else:
+                raise Exception("Logical impossibility")
             scor = l.score( test_vecs, tol )
             frac = 1.0 * scor / len(test_vecs)
             if frac > fraction_indexed:
@@ -299,23 +506,27 @@ def test_fft():
     g.props()
     g.peaksearch(open("eu.patterson_pks","w"))
     g.read_peaks("eu.patterson_pks")
-    vecs = rr_array(g.UBIALL.T , direction='row')
+    vecs = rc_array(g.UBIALL.T , direction='col')
     assert vecs.shape == (3, g.colfile.nrows)
     order = argsort( g.colfile.sum_intensity )[::-1]
     vecs = take( vecs, order, axis = 1)
     min_pks = 300
     ntry = 0
-    print ""
+
+    test_vecs = rc_array( g.gv.T, direction='row' )
+
     l1 = find_lattice( vecs,
                        min_vec2 = 1,
                        n_try = 20 )
-                  
+
+    print l1.r2c 
+    print l1.score( test_vecs)
     l2 = find_lattice( vecs,
                        min_vec2 = 1,
                        n_try = 20 )
+    print l2.r2c       
                   
-                  
-
+    sys.exit()
 
     for i,j,k in iter3d( min(len(vecs),50)):
         ntry += 1
@@ -352,24 +563,30 @@ def test_eu():
     v1 = gv[0]
     v2 = gv[1]
     v3 = gv[6]
-    # G-vectors are in row direction
-    l = lattice ( v1, v2, v3, direction='col')
+    assert len(v1) == 3
+    # This means that the g-vectors are in row direction
+    l = lattice ( v1, v2, v3, direction='row')
     esum = 0.0
-    gv = rr_array( gv, direction='col' )
-    #print v1, v2, v3
-    #print l.ubi
-    #print l.ub
-    for v in gv:
-        # print ("%8.5f "*3+"%8.5f "*3)%tuple( list(v)+list(l.flip(v))),
+    gv = rc_array( gv , direction='row' )
+    # print v1, v2, v3
+    print "ubi/r2c",l.r2c
+    print "ub /c2r",l.c2r
+    print "dot(l.r2c, gv[0])",dot(l.r2c.T, gv[0])
+    for v in gv[:10]:
+        print ("%8.5f "*3+"%8.5f "*3)%tuple( list(v)+list(l.flip(v))),
+        assert len(v) == 3
         err   = l.remainders( v )
         esum += sqrt(dot(err,err))
-        # print "%.5f"%(sqrt(dot(err,err)))
+        print "%.5f"%(sqrt(dot(err,err)))
     #import sys
     #sys.exit()
-    #print "Average",esum / len(gv)
     # print 
     assert esum / len(gv) < 0.0102, "Did not fit"
-    assert l.score(gv, tol = 0.1) == 602, "Expecting to index 602 peaks" 
+    s = l.score(gv, tol = 0.1)
+    assert  s == 602, "Expecting to index 602 peaks, got %s"%(s) 
+    print "Indexing of eu3.gve, Average",esum / len(gv),"for",s,"peaks"
+    print "UBI is",l.r2c
+
 
 def test2():
     """ Adding a fourth vector """
@@ -377,60 +594,86 @@ def test2():
                  array( [ 0, 1, 0] , float) ,
                  array( [ 0, 0, 2] , float) , direction = 'row')
     # ... how to do it?
-    u = rr_array( [ 0, 0, 1] , dtype=float, direction = 'row') 
+
+    u = rc_array( [ 0, 0, 1] , dtype=float, direction = 'row') 
     r  = o.remainders( u )
     assert ( r == array( [ 0, 0, 1] , float) ).all()
     o = o.withvec( r )
-    assert allclose(o.ub[0], array( [ 1, 0, 0] , float) )
-    assert allclose(o.ub[1], array( [ 0, 1, 0] , float) )
-    assert allclose(o.ub[2], array( [ 0, 0, 1] , float) )
+    assert allclose(o.c2r[0], array( [ 1, 0, 0] , float) )
+    assert allclose(o.c2r[1], array( [ 0, 1, 0] , float) )
+    assert allclose(o.c2r[2], array( [ 0, 0, 1] , float) )
+    assert allclose(o.c2r, o.r2c)
     
 def test1():
     """ Make a lattice from 3 vectors"""
     o = lattice( array( [ 1, 0, 0] , float) ,
                  array( [ 2, 1, 0] , float) ,
-                 array( [ 3, 4, 1] , float) )
-    assert allclose(o.ub[:,0], array( [ 1, 0, 0] , float) )
-    assert allclose(o.ub[:,1], array( [ 0, 1, 0] , float) )
-    assert allclose(o.ub[:,2], array( [ 0, 0, 1] , float) )
+                 array( [ 3, 4, 1] , float) , direction = 'col')
+    assert allclose(o.c2r[:,0], array( [ 1, 0, 0] , float) )
+    assert allclose(o.c2r[:,1], array( [ 0, 1, 0] , float) )
+    assert allclose(o.c2r[:,2], array( [ 0, 0, 1] , float) )
+    # Both are identity
+    assert allclose(o.c2r, eye(3))
+    assert allclose(o.r2c, eye(3))
+
     """ 3 more difficult vectors """
     o = lattice( array( [ 1, 0, 1] , float) ,
                  array( [ 0, 1, 0] , float) ,
-                 array( [ 0, 0, 1] , float) )
-    assert allclose(o.ub[:,0], array( [ 1, 0, 0] , float) ), str(o.ub)
-    assert allclose(o.ub[:,1], array( [ 0, 1, 0] , float) ), str(o.ub)
-    assert allclose(o.ub[:,2], array( [ 0, 0, 1] , float) ), str(o.ub)
-
+                 array( [ 0, 0, 1] , float) , direction = 'col')
+    assert allclose(o.c2r[:,0], array( [ 1, 0, 0] , float) ), str(o.c2r)
+    assert allclose(o.c2r[:,1], array( [ 0, 1, 0] , float) ), str(o.c2r)
+    assert allclose(o.c2r[:,2], array( [ 0, 0, 1] , float) ), str(o.c2r)
+    assert allclose(o.c2r, eye(3))
+    assert allclose(o.r2c, eye(3))
+    
 
     """ 3 shorter vectors """
     # print '3 short'
     o = lattice( array( [1e-2,  0,  0] , float) ,
                  array( [  0,1e-2,  0] , float) ,
-                 array( [  0,  0,1e-2] , float) , direction='col' )
+                 array( [  0,  0,1e-2] , float) , direction='row' )
     # Consider those as 3 g-vectors
-    assert allclose(o.ubi[:,0], array( [ 100, 0, 0] , float) ), str(o.ubi)
-    assert allclose(o.ubi[:,1], array( [ 0, 100, 0] , float) ), str(o.ubi)
-    assert allclose(o.ubi[:,2], array( [ 0, 0, 100] , float) ), str(o.ubi)
-    g = rr_array([1e-2,0.,0.], direction='col') 
+    # supplied rows go into c2r matrix as columns
+    # The r2c matrix (==ubi) is then the inverse of this
+    assert allclose(o.r2c[:,0], array( [ 100, 0, 0] , float) ), str(o.r2c)
+    assert allclose(o.r2c[:,1], array( [ 0, 100, 0] , float) ), str(o.r2c)
+    assert allclose(o.r2c[:,2], array( [ 0, 0, 100] , float) ), str(o.r2c)
+
+    # g-vectors written as rows here - note transpose
+    g = array( [[1e-2,   0.,0.], 
+                [1e-2, 1e-2,0.], 
+                [1e-2,   0.,1e-2],
+                [  0.,   0.,1e-2]])
+    #print g, g.shape
+    g = rc_array( g , direction='row')
+    assert g.shape == ( 4, 3)
+    check(g)
+    #print g.shape
+    #print g
     hkl = o.flip( g ) 
-    assert hkl.direction == 'row', hkl.direction
+    assert hkl.direction == 'col', hkl.direction
     # print g,"\nFlips to give\n",hkl
     assert allclose(hkl, 
-                    rr_array([1.,0.,0.], direction='row') ), str(hkl)
+                    rc_array(array([[1.,0.,0.],
+                                    [1.,1.,0.],
+                                    [1.,0.,1.],
+                                    [0.,0.,1.]]).T,
+                             direction='col') ), str(hkl)
 
 
     # print '3 long'
     """ 3 longer vectors """
     o = lattice( array( [ 10,  0,  0] , float) ,
                  array( [  0, 10,  0] , float) ,
-                 array( [  0,  0, 10] , float) , direction='row' )
-    assert allclose(o.ubi[:,0], array( [ 10, 0, 0] , float) ), str(o.ubi)
-    assert allclose(o.ubi[:,1], array( [ 0, 10, 0] , float) ), str(o.ubi)
-    assert allclose(o.ubi[:,2], array( [ 0, 0, 10] , float) ), str(o.ubi)
-    hkl = o.flip( rr_array([10.,10.,10.], direction='row') )
-    assert hkl.direction == 'col'
-    assert allclose(hkl,
-                    rr_array([1.,1.,1.], direction='col') ), str(hkl)
+                 array( [  0,  0, 10] , float) , direction='col' )
+    assert allclose(o.r2c[:,0], array( [ 10, 0, 0] , float) ), str(o.r2c)
+    assert allclose(o.r2c[:,1], array( [ 0, 10, 0] , float) ), str(o.r2c)
+    assert allclose(o.r2c[:,2], array( [ 0, 0, 10] , float) ), str(o.r2c)
+    test_col_vec = rc_array([10.,10.,10.], direction='col') 
+    flipped = o.flip( test_col_vec )
+    assert flipped.direction == 'row'
+    assert allclose( flipped,
+                     rc_array([1.,1.,1.], direction='col') ), str(flipped)
 
     """ 3 shorter vectors row"""
     # print '3 short'
@@ -438,14 +681,23 @@ def test1():
                  array( [  0,1e-2,  0] , float) ,
                  array( [  0,  0,1e-2] , float) , direction='row' )
     # Consider those as 3 g-vectors
-    assert allclose(o.ub[:,0], array( [ 100, 0, 0] , float) ), str(o.ub)
-    assert allclose(o.ub[:,1], array( [ 0, 100, 0] , float) ), str(o.ub)
-    assert allclose(o.ub[:,2], array( [ 0, 0, 100] , float) ), str(o.ub)
-    g = rr_array([1e-2,0.,0.], direction='row') 
+    assert allclose(o.r2c[:,0], array( [ 100, 0, 0] , float) ), str(o.r2c)
+    assert allclose(o.r2c[:,1], array( [ 0, 100, 0] , float) ), str(o.r2c)
+    assert allclose(o.r2c[:,2], array( [ 0, 0, 100] , float) ), str(o.r2c)
+    g = rc_array([[1e-2,   0.,0.], 
+                  [1e-2, 1e-2,0.], 
+                  [1e-2,   0.,1e-2],
+                  [  0.,   0.,1e-2]],
+                 direction='row')
     hkl = o.flip( g ) 
     # print g,"\nFlips to give\n",hkl
+
     assert allclose(hkl, 
-                    rr_array([1.,0.,0.], direction='row') ), str(hkl)
+                    rc_array([[1.,0.,0.],
+                              [1.,1.,0.],
+                              [1.,0.,1.],
+                              [0.,0.,1.]],
+                             direction='col').T ), str(hkl)
     assert hkl.direction == 'col'
 
 
@@ -454,12 +706,12 @@ def test1():
     o = lattice( array( [ 10,  0,  0] , float) ,
                  array( [  0, 10,  0] , float) ,
                  array( [  0,  0, 10] , float) , direction='col' )
-    assert allclose(o.ub[:,0], array( [ 10, 0, 0] , float) ), str(o.ub)
-    assert allclose(o.ub[:,1], array( [ 0, 10, 0] , float) ), str(o.ub)
-    assert allclose(o.ub[:,2], array( [ 0, 0, 10] , float) ), str(o.ub)
-    hkl = o.flip( rr_array([10.,10.,10.], direction='col') )
+    assert allclose(o.r2c[:,0], array( [ 10, 0, 0] , float) ), str(o.r2c)
+    assert allclose(o.r2c[:,1], array( [ 0, 10, 0] , float) ), str(o.r2c)
+    assert allclose(o.r2c[:,2], array( [ 0, 0, 10] , float) ), str(o.r2c)
+    hkl = o.flip( rc_array([10.,10.,10.], direction='col') )
     assert allclose(hkl,
-                    rr_array([1.,1.,1.], direction='row') ), str(hkl)
+                    rc_array([1.,1.,1.], direction='row') ), str(hkl)
 
     
     # FIXME - check is transpose of row is OK or not 
@@ -471,28 +723,31 @@ def test1():
 
 
     # print hkl
+    
     """ 3 really hard vectors """
     global DEBUG
     DEBUG = True
     o = lattice( array( [ 991, 990, 990] , float) ,
                  array( [ 990, 991, 990] , float) ,
-                 array( [ 990, 990, 991] , float) ,direction='col')
+                 array( [ 990, 990, 991] , float) ,direction='row')
     # Eg, these were long g-vectors far from origin but making a basis
     # Anticipate them making a ubi matrix with 990
-    assert ( o.ub  == array( [[ 990. ,   1. ,   1.],
-                              [ 990. ,  -0. ,  -1.],
-                              [ 991. ,  -1. ,  -0.],] )).all(), str(o.ubi)
+    assert ( o.c2r  == array( [[ 990. ,   1. ,   1.],
+                               [ 990. ,  -0. ,  -1.],
+                               [ 991. ,  -1. ,  -0.],] )).all(), str(o.c2r)
     # OK
-    u = rr_array([992.,990.,990.], direction='col') 
-    assert (o.nearest( u ) == rr_array([991.,990.,990], 
-                                       direction='col')).all(),\
+    u = rc_array([990.,990.,990.], direction='row') 
+    assert (o.nearest( u ) == rc_array([991.,990.,990], 
+                                       direction='row')).all(),\
         str(o.nearest( u ))+" "+str( u )
 
 
     o = o.withvec( u ) # Remove long
-    assert allclose(o.ub[:,0], array( [ 1, 0, 0] , float) )
-    assert allclose(o.ub[:,1], array( [ 0, 1, 0] , float) )
-    assert allclose(o.ub[:,2], array( [ 0, 0, 1] , float) )
+    # print o.c2r
+    print o.r2c
+    assert allclose(o.c2r[:,0], array( [ 1, 0, 0] , float) ), o.c2r
+    assert allclose(o.c2r[:,1], array( [ 0, 1, 0] , float) ), o.c2r
+    assert allclose(o.c2r[:,2], array( [ 0, 0, 1] , float) ), o.c2r
     DEBUG = False
 
         
