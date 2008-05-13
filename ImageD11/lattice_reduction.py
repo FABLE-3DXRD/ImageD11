@@ -6,6 +6,8 @@ from numpy import dot, round_, array, float, allclose, asarray, fabs,\
     zeros, cross
 from numpy.linalg import inv, LinAlgError
 
+import logging
+
 # Confirm that dot'ting a 3x3 matrix with a 3x10 gives a 3x10
 assert dot(eye(3), zeros( (3, 10) ) ).shape == (3, 10), \
     "Numpy dot insanity problem"
@@ -254,13 +256,20 @@ class lattice(object):
         l_new = lattice( v[0], v[1], v[2] , direction=r.direction )
         return l_new
 
-    def score(self, vecs, tol=0.1):
+    def score(self, vecs, tol=0.1, debug=False):
         """
-        How many peaks have rem less than tol
+        How many peaks have integer error less than tol?
         """
         assert vecs.check()
+        # These are in units of g-vector
         diffs = self.remainders(vecs)
-        r2 = diffs.norm2()
+        # Put into other space to compare to tol
+        # ... works for g-vectors as hkl
+        int_err = diffs.flip( self.matrix( diffs.direction ) )
+        r2 = int_err.norm2()
+        if debug:
+            print vecs.shape, r2.shape, tol*tol
+            print r2[:10]
         s = sum( where( r2 < tol * tol, 1, 0) )
         return s
 
@@ -292,6 +301,10 @@ def find_lattice(vecs,
     assert isinstance(vecs, rc_array)
     if n_try is None:
         n_try = len(vecs)
+    else:
+        if n_try > vecs.nvectors():
+            n_try = vecs.nvectors()
+            logging.warning("Adjusting number of trial vectors to %d"%(n_try))
     if test_vecs is None:
         test_vecs = vecs
     assert isinstance(test_vecs, rc_array)
@@ -307,9 +320,14 @@ def find_lattice(vecs,
                             direction = gen_dir,
                             min_vec2 = min_vec2)
             elif gen_dir == 'col':
-                l = lattice(vecs[:,i], vecs[:,j], vecs[:,k], 
+                try:
+                    l = lattice(vecs[:,i], vecs[:,j], vecs[:,k], 
                             direction = gen_dir,
                             min_vec2 = min_vec2)
+                except IndexError:
+                    print i,j,k,n_try,vecs.shape
+                    raise
+                    
             else:
                 raise Exception("Logical impossibility")
             scor = l.score( test_vecs, tol )

@@ -32,6 +32,8 @@ cd $SRC/test/demo
 $PYT latred_new.py
 $PYT test.py
 
+cd $SRC/test/test_index_unknown
+$PYT test_index_unknown.py
 
 cd $SRC/test/quantix/
 $PYT fitgrain.py g3.pars g3.ubi g3.flt new.pars

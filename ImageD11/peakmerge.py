@@ -1,4 +1,4 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+# Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 
 
@@ -30,8 +30,8 @@ of memory
 """
 
 # for filename -> number interpretion
-from ImageD11 import opendata
-
+# from ImageD11 import opendata
+import fabio
 import numpy.oldnumeric as Numeric
 import time, sys
 import logging 
@@ -264,7 +264,8 @@ class peakmerger:
                 name = line.split()[-1]
                 currentimage = pkimage(name)
                 self.images.append(currentimage)
-                imagenumber = opendata.getnum(name)
+                imagenumber = fabio.getnum(name)
+                # imagenumber = opendata.getnum(name)
                 currentimage.linestart = i
                 currentimage.imagenumber = imagenumber
                 continue

@@ -26,6 +26,7 @@ if __name__=="__main__":
     from ImageD11 import fft_index_refac, rc_array,\
         lattice_reduction, indexing
     import numpy as np
+    from ImageD11.fft_index_refac import grid
 
     parser = OptionParser()
 
@@ -92,12 +93,16 @@ if __name__=="__main__":
     cur_gvecs = rc_array.rc_array(sorted.copy(), direction = 'row' )
 
     ubis = []
-
+    
     try:
         for i in range(options.ngrains):
+            if len(cur_gvecs) < 3:
+                print "Ran out of unindexed peaks"
+                break
+
+            # print "Peak remaining",len(cur_gvecs)
             if options.use_fft:
                 # do fft
-                from ImageD11.fft_index_refac import grid
                 g = grid( np = options.np,
                           mr = options.mr,
                           nsig = options.nsig)
@@ -112,14 +117,19 @@ if __name__=="__main__":
                 vecs = rc_array.rc_array( np.take( vecs, order, axis = 1),
                                           direction = 'col')
                 assert g.gv.shape[1] == 3
-                print "Finding lattice l1 from patterson"
-                l = lattice_reduction.find_lattice( vecs,
+                # print "Finding lattice from patterson"
+                try:
+                    l = lattice_reduction.find_lattice( vecs,
                           min_vec2 = options.min_vec2,
                           n_try = options.n_try,
                           test_vecs = all_gvecs,
                           tol = options.tol,
                           fraction_indexed = options.fraction_indexed
                                   )
+                except IndexError:
+                    print vecs, options.n_try
+                    print vecs.shape
+                    raise
             else:
                 # Test vectors are the g-vectors
                 # Sort by length before searching??
@@ -134,23 +144,40 @@ if __name__=="__main__":
                 break
             l.r2c = indexing.refine( l.r2c, all_gvecs, tol = options.tol)
             l.c2r = np.linalg.inv(l.r2c)
+
+            #print "all_gv 3,4", all_gvecs[3:5]
+            #print np.dot(l.r2c, all_gvecs[3:5].T)
+            #print l.score(all_gvecs[3:5], tol = options.tol)
+            #print l.remainders( all_gvecs[3:5])
+                        
+            all = len(all_gvecs)
             npks = l.score( all_gvecs , tol = options.tol )
+            dr = indexing.calc_drlv2( l.r2c, all_gvecs) 
+            t2 = options.tol * options.tol
+            # print "tol, dr",t2,dr.shape, [d for d in dr[:10]] # print it !!!
+            n2 = np.sum(np.where(dr < t2 , 1, 0 ))
+            n3 = np.sum(np.where(dr > t2 , 1, 0 ) )
+            assert npks == n2 , "debug scoring"
+            assert n3 == len(all_gvecs) - npks, "debug scoring"
             print l.r2c
-            print indexing.ubitocellpars(l.r2c)
+            print "Unit cell:",(6*"%.6f ")%indexing.ubitocellpars(l.r2c)
             
             # Put this grain in the output list
             ubis.append(l.r2c)
 
             # Remove from the gvectors
             drlv2 = indexing.calc_drlv2( l.r2c, cur_gvecs )
+            # print drlv2[:20]
+            # print cur_gvecs.shape
             # print drlv2.shape,drlv2[:10],options.tol*options.tol
             
             cur_gvecs = rc_array.rc_array(
                 np.compress( drlv2 > options.tol*options.tol,
                              cur_gvecs, axis = 0),
                 direction = 'row')
-            print "Lattice found, indexes", npks
+            print "Lattice found, indexes", npks, "from all",all
             print "Number of unindexed peaks remaining %d"%(len(cur_gvecs))
+            print "Current vector shape",cur_gvecs.shape
         if len(ubis)>0:
             indexing.write_ubi_file(options.outfile,ubis)
             print "Wrote to file",options.outfile

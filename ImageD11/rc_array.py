@@ -113,6 +113,9 @@ class rc_array(ndarray):
             raise Exception("Only 1D or 2D rc_arrays allowed so far")
         return True
 
+    def nvectors(self):
+        return self.shape[self.nb_vector_axis()]
+
     def flip(self, mat):
         """
         Flip row to col or col.row

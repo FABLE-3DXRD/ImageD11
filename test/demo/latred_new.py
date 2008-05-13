@@ -93,7 +93,7 @@ def test_eu():
     # print 
     assert esum / len(gv) < 0.0102, "Did not fit"
     s = l.score(gv, tol = 0.1)
-    assert  s == 602, "Expecting to index 602 peaks, got %s"%(s) 
+    assert  s == 583, "Expecting to index 582 peaks, got %s"%(s) 
     print "Indexing of eu3.gve, Average",esum / len(gv),"for",s,"peaks"
     print "UBI is",l.r2c
 

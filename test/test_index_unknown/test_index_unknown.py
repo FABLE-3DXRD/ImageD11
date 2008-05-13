@@ -29,10 +29,10 @@ array([-0.6172134 ,  0.77151675,  0.15430335])
 UBIS = [ 
     ("1.ubi", "-k 1 -o 1.ubi.new -v 0.01 -m 20 -f 0.75 -t 0.1"),
     ("1.ubi", "-k 1 -o 1.ubi.fftnew -v 1 -m 20 -f 0.75 -t 0.1 --fft"),
-    ("2.ubi", "-k 2 -o 2.ubi.new -v 0.01 -m 20 -f 0.45 -t 0.03"),
-    ("2.ubi", "-k 2 -o 2.ubi.fftnew -v 2 -m 20 -f 0.45 -t 0.03 -s 20 --fft"),
-    ("3.ubi", "-k 3 -o 3.ubi.new -v 0.01 -m 20 -f 0.3 -t 0.03"),
-    ("3.ubi", "-k 3 -o 3.ubi.fftnew -v 3 -m 40 -f 0.3 -t 0.03 -s 10 -r 1.0 --fft"),
+    ("2.ubi", "-k 2 -o 2.ubi.new -v 0.01 -m 20 -f 0.45 -t 0.1"),
+    ("2.ubi", "-k 2 -o 2.ubi.fftnew -v 2 -m 40 -f 0.45 -t 0.1 -s 20 --fft"),
+    ("3.ubi", "-k 3 -o 3.ubi.new -v 0.01 -m 20 -f 0.3 -t 0.1"),
+    ("3.ubi", "-k 3 -o 3.ubi.fftnew -v 3 -m 40 -f 0.3 -t 0.1 -s 20 -r 0.80 --fft"),
 
     ]
 
