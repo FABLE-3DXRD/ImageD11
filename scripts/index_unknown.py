@@ -56,13 +56,13 @@ if __name__=="__main__":
                       action = 'store_true',
                       dest = 'use_fft',
                       default = False,
-                      help = "Use fft to generate lattice vectors")
+                      help = "Use fft to generate lattice vectors [False]")
 
     parser.add_option('--score_fft',
                       action = 'store_false',
                       dest = 'score_fft',
                       default = True,
-                      help = "Score fft peaks using g-vectors")
+                      help = "Score fft peaks using g-vectors [True]")
 
     parser.add_option('--do_sort',
                       action = 'store_false',
