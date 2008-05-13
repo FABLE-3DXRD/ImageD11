@@ -23,6 +23,11 @@ $PYT setup.py build
 export PYTHONPATH=$SRC/build/lib.linux-i686-2.5/
 PYTHONPATH=$SRC/build/lib.linux-i686-2.5/
 
+
+cd $SRC/test
+$PYT test_put_incr.py
+
+
 cd $SRC/test/demo
 $PYT latred_new.py
 $PYT test.py

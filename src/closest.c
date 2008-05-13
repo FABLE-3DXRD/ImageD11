@@ -66,6 +66,10 @@ static char moduledocs[] = \
 " * 5. refine_assigned( ubi, gv, labels, label, weight) \n"\
 " *    Use only the peaks where label matches labels in refinement \n"\
 " *    ...following again the Paciorek algorithm \n"\
+" *\n"\
+" * 6. put_incr( data, indices, values)\n"\
+" *    pretty much as numeric.put but as increments\n"\
+" *\n"\
 " * ****************************************************************** */ ";
 
 #include <Python.h>                  /* To talk to python */
@@ -377,15 +381,13 @@ static PyObject *score_and_refine( PyObject *self, PyObject *args, PyObject *key
 	 printf("\n");
        */
 
-       * (double *) (ubi->data + 0*ubi->strides[0] + 0*ubi->strides[1]) = UB[0][0];
-       * (double *) (ubi->data + 0*ubi->strides[0] + 1*ubi->strides[1]) = UB[0][1];
-       * (double *) (ubi->data + 0*ubi->strides[0] + 2*ubi->strides[1]) = UB[0][2];
-       * (double *) (ubi->data + 1*ubi->strides[0] + 0*ubi->strides[1]) = UB[1][0];
-       * (double *) (ubi->data + 1*ubi->strides[0] + 1*ubi->strides[1]) = UB[1][1];
-       * (double *) (ubi->data + 1*ubi->strides[0] + 2*ubi->strides[1]) = UB[1][2];
-       * (double *) (ubi->data + 2*ubi->strides[0] + 0*ubi->strides[1]) = UB[2][0];
-       * (double *) (ubi->data + 2*ubi->strides[0] + 1*ubi->strides[1]) = UB[2][1];
-       * (double *) (ubi->data + 2*ubi->strides[0] + 2*ubi->strides[1]) = UB[2][2];
+       /* Copy result into arg */
+       for(i=0; i<3; i++)
+	 for(j=0; j<3; j++)
+	   *(double *)(ubi->data + 
+		       i*ubi->strides[0] + 
+		       j*ubi->strides[1]) = UB[i][j];
+
        
      }
      
@@ -560,7 +562,9 @@ static PyObject *score_and_assign( PyObject *self, PyObject *args, PyObject *key
  *    ...following again the Paciorek algorithm 
  */
 
-static PyObject *refine_assigned( PyObject *self, PyObject *args, PyObject *keywds){
+static PyObject *refine_assigned( PyObject *self, 
+				  PyObject *args, 
+				  PyObject *keywds){
   PyArrayObject *ubi=NULL, *gv=NULL, *labels=NULL;
   int label;
   
@@ -711,16 +715,13 @@ static PyObject *refine_assigned( PyObject *self, PyObject *args, PyObject *keyw
 	 printf("UBi[%d][%d]=%f",i,j,UB[i][j]);
 	 printf("\n");
        */
+       /* Copy result into arg */
+       for(i=0; i<3; i++)
+	 for(j=0; j<3; j++)
+	   *(double *)(ubi->data + 
+		       i*ubi->strides[0] + 
+		       j*ubi->strides[1]) = UB[i][j];
 
-       * (double *) (ubi->data + 0*ubi->strides[0] + 0*ubi->strides[1]) = UB[0][0];
-       * (double *) (ubi->data + 0*ubi->strides[0] + 1*ubi->strides[1]) = UB[0][1];
-       * (double *) (ubi->data + 0*ubi->strides[0] + 2*ubi->strides[1]) = UB[0][2];
-       * (double *) (ubi->data + 1*ubi->strides[0] + 0*ubi->strides[1]) = UB[1][0];
-       * (double *) (ubi->data + 1*ubi->strides[0] + 1*ubi->strides[1]) = UB[1][1];
-       * (double *) (ubi->data + 1*ubi->strides[0] + 2*ubi->strides[1]) = UB[1][2];
-       * (double *) (ubi->data + 2*ubi->strides[0] + 0*ubi->strides[1]) = UB[2][0];
-       * (double *) (ubi->data + 2*ubi->strides[0] + 1*ubi->strides[1]) = UB[2][1];
-       * (double *) (ubi->data + 2*ubi->strides[0] + 2*ubi->strides[1]) = UB[2][2];
        
      }
      
@@ -733,15 +734,97 @@ static PyObject *refine_assigned( PyObject *self, PyObject *args, PyObject *keyw
 
 
 
+void ptype(int type){
+   /* Print out the type of a Numeric array from the C point of view */
+  printf("Your input type was ");
+  switch (type){
+  case    PyArray_CHAR   : 
+    printf("PyArray_CHAR *(char *)\n");
+    break;
+  case    PyArray_SHORT  : 
+    printf("PyArray_SHORT *(short *)\n");
+    break;
+  case    PyArray_INT    : 
+    printf("PyArray_INT *(int  *)\n");
+    break;
+  case    PyArray_LONG   : 
+    printf("PyArray_LONG *(long *)\n");
+    break;
+  case    PyArray_FLOAT  : 
+    printf("PyArray_FLOAT *(float *)\n");
+    break;
+  case    PyArray_DOUBLE : 
+    printf("PyArray_DOUBLE *(double *)\n");
+    break;
+#ifdef PyArray_UNSIGNED_TYPES
+  case    PyArray_UBYTE  : 
+    printf("PyArray_UBYTE *(unsigned char *)\n");
+    break;
+  case    PyArray_USHORT : 
+    printf("PyArray_USHORT *(unsigned short*)\n");
+    break;
+  case    PyArray_UINT   : 
+    printf("PyArray_UINT *(unsigned int *)\n");
+    break;
+#endif
+     }
+}
 
 
+static PyObject *put_incr( PyObject *self, 
+			   PyObject *args, 
+			   PyObject *keywds){
+  PyArrayObject *data=NULL, *ind=NULL, *vals=NULL;
+  int i, j;
+     
+  if(!PyArg_ParseTuple(args,"O!O!O!",
+		       &PyArray_Type, &data,   /* array args */
+		       &PyArray_Type, &ind,    /* array args */
+		       &PyArray_Type, &vals     /* array args */
+		       )) 
+    return NULL;
 
+   if(data->nd != 1 || data->descr->type_num!=PyArray_DOUBLE){
+     PyErr_SetString(PyExc_ValueError,
+		     "First array must be 1d and double");
+     return NULL;
+   }
+   if(ind->nd != 1 || ind->descr->type_num!=PyArray_INT){
+     ptype(ind->descr->type_num);
+     PyErr_SetString(PyExc_ValueError,
+		     "Second array must be 1d and int");
+     return NULL;
+   }
+   if(vals->nd != 1 || vals->descr->type_num!=PyArray_DOUBLE){
+     PyErr_SetString(PyExc_ValueError,
+		     "Second array must be 1d and double");
+     return NULL;
+   }
+   if(vals->dimensions[0] != ind->dimensions[0]){
+     PyErr_SetString(PyExc_ValueError, 
+		     "Second array must have same dims as first");
+     return NULL;
+   }
+   /* Loop over points adding with increment */
+   for(i = 0 ; i < ind->dimensions[0] ; i++){
+     /* i applies to indices and vals */
+     j = *(int *) ( ind->data + i* ind->strides[0]);
+     
+     if ( j < 0 || j > data->dimensions[0]){
+       PyErr_SetString(PyExc_ValueError, 
+		       "Array bounds exceeded");
+       return NULL;
+     }
+     
+     * (double *) (data->data + j*data->strides[0]) =
+       * (double *) (data->data + j*data->strides[0]) +
+       * (double *) (vals->data + i*vals->strides[0]);
+   }
+   /* Nothing to return */
+   Py_INCREF(Py_None);
+   return Py_None;
 
-
-
-
-
-
+}
 
 
 
@@ -851,6 +934,13 @@ static PyMethodDef closestMethods[] = {
      "    refines ubi to match gv where labels==label\n" \
      "    sigma is a soft cutoff on tolerance (drlv)\n" \
      "    returns npks, <drlv2> "},
+   { "put_incr", (PyCFunction) put_incr, METH_VARARGS,
+     " None = put_incr( data, ind, vals )\n"\
+     "    does the loop \n"\
+     "    for i, v in ind, vals:\n"\
+     "        data[ ind[i] ] += vals[i]\n"},
+     
+     
 
 
 
