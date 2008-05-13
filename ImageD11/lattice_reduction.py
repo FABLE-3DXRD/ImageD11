@@ -76,10 +76,10 @@ class BadVectors(Exception):
     """ Raised by lattice class when vectors are coplanar or colinear"""
     pass
 
-def checkvol(v1, v2, v3):
+def checkvol(v1, v2, v3, min_vec2=MIN_VEC2):
     """ Check whether vectors are singular """
     v = dot(v1, cross(v2,v3))
-    assert abs(v)>0., "Volume problem"
+    assert abs(v)> pow(min_vec2, 1.5), "Volume problem"
     return True
 
 def rsweep( vl ):
@@ -96,11 +96,11 @@ def rsweep( vl ):
     return vn
 
 
-def reduce(v1, v2, v3, min_vec2):
+def reduce(v1, v2, v3, min_vec2=MIN_VEC2):
     """
     Try to find a reduced lattice basis of v1, v2, v3
     """
-    assert checkvol(v1,v2,v3)
+    assert checkvol(v1,v2,v3,min_vec2)
     vl = array([v1, v2, v3])
     vn = rsweep(vl)
     i = 0
@@ -172,8 +172,11 @@ class lattice(object):
             assert v1.direction == v3.direction
             direction = v1.direction
         # Direction is irrelevant for reduction to shortest 3
-        vl =    reduce( v1   ,    v2,    v3, min_vec2 )
-        again = reduce( vl[0], vl[1], vl[2], min_vec2 )  
+        try:
+            vl =    reduce( v1   ,    v2,    v3, min_vec2 )
+            again = reduce( vl[0], vl[1], vl[2], min_vec2 )  
+        except:
+            raise BadVectors()
         # Check reduction is stable
         assert allclose( array(vl),array(again) ), "Bad reduction %s %s"%(
                 str(vl), str(again))
@@ -296,9 +299,13 @@ def find_lattice(vecs,
     for i,j,k in iter3d(n_try):
         try:
             if gen_dir == 'row':
-                l = lattice(vecs[i], vecs[j], vecs[k], direction=gen_dir)
+                l = lattice(vecs[i], vecs[j], vecs[k], 
+                            direction = gen_dir,
+                            min_vec2 = min_vec2)
             elif gen_dir == 'col':
-                l = lattice(vecs[:,i], vecs[:,j], vecs[:,k], direction=gen_dir)
+                l = lattice(vecs[:,i], vecs[:,j], vecs[:,k], 
+                            direction = gen_dir,
+                            min_vec2 = min_vec2)
             else:
                 raise Exception("Logical impossibility")
             scor = l.score( test_vecs, tol )

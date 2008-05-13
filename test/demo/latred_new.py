@@ -39,7 +39,7 @@ def test_fft():
     tv = rc_array( g.gv, direction='row' )
     print "Finding lattice l1 from patterson"
     l1 = find_lattice( vecs,
-                       min_vec2 = 1,
+                       min_vec2 = 9,
                        n_try = 20 )
     print "r2c == ubi matrix"
     print l1.r2c 
@@ -51,7 +51,7 @@ def test_fft():
     print "cell",ubitocellpars(l1.r2c)
     print "Finding lattice l2 with gvectors to test"
     l2 = find_lattice( vecs,
-                       min_vec2 = 1,
+                       min_vec2 = 9,
                        n_try = 20,
                        test_vecs = tv)
     print "r2c == ubi matrix"
@@ -81,7 +81,7 @@ def test_eu():
     # print v1, v2, v3
     print "ubi/r2c",l.r2c
     print "ub /c2r",l.c2r
-    print "dot(l.r2c, gv[0])",dot(l.r2c.T, gv[0])
+    print "dot(l.r2c, gv[0])",dot(l.r2c, gv[0])
     for v in gv:
         #print ("%8.5f "*3+"%8.5f "*3)%tuple( list(v)+list(l.flip(v))),
         assert len(v) == 3
