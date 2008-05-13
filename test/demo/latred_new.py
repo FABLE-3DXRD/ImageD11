@@ -21,8 +21,7 @@ def test_fft():
         refine
     g = grid( np = 128,
               mr = 1.0,
-              nsig = 20,
-              minlen = 3. )
+              nsig = 20)
     g.gv_to_grid_new(gv)
     g.fft()
     g.props()
@@ -74,6 +73,7 @@ def test_eu():
     v2 = gv[1]
     v3 = gv[6]
     assert len(v1) == 3
+    print v1,v2,v3
     # This means that the g-vectors are in row direction
     l = lattice ( v1, v2, v3, direction='row')
     esum = 0.0
@@ -97,6 +97,17 @@ def test_eu():
     print "Indexing of eu3.gve, Average",esum / len(gv),"for",s,"peaks"
     print "UBI is",l.r2c
 
+def test_eu_find():
+    gv = get_eu_gv()
+    vecs = rc_array(gv, direction="row")
+    l = find_lattice( vecs,
+                      # This next bit is important - tolerance for gve 
+                      # is very different to patterson
+                      min_vec2=1./81.,
+                      n_try=20,
+                      test_vecs=vecs)
+    s = l.score(vecs, tol=0.1)
+    print "Eu3 using find_lattice scores",s
 
 def test2():
     """ Adding a fourth vector """
@@ -269,6 +280,8 @@ if __name__=="__main__":
     test1()
     test2()
     test_eu()
+    test_eu_find()
     test_fft()
+
     print time.time()-start
     

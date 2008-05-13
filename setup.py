@@ -107,5 +107,6 @@ setup(name='ImageD11',
                  "scripts/plotgrainhist.py",
                  "scripts/rubber.py",
                  "scripts/edf2bruker.py",
+                 "scripts/index_unknown.py",
                  "scripts/ImageD11Server.py",
                  "scripts/powderimagetopeaks.py"])

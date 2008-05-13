@@ -13,10 +13,31 @@ import numpy.oldnumeric as n
 import logging, time, sys
 from numpy.oldnumeric.fft import fftnd , inverse_fftnd
 
-from ImageD11 import labelimage
+from ImageD11 import labelimage, closest
+
+def get_options(parser):
+    parser.add_option( '-n', '--ngrid', 
+                       action = 'store',
+                       dest = 'np',
+                       type = 'int',
+                       help = 'number of points in the fft grid [128]',
+                       default = 128 )
+    parser.add_option( '-r', '--max_res',
+                       action = 'store',
+                       dest = 'mr',
+                       type = 'float',
+             help = 'Maximum resolution limit for fft (d-spacing) [1.0]',
+                       default = 1.0)
+    parser.add_option( '-s', '--nsig',
+                       action = 'store',
+                       dest = 'nsig',
+                       type = 'float',
+             help = 'Number of sigma for patterson peaksearch threshold [5]',
+                       default = 5)
+    return parser
 
 class grid:
-    def __init__(self, np=128, mr=1.0 ,nsig =5, minlen = 3.):
+    def __init__(self, np = 128, mr = 1.0 ,nsig = 5):
         """
         Set up the grid to use (the large unit cell)
         np - number of points in the grid
@@ -24,11 +45,10 @@ class grid:
         """
         self.np = np
         self.nsig = nsig
-        self.minlen = minlen
         self.grid = n.zeros((np,np,np),n.Float32)
         self.old_grid = n.zeros((np,np,np),n.Float32)
         self.cell_size = np*mr/2.
-        print "Using an FFT unit cell of ",self.cell_size
+        logging.info("Using an FFT unit cell of %s"%(str(self.cell_size)))
 
     
 
@@ -38,7 +58,7 @@ class grid:
         gv - ImageD11.indexing gvectors
         """
         # Compute hkl indices in the fft unit cell
-        print "Gridding data"
+        logging.info("Gridding data")
         self.gv = gv
         hrkrlr = self.cell_size * gv
         hkl = n.floor(hrkrlr + 0.5).astype(n.Int)
@@ -50,16 +70,20 @@ class grid:
                        1, 0 )        
         my_g = n.compress( hmx & hmn, gv, axis=0 )
         
-        # Compute hkl indices in the fft unit cell
-        hrkrlr = self.cell_size * gv
+        # Compute hkl indices in the fft unit cell using filtered peaks
+        hrkrlr = self.cell_size * my_g
+
+        # Integer part of hkl (eg 1.0 from 1.9)
         hkl = n.floor(hrkrlr).astype(n.Int)
 
-        # Fractional part of indices
+        # Fractional part of indices ( eg 0.9 from 1.9)
         remain = hrkrlr - hkl
         grid = self.grid
         import time
         start = time.time()
-        # print hkl
+        # Loop over corners with respect to floor corner
+        ng = grid.shape[0]*grid.shape[1]*grid.shape[2]
+        flatgrid = grid.reshape( ng )
         for cor in [ (0,0,0),   #1
                      (1,0,0),   #2
                      (0,1,0),   #3
@@ -68,24 +92,27 @@ class grid:
                      (1,0,1),   #6
                      (0,1,1),   #7
                      (1,1,1) ]: #8
-            
+            # The corner
             thkl = hkl + cor
             fac = 1 - n.absolute(remain - cor)
-            vol = n.absolute(fac[:,0]*fac[:,1]*fac[:,2])
+            vol = n.absolute(fac[:,0]*fac[:,1]*fac[:,2]).astype(n.float32)
             thkl = n.where(thkl < 0, self.np + thkl, thkl)
             ind = thkl[:,0]*grid.shape[1]*grid.shape[2] + \
                   thkl[:,1]*grid.shape[1] + \
                   thkl[:,2]
+
+            closest.put_incr( flatgrid , ind.astype(n.intc), vol )
             # print thkl,vol
-            vals = n.take(grid.flat, ind)
+
+            # vals = n.take(grid.flat, ind)
             # print "vals",vals
-            vals = vals + vol
+            # vals = vals + vol
             # print "vol",vol
             # print "ind",ind
             # FIXME
             # This is wrong - if ind repeats several times we 
             # only take the last value
-            n.put(grid, ind, vals)
+            # n.put(grid, ind, vals)
             # print n.argmax(n.argmax(n.argmax(grid)))
             # print grid[0:3,-13:-9,-4:]
         logging.warn("Grid filling loop takes "+str(time.time()-start)+" /s")
@@ -96,9 +123,9 @@ class grid:
         """ Compute the Patterson """
         start = time.time()
         self.patty = abs(fftnd(self.grid))
-        logging.warn("Time for fft "+str(time.time()-start))
+        logging.info("Time for fft "+str(time.time()-start))
         self.origin = self.patty[0,0,0]
-        logging.warn("Patterson origin height is :"+str(self.origin))
+        logging.info("Patterson origin height is :"+str(self.origin))
 
     def props(self):
         """ Print some properties of the Patterson """
@@ -117,25 +144,26 @@ class grid:
         """ Peaksearch in the Patterson """
         lio = labelimage.labelimage( (self.np, self.np),
                                      peaksfile )
-        print "Peaksearching at",self.nsig,"sigma"
+        logging.info("Peaksearching at %f sigma"%(self.nsig))
         thresh = self.mean + self.nsig  * self.sigma
         for i in range(self.np):
             lio.peaksearch(self.patty[i],
                            thresh,
                            i)
             lio.mergelast()
-            if i%2 == 0:
-                print ".",
-                sys.stdout.flush()
-        print
+            #if i%2 == 0:
+            #    print ".",
+            #    sys.stdout.flush()
+        #print
         lio.finalise()
                                      
     def pv(self, v): return ("%8.4f "*3)%tuple(v)
 
     def reduce(self, vecs):
+        raise Exception("You want lattice_reduction instead")
         from ImageD11 import sym_u
         g =  sym_u.trans_group(tol = self.rlgrid*2) 
-        print self.rlgrid, len(vecs)
+        # print self.rlgrid, len(vecs)
         for i in range(len(vecs)):
             print self.pv(vecs[i]),
             assert len(vecs[i]) == 3
@@ -285,10 +313,10 @@ def test(options):
     go.props()
     go.peaksearch(open(gvfile+".patterson_pks","w"))
     im = go.read_peaks(gvfile+".patterson_pks")
-    print "Before reduction", len(go.UBIALL)
-    sys.stdout.flush()
-    ubinew = go.reduce(go.UBIALL)
-    print "After reduction", len(ubinew)
+    #print "Before reduction", len(go.UBIALL)
+    #sys.stdout.flush()
+    #ubinew = go.reduce(go.UBIALL)
+    #print "After reduction", len(ubinew)
     go.UBIALL = ubinew
     go.slow_score()
     #from matplotlib.pylab import imshow, show

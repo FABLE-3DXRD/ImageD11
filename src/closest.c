@@ -784,9 +784,9 @@ static PyObject *put_incr( PyObject *self,
 		       )) 
     return NULL;
 
-   if(data->nd != 1 || data->descr->type_num!=PyArray_DOUBLE){
+   if(data->nd != 1 || data->descr->type_num!=PyArray_FLOAT){
      PyErr_SetString(PyExc_ValueError,
-		     "First array must be 1d and double");
+		     "First array must be 1d and float32");
      return NULL;
    }
    if(ind->nd != 1 || ind->descr->type_num!=PyArray_INT){
@@ -795,9 +795,9 @@ static PyObject *put_incr( PyObject *self,
 		     "Second array must be 1d and int");
      return NULL;
    }
-   if(vals->nd != 1 || vals->descr->type_num!=PyArray_DOUBLE){
+   if(vals->nd != 1 || vals->descr->type_num!=PyArray_FLOAT){
      PyErr_SetString(PyExc_ValueError,
-		     "Second array must be 1d and double");
+		     "Second array must be 1d and float32");
      return NULL;
    }
    if(vals->dimensions[0] != ind->dimensions[0]){
@@ -816,9 +816,9 @@ static PyObject *put_incr( PyObject *self,
        return NULL;
      }
      
-     * (double *) (data->data + j*data->strides[0]) =
-       * (double *) (data->data + j*data->strides[0]) +
-       * (double *) (vals->data + i*vals->strides[0]);
+     * (float *) (data->data + j*data->strides[0]) =
+       * (float *) (data->data + j*data->strides[0]) +
+       * (float *) (vals->data + i*vals->strides[0]);
    }
    /* Nothing to return */
    Py_INCREF(Py_None);

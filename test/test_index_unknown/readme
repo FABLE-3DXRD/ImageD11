@@ -1,0 +1,5 @@
+1. Generate gve from ubi files
+2. index those gve via
+  a) gvectors
+  b) fft
+3. Confirm you got something like what you started with

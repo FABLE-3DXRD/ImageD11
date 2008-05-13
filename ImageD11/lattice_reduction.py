@@ -297,6 +297,10 @@ def find_lattice(vecs,
     assert isinstance(test_vecs, rc_array)
     gen_dir = vecs[0].direction
     for i,j,k in iter3d(n_try):
+        # print i,j,k
+        # if (i,j,k) == (0,1,6):
+        #    print vecs[i],vecs[j],vecs[k]
+        #    print gen_dir, min_vec2
         try:
             if gen_dir == 'row':
                 l = lattice(vecs[i], vecs[j], vecs[k], 
@@ -315,4 +319,33 @@ def find_lattice(vecs,
         except BadVectors:
             pass
     return None
+
+def get_options(parser):
+    parser.add_option('-v', '--min_vec2',
+                      action='store',
+                      type='float',
+                      dest="min_vec2",
+                      help='Minimum axis length ^2, \AA^2 [1.5]',
+                      default = 1.5)
+    parser.add_option('-m', '--n_try',
+                      action='store',
+                      type='int',
+                      dest="n_try",
+                      default=None,
+                      help='Number of vectors to test in finding lattice [all]')
+    parser.add_option('-f', '--fraction_indexed',
+                      action='store',
+                      type='float',
+                      dest="fraction_indexed",
+                      default=0.9,
+                      help='Fraction of peaks to be indexed')
+    parser.add_option('-t','--tol',
+                      action='store',
+                      type='float',
+                      default = 0.1,
+                      dest="tol",
+                      help='tolerance in hkl error for indexing')
+    return parser
+                      
+                      
 

@@ -140,6 +140,8 @@ def find_uniq_u(u, grp, debug=0, func=n.trace):
 class trans_group(group):
     """
     Translation group (eg crystal lattice)
+
+    FIXME - this is mostly done in lattice_reduction.py instead now
     """
     def __init__(self, tol = 1e-5):
         """
@@ -160,7 +162,7 @@ class trans_group(group):
         vc = n.array(v).copy() # copies
         for o in self.group:
             vc = self.mod(vc, o)
-        if DEBUG: print "reduced",v,vc
+        # if DEBUG: print "reduced",v,vc
         return vc
     def additem(self, x):
         """ Do lattice reduction before adding as infinite group"""
