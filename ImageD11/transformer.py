@@ -41,7 +41,7 @@ PARAMETERS = [
           helpstring = "sample detector distance, same units as pixel size",
           vary=True, 
           can_vary=True,
-          stepsize = 1.0),
+          stepsize = 100.0),
      par('z_size',   48.08150,
           helpstring = "pixel size in vertical, same units distance",
           vary=False, 
@@ -292,7 +292,11 @@ class transformer:
         if "tth_hist_prob" not in self.colfile.titles:
             self.compute_tth_histo()    
         mask = self.colfile.getcolumn("tth_hist_prob") > minval
+        logging.info("Number of peaks before filtering = %d"%(
+            self.colfile.nrows))
         self.colfile.filter( mask )
+        logging.info("Number of peaks after filtering = %d"%(
+            self.colfile.nrows))
 
     def tth_entropy(self):
         """
@@ -327,6 +331,9 @@ class transformer:
 
     def fit(self,tthmin=0,tthmax=180):
         """ Apply simplex to improve fit of obs/calc tth """
+        tthmin = float(tthmin)
+        tthmax = float(tthmax)
+        
         import simplex
         if self.theoryds == None:
             self.addcellpeaks()
@@ -362,6 +369,10 @@ class transformer:
                 self.indices.append(ind)
         guess = self.parameterobj.get_variable_values()
         inc = self.parameterobj.get_variable_stepsizes()
+        if len(guess) == 0:
+            # There is nothing to fit.
+            logging.warning("You try to fit with no variables!?")
+            return None
         s=simplex.Simplex(self.gof,guess,inc)
         newguess,error,niter=s.minimize()
         inc=[v/10 for v in inc]

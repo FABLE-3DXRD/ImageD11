@@ -38,7 +38,6 @@ class guitransformer:
         """
         self.quiet=quiet
         self.parent=parent
-        self.min_bin_ratio = 0.10
         self.menuitems = ( "Transformation", 0,
             [ ( "Load filtered peaks", 0, self.loadfiltered),
               ( "Plot y/z", 5, self.plotyz     ),
@@ -175,7 +174,9 @@ class guitransformer:
             d = listdialog( self.parent,
                             items={"no_bins": nbins},
                             title="Histogram - no of bins")
+
             nbins = int(d.result['no_bins'])
+            
             self.parent.guicommander.execute("transformer",
                                              "parameterobj.set_parameters",
                                              d.result)
@@ -203,19 +204,24 @@ class guitransformer:
                                                  "parameterobj.get",
                                                  "no_bins")
 
-        nbins = self.parent.guicommander.execute("transformer",
-                                                 "parameterobj.get",
-                                                 "min_bin_prob")
-
-        min_bin_prob = 0.01
+        min_bin_prob = self.parent.guicommander.execute("transformer",
+                                                        "parameterobj.get",
+                                                        "min_bin_prob")
         
         d=listdialog(self.parent,items={
-                "no_bins": nbins, 
-                "min_bin_prob": min_bin_ratio},
+            "no_bins": nbins, 
+            "min_bin_prob": min_bin_prob},
                      title="Histogram filter")
+
+        
         self.parent.guicommander.execute("transformer",
                                          "parameterobj.set_parameters",
                                          d.result)
+        
+        min_bin_prob = self.parent.guicommander.execute("transformer",
+                                                        "parameterobj.get",
+                                                        "min_bin_prob")
+        
         self.plothisto(nbins)
         self.parent.guicommander.execute("transformer",
                                          "filter_min",
