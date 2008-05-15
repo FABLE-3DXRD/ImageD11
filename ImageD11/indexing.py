@@ -252,7 +252,8 @@ class indexer:
         self.parameterobj = parameters.parameters(cosine_tol=self.cosine_tol,
               hkl_tol=self.hkl_tol, ring_1=self.ring_1, ring_2=self.ring_2,
               minpks=self.minpks, uniqueness=self.uniqueness, ds_tol=self.ds_tol,
-              wavelength=self.wavelength, eta_range=self.eta_range)
+              wavelength=self.wavelength, eta_range=self.eta_range,
+              max_grains=self.max_grains)
 
 
     def loadpars(self,filename=None):
