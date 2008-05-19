@@ -67,7 +67,7 @@ if sys.platform == "win32":
     f()
 
     import shutil
-    shutil.copy( os.path.join("win32","Togl.dll"),     
+    shutil.copy( os.path.join("win32","Togl20.dll"),     
             os.path.join(".", target) )
     shutil.copy( os.path.join("win32","pkgIndex.tcl"), 
             os.path.join(".", target) )
