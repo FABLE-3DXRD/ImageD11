@@ -5,20 +5,27 @@ import os, sys,ImageD11
 
 # Choose a version number which climbs - should actually be the svn revision #
 
-target = "fable_python_exe" + ImageD11.__version__
+target = "fable_python_" + sys.platform +"_" + ImageD11.__version__
 
-f = Freezer(target ,
-         includes = 
-                ("ctypes.util", 
+includes =  ["ctypes.util", 
                  "Tkinter", 
                  "OpenGL",
                  "OpenGL.Tk",
                  "Pmw",
                  "matplotlib",
-                 "pytz", "pytz.zoneinfo.UTC",
+                 "pytz",
                  "PIL",
-                 "pyreadline",
-                ))
+
+                ]
+
+if sys.platform == "win32":
+    # linux doesnt seem to have it.
+    includes.append("pytz.zoneinfo.UTC")
+    # linux doesnt seem to need it.
+    includes.append("pyreadline")
+
+
+f = Freezer(target , includes = tuple(includes) )
 
 scripts =    [
         "peaksearch.py",
@@ -53,25 +60,32 @@ scripts =    [
         "fabric.py",
         # 
         # This one I just like
-        "ipython.py"
-        
+        "ipython"
         ]
 
 
+if sys.version_info[0:2] == (2,5):
+    if sys.platform == "win32":
+        root = """c:\python25\scripts"""
+        
+        for s in scripts:
+            f.addScript( os.path.join(root , s) )
+        f()
 
-if sys.platform == "win32":
-    root = """c:\python25\scripts"""
+        import shutil
+        shutil.copy( os.path.join("win32","Togl20.dll"),     
+                     os.path.join(".", target) )
+        shutil.copy( os.path.join("win32","pkgIndex.tcl"), 
+                     os.path.join(".", target) )
+        sys.exit()
+    if sys.platform == "linux2":
+        # eg - an ubuntu machine...
+        root = "/usr/bin"
+        for s in scripts:
+            f.addScript( os.path.join( root, s) )
+        f()
 
-    for s in scripts:
-        f.addScript( os.path.join(root , s) )
-    f()
 
-    import shutil
-    shutil.copy( os.path.join("win32","Togl20.dll"),     
-            os.path.join(".", target) )
-    shutil.copy( os.path.join("win32","pkgIndex.tcl"), 
-            os.path.join(".", target) )
 
-else:
-    print "sys.platform",sys.platform
-    raise Exception("Need to make it working for your plaform too")
+print "I dont know how to do your platform / version yet, sorry"
+
