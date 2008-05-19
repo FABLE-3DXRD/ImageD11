@@ -8,13 +8,20 @@ import os, sys,ImageD11
 target = "fable_python_" + sys.platform +"_" + ImageD11.__version__
 
 includes =  ["ctypes.util", 
-                 "Tkinter", 
-                 "OpenGL",
-                 "OpenGL.Tk",
-                 "Pmw",
-                 "matplotlib",
-                 "pytz",
-                 "PIL",
+             "Tkinter", 
+             "OpenGL",
+             "OpenGL.Tk",
+             "Pmw",
+             "matplotlib",
+             "matplotlib.numerix",
+             "matplotlib.numerix.fft",
+             "matplotlib.numerix.linear_algebra",
+             "matplotlib.numerix.ma",
+             "matplotlib.numerix.mlab",
+             "matplotlib.numerix.random_array",
+             "pytz",
+             "PIL",
+             "numpy",
 
                 ]
 
@@ -24,8 +31,6 @@ if sys.platform == "win32":
     # linux doesnt seem to need it.
     includes.append("pyreadline")
 
-
-f = Freezer(target , includes = tuple(includes) )
 
 scripts =    [
         "peaksearch.py",
@@ -69,7 +74,7 @@ scripts =    [
 if sys.version_info[0:2] == (2,5):
     if sys.platform == "win32":
         root = """c:\python25\scripts"""
-        
+        f = Freezer(target , includes = tuple(includes) )        
         for s in scripts:
             f.addScript( os.path.join(root , s) )
         f()
@@ -89,6 +94,8 @@ if sys.version_info[0:2] == (2,5):
         # eg - an ubuntu machine...
         root = "/usr/bin"
         target = target + "_glibc_2.4"
+
+        f = Freezer(target , includes = tuple(includes) )
         for s in scripts:
             f.addScript( os.path.join( root, s) )
         f()
