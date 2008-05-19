@@ -36,27 +36,40 @@ for f in matplotlibdata:
 # #grrr.
 
 setup(
-     console = ["../scripts/peaksearch.py",
-    "../ImageD11/plot3d.py",
-    "../scripts/fitgrain.py",
-    "../scripts/ubi2cellpars.py",
-    "../scripts/filtergrain.py",
-    "../scripts/pars_2_sweeper.py",
-    "../scripts/fit2dcake.py",
-    "../scripts/edfheader.py",
-    {  "script" :    "../scripts/ImageD11_gui.py",
-       "icon_resources" : [(1, "../docs/multi.ico")] },
-    "../scripts/bgmaker.py",
-    "../scripts/rubber.py",
-    "../scripts/edfheader.py",
-    "../scripts/ImageD11Server.py",
-    "../scripts/powderimagetopeaks.py",
-    # these are from fabian
-    "c:/python24/scripts/collapse.py",
-    "c:/python24/scripts/median.py",
-    "c:/python24/scripts/fabian.py",
-    # And this is to filter manually...
-    "fable.python.py",
+     console = [         
+        "../scripts/peaksearch.py",
+        "../scripts/fitgrain.py",
+        "../scripts/ubi2cellpars.py",
+        "../scripts/filtergrain.py",
+        "../scripts/filterout.py",
+        "../scripts/pars_2_sweeper.py",
+        "../scripts/ImageD11_2_shelx.py",
+        "../scripts/fit2dcake.py",
+        "../scripts/edfheader.py",
+        "../scripts/recoveromega.py",
+        "../scripts/id11_summarize.py",
+        "../scripts/bgmaker.py",
+        "../scripts/makemap.py",
+        "../scripts/plotedf.py",
+        "../scripts/plotgrainhist.py",
+        "../scripts/rubber.py",
+        "../scripts/edf2bruker.py",
+        "../scripts/index_unknown.py",
+        "../scripts/ImageD11Server.py",
+        "../scripts/powderimagetopeaks.py",
+            {  "script" :    "../scripts/ImageD11_gui.py",
+        "icon_resources" : [(1, "../docs/multi.ico")] },
+        "../ImageD11/plot3d.py",
+        # these are from fabian
+        "c:/python25/scripts/collapse.py",
+        "c:/python25/scripts/median.py",
+        "c:/python25/scripts/fabian.py",
+        # these are from fabric
+        "c:/python25/scripts/plothst.py",
+        "c:/python25/scripts/integrate.py",
+        "c:/python25/scripts/fabric.py",
+        # And this is to filter manually...
+        "fable.python.py",
     ]  ,
      options={
              'py2exe': {
@@ -80,4 +93,5 @@ print "eg:"
 print "copy OpenGL.__init__.py c:\\python24\\lib\\site-packages\\OpenGl\\__init__.py"
 print "copy OpenGL.Tk__init__.py c:\\python24\\lib\\site-packages\\OpenGl\\Tk\\__init__.py"
 print "copy c:\\python24\\lib\\site-packages\\OpenGl\\Tk\\win32-tk8.4\\* dist\\"
+
 
