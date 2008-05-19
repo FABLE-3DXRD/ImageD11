@@ -58,8 +58,10 @@ scripts =    [
         "plothst.py",
         "integrate.py",
         "fabric.py",
+        # This is from PolyXSim
+        "PolyXSim.py",
         # 
-        # This one I just like
+        # This one I want, but recognise might not work...
         "ipython"
         ]
 
@@ -77,13 +79,21 @@ if sys.version_info[0:2] == (2,5):
                      os.path.join(".", target) )
         shutil.copy( os.path.join("win32","pkgIndex.tcl"), 
                      os.path.join(".", target) )
+        import site
+        shutil.copy( site.__file__,
+                     os.path.join(".", target) )
+        shutil.copy( site.__file__.replace("pyc","py"),
+                     os.path.join(".", target) )
         sys.exit()
-    if sys.platform == "linux2":
+    if sys.platform == "linux2" and sys.version.find("GCC 4.2.3 (Ubuntu")>0:
         # eg - an ubuntu machine...
         root = "/usr/bin"
+        target = target + "_glibc_2.4"
         for s in scripts:
             f.addScript( os.path.join( root, s) )
         f()
+        # 
+        sys.exit()
 
 
 
