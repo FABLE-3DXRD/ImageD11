@@ -24,5 +24,5 @@ cd D:\wright\eclipse_workspaces\fabulous\PolyXSim
 svn update
 c:\python25\python setup.py build --compiler=mingw32 install
 
-
+cd D:\wright\eclipse_workspaces\fabulous\ImageD11\trunk\bbfreeze
 c:\python25\python freezem.py

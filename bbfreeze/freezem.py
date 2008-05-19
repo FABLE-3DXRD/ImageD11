@@ -1,9 +1,7 @@
 
 
 from bbfreeze import Freezer
-import os
-
-import ImageD11
+import os, sys,ImageD11
 
 # Choose a version number which climbs - should actually be the svn revision #
 
@@ -17,7 +15,7 @@ f = Freezer(target ,
                  "OpenGL.Tk",
                  "Pmw",
                  "matplotlib",
-                 "pytz",
+                 "pytz", "pytz.zoneinfo.UTC",
                  "PIL",
                  "pyreadline",
                 ))
@@ -59,12 +57,21 @@ scripts =    [
         
         ]
 
-root = """c:\python25\scripts"""
-
-for s in scripts:
-    f.addScript( os.path.join(root , s) )
-
-f()
 
 
-import os
+if sys.platform == "win32":
+    root = """c:\python25\scripts"""
+
+    for s in scripts:
+        f.addScript( os.path.join(root , s) )
+    f()
+
+    import shutil
+    shutil.copy( os.path.join("win32","Togl.dll"),     
+            os.path.join(".", target) )
+    shutil.copy( os.path.join("win32","pkgIndex.tcl"), 
+            os.path.join(".", target) )
+
+else:
+    print "sys.platform",sys.platform
+    raise Exception("Need to make it working for your plaform too")
