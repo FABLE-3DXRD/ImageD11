@@ -3,9 +3,15 @@
 from bbfreeze import Freezer
 import os, sys,ImageD11
 
-# Choose a version number which climbs - should actually be the svn revision #
+# Choose a version number which climbs - should actually be the svn revision 
 
-target = "fable_python_" + sys.platform +"_" + ImageD11.__version__
+os.system("""svn update""")
+v = os.popen("svn info").read()
+vn = v[v.find("Revision"):].split("\n")[0].split(":")[-1].lstrip().rstrip()
+
+target = "fable_python_" + sys.platform +"_svn" + vn
+print vn
+sys.exit()
 
 includes =  ["ctypes.util", 
              "Tkinter", 
@@ -26,8 +32,6 @@ includes =  ["ctypes.util",
                 ]
 
 if sys.platform == "win32":
-    # linux doesnt seem to have it.
-    includes.append("pytz.zoneinfo.UTC")
     # linux doesnt seem to need it.
     includes.append("pyreadline")
 
@@ -74,6 +78,8 @@ scripts =    [
 if sys.version_info[0:2] == (2,5):
     if sys.platform == "win32":
         root = """c:\python25\scripts"""
+        # windows needs it 
+        includes.append("pytz.zoneinfo.UTC")
         f = Freezer(target , includes = tuple(includes) )        
         for s in scripts:
             f.addScript( os.path.join(root , s) )
@@ -93,6 +99,7 @@ if sys.version_info[0:2] == (2,5):
     if sys.platform == "linux2" and sys.version.find("GCC 4.2.3 (Ubuntu")>0:
         # eg - an ubuntu machine...
         root = "/usr/bin"
+        
         target = target + "_glibc_2.4"
 
         f = Freezer(target , includes = tuple(includes) )
@@ -101,6 +108,25 @@ if sys.version_info[0:2] == (2,5):
         f()
         # 
         sys.exit()
+
+    if sys.platform == "linux2" and sys.version.find( \
+        "[GCC 3.4.6 20060404 (Red Hat 3.4.6-3)]") > 0:
+        # eg - an esrflinux  machine...
+        root = "/sware/exp/fable/standalone/redhate4-a64/bin"
+        target = target + "_redhate4-a64"
+
+        includes.append("pytz.zoneinfo.UTC")
+        f = Freezer(target , includes = tuple(includes) )
+        for s in scripts:
+            f.addScript( os.path.join( root, s) )
+        f()
+        #
+        import shutil, matplotlib
+        shutil.copytree( matplotlib.get_data_path(),
+                         os.path.join(target, "matplotlibdata" ) )
+        sys.exit()
+
+
 
 
 
