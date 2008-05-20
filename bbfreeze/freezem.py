@@ -142,6 +142,13 @@ if sys.version_info[0:2] == (2,5):
         import shutil, matplotlib
         shutil.copytree( matplotlib.get_data_path(),
                          os.path.join(target, "matplotlibdata" ) )
+        shutil.copytree("/sware/exp/fable/standalone/suse82/lib/Togl1.7",
+                         os.path.join(target, "Togl1.7" ) )
+        if os.path.exists(os.path.join(target,
+                                       "libgcc_s.so.1")):
+            shutil.move(os.path.join(target,"libgcc_s.so.1"),
+                        os.path.join(target,"not_libgcc_s.so.1"))
+                        
         sys.exit()
 
 
