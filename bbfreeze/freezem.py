@@ -11,7 +11,7 @@ vn = v[v.find("Revision"):].split("\n")[0].split(":")[-1].lstrip().rstrip()
 
 target = "fable_python_" + sys.platform +"_svn" + vn
 print vn
-sys.exit()
+
 
 includes =  ["ctypes.util", 
              "Tkinter", 
@@ -127,6 +127,25 @@ if sys.version_info[0:2] == (2,5):
         sys.exit()
 
 
+    if sys.platform == "linux2" and sys.version.find( \
+        "[GCC 3.3 20030226 (prerelease) (SuSE Linux)]") >0:
+        # eg - an esrflinux  machine...
+        root = "/sware/exp/fable/standalone/suse82/bin"
+        target = target + "_suse82"
+
+        includes.append("pytz.zoneinfo.UTC")
+        f = Freezer(target , includes = tuple(includes) )
+        for s in scripts:
+            f.addScript( os.path.join( root, s) )
+        f()
+        #
+        import shutil, matplotlib
+        shutil.copytree( matplotlib.get_data_path(),
+                         os.path.join(target, "matplotlibdata" ) )
+        sys.exit()
+
+
+        
 
 
 
