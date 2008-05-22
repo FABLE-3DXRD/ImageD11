@@ -26,6 +26,7 @@ if __name__=="__main__":
     from ImageD11 import fft_index_refac, rc_array,\
         lattice_reduction, indexing
     import numpy as np
+    dot  = np.dot
     from ImageD11.fft_index_refac import grid
 
     parser = OptionParser()
@@ -80,6 +81,7 @@ if __name__=="__main__":
     if options.gvefilename is None or \
             not os.path.exists(options.gvefilename):
         print "You need to supply a gvector file with the -g option"
+	raise
         sys.exit()
 
     o.readgvfile(options.gvefilename)
@@ -117,14 +119,17 @@ if __name__=="__main__":
                 vecs = rc_array.rc_array( np.take( vecs, order, axis = 1),
                                           direction = 'col')
                 assert g.gv.shape[1] == 3
-                # print "Finding lattice from patterson"
+                print "Finding lattice from patterson"
+                for v in vecs[:options.n_try]:
+                     print v,np.sqrt(np.dot(v,v))
                 try:
                     l = lattice_reduction.find_lattice( vecs,
                           min_vec2 = options.min_vec2,
                           n_try = options.n_try,
                           test_vecs = all_gvecs,
                           tol = options.tol,
-                          fraction_indexed = options.fraction_indexed
+                          fraction_indexed = options.fraction_indexed,
+                          noisy = True			 
                                   )
                 except IndexError:
                     print vecs, options.n_try

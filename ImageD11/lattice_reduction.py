@@ -290,7 +290,8 @@ def find_lattice(vecs,
                  n_try=None, 
                  test_vecs = None, 
                  tol = 0.1,
-                 fraction_indexed=0.9):
+                 fraction_indexed=0.9,
+                 noisy = False ):
     """
     vecs - vectors to use to generate the lattice
     min_vec2 - squared length of min_vec (units as vec)
@@ -309,18 +310,27 @@ def find_lattice(vecs,
         test_vecs = vecs
     assert isinstance(test_vecs, rc_array)
     gen_dir = vecs[0].direction
+    if noisy: print "Finding with dir",gen_dir
+    print "min_vec2",min_vec2
     for i,j,k in iter3d(n_try):
-        # print i,j,k
         # if (i,j,k) == (0,1,6):
         #    print vecs[i],vecs[j],vecs[k]
         #    print gen_dir, min_vec2
         try:
             if gen_dir == 'row':
+                if dot(vecs[i], vecs[i]) < min_vec2: continue
+                if dot(vecs[j], vecs[j]) < min_vec2: continue
+                if dot(vecs[k], vecs[k]) < min_vec2: continue
+                print i,j,k
                 l = lattice(vecs[i], vecs[j], vecs[k], 
                             direction = gen_dir,
                             min_vec2 = min_vec2)
             elif gen_dir == 'col':
                 try:
+                    if dot(vecs[:,i], vecs[:,i]) < min_vec2: continue
+                    if dot(vecs[:,j], vecs[:,j]) < min_vec2: continue
+                    if dot(vecs[:,k], vecs[:,k]) < min_vec2: continue
+                    print i,j,k
                     l = lattice(vecs[:,i], vecs[:,j], vecs[:,k], 
                             direction = gen_dir,
                             min_vec2 = min_vec2)
@@ -332,6 +342,7 @@ def find_lattice(vecs,
                 raise Exception("Logical impossibility")
             scor = l.score( test_vecs, tol )
             frac = 1.0 * scor / len(test_vecs)
+            print i,j,k,scor
             if frac > fraction_indexed:
                 return l
         except BadVectors:

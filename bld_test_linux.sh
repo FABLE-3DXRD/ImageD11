@@ -2,26 +2,35 @@
 
 
 
+
 # Hmm - needs a switch case
 
 if [ `hostname` = "lapwright" ]; then
     SRC="/home/wright/workspace/ImageD11-trunk"
     PYT=python2.5
+    PYTHONPATH=$SRC/build/lib.linux-i686-2.5/
 else
     if [ "$HOSTTYPE" = "x86_64" ]; then
 	SRC="/users/wright/fable/svn/ImageD11/trunk"
 	export LD_LIBRARY_PATH=/sware/exp/fable/standalone/redhate4-a64/lib
 	PYT=/sware/exp/fable/standalone/redhate4-a64/bin/python
-    fi
+        PYTHONPATH=$SRC/build/lib.linux-i686-2.5/
+    else
+      echo 'guessing'
+   fi
 fi
 
 
+           
+SRC=/home/user/soft/fable/ImageD11
+           
+PYT=python
+           
+PYTHONPATH=$SRC/build/lib.linux-i686-2.4/
 
 
 cd $SRC
 $PYT setup.py build
-export PYTHONPATH=$SRC/build/lib.linux-i686-2.5/
-PYTHONPATH=$SRC/build/lib.linux-i686-2.5/
 
 
 cd $SRC/test
