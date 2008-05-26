@@ -60,16 +60,24 @@ if __name__=="__main__":
                       help = "Use fft to generate lattice vectors [False]")
 
     parser.add_option('--score_fft',
-                      action = 'store_false',
+                      action = 'store_true',
                       dest = 'score_fft',
-                      default = True,
-                      help = "Score fft peaks using g-vectors [True]")
+                      default = False,
+                      help = "Score fft peaks using fft peaks first [True]")
 
-    parser.add_option('--do_sort',
+    parser.add_option('--no_sort',
                       action = 'store_false',
                       dest = 'sort_gve',
                       default = True,
                       help = "Sorting the gvector by length before indexing [True]")
+
+    parser.add_option('--noisy',
+                      action = 'store_true',
+                      dest = 'noisy',
+                      default = False,
+                      help = "Print more output")
+
+
 
 
     parser = fft_index_refac.get_options(parser)
@@ -81,7 +89,6 @@ if __name__=="__main__":
     if options.gvefilename is None or \
             not os.path.exists(options.gvefilename):
         print "You need to supply a gvector file with the -g option"
-	raise
         sys.exit()
 
     o.readgvfile(options.gvefilename)
@@ -120,17 +127,24 @@ if __name__=="__main__":
                                           direction = 'col')
                 assert g.gv.shape[1] == 3
                 print "Finding lattice from patterson"
-                for v in vecs[:options.n_try]:
-                     print v,np.sqrt(np.dot(v,v))
+                # Go through and make a shortlist of lattices by scoring fft only
+                if options.score_fft:
+                    test_set = vecs
+                else:
+                    test_set = all_gvecs
+                    #for v in vecs[:options.n_try]:
+                    #     print v,np.sqrt(np.dot(v,v))
                 try:
-                    l = lattice_reduction.find_lattice( vecs,
-                          min_vec2 = options.min_vec2,
-                          n_try = options.n_try,
-                          test_vecs = all_gvecs,
-                          tol = options.tol,
-                          fraction_indexed = options.fraction_indexed,
-                          noisy = True			 
-                                  )
+                    # mv2 = 1/options.min_vec2
+                    l = lattice_reduction.find_lattice(
+                        vecs,
+                        min_vec2 = options.min_vec2,
+                        n_try = options.n_try,
+                        test_vecs = test_set,
+                        tol = options.tol,
+                        fraction_indexed = options.fraction_indexed,
+                        noisy = options.noisy,
+                        )
                 except IndexError:
                     print vecs, options.n_try
                     print vecs.shape
@@ -139,12 +153,15 @@ if __name__=="__main__":
                 # Test vectors are the g-vectors
                 # Sort by length before searching??
                 logging.info("Doing lattice search")
-                l = lattice_reduction.find_lattice( cur_gvecs, 
-                         min_vec2=options.min_vec2,
-                         n_try=options.n_try,
-                         test_vecs = all_gvecs, 
-                         tol = options.tol,
-                         fraction_indexed=options.fraction_indexed)
+                l = lattice_reduction.find_lattice(
+                    cur_gvecs, 
+                    min_vec2=options.min_vec2,
+                    n_try=options.n_try,
+                    test_vecs = all_gvecs, 
+                    tol = options.tol,
+                    fraction_indexed = options.fraction_indexed,
+                    noisy = options.noisy,
+                    )
             if l is None:
                 break
             l.r2c = indexing.refine( l.r2c, all_gvecs, tol = options.tol)
@@ -157,6 +174,8 @@ if __name__=="__main__":
                         
             all = len(all_gvecs)
             npks = l.score( all_gvecs , tol = options.tol )
+            if (1.0*npks/len(all_gvecs)) < options.fraction_indexed:
+                break
             dr = indexing.calc_drlv2( l.r2c, all_gvecs) 
             t2 = options.tol * options.tol
             # print "tol, dr",t2,dr.shape, [d for d in dr[:10]] # print it !!!
@@ -192,4 +211,4 @@ if __name__=="__main__":
         if len(ubis)>0:
             indexing.write_ubi_file(options.outfile,ubis)
             print "Wrote to file",options.outfile
-        raise
+        raise 

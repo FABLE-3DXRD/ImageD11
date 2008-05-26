@@ -1,4 +1,4 @@
-
+#!/usr/bin/env fable.python
 
 from bbfreeze import Freezer
 import os, sys,ImageD11
@@ -139,9 +139,18 @@ if sys.version_info[0:2] == (2,5):
             f.addScript( os.path.join( root, s) )
         f()
         #
-        import shutil, matplotlib
+        import shutil, matplotlib, site
+        shutil.copy(site.__file__ ,
+                    os.path.join(target,
+                                 os.path.split(site.__file__)[-1]))
+        shutil.copy(site.__file__.replace("pyc","py"),
+                    os.path.join(target,
+                                 os.path.split(site.__file__)[-1].replace(
+            "pyc","py")))
+        
+        
         shutil.copytree( matplotlib.get_data_path(),
-                         os.path.join(target, "matplotlibdata" ) )
+                         os.path.join(target, "mpl-data" ) )
         shutil.copytree("/sware/exp/fable/standalone/suse82/lib/Togl1.7",
                          os.path.join(target, "Togl1.7" ) )
         if os.path.exists(os.path.join(target,

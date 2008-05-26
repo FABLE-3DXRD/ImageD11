@@ -176,10 +176,12 @@ class lattice(object):
         # Direction is irrelevant for reduction to shortest 3
         try:
             vl =    reduce( v1   ,    v2,    v3, min_vec2 )
-            again = reduce( vl[0], vl[1], vl[2], min_vec2 )  
+            again = reduce( vl[0], vl[1], vl[2], min_vec2 )
+
         except:
             raise BadVectors()
         # Check reduction is stable
+        print vl
         assert allclose( array(vl),array(again) ), "Bad reduction %s %s"%(
                 str(vl), str(again))
         # This cause a problem - why?
@@ -310,18 +312,25 @@ def find_lattice(vecs,
         test_vecs = vecs
     assert isinstance(test_vecs, rc_array)
     gen_dir = vecs[0].direction
-    if noisy: print "Finding with dir",gen_dir
-    print "min_vec2",min_vec2
+    if noisy:
+        print "Finding with dir",gen_dir
+        for i,v in enumerate(vecs):
+            print i, v
+            if i > n_try:
+                break
+        print "min_vec2",min_vec2
     for i,j,k in iter3d(n_try):
         # if (i,j,k) == (0,1,6):
         #    print vecs[i],vecs[j],vecs[k]
         #    print gen_dir, min_vec2
+        if noisy:
+            print "Try",i,j,k,
         try:
             if gen_dir == 'row':
                 if dot(vecs[i], vecs[i]) < min_vec2: continue
                 if dot(vecs[j], vecs[j]) < min_vec2: continue
                 if dot(vecs[k], vecs[k]) < min_vec2: continue
-                print i,j,k
+                print i,j,k,
                 l = lattice(vecs[i], vecs[j], vecs[k], 
                             direction = gen_dir,
                             min_vec2 = min_vec2)
@@ -330,7 +339,7 @@ def find_lattice(vecs,
                     if dot(vecs[:,i], vecs[:,i]) < min_vec2: continue
                     if dot(vecs[:,j], vecs[:,j]) < min_vec2: continue
                     if dot(vecs[:,k], vecs[:,k]) < min_vec2: continue
-                    print i,j,k
+                    # print i,j,k,dot(vecs[:,i], vecs[:,i]),dot(vecs[:,j], vecs[:,j]),dot(vecs[:,k], vecs[:,k])
                     l = lattice(vecs[:,i], vecs[:,j], vecs[:,k], 
                             direction = gen_dir,
                             min_vec2 = min_vec2)
@@ -340,10 +349,20 @@ def find_lattice(vecs,
                     
             else:
                 raise Exception("Logical impossibility")
+            # First test on vecs
+            
+            scor = l.score( vecs, tol )
+            frac = 1.0 * scor / vecs.nvectors()
+            if noisy:
+                print "Score on vecs",scor,frac,
+            
             scor = l.score( test_vecs, tol )
-            frac = 1.0 * scor / len(test_vecs)
-            print i,j,k,scor
+            frac = 1.0 * scor / test_vecs.nvectors()
+            if noisy:
+                print "score on test_vecs",scor,frac
             if frac > fraction_indexed:
+                if noisy:
+                    print "Returning"
                 return l
         except BadVectors:
             pass
