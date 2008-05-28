@@ -789,7 +789,7 @@ static PyObject *put_incr( PyObject *self,
 		     "First array must be 1d and float32");
      return NULL;
    }
-   if(ind->nd != 1 || ind->descr->type_num!=PyArray_INT){
+   if(ind->nd != 1 || ind->descr->type_num!=PyArray_INT32){
      ptype(ind->descr->type_num);
      PyErr_SetString(PyExc_ValueError,
 		     "Second array must be 1d and int");
