@@ -250,3 +250,14 @@ class newcolumnfile(columnfile):
         self.titles = titles
         self.ncols = len(titles)
         
+if __name__=="__main__":
+    import numpy, sys, time, os
+    from ImageD11.columnfile import columnfile
+    start = time.time()
+    c = columnfile(sys.argv[1])
+    print "ImageD11",time.time()-start
+    start = time.time()
+    c = numpy.loadtxt(sys.argv[1])
+    print c.shape
+    print "numpy",time.time()-start
+    os.system("time -p ./a.out")
