@@ -29,7 +29,26 @@ class t1(unittest.TestCase):
             for item in row:    
                i+=1
                self.assertEqual(i, item)
-               
+import os, time
+
+class t2(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("nac.db"):
+            return
+        start = time.time()
+        colfile2db.colfile2db( os.path.join("..","nac_demo","peaks.out_merge_t200") , "nac.db" )
+        print "write db",time.time()-start
+
+    def test1(self):
+        # read back
+        start = time.time()
+        con = sqlite3.connect("nac.db")
+        cur = con.cursor()
+        cur.execute("select * from peaks")
+        dat = [ [ v for v in row] for row in cur]
+        print "read db",time.time()-start, len(dat[0]), len(dat)
+        
+
 if __name__=="__main__":
     unittest.main()               
     
