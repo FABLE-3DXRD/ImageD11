@@ -35,9 +35,10 @@ def fitgrain(options):
     #print "#pks",o.grains[(0,"0.flt")].x.shape
     o.refineubis(quiet = False)
     o.saveparameters(options.newparfile)
-    ul = [g.ubi for g in o.grains.values()]
-    indexing.write_ubi_file(options.newubifile, ul)
-
+    # ul = [g.ubi for g in o.grains.values()]
+    # indexing.write_ubi_file(options.newubifile, ul)
+    # Keep the original ordering and add translation information
+    o.savegrains(options.newubifile, sort_npks=False)
 
 
 
