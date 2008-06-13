@@ -77,7 +77,7 @@ class p:
 
 if __name__=="__main__":
         parser = p()
-        import ImageD11.peaksearch
-        newparser = ImageD11.peaksearch.get_options(parser)
+        import ImageD11.peaksearcher
+        newparser = ImageD11.peaksearcher.get_options(parser)
         newparser.save("peaksearch.xml")
 
