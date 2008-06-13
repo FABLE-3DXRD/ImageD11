@@ -8,7 +8,7 @@ import numpy as np
 class test1(unittest.TestCase):
     def test_put(self):
         data = np.zeros(10,np.float32)
-        ind  = np.arange(10).astype(np.intc)
+        ind  = np.arange(10).astype(np.int32)
         vals = np.ones(10,np.float32)
         closest.put_incr( data, ind, vals )
         assert (data == vals).all()
@@ -17,7 +17,7 @@ class test1(unittest.TestCase):
 
     def test_put_twice(self):
         data = np.zeros(10,np.float32)
-        ind  = np.ones(10,np.intc)
+        ind  = np.ones(10,np.int32)
         vals = np.ones(10,np.float32)
         closest.put_incr( data, ind, vals )
         assert (data == np.array( [0, 10] + [0]*8 , np.float)).all()
@@ -26,7 +26,7 @@ class test1(unittest.TestCase):
 
     def test_as_flat(self):
         data = np.zeros( (10, 10), np.float32 )
-        ind  = np.ones( 10 , np.intc)*50
+        ind  = np.ones( 10 , np.int32)*50
         vals = np.ones( 10 , np.float32)
         closest.put_incr( np.ravel(data) , ind, vals )
         assert ( np.ravel(data)[50] == 10 )
