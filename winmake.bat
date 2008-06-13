@@ -1,6 +1,6 @@
 
 set SRC="\wright\eclipse_workspaces\fabulous\imaged11\trunk"
-set PYT=c:\python24\python
+set PYT=c:\python25\python
 cd %SRC%
 %PYT% setup.py build --compiler=mingw32 install 
 
@@ -19,11 +19,9 @@ REM del /q _na* _ns* ssl.pyd
 
 :TEST
 
-cd %SRC%\test\demo
-%PYT% test.py
 
 cd %SRC%\test\quantix
-%PYT% fitgrain.py g3.pars g3.ubi g3.flt new.pars
+%PYT% testfitfilt.py
 
 cd %SRC%\test
 %PYT% test_peaksearch.py
@@ -41,6 +39,18 @@ cd %SRC%\test\testconnectedpixels
 cd %SRC%\test\testlabelimage
 %PYT% testlabelimage.py
 
+cd %SRC%/test
+%PYT% test_put_incr.py
+
+cd %SRC%\test\demo
+%PYT% latred_new.py
+%PYT% test.py
+
+cd %SRC%/test/test_index_unknown
+%PYT% test_index_unknown.py
+
+cd %SRC%/test/test_mmo
+%PYT% make_test_data.py
 
 %PYT% -c "import ImageD11; print ImageD11.__version__"
 
