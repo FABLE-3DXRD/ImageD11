@@ -39,6 +39,7 @@ def test_fft():
     print "Finding lattice l1 from patterson"
     l1 = find_lattice( vecs,
                        min_vec2 = 9,
+                       test_vecs = tv,
                        n_try = 20 )
     print "r2c == ubi matrix"
     print l1.r2c 
