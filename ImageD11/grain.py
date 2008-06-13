@@ -31,7 +31,10 @@ class grain:
         self.mt = numpy.dot(self.ubi, self.ubi.T)
         self.rmt = numpy.linalg.inv(self.mt)
         if translation==None:
-            self.translation = numpy.zeros(3, numpy.float)
+            # If translation has not been read from ubi file make it 
+            # be None to avoid confusion with a grain which is known
+            # to be at [0,0,0]
+            self.translation = None
         else:
             self.translation = numpy.array(translation,numpy.float)
 
@@ -60,7 +63,7 @@ def read_grain_file(filename):
     f = open(filename, "r")
     grainsread = []
     u = []
-    t = [0,0,0]
+    t = None
     for line in f:
         if line.find("#translation:")==0:
             t = [ float(x) for x in line.split()[1:]]
@@ -73,6 +76,6 @@ def read_grain_file(filename):
         if len(u)==3:
             grainsread.append( grain(u, t) )
             u = []
-            t = [0,0,0]
+            t = None
     f.close()
     return grainsread

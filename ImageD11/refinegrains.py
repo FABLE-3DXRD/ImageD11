@@ -185,10 +185,9 @@ class refinegrains:
                 try:
                     gr = self.grains[(grainname,scanname)]
                 except KeyError:
-                    if (self.translationsread[grainname] == 0).all():
+                    if self.translationsread[grainname] is None:
                         self.grains[(grainname,scanname)] = grain.grain(
-                            self.ubisread[grainname],
-                            translation=t)
+                            self.ubisread[grainname], translation = t )
                         self.grains[(grainname,scanname)].name = \
                             (str(grainname)+":"+scanname).replace(" ","_")
                     else:
@@ -197,9 +196,6 @@ class refinegrains:
                             translation = self.translationsread[grainname] )
                         self.grains[(grainname,scanname)].name = \
                             (str(grainname)+":"+scanname).replace(" ","_")
-
-                    
-
         for scanname in self.scannames:
             self.reset_labels(scanname)
 
@@ -238,9 +234,9 @@ class refinegrains:
                                       omega = om * sign,
                                       **self.parameterobj.parameters)
         self.gv = transform.compute_g_vectors(self.tth, self.eta, om*sign,
-                                              float(self.parameterobj.parameters['wavelength']),
-                                              self.parameterobj.parameters['wedge'],
-                                              self.parameterobj.parameters['chi'])
+                                float(self.parameterobj.parameters['wavelength']),
+                                self.parameterobj.parameters['wedge'],
+                                self.parameterobj.parameters['chi'])
         self.gv = self.gv.T
         # print "in compute_gv",self.gv[0]
 
@@ -256,7 +252,11 @@ class refinegrains:
 
         if not quiet:
             import math
-            print "%-8d %.6f"%(self.npks,math.sqrt(self.avg_drlv2))
+            try:
+                print "%-8d %.6f"%(self.npks,math.sqrt(self.avg_drlv2))
+            except:
+                print self.npks,self.avg_drlv2, mat, self.gv.shape, self.tolerance
+#                raise
 
         #print self.tolerance
         # self.npks = closest.score_and_refine(mat, self.gv, self.tolerance)
@@ -339,7 +339,7 @@ class refinegrains:
         self.parameterobj.parameters['t_y'] = self.grains[(gr,sc)].translation[1]
         self.parameterobj.parameters['t_z'] = self.grains[(gr,sc)].translation[2]
 
-        
+
     def refinepositions(self, quiet=True,maxiters=100):
         self.assignlabels()
         ks  = self.grains.keys()
@@ -380,7 +380,8 @@ class refinegrains:
             scanname = key[1]
             if not quiet:
                 print "%10s %10s"%(grainname,scanname),
-            # Compute gv using current parameters
+            # Compute gv using current parameters, including grain position
+            self.set_translation(key[0],key[1])
             self.compute_gv(grainname, scanname)
             res = self.refine(g.ubi , quiet=quiet)
             if not scoreonly:
