@@ -393,8 +393,11 @@ static PyObject *score_and_refine( PyObject *self, PyObject *args, PyObject *key
      
    }
    
-      
-   return Py_BuildValue("id",n,sumdrlv2/n);
+   if( n > 0){    
+       return Py_BuildValue("id",n,sumdrlv2/n);
+    }   else  {
+       return Py_BuildValue("id",n,0);
+    }
 }
 
 
