@@ -181,7 +181,7 @@ class lattice(object):
         except:
             raise BadVectors()
         # Check reduction is stable
-        print vl
+        # print vl
         assert allclose( array(vl),array(again) ), "Bad reduction %s %s"%(
                 str(vl), str(again))
         # This cause a problem - why?
