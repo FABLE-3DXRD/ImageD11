@@ -20,6 +20,8 @@ def colfile2db( colfilename, dbname ):
     c = dbo.cursor()
     # Build up columnames and types to make table
     tablecols = []
+    # Not allowed for sql to have ^ in string
+    colf.titles = [t.replace("^","_pow_") for t in colf.titles]
     for name in colf.titles:
         if name in columnfile.INTS:
             tablecols.append(name + " INTEGER")
