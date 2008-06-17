@@ -1,0 +1,4 @@
+
+"""
+Module for scaling peaks
+"""
