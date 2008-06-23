@@ -323,10 +323,29 @@ class refinegrains:
         self.assignlabels()
         guess = self.parameterobj.get_variable_values()
         inc = self.parameterobj.get_variable_stepsizes()
+        names = self.parameterobj.varylist
         self.printresult(guess)
         self.grains_to_refine = self.grains.keys()
         s=simplex.Simplex(self.gof, guess, inc)
         newguess,error,iter=s.minimize(maxiters=maxiters , monitor=1)
+        print 
+        print "names",names
+        print "ng",newguess
+        for p,v in zip(names,newguess):
+            # record results
+            self.parameterobj.set(p,v)    
+            print "Setting parameter",p,v
+        trans =["t_x","t_y","t_z"]
+        for t in trans:
+            if t in names:
+                i = trans.index(t)
+                # imply that we are using this translation value, not the 
+                # per grain values
+                # This is a f*cking mess - translations should never have been
+                # diffractometer parameters
+                for g in self.getgrains():
+                    self.grains[g].translation[i] = newguess[names.index(t)]
+                    print g, t,i,newguess[names.index(t)]
         print
         self.printresult(newguess)
 

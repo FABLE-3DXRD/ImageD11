@@ -55,6 +55,7 @@ class data_table(object):
         """
         self.keys = keys
     def calc(self):
+        pass
         
 
 class scalem(object):
@@ -107,7 +108,8 @@ class scalem(object):
             Columns: I_corr, sigma_corr
             Foreach scaling variable: dI_corr/dvar, dsigma_corr/dvar
         """
-        for o in self.
+        pass
+        # for o in self.
 
 
 
@@ -139,6 +141,9 @@ class scalem(object):
 # Form R(int) and check for absences and centrics
 #
 # Done.
+
+
+
 
 def generate_key(hkl,symmops):
     """ To be redone in C/fortran etc 
