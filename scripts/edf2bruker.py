@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/sware/exp/fable/standalone/redhate4-a64/bin/python
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 #!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
@@ -38,7 +38,9 @@ class darkflood:
                  darkoffset = None,
                  floodfile = None,
                  floodmultiplier = None,
-                 border = None):
+                 border = None,
+                 powfac = 1.0
+                 ):
         self.darkfile = darkfile
         self.darkoffset = darkoffset
         self.floodfile = floodfile
@@ -48,6 +50,7 @@ class darkflood:
         self.darkimage = None
         self.floodimage = None
         self.flmult = None
+        self.powfac = powfac
 
 
     def readdark(self,darkfile):
@@ -56,6 +59,9 @@ class darkflood:
             self.darkdata = openimage(darkfile)
             self.darkfile=darkfile
             self.darkimage = self.darkdata.data
+            if self.powfac != 1.0:
+                print "apply 0.96 to dark"
+                self.darkimage = n.power(self.darkimage, 0.96)
         except:
             print "No dark file"
             self.darkdata = None
@@ -86,6 +92,9 @@ class darkflood:
         tin = data.dtype.char
         # Start by copying
         cor = data.astype(n.Float32).copy()
+        if self.powfac != 1.0:
+            print "applying 0.96"
+            cor = n.power(cor, 0.96)
         if self.darkimage is not None:
             cor = cor - self.darkimage
             # print cor[c0,c1]
@@ -117,12 +126,16 @@ class edf2bruker:
                  distance = 5.0, 
                  border = None, 
                  wvln = 0.5,
-                 omegasign = 1.):
+                 omegasign = 1.,
+                 powfac = 1.0):
         """ converts edf (esrf id11 frelon) to bruker (esrf id11 smart6500)"""
         self.distance = distance
         self.omegasign = omegasign
         self.wvln = wvln
-        self.darkflood = darkflood(darkoffset = darkoffset, border = border)
+        self.powfac = powfac
+        self.darkflood = darkflood(darkoffset = darkoffset,
+                                   border = border,
+                                   powfac = self.powfac)
         self.darkflood.readdark(dark)
         self.darkflood.readflood(flood)
         self.templatefile = template
@@ -242,6 +255,11 @@ if __name__=="__main__":
                           default=None,
                           help="Border of image to zero out")
 
+        parser.add_option("-p","--powfac",action="store",type="float", 
+                          dest="powfac",
+                          default=1.0,
+                          help="power to raise image to (1.0 or 0.96)")
+
         parser.add_option("-t","--template",action="store", type="string", 
                           dest="template",
              default = "/data/opid11/inhouse/Frelon2K/brukertemplate.0000")
@@ -253,7 +271,9 @@ if __name__=="__main__":
                                distance=options.distance,
                                border=options.border,
                                wvln=options.wvln,
-                               omegasign=options.omegasign)
+                               omegasign=options.omegasign,
+                               powfac = options.powfac
+                               )
 
 
         files_in = file_series.numbered_file_series(
