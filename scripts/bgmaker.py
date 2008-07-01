@@ -1,4 +1,5 @@
-#!python
+#!/usr/bin/python
+
 
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
@@ -99,10 +100,7 @@ if __name__=="__main__":
         step = options.step
         # Generate list of files to proces
         from fabio import file_series
-        if options.format in ['bruker', 'BRUKER', 'Bruker']:
-            extn = ""
-            corrfunc.orientation = "bruker"
-        elif options.format == 'GE':
+        if options.format in ['bruker', 'BRUKER', 'Bruker', 'GE']:
             extn = ""
         else:
             extn = options.format

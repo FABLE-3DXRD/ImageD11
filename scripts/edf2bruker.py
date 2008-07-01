@@ -26,7 +26,7 @@ A script to convert edf images into bruker format
 """
 
 import time
-import numpy.oldnumeric as n
+import numpy
 from fabio.openimage import openimage
 from fabio.brukerimage import brukerimage
 from fabio import file_series
@@ -39,8 +39,10 @@ class darkflood:
                  floodfile = None,
                  floodmultiplier = None,
                  border = None,
-                 powfac = 1.0
+                 powfac = 1.0,
+                 overflow= 65534, 
                  ):
+        self.overflow=overflow
         self.darkfile = darkfile
         self.darkoffset = darkoffset
         self.floodfile = floodfile
@@ -58,10 +60,10 @@ class darkflood:
         try:
             self.darkdata = openimage(darkfile)
             self.darkfile=darkfile
-            self.darkimage = self.darkdata.data
+            self.darkimage = self.darkdata.data.astype(numpy.float32)
             if self.powfac != 1.0:
                 print "apply 0.96 to dark"
-                self.darkimage = n.power(self.darkimage, 0.96)
+                self.darkimage = numpy.power(self.darkimage, 0.96)
         except:
             print "No dark file"
             self.darkdata = None
@@ -73,12 +75,12 @@ class darkflood:
         try:
             self.flooddata = openimage(floodfile)
             self.floodfile = floodfile
-            self.floodimage = self.flooddata.data.astype(n.Float32)
+            self.floodimage = self.flooddata.data.astype(numpy.float32)
             if self.floodmultiplier is None:
                 centre = self.floodimage[100:-100,100:-100]
                 npix = centre.shape[0]*centre.shape[1]
-                self.floodmultiplier = n.sum(n.ravel(
-                        centre).astype(n.Float32))/npix
+                self.floodmultiplier = numpy.sum(numpy.ravel(
+                        centre).astype(numpy.float32))/npix
                 self.flmult = 1 / (self.floodimage * self.floodmultiplier)
         except:
             print "No flood file"
@@ -91,18 +93,21 @@ class darkflood:
         """ correct the data """
         tin = data.dtype.char
         # Start by copying
-        cor = data.astype(n.Float32).copy()
+        cor = data.astype(numpy.float32).copy()
+        msk = numpy.where( cor > self.overflow,
+                           65534,
+                           0 )
         if self.powfac != 1.0:
-            print "applying 0.96"
-            cor = n.power(cor, 0.96)
+            # print "applying 0.96"
+            numpy.power(cor, 0.96, cor)
         if self.darkimage is not None:
-            cor = cor - self.darkimage
+            numpy.subtract(cor, self.darkimage,cor)
             # print cor[c0,c1]
         if self.flmult is not None:
-            cor = cor * self.flmult
+            numpy.multiply(cor , self.flmult, cor)
             # print cor[c0,c1]
-        if self.darkoffset is not None:
-            cor = cor + self.darkoffset
+        #if self.darkoffset is not None:
+        #    cor = cor + self.darkoffset
         if self.border is not None:
             # set the edges to zero
             b=self.border
@@ -111,10 +116,12 @@ class darkflood:
             cor[-b:,:]=0
             cor[:,-b:]=0
         # Should we bother with this - yes please - noisy pixels overflow
-        cor =  n.where(cor>0.1, cor, 0.) # truncate zero
-        
+        cor =  numpy.where(cor>0.1, cor, 0.) # truncate zero
+        cor =  numpy.where(msk > 1, msk, cor) # mask overflows
         # print cor[c0,c1]
         return cor.astype(tin)
+
+
 
 class edf2bruker:
 
@@ -127,15 +134,18 @@ class edf2bruker:
                  border = None, 
                  wvln = 0.5,
                  omegasign = 1.,
-                 powfac = 1.0):
+                 powfac = 1.0,
+                 overflow=65534 ):
         """ converts edf (esrf id11 frelon) to bruker (esrf id11 smart6500)"""
         self.distance = distance
+        self.overflow = overflow
         self.omegasign = omegasign
         self.wvln = wvln
         self.powfac = powfac
         self.darkflood = darkflood(darkoffset = darkoffset,
                                    border = border,
-                                   powfac = self.powfac)
+                                   powfac = self.powfac,
+                                   overflow = self.overflow)
         self.darkflood.readdark(dark)
         self.darkflood.readflood(flood)
         self.templatefile = template
@@ -208,7 +218,8 @@ class edf2bruker:
         outf = open(fileout,"wb")
         outf.write(self.h)
         #self.tlog("write header")
-        outf.write(n.ravel(n.transpose(corrected_image.astype(n.UInt16))).tostring())
+        outf.write(numpy.ravel(
+            numpy.transpose(corrected_image.astype(numpy.uint16))).tostring())
         #self.tlog("write")
         outf.close()
         self.tlog("/s")
@@ -264,17 +275,45 @@ if __name__=="__main__":
                           dest="template",
              default = "/data/opid11/inhouse/Frelon2K/brukertemplate.0000")
 
+
+        parser.add_option("-o","--overflow",action="store",type="float", 
+                          dest="overflow",
+                          default=65534,
+                          help="Overflow value, greater than this set to 65534")
+        
+        parser.add_option("-j","--jthreads",action="store",type="int", 
+                          dest="jthreads",
+                          default=1,
+                          help="Number of threads to use for processing")
+        
+
         options, args = parser.parse_args()
 
 
-        converter = edf2bruker(options.dark , options.flood , options.template,
-                               distance=options.distance,
-                               border=options.border,
-                               wvln=options.wvln,
-                               omegasign=options.omegasign,
-                               powfac = options.powfac
-                               )
 
+
+
+        from ImageD11.ImageD11_thread import ImageD11_thread
+        class threaded_converter(ImageD11_thread):
+            def __init__(self, files, c, name="converter"):
+                self.files = files
+                self.c = c
+                ImageD11_thread.__init__(self,name=name)
+            def ImageD11_run(self):
+                for fin, fout in self.files:
+                    c.convert(fin, fout)
+                    print fout
+    
+        # Make jthreads converters
+        converters = [ edf2bruker(options.dark , options.flood , options.template,
+                                  distance=options.distance,
+                                  border=options.border,
+                                  wvln=options.wvln,
+                                  omegasign=options.omegasign,
+                                  powfac = options.powfac,
+                                  overflow = options.overflow,
+                                  )
+                       for j in range(options.jthreads)]
 
         files_in = file_series.numbered_file_series(
             options.stem,
@@ -288,12 +327,17 @@ if __name__=="__main__":
             options.last,
             "") # extn
 
-        for filein, fileout in zip(files_in, files_out):
-            print filein,
-            converter.convert(filein,fileout)
-            print fileout
-            sys.stdout.flush()
+        allfiles = zip(files_in, files_out)
 
+        # Divide files over threads
+        fl = [ allfiles[j::options.jthreads] for j in range(options.jthreads) ]
+
+        # Create threads
+        my_threads = [ threaded_converter( f, c) for c, f in zip(converters, fl) ]
+
+        # Off we go!
+        for t in my_threads:
+            t.start()
 
     except:
         parser.print_help()
