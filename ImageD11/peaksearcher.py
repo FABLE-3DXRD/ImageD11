@@ -178,6 +178,13 @@ def peaksearch_driver(options, args):
     ###################
 
 
+    if options.killfile is not None and os.path.exists(options.killfile):
+        print "The purpose of the killfile option is to create that file"
+        print "only when you want peaksearcher to stop"
+        print "If the file already exists when you run peaksearcher it is"
+        print "never going to get started"
+        raise ValueError("Your killfile "+options.killfile+" already exists")
+
     if options.thresholds is None:
         raise ValueError("No thresholds supplied [-t 1234]")
 
@@ -465,6 +472,8 @@ def peaksearch_driver(options, args):
                     for thr in my_threads:
                         if thr.isAlive():
                             nalive += 1
+                    if options.killfile is not None and os.path.exists(options.killfile):
+                        raise KeyboardInterrupt()
                     time.sleep(1)
                 except KeyboardInterrupt:
                     print "Got keyboard interrupt in waiting loop"
@@ -553,6 +562,9 @@ def get_options(parser):
         parser.add_option("-T","--start", action="store",
                           dest="OMEGA", default=0.0, type="float",
                           help="Start position in Omega when you have no header info")
+        parser.add_option("-k","--killfile", action="store",
+                          dest="killfile", default=None, type="string",
+                          help="Name of file to create stop the peaksearcher running")
         parser.add_option("--ndigits", action="store", type="int",
                 dest = "ndigits", default = 4,
                 help = "Number of digits in file numbering [4]")
