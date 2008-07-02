@@ -257,9 +257,9 @@ def peaksearch_driver(options, args):
         print "make labelimage",mergefile,spotfile
     # Not sure why that was there (I think if glob was used)
     # files.sort()
-    if options.darkfile!=None:
-        print "Using dark (background)",options.darkfile
-        darkimage= openimage(options.darkfile).data.astype(numpy.float32)
+    if options.dark!=None:
+        print "Using dark (background)",options.dark
+        darkimage= openimage(options.dark).data.astype(numpy.float32)
     else:
         darkimage=None
     if options.darkoffset!=0:
@@ -526,7 +526,7 @@ def get_options(parser):
             dest="outfile",default="peaks.spt", type="string",
             help="Output filename, default=peaks.spt")
         parser.add_option("-d", "--darkfile", action="store",
-            dest="darkfile", default=None,  type="string",
+            dest="dark", default=None,  type="string",
             help="Dark current filename, to be subtracted, default=None")
         parser.add_option("-D", "--darkfileoffset", action="store",
             dest="darkoffset", default=0, type="float",
