@@ -46,11 +46,17 @@ def write_grain_file(filename, list_of_grains):
         t = g.translation
         f.write("#translation: %f %f %f\n"%(t[0],t[1],t[2]))
         if hasattr(g,"name"):
-            f.write("#name %s\n"%(g.name))
+            f.write("#name %s\n"%(g.name.rstrip()))
         if hasattr(g,"x"):
+            # Refined peaks assigned takes priority
             f.write("#npks %d\n"%(len(g.x)))
+        elif hasattr(g,"npks"):
+            f.write("#npks %d\n"%(int(g.npks)))
         if hasattr(g,"Rod"):
-            f.write("#Rod %f %f %f\n"%tuple(g.Rod))
+            try:
+                f.write("#Rod %f %f %f\n"%tuple([float(r) for r in g.Rod]))
+            except:
+                f.write("#Rod %s"%(g.Rod))
         f.write("#UBI:\n")
         u = g.ubi
         f.write("%f %f %f\n"  %(u[0,0],u[0,1],u[0,2]))
@@ -64,17 +70,25 @@ def read_grain_file(filename):
     grainsread = []
     u = []
     t = None
+    p = {}
     for line in f:
         if line.find("#translation:")==0:
             t = [ float(x) for x in line.split()[1:]]
             continue
-        if line[0] == "#":
+        if line[0] == "#" and line.find("UBI")<0:
+            k,v=line[1:].split(" ",1)
+            p[k]=v
             continue
+        if line.find("#")==0: continue
         vals = [ float(x) for x in line.split() ]
         if len(vals) == 3:
             u = u + [vals]
         if len(u)==3:
             grainsread.append( grain(u, t) )
+            for k in ["name","npks","Rod"]:
+                if p.has_key(k):
+                    setattr(grainsread[-1], k, p[k])
+            p={}
             u = []
             t = None
     f.close()

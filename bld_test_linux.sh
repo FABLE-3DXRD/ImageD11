@@ -11,7 +11,7 @@ if [ `hostname` = "lapwright" ]; then
     PYTHONPATH=$SRC/build/lib.linux-i686-2.5/
 else
     if [ "$HOSTTYPE" = "x86_64" ]; then
-	SRC="/users/wright/fable/svn/ImageD11/trunk"
+	SRC="/users/wright/fable/trunks/ImageD11/"
 	export LD_LIBRARY_PATH=/sware/exp/fable/standalone/redhate4-a64/lib
 	PYT=/sware/exp/fable/standalone/redhate4-a64/bin/python
         PYTHONPATH=$SRC/build/lib.linux-i686-2.5/
@@ -22,7 +22,7 @@ fi
 
 
            
-SRC=/home/user/soft/fable/ImageD11
+# SRC=/home/user/soft/fable/ImageD11
            
 PYT=python
            

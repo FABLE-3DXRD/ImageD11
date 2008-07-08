@@ -39,7 +39,8 @@ import time
 
 # For benchmarking
 reallystart = time.time()
-global stop_now
+from ImageD11.ImageD11_thread import stop_now, ImageD11_thread
+
 stop_now = False
 
 from math import sqrt
@@ -341,24 +342,7 @@ def peaksearch_driver(options, args):
         try:
             # TODO move this to a module ?
             import Queue, threading
-            
-            class ImageD11_thread(threading.Thread):
-                """ Add a stopping mechanism for unhandled exceptions """
-                def __init__(self, name="ImageD11_thread"):
-                    self.name=name
-                    threading.Thread.__init__(self)
-                def run(self):
-                    global stop_now
-                    try:
-                        self.ImageD11_run()
-                    except:
-                        stop_now = True
-                        raise
-                def ImageD11_stop_now(self):
-                    global stop_now
-                    if stop_now:
-                        print "Got a stop in",self.name
-                    return stop_now
+
                 
             class read_only(ImageD11_thread):
                 def __init__(self, queue, file_series_obj , name="read_only"):
