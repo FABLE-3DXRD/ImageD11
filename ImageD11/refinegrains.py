@@ -67,17 +67,17 @@ class refinegrains:
     # Default stepsizes for the 
     stepsizes = {
         "wavelength" : 0.001,
-        'y_center'   : 0.1,
-        'z_center'   : 0.1,
-        'distance'   : 0.1,
+        'y_center'   : 0.2,
+        'z_center'   : 0.2,
+        'distance'   : 0.2,
         'tilt_y'     : transform.radians(0.1),
         'tilt_z'     : transform.radians(0.1),
         'tilt_x'     : transform.radians(0.1),
         'wedge'      : transform.radians(0.1),
         'chi'        : transform.radians(0.1),
-        't_x' : 0.1,
-        't_y' : 0.1,
-        't_z' : 0.1,
+        't_x' : 0.2,
+        't_y' : 0.2,
+        't_z' : 0.2,
         }
 
     def __init__(self, tolerance = 0.01):
@@ -312,8 +312,33 @@ class refinegrains:
         if contribs > 0:
             return 1e6*diffs/contribs
         else:
-            print "No contribs???"
+            print "No contribs???", self.grains_to_refine
             return 1e6
+
+
+    def estimate_steps(self, gof, guess, steps):
+        assert len(guess) == len(steps)
+        cen = self.gof(guess)
+        deriv = []
+        print "Estimating step sizes"
+        for i in range(len(steps)):
+            print self.parameterobj.varylist[i],
+            newguess = [g for g in guess]
+            newguess[i] = newguess[i] + steps[i]
+            here = self.gof(newguess)
+            print "npks, avgdrlv" ,  self.npks, self.avg_drlv2,
+            deriv.append(here - cen)
+            print "D_gof, d_par, dg/dp",here-cen, steps[i],here-cen/steps[i]
+        # Make all match the one which has the biggest impact
+        j = numpy.argmax(numpy.absolute(deriv))
+        print "Max step size is on", self.parameterobj.varylist[j]
+        inc  =  [ s * abs(deriv[j]) / abs(d) for d, s in zip(deriv, steps) ]
+        print "steps",steps
+        print "inc",inc
+        return inc
+    
+
+
 
 
     def fit(self, maxiters=100):
@@ -326,6 +351,7 @@ class refinegrains:
         names = self.parameterobj.varylist
         self.printresult(guess)
         self.grains_to_refine = self.grains.keys()
+        inc = self.estimate_steps(self.gof, guess, inc)
         s=simplex.Simplex(self.gof, guess, inc)
         newguess,error,iter=s.minimize(maxiters=maxiters , monitor=1)
         print 
