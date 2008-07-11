@@ -54,10 +54,10 @@ import numpy
 from fabio.openimage import openimage
 from fabio import file_series, fabioimage
 
-# Global variables
-OMEGA = 0
-OMEGASTEP = 1.0
-OMEGAOVERRIDE = False
+# Cannot be global variables due to threading
+# OMEGA = 0
+# OMEGASTEP = 1.0
+# OMEGAOVERRIDE = False
 
 class timer:
     def __init__(self):
@@ -110,6 +110,8 @@ def peaksearch( filename ,
     """
     t = timer()
     picture = data_object.data.astype(numpy.float32)
+    
+    assert data_object.header.has_key("Omega"), "Bug in peaksearch headers"
 
     for lio in labims.values():
         f = lio.sptfile
@@ -130,15 +132,15 @@ def peaksearch( filename ,
             except KeyError:
                 pass
 
-    # Get the rotaiton angle for this image
-    global OMEGA, OMEGASTEP, OMEGAOVERRIDE
-    if not data_object.header.has_key("Omega") or OMEGAOVERRIDE:
+    # Get the rotation angle for this image
+    # global OMEGA, OMEGASTEP, OMEGAOVERRIDE
+    # if not data_object.header.has_key("Omega") or OMEGAOVERRIDE:
         # Might have imagenumber or something??
-        ome = OMEGA
-        OMEGA += OMEGASTEP
+        # ome = OMEGA
+        # OMEGA += OMEGASTEP
         # print "Overriding the OMEGA"
-    else: # Might have imagenumber or something??
-        ome = float(data_object.header["Omega"])
+    # else: # Might have imagenumber or something??
+    ome = float(data_object.header["Omega"])
     # print "Reading from header"
     #
     # Now peaksearch at each threshold level    
@@ -231,7 +233,7 @@ def peaksearch_driver(options, args):
 
     # Omega overrides
 
-    global OMEGA, OMEGASTEP, OMEGAOVERRIDE
+    # global OMEGA, OMEGASTEP, OMEGAOVERRIDE
     OMEGA = options.OMEGA
     OMEGASTEP = options.OMEGASTEP
     OMEGAOVERRIDE = options.OMEGAOVERRIDE 
@@ -292,7 +294,8 @@ def peaksearch_driver(options, args):
     if options.oneThread:
         # Wrap in a function to allow profiling (perhaps? what about globals??)
         def go_for_it(file_series_object, darkimage, floodimage, 
-                corrfunc , thresholds_list , li_objs ):
+                      corrfunc , thresholds_list , li_objs,
+                      OMEGA, OMEGASTEP, OMEGAOVERRIDE ):
             for filein in file_series_object:
                 t = timer()
                 try:
@@ -302,6 +305,9 @@ def peaksearch_driver(options, args):
                 except:
                     sys.stdout.write(filein+" not found\n")
                     continue
+                if OMEGAOVERRIDE or not data_object.header.has_key("Omega"):
+                    data_object.header["Omega"] = OMEGA
+                    OMEGA += OMEGASTEP
                 data_object = correct( data_object, darkimage, floodimage)
                 t.tick(filein+" io/cor")
                 peaksearch( filein, data_object , corrfunc , 
@@ -320,7 +326,8 @@ def peaksearch_driver(options, args):
                     print "install python-profile please"
                     raise
             Prof.runctx( "go_for_it(file_series_object, darkimage, floodimage, \
-                corrfunc , thresholds_list, li_objs )",
+                corrfunc , thresholds_list, li_objs , \
+                OMEGA, OMEGASTEP, OMEGAOVERRIDE )",
                 globals(),
                 locals(),
                 options.profile_file )
@@ -334,7 +341,8 @@ def peaksearch_driver(options, args):
 
         else:
             go_for_it(file_series_object, darkimage, floodimage, 
-                 corrfunc , thresholds_list, li_objs )
+                      corrfunc , thresholds_list, li_objs,
+                      OMEGA, OMEGASTEP, OMEGAOVERRIDE )
 
             
     else:
@@ -345,10 +353,14 @@ def peaksearch_driver(options, args):
 
                 
             class read_only(ImageD11_thread):
-                def __init__(self, queue, file_series_obj , name="read_only"):
+                def __init__(self, queue, file_series_obj , name="read_only",
+                             OMEGA=0, OMEGAOVERRIDE = False, OMEGASTEP = 1):
                     """ Reads files in file_series_obj, writes to queue """
                     self.queue = queue 
                     self.file_series_obj = file_series_obj
+                    self.OMEGA = OMEGA
+                    self.OMEGAOVERRIDE = OMEGAOVERRIDE
+                    self.OMEGASTEP = OMEGASTEP
                     ImageD11_thread.__init__(self , name=name)
                     
                 def ImageD11_run(self):
@@ -358,6 +370,9 @@ def peaksearch_driver(options, args):
                         ti = timer()
                         try:
                             data_object = openimage(filein)
+                            if self.OMEGAOVERRIDE or not data_object.header.has_key("Omega"):
+                                data_object.header["Omega"] = self.OMEGA
+                                self.OMEGA += self.OMEGASTEP
                         except KeyboardInterrupt:
                             raise
                         except:
@@ -421,7 +436,10 @@ def peaksearch_driver(options, args):
 
             # 8 MB images - max 40 MB in this queue
             read_queue = Queue.Queue(5)
-            reader = read_only(read_queue, file_series_object)
+            reader = read_only(read_queue, file_series_object,
+                               OMEGA = OMEGA,
+                               OMEGASTEP = OMEGASTEP,
+                               OMEGAOVERRIDE = OMEGAOVERRIDE )
             reader.start()
             queues = {}
             searchers = {}
