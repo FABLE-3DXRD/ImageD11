@@ -92,23 +92,24 @@ class rubber(Frame):
         if type(datafile)==type("string"):
             self.datafile=datafile
             dataobj=opendata(datafile)
-            self.data=dataobj.data.astype(Int)
+            self.data=dataobj.data.astype(n.Int)
             try:
                 self.omega=float(dataobj.header["Omega"])
             except:
                 self.omega = None
         else:
-            if type(datafile)==type(array([10,11,12])):
+            if type(datafile)==type(n.array([10,11,12])):
                 self.data=datafile
                 self.datafile="unknown0000.edf"
         pass  ## self.data.savespace(0)
         if type(bkgfile)==type("string"):
             self.bkgfile=bkgfile
             bkgobj=opendata(bkgfile)
-            self.bkg=bkgobj.data.astype(Int)
-            self.data=self.data.astype(Int)-self.bkg
+            self.bkg=bkgobj.data.astype(n.Int)
+            self.data=self.data.astype(n.Int)-self.bkg
             print "Got your background from",bkgfile,self.bkg.shape
-
+        else:
+            self.bkg = None
 
         Pack.config(self,expand=1,fill=BOTH)
         self.b=Frame(self)
@@ -123,6 +124,7 @@ class rubber(Frame):
         self.b.pack(side=BOTTOM)
 
         self.b1=Frame(self)
+        Button(self.b1,text="Background",command=self.rdbkg).pack(side=LEFT)
         Button(self.b1,text="Rock",command=self.makerockingcurve).pack(side=LEFT)
         Button(self.b1,text="Prev",command=self.prev).pack(side=LEFT)
         Button(self.b1,text="Next",command=self.next).pack(side=LEFT)
@@ -188,7 +190,7 @@ class rubber(Frame):
         while x <= self.maxi:
             l.append(x)
             x+=step
-        self.legend=transpose(array([l],Float))
+        self.legend=n.transpose(n.array([l],n.Float))
         self.legendimage,(scalesx,scalesy)=NumerictoImage(self.legend,(self.scale[0],10))
         self.legendimage=ImageTk.PhotoImage(self.legendimage)
         self.key.configure(image=self.legendimage)
@@ -219,12 +221,24 @@ class rubber(Frame):
         from ImageD11 import parameters
         o=parameters.parameters()
         o.loadparameters(parfile)
-        self.parameters=o.getparameters()
+        self.parameters=o.parameters
 
     def rdubis(self,ubifile=None):
         from ImageD11 import indexing
-        return indexing.readubis(ubifile)
+        if ubifile==None:
+            ubifile=tkFileDialog.askopenfilename(initialdir=os.getcwd())
+        self.ubisread = indexing.readubis(ubifile)
+        print "Read into self.ubisread",self.ubisread
 
+    def rdbkg(self, bkgfile=None):
+        if bkgfile == None:
+            bkgfile=tkFileDialog.askopenfilename(initialdir=os.getcwd())
+        self.bkgfile=bkgfile
+        bkgobj=opendata(bkgfile)
+        self.bkg=bkgobj.data.astype(n.Int)
+        self.data=self.data.astype(n.Int)-self.bkg
+        print "Got your background from",bkgfile,self.bkg.shape
+        
     def jump(self):
         number=int(self.filenum.get())
         self.datafile="%s%04d.edf"%(self.datafile[:-8],number)
@@ -249,10 +263,10 @@ class rubber(Frame):
     def readdata(self):
         dataobj=opendata(self.datafile)
         self.status.config(text=self.datafile)
-        self.data=dataobj.data.astype(Int)
+        self.data=dataobj.data.astype(n.Int)
         pass  ## self.data.savespace(0)
         try:
-            self.data=self.data.astype(Int)-self.bkg
+            self.data=self.data.astype(n.Int)-self.bkg
         except:
             print "Failed to subtract bkg",self.bkg.shape,self.data.shape
             pass
@@ -292,7 +306,7 @@ class rubber(Frame):
 
     def getstats(self):
         # Convert to float to avoid overflow issues
-        t=self.data.astype(Float)
+        t=self.data.astype(n.Float)
         sumi=n.sum(n.ravel(t))
         sumisq=n.sum(n.ravel(t*t))
         npixels=t.shape[0]*t.shape[1]
@@ -409,30 +423,20 @@ class rubber(Frame):
         ypos = self.canvasObject.canvasy(event.y)/self.zoom
         print "xpos,ypos",xpos,ypos
         from ImageD11 import transform
-        tth,eta = transform.compute_tth_eta( array([[xpos], [ypos ]]) ,
-                                             self.parameters['y-center'],
-                                             self.parameters['y-size'],
-                                             self.parameters['tilt-y'],
-                                             self.parameters['z-center'],
-                                             self.parameters['z-size'],
-                                             self.parameters['tilt-z'],
-                                             self.parameters['distance']*1.0e3)
-                                             #crystal_translation = g.translation,
-                                             #omega = om,
-                                             #axis_orientation1 = self.parameters['wedge'],
-                                             #axis_orientation2 = self.parameters['chi'])
+        tth,eta = transform.compute_tth_eta( n.array([[xpos], [ypos ]]) ,
+                                             **self.parameters )
         print "omega:",self.omega,type(self.omega)
         om = n.array([float(self.omega)])
         print "tth,eta,om",tth,eta,om
         self.gv = transform.compute_g_vectors(tth,eta,om,float(self.parameters['wavelength']), self.parameters['wedge'])
-        self.gv = transpose(self.gv)
+        self.gv = n.transpose(self.gv)
         s=""
         i=0
         for ubi in self.ubisread:
-            h=matrixmultiply(ubi,transpose(self.gv))
-            print ubi, "hkl=",h
+            h=n.dot(ubi,self.gv.T)
+            print "i=%d"%(i),"hkl= %.2f %.2f %.2f"%tuple(h)
             i+=1
-            s+="grain %3d\n h = %.3f k=%.3f l = %.3f\n"%(i,h[0],h[1],h[2])
+            s+="grain %3d\n h = %.2f k=%.2f l = %.2f\n"%(i,h[0],h[1],h[2])
         showinfo("Right clicked",
                  "You click at %f %f, tth=%f eta=%f omega=%f\n %s"%(xpos,ypos,tth,eta,om,s))
 
