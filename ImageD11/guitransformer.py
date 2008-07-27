@@ -51,6 +51,7 @@ class guitransformer:
               ( "Filter peaks based on tth histogram", 0, self.filterhisto ),
               ( "Compute g-vectors", 0, self.computegv),
               ( "Save g-vectors", 0, self.savegv),
+              ( "Save new colfile", 0, self.savecolfile),
               ( "Write graindex finalpeaks.log",0, self.write_graindex_gv)
               ] )
 
@@ -248,6 +249,13 @@ class guitransformer:
     def savegv(self):       
         filename=self.parent.saver.show(title="File to save gvectors")
         self.parent.guicommander.execute("transformer","savegv",filename)
+
+    def savecolfile(self):       
+        filename=self.parent.saver.show(title="File to save newcolfile")
+        self.parent.guicommander.execute("transformer",
+                                         "write_colfile",
+                                         filename)
+
 
     def write_graindex_gv(self):
         filename=self.parent.saver.show(title="File for graindex, try finalpeaks.log")
