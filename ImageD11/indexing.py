@@ -193,7 +193,8 @@ def refine(UBI, gv, tol, quiet=True):
         return UBI
         raise
     #      for i in ind:
-    #         print "( %-6.4f %-6.4f %-6.4f ) %12.8f %12.8f"%(h[0,i],h[1,i],h[2,i],sqrt(drlv2[i]),sqrt(drlv2_old[i]))
+    #         print "( %-6.4f %-6.4f %-6.4f ) %12.8f %12.8f"%(\
+    #            h[0,i],h[1,i],h[2,i],sqrt(drlv2[i]),sqrt(drlv2_old[i]))
     #      print UBIo
     #      print "Scores after", self.score(UBIo,self.hkl_tol)
     #      print "diff\n",UBI-UBIo
@@ -230,7 +231,8 @@ class indexer:
         self.gv=gv
         self.wedge=0.0 # Default
         if gv !=None:
-            self.gvflat=n.reshape(n.fromstring(self.gv.tostring(),n.Float),self.gv.shape) # Makes it contiguous in memory, hkl fast index
+            self.gvflat=n.reshape(n.fromstring(self.gv.tostring(),n.Float),self.gv.shape)
+            # Makes it contiguous in memory, hkl fast index
 
         self.cosine_tol=cosine_tol
         self.wavelength=wavelength
@@ -314,9 +316,11 @@ class indexer:
             n_to_index = n.sum(n.where( n.take(self.ga,ind) == -1, 1, 0))
             # diffs = abs(take(ds,ind) - dsr[j])
             h=self.unitcell.ringhkls[dsr[j]][0]
-            print "Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d"%(j,h[0],h[1],h[2],len(self.unitcell.ringhkls[dsr[j]]),
+            print "Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d"%(\
+                j,h[0],h[1],h[2],len(self.unitcell.ringhkls[dsr[j]]),
                      self.na[j],n_indexed,n_to_index)
-        # We will only attempt to index g-vectors which have been assigned to hkl rings (this gives a speedup if there
+        # We will only attempt to index g-vectors which have been assigned
+        # to hkl rings (this gives a speedup if there
         # are a lot of spare peaks
         ind = n.compress( n.greater(self.ra,-1) , n.arange(self.ra.shape[0]) )
         self.gvr = n.take(self.gv , ind)

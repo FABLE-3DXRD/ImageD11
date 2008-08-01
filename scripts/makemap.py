@@ -6,8 +6,10 @@ import sys, os
 
 
 def makemap(options):
-
-    o = refinegrains()
+    try:
+        o = refinegrains(intensity_tth_range = tuple(options.tthrange))
+    except:
+        o = refinegrains()
     o.loadparameters(options.parfile)
     print "got pars"
     o.loadfiltered(options.fltfile)
@@ -28,6 +30,7 @@ def makemap(options):
     print "Done refining positions too"    
     o.refineubis(quiet = False , scoreonly = True)
     o.savegrains(options.newubifile, sort_npks = options.sort_npks)
+    col = o.scandata[options.fltfile].writefile( options.fltfile+".new")
     if hasattr(options, "newfltfile") and options.newfltfile is not None:
         print "re-assignlabels"
         o.assignlabels()
@@ -37,6 +40,7 @@ def makemap(options):
         # print col.labels[:10]
         print "After filtering",col.nrows
         col.writefile(options.newfltfile)
+        
 
 
 
@@ -89,7 +93,10 @@ if __name__ == "__main__":
                       default = "triclinic",
                       choices = lattices,
                       help="Lattice symmetry for choosing orientation")
-
+    parser.add_option( "--tthrange", action="append",
+                      dest = "tthrange", type="float",
+                      default = None,
+                      help= "Two theta range for getting median intensity")
 
     
     options, args = parser.parse_args()

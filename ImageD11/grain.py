@@ -47,6 +47,8 @@ def write_grain_file(filename, list_of_grains):
         f.write("#translation: %f %f %f\n"%(t[0],t[1],t[2]))
         if hasattr(g,"name"):
             f.write("#name %s\n"%(g.name.rstrip()))
+        if hasattr(g,"intensity_info"):
+            f.write("#intensity_info %s\n"%(g.intensity_info))
         if hasattr(g,"x"):
             # Refined peaks assigned takes priority
             f.write("#npks %d\n"%(len(g.x)))
@@ -79,13 +81,15 @@ def read_grain_file(filename):
             k,v=line[1:].split(" ",1)
             p[k]=v
             continue
+        if line[0] == "#" and line.find("intensity_info")>-1:
+            p["intensity_info"] = line.split("info")[1].rstrip()
         if line.find("#")==0: continue
         vals = [ float(x) for x in line.split() ]
         if len(vals) == 3:
             u = u + [vals]
         if len(u)==3:
             grainsread.append( grain(u, t) )
-            for k in ["name","npks","Rod"]:
+            for k in ["name","npks","Rod","intensity_info"]:
                 if p.has_key(k):
                     setattr(grainsread[-1], k, p[k])
             p={}

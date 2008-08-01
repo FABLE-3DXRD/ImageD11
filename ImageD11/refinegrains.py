@@ -80,7 +80,7 @@ class refinegrains:
         't_z' : 0.2,
         }
 
-    def __init__(self, tolerance = 0.01):
+    def __init__(self, tolerance = 0.01, intensity_tth_range = (8.4, 9.0) ):
         """
 
         """
@@ -99,6 +99,7 @@ class refinegrains:
         # ?
         self.drlv = None
         self.parameterobj = parameters.parameters(**self.pars)
+        self.intensity_tth_range = intensity_tth_range
         for k,s in self.stepsizes.items():
             self.parameterobj.stepsizes[k]=s
 
@@ -200,7 +201,7 @@ class refinegrains:
             self.reset_labels(scanname)
 
     def reset_labels(self, scanname):
-        
+        print "resetting labels"
         try:
             x = self.scandata[scanname].xc
             y = self.scandata[scanname].yc
@@ -436,13 +437,18 @@ class refinegrains:
         """
         Fill out the appropriate labels for the spots
         """
-        # print "Assigning labels"
+        print "Assigning labels"
         for s in self.scannames:
-            self.scandata[s].labels = self.scandata[s].labels * 0 - 2 # == -1
-            self.scandata[s].drlv2 = self.scandata[s].drlv2*0 + 1  # == 1
+            self.scandata[s].labels = self.scandata[s].labels*0 - 2 # == -1
+            drlv2 = self.scandata[s].drlv2*0 + 1  # == 1
             nr = self.scandata[s].nrows
+            # Looks like this in one dataset only
+            ng = len(self.grainnames)
             int_tmp = numpy.zeros(nr , numpy.int32 )-1
-            for g in self.grainnames:
+            tth_tmp = numpy.zeros((ng, nr) ,numpy.float32 ) - 1
+            eta_tmp = numpy.zeros((ng, nr) ,numpy.float32 ) 
+            for g, ig in zip(self.grainnames, range(ng)):
+                assert g == ig, "sorry - a bug in program"
                 gr = self.grains[ ( g, s) ]                
                 self.set_translation( g, s)
                 try:
@@ -453,18 +459,49 @@ class refinegrains:
                     gr.y = self.scandata[s].fc
                 gr.om = self.scandata[s].omega
                 self.compute_gv( g, s )
+                # self.tth and self.eta hold the current tth and eta values
+                tth_tmp[int(g),:] = self.tth
+                eta_tmp[int(g),:] = self.eta
                 #print "about to assign"
                 closest.score_and_assign( gr.ubi,
                                           self.gv,
                                           self.tolerance,
-                                          self.scandata[s].drlv2,
+                                          drlv2,
                                           int_tmp,
                                           int(g))
-                #print "assigned"
+                # print "assigned"
+                
+                 
             # Second loop after checking all grains
-            self.scandata[s].labels = int_tmp * 1.
+
+            print self.scandata[s].labels.shape, \
+                  numpy.minimum.reduce(self.scandata[s].labels),\
+                  numpy.maximum.reduce(self.scandata[s].labels)
+            
+            self.scandata[s].addcolumn( int_tmp , "labels" )
+            self.scandata[s].addcolumn( drlv2 , "drlv2" )
+            print self.scandata[s].labels.shape, \
+                  numpy.minimum.reduce(self.scandata[s].labels),\
+                  numpy.maximum.reduce(self.scandata[s].labels)
+            
+            tth = numpy.zeros( nr, numpy.float32 )-1
+            eta = numpy.zeros( nr, numpy.float32 )
+            for i in range( ng ):
+                try:
+                    tth = numpy.where( int_tmp == i, tth_tmp[i,:], tth )
+                    eta = numpy.where( int_tmp == i, eta_tmp[i,:], eta )
+                except:
+                    print int_tmp.shape, tth_tmp.shape, tth.shape, eta.shape
+                    raise
+            self.scandata[s].addcolumn( tth, "tth_per_grain" )
+            self.scandata[s].addcolumn( eta, "eta_per_grain" )
+
+            compute_lp_factor( self.scandata[s] )
+            
+            # We have the labels set in self.scandata!!!
             for g in self.grainnames:
                 gr = self.grains[ ( g, s) ]
+                
                 ind = numpy.compress(int_tmp == g,
                                      range(nr) )
                 #print 'x',gr.x[:10]
@@ -476,9 +513,162 @@ class refinegrains:
                     gr.x = numpy.take(self.scandata[s].sc , ind)
                     gr.y = numpy.take(self.scandata[s].fc , ind)
                 gr.om = numpy.take(self.scandata[s].omega , ind)
+                # Compute the total integrated intensity if we have enough
+                # information available
+                gr.intensity_info = compute_total_intensity( self.scandata[s] ,
+                                                            ind,
+                                                            self.intensity_tth_range )
                 self.grains[ ( g, s) ] = gr
                 print "Grain",g,"Scan",s,"npks=",len(ind)
                 #print 'x',gr.x[:10]
+
+def compute_lp_factor( colfile, **kwds ):
+    """
+    We'll assume for simplicity that wedge, chi, tilts are all zero
+    Of course we should put that in sometime in the near future
+
+    Try using:
+
+    Table  6.2.1.1 in Volume C of international tables :
+    (h) Rotation photograph of small crystal, volume V
+        1. Beam normal to axis
+        rho = \frac{ N^2 e^4 \lambda^3 V} { 4 \pi m^2 c^4} .
+              \frac{ 1 + \cos^2{\theta} }  { \sin{2\theta } .
+              \frac{ cos{\theta} { \sqrt{ \cos^2{\psi} - \sin^2{\theta} } }
+              p' |F|^2
+              
+    rho is Integrated reflection power ratio from a crystal element
+    e, m 	Electronic charge and mass
+    c 	Speed of light
+    \lambda 	Wavelength of radiation
+    2\theta 	Angle between incident and diffracted beams
+    \psi  in (h), latitude of reciprocal-lattice point relative to axis of rotation
+    V 	Volume of crystal, or of irradiated part of powder sample
+    N 	Number of unit cells per unit volume
+    F 	Structure factor of hkl reflection
+    p' 	Multiplicity factor for single-crystal methods
+         nb - what is this ? Hopefully would be 1 ?
+
+
+    From this we will take the (1+cos^2(2t))cos(2t)/sqrt(cos^2p-sin^2t)/sin2t
+    """
+    if "tth" in colfile.titles and "eta" in colfile.titles:
+        lp  = lf( colfile.tth, colfile.eta )
+        assert len(lp) == len(colfile.tth)
+        try:
+            colfile.addcolumn(lp, "Lorentz")
+        except:
+            print lp.shape, colfile.tth.shape, colfile.nrows, "?"
+            raise
+        
+    if "tth_per_grain" in colfile.titles and \
+       "eta_per_grain" in colfile.titles:
+        lpg = lf( colfile.tth_per_grain, colfile.eta_per_grain )
+        assert len(lpg) == len(colfile.tth_per_grain)
+        colfile.addcolumn(lpg, "Lorentz_per_grain")
+    
+    
+import math
+
+def cosd(x): return numpy.cos( x * math.pi/180 )
+def sind(x): return numpy.sin( x * math.pi/180 )
+
+def lf( tth, eta ):
+
+    sin_2t  = sind( tth )
+    sin_eta = sind( numpy.abs( eta ) )
+    sin2_t  = sind( tth/2 )*sind( tth/2 )
+    # pure guesswork
+    return  sin_2t * ( sin_eta + sin2_t )
+
+    # unreachable code here:
+    #  ... problem that cos^2_p - sin^2 can be < 0
+    #       must mean that p is NOT eta 
+    
+    cos_2t = cosd( tth )
+    
+    cos_t  = cosd( tth/2 )
+    sin_t  = sind( tth/2 )
+    # our eta is their psi + 90 degrees
+    cos_p  = cosd( eta + 90 )
+    
+    bot = sin_2t * numpy.sqrt( cos_p * cos_p - sin_t * sin_t )
+    
+    top = (1 + cos_2t * cos_2t)*cos_2t
+    # Wondering if there is a div0 to fear
+    # Certainly lf can be infinite, so mask this problem as 1e6
+    bot = numpy.where( numpy.abs ( bot ) > 1e-6 , bot, 1e-6 )
+    return top / bot
+    
+    
+def compute_total_intensity( colfile, indices, tth_range, ntrim = 2 ):
+    """
+    Add up the intensity in colfile for peaks given in indices
+    """
+    if "sum_intensity" in colfile.titles:
+        raw_intensities = colfile.sum_intensity
+    else:
+        if ("Number_of_pixels" in colfile.titles) and \
+           ("avg_intensity"    in colfile.titles):
+            raw_intensities = colfile.Number_of_pixels * colfile.avg_intensity
+    # Lorentz factor requires eta per grain. This would be tedious to
+    # compute, but should eventually be added
+    if "Lorentz_per_grain" in colfile.titles:
+        lor = colfile.Lorentz_per_grain
+        print "lorentz per grain for ints",
+    elif "Lorentz" in colfile.titles:
+        lor = colfile.Lorentz
+        print "lorentz for ints",
+    else:
+        print "lost the lorentz",
+        lor = numpy.ones( colfile.nrows, numpy.float32 )
+
+    # risk divide by zero here...
+    intensities = numpy.take( raw_intensities * lor , indices )
+    sigma_i = numpy.sum(intensities)
+    if tth_range is not None:
+        if "tth_per_grain" in colfile.titles:
+            tth = colfile.tth_per_grain
+            print "tth_per_grain for",
+        elif "tth" in colfile.titles:
+            tth = colfile.tth
+            print "tth for range",
+        else:
+            # bugger
+            tth = numpy.ones(colfile.nrows)
+        tth_vals = numpy.take(tth, indices )
+
+        intensities = numpy.compress( ( tth_vals > min(tth_range) )&
+                                      ( tth_vals < max(tth_range) ) ,
+                                      intensities )
+        print "range %.5f %.5f"%tth_range,
+
+
+    if len(intensities) < 1:
+        return "no peaks"
+    # min, max, med, mean, stddev, n
+    intensities.sort()
+    
+    if(len(intensities)) > ntrim*2+1:
+        intensities = intensities[ntrim:-ntrim]
+    try:
+        ret = "sum_of_all = %f , middle %d from %f to %f in tth: median = %f , min = %f , max = %f , mean = %f , std = %f , n = %d"%(
+        sigma_i,
+        len(intensities),
+        min(tth_range),
+        max(tth_range),
+        intensities[ len(intensities)/2 ],
+        intensities.min(),
+        intensities.max(),
+        intensities.mean(),
+        intensities.std(),
+        intensities.shape[0])
+    except:
+        print intensities
+        raise
+    print ret
+    return ret
+    
 
 
 
