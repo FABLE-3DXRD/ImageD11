@@ -215,9 +215,11 @@ for o in oms:
 
         if o == flt.Max_o[i]:
             # This is the last image it is on
-#            writespot( "%d.edf"%(i), roi, boxes[i], data_obj.header,
-#                    flt, i )
+            writespot( "%d.edf"%(i), roi, boxes[i], data_obj.header,
+                    flt, i )
+            
             integ_int[i] = np.sum(boxes[i])
+
             del boxes[i]
 
         if False:

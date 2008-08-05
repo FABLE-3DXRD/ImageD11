@@ -23,7 +23,7 @@ import ImageD11.indexing
 
 
 class grain:
-    def __init__(self,ubi,translation=None):
+    def __init__(self,ubi,translation=None, **kwds):
         self.ubi = numpy.array(ubi,numpy.float)
         self.ub = numpy.linalg.inv(ubi)
         self.u = ImageD11.indexing.ubitoU(self.ubi)
@@ -37,6 +37,14 @@ class grain:
             self.translation = None
         else:
             self.translation = numpy.array(translation,numpy.float)
+    def set_ubi(self, ubi):
+        self.ubi = numpy.array(ubi,numpy.float)
+        self.ub = numpy.linalg.inv(ubi)
+        self.u = ImageD11.indexing.ubitoU(self.ubi)
+        self.Rod = ImageD11.indexing.ubitoRod(self.ubi)
+        self.mt = numpy.dot(self.ubi, self.ubi.T)
+        self.rmt = numpy.linalg.inv(self.mt)
+        
 
 
     
@@ -48,7 +56,7 @@ def write_grain_file(filename, list_of_grains):
         if hasattr(g,"name"):
             f.write("#name %s\n"%(g.name.rstrip()))
         if hasattr(g,"intensity_info"):
-            f.write("#intensity_info %s\n"%(g.intensity_info))
+            f.write("#intensity_info %s\n"%(g.intensity_info.rstrip()))
         if hasattr(g,"x"):
             # Refined peaks assigned takes priority
             f.write("#npks %d\n"%(len(g.x)))
@@ -82,7 +90,7 @@ def read_grain_file(filename):
             p[k]=v
             continue
         if line[0] == "#" and line.find("intensity_info")>-1:
-            p["intensity_info"] = line.split("info")[1].rstrip()
+            p["intensity_info"] = line.split("intensity_info")[1].rstrip()
         if line.find("#")==0: continue
         vals = [ float(x) for x in line.split() ]
         if len(vals) == 3:

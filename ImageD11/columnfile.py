@@ -69,6 +69,7 @@ INTS = [
     "Max_s",
     "spot3d_id",
     "h", "k", "l",
+    "labels",
     "Grain"
     ]
 FORMATS = {}
