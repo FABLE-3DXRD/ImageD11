@@ -305,7 +305,8 @@ class refinegrains:
             #print self.gv.shape
             #print self.gv[0:10,:]
 
-            g.ubi = self.refine(g.ubi)
+            # For stability, always start refining the read in one
+            g.ubi = self.refine( self.ubisread[grainname] ) 
             self.npks # number of peaks it got
 
             diffs +=  self.npks*self.avg_drlv2
