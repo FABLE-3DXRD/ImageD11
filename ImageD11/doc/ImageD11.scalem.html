@@ -1,0 +1,134 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module ImageD11.scalem</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.scalem</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/sware/exp/fable/standalone/redhate4-a64/lib/python2.5/site-packages/ImageD11/scalem.py">/sware/exp/fable/standalone/redhate4-a64/lib/python2.5/site-packages/ImageD11/scalem.py</a></font></td></tr></table>
+    <p><tt>Module(s)&nbsp;for&nbsp;scaling&nbsp;peaks<br>
+&nbsp;<br>
+-&nbsp;Read&nbsp;in&nbsp;a&nbsp;series&nbsp;of&nbsp;columnfile&nbsp;type&nbsp;objects<br>
+&nbsp;&nbsp;&nbsp;&nbsp;collection&nbsp;of&nbsp;columnfiles<br>
+&nbsp;<br>
+-&nbsp;Read&nbsp;in&nbsp;some&nbsp;symmetry&nbsp;information:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;there&nbsp;are&nbsp;32&nbsp;crystallographic&nbsp;point&nbsp;groups<br>
+&nbsp;&nbsp;&nbsp;&nbsp;11&nbsp;contain&nbsp;a&nbsp;centre&nbsp;of&nbsp;symmetry&nbsp;and&nbsp;are&nbsp;also&nbsp;laue&nbsp;groups&nbsp;<br>
+&nbsp;<br>
+-&nbsp;For&nbsp;each&nbsp;peak&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;assign&nbsp;it&nbsp;a&nbsp;unique&nbsp;"key"&nbsp;in&nbsp;a&nbsp;list&nbsp;of&nbsp;reflections<br>
+&nbsp;&nbsp;&nbsp;&nbsp;typically&nbsp;h&gt;=k&gt;=l&nbsp;of&nbsp;the&nbsp;symmetry&nbsp;equivalents<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Give&nbsp;it&nbsp;a&nbsp;scale&nbsp;factor&nbsp;(or&nbsp;two)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Compute&nbsp;the&nbsp;corrected&nbsp;intensity&nbsp;and&nbsp;derivative&nbsp;w.r.t&nbsp;scale&nbsp;factors<br>
+&nbsp;<br>
+-&nbsp;For&nbsp;each&nbsp;uniq&nbsp;key&nbsp;compute&nbsp;the&nbsp;average&nbsp;group&nbsp;intensity<br>
+&nbsp;&nbsp;&nbsp;&nbsp;with&nbsp;or&nbsp;without&nbsp;median&nbsp;style&nbsp;filtering<br>
+&nbsp;<br>
+-&nbsp;Compute&nbsp;the&nbsp;overall&nbsp;R(int)&nbsp;merging&nbsp;statistic&nbsp;and&nbsp;minimise&nbsp;that&nbsp;w.r.t&nbsp;scaling&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;variables<br>
+&nbsp;<br>
+-&nbsp;Optimise&nbsp;scale&nbsp;factor&nbsp;variables</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="ImageD11.columnfile.html">ImageD11.columnfile</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="__builtin__.html#object">__builtin__.object</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="ImageD11.scalem.html#data_table">data_table</a>
+</font></dt><dt><font face="helvetica, arial"><a href="ImageD11.scalem.html#scalem">scalem</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="data_table">class <strong>data_table</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Wraps&nbsp;a&nbsp;columnfile/hklf4/brukerraw&nbsp;file<br>
+Gives&nbsp;h,k,l<br>
+&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;variables&nbsp;[scales&nbsp;per&nbsp;frame,&nbsp;scan,&nbsp;grain&nbsp;etc]<br>
+&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;derivatives&nbsp;[of&nbsp;all&nbsp;variables]<br>
+To&nbsp;constrain&nbsp;grain&nbsp;scale&nbsp;factors&nbsp;across&nbsp;different&nbsp;scans&nbsp;imply<br>
+we&nbsp;need&nbsp;to&nbsp;have&nbsp;grains&nbsp;in&nbsp;same&nbsp;datafile.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="data_table-__init__"><strong>__init__</strong></a>(self)</dt><dd><tt>Initialise&nbsp;some&nbsp;variables</tt></dd></dl>
+
+<dl><dt><a name="data_table-calc"><strong>calc</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="data_table-get_hkls"><strong>get_hkls</strong></a>(self)</dt><dd><tt>Return&nbsp;the&nbsp;hkl&nbsp;indices&nbsp;of&nbsp;the&nbsp;peaks</tt></dd></dl>
+
+<dl><dt><a name="data_table-set_keys"><strong>set_keys</strong></a>(self, keys)</dt><dd><tt>Store&nbsp;a&nbsp;list&nbsp;of&nbsp;uniq&nbsp;keys&nbsp;which&nbsp;go&nbsp;with&nbsp;each&nbsp;peak<br>
+These&nbsp;are&nbsp;used&nbsp;to&nbsp;group&nbsp;peaks&nbsp;into&nbsp;symmetry&nbsp;equivalents</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="scalem">class <strong>scalem</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>This&nbsp;class&nbsp;holds&nbsp;a&nbsp;series&nbsp;of&nbsp;tables&nbsp;(assumes&nbsp;everything&nbsp;fits&nbsp;in&nbsp;memory)<br>
+...&nbsp;and&nbsp;does&nbsp;some&nbsp;fitting<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="scalem-__init__"><strong>__init__</strong></a>(self)</dt><dd><tt>Holds&nbsp;a&nbsp;list&nbsp;of&nbsp;unmerged&nbsp;data&nbsp;tables<br>
+These&nbsp;correspond&nbsp;to&nbsp;a&nbsp;single&nbsp;scans&nbsp;containing&nbsp;N&nbsp;grains</tt></dd></dl>
+
+<dl><dt><a name="scalem-add_data"><strong>add_data</strong></a>(self, filename, format<font color="#909090">='ImageD11'</font>)</dt><dd><tt>Read&nbsp;a&nbsp;columnfile&nbsp;<a href="__builtin__.html#object">object</a>.&nbsp;Allowed&nbsp;to&nbsp;have&nbsp;format&nbsp;==&nbsp;ImageD11|bruker|hklf4</tt></dd></dl>
+
+<dl><dt><a name="scalem-calc"><strong>calc</strong></a>(self)</dt><dd><tt>Compute&nbsp;for&nbsp;each&nbsp;data&nbsp;<a href="__builtin__.html#object">object</a>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Columns:&nbsp;I_corr,&nbsp;sigma_corr<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Foreach&nbsp;scaling&nbsp;variable:&nbsp;dI_corr/dvar,&nbsp;dsigma_corr/dvar</tt></dd></dl>
+
+<dl><dt><a name="scalem-set_sym"><strong>set_sym</strong></a>(self, sym)</dt><dd><tt>Set&nbsp;the&nbsp;symmetry&nbsp;to&nbsp;sym<br>
+&nbsp;-&nbsp;list&nbsp;of&nbsp;matrices&nbsp;(3x3)<br>
+&nbsp;-&nbsp;list&nbsp;of&nbsp;operators&nbsp;(4x4)<br>
+&nbsp;-&nbsp;string&nbsp;(eg&nbsp;m3m&nbsp;etc)</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-generate_key"><strong>generate_key</strong></a>(hkl, symmops)</dt><dd><tt>To&nbsp;be&nbsp;redone&nbsp;in&nbsp;C/fortran&nbsp;etc&nbsp;<br>
+Expect&nbsp;identity&nbsp;to&nbsp;be&nbsp;in&nbsp;symmops<br>
+All&nbsp;symmetry&nbsp;matrices,&nbsp;not&nbsp;including&nbsp;inversion</tt></dd></dl>
+</td></tr></table>
+</body></html>

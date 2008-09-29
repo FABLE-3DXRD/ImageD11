@@ -1,0 +1,955 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module ImageD11.rc_array</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.rc_array</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/sware/exp/fable/standalone/redhate4-a64/lib/python2.5/site-packages/ImageD11/rc_array.py">/sware/exp/fable/standalone/redhate4-a64/lib/python2.5/site-packages/ImageD11/rc_array.py</a></font></td></tr></table>
+    <p><tt>Row/column&nbsp;array&nbsp;type<br>
+&nbsp;<br>
+Inherits&nbsp;from&nbsp;numpy.<a href="numpy.html#ndarray">ndarray</a><br>
+&nbsp;<br>
+To&nbsp;be&nbsp;used&nbsp;for&nbsp;lattice&nbsp;reduction&nbsp;to&nbsp;apply&nbsp;to&nbsp;g-vectors&nbsp;and&nbsp;patterson<br>
+peaks&nbsp;equally&nbsp;well&nbsp;and&nbsp;in&nbsp;a&nbsp;coherent&nbsp;way.</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="numpy.html#ndarray">numpy.ndarray</a>(<a href="__builtin__.html#object">__builtin__.object</a>)
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="ImageD11.rc_array.html#rc_array">rc_array</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="rc_array">class <strong>rc_array</strong></a>(<a href="numpy.html#ndarray">numpy.ndarray</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Row/Column&nbsp;array<br>
+Represent&nbsp;a&nbsp;list&nbsp;of&nbsp;row&nbsp;or&nbsp;column&nbsp;vectors<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="ImageD11.rc_array.html#rc_array">rc_array</a></dd>
+<dd><a href="numpy.html#ndarray">numpy.ndarray</a></dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="rc_array-__array_finalize__"><strong>__array_finalize__</strong></a>(self, obj)</dt><dd><tt>Fill&nbsp;in&nbsp;a&nbsp;default&nbsp;row&nbsp;arg&nbsp;to&nbsp;direction<br>
+self/obj??</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__iter__"><strong>__iter__</strong></a>(self)</dt><dd><tt>Iterate&nbsp;depending&nbsp;on&nbsp;rows&nbsp;columns<br>
+Use&nbsp;to&nbsp;get&nbsp;[&nbsp;v&nbsp;for&nbsp;v&nbsp;in&nbsp;rr_array&nbsp;]</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__str__"><strong>__str__</strong></a>(self)</dt><dd><tt>Used&nbsp;for&nbsp;printing</tt></dd></dl>
+
+<dl><dt><a name="rc_array-check"><strong>check</strong></a>(self)</dt><dd><tt>Ensure&nbsp;we&nbsp;have&nbsp;an&nbsp;<a href="#rc_array">rc_array</a>&nbsp;which&nbsp;is&nbsp;well&nbsp;behaved&nbsp;<br>
+Pattern&nbsp;assert(<a href="#rc_array-check">check</a>(v))&nbsp;should&nbsp;disappear&nbsp;in&nbsp;optimiser</tt></dd></dl>
+
+<dl><dt><a name="rc_array-flip"><strong>flip</strong></a>(self, mat)</dt><dd><tt>Flip&nbsp;row&nbsp;to&nbsp;col&nbsp;or&nbsp;col.row</tt></dd></dl>
+
+<dl><dt><a name="rc_array-inv"><strong>inv</strong></a>(self)</dt><dd><tt>Inverse&nbsp;matrix&nbsp;of&nbsp;self</tt></dd></dl>
+
+<dl><dt><a name="rc_array-nb_vector_axis"><strong>nb_vector_axis</strong></a>(self)</dt><dd><tt>The&nbsp;axis&nbsp;which&nbsp;has&nbsp;the&nbsp;n&nbsp;on&nbsp;it</tt></dd></dl>
+
+<dl><dt><a name="rc_array-norm2"><strong>norm2</strong></a>(self)</dt><dd><tt><a href="#rc_array-sum">sum</a>(v*v,axis=?&nbsp;for&nbsp;row&nbsp;or&nbsp;col</tt></dd></dl>
+
+<dl><dt><a name="rc_array-nvectors"><strong>nvectors</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="rc_array-other_direction"><strong>other_direction</strong></a>(self)</dt><dd><tt>The&nbsp;one&nbsp;which&nbsp;is&nbsp;not&nbsp;self.<strong>direction</strong></tt></dd></dl>
+
+<dl><dt><a name="rc_array-vector_axis"><strong>vector_axis</strong></a>(self)</dt><dd><tt>The&nbsp;axis&nbsp;which&nbsp;has&nbsp;the&nbsp;3&nbsp;on&nbsp;it</tt></dd></dl>
+
+<hr>
+Static methods defined here:<br>
+<dl><dt><a name="rc_array-__new__"><strong>__new__</strong></a>(subtype, data, direction<font color="#909090">=None</font>, dtype<font color="#909090">=None</font>, copy<font color="#909090">=False</font>)</dt><dd><tt>Mostly&nbsp;as&nbsp;from&nbsp;example<br>
+direction&nbsp;is&nbsp;one&nbsp;of&nbsp;row&nbsp;/&nbsp;column</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<hr>
+Methods inherited from <a href="numpy.html#ndarray">numpy.ndarray</a>:<br>
+<dl><dt><a name="rc_array-__abs__"><strong>__abs__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__abs__">__abs__</a>()&nbsp;&lt;==&gt;&nbsp;abs(x)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__add__"><strong>__add__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__add__">__add__</a>(y)&nbsp;&lt;==&gt;&nbsp;x+y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__and__"><strong>__and__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__and__">__and__</a>(y)&nbsp;&lt;==&gt;&nbsp;x&amp;y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__array__"><strong>__array__</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-__array__">__array__</a>(|dtype)&nbsp;-&gt;&nbsp;reference&nbsp;if&nbsp;type&nbsp;unchanged,&nbsp;copy&nbsp;otherwise.<br>
+&nbsp;<br>
+Returns&nbsp;either&nbsp;a&nbsp;new&nbsp;reference&nbsp;to&nbsp;self&nbsp;if&nbsp;dtype&nbsp;is&nbsp;not&nbsp;given&nbsp;or&nbsp;a&nbsp;new&nbsp;array<br>
+of&nbsp;provided&nbsp;data&nbsp;type&nbsp;if&nbsp;dtype&nbsp;is&nbsp;different&nbsp;from&nbsp;the&nbsp;current&nbsp;dtype&nbsp;of&nbsp;the<br>
+array.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__array_wrap__"><strong>__array_wrap__</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-__array_wrap__">__array_wrap__</a>(obj)&nbsp;-&gt;&nbsp;Object&nbsp;of&nbsp;same&nbsp;type&nbsp;as&nbsp;a&nbsp;from&nbsp;<a href="numpy.html#ndarray">ndarray</a>&nbsp;obj.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__contains__"><strong>__contains__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__contains__">__contains__</a>(y)&nbsp;&lt;==&gt;&nbsp;y&nbsp;in&nbsp;x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__copy__"><strong>__copy__</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-__copy__">__copy__</a>(|order)&nbsp;-&gt;&nbsp;copy,&nbsp;possibly&nbsp;with&nbsp;different&nbsp;order.<br>
+&nbsp;<br>
+Return&nbsp;a&nbsp;copy&nbsp;of&nbsp;the&nbsp;array.<br>
+&nbsp;<br>
+Argument:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;order&nbsp;--&nbsp;Order&nbsp;of&nbsp;returned&nbsp;copy&nbsp;(default&nbsp;'C')<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If&nbsp;order&nbsp;is&nbsp;'C'&nbsp;(False)&nbsp;then&nbsp;the&nbsp;result&nbsp;is&nbsp;contiguous&nbsp;(default).<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If&nbsp;order&nbsp;is&nbsp;'Fortran'&nbsp;(True)&nbsp;then&nbsp;the&nbsp;result&nbsp;has&nbsp;fortran&nbsp;order.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If&nbsp;order&nbsp;is&nbsp;'Any'&nbsp;(None)&nbsp;then&nbsp;the&nbsp;result&nbsp;has&nbsp;fortran&nbsp;order<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;only&nbsp;if&nbsp;m&nbsp;is&nbsp;already&nbsp;in&nbsp;fortran&nbsp;order.;</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__deepcopy__"><strong>__deepcopy__</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-__deepcopy__">__deepcopy__</a>()&nbsp;-&gt;&nbsp;Deep&nbsp;copy&nbsp;of&nbsp;array.<br>
+&nbsp;<br>
+Used&nbsp;if&nbsp;copy.deepcopy&nbsp;is&nbsp;called&nbsp;on&nbsp;an&nbsp;array.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__delitem__"><strong>__delitem__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__delitem__">__delitem__</a>(y)&nbsp;&lt;==&gt;&nbsp;del&nbsp;x[y]</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__delslice__"><strong>__delslice__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__delslice__">__delslice__</a>(i,&nbsp;j)&nbsp;&lt;==&gt;&nbsp;del&nbsp;x[i:j]<br>
+&nbsp;<br>
+Use&nbsp;of&nbsp;negative&nbsp;indices&nbsp;is&nbsp;not&nbsp;supported.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__div__"><strong>__div__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__div__">__div__</a>(y)&nbsp;&lt;==&gt;&nbsp;x/y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__divmod__"><strong>__divmod__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__divmod__">__divmod__</a>(y)&nbsp;&lt;==&gt;&nbsp;divmod(x,&nbsp;y)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__eq__"><strong>__eq__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__eq__">__eq__</a>(y)&nbsp;&lt;==&gt;&nbsp;x==y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__float__"><strong>__float__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__float__">__float__</a>()&nbsp;&lt;==&gt;&nbsp;float(x)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__floordiv__"><strong>__floordiv__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__floordiv__">__floordiv__</a>(y)&nbsp;&lt;==&gt;&nbsp;x//y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__ge__"><strong>__ge__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__ge__">__ge__</a>(y)&nbsp;&lt;==&gt;&nbsp;x&gt;=y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__getitem__"><strong>__getitem__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__getitem__">__getitem__</a>(y)&nbsp;&lt;==&gt;&nbsp;x[y]</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__getslice__"><strong>__getslice__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__getslice__">__getslice__</a>(i,&nbsp;j)&nbsp;&lt;==&gt;&nbsp;x[i:j]<br>
+&nbsp;<br>
+Use&nbsp;of&nbsp;negative&nbsp;indices&nbsp;is&nbsp;not&nbsp;supported.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__gt__"><strong>__gt__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__gt__">__gt__</a>(y)&nbsp;&lt;==&gt;&nbsp;x&gt;y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__hex__"><strong>__hex__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__hex__">__hex__</a>()&nbsp;&lt;==&gt;&nbsp;hex(x)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__iadd__"><strong>__iadd__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__iadd__">__iadd__</a>(y)&nbsp;&lt;==&gt;&nbsp;x+y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__iand__"><strong>__iand__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__iand__">__iand__</a>(y)&nbsp;&lt;==&gt;&nbsp;x&amp;y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__idiv__"><strong>__idiv__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__idiv__">__idiv__</a>(y)&nbsp;&lt;==&gt;&nbsp;x/y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__ifloordiv__"><strong>__ifloordiv__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__ifloordiv__">__ifloordiv__</a>(y)&nbsp;&lt;==&gt;&nbsp;x//y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__ilshift__"><strong>__ilshift__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__ilshift__">__ilshift__</a>(y)&nbsp;&lt;==&gt;&nbsp;x&lt;&lt;y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__imod__"><strong>__imod__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__imod__">__imod__</a>(y)&nbsp;&lt;==&gt;&nbsp;x%y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__imul__"><strong>__imul__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__imul__">__imul__</a>(y)&nbsp;&lt;==&gt;&nbsp;x*y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__index__"><strong>__index__</strong></a>(...)</dt><dd><tt>x[y:z]&nbsp;&lt;==&gt;&nbsp;x[y.<a href="#rc_array-__index__">__index__</a>():z.<a href="#rc_array-__index__">__index__</a>()]</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__int__"><strong>__int__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__int__">__int__</a>()&nbsp;&lt;==&gt;&nbsp;int(x)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__invert__"><strong>__invert__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__invert__">__invert__</a>()&nbsp;&lt;==&gt;&nbsp;~x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__ior__"><strong>__ior__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__ior__">__ior__</a>(y)&nbsp;&lt;==&gt;&nbsp;x|y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__ipow__"><strong>__ipow__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__ipow__">__ipow__</a>(y)&nbsp;&lt;==&gt;&nbsp;x**y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__irshift__"><strong>__irshift__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__irshift__">__irshift__</a>(y)&nbsp;&lt;==&gt;&nbsp;x&gt;&gt;y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__isub__"><strong>__isub__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__isub__">__isub__</a>(y)&nbsp;&lt;==&gt;&nbsp;x-y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__itruediv__"><strong>__itruediv__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__itruediv__">__itruediv__</a>(y)&nbsp;&lt;==&gt;&nbsp;x/y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__ixor__"><strong>__ixor__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__ixor__">__ixor__</a>(y)&nbsp;&lt;==&gt;&nbsp;x^y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__le__"><strong>__le__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__le__">__le__</a>(y)&nbsp;&lt;==&gt;&nbsp;x&lt;=y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__len__"><strong>__len__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__len__">__len__</a>()&nbsp;&lt;==&gt;&nbsp;len(x)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__long__"><strong>__long__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__long__">__long__</a>()&nbsp;&lt;==&gt;&nbsp;long(x)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__lshift__"><strong>__lshift__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__lshift__">__lshift__</a>(y)&nbsp;&lt;==&gt;&nbsp;x&lt;&lt;y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__lt__"><strong>__lt__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__lt__">__lt__</a>(y)&nbsp;&lt;==&gt;&nbsp;x&lt;y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__mod__"><strong>__mod__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__mod__">__mod__</a>(y)&nbsp;&lt;==&gt;&nbsp;x%y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__mul__"><strong>__mul__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__mul__">__mul__</a>(y)&nbsp;&lt;==&gt;&nbsp;x*y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__ne__"><strong>__ne__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__ne__">__ne__</a>(y)&nbsp;&lt;==&gt;&nbsp;x!=y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__neg__"><strong>__neg__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__neg__">__neg__</a>()&nbsp;&lt;==&gt;&nbsp;-x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__nonzero__"><strong>__nonzero__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__nonzero__">__nonzero__</a>()&nbsp;&lt;==&gt;&nbsp;x&nbsp;!=&nbsp;0</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__oct__"><strong>__oct__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__oct__">__oct__</a>()&nbsp;&lt;==&gt;&nbsp;oct(x)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__or__"><strong>__or__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__or__">__or__</a>(y)&nbsp;&lt;==&gt;&nbsp;x|y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__pos__"><strong>__pos__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__pos__">__pos__</a>()&nbsp;&lt;==&gt;&nbsp;+x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__pow__"><strong>__pow__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__pow__">__pow__</a>(y[,&nbsp;z])&nbsp;&lt;==&gt;&nbsp;pow(x,&nbsp;y[,&nbsp;z])</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__radd__"><strong>__radd__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__radd__">__radd__</a>(y)&nbsp;&lt;==&gt;&nbsp;y+x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__rand__"><strong>__rand__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__rand__">__rand__</a>(y)&nbsp;&lt;==&gt;&nbsp;y&amp;x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__rdiv__"><strong>__rdiv__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__rdiv__">__rdiv__</a>(y)&nbsp;&lt;==&gt;&nbsp;y/x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__rdivmod__"><strong>__rdivmod__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__rdivmod__">__rdivmod__</a>(y)&nbsp;&lt;==&gt;&nbsp;divmod(y,&nbsp;x)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__reduce__"><strong>__reduce__</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-__reduce__">__reduce__</a>()<br>
+&nbsp;<br>
+For&nbsp;pickling.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__repr__">__repr__</a>()&nbsp;&lt;==&gt;&nbsp;repr(x)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__rfloordiv__"><strong>__rfloordiv__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__rfloordiv__">__rfloordiv__</a>(y)&nbsp;&lt;==&gt;&nbsp;y//x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__rlshift__"><strong>__rlshift__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__rlshift__">__rlshift__</a>(y)&nbsp;&lt;==&gt;&nbsp;y&lt;&lt;x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__rmod__"><strong>__rmod__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__rmod__">__rmod__</a>(y)&nbsp;&lt;==&gt;&nbsp;y%x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__rmul__"><strong>__rmul__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__rmul__">__rmul__</a>(y)&nbsp;&lt;==&gt;&nbsp;y*x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__ror__"><strong>__ror__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__ror__">__ror__</a>(y)&nbsp;&lt;==&gt;&nbsp;y|x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__rpow__"><strong>__rpow__</strong></a>(...)</dt><dd><tt>y.<a href="#rc_array-__rpow__">__rpow__</a>(x[,&nbsp;z])&nbsp;&lt;==&gt;&nbsp;pow(x,&nbsp;y[,&nbsp;z])</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__rrshift__"><strong>__rrshift__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__rrshift__">__rrshift__</a>(y)&nbsp;&lt;==&gt;&nbsp;y&gt;&gt;x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__rshift__"><strong>__rshift__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__rshift__">__rshift__</a>(y)&nbsp;&lt;==&gt;&nbsp;x&gt;&gt;y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__rsub__"><strong>__rsub__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__rsub__">__rsub__</a>(y)&nbsp;&lt;==&gt;&nbsp;y-x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__rtruediv__"><strong>__rtruediv__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__rtruediv__">__rtruediv__</a>(y)&nbsp;&lt;==&gt;&nbsp;y/x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__rxor__"><strong>__rxor__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__rxor__">__rxor__</a>(y)&nbsp;&lt;==&gt;&nbsp;y^x</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__setitem__"><strong>__setitem__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__setitem__">__setitem__</a>(i,&nbsp;y)&nbsp;&lt;==&gt;&nbsp;x[i]=y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__setslice__"><strong>__setslice__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__setslice__">__setslice__</a>(i,&nbsp;j,&nbsp;y)&nbsp;&lt;==&gt;&nbsp;x[i:j]=y<br>
+&nbsp;<br>
+Use&nbsp;&nbsp;of&nbsp;negative&nbsp;indices&nbsp;is&nbsp;not&nbsp;supported.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__setstate__"><strong>__setstate__</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-__setstate__">__setstate__</a>(version,&nbsp;shape,&nbsp;typecode,&nbsp;isfortran,&nbsp;rawdata)<br>
+&nbsp;<br>
+For&nbsp;unpickling.<br>
+&nbsp;<br>
+Arguments:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;version&nbsp;--&nbsp;optional&nbsp;pickle&nbsp;version.&nbsp;If&nbsp;omitted&nbsp;defaults&nbsp;to&nbsp;0.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;shape&nbsp;--&nbsp;a&nbsp;tuple&nbsp;giving&nbsp;the&nbsp;shape<br>
+&nbsp;&nbsp;&nbsp;&nbsp;typecode&nbsp;--&nbsp;a&nbsp;typecode<br>
+&nbsp;&nbsp;&nbsp;&nbsp;isFortran&nbsp;--&nbsp;&nbsp;a&nbsp;bool&nbsp;stating&nbsp;if&nbsp;Fortran&nbsp;or&nbsp;no<br>
+&nbsp;&nbsp;&nbsp;&nbsp;rawdata&nbsp;--&nbsp;a&nbsp;binary&nbsp;string&nbsp;with&nbsp;the&nbsp;data&nbsp;(or&nbsp;a&nbsp;list&nbsp;if&nbsp;Object&nbsp;array)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__sub__"><strong>__sub__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__sub__">__sub__</a>(y)&nbsp;&lt;==&gt;&nbsp;x-y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__truediv__"><strong>__truediv__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__truediv__">__truediv__</a>(y)&nbsp;&lt;==&gt;&nbsp;x/y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-__xor__"><strong>__xor__</strong></a>(...)</dt><dd><tt>x.<a href="#rc_array-__xor__">__xor__</a>(y)&nbsp;&lt;==&gt;&nbsp;x^y</tt></dd></dl>
+
+<dl><dt><a name="rc_array-all"><strong>all</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-all">all</a>(axis=None)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-any"><strong>any</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-any">any</a>(axis=None,&nbsp;out=None)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-argmax"><strong>argmax</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-argmax">argmax</a>(axis=None,&nbsp;out=None)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-argmin"><strong>argmin</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-argmin">argmin</a>(axis=None,&nbsp;out=None)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-argsort"><strong>argsort</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-argsort">argsort</a>(axis=-1,&nbsp;kind='quicksort',&nbsp;order=None)&nbsp;-&gt;&nbsp;indices<br>
+&nbsp;<br>
+Perform&nbsp;an&nbsp;indirect&nbsp;sort&nbsp;along&nbsp;the&nbsp;given&nbsp;axis&nbsp;using&nbsp;the&nbsp;algorithm&nbsp;specified<br>
+by&nbsp;the&nbsp;kind&nbsp;keyword.&nbsp;It&nbsp;returns&nbsp;an&nbsp;array&nbsp;of&nbsp;indices&nbsp;of&nbsp;the&nbsp;same&nbsp;shape&nbsp;as<br>
+'a'&nbsp;that&nbsp;index&nbsp;data&nbsp;along&nbsp;the&nbsp;given&nbsp;axis&nbsp;in&nbsp;sorted&nbsp;order.<br>
+&nbsp;<br>
+:Parameters:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;axis&nbsp;:&nbsp;integer<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Axis&nbsp;to&nbsp;be&nbsp;indirectly&nbsp;sorted.&nbsp;None&nbsp;indicates&nbsp;that&nbsp;the&nbsp;flattened<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;array&nbsp;should&nbsp;be&nbsp;used.&nbsp;Default&nbsp;is&nbsp;-1.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;kind&nbsp;:&nbsp;string<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sorting&nbsp;algorithm&nbsp;to&nbsp;use.&nbsp;Possible&nbsp;values&nbsp;are&nbsp;'quicksort',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'mergesort',&nbsp;or&nbsp;'heapsort'.&nbsp;Default&nbsp;is&nbsp;'quicksort'.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;order&nbsp;:&nbsp;list&nbsp;type&nbsp;or&nbsp;None<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;When&nbsp;a&nbsp;is&nbsp;an&nbsp;array&nbsp;with&nbsp;fields&nbsp;defined,&nbsp;this&nbsp;argument&nbsp;specifies<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;which&nbsp;fields&nbsp;to&nbsp;compare&nbsp;first,&nbsp;second,&nbsp;etc.&nbsp;&nbsp;Not&nbsp;all&nbsp;fields&nbsp;need&nbsp;be<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified.<br>
+&nbsp;<br>
+:Returns:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;indices&nbsp;:&nbsp;integer&nbsp;array<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Array&nbsp;of&nbsp;indices&nbsp;that&nbsp;sort&nbsp;'a'&nbsp;along&nbsp;the&nbsp;specified&nbsp;axis.<br>
+&nbsp;<br>
+:SeeAlso:<br>
+&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;lexsort&nbsp;:&nbsp;indirect&nbsp;stable&nbsp;sort&nbsp;with&nbsp;multiple&nbsp;keys<br>
+&nbsp;&nbsp;-&nbsp;sort&nbsp;:&nbsp;inplace&nbsp;sort<br>
+&nbsp;<br>
+:Notes:<br>
+------<br>
+&nbsp;<br>
+The&nbsp;various&nbsp;sorts&nbsp;are&nbsp;characterized&nbsp;by&nbsp;average&nbsp;speed,&nbsp;worst&nbsp;case<br>
+performance,&nbsp;need&nbsp;for&nbsp;work&nbsp;space,&nbsp;and&nbsp;whether&nbsp;they&nbsp;are&nbsp;stable.&nbsp;A&nbsp;stable<br>
+sort&nbsp;keeps&nbsp;items&nbsp;with&nbsp;the&nbsp;same&nbsp;key&nbsp;in&nbsp;the&nbsp;same&nbsp;relative&nbsp;order.&nbsp;The&nbsp;three<br>
+available&nbsp;algorithms&nbsp;have&nbsp;the&nbsp;following&nbsp;properties:<br>
+&nbsp;<br>
+|------------------------------------------------------|<br>
+|&nbsp;&nbsp;&nbsp;&nbsp;kind&nbsp;&nbsp;&nbsp;|&nbsp;speed&nbsp;|&nbsp;&nbsp;worst&nbsp;case&nbsp;|&nbsp;work&nbsp;space&nbsp;|&nbsp;stable|<br>
+|------------------------------------------------------|<br>
+|'quicksort'|&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;|&nbsp;O(n^2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;no&nbsp;&nbsp;|<br>
+|'mergesort'|&nbsp;&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;|&nbsp;O(n*log(n))&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;~n/2&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;yes&nbsp;|<br>
+|'heapsort'&nbsp;|&nbsp;&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;|&nbsp;O(n*log(n))&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;no&nbsp;&nbsp;|<br>
+|------------------------------------------------------|<br>
+&nbsp;<br>
+All&nbsp;the&nbsp;sort&nbsp;algorithms&nbsp;make&nbsp;temporary&nbsp;copies&nbsp;of&nbsp;the&nbsp;data&nbsp;when&nbsp;the&nbsp;sort&nbsp;is&nbsp;not<br>
+along&nbsp;the&nbsp;last&nbsp;axis.&nbsp;Consequently,&nbsp;sorts&nbsp;along&nbsp;the&nbsp;last&nbsp;axis&nbsp;are&nbsp;faster&nbsp;and&nbsp;use<br>
+less&nbsp;space&nbsp;than&nbsp;sorts&nbsp;along&nbsp;other&nbsp;axis.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-astype"><strong>astype</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-astype">astype</a>(t)&nbsp;-&gt;&nbsp;Copy&nbsp;of&nbsp;array&nbsp;cast&nbsp;to&nbsp;type&nbsp;t.<br>
+&nbsp;<br>
+Cast&nbsp;array&nbsp;m&nbsp;to&nbsp;type&nbsp;t.&nbsp;&nbsp;t&nbsp;can&nbsp;be&nbsp;either&nbsp;a&nbsp;string&nbsp;representing&nbsp;a&nbsp;typecode,<br>
+or&nbsp;a&nbsp;python&nbsp;type&nbsp;object&nbsp;of&nbsp;type&nbsp;int,&nbsp;float,&nbsp;or&nbsp;complex.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-byteswap"><strong>byteswap</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-byteswap">byteswap</a>(False)&nbsp;-&gt;&nbsp;View&nbsp;or&nbsp;copy.&nbsp;Swap&nbsp;the&nbsp;bytes&nbsp;in&nbsp;the&nbsp;array.<br>
+&nbsp;<br>
+Swap&nbsp;the&nbsp;bytes&nbsp;in&nbsp;the&nbsp;array.&nbsp;&nbsp;Return&nbsp;the&nbsp;byteswapped&nbsp;array.&nbsp;&nbsp;If&nbsp;the&nbsp;first<br>
+argument&nbsp;is&nbsp;True,&nbsp;byteswap&nbsp;in-place&nbsp;and&nbsp;return&nbsp;a&nbsp;reference&nbsp;to&nbsp;self.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-choose"><strong>choose</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-choose">choose</a>(b0,&nbsp;b1,&nbsp;...,&nbsp;bn,&nbsp;out=None,&nbsp;mode='raise')<br>
+&nbsp;<br>
+Return&nbsp;an&nbsp;array&nbsp;that&nbsp;merges&nbsp;the&nbsp;b_i&nbsp;arrays&nbsp;together&nbsp;using&nbsp;'a'&nbsp;as<br>
+the&nbsp;index&nbsp;The&nbsp;b_i&nbsp;arrays&nbsp;and&nbsp;'a'&nbsp;must&nbsp;all&nbsp;be&nbsp;broadcastable&nbsp;to&nbsp;the<br>
+same&nbsp;shape.&nbsp;&nbsp;The&nbsp;output&nbsp;at&nbsp;a&nbsp;particular&nbsp;position&nbsp;is&nbsp;the&nbsp;input<br>
+array&nbsp;b_i&nbsp;at&nbsp;that&nbsp;position&nbsp;depending&nbsp;on&nbsp;the&nbsp;value&nbsp;of&nbsp;'a'&nbsp;at&nbsp;that<br>
+position.&nbsp;&nbsp;Therefore,&nbsp;'a'&nbsp;must&nbsp;be&nbsp;an&nbsp;integer&nbsp;array&nbsp;with&nbsp;entries<br>
+from&nbsp;0&nbsp;to&nbsp;n+1.;</tt></dd></dl>
+
+<dl><dt><a name="rc_array-clip"><strong>clip</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-clip">clip</a>(min=,&nbsp;max=,&nbsp;out=None)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-compress"><strong>compress</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-compress">compress</a>(condition=,&nbsp;axis=None,&nbsp;out=None)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-conj"><strong>conj</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-conj">conj</a>()</tt></dd></dl>
+
+<dl><dt><a name="rc_array-conjugate"><strong>conjugate</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-conjugate">conjugate</a>()</tt></dd></dl>
+
+<dl><dt><a name="rc_array-copy"><strong>copy</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-copy">copy</a>(|order)&nbsp;-&gt;&nbsp;copy,&nbsp;possibly&nbsp;with&nbsp;different&nbsp;order.<br>
+&nbsp;<br>
+Return&nbsp;a&nbsp;copy&nbsp;of&nbsp;the&nbsp;array.<br>
+&nbsp;<br>
+Argument:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;order&nbsp;--&nbsp;Order&nbsp;of&nbsp;returned&nbsp;copy&nbsp;(default&nbsp;'C')<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If&nbsp;order&nbsp;is&nbsp;'C'&nbsp;(False)&nbsp;then&nbsp;the&nbsp;result&nbsp;is&nbsp;contiguous&nbsp;(default).<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If&nbsp;order&nbsp;is&nbsp;'Fortran'&nbsp;(True)&nbsp;then&nbsp;the&nbsp;result&nbsp;has&nbsp;fortran&nbsp;order.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If&nbsp;order&nbsp;is&nbsp;'Any'&nbsp;(None)&nbsp;then&nbsp;the&nbsp;result&nbsp;has&nbsp;fortran&nbsp;order<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;only&nbsp;if&nbsp;m&nbsp;is&nbsp;already&nbsp;in&nbsp;fortran&nbsp;order.;</tt></dd></dl>
+
+<dl><dt><a name="rc_array-cumprod"><strong>cumprod</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-cumprod">cumprod</a>(axis=None,&nbsp;dtype=None)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-cumsum"><strong>cumsum</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-cumsum">cumsum</a>(axis=None,&nbsp;dtype=None,&nbsp;out=None)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-diagonal"><strong>diagonal</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-diagonal">diagonal</a>(offset=0,&nbsp;axis1=0,&nbsp;axis2=1)&nbsp;-&gt;&nbsp;diagonals<br>
+&nbsp;<br>
+If&nbsp;a&nbsp;is&nbsp;2-d,&nbsp;return&nbsp;the&nbsp;diagonal&nbsp;of&nbsp;self&nbsp;with&nbsp;the&nbsp;given&nbsp;offset,&nbsp;i.e.,&nbsp;the<br>
+collection&nbsp;of&nbsp;elements&nbsp;of&nbsp;the&nbsp;form&nbsp;a[i,i+offset].&nbsp;If&nbsp;a&nbsp;is&nbsp;n-d&nbsp;with&nbsp;n&nbsp;&gt;&nbsp;2,<br>
+then&nbsp;the&nbsp;axes&nbsp;specified&nbsp;by&nbsp;axis1&nbsp;and&nbsp;axis2&nbsp;are&nbsp;used&nbsp;to&nbsp;determine&nbsp;the&nbsp;2-d<br>
+subarray&nbsp;whose&nbsp;diagonal&nbsp;is&nbsp;returned.&nbsp;The&nbsp;shape&nbsp;of&nbsp;the&nbsp;resulting&nbsp;array&nbsp;can<br>
+be&nbsp;determined&nbsp;by&nbsp;removing&nbsp;axis1&nbsp;and&nbsp;axis2&nbsp;and&nbsp;appending&nbsp;an&nbsp;index&nbsp;to&nbsp;the<br>
+right&nbsp;equal&nbsp;to&nbsp;the&nbsp;size&nbsp;of&nbsp;the&nbsp;resulting&nbsp;diagonals.<br>
+&nbsp;<br>
+:Parameters:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;offset&nbsp;:&nbsp;integer<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Offset&nbsp;of&nbsp;the&nbsp;diagonal&nbsp;from&nbsp;the&nbsp;main&nbsp;diagonal.&nbsp;Can&nbsp;be&nbsp;both&nbsp;positive<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and&nbsp;negative.&nbsp;Defaults&nbsp;to&nbsp;main&nbsp;diagonal.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;axis1&nbsp;:&nbsp;integer<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Axis&nbsp;to&nbsp;be&nbsp;used&nbsp;as&nbsp;the&nbsp;first&nbsp;axis&nbsp;of&nbsp;the&nbsp;2-d&nbsp;subarrays&nbsp;from&nbsp;which<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;diagonals&nbsp;should&nbsp;be&nbsp;taken.&nbsp;Defaults&nbsp;to&nbsp;first&nbsp;index.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;axis2&nbsp;:&nbsp;integer<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Axis&nbsp;to&nbsp;be&nbsp;used&nbsp;as&nbsp;the&nbsp;second&nbsp;axis&nbsp;of&nbsp;the&nbsp;2-d&nbsp;subarrays&nbsp;from&nbsp;which<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;diagonals&nbsp;should&nbsp;be&nbsp;taken.&nbsp;Defaults&nbsp;to&nbsp;second&nbsp;index.<br>
+&nbsp;<br>
+:Returns:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;array_of_diagonals&nbsp;:&nbsp;same&nbsp;type&nbsp;as&nbsp;original&nbsp;array<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If&nbsp;a&nbsp;is&nbsp;2-d,&nbsp;then&nbsp;a&nbsp;1-d&nbsp;array&nbsp;containing&nbsp;the&nbsp;diagonal&nbsp;is&nbsp;returned.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If&nbsp;a&nbsp;is&nbsp;n-d,&nbsp;n&nbsp;&gt;&nbsp;2,&nbsp;then&nbsp;an&nbsp;array&nbsp;of&nbsp;diagonals&nbsp;is&nbsp;returned.<br>
+&nbsp;<br>
+:SeeAlso:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;diag&nbsp;:&nbsp;matlab&nbsp;workalike&nbsp;for&nbsp;1-d&nbsp;and&nbsp;2-d&nbsp;arrays.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;diagflat&nbsp;:&nbsp;creates&nbsp;diagonal&nbsp;arrays<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;trace&nbsp;:&nbsp;sum&nbsp;along&nbsp;diagonals<br>
+&nbsp;<br>
+Examples<br>
+--------<br>
+&nbsp;<br>
+&gt;&gt;&gt;&nbsp;a&nbsp;=&nbsp;arange(4).<a href="#rc_array-reshape">reshape</a>(2,2)<br>
+&gt;&gt;&gt;&nbsp;a<br>
+<a href="#-array">array</a>([[0,&nbsp;1],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[2,&nbsp;3]])<br>
+&gt;&gt;&gt;&nbsp;a.<a href="#rc_array-diagonal">diagonal</a>()<br>
+<a href="#-array">array</a>([0,&nbsp;3])<br>
+&gt;&gt;&gt;&nbsp;a.<a href="#rc_array-diagonal">diagonal</a>(1)<br>
+<a href="#-array">array</a>([1])<br>
+&nbsp;<br>
+&gt;&gt;&gt;&nbsp;a&nbsp;=&nbsp;arange(8).<a href="#rc_array-reshape">reshape</a>(2,2,2)<br>
+&gt;&gt;&gt;&nbsp;a<br>
+<a href="#-array">array</a>([[[0,&nbsp;1],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[2,&nbsp;3]],<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[[4,&nbsp;5],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[6,&nbsp;7]]])<br>
+&gt;&gt;&gt;&nbsp;a.<a href="#rc_array-diagonal">diagonal</a>(0,-2,-1)<br>
+<a href="#-array">array</a>([[0,&nbsp;3],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[4,&nbsp;7]])</tt></dd></dl>
+
+<dl><dt><a name="rc_array-dump"><strong>dump</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-dump">dump</a>(file)&nbsp;Dump&nbsp;a&nbsp;pickle&nbsp;of&nbsp;the&nbsp;array&nbsp;to&nbsp;the&nbsp;specified&nbsp;file.<br>
+&nbsp;<br>
+The&nbsp;array&nbsp;can&nbsp;be&nbsp;read&nbsp;back&nbsp;with&nbsp;pickle.load&nbsp;or&nbsp;numpy.load<br>
+&nbsp;<br>
+Arguments:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;file&nbsp;--&nbsp;string&nbsp;naming&nbsp;the&nbsp;dump&nbsp;file.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-dumps"><strong>dumps</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-dumps">dumps</a>()&nbsp;returns&nbsp;the&nbsp;pickle&nbsp;of&nbsp;the&nbsp;array&nbsp;as&nbsp;a&nbsp;string.<br>
+&nbsp;<br>
+pickle.loads&nbsp;or&nbsp;numpy.loads&nbsp;will&nbsp;convert&nbsp;the&nbsp;string&nbsp;back&nbsp;to&nbsp;an&nbsp;array.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-fill"><strong>fill</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-fill">fill</a>(value)&nbsp;-&gt;&nbsp;None.&nbsp;Fill&nbsp;the&nbsp;array&nbsp;with&nbsp;the&nbsp;scalar&nbsp;value.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-flatten"><strong>flatten</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-flatten">flatten</a>([fortran])&nbsp;return&nbsp;a&nbsp;1-d&nbsp;array&nbsp;(always&nbsp;copy)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-getfield"><strong>getfield</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-getfield">getfield</a>(dtype,&nbsp;offset)&nbsp;-&gt;&nbsp;field&nbsp;of&nbsp;array&nbsp;as&nbsp;given&nbsp;type.<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;field&nbsp;of&nbsp;the&nbsp;given&nbsp;array&nbsp;as&nbsp;a&nbsp;certain&nbsp;type.&nbsp;A&nbsp;field&nbsp;is&nbsp;a&nbsp;view&nbsp;of<br>
+the&nbsp;array&nbsp;data&nbsp;with&nbsp;each&nbsp;itemsize&nbsp;determined&nbsp;by&nbsp;the&nbsp;given&nbsp;type&nbsp;and&nbsp;the<br>
+offset&nbsp;into&nbsp;the&nbsp;current&nbsp;array.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-item"><strong>item</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-item">item</a>()&nbsp;-&gt;&nbsp;&nbsp;copy&nbsp;of&nbsp;first&nbsp;array&nbsp;item&nbsp;as&nbsp;Python&nbsp;scalar.<br>
+&nbsp;<br>
+Copy&nbsp;the&nbsp;first&nbsp;element&nbsp;of&nbsp;array&nbsp;to&nbsp;a&nbsp;standard&nbsp;Python&nbsp;scalar&nbsp;and&nbsp;return<br>
+it.&nbsp;The&nbsp;array&nbsp;must&nbsp;be&nbsp;of&nbsp;size&nbsp;one.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-itemset"><strong>itemset</strong></a>(...)</dt></dl>
+
+<dl><dt><a name="rc_array-max"><strong>max</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-max">max</a>(axis=None)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-mean"><strong>mean</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-mean">mean</a>(axis=None,&nbsp;dtype=None,&nbsp;out=None)&nbsp;-&gt;&nbsp;mean<br>
+&nbsp;<br>
+Returns&nbsp;the&nbsp;average&nbsp;of&nbsp;the&nbsp;array&nbsp;elements.&nbsp;&nbsp;The&nbsp;average&nbsp;is&nbsp;taken&nbsp;over&nbsp;the<br>
+flattened&nbsp;array&nbsp;by&nbsp;default,&nbsp;otherwise&nbsp;over&nbsp;the&nbsp;specified&nbsp;axis.<br>
+&nbsp;<br>
+:Parameters:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;axis&nbsp;:&nbsp;integer<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Axis&nbsp;along&nbsp;which&nbsp;the&nbsp;means&nbsp;are&nbsp;computed.&nbsp;The&nbsp;default&nbsp;is<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;compute&nbsp;the&nbsp;standard&nbsp;deviation&nbsp;of&nbsp;the&nbsp;flattened&nbsp;array.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;dtype&nbsp;:&nbsp;type<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Type&nbsp;to&nbsp;use&nbsp;in&nbsp;computing&nbsp;the&nbsp;means.&nbsp;For&nbsp;arrays&nbsp;of<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;integer&nbsp;type&nbsp;the&nbsp;default&nbsp;is&nbsp;float32,&nbsp;for&nbsp;arrays&nbsp;of&nbsp;float&nbsp;types&nbsp;it<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;is&nbsp;the&nbsp;same&nbsp;as&nbsp;the&nbsp;array&nbsp;type.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;out&nbsp;:&nbsp;<a href="numpy.html#ndarray">ndarray</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Alternative&nbsp;output&nbsp;array&nbsp;in&nbsp;which&nbsp;to&nbsp;place&nbsp;the&nbsp;result.&nbsp;It&nbsp;must&nbsp;have<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;same&nbsp;shape&nbsp;as&nbsp;the&nbsp;expected&nbsp;output&nbsp;but&nbsp;the&nbsp;type&nbsp;will&nbsp;be&nbsp;cast&nbsp;if<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;necessary.<br>
+&nbsp;<br>
+:Returns:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;mean&nbsp;:&nbsp;The&nbsp;return&nbsp;type&nbsp;varies,&nbsp;see&nbsp;above.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;new&nbsp;array&nbsp;holding&nbsp;the&nbsp;result&nbsp;is&nbsp;returned&nbsp;unless&nbsp;out&nbsp;is&nbsp;specified,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;in&nbsp;which&nbsp;case&nbsp;a&nbsp;reference&nbsp;to&nbsp;out&nbsp;is&nbsp;returned.<br>
+&nbsp;<br>
+:SeeAlso:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;var&nbsp;:&nbsp;variance<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;std&nbsp;:&nbsp;standard&nbsp;deviation<br>
+&nbsp;<br>
+Notes<br>
+-----<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;mean&nbsp;is&nbsp;the&nbsp;sum&nbsp;of&nbsp;the&nbsp;elements&nbsp;along&nbsp;the&nbsp;axis&nbsp;divided&nbsp;by&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;number&nbsp;of&nbsp;elements.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-min"><strong>min</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-min">min</a>(axis=None)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-newbyteorder"><strong>newbyteorder</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-newbyteorder">newbyteorder</a>(&lt;byteorder&gt;)&nbsp;is&nbsp;equivalent&nbsp;to<br>
+a.<a href="#rc_array-view">view</a>(a.dtype.newbytorder(&lt;byteorder&gt;))</tt></dd></dl>
+
+<dl><dt><a name="rc_array-nonzero"><strong>nonzero</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-nonzero">nonzero</a>()&nbsp;returns&nbsp;a&nbsp;tuple&nbsp;of&nbsp;arrays<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;tuple&nbsp;of&nbsp;arrays,&nbsp;one&nbsp;for&nbsp;each&nbsp;dimension&nbsp;of&nbsp;a,<br>
+containing&nbsp;the&nbsp;indices&nbsp;of&nbsp;the&nbsp;non-zero&nbsp;elements&nbsp;in&nbsp;that<br>
+dimension.&nbsp;&nbsp;The&nbsp;corresponding&nbsp;non-zero&nbsp;values&nbsp;can&nbsp;be&nbsp;obtained<br>
+with<br>
+&nbsp;&nbsp;&nbsp;&nbsp;a[a.<a href="#rc_array-nonzero">nonzero</a>()].<br>
+&nbsp;<br>
+To&nbsp;group&nbsp;the&nbsp;indices&nbsp;by&nbsp;element,&nbsp;rather&nbsp;than&nbsp;dimension,&nbsp;use<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#rc_array-transpose">transpose</a>(a.<a href="#rc_array-nonzero">nonzero</a>())<br>
+instead.&nbsp;The&nbsp;result&nbsp;of&nbsp;this&nbsp;is&nbsp;always&nbsp;a&nbsp;2d&nbsp;array,&nbsp;with&nbsp;a&nbsp;row&nbsp;for<br>
+each&nbsp;non-zero&nbsp;element.;</tt></dd></dl>
+
+<dl><dt><a name="rc_array-prod"><strong>prod</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-prod">prod</a>(axis=None,&nbsp;dtype=None)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-ptp"><strong>ptp</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-ptp">ptp</a>(axis=None)&nbsp;a.<a href="#rc_array-max">max</a>(axis)-a.<a href="#rc_array-min">min</a>(axis)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-put"><strong>put</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-put">put</a>(indices,&nbsp;values,&nbsp;mode)&nbsp;sets&nbsp;a.flat[n]&nbsp;=&nbsp;values[n]&nbsp;for<br>
+each&nbsp;n&nbsp;in&nbsp;indices.&nbsp;If&nbsp;values&nbsp;is&nbsp;shorter&nbsp;than&nbsp;indices&nbsp;then&nbsp;it<br>
+will&nbsp;repeat.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-ravel"><strong>ravel</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-ravel">ravel</a>([fortran])&nbsp;return&nbsp;a&nbsp;1-d&nbsp;array&nbsp;(copy&nbsp;only&nbsp;if&nbsp;needed)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-repeat"><strong>repeat</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-repeat">repeat</a>(repeats=,&nbsp;axis=none)<br>
+&nbsp;<br>
+copy&nbsp;elements&nbsp;of&nbsp;a,&nbsp;repeats&nbsp;times.&nbsp;&nbsp;the&nbsp;repeats&nbsp;argument&nbsp;must&nbsp;be&nbsp;a&nbsp;sequence<br>
+of&nbsp;length&nbsp;a.shape[axis]&nbsp;or&nbsp;a&nbsp;scalar.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-reshape"><strong>reshape</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-reshape">reshape</a>(d1,&nbsp;d2,&nbsp;...,&nbsp;dn,&nbsp;order='c')<br>
+&nbsp;<br>
+Return&nbsp;a&nbsp;new&nbsp;array&nbsp;from&nbsp;this&nbsp;one.&nbsp;&nbsp;The&nbsp;new&nbsp;array&nbsp;must&nbsp;have&nbsp;the&nbsp;same&nbsp;number<br>
+of&nbsp;elements&nbsp;as&nbsp;self.&nbsp;&nbsp;Also&nbsp;always&nbsp;returns&nbsp;a&nbsp;view&nbsp;or&nbsp;raises&nbsp;a&nbsp;ValueError&nbsp;if<br>
+that&nbsp;is&nbsp;impossible.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-resize"><strong>resize</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-resize">resize</a>(new_shape,&nbsp;refcheck=True,&nbsp;order=False)&nbsp;-&gt;&nbsp;None.&nbsp;Change&nbsp;array&nbsp;shape.<br>
+&nbsp;<br>
+Change&nbsp;size&nbsp;and&nbsp;shape&nbsp;of&nbsp;self&nbsp;inplace.&nbsp;&nbsp;Array&nbsp;must&nbsp;own&nbsp;its&nbsp;own&nbsp;memory&nbsp;and<br>
+not&nbsp;be&nbsp;referenced&nbsp;by&nbsp;other&nbsp;arrays.&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;None.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-round"><strong>round</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-round">round</a>(decimals=0,&nbsp;out=None)&nbsp;-&gt;&nbsp;out&nbsp;(a).&nbsp;Rounds&nbsp;to&nbsp;'decimals'&nbsp;places.<br>
+&nbsp;<br>
+Keyword&nbsp;arguments:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;decimals&nbsp;--&nbsp;number&nbsp;of&nbsp;decimals&nbsp;to&nbsp;round&nbsp;to&nbsp;(default&nbsp;0).&nbsp;May&nbsp;be&nbsp;negative.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;out&nbsp;--&nbsp;existing&nbsp;array&nbsp;to&nbsp;use&nbsp;for&nbsp;output&nbsp;(default&nbsp;a).<br>
+&nbsp;<br>
+Return:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Reference&nbsp;to&nbsp;out,&nbsp;where&nbsp;None&nbsp;specifies&nbsp;the&nbsp;original&nbsp;array&nbsp;a.<br>
+&nbsp;<br>
+Round&nbsp;to&nbsp;the&nbsp;specified&nbsp;number&nbsp;of&nbsp;decimals.&nbsp;When&nbsp;'decimals'&nbsp;is&nbsp;negative&nbsp;it<br>
+specifies&nbsp;the&nbsp;number&nbsp;of&nbsp;positions&nbsp;to&nbsp;the&nbsp;left&nbsp;of&nbsp;the&nbsp;decimal&nbsp;point.&nbsp;The<br>
+real&nbsp;and&nbsp;imaginary&nbsp;parts&nbsp;of&nbsp;complex&nbsp;numbers&nbsp;are&nbsp;rounded&nbsp;separately.&nbsp;Nothing<br>
+is&nbsp;done&nbsp;if&nbsp;the&nbsp;array&nbsp;is&nbsp;not&nbsp;of&nbsp;float&nbsp;type&nbsp;and&nbsp;'decimals'&nbsp;is&nbsp;&gt;=&nbsp;0.<br>
+&nbsp;<br>
+The&nbsp;keyword&nbsp;'out'&nbsp;may&nbsp;be&nbsp;used&nbsp;to&nbsp;specify&nbsp;a&nbsp;different&nbsp;array&nbsp;to&nbsp;hold&nbsp;the<br>
+result&nbsp;rather&nbsp;than&nbsp;the&nbsp;default&nbsp;'a'.&nbsp;If&nbsp;the&nbsp;type&nbsp;of&nbsp;the&nbsp;array&nbsp;specified&nbsp;by<br>
+'out'&nbsp;differs&nbsp;from&nbsp;that&nbsp;of&nbsp;'a',&nbsp;the&nbsp;result&nbsp;is&nbsp;cast&nbsp;to&nbsp;the&nbsp;new&nbsp;type,<br>
+otherwise&nbsp;the&nbsp;original&nbsp;type&nbsp;is&nbsp;kept.&nbsp;Floats&nbsp;round&nbsp;to&nbsp;floats&nbsp;by&nbsp;default.<br>
+&nbsp;<br>
+Numpy&nbsp;rounds&nbsp;to&nbsp;even.&nbsp;Thus&nbsp;1.5&nbsp;and&nbsp;2.5&nbsp;round&nbsp;to&nbsp;2.0,&nbsp;-0.5&nbsp;and&nbsp;0.5&nbsp;round&nbsp;to<br>
+0.0,&nbsp;etc.&nbsp;Results&nbsp;may&nbsp;also&nbsp;be&nbsp;surprising&nbsp;due&nbsp;to&nbsp;the&nbsp;inexact&nbsp;representation<br>
+of&nbsp;decimal&nbsp;fractions&nbsp;in&nbsp;IEEE&nbsp;floating&nbsp;point&nbsp;and&nbsp;the&nbsp;errors&nbsp;introduced&nbsp;in<br>
+scaling&nbsp;the&nbsp;numbers&nbsp;when&nbsp;'decimals'&nbsp;is&nbsp;something&nbsp;other&nbsp;than&nbsp;0.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-searchsorted"><strong>searchsorted</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-searchsorted">searchsorted</a>(v,&nbsp;side='left')&nbsp;-&gt;&nbsp;index&nbsp;array.<br>
+&nbsp;<br>
+Find&nbsp;the&nbsp;indices&nbsp;into&nbsp;a&nbsp;sorted&nbsp;array&nbsp;such&nbsp;that&nbsp;if&nbsp;the&nbsp;corresponding&nbsp;keys&nbsp;in<br>
+v&nbsp;were&nbsp;inserted&nbsp;before&nbsp;the&nbsp;indices&nbsp;the&nbsp;order&nbsp;of&nbsp;a&nbsp;would&nbsp;be&nbsp;preserved.&nbsp;&nbsp;If<br>
+side='left',&nbsp;then&nbsp;the&nbsp;first&nbsp;such&nbsp;index&nbsp;is&nbsp;returned.&nbsp;If&nbsp;side='right',&nbsp;then<br>
+the&nbsp;last&nbsp;such&nbsp;index&nbsp;is&nbsp;returned.&nbsp;If&nbsp;there&nbsp;is&nbsp;no&nbsp;such&nbsp;index&nbsp;because&nbsp;the&nbsp;key<br>
+is&nbsp;out&nbsp;of&nbsp;bounds,&nbsp;then&nbsp;the&nbsp;length&nbsp;of&nbsp;a&nbsp;is&nbsp;returned,&nbsp;i.e.,&nbsp;the&nbsp;key&nbsp;would<br>
+need&nbsp;to&nbsp;be&nbsp;appended.&nbsp;The&nbsp;returned&nbsp;index&nbsp;array&nbsp;has&nbsp;the&nbsp;same&nbsp;shape&nbsp;as&nbsp;v.<br>
+&nbsp;<br>
+:Parameters:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;v&nbsp;:&nbsp;array&nbsp;or&nbsp;list&nbsp;type<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Array&nbsp;of&nbsp;keys&nbsp;to&nbsp;be&nbsp;searched&nbsp;for&nbsp;in&nbsp;a.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;side&nbsp;:&nbsp;string<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Possible&nbsp;values&nbsp;are&nbsp;:&nbsp;'left',&nbsp;'right'.&nbsp;Default&nbsp;is&nbsp;'left'.&nbsp;Return<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;first&nbsp;or&nbsp;last&nbsp;index&nbsp;where&nbsp;the&nbsp;key&nbsp;could&nbsp;be&nbsp;inserted.<br>
+&nbsp;<br>
+:Returns:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;indices&nbsp;:&nbsp;integer&nbsp;array<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;returned&nbsp;array&nbsp;has&nbsp;the&nbsp;same&nbsp;shape&nbsp;as&nbsp;v.<br>
+&nbsp;<br>
+:SeeAlso:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;sort<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;histogram<br>
+&nbsp;<br>
+:Notes:<br>
+-------<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;array&nbsp;a&nbsp;must&nbsp;be&nbsp;1-d&nbsp;and&nbsp;is&nbsp;assumed&nbsp;to&nbsp;be&nbsp;sorted&nbsp;in&nbsp;ascending&nbsp;order.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Searchsorted&nbsp;uses&nbsp;binary&nbsp;search&nbsp;to&nbsp;find&nbsp;the&nbsp;required&nbsp;insertion&nbsp;points.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-setfield"><strong>setfield</strong></a>(...)</dt><dd><tt>m.<a href="#rc_array-setfield">setfield</a>(value,&nbsp;dtype,&nbsp;offset)&nbsp;-&gt;&nbsp;None.<br>
+places&nbsp;val&nbsp;into&nbsp;field&nbsp;of&nbsp;the&nbsp;given&nbsp;array&nbsp;defined&nbsp;by&nbsp;the&nbsp;data&nbsp;type&nbsp;and&nbsp;offset.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-setflags"><strong>setflags</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-setflags">setflags</a>(write=None,&nbsp;align=None,&nbsp;uic=None)</tt></dd></dl>
+
+<dl><dt><a name="rc_array-sort"><strong>sort</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-sort">sort</a>(axis=-1,&nbsp;kind='quicksort',&nbsp;order=None)&nbsp;-&gt;&nbsp;None.<br>
+&nbsp;<br>
+Perform&nbsp;an&nbsp;inplace&nbsp;sort&nbsp;along&nbsp;the&nbsp;given&nbsp;axis&nbsp;using&nbsp;the&nbsp;algorithm&nbsp;specified<br>
+by&nbsp;the&nbsp;kind&nbsp;keyword.<br>
+&nbsp;<br>
+:Parameters:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;axis&nbsp;:&nbsp;integer<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Axis&nbsp;to&nbsp;be&nbsp;sorted&nbsp;along.&nbsp;None&nbsp;indicates&nbsp;that&nbsp;the&nbsp;flattened&nbsp;array<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;should&nbsp;be&nbsp;used.&nbsp;Default&nbsp;is&nbsp;-1.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;kind&nbsp;:&nbsp;string<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sorting&nbsp;algorithm&nbsp;to&nbsp;use.&nbsp;Possible&nbsp;values&nbsp;are&nbsp;'quicksort',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'mergesort',&nbsp;or&nbsp;'heapsort'.&nbsp;Default&nbsp;is&nbsp;'quicksort'.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;order&nbsp;:&nbsp;list&nbsp;type&nbsp;or&nbsp;None<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;When&nbsp;a&nbsp;is&nbsp;an&nbsp;array&nbsp;with&nbsp;fields&nbsp;defined,&nbsp;this&nbsp;argument&nbsp;specifies<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;which&nbsp;fields&nbsp;to&nbsp;compare&nbsp;first,&nbsp;second,&nbsp;etc.&nbsp;&nbsp;Not&nbsp;all&nbsp;fields&nbsp;need&nbsp;be<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified.<br>
+&nbsp;<br>
+:Returns:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;None<br>
+&nbsp;<br>
+:SeeAlso:<br>
+&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;argsort&nbsp;:&nbsp;indirect&nbsp;sort<br>
+&nbsp;&nbsp;-&nbsp;lexsort&nbsp;:&nbsp;indirect&nbsp;stable&nbsp;sort&nbsp;on&nbsp;multiple&nbsp;keys<br>
+&nbsp;&nbsp;-&nbsp;searchsorted&nbsp;:&nbsp;find&nbsp;keys&nbsp;in&nbsp;sorted&nbsp;array<br>
+&nbsp;<br>
+:Notes:<br>
+------<br>
+&nbsp;<br>
+The&nbsp;various&nbsp;sorts&nbsp;are&nbsp;characterized&nbsp;by&nbsp;average&nbsp;speed,&nbsp;worst&nbsp;case<br>
+performance,&nbsp;need&nbsp;for&nbsp;work&nbsp;space,&nbsp;and&nbsp;whether&nbsp;they&nbsp;are&nbsp;stable.&nbsp;A&nbsp;stable<br>
+sort&nbsp;keeps&nbsp;items&nbsp;with&nbsp;the&nbsp;same&nbsp;key&nbsp;in&nbsp;the&nbsp;same&nbsp;relative&nbsp;order.&nbsp;The&nbsp;three<br>
+available&nbsp;algorithms&nbsp;have&nbsp;the&nbsp;following&nbsp;properties:<br>
+&nbsp;<br>
+|------------------------------------------------------|<br>
+|&nbsp;&nbsp;&nbsp;&nbsp;kind&nbsp;&nbsp;&nbsp;|&nbsp;speed&nbsp;|&nbsp;&nbsp;worst&nbsp;case&nbsp;|&nbsp;work&nbsp;space&nbsp;|&nbsp;stable|<br>
+|------------------------------------------------------|<br>
+|'quicksort'|&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;|&nbsp;O(n^2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;no&nbsp;&nbsp;|<br>
+|'mergesort'|&nbsp;&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;|&nbsp;O(n*log(n))&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;~n/2&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;yes&nbsp;|<br>
+|'heapsort'&nbsp;|&nbsp;&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;|&nbsp;O(n*log(n))&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;no&nbsp;&nbsp;|<br>
+|------------------------------------------------------|<br>
+&nbsp;<br>
+All&nbsp;the&nbsp;sort&nbsp;algorithms&nbsp;make&nbsp;temporary&nbsp;copies&nbsp;of&nbsp;the&nbsp;data&nbsp;when&nbsp;the&nbsp;sort&nbsp;is&nbsp;not<br>
+along&nbsp;the&nbsp;last&nbsp;axis.&nbsp;Consequently,&nbsp;sorts&nbsp;along&nbsp;the&nbsp;last&nbsp;axis&nbsp;are&nbsp;faster&nbsp;and&nbsp;use<br>
+less&nbsp;space&nbsp;than&nbsp;sorts&nbsp;along&nbsp;other&nbsp;axis.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-squeeze"><strong>squeeze</strong></a>(...)</dt><dd><tt>m.<a href="#rc_array-squeeze">squeeze</a>()&nbsp;eliminate&nbsp;all&nbsp;length-1&nbsp;dimensions</tt></dd></dl>
+
+<dl><dt><a name="rc_array-std"><strong>std</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-std">std</a>(axis=None,&nbsp;dtype=None,&nbsp;out=None)&nbsp;-&gt;&nbsp;standard&nbsp;deviation.<br>
+&nbsp;<br>
+Returns&nbsp;the&nbsp;standard&nbsp;deviation&nbsp;of&nbsp;the&nbsp;array&nbsp;elements,&nbsp;a&nbsp;measure&nbsp;of&nbsp;the<br>
+spread&nbsp;of&nbsp;a&nbsp;distribution.&nbsp;The&nbsp;standard&nbsp;deviation&nbsp;is&nbsp;computed&nbsp;for&nbsp;the<br>
+flattened&nbsp;array&nbsp;by&nbsp;default,&nbsp;otherwise&nbsp;over&nbsp;the&nbsp;specified&nbsp;axis.<br>
+&nbsp;<br>
+:Parameters:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;axis&nbsp;:&nbsp;integer<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Axis&nbsp;along&nbsp;which&nbsp;the&nbsp;standard&nbsp;deviation&nbsp;is&nbsp;computed.&nbsp;The&nbsp;default&nbsp;is<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;compute&nbsp;the&nbsp;standard&nbsp;deviation&nbsp;of&nbsp;the&nbsp;flattened&nbsp;array.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;dtype&nbsp;:&nbsp;type<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Type&nbsp;to&nbsp;use&nbsp;in&nbsp;computing&nbsp;the&nbsp;standard&nbsp;deviation.&nbsp;For&nbsp;arrays&nbsp;of<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;integer&nbsp;type&nbsp;the&nbsp;default&nbsp;is&nbsp;float32,&nbsp;for&nbsp;arrays&nbsp;of&nbsp;float&nbsp;types&nbsp;it<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;is&nbsp;the&nbsp;same&nbsp;as&nbsp;the&nbsp;array&nbsp;type.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;out&nbsp;:&nbsp;<a href="numpy.html#ndarray">ndarray</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Alternative&nbsp;output&nbsp;array&nbsp;in&nbsp;which&nbsp;to&nbsp;place&nbsp;the&nbsp;result.&nbsp;It&nbsp;must&nbsp;have<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;same&nbsp;shape&nbsp;as&nbsp;the&nbsp;expected&nbsp;output&nbsp;but&nbsp;the&nbsp;type&nbsp;will&nbsp;be&nbsp;cast&nbsp;if<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;necessary.<br>
+&nbsp;<br>
+:Returns:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;standard&nbsp;deviation&nbsp;:&nbsp;The&nbsp;return&nbsp;type&nbsp;varies,&nbsp;see&nbsp;above.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;new&nbsp;array&nbsp;holding&nbsp;the&nbsp;result&nbsp;is&nbsp;returned&nbsp;unless&nbsp;out&nbsp;is&nbsp;specified,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;in&nbsp;which&nbsp;case&nbsp;a&nbsp;reference&nbsp;to&nbsp;out&nbsp;is&nbsp;returned.<br>
+&nbsp;<br>
+:SeeAlso:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;var&nbsp;:&nbsp;variance<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;mean&nbsp;:&nbsp;average<br>
+&nbsp;<br>
+Notes<br>
+-----<br>
+&nbsp;<br>
+&nbsp;&nbsp;The&nbsp;standard&nbsp;deviation&nbsp;is&nbsp;the&nbsp;square&nbsp;root&nbsp;of&nbsp;the&nbsp;average&nbsp;of&nbsp;the&nbsp;squared<br>
+&nbsp;&nbsp;deviations&nbsp;from&nbsp;the&nbsp;mean,&nbsp;i.e.&nbsp;var&nbsp;=&nbsp;sqrt(<a href="#rc_array-mean">mean</a>((x&nbsp;-&nbsp;x.<a href="#rc_array-mean">mean</a>())**2)).&nbsp;&nbsp;The<br>
+&nbsp;&nbsp;computed&nbsp;standard&nbsp;deviation&nbsp;is&nbsp;biased,&nbsp;i.e.,&nbsp;the&nbsp;mean&nbsp;is&nbsp;computed&nbsp;by<br>
+&nbsp;&nbsp;dividing&nbsp;by&nbsp;the&nbsp;number&nbsp;of&nbsp;elements,&nbsp;N,&nbsp;rather&nbsp;than&nbsp;by&nbsp;N-1.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-sum"><strong>sum</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-sum">sum</a>(axis=None,&nbsp;dtype=None)&nbsp;-&gt;&nbsp;Sum&nbsp;of&nbsp;array&nbsp;over&nbsp;given&nbsp;axis.<br>
+&nbsp;<br>
+Sum&nbsp;the&nbsp;array&nbsp;over&nbsp;the&nbsp;given&nbsp;axis.&nbsp;&nbsp;If&nbsp;the&nbsp;axis&nbsp;is&nbsp;None,&nbsp;sum&nbsp;over<br>
+all&nbsp;dimensions&nbsp;of&nbsp;the&nbsp;array.<br>
+&nbsp;<br>
+The&nbsp;optional&nbsp;dtype&nbsp;argument&nbsp;is&nbsp;the&nbsp;data&nbsp;type&nbsp;for&nbsp;the&nbsp;returned<br>
+value&nbsp;and&nbsp;intermediate&nbsp;calculations.&nbsp;&nbsp;The&nbsp;default&nbsp;is&nbsp;to&nbsp;upcast<br>
+(promote)&nbsp;smaller&nbsp;integer&nbsp;types&nbsp;to&nbsp;the&nbsp;platform-dependent&nbsp;int.<br>
+For&nbsp;example,&nbsp;on&nbsp;32-bit&nbsp;platforms:<br>
+&nbsp;<br>
+&nbsp;&nbsp;a.dtype&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;default&nbsp;sum&nbsp;dtype<br>
+&nbsp;&nbsp;---------------------------------------------------<br>
+&nbsp;&nbsp;bool,&nbsp;int8,&nbsp;int16,&nbsp;int32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int32<br>
+&nbsp;<br>
+Warning:&nbsp;The&nbsp;arithmetic&nbsp;is&nbsp;modular&nbsp;and&nbsp;no&nbsp;error&nbsp;is&nbsp;raised&nbsp;on&nbsp;overflow.<br>
+&nbsp;<br>
+Examples:<br>
+&nbsp;<br>
+&gt;&gt;&gt;&nbsp;<a href="#-array">array</a>([0.5,&nbsp;1.5]).<a href="#rc_array-sum">sum</a>()<br>
+2.0<br>
+&gt;&gt;&gt;&nbsp;<a href="#-array">array</a>([0.5,&nbsp;1.5]).<a href="#rc_array-sum">sum</a>(dtype=int32)<br>
+1<br>
+&gt;&gt;&gt;&nbsp;<a href="#-array">array</a>([[0,&nbsp;1],&nbsp;[0,&nbsp;5]]).<a href="#rc_array-sum">sum</a>(axis=0)<br>
+<a href="#-array">array</a>([0,&nbsp;6])<br>
+&gt;&gt;&gt;&nbsp;<a href="#-array">array</a>([[0,&nbsp;1],&nbsp;[0,&nbsp;5]]).<a href="#rc_array-sum">sum</a>(axis=1)<br>
+<a href="#-array">array</a>([1,&nbsp;5])<br>
+&gt;&gt;&gt;&nbsp;ones(128,&nbsp;dtype=int8).<a href="#rc_array-sum">sum</a>(dtype=int8)&nbsp;#&nbsp;overflow!<br>
+-128</tt></dd></dl>
+
+<dl><dt><a name="rc_array-swapaxes"><strong>swapaxes</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-swapaxes">swapaxes</a>(axis1,&nbsp;axis2)&nbsp;-&gt;&nbsp;new&nbsp;view&nbsp;with&nbsp;axes&nbsp;swapped.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-take"><strong>take</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-take">take</a>(indices,&nbsp;axis=None,&nbsp;out=None,&nbsp;mode='raise')&nbsp;-&gt;&nbsp;new&nbsp;array.<br>
+&nbsp;<br>
+The&nbsp;new&nbsp;array&nbsp;is&nbsp;formed&nbsp;from&nbsp;the&nbsp;elements&nbsp;of&nbsp;a&nbsp;indexed&nbsp;by&nbsp;indices&nbsp;along&nbsp;the<br>
+given&nbsp;axis.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-tofile"><strong>tofile</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-tofile">tofile</a>(fid,&nbsp;sep="",&nbsp;format="%s")&nbsp;-&gt;&nbsp;None.&nbsp;Write&nbsp;the&nbsp;data&nbsp;to&nbsp;a&nbsp;file.<br>
+&nbsp;<br>
+Required&nbsp;arguments:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;file&nbsp;--&nbsp;an&nbsp;open&nbsp;file&nbsp;object&nbsp;or&nbsp;a&nbsp;string&nbsp;containing&nbsp;a&nbsp;filename<br>
+&nbsp;<br>
+Keyword&nbsp;arguments:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;sep&nbsp;--&nbsp;separator&nbsp;for&nbsp;text&nbsp;output.&nbsp;Write&nbsp;binary&nbsp;if&nbsp;empty&nbsp;(default&nbsp;"")<br>
+&nbsp;&nbsp;&nbsp;&nbsp;format&nbsp;--&nbsp;format&nbsp;string&nbsp;for&nbsp;text&nbsp;file&nbsp;output&nbsp;(default&nbsp;"%s")<br>
+&nbsp;<br>
+A&nbsp;convenience&nbsp;function&nbsp;for&nbsp;quick&nbsp;storage&nbsp;of&nbsp;array&nbsp;data.&nbsp;Information&nbsp;on<br>
+endianess&nbsp;and&nbsp;precision&nbsp;is&nbsp;lost,&nbsp;so&nbsp;this&nbsp;method&nbsp;is&nbsp;not&nbsp;a&nbsp;good&nbsp;choice&nbsp;for<br>
+files&nbsp;intended&nbsp;to&nbsp;archive&nbsp;data&nbsp;or&nbsp;transport&nbsp;data&nbsp;between&nbsp;machines&nbsp;with<br>
+different&nbsp;endianess.&nbsp;Some&nbsp;of&nbsp;these&nbsp;problems&nbsp;can&nbsp;be&nbsp;overcome&nbsp;by&nbsp;outputting<br>
+the&nbsp;data&nbsp;as&nbsp;text&nbsp;files&nbsp;at&nbsp;the&nbsp;expense&nbsp;of&nbsp;speed&nbsp;and&nbsp;file&nbsp;size.<br>
+&nbsp;<br>
+If&nbsp;'sep'&nbsp;is&nbsp;empty&nbsp;this&nbsp;method&nbsp;is&nbsp;equivalent&nbsp;to&nbsp;file.write(a.<a href="#rc_array-tostring">tostring</a>()).&nbsp;If<br>
+'sep'&nbsp;is&nbsp;not&nbsp;empty&nbsp;each&nbsp;data&nbsp;item&nbsp;is&nbsp;converted&nbsp;to&nbsp;the&nbsp;nearest&nbsp;Python&nbsp;type<br>
+and&nbsp;formatted&nbsp;using&nbsp;"format"%item.&nbsp;The&nbsp;resulting&nbsp;strings&nbsp;are&nbsp;written&nbsp;to&nbsp;the<br>
+file&nbsp;separated&nbsp;by&nbsp;the&nbsp;contents&nbsp;of&nbsp;'sep'.&nbsp;The&nbsp;data&nbsp;is&nbsp;always&nbsp;written&nbsp;in&nbsp;"C"<br>
+(row&nbsp;major)&nbsp;order&nbsp;independent&nbsp;of&nbsp;the&nbsp;order&nbsp;of&nbsp;'a'.<br>
+&nbsp;<br>
+The&nbsp;data&nbsp;produced&nbsp;by&nbsp;this&nbsp;method&nbsp;can&nbsp;be&nbsp;recovered&nbsp;by&nbsp;using&nbsp;the&nbsp;function<br>
+fromfile().</tt></dd></dl>
+
+<dl><dt><a name="rc_array-tolist"><strong>tolist</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-tolist">tolist</a>()&nbsp;-&gt;&nbsp;Array&nbsp;as&nbsp;hierarchical&nbsp;list.<br>
+&nbsp;<br>
+Copy&nbsp;the&nbsp;data&nbsp;portion&nbsp;of&nbsp;the&nbsp;array&nbsp;to&nbsp;a&nbsp;hierarchical&nbsp;python&nbsp;list&nbsp;and&nbsp;return<br>
+that&nbsp;list.&nbsp;Data&nbsp;items&nbsp;are&nbsp;converted&nbsp;to&nbsp;the&nbsp;nearest&nbsp;compatible&nbsp;Python&nbsp;type.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-tostring"><strong>tostring</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-tostring">tostring</a>(order='C')&nbsp;-&gt;&nbsp;raw&nbsp;copy&nbsp;of&nbsp;array&nbsp;data&nbsp;as&nbsp;a&nbsp;Python&nbsp;string.<br>
+&nbsp;<br>
+Keyword&nbsp;arguments:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;order&nbsp;--&nbsp;order&nbsp;of&nbsp;the&nbsp;data&nbsp;item&nbsp;in&nbsp;the&nbsp;copy&nbsp;{"C","F","A"}&nbsp;(default&nbsp;"C")<br>
+&nbsp;<br>
+Construct&nbsp;a&nbsp;Python&nbsp;string&nbsp;containing&nbsp;the&nbsp;raw&nbsp;bytes&nbsp;in&nbsp;the&nbsp;array.&nbsp;The&nbsp;order<br>
+of&nbsp;the&nbsp;data&nbsp;in&nbsp;arrays&nbsp;with&nbsp;ndim&nbsp;&gt;&nbsp;1&nbsp;is&nbsp;specified&nbsp;by&nbsp;the&nbsp;'order'&nbsp;keyword&nbsp;and<br>
+this&nbsp;keyword&nbsp;overrides&nbsp;the&nbsp;order&nbsp;of&nbsp;the&nbsp;array.&nbsp;The<br>
+choices&nbsp;are:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"C"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;C&nbsp;order&nbsp;(row&nbsp;major)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"Fortran"&nbsp;--&nbsp;Fortran&nbsp;order&nbsp;(column&nbsp;major)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"Any"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Current&nbsp;order&nbsp;of&nbsp;array.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;None&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Same&nbsp;as&nbsp;"Any"</tt></dd></dl>
+
+<dl><dt><a name="rc_array-trace"><strong>trace</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-trace">trace</a>(offset=0,&nbsp;axis1=0,&nbsp;axis2=1,&nbsp;dtype=None,&nbsp;out=None)<br>
+return&nbsp;the&nbsp;sum&nbsp;along&nbsp;the&nbsp;offset&nbsp;diagonal&nbsp;of&nbsp;the&nbsp;array's&nbsp;indicated<br>
+axis1&nbsp;and&nbsp;axis2.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-transpose"><strong>transpose</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-transpose">transpose</a>(*axes)<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;view&nbsp;of&nbsp;'a'&nbsp;with&nbsp;axes&nbsp;transposed.&nbsp;If&nbsp;no&nbsp;axes&nbsp;are&nbsp;given,<br>
+or&nbsp;None&nbsp;is&nbsp;passed,&nbsp;switches&nbsp;the&nbsp;order&nbsp;of&nbsp;the&nbsp;axes.&nbsp;For&nbsp;a&nbsp;2-d<br>
+array,&nbsp;this&nbsp;is&nbsp;the&nbsp;usual&nbsp;matrix&nbsp;transpose.&nbsp;If&nbsp;axes&nbsp;are&nbsp;given,<br>
+they&nbsp;describe&nbsp;how&nbsp;the&nbsp;axes&nbsp;are&nbsp;permuted.<br>
+&nbsp;<br>
+Example:<br>
+&gt;&gt;&gt;&nbsp;a&nbsp;=&nbsp;<a href="#-array">array</a>([[1,2],[3,4]])<br>
+&gt;&gt;&gt;&nbsp;a<br>
+<a href="#-array">array</a>([[1,&nbsp;2],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[3,&nbsp;4]])<br>
+&gt;&gt;&gt;&nbsp;a.<a href="#rc_array-transpose">transpose</a>()<br>
+<a href="#-array">array</a>([[1,&nbsp;3],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[2,&nbsp;4]])<br>
+&gt;&gt;&gt;&nbsp;a.<a href="#rc_array-transpose">transpose</a>((1,0))<br>
+<a href="#-array">array</a>([[1,&nbsp;3],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[2,&nbsp;4]])<br>
+&gt;&gt;&gt;&nbsp;a.<a href="#rc_array-transpose">transpose</a>(1,0)<br>
+<a href="#-array">array</a>([[1,&nbsp;3],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[2,&nbsp;4]])</tt></dd></dl>
+
+<dl><dt><a name="rc_array-var"><strong>var</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-var">var</a>(axis=None,&nbsp;dtype=None,&nbsp;out=None)&nbsp;-&gt;&nbsp;variance<br>
+&nbsp;<br>
+Returns&nbsp;the&nbsp;variance&nbsp;of&nbsp;the&nbsp;array&nbsp;elements,&nbsp;a&nbsp;measure&nbsp;of&nbsp;the&nbsp;spread&nbsp;of&nbsp;a<br>
+distribution.&nbsp;&nbsp;The&nbsp;variance&nbsp;is&nbsp;computed&nbsp;for&nbsp;the&nbsp;flattened&nbsp;array&nbsp;by&nbsp;default,<br>
+otherwise&nbsp;over&nbsp;the&nbsp;specified&nbsp;axis.<br>
+&nbsp;<br>
+:Parameters:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;axis&nbsp;:&nbsp;integer<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Axis&nbsp;along&nbsp;which&nbsp;the&nbsp;variance&nbsp;is&nbsp;computed.&nbsp;The&nbsp;default&nbsp;is&nbsp;to<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;compute&nbsp;the&nbsp;variance&nbsp;of&nbsp;the&nbsp;flattened&nbsp;array.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;dtype&nbsp;:&nbsp;type<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Type&nbsp;to&nbsp;use&nbsp;in&nbsp;computing&nbsp;the&nbsp;variance.&nbsp;For&nbsp;arrays&nbsp;of&nbsp;integer&nbsp;type<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;default&nbsp;is&nbsp;float32,&nbsp;for&nbsp;arrays&nbsp;of&nbsp;float&nbsp;types&nbsp;it&nbsp;is&nbsp;the&nbsp;same&nbsp;as<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;array&nbsp;type.<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;out&nbsp;:&nbsp;<a href="numpy.html#ndarray">ndarray</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Alternative&nbsp;output&nbsp;array&nbsp;in&nbsp;which&nbsp;to&nbsp;place&nbsp;the&nbsp;result.&nbsp;It&nbsp;must&nbsp;have<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;same&nbsp;shape&nbsp;as&nbsp;the&nbsp;expected&nbsp;output&nbsp;but&nbsp;the&nbsp;type&nbsp;will&nbsp;be&nbsp;cast&nbsp;if<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;necessary.<br>
+&nbsp;<br>
+:Returns:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;variance&nbsp;:&nbsp;The&nbsp;return&nbsp;type&nbsp;varies,&nbsp;see&nbsp;above.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;new&nbsp;array&nbsp;holding&nbsp;the&nbsp;result&nbsp;is&nbsp;returned&nbsp;unless&nbsp;out&nbsp;is&nbsp;specified,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;in&nbsp;which&nbsp;case&nbsp;a&nbsp;reference&nbsp;to&nbsp;out&nbsp;is&nbsp;returned.<br>
+&nbsp;<br>
+:SeeAlso:<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;std&nbsp;:&nbsp;standard&nbsp;deviation<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;mean:&nbsp;average<br>
+&nbsp;<br>
+Notes<br>
+-----<br>
+&nbsp;<br>
+&nbsp;&nbsp;The&nbsp;variance&nbsp;is&nbsp;the&nbsp;average&nbsp;of&nbsp;the&nbsp;squared&nbsp;deviations&nbsp;from&nbsp;the&nbsp;mean,&nbsp;i.e.<br>
+&nbsp;&nbsp;var&nbsp;=&nbsp;<a href="#rc_array-mean">mean</a>((x&nbsp;-&nbsp;x.<a href="#rc_array-mean">mean</a>())**2).&nbsp;&nbsp;The&nbsp;computed&nbsp;variance&nbsp;is&nbsp;biased,&nbsp;i.e.,<br>
+&nbsp;&nbsp;the&nbsp;mean&nbsp;is&nbsp;computed&nbsp;by&nbsp;dividing&nbsp;by&nbsp;the&nbsp;number&nbsp;of&nbsp;elements,&nbsp;N,&nbsp;rather<br>
+&nbsp;&nbsp;than&nbsp;by&nbsp;N-1.</tt></dd></dl>
+
+<dl><dt><a name="rc_array-view"><strong>view</strong></a>(...)</dt><dd><tt>a.<a href="#rc_array-view">view</a>(&lt;type&gt;)&nbsp;-&gt;&nbsp;new&nbsp;view&nbsp;of&nbsp;array&nbsp;with&nbsp;same&nbsp;data.<br>
+&nbsp;<br>
+Type&nbsp;can&nbsp;be&nbsp;either&nbsp;a&nbsp;new&nbsp;sub-type&nbsp;object&nbsp;or&nbsp;a&nbsp;data-descriptor&nbsp;object</tt></dd></dl>
+
+<hr>
+Data descriptors inherited from <a href="numpy.html#ndarray">numpy.ndarray</a>:<br>
+<dl><dt><strong>T</strong></dt>
+<dd><tt>Same&nbsp;as&nbsp;transpose()&nbsp;except&nbsp;self&nbsp;is&nbsp;returned&nbsp;for&nbsp;self.<strong>ndim</strong>&nbsp;&lt;&nbsp;2.</tt></dd>
+</dl>
+<dl><dt><strong>__array_interface__</strong></dt>
+<dd><tt>Array&nbsp;protocol:&nbsp;Python&nbsp;side.</tt></dd>
+</dl>
+<dl><dt><strong>__array_priority__</strong></dt>
+<dd><tt>Array&nbsp;priority.</tt></dd>
+</dl>
+<dl><dt><strong>__array_struct__</strong></dt>
+<dd><tt>Array&nbsp;protocol:&nbsp;C-struct&nbsp;side.</tt></dd>
+</dl>
+<dl><dt><strong>base</strong></dt>
+<dd><tt>Base&nbsp;object&nbsp;if&nbsp;memory&nbsp;is&nbsp;from&nbsp;some&nbsp;other&nbsp;object.</tt></dd>
+</dl>
+<dl><dt><strong>ctypes</strong></dt>
+<dd><tt>A&nbsp;ctypes&nbsp;interface&nbsp;object.</tt></dd>
+</dl>
+<dl><dt><strong>data</strong></dt>
+<dd><tt>Buffer&nbsp;object&nbsp;pointing&nbsp;to&nbsp;the&nbsp;start&nbsp;of&nbsp;the&nbsp;data.</tt></dd>
+</dl>
+<dl><dt><strong>dtype</strong></dt>
+<dd><tt>Data-type&nbsp;for&nbsp;the&nbsp;array.</tt></dd>
+</dl>
+<dl><dt><strong>flags</strong></dt>
+<dd><tt>Special&nbsp;object&nbsp;providing&nbsp;array&nbsp;flags.</tt></dd>
+</dl>
+<dl><dt><strong>flat</strong></dt>
+<dd><tt>A&nbsp;1-d&nbsp;flat&nbsp;iterator.</tt></dd>
+</dl>
+<dl><dt><strong>imag</strong></dt>
+<dd><tt>Imaginary&nbsp;part&nbsp;of&nbsp;the&nbsp;array.</tt></dd>
+</dl>
+<dl><dt><strong>itemsize</strong></dt>
+<dd><tt>Length&nbsp;of&nbsp;one&nbsp;element&nbsp;in&nbsp;bytes.</tt></dd>
+</dl>
+<dl><dt><strong>nbytes</strong></dt>
+<dd><tt>Number&nbsp;of&nbsp;bytes&nbsp;in&nbsp;the&nbsp;array.</tt></dd>
+</dl>
+<dl><dt><strong>ndim</strong></dt>
+<dd><tt>Number&nbsp;of&nbsp;array&nbsp;dimensions.</tt></dd>
+</dl>
+<dl><dt><strong>real</strong></dt>
+<dd><tt>Real&nbsp;part&nbsp;of&nbsp;the&nbsp;array.</tt></dd>
+</dl>
+<dl><dt><strong>shape</strong></dt>
+<dd><tt>Tuple&nbsp;of&nbsp;array&nbsp;dimensions.</tt></dd>
+</dl>
+<dl><dt><strong>size</strong></dt>
+<dd><tt>Number&nbsp;of&nbsp;elements&nbsp;in&nbsp;the&nbsp;array.</tt></dd>
+</dl>
+<dl><dt><strong>strides</strong></dt>
+<dd><tt>Tuple&nbsp;of&nbsp;bytes&nbsp;to&nbsp;step&nbsp;in&nbsp;each&nbsp;dimension.</tt></dd>
+</dl>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-array"><strong>array</strong></a>(...)</dt><dd><tt><a href="#-array">array</a>(object,&nbsp;dtype=None,&nbsp;copy=1,order=None,&nbsp;subok=0,ndmin=0)<br>
+&nbsp;<br>
+Return&nbsp;an&nbsp;array&nbsp;from&nbsp;object&nbsp;with&nbsp;the&nbsp;specified&nbsp;date-type.<br>
+&nbsp;<br>
+Inputs:<br>
+&nbsp;&nbsp;object&nbsp;-&nbsp;an&nbsp;array,&nbsp;any&nbsp;object&nbsp;exposing&nbsp;the&nbsp;array&nbsp;interface,&nbsp;any<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;object&nbsp;whose&nbsp;__array__&nbsp;method&nbsp;returns&nbsp;an&nbsp;array,&nbsp;or&nbsp;any<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(nested)&nbsp;sequence.<br>
+&nbsp;&nbsp;dtype&nbsp;&nbsp;-&nbsp;The&nbsp;desired&nbsp;data-type&nbsp;for&nbsp;the&nbsp;array.&nbsp;&nbsp;If&nbsp;not&nbsp;given,&nbsp;then<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;type&nbsp;will&nbsp;be&nbsp;determined&nbsp;as&nbsp;the&nbsp;minimum&nbsp;type&nbsp;required<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to&nbsp;hold&nbsp;the&nbsp;objects&nbsp;in&nbsp;the&nbsp;sequence.&nbsp;&nbsp;This&nbsp;argument&nbsp;can&nbsp;only<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;be&nbsp;used&nbsp;to&nbsp;'upcast'&nbsp;the&nbsp;array.&nbsp;&nbsp;For&nbsp;downcasting,&nbsp;use&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.astype(t)&nbsp;method.<br>
+&nbsp;&nbsp;copy&nbsp;&nbsp;&nbsp;-&nbsp;If&nbsp;true,&nbsp;then&nbsp;force&nbsp;a&nbsp;copy.&nbsp;&nbsp;Otherwise&nbsp;a&nbsp;copy&nbsp;will&nbsp;only&nbsp;occur<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;__array__&nbsp;returns&nbsp;a&nbsp;copy,&nbsp;obj&nbsp;is&nbsp;a&nbsp;nested&nbsp;sequence,&nbsp;or<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;copy&nbsp;is&nbsp;needed&nbsp;to&nbsp;satisfy&nbsp;any&nbsp;of&nbsp;the&nbsp;other&nbsp;requirements<br>
+&nbsp;&nbsp;order&nbsp;&nbsp;-&nbsp;Specify&nbsp;the&nbsp;order&nbsp;of&nbsp;the&nbsp;array.&nbsp;&nbsp;If&nbsp;order&nbsp;is&nbsp;'C',&nbsp;then&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;array&nbsp;will&nbsp;be&nbsp;in&nbsp;C-contiguous&nbsp;order&nbsp;(last-index&nbsp;varies&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fastest).&nbsp;&nbsp;If&nbsp;order&nbsp;is&nbsp;'FORTRAN',&nbsp;then&nbsp;the&nbsp;returned&nbsp;array<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;will&nbsp;be&nbsp;in&nbsp;Fortran-contiguous&nbsp;order&nbsp;(first-index&nbsp;varies&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fastest).&nbsp;&nbsp;If&nbsp;order&nbsp;is&nbsp;None,&nbsp;then&nbsp;the&nbsp;returned&nbsp;array&nbsp;may<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;be&nbsp;in&nbsp;either&nbsp;C-,&nbsp;or&nbsp;Fortran-contiguous&nbsp;order&nbsp;or&nbsp;even<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;discontiguous.<br>
+&nbsp;&nbsp;subok&nbsp;&nbsp;-&nbsp;If&nbsp;True,&nbsp;then&nbsp;sub-classes&nbsp;will&nbsp;be&nbsp;passed-through,&nbsp;otherwise<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;returned&nbsp;array&nbsp;will&nbsp;be&nbsp;forced&nbsp;to&nbsp;be&nbsp;a&nbsp;base-class&nbsp;array<br>
+&nbsp;&nbsp;ndmin&nbsp;&nbsp;-&nbsp;Specifies&nbsp;the&nbsp;minimum&nbsp;number&nbsp;of&nbsp;dimensions&nbsp;that&nbsp;the&nbsp;resulting<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;array&nbsp;should&nbsp;have.&nbsp;&nbsp;1's&nbsp;will&nbsp;be&nbsp;pre-pended&nbsp;to&nbsp;the&nbsp;shape&nbsp;as<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;needed&nbsp;to&nbsp;meet&nbsp;this&nbsp;requirement.</tt></dd></dl>
+ <dl><dt><a name="-dot"><strong>dot</strong></a>(...)</dt></dl>
+ <dl><dt><a name="-where"><strong>where</strong></a>(...)</dt><dd><tt><a href="#-where">where</a>(condition,&nbsp;|&nbsp;x,&nbsp;y)<br>
+&nbsp;<br>
+The&nbsp;result&nbsp;is&nbsp;shaped&nbsp;like&nbsp;condition&nbsp;and&nbsp;has&nbsp;elements&nbsp;of&nbsp;x&nbsp;and&nbsp;y&nbsp;where<br>
+condition&nbsp;is&nbsp;respectively&nbsp;true&nbsp;or&nbsp;false.&nbsp;&nbsp;If&nbsp;x&nbsp;or&nbsp;y&nbsp;are&nbsp;not&nbsp;given,<br>
+then&nbsp;it&nbsp;is&nbsp;equivalent&nbsp;to&nbsp;condition.nonzero().<br>
+&nbsp;<br>
+To&nbsp;group&nbsp;the&nbsp;indices&nbsp;by&nbsp;element,&nbsp;rather&nbsp;than&nbsp;dimension,&nbsp;use<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;transpose(<a href="#-where">where</a>(condition,&nbsp;|&nbsp;x,&nbsp;y))<br>
+&nbsp;<br>
+instead.&nbsp;This&nbsp;always&nbsp;results&nbsp;in&nbsp;a&nbsp;2d&nbsp;array,&nbsp;with&nbsp;a&nbsp;row&nbsp;of&nbsp;indices&nbsp;for<br>
+each&nbsp;element&nbsp;that&nbsp;satisfies&nbsp;the&nbsp;condition.</tt></dd></dl>
+ <dl><dt><a name="-zeros"><strong>zeros</strong></a>(...)</dt><dd><tt><a href="#-zeros">zeros</a>((d1,...,dn),dtype=float,order='C')<br>
+&nbsp;<br>
+Return&nbsp;a&nbsp;new&nbsp;array&nbsp;of&nbsp;shape&nbsp;(d1,...,dn)&nbsp;and&nbsp;type&nbsp;typecode&nbsp;with&nbsp;all<br>
+it's&nbsp;entries&nbsp;initialized&nbsp;to&nbsp;zero.</tt></dd></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>fabs</strong> = &lt;ufunc 'fabs'&gt;<br>
+<strong>sqrt</strong> = &lt;ufunc 'sqrt'&gt;</td></tr></table>
+</body></html>
