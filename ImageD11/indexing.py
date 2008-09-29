@@ -356,11 +356,14 @@ class indexer:
             for k in range(thesepeaks.shape[0]):
                 nearlyzero = thesepeaks + thesepeaks[k]
                 mag = n.sum(nearlyzero*nearlyzero,1)
-                b = n.argmin(mag)
-                if b > k:
-                    out.write("%f "%( n.sqrt(mag[b]) ) )
-                    out.write("%f %f %f %f %f %f    "%(self.eta[k],self.omega[k],self.tth[k],self.gv[k][0],self.gv[k][1],self.gv[k][2]))
-                    out.write("%f %f %f %f %f %f\n"%(self.eta[b],self.omega[b],self.tth[b],self.gv[b][0],self.gv[b][1],self.gv[b][2]))
+                best = n.argmin(mag)
+                if best > k:
+                    a = ind[k]
+                    out.write("%f "%( n.sqrt(mag[best]) ) )
+                    out.write("%f %f %f %f %f %f    "%(self.eta[a],self.omega[a],self.tth[a],self.gv[a][0],self.gv[a][1],self.gv[a][2]))
+                    a = ind[best]
+                    out.write("%f %f %f %f %f %f    "%(self.eta[a],self.omega[a],self.tth[a],self.gv[a][0],self.gv[a][1],self.gv[a][2]))
+                    out.write("\n")
 
 
 
