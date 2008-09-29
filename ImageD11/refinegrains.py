@@ -612,6 +612,8 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2 ):
         if ("Number_of_pixels" in colfile.titles) and \
            ("avg_intensity"    in colfile.titles):
             raw_intensities = colfile.Number_of_pixels * colfile.avg_intensity
+        else:
+            raw_intensities = colfile.npixels * colfile.avg_intensity
     # Lorentz factor requires eta per grain. This would be tedious to
     # compute, but should eventually be added
     if "Lorentz_per_grain" in colfile.titles:
