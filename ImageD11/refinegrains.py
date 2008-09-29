@@ -157,7 +157,7 @@ class refinegrains:
         for k  in self.ubisread.keys():
             self.ubisread[k] = find_uniq_u(self.ubisread[k], g)
         for k in self.grains.keys():
-            self.grains[k].ubi = find_uniq_u(self.grains[k].ubi, g)
+            self.grains[k].set_ubi( find_uniq_u(self.grains[k].ubi, g) )
             
 
     def loadfiltered(self, filename):
@@ -219,27 +219,84 @@ class refinegrains:
 
             
 
-    def compute_gv(self, grainname, scanname):
+    def compute_gv(self, thisgrain  ):
         """
         Makes self.gv refer be g-vectors computed for this grain in this scan
         """
-        x  = self.grains[ ( grainname, scanname ) ].x
-        y  = self.grains[ ( grainname, scanname ) ].y
-        om = self.grains[ ( grainname, scanname ) ].om
+        x  = thisgrain.x
+        y  = thisgrain.y
+        om = thisgrain.om
         try:
             sign = self.parameterobj.parameters['omegasign']
         except:
             sign = 1.0
-                
+        if False:    
+            thisgrain.translation[0] = float( self.parameterobj.parameters['t_x'] )
+            thisgrain.translation[1] = float( self.parameterobj.parameters['t_y'] )
+            thisgrain.translation[2] = float( self.parameterobj.parameters['t_z'] )
+        
         self.tth,self.eta = transform.compute_tth_eta( numpy.array([x, y]),
                                       omega = om * sign,
                                       **self.parameterobj.parameters)
-        self.gv = transform.compute_g_vectors(self.tth, self.eta, om*sign,
+        
+        gv = transform.compute_g_vectors(self.tth, self.eta, om*sign,
                                 float(self.parameterobj.parameters['wavelength']),
                                 self.parameterobj.parameters['wedge'],
                                 self.parameterobj.parameters['chi'])
-        self.gv = self.gv.T
-        # print "in compute_gv",self.gv[0]
+        self.OMEGA_FLOAT = False
+        if not self.OMEGA_FLOAT:
+            self.gv = gv.T
+            return
+        if self.OMEGA_FLOAT:
+            # print "setting omegas"
+            mat = thisgrain.ubi.copy()
+            junk = closest.score_and_refine(mat , gv.T,
+                                            self.tolerance)
+            hklf = numpy.dot( mat, gv )
+            hkli = numpy.floor( hklf + 0.5 )
+            
+            gcalc = numpy.dot( numpy.linalg.inv(mat) , hkli ) 
+            tth,[eta1,eta2],[omega1,omega2] = transform.uncompute_g_vectors(
+                gcalc , float(self.parameterobj.parameters['wavelength']),
+                self.parameterobj.parameters['wedge'],
+                self.parameterobj.parameters['chi'])
+
+            e1e = numpy.abs(eta1 - self.eta)
+            e2e = numpy.abs(eta2 - self.eta)
+            try:
+                eta_err = numpy.array( [ e1e, e2e ] )
+            except:
+                print e1e.shape, e2e.shape, e1e
+                
+                raise
+            
+            best_fitting = numpy.argmin( eta_err, axis = 0 )
+
+            # These are always 1 or zero
+            # pick the right omega (confuddled by take here)
+            omega_calc = best_fitting * omega2 + ( 1 - best_fitting ) * omega1
+            # Take a weighted average within the omega error of the observed
+            omerr = (om*sign - omega_calc)
+            # print omerr[0:5]
+            omega_calc = om*sign - numpy.clip( omerr, -0.1 , 0.1 ) 
+            # print omega_calc[0], om[0]
+
+            # Now recompute with improved omegas...
+            self.tth, self.eta = transform.compute_tth_eta(
+                numpy.array([x, y]),
+                omega = omega_calc, 
+                **self.parameterobj.parameters)
+        
+            gv = transform.compute_g_vectors(self.tth, self.eta, omega_calc,
+                        float(self.parameterobj.parameters['wavelength']),
+                        self.parameterobj.parameters['wedge'],
+                        self.parameterobj.parameters['chi'])
+            
+            
+            
+            self.gv = gv.T
+            return
+
 
     def refine(self, ubi, quiet=True):
         """
@@ -268,7 +325,7 @@ class refinegrains:
 
     def applyargs(self,args):
         self.parameterobj.set_variable_values(args)
-
+        
     def printresult(self,arg):
         # print self.parameterobj.parameters
         # return
@@ -301,12 +358,12 @@ class refinegrains:
 
             # Compute gv using current parameters
             # Keep labels fixed
-            self.compute_gv(grainname,scanname)
+            self.compute_gv( g )
             #print self.gv.shape
             #print self.gv[0:10,:]
 
             # For stability, always start refining the read in one
-            g.ubi = self.refine( self.ubisread[grainname] ) 
+            g.set_ubi( self.refine( self.ubisread[grainname] ) )
             self.npks # number of peaks it got
 
             diffs +=  self.npks*self.avg_drlv2
@@ -387,7 +444,7 @@ class refinegrains:
         self.parameterobj.parameters['t_z'] = self.grains[(gr,sc)].translation[2]
 
 
-    def refinepositions(self, quiet=True,maxiters=100):
+    def refinepositions(self, quiet=True, maxiters=100):
         self.assignlabels()
         ks  = self.grains.keys()
         ks.sort()
@@ -429,10 +486,10 @@ class refinegrains:
                 print "%10s %10s"%(grainname,scanname),
             # Compute gv using current parameters, including grain position
             self.set_translation(key[0],key[1])
-            self.compute_gv(grainname, scanname)
+            self.compute_gv(g)
             res = self.refine(g.ubi , quiet=quiet)
             if not scoreonly:
-                g.ubi = res
+                g.set_ubi( res )
 
     def assignlabels(self):
         """
@@ -459,7 +516,7 @@ class refinegrains:
                     gr.x = self.scandata[s].sc
                     gr.y = self.scandata[s].fc
                 gr.om = self.scandata[s].omega
-                self.compute_gv( g, s )
+                self.compute_gv( gr )
                 # self.tth and self.eta hold the current tth and eta values
                 tth_tmp[int(g),:] = self.tth
                 eta_tmp[int(g),:] = self.eta
