@@ -8,7 +8,7 @@
 <td valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.gv_general</strong></big></big></font></td
 ><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python25/lib/site-packages/imaged11/gv_general.py">c:\python25\lib\site-packages\imaged11\gv_general.py</a></font></td></tr></table>
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/sware/exp/fable/standalone/redhate4-a64/lib/python2.5/site-packages/ImageD11/gv_general.py">/sware/exp/fable/standalone/redhate4-a64/lib/python2.5/site-packages/ImageD11/gv_general.py</a></font></td></tr></table>
     <p><tt>Find&nbsp;a&nbsp;generalised&nbsp;way&nbsp;to&nbsp;compute&nbsp;g-vectors&nbsp;backwards&nbsp;and&nbsp;forwards</tt></p>
 <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
@@ -17,11 +17,10 @@
 <font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
     
 <tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="numpy.oldnumeric.linear_algebra.html">numpy.oldnumeric.linear_algebra</a><br>
-</td><td width="25%" valign=top><a href="logging.html">logging</a><br>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="logging.html">logging</a><br>
 </td><td width="25%" valign=top><a href="math.html">math</a><br>
-</td><td width="25%" valign=top><a href="numpy.oldnumeric.html">numpy.oldnumeric</a><br>
-</td></tr></table></td></tr></table><p>
+</td><td width="25%" valign=top><a href="numpy.html">numpy</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ee77aa">
 <td colspan=3 valign=bottom>&nbsp;<br>
@@ -76,7 +75,8 @@ W&nbsp;=&nbsp;vector&nbsp;with&nbsp;hat&nbsp;operator&nbsp;=&nbsp;[&nbsp;0&nbsp;
 <font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
     
 <tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><dl><dt><a name="-axis_from_matrix"><strong>axis_from_matrix</strong></a>(m)</dt><dd><tt>Factory&nbsp;method&nbsp;to&nbsp;create&nbsp;a&nbsp;<a href="#rotation_axis">rotation_axis</a>&nbsp;object&nbsp;from&nbsp;a&nbsp;direction&nbsp;cosine&nbsp;matrix<br>
+<td width="100%"><dl><dt><a name="-axis_from_matrix"><strong>axis_from_matrix</strong></a>(m)</dt><dd><tt>Factory&nbsp;method&nbsp;to&nbsp;create&nbsp;a&nbsp;<a href="#rotation_axis">rotation_axis</a>&nbsp;object&nbsp;from&nbsp;a&nbsp;<br>
+direction&nbsp;cosine&nbsp;matrix<br>
 <a href="http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29">http://en.wikipedia.org/wiki/Rotation_representation_%28mathematics%29</a></tt></dd></dl>
  <dl><dt><a name="-g_to_k"><strong>g_to_k</strong></a>(g, wavelength, axis<font color="#909090">=array([ 0.,  0.,  1.])</font>, pre<font color="#909090">=None</font>, post<font color="#909090">=None</font>)</dt><dd><tt>Get&nbsp;the&nbsp;k&nbsp;and&nbsp;angles&nbsp;given&nbsp;the&nbsp;g&nbsp;in&nbsp;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;g&nbsp;=&nbsp;pre&nbsp;.&nbsp;rot(axis,&nbsp;angle)&nbsp;.&nbsp;post&nbsp;.&nbsp;k<br>
@@ -84,7 +84,9 @@ W&nbsp;=&nbsp;vector&nbsp;with&nbsp;hat&nbsp;operator&nbsp;=&nbsp;[&nbsp;0&nbsp;
 &nbsp;<br>
 The&nbsp;recipe&nbsp;is:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Find&nbsp;the&nbsp;components&nbsp;of&nbsp;g&nbsp;along&nbsp;and&nbsp;perpendicular&nbsp;to&nbsp;the&nbsp;rotation&nbsp;axis<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;co-ords&nbsp;are&nbsp;a0&nbsp;=&nbsp;axis,&nbsp;a1&nbsp;=&nbsp;axis&nbsp;x&nbsp;g,&nbsp;a2&nbsp;=&nbsp;a1&nbsp;x&nbsp;axis&nbsp;=&nbsp;(&nbsp;axis&nbsp;x&nbsp;g&nbsp;)&nbsp;x&nbsp;axis<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;co-ords&nbsp;are&nbsp;a0&nbsp;=&nbsp;axis,&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a1&nbsp;=&nbsp;axis&nbsp;x&nbsp;g,&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a2&nbsp;=&nbsp;a1&nbsp;x&nbsp;axis&nbsp;=&nbsp;(&nbsp;axis&nbsp;x&nbsp;g&nbsp;)&nbsp;x&nbsp;axis<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Rotated&nbsp;vector&nbsp;will&nbsp;be&nbsp;a0&nbsp;+&nbsp;a1&nbsp;sin(angle)&nbsp;+&nbsp;a2&nbsp;cos(angle)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Laue&nbsp;condition&nbsp;says&nbsp;that&nbsp;[incident&nbsp;beam].[k]&nbsp;=&nbsp;k.sin(theta)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;2&nbsp;sin^2(theta)&nbsp;/&nbsp;lambda&nbsp;<br>
@@ -102,7 +104,7 @@ The&nbsp;recipe&nbsp;is:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Finally&nbsp;you'll&nbsp;find:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A.sin(u-u')&nbsp;=&nbsp;c<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A.cos(pi/2&nbsp;-&nbsp;u&nbsp;-&nbsp;u')&nbsp;=&nbsp;c</tt></dd></dl>
- <dl><dt><a name="-k_to_g"><strong>k_to_g</strong></a>(k, angles, axis<font color="#909090">=&lt;ImageD11.gv_general.rotation_axis instance at 0x099FB300&gt;</font>, pre<font color="#909090">=&lt;ImageD11.gv_general.rotation_axis instance at 0x099FB3C8&gt;</font>, post<font color="#909090">=&lt;ImageD11.gv_general.rotation_axis instance at 0x099FB3C8&gt;</font>)</dt><dd><tt>Computes&nbsp;g&nbsp;=&nbsp;pre&nbsp;.&nbsp;rot(axis,&nbsp;angle)&nbsp;.&nbsp;post&nbsp;.&nbsp;k<br>
+ <dl><dt><a name="-k_to_g"><strong>k_to_g</strong></a>(k, angles, axis<font color="#909090">=&lt;ImageD11.gv_general.rotation_axis instance at 0x2a9c40bea8&gt;</font>, pre<font color="#909090">=&lt;ImageD11.gv_general.rotation_axis instance at 0x2a9c40b680&gt;</font>, post<font color="#909090">=&lt;ImageD11.gv_general.rotation_axis instance at 0x2a9c40b680&gt;</font>)</dt><dd><tt>Computes&nbsp;g&nbsp;=&nbsp;pre&nbsp;.&nbsp;rot(axis,&nbsp;angle)&nbsp;.&nbsp;post&nbsp;.&nbsp;k<br>
 Typically&nbsp;in&nbsp;ImageD11&nbsp;pre&nbsp;=&nbsp;[wedge][chi]&nbsp;and&nbsp;post&nbsp;=&nbsp;identity</tt></dd></dl>
 </td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
@@ -111,5 +113,5 @@ Typically&nbsp;in&nbsp;ImageD11&nbsp;pre&nbsp;=&nbsp;[wedge][chi]&nbsp;and&nbsp;
 <font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
     
 <tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><strong>rotate_identity</strong> = &lt;ImageD11.gv_general.rotation_axis instance at 0x099FB3C8&gt;</td></tr></table>
+<td width="100%"><strong>rotate_identity</strong> = &lt;ImageD11.gv_general.rotation_axis instance at 0x2a9c40b680&gt;</td></tr></table>
 </body></html>

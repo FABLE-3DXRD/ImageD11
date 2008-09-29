@@ -8,8 +8,8 @@
 <td valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.refinegrains</strong></big></big></font></td
 ><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python25/lib/site-packages/imaged11/refinegrains.py">c:\python25\lib\site-packages\imaged11\refinegrains.py</a></font></td></tr></table>
-    <p><tt>##&nbsp;Automatically&nbsp;adapted&nbsp;for&nbsp;numpy.oldnumeric&nbsp;Sep&nbsp;06,&nbsp;2007&nbsp;by&nbsp;alter_code1.py</tt></p>
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/sware/exp/fable/standalone/redhate4-a64/lib/python2.5/site-packages/ImageD11/refinegrains.py">/sware/exp/fable/standalone/redhate4-a64/lib/python2.5/site-packages/ImageD11/refinegrains.py</a></font></td></tr></table>
+    <p><tt>#&nbsp;Automatically&nbsp;adapted&nbsp;for&nbsp;numpy.oldnumeric&nbsp;Sep&nbsp;06,&nbsp;2007&nbsp;by&nbsp;alter_code1.py</tt></p>
 <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#aa55cc">
@@ -17,11 +17,14 @@
 <font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
     
 <tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="numpy.oldnumeric.html">numpy.oldnumeric</a><br>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="ImageD11.closest.html">ImageD11.closest</a><br>
 <a href="ImageD11.columnfile.html">ImageD11.columnfile</a><br>
-</td><td width="25%" valign=top><a href="ImageD11.grain.html">ImageD11.grain</a><br>
-<a href="ImageD11.indexing.html">ImageD11.indexing</a><br>
+<a href="ImageD11.grain.html">ImageD11.grain</a><br>
+</td><td width="25%" valign=top><a href="ImageD11.indexing.html">ImageD11.indexing</a><br>
+<a href="math.html">math</a><br>
+<a href="numpy.html">numpy</a><br>
 </td><td width="25%" valign=top><a href="ImageD11.parameters.html">ImageD11.parameters</a><br>
+<a href="ImageD11.simplex.html">ImageD11.simplex</a><br>
 <a href="ImageD11.transform.html">ImageD11.transform</a><br>
 </td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
@@ -39,21 +42,26 @@
 <td colspan=3 valign=bottom>&nbsp;<br>
 <font color="#000000" face="helvetica, arial"><a name="refinegrains">class <strong>refinegrains</strong></a></font></td></tr>
     
-<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Class&nbsp;to&nbsp;refine&nbsp;the&nbsp;position&nbsp;and&nbsp;orientation&nbsp;of&nbsp;grains<br>
+and&nbsp;also&nbsp;the&nbsp;detector&nbsp;parameters<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
-<dl><dt><a name="refinegrains-__init__"><strong>__init__</strong></a>(self, tolerance<font color="#909090">=0.01</font>)</dt></dl>
+<dl><dt><a name="refinegrains-__init__"><strong>__init__</strong></a>(self, tolerance<font color="#909090">=0.01</font>, intensity_tth_range<font color="#909090">=(8.4000000000000004, 9.0)</font>)</dt></dl>
 
 <dl><dt><a name="refinegrains-applyargs"><strong>applyargs</strong></a>(self, args)</dt></dl>
 
+<dl><dt><a name="refinegrains-assignlabels"><strong>assignlabels</strong></a>(self)</dt><dd><tt>Fill&nbsp;out&nbsp;the&nbsp;appropriate&nbsp;labels&nbsp;for&nbsp;the&nbsp;spots</tt></dd></dl>
+
 <dl><dt><a name="refinegrains-compute_gv"><strong>compute_gv</strong></a>(self, grainname, scanname)</dt><dd><tt>Makes&nbsp;self.<strong>gv</strong>&nbsp;refer&nbsp;be&nbsp;g-vectors&nbsp;computed&nbsp;for&nbsp;this&nbsp;grain&nbsp;in&nbsp;this&nbsp;scan</tt></dd></dl>
 
-<dl><dt><a name="refinegrains-fit"><strong>fit</strong></a>(self, maxiters<font color="#909090">=100</font>)</dt></dl>
+<dl><dt><a name="refinegrains-estimate_steps"><strong>estimate_steps</strong></a>(self, gof, guess, steps)</dt></dl>
+
+<dl><dt><a name="refinegrains-fit"><strong>fit</strong></a>(self, maxiters<font color="#909090">=100</font>)</dt><dd><tt>Fit&nbsp;the&nbsp;global&nbsp;parameters</tt></dd></dl>
 
 <dl><dt><a name="refinegrains-generate_grains"><strong>generate_grains</strong></a>(self)</dt></dl>
 
 <dl><dt><a name="refinegrains-getgrains"><strong>getgrains</strong></a>(self)</dt></dl>
-
-<dl><dt><a name="refinegrains-getpeaks"><strong>getpeaks</strong></a>(self, g)</dt></dl>
 
 <dl><dt><a name="refinegrains-gof"><strong>gof</strong></a>(self, args)</dt><dd><tt>&lt;drlv&gt;&nbsp;for&nbsp;all&nbsp;of&nbsp;the&nbsp;grains&nbsp;in&nbsp;all&nbsp;of&nbsp;the&nbsp;scans</tt></dd></dl>
 
@@ -61,21 +69,74 @@
 
 <dl><dt><a name="refinegrains-loadparameters"><strong>loadparameters</strong></a>(self, filename)</dt></dl>
 
+<dl><dt><a name="refinegrains-makeuniq"><strong>makeuniq</strong></a>(self, symmetry)</dt><dd><tt>Flip&nbsp;orientations&nbsp;to&nbsp;a&nbsp;particular&nbsp;choice<br>
+&nbsp;<br>
+Be&nbsp;aware&nbsp;that&nbsp;if&nbsp;the&nbsp;unit&nbsp;cell&nbsp;is&nbsp;distorted&nbsp;and&nbsp;you&nbsp;do&nbsp;this,<br>
+you&nbsp;might&nbsp;have&nbsp;problems...</tt></dd></dl>
+
 <dl><dt><a name="refinegrains-printresult"><strong>printresult</strong></a>(self, arg)</dt></dl>
 
 <dl><dt><a name="refinegrains-readubis"><strong>readubis</strong></a>(self, filename)</dt><dd><tt>Read&nbsp;ubi&nbsp;matrices&nbsp;from&nbsp;a&nbsp;text&nbsp;file</tt></dd></dl>
 
-<dl><dt><a name="refinegrains-refine"><strong>refine</strong></a>(self, ubi, quiet<font color="#909090">=True</font>)</dt></dl>
+<dl><dt><a name="refinegrains-refine"><strong>refine</strong></a>(self, ubi, quiet<font color="#909090">=True</font>)</dt><dd><tt>Fit&nbsp;the&nbsp;matrix&nbsp;without&nbsp;changing&nbsp;the&nbsp;peak&nbsp;assignments</tt></dd></dl>
+
+<dl><dt><a name="refinegrains-refinepositions"><strong>refinepositions</strong></a>(self, quiet<font color="#909090">=True</font>, maxiters<font color="#909090">=100</font>)</dt></dl>
 
 <dl><dt><a name="refinegrains-refineubis"><strong>refineubis</strong></a>(self, quiet<font color="#909090">=True</font>, scoreonly<font color="#909090">=False</font>)</dt></dl>
 
+<dl><dt><a name="refinegrains-reset_labels"><strong>reset_labels</strong></a>(self, scanname)</dt></dl>
+
+<dl><dt><a name="refinegrains-savegrains"><strong>savegrains</strong></a>(self, filename, sort_npks<font color="#909090">=True</font>)</dt><dd><tt>Save&nbsp;the&nbsp;refined&nbsp;grains</tt></dd></dl>
+
 <dl><dt><a name="refinegrains-saveparameters"><strong>saveparameters</strong></a>(self, filename)</dt></dl>
+
+<dl><dt><a name="refinegrains-set_translation"><strong>set_translation</strong></a>(self, gr, sc)</dt></dl>
 
 <hr>
 Data and other attributes defined here:<br>
 <dl><dt><strong>pars</strong> = {'cell__a': 4.1569162000000004, 'cell__b': 4.1569162000000004, 'cell__c': 4.1569162000000004, 'cell_alpha': 90.0, 'cell_beta': 90.0, 'cell_gamma': 90.0, 'cell_lattice_[P,A,B,C,I,F,R]': 'P', 'chi': 0.0, 'distance': 7367.8452301999996, 'fit_tolerance': 0.5, ...}</dl>
 
-<dl><dt><strong>stepsizes</strong> = {'chi': 0.0017453292519943296, 'distance': 0.10000000000000001, 't_x': 0.10000000000000001, 't_y': 0.10000000000000001, 't_z': 0.10000000000000001, 'tilt_x': 0.0017453292519943296, 'tilt_y': 0.0017453292519943296, 'tilt_z': 0.0017453292519943296, 'wavelength': 0.001, 'wedge': 0.0017453292519943296, ...}</dl>
+<dl><dt><strong>stepsizes</strong> = {'chi': 0.0017453292519943296, 'distance': 0.20000000000000001, 't_x': 0.20000000000000001, 't_y': 0.20000000000000001, 't_z': 0.20000000000000001, 'tilt_x': 0.0017453292519943296, 'tilt_y': 0.0017453292519943296, 'tilt_z': 0.0017453292519943296, 'wavelength': 0.001, 'wedge': 0.0017453292519943296, ...}</dl>
 
-</td></tr></table></td></tr></table>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-compute_lp_factor"><strong>compute_lp_factor</strong></a>(colfile, **kwds)</dt><dd><tt>We'll&nbsp;assume&nbsp;for&nbsp;simplicity&nbsp;that&nbsp;wedge,&nbsp;chi,&nbsp;tilts&nbsp;are&nbsp;all&nbsp;zero<br>
+Of&nbsp;course&nbsp;we&nbsp;should&nbsp;put&nbsp;that&nbsp;in&nbsp;sometime&nbsp;in&nbsp;the&nbsp;near&nbsp;future<br>
+&nbsp;<br>
+Try&nbsp;using:<br>
+&nbsp;<br>
+Table&nbsp;&nbsp;6.2.1.1&nbsp;in&nbsp;Volume&nbsp;C&nbsp;of&nbsp;international&nbsp;tables&nbsp;:<br>
+(h)&nbsp;Rotation&nbsp;photograph&nbsp;of&nbsp;small&nbsp;crystal,&nbsp;volume&nbsp;V<br>
+&nbsp;&nbsp;&nbsp;&nbsp;1.&nbsp;Beam&nbsp;normal&nbsp;to&nbsp;axis<br>
+&nbsp;&nbsp;&nbsp;&nbsp;rho&nbsp;=&nbsp;rac{&nbsp;N^2&nbsp;e^4&nbsp;\lambda^3&nbsp;V}&nbsp;{&nbsp;4&nbsp;\pi&nbsp;m^2&nbsp;c^4}&nbsp;.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rac{&nbsp;1&nbsp;+&nbsp;\cos^2{&nbsp;heta}&nbsp;}&nbsp;&nbsp;{&nbsp;\sin{2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;heta&nbsp;}&nbsp;.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rac{&nbsp;cos{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;heta}&nbsp;{&nbsp;\sqrt{&nbsp;\cos^2{\psi}&nbsp;-&nbsp;\sin^2{&nbsp;&nbsp;&nbsp;heta}&nbsp;}&nbsp;}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p'&nbsp;|F|^2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+rho&nbsp;is&nbsp;Integrated&nbsp;reflection&nbsp;power&nbsp;ratio&nbsp;from&nbsp;a&nbsp;crystal&nbsp;element<br>
+e,&nbsp;m&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Electronic&nbsp;charge&nbsp;and&nbsp;mass<br>
+c&nbsp;&nbsp;&nbsp;Speed&nbsp;of&nbsp;light<br>
+\lambda&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Wavelength&nbsp;of&nbsp;radiation<br>
+2&nbsp;&nbsp;&nbsp;heta&nbsp;&nbsp;&nbsp;&nbsp;Angle&nbsp;between&nbsp;incident&nbsp;and&nbsp;diffracted&nbsp;beams<br>
+\psi&nbsp;&nbsp;in&nbsp;(h),&nbsp;latitude&nbsp;of&nbsp;reciprocal-lattice&nbsp;point&nbsp;relative&nbsp;to&nbsp;axis&nbsp;of&nbsp;rotation<br>
+V&nbsp;&nbsp;&nbsp;Volume&nbsp;of&nbsp;crystal,&nbsp;or&nbsp;of&nbsp;irradiated&nbsp;part&nbsp;of&nbsp;powder&nbsp;sample<br>
+N&nbsp;&nbsp;&nbsp;Number&nbsp;of&nbsp;unit&nbsp;cells&nbsp;per&nbsp;unit&nbsp;volume<br>
+F&nbsp;&nbsp;&nbsp;Structure&nbsp;factor&nbsp;of&nbsp;hkl&nbsp;reflection<br>
+p'&nbsp;&nbsp;Multiplicity&nbsp;factor&nbsp;for&nbsp;single-crystal&nbsp;methods<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nb&nbsp;-&nbsp;what&nbsp;is&nbsp;this&nbsp;?&nbsp;Hopefully&nbsp;would&nbsp;be&nbsp;1&nbsp;?<br>
+&nbsp;<br>
+&nbsp;<br>
+From&nbsp;this&nbsp;we&nbsp;will&nbsp;take&nbsp;the&nbsp;(1+cos^2(2t))cos(2t)/sqrt(cos^2p-sin^2t)/sin2t</tt></dd></dl>
+ <dl><dt><a name="-compute_total_intensity"><strong>compute_total_intensity</strong></a>(colfile, indices, tth_range, ntrim<font color="#909090">=2</font>)</dt><dd><tt>Add&nbsp;up&nbsp;the&nbsp;intensity&nbsp;in&nbsp;colfile&nbsp;for&nbsp;peaks&nbsp;given&nbsp;in&nbsp;indices</tt></dd></dl>
+ <dl><dt><a name="-cosd"><strong>cosd</strong></a>(x)</dt></dl>
+ <dl><dt><a name="-lf"><strong>lf</strong></a>(tth, eta)</dt></dl>
+ <dl><dt><a name="-sind"><strong>sind</strong></a>(x)</dt></dl>
+ <dl><dt><a name="-test_benoit"><strong>test_benoit</strong></a>()</dt></dl>
+ <dl><dt><a name="-test_nac"><strong>test_nac</strong></a>()</dt></dl>
+</td></tr></table>
 </body></html>

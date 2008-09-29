@@ -8,7 +8,7 @@
 <td valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.peaksearcher</strong></big></big></font></td
 ><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python25/lib/site-packages/imaged11/peaksearcher.py">c:\python25\lib\site-packages\imaged11\peaksearcher.py</a></font></td></tr></table>
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/sware/exp/fable/standalone/redhate4-a64/lib/python2.5/site-packages/ImageD11/peaksearcher.py">/sware/exp/fable/standalone/redhate4-a64/lib/python2.5/site-packages/ImageD11/peaksearcher.py</a></font></td></tr></table>
     <p><tt>Script&nbsp;for&nbsp;peaksearching&nbsp;images&nbsp;from&nbsp;the&nbsp;command&nbsp;line<br>
 &nbsp;<br>
 Uses&nbsp;the&nbsp;connectedpixels&nbsp;extension&nbsp;for&nbsp;finding&nbsp;blobs&nbsp;above&nbsp;a&nbsp;threshold<br>
@@ -22,13 +22,14 @@ Defines&nbsp;one&nbsp;function&nbsp;(peaksearch)&nbsp;which&nbsp;might&nbsp;be&n
 <font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
     
 <tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="numpy.oldnumeric.html">numpy.oldnumeric</a><br>
-<a href="ImageD11.blobcorrector.html">ImageD11.blobcorrector</a><br>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="ImageD11.blobcorrector.html">ImageD11.blobcorrector</a><br>
+<a href="fabio.fabioimage.html">fabio.fabioimage</a><br>
 </td><td width="25%" valign=top><a href="fabio.file_series.html">fabio.file_series</a><br>
 <a href="glob.html">glob</a><br>
-</td><td width="25%" valign=top><a href="os.html">os</a><br>
-<a href="sys.html">sys</a><br>
-</td><td width="25%" valign=top><a href="time.html">time</a><br>
+</td><td width="25%" valign=top><a href="numpy.html">numpy</a><br>
+<a href="os.html">os</a><br>
+</td><td width="25%" valign=top><a href="sys.html">sys</a><br>
+<a href="time.html">time</a><br>
 </td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ee77aa">
@@ -49,6 +50,8 @@ Defines&nbsp;one&nbsp;function&nbsp;(peaksearch)&nbsp;which&nbsp;might&nbsp;be&n
 <td width="100%">Methods defined here:<br>
 <dl><dt><a name="timer-__init__"><strong>__init__</strong></a>(self)</dt></dl>
 
+<dl><dt><a name="timer-msg"><strong>msg</strong></a>(self, msg)</dt></dl>
+
 <dl><dt><a name="timer-tick"><strong>tick</strong></a>(self, msg<font color="#909090">=''</font>)</dt></dl>
 
 <dl><dt><a name="timer-tock"><strong>tock</strong></a>(self, msg<font color="#909090">=''</font>)</dt></dl>
@@ -60,15 +63,15 @@ Defines&nbsp;one&nbsp;function&nbsp;(peaksearch)&nbsp;which&nbsp;might&nbsp;be&n
 <font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
     
 <tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><dl><dt><a name="-get_options"><strong>get_options</strong></a>(parser)</dt><dd><tt>Add&nbsp;our&nbsp;options&nbsp;to&nbsp;a&nbsp;parser&nbsp;object</tt></dd></dl>
- <dl><dt><a name="-peaksearch"><strong>peaksearch</strong></a>(filename, corrector, thresholds, outputfile, labims, dark<font color="#909090">=None</font>, flood<font color="#909090">=None</font>, darkoffset<font color="#909090">=10</font>)</dt><dd><tt>file_series&nbsp;:&nbsp;fabio&nbsp;file&nbsp;series&nbsp;object,&nbsp;supports&nbsp;iteration<br>
-&nbsp;<br>
+<td width="100%"><dl><dt><a name="-correct"><strong>correct</strong></a>(data_object, dark<font color="#909090">=None</font>, flood<font color="#909090">=None</font>)</dt><dd><tt>Does&nbsp;the&nbsp;dark&nbsp;and&nbsp;flood&nbsp;corrections</tt></dd></dl>
+ <dl><dt><a name="-get_options"><strong>get_options</strong></a>(parser)</dt><dd><tt>Add&nbsp;our&nbsp;options&nbsp;to&nbsp;a&nbsp;parser&nbsp;object</tt></dd></dl>
+ <dl><dt><a name="-peaksearch"><strong>peaksearch</strong></a>(filename, data_object, corrector, thresholds, labims)</dt><dd><tt>filename&nbsp;&nbsp;:&nbsp;The&nbsp;name&nbsp;of&nbsp;the&nbsp;image&nbsp;file&nbsp;for&nbsp;progress&nbsp;info&nbsp;&nbsp;&nbsp;&nbsp;<br>
+data_object&nbsp;:&nbsp;Fabio&nbsp;object&nbsp;containing&nbsp;data&nbsp;and&nbsp;header&nbsp;<br>
 corrector&nbsp;:&nbsp;spatial&nbsp;and&nbsp;dark/flood&nbsp;,&nbsp;linearity&nbsp;etc<br>
 &nbsp;<br>
 thresholds&nbsp;:&nbsp;[&nbsp;float[1],&nbsp;float[2]&nbsp;etc]<br>
 &nbsp;<br>
-outputfile&nbsp;:&nbsp;the&nbsp;2d&nbsp;output&nbsp;file,&nbsp;name+".spt"<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;the&nbsp;3d&nbsp;output&nbsp;files&nbsp;name+"_threshold.flt"</tt></dd></dl>
+labims&nbsp;:&nbsp;label&nbsp;image&nbsp;objects,&nbsp;one&nbsp;for&nbsp;each&nbsp;threshold</tt></dd></dl>
  <dl><dt><a name="-peaksearch_driver"><strong>peaksearch_driver</strong></a>(options, args)</dt><dd><tt>To&nbsp;be&nbsp;called&nbsp;with&nbsp;options&nbsp;from&nbsp;command&nbsp;line</tt></dd></dl>
  <dl><dt><a name="-sqrt"><strong>sqrt</strong></a>(...)</dt><dd><tt><a href="#-sqrt">sqrt</a>(x)<br>
 &nbsp;<br>
@@ -80,8 +83,6 @@ Return&nbsp;the&nbsp;square&nbsp;root&nbsp;of&nbsp;x.</tt></dd></dl>
 <font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
     
 <tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><strong>OMEGA</strong> = 0<br>
-<strong>OMEGAOVERRIDE</strong> = False<br>
-<strong>OMEGASTEP</strong> = 1.0<br>
-<strong>reallystart</strong> = 1196355869.1159999</td></tr></table>
+<td width="100%"><strong>reallystart</strong> = 1222250671.1038129<br>
+<strong>stop_now</strong> = False</td></tr></table>
 </body></html>

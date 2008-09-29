@@ -8,7 +8,7 @@
 <td valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="ImageD11.html"><font color="#ffffff">ImageD11</font></a>.unitcell</strong></big></big></font></td
 ><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C|/python25/lib/site-packages/imaged11/unitcell.py">c:\python25\lib\site-packages\imaged11\unitcell.py</a></font></td></tr></table>
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/sware/exp/fable/standalone/redhate4-a64/lib/python2.5/site-packages/ImageD11/unitcell.py">/sware/exp/fable/standalone/redhate4-a64/lib/python2.5/site-packages/ImageD11/unitcell.py</a></font></td></tr></table>
     <p><tt>##&nbsp;Automatically&nbsp;adapted&nbsp;for&nbsp;numpy.oldnumeric&nbsp;Sep&nbsp;06,&nbsp;2007&nbsp;by&nbsp;alter_code1.py</tt></p>
 <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
@@ -17,9 +17,9 @@
 <font color="#fffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
     
 <tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="numpy.oldnumeric.html">numpy.oldnumeric</a><br>
-</td><td width="25%" valign=top><a href="logging.html">logging</a><br>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="logging.html">logging</a><br>
 </td><td width="25%" valign=top><a href="math.html">math</a><br>
+</td><td width="25%" valign=top><a href="numpy.html">numpy</a><br>
 </td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ee77aa">
@@ -45,6 +45,8 @@ optionally&nbsp;a&nbsp;symmetry,&nbsp;one&nbsp;of&nbsp;"P","A","B","C","I","F","
 <dl><dt><a name="unitcell-anglehkls"><strong>anglehkls</strong></a>(self, h1, h2)</dt><dd><tt>Compute&nbsp;the&nbsp;angle&nbsp;between&nbsp;reciprocal&nbsp;lattice&nbsp;vectors&nbsp;h1,&nbsp;h2</tt></dd></dl>
 
 <dl><dt><a name="unitcell-ds"><strong>ds</strong></a>(self, h)</dt><dd><tt>computes&nbsp;1/d&nbsp;for&nbsp;this&nbsp;hkl&nbsp;=&nbsp;hgh</tt></dd></dl>
+
+<dl><dt><a name="unitcell-getanglehkls"><strong>getanglehkls</strong></a>(self, ring1, ring2)</dt><dd><tt>Cache&nbsp;the&nbsp;last&nbsp;pair&nbsp;called&nbsp;for</tt></dd></dl>
 
 <dl><dt><a name="unitcell-gethkls"><strong>gethkls</strong></a>(self, dsmax)</dt><dd><tt>Generate&nbsp;hkl&nbsp;list<br>
 Argument&nbsp;dsmax&nbsp;is&nbsp;the&nbsp;d*&nbsp;limit&nbsp;(eg&nbsp;1/d)<br>
@@ -85,6 +87,7 @@ t3&nbsp;is&nbsp;perpendicular&nbsp;to&nbsp;both&nbsp;&nbsp;(unit&nbsp;vector&nbs
  <dl><dt><a name="-cellfromstring"><strong>cellfromstring</strong></a>(s)</dt></dl>
  <dl><dt><a name="-cross"><strong>cross</strong></a>(a, b)</dt><dd><tt>a&nbsp;x&nbsp;b&nbsp;has&nbsp;length&nbsp;|a||b|sin(theta)</tt></dd></dl>
  <dl><dt><a name="-degrees"><strong>degrees</strong></a>(x)</dt></dl>
+ <dl><dt><a name="-norm2"><strong>norm2</strong></a>(a)</dt><dd><tt>Compute&nbsp;the&nbsp;unit&nbsp;2&nbsp;norm</tt></dd></dl>
  <dl><dt><a name="-radians"><strong>radians</strong></a>(x)</dt></dl>
  <dl><dt><a name="-unit"><strong>unit</strong></a>(a)</dt><dd><tt>Normalise&nbsp;vector&nbsp;a&nbsp;to&nbsp;unit&nbsp;length</tt></dd></dl>
 </td></tr></table><p>
@@ -94,5 +97,5 @@ t3&nbsp;is&nbsp;perpendicular&nbsp;to&nbsp;both&nbsp;&nbsp;(unit&nbsp;vector&nbs
 <font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
     
 <tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><strong>outif</strong> = {'A': &lt;function I at 0x00EAEF30&gt;, 'B': &lt;function B at 0x00EAEEB0&gt;, 'C': &lt;function C at 0x00EAEEF0&gt;, 'F': &lt;function F at 0x00EAEF70&gt;, 'I': &lt;function I at 0x00EAEF30&gt;, 'P': &lt;function P at 0x00EAEE30&gt;, 'R': &lt;function R at 0x00EAEFB0&gt;}</td></tr></table>
+<td width="100%"><strong>outif</strong> = {'A': &lt;function I at 0x2a9a212578&gt;, 'B': &lt;function B at 0x2a9a212488&gt;, 'C': &lt;function C at 0x2a9a212500&gt;, 'F': &lt;function F at 0x2a9a2125f0&gt;, 'I': &lt;function I at 0x2a9a212578&gt;, 'P': &lt;function P at 0x2a9a212398&gt;, 'R': &lt;function R at 0x2a9a212668&gt;}</td></tr></table>
 </body></html>
