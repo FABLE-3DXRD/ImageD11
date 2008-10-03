@@ -1,5 +1,3 @@
-
-
 # Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 
@@ -243,7 +241,7 @@ class refinegrains:
                                 float(self.parameterobj.parameters['wavelength']),
                                 self.parameterobj.parameters['wedge'],
                                 self.parameterobj.parameters['chi'])
-        self.OMEGA_FLOAT = False
+        self.OMEGA_FLOAT = True
         if not self.OMEGA_FLOAT:
             self.gv = gv.T
             return
@@ -278,7 +276,7 @@ class refinegrains:
             # Take a weighted average within the omega error of the observed
             omerr = (om*sign - omega_calc)
             # print omerr[0:5]
-            omega_calc = om*sign - numpy.clip( omerr, -0.1 , 0.1 ) 
+            omega_calc = om*sign - numpy.clip( omerr, -0.5 , 0.5 ) 
             # print omega_calc[0], om[0]
 
             # Now recompute with improved omegas...
