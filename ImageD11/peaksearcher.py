@@ -175,11 +175,16 @@ def peaksearch_driver(options, args):
     """
     ################## debugging still
     for a in args:
-        print "arg:"+str(a)
+        print "arg: "+str(a)+","+str(type(a))
     for o in options.__dict__.keys():
-        print "option:",str(o),str(getattr(options,o))
+        if getattr(options,o) in [ "False", "FALSE", "false" ]:
+            setattr(options,o,False)
+        if getattr(options,o) in [ "True", "TRUE", "true" ]:
+            setattr(options,o,True)
+        print "option:",str(o),str(getattr(options,o)),",",\
+        str(type( getattr(options,o) ) )
     ###################
-
+    print "This peaksearcher is from",__file__
 
     if options.killfile is not None and os.path.exists(options.killfile):
         print "The purpose of the killfile option is to create that file"
@@ -362,6 +367,11 @@ def peaksearch_driver(options, args):
                     self.OMEGAOVERRIDE = OMEGAOVERRIDE
                     self.OMEGASTEP = OMEGASTEP
                     ImageD11_thread.__init__(self , name=name)
+                    print "Reading thread initialised",
+                    #print "self.OMEGA=",self.OMEGA,
+                    #print "self.OMEGAOVERRIDE",self.OMEGAOVERRIDE,type(self.OMEGAOVERRIDE)
+                    #print "self.OMEGASTEP" ,self.OMEGASTEP
+
                     
                 def ImageD11_run(self):
                     """ Read images and copy them to self.queue """
@@ -370,9 +380,16 @@ def peaksearch_driver(options, args):
                         ti = timer()
                         try:
                             data_object = openimage(filein)
-                            if self.OMEGAOVERRIDE or not data_object.header.has_key("Omega"):
-                                data_object.header["Omega"] = self.OMEGA
+                            if self.OMEGAOVERRIDE:
+                                #print "Over ride due to option",self.OMEGAOVERRIDE
                                 self.OMEGA += self.OMEGASTEP
+                                data_object.header["Omega"] = self.OMEGA
+                            else:
+                                if not data_object.header.has_key("Omega"):
+                                    #print "Computing omega as not in header"
+                                    data_object.header["Omega"] = self.OMEGA
+                                    self.OMEGA += self.OMEGASTEP
+                            #print "Omega = ", data_object.header["Omega"]
                         except KeyboardInterrupt:
                             raise
                         except:
@@ -530,9 +547,11 @@ def get_options(parser):
         parser.add_option("-d", "--darkfile", action="store",
             dest="dark", default=None,  type="string",
             help="Dark current filename, to be subtracted, default=None")
+        dod = 0
         parser.add_option("-D", "--darkfileoffset", action="store",
-            dest="darkoffset", default=0, type="float",
-            help="Constant to subtract from dark to avoid overflows, default=100")
+            dest="darkoffset", default=dod, type="float",
+            help=
+         "Constant to subtract from dark to avoid overflows, default=%d"%(dod))
         s="/data/opid11/inhouse/Frelon2K/spatial2k.spline"
         parser.add_option("-s", "--splinefile", action="store",
             dest="spline", default=s, type="string",
