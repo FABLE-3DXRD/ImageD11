@@ -28,13 +28,12 @@ setting rows and columns to zero
 Note: Trivial script
 """
 
-from ImageD11 import opendata
+from fabio import openimage
 import sys
 
 if __name__=="__main__":
     try:
-        inputdata = opendata.opendata(sys.argv[1])
-        outputfile= open(sys.argv[2],"wb")
+        inputdata = openimage.openimage(sys.argv[1])
         step = int(sys.argv[3])
     except:
         print "Usage: %s infile outfile stepsize"%(sys.argv[0])
@@ -45,5 +44,6 @@ if __name__=="__main__":
     for i in range(0,inputdata.data.shape[1],step):
         inputdata.data[:,i]=0
 
-    outputfile.write(inputdata.header["headerstring"])
-    outputfile.write(inputdata.data.tostring())
+
+    inputdata.write(sys.argv[2])
+
