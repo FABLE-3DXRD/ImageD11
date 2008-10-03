@@ -43,6 +43,7 @@ FLOATS = [
     "covso",
     "covfo",
     "sum_intensity",
+    "sum_intensity^2"
     "IMax_int",
     "IMax_o",
     "avg_intensity",
