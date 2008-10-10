@@ -1,0 +1,34 @@
+grids.py : Does the actual indexing grid search
+   Arguments are  flt tol npk
+   flt = filtered peaks file
+   tol = tolerance for indexing peaks (eg 0.1)
+   npk = number of peaks having tol
+   Hard wired: instrument parameter file, 
+               other indexing parameters, 
+               grid to search
+   Outputs: flt.maptxt containing #grains versus position
+            flt_mapdir/*.ubi containing the ubi files found at each position
+   
+mp.py: Reads the ubis from the grids output and prints them on one line each, with x, y, flipped to a particular setting
+
+uniqify_ubi.py: Merges a collection of ubi files to try to make "unique" ones.
+   Arguments flt_mapdir
+   flt_mapdir = directory where the ubi files from grids.py are
+   Hard wired: cubic symmetry and tolerance
+   Outputs: to stdout (redirect to save it)
+      ... debug stuff about double uniqs (bad news)
+      uniq ubi matrices -> make this into a ubi file by emacs
+      where each ubi matrix is found.
+   TODO: take account of spatial info in doing this....
+
+gridmap.py: Takes a set of grains previously indexed and scores them with an flt file
+    Arguments are flt par grains tol
+    flt = filtered peaks output
+    par = ImageD11 parameters 
+    grains = ubi file from uniqify above
+    tol = tolerance for counting peaks
+    Outputs: for each position in the map, the number of peaks indexed by each grain
+
+gridgrain.py : Similar to gridmap.py - expectation is to edit this to make a search of the "global parameters". Total peaks indexed goes up when the parameters are better. To be done for Krill still. Needs some "optimisation" still.
+
+plot_gmap.py : Takes the output of gridmap.py and picks the "best" grain for each position, printing which grain is best and what it scores.
