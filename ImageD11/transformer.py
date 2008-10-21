@@ -514,14 +514,36 @@ class transformer:
 
     def write_graindex_gv(self,filename):
         from ImageD11 import write_graindex_gv
-        if self.gv is None:
-            self.computegv()
-        self.intensity = self.finalpeaks[3,:]*self.finalpeaks[4,:]
+        if ("gx" not in self.colfile.titles):
+            self.compute_gv()
+        gv = [ self.getcolumn("gx"),
+               self.getcolumn("gy"),
+               self.getcolumn("gz") ] 
+
+        if ("sum_intensity" in self.colfile.titles):
+            ints = self.getcolumn("sum_intensity")
+        elif ("avg_intensity" in self.colfile.titles) and \
+             ("Number_of_pixels" in self.colfile.titles):
+            ints = self.getcolumn("sum_intensity")* \
+                   self.getcolumn("Number_of_pixels")
+        elif ("avg_intensity" in self.colfile.titles) and \
+             ("npixels" in self.colfile.titles):
+            ints = self.getcolumn("sum_intensity")* \
+                   self.getcolumn("npixels")
+        else:
+            ints = n.zeros( self.colfile.nrows )
+
+        pars = self.parameterobj.get_parameters()
+        if pars.has_key("omegasign"):
+            om_sgn = pars["omegasign"]
+        else:
+            om_sgn = 1.0
+                           
         write_graindex_gv.write_graindex_gv(filename,
-                                            self.gv,
-                                            self.twotheta,
-                                            self.eta,
-                                            self.omega*self.omegasign,
-                                            self.intensity,
+                                            n.array(gv),
+                                            self.getcolumn("tth"),
+                                            self.getcolumn("eta"),
+                                            self.getcolumn("omega") * om_sgn,
+                                            ints,
                                             self.unitcell)
         
