@@ -49,6 +49,25 @@ def radians(x):
     """Convenience function"""
     return x*pi/180.0
 
+def detector_rotation_matrix(tilt_x, tilt_y, tilt_z):
+    """
+    Return the tilt matrix to apply to peaks
+    tilts in radians
+    typically applied to peaks rotating around beam center
+    """
+    r1 = n.array( [ [  n.cos(tilt_z) ,-n.sin(tilt_z) , 0 ], # note this is r.h.
+                    [  n.sin(tilt_z) , n.cos(tilt_z) , 0 ],
+                    [    0         ,    0        , 1 ]],n.float)
+    r2 = n.array( [ [ n.cos(tilt_y) , 0 , n.sin(tilt_y) ],
+                    [       0     , 1 ,   0     ],
+                    [-n.sin(tilt_y) , 0 , n.cos(tilt_y) ]],n.float)
+    r3 = n.array( [ [  1 ,          0  ,       0     ],
+                    [  0 ,  n.cos(tilt_x), -n.sin(tilt_x) ],
+                    [  0 ,  n.sin(tilt_x), n.cos(tilt_x) ]],n.float)
+    r2r1 = n.dot(n.dot(r3,r2),r1)
+    return r2r1
+
+
 
 def compute_xyz_lab(peaks,
                     y_center=0.,y_size=0.,tilt_y=0.,
@@ -75,17 +94,8 @@ def compute_xyz_lab(peaks,
       etc...
     """
     assert len(peaks)==2, "peaks must be a 2D array"
-    # Matrices for the tilt rotations
-    r1 = n.array( [ [  n.cos(tilt_z) ,-n.sin(tilt_z) , 0 ], # note this is r.h.
-                    [  n.sin(tilt_z) , n.cos(tilt_z) , 0 ],
-                    [    0         ,    0        , 1 ]],n.float)
-    r2 = n.array( [ [ n.cos(tilt_y) , 0 , n.sin(tilt_y) ],
-                    [       0     , 1 ,   0     ],
-                    [-n.sin(tilt_y) , 0 , n.cos(tilt_y) ]],n.float)
-    r3 = n.array( [ [  1 ,          0  ,       0     ],
-                    [  0 ,  n.cos(tilt_x), -n.sin(tilt_x) ],
-                    [  0 ,  n.sin(tilt_x), n.cos(tilt_x) ]],n.float)
-    r2r1 = n.dot(n.dot(r3,r2),r1)
+    # Matrix for the tilt rotations
+    r2r1 = detector_rotation_matrix( tilt_x, tilt_y, tilt_z )
     # Peak positions in 3D space
     #  - apply detector orientation
     peaks_on_detector = n.array(peaks)
@@ -176,6 +186,80 @@ def compute_tth_eta_from_xyz(peaks_xyz , omega ,
     tth = degrees( n.arctan2( s1_perp_x, s1[0,:]) )
     return tth , eta
 
+
+def compute_xyz_from_tth_eta( tth , eta , omega , 
+                              t_x = 0.0, t_y = 0.0 , t_z = 0.0,
+                              #       == phi at chi=90
+                              wedge = 0.0,  # Wedge == theta on 4circ
+                              chi = 0.0,    #       == chi - 90
+                              **kwds): # last line is for laziness - 
+    """
+    Given the tth, eta and omega, compute the xyz on the detector
+    
+    crystal_translation is the position of the grain giving rise 
+    to a diffraction spot
+                 in x,y,z ImageD11 co-ordinates
+                 x,y with respect to axis of rotation and or beam centre ??
+                 z with respect to beam height, z centre
+                 
+    omega data needed if crystal translations used
+    """
+    
+    # xyz = unit vectors along the scattered vectors
+    xyz = n.zeros( (3, tth.shape[0]), n.float)
+    rtth = radians(tth)
+    reta = radians(eta)
+    xyz[0,:] =  n.cos( rtth )
+    xyz[1,:] = -n.sin( rtth )*n.sin( reta )
+    xyz[2,:] =  n.sin( rtth )*n.cos( reta )
+
+    # Find some vectors in the fast, slow directions in the detector plane
+    
+    pks = n.array( [ ( 0, 0 ),
+                     ( 1, 0 ),
+                     ( 0, 1 ) ] )
+    # ... not sure this is needed - puts the origin at the beam center
+    # pks += n.array( [ float(kwds['z_center']) ,
+    # float(kwds['y_center'])]  )
+
+    # 3 peaks in the detector plane
+    dxyzl = compute_xyz_lab(peaks, **kwds)
+
+    # Detector plane normal
+    norman = cross_product_2x2( dxyzl[1]-dxyzl[0],
+                                dxyzl[2]-dxyzl[0] )
+
+    # Equation of a plane gives:
+    #   N dot ( P - Po ) == 0
+    # ... where P is any point on the plane going through Po
+    #     that is normal to P.
+    # P is on our line, so:
+    #     P = grain_origin + t * xyz
+    # Also:
+    #     N dot( grain_origin + t * xyz - Po ) == 0
+    # ... solve for t ...
+    
+    grain_origins = compute_grain_origins(omega, **kwds )
+    
+    N_txyz = dot(norman, dxyzl[0] - grain_origins )
+    N_xyz = dot( norman, xyz )
+
+    # If N_xyz is zero anywhere the beam is || to plane and cannot
+    # intersect.
+    # expect a div0 and set to infinity
+    N_xyz = n.where( N_xyz <= 0, 1e35, N_xyz )
+
+    t = N_txyz / N_xyz
+    
+    # Now we have the teas we just wander along the lines
+    xyz_det = t * xyz
+
+    # And finally find those points in terms of our original vectors
+    sc = dot( dxyzl[1] - dxyzl[0], xyz_det - dxyzl[0] )
+    fc = dot( dxyzl[2] - dxyzl[0], xyz_det - dxyzl[0] )
+
+    return fc, sc
+    
 
 def compute_grain_origins(omega, wedge = 0.0, chi = 0.0,
                           t_x = 0.0, t_y = 0.0, t_z = 0.0):
