@@ -102,6 +102,25 @@ class columnfile:
         if not new:
             self.readfile(filename)
 
+    def removerows( self, column_name, values, tol = 0 ):
+        """
+        removes rows where self.column_name == values
+        values is a list of values to remove
+        column name should be in self.titles
+        tol is for floating point (fuzzy) comparisons versus integer
+        """
+        col = self.getcolumn( column_name )
+        if tol <= 0: # integer comparisons
+            col = col.astype( n.Int )
+            mskfun = lambda x, v, t: x == v
+        else:        # floating point
+            mskfun = lambda x, v, t: n.abs( x - v ) < t 
+        mask  = mskfun( col, values[0], tol )
+        for v in values[1:]:
+            n.logical_or( mskfun( col, v, tol ), mask, mask)
+        self.filter( ~mask )
+
+
     def writefile(self, filename):
         """
         write an ascii columned file
