@@ -269,7 +269,7 @@ class unitcell:
         The tolerance is the difference in d* to decide
         if two peaks overlap
         """
-        self.peaks=self.gethkls(limit) # [ ds, [hkl] ]
+        self.peaks=self.gethkls(limit+tol) # [ ds, [hkl] ]
         self.ringds=[]   # a list of floats
         self.ringhkls={} # a dict of lists of integer hkl
         # Append first peak
