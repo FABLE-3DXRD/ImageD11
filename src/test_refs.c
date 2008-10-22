@@ -6,7 +6,12 @@
 int main(int argc, char** argv){
     int i, nsym;    
     int hkl[] = {3,1,2,  -1,-2,-3,   -3,1,2} ;
+    int res[3] ;
     int *kh, *kk, *kl;
+    
+    kh = &res[0];
+    kk = &res[1];
+    kl = &res[2];
     float sym[] = {
         1, 0, 0,
         0, 1, 0,
