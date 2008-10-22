@@ -6,7 +6,7 @@
 int main(int argc, char** argv){
     int i, nsym;    
     int hkl[] = {3,1,2,  -1,-2,-3,   -3,1,2} ;
-    int res[3] ;
+    int res[9] ;
     int *kh, *kk, *kl;
     
     kh = &res[0];
@@ -38,6 +38,11 @@ int main(int argc, char** argv){
                 sym, nsym,
                 kh, kk, kl);
         printf("%4d %4d %4d\n",*kh,*kk,*kl);
+    }
+    get_many_keys( hkl, res, 3, sym, nsym );
+    for( i=0; i<3; i++){
+      printf("%4d %4d %4d ->",hkl[i*3],hkl[i*3+1],hkl[i*3+2]);
+      printf("%4d %4d %4d\n",res[i*3],res[i*3+1],res[i*3+2]);
     }
     return 0;
 }
