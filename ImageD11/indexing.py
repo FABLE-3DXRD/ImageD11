@@ -274,8 +274,9 @@ class indexer:
 
     
 
-    def out_of_eta_range(self,e):
+    def out_of_eta_range(self,eta):
         """ decide if an eta is going to be kept """
+        e = mod_360(float(eta), 0)
         if e < abs(self.eta_range) and e > -abs(self.eta_range):
             return True
         if e < -180.+abs(self.eta_range) or e > 180.-abs(self.eta_range):
@@ -401,8 +402,10 @@ class indexer:
         iall = n.arange(self.gv.shape[0])
         #
         # Optionally only used unindexed peaks here? Make this obligatory
-        i1 = n.compress(n.logical_and(n.equal(self.ra,self.ring_1), self.ga==-1  ) , iall).tolist()
-        i2 = n.compress(n.logical_and(n.equal(self.ra,self.ring_2), self.ga==-1  ) , iall).tolist()
+        i1 = n.compress(n.logical_and(n.equal(self.ra,self.ring_1),
+                                      self.ga==-1  ) , iall).tolist()
+        i2 = n.compress(n.logical_and(n.equal(self.ra,self.ring_2),
+                                      self.ga==-1  ) , iall).tolist()
         print "Number of peaks in ring 1:",len(i1)
         print "Number of peaks in ring 2:",len(i2)
         print "Minimum number of peaks to identify a grain",self.minpks
@@ -499,7 +502,8 @@ class indexer:
             sys.stdout.write("Tested %8d    Found %8d     Rejected %8d as not being unique\r"%(prog,ng,nuniq))
             prog=prog+1
             diff,i,j = self.hits.pop()
-            if self.ga[i]>-1 or self.ga[j]>-1:  # skip things which are already assigned
+            if self.ga[i]>-1 or self.ga[j]>-1:
+                # skip things which are already assigned
                 continue
             if i==j:
                 continue
@@ -524,12 +528,14 @@ class indexer:
             if npk > self.minpks:
                 # See if we already have this grain...
                 try:
-                    ubio=self.refine(self.unitcell.UBI.copy()) # refine the orientation
+                    ubio=self.refine(self.unitcell.UBI.copy())
+                    # refine the orientation
                     ind=self.getind(ubio) # indices of peaks indexed
                     ga=n.take(self.ga,ind)  # previous grain assignments
                     uniqueness=n.sum(n.where(ga==-1,1,0))*1.0/ga.shape[0]
                     if uniqueness > self.uniqueness:
-                        n.put(self.ga,ind,len(self.scores)+1)
+#                        print "Writing in self.ga"
+                        n.put(self.ga, ind, len(self.scores)+1)
                         self.ubis.append(ubio)
                         self.scores.append(npk)
                         ng=ng+1
@@ -547,13 +553,39 @@ class indexer:
             print "Unit cell\n",ubitocellpars(self.ubis[bestfitting])
             print "Indexes",self.scorelastrefined,"peaks, with <drlv2>=",self.fitlastrefined
             print "That was the best thing I found so far"
-            notaccountedfor = n.sum(n.where( n.logical_and(self.ga==-1, self.ra!=-1),1,0))
-            print "Number of peaks assigned to rings but not indexed = ",notaccountedfor
+            notaccountedfor = n.sum(n.where( n.logical_and(
+                self.ga==-1, self.ra!=-1),1,0))
+            print "Number of peaks assigned to rings but not indexed = ",\
+                  notaccountedfor
             #self.histogram(self.ubis[bestfitting])
         else:
             print "Try again, either with larger tolerance or fewer minimum peaks"
 
-    def saveindexing(self,filename,tol=None):
+    def fight_over_peaks(self):
+        """
+        Get the best ubis from those proposed
+        """
+        self.drlv2 = n.zeros( self.ra.shape, n.Float)+2
+        labels= n.ones( self.ra.shape, n.Int32)-2
+        i = -1
+        for ubi in self.ubis:
+            i += 1
+            npk = closest.score_and_assign( ubi, self.gv, self.hkl_tol,
+                                            self.drlv2, labels, i)
+
+        self.ga = labels
+        # For each grain we want to know how many peaks it indexes
+        # This is a histogram of labels
+        hst, edges = numpy.histogram(
+            labels,
+            n.array( range(-1, len(self.ubis)))-0.5 )
+        self.gas = hst[1:]
+        assert len(self.gas) == len(self.ubis)
+                         
+        
+        
+
+    def saveindexing(self, filename, tol = None):
         """
         Save orientation matrices
 
@@ -561,31 +593,34 @@ class indexer:
             grain by grain }
             peak by peak   }
         """
-        f=open(filename,"w")
-        i=0
+        f = open(filename,"w")
+        i = 0
         from ImageD11 import transform
         from numpy.oldnumeric.linear_algebra import inverse
+        
         # grain assignment
-        self.ga = -1*n.ones(self.ra.shape,n.Int)
-        # grain assignment scores
-        self.gas = n.ones(self.ra.shape,n.Float)
+        self.fight_over_peaks()
+        
+        # Printing per grain
+        uinverses = []
+        allind = numpy.array(range(len(self.ra)))
+        tthcalc =numpy.zeros(len(self.ra),numpy.float)
+        etacalc =numpy.zeros(len(self.ra),numpy.float)
+        omegacalc = numpy.zeros(len(self.ra),numpy.float)
+        i = -1
         for ubi in self.ubis:
-            if tol==None:
-                tol=self.hkl_tol
-            h=n.dot(ubi,n.transpose(self.gv))
-            hint=n.floor(h+0.5).astype(n.Int) # rounds down
-            gint=n.dot(inverse(ubi),hint)
-            diff=h-hint
-            drlv2=n.sum(diff*diff,0)
-            self.ga  = n.where(drlv2 < self.gas, i, -1)
-            self.gas = n.where(drlv2 < self.gas, drlv2, self.gas)
-            ind = n.compress( n.less(drlv2,tol*tol) , n.arange(self.gv.shape[0]) )
-            try:
-                mdrlv=  n.sum(n.sqrt(n.take(drlv2,ind)))/ind.shape[0]
-            except:
-                mdrlv= 1.0
-            f.write("Grain: %d   Npeaks=%d   <drlv>=%f\n"%(i,ind.shape[0],mdrlv))
-            i=i+1
+            i += 1
+            # Each ubi has peaks in self.ga
+            uinverses.append( inverse(ubi) )
+            npk , mdrlv = closest.refine_assigned(
+                ubi.copy(),
+                self.gv,
+                self.ga,
+                i,
+                -1)
+            assert npk == self.gas[i]
+            f.write("Grain: %d   Npeaks=%d   <drlv>=%f\n"%(
+                i, self.gas[i], n.sqrt(mdrlv) ))
             f.write("UBI:\n"+str(ubi)+"\n")
             cellpars = ubitocellpars(ubi)
             f.write("Cell pars: ")
@@ -595,31 +630,51 @@ class indexer:
             # Grainspotter U
             f.write("U:\n"+str( ubitoU(ubi) ) + "\n")
             f.write("B:\n"+str( ubitoB(ubi) ) + "\n")
-            f.write("Peak   (  h       k       l      )   drlv             x       y ")
+
+            # Compute hkls
+            h = numpy.dot( ubi, self.gv.T )
+            hint = numpy.floor( h + 0.5 )
+            gint= numpy.dot( uinverses[-1], hint )
+            dr = h - hint
+            
+            f.write(
+                "Peak   (  h       k       l      )   drlv             x       y ")
             if self.wavelength < 0:
                 f.write("\n")
             else:
-                f.write("   Omega_obs Omega_calc   Eta_obs Eta_calc   tth_obs tth_calc\n")
-                tc,ec,oc =  transform.uncompute_g_vectors(gint,self.wavelength,wedge=self.wedge)
+                f.write(
+                    "   Omega_obs Omega_calc   Eta_obs Eta_calc   tth_obs tth_calc\n")
+                
+                tc, ec, oc =  transform.uncompute_g_vectors(
+                    gint,
+                    self.wavelength,
+                    wedge = self.wedge)
+                ind = numpy.compress( self.ga == i, allind)
+
             for j in ind:
-                f.write("%-6d ( % 6.4f % 6.4f % 6.4f ) % 12.8f "%(j,h[0,j],h[1,j],h[2,j],n.sqrt(drlv2[j])) )
+                f.write("%-6d ( % 6.4f % 6.4f % 6.4f ) % 12.8f "%(j,h[0,j],h[1,j],h[2,j],n.sqrt(self.drlv2[j])) )
                 f.write(" % 7.1f % 7.1f "%(self.xp[j],self.yp[j]) )
                 if self.wavelength < 0:
                     f.write("\n")
                 else:
                     # # # These should be equal to
-                    to=math.asin(self.wavelength*self.ds[j]/2)*360/math.pi # tth observed
-                    eo=self.eta[j]
-                    oo=self.omega[j]
-                    tc1=tc[j]
-                    # Choose which is closest in eta/omega, there are two choices, {eta,omega}, {-eta,omega+180}
-                    w=n.argmin( [ abs(ec[0][j] - eo) , abs(ec[1][j] - eo) ] )
-                    ec1=ec[w][j]
-                    oc1=oc[w][j]
+                    to = math.asin( self.wavelength * self.ds[j]/2)*360/math.pi
+                    # tth observed
+                    eo = mod_360(self.eta[j], 0)
+                    oo = self.omega[j]
+                    tc1 = tc[j]
+                    # Choose which is closest in eta/omega,
+                    # there are two choices, {eta,omega}, {-eta,omega+180}
+                    w = n.argmin( [ abs(ec[0][j] - eo) , abs(ec[1][j] - eo) ] )
+                    ec1 = ec[w][j]
+                    oc1 = oc[w][j]
                     # Now find best omega within 360 degree intervals
-                    oc1=mod_360(oc1,oo)
+                    oc1 = mod_360(oc1, oo)
                     f.write("  % 9.4f % 9.4f     % 9.4f % 9.4f   % 9.4f % 9.4f"% (oo,oc1, eo,ec1 ,to,tc1))
-                if self.ra[j]==-1:
+                    etacalc[ j ] = ec1
+                    omegacalc[ j ] = oc1
+                    tthcalc[ j ] = tc1
+                if self.ra[j] == -1 :
                     f.write(" *** was not assigned to ring\n")
                 else:
                     f.write("\n")
@@ -629,35 +684,23 @@ class indexer:
         f.write("\n\nAnd now listing via peaks which were assigned to rings\n")
         nleft=0
         nfitted=0
+        npk = 0
         for peak in in_rings:
             # Compute hkl for each grain
-            h=self.gv[peak,:]
+            h = self.gv[peak,:]
             f.write("\nPeak= %-5d Ring= %-5d gv=[ % -6.4f % -6.4f % -6.4f ]   omega= % 9.4f   eta= % 9.4f   tth= % 9.4f\n"%(peak,self.ra[peak],h[0],h[1],h[2],
                   self.omega[peak],self.eta[peak],self.tth[peak]))
-            m=0
-            npk=0
-            bestubi=999. # in ga / gsa
-            drlv2 = self.gas[i]
-            m = self.ga[9]
-            hi = n.dot(ubi,h)
-            hint = n.floor(hi+0.5).astype(n.Int)
-            gint = n.dot(inverse(ubi),hint)
-            diff=hi-hint
-            drlv2 = n.sum(diff*diff,0)
-            if drlv2 < tol*tol:
-                f.write("Grain %-5d (%3d,%3d,%3d)"%(m,hint[0],hint[1],hint[2]))
+            if self.ga[peak] != -1:
+                m = self.ga[peak]
+                hi = n.dot(self.ubis[m],h)
+                hint = n.floor(hi+0.5).astype(n.Int)
+                gint = n.dot(uinverses[m], hint)
+                f.write("Grain %-5d (%3d,%3d,%3d)"%( m,
+                    hint[0],hint[1],hint[2]))
                 f.write("  ( % -6.4f % -6.4f % -6.4f )  "%(hi[0],hi[1],hi[2]))
-                # hint
-                tt,e,o=transform.uncompute_one_g_vector(gint,self.wavelength,self.wedge)
-#               print "obs",self.omega[peak],self.eta[peak],self.tth[peak]
-#               print "calc",tt,e,o
-                w=[ abs(e[0] - self.eta[peak]) , abs(e[1] - self.eta[peak]) ]
-                w=n.argmin( w )
-                et=e[w]
-                om=o[w]
-                    # Now find best omega within 360 degree intervals
-                om=mod_360(om,self.omega[peak])
-                f.write(" omega= % 9.4f   eta= %9.4f   tth= %9.4f\n"%(om,et,tt) )
+                # Now find best omega within 360 degree intervals
+                f.write(" omega= % 9.4f   eta= %9.4f   tth= %9.4f\n"%(
+                    omegacalc[peak],etacalc[peak],tthcalc[peak]) )
                 npk=npk+1
             else:
                 if len(self.ubis)>0:
@@ -680,10 +723,10 @@ class indexer:
         """
         Returns the indices of peaks in self.gv indexed by matrix UBI
         """
-        if tol==None:
-            tol=self.hkl_tol
-        drlv2=calc_drlv2(UBI,self.gv)
-        drlv2=n.where(self.ra==-1,tol+1,drlv2)
+        if tol == None:
+            tol = self.hkl_tol
+        drlv2 = calc_drlv2( UBI, self.gv)
+        drlv2 = n.where( self.ra == -1, tol + 1, drlv2)
         ind = n.compress( n.less(drlv2,tol*tol) , n.arange(self.gv.shape[0]) )
         return ind
 
@@ -836,6 +879,9 @@ class indexer:
         for line in f.readlines():
             try:
                 v=[float(x) for x in line.split()]
+                if len(v) == 0:
+                    # Skip the blank lines
+                    continue
                 if self.out_of_eta_range(v[6]):
                     continue
                 self.xr.append(v[0])
@@ -847,7 +893,7 @@ class indexer:
                 self.eta.append(v[6])
                 self.omega.append(v[7])
             except:
-                print line
+                print "LINE:",line
                 raise
 #            raise "Problem interpreting the last thing I printed"
         f.close()
