@@ -36,10 +36,9 @@ UBIS = [
 
     ]
 
-if sys.platform == "win32":
-    SCRIPT = os.path.join("c:\python25\python ..","..","scripts","index_unknown.py")
-else:
-    SCRIPT = os.path.join("fable.python ..","..","scripts","index_unknown.py")
+
+
+SCRIPT = os.path.join(sys.executable+" ..","..","scripts","index_unknown.py")
 
 def generate_hkls( n ):
     """ Makes solid hkl cube """
