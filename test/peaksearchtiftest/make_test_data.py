@@ -26,11 +26,7 @@ class test_tifs(unittest.TestCase):
                 obj = tifimage.tifimage( blank, { } )
             obj.write( 'tiftest%04d.tif'%(i))
         
-        if os.path.exists('peaks_t5.spt'):
-            os.remove('peaks_t5.spt')
-        if os.path.exists('peaks_t5.flt'):
-            os.remove('peaks_t5.flt')
-
+       
     def tearDown(self):
         return
         # we'll leave the files around for now
@@ -47,8 +43,21 @@ class test_tifs(unittest.TestCase):
                   " -f %d -l %d"%(self.FIRST, self.LAST))
         results = columnfile.columnfile( "peaks_t5.flt" )
         self.assertEqual( results.nrows, self.NPK)
+        if os.path.exists( 'peaks_t5.flt' ):
+            self.assertEqual( open( 'peaks_t5.flt').read(),
+                              open( 'peaks_t6.flt').read() )
 
-
+    def testpeaksearch_nooverride(self):
+        os.system("peaksearch.py -n tiftest " + \
+                  " -t 6 -F .tif -S 0.3 " + \
+                  " -T 11 -p Y " +\
+                  " -f %d -l %d"%(self.FIRST, self.LAST))
+        results = columnfile.columnfile( "peaks_t6.flt" )
+        self.assertEqual( results.nrows, self.NPK)
+        if os.path.exists( 'peaks_t5.flt' ):
+            self.assertEqual( open( 'peaks_t5.flt').read(),
+                              open( 'peaks_t6.flt').read() )
+        
         
         
 if __name__ == '__main__':
