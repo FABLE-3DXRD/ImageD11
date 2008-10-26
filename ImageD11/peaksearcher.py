@@ -54,10 +54,6 @@ import numpy
 from fabio.openimage import openimage
 from fabio import file_series, fabioimage
 
-# Cannot be global variables due to threading
-# OMEGA = 0
-# OMEGASTEP = 1.0
-# OMEGAOVERRIDE = False
 
 class timer:
     def __init__(self):
@@ -133,13 +129,6 @@ def peaksearch( filename ,
                 pass
 
     # Get the rotation angle for this image
-    # global OMEGA, OMEGASTEP, OMEGAOVERRIDE
-    # if not data_object.header.has_key("Omega") or OMEGAOVERRIDE:
-        # Might have imagenumber or something??
-        # ome = OMEGA
-        # OMEGA += OMEGASTEP
-        # print "Overriding the OMEGA"
-    # else: # Might have imagenumber or something??
     ome = float(data_object.header["Omega"])
     # print "Reading from header"
     #
@@ -368,9 +357,6 @@ def peaksearch_driver(options, args):
                     self.OMEGASTEP = OMEGASTEP
                     ImageD11_thread.__init__(self , name=name)
                     print "Reading thread initialised",
-                    #print "self.OMEGA=",self.OMEGA,
-                    #print "self.OMEGAOVERRIDE",self.OMEGAOVERRIDE,type(self.OMEGAOVERRIDE)
-                    #print "self.OMEGASTEP" ,self.OMEGASTEP
 
                     
                 def ImageD11_run(self):
@@ -382,8 +368,8 @@ def peaksearch_driver(options, args):
                             data_object = openimage(filein)
                             if self.OMEGAOVERRIDE:
                                 #print "Over ride due to option",self.OMEGAOVERRIDE
-                                self.OMEGA += self.OMEGASTEP
                                 data_object.header["Omega"] = self.OMEGA
+                                self.OMEGA += self.OMEGASTEP
                             else:
                                 if not data_object.header.has_key("Omega"):
                                     #print "Computing omega as not in header"
