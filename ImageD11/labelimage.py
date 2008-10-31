@@ -214,17 +214,17 @@ class labelimage:
         """
         
         file_obj.write("# Threshold level %f\n"%( self.threshold))
-        file_obj.write("# Number_of_pixels Average_counts    f   s     fc   sc      sig_f sig_s cov_fs\n")
+        file_obj.write("# Number_of_pixels Average_counts    s   f     sc   fc      sig_s  sig_f  cov_sf  IMax_int\n")
         ret = connectedpixels.blob_moments(self.res)
 
-        fs = "%d  "+ "%f  "*8 + "\n"
+        fs = "%d  "+ "%f  "*9 + "\n"
         for i in self.res[:self.npk]:
             if i[s_1] < 0.1:
                 raise Exception("Empty peak on current frame")
             i[s_cen], i[f_cen] = self.corrector.correct(i[s_raw], i[f_raw])
             file_obj.write(fs % (i[s_1],  i[avg_i], i[s_raw], i[f_raw],
                                  i[s_cen], i[f_cen],
-                                 i[m_ss], i[m_ff], i[m_sf]))
+                                 i[m_ss], i[m_ff], i[m_sf], i[mx_I]))
         file_obj.write("\n")
         
     def outputpeaks(self, peaks):
