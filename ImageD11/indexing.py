@@ -704,7 +704,8 @@ class indexer:
                 npk=npk+1
             else:
                 if len(self.ubis)>0:
-                    f.write("Peak not assigned, closest=[ % -6.4f % -6.4f % -6.4f ] for grain %d\n"%(hi[0],hi[1],hi[2],m))
+                    f.write("Peak not assigned\m")
+                    # , closest=[ % -6.4f % -6.4f % -6.4f ] for grain %d\n"%(hi[0],hi[1],hi[2],m))
                 else:
                     f.write("Peak not assigned, no grains found\n")
                 nleft=nleft+1
