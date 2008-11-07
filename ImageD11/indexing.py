@@ -68,12 +68,11 @@ def ubitocellpars(ubi):
 
 def ubitoU(ubi):
     """
-    (try) to convert ubi to Grainspotter style U
+    convert ubi to Grainspotter style U
     The convention is B as being triangular, hopefully as Busing and Levy
-    TODO / FIXME - make some testcases please!!
+    TODO - make some testcases please!!
     """
-    return n.transpose(n.dot(ubi, LinearAlgebra.inverse(ubitoB(ubi))))
-
+    return n.transpose(n.dot(ubitoB(ubi),ubi))
 
 def ubitoRod(ubi):
     """
@@ -82,17 +81,14 @@ def ubitoRod(ubi):
     u = ubitoU(ubi)
     w, v = numpy.linalg.eig(u)
     ehat = v[:,0]
-    angle = math.acos(w[1].real)
+    angle = -1*math.acos(w[1].real)
     Rod = ehat * math.tan(angle/2)
-    return Rod
-    
-
-
+    return Rod.real
 
 def ubitoB(ubi):
     """ give the B matrix from ubi """
     g = n.dot(ubi, n.transpose(ubi))
-    return LinearAlgebra.cholesky_decomposition(g)
+    return numpy.transpose(numpy.linalg.inv(numpy.linalg.cholesky(g)))
     
 
 def mod_360(theta, target):
