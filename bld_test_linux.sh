@@ -2,52 +2,42 @@
 
 
 
+SRC=`dirname "$0"`
+PYTHONPATH=$SRC/build/lib.linux-i686-2.5/
+
+echo "Running tests from " $SRC " with PYTHONPATH " $PYTHONPATH
 
 # Hmm - needs a switch case
 
-if [ `hostname` = "lapwright" ]; then
-    SRC="/home/wright/workspace/ImageD11-trunk"
-    PYT=python2.5
-    PYTHONPATH=$SRC/build/lib.linux-i686-2.5/
-else
-    if [ "$HOSTTYPE" = "x86_64" ]; then
-	SRC="/users/wright/fable/trunks/ImageD11/"
-	export LD_LIBRARY_PATH=/sware/exp/fable/standalone/redhate4-a64/lib
-	PYT=/sware/exp/fable/standalone/redhate4-a64/bin/python
-        PYTHONPATH=$SRC/build/lib.linux-i686-2.5/
-    else
-      echo 'guessing'
-   fi
-fi
-
-
-           
-# SRC=/home/user/soft/fable/ImageD11
-           
-PYT=python
-           
-PYTHONPATH=$SRC/build/lib.linux-i686-2.4/
-
+case `hostname`  in
+    lapwright) PYT=python2.5 ;;
+    *)  PYT=fable.python ;;
+esac
 
 cd $SRC
 $PYT setup.py build
 
-
+echo test_put_incr.py
 cd $SRC/test
 $PYT test_put_incr.py
 
 
 cd $SRC/test/demo
+echo `pwd` latred_new.py
 $PYT latred_new.py
+echo `pwd` test.py
 $PYT test.py
 
 cd $SRC/test/test_index_unknown
+echo `pwd` test_index_unknown.py
 $PYT test_index_unknown.py
 
 cd $SRC/test/quantix/
-$PYT fitgrain.py g3.pars g3.ubi g3.flt new.pars
+echo `pwd` testfitfilt.py
+$PYT testfitfilt.py 
 
 cd $SRC/test
+echo `pwd` test_peaksearch.py
 $PYT test_peaksearch.py
 
 cd $SRC/test
@@ -64,6 +54,10 @@ $PYT testconnectedpixels.py
 cd $SRC/test/testlabelimage
 $PYT testlabelimage.py
 
+cd $SRC/test/ken_simul
+$PYT idx.py
+
+cd $SRC
 
 
 echo
