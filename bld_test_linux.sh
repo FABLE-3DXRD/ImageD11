@@ -57,6 +57,11 @@ $PYT testlabelimage.py
 cd $SRC/test/ken_simul
 $PYT idx.py
 
+cd $SRC/test/
+$PYT test_ubito.py
+
+
+
 cd $SRC
 
 
