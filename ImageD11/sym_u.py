@@ -38,8 +38,9 @@ class group:
         Means of generating new thing from two others
         """
         m = n.dot(x, y)
-        d = n.linalg.det(m)
-        # Only appears to make sense for pure rotations
+        #
+        # d = n.linalg.det(m)
+        # Only appears to make sense for pure rotation matrices
         # assert abs(d-1)<1e-6, (str((d,m,x,y)))
         return m
     def comp(self, x, y):
@@ -62,8 +63,8 @@ class group:
         item = n.asarray(item)
         if not self.isMember(item):
             self.group.append(item)
-        else:
-            logging.warning(str(item)+" is already a group member")
+        #else:
+        #    logging.warning(str(item)+" is already a group member")
         self.makegroup()
     def makegroup(self):
         """
@@ -136,6 +137,24 @@ def find_uniq_u(u, grp, debug=0, func=n.trace):
             tmax = t
     return n.array(uniq)
 
+
+def hklmax(h, hmax=1000):
+    # Assumes |h| < hmax
+    return (h[0]*hmax + h[1])*hmax + h[2]
+
+def find_uniq_hkls( hkls, grp, func=hklmax):
+    assert hkls.shape[0] == 3, 'hkls must be 3xn array'
+    uniq = hkls.copy()
+    tmax = func( hkls )
+    for o in grp.group:
+        cand = grp.op( o, hkls)
+        t = func(cand)
+        msk = t > tmax
+        for i in range(3):
+            uniq[i] = n.where( msk , cand[i], uniq[i] )
+        tmax = n.where( msk , t, tmax )
+    return uniq
+        
 
 class trans_group(group):
     """
