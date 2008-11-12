@@ -15,18 +15,18 @@ gcalc = [ np.dot( ub, hkls.T).T for ub in ui]
 # 30 keV
 energy = 30
 wvln = 12.3985 / energy
-k = 0
+ng = 0
 for g, ubi in zip(gcalc, ul):
-    k +=1
-    print "# Grain",k, "\n# Energy",energy,"keV, wavelength %.5f"%(wvln)
+    ng +=1
+    print "# Grain",ng, "\n# Energy",energy,"keV, wavelength %.5f"%(wvln)
     tth, eta, omega = uncompute_g_vectors( g.T, wvln )
     order = np.argsort(tth)
-    hkls = np.dot( ubi, g.T).T
-    print "#  h  k  l  tth  eta  omega"
+    # hkls = np.dot( ubi, g.T).T
+    print "#   h    k    l   tth     eta    omega"
     for j in range(len(order)):
         i = order[j]
         for s in (0,1):
-            h,k,l = [int(h) for h in hkls[i]]
+            h,k,l = [int(v) for v in hkls[i]]
             if tth[i]>0  and tth[i] < 20 and \
                     abs(eta[s][i])< 45 and not unitcell.F(h,k,l):
 
