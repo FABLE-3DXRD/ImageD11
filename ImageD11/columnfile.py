@@ -70,7 +70,11 @@ INTS = [
     "Max_s",
     "spot3d_id",
     "h", "k", "l",
+<<<<<<< .mine
+    "onfirst", "onlast", "labels",
+=======
     "labels",
+>>>>>>> .r3577
     "Grain"
     ]
 FORMATS = {}
