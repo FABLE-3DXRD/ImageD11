@@ -56,6 +56,7 @@ test/gv_general/test.py
 test/gv_general/test_gv_general.py
 test/testconnectedpixels/testconnectedpixels.py
 scripts/cutgrains.py
+scripts/merge_flt.py
 scripts/ubi2cellpars.py
 scripts/makemap.py
 scripts/mar2bruker.py

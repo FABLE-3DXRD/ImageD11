@@ -70,11 +70,8 @@ INTS = [
     "Max_s",
     "spot3d_id",
     "h", "k", "l",
-<<<<<<< .mine
     "onfirst", "onlast", "labels",
-=======
     "labels",
->>>>>>> .r3577
     "Grain"
     ]
 FORMATS = {}
@@ -101,6 +98,8 @@ class columnfile:
         self.titles = []
         if filename is not None:
             self.parameters = parameters.parameters(filename=filename)
+        else:
+            self.parameters = parameters.parameters()
         self.ncols = 0
         self.nrows = 0
         if not new:
@@ -271,7 +270,7 @@ class newcolumnfile(columnfile):
     """ Just like a columnfile, but for creating new
     files """
     def __init__(self, titles):
-        columnfile.__init__(self, filename=None)
+        columnfile.__init__(self, filename=None, new=True)
         self.titles = titles
         self.ncols = len(titles)
         
