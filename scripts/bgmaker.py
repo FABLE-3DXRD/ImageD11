@@ -119,8 +119,8 @@ if __name__=="__main__":
         # finally write out the answer
         # model header + data
         o=openimage(file_series_object[0])
-        o.data = mi.minimum_image.astype(Numeric.UInt16)
-        o.write(options.outfile)
+        o.data = mi.minimum_image
+        o.write(options.outfile, force_type = o.data.dtype)
     except:
         parser.print_help()
         raise
