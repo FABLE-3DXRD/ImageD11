@@ -757,19 +757,19 @@ static PyObject * bloboverlaps (PyObject *self,
 		    "Blob2 array must be 2d and integer, second arg problem");
     return NULL;
   }
-  if (b1->strides[0]!=b2->strides[0] ||
-      b1->strides[1]!=b2->strides[1] ||
-      b1->dimensions[0]!=b2->dimensions[0] ||
-      b1->dimensions[1]!=b2->dimensions[1] ){
+  if (b1->strides[0]    != b2->strides[0]    ||
+      b1->strides[1]    != b2->strides[1]    ||
+      b1->dimensions[0] != b2->dimensions[0] ||
+      b1->dimensions[1] != b2->dimensions[1]    ){
     PyErr_SetString(PyExc_ValueError,
 		    "Blob1 and Blob2 array be similar (dims & strides)");
     return NULL;
   }       
   /* check results args */
-  if (r1->dimensions[0] < n1 ||
-      r1->dimensions[1] != NPROPERTY ||
-      r2->dimensions[0] < n2 ||
-      r2->dimensions[1] != NPROPERTY ||
+  if (r1->dimensions[0]   <  n1        ||
+      r1->dimensions[1]   != NPROPERTY ||
+      r2->dimensions[0]   <  n2        ||
+      r2->dimensions[1]   != NPROPERTY ||
       r1->descr->type_num != PyArray_DOUBLE ||
       r2->descr->type_num != PyArray_DOUBLE ){
     PyErr_SetString(PyExc_ValueError,
@@ -835,55 +835,99 @@ static PyObject * bloboverlaps (PyObject *self,
     } /* j */
   } /* i */
   if(verbose)printf("Finished scanning blob images\n");
-  must_do_relabel = 0;
+  must_do_relabel = 1; /* Just do it always */
   for(i=1; i < safelyneed; i++){
     if(link[i] != i && i != n2+1){
       j = dset_find(i, link);
       if(verbose>1){
-    	printf("i= %d link[i]= %d j= %d n1= %d n2=%d \n",i,link[i],j, n1,n2);
+    	printf("\ni= %d link[i]= %d j= %d n1= %d n2=%d \n",i,link[i],j, n1,n2);
       }
       if(i > n2+1 && j<n2+1){
     	/* linking between images */
-	    jpk = j-1;
-	    ipk = i-n2-2;
-	    if(jpk<0 || jpk>r2->dimensions[0])printf("bounds jpk %d",jpk);
-	    if(ipk<0 || ipk>r1->dimensions[0])printf("bounds ipk %d",ipk);
-	    merge( &res2[NPROPERTY*jpk], &res1[NPROPERTY*ipk] );
+	jpk = j-1;
+	ipk = i-n2-2;
+	if(jpk<0 || jpk>r2->dimensions[0])printf("bounds jpk %d",jpk);
+	if(ipk<0 || ipk>r1->dimensions[0])printf("bounds ipk %d",ipk);
+	
+	if(verbose>2)printf("mx_o,f,s 1 %f %d %d %f %d %d ",
+			    res2[NPROPERTY*jpk+mx_I_o],
+			    (int)res2[NPROPERTY*jpk+mx_I_f],
+			    (int)res2[NPROPERTY*jpk+mx_I_s],
+			    res1[NPROPERTY*ipk+mx_I_o],
+			    (int)res1[NPROPERTY*ipk+mx_I_f],
+			    (int)res1[NPROPERTY*ipk+mx_I_s] );
 
-        if(verbose>2)printf("mx_o 1 %f %f\n",res2[NPROPERTY*jpk+bb_mx_o]
-                ,res1[NPROPERTY*ipk+bb_mx_o]);
-
-	    if(verbose>2)printf("merged ipk %d jpk %d between images\n",ipk,jpk);
-	    continue;
+	merge( &res2[NPROPERTY*jpk], &res1[NPROPERTY*ipk] );
+	
+	if(verbose>2)printf("after 1 %f %d %d %f %d %d\n",
+			    res2[NPROPERTY*jpk+mx_I_o],
+			    (int)res2[NPROPERTY*jpk+mx_I_f],
+			    (int)res2[NPROPERTY*jpk+mx_I_s],
+			    res1[NPROPERTY*ipk+mx_I_o],
+			    (int)res1[NPROPERTY*ipk+mx_I_f],
+			    (int)res1[NPROPERTY*ipk+mx_I_s] );
+	
+	
+	if(verbose>2)printf("merged ipk %d jpk %d between images\n",ipk,jpk);
+	continue;
       }
       if(i > n2+1 && j>n2+1){
-	    /* linking on same image */
-	    jpk = j-n2-2;
+	/* linking on same image */
+	jpk = j-n2-2;
     	ipk = i-n2-2;
-	    if(jpk<0 || jpk>r1->dimensions[0])printf("bounds jpk %d",jpk);
+	if(jpk<0 || jpk>r1->dimensions[0])printf("bounds jpk %d",jpk);
     	if(ipk<0 || ipk>r1->dimensions[0])printf("bounds ipk %d",ipk);
-	    merge( &res1[NPROPERTY*jpk], &res1[NPROPERTY*ipk] );
 
-        if(verbose>2)printf("mx_o 2 %f %f\n",res1[NPROPERTY*jpk+bb_mx_o]
-                ,res1[NPROPERTY*ipk+bb_mx_o]);
+	if(verbose>2)printf("mx_o,f,s 2 %f %d %d %f %d %d ",
+			    res1[NPROPERTY*jpk+mx_I_o],
+			    (int)res1[NPROPERTY*jpk+mx_I_f],
+			    (int)res1[NPROPERTY*jpk+mx_I_s],
+			    res1[NPROPERTY*ipk+mx_I_o],
+			    (int)res1[NPROPERTY*ipk+mx_I_f],
+			    (int)res1[NPROPERTY*ipk+mx_I_s] );
+
+	merge( &res1[NPROPERTY*jpk], &res1[NPROPERTY*ipk] );
+
+	if(verbose>2)printf("after 2 %f %d %d %f %d %d\n",
+			    res1[NPROPERTY*jpk+mx_I_o],
+			    (int)res1[NPROPERTY*jpk+mx_I_f],
+			    (int)res1[NPROPERTY*jpk+mx_I_s],
+			    res1[NPROPERTY*ipk+mx_I_o],
+			    (int)res1[NPROPERTY*ipk+mx_I_f],
+			    (int)res1[NPROPERTY*ipk+mx_I_s] );
+
 
     	if(verbose>2)printf("merged ipk %d jpk %d on same image\n",ipk,jpk);
 	    continue;
       }
       if(i < n2+1 && j < n2+1){
     	/* linking on same image */
-	    jpk = j-1;
-	    ipk = i-1;
-	    if(jpk<0 || jpk>r2->dimensions[0])printf("bounds jpk %d",jpk);
-	    if(ipk<0 || ipk>r2->dimensions[0])printf("bounds ipk %d",ipk);
-	    merge( &res2[NPROPERTY*jpk], &res2[NPROPERTY*ipk] );
-
-        if(verbose>2)printf("mx_o 3 %f %f %d %d\n",res2[NPROPERTY*jpk+bb_mx_o]
-                ,res2[NPROPERTY*ipk+bb_mx_o],jpk,ipk);
-
+	jpk = j-1;
+	ipk = i-1;
+	if(jpk<0 || jpk>r2->dimensions[0])printf("bounds jpk %d",jpk);
+	if(ipk<0 || ipk>r2->dimensions[0])printf("bounds ipk %d",ipk);
+	
+	if(verbose>2)printf("ms_o,f,s 3 %f %d %d %f %d %d ",
+			    res2[NPROPERTY*jpk+mx_I_o],
+			    (int)res2[NPROPERTY*jpk+mx_I_f],
+			    (int)res2[NPROPERTY*jpk+mx_I_s],
+			    res2[NPROPERTY*ipk+mx_I_o],
+			    (int)res2[NPROPERTY*ipk+mx_I_f],
+			    (int)res2[NPROPERTY*ipk+mx_I_s] );
+	
+	merge( &res2[NPROPERTY*jpk], &res2[NPROPERTY*ipk] );
+	
+	if(verbose>2)printf("after 3 %f %d %d %f %d %d\n",
+			    res2[NPROPERTY*jpk+mx_I_o],
+			    (int)res2[NPROPERTY*jpk+mx_I_f],
+			    (int)res2[NPROPERTY*jpk+mx_I_s],
+			    res2[NPROPERTY*ipk+mx_I_o],
+			    (int)res2[NPROPERTY*ipk+mx_I_f],
+			    (int)res2[NPROPERTY*ipk+mx_I_s] );
+	
         must_do_relabel = 1;
-	    if(verbose>2)printf("merged check ipk %d jpk on same II %d\n",ipk,jpk);
-	    continue;
+	if(verbose>2)printf("merged check ipk %d jpk on same II %d\n",ipk,jpk);
+	continue;
       }
       printf("bad logic in bloboverlaps\n");
       return NULL;
@@ -892,7 +936,8 @@ static PyObject * bloboverlaps (PyObject *self,
   }
 
   npk = n2;
-  if(must_do_relabel){
+  if((must_do_relabel=1)){ /* just always do it */
+
       /* This is the case where two spots on the current image become linked by 
        * by a spot overlap on the previous one
        *
@@ -915,6 +960,7 @@ static PyObject * bloboverlaps (PyObject *self,
           return 0;
         }
 
+
       
       npk = 0;
 
@@ -924,17 +970,20 @@ static PyObject * bloboverlaps (PyObject *self,
             T[i]=npk;
         }
         else {  /* check */
-            j=dset_find(i,link);
-            T[i]=T[j];
+            j = dset_find(i,link);
+	    /* j is the lower one, fill in as T[i] = npk previously */
+	    T[i] = T[j]; 
+	    if(verbose)printf("T[i] = T[%d] = T[j] = T[%d] = %d\n",i,j,T[i]);
             if(j>=i && verbose){
 	            printf("Oh dear - there was a problem compressing"\
 	    	           " the disjoint set, j=%d, i=%d \n",j,i);
             }
-            if(T[j]!=j && verbose!=0){
+            /* if(T[j]!=j && verbose!=0){
     	        printf("Oh dear - the disjoint set is squiff,"\
-    		           "link[j]=%d,j=%d\n",link[j],j);
-            }
+		       "T[j]=%d, link[j]=%d,j=%d, n2+1\n",T[j],link[j],j);
+		       }*/
         }
+        if(verbose>10){ printf("i=%d T[i]=%d\n",i,T[i] ); }
     } /* Compress the set */
 
       if (verbose) printf("Done compressing set in b.o.\n");
@@ -950,6 +999,7 @@ static PyObject * bloboverlaps (PyObject *self,
           if (T[i] < link[i] ) { /* copy and zero out */
               for (j=0 ; j < NPROPERTY ; j++ ){
                 res2[NPROPERTY*(T[i]-1) + j] = res2[NPROPERTY*(link[i]-1) + j] ;
+                res2[NPROPERTY*(link[i]-1) + j] = 0;
               } 
               if(verbose) printf("np i %d j %d %f \n",T[i],link[i],res2[NPROPERTY*T[i] + 1]);
           } else {
