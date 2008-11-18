@@ -1016,8 +1016,11 @@ static PyObject * bloboverlaps (PyObject *self,
           intp = (int *) getptr(b2,f,s,i,j);
           if ( *intp == 0 ) continue; 
           ipk = T[*intp];
-          if (ipk > 0 && ipk < n2) *intp = ipk;
-          else printf("bad logic on image relabelling\n");
+          if (ipk > 0 && ipk <= n2) *intp = ipk;
+          else {
+	    printf("bad logic on image relabelling, ipk=%d, n2=%d\n",ipk,n2);
+	    return NULL;
+	  }
         }
       } /* for loops over image */
 
