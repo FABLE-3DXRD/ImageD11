@@ -84,7 +84,10 @@ for v in thres:
             continue
         
         if allpeaks.has_key( key ):
-            assert v is not thres[0], "Impossible"
+            if v is thres[0]:
+                print key
+                print "duplicate"
+                #raise
             # This peak is already found
             # Should we replace it, or trash the lower threshold ??
             # previous is allpeaks[key]
