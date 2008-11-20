@@ -1,3 +1,8 @@
+# 20-11-08
+
+Reduce and then fix the duplicate peak issue in peaksearch
+Sort out the omega error bars in peaksearch
+Have another look at makemap performance with >500 grains and >50000K peaks...
 
 
 # 3-3-08
