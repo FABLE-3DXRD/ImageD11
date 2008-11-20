@@ -81,7 +81,7 @@ def ubitoRod(ubi):
     u = ubitoU(ubi)
     w, v = numpy.linalg.eig(u)
     ehat = v[:,0]
-    angle = -1*math.acos(w[1].real)
+    angle = -1*math.acos(n.clip(w[1].real,-1,1))
     Rod = ehat * math.tan(angle/2)
     return Rod.real
 
