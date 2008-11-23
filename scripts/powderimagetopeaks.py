@@ -45,5 +45,5 @@ if __name__=="__main__":
         inputdata.data[:,i]=0
 
 
-    inputdata.write(sys.argv[2])
+    inputdata.write(sys.argv[2], force_type=inputdata.data.dtype)
 
