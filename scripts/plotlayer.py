@@ -111,25 +111,11 @@ if __name__=="__main__":
 
     import sys, os, glob, time
 
+    
 
-    dl = glob.glob("../c_Al_s1_*")
-    first = True
+    
+    
     fig = figure()
-    names = []
-    i = 0
-    for d in dl:
-        uf = os.path.join(d,"ImageD11_frelon/f1000.ubi")
-
-        if os.path.exists(uf):
-            plubi(uf, uf is dl[0] , fig = fig)
-            savefig("fpngs/%d.png"%(i))
-            cla()
-
-        uf = os.path.join(d,"ImageD11_quantix/q100.ubi")
-
-        if os.path.exists(uf):
-            plubi(uf, uf is dl[0] , fig = fig)
-            savefig("pngs/%d.png"%(i))
-            cla()
-
-            i+=1
+    
+    plubi(  sys.argv[1], True, fig)
+    show()

@@ -55,6 +55,8 @@ test/gv_general/eu.flt
 test/gv_general/test.py
 test/gv_general/test_gv_general.py
 test/testconnectedpixels/testconnectedpixels.py
+scripts/tomapper.py
+scripts/plotlayer.py
 scripts/cutgrains.py
 scripts/merge_flt.py
 scripts/ubi2cellpars.py
