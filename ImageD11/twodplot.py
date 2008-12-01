@@ -259,20 +259,31 @@ class twodplot(Tk.Frame):
         self.replot()
 
     def on_2(self,event):
-        height = self.f.bbox.height()
-        x, y = event.x, height-event.y
-        (xd,yd)= self.a.transData.inverse_xy_tup( (x,y) )
+        try:
+            height = self.f.bbox.height()
+            x, y = event.x, height-event.y
+            (xd,yd)= self.a.transData.inverse_xy_tup( (x,y) )
+        except:
+            height = self.f.bbox.height
+            x, y = event.x, height-event.y
+            (xd,yd)= self.a.transData.inverted().transform((x,y))
         self.label.config(text="Clicked at x=%f y=%f"%(xd,yd))
 
     # Callback functions for mouse
     def on_down(self,event):
         # get the x and y coords, flip y from top to bottom
         self.when_down = time.time()
-        height = self.f.bbox.height()
-        x, y = event.x, height-event.y
+        try:
+            height = self.f.bbox.height()
+            x, y = event.x, height-event.y
+            (self.xd,self.yd)= self.a.transData.inverse_xy_tup( (x,y) )
+        except:
+            height = self.f.bbox.height
+            x, y = event.x, height-event.y
+            (self.xd,self.yd)= self.a.transData.inverted().transform((x,y))
+ 
         # transData transforms data coords to display coords.  Use the
         # inverse method to transform back
-        (self.xd,self.yd)= self.a.transData.inverse_xy_tup( (x,y) )
         # print "print mouse down at", t, val
         # rubber banding:
         if self.rubberbandbox!=None: self.tkc.delete(self.rubberbandbox)
@@ -297,11 +308,17 @@ class twodplot(Tk.Frame):
         if time.time()-self.when_down < self.time_down and self.when_down>0:
             return
         self.tkc.delete(self.rubberbandbox)
-        height = self.f.bbox.height()
-        x, y = event.x, height-event.y
+        try:
+            height = self.f.bbox.height()
+            x, y = event.x, height-event.y
+            (self.xu,self.yu) = self.a.transData.inverse_xy_tup( (x,y) )
+        except:
+            height = self.f.bbox.height
+            x, y = event.x, height-event.y
+            (self.xu,self.yu)= self.a.transData.inverted().transform((x,y))
+            
         # transData transforms data coords to display coords.  Use the
         # inverse method to transform back
-        (self.xu,self.yu) = self.a.transData.inverse_xy_tup( (x,y) )
         if self.xu != self.xd and self.yu != self.yd:
             # rescale
             xr=[self.xd,self.xu];xr.sort()
