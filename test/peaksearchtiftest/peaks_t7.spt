@@ -1,156 +1,156 @@
 
 
 # File tiftest0006.tif
-# Processed on Fri Dec 05 22:24:41 2008
+# Processed on Fri Dec 05 22:24:49 2008
 # Spatial correction from None
 # SPLINE X-PIXEL-SIZE 1.0
 # SPLINE Y-PIXEL-SIZE 1.0
 # Omega = 11.0
 # filename = tiftest0006.tif
 # Omega = 11.000000
-# Threshold = 5.000000
+# Threshold = 7.000000
 # npks = 1
-# Threshold level 5.000000
+# Threshold level 7.000000
 # Number_of_pixels Average_counts    f   s     fc   sc      sig_f sig_s cov_fs
 4  42.000000  12.500000  15.500000  12.500000  15.500000  1.118034  1.118034  0.000000  
 
 
 
 # File tiftest0007.tif
-# Processed on Fri Dec 05 22:24:41 2008
+# Processed on Fri Dec 05 22:24:49 2008
 # Spatial correction from None
 # SPLINE X-PIXEL-SIZE 1.0
 # SPLINE Y-PIXEL-SIZE 1.0
 # Omega = 11.3
 # filename = tiftest0007.tif
 # Omega = 11.300000
-# Threshold = 5.000000
+# Threshold = 7.000000
 # npks = 0
 
 
 # File tiftest0008.tif
-# Processed on Fri Dec 05 22:24:41 2008
+# Processed on Fri Dec 05 22:24:49 2008
 # Spatial correction from None
 # SPLINE X-PIXEL-SIZE 1.0
 # SPLINE Y-PIXEL-SIZE 1.0
 # Omega = 11.6
 # filename = tiftest0008.tif
 # Omega = 11.600000
-# Threshold = 5.000000
+# Threshold = 7.000000
 # npks = 1
-# Threshold level 5.000000
+# Threshold level 7.000000
 # Number_of_pixels Average_counts    f   s     fc   sc      sig_f sig_s cov_fs
 4  42.000000  12.500000  15.500000  12.500000  15.500000  1.118034  1.118034  0.000000  
 
 
 
 # File tiftest0009.tif
-# Processed on Fri Dec 05 22:24:41 2008
+# Processed on Fri Dec 05 22:24:49 2008
 # Spatial correction from None
 # SPLINE X-PIXEL-SIZE 1.0
 # SPLINE Y-PIXEL-SIZE 1.0
 # Omega = 11.9
 # filename = tiftest0009.tif
 # Omega = 11.900000
-# Threshold = 5.000000
+# Threshold = 7.000000
 # npks = 0
 
 
 # File tiftest0010.tif
-# Processed on Fri Dec 05 22:24:41 2008
+# Processed on Fri Dec 05 22:24:49 2008
 # Spatial correction from None
 # SPLINE X-PIXEL-SIZE 1.0
 # SPLINE Y-PIXEL-SIZE 1.0
 # Omega = 12.2
 # filename = tiftest0010.tif
 # Omega = 12.200000
-# Threshold = 5.000000
+# Threshold = 7.000000
 # npks = 1
-# Threshold level 5.000000
+# Threshold level 7.000000
 # Number_of_pixels Average_counts    f   s     fc   sc      sig_f sig_s cov_fs
 4  42.000000  12.500000  15.500000  12.500000  15.500000  1.118034  1.118034  0.000000  
 
 
 
 # File tiftest0011.tif
-# Processed on Fri Dec 05 22:24:41 2008
+# Processed on Fri Dec 05 22:24:49 2008
 # Spatial correction from None
 # SPLINE X-PIXEL-SIZE 1.0
 # SPLINE Y-PIXEL-SIZE 1.0
 # Omega = 12.5
 # filename = tiftest0011.tif
 # Omega = 12.500000
-# Threshold = 5.000000
+# Threshold = 7.000000
 # npks = 0
 
 
 # File tiftest0012.tif
-# Processed on Fri Dec 05 22:24:41 2008
+# Processed on Fri Dec 05 22:24:49 2008
 # Spatial correction from None
 # SPLINE X-PIXEL-SIZE 1.0
 # SPLINE Y-PIXEL-SIZE 1.0
 # Omega = 12.8
 # filename = tiftest0012.tif
 # Omega = 12.800000
-# Threshold = 5.000000
+# Threshold = 7.000000
 # npks = 1
-# Threshold level 5.000000
+# Threshold level 7.000000
 # Number_of_pixels Average_counts    f   s     fc   sc      sig_f sig_s cov_fs
 4  42.000000  12.500000  15.500000  12.500000  15.500000  1.118034  1.118034  0.000000  
 
 
 
 # File tiftest0013.tif
-# Processed on Fri Dec 05 22:24:41 2008
+# Processed on Fri Dec 05 22:24:49 2008
 # Spatial correction from None
 # SPLINE X-PIXEL-SIZE 1.0
 # SPLINE Y-PIXEL-SIZE 1.0
 # Omega = 13.1
 # filename = tiftest0013.tif
 # Omega = 13.100000
-# Threshold = 5.000000
+# Threshold = 7.000000
 # npks = 0
 
 
 # File tiftest0014.tif
-# Processed on Fri Dec 05 22:24:41 2008
+# Processed on Fri Dec 05 22:24:49 2008
 # Spatial correction from None
 # SPLINE X-PIXEL-SIZE 1.0
 # SPLINE Y-PIXEL-SIZE 1.0
 # Omega = 13.4
 # filename = tiftest0014.tif
 # Omega = 13.400000
-# Threshold = 5.000000
+# Threshold = 7.000000
 # npks = 1
-# Threshold level 5.000000
+# Threshold level 7.000000
 # Number_of_pixels Average_counts    f   s     fc   sc      sig_f sig_s cov_fs
 4  42.000000  12.500000  15.500000  12.500000  15.500000  1.118034  1.118034  0.000000  
 
 
 
 # File tiftest0015.tif
-# Processed on Fri Dec 05 22:24:41 2008
+# Processed on Fri Dec 05 22:24:49 2008
 # Spatial correction from None
 # SPLINE X-PIXEL-SIZE 1.0
 # SPLINE Y-PIXEL-SIZE 1.0
 # Omega = 13.7
 # filename = tiftest0015.tif
 # Omega = 13.700000
-# Threshold = 5.000000
+# Threshold = 7.000000
 # npks = 0
 
 
 # File tiftest0016.tif
-# Processed on Fri Dec 05 22:24:41 2008
+# Processed on Fri Dec 05 22:24:49 2008
 # Spatial correction from None
 # SPLINE X-PIXEL-SIZE 1.0
 # SPLINE Y-PIXEL-SIZE 1.0
 # Omega = 14.0
 # filename = tiftest0016.tif
 # Omega = 14.000000
-# Threshold = 5.000000
+# Threshold = 7.000000
 # npks = 1
-# Threshold level 5.000000
+# Threshold level 7.000000
 # Number_of_pixels Average_counts    f   s     fc   sc      sig_f sig_s cov_fs
 4  42.000000  12.500000  15.500000  12.500000  15.500000  1.118034  1.118034  0.000000  
 

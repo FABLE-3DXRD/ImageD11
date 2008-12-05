@@ -58,6 +58,16 @@ class test_tifs(unittest.TestCase):
             self.assertEqual( open( 'peaks_t5.flt').read(),
                               open( 'peaks_t6.flt').read() )
         
+    def testpeaksearch_singlethread(self):
+        os.system("peaksearch.py -n tiftest " + \
+                  " -t 7 -F .tif -S 0.3 " + \
+                  " -T 11 -p Y --singleThread " +\
+                  " -f %d -l %d"%(self.FIRST, self.LAST))
+        results = columnfile.columnfile( "peaks_t7.flt" )
+        self.assertEqual( results.nrows, self.NPK)
+        if os.path.exists( 'peaks_t7.flt' ):
+            self.assertEqual( open( 'peaks_t7.flt').read(),
+                              open( 'peaks_t6.flt').read() )
         
         
 if __name__ == '__main__':
