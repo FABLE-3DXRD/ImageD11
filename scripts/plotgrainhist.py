@@ -46,11 +46,14 @@ o.generate_grains()
 o.assignlabels()
 from matplotlib.pylab import *
 d = o.scandata[flt]
-bins = arange(0.0,tol*11./10,tol/nbins)
+bins = array(arange(0.0,tol*11./10,tol/nbins))
 ng = int(maximum.reduce(d.labels))+1
 drl = [ compress(d.labels==i, d.drlv2) for i in range(ng)]
 dp5 = [sqrt(di) for di in drl]
 hl = [ hist(dpi, bins)[0] for dpi in dp5]
+print "hl0:",hl[0].shape, bins.shape
+if bins.shape[0] != hl[0].shape[0]:
+    bins = (bins[1:] + bins[:-1])/2
 cla()
 
 for i in range(ng): 
