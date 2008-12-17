@@ -28,7 +28,7 @@ An equals sign "=" on a "#" line implies a parameter = value pair
 
 from ImageD11 import parameters
 
-import numpy.oldnumeric as n
+import numpy
 
 FLOATS = [
     "fc",
@@ -114,13 +114,13 @@ class columnfile:
         """
         col = self.getcolumn( column_name )
         if tol <= 0: # integer comparisons
-            col = col.astype( n.Int )
-            mskfun = lambda x, v, t: x == v
+            col = col.astype( numpy.int )
+            mskfun = lambda x, val, t: x == val
         else:        # floating point
-            mskfun = lambda x, v, t: n.abs( x - v ) < t 
+            mskfun = lambda x, val, t: numpy.abs( x - val ) < t 
         mask  = mskfun( col, values[0], tol )
-        for v in values[1:]:
-            n.logical_or( mskfun( col, v, tol ), mask, mask)
+        for val in values[1:]:
+            numpy.logical_or( mskfun( col, val, tol ), mask, mask)
         self.filter( ~mask )
 
 
@@ -189,7 +189,7 @@ class columnfile:
                                  i, self.filename))
             self.nrows += 1
             data.append(vals)
-        self.bigarray = n.transpose(n.array(data))
+        self.bigarray = numpy.transpose(numpy.array(data))
         assert self.bigarray.shape == (self.ncols, self.nrows)
         self.set_attributes()
 
@@ -208,8 +208,8 @@ class columnfile:
         self.chkarray()
         if len(mask) != self.nrows:
             raise Exception("Mask is the wrong size")
-        self.nrows = n.sum(n.compress(mask, n.ones(len(mask))))
-        self.bigarray = n.compress(mask, self.bigarray, axis = 1)
+        self.nrows = numpy.sum(numpy.compress(mask, numpy.ones(len(mask))))
+        self.bigarray = numpy.compress(mask, self.bigarray, axis = 1)
         assert self.bigarray.shape == (self.ncols, self.nrows)
         self.set_attributes()
  
@@ -217,21 +217,21 @@ class columnfile:
         """
         Returns a (deep) copy of the columnfile
         """
-        cn = columnfile(self.filename, new = True)
+        cnw = columnfile(self.filename, new = True)
         self.chkarray()
-        cn.bigarray = self.bigarray.copy()
-        cn.titles = [t for t in self.titles ]
-        cn.parameters = self.parameters
-        (cn.ncols, cn.nrows) = cn.bigarray.shape
-        cn.set_attributes()
-        return cn
+        cnw.bigarray = self.bigarray.copy()
+        cnw.titles = [t for t in self.titles ]
+        cnw.parameters = self.parameters
+        (cnw.ncols, cnw.nrows) = cnw.bigarray.shape
+        cnw.set_attributes()
+        return cnw
 
     def chkarray(self):
         """
         Ensure self.bigarray holds our attributes
         """
-        for i,t in enumerate(self.titles):
-            self.bigarray[i] = getattr(self, t)
+        for i, title in enumerate(self.titles):
+            self.bigarray[i] = getattr(self, title)
 
     def addcolumn(self, col, name):
         """
@@ -251,7 +251,7 @@ class columnfile:
             self.ncols += 1
             lis = list(self.bigarray)
             lis.append(col)
-            self.bigarray = n.array( lis )
+            self.bigarray = numpy.array( lis )
             assert self.bigarray.shape == (self.ncols, self.nrows)
             self.set_attributes()
 
@@ -273,15 +273,23 @@ class newcolumnfile(columnfile):
         columnfile.__init__(self, filename=None, new=True)
         self.titles = titles
         self.ncols = len(titles)
-        
-if __name__=="__main__":
-    import numpy, sys, time, os
-    from ImageD11.columnfile import columnfile
+
+def bench():
+    """
+    Compares the timing for reading with columfile
+    versus numpy.loadtxt
+    """
+    import sys, time
     start = time.time()
-    c = columnfile(sys.argv[1])
-    print "ImageD11",time.time()-start
+    colf = columnfile(sys.argv[1])
+    print colf.bigarray.shape
+    print "ImageD11", time.time() - start
     start = time.time()
-    c = numpy.loadtxt(sys.argv[1])
-    print c.shape
-    print "numpy",time.time()-start
-    os.system("time -p ./a.out")
+    nolf = numpy.loadtxt(sys.argv[1])
+    print nolf.shape
+    print "numpy", time.time() - start
+    
+    # os.system("time -p ./a.out")
+
+if __name__ == "__main__":
+    bench()

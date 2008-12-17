@@ -28,19 +28,20 @@ via a fit2d spline file
 To think about doing - valid regions? What if someone uses a 1K spline
 file for a 2K image etc?
 """
-import logging
-import numpy.oldnumeric as n
-import bisplev, math
+import logging, numpy, math
+from ImageD11 import bisplev
 
-def readfit2dfloats(fp, nfl):
+def readfit2dfloats(filep, nfl):
     """
     Interprets a 5E14.7 formatted fortran line
+    filep = file object (has readline method)
+    nfl   = the number of floats to read
     """
     ret = []
     j = 0
     while j < nfl:
         i = 0
-        thisline = fp.readline()
+        thisline = filep.readline()
         # logging.debug("readfit2dfloats:"+thisline)
         while i < 5 * 14:
             # logging.debug(str(i)+ thisline[i:i+14])
@@ -102,8 +103,8 @@ class correctorclass: #IGNORE:R0902
         """
         # Cache the value in case of multiple calls
         if self.pixel_lut is None:
-            x_im = n.outerproduct(range(dims[0]), n.ones(dims[1]))
-            y_im = n.outerproduct(n.ones(dims[1]), range(dims[0]))  
+            x_im = numpy.outer(range(dims[0]), numpy.ones(dims[1]))
+            y_im = numpy.outer(numpy.ones(dims[1]), range(dims[0]))  
             self.pixel_lut = self.correct(x_im, y_im)
         return self.pixel_lut
 
@@ -130,23 +131,24 @@ class correctorclass: #IGNORE:R0902
         yold = yin - bisplev.bisplev(yin, xin, self.tck1)
         xold = xin - bisplev.bisplev(yin, xin, self.tck2)
         # First guess, assumes distortion is constant
-        yt = yin - bisplev.bisplev(yold, xold, self.tck1)
-        xt = xin - bisplev.bisplev(yold, xold, self.tck2)
+        ytmp = yin - bisplev.bisplev(yold, xold, self.tck1)
+        xtmp = xin - bisplev.bisplev(yold, xold, self.tck2)
         # Second guess should be better
-        error = math.sqrt((xt - xold) * (xt - xold) + (yt - yold) * (yt - yold))
+        error = math.sqrt((xtmp - xold) * (xtmp - xold) + 
+                          (ytmp - yold) * (ytmp - yold)   )
         ntries = 0
         while error > self.tolerance:
             ntries = ntries + 1
-            xold = xt
-            yold = yt
-            yt = yin - bisplev.bisplev(yold, xold, self.tck1)
-            xt = xin - bisplev.bisplev(yold, xold, self.tck2)
-            error = math.sqrt((xt - xold) * (xt - xold) + 
-                              (yt - yold) * (yt - yold)   )
+            xold = xtmp
+            yold = ytmp
+            ytmp = yin - bisplev.bisplev(yold, xold, self.tck1)
+            xtmp = xin - bisplev.bisplev(yold, xold, self.tck2)
+            error = math.sqrt((xtmp - xold) * (xtmp - xold) + 
+                              (ytmp - yold) * (ytmp - yold)   )
             # print error,xold,x,yold,y
             if ntries == 10:
                 raise Exception("Error getting the inverse spline to converge")
-        return xt, yt
+        return xtmp, ytmp
 
     def test(self, xin, yin):
         """
@@ -172,47 +174,47 @@ class correctorclass: #IGNORE:R0902
         Reads a fit2d spline file into a scipy/fitpack tuple, tck
         A fairly long and dull routine...
         """
-        fp = open(name, "r")
+        fin = open(name, "r")
         # SPATIAL DISTORTION SPLINE INTERPOLATION COEFFICIENTS
-        myline = fp.readline() 
+        myline = fin.readline() 
         if myline[:7] != "SPATIAL":
             raise SyntaxError, name + \
                 ": file does not seem to be a fit2d spline file"
-        myline = fp.readline() # BLANK LINE
-        myline = fp.readline() # VALID REGION
-        myline = fp.readline() # the actual valid region, 
+        myline = fin.readline() # BLANK LINE
+        myline = fin.readline() # VALID REGION
+        myline = fin.readline() # the actual valid region, 
                                # assuming xmin,ymin,xmax,ymax
         logging.debug("xmin,ymin,xmax,ymax, read: "+myline)
         self.xmin, self.ymin, self.xmax, self.ymax = \
          [float(z) for z in myline.split()]
-        myline = fp.readline() # BLANK
-        myline = fp.readline() # GRID SPACING, X-PIXEL SIZE, Y-PIXEL SIZE
-        myline = fp.readline()
+        myline = fin.readline() # BLANK
+        myline = fin.readline() # GRID SPACING, X-PIXEL SIZE, Y-PIXEL SIZE
+        myline = fin.readline()
         logging.debug("gridspace, xsize, ysize: "+myline)
         self.gridspacing, self.xsize, self.ysize = \
          [float(z) for z in  myline.split()]
-        myline = fp.readline() # BLANK
-        myline = fp.readline() # X-DISTORTION
-        myline = fp.readline() # two integers nx1,ny1
+        myline = fin.readline() # BLANK
+        myline = fin.readline() # X-DISTORTION
+        myline = fin.readline() # two integers nx1,ny1
         logging.debug("nx1, ny1 read: "+myline)
         nx1, ny1 = [int(z) for z in myline.split()]
         # Now follow fit2d formatted line 5E14.7
-        tx1 = n.array(readfit2dfloats(fp, nx1), n.Float32)
-        ty1 = n.array(readfit2dfloats(fp, ny1), n.Float32)
-        c1 = n.array(readfit2dfloats(fp, (nx1 - 4) * (ny1 - 4)),  
-                     n.Float32)
-        myline = fp.readline() #BLANK
-        myline = fp.readline() # Y-DISTORTION
-        myline = fp.readline() # two integers nx2, ny2
+        tx1 = numpy.array(readfit2dfloats(fin, nx1), numpy.float32)
+        ty1 = numpy.array(readfit2dfloats(fin, ny1), numpy.float32)
+        cf1 = numpy.array(readfit2dfloats(fin, (nx1 - 4) * (ny1 - 4)),  
+                          numpy.float32)
+        myline = fin.readline() #BLANK
+        myline = fin.readline() # Y-DISTORTION
+        myline = fin.readline() # two integers nx2, ny2
         nx2 , ny2 = [int(z) for z in myline.split()]
-        tx2 = n.array(readfit2dfloats(fp, nx2), n.Float32)
-        ty2 = n.array(readfit2dfloats(fp, ny2), n.Float32)
-        c2 = n.array(readfit2dfloats(fp, (nx2 - 4) * (ny2 - 4)), 
-                     n.Float32)
-        fp.close()
+        tx2 = numpy.array(readfit2dfloats(fin, nx2), numpy.float32)
+        ty2 = numpy.array(readfit2dfloats(fin, ny2), numpy.float32)
+        cf2 = numpy.array(readfit2dfloats(fin, (nx2 - 4) * (ny2 - 4)), 
+                     numpy.float32)
+        fin.close()
         # The 3 ,3 is the number of knots
-        self.tck1 = (tx1, ty1, c1, 3, 3)
-        self.tck2 = (tx2, ty2, c2, 3, 3)
+        self.tck1 = (tx1, ty1, cf1, 3, 3)
+        self.tck2 = (tx2, ty2, cf2, 3, 3)
 
 
 

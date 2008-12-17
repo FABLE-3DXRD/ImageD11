@@ -42,8 +42,8 @@ are above a threshold (eg the central circle on the bruker)
 """
 
 
-import numpy.oldnumeric as Numeric, numpy.oldnumeric.linear_algebra as LinearAlgebra
-from ImageD11 import opendata
+import numpy
+from fabio.openimage import openimage
 
 class scale:
     def __init__( self, im1, threshold = None):
@@ -53,42 +53,42 @@ class scale:
         im1 = a * im2 + b
         returns a, b
         """
-        LsqMat = Numeric.zeros((2,2),Numeric.Float)
-        dyda   = Numeric.ravel(im1).astype(Numeric.Float)
+        lsqmat = numpy.zeros((2, 2), numpy.float)
+        dyda   = numpy.ravel(im1).astype(numpy.float)
         self.threshold = threshold
         if threshold is None:
             self.indices = None
             self.notindices = None
         if threshold is not None:
-            self.indices = Numeric.compress(dyda > threshold,
-                                            Numeric.arange(dyda.shape[0]))
-            self.notindices = Numeric.compress(dyda <= threshold,
-                                            Numeric.arange(dyda.shape[0]))
+            self.indices = numpy.compress(dyda > threshold,
+                                            numpy.arange(dyda.shape[0]))
+            self.notindices = numpy.compress(dyda <= threshold,
+                                            numpy.arange(dyda.shape[0]))
             assert self.indices.shape[0] + self.notindices.shape[0] == \
                    dyda.shape[0], 'problem with threshold'
-            dyda = Numeric.take(dyda,self.indices)
-        LsqMat[0,0] = Numeric.sum(dyda*dyda)
-        LsqMat[1,0] = LsqMat[0,1] = Numeric.sum(dyda)
-        LsqMat[1,1] = dyda.shape[0]
+            dyda = numpy.take(dyda, self.indices)
+        lsqmat[0, 0] = numpy.sum(dyda*dyda)
+        lsqmat[1, 0] = lsqmat[0, 1] = numpy.sum(dyda)
+        lsqmat[1, 1] = dyda.shape[0]
         self.dyda = dyda
         try:
-            self.Inverse = LinearAlgebra.inverse(LsqMat)
+            self.inverse = numpy.linalg.inv(lsqmat)
         except:
-            print LsqMat
+            print lsqmat
             raise
         
 
-    def scaleimage(self,im2):
+    def scaleimage(self, im2):
         """
         Return a copy of the image scaled to match the class
         """
-        a,b = self.scale(im2)
-        new = im2/a - b/a
-        new = Numeric.where(new<0, 0, new)
+        grad, off = self.scale(im2)
+        new = im2/grad - off/grad
+        new = numpy.where(new<0, 0, new)
         if self.notindices is None: 
             return new
         else:
-            Numeric.put(new, self.notindices, 0. )
+            numpy.put(new, self.notindices, 0. )
             return new
     
     def scale(self, im2):
@@ -100,72 +100,68 @@ class scale:
         ...use scale image for that
         """
         if self.indices is None:
-            rhs0 = Numeric.sum(self.dyda * Numeric.ravel(im2).astype(Numeric.Float))
-            rhs1 = Numeric.sum(Numeric.ravel(im2).astype(Numeric.Float))
-            ans = Numeric.matrixmultiply(self.Inverse,[rhs0,rhs1])
-            return ans[0],ans[1]
+            rhs0 = numpy.sum(self.dyda * numpy.ravel(im2).astype(numpy.float))
+            rhs1 = numpy.sum(numpy.ravel(im2).astype(numpy.float))
+            ans = numpy.dot(self.inverse, [rhs0, rhs1])
+            return ans[0], ans[1]
         else:
-            usedata = Numeric.take(Numeric.ravel(im2),self.indices)
-            rhs0 = Numeric.sum(self.dyda * usedata.astype(Numeric.Float))
-            rhs1 = Numeric.sum(usedata.astype(Numeric.Float))
-            ans = Numeric.matrixmultiply(self.Inverse,[rhs0,rhs1])
-            return ans[0],ans[1]
+            usedata = numpy.take(numpy.ravel(im2) , self.indices)
+            rhs0 = numpy.sum(self.dyda * usedata.astype(numpy.float))
+            rhs1 = numpy.sum(usedata.astype(numpy.float))
+            ans = numpy.dot(self.inverse, [rhs0, rhs1])
+            return ans[0], ans[1]
             
 
-def testscaleimage():
-    im1 = Numeric.ones((10,10),Numeric.Float)
-    im1[2:8,2:8] *= 2
-    im1[4:6,4:6] *= 2
-    im2 = im1 * 2. + 3.
-    o = scale(im1)
-    a , b = o.scale(im2)
-    assert abs(a-2.)< 1e-6 and abs(b-3.) < 1e-6
-    scaled = o.scaleimage(im2)
-    diff = Numeric.ravel(scaled - im1)
-    assert Numeric.sum(diff*diff) < 1e-6
-
-if __name__=="__main__":
-    import sys, time, glob
-#    testscaleimage()
-#    sys.exit()
-
-    firstimage = opendata.opendata(sys.argv[1])
-    stem = sys.argv[2]
-    first = int(sys.argv[3])
-    last  = int(sys.argv[4])
-    try:
-        threshold = float(sys.argv[5])
-    except:
-        threshold = None
-    try:
-        write = sys.argv[6]
-    except:
-        write = None
-    d0 = Numeric.ravel(firstimage.data.astype(Numeric.Float))
-    scaler = scale(firstimage.data,threshold)
-    print "# Scaling with respect to:",sys.argv[1]
-    if threshold is not None:
-        print "# Using",scaler.indices.shape[0],"pixels above threshold"
+def scaleseries( target, stem, first, last, 
+                 thresh = None,
+                 writeim = None ):
+    """
+    Scale a series of [bruker] images to the target
+    TODO - make it work with fabio file series
+    """
+    # d0 = numpy.ravel(target.data.astype(numpy.float))
+    scaler = scale(target.data, thresh)
+    print "# Scaling with respect to:", sys.argv[1]
+    if thresh is not None:
+        print "# Using", scaler.indices.shape[0], "pixels above threshold"
     else:
         print "# Using all pixels"
-    print "# Number Filename multiplier(t="+str(threshold)+") offset multiplier(all) offset"
-    if write is None:
+    print "# Number Filename multiplier(t=" + str(thresh) + \
+          ") offset multiplier(all) offset"
+    if writeim is None:
         # we only look to see
-        for i in range(first,last+1):
-            start = time.clock()
-            name = "%s.%04d"%(stem,i)
-            secondimage = opendata.opendata(name)
+        for i in range(first, last+1):
+            name = "%s.%04d" % (stem, i)
+            secondimage = openimage.openimage(name)
             a, b = scaler.scale(secondimage.data)
             print i, name , a, b,
     else: # we correct the image
-        from ImageD11 import data
-        for i in range(first,last+1):
-            name = "%s.%04d"%(stem,i)
-            newname = "cor_%s.%04d"%(stem.split("/")[-1],i)
-            secondimage = opendata.opendata(name)
+        for i in range(first, last+1):
+            name = "%s.%04d" % (stem, i)
+            newname = "cor_%s.%04d" % (stem.split("/")[-1], i)
+            secondimage = openimage.openimage(name)
             newdata = scaler.scaleimage(secondimage.data)
             # write out the file
-            dataobj = data.data(newdata, secondimage.header)
-            opendata.writedata(newname,dataobj)
-            print name," -> ",newname
+            secondimage.data = newdata
+            secondimage.write( newname )
+            print name, " -> ", newname
             sys.stdout.flush()
+
+
+if __name__ == "__main__":
+
+    import sys
+    FIRSTIMAGE = openimage.openimage(sys.argv[1])
+    STEM = sys.argv[2]
+    FIRST = int(sys.argv[3])
+    LAST  = int(sys.argv[4])
+    try:
+        THRES = float(sys.argv[5])
+    except:
+        THRES = None
+    try:
+        WRIT = sys.argv[6]
+    except:
+        WRIT = None
+
+    scaleseries( FIRSTIMAGE, STEM, FIRST, LAST, THRES, WRIT )

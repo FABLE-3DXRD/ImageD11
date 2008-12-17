@@ -17,7 +17,7 @@ def colfile2db( colfilename, dbname ):
     """
     colf = columnfile.columnfile( colfilename )
     dbo = database_module.connect( dbname )
-    c = dbo.cursor()
+    curs = dbo.cursor()
     # Build up columnames and types to make table
     tablecols = []
     # Not allowed for sql to have ^ in string
@@ -30,19 +30,19 @@ def colfile2db( colfilename, dbname ):
             tablecols.append(name + " REAL")
             continue
         tablecols.append(name + " REAL")
-    c.execute("create table peaks \n( " + \
-              " , ".join(tablecols)     + " ) ; \n" )
+    curs.execute("create table peaks \n( " + \
+                 " , ".join(tablecols)     + " ) ; \n" )
     # Make a format string for inserting data
     ins = "insert into peaks values ("  + \
           ",".join(["?"]*colf.ncols)    +") ;"
     # insert the data
     for i in range(colf.nrows):
-        c.execute( ins , tuple(colf.bigarray[:,i]) )
-    c.close()
+        curs.execute( ins , tuple(colf.bigarray[:, i]) )
+    curs.close()
     dbo.commit()
     dbo.close()
 
-if __name__=="__main__":
+if __name__ == "__main__":
     import sys
     try:
         colfile2db(sys.argv[1], sys.argv[2])
