@@ -1,0 +1,173 @@
+************* Module rc_array
+W0622: 12: Redefining built-in 'float'
+W0622: 12: Redefining built-in 'sum'
+C0324: 12: Comma not followed by a space
+from numpy import dot, round_, array, float, allclose, asarray, fabs,\
+                                                                    ^^
+    argmin, argmax, sqrt, argsort, take, sum, where, ndarray, eye,\
+    zeros, cross
+C0103: 35:rc_array: Invalid name "rc_array" (should match [a-z_][a-zA-Z0-9]+$)
+W0232: 35:rc_array: Class has no __init__ method
+C0202: 40:rc_array.__new__: Class method should have "cls" as first argument
+E1101: 77:rc_array.__iter__: Instance of 'rc_array' has no 'T' member
+E1101:105:rc_array.check: Instance of 'rc_array' has no 'shape' member
+E1101:106:rc_array.check: Instance of 'rc_array' has no 'shape' member
+E1101:107:rc_array.check: Instance of 'rc_array' has no 'shape' member
+E1101:109:rc_array.check: Instance of 'rc_array' has no 'shape' member
+E1101:111:rc_array.check: Instance of 'rc_array' has no 'shape' member
+C0111:116:rc_array.nvectors: Missing docstring
+E1101:117:rc_array.nvectors: Instance of 'rc_array' has no 'shape' member
+E1101:126:rc_array.flip: Instance of 'rc_array' has no 'T' member
+E1101:131:rc_array.flip: Instance of 'rc_array' has no 'shape' member
+E1101:131:rc_array.flip: Instance of 'rc_array' has no 'shape' member
+C0324:138:rc_array.inv: Comma not followed by a space
+        assert self.shape == (3,3)
+                               ^^
+E1101:138:rc_array.inv: Instance of 'rc_array' has no 'shape' member
+E0602:140:rc_array.inv: Undefined variable 'rr_array'
+W0201: 58:rc_array.__array_finalize__: Attribute 'direction' defined outside __init__
+C0322:142: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+C0324:145: Comma not followed by a space
+    v = rc_array([1,2,3],direction='row')
+                   ^^
+C0103:145: Invalid name "v" (should match (([A-Z_]*)|(__.*__))$)
+C0324:148: Comma not followed by a space
+    v = rc_array([[1,2,3],[4,5,6]],direction='row')
+                    ^^
+C0103:148: Invalid name "v" (should match (([A-Z_]*)|(__.*__))$)
+E1101:152: Instance of 'rc_array' has no 'T' member
+E1101:153: Instance of 'rc_array' has no 'shape' member
+C0324:157: Comma not followed by a space
+    v = rc_array(array( [[1,2,3],[4,5,6]] ).T ,direction='col')
+                           ^^
+C0103:157: Invalid name "v" (should match (([A-Z_]*)|(__.*__))$)
+E1101:161: Instance of 'rc_array' has no 'T' member
+E1101:163: Instance of 'rc_array' has no 'shape' member
+W0611: 12: Unused import argmax
+W0611: 12: Unused import float
+W0611: 12: Unused import argmin
+W0611: 12: Unused import fabs
+W0611: 12: Unused import asarray
+W0611: 12: Unused import cross
+W0611: 12: Unused import sqrt
+W0611: 12: Unused import argsort
+W0611: 12: Unused import round_
+W0611: 15: Unused import LinAlgError
+W0611: 12: Unused import take
+W0611: 12: Unused import where
+
+
+Report
+======
+78 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |87     |56.49 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |43     |27.92 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |4      |2.60  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |20     |12.99 |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy (rc_array)
+      \-linalg (rc_array)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |NC         |NC         |100.00      |100.00   |
++---------+-------+-----------+-----------+------------+---------+
+|method   |12     |NC         |NC         |91.67       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |12     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |16     |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |16     |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|E1101      |15         |
++-----------+-----------+
+|W0611      |12         |
++-----------+-----------+
+|C0324      |5          |
++-----------+-----------+
+|C0103      |4          |
++-----------+-----------+
+|W0622      |2          |
++-----------+-----------+
+|W0232      |1          |
++-----------+-----------+
+|W0201      |1          |
++-----------+-----------+
+|E0602      |1          |
++-----------+-----------+
+|C0322      |1          |
++-----------+-----------+
+|C0202      |1          |
++-----------+-----------+
+|C0111      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at -3.85/10
+

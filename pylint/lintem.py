@@ -10,7 +10,8 @@ def lintit(infile,outfile):
 
 
 imaged11 = glob.glob("../ImageD11/*.py") + glob.glob("../scripts/*.py") + \
-           glob.glob("../test/*.py")       
+           glob.glob("../test/*.py") + glob.glob("../sandbox/*.py") + \
+           glob.glob("../sandbox/map/*.py") 
 
 for f in imaged11:
     outf = os.path.split(f)[-1] + ".lint"

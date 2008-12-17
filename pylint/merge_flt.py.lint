@@ -1,0 +1,162 @@
+************* Module merge_flt
+C0301:111: Line too long (97/80)
+W0622:  3: Redefining built-in 'help'
+C0111:  1: Missing docstring
+C0103:  3: Invalid name "help" (should match (([A-Z_]*)|(__.*__))$)
+W0702: 31: No exception's type specified
+C0103: 25: Invalid name "pars" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 26: Invalid name "stem" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 27: Invalid name "outf" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 28: Invalid name "dpix" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 29: Invalid name "thres" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 38: Invalid name "thres" (should match (([A-Z_]*)|(__.*__))$)
+C0324: 40: Comma not followed by a space
+print "Using parameters",pars
+                        ^^
+C0323: 43: Operator not followed by a space
+    print "%s_t%d.flt"%(stem,v),
+                      ^
+C0323: 45: Operator not followed by a space
+print "Into output file %s"%(outf)
+                           ^
+C0103: 50: Invalid name "allpks" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 52: Invalid name "allpeaks" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 53: Invalid name "always_ignore" (should match (([A-Z_]*)|(__.*__))$)
+C0323: 60: Operator not followed by a space
+    flt = "%s_t%d.flt"%(stem,v)
+                      ^
+E1101: 78: Instance of 'columnfile' has no 'IMax_o' member
+E1101: 79: Instance of 'columnfile' has no 'IMax_s' member
+E1101: 80: Instance of 'columnfile' has no 'IMax_f' member
+C0324: 95: Comma not followed by a space
+            df = allpeaks[key][f]-mytransformer.colfile.bigarray[f,i]
+                                                                  ^^
+C0324: 96: Comma not followed by a space
+            ds = allpeaks[key][s]-mytransformer.colfile.bigarray[s,i]
+                                                                  ^^
+C0324:105: Comma not followed by a space
+                allpeaks[key] = mytransformer.colfile.bigarray[:,i]
+                                                                ^^
+C0324:109: Comma not followed by a space
+            allpeaks[key] = mytransformer.colfile.bigarray[:,i]
+                                                            ^^
+C0324:111: Comma not followed by a space
+    print "total peaks",len(allpeaks.keys()), "ignored", nignore, "new",nnew, "replacements",nold
+                       ^^
+C0103:116: Invalid name "keys" (should match (([A-Z_]*)|(__.*__))$)
+C0103:120: Invalid name "c" (should match (([A-Z_]*)|(__.*__))$)
+C0103:124: Invalid name "bigarray" (should match (([A-Z_]*)|(__.*__))$)
+C0103:133: Invalid name "mytransformer" (should match (([A-Z_]*)|(__.*__))$)
+W0611: 22: Unused import time
+
+
+Report
+======
+81 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |95     |81.20 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |3      |2.56  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |9      |7.69  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |10     |8.55  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy (merge_flt)
+    ImageD11 
+      \-transformer (merge_flt)
+      \-columnfile (merge_flt)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |25     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |3      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |3      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |14         |
++-----------+-----------+
+|C0324      |6          |
++-----------+-----------+
+|E1101      |3          |
++-----------+-----------+
+|C0323      |3          |
++-----------+-----------+
+|W0702      |1          |
++-----------+-----------+
+|W0622      |1          |
++-----------+-----------+
+|W0611      |1          |
++-----------+-----------+
+|C0301      |1          |
++-----------+-----------+
+|C0111      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 4.69/10
+

@@ -1,0 +1,300 @@
+************* Module lattice_reduction
+C0301:342: Line too long (111/80)
+W0622:  4: Redefining built-in 'float'
+W0622:101:reduce: Redefining built-in 'reduce'
+W0622:  4: Redefining built-in 'sum'
+C0111:  1: Missing docstring
+C0324:  4: Comma not followed by a space
+from numpy import dot, round_, array, float, allclose, asarray, fabs,\
+                                                                    ^^
+    argmin, argmax, sqrt, argsort, take, sum, where, ndarray, eye,\
+    zeros, cross
+C0103: 29: Invalid name "MIN_VEC2" (should match (([A-Z_]*)|(__.*__))$)
+C0324: 35:fparl: Comma not followed by a space
+    ly2 = dot(y ,y)
+                ^^
+C0324: 40:mod: Comma not followed by a space
+def mod(x,y):
+         ^^
+C0324: 46:mod: Comma not followed by a space
+        b4  = dot(x,x)
+                   ^^
+C0103: 46:mod: Invalid name "b4" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 47:mod: Comma not followed by a space
+    n   = round_(fparl(x,y))
+                        ^^
+C0103: 47:mod: Invalid name "n" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 50:mod: Comma not followed by a space
+        af  = dot(ret,ret)
+                     ^^
+C0103: 50:mod: Invalid name "af" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 54:sortvec_len: Invalid name "vl" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 59:sortvec_len: Comma not followed by a space
+    ul = [ ( dot(v,v), tuple(v)) for v in vl ]
+                  ^^
+C0103: 59:sortvec_len: Invalid name "ul" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 63:sortvec_xyz: Invalid name "vl" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 68:sortvec_xyz: Invalid name "ul" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 70:sortvec_xyz: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 72:sortvec_xyz: Comma not followed by a space
+        ul.append( max( tuple(v),tuple(-asarray(v)) ) )
+                                ^^
+C0103: 77:BadVectors: Invalid name "BadVectors" (should match [a-z_][a-zA-Z0-9]+$)
+C0103: 81:checkvol: Invalid name "v1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 81:checkvol: Invalid name "v2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 81:checkvol: Invalid name "v3" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 83:checkvol: Comma not followed by a space
+    v = dot(v1, cross(v2,v3))
+                        ^^
+C0103: 83:checkvol: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 87:rsweep: Invalid name "vl" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 92:rsweep: Invalid name "vn" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 94:rsweep: Comma not followed by a space
+        for j in range(i+1,i+3):
+                          ^^
+C0322: 95:rsweep: Operator not preceded by a space
+            k = j%3
+                 ^
+C0322: 96:rsweep: Operator not preceded by a space
+            assert i!=k
+                    ^^
+C0103:101:reduce: Invalid name "v1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:101:reduce: Invalid name "v2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:101:reduce: Invalid name "v3" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:105:reduce: Comma not followed by a space
+    assert checkvol(v1,v2,v3,min_vec2)
+                      ^^
+C0103:106:reduce: Invalid name "vl" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:107:reduce: Invalid name "vn" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:109:reduce: Comma not followed by a space
+    while not allclose(vn ,vl) :
+                          ^^
+C0103:110:reduce: Invalid name "vl" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:111:reduce: Invalid name "vn" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:126:lattice.__init__: Invalid name "v1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:126:lattice.__init__: Invalid name "v2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:126:lattice.__init__: Invalid name "v3" (should match [a-z_][a-z0-9_]{2,30}$)
+R0913:126:lattice.__init__: Too many arguments (6/5)
+C0103:178:lattice.__init__: Invalid name "vl" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:185:lattice.__init__: Comma not followed by a space
+        assert allclose( array(vl),array(again) ), "Bad reduction %s %s"%(
+                                  ^^
+                str(vl), str(again))
+C0324:203:lattice.__init__: Comma not followed by a space
+            print v1,v2,v3
+                    ^^
+C0103:210:lattice.flip: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0323:218:lattice.flip: Operator not followed by a space
+        assert ret.shape == v.shape[::-1], "Shape mismatch, %s %s %s %s"%(
+                                                                        ^
+            str(v.shape[::-1]),str(v.shape), str(ra.shape), v.direction)
+E0602:219:lattice.flip: Undefined variable 'ra'
+C0111:222:lattice.matrix: Missing docstring
+C0321:223:lattice.matrix: More than one statement on a single line
+C0321:224:lattice.matrix: More than one statement on a single line
+C0103:249:lattice.withvec: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:253:lattice.withvec: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:256:lattice.withvec: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:257:lattice.withvec: Operator not preceded by a space
+        v[worst]=r
+                ^
+W0613:240:lattice.withvec: Unused argument 'direction'
+C0103:271:lattice.score: Invalid name "r2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:275:lattice.score: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:279:iter3d: Invalid name "n" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:287:iter3d: Comma not followed by a space
+                yield i,j,k
+                       ^^
+R0913:290:find_lattice: Too many arguments (7/5)
+C0324:316:find_lattice: Comma not followed by a space
+        print "Finding with dir",gen_dir
+                                ^^
+C0324:317:find_lattice: Comma not followed by a space
+        for i,v in enumerate(vecs):
+             ^^
+C0103:317:find_lattice: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:321:find_lattice: Comma not followed by a space
+        print "min_vec2",min_vec2
+                        ^^
+C0324:322:find_lattice: Comma not followed by a space
+    for i,j,k in iter3d(n_try):
+         ^^
+C0324:327:find_lattice: Comma not followed by a space
+            print "Try",i,j,k,
+                       ^^
+W0704:367:find_lattice: Except doesn't do anything
+C0321:330:find_lattice: More than one statement on a single line
+C0321:331:find_lattice: More than one statement on a single line
+C0321:332:find_lattice: More than one statement on a single line
+C0324:333:find_lattice: Comma not followed by a space
+                print i,j,k,
+                       ^^
+C0103:334:find_lattice: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:339:find_lattice: Comma not followed by a space
+                    if dot(vecs[:,i], vecs[:,i]) < min_vec2: continue
+                                 ^^
+C0321:339:find_lattice: More than one statement on a single line
+C0324:340:find_lattice: Comma not followed by a space
+                    if dot(vecs[:,j], vecs[:,j]) < min_vec2: continue
+                                 ^^
+C0321:340:find_lattice: More than one statement on a single line
+C0324:341:find_lattice: Comma not followed by a space
+                    if dot(vecs[:,k], vecs[:,k]) < min_vec2: continue
+                                 ^^
+C0321:341:find_lattice: More than one statement on a single line
+C0324:343:find_lattice: Comma not followed by a space
+                    l = lattice(vecs[:,i], vecs[:,j], vecs[:,k],
+                                      ^^
+                            direction = gen_dir,
+                            min_vec2 = min_vec2)
+C0103:343:find_lattice: Invalid name "l" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:347:find_lattice: Comma not followed by a space
+                    print i,j,k,n_try,vecs.shape
+                           ^^
+C0324:357:find_lattice: Comma not followed by a space
+                print "Score on vecs",scor,frac,
+                                     ^^
+C0324:362:find_lattice: Comma not followed by a space
+                print "score on test_vecs",scor,frac
+                                          ^^
+R0912:290:find_lattice: Too many branches (24/12)
+R0915:290:find_lattice: Too many statements (55/50)
+C0111:371:get_options: Missing docstring
+C0324:390:get_options: Comma not followed by a space
+    parser.add_option('-t','--tol',
+                          ^^
+                      action='store',
+                      type='float',
+                      default = 0.1,
+                      dest="tol",
+                      help='tolerance in hkl error for indexing')
+W0611:  4: Unused import float
+W0611:  4: Unused import sqrt
+W0611:  4: Unused import take
+W0611:  4: Unused import argmin
+W0611:  4: Unused import argsort
+W0611:  4: Unused import ndarray
+
+
+Report
+======
+201 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |234    |62.90 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |95     |25.54 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |10     |2.69  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |33     |8.87  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy (lattice_reduction)
+      \-linalg (lattice_reduction)
+    ImageD11 
+      \-rc_array (lattice_reduction)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |2      |NC         |NC         |100.00      |50.00    |
++---------+-------+-----------+-----------+------------+---------+
+|method   |7      |NC         |NC         |85.71       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |10     |NC         |NC         |90.00       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |82     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |4      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |11     |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |1      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |37         |
++-----------+-----------+
+|C0324      |29         |
++-----------+-----------+
+|C0321      |8          |
++-----------+-----------+
+|W0611      |6          |
++-----------+-----------+
+|W0622      |3          |
++-----------+-----------+
+|C0322      |3          |
++-----------+-----------+
+|C0111      |3          |
++-----------+-----------+
+|R0913      |2          |
++-----------+-----------+
+|W0704      |1          |
++-----------+-----------+
+|W0613      |1          |
++-----------+-----------+
+|R0915      |1          |
++-----------+-----------+
+|R0912      |1          |
++-----------+-----------+
+|E0602      |1          |
++-----------+-----------+
+|C0323      |1          |
++-----------+-----------+
+|C0301      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 4.93/10
+

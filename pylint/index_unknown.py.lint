@@ -1,0 +1,165 @@
+************* Module index_unknown
+C0301: 72: Line too long (84/80)
+C0301:130: Line too long (81/80)
+W0622:175: Redefining built-in 'all'
+W0622: 99: Redefining built-in 'sorted'
+C0111:  1: Missing docstring
+C0322: 22: Operator not preceded by a space
+if __name__=="__main__":
+           ^^
+C0324: 26: Comma not followed by a space
+    from ImageD11 import fft_index_refac, rc_array,\
+                                                  ^^
+        lattice_reduction, indexing
+C0103: 29: Invalid name "dot" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 32: Invalid name "parser" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 54: Invalid name "parser" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 83: Invalid name "parser" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 85: Invalid name "options" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 85: Invalid name "args" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 88: Invalid name "o" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 97: Invalid name "mags" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 99: Invalid name "sorted" (should match (([A-Z_]*)|(__.*__))$)
+C0103:101: Invalid name "all_gvecs" (should match (([A-Z_]*)|(__.*__))$)
+C0103:102: Invalid name "cur_gvecs" (should match (([A-Z_]*)|(__.*__))$)
+C0103:104: Invalid name "ubis" (should match (([A-Z_]*)|(__.*__))$)
+E1101:124: Instance of 'rc_array' has no 'shape' member
+E1101:125: Instance of 'columnfile' has no 'sum_intensity' member
+E1101:150: Instance of 'rc_array' has no 'shape' member
+C0324:187: Comma not followed by a space
+            print "Unit cell:",(6*"%.6f ")%indexing.ubitocellpars(l.r2c)
+                              ^^
+C0324:202: Comma not followed by a space
+            print "Lattice found, indexes", npks, "from all",all
+                                                            ^^
+C0323:203: Operator not followed by a space
+            print "Number of unindexed peaks remaining %d"%(len(cur_gvecs))
+                                                          ^
+C0324:204: Comma not followed by a space
+            print "Current vector shape",cur_gvecs.shape
+                                        ^^
+E1101:204: Instance of 'rc_array' has no 'shape' member
+C0324:206: Comma not followed by a space
+            indexing.write_ubi_file(options.outfile,ubis)
+                                                   ^^
+C0324:207: Comma not followed by a space
+            print "Wrote to file",options.outfile
+                                 ^^
+C0324:212: Comma not followed by a space
+            indexing.write_ubi_file(options.outfile,ubis)
+                                                   ^^
+C0324:213: Comma not followed by a space
+            print "Wrote to file",options.outfile
+                                 ^^
+
+
+Report
+======
+87 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |137    |73.26 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |7      |3.74  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |28     |14.97 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |15     |8.02  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy (index_unknown)
+    ImageD11 
+      \-fft_index_refac (index_unknown)
+      \-lattice_reduction (index_unknown)
+      \-indexing (index_unknown)
+      \-rc_array (index_unknown)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |25     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |2      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |4      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |12         |
++-----------+-----------+
+|C0324      |8          |
++-----------+-----------+
+|E1101      |4          |
++-----------+-----------+
+|W0622      |2          |
++-----------+-----------+
+|C0301      |2          |
++-----------+-----------+
+|C0323      |1          |
++-----------+-----------+
+|C0322      |1          |
++-----------+-----------+
+|C0111      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 4.60/10
+

@@ -1,0 +1,132 @@
+************* Module scalem
+W0403: 27: Relative import 'columnfile'
+C0103: 29:data_table: Invalid name "data_table" (should match [a-z_][a-zA-Z0-9]+$)
+R0201: 46:data_table.get_hkls: Method could be a function
+C0111: 57:data_table.calc: Missing docstring
+W0201: 56:data_table.set_keys: Attribute 'keys' defined outside __init__
+E0602: 77:scalem.add_data: Undefined variable 'fo'
+C0103: 79:scalem.add_data: Invalid name "c" (should match [a-z_][a-z0-9_]{2,30}$)
+R0201: 73:scalem.add_data: Method could be a function
+R0201: 97:scalem.set_sym: Method could be a function
+C0324:148:generate_key: Comma not followed by a space
+def generate_key(hkl,symmops):
+                    ^^
+E0602:154:generate_key: Undefined variable 'np'
+E0602:154:generate_key: Undefined variable 'np'
+C0324:156:generate_key: Comma not followed by a space
+    for s in [-1,1]:
+                ^^
+C0103:156:generate_key: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:157:generate_key: Invalid name "op" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:158:generate_key: Comma not followed by a space
+            res[:,j] = np.round(s*np.dot( op, hkl )).astype(np.int16)
+                 ^^
+E0602:158:generate_key: Undefined variable 'np'
+E0602:158:generate_key: Undefined variable 'np'
+E0602:158:generate_key: Undefined variable 'np'
+
+
+Report
+======
+38 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |36     |20.69 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |72     |41.38 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |30     |17.24 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |36     |20.69 |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+     
+      \-columnfile (scalem)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |2      |NC         |NC         |100.00      |50.00    |
++---------+-------+-----------+-----------+------------+---------+
+|method   |8      |NC         |NC         |87.50       |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |8      |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |3      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |2      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |6      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|E0602      |6          |
++-----------+-----------+
+|C0103      |4          |
++-----------+-----------+
+|R0201      |3          |
++-----------+-----------+
+|C0324      |3          |
++-----------+-----------+
+|W0403      |1          |
++-----------+-----------+
+|W0201      |1          |
++-----------+-----------+
+|C0111      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at -1.32/10
+

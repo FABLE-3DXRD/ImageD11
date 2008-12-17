@@ -1,0 +1,124 @@
+************* Module test_ubito
+C0301: 34: Line too long (89/80)
+C0301: 38: Line too long (115/80)
+C0111:  1: Missing docstring
+C0324:  3: Comma not followed by a space
+from ImageD11.indexing import ubitoU,ubitoB,ubitoRod
+                                    ^^
+C0103: 16: Invalid name "Rod_GS" (should match (([A-Z_]*)|(__.*__))$)
+C0111: 25:test1: Missing docstring
+C0103: 26:test1.test_ubitoB: Invalid name "test_ubitoB" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111: 26:test1.test_ubitoB: Missing docstring
+C0103: 28:test1.test_ubitoB: Invalid name "b" (should match [a-z_][a-z0-9_]{2,30}$)
+R0201: 26:test1.test_ubitoB: Method could be a function
+C0103: 31:test1.test_ubitoU: Invalid name "test_ubitoU" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111: 31:test1.test_ubitoU: Missing docstring
+C0103: 33:test1.test_ubitoU: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+R0201: 31:test1.test_ubitoU: Method could be a function
+C0103: 35:test1.test_ubitoRod: Invalid name "test_ubitoRod" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111: 35:test1.test_ubitoRod: Missing docstring
+C0103: 37:test1.test_ubitoRod: Invalid name "Rod" (should match [a-z_][a-z0-9_]{2,30}$)
+R0201: 35:test1.test_ubitoRod: Method could be a function
+
+
+Report
+======
+19 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |25     |78.12 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |0      |0.00  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |0      |0.00  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |7      |21.88 |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    numpy (test_ubito)
+    ImageD11 
+      \-indexing (test_ubito)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |1      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |3      |NC         |NC         |0.00        |100.00   |
++---------+-------+-----------+-----------+------------+---------+
+|function |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |15     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |3      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |7          |
++-----------+-----------+
+|C0111      |5          |
++-----------+-----------+
+|R0201      |3          |
++-----------+-----------+
+|C0301      |2          |
++-----------+-----------+
+|C0324      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 0.53/10
+
