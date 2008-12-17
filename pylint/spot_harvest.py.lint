@@ -1,0 +1,178 @@
+************* Module spot_harvest
+C0301: 94: Line too long (94/80)
+C0301:113: Line too long (87/80)
+C0301:202: Line too long (86/80)
+C0103: 34: Invalid name "flt" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 35: Invalid name "sptfile" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 37: Invalid name "bkg" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 40: Invalid name "bkg" (should match (([A-Z_]*)|(__.*__))$)
+C0324: 42: Comma not followed by a space
+for col in ["sc","fc","omega",  # Slow, fast and omega center positions
+                ^^
+            "Min_o","Max_o",    # Bounding box
+            "Min_s","Max_s",
+            "Min_f","Max_f" ] :
+C0324: 47: Comma not followed by a space
+    assert hasattr(flt, col),col
+                            ^^
+C0324: 49: Comma not followed by a space
+print "Looking for",flt.nrows,"spots"
+                   ^^
+C0103: 52: Invalid name "omegas" (should match (([A-Z_]*)|(__.*__))$)
+C0321: 52: More than one statement on a single line
+C0103: 52: Invalid name "filenames" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 52: Invalid name "spots" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 63: Invalid name "oms" (should match (([A-Z_]*)|(__.*__))$)
+C0324: 65: Comma not followed by a space
+print "Found",len(oms),"distinct omega values"
+             ^^
+C0103: 81: Invalid name "mappings" (should match (([A-Z_]*)|(__.*__))$)
+W0621:123:writespot: Redefining name 'roi' from outer scope (line 206)
+W0621:174:writespot: Redefining name 'o' from outer scope (line 190)
+W0621:123:writespot: Redefining name 'flt' from outer scope (line 34)
+W0621:123:writespot: Redefining name 'filename' from outer scope (line 55)
+R0913:123:writespot: Too many arguments (6/5)
+C0324:133:writespot: Comma not followed by a space
+    print "writing",filename
+                   ^^
+C0103:135:writespot: Invalid name "ks" (should match [a-z_][a-z0-9_]{2,30}$)
+W0704:141:writespot: Except doesn't do anything
+W0702:142:writespot: No exception's type specified
+C0103:149:writespot: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:155:writespot: Invalid name "km" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:161:writespot: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+W0142:168:writespot: Used * or ** magic
+C0103:174:writespot: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+E1101:187: Instance of 'columnfile' has no 'Min_o' member
+E1101:188: Instance of 'columnfile' has no 'Max_o' member
+C0103:193: Invalid name "boxes" (should match (([A-Z_]*)|(__.*__))$)
+C0103:194: Invalid name "border" (should match (([A-Z_]*)|(__.*__))$)
+C0103:196: Invalid name "integ_int" (should match (([A-Z_]*)|(__.*__))$)
+E1101:206: Instance of 'columnfile' has no 'Min_s' member
+E1101:207: Instance of 'columnfile' has no 'Max_s' member
+E1101:208: Instance of 'columnfile' has no 'Min_f' member
+E1101:209: Instance of 'columnfile' has no 'Max_f' member
+E1101:211: Instance of 'columnfile' has no 'Min_o' member
+E1101:216: Instance of 'columnfile' has no 'Max_o' member
+E0602:227: Undefined variable 'imshow'
+E0602:227: Undefined variable 'box'
+E0602:228: Undefined variable 'show'
+C0103:231: Invalid name "integ_int" (should match (([A-Z_]*)|(__.*__))$)
+
+
+Report
+======
+101 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |108    |51.18 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |35     |16.59 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |51     |24.17 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |17     |8.06  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    fabio 
+      \-edfimage (spot_harvest)
+      \-openimage (spot_harvest)
+    numpy (spot_harvest)
+    ImageD11 
+      \-columnfile (spot_harvest)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |1      |NC         |NC         |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |27     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |1      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |7      |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |11     |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|C0103      |18         |
++-----------+-----------+
+|E1101      |8          |
++-----------+-----------+
+|C0324      |5          |
++-----------+-----------+
+|W0621      |4          |
++-----------+-----------+
+|E0602      |3          |
++-----------+-----------+
+|C0301      |3          |
++-----------+-----------+
+|W0704      |1          |
++-----------+-----------+
+|W0702      |1          |
++-----------+-----------+
+|W0142      |1          |
++-----------+-----------+
+|R0913      |1          |
++-----------+-----------+
+|C0321      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 1.09/10
+

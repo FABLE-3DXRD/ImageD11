@@ -1,0 +1,155 @@
+************* Module gridmap
+W0311: 31: Bad indentation. Found 9 spaces, expected 8
+W0311: 32: Bad indentation. Found 9 spaces, expected 8
+W0311: 33: Bad indentation. Found 9 spaces, expected 8
+W0311: 34: Bad indentation. Found 13 spaces, expected 12
+W0311: 35: Bad indentation. Found 13 spaces, expected 12
+W0311: 38: Bad indentation. Found 13 spaces, expected 12
+W0311: 39: Bad indentation. Found 13 spaces, expected 12
+W0311: 43: Bad indentation. Found 13 spaces, expected 12
+W0311: 44: Bad indentation. Found 17 spaces, expected 16
+W0311: 45: Bad indentation. Found 13 spaces, expected 12
+W0311: 48: Bad indentation. Found 13 spaces, expected 12
+W0311: 50: Bad indentation. Found 13 spaces, expected 12
+W0311: 51: Bad indentation. Found 13 spaces, expected 12
+W0311: 52: Bad indentation. Found 17 spaces, expected 16
+W0311: 53: Bad indentation. Found 17 spaces, expected 16
+W0311: 54: Bad indentation. Found 17 spaces, expected 16
+W0311: 55: Bad indentation. Found 13 spaces, expected 12
+C0111:  1: Missing docstring
+W0621: 11:gridgrains: Redefining name 'tol' from outer scope (line 63)
+W0621: 11:gridgrains: Redefining name 'pars' from outer scope (line 69)
+W0621: 11:gridgrains: Redefining name 'flt' from outer scope (line 60)
+W0621: 11:gridgrains: Redefining name 'ul' from outer scope (line 65)
+C0111: 11:gridgrains: Missing docstring
+C0103: 11:gridgrains: Invalid name "ul" (should match [a-z_][a-z0-9_]{2,30}$)
+R0913: 11:gridgrains: Too many arguments (10/5)
+R0914: 11:gridgrains: Too many local variables (23/15)
+W0142: 18:gridgrains: Used * or ** magic
+W0142: 22:gridgrains: Used * or ** magic
+C0103: 27:gridgrains: Invalid name "tx" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 28:gridgrains: Invalid name "n" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 31:gridgrains: Invalid name "tx" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 32:gridgrains: Invalid name "ty" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 34:gridgrains: Invalid name "ty" (should match [a-z_][a-z0-9_]{2,30}$)
+W0142: 39:gridgrains: Used * or ** magic
+C0103: 48:gridgrains: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
+W0142: 48:gridgrains: Used * or ** magic
+C0103: 52:gridgrains: Invalid name "ns" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 60: Invalid name "flt" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 61: Invalid name "par" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 62: Invalid name "grains" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 63: Invalid name "tol" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 65: Invalid name "ul" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 67: Invalid name "po" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 69: Invalid name "pars" (should match (([A-Z_]*)|(__.*__))$)
+
+
+Report
+======
+43 statements analysed.
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |0     |NC       |NC         |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |0.000 |NC       |NC         |
++-------------------------+------+---------+-----------+
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |55     |85.94 |NC       |NC         |
++----------+-------+------+---------+-----------+
+|docstring |2      |3.12  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|comment   |1      |1.56  |NC       |NC         |
++----------+-------+------+---------+-----------+
+|empty     |6      |9.38  |NC       |NC         |
++----------+-------+------+---------+-----------+
+
+
+
+External dependencies
+---------------------
+::
+
+    ImageD11 
+      \-transformer (gridmap)
+      \-indexing (gridmap)
+      \-parameters (gridmap)
+      \-closest (gridmap)
+      \-transform (gridmap)
+
+
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |1      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|class    |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |0      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|function |1      |NC         |NC         |0.00        |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |17     |NC       |NC         |
++-----------+-------+---------+-----------+
+|refactor   |2      |NC       |NC         |
++-----------+-------+---------+-----------+
+|warning    |25     |NC       |NC         |
++-----------+-------+---------+-----------+
+|error      |0      |NC       |NC         |
++-----------+-------+---------+-----------+
+
+
+
+Messages
+--------
+
++-----------+-----------+
+|message id |occurences |
++===========+===========+
+|W0311      |17         |
++-----------+-----------+
+|C0103      |15         |
++-----------+-----------+
+|W0621      |4          |
++-----------+-----------+
+|W0142      |4          |
++-----------+-----------+
+|C0111      |2          |
++-----------+-----------+
+|R0914      |1          |
++-----------+-----------+
+|R0913      |1          |
++-----------+-----------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at -0.23/10
+
