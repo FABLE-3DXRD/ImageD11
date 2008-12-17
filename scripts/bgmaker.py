@@ -31,28 +31,30 @@ Script for making a pseudo-dark file as the minimum of a file series
 Defines one class (minimum_image) which might perhaps be reused
 """
 
-import time
-# For benchmarking
-reallystart=time.time()
 
 from fabio.openimage import openimage
-import numpy.oldnumeric as Numeric
+from fabio import file_series
+import numpy
 
 class minimum_image:
     """
     Used for forming the minimum of a series of images
     """
-    def __init__(self,filename=None,image=None):
-        self.minimum_image=None
+    def __init__(self, filename = None, image = None):
+        """
+        file - the initial image to use a minimum
+        image - a second image to make the min of the two args (??)
+        """
+        self.minimum_image = None
         if image is not None:
             # if an image is supplied we take that as the initial minimum
-            self.minimum_image=image
-        if filename!=None:
+            self.minimum_image = image
+        if filename != None:
             # if a filename is supplied we take the minimum of the image in that
             # file and the one stored
             self.add_file(filename)
 
-    def add_file(self,filename):
+    def add_file(self, filename):
         """
         Include another file
         """
@@ -67,63 +69,91 @@ class minimum_image:
         else:
             # Check dimensions match
             if self.minimum_image.shape == picture.shape:
-                self.minimum_image = Numeric.minimum(self.minimum_image, picture)
+                self.minimum_image = numpy.minimum(self.minimum_image, 
+                                                   picture)
             else:
                 raise Exception("Incompatible image dimensions")
 
-if __name__=="__main__":
+
+
+def get_options(parser):
+    """ add the command line options to parser """
+    parser.add_option("-n", "--namestem", action = "store", 
+                      type = "string", dest = "stem",
+     help="Name of the files up the digits part, eg mydata in mydata0000.edf" )
+    parser.add_option("-f", "--first", action = "store", type = "int", 
+                      dest = "first",default = 0,
+                      help = "Number of first file to process, default=0")
+    parser.add_option("-l", "--last", action = "store", type = "int", 
+                      dest = "last",default = 0, 
+                      help = "Number of last file to process")
+    parser.add_option("-o", "--outfile", action = "store", type = "string", 
+                          dest = "outfile", default = "bkg.edf", 
+                      help = "Output filename, default=bkg.edf")
+    parser.add_option("-F", "--Format", action = "store", 
+                      type = "string", dest = "format", default = ".edf",
+                      help = "File format [edf|bruker]")
+    parser.add_option("-s", "--step", action = "store", type = "int", 
+                      dest = "step",default = 1,
+                      help = "step - every nth image")
+    parser.add_option("--ndigits", action = "store", type = "int",
+                      dest = "ndigits", default = 4,
+                      help = "Number of digits in file numbering [4]")
+    return parser
+
+def check_options( options ):
+    """ Validate the command line options """
+    for att in [ "stem", "first", "last"]:
+        if getattr( options, att) is None:
+            raise Exception("You must supply an option for "+att)
+
+
+def bgmaker( options ):
+    """ execute the command line script """
+    # Generate list of files to proces
+    if options.format in ['bruker', 'BRUKER', 'Bruker', 'GE']:
+        extn = ""
+    else:
+        extn = options.format
+    file_series_object = file_series.numbered_file_series(
+        options.stem,
+        options.first,
+        options.last,
+        extn,
+        options.ndigits,
+        step = options.step)
+    minim = minimum_image(file_series_object[0])
+    for filein in file_series_object:
+        print filein
+        minim.add_file(filein)
+    # finally write out the answer
+    # model header + data
+    obj = openimage(file_series_object[0])
+    obj.data = minim.minimum_image
+    try:
+        obj.write(options.outfile, force_type = obj.data.dtype)
+    except TypeError:
+        obj.write(options.outfile)
+        
+if __name__ == "__main__":
+
     # If we are running from a command line:
+    import time
+    # For benchmarking
+    START = time.time()
+
     try:
         from optparse import OptionParser
-        parser = OptionParser()
-        parser.add_option("-n","--namestem",action="store", type="string", dest="stem",
-                          help="Name of the files up the digits part, eg mydata in mydata0000.edf" )
-        parser.add_option("-f","--first",action="store", type="int", dest="first",default=0,
-                          help="Number of first file to process, default=0")
-        parser.add_option("-l","--last",action="store", type="int", dest="last",
-                          help="Number of last file to process")
-        parser.add_option("-o","--outfile",action="store", type="string", dest="outfile",default="bkg.edf",                         
-                          help="Output filename, default=bkg.edf")
-        parser.add_option("-F","--Format",action="store", 
-                          type="string", dest="format",default=".edf",
-                          help="File format [edf|bruker]")
-        parser.add_option("-s","--step",action="store", type="int", dest="step",default=1,
-                          help="step - every nth image")
-        parser.add_option("--ndigits", action="store", type="int",
-                          dest = "ndigits", default = 4,
-                          help = "Number of digits in file numbering [4]")
-        options , args = parser.parse_args()
-        stem =        options.stem
-        outfile =     options.outfile
-        first =       options.first
-        last =        options.last
-        step = options.step
-        # Generate list of files to proces
-        from fabio import file_series
-        if options.format in ['bruker', 'BRUKER', 'Bruker', 'GE']:
-            extn = ""
-        else:
-            extn = options.format
-        file_series_object = file_series.numbered_file_series(
-            options.stem,
-            options.first,
-            options.last,
-            extn,
-            options.ndigits,
-            step = options.step)
-        start = time.time()
-        mi = minimum_image(file_series_object[0])
-        for filein in file_series_object:
-            print filein
-            mi.add_file(filein)
-        # finally write out the answer
-        # model header + data
-        o=openimage(file_series_object[0])
-        o.data = mi.minimum_image
-        o.write(options.outfile, force_type = o.data.dtype)
+        MYPARSER = OptionParser()
+        MYPARSER = get_options( MYPARSER )
+        OPTS , DUMMY = MYPARSER.parse_args()
+        check_options( OPTS )
+        bgmaker( OPTS )
+
     except:
-        parser.print_help()
+        MYPARSER.print_help()
         raise
-end=time.time()
-t=end-reallystart
-print "Total time = %f /s"%(t)
+
+    END = time.time()
+
+    print "Total time = %f /s" % (END - START)

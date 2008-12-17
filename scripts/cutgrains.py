@@ -1,11 +1,23 @@
 #!/sware/exp/fable/standalone/redhate4-a64/bin/python
 
+"""
+Removes grains from a grain file if they have less than
+npks peaks
+
+Usage : cutgrains.py   ubi_in  ubi_out  npks
+"""
+
 from ImageD11.grain import read_grain_file, write_grain_file
 import sys
-grains = read_grain_file(sys.argv[1])
-np = int(sys.argv[3])
-keep = []
-for g in grains:
-    if int(g.npks)>=np:
-        keep.append(g)
-write_grain_file( sys.argv[2], keep)
+try:
+    GRAINS = read_grain_file(sys.argv[1])
+    NPKS = int(sys.argv[3])
+    KEEP = []
+    for g in GRAINS:
+        if int(g.npks) >= NPKS:
+            KEEP.append(g)
+    write_grain_file( sys.argv[2], KEEP)
+except:
+    print __doc__
+    raise
+            
