@@ -52,6 +52,16 @@ cd %SRC%/test/test_index_unknown
 cd %SRC%/test/test_mmo
 %PYT% make_test_data.py
 
+cd %SRC%/test
+%PYT% testscale.py
+
+cd %SRC%/test
+%PYT% testcolumnfile.py
+
+cd %SRC%/test/testcolfile2db
+%PYT% testcolfile2db.py
+
+
 %PYT% -c "import ImageD11; print ImageD11.__version__"
 
 %PYT% -V

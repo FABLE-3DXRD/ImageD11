@@ -59,7 +59,9 @@ $PYT idx.py
 
 cd $SRC/test/
 $PYT test_ubito.py
-
+$PYT testcolumnfile.py
+$PYT testscale.py
+$PYT testcol.py
 
 
 cd $SRC
