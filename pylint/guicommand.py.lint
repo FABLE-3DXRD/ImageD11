@@ -1,42 +1,41 @@
 ************* Module guicommand
-W: 70: TODO : change this interface???
-C: 41:guicommand: Invalid name "guicommand" (should match [A-Z_][a-zA-Z0-9]+$)
-R: 64:guicommand.execute: Too many local variables (16/15)
-C: 78:guicommand.execute: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 82:guicommand.execute: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 83:guicommand.execute: Comma not followed by a space
+W0511: 70: TODO : change this interface???
+R0914: 64:guicommand.execute: Too many local variables (16/15)
+C0103: 78:guicommand.execute: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 82:guicommand.execute: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 83:guicommand.execute: Comma not followed by a space
                 o = getattr(o,s)
                              ^^
-C: 83:guicommand.execute: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 85:guicommand.execute: Comma not followed by a space
+C0103: 83:guicommand.execute: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 85:guicommand.execute: Comma not followed by a space
         func = getattr(o,command)
                         ^^
-W:100:guicommand.execute: No exception's type specified
-C: 88:guicommand.execute: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 89:guicommand.execute: Operator not preceded by a space
+W0702:100:guicommand.execute: No exception's type specified
+C0103: 88:guicommand.execute: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 89:guicommand.execute: Operator not preceded by a space
                 ran="%s %s %s"%(ran,addedcomma,repr(a))
                    ^
-C: 90:guicommand.execute: Operator not preceded by a space
+C0322: 90:guicommand.execute: Operator not preceded by a space
                 addedcomma=","
                           ^
-C: 91:guicommand.execute: Comma not followed by a space
+C0324: 91:guicommand.execute: Comma not followed by a space
             for k,v in kwds.items():
                  ^^
-C: 91:guicommand.execute: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 92:guicommand.execute: Operator not preceded by a space
+C0103: 91:guicommand.execute: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 92:guicommand.execute: Operator not preceded by a space
                 ran="%s %s %s=%s "%(ran,addedcomma,k,v)
                    ^
-C: 93:guicommand.execute: Operator not preceded by a space
+C0322: 93:guicommand.execute: Operator not preceded by a space
                 addedcomma=","
                           ^
-C: 94:guicommand.execute: Operator not preceded by a space
+C0322: 94:guicommand.execute: Operator not preceded by a space
             ran+=" )\n"
                ^^
-W: 97:guicommand.execute: Used * or ** magic
-C:106:guicommand.execute: Operator not preceded by a space
+W0142: 97:guicommand.execute: Used * or ** magic
+C0322:106:guicommand.execute: Operator not preceded by a space
         self.commandscript+=ran
                           ^^
-C:120:guicommand.getdata: Comma not followed by a space
+C0324:120:guicommand.getdata: Comma not followed by a space
         attribute = getattr(self.objects[obj],name)
                                              ^^
 
@@ -51,9 +50,9 @@ Duplication
 +-------------------------+------+---------+-----------+
 |                         |now   |previous |difference |
 +=========================+======+=========+===========+
-|nb duplicated lines      |0     |NC       |NC         |
+|nb duplicated lines      |0     |0        |=          |
 +-------------------------+------+---------+-----------+
-|percent duplicated lines |0.000 |NC       |NC         |
+|percent duplicated lines |0.000 |0.000    |=          |
 +-------------------------+------+---------+-----------+
 
 
@@ -64,13 +63,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |53     |39.85 |NC       |NC         |
+|code      |53     |39.85 |53       |=          |
 +----------+-------+------+---------+-----------+
-|docstring |49     |36.84 |NC       |NC         |
+|docstring |49     |36.84 |49       |=          |
 +----------+-------+------+---------+-----------+
-|comment   |19     |14.29 |NC       |NC         |
+|comment   |19     |14.29 |19       |=          |
 +----------+-------+------+---------+-----------+
-|empty     |12     |9.02  |NC       |NC         |
+|empty     |12     |9.02  |12       |=          |
 +----------+-------+------+---------+-----------+
 
 
@@ -94,13 +93,13 @@ Statistics by type
 +---------+-------+-----------+-----------+------------+---------+
 |type     |number |old number |difference |%documented |%badname |
 +=========+=======+===========+===========+============+=========+
-|module   |1      |NC         |NC         |100.00      |0.00     |
+|module   |1      |1          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|class    |1      |NC         |NC         |100.00      |100.00   |
+|class    |1      |1          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|method   |4      |NC         |NC         |100.00      |0.00     |
+|method   |4      |4          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|function |0      |NC         |NC         |0.00        |0.00     |
+|function |0      |0          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 
 
@@ -111,13 +110,13 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |16     |NC       |NC         |
+|convention |15     |16       |-1.00      |
 +-----------+-------+---------+-----------+
-|refactor   |1      |NC       |NC         |
+|refactor   |1      |1        |=          |
 +-----------+-------+---------+-----------+
-|warning    |3      |NC       |NC         |
+|warning    |3      |3        |=          |
 +-----------+-------+---------+-----------+
-|error      |0      |NC       |NC         |
+|error      |0      |0        |=          |
 +-----------+-------+---------+-----------+
 
 
@@ -130,7 +129,7 @@ Messages
 +===========+===========+
 |C0322      |6          |
 +-----------+-----------+
-|C0103      |6          |
+|C0103      |5          |
 +-----------+-----------+
 |C0324      |4          |
 +-----------+-----------+
@@ -147,5 +146,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at 6.08/10
+Your code has been rated at 6.27/10 (previous run: 6.08/10)
 

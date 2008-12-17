@@ -1,41 +1,38 @@
 ************* Module pars_2_sweeper
-C:  1: Missing docstring
-W: 13: No exception's type specified
-C: 11: Invalid name "parfile" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-W: 20: No exception's type specified
-C: 17: Operator not preceded by a space
+C0111:  1: Missing docstring
+W0702: 13: No exception's type specified
+C0103: 11: Invalid name "parfile" (should match (([A-Z_]*)|(__.*__))$)
+W0702: 20: No exception's type specified
+C0322: 17: Operator not preceded by a space
     v=float(sys.argv[2])
      ^
-C: 17: Invalid name "v" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 18: Operator not preceded by a space
+C0103: 17: Invalid name "v" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 18: Operator not preceded by a space
     h=float(sys.argv[3])
      ^
-C: 18: Invalid name "h" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 20: Operator not preceded by a space
+C0103: 18: Invalid name "h" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 20: Operator not preceded by a space
     v=512.
      ^
-C: 20: Invalid name "v" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 21: Operator not preceded by a space
+C0103: 20: Invalid name "v" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 21: Operator not preceded by a space
     h=1536/2.
      ^
-C: 21: Invalid name "h" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 23: Comma not followed by a space
+C0103: 21: Invalid name "h" (should match (([A-Z_]*)|(__.*__))$)
+C0324: 23: Comma not followed by a space
 print "Getting parameters from",parfile
                                ^^
-C: 25: Invalid name "p" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 28: Invalid name "pars" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 30: Invalid name "xyz" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-W: 31: Used * or ** magic
-C: 35: Invalid name "ks" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 38: Comma not followed by a space
+C0103: 25: Invalid name "p" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 28: Invalid name "pars" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 30: Invalid name "xyz" (should match (([A-Z_]*)|(__.*__))$)
+W0142: 31: Used * or ** magic
+C0103: 34: Invalid name "ks" (should match (([A-Z_]*)|(__.*__))$)
+C0324: 37: Comma not followed by a space
     print k,pars[k]
            ^^
-C: 41: Comma not followed by a space
+C0324: 40: Comma not followed by a space
 print "detector vertical",v,"horizontal",h
                          ^^
-C: 43: Comma not followed by a space
-print "real space x, y, z = ", [pars['distance'],0,0] + xyz
-                                                ^^
 
 
 Report
@@ -48,9 +45,9 @@ Duplication
 +-------------------------+------+---------+-----------+
 |                         |now   |previous |difference |
 +=========================+======+=========+===========+
-|nb duplicated lines      |0     |NC       |NC         |
+|nb duplicated lines      |0     |0        |=          |
 +-------------------------+------+---------+-----------+
-|percent duplicated lines |0.000 |NC       |NC         |
+|percent duplicated lines |0.000 |0.000    |=          |
 +-------------------------+------+---------+-----------+
 
 
@@ -61,13 +58,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |27     |75.00 |NC       |NC         |
+|code      |25     |71.43 |27       |-2.00      |
 +----------+-------+------+---------+-----------+
-|docstring |3      |8.33  |NC       |NC         |
+|docstring |4      |11.43 |3        |+1.00      |
 +----------+-------+------+---------+-----------+
-|comment   |3      |8.33  |NC       |NC         |
+|comment   |3      |8.57  |3        |=          |
 +----------+-------+------+---------+-----------+
-|empty     |3      |8.33  |NC       |NC         |
+|empty     |3      |8.57  |3        |=          |
 +----------+-------+------+---------+-----------+
 
 
@@ -90,13 +87,13 @@ Statistics by type
 +---------+-------+-----------+-----------+------------+---------+
 |type     |number |old number |difference |%documented |%badname |
 +=========+=======+===========+===========+============+=========+
-|module   |1      |NC         |NC         |0.00        |0.00     |
+|module   |1      |1          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|class    |0      |NC         |NC         |0.00        |0.00     |
+|class    |0      |0          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|method   |0      |NC         |NC         |0.00        |0.00     |
+|method   |0      |0          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|function |0      |NC         |NC         |0.00        |0.00     |
+|function |0      |0          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 
 
@@ -107,13 +104,13 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |18     |NC       |NC         |
+|convention |17     |18       |-1.00      |
 +-----------+-------+---------+-----------+
-|refactor   |0      |NC       |NC         |
+|refactor   |0      |0        |=          |
 +-----------+-------+---------+-----------+
-|warning    |3      |NC       |NC         |
+|warning    |3      |3        |=          |
 +-----------+-------+---------+-----------+
-|error      |0      |NC       |NC         |
+|error      |0      |0        |=          |
 +-----------+-------+---------+-----------+
 
 
@@ -126,9 +123,9 @@ Messages
 +===========+===========+
 |C0103      |9          |
 +-----------+-----------+
-|C0324      |4          |
-+-----------+-----------+
 |C0322      |4          |
++-----------+-----------+
+|C0324      |3          |
 +-----------+-----------+
 |W0702      |2          |
 +-----------+-----------+
@@ -141,5 +138,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at 1.60/10
+Your code has been rated at 2.00/10 (previous run: 1.60/10)
 

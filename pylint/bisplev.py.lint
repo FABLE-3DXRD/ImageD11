@@ -386,7 +386,7 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |152    |162      |-10.00     |
+|convention |152    |152      |=          |
 +-----------+-------+---------+-----------+
 |refactor   |4      |4        |=          |
 +-----------+-------+---------+-----------+
@@ -440,5 +440,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at -9.22/10 (previous run: -10.09/10)
+Your code has been rated at -9.22/10 (previous run: -9.22/10)
 

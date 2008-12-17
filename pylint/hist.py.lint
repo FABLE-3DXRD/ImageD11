@@ -1,64 +1,64 @@
 ************* Module hist
-C: 36:hist: Comma not followed by a space
+C0324: 36:hist: Comma not followed by a space
 def hist(data,verbose=0):
              ^^
-E: 41:hist: Module 'numpy.oldnumeric' has no 'UInt16' member
-C: 42:hist: Comma not followed by a space
+E1101: 41:hist: Module 'numpy.oldnumeric' has no 'UInt16' member
+C0324: 42:hist: Comma not followed by a space
         h = Numeric.zeros(pow(2,16)-1,Numeric.Int)
                                ^^
-C: 42:hist: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 43:hist: Comma not followed by a space
+C0103: 42:hist: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 43:hist: Comma not followed by a space
         _hist._hist(data,h,verbose)
                         ^^
-W: 43:hist: Access to a protected member _hist of a client class
-W: 49:test_dvhist: Redefining name '_hist' from outer scope (line 32)
-C: 48:test_dvhist: Missing docstring
-C: 50:test_dvhist: Operator not preceded by a space
+W0212: 43:hist: Access to a protected member _hist of a client class
+W0621: 49:test_dvhist: Redefining name '_hist' from outer scope (line 32)
+C0111: 48:test_dvhist: Missing docstring
+C0322: 50:test_dvhist: Operator not preceded by a space
     gv= Numeric.zeros((10,3),Numeric.Float)
       ^
-C: 50:test_dvhist: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 51:test_dvhist: Comma not followed by a space
+C0103: 50:test_dvhist: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 51:test_dvhist: Comma not followed by a space
     h = Numeric.zeros((10,10,10),Numeric.Int)
                          ^^
-C: 51:test_dvhist: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 52:test_dvhist: Comma not followed by a space
+C0103: 51:test_dvhist: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 52:test_dvhist: Comma not followed by a space
     _hist._dvhist(gv,h,-1,1,-1,1,-1,1,1)
                     ^^
-W: 52:test_dvhist: Access to a protected member _dvhist of a client class
-C: 57: Operator not preceded by a space
+W0212: 52:test_dvhist: Access to a protected member _dvhist of a client class
+C0322: 57: Operator not preceded by a space
 if __name__=="__main__":
            ^^
-W: 61: Reimport 'logging' (imported line 34)
-C: 62: Invalid name "start" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 63: Operator not preceded by a space
+W0404: 61: Reimport 'logging' (imported line 34)
+C0103: 62: Invalid name "start" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 63: Operator not preceded by a space
     d=opendata.openedf(sys.argv[1]).data
      ^
-C: 63: Invalid name "d" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 65: Operator not preceded by a space
+C0103: 63: Invalid name "d" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 65: Operator not preceded by a space
     start=time.time()
          ^
-C: 65: Invalid name "start" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 66: Invalid name "l1" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 67: Invalid name "l2" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 68: Invalid name "h1" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 69: Invalid name "h2" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 72: Operator not preceded by a space
+C0103: 65: Invalid name "start" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 66: Invalid name "l1" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 67: Invalid name "l2" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 68: Invalid name "h1" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 69: Invalid name "h2" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 72: Operator not preceded by a space
         h2=hist(d[l1:h1,l2:h2],1)
           ^
-C: 72: Invalid name "h2" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 74: Operator not preceded by a space
+C0103: 72: Invalid name "h2" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 74: Operator not preceded by a space
         h2=hist(d[l1:h1,l2:h2])
           ^
-C: 74: Invalid name "h2" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 77: Operator not preceded by a space
+C0103: 74: Invalid name "h2" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 77: Operator not preceded by a space
         h1=hist(d,1)
           ^
-C: 77: Invalid name "h1" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 79: Operator not preceded by a space
+C0103: 77: Invalid name "h1" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 79: Operator not preceded by a space
         h1=hist(d)
           ^
-C: 79: Invalid name "h1" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 82: Comma not followed by a space
+C0103: 79: Invalid name "h1" (should match (([A-Z_]*)|(__.*__))$)
+C0324: 82: Comma not followed by a space
     from matplotlib.pylab import plot,show
                                      ^^
 
@@ -73,9 +73,9 @@ Duplication
 +-------------------------+------+---------+-----------+
 |                         |now   |previous |difference |
 +=========================+======+=========+===========+
-|nb duplicated lines      |0     |NC       |NC         |
+|nb duplicated lines      |0     |0        |=          |
 +-------------------------+------+---------+-----------+
-|percent duplicated lines |0.000 |NC       |NC         |
+|percent duplicated lines |0.000 |0.000    |=          |
 +-------------------------+------+---------+-----------+
 
 
@@ -86,13 +86,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |41     |50.62 |NC       |NC         |
+|code      |41     |50.62 |41       |=          |
 +----------+-------+------+---------+-----------+
-|docstring |12     |14.81 |NC       |NC         |
+|docstring |12     |14.81 |12       |=          |
 +----------+-------+------+---------+-----------+
-|comment   |17     |20.99 |NC       |NC         |
+|comment   |17     |20.99 |17       |=          |
 +----------+-------+------+---------+-----------+
-|empty     |11     |13.58 |NC       |NC         |
+|empty     |11     |13.58 |11       |=          |
 +----------+-------+------+---------+-----------+
 
 
@@ -118,13 +118,13 @@ Statistics by type
 +---------+-------+-----------+-----------+------------+---------+
 |type     |number |old number |difference |%documented |%badname |
 +=========+=======+===========+===========+============+=========+
-|module   |1      |NC         |NC         |100.00      |0.00     |
+|module   |1      |1          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|class    |0      |NC         |NC         |0.00        |0.00     |
+|class    |0      |0          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|method   |0      |NC         |NC         |0.00        |0.00     |
+|method   |0      |0          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|function |2      |NC         |NC         |50.00       |0.00     |
+|function |2      |2          |=          |50.00       |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 
 
@@ -135,13 +135,13 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |29     |NC       |NC         |
+|convention |29     |29       |=          |
 +-----------+-------+---------+-----------+
-|refactor   |0      |NC       |NC         |
+|refactor   |0      |0        |=          |
 +-----------+-------+---------+-----------+
-|warning    |4      |NC       |NC         |
+|warning    |4      |4        |=          |
 +-----------+-------+---------+-----------+
-|error      |1      |NC       |NC         |
+|error      |1      |1        |=          |
 +-----------+-------+---------+-----------+
 
 
@@ -173,5 +173,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at 0.26/10
+Your code has been rated at 0.26/10 (previous run: 0.26/10)
 

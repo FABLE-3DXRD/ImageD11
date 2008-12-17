@@ -220,7 +220,7 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |61     |63       |-2.00      |
+|convention |61     |61       |=          |
 +-----------+-------+---------+-----------+
 |refactor   |0      |0        |=          |
 +-----------+-------+---------+-----------+
@@ -248,5 +248,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at 2.38/10 (previous run: 2.12/10)
+Your code has been rated at 2.38/10 (previous run: 2.38/10)
 

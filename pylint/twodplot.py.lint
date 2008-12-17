@@ -20,8 +20,8 @@ C0301:148: Line too long (81/80)
 C0301:217: Line too long (155/80)
 C0301:218: Line too long (97/80)
 C0301:222: Line too long (93/80)
-C0301:288: Line too long (107/80)
-C0301:323: Line too long (88/80)
+C0301:299: Line too long (107/80)
+C0301:340: Line too long (88/80)
 W0511: 84: FIXME - buttons for panx/y and zoomx/y
 W0511:234: FIXME - clip negative values before making logscaled?
 W0511:242: FIXME - clip negative values before making logscaled?
@@ -31,7 +31,7 @@ import sys,os,time
           ^^
 C0111: 45:data: Missing docstring
 C0103: 49:data.__init__: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
-W0621: 46:data.__init__: Redefining name 'x' from outer scope (line 322)
+W0621: 46:data.__init__: Redefining name 'x' from outer scope (line 339)
 W0102: 46:data.__init__: Dangerous default value {} as argument
 C0103: 46:data.__init__: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
 C0324: 46:data.__init__: Comma not followed by a space
@@ -46,14 +46,14 @@ C0322: 48:data.__init__: Operator not preceded by a space
 C0322: 49:data.__init__: Operator not preceded by a space
         self.d=d
               ^
-R0903: 45:data: To few public methods (0/2)
+R0903: 45:data: Too few public methods (0/2)
 C0111: 51:twodplot: Missing docstring
 C0103: 63:twodplot.__init__: Invalid name "xr" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:304:twodplot.on_up: Invalid name "xu" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:314:twodplot.on_up: Invalid name "xu" (should match [a-z_][a-z0-9_]{2,30}$)
 C0103:114:twodplot.__init__: Invalid name "yd" (should match [a-z_][a-z0-9_]{2,30}$)
 C0103:113:twodplot.__init__: Invalid name "xd" (should match [a-z_][a-z0-9_]{2,30}$)
 C0103: 63:twodplot.__init__: Invalid name "yr" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:304:twodplot.on_up: Invalid name "yu" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:314:twodplot.on_up: Invalid name "yu" (should match [a-z_][a-z0-9_]{2,30}$)
 C0103: 56:twodplot.__init__: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
 C0103: 55:twodplot.__init__: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
 R0902: 51:twodplot: Too many instance attributes (24/7)
@@ -200,27 +200,43 @@ W0101:139:twodplot.bindkeys: Unreachable code
 C0324:139:twodplot.bindkeys: Comma not followed by a space
         self.bind_all('<Left>' ,lambda e: self.keypress(self.a.panx,1 )  )
                                ^^
+E1103:139:twodplot.bindkeys.<lambda>: Instance of 'PolarSubplot' has no 'panx' member (but some types could not be inferred)
+E1103:139:twodplot.bindkeys.<lambda>: Instance of 'Subplot' has no 'panx' member (but some types could not be inferred)
 C0324:140:twodplot.bindkeys: Comma not followed by a space
         self.bind_all('<Right>',lambda e: self.keypress(self.a.panx,-1)  )
                                ^^
+E1103:140:twodplot.bindkeys.<lambda>: Instance of 'PolarSubplot' has no 'panx' member (but some types could not be inferred)
+E1103:140:twodplot.bindkeys.<lambda>: Instance of 'Subplot' has no 'panx' member (but some types could not be inferred)
 C0324:141:twodplot.bindkeys: Comma not followed by a space
         self.bind_all('<Up>'   ,lambda e: self.keypress(self.a.pany,-1 ) )
                                ^^
+E1103:141:twodplot.bindkeys.<lambda>: Instance of 'PolarSubplot' has no 'pany' member (but some types could not be inferred)
+E1103:141:twodplot.bindkeys.<lambda>: Instance of 'Subplot' has no 'pany' member (but some types could not be inferred)
 C0324:142:twodplot.bindkeys: Comma not followed by a space
         self.bind_all('<Down>' ,lambda e: self.keypress(self.a.pany,1)   )
                                ^^
+E1103:142:twodplot.bindkeys.<lambda>: Instance of 'PolarSubplot' has no 'pany' member (but some types could not be inferred)
+E1103:142:twodplot.bindkeys.<lambda>: Instance of 'Subplot' has no 'pany' member (but some types could not be inferred)
 C0324:143:twodplot.bindkeys: Comma not followed by a space
         self.bind_all('<Shift-Left>' ,lambda e: self.keypress(self.a.zoomx,-1 )  )
                                      ^^
+E1103:143:twodplot.bindkeys.<lambda>: Instance of 'PolarSubplot' has no 'zoomx' member (but some types could not be inferred)
+E1103:143:twodplot.bindkeys.<lambda>: Instance of 'Subplot' has no 'zoomx' member (but some types could not be inferred)
 C0324:144:twodplot.bindkeys: Comma not followed by a space
         self.bind_all('<Shift-Right>',lambda e: self.keypress(self.a.zoomx,1)  )
                                      ^^
+E1103:144:twodplot.bindkeys.<lambda>: Instance of 'PolarSubplot' has no 'zoomx' member (but some types could not be inferred)
+E1103:144:twodplot.bindkeys.<lambda>: Instance of 'Subplot' has no 'zoomx' member (but some types could not be inferred)
 C0324:145:twodplot.bindkeys: Comma not followed by a space
         self.bind_all('<Shift-Up>'   ,lambda e: self.keypress(self.a.zoomy,1 ) )
                                      ^^
+E1103:145:twodplot.bindkeys.<lambda>: Instance of 'PolarSubplot' has no 'zoomy' member (but some types could not be inferred)
+E1103:145:twodplot.bindkeys.<lambda>: Instance of 'Subplot' has no 'zoomy' member (but some types could not be inferred)
 C0324:146:twodplot.bindkeys: Comma not followed by a space
         self.bind_all('<Shift-Down>' ,lambda e: self.keypress(self.a.zoomy,-1)   )
                                      ^^
+E1103:146:twodplot.bindkeys.<lambda>: Instance of 'PolarSubplot' has no 'zoomy' member (but some types could not be inferred)
+E1103:146:twodplot.bindkeys.<lambda>: Instance of 'Subplot' has no 'zoomy' member (but some types could not be inferred)
 C0111:150:twodplot.autoscaley: Missing docstring
 C0103:150:twodplot.autoscaley: Invalid name "e" (should match [a-z_][a-z0-9_]{2,30}$)
 C0324:150:twodplot.autoscaley: Comma not followed by a space
@@ -302,9 +318,9 @@ C0322:229:twodplot.replot: Operator not preceded by a space
 R0912:178:twodplot.replot: Too many branches (20/12)
 W0612:214:twodplot.replot: Unused variable 'ret'
 C0111:233:twodplot.logy: Missing docstring
-E1101:235:twodplot.logy: Instance of 'YAxis' has no 'is_log' member
+E1103:235:twodplot.logy: Instance of 'YAxis' has no 'is_log' member (but some types could not be inferred)
 C0111:241:twodplot.logx: Missing docstring
-E1101:243:twodplot.logx: Instance of 'XAxis' has no 'is_log' member
+E1103:243:twodplot.logx: Instance of 'XAxis' has no 'is_log' member (but some types could not be inferred)
 C0111:249:twodplot.on_3: Missing docstring
 C0324:249:twodplot.on_3: Comma not followed by a space
     def on_3(self,event):
@@ -315,124 +331,138 @@ C0111:257:twodplot.clear: Missing docstring
 C0322:258:twodplot.clear: Operator not preceded by a space
         self.plotitems={}
                       ^
-W0621:263:twodplot.on_2: Redefining name 'x' from outer scope (line 322)
+W0621:264:twodplot.on_2: Redefining name 'x' from outer scope (line 339)
 C0111:261:twodplot.on_2: Missing docstring
 C0324:261:twodplot.on_2: Comma not followed by a space
     def on_2(self,event):
                  ^^
-C0324:264:twodplot.on_2: Comma not followed by a space
-        (xd,yd)= self.a.transData.inverse_xy_tup( (x,y) )
-           ^^
-C0103:264:twodplot.on_2: Invalid name "xd" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:264:twodplot.on_2: Invalid name "yd" (should match [a-z_][a-z0-9_]{2,30}$)
+W0702:267:twodplot.on_2: No exception's type specified
 C0324:265:twodplot.on_2: Comma not followed by a space
+            (xd,yd)= self.a.transData.inverse_xy_tup( (x,y) )
+               ^^
+C0103:265:twodplot.on_2: Invalid name "xd" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:265:twodplot.on_2: Invalid name "yd" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:269:twodplot.on_2: Comma not followed by a space
+            (xd,yd)= self.a.transData.inverted().transform((x,y))
+               ^^
+C0103:269:twodplot.on_2: Invalid name "xd" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:269:twodplot.on_2: Invalid name "yd" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:270:twodplot.on_2: Comma not followed by a space
         self.label.config(text="Clicked at x=%f y=%f"%(xd,yd))
                                                          ^^
-W0621:272:twodplot.on_down: Redefining name 'x' from outer scope (line 322)
-C0111:268:twodplot.on_down: Missing docstring
-C0324:268:twodplot.on_down: Comma not followed by a space
+W0621:278:twodplot.on_down: Redefining name 'x' from outer scope (line 339)
+C0111:273:twodplot.on_down: Missing docstring
+C0324:273:twodplot.on_down: Comma not followed by a space
     def on_down(self,event):
                     ^^
-C0324:275:twodplot.on_down: Comma not followed by a space
-        (self.xd,self.yd)= self.a.transData.inverse_xy_tup( (x,y) )
-                ^^
-C0322:278:twodplot.on_down: Operator not preceded by a space
+W0702:281:twodplot.on_down: No exception's type specified
+C0324:279:twodplot.on_down: Comma not followed by a space
+            (self.xd,self.yd)= self.a.transData.inverse_xy_tup( (x,y) )
+                    ^^
+C0324:283:twodplot.on_down: Comma not followed by a space
+            (self.xd,self.yd)= self.a.transData.inverted().transform((x,y))
+                    ^^
+C0322:289:twodplot.on_down: Operator not preceded by a space
         if self.rubberbandbox!=None: self.tkc.delete(self.rubberbandbox)
                              ^^
-C0321:278:twodplot.on_down: More than one statement on a single line
-C0322:279:twodplot.on_down: Operator not preceded by a space
+C0321:289:twodplot.on_down: More than one statement on a single line
+C0322:290:twodplot.on_down: Operator not preceded by a space
         self.startx=self.tkc.canvasx(event.x)
                    ^
-C0322:280:twodplot.on_down: Operator not preceded by a space
+C0322:291:twodplot.on_down: Operator not preceded by a space
         self.starty=self.tkc.canvasx(event.y)
                    ^
-W0621:283:twodplot.on_move: Redefining name 'x' from outer scope (line 322)
-C0111:282:twodplot.on_move: Missing docstring
-C0324:282:twodplot.on_move: Comma not followed by a space
+W0621:294:twodplot.on_move: Redefining name 'x' from outer scope (line 339)
+C0111:293:twodplot.on_move: Missing docstring
+C0324:293:twodplot.on_move: Comma not followed by a space
     def on_move(self,event):
                     ^^
-C0322:286:twodplot.on_move: Operator not preceded by a space
+C0322:297:twodplot.on_move: Operator not preceded by a space
             if self.rubberbandbox!=None:
                                  ^^
-W0621:301:twodplot.on_up: Redefining name 'x' from outer scope (line 322)
-C0111:293:twodplot.on_up: Missing docstring
-C0324:293:twodplot.on_up: Comma not followed by a space
+W0621:313:twodplot.on_up: Redefining name 'x' from outer scope (line 339)
+C0111:304:twodplot.on_up: Missing docstring
+C0324:304:twodplot.on_up: Comma not followed by a space
     def on_up(self,event):
                   ^^
-C0322:295:twodplot.on_up: Operator not preceded by a space
+C0322:306:twodplot.on_up: Operator not preceded by a space
         if self.xd==None:
                   ^^
-C0324:304:twodplot.on_up: Comma not followed by a space
-        (self.xu,self.yu) = self.a.transData.inverse_xy_tup( (x,y) )
-                ^^
-C0322:307:twodplot.on_up: Operator not preceded by a space
+W0702:316:twodplot.on_up: No exception's type specified
+C0324:314:twodplot.on_up: Comma not followed by a space
+            (self.xu,self.yu) = self.a.transData.inverse_xy_tup( (x,y) )
+                    ^^
+C0324:318:twodplot.on_up: Comma not followed by a space
+            (self.xu,self.yu)= self.a.transData.inverted().transform((x,y))
+                    ^^
+C0322:324:twodplot.on_up: Operator not preceded by a space
             xr=[self.xd,self.xu];xr.sort()
               ^
-C0103:307:twodplot.on_up: Invalid name "xr" (should match [a-z_][a-z0-9_]{2,30}$)
-C0321:307:twodplot.on_up: More than one statement on a single line
-C0322:308:twodplot.on_up: Operator not preceded by a space
+C0103:324:twodplot.on_up: Invalid name "xr" (should match [a-z_][a-z0-9_]{2,30}$)
+C0321:324:twodplot.on_up: More than one statement on a single line
+C0322:325:twodplot.on_up: Operator not preceded by a space
             yr=[self.yd,self.yu];yr.sort()
               ^
-C0103:308:twodplot.on_up: Invalid name "yr" (should match [a-z_][a-z0-9_]{2,30}$)
-C0321:308:twodplot.on_up: More than one statement on a single line
-C0322:309:twodplot.on_up: Operator not preceded by a space
+C0103:325:twodplot.on_up: Invalid name "yr" (should match [a-z_][a-z0-9_]{2,30}$)
+C0321:325:twodplot.on_up: More than one statement on a single line
+C0322:326:twodplot.on_up: Operator not preceded by a space
             self.xr=xr
                    ^
-C0322:310:twodplot.on_up: Operator not preceded by a space
+C0322:327:twodplot.on_up: Operator not preceded by a space
             self.yr=yr
                    ^
-W0201:304:twodplot.on_up: Attribute 'xu' defined outside __init__
-W0201:304:twodplot.on_up: Attribute 'yu' defined outside __init__
-W0201:279:twodplot.on_down: Attribute 'startx' defined outside __init__
-W0201:280:twodplot.on_down: Attribute 'starty' defined outside __init__
+W0201:314:twodplot.on_up: Attribute 'xu' defined outside __init__
+W0201:314:twodplot.on_up: Attribute 'yu' defined outside __init__
+W0201:290:twodplot.on_down: Attribute 'startx' defined outside __init__
+W0201:291:twodplot.on_down: Attribute 'starty' defined outside __init__
 R0904: 51:twodplot: Too many public methods (152/20)
-C0322:316: Operator not preceded by a space
+C0322:333: Operator not preceded by a space
 if __name__=="__main__":
            ^^
-C0323:321: Operator not followed by a space
+C0323:338: Operator not followed by a space
         print "Usage: %s filename format"%(sys.argv[0])
                                          ^
-C0322:322: Operator not preceded by a space
+C0322:339: Operator not preceded by a space
         x=Numeric.arange(0.0,3.0,0.01)
          ^
-E0602:322: Undefined variable 'Numeric'
-C0322:323: Operator not preceded by a space
+E0602:339: Undefined variable 'Numeric'
+C0322:340: Operator not preceded by a space
         dat=epffile.powderdata(x,sin(2*pi*x)+5,sqrt(sin(2*pi*x)+5),{ "title":"sin x" } )
            ^
-C0103:323: Invalid name "dat" (should match (([A-Z_]*)|(__.*__))$)
-C0322:326: Operator not preceded by a space
+C0103:340: Invalid name "dat" (should match (([A-Z_]*)|(__.*__))$)
+C0322:343: Operator not preceded by a space
             if sys.argv[2]=="powbase":
                           ^^
-C0322:327: Operator not preceded by a space
+C0322:344: Operator not preceded by a space
                 dat=powbase.powbase(sys.argv[1])
                    ^
-C0103:327: Invalid name "dat" (should match (([A-Z_]*)|(__.*__))$)
-C0322:328: Operator not preceded by a space
+C0103:344: Invalid name "dat" (should match (([A-Z_]*)|(__.*__))$)
+C0322:345: Operator not preceded by a space
             if sys.argv[2]=="epf":
                           ^^
-C0322:329: Operator not preceded by a space
+C0322:346: Operator not preceded by a space
                 dat=epffile.epffile(sys.argv[1])
                    ^
-C0103:329: Invalid name "dat" (should match (([A-Z_]*)|(__.*__))$)
-C0322:330: Operator not preceded by a space
+C0103:346: Invalid name "dat" (should match (([A-Z_]*)|(__.*__))$)
+C0322:347: Operator not preceded by a space
             if sys.argv[2]=="mca":
                           ^^
-C0322:331: Operator not preceded by a space
+C0322:348: Operator not preceded by a space
                 dat=mcadata.mcadata(sys.argv[1])
                    ^
-C0103:331: Invalid name "dat" (should match (([A-Z_]*)|(__.*__))$)
-C0103:336: Invalid name "root" (should match (([A-Z_]*)|(__.*__))$)
-C0322:338: Operator not preceded by a space
+C0103:348: Invalid name "dat" (should match (([A-Z_]*)|(__.*__))$)
+C0103:353: Invalid name "root" (should match (([A-Z_]*)|(__.*__))$)
+C0322:355: Operator not preceded by a space
     p=twodplot(root,data=dat)
      ^
-C0103:338: Invalid name "p" (should match (([A-Z_]*)|(__.*__))$)
-W0611:319: Unused import arange
-W0611:317: Unused import ciidata
+C0103:355: Invalid name "p" (should match (([A-Z_]*)|(__.*__))$)
+W0611:336: Unused import arange
+W0611:334: Unused import ciidata
 
 
 Report
 ======
-228 statements analysed.
+240 statements analysed.
 
 Duplication
 -----------
@@ -440,9 +470,9 @@ Duplication
 +-------------------------+------+---------+-----------+
 |                         |now   |previous |difference |
 +=========================+======+=========+===========+
-|nb duplicated lines      |0     |NC       |NC         |
+|nb duplicated lines      |0     |0        |=          |
 +-------------------------+------+---------+-----------+
-|percent duplicated lines |0.000 |NC       |NC         |
+|percent duplicated lines |0.000 |0.000    |=          |
 +-------------------------+------+---------+-----------+
 
 
@@ -453,13 +483,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |249    |81.11 |NC       |NC         |
+|code      |264    |81.23 |249      |+15.00     |
 +----------+-------+------+---------+-----------+
-|docstring |7      |2.28  |NC       |NC         |
+|docstring |7      |2.15  |7        |=          |
 +----------+-------+------+---------+-----------+
-|comment   |34     |11.07 |NC       |NC         |
+|comment   |37     |11.38 |34       |+3.00      |
 +----------+-------+------+---------+-----------+
-|empty     |17     |5.54  |NC       |NC         |
+|empty     |17     |5.23  |17       |=          |
 +----------+-------+------+---------+-----------+
 
 
@@ -487,13 +517,13 @@ Statistics by type
 +---------+-------+-----------+-----------+------------+---------+
 |type     |number |old number |difference |%documented |%badname |
 +=========+=======+===========+===========+============+=========+
-|module   |1      |NC         |NC         |100.00      |0.00     |
+|module   |1      |1          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|class    |2      |NC         |NC         |0.00        |0.00     |
+|class    |2      |2          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|method   |19     |NC         |NC         |15.79       |0.00     |
+|method   |19     |19         |=          |15.79       |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|function |0      |NC         |NC         |0.00        |0.00     |
+|function |0      |0          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 
 
@@ -504,13 +534,13 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |178    |NC       |NC         |
+|convention |183    |178      |+5.00      |
 +-----------+-------+---------+-----------+
-|refactor   |4      |NC       |NC         |
+|refactor   |4      |4        |=          |
 +-----------+-------+---------+-----------+
-|warning    |26     |NC       |NC         |
+|warning    |29     |26       |+3.00      |
 +-----------+-------+---------+-----------+
-|error      |3      |NC       |NC         |
+|error      |19     |3        |+16.00     |
 +-----------+-------+---------+-----------+
 
 
@@ -521,17 +551,21 @@ Messages
 +-----------+-----------+
 |message id |occurences |
 +===========+===========+
-|C0324      |53         |
+|C0324      |56         |
 +-----------+-----------+
 |C0322      |50         |
 +-----------+-----------+
-|C0103      |30         |
+|C0103      |32         |
 +-----------+-----------+
 |C0301      |23         |
++-----------+-----------+
+|E1103      |18         |
 +-----------+-----------+
 |C0111      |18         |
 +-----------+-----------+
 |W0621      |7          |
++-----------+-----------+
+|W0702      |5          |
 +-----------+-----------+
 |W0201      |4          |
 +-----------+-----------+
@@ -539,15 +573,11 @@ Messages
 +-----------+-----------+
 |C0321      |3          |
 +-----------+-----------+
-|W0702      |2          |
-+-----------+-----------+
 |W0613      |2          |
 +-----------+-----------+
 |W0612      |2          |
 +-----------+-----------+
 |W0611      |2          |
-+-----------+-----------+
-|E1101      |2          |
 +-----------+-----------+
 |W0704      |1          |
 +-----------+-----------+
@@ -574,5 +604,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at 0.22/10
+Your code has been rated at -2.96/10 (previous run: 0.22/10)
 

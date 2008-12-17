@@ -1,54 +1,54 @@
 ************* Module findreflections
-C: 13:loadfiltered: Operator not preceded by a space
+C0322: 13:loadfiltered: Operator not preceded by a space
     file_obj=open(filename,"r")
             ^
-C: 21:loadfiltered: Operator not preceded by a space
+C0322: 21:loadfiltered: Operator not preceded by a space
     bigarray=[]
             ^
-C: 30:findclosest: Comma not followed by a space
+C0324: 30:findclosest: Comma not followed by a space
 def findclosest(xin, yin, omega_in ,data):
                                    ^^
-C: 35:findclosest: Comma not followed by a space
+C0324: 35:findclosest: Comma not followed by a space
         xp,yp,op = values[0:3]
           ^^
-C: 35:findclosest: Invalid name "xp" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 35:findclosest: Invalid name "yp" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 35:findclosest: Invalid name "op" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 43: Operator not preceded by a space
+C0103: 35:findclosest: Invalid name "xp" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 35:findclosest: Invalid name "yp" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 35:findclosest: Invalid name "op" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 43: Operator not preceded by a space
 if __name__=="__main__":
            ^^
-C: 44: Operator not preceded by a space
+C0322: 44: Operator not preceded by a space
     scans=[]
          ^
-C: 44: Invalid name "scans" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 45: Operator not preceded by a space
+C0103: 44: Invalid name "scans" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 45: Operator not preceded by a space
     loads={}
          ^
-C: 45: Invalid name "loads" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 48: Comma not followed by a space
+C0103: 45: Invalid name "loads" (should match (([A-Z_]*)|(__.*__))$)
+C0324: 48: Comma not followed by a space
         name,load = f.split()
             ^^
-C: 50: Operator not preceded by a space
+C0322: 50: Operator not preceded by a space
         loads[name]=float(load)
                    ^
-C: 53: Invalid name "scandata" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 58: Invalid name "results" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 62: Comma not followed by a space
+C0103: 53: Invalid name "scandata" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 58: Invalid name "results" (should match (([A-Z_]*)|(__.*__))$)
+C0324: 62: Comma not followed by a space
         h,k,l = [float(v) for v in items[2:5]]
          ^^
-C: 63: Comma not followed by a space
+C0324: 63: Comma not followed by a space
         results.write("# hkl %f %f %f\n"%(h,k,l))
                                            ^^
-C: 64: Comma not followed by a space
+C0324: 64: Comma not followed by a space
         x,y,omega =  [float(v) for v in items[7:10]]
          ^^
-C: 65: Comma not followed by a space
+C0324: 65: Comma not followed by a space
         print h,k,l,x,y,omega
                ^^
-C: 67: Comma not followed by a space
+C0324: 67: Comma not followed by a space
             line = findclosest(x,y,omega,scandata[scan])
                                 ^^
-C: 68: Comma not followed by a space
+C0324: 68: Comma not followed by a space
             results.write("%f %s "%(loads[scan],scan))
                                                ^^
 
@@ -63,9 +63,9 @@ Duplication
 +-------------------------+------+---------+-----------+
 |                         |now   |previous |difference |
 +=========================+======+=========+===========+
-|nb duplicated lines      |0     |NC       |NC         |
+|nb duplicated lines      |0     |0        |=          |
 +-------------------------+------+---------+-----------+
-|percent duplicated lines |0.000 |NC       |NC         |
+|percent duplicated lines |0.000 |0.000    |=          |
 +-------------------------+------+---------+-----------+
 
 
@@ -76,13 +76,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |52     |77.61 |NC       |NC         |
+|code      |52     |77.61 |52       |=          |
 +----------+-------+------+---------+-----------+
-|docstring |8      |11.94 |NC       |NC         |
+|docstring |8      |11.94 |8        |=          |
 +----------+-------+------+---------+-----------+
-|comment   |0      |0.00  |NC       |NC         |
+|comment   |0      |0.00  |0        |=          |
 +----------+-------+------+---------+-----------+
-|empty     |7      |10.45 |NC       |NC         |
+|empty     |7      |10.45 |7        |=          |
 +----------+-------+------+---------+-----------+
 
 
@@ -93,13 +93,13 @@ Statistics by type
 +---------+-------+-----------+-----------+------------+---------+
 |type     |number |old number |difference |%documented |%badname |
 +=========+=======+===========+===========+============+=========+
-|module   |1      |NC         |NC         |100.00      |0.00     |
+|module   |1      |1          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|class    |0      |NC         |NC         |0.00        |0.00     |
+|class    |0      |0          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|method   |0      |NC         |NC         |0.00        |0.00     |
+|method   |0      |0          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|function |2      |NC         |NC         |100.00      |0.00     |
+|function |2      |2          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 
 
@@ -110,13 +110,13 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |22     |NC       |NC         |
+|convention |22     |22       |=          |
 +-----------+-------+---------+-----------+
-|refactor   |0      |NC       |NC         |
+|refactor   |0      |0        |=          |
 +-----------+-------+---------+-----------+
-|warning    |0      |NC       |NC         |
+|warning    |0      |0        |=          |
 +-----------+-------+---------+-----------+
-|error      |0      |NC       |NC         |
+|error      |0      |0        |=          |
 +-----------+-------+---------+-----------+
 
 
@@ -138,5 +138,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at 5.60/10
+Your code has been rated at 5.60/10 (previous run: 5.60/10)
 

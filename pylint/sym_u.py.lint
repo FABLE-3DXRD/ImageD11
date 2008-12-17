@@ -1,119 +1,138 @@
 ************* Module sym_u
-C0301:137: Line too long (93/80)
+W0511:163: FIXME - this is mostly done in lattice_reduction.py instead now
 C0111:  1: Missing docstring
-C0111: 10:m_from_string: Missing docstring
-C0103: 10:m_from_string: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103: 11:m_from_string: Invalid name "m" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324: 12:m_from_string: Comma not followed by a space
+C0103: 12:m_from_string: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 16:m_from_string: Invalid name "m" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 17:m_from_string: Comma not followed by a space
     t = n.array(eval("lambda x,y,z: ( %s )"%(s))(0,0,0))
                                                   ^^
-C0103: 12:m_from_string: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324: 13:m_from_string: Comma not followed by a space
+C0103: 17:m_from_string: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 18:m_from_string: Comma not followed by a space
     for v1,v2,v3 in [ [ 1,0,0] , [ 0,1,0], [0,0,1] ]:
           ^^
-C0103: 13:m_from_string: Invalid name "v1" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103: 13:m_from_string: Invalid name "v2" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103: 13:m_from_string: Invalid name "v3" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324: 14:m_from_string: Comma not followed by a space
+C0103: 18:m_from_string: Invalid name "v1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 18:m_from_string: Invalid name "v2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 18:m_from_string: Invalid name "v3" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 19:m_from_string: Comma not followed by a space
         r = eval("lambda x,y,z: ( %s )"%(s))(v1,v2,v3)
                                                ^^
-C0103: 14:m_from_string: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
-C0111: 20:group: Missing docstring
-C0103: 26:group.op: Invalid name "op" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324: 30:group.op: Comma not followed by a space
-        m = n.dot(x,y)
-                   ^^
-C0103: 30:group.op: Invalid name "m" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103: 31:group.op: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
-R0201: 26:group.op: Method could be a function
-W0612: 31:group.op: Unused variable 'd'
-C0324: 35:group.comp: Comma not followed by a space
-    def comp(self,x,y):
-                 ^^
-C0324: 39:group.comp: Comma not followed by a space
-        return n.allclose(x,y)
-                           ^^
-R0201: 35:group.comp: Method could be a function
-C0103: 40:group.isMember: Invalid name "isMember" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324: 40:group.isMember: Comma not followed by a space
-    def isMember(self,item):
-                     ^^
-C0103: 44:group.isMember: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324: 45:group.isMember: Comma not followed by a space
-            if self.comp(g,item):
-                          ^^
-C0324: 47:group.additem: Comma not followed by a space
-    def additem(self,item):
-                    ^^
-C0103: 60:group.makegroup: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103: 61:group.makegroup: Invalid name "b" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324: 62:group.makegroup: Comma not followed by a space
+C0103: 19:m_from_string: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
+W0613: 28:group.__init__: Unused argument 'tol'
+C0103: 35:group.op: Invalid name "op" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 40:group.op: Invalid name "m" (should match [a-z_][a-z0-9_]{2,30}$)
+R0201: 35:group.op: Method could be a function
+C0103: 51:group.isMember: Invalid name "isMember" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 55:group.isMember: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+W0602: 73:group.makegroup: Using global for 'DEBUG' but no assigment is done
+C0103: 78:group.makegroup: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 79:group.makegroup: Invalid name "b" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 80:group.makegroup: Comma not followed by a space
                     c = self.op(a,b)
                                  ^^
-C0103: 62:group.makegroup: Invalid name "c" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322: 65:group.makegroup: Operator not preceded by a space
+C0103: 80:group.makegroup: Invalid name "c" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 83:group.makegroup: Operator not preceded by a space
                         new=False
                            ^
-C0111: 69:generate_group: Missing docstring
-C0322: 70:generate_group: Operator not preceded by a space
+C0324: 85:group.makegroup: Comma not followed by a space
+                        if DEBUG: print "adding",c,"to group"
+                                                ^^
+C0321: 85:group.makegroup: More than one statement on a single line
+C0111: 88:generate_group: Missing docstring
+C0322: 89:generate_group: Operator not preceded by a space
     g=group()
      ^
-C0103: 70:generate_group: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103: 71:generate_group: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
-C0111: 77:cubic: Missing docstring
-C0111: 96:monoclinic_c: Missing docstring
-C0111: 99:monoclinic_a: Missing docstring
-C0111:102:monoclinic_b: Missing docstring
-C0111:105:triclinic: Missing docstring
-W0621:109:find_uniq_u: Redefining name 'u' from outer scope (line 168)
-C0111:109:find_uniq_u: Missing docstring
-C0103:109:find_uniq_u: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:109:find_uniq_u: Comma not followed by a space
-def find_uniq_u(u,grp,debug=0,func=n.trace):
-                 ^^
-C0103:112:find_uniq_u: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:113:find_uniq_u: Comma not followed by a space
-        cand = grp.op(o,u)
-                       ^^
-C0103:114:find_uniq_u: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
-C0321:115:find_uniq_u: More than one statement on a single line
-C0111:122:test: Missing docstring
-C0324:124:test: Comma not followed by a space
+C0103: 89:generate_group: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 90:generate_group: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111: 96:cubic: Missing docstring
+C0111:115:monoclinic_c: Missing docstring
+C0111:118:monoclinic_a: Missing docstring
+C0111:121:monoclinic_b: Missing docstring
+C0111:124:triclinic: Missing docstring
+W0621:128:find_uniq_u: Redefining name 'u' from outer scope (line 280)
+C0111:128:find_uniq_u: Missing docstring
+C0103:128:find_uniq_u: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:131:find_uniq_u: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:133:find_uniq_u: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+C0321:134:find_uniq_u: More than one statement on a single line
+C0111:141:hklmax: Missing docstring
+C0103:141:hklmax: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111:145:find_uniq_hkls: Missing docstring
+C0103:149:find_uniq_hkls: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:151:find_uniq_hkls: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:159:trans_group: Invalid name "trans_group" (should match [a-z_][a-zA-Z0-9]+$)
+W0231:165:trans_group.__init__: __init__ method from base class 'group' is not called
+C0103:171:trans_group.op: Invalid name "op" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:177:trans_group.reduce: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:181:trans_group.reduce: Invalid name "vc" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:182:trans_group.reduce: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:183:trans_group.reduce: Invalid name "vc" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:188:trans_group.additem: Invalid name "t" (should match [a-z_][a-z0-9_]{2,30}$)
+W0612:188:trans_group.additem: Unused variable 't'
+C0324:199:trans_group.mod: Comma not followed by a space
+            ny = n.dot(x,y)/ly2
+                        ^^
+C0103:199:trans_group.mod: Invalid name "ny" (should match [a-z_][a-z0-9_]{2,30}$)
+R0201:192:trans_group.mod: Method could be a function
+W0612:200:trans_group.mod: Unused variable 'parl'
+C0103:205:trans_group.isMember: Invalid name "isMember" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111:205:trans_group.isMember: Missing docstring
+C0111:208:test: Missing docstring
+C0324:210:test: Comma not followed by a space
     assert n.allclose( m_from_string( "-y,x,z" ), n.array([ [ 0,1,0],
                                                                ^^
                                                           [-1,0,0],
                                                           [ 0,0,1]] ))
-C0324:127:test: Comma not followed by a space
+C0324:213:test: Comma not followed by a space
     assert n.allclose( m_from_string( "-y,y-x,z" ), n.array([[ 0,-1,0],
                                                                 ^^
                                                              [ -1, 1,0],
                                                              [ 0, 0,1]] ))
-C0103:131:test: Invalid name "op" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:132:test: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
-C0323:133:test: Operator not followed by a space
+C0103:217:test: Invalid name "op" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:218:test: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+C0323:219:test: Operator not followed by a space
         assert d == 1.0, "Determinant = %f %s"%(d,op)
                                               ^
-C0324:137:test: Comma not followed by a space
-    assert len(trigonal().group) == 3 ,"not 3 ops found for trigonal !"+str(trigonal().group)
+C0324:223:test: Comma not followed by a space
+    assert len(trigonal().group) == 3 ,"not 3 ops found for trigonal !"+\
                                       ^^
-C0103:141:test: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:142:test: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:151:getgroup: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:156:getgroup: Comma not followed by a space
+        str(trigonal().group)
+C0103:228:test: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:229:test: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:238:test: Invalid name "g1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:239:test: Invalid name "g2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:240:test: Comma not followed by a space
+    ops = [ n.array( [ 1,0,0], n.float) ,
+                        ^^
+            n.array( [ 0,1,0], n.float) ,
+            n.array( [ 0,0,1], n.float) ]
+C0103:243:test: Invalid name "op" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:246:test: Comma not followed by a space
+    g2.additem( n.array( [ 5,6,7], n.float)  )
+                            ^^
+C0324:254:test: Comma not followed by a space
+    assert not g2.isMember([0.1,0.5,10]), "Not a member"
+                               ^^
+C0324:255:test: Comma not followed by a space
+    assert g2.isMember([99,-1e5,4e7]), "Not a member"
+                          ^^
+W0603:256:test: Using the global statement
+C0103:263:getgroup: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:268:getgroup: Comma not followed by a space
     if s in ['cubic', 'hexagonal','trigonal','tetragonal',
                                  ^^
-C0322:164: Operator not preceded by a space
+C0322:276: Operator not preceded by a space
 if __name__=="__main__":
            ^^
-C0103:168: Invalid name "u" (should match (([A-Z_]*)|(__.*__))$)
-C0324:172: Comma not followed by a space
-    find_uniq_u(u,cubic(),debug=1)
+C0103:280: Invalid name "u" (should match (([A-Z_]*)|(__.*__))$)
+C0324:284: Comma not followed by a space
+    find_uniq_u(u,cubic(),debug=0)
                  ^^
+W0611:  8: Unused import logging
 
 
 Report
 ======
-99 statements analysed.
+167 statements analysed.
 
 Duplication
 -----------
@@ -134,13 +153,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |106    |65.03 |102      |+4.00      |
+|code      |177    |65.07 |106      |+71.00     |
 +----------+-------+------+---------+-----------+
-|docstring |30     |18.40 |18       |+12.00     |
+|docstring |56     |20.59 |30       |+26.00     |
 +----------+-------+------+---------+-----------+
-|comment   |2      |1.23  |1        |+1.00      |
+|comment   |6      |2.21  |2        |+4.00      |
 +----------+-------+------+---------+-----------+
-|empty     |25     |15.34 |20       |+5.00      |
+|empty     |33     |12.13 |25       |+8.00      |
 +----------+-------+------+---------+-----------+
 
 
@@ -149,9 +168,7 @@ External dependencies
 ---------------------
 ::
 
-    numpy 
-      \-oldnumeric (sym_u)
-        \-linear_algebra (sym_u)
+    numpy (sym_u)
     ImageD11 
       \-sym_u (sym_u)
 
@@ -165,11 +182,11 @@ Statistics by type
 +=========+=======+===========+===========+============+=========+
 |module   |1      |1          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|class    |1      |1          |=          |0.00        |0.00     |
+|class    |2      |1          |+1.00      |100.00      |50.00    |
 +---------+-------+-----------+-----------+------------+---------+
-|method   |6      |6          |=          |100.00      |33.33    |
+|method   |12     |6          |+6.00      |91.67       |33.33    |
 +---------+-------+-----------+-----------+------------+---------+
-|function |14     |13         |+1.00      |35.71       |0.00     |
+|function |16     |14         |+2.00      |37.50       |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 
 
@@ -180,11 +197,11 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |60     |66       |-6.00      |
+|convention |73     |60       |+13.00     |
 +-----------+-------+---------+-----------+
 |refactor   |2      |2        |=          |
 +-----------+-------+---------+-----------+
-|warning    |2      |1        |+1.00      |
+|warning    |9      |2        |+7.00      |
 +-----------+-------+---------+-----------+
 |error      |0      |0        |=          |
 +-----------+-------+---------+-----------+
@@ -197,30 +214,40 @@ Messages
 +-----------+-----------+
 |message id |occurences |
 +===========+===========+
-|C0103      |26         |
+|C0103      |40         |
 +-----------+-----------+
-|C0324      |17         |
+|C0324      |15         |
 +-----------+-----------+
-|C0111      |11         |
+|C0111      |12         |
 +-----------+-----------+
 |C0322      |3          |
 +-----------+-----------+
+|W0612      |2          |
++-----------+-----------+
 |R0201      |2          |
++-----------+-----------+
+|C0321      |2          |
 +-----------+-----------+
 |W0621      |1          |
 +-----------+-----------+
-|W0612      |1          |
+|W0613      |1          |
++-----------+-----------+
+|W0611      |1          |
++-----------+-----------+
+|W0603      |1          |
++-----------+-----------+
+|W0602      |1          |
++-----------+-----------+
+|W0511      |1          |
++-----------+-----------+
+|W0231      |1          |
 +-----------+-----------+
 |C0323      |1          |
-+-----------+-----------+
-|C0321      |1          |
-+-----------+-----------+
-|C0301      |1          |
 +-----------+-----------+
 
 
 
 Global evaluation
 -----------------
-Your code has been rated at 3.54/10 (previous run: 2.58/10)
+Your code has been rated at 4.97/10 (previous run: 3.54/10)
 

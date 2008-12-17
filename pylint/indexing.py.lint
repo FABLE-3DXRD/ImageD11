@@ -1,52 +1,36 @@
 ************* Module indexing
-C0301:196: Line too long (117/80)
-C0301:233: Line too long (137/80)
-C0301:254: Line too long (81/80)
-C0301:316: Line too long (118/80)
-C0301:318: Line too long (118/80)
-C0301:322: Line too long (93/80)
-C0301:324: Line too long (135/80)
-C0301:338: Line too long (86/80)
-C0301:350: Line too long (104/80)
-C0301:357: Line too long (136/80)
-C0301:358: Line too long (134/80)
-C0301:396: Line too long (99/80)
-C0301:397: Line too long (99/80)
-C0301:432: Line too long (101/80)
-C0301:437: Line too long (93/80)
-C0301:491: Line too long (110/80)
-C0301:494: Line too long (88/80)
-C0301:501: Line too long (100/80)
-C0301:519: Line too long (87/80)
-C0301:534: Line too long (91/80)
-C0301:540: Line too long (92/80)
-C0301:542: Line too long (90/80)
-C0301:543: Line too long (88/80)
-C0301:546: Line too long (82/80)
-C0301:574: Line too long (82/80)
-C0301:579: Line too long (81/80)
-C0301:590: Line too long (87/80)
-C0301:594: Line too long (90/80)
-C0301:595: Line too long (96/80)
-C0301:597: Line too long (108/80)
-C0301:603: Line too long (89/80)
-C0301:607: Line too long (112/80)
-C0301:613: Line too long (106/80)
-C0301:627: Line too long (158/80)
-C0301:643: Line too long (88/80)
-C0301:652: Line too long (81/80)
-C0301:656: Line too long (122/80)
-C0301:665: Line too long (92/80)
-C0301:734: Line too long (111/80)
-C0301:762: Line too long (110/80)
-C0301:774: Line too long (113/80)
-C0301:852: Line too long (133/80)
-C0301:862: Line too long (92/80)
-C0301:863: Line too long (112/80)
-C0301:866: Line too long (91/80)
-W0511: 73: FIXME - make some testcases please!!
-W0511: 80: TODO Testcases!!!
-W0511:552: FIXME : refactor this into something to do 
+C0301:230: Line too long (89/80)
+C0301:252: Line too long (81/80)
+C0301:324: Line too long (93/80)
+C0301:326: Line too long (135/80)
+C0301:340: Line too long (86/80)
+C0301:352: Line too long (104/80)
+C0301:360: Line too long (136/80)
+C0301:362: Line too long (136/80)
+C0301:439: Line too long (101/80)
+C0301:444: Line too long (93/80)
+C0301:498: Line too long (110/80)
+C0301:509: Line too long (100/80)
+C0301:544: Line too long (91/80)
+C0301:550: Line too long (92/80)
+C0301:558: Line too long (82/80)
+C0301:637: Line too long (83/80)
+C0301:642: Line too long (86/80)
+C0301:651: Line too long (113/80)
+C0301:669: Line too long (106/80)
+C0301:687: Line too long (158/80)
+C0301:704: Line too long (98/80)
+C0301:713: Line too long (92/80)
+C0301:782: Line too long (111/80)
+C0301:810: Line too long (110/80)
+C0301:822: Line too long (113/80)
+C0301:905: Line too long (133/80)
+C0301:916: Line too long (92/80)
+C0301:917: Line too long (112/80)
+C0301:920: Line too long (91/80)
+W0511: 73: TODO - make some testcases please!!
+W0511: 79: TODO Testcases!!!
+W0511:588: FIXME : refactor this into something to do 
 C0111:  1: Missing docstring
 C0103: 33:readubis: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
 C0103: 35:readubis: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
@@ -92,181 +76,187 @@ C0324: 66:ubitocellpars: Comma not followed by a space
     gamma = degrees( acos(g[0,1]/a/b))
                              ^^
 C0103: 69:ubitoU: Invalid name "ubitoU" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103: 78:ubitoRod: Invalid name "ubitoRod" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103: 82:ubitoRod: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103: 83:ubitoRod: Invalid name "w" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103: 83:ubitoRod: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324: 84:ubitoRod: Comma not followed by a space
+C0324: 75:ubitoU: Comma not followed by a space
+    return n.transpose(n.dot(ubitoB(ubi),ubi))
+                                        ^^
+C0103: 77:ubitoRod: Invalid name "ubitoRod" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 81:ubitoRod: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 82:ubitoRod: Invalid name "w" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 82:ubitoRod: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 83:ubitoRod: Comma not followed by a space
     ehat = v[:,0]
               ^^
-C0103: 86:ubitoRod: Invalid name "Rod" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103: 92:ubitoB: Invalid name "ubitoB" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103: 94:ubitoB: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:111:calc_drlv2: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:111:calc_drlv2: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:118:calc_drlv2: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:121:calc_drlv2: Comma not followed by a space
+C0324: 84:ubitoRod: Comma not followed by a space
+    angle = -1*math.acos(n.clip(w[1].real,-1,1))
+                                         ^^
+C0103: 85:ubitoRod: Invalid name "Rod" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 88:ubitoB: Invalid name "ubitoB" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 90:ubitoB: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:107:calc_drlv2: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:107:calc_drlv2: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:114:calc_drlv2: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:117:calc_drlv2: Comma not followed by a space
     drlv2 = n.sum(diff * diff,0)
                              ^^
-C0103:126:refine: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:126:refine: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
-R0914:126:refine: Too many local variables (21/15)
-C0103:142:refine: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:149:refine: Comma not followed by a space
+C0103:122:refine: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:122:refine: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
+R0914:122:refine: Too many local variables (21/15)
+C0103:138:refine: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:145:refine: Comma not followed by a space
     ind = n.compress( n.less(drlv2,tol) , n.arange(gv.shape[0]) )
                                   ^^
-C0324:151:refine: Comma not followed by a space
+C0324:147:refine: Comma not followed by a space
     contribs = n.take(drlv2,ind)
                            ^^
-C0322:153:refine: Operator not preceded by a space
+C0322:149:refine: Operator not preceded by a space
         fitb4=math.sqrt(n.sum(contribs)/contribs.shape[0])
              ^
-C0322:161:refine: Operator not preceded by a space
+C0322:157:refine: Operator not preceded by a space
     R=n.zeros((3,3),n.Float)
      ^
-C0103:161:refine: Invalid name "R" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:162:refine: Operator not preceded by a space
+C0103:157:refine: Invalid name "R" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:158:refine: Operator not preceded by a space
     H=n.zeros((3,3),n.Float)
      ^
-C0103:162:refine: Invalid name "H" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:164:refine: Comma not followed by a space
+C0103:158:refine: Invalid name "H" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:160:refine: Comma not followed by a space
         r = gv[i,:]
                 ^^
-C0103:164:refine: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:165:refine: Comma not followed by a space
+C0103:160:refine: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:161:refine: Comma not followed by a space
         k = hint[:,i].astype(n.Float)
                   ^^
-C0324:167:refine: Comma not followed by a space
+C0324:163:refine: Comma not followed by a space
         R = R + n.outerproduct(r,k)
                                 ^^
-C0103:167:refine: Invalid name "R" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:168:refine: Comma not followed by a space
+C0103:163:refine: Invalid name "R" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:164:refine: Comma not followed by a space
         H = H + n.outerproduct(k,k)
                                 ^^
-C0103:168:refine: Invalid name "H" (should match [a-z_][a-z0-9_]{2,30}$)
-W0702:176:refine: No exception's type specified
-C0322:171:refine: Operator not preceded by a space
+C0103:164:refine: Invalid name "H" (should match [a-z_][a-z0-9_]{2,30}$)
+W0702:172:refine: No exception's type specified
+C0322:167:refine: Operator not preceded by a space
         HI=inverse(H)
           ^
-C0103:171:refine: Invalid name "HI" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:172:refine: Operator not preceded by a space
+C0103:167:refine: Invalid name "HI" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:168:refine: Operator not preceded by a space
         UBoptimal=n.dot(R,HI)
                  ^
-C0103:172:refine: Invalid name "UBoptimal" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:173:refine: Operator not preceded by a space
+C0103:168:refine: Invalid name "UBoptimal" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:169:refine: Operator not preceded by a space
         UBIo=inverse(UBoptimal)
             ^
-C0103:173:refine: Invalid name "UBIo" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:176:refine: Operator not preceded by a space
+C0103:169:refine: Invalid name "UBIo" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:172:refine: Operator not preceded by a space
         UBIo=UBI
             ^
-C0103:176:refine: Invalid name "UBIo" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:177:refine: Operator not preceded by a space
+C0103:172:refine: Invalid name "UBIo" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:173:refine: Operator not preceded by a space
     h=n.dot(UBIo,n.transpose(gv))
      ^
-C0103:177:refine: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:178:refine: Operator not preceded by a space
+C0103:173:refine: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:174:refine: Operator not preceded by a space
     hint=n.floor(h+0.5).astype(n.Int) # rounds down
         ^
-C0322:179:refine: Operator not preceded by a space
+C0322:175:refine: Operator not preceded by a space
     diff=h-hint
         ^
-C0322:180:refine: Operator not preceded by a space
+C0322:176:refine: Operator not preceded by a space
     drlv2=n.sum(diff*diff,0)
          ^
-C0324:181:refine: Comma not followed by a space
+C0324:177:refine: Comma not followed by a space
     ind = n.compress( n.less(drlv2,tol), n.arange(gv.shape[0]) )
                                   ^^
-C0324:183:refine: Comma not followed by a space
+C0324:179:refine: Comma not followed by a space
     contribs = n.take(drlv2,ind)
                            ^^
-C0322:185:refine: Operator not preceded by a space
+C0322:181:refine: Operator not preceded by a space
         fitlastrefined=math.sqrt(n.sum(contribs)/contribs.shape[0])
                       ^
-C0323:187:refine: Operator not followed by a space
+C0323:183:refine: Operator not followed by a space
             print "after %.8f %5d"%(fitlastrefined,contribs.shape[0])
                                   ^
-C0324:190:refine: Comma not followed by a space
+C0324:186:refine: Comma not followed by a space
         print "No contributing reflections for\n",UBI
                                                  ^^
-W0101:194:refine: Unreachable code
-C0103:230:indexer.__init__: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:561:indexer.saveindexing: Invalid name "ga" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:821:indexer.readgvfile: Invalid name "xr" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:824:indexer.readgvfile: Invalid name "xp" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:823:indexer.readgvfile: Invalid name "zr" (should match [a-z_][a-z0-9_]{2,30}$)
+W0101:190:refine: Unreachable code
+C0103:227:indexer.__init__: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:572:indexer.fight_over_peaks: Invalid name "ga" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:871:indexer.readgvfile: Invalid name "xr" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:874:indexer.readgvfile: Invalid name "xp" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:873:indexer.readgvfile: Invalid name "zr" (should match [a-z_][a-z0-9_]{2,30}$)
 C0103:292:indexer.assigntorings: Invalid name "na" (should match [a-z_][a-z0-9_]{2,30}$)
 C0103:291:indexer.assigntorings: Invalid name "ra" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:825:indexer.readgvfile: Invalid name "yp" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:822:indexer.readgvfile: Invalid name "yr" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:820:indexer.readgvfile: Invalid name "ds" (should match [a-z_][a-z0-9_]{2,30}$)
-R0902:207:indexer: Too many instance attributes (38/7)
-C0103:211:indexer.__init__: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
-R0913:211:indexer.__init__: Too many arguments (13/5)
-C0322:229:indexer.__init__: Operator not preceded by a space
+C0103:875:indexer.readgvfile: Invalid name "yp" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:872:indexer.readgvfile: Invalid name "yr" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:870:indexer.readgvfile: Invalid name "ds" (should match [a-z_][a-z0-9_]{2,30}$)
+R0902:204:indexer: Too many instance attributes (39/7)
+C0103:208:indexer.__init__: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
+R0913:208:indexer.__init__: Too many arguments (13/5)
+C0322:226:indexer.__init__: Operator not preceded by a space
         self.unitcell=unitcell
                      ^
-C0322:230:indexer.__init__: Operator not preceded by a space
+C0322:227:indexer.__init__: Operator not preceded by a space
         self.gv=gv
                ^
-C0322:231:indexer.__init__: Operator not preceded by a space
+C0322:228:indexer.__init__: Operator not preceded by a space
         self.wedge=0.0 # Default
                   ^
-C0323:232:indexer.__init__: Operator not followed by a space
+C0323:229:indexer.__init__: Operator not followed by a space
         if gv !=None:
               ^^
-C0322:233:indexer.__init__: Operator not preceded by a space
-            self.gvflat=n.reshape(n.fromstring(self.gv.tostring(),n.Float),self.gv.shape) # Makes it contiguous in memory, hkl fast index
+C0322:230:indexer.__init__: Operator not preceded by a space
+            self.gvflat=n.reshape(n.fromstring(self.gv.tostring(),n.Float),self.gv.shape)
                        ^
-C0322:235:indexer.__init__: Operator not preceded by a space
+C0322:233:indexer.__init__: Operator not preceded by a space
         self.cosine_tol=cosine_tol
                        ^
-C0322:236:indexer.__init__: Operator not preceded by a space
+C0322:234:indexer.__init__: Operator not preceded by a space
         self.wavelength=wavelength
                        ^
-C0322:237:indexer.__init__: Operator not preceded by a space
+C0322:235:indexer.__init__: Operator not preceded by a space
         self.hkl_tol=hkl_tol
                     ^
-C0322:238:indexer.__init__: Operator not preceded by a space
+C0322:236:indexer.__init__: Operator not preceded by a space
         self.ring_1=ring_1
                    ^
-C0322:239:indexer.__init__: Operator not preceded by a space
+C0322:237:indexer.__init__: Operator not preceded by a space
         self.ring_2=ring_2
                    ^
-C0322:240:indexer.__init__: Operator not preceded by a space
+C0322:238:indexer.__init__: Operator not preceded by a space
         self.uniqueness=uniqueness
                        ^
-C0322:241:indexer.__init__: Operator not preceded by a space
+C0322:239:indexer.__init__: Operator not preceded by a space
         self.minpks=minpks
                    ^
-C0322:242:indexer.__init__: Operator not preceded by a space
+C0322:240:indexer.__init__: Operator not preceded by a space
         self.ds_tol=ds_tol
                    ^
-C0322:243:indexer.__init__: Operator not preceded by a space
+C0322:241:indexer.__init__: Operator not preceded by a space
         self.max_grains=max_grains
                        ^
-C0322:245:indexer.__init__: Operator not preceded by a space
+C0322:243:indexer.__init__: Operator not preceded by a space
         self.ubis=[]
                  ^
-C0322:246:indexer.__init__: Operator not preceded by a space
+C0322:244:indexer.__init__: Operator not preceded by a space
         self.scores=[]
                    ^
-C0111:258:indexer.loadpars: Missing docstring
-C0324:258:indexer.loadpars: Comma not followed by a space
+C0111:257:indexer.loadpars: Missing docstring
+C0324:257:indexer.loadpars: Comma not followed by a space
     def loadpars(self,filename=None):
                      ^^
-C0111:263:indexer.updateparameters: Missing docstring
-C0322:265:indexer.updateparameters: Operator not preceded by a space
+C0111:262:indexer.updateparameters: Missing docstring
+C0322:264:indexer.updateparameters: Operator not preceded by a space
         self.pars=self.parameterobj.parameters
                  ^
-C0111:267:indexer.savepars: Missing docstring
-C0324:267:indexer.savepars: Comma not followed by a space
+C0111:266:indexer.savepars: Missing docstring
+C0324:266:indexer.savepars: Comma not followed by a space
     def savepars(self,filename=None):
                      ^^
-C0103:274:indexer.out_of_eta_range: Invalid name "e" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:274:indexer.out_of_eta_range: Comma not followed by a space
-    def out_of_eta_range(self,e):
+C0324:273:indexer.out_of_eta_range: Comma not followed by a space
+    def out_of_eta_range(self,eta):
                              ^^
+C0103:275:indexer.out_of_eta_range: Invalid name "e" (should match [a-z_][a-z0-9_]{2,30}$)
 C0324:288:indexer.assigntorings: Comma not followed by a space
         print "Maximum d-spacing considered",limit
                                             ^^
@@ -307,749 +297,624 @@ C0322:315:indexer.assigntorings: Operator not preceded by a space
              ^
 C0103:315:indexer.assigntorings: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
 C0323:316:indexer.assigntorings: Operator not followed by a space
-            print "Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d"%(j,h[0],h[1],h[2],len(self.unitcell.ringhkls[dsr[j]]),
+            print "Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d"%(\
                                                                ^
+                j,h[0],h[1],h[2],len(self.unitcell.ringhkls[dsr[j]]),
                      self.na[j],n_indexed,n_to_index)
-C0324:320:indexer.assigntorings: Comma not followed by a space
+C0324:322:indexer.assigntorings: Comma not followed by a space
         ind = n.compress( n.greater(self.ra,-1) , n.arange(self.ra.shape[0]) )
                                            ^^
-C0324:323:indexer.assigntorings: Comma not followed by a space
+C0324:325:indexer.assigntorings: Comma not followed by a space
         print "Shape of scoring matrix",self.gvr.shape
                                        ^^
-C0322:324:indexer.assigntorings: Operator not preceded by a space
+C0322:326:indexer.assigntorings: Operator not preceded by a space
         self.gvflat=n.reshape(n.fromstring(self.gvr.tostring(),n.Float),self.gvr.shape) # Makes it contiguous in memory, hkl fast index
                    ^
-C0324:326:indexer.friedelpairs: Comma not followed by a space
+C0324:328:indexer.friedelpairs: Comma not followed by a space
     def friedelpairs(self,filename):
                          ^^
-C0322:334:indexer.friedelpairs: Operator not preceded by a space
+C0322:336:indexer.friedelpairs: Operator not preceded by a space
         dsr=self.unitcell.ringds
            ^
-C0324:337:indexer.friedelpairs: Comma not followed by a space
+C0324:339:indexer.friedelpairs: Comma not followed by a space
             ind = n.compress( n.equal(self.ra,j), n.arange(self.ra.shape[0]) )
                                              ^^
-C0324:342:indexer.friedelpairs: Comma not followed by a space
+C0324:344:indexer.friedelpairs: Comma not followed by a space
             thesepeaks = n.take(self.gv,ind)
                                        ^^
-C0322:344:indexer.friedelpairs: Operator not preceded by a space
+C0322:346:indexer.friedelpairs: Operator not preceded by a space
             h=self.unitcell.ringhkls[dsr[j]][0]
              ^
-C0103:344:indexer.friedelpairs: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:353:indexer.friedelpairs: Comma not followed by a space
+C0103:346:indexer.friedelpairs: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:355:indexer.friedelpairs: Comma not followed by a space
                 mag = n.sum(nearlyzero*nearlyzero,1)
                                                  ^^
-C0103:354:indexer.friedelpairs: Invalid name "b" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:357:indexer.friedelpairs: Comma not followed by a space
-                    out.write("%f %f %f %f %f %f    "%(self.eta[k],self.omega[k],self.tth[k],self.gv[k][0],self.gv[k][1],self.gv[k][2]))
+C0103:358:indexer.friedelpairs: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:360:indexer.friedelpairs: Comma not followed by a space
+                    out.write("%f %f %f %f %f %f    "%(self.eta[a],self.omega[a],self.tth[a],self.gv[a][0],self.gv[a][1],self.gv[a][2]))
                                                                   ^^
-C0324:358:indexer.friedelpairs: Comma not followed by a space
-                    out.write("%f %f %f %f %f %f\n"%(self.eta[b],self.omega[b],self.tth[b],self.gv[b][0],self.gv[b][1],self.gv[b][2]))
-                                                                ^^
-R0914:362:indexer.find: Too many local variables (29/15)
-C0324:370:indexer.find: Comma not followed by a space
+C0103:361:indexer.friedelpairs: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:362:indexer.friedelpairs: Comma not followed by a space
+                    out.write("%f %f %f %f %f %f    "%(self.eta[a],self.omega[a],self.tth[a],self.gv[a][0],self.gv[a][1],self.gv[a][2]))
+                                                                  ^^
+R0914:367:indexer.find: Too many local variables (29/15)
+C0324:375:indexer.find: Comma not followed by a space
         print "Ring 1:",hkls1
                        ^^
-C0324:371:indexer.find: Comma not followed by a space
+C0324:376:indexer.find: Comma not followed by a space
         print "Ring 2:",hkls2
                        ^^
-C0322:372:indexer.find: Operator not preceded by a space
+C0322:377:indexer.find: Operator not preceded by a space
         cosangles=[]
                  ^
-C0103:373:indexer.find: Invalid name "h1" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:374:indexer.find: Invalid name "h2" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:375:indexer.find: Operator not preceded by a space
+C0103:378:indexer.find: Invalid name "h1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:379:indexer.find: Invalid name "h2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:380:indexer.find: Operator not preceded by a space
                 ca=self.unitcell.anglehkls(h1,h2)
                   ^
-C0103:375:indexer.find: Invalid name "ca" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:378:indexer.find: Operator not preceded by a space
+C0103:380:indexer.find: Invalid name "ca" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:383:indexer.find: Operator not preceded by a space
         coses=[]
              ^
-C0322:380:indexer.find: Operator not preceded by a space
+C0322:385:indexer.find: Operator not preceded by a space
             a=cosangles.pop()
              ^
-C0103:380:indexer.find: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:389:indexer.find: Invalid name "c" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:390:indexer.find: Comma not followed by a space
+C0103:385:indexer.find: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:394:indexer.find: Invalid name "c" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:395:indexer.find: Comma not followed by a space
             print math.acos(c)*180/math.pi,c
                                           ^^
-C0324:396:indexer.find: Comma not followed by a space
-        i1 = n.compress(n.logical_and(n.equal(self.ra,self.ring_1), self.ga==-1  ) , iall).tolist()
+C0324:401:indexer.find: Comma not followed by a space
+        i1 = n.compress(n.logical_and(n.equal(self.ra,self.ring_1),
                                                      ^^
-C0103:396:indexer.find: Invalid name "i1" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:397:indexer.find: Comma not followed by a space
-        i2 = n.compress(n.logical_and(n.equal(self.ra,self.ring_2), self.ga==-1  ) , iall).tolist()
+                                      self.ga==-1  ) , iall).tolist()
+C0103:401:indexer.find: Invalid name "i1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:403:indexer.find: Comma not followed by a space
+        i2 = n.compress(n.logical_and(n.equal(self.ra,self.ring_2),
                                                      ^^
-C0103:397:indexer.find: Invalid name "i2" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:398:indexer.find: Comma not followed by a space
+                                      self.ga==-1  ) , iall).tolist()
+C0103:403:indexer.find: Invalid name "i2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:405:indexer.find: Comma not followed by a space
         print "Number of peaks in ring 1:",len(i1)
                                           ^^
-C0324:399:indexer.find: Comma not followed by a space
+C0324:406:indexer.find: Comma not followed by a space
         print "Number of peaks in ring 2:",len(i2)
                                           ^^
-C0324:400:indexer.find: Comma not followed by a space
+C0324:407:indexer.find: Comma not followed by a space
         print "Minimum number of peaks to identify a grain",self.minpks
                                                            ^^
-C0322:404:indexer.find: Operator not preceded by a space
+C0322:411:indexer.find: Operator not preceded by a space
         self.hits=[]
                  ^
-C0322:408:indexer.find: Operator not preceded by a space
+C0322:415:indexer.find: Operator not preceded by a space
         tol=float(self.cosine_tol)
            ^
-C0322:410:indexer.find: Operator not preceded by a space
+C0322:417:indexer.find: Operator not preceded by a space
         mp=n.sqrt(n.sum(self.gv*self.gv,1))
           ^
-C0103:410:indexer.find: Invalid name "mp" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:412:indexer.find: Comma not followed by a space
+C0103:417:indexer.find: Invalid name "mp" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:419:indexer.find: Comma not followed by a space
         ps1 = n.take(self.gv,i1,0)
                             ^^
-C0324:413:indexer.find: Comma not followed by a space
+C0324:420:indexer.find: Comma not followed by a space
         mp1 = n.take(mp,i1,0)
                        ^^
-C0103:414:indexer.find: Invalid name "n1" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:415:indexer.find: Comma not followed by a space
+C0103:421:indexer.find: Invalid name "n1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:422:indexer.find: Comma not followed by a space
         ps2 = n.take(self.gv,i2,0)
                             ^^
-C0324:416:indexer.find: Comma not followed by a space
+C0324:423:indexer.find: Comma not followed by a space
         mp2 = n.take(mp,i2,0)
                        ^^
-C0103:417:indexer.find: Invalid name "n2" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:421:indexer.find: Operator not preceded by a space
+C0103:424:indexer.find: Invalid name "n2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:428:indexer.find: Operator not preceded by a space
             n1[:,i]=n1[:,i]/mp1
                    ^
-C0322:422:indexer.find: Operator not preceded by a space
+C0322:429:indexer.find: Operator not preceded by a space
             n2[:,i]=n2[:,i]/mp2
                    ^
-C0324:423:indexer.find: Comma not followed by a space
+C0324:430:indexer.find: Comma not followed by a space
         cs = n.array(coses,n.Float)
                           ^^
-C0103:423:indexer.find: Invalid name "cs" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:425:indexer.find: Operator not preceded by a space
+C0103:430:indexer.find: Invalid name "cs" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:432:indexer.find: Operator not preceded by a space
         hits=[]
             ^
-C0322:427:indexer.find: Operator not preceded by a space
+C0322:434:indexer.find: Operator not preceded by a space
         onepercent=len(i1)/100
                   ^
-C0322:428:indexer.find: Operator not preceded by a space
+C0322:435:indexer.find: Operator not preceded by a space
         if onepercent < 1: onepercent=1
                                      ^
-C0321:428:indexer.find: More than one statement on a single line
-C0322:429:indexer.find: Operator not preceded by a space
+C0321:435:indexer.find: More than one statement on a single line
+C0322:436:indexer.find: Operator not preceded by a space
         start=time.time()
              ^
-C0322:431:indexer.find: Operator not preceded by a space
+C0322:438:indexer.find: Operator not preceded by a space
             if i%onepercent == 0:
                 ^
-C0323:432:indexer.find: Operator not followed by a space
+C0323:439:indexer.find: Operator not followed by a space
                 print "Percent done %6.3f%%   ... potential hits %-6d \r"%(i*100./len(i1),len(hits)),
                                                                          ^
-C0322:433:indexer.find: Operator not preceded by a space
+C0322:440:indexer.find: Operator not preceded by a space
             costheta=n.dot(n2,n1[i])
                     ^
-C0324:434:indexer.find: Comma not followed by a space
+C0324:441:indexer.find: Comma not followed by a space
             best,diff = closest.closest(costheta,cs)
                 ^^
-C0323:437:indexer.find: Operator not followed by a space
+C0323:444:indexer.find: Operator not followed by a space
         print "Percent done %6.3f%%   ... potential hits %-6d \r"%(i*100./len(i1),len(hits)),
                                                                  ^
-W0631:437:indexer.find: Using possibly undefined loop variable 'i'
-C0324:439:indexer.find: Comma not followed by a space
+W0631:444:indexer.find: Using possibly undefined loop variable 'i'
+C0324:446:indexer.find: Comma not followed by a space
         print "Number of trial orientations generated",len(hits)
                                                       ^^
-C0324:440:indexer.find: Comma not followed by a space
+C0324:447:indexer.find: Comma not followed by a space
         print "Time taken",time.time()-start
                           ^^
-C0322:441:indexer.find: Operator not preceded by a space
+C0322:448:indexer.find: Operator not preceded by a space
         self.hits=hits
                  ^
-R0912:362:indexer.find: Too many branches (13/12)
-R0915:362:indexer.find: Too many statements (57/50)
-C0103:443:indexer.histogram_drlv_fit: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:443:indexer.histogram_drlv_fit: Comma not followed by a space
+R0912:367:indexer.find: Too many branches (13/12)
+R0915:367:indexer.find: Too many statements (57/50)
+C0103:450:indexer.histogram_drlv_fit: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:450:indexer.histogram_drlv_fit: Comma not followed by a space
     def histogram_drlv_fit(self,UBI=None,bins=None):
                                ^^
-C0322:453:indexer.histogram_drlv_fit: Operator not preceded by a space
+C0322:460:indexer.histogram_drlv_fit: Operator not preceded by a space
             start=0.25
                  ^
-C0322:454:indexer.histogram_drlv_fit: Operator not preceded by a space
+C0322:461:indexer.histogram_drlv_fit: Operator not preceded by a space
             fac=2
                ^
-C0322:455:indexer.histogram_drlv_fit: Operator not preceded by a space
+C0322:462:indexer.histogram_drlv_fit: Operator not preceded by a space
             bins=[start]
                 ^
-C0322:457:indexer.histogram_drlv_fit: Operator not preceded by a space
+C0322:464:indexer.histogram_drlv_fit: Operator not preceded by a space
                 start=start/fac
                      ^
-C0322:461:indexer.histogram_drlv_fit: Operator not preceded by a space
+C0322:468:indexer.histogram_drlv_fit: Operator not preceded by a space
             bins=n.array(bins)
                 ^
-C0324:462:indexer.histogram_drlv_fit: Comma not followed by a space
+C0324:469:indexer.histogram_drlv_fit: Comma not followed by a space
         hist = n.zeros((len(ubilist),bins.shape[0]-1),n.Int)
                                     ^^
-C0322:463:indexer.histogram_drlv_fit: Operator not preceded by a space
+C0322:470:indexer.histogram_drlv_fit: Operator not preceded by a space
         j=0
          ^
-C0103:464:indexer.histogram_drlv_fit: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:467:indexer.histogram_drlv_fit: Operator not preceded by a space
+C0103:471:indexer.histogram_drlv_fit: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:474:indexer.histogram_drlv_fit: Operator not preceded by a space
             if drlv[-1]>0.866:
                        ^
-C0324:468:indexer.histogram_drlv_fit: Comma not followed by a space
+C0324:475:indexer.histogram_drlv_fit: Comma not followed by a space
                 print "drlv of greater than 0.866!!!",drlv[-1]
                                                      ^^
-C0324:469:indexer.histogram_drlv_fit: Comma not followed by a space
+C0324:476:indexer.histogram_drlv_fit: Comma not followed by a space
             positions =  n.searchsorted(drlv,bins)
                                             ^^
-C0324:470:indexer.histogram_drlv_fit: Comma not followed by a space
+C0324:477:indexer.histogram_drlv_fit: Comma not followed by a space
             hist[j,:] =  positions[1:]-positions[:-1]
                   ^^
-C0322:471:indexer.histogram_drlv_fit: Operator not preceded by a space
+C0322:478:indexer.histogram_drlv_fit: Operator not preceded by a space
             j=j+1
              ^
-C0322:475:indexer.histogram_drlv_fit: Operator not preceded by a space
+C0322:482:indexer.histogram_drlv_fit: Operator not preceded by a space
         self.bins=bins
                  ^
-C0322:476:indexer.histogram_drlv_fit: Operator not preceded by a space
+C0322:483:indexer.histogram_drlv_fit: Operator not preceded by a space
         self.histogram=hist
                       ^
-W0622:485:indexer.scorethem: Redefining built-in 'all'
-C0111:478:indexer.scorethem: Missing docstring
-R0914:478:indexer.scorethem: Too many local variables (24/15)
-C0322:479:indexer.scorethem: Operator not preceded by a space
+W0622:492:indexer.scorethem: Redefining built-in 'all'
+C0111:485:indexer.scorethem: Missing docstring
+R0914:485:indexer.scorethem: Too many local variables (24/15)
+C0322:486:indexer.scorethem: Operator not preceded by a space
         start=time.time()
              ^
-C0322:480:indexer.scorethem: Operator not preceded by a space
+C0322:487:indexer.scorethem: Operator not preceded by a space
         ts=0
           ^
-C0103:480:indexer.scorethem: Invalid name "ts" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:481:indexer.scorethem: Operator not preceded by a space
+C0103:487:indexer.scorethem: Invalid name "ts" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:488:indexer.scorethem: Operator not preceded by a space
         tor=0
            ^
-C0322:482:indexer.scorethem: Operator not preceded by a space
+C0322:489:indexer.scorethem: Operator not preceded by a space
         ng=0
           ^
-C0103:482:indexer.scorethem: Invalid name "ng" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:483:indexer.scorethem: Operator not preceded by a space
+C0103:489:indexer.scorethem: Invalid name "ng" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:490:indexer.scorethem: Operator not preceded by a space
         tol=float(self.hkl_tol)
            ^
-C0322:484:indexer.scorethem: Operator not preceded by a space
+C0322:491:indexer.scorethem: Operator not preceded by a space
         gv=self.gvflat
           ^
-C0103:484:indexer.scorethem: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:485:indexer.scorethem: Operator not preceded by a space
+C0103:491:indexer.scorethem: Invalid name "gv" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:492:indexer.scorethem: Operator not preceded by a space
         all=len(self.hits)
            ^
-C0324:486:indexer.scorethem: Comma not followed by a space
+C0324:493:indexer.scorethem: Comma not followed by a space
         print "Scoring",all,"potential orientations"
                        ^^
-C0322:487:indexer.scorethem: Operator not preceded by a space
+C0322:494:indexer.scorethem: Operator not preceded by a space
         prog=0
             ^
-C0322:488:indexer.scorethem: Operator not preceded by a space
+C0322:495:indexer.scorethem: Operator not preceded by a space
         ng=0
           ^
-C0103:488:indexer.scorethem: Invalid name "ng" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:489:indexer.scorethem: Operator not preceded by a space
+C0103:495:indexer.scorethem: Invalid name "ng" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:496:indexer.scorethem: Operator not preceded by a space
         nuniq=0
              ^
-C0324:491:indexer.scorethem: Comma not followed by a space
+C0324:498:indexer.scorethem: Comma not followed by a space
             sys.stdout.write("Tested %8d    Found %8d     Rejected %8d as not being unique\r"%(prog,ng,nuniq))
                                                                                                    ^^
-C0322:492:indexer.scorethem: Operator not preceded by a space
+C0322:499:indexer.scorethem: Operator not preceded by a space
             prog=prog+1
                 ^
-C0324:493:indexer.scorethem: Comma not followed by a space
+C0324:500:indexer.scorethem: Comma not followed by a space
             diff,i,j = self.hits.pop()
                 ^^
-C0322:494:indexer.scorethem: Operator not preceded by a space
-            if self.ga[i]>-1 or self.ga[j]>-1:  # skip things which are already assigned
+C0322:501:indexer.scorethem: Operator not preceded by a space
+            if self.ga[i]>-1 or self.ga[j]>-1:
                          ^
-C0322:496:indexer.scorethem: Operator not preceded by a space
+C0322:504:indexer.scorethem: Operator not preceded by a space
             if i==j:
                 ^^
-C0322:499:indexer.scorethem: Operator not preceded by a space
+C0322:507:indexer.scorethem: Operator not preceded by a space
                 t0=time.time()
                   ^
-C0103:499:indexer.scorethem: Invalid name "t0" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:501:indexer.scorethem: Comma not followed by a space
+C0103:507:indexer.scorethem: Invalid name "t0" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:509:indexer.scorethem: Comma not followed by a space
                 self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],verbose=0)
                                                            ^^
-C0322:502:indexer.scorethem: Operator not preceded by a space
+C0322:510:indexer.scorethem: Operator not preceded by a space
                 UBI=self.unitcell.UBI
                    ^
-C0103:502:indexer.scorethem: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:503:indexer.scorethem: Operator not preceded by a space
+C0103:510:indexer.scorethem: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:511:indexer.scorethem: Operator not preceded by a space
                 t1=time.time()
                   ^
-C0103:503:indexer.scorethem: Invalid name "t1" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:506:indexer.scorethem: Operator not preceded by a space
+C0103:511:indexer.scorethem: Invalid name "t1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:514:indexer.scorethem: Operator not preceded by a space
                 npk=closest.score(UBI,gv,tol)
                    ^
-C0322:507:indexer.scorethem: Operator not preceded by a space
+C0322:515:indexer.scorethem: Operator not preceded by a space
                 t2=time.time()
                   ^
-C0103:507:indexer.scorethem: Invalid name "t2" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:508:indexer.scorethem: Operator not preceded by a space
+C0103:515:indexer.scorethem: Invalid name "t2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:516:indexer.scorethem: Operator not preceded by a space
                 tor=tor+t1-t0
                    ^
-C0322:509:indexer.scorethem: Operator not preceded by a space
+C0322:517:indexer.scorethem: Operator not preceded by a space
                 ts=ts+t2-t1
                   ^
-C0103:509:indexer.scorethem: Invalid name "ts" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:512:indexer.scorethem: Comma not followed by a space
+C0103:517:indexer.scorethem: Invalid name "ts" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:520:indexer.scorethem: Comma not followed by a space
                 print i,j,self.ring_1,self.ring_2
                        ^^
-W0704:531:indexer.scorethem: Except doesn't do anything
-W0702:532:indexer.scorethem: No exception's type specified
-C0322:519:indexer.scorethem: Operator not preceded by a space
-                    ubio=self.refine(self.unitcell.UBI.copy()) # refine the orientation
+W0704:541:indexer.scorethem: Except doesn't do anything
+W0702:542:indexer.scorethem: No exception's type specified
+C0322:527:indexer.scorethem: Operator not preceded by a space
+                    ubio=self.refine(self.unitcell.UBI.copy())
                         ^
-C0322:520:indexer.scorethem: Operator not preceded by a space
+C0322:529:indexer.scorethem: Operator not preceded by a space
                     ind=self.getind(ubio) # indices of peaks indexed
                        ^
-C0322:521:indexer.scorethem: Operator not preceded by a space
+C0322:530:indexer.scorethem: Operator not preceded by a space
                     ga=n.take(self.ga,ind)  # previous grain assignments
                       ^
-C0103:521:indexer.scorethem: Invalid name "ga" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:522:indexer.scorethem: Operator not preceded by a space
+C0103:530:indexer.scorethem: Invalid name "ga" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:531:indexer.scorethem: Operator not preceded by a space
                     uniqueness=n.sum(n.where(ga==-1,1,0))*1.0/ga.shape[0]
                               ^
-C0324:524:indexer.scorethem: Comma not followed by a space
-                        n.put(self.ga,ind,len(self.scores)+1)
-                                     ^^
-C0322:527:indexer.scorethem: Operator not preceded by a space
+C0322:537:indexer.scorethem: Operator not preceded by a space
                         ng=ng+1
                           ^
-C0103:527:indexer.scorethem: Invalid name "ng" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:529:indexer.scorethem: Operator not preceded by a space
+C0103:537:indexer.scorethem: Invalid name "ng" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:539:indexer.scorethem: Operator not preceded by a space
                         nuniq=nuniq+1
                              ^
-C0324:534:indexer.scorethem: Comma not followed by a space
+C0324:544:indexer.scorethem: Comma not followed by a space
         print "Number of orientations with more than",self.minpks,"peaks is",len(self.ubis)
                                                      ^^
-C0324:535:indexer.scorethem: Comma not followed by a space
+C0324:545:indexer.scorethem: Comma not followed by a space
         print "Time taken",time.time()-start
                           ^^
-C0322:537:indexer.scorethem: Operator not preceded by a space
+C0322:547:indexer.scorethem: Operator not preceded by a space
             bestfitting=n.argmax(self.scores)
                        ^
-C0324:538:indexer.scorethem: Comma not followed by a space
+C0324:548:indexer.scorethem: Comma not followed by a space
             print "UBI for best fitting\n",self.ubis[bestfitting]
                                           ^^
-C0324:539:indexer.scorethem: Comma not followed by a space
+C0324:549:indexer.scorethem: Comma not followed by a space
             print "Unit cell\n",ubitocellpars(self.ubis[bestfitting])
                                ^^
-C0324:540:indexer.scorethem: Comma not followed by a space
+C0324:550:indexer.scorethem: Comma not followed by a space
             print "Indexes",self.scorelastrefined,"peaks, with <drlv2>=",self.fitlastrefined
                            ^^
-C0324:542:indexer.scorethem: Comma not followed by a space
-            notaccountedfor = n.sum(n.where( n.logical_and(self.ga==-1, self.ra!=-1),1,0))
-                                                                                    ^^
-C0324:543:indexer.scorethem: Comma not followed by a space
-            print "Number of peaks assigned to rings but not indexed = ",notaccountedfor
+C0324:554:indexer.scorethem: Comma not followed by a space
+            print "Number of peaks assigned to rings but not indexed = ",\
                                                                         ^^
-R0915:478:indexer.scorethem: Too many statements (59/50)
-W0612:493:indexer.scorethem: Unused variable 'diff'
-R0914:548:indexer.saveindexing: Too many local variables (41/15)
-C0324:548:indexer.saveindexing: Comma not followed by a space
-    def saveindexing(self,filename,tol=None):
-                         ^^
-C0322:556:indexer.saveindexing: Operator not preceded by a space
-        f=open(filename,"w")
-         ^
-C0103:556:indexer.saveindexing: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:557:indexer.saveindexing: Operator not preceded by a space
-        i=0
-         ^
-C0324:561:indexer.saveindexing: Comma not followed by a space
-        self.ga = -1*n.ones(self.ra.shape,n.Int)
-                                         ^^
-C0324:563:indexer.saveindexing: Comma not followed by a space
-        self.gas = n.ones(self.ra.shape,n.Float)
-                                       ^^
-C0322:565:indexer.saveindexing: Operator not preceded by a space
-            if tol==None:
-                  ^^
-C0322:566:indexer.saveindexing: Operator not preceded by a space
-                tol=self.hkl_tol
-                   ^
-C0322:567:indexer.saveindexing: Operator not preceded by a space
-            h=n.dot(ubi,n.transpose(self.gv))
-             ^
-C0103:567:indexer.saveindexing: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:568:indexer.saveindexing: Operator not preceded by a space
-            hint=n.floor(h+0.5).astype(n.Int) # rounds down
+                  notaccountedfor
+R0915:485:indexer.scorethem: Too many statements (59/50)
+W0612:500:indexer.scorethem: Unused variable 'diff'
+C0322:565:indexer.fight_over_peaks: Operator not preceded by a space
+        labels= n.ones( self.ra.shape, numpy.int32)-2
+              ^
+W0612:575:indexer.fight_over_peaks: Unused variable 'edges'
+W0612:569:indexer.fight_over_peaks: Unused variable 'npk'
+R0914:584:indexer.saveindexing: Too many local variables (39/15)
+C0103:592:indexer.saveindexing: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C0323:603:indexer.saveindexing: Operator not followed by a space
+        tthcalc =numpy.zeros(len(self.ra),numpy.float)
                 ^
-C0322:569:indexer.saveindexing: Operator not preceded by a space
-            gint=n.dot(inverse(ubi),hint)
+C0323:604:indexer.saveindexing: Operator not followed by a space
+        etacalc =numpy.zeros(len(self.ra),numpy.float)
                 ^
-C0322:570:indexer.saveindexing: Operator not preceded by a space
-            diff=h-hint
+C0324:605:indexer.saveindexing: Comma not followed by a space
+        omegacalc = numpy.zeros(len(self.ra),numpy.float)
+                                            ^^
+C0321:623:indexer.saveindexing: More than one statement on a single line
+C0321:624:indexer.saveindexing: More than one statement on a single line
+C0103:631:indexer.saveindexing: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:633:indexer.saveindexing: Operator not preceded by a space
+            gint= numpy.dot( uinverses[-1], hint )
                 ^
-C0322:571:indexer.saveindexing: Operator not preceded by a space
-            drlv2=n.sum(diff*diff,0)
-                 ^
-C0324:574:indexer.saveindexing: Comma not followed by a space
-            ind = n.compress( n.less(drlv2,tol*tol) , n.arange(self.gv.shape[0]) )
-                                          ^^
-W0702:578:indexer.saveindexing: No exception's type specified
-C0322:576:indexer.saveindexing: Operator not preceded by a space
-                mdrlv=  n.sum(n.sqrt(n.take(drlv2,ind)))/ind.shape[0]
-                     ^
-C0322:578:indexer.saveindexing: Operator not preceded by a space
-                mdrlv= 1.0
-                     ^
-C0324:579:indexer.saveindexing: Comma not followed by a space
-            f.write("Grain: %d   Npeaks=%d   <drlv>=%f\n"%(i,ind.shape[0],mdrlv))
-                                                            ^^
-C0322:580:indexer.saveindexing: Operator not preceded by a space
-            i=i+1
-             ^
-C0321:584:indexer.saveindexing: More than one statement on a single line
-C0321:585:indexer.saveindexing: More than one statement on a single line
-C0324:595:indexer.saveindexing: Comma not followed by a space
-                tc,ec,oc =  transform.uncompute_g_vectors(gint,self.wavelength,wedge=self.wedge)
-                  ^^
-C0103:595:indexer.saveindexing: Invalid name "tc" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:595:indexer.saveindexing: Invalid name "ec" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:595:indexer.saveindexing: Invalid name "oc" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:597:indexer.saveindexing: Comma not followed by a space
-                f.write("%-6d ( % 6.4f % 6.4f % 6.4f ) % 12.8f "%(j,h[0,j],h[1,j],h[2,j],n.sqrt(drlv2[j])) )
+C0103:634:indexer.saveindexing: Invalid name "dr" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:644:indexer.saveindexing: Invalid name "tc" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:644:indexer.saveindexing: Invalid name "ec" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:644:indexer.saveindexing: Invalid name "oc" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:651:indexer.saveindexing: Comma not followed by a space
+                f.write("%-6d ( % 6.4f % 6.4f % 6.4f ) % 12.8f "%(j,h[0,j],h[1,j],h[2,j],n.sqrt(self.drlv2[j])) )
                                                                    ^^
-C0324:598:indexer.saveindexing: Comma not followed by a space
+C0324:652:indexer.saveindexing: Comma not followed by a space
                 f.write(" % 7.1f % 7.1f "%(self.xp[j],self.yp[j]) )
                                                      ^^
-C0322:603:indexer.saveindexing: Operator not preceded by a space
-                    to=math.asin(self.wavelength*self.ds[j]/2)*360/math.pi # tth observed
-                      ^
-C0103:603:indexer.saveindexing: Invalid name "to" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:604:indexer.saveindexing: Operator not preceded by a space
-                    eo=self.eta[j]
-                      ^
-C0103:604:indexer.saveindexing: Invalid name "eo" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:605:indexer.saveindexing: Operator not preceded by a space
-                    oo=self.omega[j]
-                      ^
-C0103:605:indexer.saveindexing: Invalid name "oo" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:606:indexer.saveindexing: Operator not preceded by a space
-                    tc1=tc[j]
-                       ^
-C0322:608:indexer.saveindexing: Operator not preceded by a space
-                    w=n.argmin( [ abs(ec[0][j] - eo) , abs(ec[1][j] - eo) ] )
-                     ^
-C0103:608:indexer.saveindexing: Invalid name "w" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:609:indexer.saveindexing: Operator not preceded by a space
-                    ec1=ec[w][j]
-                       ^
-C0322:610:indexer.saveindexing: Operator not preceded by a space
-                    oc1=oc[w][j]
-                       ^
-C0322:612:indexer.saveindexing: Operator not preceded by a space
-                    oc1=mod_360(oc1,oo)
-                       ^
-C0324:613:indexer.saveindexing: Comma not followed by a space
+C0103:657:indexer.saveindexing: Invalid name "to" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:659:indexer.saveindexing: Invalid name "eo" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:660:indexer.saveindexing: Invalid name "oo" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:664:indexer.saveindexing: Invalid name "w" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:669:indexer.saveindexing: Comma not followed by a space
                     f.write("  % 9.4f % 9.4f     % 9.4f % 9.4f   % 9.4f % 9.4f"% (oo,oc1, eo,ec1 ,to,tc1))
                                                                                     ^^
-C0322:614:indexer.saveindexing: Operator not preceded by a space
-                if self.ra[j]==-1:
-                             ^^
-C0324:620:indexer.saveindexing: Comma not followed by a space
+C0324:679:indexer.saveindexing: Comma not followed by a space
         in_rings = n.compress(n.greater(self.ra,-1),n.arange(self.gv.shape[0]))
                                                ^^
-C0322:622:indexer.saveindexing: Operator not preceded by a space
+C0322:681:indexer.saveindexing: Operator not preceded by a space
         nleft=0
              ^
-C0322:623:indexer.saveindexing: Operator not preceded by a space
+C0322:682:indexer.saveindexing: Operator not preceded by a space
         nfitted=0
                ^
-C0322:626:indexer.saveindexing: Operator not preceded by a space
-            h=self.gv[peak,:]
-             ^
-C0103:626:indexer.saveindexing: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:627:indexer.saveindexing: Comma not followed by a space
+C0324:686:indexer.saveindexing: Comma not followed by a space
+            h = self.gv[peak,:]
+                            ^^
+C0103:686:indexer.saveindexing: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:687:indexer.saveindexing: Comma not followed by a space
             f.write("\nPeak= %-5d Ring= %-5d gv=[ % -6.4f % -6.4f % -6.4f ]   omega= % 9.4f   eta= % 9.4f   tth= % 9.4f\n"%(peak,self.ra[peak],h[0],h[1],h[2],
                                                                                                                                 ^^
                   self.omega[peak],self.eta[peak],self.tth[peak]))
-C0322:629:indexer.saveindexing: Operator not preceded by a space
-            m=0
-             ^
-C0103:629:indexer.saveindexing: Invalid name "m" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:630:indexer.saveindexing: Operator not preceded by a space
-            npk=0
-               ^
-C0322:631:indexer.saveindexing: Operator not preceded by a space
-            bestubi=999. # in ga / gsa
-                   ^
-C0103:633:indexer.saveindexing: Invalid name "m" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:634:indexer.saveindexing: Comma not followed by a space
-            hi = n.dot(ubi,h)
-                          ^^
-C0103:634:indexer.saveindexing: Invalid name "hi" (should match [a-z_][a-z0-9_]{2,30}$)
-W0631:634:indexer.saveindexing: Using possibly undefined loop variable 'ubi'
-C0324:636:indexer.saveindexing: Comma not followed by a space
-            gint = n.dot(inverse(ubi),hint)
-                                     ^^
-W0631:636:indexer.saveindexing: Using possibly undefined loop variable 'ubi'
-C0322:637:indexer.saveindexing: Operator not preceded by a space
-            diff=hi-hint
-                ^
-C0324:638:indexer.saveindexing: Comma not followed by a space
-            drlv2 = n.sum(diff*diff,0)
-                                   ^^
-C0324:640:indexer.saveindexing: Comma not followed by a space
-                f.write("Grain %-5d (%3d,%3d,%3d)"%(m,hint[0],hint[1],hint[2]))
-                                                     ^^
-C0324:641:indexer.saveindexing: Comma not followed by a space
+C0103:690:indexer.saveindexing: Invalid name "m" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:691:indexer.saveindexing: Comma not followed by a space
+                hi = n.dot(self.ubis[m],h)
+                                       ^^
+C0103:691:indexer.saveindexing: Invalid name "hi" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:696:indexer.saveindexing: Comma not followed by a space
                 f.write("  ( % -6.4f % -6.4f % -6.4f )  "%(hi[0],hi[1],hi[2]))
                                                                 ^^
-C0322:643:indexer.saveindexing: Operator not preceded by a space
-                tt,e,o=transform.uncompute_one_g_vector(gint,self.wavelength,self.wedge)
-                      ^
-C0103:643:indexer.saveindexing: Invalid name "tt" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:643:indexer.saveindexing: Invalid name "e" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:643:indexer.saveindexing: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:646:indexer.saveindexing: Operator not preceded by a space
-                w=[ abs(e[0] - self.eta[peak]) , abs(e[1] - self.eta[peak]) ]
-                 ^
-C0103:646:indexer.saveindexing: Invalid name "w" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:647:indexer.saveindexing: Operator not preceded by a space
-                w=n.argmin( w )
-                 ^
-C0103:647:indexer.saveindexing: Invalid name "w" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:648:indexer.saveindexing: Operator not preceded by a space
-                et=e[w]
-                  ^
-C0103:648:indexer.saveindexing: Invalid name "et" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:649:indexer.saveindexing: Operator not preceded by a space
-                om=o[w]
-                  ^
-C0103:649:indexer.saveindexing: Invalid name "om" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:651:indexer.saveindexing: Operator not preceded by a space
-                om=mod_360(om,self.omega[peak])
-                  ^
-C0103:651:indexer.saveindexing: Invalid name "om" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:652:indexer.saveindexing: Comma not followed by a space
-                f.write(" omega= % 9.4f   eta= %9.4f   tth= %9.4f\n"%(om,et,tt) )
-                                                                        ^^
-C0322:653:indexer.saveindexing: Operator not preceded by a space
+C0322:700:indexer.saveindexing: Operator not preceded by a space
                 npk=npk+1
                    ^
-C0324:656:indexer.saveindexing: Comma not followed by a space
-                    f.write("Peak not assigned, closest=[ % -6.4f % -6.4f % -6.4f ] for grain %d\n"%(hi[0],hi[1],hi[2],m))
-                                                                                                          ^^
-C0322:659:indexer.saveindexing: Operator not preceded by a space
+C0322:707:indexer.saveindexing: Operator not preceded by a space
                 nleft=nleft+1
                      ^
-C0324:665:indexer.saveindexing: Comma not followed by a space
+C0324:713:indexer.saveindexing: Comma not followed by a space
         f.write("Peaks not assigned to rings at all %d\n"%(n.sum(n.where(self.ra==-1,1,0))))
                                                                                     ^^
-R0912:548:indexer.saveindexing: Too many branches (17/12)
-R0915:548:indexer.saveindexing: Too many statements (93/50)
-W0612:631:indexer.saveindexing: Unused variable 'bestubi'
-C0103:671:indexer.getind: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:671:indexer.getind: Comma not followed by a space
+R0912:584:indexer.saveindexing: Too many branches (15/12)
+R0915:584:indexer.saveindexing: Too many statements (85/50)
+W0613:584:indexer.saveindexing: Unused argument 'tol'
+W0612:634:indexer.saveindexing: Unused variable 'dr'
+C0103:719:indexer.getind: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:719:indexer.getind: Comma not followed by a space
     def getind(self,UBI,tol=None):
                    ^^
-C0322:675:indexer.getind: Operator not preceded by a space
-        if tol==None:
-              ^^
-C0322:676:indexer.getind: Operator not preceded by a space
-            tol=self.hkl_tol
-               ^
-C0322:677:indexer.getind: Operator not preceded by a space
-        drlv2=calc_drlv2(UBI,self.gv)
-             ^
-C0322:678:indexer.getind: Operator not preceded by a space
-        drlv2=n.where(self.ra==-1,tol+1,drlv2)
-             ^
-C0324:679:indexer.getind: Comma not followed by a space
+C0324:727:indexer.getind: Comma not followed by a space
         ind = n.compress( n.less(drlv2,tol*tol) , n.arange(self.gv.shape[0]) )
                                       ^^
-C0103:683:indexer.score: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:683:indexer.score: Comma not followed by a space
+C0103:731:indexer.score: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:731:indexer.score: Comma not followed by a space
     def score(self,UBI,tol=None):
                   ^^
-C0322:688:indexer.score: Operator not preceded by a space
+C0322:736:indexer.score: Operator not preceded by a space
         if tol==None:
               ^^
-C0324:689:indexer.score: Comma not followed by a space
+C0324:737:indexer.score: Comma not followed by a space
             return closest.score(UBI,self.gvflat,self.hkl_tol)
                                     ^^
-C0324:691:indexer.score: Comma not followed by a space
+C0324:739:indexer.score: Comma not followed by a space
             return closest.score(UBI,self.gvflat,tol)
                                     ^^
-C0103:712:indexer.refine: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
-R0914:712:indexer.refine: Too many local variables (17/15)
-C0324:712:indexer.refine: Comma not followed by a space
+C0103:760:indexer.refine: Invalid name "UBI" (should match [a-z_][a-z0-9_]{2,30}$)
+R0914:760:indexer.refine: Too many local variables (17/15)
+C0324:760:indexer.refine: Comma not followed by a space
     def refine(self,UBI):
                    ^^
-C0322:728:indexer.refine: Operator not preceded by a space
+C0322:776:indexer.refine: Operator not preceded by a space
         drlv2=calc_drlv2(UBI,self.gv)
              ^
-C0103:729:indexer.refine: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:734:indexer.refine: Comma not followed by a space
+C0103:777:indexer.refine: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:782:indexer.refine: Comma not followed by a space
         ind = n.compress( n.logical_and(n.less(drlv2,tol),n.greater(self.ra,-1)) , n.arange(self.gv.shape[0]) )
                                                     ^^
-C0324:736:indexer.refine: Comma not followed by a space
+C0324:784:indexer.refine: Comma not followed by a space
         contribs = n.take(drlv2,ind)
                                ^^
-C0322:745:indexer.refine: Operator not preceded by a space
+C0322:793:indexer.refine: Operator not preceded by a space
         R=n.zeros((3,3),n.Float)
          ^
-C0103:745:indexer.refine: Invalid name "R" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:746:indexer.refine: Operator not preceded by a space
+C0103:793:indexer.refine: Invalid name "R" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:794:indexer.refine: Operator not preceded by a space
         H=n.zeros((3,3),n.Float)
          ^
-C0103:746:indexer.refine: Invalid name "H" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:748:indexer.refine: Comma not followed by a space
+C0103:794:indexer.refine: Invalid name "H" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:796:indexer.refine: Comma not followed by a space
             r = self.gv[i,:]
                          ^^
-C0103:748:indexer.refine: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:749:indexer.refine: Comma not followed by a space
+C0103:796:indexer.refine: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:797:indexer.refine: Comma not followed by a space
             k = hint[:,i].astype(n.Float)
                       ^^
-C0324:751:indexer.refine: Comma not followed by a space
+C0324:799:indexer.refine: Comma not followed by a space
             R = R + n.outerproduct(r,k)
                                     ^^
-C0103:751:indexer.refine: Invalid name "R" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:752:indexer.refine: Comma not followed by a space
+C0103:799:indexer.refine: Invalid name "R" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:800:indexer.refine: Comma not followed by a space
             H = H + n.outerproduct(k,k)
                                     ^^
-C0103:752:indexer.refine: Invalid name "H" (should match [a-z_][a-z0-9_]{2,30}$)
-W0702:760:indexer.refine: No exception's type specified
-C0322:755:indexer.refine: Operator not preceded by a space
+C0103:800:indexer.refine: Invalid name "H" (should match [a-z_][a-z0-9_]{2,30}$)
+W0702:808:indexer.refine: No exception's type specified
+C0322:803:indexer.refine: Operator not preceded by a space
             HI=inverse(H)
               ^
-C0103:755:indexer.refine: Invalid name "HI" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:756:indexer.refine: Operator not preceded by a space
+C0103:803:indexer.refine: Invalid name "HI" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:804:indexer.refine: Operator not preceded by a space
             UBoptimal=n.dot(R,HI)
                      ^
-C0103:756:indexer.refine: Invalid name "UBoptimal" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:757:indexer.refine: Operator not preceded by a space
+C0103:804:indexer.refine: Invalid name "UBoptimal" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:805:indexer.refine: Operator not preceded by a space
             UBIo=inverse(UBoptimal)
                 ^
-C0103:757:indexer.refine: Invalid name "UBIo" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:760:indexer.refine: Operator not preceded by a space
+C0103:805:indexer.refine: Invalid name "UBIo" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:808:indexer.refine: Operator not preceded by a space
             UBIo=UBI
                 ^
-C0103:760:indexer.refine: Invalid name "UBIo" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:761:indexer.refine: Comma not followed by a space
+C0103:808:indexer.refine: Invalid name "UBIo" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:809:indexer.refine: Comma not followed by a space
         drlv2 = calc_drlv2(UBIo,self.gv)
                                ^^
-C0324:762:indexer.refine: Comma not followed by a space
+C0324:810:indexer.refine: Comma not followed by a space
         ind = n.compress( n.logical_and(n.less(drlv2,tol),n.greater(self.ra,-1)), n.arange(self.gv.shape[0]) )
                                                     ^^
-C0322:763:indexer.refine: Operator not preceded by a space
+C0322:811:indexer.refine: Operator not preceded by a space
         self.scorelastrefined=ind.shape[0]
                              ^
-C0324:764:indexer.refine: Comma not followed by a space
+C0324:812:indexer.refine: Comma not followed by a space
         contribs = n.take(drlv2,ind)
                                ^^
-C0322:766:indexer.refine: Operator not preceded by a space
+C0322:814:indexer.refine: Operator not preceded by a space
             self.fitlastrefined=math.sqrt(n.sum(contribs)/contribs.shape[0])
                                ^
-C0324:769:indexer.refine: Comma not followed by a space
+C0324:817:indexer.refine: Comma not followed by a space
             print "No contributing reflections for\n",UBI
                                                      ^^
-C0324:782:indexer.saveubis: Comma not followed by a space
+C0324:830:indexer.saveubis: Comma not followed by a space
     def saveubis(self,filename):
                      ^^
-W0621:800:indexer.readgvfile: Redefining name 'math' from outer scope (line 27)
-C0111:798:indexer.readgvfile: Missing docstring
-C0324:798:indexer.readgvfile: Comma not followed by a space
-    def readgvfile(self,filename):
+W0621:848:indexer.readgvfile: Redefining name 'math' from outer scope (line 27)
+C0111:846:indexer.readgvfile: Missing docstring
+C0324:846:indexer.readgvfile: Comma not followed by a space
+    def readgvfile(self,filename, quiet=False):
                        ^^
-C0322:799:indexer.readgvfile: Operator not preceded by a space
+C0322:847:indexer.readgvfile: Operator not preceded by a space
         f=open(filename,"r")
          ^
-C0103:799:indexer.readgvfile: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
-W0403:800:indexer.readgvfile: Relative import 'unitcell'
-W0404:800:indexer.readgvfile: Reimport 'math' (imported line 27)
-C0324:800:indexer.readgvfile: Comma not followed by a space
+C0103:847:indexer.readgvfile: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+W0403:848:indexer.readgvfile: Relative import 'unitcell'
+W0404:848:indexer.readgvfile: Reimport 'math' (imported line 27)
+C0324:848:indexer.readgvfile: Comma not followed by a space
         import unitcell,math
                        ^^
-C0322:804:indexer.readgvfile: Operator not preceded by a space
+C0322:852:indexer.readgvfile: Operator not preceded by a space
             line=f.readline()
                 ^
-C0322:805:indexer.readgvfile: Operator not preceded by a space
+C0322:853:indexer.readgvfile: Operator not preceded by a space
             if line[0]=="#":
                       ^^
-C0324:808:indexer.readgvfile: Comma not followed by a space
-                    print "Got wavelength from gv file of ",self.wavelength
-                                                           ^^
-C0324:812:indexer.readgvfile: Comma not followed by a space
-                    print "Got wedge from gv file of ",self.wedge
-                                                      ^^
-C0322:818:indexer.readgvfile: Operator not preceded by a space
+C0324:857:indexer.readgvfile: Comma not followed by a space
+                        print "Got wavelength from gv file of ",self.wavelength
+                                                               ^^
+C0324:862:indexer.readgvfile: Comma not followed by a space
+                        print "Got wedge from gv file of ",self.wedge
+                                                          ^^
+C0322:868:indexer.readgvfile: Operator not preceded by a space
         self.eta=[]   # Raw peak information
                 ^
-C0322:819:indexer.readgvfile: Operator not preceded by a space
+C0322:869:indexer.readgvfile: Operator not preceded by a space
         self.omega=[]
                   ^
-C0322:820:indexer.readgvfile: Operator not preceded by a space
+C0322:870:indexer.readgvfile: Operator not preceded by a space
         self.ds=[]
                ^
-C0322:821:indexer.readgvfile: Operator not preceded by a space
+C0322:871:indexer.readgvfile: Operator not preceded by a space
         self.xr=[]
                ^
-C0322:822:indexer.readgvfile: Operator not preceded by a space
+C0322:872:indexer.readgvfile: Operator not preceded by a space
         self.yr=[]
                ^
-C0322:823:indexer.readgvfile: Operator not preceded by a space
+C0322:873:indexer.readgvfile: Operator not preceded by a space
         self.zr=[]
                ^
-C0322:824:indexer.readgvfile: Operator not preceded by a space
+C0322:874:indexer.readgvfile: Operator not preceded by a space
         self.xp=[]
                ^
-C0322:825:indexer.readgvfile: Operator not preceded by a space
+C0322:875:indexer.readgvfile: Operator not preceded by a space
         self.yp=[]
                ^
-C0322:828:indexer.readgvfile: Operator not preceded by a space
+C0322:878:indexer.readgvfile: Operator not preceded by a space
                 v=[float(x) for x in line.split()]
                  ^
-C0103:828:indexer.readgvfile: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:845:indexer.readgvfile: Operator not preceded by a space
+C0103:878:indexer.readgvfile: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:893:indexer.readgvfile: Comma not followed by a space
+                print "LINE:",line
+                             ^^
+C0322:898:indexer.readgvfile: Operator not preceded by a space
             self.tth=n.arcsin(n.array(self.ds)*self.wavelength/2)*360/math.pi
                     ^
-C0322:847:indexer.readgvfile: Operator not preceded by a space
+C0322:900:indexer.readgvfile: Operator not preceded by a space
             self.tth=n.zeros(len(self.ds))
                     ^
-C0322:848:indexer.readgvfile: Operator not preceded by a space
+C0322:901:indexer.readgvfile: Operator not preceded by a space
         self.gv=n.transpose(n.array( [ self.xr , self.yr, self.zr ] ,n.Float))
                ^
-C0322:850:indexer.readgvfile: Operator not preceded by a space
+C0322:903:indexer.readgvfile: Operator not preceded by a space
         self.ga=n.zeros(len(self.ds),n.Int)-1 # Grain assignments
                ^
-C0322:852:indexer.readgvfile: Operator not preceded by a space
+C0322:905:indexer.readgvfile: Operator not preceded by a space
         self.gvflat=n.reshape(n.fromstring(self.gv.tostring(),n.Float),self.gv.shape) # Makes it contiguous in memory, hkl fast index
                    ^
-C0324:853:indexer.readgvfile: Comma not followed by a space
-        print "Read your gv file containing",self.gv.shape
-                                            ^^
-W0201:763:indexer.refine: Attribute 'scorelastrefined' defined outside __init__
-W0201:845:indexer.readgvfile: Attribute 'tth' defined outside __init__
-W0201:561:indexer.saveindexing: Attribute 'ga' defined outside __init__
-W0201:821:indexer.readgvfile: Attribute 'xr' defined outside __init__
-W0201:824:indexer.readgvfile: Attribute 'xp' defined outside __init__
-W0201:823:indexer.readgvfile: Attribute 'zr' defined outside __init__
-W0201:849:indexer.readgvfile: Attribute 'allgv' defined outside __init__
+C0324:907:indexer.readgvfile: Comma not followed by a space
+            print "Read your gv file containing",self.gv.shape
+                                                ^^
+R0912:846:indexer.readgvfile: Too many branches (15/12)
+R0915:846:indexer.readgvfile: Too many statements (55/50)
+W0201:811:indexer.refine: Attribute 'scorelastrefined' defined outside __init__
+W0201:898:indexer.readgvfile: Attribute 'tth' defined outside __init__
+W0201:572:indexer.fight_over_peaks: Attribute 'ga' defined outside __init__
+W0201:871:indexer.readgvfile: Attribute 'xr' defined outside __init__
+W0201:874:indexer.readgvfile: Attribute 'xp' defined outside __init__
+W0201:873:indexer.readgvfile: Attribute 'zr' defined outside __init__
+W0201:902:indexer.readgvfile: Attribute 'allgv' defined outside __init__
 W0201:292:indexer.assigntorings: Attribute 'na' defined outside __init__
 W0201:291:indexer.assigntorings: Attribute 'ra' defined outside __init__
-W0201:321:indexer.assigntorings: Attribute 'gvr' defined outside __init__
-W0201:766:indexer.refine: Attribute 'fitlastrefined' defined outside __init__
-W0201:563:indexer.saveindexing: Attribute 'gas' defined outside __init__
-W0201:476:indexer.histogram_drlv_fit: Attribute 'histogram' defined outside __init__
-W0201:265:indexer.updateparameters: Attribute 'pars' defined outside __init__
-W0201:825:indexer.readgvfile: Attribute 'yp' defined outside __init__
-W0201:822:indexer.readgvfile: Attribute 'yr' defined outside __init__
-W0201:819:indexer.readgvfile: Attribute 'omega' defined outside __init__
-W0201:820:indexer.readgvfile: Attribute 'ds' defined outside __init__
-W0201:404:indexer.find: Attribute 'hits' defined outside __init__
-W0201:818:indexer.readgvfile: Attribute 'eta' defined outside __init__
-W0201:475:indexer.histogram_drlv_fit: Attribute 'bins' defined outside __init__
+W0201:323:indexer.assigntorings: Attribute 'gvr' defined outside __init__
+W0201:564:indexer.fight_over_peaks: Attribute 'drlv2' defined outside __init__
+W0201:814:indexer.refine: Attribute 'fitlastrefined' defined outside __init__
+W0201:578:indexer.fight_over_peaks: Attribute 'gas' defined outside __init__
+W0201:483:indexer.histogram_drlv_fit: Attribute 'histogram' defined outside __init__
+W0201:264:indexer.updateparameters: Attribute 'pars' defined outside __init__
+W0201:875:indexer.readgvfile: Attribute 'yp' defined outside __init__
+W0201:872:indexer.readgvfile: Attribute 'yr' defined outside __init__
+W0201:869:indexer.readgvfile: Attribute 'omega' defined outside __init__
+W0201:870:indexer.readgvfile: Attribute 'ds' defined outside __init__
+W0201:411:indexer.find: Attribute 'hits' defined outside __init__
+W0201:868:indexer.readgvfile: Attribute 'eta' defined outside __init__
+W0201:482:indexer.histogram_drlv_fit: Attribute 'bins' defined outside __init__
+W0611: 29: Unused import LinearAlgebra
 
 
 Report
 ======
-544 statements analysed.
+556 statements analysed.
 
 Duplication
 -----------
@@ -1070,13 +935,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |540    |67.00 |528      |+12.00     |
+|code      |576    |67.84 |540      |+36.00     |
 +----------+-------+------+---------+-----------+
-|docstring |119    |14.76 |116      |+3.00      |
+|docstring |121    |14.25 |119      |+2.00      |
 +----------+-------+------+---------+-----------+
-|comment   |93     |11.54 |93       |=          |
+|comment   |99     |11.66 |93       |+6.00      |
 +----------+-------+------+---------+-----------+
-|empty     |54     |6.70  |49       |+5.00      |
+|empty     |53     |6.24  |54       |-1.00      |
 +----------+-------+------+---------+-----------+
 
 
@@ -1107,9 +972,9 @@ Statistics by type
 +---------+-------+-----------+-----------+------------+---------+
 |class    |1      |1          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|method   |17     |17         |=          |70.59       |0.00     |
+|method   |18     |17         |+1.00      |72.22       |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|function |9      |8          |+1.00      |100.00      |33.33    |
+|function |9      |9          |=          |100.00      |33.33    |
 +---------+-------+-----------+-----------+------------+---------+
 
 
@@ -1120,11 +985,11 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |441    |443      |-2.00      |
+|convention |378    |441      |-63.00     |
 +-----------+-------+---------+-----------+
-|refactor   |12     |11       |+1.00      |
+|refactor   |14     |12       |+2.00      |
 +-----------+-------+---------+-----------+
-|warning    |39     |34       |+5.00      |
+|warning    |41     |39       |+2.00      |
 +-----------+-------+---------+-----------+
 |error      |0      |0        |=          |
 +-----------+-------+---------+-----------+
@@ -1137,41 +1002,45 @@ Messages
 +-----------+-----------+
 |message id |occurences |
 +===========+===========+
-|C0322      |158        |
+|C0322      |124        |
 +-----------+-----------+
-|C0324      |113        |
+|C0324      |105        |
 +-----------+-----------+
-|C0103      |111        |
+|C0103      |104        |
 +-----------+-----------+
-|C0301      |45         |
+|C0301      |29         |
 +-----------+-----------+
-|W0201      |21         |
+|W0201      |22         |
++-----------+-----------+
+|C0323      |7          |
 +-----------+-----------+
 |C0111      |6          |
 +-----------+-----------+
 |R0914      |5          |
 +-----------+-----------+
-|C0323      |5          |
+|W0612      |4          |
 +-----------+-----------+
-|W0702      |4          |
+|R0915      |4          |
 +-----------+-----------+
-|W0631      |3          |
+|W0702      |3          |
 +-----------+-----------+
 |W0511      |3          |
 +-----------+-----------+
-|R0915      |3          |
+|R0912      |3          |
 +-----------+-----------+
 |C0321      |3          |
 +-----------+-----------+
-|W0612      |2          |
-+-----------+-----------+
-|R0912      |2          |
-+-----------+-----------+
 |W0704      |1          |
++-----------+-----------+
+|W0631      |1          |
 +-----------+-----------+
 |W0622      |1          |
 +-----------+-----------+
 |W0621      |1          |
++-----------+-----------+
+|W0613      |1          |
++-----------+-----------+
+|W0611      |1          |
 +-----------+-----------+
 |W0404      |1          |
 +-----------+-----------+
@@ -1188,5 +1057,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at 0.96/10 (previous run: 0.83/10)
+Your code has been rated at 2.21/10 (previous run: 0.96/10)
 

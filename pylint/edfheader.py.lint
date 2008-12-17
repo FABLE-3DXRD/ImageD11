@@ -1,50 +1,50 @@
 ************* Module edfheader
-C:  1: Missing docstring
-C: 31:getheader: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 32:getheader: Operator not preceded by a space
+C0111:  1: Missing docstring
+C0103: 31:getheader: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 32:getheader: Operator not preceded by a space
     if filename[-3:]==".gz":
                     ^^
-C: 33:getheader: Operator not preceded by a space
+C0322: 33:getheader: Operator not preceded by a space
         fp=gzip.GzipFile(filename,"rb")
           ^
-C: 33:getheader: Invalid name "fp" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 35:getheader: Operator not preceded by a space
+C0103: 33:getheader: Invalid name "fp" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 35:getheader: Operator not preceded by a space
         fp=bz2.BZ2File(filename,"rb")
           ^
-C: 35:getheader: Invalid name "fp" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 38:getheader: Operator not preceded by a space
+C0103: 35:getheader: Invalid name "fp" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 38:getheader: Operator not preceded by a space
             fp=open(filename,"rb")
               ^
-C: 38:getheader: Invalid name "fp" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 41:getheader: Operator not preceded by a space
+C0103: 38:getheader: Invalid name "fp" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 41:getheader: Operator not preceded by a space
     h=h+filename+";\n"
      ^
-C: 41:getheader: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 42:getheader: Operator not preceded by a space
+C0103: 41:getheader: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 42:getheader: Operator not preceded by a space
     s=fp.read(1024)
      ^
-C: 42:getheader: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 47:getheader: Operator not preceded by a space
+C0103: 42:getheader: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 47:getheader: Operator not preceded by a space
             h=h+s[0:s.find("}")+2]
              ^
-C: 47:getheader: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 50:getheader: Operator not preceded by a space
+C0103: 47:getheader: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 50:getheader: Operator not preceded by a space
             h=h+s
              ^
-C: 50:getheader: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 51:getheader: Operator not preceded by a space
+C0103: 50:getheader: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 51:getheader: Operator not preceded by a space
         s=fp.read(1024)
          ^
-C: 51:getheader: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 55: Operator not preceded by a space
+C0103: 51:getheader: Invalid name "s" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 55: Operator not preceded by a space
 if __name__=="__main__":
            ^^
-C: 56: Operator not preceded by a space
+C0322: 56: Operator not preceded by a space
     keys=[]
         ^
-C: 56: Invalid name "keys" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 57: Invalid name "args" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 72: Operator not preceded by a space
+C0103: 56: Invalid name "keys" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 57: Invalid name "args" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 72: Operator not preceded by a space
                 item=hd[hd.find(key):].split(";")[0]
                     ^
 
@@ -59,9 +59,9 @@ Duplication
 +-------------------------+------+---------+-----------+
 |                         |now   |previous |difference |
 +=========================+======+=========+===========+
-|nb duplicated lines      |0     |NC       |NC         |
+|nb duplicated lines      |0     |0        |=          |
 +-------------------------+------+---------+-----------+
-|percent duplicated lines |0.000 |NC       |NC         |
+|percent duplicated lines |0.000 |0.000    |=          |
 +-------------------------+------+---------+-----------+
 
 
@@ -72,13 +72,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |46     |60.53 |NC       |NC         |
+|code      |46     |60.53 |46       |=          |
 +----------+-------+------+---------+-----------+
-|docstring |6      |7.89  |NC       |NC         |
+|docstring |6      |7.89  |6        |=          |
 +----------+-------+------+---------+-----------+
-|comment   |18     |23.68 |NC       |NC         |
+|comment   |18     |23.68 |18       |=          |
 +----------+-------+------+---------+-----------+
-|empty     |6      |7.89  |NC       |NC         |
+|empty     |6      |7.89  |6        |=          |
 +----------+-------+------+---------+-----------+
 
 
@@ -89,13 +89,13 @@ Statistics by type
 +---------+-------+-----------+-----------+------------+---------+
 |type     |number |old number |difference |%documented |%badname |
 +=========+=======+===========+===========+============+=========+
-|module   |1      |NC         |NC         |0.00        |0.00     |
+|module   |1      |1          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|class    |0      |NC         |NC         |0.00        |0.00     |
+|class    |0      |0          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|method   |0      |NC         |NC         |0.00        |0.00     |
+|method   |0      |0          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|function |1      |NC         |NC         |100.00      |0.00     |
+|function |1      |1          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 
 
@@ -106,13 +106,13 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |24     |NC       |NC         |
+|convention |24     |24       |=          |
 +-----------+-------+---------+-----------+
-|refactor   |0      |NC       |NC         |
+|refactor   |0      |0        |=          |
 +-----------+-------+---------+-----------+
-|warning    |0      |NC       |NC         |
+|warning    |0      |0        |=          |
 +-----------+-------+---------+-----------+
-|error      |0      |NC       |NC         |
+|error      |0      |0        |=          |
 +-----------+-------+---------+-----------+
 
 
@@ -134,5 +134,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at 4.15/10
+Your code has been rated at 4.15/10 (previous run: 4.15/10)
 

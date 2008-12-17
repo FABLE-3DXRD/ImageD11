@@ -1,159 +1,158 @@
 ************* Module fit2dcake
-C:462: Line too long (83/80)
-C:490: Line too long (89/80)
-C:547: Line too long (97/80)
-C:606: Line too long (91/80)
-W:433: TODO Make this format friendly - deal with other formats that have special options
-C: 45:spr_to_median: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 48:spr_to_median: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 50:spr_to_median: Invalid name "EX2" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 51:spr_to_median: Invalid name "EX" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 52:spr_to_median: Invalid name "VAR" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 64:deg: Invalid name "x" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 72:cakemacrogenerator: Invalid name "cakemacrogenerator" (should match [A-Z_][a-zA-Z0-9]+$)
-C:202:cakemacrogenerator.writepars: Invalid name "pf" (should match [a-z_][a-z0-9_]{2,30}$)
-C:204:cakemacrogenerator.writepars: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
-C:210:cakemacrogenerator.writepars: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
-C:216:cakemacrogenerator.writepars: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
-C:222:cakemacrogenerator.writepars: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
-C:238:cakemacrogenerator.readpars: Invalid name "pf" (should match [a-z_][a-z0-9_]{2,30}$)
-C:423:cakemacrogenerator.ap: Invalid name "ap" (should match [a-z_][a-z0-9_]{2,30}$)
-C:427:cakemacrogenerator.ap: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
-C:445:cakemacrogenerator.outputfile: Operator not preceded by a space
+C0301:462: Line too long (83/80)
+C0301:490: Line too long (89/80)
+C0301:547: Line too long (97/80)
+C0301:606: Line too long (91/80)
+W0511:433: TODO Make this format friendly - deal with other formats that have special options
+C0103: 25: Invalid name "FIT2D" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 45:spr_to_median: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 48:spr_to_median: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 50:spr_to_median: Invalid name "EX2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 51:spr_to_median: Invalid name "EX" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 52:spr_to_median: Invalid name "VAR" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:202:cakemacrogenerator.writepars: Invalid name "pf" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:204:cakemacrogenerator.writepars: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:210:cakemacrogenerator.writepars: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:216:cakemacrogenerator.writepars: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:222:cakemacrogenerator.writepars: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:238:cakemacrogenerator.readpars: Invalid name "pf" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:423:cakemacrogenerator.ap: Invalid name "ap" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:427:cakemacrogenerator.ap: Invalid name "a" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:445:cakemacrogenerator.outputfile: Operator not preceded by a space
             self.macro=self.macro+"OUTPUT\nCHIPLOT\nFILE NAME\n"+filename+"_x\n"
                       ^
-C:446:cakemacrogenerator.outputfile: Operator not preceded by a space
+C0322:446:cakemacrogenerator.outputfile: Operator not preceded by a space
             self.macro=self.macro+"OUTPUT ROWS\nYES\nO.K.\n"
                       ^
-C:447:cakemacrogenerator.outputfile: Operator not preceded by a space
+C0322:447:cakemacrogenerator.outputfile: Operator not preceded by a space
             self.macro=self.macro+"OUTPUT\nCHIPLOT\nFILE NAME\n"+filename+"_y\n"
                       ^
-C:448:cakemacrogenerator.outputfile: Operator not preceded by a space
+C0322:448:cakemacrogenerator.outputfile: Operator not preceded by a space
             self.macro=self.macro+"OUTPUT ROWS\nNO\nO.K.\n"
                       ^
-C:451:cakemacrogenerator.outputfile: Operator not preceded by a space
+C0322:451:cakemacrogenerator.outputfile: Operator not preceded by a space
             self.macro=self.macro+"EXIT\nOUTPUT\n%s\n"%(self.saving_format)
                       ^
-C:452:cakemacrogenerator.outputfile: Operator not preceded by a space
+C0322:452:cakemacrogenerator.outputfile: Operator not preceded by a space
             self.macro=self.macro+"FILE NAME\n"
                       ^
-C:453:cakemacrogenerator.outputfile: Operator not preceded by a space
+C0322:453:cakemacrogenerator.outputfile: Operator not preceded by a space
             self.macro=self.macro+filename+"\n"
                       ^
-C:454:cakemacrogenerator.outputfile: Operator not preceded by a space
+C0322:454:cakemacrogenerator.outputfile: Operator not preceded by a space
             self.macro=self.macro+"O.K.\n"
                       ^
-C:464:cakemacrogenerator.cakeafile: Operator not preceded by a space
+C0322:464:cakemacrogenerator.cakeafile: Operator not preceded by a space
         self.macro=""
                   ^
-C:470:cakemacrogenerator.cakeafile: Operator not preceded by a space
+C0322:470:cakemacrogenerator.cakeafile: Operator not preceded by a space
         self.macro=self.macro+"CAKE\n"
                   ^
-C:473:cakemacrogenerator.cakeafile: Operator not preceded by a space
+C0322:473:cakemacrogenerator.cakeafile: Operator not preceded by a space
             self.macro=self.macro+self.first_time_run_string
                       ^
-C:474:cakemacrogenerator.cakeafile: Operator not preceded by a space
+C0322:474:cakemacrogenerator.cakeafile: Operator not preceded by a space
             self.first_time_run=False
                                ^
-C:475:cakemacrogenerator.cakeafile: Operator not preceded by a space
+C0322:475:cakemacrogenerator.cakeafile: Operator not preceded by a space
         self.macro=self.macro+"INTEGRATE\n"
                   ^
-C:483:cakemacrogenerator.cakeafile: Operator not preceded by a space
+C0322:483:cakemacrogenerator.cakeafile: Operator not preceded by a space
         self.macro=mac+self.macro+"EXCHANGE\n"
                   ^
-C:485:cakemacrogenerator.cakefileglob: Missing docstring
-C:485:cakemacrogenerator.cakefileglob: Comma not followed by a space
+C0111:485:cakemacrogenerator.cakefileglob: Missing docstring
+C0324:485:cakemacrogenerator.cakefileglob: Comma not followed by a space
     def cakefileglob(self,stem_arg,replace=False,outstem=None):
                          ^^
-C:487:cakemacrogenerator.cakefileglob: Operator not preceded by a space
+C0322:487:cakemacrogenerator.cakefileglob: Operator not preceded by a space
         filelist=glob.glob("%s????.%s"%(stem_arg,self.input_extn))
                 ^
-C:490:cakemacrogenerator.cakefileglob: Comma not followed by a space
+C0324:490:cakemacrogenerator.cakefileglob: Comma not followed by a space
         outputfilelist = [s.replace(self.input_extn,self.output_extn) for s in filelist ]
                                                    ^^
-C:491:cakemacrogenerator.cakefileglob: Comma not followed by a space
+C0324:491:cakemacrogenerator.cakefileglob: Comma not followed by a space
         outputfilelist = [s.replace(stem_arg,outstem) for s in outputfilelist ]
                                             ^^
-C:502:cakemacrogenerator.cakefileglob: Comma not followed by a space
+C0324:502:cakemacrogenerator.cakefileglob: Comma not followed by a space
                 self.cakeafile(filelist[i],outputfilelist[i])
                                           ^^
-C:507:cakemacrogenerator.cakefileseries: Comma not followed by a space
+C0324:507:cakemacrogenerator.cakefileseries: Comma not followed by a space
     def cakefileseries(self,stem_arg,first_arg,last_arg,outstem=None):
                            ^^
-C:511:cakemacrogenerator.cakefileseries: Comma not followed by a space
+C0324:511:cakemacrogenerator.cakefileseries: Comma not followed by a space
         for i in range(first_arg,last_arg+1):
                                 ^^
-C:519:cakemacrogenerator.cakefileseries: Comma not followed by a space
+C0324:519:cakemacrogenerator.cakefileseries: Comma not followed by a space
             self.cakeafile(filein,fileout)
                                  ^^
-C:520:cakemacrogenerator.cakefileseries: Operator not preceded by a space
+C0322:520:cakemacrogenerator.cakefileseries: Operator not preceded by a space
             if i%100 == 0:
                 ^
-C:524:cakemacrogenerator.run: Comma not followed by a space
+C0324:524:cakemacrogenerator.run: Comma not followed by a space
     def run(self,show=True):
                 ^^
-C:528:cakemacrogenerator.run: Operator not preceded by a space
+C0322:528:cakemacrogenerator.run: Operator not preceded by a space
         self.macro=self.macro+"EXIT\nEXIT FIT2d\nYES\n"
                   ^
-C:530:cakemacrogenerator.run: Operator not preceded by a space
+C0322:530:cakemacrogenerator.run: Operator not preceded by a space
         tmpfilename=tempfile.mkstemp(dir=".")[1]
                    ^
-C:531:cakemacrogenerator.run: Operator not preceded by a space
+C0322:531:cakemacrogenerator.run: Operator not preceded by a space
         tmpfilename=os.path.split(tmpfilename)[-1]
                    ^
-C:532:cakemacrogenerator.run: Operator not preceded by a space
+C0322:532:cakemacrogenerator.run: Operator not preceded by a space
         tmpfile=open(tmpfilename,"w")
                ^
-C:536:cakemacrogenerator.run: Operator not preceded by a space
+C0322:536:cakemacrogenerator.run: Operator not preceded by a space
         if show!="SHOW":
                ^^
-C:540:cakemacrogenerator.run: Operator not preceded by a space
+C0322:540:cakemacrogenerator.run: Operator not preceded by a space
                 displaywas=os.environ["DISPLAY"]
                           ^
-C:542:cakemacrogenerator.run: Operator not preceded by a space
+C0322:542:cakemacrogenerator.run: Operator not preceded by a space
                 displaywas=":0"
                           ^
-C:544:cakemacrogenerator.run: Operator not preceded by a space
+C0322:544:cakemacrogenerator.run: Operator not preceded by a space
                 os.environ["DISPLAY"]=os.environ["HOST"]+":1"
                                      ^
-C:546:cakemacrogenerator.run: Operator not preceded by a space
+C0322:546:cakemacrogenerator.run: Operator not preceded by a space
                 os.environ["DISPLAY"]=":1"
                                      ^
-C:547:cakemacrogenerator.run: Operator not preceded by a space
+C0322:547:cakemacrogenerator.run: Operator not preceded by a space
         array=str(self.mask_pars_values["DIM1_DATA"])+"x"+str(self.mask_pars_values["DIM2_DATA"])
              ^
-C:548:cakemacrogenerator.run: Comma not followed by a space
+C0324:548:cakemacrogenerator.run: Comma not followed by a space
         os.system(FIT2D + " -dim%s -mac%s"%(array,tmpfilename))
                                                  ^^
-C:551:cakemacrogenerator.run: Operator not preceded by a space
+C0322:551:cakemacrogenerator.run: Operator not preceded by a space
             os.environ["DISPLAY"]=displaywas
                                  ^
-C:555:cakemacrogenerator.run: Comma not followed by a space
+C0324:555:cakemacrogenerator.run: Comma not followed by a space
             job[0](job[1],job[2])
                          ^^
-C:558: Operator not preceded by a space
+C0322:558: Operator not preceded by a space
 if __name__=="__main__":
            ^^
-C:563: Operator not preceded by a space
+C0322:563: Operator not preceded by a space
     parser=OptionParser(usage="%prog stem_name first last parfile")
           ^
-C:563: Invalid name "parser" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C:588: Invalid name "options" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C:588: Invalid name "userargs" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C:590: Operator not preceded by a space
+C0103:563: Invalid name "parser" (should match (([A-Z_]*)|(__.*__))$)
+C0103:588: Invalid name "options" (should match (([A-Z_]*)|(__.*__))$)
+C0103:588: Invalid name "userargs" (should match (([A-Z_]*)|(__.*__))$)
+C0322:590: Operator not preceded by a space
     caker=cakemacrogenerator()
          ^
-C:590: Invalid name "caker" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C:595: Invalid name "f" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C:597: Invalid name "f" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C:606: Comma not followed by a space
+C0103:590: Invalid name "caker" (should match (([A-Z_]*)|(__.*__))$)
+C0103:595: Invalid name "f" (should match (([A-Z_]*)|(__.*__))$)
+C0103:597: Invalid name "f" (should match (([A-Z_]*)|(__.*__))$)
+C0324:606: Comma not followed by a space
         caker.cakefileglob(options.glob,options.forceoverwrite is not None,options.outstem)
                                        ^^
-C:611: Invalid name "stem" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C:612: Invalid name "first" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C:613: Invalid name "last" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C:614: Invalid name "parfile" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C:621: Comma not followed by a space
+C0103:611: Invalid name "stem" (should match (([A-Z_]*)|(__.*__))$)
+C0103:612: Invalid name "first" (should match (([A-Z_]*)|(__.*__))$)
+C0103:613: Invalid name "last" (should match (([A-Z_]*)|(__.*__))$)
+C0103:614: Invalid name "parfile" (should match (([A-Z_]*)|(__.*__))$)
+C0324:621: Comma not followed by a space
     caker.cakefileseries(stem,first,last,options.outstem)
                              ^^
 
@@ -168,9 +167,9 @@ Duplication
 +-------------------------+------+---------+-----------+
 |                         |now   |previous |difference |
 +=========================+======+=========+===========+
-|nb duplicated lines      |0     |NC       |NC         |
+|nb duplicated lines      |0     |0        |=          |
 +-------------------------+------+---------+-----------+
-|percent duplicated lines |0.000 |NC       |NC         |
+|percent duplicated lines |0.000 |0.000    |=          |
 +-------------------------+------+---------+-----------+
 
 
@@ -181,13 +180,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |342    |58.97 |NC       |NC         |
+|code      |342    |58.97 |342      |=          |
 +----------+-------+------+---------+-----------+
-|docstring |168    |28.97 |NC       |NC         |
+|docstring |168    |28.97 |168      |=          |
 +----------+-------+------+---------+-----------+
-|comment   |24     |4.14  |NC       |NC         |
+|comment   |24     |4.14  |24       |=          |
 +----------+-------+------+---------+-----------+
-|empty     |46     |7.93  |NC       |NC         |
+|empty     |46     |7.93  |46       |=          |
 +----------+-------+------+---------+-----------+
 
 
@@ -207,13 +206,13 @@ Statistics by type
 +---------+-------+-----------+-----------+------------+---------+
 |type     |number |old number |difference |%documented |%badname |
 +=========+=======+===========+===========+============+=========+
-|module   |1      |NC         |NC         |100.00      |0.00     |
+|module   |1      |1          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|class    |1      |NC         |NC         |100.00      |100.00   |
+|class    |1      |1          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|method   |16     |NC         |NC         |93.75       |6.25     |
+|method   |16     |16         |=          |93.75       |6.25     |
 +---------+-------+-----------+-----------+------------+---------+
-|function |2      |NC         |NC         |100.00      |0.00     |
+|function |2      |2          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 
 
@@ -224,13 +223,13 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |72     |NC       |NC         |
+|convention |71     |72       |-1.00      |
 +-----------+-------+---------+-----------+
-|refactor   |0      |NC       |NC         |
+|refactor   |0      |0        |=          |
 +-----------+-------+---------+-----------+
-|warning    |1      |NC       |NC         |
+|warning    |1      |1        |=          |
 +-----------+-------+---------+-----------+
-|error      |0      |NC       |NC         |
+|error      |0      |0        |=          |
 +-----------+-------+---------+-----------+
 
 
@@ -243,7 +242,7 @@ Messages
 +===========+===========+
 |C0322      |30         |
 +-----------+-----------+
-|C0103      |25         |
+|C0103      |24         |
 +-----------+-----------+
 |C0324      |12         |
 +-----------+-----------+
@@ -258,5 +257,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at 7.36/10
+Your code has been rated at 7.39/10 (previous run: 7.36/10)
 

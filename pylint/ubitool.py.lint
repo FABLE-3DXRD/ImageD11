@@ -1,49 +1,48 @@
 ************* Module ubitool
-C: 35:ubitool: Invalid name "ubitool" (should match [A-Z_][a-zA-Z0-9]+$)
-C: 35:ubitool: Missing docstring
-C: 36:ubitool.__init__: Comma not followed by a space
+C0111: 35:ubitool: Missing docstring
+C0324: 36:ubitool.__init__: Comma not followed by a space
     def __init__(self,ubilist=None,ubifile=None,obsdata=None):
                      ^^
-C: 37:ubitool.__init__: Operator not preceded by a space
+C0322: 37:ubitool.__init__: Operator not preceded by a space
         self.ubilist=ubilist
                     ^
-C: 38:ubitool.__init__: Operator not preceded by a space
+C0322: 38:ubitool.__init__: Operator not preceded by a space
         self.ubifile=ubifile
                     ^
-C: 39:ubitool.__init__: Operator not preceded by a space
+C0322: 39:ubitool.__init__: Operator not preceded by a space
         self.obsdata=obsdata
                     ^
-C: 40:ubitool.get_unit_cell: Comma not followed by a space
+C0324: 40:ubitool.get_unit_cell: Comma not followed by a space
     def get_unit_cell(self,ubi=None):
                           ^^
-C: 45:ubitool.get_orientation: Comma not followed by a space
+C0324: 45:ubitool.get_orientation: Comma not followed by a space
     def get_orientation(self,ubi=None):
                             ^^
-C: 50:ubitool.validate_ubi: Comma not followed by a space
+C0324: 50:ubitool.validate_ubi: Comma not followed by a space
     def validate_ubi(self,ubi=None):
                          ^^
-C: 68:ubitool.refine_translations: Comma not followed by a space
+C0324: 68:ubitool.refine_translations: Comma not followed by a space
     def refine_translations(self,ubi=None):
                                 ^^
-C: 74:ubitool.read_ubi_file: Comma not followed by a space
+C0324: 74:ubitool.read_ubi_file: Comma not followed by a space
     def read_ubi_file(self,filename):
                           ^^
-C: 78:ubitool.read_ubi_file: Operator not preceded by a space
+C0322: 78:ubitool.read_ubi_file: Operator not preceded by a space
         i=0; u = Numeric.zeros((3,3),Numeric.Float)
          ^
-C: 78:ubitool.read_ubi_file: More than one statement on a single line
-C: 78:ubitool.read_ubi_file: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 82:ubitool.read_ubi_file: Operator not preceded by a space
+C0321: 78:ubitool.read_ubi_file: More than one statement on a single line
+C0103: 78:ubitool.read_ubi_file: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 82:ubitool.read_ubi_file: Operator not preceded by a space
                 u[i,0]=uij[0] ; u[i,1]=uij[1] ; u[i,2]=uij[2]
                       ^
-C: 82:ubitool.read_ubi_file: More than one statement on a single line
-C: 83:ubitool.read_ubi_file: Operator not preceded by a space
+C0321: 82:ubitool.read_ubi_file: More than one statement on a single line
+C0322: 83:ubitool.read_ubi_file: Operator not preceded by a space
                 i=i+1
                  ^
-C: 86:ubitool.read_ubi_file: Comma not followed by a space
+C0324: 86:ubitool.read_ubi_file: Comma not followed by a space
                 u = Numeric.zeros((3,3),Numeric.Float)
                                     ^^
-C: 86:ubitool.read_ubi_file: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 86:ubitool.read_ubi_file: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
 
 
 Report
@@ -56,9 +55,9 @@ Duplication
 +-------------------------+------+---------+-----------+
 |                         |now   |previous |difference |
 +=========================+======+=========+===========+
-|nb duplicated lines      |0     |NC       |NC         |
+|nb duplicated lines      |0     |0        |=          |
 +-------------------------+------+---------+-----------+
-|percent duplicated lines |0.000 |NC       |NC         |
+|percent duplicated lines |0.000 |0.000    |=          |
 +-------------------------+------+---------+-----------+
 
 
@@ -69,13 +68,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |29     |30.85 |NC       |NC         |
+|code      |29     |30.85 |29       |=          |
 +----------+-------+------+---------+-----------+
-|docstring |33     |35.11 |NC       |NC         |
+|docstring |33     |35.11 |33       |=          |
 +----------+-------+------+---------+-----------+
-|comment   |17     |18.09 |NC       |NC         |
+|comment   |17     |18.09 |17       |=          |
 +----------+-------+------+---------+-----------+
-|empty     |15     |15.96 |NC       |NC         |
+|empty     |15     |15.96 |15       |=          |
 +----------+-------+------+---------+-----------+
 
 
@@ -95,13 +94,13 @@ Statistics by type
 +---------+-------+-----------+-----------+------------+---------+
 |type     |number |old number |difference |%documented |%badname |
 +=========+=======+===========+===========+============+=========+
-|module   |1      |NC         |NC         |100.00      |0.00     |
+|module   |1      |1          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|class    |1      |NC         |NC         |0.00        |100.00   |
+|class    |1      |1          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|method   |8      |NC         |NC         |100.00      |0.00     |
+|method   |8      |8          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|function |0      |NC         |NC         |0.00        |0.00     |
+|function |0      |0          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 
 
@@ -112,13 +111,13 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |19     |NC       |NC         |
+|convention |18     |19       |-1.00      |
 +-----------+-------+---------+-----------+
-|refactor   |0      |NC       |NC         |
+|refactor   |0      |0        |=          |
 +-----------+-------+---------+-----------+
-|warning    |0      |NC       |NC         |
+|warning    |0      |0        |=          |
 +-----------+-------+---------+-----------+
-|error      |0      |NC       |NC         |
+|error      |0      |0        |=          |
 +-----------+-------+---------+-----------+
 
 
@@ -133,9 +132,9 @@ Messages
 +-----------+-----------+
 |C0322      |6          |
 +-----------+-----------+
-|C0103      |3          |
-+-----------+-----------+
 |C0321      |2          |
++-----------+-----------+
+|C0103      |2          |
 +-----------+-----------+
 |C0111      |1          |
 +-----------+-----------+
@@ -144,5 +143,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at 3.67/10
+Your code has been rated at 4.00/10 (previous run: 3.67/10)
 

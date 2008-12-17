@@ -1,38 +1,38 @@
 ************* Module mar2bruker
-C: 26: Line too long (83/80)
-W: 62: Bad indentation. Found 3 spaces, expected 4
-W: 63: Bad indentation. Found 3 spaces, expected 4
-W: 64: Bad indentation. Found 3 spaces, expected 4
-W: 65: Bad indentation. Found 3 spaces, expected 4
-C: 67: Line too long (117/80)
-W: 71: Bad indentation. Found 3 spaces, expected 4
-W: 73: Bad indentation. Found 3 spaces, expected 4
-W: 75: Bad indentation. Found 3 spaces, expected 4
-W: 77: Bad indentation. Found 3 spaces, expected 4
-W: 79: Bad indentation. Found 3 spaces, expected 4
-W: 81: Bad indentation. Found 3 spaces, expected 4
-C:101: Line too long (91/80)
-C:133: Line too long (85/80)
-C:134: Line too long (90/80)
-C:162: Line too long (118/80)
-W:  3: Redefining built-in 'sum'
-C:  1: Missing docstring
-W:  3: Wildcard import Numeric
-C:  5: Comma not followed by a space
+C0301: 26: Line too long (83/80)
+W0311: 62: Bad indentation. Found 3 spaces, expected 4
+W0311: 63: Bad indentation. Found 3 spaces, expected 4
+W0311: 64: Bad indentation. Found 3 spaces, expected 4
+W0311: 65: Bad indentation. Found 3 spaces, expected 4
+C0301: 67: Line too long (117/80)
+W0311: 71: Bad indentation. Found 3 spaces, expected 4
+W0311: 73: Bad indentation. Found 3 spaces, expected 4
+W0311: 75: Bad indentation. Found 3 spaces, expected 4
+W0311: 77: Bad indentation. Found 3 spaces, expected 4
+W0311: 79: Bad indentation. Found 3 spaces, expected 4
+W0311: 81: Bad indentation. Found 3 spaces, expected 4
+C0301:101: Line too long (91/80)
+C0301:133: Line too long (85/80)
+C0301:134: Line too long (90/80)
+C0301:162: Line too long (118/80)
+W0622:  3: Redefining built-in 'sum'
+C0111:  1: Missing docstring
+W0401:  3: Wildcard import Numeric
+C0324:  5: Comma not followed by a space
 import sys,time
           ^^
-C:  6: Operator not preceded by a space
+C0322:  6: Operator not preceded by a space
 starttime=time.time()
          ^
-C:  6: Invalid name "starttime" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-W: 10:mar2edf_fit2d: Redefining name 'outfile' from outer scope (line 109)
-W: 10:mar2edf_fit2d: Redefining name 'rebinfactor' from outer scope (line 75)
-W: 10:mar2edf_fit2d: Redefining name 'infile' from outer scope (line 108)
-C: 10:mar2edf_fit2d: Missing docstring
-C: 10:mar2edf_fit2d: Comma not followed by a space
+C0103:  6: Invalid name "starttime" (should match (([A-Z_]*)|(__.*__))$)
+W0621: 10:mar2edf_fit2d: Redefining name 'outfile' from outer scope (line 109)
+W0621: 10:mar2edf_fit2d: Redefining name 'rebinfactor' from outer scope (line 75)
+W0621: 10:mar2edf_fit2d: Redefining name 'infile' from outer scope (line 108)
+C0111: 10:mar2edf_fit2d: Missing docstring
+C0324: 10:mar2edf_fit2d: Comma not followed by a space
 def mar2edf_fit2d(infile,outfile,rebinfactor):
                         ^^
-C: 11:mar2edf_fit2d: Operator not preceded by a space
+C0322: 11:mar2edf_fit2d: Operator not preceded by a space
     macro="""INPUT DATA
          ^
 
@@ -49,172 +49,171 @@ C: 11:mar2edf_fit2d: Operator not preceded by a space
 
 
 """
-C: 26:mar2edf_fit2d: Comma not followed by a space
+C0324: 26:mar2edf_fit2d: Comma not followed by a space
     open("converter.mac","w").write(macro%(infile,rebinfactor,rebinfactor,outfile))
                         ^^
-W: 35:readedffloat: Redefining name 's' from outer scope (line 90)
-C: 33:readedffloat: Missing docstring
-C: 34:readedffloat: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 35:readedffloat: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 36:readedffloat: Comma not followed by a space
+W0621: 35:readedffloat: Redefining name 's' from outer scope (line 90)
+C0111: 33:readedffloat: Missing docstring
+C0103: 34:readedffloat: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 35:readedffloat: Invalid name "h" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 36:readedffloat: Comma not followed by a space
     for n,v in h[:-1]:
          ^^
-C: 36:readedffloat: Invalid name "n" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 36:readedffloat: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 37:readedffloat: Operator not preceded by a space
+C0103: 36:readedffloat: Invalid name "n" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 36:readedffloat: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322: 37:readedffloat: Operator not preceded by a space
         v=v.strip()
          ^
-C: 37:readedffloat: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
-C: 38:readedffloat: More than one statement on a single line
-C: 39:readedffloat: More than one statement on a single line
-C: 44:readedffloat: Comma not followed by a space
+C0103: 37:readedffloat: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0321: 38:readedffloat: More than one statement on a single line
+C0321: 39:readedffloat: More than one statement on a single line
+C0324: 44:readedffloat: Comma not followed by a space
     f.seek(-xdim*ydim*4,2)
                        ^^
-C: 45:readedffloat: Comma not followed by a space
+C0324: 45:readedffloat: Comma not followed by a space
     return  reshape(fromstring(f.read(xdim*ydim*4),Float32),(xdim,ydim))
                                                   ^^
-W: 48:fortranindex: Redefining name 'i' from outer scope (line 155)
-W: 48:fortranindex: Redefining name 'size' from outer scope (line 3)
-C: 48:fortranindex: Missing docstring
-C: 48:fortranindex: Comma not followed by a space
+W0621: 48:fortranindex: Redefining name 'i' from outer scope (line 155)
+W0621: 48:fortranindex: Redefining name 'size' from outer scope (line 3)
+C0111: 48:fortranindex: Missing docstring
+C0324: 48:fortranindex: Comma not followed by a space
 def fortranindex(i,size):
                   ^^
-C: 50:fortranindex: Operator not preceded by a space
+C0322: 50:fortranindex: Operator not preceded by a space
     index2 = i%size
               ^
-W: 53:getomega: Redefining name 'num' from outer scope (line 106)
-C: 53:getomega: Missing docstring
-W: 53:getomega: Unused argument 'num'
-W: 67: No exception's type specified
-C: 62: Operator not preceded by a space
+W0621: 53:getomega: Redefining name 'num' from outer scope (line 106)
+C0111: 53:getomega: Missing docstring
+W0613: 53:getomega: Unused argument 'num'
+W0702: 67: No exception's type specified
+C0322: 62: Operator not preceded by a space
    brukerfiletemplate=sys.argv[1]
                      ^
-C: 62: Invalid name "brukerfiletemplate" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 63: Invalid name "stem" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 64: Operator not preceded by a space
+C0103: 62: Invalid name "brukerfiletemplate" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 63: Invalid name "stem" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 64: Operator not preceded by a space
    first=int(sys.argv[3])
         ^
-C: 64: Invalid name "first" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 65: Operator not preceded by a space
+C0103: 64: Invalid name "first" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 65: Operator not preceded by a space
    last=int(sys.argv[4])
        ^
-C: 65: Invalid name "last" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 67: Operator not followed by a space
+C0103: 65: Invalid name "last" (should match (([A-Z_]*)|(__.*__))$)
+C0323: 67: Operator not followed by a space
     print "Usage: %s brukertemplate stem first last [extension=mar3450] [rebinfactor=3] [outsize=2048]"%(sys.argv[0])
                                                                                                        ^
-W: 73: No exception's type specified
-C: 71: Operator not preceded by a space
+W0702: 73: No exception's type specified
+C0322: 71: Operator not preceded by a space
    inputextn=sys.argv[5]
             ^
-C: 71: Invalid name "inputextn" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 73: Operator not preceded by a space
+C0103: 71: Invalid name "inputextn" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 73: Operator not preceded by a space
    inputextn="mar3450"
             ^
-C: 73: Invalid name "inputextn" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-W: 77: No exception's type specified
-C: 75: Operator not preceded by a space
+C0103: 73: Invalid name "inputextn" (should match (([A-Z_]*)|(__.*__))$)
+W0702: 77: No exception's type specified
+C0322: 75: Operator not preceded by a space
    rebinfactor=int(sys.argv[6])
               ^
-C: 75: Invalid name "rebinfactor" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 77: Operator not preceded by a space
+C0103: 75: Invalid name "rebinfactor" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 77: Operator not preceded by a space
    rebinfactor=3
               ^
-C: 77: Invalid name "rebinfactor" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-W: 81: No exception's type specified
-C: 79: Operator not preceded by a space
+C0103: 77: Invalid name "rebinfactor" (should match (([A-Z_]*)|(__.*__))$)
+W0702: 81: No exception's type specified
+C0322: 79: Operator not preceded by a space
    outsize=int(sys.argv[7])
           ^
-C: 79: Invalid name "outsize" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 81: Operator not preceded by a space
+C0103: 79: Invalid name "outsize" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 81: Operator not preceded by a space
    outsize=2048
           ^
-C: 81: Invalid name "outsize" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 83: Operator not preceded by a space
+C0103: 81: Invalid name "outsize" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 83: Operator not preceded by a space
 hs=opendata.readbrukerheader(brukerfiletemplate)["headerstring"]
   ^
-C: 83: Invalid name "hs" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 86: Operator not preceded by a space
+C0103: 83: Invalid name "hs" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 86: Operator not preceded by a space
 hs=hs.replace("RANGE  :     0.4000000","RANGE  :     0.1000000")
   ^
-C: 86: Invalid name "hs" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 87: Operator not preceded by a space
+C0103: 86: Invalid name "hs" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 87: Operator not preceded by a space
 hs=hs.replace("INCREME:    -0.4000000","INCREME:     0.1000000")
   ^
-C: 87: Invalid name "hs" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 88: Operator not preceded by a space
+C0103: 87: Invalid name "hs" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 88: Operator not preceded by a space
 a=hs.find("ANGLES")
  ^
-C: 88: Invalid name "a" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 89: Operator not preceded by a space
+C0103: 88: Invalid name "a" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 89: Operator not preceded by a space
 e=hs.find("ENDING")
  ^
-C: 89: Invalid name "e" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 90: Operator not preceded by a space
+C0103: 89: Invalid name "e" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 90: Operator not preceded by a space
 s=hs.find("START")
  ^
-C: 90: Invalid name "s" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 91: Operator not preceded by a space
+C0103: 90: Invalid name "s" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 91: Operator not preceded by a space
 x=hs.find("CENTER")
  ^
-C: 91: Invalid name "x" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 92: Operator not preceded by a space
+C0322: 92: Operator not preceded by a space
 o=hs.find("NOVERFL")
  ^
-C: 92: Invalid name "o" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 93: Operator not preceded by a space
+C0103: 92: Invalid name "o" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 93: Operator not preceded by a space
 r=hs.find("NROWS")
  ^
-C: 93: Invalid name "r" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 94: Operator not preceded by a space
+C0103: 93: Invalid name "r" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 94: Operator not preceded by a space
 c=hs.find("NCOLS")
  ^
-C: 94: Invalid name "c" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C: 96: Operator not preceded by a space
+C0103: 94: Invalid name "c" (should match (([A-Z_]*)|(__.*__))$)
+C0322: 96: Operator not preceded by a space
 extn=".edf"
     ^
-C: 96: Invalid name "extn" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-W:103: No exception's type specified
-C: 99: Invalid name "outsize" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C:100: Comma not followed by a space
+C0103: 96: Invalid name "extn" (should match (([A-Z_]*)|(__.*__))$)
+W0702:103: No exception's type specified
+C0103: 99: Invalid name "outsize" (should match (([A-Z_]*)|(__.*__))$)
+C0324:100: Comma not followed by a space
     if outsize not in [512,1024,2048]:
                           ^^
-C:103: Invalid name "outsize" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C:104: Operator not followed by a space
+C0103:103: Invalid name "outsize" (should match (([A-Z_]*)|(__.*__))$)
+C0323:104: Operator not followed by a space
 omegadone =[]
           ^
-C:104: Invalid name "omegadone" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C:105: Operator not preceded by a space
+C0103:104: Invalid name "omegadone" (should match (([A-Z_]*)|(__.*__))$)
+C0322:105: Operator not preceded by a space
 skip=0
     ^
-C:105: Invalid name "skip" (should match (([A-Z_][A-Z1-9_]*)|(__.*__))$)
-C:106: Comma not followed by a space
+C0103:105: Invalid name "skip" (should match (([A-Z_]*)|(__.*__))$)
+C0324:106: Comma not followed by a space
 for num in range(first,last+1):
                       ^^
-C:108: Operator not followed by a space
+C0323:108: Operator not followed by a space
     infile = stem+"%03d."%(num)+inputextn
                          ^
-C:109: Operator not followed by a space
+C0323:109: Operator not followed by a space
     outfile = stem+"%03d.edf"%(num)
                              ^
-C:110: Comma not followed by a space
+C0324:110: Comma not followed by a space
     mar2edf_fit2d(infile,outfile,rebinfactor)
                         ^^
-C:113: Comma not followed by a space
+C0324:113: Comma not followed by a space
     if d.shape != (outsize,outsize) and d.shape[0]>outsize:
                           ^^
-C:116: Operator not preceded by a space
+C0322:116: Operator not preceded by a space
         d=d[off:off+outsize, off:off+outsize]
          ^
-C:118: Comma not followed by a space
+C0324:118: Comma not followed by a space
     if d.shape != (outsize,outsize) and d.shape[0]<outsize:
                           ^^
-C:121: Operator not preceded by a space
+C0322:121: Operator not preceded by a space
         new=zeros((outsize,outsize),Float32)
            ^
-C:123: Operator not preceded by a space
+C0322:123: Operator not preceded by a space
         d=new
          ^
-C:132: Operator not preceded by a space
+C0322:132: Operator not preceded by a space
     hl=hs.replace(hs[a:a+80],
       ^
                   "ANGLES :%14f%14f%14f%14f"%(0,0,omega,90)+" "*(80-14*4-8)).replace(
@@ -223,195 +222,195 @@ C:132: Operator not preceded by a space
         hs[x:x+80],"CENTER :%14f%14f"%(468,567)+" "*(80-14*2-8)).replace(
         hs[r:r+80],"NROWS  :%10d"%(outsize)+" "*(80-10-8)).replace(
         hs[c:c+80],"NCOLS  :%10d"%(outsize)+" "*(80-10-8))
-C:142: Comma not followed by a space
+C0324:142: Comma not followed by a space
     indices = compress(r > pow(2,16)-1, arange(r.shape[0]))
                                 ^^
-C:143: Operator not preceded by a space
+C0322:143: Operator not preceded by a space
     noverfl=indices.shape[0]
            ^
-C:145: Comma not followed by a space
+C0324:145: Comma not followed by a space
     hl = hl.replace(hs[o:o+80],"NOVERFL:%10d"%(noverfl)+" "*(80-10-8) )
                               ^^
-C:149: Comma not followed by a space
+C0324:149: Comma not followed by a space
     r = where(r<65535,r,65535)
                      ^^
-C:150: Operator not preceded by a space
+C0322:150: Operator not preceded by a space
     out=open(opendata.makename(stem+".",num-skip,""),"wb")
        ^
-C:154: Operator not preceded by a space
+C0322:154: Operator not preceded by a space
     length=0
           ^
-C:156: Operator not preceded by a space
+C0322:156: Operator not preceded by a space
         s="%9d%7d"%(ravel(d)[i],i)
          ^
-C:157: Operator not preceded by a space
+C0322:157: Operator not preceded by a space
         length+=16
               ^^
-C:162: Comma not followed by a space
+C0324:162: Comma not followed by a space
     print "Image",num,"time",(time.time()-starttime)/(num-first+1),opendata.makename(stem+".",num,""),"overfl",noverfl
                  ^^
-W:  3: Unused import load
-W:  3: Unused import Complex32
-W:  3: Unused import less
-W:  3: Unused import putmask
-W:  3: Unused import Unpickler
-W:  3: Unused import Character
-W:  3: Unused import arraytype
-W:  3: Unused import shape
-W:  3: Unused import LittleEndian
-W:  3: Unused import cumsum
-W:  3: Unused import divide
-W:  3: Unused import Int32
-W:  3: Unused import Complex64
-W:  3: Unused import add
-W:  3: Unused import choose
-W:  3: Unused import NewAxis
-W:  3: Unused import UInt32
-W:  3: Unused import string
-W:  3: Unused import PyObject
-W:  3: Unused import ceil
-W:  3: Unused import ones
-W:  3: Unused import arctan2
-W:  3: Unused import array_str
-W:  3: Unused import identity
-W:  3: Unused import arrayrange
-W:  3: Unused import UnsignedInt32
-W:  3: Unused import dumps
-W:  3: Unused import convolve
-W:  3: Unused import divide_safe
-W:  3: Unused import fmod
-W:  3: Unused import loads
-W:  3: Unused import Pickler
-W:  3: Unused import PrecisionError
-W:  3: Unused import Complex0
-W:  3: Unused import dump
-W:  3: Unused import argmax
-W:  3: Unused import Complex8
-W:  3: Unused import product
-W:  3: Unused import sign
-W:  3: Unused import logical_and
-W:  3: Unused import UfuncType
-W:  3: Unused import allclose
-W:  3: Unused import nonzero
-W:  3: Unused import asarray
-W:  3: Unused import sum
-W:  3: Unused import vdot
-W:  3: Unused import Complex16
-W:  3: Unused import math
-W:  3: Unused import numeric_version
-W:  3: Unused import concatenate
-W:  3: Unused import pickle_array
-W:  3: Unused import power
-W:  3: Unused import transpose
-W:  3: Unused import array2string
-W:  3: Unused import diagonal
-W:  3: Unused import sinh
-W:  3: Unused import put
-W:  3: Unused import remainder
-W:  3: Unused import UInt64
-W:  3: Unused import cos
-W:  3: Unused import StringIO
-W:  3: Unused import Float0
-W:  3: Unused import equal
-W:  3: Unused import argsort
-W:  3: Unused import arccos
-W:  3: Unused import less_equal
-W:  3: Unused import UInt
-W:  3: Unused import Float16
-W:  3: Unused import arcsinh
-W:  3: Unused import cosh
-W:  3: Unused import rank
-W:  3: Unused import bitwise_or
-W:  3: Unused import bitwise_and
-W:  3: Unused import array
-W:  3: Unused import UnsignedInt64
-W:  3: Unused import size
-W:  3: Unused import logical_xor
-W:  3: Unused import log
-W:  3: Unused import sometrue
-W:  3: Unused import subtract
-W:  3: Unused import invert
-W:  3: Unused import negative
-W:  3: Unused import cross_correlate
-W:  3: Unused import alltrue
-W:  3: Unused import Int0
-W:  3: Unused import UnsignedInt8
-W:  3: Unused import pi
-W:  3: Unused import log10
-W:  3: Unused import empty
-W:  3: Unused import sort
-W:  3: Unused import LoadArray
-W:  3: Unused import cumproduct
-W:  3: Unused import swapaxes
-W:  3: Unused import Float64
-W:  3: Unused import arcsin
-W:  3: Unused import Int64
-W:  3: Unused import typecodes
-W:  3: Unused import Int128
-W:  3: Unused import copy
-W:  3: Unused import resize
-W:  3: Unused import array_repr
-W:  3: Unused import not_equal
-W:  3: Unused import fromfunction
-W:  3: Unused import greater_equal
-W:  3: Unused import argmin
-W:  3: Unused import tanh
-W:  3: Unused import Int
-W:  3: Unused import cross_product
-W:  3: Unused import true_divide
-W:  3: Unused import UInt128
-W:  3: Unused import maximum
-W:  3: Unused import Int8
-W:  3: Unused import UnsignedInt16
-W:  3: Unused import Complex
-W:  3: Unused import Float8
-W:  3: Unused import arccosh
-W:  3: Unused import greater
-W:  3: Unused import copy_reg
-W:  3: Unused import clip
-W:  3: Unused import DumpArray
-W:  3: Unused import Complex128
-W:  3: Unused import ArrayType
-W:  3: Unused import logical_or
-W:  3: Unused import array_constructor
-W:  3: Unused import conjugate
-W:  3: Unused import innerproduct
-W:  3: Unused import tan
-W:  3: Unused import around
-W:  3: Unused import bitwise_xor
-W:  3: Unused import Int16
-W:  3: Unused import fabs
-W:  3: Unused import floor
-W:  3: Unused import sqrt
-W:  3: Unused import arctan
-W:  3: Unused import multiarray
-W:  3: Unused import right_shift
-W:  3: Unused import take
-W:  3: Unused import floor_divide
-W:  3: Unused import absolute
-W:  3: Unused import sin
-W:  3: Unused import sarray
-W:  3: Unused import outerproduct
-W:  3: Unused import repeat
-W:  3: Unused import trace
-W:  3: Unused import UnsignedInteger
-W:  3: Unused import UInt8
-W:  3: Unused import hypot
-W:  3: Unused import matrixmultiply
-W:  3: Unused import UnsignedInt128
-W:  3: Unused import Float128
-W:  3: Unused import multiply
-W:  3: Unused import pickle
-W:  3: Unused import types
-W:  3: Unused import logical_not
-W:  3: Unused import minimum
-W:  3: Unused import average
-W:  3: Unused import Float
-W:  3: Unused import left_shift
-W:  3: Unused import searchsorted
-W:  3: Unused import exp
-W:  3: Unused import arctanh
-W:  3: Unused import dot
+W0614:  3: Unused import load from wildcard import
+W0614:  3: Unused import Complex32 from wildcard import
+W0614:  3: Unused import less from wildcard import
+W0614:  3: Unused import putmask from wildcard import
+W0614:  3: Unused import Unpickler from wildcard import
+W0614:  3: Unused import Character from wildcard import
+W0614:  3: Unused import arraytype from wildcard import
+W0614:  3: Unused import shape from wildcard import
+W0614:  3: Unused import LittleEndian from wildcard import
+W0614:  3: Unused import cumsum from wildcard import
+W0614:  3: Unused import divide from wildcard import
+W0614:  3: Unused import Int32 from wildcard import
+W0614:  3: Unused import Complex64 from wildcard import
+W0614:  3: Unused import add from wildcard import
+W0614:  3: Unused import choose from wildcard import
+W0614:  3: Unused import NewAxis from wildcard import
+W0614:  3: Unused import UInt32 from wildcard import
+W0614:  3: Unused import string from wildcard import
+W0614:  3: Unused import PyObject from wildcard import
+W0614:  3: Unused import ceil from wildcard import
+W0614:  3: Unused import ones from wildcard import
+W0614:  3: Unused import arctan2 from wildcard import
+W0614:  3: Unused import array_str from wildcard import
+W0614:  3: Unused import identity from wildcard import
+W0614:  3: Unused import arrayrange from wildcard import
+W0614:  3: Unused import UnsignedInt32 from wildcard import
+W0614:  3: Unused import dumps from wildcard import
+W0614:  3: Unused import convolve from wildcard import
+W0614:  3: Unused import divide_safe from wildcard import
+W0614:  3: Unused import fmod from wildcard import
+W0614:  3: Unused import loads from wildcard import
+W0614:  3: Unused import Pickler from wildcard import
+W0614:  3: Unused import PrecisionError from wildcard import
+W0614:  3: Unused import Complex0 from wildcard import
+W0614:  3: Unused import dump from wildcard import
+W0614:  3: Unused import argmax from wildcard import
+W0614:  3: Unused import Complex8 from wildcard import
+W0614:  3: Unused import product from wildcard import
+W0614:  3: Unused import sign from wildcard import
+W0614:  3: Unused import logical_and from wildcard import
+W0614:  3: Unused import UfuncType from wildcard import
+W0614:  3: Unused import allclose from wildcard import
+W0614:  3: Unused import nonzero from wildcard import
+W0614:  3: Unused import asarray from wildcard import
+W0614:  3: Unused import sum from wildcard import
+W0614:  3: Unused import vdot from wildcard import
+W0614:  3: Unused import Complex16 from wildcard import
+W0614:  3: Unused import math from wildcard import
+W0614:  3: Unused import numeric_version from wildcard import
+W0614:  3: Unused import concatenate from wildcard import
+W0614:  3: Unused import pickle_array from wildcard import
+W0614:  3: Unused import power from wildcard import
+W0614:  3: Unused import transpose from wildcard import
+W0614:  3: Unused import array2string from wildcard import
+W0614:  3: Unused import diagonal from wildcard import
+W0614:  3: Unused import sinh from wildcard import
+W0614:  3: Unused import put from wildcard import
+W0614:  3: Unused import remainder from wildcard import
+W0614:  3: Unused import UInt64 from wildcard import
+W0614:  3: Unused import cos from wildcard import
+W0614:  3: Unused import StringIO from wildcard import
+W0614:  3: Unused import Float0 from wildcard import
+W0614:  3: Unused import equal from wildcard import
+W0614:  3: Unused import argsort from wildcard import
+W0614:  3: Unused import arccos from wildcard import
+W0614:  3: Unused import less_equal from wildcard import
+W0614:  3: Unused import UInt from wildcard import
+W0614:  3: Unused import Float16 from wildcard import
+W0614:  3: Unused import arcsinh from wildcard import
+W0614:  3: Unused import cosh from wildcard import
+W0614:  3: Unused import rank from wildcard import
+W0614:  3: Unused import bitwise_or from wildcard import
+W0614:  3: Unused import bitwise_and from wildcard import
+W0614:  3: Unused import array from wildcard import
+W0614:  3: Unused import UnsignedInt64 from wildcard import
+W0614:  3: Unused import size from wildcard import
+W0614:  3: Unused import logical_xor from wildcard import
+W0614:  3: Unused import log from wildcard import
+W0614:  3: Unused import sometrue from wildcard import
+W0614:  3: Unused import subtract from wildcard import
+W0614:  3: Unused import invert from wildcard import
+W0614:  3: Unused import negative from wildcard import
+W0614:  3: Unused import cross_correlate from wildcard import
+W0614:  3: Unused import alltrue from wildcard import
+W0614:  3: Unused import Int0 from wildcard import
+W0614:  3: Unused import UnsignedInt8 from wildcard import
+W0614:  3: Unused import pi from wildcard import
+W0614:  3: Unused import log10 from wildcard import
+W0614:  3: Unused import empty from wildcard import
+W0614:  3: Unused import sort from wildcard import
+W0614:  3: Unused import LoadArray from wildcard import
+W0614:  3: Unused import cumproduct from wildcard import
+W0614:  3: Unused import swapaxes from wildcard import
+W0614:  3: Unused import Float64 from wildcard import
+W0614:  3: Unused import arcsin from wildcard import
+W0614:  3: Unused import Int64 from wildcard import
+W0614:  3: Unused import typecodes from wildcard import
+W0614:  3: Unused import Int128 from wildcard import
+W0614:  3: Unused import copy from wildcard import
+W0614:  3: Unused import resize from wildcard import
+W0614:  3: Unused import array_repr from wildcard import
+W0614:  3: Unused import not_equal from wildcard import
+W0614:  3: Unused import fromfunction from wildcard import
+W0614:  3: Unused import greater_equal from wildcard import
+W0614:  3: Unused import argmin from wildcard import
+W0614:  3: Unused import tanh from wildcard import
+W0614:  3: Unused import Int from wildcard import
+W0614:  3: Unused import cross_product from wildcard import
+W0614:  3: Unused import true_divide from wildcard import
+W0614:  3: Unused import UInt128 from wildcard import
+W0614:  3: Unused import maximum from wildcard import
+W0614:  3: Unused import Int8 from wildcard import
+W0614:  3: Unused import UnsignedInt16 from wildcard import
+W0614:  3: Unused import Complex from wildcard import
+W0614:  3: Unused import Float8 from wildcard import
+W0614:  3: Unused import arccosh from wildcard import
+W0614:  3: Unused import greater from wildcard import
+W0614:  3: Unused import copy_reg from wildcard import
+W0614:  3: Unused import clip from wildcard import
+W0614:  3: Unused import DumpArray from wildcard import
+W0614:  3: Unused import Complex128 from wildcard import
+W0614:  3: Unused import ArrayType from wildcard import
+W0614:  3: Unused import logical_or from wildcard import
+W0614:  3: Unused import array_constructor from wildcard import
+W0614:  3: Unused import conjugate from wildcard import
+W0614:  3: Unused import innerproduct from wildcard import
+W0614:  3: Unused import tan from wildcard import
+W0614:  3: Unused import around from wildcard import
+W0614:  3: Unused import bitwise_xor from wildcard import
+W0614:  3: Unused import Int16 from wildcard import
+W0614:  3: Unused import fabs from wildcard import
+W0614:  3: Unused import floor from wildcard import
+W0614:  3: Unused import sqrt from wildcard import
+W0614:  3: Unused import arctan from wildcard import
+W0614:  3: Unused import multiarray from wildcard import
+W0614:  3: Unused import right_shift from wildcard import
+W0614:  3: Unused import take from wildcard import
+W0614:  3: Unused import floor_divide from wildcard import
+W0614:  3: Unused import absolute from wildcard import
+W0614:  3: Unused import sin from wildcard import
+W0614:  3: Unused import sarray from wildcard import
+W0614:  3: Unused import outerproduct from wildcard import
+W0614:  3: Unused import repeat from wildcard import
+W0614:  3: Unused import trace from wildcard import
+W0614:  3: Unused import UnsignedInteger from wildcard import
+W0614:  3: Unused import UInt8 from wildcard import
+W0614:  3: Unused import hypot from wildcard import
+W0614:  3: Unused import matrixmultiply from wildcard import
+W0614:  3: Unused import UnsignedInt128 from wildcard import
+W0614:  3: Unused import Float128 from wildcard import
+W0614:  3: Unused import multiply from wildcard import
+W0614:  3: Unused import pickle from wildcard import
+W0614:  3: Unused import types from wildcard import
+W0614:  3: Unused import logical_not from wildcard import
+W0614:  3: Unused import minimum from wildcard import
+W0614:  3: Unused import average from wildcard import
+W0614:  3: Unused import Float from wildcard import
+W0614:  3: Unused import left_shift from wildcard import
+W0614:  3: Unused import searchsorted from wildcard import
+W0614:  3: Unused import exp from wildcard import
+W0614:  3: Unused import arctanh from wildcard import
+W0614:  3: Unused import dot from wildcard import
 
 
 Report
@@ -424,9 +423,9 @@ Duplication
 +-------------------------+------+---------+-----------+
 |                         |now   |previous |difference |
 +=========================+======+=========+===========+
-|nb duplicated lines      |0     |NC       |NC         |
+|nb duplicated lines      |0     |0        |=          |
 +-------------------------+------+---------+-----------+
-|percent duplicated lines |0.000 |NC       |NC         |
+|percent duplicated lines |0.000 |0.000    |=          |
 +-------------------------+------+---------+-----------+
 
 
@@ -437,13 +436,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |115    |82.73 |NC       |NC         |
+|code      |115    |82.73 |115      |=          |
 +----------+-------+------+---------+-----------+
-|docstring |2      |1.44  |NC       |NC         |
+|docstring |2      |1.44  |2        |=          |
 +----------+-------+------+---------+-----------+
-|comment   |11     |7.91  |NC       |NC         |
+|comment   |11     |7.91  |11       |=          |
 +----------+-------+------+---------+-----------+
-|empty     |11     |7.91  |NC       |NC         |
+|empty     |11     |7.91  |11       |=          |
 +----------+-------+------+---------+-----------+
 
 
@@ -462,13 +461,13 @@ Statistics by type
 +---------+-------+-----------+-----------+------------+---------+
 |type     |number |old number |difference |%documented |%badname |
 +=========+=======+===========+===========+============+=========+
-|module   |1      |NC         |NC         |0.00        |0.00     |
+|module   |1      |1          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|class    |0      |NC         |NC         |0.00        |0.00     |
+|class    |0      |0          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|method   |0      |NC         |NC         |0.00        |0.00     |
+|method   |0      |0          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|function |4      |NC         |NC         |0.00        |0.00     |
+|function |4      |4          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 
 
@@ -479,13 +478,13 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |98     |NC       |NC         |
+|convention |97     |98       |-1.00      |
 +-----------+-------+---------+-----------+
-|refactor   |0      |NC       |NC         |
+|refactor   |0      |0        |=          |
 +-----------+-------+---------+-----------+
-|warning    |187    |NC       |NC         |
+|warning    |187    |187      |=          |
 +-----------+-------+---------+-----------+
-|error      |0      |NC       |NC         |
+|error      |0      |0        |=          |
 +-----------+-------+---------+-----------+
 
 
@@ -496,11 +495,11 @@ Messages
 +-----------+-----------+
 |message id |occurences |
 +===========+===========+
-|W0611      |162        |
+|W0614      |162        |
 +-----------+-----------+
 |C0322      |34         |
 +-----------+-----------+
-|C0103      |31         |
+|C0103      |30         |
 +-----------+-----------+
 |C0324      |16         |
 +-----------+-----------+
@@ -529,5 +528,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at -20.32/10
+Your code has been rated at -20.21/10 (previous run: -20.32/10)
 

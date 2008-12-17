@@ -1,26 +1,26 @@
 ************* Module fitgrain
-W0621: 14:fitgrain: Redefining name 'options' from outer scope (line 99)
+W0621: 14:fitgrain: Redefining name 'options' from outer scope (line 100)
 C0103: 18:fitgrain: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
 C0103: 27:fitgrain: Invalid name "p" (should match [a-z_][a-z0-9_]{2,30}$)
 W0704: 30:fitgrain: Except doesn't do anything
 W0702: 31:fitgrain: No exception's type specified
-C0103: 38:fitgrain: Invalid name "ul" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322: 44: Operator not preceded by a space
+C0322: 45: Operator not preceded by a space
 if __name__=="__main__":
            ^^
-C0103: 46: Invalid name "console" (should match (([A-Z_]*)|(__.*__))$)
-C0103: 48: Invalid name "formatter" (should match (([A-Z_]*)|(__.*__))$)
-C0103: 53: Invalid name "root" (should match (([A-Z_]*)|(__.*__))$)
-C0103: 59: Invalid name "parser" (should match (([A-Z_]*)|(__.*__))$)
-C0103: 99: Invalid name "options" (should match (([A-Z_]*)|(__.*__))$)
-C0103: 99: Invalid name "args" (should match (([A-Z_]*)|(__.*__))$)
-W0404:107: Reimport 'sys' (imported line 12)
-W0702:113: No exception's type specified
+C0103: 47: Invalid name "console" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 49: Invalid name "formatter" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 54: Invalid name "root" (should match (([A-Z_]*)|(__.*__))$)
+C0103: 60: Invalid name "parser" (should match (([A-Z_]*)|(__.*__))$)
+C0103:100: Invalid name "options" (should match (([A-Z_]*)|(__.*__))$)
+C0103:100: Invalid name "args" (should match (([A-Z_]*)|(__.*__))$)
+W0404:108: Reimport 'sys' (imported line 12)
+W0702:114: No exception's type specified
+W0611: 11: Unused import indexing
 
 
 Report
 ======
-53 statements analysed.
+52 statements analysed.
 
 Duplication
 -----------
@@ -41,13 +41,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |81     |76.42 |18       |+63.00     |
+|code      |80     |75.47 |81       |-1.00      |
 +----------+-------+------+---------+-----------+
-|docstring |12     |11.32 |2        |+10.00     |
+|docstring |12     |11.32 |12       |=          |
 +----------+-------+------+---------+-----------+
-|comment   |3      |2.83  |10       |-7.00      |
+|comment   |5      |4.72  |3        |+2.00      |
 +----------+-------+------+---------+-----------+
-|empty     |10     |9.43  |3        |+7.00      |
+|empty     |9      |8.49  |10       |-1.00      |
 +----------+-------+------+---------+-----------+
 
 
@@ -74,7 +74,7 @@ Statistics by type
 +---------+-------+-----------+-----------+------------+---------+
 |method   |0      |0          |=          |0.00        |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|function |1      |0          |+1.00      |100.00      |0.00     |
+|function |1      |1          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 
 
@@ -85,11 +85,11 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |10     |7        |+3.00      |
+|convention |9      |10       |-1.00      |
 +-----------+-------+---------+-----------+
 |refactor   |0      |0        |=          |
 +-----------+-------+---------+-----------+
-|warning    |5      |1        |+4.00      |
+|warning    |6      |5        |+1.00      |
 +-----------+-------+---------+-----------+
 |error      |0      |0        |=          |
 +-----------+-------+---------+-----------+
@@ -102,13 +102,15 @@ Messages
 +-----------+-----------+
 |message id |occurences |
 +===========+===========+
-|C0103      |9          |
+|C0103      |8          |
 +-----------+-----------+
 |W0702      |2          |
 +-----------+-----------+
 |W0704      |1          |
 +-----------+-----------+
 |W0621      |1          |
++-----------+-----------+
+|W0611      |1          |
 +-----------+-----------+
 |W0404      |1          |
 +-----------+-----------+
@@ -119,5 +121,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at 7.17/10 (previous run: 5.56/10)
+Your code has been rated at 7.12/10 (previous run: 7.17/10)
 

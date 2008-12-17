@@ -1,409 +1,399 @@
 ************* Module plot3d
-C0301: 15: Line too long (103/80)
-C0301: 16: Line too long (127/80)
-W0311: 78: Bad indentation. Found 11 spaces, expected 12
+C0301: 16: Line too long (103/80)
+C0301: 17: Line too long (127/80)
 W0311: 79: Bad indentation. Found 11 spaces, expected 12
-W0311: 81: Bad indentation. Found 11 spaces, expected 12
+W0311: 80: Bad indentation. Found 11 spaces, expected 12
 W0311: 82: Bad indentation. Found 11 spaces, expected 12
 W0311: 83: Bad indentation. Found 11 spaces, expected 12
 W0311: 84: Bad indentation. Found 11 spaces, expected 12
-C0301:108: Line too long (90/80)
-C0301:128: Line too long (85/80)
-C0301:135: Line too long (103/80)
-C0301:139: Line too long (85/80)
-C0301:159: Line too long (85/80)
+W0311: 85: Bad indentation. Found 11 spaces, expected 12
+C0301:109: Line too long (90/80)
+C0301:129: Line too long (85/80)
+C0301:136: Line too long (103/80)
+C0301:140: Line too long (85/80)
 C0301:160: Line too long (85/80)
-W0311:292: Bad indentation. Found 7 spaces, expected 8
-C0301:294: Line too long (101/80)
-W0311:294: Bad indentation. Found 7 spaces, expected 8
-W0311:296: Bad indentation. Found 7 spaces, expected 8
-W0402: 13: Uses of a deprecated module 'string'
-W0702: 21: No exception's type specified
-W0404: 30: Reimport 'sys' (imported line 21)
-C0111: 33:plot3d: Missing docstring
-C0103: 46:plot3d.__init__: Invalid name "ps" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103: 51:plot3d.__init__: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:115:plot3d.readimage: Invalid name "imageWidth" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:116:plot3d.readimage: Invalid name "imageHeight" (should match [a-z_][a-z0-9_]{2,30}$)
-R0902: 33:plot3d: Too many instance attributes (17/7)
-W0621: 43:plot3d.__init__: Redefining name 'xyz' from outer scope (line 278)
-W0621: 34:plot3d.__init__: Redefining name 'lines' from outer scope (line 272)
-R0913: 34:plot3d.__init__: Too many arguments (8/5)
-C0324: 34:plot3d.__init__: Comma not followed by a space
+C0301:161: Line too long (85/80)
+W0311:293: Bad indentation. Found 7 spaces, expected 8
+C0301:295: Line too long (101/80)
+W0311:295: Bad indentation. Found 7 spaces, expected 8
+W0311:297: Bad indentation. Found 7 spaces, expected 8
+W0402: 14: Uses of a deprecated module 'string'
+W0702: 22: No exception's type specified
+W0404: 31: Reimport 'sys' (imported line 22)
+C0111: 34:plot3d: Missing docstring
+C0103: 47:plot3d.__init__: Invalid name "ps" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103: 52:plot3d.__init__: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:116:plot3d.readimage: Invalid name "imageWidth" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:117:plot3d.readimage: Invalid name "imageHeight" (should match [a-z_][a-z0-9_]{2,30}$)
+R0902: 34:plot3d: Too many instance attributes (17/7)
+W0621: 44:plot3d.__init__: Redefining name 'xyz' from outer scope (line 279)
+W0621: 35:plot3d.__init__: Redefining name 'lines' from outer scope (line 273)
+R0913: 35:plot3d.__init__: Too many arguments (8/5)
+C0324: 35:plot3d.__init__: Comma not followed by a space
     def __init__(self,parent,data=None,lines=None,
                      ^^
                  ubis=None,image=None,pars=None,spline=None):
-C0324: 40:plot3d.__init__: Comma not followed by a space
+C0324: 41:plot3d.__init__: Comma not followed by a space
         Tk.Toplevel.__init__(self,parent)
                                  ^^
-C0322: 41:plot3d.__init__: Operator not preceded by a space
+C0322: 42:plot3d.__init__: Operator not preceded by a space
         self.parent=parent
                    ^
-C0322: 42:plot3d.__init__: Operator not preceded by a space
+C0322: 43:plot3d.__init__: Operator not preceded by a space
         if data!=None:
                ^^
-C0322: 43:plot3d.__init__: Operator not preceded by a space
+C0322: 44:plot3d.__init__: Operator not preceded by a space
             xyz=data.copy()
                ^
-C0322: 45:plot3d.__init__: Operator not preceded by a space
+C0322: 46:plot3d.__init__: Operator not preceded by a space
             xyz=numpy.array([0,0,0])
                ^
-C0322: 46:plot3d.__init__: Operator not preceded by a space
+C0322: 47:plot3d.__init__: Operator not preceded by a space
         self.ps=Tk.StringVar()
                ^
-C0322: 48:plot3d.__init__: Operator not preceded by a space
+C0322: 49:plot3d.__init__: Operator not preceded by a space
         self.pointsize=1.
                       ^
-C0322: 49:plot3d.__init__: Operator not preceded by a space
+C0322: 50:plot3d.__init__: Operator not preceded by a space
         self.npeaks=xyz.shape[0]
                    ^
-C0322: 54:plot3d.__init__: Operator not preceded by a space
+C0322: 55:plot3d.__init__: Operator not preceded by a space
         self.o.fovy=5
                    ^
-C0322: 55:plot3d.__init__: Operator not preceded by a space
+C0322: 56:plot3d.__init__: Operator not preceded by a space
         self.o.near=1e6
                    ^
-C0322: 56:plot3d.__init__: Operator not preceded by a space
+C0322: 57:plot3d.__init__: Operator not preceded by a space
         self.o.far=1e-6
                   ^
-C0322: 58:plot3d.__init__: Operator not preceded by a space
+C0322: 59:plot3d.__init__: Operator not preceded by a space
         self.o.distance=numpy.maximum.reduce(numpy.ravel(xyz))*4 / \
                        ^
             math.tan(self.o.fovy*math.pi/180)
-C0324: 60:plot3d.__init__: Comma not followed by a space
+C0324: 61:plot3d.__init__: Comma not followed by a space
         print type(xyz),xyz.dtype.char,xyz.shape
                        ^^
-C0322: 61:plot3d.__init__: Operator not preceded by a space
+C0322: 62:plot3d.__init__: Operator not preceded by a space
         self.xyz=xyz
                 ^
-C0322: 62:plot3d.__init__: Operator not preceded by a space
+C0322: 63:plot3d.__init__: Operator not preceded by a space
         f=Tk.Frame(self)
          ^
-C0103: 62:plot3d.__init__: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324: 63:plot3d.__init__: Comma not followed by a space
+C0103: 63:plot3d.__init__: Invalid name "f" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324: 64:plot3d.__init__: Comma not followed by a space
         Tk.Button(f,text="Help",command=self.o.help).pack(side=Tk.LEFT)
                    ^^
-C0324: 64:plot3d.__init__: Comma not followed by a space
+C0324: 65:plot3d.__init__: Comma not followed by a space
         Tk.Button(f,text="Reset",command=self.o.reset).pack(side=Tk.LEFT)
                    ^^
-C0324: 65:plot3d.__init__: Comma not followed by a space
+C0324: 66:plot3d.__init__: Comma not followed by a space
         Tk.Button(f,text="Pointsize",command=self.setps).pack(side=Tk.LEFT)
                    ^^
-C0324: 66:plot3d.__init__: Comma not followed by a space
+C0324: 67:plot3d.__init__: Comma not followed by a space
         Tk.Entry(f,textvariable=self.ps).pack(side=Tk.LEFT)
                   ^^
-C0324: 67:plot3d.__init__: Comma not followed by a space
+C0324: 68:plot3d.__init__: Comma not followed by a space
         Tk.Button(f,text="Quit",command=self.goaway).pack(side=Tk.RIGHT)
                    ^^
-C0322: 68:plot3d.__init__: Operator not preceded by a space
+C0322: 69:plot3d.__init__: Operator not preceded by a space
         self.dataoff=0
                     ^
-C0324: 70:plot3d.__init__: Comma not followed by a space
+C0324: 71:plot3d.__init__: Comma not followed by a space
         f.pack(side=Tk.BOTTOM,expand=Tk.NO,fill=Tk.X)
                              ^^
-C0324: 71:plot3d.__init__: Comma not followed by a space
+C0324: 72:plot3d.__init__: Comma not followed by a space
         Tk.Label(self,text="Red=[1,0,0] Green=[0,1,0] Blue=[0,0,1]").pack(
                      ^^
             side=Tk.BOTTOM,expand=Tk.NO,fill=Tk.X)
-C0322: 73:plot3d.__init__: Operator not preceded by a space
+C0322: 74:plot3d.__init__: Operator not preceded by a space
         self.ubis=ubis
                  ^
-C0322: 74:plot3d.__init__: Operator not preceded by a space
+C0322: 75:plot3d.__init__: Operator not preceded by a space
         self.color=numpy.ones((xyz.shape[0],3),numpy.float)
                   ^
-C0322: 76:plot3d.__init__: Operator not preceded by a space
+C0322: 77:plot3d.__init__: Operator not preceded by a space
         self.tex=False
                 ^
-C0322: 81:plot3d.__init__: Operator not preceded by a space
+C0322: 82:plot3d.__init__: Operator not preceded by a space
            self.tex=True
                    ^
-W0613: 34:plot3d.__init__: Unused argument 'lines'
-C0111: 87:plot3d.readspline: Missing docstring
-C0324: 87:plot3d.readspline: Comma not followed by a space
+W0613: 35:plot3d.__init__: Unused argument 'lines'
+C0111: 88:plot3d.readspline: Missing docstring
+C0324: 88:plot3d.readspline: Comma not followed by a space
     def readspline(self,spline):
                        ^^
-C0111: 91:plot3d.readubis: Missing docstring
-C0324: 91:plot3d.readubis: Comma not followed by a space
+C0111: 92:plot3d.readubis: Missing docstring
+C0324: 92:plot3d.readubis: Comma not followed by a space
     def readubis(self,ubis):
                      ^^
-R0201: 91:plot3d.readubis: Method could be a function
-W0621: 97:plot3d.readprms: Redefining name 'o' from outer scope (line 292)
-C0111: 95:plot3d.readprms: Missing docstring
-C0324: 95:plot3d.readprms: Comma not followed by a space
+R0201: 92:plot3d.readubis: Method could be a function
+W0621: 98:plot3d.readprms: Redefining name 'o' from outer scope (line 293)
+C0111: 96:plot3d.readprms: Missing docstring
+C0324: 96:plot3d.readprms: Comma not followed by a space
     def readprms(self,prms):
                      ^^
-C0103: 97:plot3d.readprms: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322: 99:plot3d.readprms: Operator not preceded by a space
+C0103: 98:plot3d.readprms: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:100:plot3d.readprms: Operator not preceded by a space
         self.pars=o.get_parameters()
                  ^
-W0621:128:plot3d.readimage: Redefining name 'x' from outer scope (line 282)
-C0111:101:plot3d.readimage: Missing docstring
-R0914:101:plot3d.readimage: Too many local variables (22/15)
-C0324:101:plot3d.readimage: Comma not followed by a space
+W0621:129:plot3d.readimage: Redefining name 'x' from outer scope (line 283)
+C0111:102:plot3d.readimage: Missing docstring
+R0914:102:plot3d.readimage: Too many local variables (22/15)
+C0324:102:plot3d.readimage: Comma not followed by a space
     def readimage(self,image):
                       ^^
-C0322:103:plot3d.readimage: Operator not preceded by a space
+C0322:104:plot3d.readimage: Operator not preceded by a space
         self.imageobj=opendata.opendata(image)
                      ^
-C0322:105:plot3d.readimage: Operator not preceded by a space
+C0322:106:plot3d.readimage: Operator not preceded by a space
         mi=1000
           ^
-C0103:105:plot3d.readimage: Invalid name "mi" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:106:plot3d.readimage: Operator not preceded by a space
+C0103:106:plot3d.readimage: Invalid name "mi" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:107:plot3d.readimage: Operator not preceded by a space
         mx=1500
           ^
-C0103:106:plot3d.readimage: Invalid name "mx" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:107:plot3d.readimage: Operator not preceded by a space
+C0103:107:plot3d.readimage: Invalid name "mx" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:108:plot3d.readimage: Operator not preceded by a space
         shape=self.imageobj.data.shape
              ^
-C0322:108:plot3d.readimage: Operator not preceded by a space
-        d=numpy.reshape(numpy.clip(self.imageobj.data,mi,mx),shape) # makes a clipped copy
-         ^
-C0103:108:plot3d.readimage: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
 C0322:109:plot3d.readimage: Operator not preceded by a space
-        d=(255.*(d-mi)/(mx-mi)) # scale intensity
+        d=numpy.reshape(numpy.clip(self.imageobj.data,mi,mx),shape) # makes a clipped copy
          ^
 C0103:109:plot3d.readimage: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
 C0322:110:plot3d.readimage: Operator not preceded by a space
+        d=(255.*(d-mi)/(mx-mi)) # scale intensity
+         ^
+C0103:110:plot3d.readimage: Invalid name "d" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:111:plot3d.readimage: Operator not preceded by a space
         self.image=numpy.zeros((1024,1024),numpy.UInt8)
                   ^
-E1101:110:plot3d.readimage: Module 'numpy' has no 'UInt8' member
-C0322:111:plot3d.readimage: Operator not preceded by a space
+E1101:111:plot3d.readimage: Module 'numpy' has no 'UInt8' member
+C0322:112:plot3d.readimage: Operator not preceded by a space
         if d.shape==(2048,2048):
                   ^^
-C0322:113:plot3d.readimage: Operator not preceded by a space
+C0322:114:plot3d.readimage: Operator not preceded by a space
             im=(d[::2,::2]+d[::2,1::2]+d[1::2,::2]+d[1::2,1::2])/4
               ^
-C0103:113:plot3d.readimage: Invalid name "im" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:114:plot3d.readimage: Operator not preceded by a space
+C0103:114:plot3d.readimage: Invalid name "im" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:115:plot3d.readimage: Operator not preceded by a space
             self.image=(255-im).astype(numpy.UInt8).tostring()
                       ^
-E1101:114:plot3d.readimage: Module 'numpy' has no 'UInt8' member
-C0322:115:plot3d.readimage: Operator not preceded by a space
+E1101:115:plot3d.readimage: Module 'numpy' has no 'UInt8' member
+C0322:116:plot3d.readimage: Operator not preceded by a space
         self.imageWidth=1024
                        ^
-C0322:116:plot3d.readimage: Operator not preceded by a space
+C0322:117:plot3d.readimage: Operator not preceded by a space
         self.imageHeight=1024
                         ^
-C0322:118:plot3d.readimage: Operator not preceded by a space
+C0322:119:plot3d.readimage: Operator not preceded by a space
         p=[]
          ^
-C0103:118:plot3d.readimage: Invalid name "p" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:119:plot3d.readimage: Operator not preceded by a space
+C0103:119:plot3d.readimage: Invalid name "p" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:120:plot3d.readimage: Operator not preceded by a space
         pk=[]
           ^
-C0103:119:plot3d.readimage: Invalid name "pk" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:121:plot3d.readimage: Operator not preceded by a space
+C0103:120:plot3d.readimage: Invalid name "pk" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:122:plot3d.readimage: Operator not preceded by a space
         r=[ [ 0,0 ], [0,step], [step,step], [step,0] ]
          ^
-C0103:121:plot3d.readimage: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:122:plot3d.readimage: Comma not followed by a space
+C0103:122:plot3d.readimage: Invalid name "r" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:123:plot3d.readimage: Comma not followed by a space
         for i in range(0,1024,step):
                         ^^
-C0324:123:plot3d.readimage: Comma not followed by a space
+C0324:124:plot3d.readimage: Comma not followed by a space
             for j in range(0,1024,step):
                             ^^
-C0103:126:plot3d.readimage: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:127:plot3d.readimage: Comma not followed by a space
+C0103:127:plot3d.readimage: Invalid name "v" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:128:plot3d.readimage: Comma not followed by a space
                     pk.append([i+v[0],j+v[1]])
                                      ^^
-C0324:128:plot3d.readimage: Comma not followed by a space
+C0324:129:plot3d.readimage: Comma not followed by a space
                     x,y = self.corrector.correct((i+v[0])*2 , (j+v[1])*2) # corrected
                      ^^
-C0324:129:plot3d.readimage: Comma not followed by a space
+C0324:130:plot3d.readimage: Comma not followed by a space
                     p.append([x,y])
                                ^^
-C0322:130:plot3d.readimage: Operator not preceded by a space
+C0322:131:plot3d.readimage: Operator not preceded by a space
         p=numpy.array(p).T
          ^
-C0103:130:plot3d.readimage: Invalid name "p" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:131:plot3d.readimage: Operator not preceded by a space
+C0103:131:plot3d.readimage: Invalid name "p" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:132:plot3d.readimage: Operator not preceded by a space
         pk=numpy.array(pk).T
           ^
-C0103:131:plot3d.readimage: Invalid name "pk" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:132:plot3d.readimage: Operator not preceded by a space
+C0103:132:plot3d.readimage: Invalid name "pk" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:133:plot3d.readimage: Operator not preceded by a space
         omega=float(self.imageobj.header['Omega'])
              ^
-C0322:133:plot3d.readimage: Operator not preceded by a space
+C0322:134:plot3d.readimage: Operator not preceded by a space
         self.pars['distance']=float(self.pars['distance'])*1000
                              ^
-C0322:134:plot3d.readimage: Operator not preceded by a space
+C0322:135:plot3d.readimage: Operator not preceded by a space
         tth,eta=transform.compute_tth_eta(p,**self.pars)
                ^
-W0142:134:plot3d.readimage: Used * or ** magic
-C0324:135:plot3d.readimage: Comma not followed by a space
+W0142:135:plot3d.readimage: Used * or ** magic
+C0324:136:plot3d.readimage: Comma not followed by a space
         gve = transform.compute_g_vectors(tth,eta,omega*self.pars['omegasign'],self.pars['wavelength'])
                                              ^^
-C0324:137:plot3d.readimage: Comma not followed by a space
+C0324:138:plot3d.readimage: Comma not followed by a space
         print "Setting up image mapping",p.shape,gve.shape
                                         ^^
-C0324:139:plot3d.readimage: Comma not followed by a space
+C0324:140:plot3d.readimage: Comma not followed by a space
             self.pts.append([pk[1,i]/1024.,pk[0,i]/1024.,gve[0,i],gve[1,i],gve[2,i]])
                                  ^^
-C0103:144:plot3d.setupTexture: Invalid name "setupTexture" (should match [a-z_][a-z0-9_]{2,30}$)
-C0111:144:plot3d.setupTexture: Missing docstring
-C0324:147:plot3d.setupTexture: Comma not followed by a space
-        GL.glTexImage2D(GL.GL_TEXTURE_2D,#target
-                                        ^^
-                    0,#level
-                    3,#internalformat
-                    self.imageWidth, self.imageHeight,
-                    0,#border
-                    GL.GL_LUMINANCE,#format
-                    GL.GL_UNSIGNED_BYTE,# type
-                    self.image)
-C0111:168:plot3d.scorecolor: Missing docstring
-C0324:168:plot3d.scorecolor: Comma not followed by a space
+C0103:145:plot3d.setupTexture: Invalid name "setupTexture" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111:145:plot3d.setupTexture: Missing docstring
+C0111:169:plot3d.scorecolor: Missing docstring
+C0324:169:plot3d.scorecolor: Comma not followed by a space
     def scorecolor(self,i=0):
                        ^^
-C0324:169:plot3d.scorecolor: Comma not followed by a space
+C0324:170:plot3d.scorecolor: Comma not followed by a space
         cc = [ [ 1,0,0] , [0,1,0] , [0,0,1], [1,1,0], [1,0,1], [0,1,1]]
                   ^^
-C0103:169:plot3d.scorecolor: Invalid name "cc" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:172:plot3d.scorecolor: Comma not followed by a space
+C0103:170:plot3d.scorecolor: Invalid name "cc" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:173:plot3d.scorecolor: Comma not followed by a space
             for u,i in zip(self.ubis,range(len(self.ubis))):
                  ^^
-C0103:172:plot3d.scorecolor: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
-C0322:173:plot3d.scorecolor: Operator not preceded by a space
+C0103:173:plot3d.scorecolor: Invalid name "u" (should match [a-z_][a-z0-9_]{2,30}$)
+C0322:174:plot3d.scorecolor: Operator not preceded by a space
                 scores=indexing.calc_drlv2(self.ubis[i],self.xyz)
                       ^
-C0324:174:plot3d.scorecolor: Comma not followed by a space
+C0324:175:plot3d.scorecolor: Comma not followed by a space
                 print self.xyz.shape,scores.shape
                                     ^^
-C0324:175:plot3d.scorecolor: Comma not followed by a space
+C0324:176:plot3d.scorecolor: Comma not followed by a space
                 ind = numpy.compress( numpy.less(scores,0.02) ,
                                                        ^^
                                       numpy.arange(self.xyz.shape[0]) )
-C0324:177:plot3d.scorecolor: Comma not followed by a space
+C0324:178:plot3d.scorecolor: Comma not followed by a space
                 print "Grain",i,scores.shape,ind.shape
                              ^^
-C0322:179:plot3d.scorecolor: Operator not preceded by a space
+C0322:180:plot3d.scorecolor: Operator not preceded by a space
                     c=numpy.ones(self.color.shape[0])
                      ^
-C0103:179:plot3d.scorecolor: Invalid name "c" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:180:plot3d.scorecolor: Comma not followed by a space
+C0103:180:plot3d.scorecolor: Invalid name "c" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:181:plot3d.scorecolor: Comma not followed by a space
                     numpy.put(c,ind,cc[i%len(cc)][j])
                                ^^
-C0322:181:plot3d.scorecolor: Operator not preceded by a space
+C0322:182:plot3d.scorecolor: Operator not preceded by a space
                     self.color[:,j]*=c
                                    ^^
-W0612:172:plot3d.scorecolor: Unused variable 'u'
-C0103:183:plot3d.go: Invalid name "go" (should match [a-z_][a-z0-9_]{2,30}$)
-C0111:189:plot3d.goaway: Missing docstring
-C0321:193:plot3d.goaway: More than one statement on a single line
-W0621:196:plot3d.changedata: Redefining name 'xyz' from outer scope (line 278)
-C0111:196:plot3d.changedata: Missing docstring
-C0324:196:plot3d.changedata: Comma not followed by a space
+W0612:173:plot3d.scorecolor: Unused variable 'u'
+C0103:184:plot3d.go: Invalid name "go" (should match [a-z_][a-z0-9_]{2,30}$)
+C0111:190:plot3d.goaway: Missing docstring
+C0321:194:plot3d.goaway: More than one statement on a single line
+W0621:197:plot3d.changedata: Redefining name 'xyz' from outer scope (line 279)
+C0111:197:plot3d.changedata: Missing docstring
+C0324:197:plot3d.changedata: Comma not followed by a space
     def changedata(self,xyz):
                        ^^
-C0322:197:plot3d.changedata: Operator not preceded by a space
+C0322:198:plot3d.changedata: Operator not preceded by a space
         self.xyz=xyz.copy()
                 ^
-C0322:198:plot3d.changedata: Operator not preceded by a space
+C0322:199:plot3d.changedata: Operator not preceded by a space
         self.npeaks=xyz.shape[0]
                    ^
-C0111:207:plot3d.setps: Missing docstring
-C0322:208:plot3d.setps: Operator not preceded by a space
+C0111:208:plot3d.setps: Missing docstring
+C0322:209:plot3d.setps: Operator not preceded by a space
         self.pointsize=float(self.ps.get())
                       ^
-W0621:212:plot3d.redraw: Redefining name 'o' from outer scope (line 292)
-C0111:212:plot3d.redraw: Missing docstring
-C0103:212:plot3d.redraw: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:212:plot3d.redraw: Comma not followed by a space
+W0621:213:plot3d.redraw: Redefining name 'o' from outer scope (line 293)
+C0111:213:plot3d.redraw: Missing docstring
+C0103:213:plot3d.redraw: Invalid name "o" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:213:plot3d.redraw: Comma not followed by a space
     def redraw(self,o):
                    ^^
-C0324:217:plot3d.redraw: Comma not followed by a space
+C0324:218:plot3d.redraw: Comma not followed by a space
         GL.glOrtho(-1,1,-1,1,-1,1)
                      ^^
-C0324:227:plot3d.redraw: Comma not followed by a space
+C0324:228:plot3d.redraw: Comma not followed by a space
             hkl = numpy.identity(3,numpy.float)
                                   ^^
-C0324:232:plot3d.redraw: Comma not followed by a space
+C0324:233:plot3d.redraw: Comma not followed by a space
         GL.glVertex3f(0.,0.,0.)
                         ^^
-C0324:233:plot3d.redraw: Comma not followed by a space
+C0324:234:plot3d.redraw: Comma not followed by a space
         GL.glVertex3f(hkl[0][0],hkl[0][1],hkl[0][2])
                                ^^
-C0324:237:plot3d.redraw: Comma not followed by a space
+C0324:238:plot3d.redraw: Comma not followed by a space
         GL.glVertex3f(0.,0.,0.)
                         ^^
-C0324:238:plot3d.redraw: Comma not followed by a space
+C0324:239:plot3d.redraw: Comma not followed by a space
         GL.glVertex3f(hkl[1][0],hkl[1][1],hkl[1][2])
                                ^^
-C0324:242:plot3d.redraw: Comma not followed by a space
+C0324:243:plot3d.redraw: Comma not followed by a space
         GL.glVertex3f(0.,0.,0.)
                         ^^
-C0324:243:plot3d.redraw: Comma not followed by a space
+C0324:244:plot3d.redraw: Comma not followed by a space
         GL.glVertex3f(hkl[2][0],hkl[2][1],hkl[2][2])
                                ^^
-C0324:253:plot3d.redraw: Comma not followed by a space
+C0324:254:plot3d.redraw: Comma not followed by a space
             for i,j,g1,g2,g3 in self.pts:
                  ^^
-C0103:253:plot3d.redraw: Invalid name "g1" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:253:plot3d.redraw: Invalid name "g2" (should match [a-z_][a-z0-9_]{2,30}$)
-C0103:253:plot3d.redraw: Invalid name "g3" (should match [a-z_][a-z0-9_]{2,30}$)
-C0324:255:plot3d.redraw: Comma not followed by a space
+C0103:254:plot3d.redraw: Invalid name "g1" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:254:plot3d.redraw: Invalid name "g2" (should match [a-z_][a-z0-9_]{2,30}$)
+C0103:254:plot3d.redraw: Invalid name "g3" (should match [a-z_][a-z0-9_]{2,30}$)
+C0324:256:plot3d.redraw: Comma not followed by a space
                 GL.glTexCoord2f(i,j)
                                  ^^
-W0613:212:plot3d.redraw: Unused argument 'o'
-W0201: 89:plot3d.readspline: Attribute 'corrector' defined outside __init__
-W0201:103:plot3d.readimage: Attribute 'imageobj' defined outside __init__
-W0201:115:plot3d.readimage: Attribute 'imageWidth' defined outside __init__
-W0201: 99:plot3d.readprms: Attribute 'pars' defined outside __init__
-W0201:136:plot3d.readimage: Attribute 'pts' defined outside __init__
-W0201:110:plot3d.readimage: Attribute 'image' defined outside __init__
-W0201:116:plot3d.readimage: Attribute 'imageHeight' defined outside __init__
-R0904: 33:plot3d: Too many public methods (164/20)
-C0322:269: Operator not preceded by a space
+W0613:213:plot3d.redraw: Unused argument 'o'
+W0201: 90:plot3d.readspline: Attribute 'corrector' defined outside __init__
+W0201:104:plot3d.readimage: Attribute 'imageobj' defined outside __init__
+W0201:116:plot3d.readimage: Attribute 'imageWidth' defined outside __init__
+W0201:100:plot3d.readprms: Attribute 'pars' defined outside __init__
+W0201:137:plot3d.readimage: Attribute 'pts' defined outside __init__
+W0201:111:plot3d.readimage: Attribute 'image' defined outside __init__
+W0201:117:plot3d.readimage: Attribute 'imageHeight' defined outside __init__
+R0904: 34:plot3d: Too many public methods (164/20)
+C0322:270: Operator not preceded by a space
 if __name__=="__main__":
            ^^
-W0702:274: No exception's type specified
-C0322:272: Operator not preceded by a space
+W0702:275: No exception's type specified
+C0322:273: Operator not preceded by a space
         lines=open(sys.argv[1],"r").readlines()
              ^
-C0103:272: Invalid name "lines" (should match (([A-Z_]*)|(__.*__))$)
-C0323:274: Operator not followed by a space
+C0103:273: Invalid name "lines" (should match (([A-Z_]*)|(__.*__))$)
+C0323:275: Operator not followed by a space
         print "Usage %s gvector_file [ubifile] [image parfile]"%(sys.argv[0])
                                                                ^
-C0322:277: Operator not preceded by a space
+C0322:278: Operator not preceded by a space
     on=0
       ^
-C0103:277: Invalid name "on" (should match (([A-Z_]*)|(__.*__))$)
-C0322:278: Operator not preceded by a space
+C0103:278: Invalid name "on" (should match (([A-Z_]*)|(__.*__))$)
+C0322:279: Operator not preceded by a space
     xyz=[]
        ^
-C0103:278: Invalid name "xyz" (should match (([A-Z_]*)|(__.*__))$)
-C0322:280: Operator not preceded by a space
+C0103:279: Invalid name "xyz" (should match (([A-Z_]*)|(__.*__))$)
+C0322:281: Operator not preceded by a space
         if on==1:
              ^^
-W0704:284: Except doesn't do anything
-W0702:285: No exception's type specified
-C0322:282: Operator not preceded by a space
+W0704:285: Except doesn't do anything
+W0702:286: No exception's type specified
+C0322:283: Operator not preceded by a space
                 vals=[float(x) for x in line.split()]
                     ^
-C0324:283: Comma not followed by a space
+C0324:284: Comma not followed by a space
                 xyz.append( [ vals[0],vals[1],vals[2] ])
                                      ^^
-C0322:287: Operator not preceded by a space
+C0322:288: Operator not preceded by a space
             on=1
               ^
-C0103:289: Invalid name "npeaks" (should match (([A-Z_]*)|(__.*__))$)
-C0322:290: Operator not preceded by a space
+C0103:290: Invalid name "npeaks" (should match (([A-Z_]*)|(__.*__))$)
+C0322:291: Operator not preceded by a space
     xyz=numpy.array(xyz)
        ^
-C0103:290: Invalid name "xyz" (should match (([A-Z_]*)|(__.*__))$)
-C0322:292: Operator not preceded by a space
+C0103:291: Invalid name "xyz" (should match (([A-Z_]*)|(__.*__))$)
+C0322:293: Operator not preceded by a space
        o=plot3d(None,data=xyz,ubis=sys.argv[2])
         ^
-C0103:292: Invalid name "o" (should match (([A-Z_]*)|(__.*__))$)
-C0322:294: Operator not preceded by a space
+C0103:293: Invalid name "o" (should match (([A-Z_]*)|(__.*__))$)
+C0322:295: Operator not preceded by a space
        o=plot3d(None,data=xyz,ubis=sys.argv[2],image=sys.argv[3],pars=sys.argv[4],spline=sys.argv[5])
         ^
-C0103:294: Invalid name "o" (should match (([A-Z_]*)|(__.*__))$)
-C0322:296: Operator not preceded by a space
+C0103:295: Invalid name "o" (should match (([A-Z_]*)|(__.*__))$)
+C0322:297: Operator not preceded by a space
        o=plot3d(None,data=xyz,ubis=None)
         ^
-C0103:296: Invalid name "o" (should match (([A-Z_]*)|(__.*__))$)
+C0103:297: Invalid name "o" (should match (([A-Z_]*)|(__.*__))$)
 
 
 Report
@@ -429,13 +419,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |226    |84.96 |217      |+9.00      |
+|code      |226    |84.64 |226      |=          |
 +----------+-------+------+---------+-----------+
-|docstring |14     |5.26  |14       |=          |
+|docstring |14     |5.24  |14       |=          |
 +----------+-------+------+---------+-----------+
-|comment   |6      |2.26  |8        |-2.00      |
+|comment   |7      |2.62  |6        |+1.00      |
 +----------+-------+------+---------+-----------+
-|empty     |20     |7.52  |19       |+1.00      |
+|empty     |20     |7.49  |20       |=          |
 +----------+-------+------+---------+-----------+
 
 
@@ -480,13 +470,13 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |155    |161      |-6.00      |
+|convention |154    |155      |-1.00      |
 +-----------+-------+---------+-----------+
-|refactor   |5      |4        |+1.00      |
+|refactor   |5      |5        |=          |
 +-----------+-------+---------+-----------+
-|warning    |32     |33       |-1.00      |
+|warning    |32     |32       |=          |
 +-----------+-------+---------+-----------+
-|error      |2      |6        |-4.00      |
+|error      |2      |2        |=          |
 +-----------+-------+---------+-----------+
 
 
@@ -499,7 +489,7 @@ Messages
 +===========+===========+
 |C0322      |56         |
 +-----------+-----------+
-|C0324      |43         |
+|C0324      |42         |
 +-----------+-----------+
 |C0103      |34         |
 +-----------+-----------+
@@ -548,5 +538,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at 0.47/10 (previous run: -0.91/10)
+Your code has been rated at 0.52/10 (previous run: 0.47/10)
 

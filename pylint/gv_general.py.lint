@@ -44,13 +44,6 @@ C0103:166:k_to_g: Invalid name "pk" (should match [a-z_][a-z0-9_]{2,30}$)
 C0103:170:k_to_g: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
 C0103:175:g_to_k: Invalid name "g" (should match [a-z_][a-z0-9_]{2,30}$)
 R0914:175:g_to_k: Too many local variables (27/15)
-C0324:175:g_to_k: Comma not followed by a space
-def g_to_k( g,  # g-vectors [3,:]
-                              ^^
-            wavelength, # Needed - depends on curve of Ewald sphere!
-            axis = n.array([0,0,1], n.float),
-            pre = None,
-            post = None ):
 C0103:212:g_to_k: Invalid name "rg" (should match [a-z_][a-z0-9_]{2,30}$)
 C0103:214:g_to_k: Invalid name "rg" (should match [a-z_][a-z0-9_]{2,30}$)
 C0324:217:g_to_k: Comma not followed by a space
@@ -100,13 +93,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |124    |50.00 |120      |+4.00      |
+|code      |124    |50.00 |124      |=          |
 +----------+-------+------+---------+-----------+
-|docstring |78     |31.45 |72       |+6.00      |
+|docstring |78     |31.45 |78       |=          |
 +----------+-------+------+---------+-----------+
-|comment   |26     |10.48 |25       |+1.00      |
+|comment   |26     |10.48 |26       |=          |
 +----------+-------+------+---------+-----------+
-|empty     |20     |8.06  |21       |-1.00      |
+|empty     |20     |8.06  |20       |=          |
 +----------+-------+------+---------+-----------+
 
 
@@ -145,7 +138,7 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |42     |44       |-2.00      |
+|convention |41     |42       |-1.00      |
 +-----------+-------+---------+-----------+
 |refactor   |1      |1        |=          |
 +-----------+-------+---------+-----------+
@@ -164,7 +157,7 @@ Messages
 +===========+===========+
 |C0103      |30         |
 +-----------+-----------+
-|C0324      |11         |
+|C0324      |10         |
 +-----------+-----------+
 |W0622      |1          |
 +-----------+-----------+
@@ -185,5 +178,5 @@ Messages
 
 Global evaluation
 -----------------
-Your code has been rated at 5.43/10 (previous run: 5.10/10)
+Your code has been rated at 5.52/10 (previous run: 5.43/10)
 
