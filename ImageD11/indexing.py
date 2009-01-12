@@ -23,6 +23,7 @@
 import numpy
 import numpy.oldnumeric as n
 from ImageD11 import closest
+from xfab.tools import ubi2U, U2rod, ubi2rod
 
 import math, time, sys, logging
 
@@ -72,18 +73,32 @@ def ubitoU(ubi):
     The convention is B as being triangular, hopefully as Busing and Levy
     TODO - make some testcases please!!
     """
-    return n.transpose(n.dot(ubitoB(ubi),ubi))
+    #return n.transpose(n.dot(ubitoB(ubi),ubi))
+    return ubi2U(ubi)
 
 def ubitoRod(ubi):
     """
     TODO Testcases!!!
     """
-    u = ubitoU(ubi)
-    w, v = numpy.linalg.eig(u)
-    ehat = v[:,0]
-    angle = -1*math.acos(n.clip(w[1].real,-1,1))
-    Rod = ehat * math.tan(angle/2)
-    return Rod.real
+#     u = ubitoU(ubi)
+#     w, v = numpy.linalg.eig(u)
+#     print 'Eigenvalues'
+#     print w
+#     print 'Eigen vectors'
+#     print v
+#     #ehat = v[:,0]
+#     #angle = -1*math.acos(n.clip(w[order[1]].real,-1,1))
+#     order = n.argsort(w.real)
+#     print order
+#     ehat = v[:, order[-1]]
+#     if order.tolist() != range(3):
+#         print 'HHFH'
+#         angle = -1*n.arccos(w[order[1]].real)
+#     else:
+#         angle = n.arccos(w[order[1]].real)
+#     Rod = ehat * math.tan(angle/2)
+#     return Rod.real
+    return ubi2rod(ubi)
 
 def ubitoB(ubi):
     """ give the B matrix from ubi """
