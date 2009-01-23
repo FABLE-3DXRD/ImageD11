@@ -23,7 +23,7 @@
 import numpy
 import numpy.oldnumeric as n
 from ImageD11 import closest
-from xfab.tools import ubi2U, U2rod, ubi2rod
+from xfab.tools import ubi_to_u, u_to_rod, ubi_to_rod
 
 import math, time, sys, logging
 
@@ -74,7 +74,7 @@ def ubitoU(ubi):
     TODO - make some testcases please!!
     """
     #return n.transpose(n.dot(ubitoB(ubi),ubi))
-    return ubi2U(ubi)
+    return ubi_to_u(ubi)
 
 def ubitoRod(ubi):
     """
@@ -98,7 +98,7 @@ def ubitoRod(ubi):
 #         angle = n.arccos(w[order[1]].real)
 #     Rod = ehat * math.tan(angle/2)
 #     return Rod.real
-    return ubi2rod(ubi)
+    return ubi_to_rod(ubi)
 
 def ubitoB(ubi):
     """ give the B matrix from ubi """
