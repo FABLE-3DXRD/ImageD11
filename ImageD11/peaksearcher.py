@@ -51,6 +51,7 @@ from ImageD11.labelimage import labelimage
 import numpy
 
 # Generic file format opener from fabio
+import fabio
 from fabio.openimage import openimage
 from fabio import file_series, fabioimage
 
@@ -71,7 +72,7 @@ class timer:
         print " ".join(self.msgs),"%.2f/s"% (self.now-self.start)
         sys.stdout.flush()
 
-def correct(data_object, dark = None, flood = None ):
+def correct(data_object, dark = None, flood = None, do_median = False ):
     """
     Does the dark and flood corrections
     """
@@ -83,6 +84,18 @@ def correct(data_object, dark = None, flood = None ):
     if flood != None:
         picture = numpy.divide( picture, flood, picture )
         data_object.data = picture
+    if do_median:
+        # We do this after corrections
+        # The expectation is that this is a median on the azimuth
+        # direction of a previously radially transformed image
+        # Gives the liquid contribution 
+        med = numpy.median( picture )
+        if True: # Suboption - save the median or not?
+            obj = fabio.deconstruct_filename( data_object.header['filename'] )
+            obj.extension = ".bkm"
+            medfilename = obj.tostring()
+            med.tofile( medfilename , sep = "\n")
+        picture = numpy.subtract( picture , med, picture )
     return data_object
 
 
@@ -302,7 +315,8 @@ def peaksearch_driver(options, args):
                 if OMEGAOVERRIDE or not data_object.header.has_key("Omega"):
                     data_object.header["Omega"] = OMEGA
                     OMEGA += OMEGASTEP
-                data_object = correct( data_object, darkimage, floodimage)
+                data_object = correct( data_object, darkimage, floodimage,
+                                       do_median = options.median)
                 t.tick(filein+" io/cor")
                 peaksearch( filein, data_object , corrfunc , 
                             thresholds_list , li_objs )
@@ -389,13 +403,15 @@ def peaksearch_driver(options, args):
 
             class correct_one_to_many(ImageD11_thread):
                 def __init__(self, queue_read, queues_out,  thresholds_list,
-                             dark = None , flood = None, name="correct_one"):
+                             dark = None , flood = None, name="correct_one",
+                             do_median = False):
                     """ Using a single reading queue retains a global ordering
                     corrects and copies images to output queues doing correction once """
                     self.queue_read = queue_read
                     self.queues_out = queues_out 
                     self.dark = dark
                     self.flood = flood
+                    self.do_median = do_median
                     self.thresholds_list = thresholds_list
                     ImageD11_thread.__init__(self , name=name)
                     
@@ -408,7 +424,8 @@ def peaksearch_driver(options, args):
                                 self.queues_out[t].put( (None, None) , block = True)
                             # exit the while 1
                             break 
-                        data_object = correct(data_object, self.dark, self.flood)
+                        data_object = correct(data_object, self.dark, self.flood,
+                                              do_median = self.do_median)
                         ti.tick(filein+" correct ")
                         for t in self.thresholds_list:
                             # Hope that data object is read only
@@ -455,7 +472,8 @@ def peaksearch_driver(options, args):
                                              queues,
                                              thresholds_list,
                                              dark=darkimage,
-                                             flood=floodimage)
+                                             flood=floodimage,
+                                             do_median = options.median)
             corrector.start()
             my_threads = [reader, corrector]
             for t in thresholds_list[::-1]:
@@ -579,6 +597,13 @@ def get_options(parser):
                type="choice", choices=["Y","N"], default="Y", dest="padding",
                           help="Is the image number to padded Y|N, e.g. "\
                     "should 1 be 0001 or just 1 in image name, default=Y")
+        
+        parser.add_option("-m", "--median1D", action="store",
+               type="choice", choices=["Y","N"], default="N", dest="median",
+                          help="Computes the 1D median, writes it to file .bkm and" \
+                          +" subtracts it from image. For liquid background"\
+                          +" on radially transformed images")
+
         return parser
 
 if __name__=="__main__":
