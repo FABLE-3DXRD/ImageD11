@@ -190,13 +190,16 @@ class columnfile:
             self.nrows += 1
             data.append(vals)
         self.bigarray = numpy.transpose(numpy.array(data))
-        assert self.bigarray.shape == (self.ncols, self.nrows)
+        if self.nrows > 0:
+            assert self.bigarray.shape == (self.ncols, self.nrows)
         self.set_attributes()
 
     def set_attributes(self):
         """
         Set object vars to point into the big array
         """
+        if self.nrows == 0:
+            return
         for title, i in zip(self.titles, range(len(self.titles))):
             setattr(self, title, self.bigarray[i])
             assert getattr(self, title).shape == (self.nrows,)
