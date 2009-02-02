@@ -447,6 +447,12 @@ class cakemacrogenerator:
             self.macro=self.macro+"OUTPUT\nCHIPLOT\nFILE NAME\n"+filename+"_y\n"
             self.macro=self.macro+"OUTPUT ROWS\nNO\nO.K.\n"
 
+        elif self.saving_format.find("KLORA")>-1:
+             self.macro=self.macro+"EXIT\nOUTPUT\n%s\n"%(self.saving_format)
+             self.macro=self.macro+"NO\n"
+             self.macro=self.macro+filename+"\n"
+#            self.macro=self.macro+"O.K.\n"
+
         else:
             self.macro=self.macro+"EXIT\nOUTPUT\n%s\n"%(self.saving_format)
             self.macro=self.macro+"FILE NAME\n"
