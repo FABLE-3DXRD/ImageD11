@@ -79,13 +79,17 @@ bl = Extension("_splines",
 
 # See the distutils docs...
 setup(name='ImageD11', 
-      version='1.2.1',
+      version='1.2.2',
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
       ext_modules = [cl,cp,bl,ch],
+      install_requires = [
+            'xfab>=0.0.1',
+            'fabio>=0.0.4',
+          ],
       packages = ["ImageD11"],
       package_dir = {"ImageD11":"ImageD11"},
       package_data = {"ImageD11" : ["doc/*.html"]},
