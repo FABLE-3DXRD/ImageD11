@@ -580,16 +580,16 @@ def get_options(parser):
                           help="Do single threaded processing")
         parser.add_option("--profile", action="store", type="string",
                           dest="profile_file", default=None, 
-                          help="Write profiling information (you will want singleThread too)")
+ help="Write profiling information (you will want singleThread too)")
         parser.add_option("-S","--step", action="store",
                           dest="OMEGASTEP", default=1.0, type="float",
-                          help="Step size in Omega when you have no header info")
+ help="Step size in Omega when you have no header info")
         parser.add_option("-T","--start", action="store",
                           dest="OMEGA", default=0.0, type="float",
-                          help="Start position in Omega when you have no header info")
+ help="Start position in Omega when you have no header info")
         parser.add_option("-k","--killfile", action="store",
                           dest="killfile", default=None, type="string",
-                          help="Name of file to create stop the peaksearcher running")
+ help="Name of file to create stop the peaksearcher running")
         parser.add_option("--ndigits", action="store", type="int",
                 dest = "ndigits", default = 4,
                 help = "Number of digits in file numbering [4]")
@@ -598,11 +598,11 @@ def get_options(parser):
                           help="Is the image number to padded Y|N, e.g. "\
                     "should 1 be 0001 or just 1 in image name, default=Y")
         
-        parser.add_option("-m", "--median1D", action="store",
-               type="choice", choices=["Y","N"], default="N", dest="median",
-                          help="Computes the 1D median, writes it to file .bkm and" \
-                          +" subtracts it from image. For liquid background"\
-                          +" on radially transformed images")
+        parser.add_option("-m", "--median1D", action="store_true",
+               default=False, dest="median",
+               help="Computes the 1D median, writes it to file .bkm and" \
+               +" subtracts it from image. For liquid background"\
+               +" on radially transformed images")
 
         return parser
 
