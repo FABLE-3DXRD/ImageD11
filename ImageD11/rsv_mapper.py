@@ -60,9 +60,8 @@ class rsv_mapper(object):
         self.find_vol( border = border, omegarange = omegarange )
 
         self.rsv.metadata['ubi'] = ubi
-        self.rsv.metadata['pixels_per_hkls'] = np
         self.rsv.metadata['uspace'] = self.uspace
-
+        # Make and cache the k vectors
         self.make_k_vecs()
         
 
@@ -111,7 +110,7 @@ class rsv_mapper(object):
             bounds[i][1] = numpy.ceil(hkls[i].max())
             npv[i] = (bounds[i][1]-bounds[i][0]) + 1
         self.bounds = bounds
-        self.rsv = rsv.rsv( npv , bounds=bounds )
+        self.rsv = rsv.rsv( npv , bounds=bounds, np=self.np )
 
                             
 

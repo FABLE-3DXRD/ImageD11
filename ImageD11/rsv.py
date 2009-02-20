@@ -31,7 +31,7 @@ class rsv(object):
     """
     A reciprocal space volume
     """
-    def __init__(self, dimensions , **kwds ):
+    def __init__(self, dimensions, bounds, np, **kwds ):
         """
         dimensions = NX*NY*NZ grid for the space
         uspace = a 3x3 matrix describing the grid
@@ -47,6 +47,8 @@ class rsv(object):
         self.MON = None # monitor
         self.NR =  dimensions # dimensions      
         self.NORMED = None
+        self.bounds = bounds  # boundary in reciprocal space
+        self.np = np          # px per hkl
         self.metadata = kwds
         self.allocate_vol()
 
@@ -60,7 +62,7 @@ class rsv(object):
         logging.info("rsv: memory used = %.2f MB"%(total*8.0/1024/1024))
         self.SIG = numpy.zeros( total, numpy.float32 )
         self.MON = numpy.zeros( total, numpy.float32 )
-        self.metadata = {}
+        
         
     def normalise( self ):
         """
@@ -69,7 +71,44 @@ class rsv(object):
         self.NORMED = numpy.where( self.MON > 0.1, 
                               self.SIG/(self.MON+1e-32), 
                               0.0)
+
+    plnames = {
+        0 :0, "h":0, "H":0,
+        1 :1, "k":1, "K":1,
+        2 :2, "l":2, "L":2,
+        }
         
+
+    def slice(self, plane, num):
+        """
+        return signal on plane index num 
+        """
+        if not self.plnames.has_key(plane):
+            raise Exception("Plane should be one of %s"%(
+                        str(self.plnames)))
+        p = self.plnames[plane]
+        # floor(x+0.5) is nearest integer
+        ind = numpy.floor( num * self.np + 0.5) - self.bounds[p][0]
+        # convert this back to num
+        testnum = 1.0*(self.bounds[p][0] + ind )/self.np
+        if abs(testnum - num)>1e-6:
+            logging.info("Nearest plane to %f is %f"%(num, testnum))
+        if ind < 0 or ind >= self.NR[p]:
+            print ind,num,self.np,self.bounds
+            raise Exception("slice is out of volume bounds")
+        if self.NORMED is None:
+            self.normalise()
+        if p==0:
+            return self.NORMED.reshape(self.NR)[ind, :, :]
+        if p==1:
+            return self.NORMED.reshape(self.NR)[:, ind, :]
+        if p==2:
+            return self.NORMED.reshape(self.NR)[:, :, ind]
+
+
+        
+        
+
 
 def writevol(vol, filename):
     """
@@ -100,6 +139,8 @@ def writevol(vol, filename):
                            data = vol.MON,
                            compression = 'gzip',
                            compression_opts = 1)
+    volout.attrs['bounds'] = vol.bounds
+    volout.attrs['np'] = vol.np
     for key, value in vol.metadata.iteritems():
         volout.attrs[key]=value
     volout.flush()
@@ -121,7 +162,11 @@ def readvol(filename):
     siga= sig[:,:,:]
     assert mona.shape == siga.shape
     assert len(mona.shape)==3
-    vol = rsv( mona.shape )
+    bounds = volf.attrs['bounds']
+    np = volf.attrs['np']
+    vol = rsv( mona.shape, bounds, np )
+    vol.MON = mona
+    vol.SIG = siga
     for name, value in volf.attrs.iteritems():
         vol.metadata[name] = value
     volf.close()
