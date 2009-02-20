@@ -104,8 +104,20 @@ class correctorclass: #IGNORE:R0902
         # Cache the value in case of multiple calls
         if self.pixel_lut is None:
             x_im = numpy.outer(range(dims[0]), numpy.ones(dims[1]))
-            y_im = numpy.outer(numpy.ones(dims[1]), range(dims[0]))  
-            self.pixel_lut = self.correct(x_im, y_im)
+            y_im = numpy.outer(numpy.ones(dims[0]), range(dims[1]))
+            # xcor is tck2
+            x_im = numpy.add( x_im,
+                              bisplev.bisplev( range(2048),
+                                               range(2048),
+                                               self.tck2 ).T,
+                              x_im)
+            # ycor is tck1
+            y_im = numpy.add( y_im,
+                              bisplev.bisplev( range(2048),
+                                               range(2048),
+                                               self.tck1 ).T,
+                              y_im)
+            self.pixel_lut = x_im, y_im
         return self.pixel_lut
 
     def make_pos_lut(self, dims):
@@ -234,6 +246,24 @@ class perfect(correctorclass):
         Do nothing - just return the same values
         """
         return xin, yin
+
+    def make_pixel_lut(self, dims):
+        """
+        Generate an x and y image which maps the array indices into
+        floating point array indices (to be corrected for pixel size later)
+
+        returns 
+        FIXME - check they are the right way around
+                add some sort of known splinefile testcase
+        """
+        # Cache the value in case of multiple calls
+        if self.pixel_lut is None:
+            x_im = numpy.outer(range(dims[0]), numpy.ones(dims[1]))
+            y_im = numpy.outer(numpy.ones(dims[0]), range(dims[1]))
+            self.pixel_lut = x_im, y_im
+        return self.pixel_lut
+
+
 
 #
 #"""
