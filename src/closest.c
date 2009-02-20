@@ -779,7 +779,7 @@ static PyObject *put_incr( PyObject *self,
 			   PyObject *keywds){
   PyArrayObject *data=NULL, *ind=NULL, *vals=NULL;
   int i, j;
-     
+  float f;
   if(!PyArg_ParseTuple(args,"O!O!O!",
 		       &PyArray_Type, &data,   /* array args */
 		       &PyArray_Type, &ind,    /* array args */
@@ -792,7 +792,7 @@ static PyObject *put_incr( PyObject *self,
 		     "First array must be 1d and float32");
      return NULL;
    }
-   if(ind->nd != 1 || ind->descr->type_num!=PyArray_INT32){
+   if(ind->nd != 1 || ind->descr->type_num!=PyArray_INT){
      ptype(ind->descr->type_num);
      PyErr_SetString(PyExc_ValueError,
 		     "Second array must be 1d and int");
@@ -800,7 +800,7 @@ static PyObject *put_incr( PyObject *self,
    }
    if(vals->nd != 1 || vals->descr->type_num!=PyArray_FLOAT){
      PyErr_SetString(PyExc_ValueError,
-		     "Second array must be 1d and float32");
+		     "Third array must be 1d and float32");
      return NULL;
    }
    if(vals->dimensions[0] != ind->dimensions[0]){
@@ -818,10 +818,14 @@ static PyObject *put_incr( PyObject *self,
 		       "Array bounds exceeded");
        return NULL;
      }
-     
-     * (float *) (data->data + j*data->strides[0]) =
-       * (float *) (data->data + j*data->strides[0]) +
-       * (float *) (vals->data + i*vals->strides[0]);
+
+     f =* (float *) (data->data + j*data->strides[0]) ; 
+     * (float *) (data->data + j*data->strides[0]) = f + 
+               * (float *) (vals->data + i*vals->strides[0]);
+     /*     if( i < 20){
+       printf("i %d  j %d f %f  tot %f\n",i,j,f,
+	      * (float *) (vals->data + i*vals->strides[0]));
+	      }*/
    }
    /* Nothing to return */
    Py_INCREF(Py_None);
