@@ -90,6 +90,10 @@ src/blobs.c
 src/blobs.h
 src/connectedpixels.c
 ImageD11/doc
+ImageD11/rsv.py
+ImageD11/rsv_mapper.py
+ImageD11/ImageD11_file_series.py
+ImageD11/saintraw.py
 ImageD11/ImageD11_thread.py
 ImageD11/fft_index.py
 ImageD11/fft_index_refac.py
