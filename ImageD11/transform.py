@@ -358,7 +358,7 @@ def compute_tth_histo(tth, no_bins = 100,
     #print "hpk",hpk[:10]
     return tthbin, histogram, hpk
   
-def compute_k_vectors(tth, eta, wavelength):
+def compute_k_vectors(tth, eta, wvln, **kwds):
     """
     generate k vectors - scattering vectors in laboratory frame
     """
@@ -366,7 +366,7 @@ def compute_k_vectors(tth, eta, wavelength):
     eta=radians(eta)
     c=n.cos(tth/2) # cos theta
     s=n.sin(tth/2) # sin theta
-    ds=2*s/wavelength
+    ds=2*s/wvln
     k=n.zeros((3,tth.shape[0]),n.float)
     # x - along incident beam
     k[0,:] = -ds*s # this is negative x
@@ -375,11 +375,12 @@ def compute_k_vectors(tth, eta, wavelength):
     # z - towards roof
     k[2,:] =  ds*c*n.cos(eta)
     return k
+
                              
 def compute_g_vectors(tth, 
                       eta, 
                       omega, 
-                      wavelength, 
+                      wvln, 
                       wedge = 0.0, 
                       chi   = 0.0,
                       **kwds):
@@ -389,11 +390,19 @@ def compute_g_vectors(tth,
     Assumes single axis vertical
     ... unless a wedge angle is specified
     """
+    k = compute_k_vectors(tth, eta, wvln, **kwds)
+#    print k[:,0]
+    return compute_g_from_k( k, omega, **kwds)
+
+    
+def compute_g_from_k( k, omega, wedge=0, chi=0, **kwds):
+    """
+    Compute g-vectors with cached k-vectors
+    """
     om =radians(omega)
-    k = compute_k_vectors(tth, eta, wavelength)
     # G-vectors - rotate k onto the crystal axes
-    g=n.zeros((3,om.shape[0]),n.float)
-    t=n.zeros((3,om.shape[0]),n.float)
+    g = n.zeros((3,k.shape[1]),n.float)
+    t = n.zeros((3,k.shape[1]),n.float)
     #
     # g =  R . W . k where:
     # R = ( cos(omega) , sin(omega), 0 )
