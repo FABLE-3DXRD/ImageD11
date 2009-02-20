@@ -778,7 +778,8 @@ static PyObject *put_incr( PyObject *self,
 			   PyObject *args, 
 			   PyObject *keywds){
   PyArrayObject *data=NULL, *ind=NULL, *vals=NULL;
-  int i, j;
+  int i;
+  long j;
   float f;
   if(!PyArg_ParseTuple(args,"O!O!O!",
 		       &PyArray_Type, &data,   /* array args */
@@ -792,10 +793,16 @@ static PyObject *put_incr( PyObject *self,
 		     "First array must be 1d and float32");
      return NULL;
    }
-   if(ind->nd != 1 || ind->descr->type_num!=PyArray_INT){
-     ptype(ind->descr->type_num);
+   if(ind->nd != 1 ){
      PyErr_SetString(PyExc_ValueError,
-		     "Second array must be 1d and int");
+		     "Second array must be 1d");
+     return NULL;
+   }
+
+   if( ind->descr->type_num!=PyArray_INTP ){
+     ptype(ind->descr->type_num);       
+     PyErr_SetString(PyExc_ValueError,
+		     "Second array must be int pointer type");
      return NULL;
    }
    if(vals->nd != 1 || vals->descr->type_num!=PyArray_FLOAT){
@@ -811,7 +818,7 @@ static PyObject *put_incr( PyObject *self,
    /* Loop over points adding with increment */
    for(i = 0 ; i < ind->dimensions[0] ; i++){
      /* i applies to indices and vals */
-     j = *(int *) ( ind->data + i* ind->strides[0]);
+     j = *(long *) ( ind->data + i* ind->strides[0]);
      
      if ( j < 0 || j > data->dimensions[0]){
        PyErr_SetString(PyExc_ValueError, 
