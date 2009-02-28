@@ -101,7 +101,7 @@ class grid:
                   thkl[:,1]*grid.shape[1] + \
                   thkl[:,2]
 
-            closest.put_incr( flatgrid , ind.astype(n.int32), vol )
+            closest.put_incr( flatgrid , ind.astype(n.intp), vol )
             # print thkl,vol
 
             # vals = n.take(grid.flat, ind)
