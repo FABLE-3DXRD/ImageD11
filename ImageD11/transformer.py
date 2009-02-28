@@ -435,7 +435,8 @@ class transformer:
         gv = transform.compute_g_vectors(
             self.getcolumn("tth"),
             self.getcolumn("eta"),
-            self.getcolumn("omega")*om_sgn,           
+            self.getcolumn("omega")*om_sgn,
+            self.parameterobj.get('wavelength'),
             **pars)
         self.addcolumn(gv[0],"gx")
         self.addcolumn(gv[1],"gy")

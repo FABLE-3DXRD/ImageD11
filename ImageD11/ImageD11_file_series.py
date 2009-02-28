@@ -109,7 +109,7 @@ def get_series_from_options( options, args ):
 
     try:
         if options.dark is not None:
-            dark = fabio.openimage( options.dark ).data
+            dark = fabio.openimage.openimage( options.dark ).data
         else:
             dark = None
     except:
@@ -118,7 +118,7 @@ def get_series_from_options( options, args ):
     
     try:
         if options.flood is not None:
-            flood = fabio.openimage( options.flood ).data
+            flood = fabio.openimage.openimage( options.flood ).data
         else:
             flood = None
     except:
