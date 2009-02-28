@@ -211,7 +211,8 @@ class columnfile:
         self.chkarray()
         if len(mask) != self.nrows:
             raise Exception("Mask is the wrong size")
-        self.nrows = numpy.sum(numpy.compress(mask, numpy.ones(len(mask))))
+        self.nrows = int(numpy.sum(
+            numpy.compress(mask, numpy.ones(len(mask)))))
         self.bigarray = numpy.compress(mask, self.bigarray, axis = 1)
         assert self.bigarray.shape == (self.ncols, self.nrows)
         self.set_attributes()
