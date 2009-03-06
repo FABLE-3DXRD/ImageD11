@@ -276,7 +276,7 @@ class lattice(object):
         return s
 
 
-def iter3d(n):
+def iter3d_old(n):
     """
     Generate all possible unordered combinations of vectors i,j,k
     for i,j,k < n
@@ -285,6 +285,28 @@ def iter3d(n):
         for j in range(i+1, n):
             for k in range(j+1, n):
                 yield i,j,k 
+
+def iter3d(n):
+    """
+    Generate all possible unordered combinations of vectors i,j,k
+    for i,j,k < n
+
+    This looping was rewritten thanks to:
+    TAOCP V4 fascicle 3, section 7.2.1.3.
+    
+    It gives much nicer ordering than previously, as is gradually
+    expands down the list, instead of hammering the start
+    """
+    for k in range(2,n):
+        for j in range(1,k):
+            for i in range(j):
+                yield i,j,k
+
+#t1 = [ l for l in iter3d_old(10) ]
+#t2 = [ l for l in iter3d(10) ]
+#print t1
+#print t2
+#assert t1 == t2
 
 
 def find_lattice(vecs, 
