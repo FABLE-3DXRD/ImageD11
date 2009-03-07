@@ -390,6 +390,37 @@ def find_lattice(vecs,
             pass
     return None
 
+
+def cosangle_vec( ubi, v ):
+    """
+    Angle between v in real and reciprocal space
+    eg, is a* parallel to a or not?
+    """
+    real = np.dot( ubi.T, v )
+    reci = np.dot( np.linalg.inv(ubi) , v )
+    return np.dot( real, reci )/np.sqrt(
+        np.dot(real, real) * np.dot(reci, reci) )
+
+
+def search_2folds( ubi ):
+    """
+    Inspired by the Yvon Lepage's method for finding lattice symmetry
+    Check for 2 fold axes by measuring the directions between real
+    and reciprocal vectors with the same indices. In the case of 2 fold
+    axes they should be parallel
+    """
+    hr = range(-2,3)
+    for h in hr:
+        for k in hr:
+            for l in hr:
+                if h==0 and k==0 and l==0:
+                    continue
+                c = cosangle_vec( ubi, [h,k,l] )
+                if abs(c - np.floor( c + 0.5)) < 0.001:
+                    print h, k, l, c, np.arccos(c)*180/pi
+
+
+
 def get_options(parser):
     parser.add_option('-v', '--min_vec2',
                       action='store',
