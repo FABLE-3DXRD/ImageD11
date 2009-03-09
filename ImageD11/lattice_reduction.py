@@ -32,9 +32,9 @@ MIN_VEC2 = 1e-9*1e-9
 
 def fparl(x, y):
     """ fraction of x parallel to y """
-    ly2 = dot(y ,y)
+    ly2 = dot(1.0*y ,y)
     if ly2 > 1e-9:
-        return dot(x, y) / ly2
+        return dot(1.0*x, y) / ly2
     return 0
 
 def mod(x,y):
