@@ -53,7 +53,7 @@ import numpy
 # Generic file format opener from fabio
 import fabio
 from fabio.openimage import openimage
-from fabio import file_series, fabioimage
+from fabio import fabioimage
 
 
 class timer:
@@ -213,27 +213,34 @@ def peaksearch_driver(options, args):
 
 
     # Get list of filenames to process
-    if len(args) > 0 :
-        # We assume unlabelled arguments are filenames 
-        file_series_object = file_series.file_series(args)
+    # if len(args) > 0 :
+    #     # We no longer assume unlabelled arguments are filenames 
+    #     file_series_object = file_series.file_series(args)
+    
+    
+    if options.format in ['bruker', 'BRUKER', 'Bruker']:
+        extn = ""
+        corrfunc.orientation = "bruker"
+    elif options.format == 'GE':
+        extn = ""
+        options.ndigits = 0
     else:
-        if options.format in ['bruker', 'BRUKER', 'Bruker']:
-            extn = ""
-            corrfunc.orientation = "bruker"
-        elif options.format == 'GE':
-            extn = ""
-        else:
-            extn = options.format
-            corrfunc.orientation = "edf"
-        file_series_object = file_series.numbered_file_series(
+        extn = options.format
+        corrfunc.orientation = "edf"
+    import fabio
+    file_name_object = fabio.filename_object(
                 options.stem,
-                options.first,
-                options.last,
-                extn,
-                digits = options.ndigits,
-                padding = options.padding )
+                num = options.first,
+                extension = extn,
+                digits = options.ndigits)
+                
     # Output files:
 
+    first_image = openimage( file_name_object )
+    import fabio.file_series
+    file_series_object = fabio.file_series.new_file_series( first_image,
+                                                            first = options.first,
+                                                            last = options.last )
     if options.outfile[-4:] != ".spt":
         options.outfile = options.outfile + ".spt"
         print "Your output file must end with .spt, changing to ",options.outfile
@@ -254,7 +261,10 @@ def peaksearch_driver(options, args):
     thresholds_list.sort()
         
     li_objs={} # label image objects, dict of
-    s = openimage(file_series_object.current()).data.shape # data array shape
+
+    
+    s = first_image.data.shape # data array shape
+    
     # Create label images
     for t in thresholds_list:
         # the last 4 chars are guaranteed to be .spt above
@@ -303,18 +313,16 @@ def peaksearch_driver(options, args):
         def go_for_it(file_series_object, darkimage, floodimage, 
                       corrfunc , thresholds_list , li_objs,
                       OMEGA, OMEGASTEP, OMEGAOVERRIDE ):
-            for filein in file_series_object:
+            for data_object in file_series_object:
                 t = timer()
-                try:
-                    data_object = openimage(filein)
-                except KeyboardInterrupt:
-                    raise
-                except:
-                    sys.stdout.write(filein+" not found\n")
+                if data_object is None:
+                    sys.stdout.write("A file was not found\n")
                     continue
+                filein = data_object.filename
                 if OMEGAOVERRIDE or not data_object.header.has_key("Omega"):
                     data_object.header["Omega"] = OMEGA
                     OMEGA += OMEGASTEP
+                    OMEGAOVERRIDE = True # once you do it once, continue
                 data_object = correct( data_object, darkimage, floodimage,
                                        do_median = options.median)
                 t.tick(filein+" io/cor")
@@ -375,25 +383,29 @@ def peaksearch_driver(options, args):
                     
                 def ImageD11_run(self):
                     """ Read images and copy them to self.queue """
-                    for filein in self.file_series_obj:
+                    for data_object in self.file_series_obj:
                         if self.ImageD11_stop_now(): break
+                        if data_object is None:
+                            sys.stdout.write("An image was not found\n")
+                            continue
                         ti = timer()
+                        filein = data_object.filename
                         try:
-                            data_object = openimage(filein)
                             if self.OMEGAOVERRIDE:
-                                #print "Over ride due to option",self.OMEGAOVERRIDE
+                                # print "Over ride due to option",self.OMEGAOVERRIDE
                                 data_object.header["Omega"] = self.OMEGA
                                 self.OMEGA += self.OMEGASTEP
                             else:
                                 if not data_object.header.has_key("Omega"):
-                                    #print "Computing omega as not in header"
+                                    # print "Computing omega as not in header"
                                     data_object.header["Omega"] = self.OMEGA
                                     self.OMEGA += self.OMEGASTEP
-                            #print "Omega = ", data_object.header["Omega"]
+                                    self.OMEGAOVERRIDE = True
+                            # print "Omega = ", data_object.header["Omega"],data_object.filename
                         except KeyboardInterrupt:
                             raise
                         except:
-                            sys.stdout.write(filein+" not found\n")
+
                             continue
                         ti.tick(filein)
                         self.queue.put((filein, data_object) , block = True)
@@ -501,7 +513,10 @@ def peaksearch_driver(options, args):
                 except KeyboardInterrupt:
                     print "Got keyboard interrupt in waiting loop"
                     stop_now = True
-                    time.sleep(1)
+                    try:
+                        time.sleep(1)
+                    except:
+                        pass
                     empty_queue(read_queue)
                     for t in thresholds_list:
                         q = queues[t]
