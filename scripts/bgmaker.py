@@ -31,9 +31,8 @@ Script for making a pseudo-dark file as the minimum of a file series
 Defines one class (minimum_image) which might perhaps be reused
 """
 
-
+import fabio
 from fabio.openimage import openimage
-from fabio import file_series
 import numpy
 
 class minimum_image:
@@ -50,20 +49,14 @@ class minimum_image:
             # if an image is supplied we take that as the initial minimum
             self.minimum_image = image
         if filename != None:
-            # if a filename is supplied we take the minimum of the image in that
+            # if a filename is supplied we take the minimum of the
+            # image in that
             # file and the one stored
             self.add_file(filename)
 
-    def add_file(self, filename):
+    def add_image(self, picture):
         """
-        Include another file
         """
-        try:
-            data_object = openimage(filename)
-        except IOError:
-            print filename, "not found"
-            return
-        picture = data_object.data
         if self.minimum_image is None:
             self.minimum_image = picture.copy()
         else:
@@ -74,6 +67,16 @@ class minimum_image:
             else:
                 raise Exception("Incompatible image dimensions")
 
+    def add_file(self, filename):
+        """
+        Include another file
+        """
+        try:
+            data_object = openimage(filename)
+        except IOError:
+            print filename, "not found"
+            return
+        self.add_image(data_object.data)
 
 
 def get_options(parser):
@@ -111,29 +114,62 @@ def check_options( options ):
 def bgmaker( options ):
     """ execute the command line script """
     # Generate list of files to proces
+
     if options.format in ['bruker', 'BRUKER', 'Bruker', 'GE']:
         extn = ""
     else:
         extn = options.format
-    file_series_object = file_series.numbered_file_series(
-        options.stem,
-        options.first,
-        options.last,
-        extn,
-        options.ndigits,
-        step = options.step)
-    minim = minimum_image(file_series_object[0])
-    for filein in file_series_object:
-        print filein
-        minim.add_file(filein)
+
+    import fabio
+    first_image_name = fabio.filename_object(
+        options.stem,  
+        num = options.first,
+        extension = extn,
+        digits = options.ndigits)
+
+
+    first_image = openimage( first_image_name )
+    minim = minimum_image( image = first_image.data )
+    print first_image.filename
+    current_num = options.first + options.step
+    while current_num <= options.last:
+        try:
+            im = first_image.getframe( current_num )
+            print im.filename
+            minim.add_image( im.data )
+        except:
+            import traceback
+            traceback.print_exc()
+            print "Failed for",current_num
+        current_num = current_num + options.step
+        
     # finally write out the answer
     # model header + data
-    obj = openimage(file_series_object[0])
-    obj.data = minim.minimum_image
+
+
+    # write as edf - we should actually have a way to flag
+    # which fabioimage formats know how to write themselves
+    if options.outfile[-3:] == "edf":
+        print "writing",options.outfile,"in edf format"
+        import fabio.edfimage
+        im = fabio.edfimage.edfimage( data = minim.minimum_image )
+    else:
+        im = first_image
+        
+    im.data = minim.minimum_image
     try:
-        obj.write(options.outfile, force_type = obj.data.dtype)
+        im.write(options.outfile, force_type = im.data.dtype)
     except TypeError:
-        obj.write(options.outfile)
+        im.write(options.outfile)
+    except:
+        print "problem writing"
+        print "trying to write",options.outfile,"in edf format"
+        import fabio.edfimage
+        im = fabio.edfimage.edfimage( data = minim.minimum_image )
+        try:
+            im.write(options.outfile, force_type = im.data.dtype)
+        except TypeError:
+            im.write(options.outfile)
         
 if __name__ == "__main__":
 
