@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!c:\python25\python.exe
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 #!/usr/bin/env python
@@ -20,9 +20,17 @@ example usage:
 """
 import numpy.oldnumeric as Numeric, logging, sys, os
 
+import sys
+if sys.platform == 'win32':
+    XVFB = "echo "
+    FIT2D = """D:\\fit2d_12_077_i686_WXP.exe """
+    REMOVE = "del "
+else:
+    XVFB = "Xvfb :1 -ac &"
+    FIT2D = "fit2d_12_081_i686_linux2.4.20"
+    REMOVE = "rm -f "
 
-XVFB = "Xvfb :1 -ac &"
-FIT2D = "fit2d_12_081_i686_linux2.4.20"
+
 
 def spr_to_median(filename, outputfilename):
     """
@@ -533,7 +541,7 @@ class cakemacrogenerator:
         """
         self.macro=self.macro+"EXIT\nEXIT FIT2d\nYES\n"
         import time, tempfile
-        tmpfilename=tempfile.mkstemp(dir=".")[1]
+        tmpfilename=tempfile.mkstemp(dir=".")[1]+".mac"
         tmpfilename=os.path.split(tmpfilename)[-1]
         tmpfile=open(tmpfilename,"w")
         tmpfile.write(self.macro)
@@ -551,11 +559,12 @@ class cakemacrogenerator:
             except KeyError:
                 os.environ["DISPLAY"]=":1"
         array=str(self.mask_pars_values["DIM1_DATA"])+"x"+str(self.mask_pars_values["DIM2_DATA"])
-        os.system(FIT2D + " -dim%s -mac%s"%(array,tmpfilename))
-        os.system("rm -f %s"%(tmpfilename))
+        cmd = FIT2D + " -dim%s -mac%s "%(array,tmpfilename)
+        print "executing",cmd
+        os.system(cmd)
+        os.system(REMOVE+" "+tmpfilename)
         if show is None:
             os.environ["DISPLAY"]=displaywas
-        print tmpfilename
         print "Finalising"
         for job in self.do_when_finished:
             job[0](job[1],job[2])
@@ -630,3 +639,4 @@ if __name__=="__main__":
         caker.run(show=options.show)
     else:
         open(options.debug,"w").write(caker.macro)
+
