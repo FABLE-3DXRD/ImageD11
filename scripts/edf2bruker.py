@@ -40,7 +40,8 @@ class darkflood:
                  floodmultiplier = None,
                  border = None,
                  powfac = 1.0,
-                 overflow= 65534, 
+                 overflow= 65534,
+                 detrend = None
                  ):
         self.overflow=overflow
         self.darkfile = darkfile
@@ -53,6 +54,7 @@ class darkflood:
         self.floodimage = None
         self.flmult = None
         self.powfac = powfac
+        self.detrend = detrend
 
 
     def readdark(self,darkfile):
@@ -61,6 +63,8 @@ class darkflood:
             self.darkdata = openimage(darkfile)
             self.darkfile=darkfile
             self.darkimage = self.darkdata.data.astype(numpy.float32)
+            if self.detrend is not None:
+                self.do_detrend( self.darkimage )
             if self.powfac != 1.0:
                 print "apply 0.96 to dark"
                 self.darkimage = numpy.power(self.darkimage, 0.96)
@@ -89,7 +93,7 @@ class darkflood:
             self.floodfile = None
             self.floodmultiplier = None
             
-    def correct(self,data):
+    def correct(self, data, detrend = None):
         """ correct the data """
         tin = data.dtype.char
         # Start by copying
@@ -103,6 +107,8 @@ class darkflood:
         if self.darkimage is not None:
             numpy.subtract(cor, self.darkimage,cor)
             # print cor[c0,c1]
+        if self.detrend is not None:
+            cor = self.do_detrend( cor )
         if self.flmult is not None:
             numpy.multiply(cor , self.flmult, cor)
             # print cor[c0,c1]
@@ -123,6 +129,24 @@ class darkflood:
 
 
 
+    def do_detrend( self, ar):
+        if self.detrend is None:
+            return ar
+        print "detrending"
+        s = ar.copy()
+        np = ar.shape[1]/2
+        s[:,:np].sort()
+        s[:,np:].sort()
+        s1 = ar.copy()
+        n = self.detrend
+        o1 = s[:,:n].sum(axis=1)/n
+        o2 = s[:,np:(np+n)].sum(axis=1)/n    
+        s1[:,:np] = (s1[:,:np].T - o1 + o1.mean() ).T
+        s1[:,np:] = (s1[:,np:].T - o2 + o2.mean() ).T
+        return s1
+
+
+
 class edf2bruker:
 
     def __init__(self, 
@@ -135,7 +159,8 @@ class edf2bruker:
                  wvln = 0.5,
                  omegasign = 1.,
                  powfac = 1.0,
-                 overflow=65534 ):
+                 overflow=65534,
+                 detrend = None ):
         """ converts edf (esrf id11 frelon) to bruker (esrf id11 smart6500)"""
         self.distance = distance
         self.overflow = overflow
@@ -145,7 +170,8 @@ class edf2bruker:
         self.darkflood = darkflood(darkoffset = darkoffset,
                                    border = border,
                                    powfac = self.powfac,
-                                   overflow = self.overflow)
+                                   overflow = self.overflow,
+                                   detrend = detrend )
         self.darkflood.readdark(dark)
         self.darkflood.readflood(flood)
         self.templatefile = template
@@ -256,7 +282,8 @@ if __name__=="__main__":
                    help="Sign of ID11 omega rotation, +1 is right handed")
         parser.add_option("-F","--Flood",action="store", 
                           type="string", dest="flood",
-#           default="/data/opid11/inhouse/Frelon2K/Ags_mask0000.edf",
+            default="/data/id11/inhouse/Frelon4M/F4M_Sm_July08.edf",
+#           default="/data/id11/inhouse/Frelon2K/Ags_mask0000.edf",
                           help="Flood field")
         parser.add_option("-D","--distance",action="store",type="float", 
                           dest="distance",
@@ -273,7 +300,7 @@ if __name__=="__main__":
 
         parser.add_option("-t","--template",action="store", type="string", 
                           dest="template",
-             default = "/data/opid11/inhouse/Frelon2K/brukertemplate.0000")
+             default = "/data/id11/inhouse/Frelon2K/brukertemplate.0000")
 
 
         parser.add_option("-o","--overflow",action="store",type="float", 
@@ -285,6 +312,12 @@ if __name__=="__main__":
                           dest="jthreads",
                           default=1,
                           help="Number of threads to use for processing")
+        
+
+        parser.add_option("-R","--detRend",action="store",type="int", 
+                          dest="detrend",
+                          default=None,
+                          help="Number of pixels in background filter")
         
 
         options, args = parser.parse_args()
@@ -305,21 +338,31 @@ if __name__=="__main__":
                     print fout
     
         # Make jthreads converters
-        converters = [ edf2bruker(options.dark , options.flood , options.template,
+        converters = [ edf2bruker(options.dark , options.flood ,
+                                  options.template,
                                   distance=options.distance,
                                   border=options.border,
                                   wvln=options.wvln,
                                   omegasign=options.omegasign,
                                   powfac = options.powfac,
                                   overflow = options.overflow,
+                                  detrend = options.detrend,
                                   )
                        for j in range(options.jthreads)]
 
-        files_in = file_series.numbered_file_series(
+        tmp_in = file_series.numbered_file_series(
             options.stem,
             options.first,
             options.last,
             options.extn)
+
+        import os
+        files_in = []
+        for f in tmp_in:
+            if os.path.exists(f):
+                files_in.append(f)
+            else:
+                print "Missing image",f
            
         files_out = file_series.numbered_file_series(
             options.stem+"_bruker_0.",
