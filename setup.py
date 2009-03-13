@@ -40,7 +40,8 @@ work ??
 
 
 
-from distutils.core import setup, Extension
+#from distutils.core import setup, Extension
+from setuptools import setup, Extension
 
 
 from numpy.distutils.misc_util import get_numpy_include_dirs
@@ -89,6 +90,10 @@ setup(name='ImageD11',
       install_requires = [
             'xfab>=0.0.1',
             'fabio>=0.0.4',
+            'numpy>=1.0.0',
+            'matplotlib>=0.90.0',
+            'PIL',
+            'Pmw'
           ],
       packages = ["ImageD11"],
       package_dir = {"ImageD11":"ImageD11"},
