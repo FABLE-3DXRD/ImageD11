@@ -80,6 +80,15 @@ class convolver(object):
         qim = np.fft.rfft2( image )
         return np.fft.irfft2( qim * self.QPSF )
 
+    def convolve_transp(self, image):
+        """
+        Does a convolution
+        Currently using wraparound - which should probably be changed to clamp
+        """
+        assert image.shape == self.dims
+        qim = np.fft.rfft2( image )
+        return np.fft.irfft2( qim * self.QPSF.conj() )
+
 def score( obs, calc):
     """ See how well our model matches the data """
     diff = (obs-calc)
@@ -106,7 +115,7 @@ class RichardsonLucy(object):
             calc = self.convolver.convolve( perfect )
             if self.debug: score( obs, calc )
             factor = obs / calc
-            correction = self.convolver.convolve(factor)
+            correction = self.convolver.convolve_transp(factor)
             perfect = perfect * correction
         rescaled = undo_scale(perfect, scale, offset)
         return rescaled
