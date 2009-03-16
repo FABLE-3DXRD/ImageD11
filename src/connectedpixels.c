@@ -581,7 +581,7 @@ static PyObject * blobproperties (PyObject *self,
    safelyneed[0]=np;
    safelyneed[1]=NPROPERTY;
 
-   results = (PyArrayObject *) PyArray_FromDims(2, 
+   results = (PyArrayObject *) PyArray_SimpleNew(2, 
 						safelyneed, 
 						PyArray_DOUBLE);
 

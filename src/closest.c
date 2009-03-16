@@ -741,35 +741,33 @@ void ptype(int type){
    /* Print out the type of a Numeric array from the C point of view */
   printf("Your input type was ");
   switch (type){
-  case    PyArray_CHAR   : 
+  case    NPY_CHAR   : 
     printf("PyArray_CHAR *(char *)\n");
     break;
-  case    PyArray_SHORT  : 
+  case    NPY_SHORT  : 
     printf("PyArray_SHORT *(short *)\n");
     break;
-  case    PyArray_INT    : 
+  case    NPY_INT    : 
     printf("PyArray_INT *(int  *)\n");
     break;
-  case    PyArray_LONG   : 
+  case    NPY_LONG   : 
     printf("PyArray_LONG *(long *)\n");
     break;
-  case    PyArray_FLOAT  : 
-    printf("PyArray_FLOAT *(float *)\n");
+  case    NPY_FLOAT  : 
+    printf("NPY_FLOAT *(float *)\n");
     break;
-  case    PyArray_DOUBLE : 
+  case    NPY_DOUBLE : 
     printf("PyArray_DOUBLE *(double *)\n");
     break;
-#ifdef PyArray_UNSIGNED_TYPES
-  case    PyArray_UBYTE  : 
+  case    NPY_UBYTE  : 
     printf("PyArray_UBYTE *(unsigned char *)\n");
     break;
-  case    PyArray_USHORT : 
+  case    NPY_USHORT : 
     printf("PyArray_USHORT *(unsigned short*)\n");
     break;
-  case    PyArray_UINT   : 
+  case    NPY_UINT   : 
     printf("PyArray_UINT *(unsigned int *)\n");
     break;
-#endif
      }
 }
 
@@ -779,7 +777,7 @@ static PyObject *put_incr( PyObject *self,
 			   PyObject *keywds){
   PyArrayObject *data=NULL, *ind=NULL, *vals=NULL;
   int i;
-  long j;
+  npy_intp j;
   float f;
   if(!PyArg_ParseTuple(args,"O!O!O!",
 		       &PyArray_Type, &data,   /* array args */
@@ -788,7 +786,7 @@ static PyObject *put_incr( PyObject *self,
 		       )) 
     return NULL;
 
-   if(data->nd != 1 || data->descr->type_num!=PyArray_FLOAT){
+   if(data->nd != 1 || data->descr->type_num!=NPY_FLOAT){
      PyErr_SetString(PyExc_ValueError,
 		     "First array must be 1d and float32");
      return NULL;
@@ -798,14 +796,15 @@ static PyObject *put_incr( PyObject *self,
 		     "Second array must be 1d");
      return NULL;
    }
-
-   if( ind->descr->type_num!=PyArray_INTP ){
+   if( PyArray_EquivTypenums( NPY_INTP, data->descr->type_num  ) ){
+     printf("ind->descr->type_num = %d , NPY_INTP %d, NPY_INT32 %d, NPY_INT %d\n",
+             ind->descr->type_num, NPY_INTP, NPY_INT32, NPY_INT);
      ptype(ind->descr->type_num);       
      PyErr_SetString(PyExc_ValueError,
 		     "Second array must be int pointer type");
      return NULL;
    }
-   if(vals->nd != 1 || vals->descr->type_num!=PyArray_FLOAT){
+   if(vals->nd != 1 || vals->descr->type_num!=NPY_FLOAT){
      PyErr_SetString(PyExc_ValueError,
 		     "Third array must be 1d and float32");
      return NULL;
