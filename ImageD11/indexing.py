@@ -587,10 +587,18 @@ class indexer:
         self.ga = labels
         # For each grain we want to know how many peaks it indexes
         # This is a histogram of labels
-        hst, edges = numpy.histogram(
-            labels,
-            n.array( range(-1, len(self.ubis)))-0.5 )
-        self.gas = hst[1:]
+        try:
+            hst, edges = numpy.histogram(
+                labels,
+                n.arange(-0.5, len(self.ubis)-0.49),
+                new = True )
+            self.gas = hst
+        except TypeError: # they changed the interface to histogram. Thanks for that.    
+            raise
+            hst, edges = numpy.histogram(
+                labels,
+                n.array( range(-1, len(self.ubis)))-0.5 )
+            self.gas = hst[1:]
         assert len(self.gas) == len(self.ubis)
                          
         
