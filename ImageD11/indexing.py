@@ -593,8 +593,7 @@ class indexer:
                 n.arange(-0.5, len(self.ubis)-0.49),
                 new = True )
             self.gas = hst
-        except TypeError: # they changed the interface to histogram. Thanks for that.    
-            raise
+        except: # they changed the interface to histogram. Thanks for that.    
             hst, edges = numpy.histogram(
                 labels,
                 n.array( range(-1, len(self.ubis)))-0.5 )
