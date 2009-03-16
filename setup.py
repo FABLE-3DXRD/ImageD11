@@ -77,6 +77,20 @@ bl = Extension("_splines",
                sources = ['src/splines.c', 'src/bispev.c'],
                include_dirs = nid)
 
+import sys
+if sys.platform == 'win32':
+    needed = [
+        'xfab>=0.0.1',
+        'fabio>=0.0.4',
+        'numpy>=1.0.0',
+        'matplotlib>=0.90.0',
+        'PIL',
+        'Pmw']
+else: # Take care of yourself if you are on linux
+    # You package manager is inevitable f*cked
+    needed = []
+#        'xfab>=0.0.1',
+#        'fabio>=0.0.4']
 
 # See the distutils docs...
 setup(name='ImageD11', 
@@ -87,14 +101,7 @@ setup(name='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
       ext_modules = [cl,cp,bl,ch],
-      install_requires = [
-            'xfab>=0.0.1',
-            'fabio>=0.0.4',
-            'numpy>=1.0.0',
-            'matplotlib>=0.90.0',
-            'PIL',
-            'Pmw'
-          ],
+      install_requires = needed,
       packages = ["ImageD11"],
       package_dir = {"ImageD11":"ImageD11"},
       url = ["http://fable.wiki.sourceforge.net/ImageD11"],
