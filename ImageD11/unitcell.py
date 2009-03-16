@@ -148,25 +148,25 @@ class unitcell:
             raise Exception("Unit cell was degenerate, could not determine"+\
                     "reciprocal metric tensor")
         if verbose==1: print "Reciprocal Metric tensor\n",self.gi
-        self.as=numpy.sqrt(self.gi[0,0])
-        self.bs=numpy.sqrt(self.gi[1,1])
-        self.cs=numpy.sqrt(self.gi[2,2])
+        self.astar=numpy.sqrt(self.gi[0,0])
+        self.bstar=numpy.sqrt(self.gi[1,1])
+        self.cstar=numpy.sqrt(self.gi[2,2])
 
-        self.alphas=degrees(math.acos(self.gi[1,2]/self.bs/self.cs))
-        self.betas =degrees(math.acos(self.gi[0,2]/self.as/self.cs))
-        self.gammas=degrees(math.acos(self.gi[0,1]/self.as/self.bs))
+        self.alphas=degrees(math.acos(self.gi[1,2]/self.bstar/self.cstar))
+        self.betas =degrees(math.acos(self.gi[0,2]/self.astar/self.cstar))
+        self.gammas=degrees(math.acos(self.gi[0,1]/self.astar/self.bstar))
         if verbose==1: print "Reciprocal cell"
         if verbose==1: 
-            print self.as, self.bs, self.cs, \
+            print self.astar, self.bstar, self.cstar, \
                 self.alphas, self.betas, self.gammas
         # Equation 3 from Busing and Levy
         self.B = numpy.array ( 
-            [ [ self.as , 
-                self.bs*math.cos(radians(self.gammas)) , 
-                self.cs*math.cos(radians(self.betas)) ] ,
+            [ [ self.astar , 
+                self.bstar*math.cos(radians(self.gammas)) , 
+                self.cstar*math.cos(radians(self.betas)) ] ,
               [ 0 , 
-                self.bs*math.sin(radians(self.gammas)) , 
-                -self.cs*math.sin(radians(self.betas))*ca ],
+                self.bstar*math.sin(radians(self.gammas)) , 
+                -self.cstar*math.sin(radians(self.betas))*ca ],
               [ 0 , 0  ,
                 1./c ] ] , numpy.float)
         if verbose == 1: print self.B
