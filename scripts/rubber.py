@@ -91,7 +91,7 @@ class rubber(Frame):
             datafile=tkFileDialog.askopenfilename(initialdir=os.getcwd())
         if type(datafile)==type("string"):
             self.datafile=datafile
-            dataobj=opendata(datafile)
+            dataobj=openimage(datafile)
             self.data=dataobj.data.astype(n.Int)
             try:
                 self.omega=float(dataobj.header["Omega"])
@@ -104,7 +104,7 @@ class rubber(Frame):
         pass  ## self.data.savespace(0)
         if type(bkgfile)==type("string"):
             self.bkgfile=bkgfile
-            bkgobj=opendata(bkgfile)
+            bkgobj=openimage(bkgfile)
             self.bkg=bkgobj.data.astype(n.Int)
             self.data=self.data.astype(n.Int)-self.bkg
             print "Got your background from",bkgfile,self.bkg.shape
@@ -234,7 +234,7 @@ class rubber(Frame):
         if bkgfile == None:
             bkgfile=tkFileDialog.askopenfilename(initialdir=os.getcwd())
         self.bkgfile=bkgfile
-        bkgobj=opendata(bkgfile)
+        bkgobj=openimage(bkgfile)
         self.bkg=bkgobj.data.astype(n.Int)
         self.data=self.data.astype(n.Int)-self.bkg
         print "Got your background from",bkgfile,self.bkg.shape
@@ -261,7 +261,7 @@ class rubber(Frame):
         self.readdata()
 
     def readdata(self):
-        dataobj=opendata(self.datafile)
+        dataobj=openimage(self.datafile)
         self.status.config(text=self.datafile)
         self.data=dataobj.data.astype(n.Int)
         pass  ## self.data.savespace(0)
@@ -506,7 +506,7 @@ class rubber(Frame):
 
 
 import sys
-from ImageD11.opendata import opendata
+from fabio.openimage import openimage
 if len(sys.argv)>2:
     test = rubber(sys.argv[1],bkgfile=sys.argv[2])
 elif len(sys.argv)>2:
