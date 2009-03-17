@@ -85,7 +85,7 @@ if sys.platform == 'win32':
         'numpy>=1.0.0',
         'matplotlib>=0.90.0',
         'PIL',
-        'Pmw']
+        ]
 else: # Take care of yourself if you are on linux
     # You package manager is inevitable f*cked
     needed = []
