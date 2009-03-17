@@ -131,12 +131,20 @@ def gauss2d( dims, sig):
 
 
 def dodeconv( filename_in,
+              filename_bg,
+              extra_bg,
               filename_out,
               pointspread_image,
               niter = 20):
 
     from fabio.openimage import openimage
+
     im_in = openimage( filename_in)
+    im_bg = openimage( filename_bg)
+
+    # do background subtraction
+    im_in.data = im_in.data.astype(np.float32) - im_bg.data - float(extra_bg)
+    im_in.data = np.where( im_in.data > 0 , im_in.data, 0 )
     # conv does the image convolution
     conv = convolver( pointspread_image, im_in.data.shape )
     # rl does the deconvolution
@@ -248,18 +256,21 @@ if __name__=="__main__":
     from fabio.openimage import openimage
 
     def usage():
-        print sys.argv[0],"infile outfile [psfile|Gaussian_sig] [niterations=20]"
+        print sys.argv[0],"infile bgfilw extra_bg outfile [psfile|Gaussian_sig] [niterations=20]"
         sys.exit()
 
     filename_in = sys.argv[1]
-    filename_out = sys.argv[2]
-    filename_pointspread = sys.argv[3]
+    filename_bg = sys.argv[2]
+    extra_bg = sys.argv[3]
+    filename_out = sys.argv[4]
+    filename_pointspread = sys.argv[5]
     try:
-        niter = int(sys.argv[4])
+        niter = int(sys.argv[6])
     except:
         niter = 20
         
     if not os.path.exists(filename_in): usage()
+    if not os.path.exists(filename_bg): usage()
     if os.path.exists(filename_pointspread):
         psf =  openimage( filename_pointspread ).data
         psfr = psf.ravel()
@@ -274,6 +285,8 @@ if __name__=="__main__":
         psf = gauss2d( dims, sig )
         
     dodeconv( filename_in,
+              filename_bg,
+              extra_bg,
               filename_out,
               psf, 
               niter)
