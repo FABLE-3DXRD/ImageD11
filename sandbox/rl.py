@@ -5,6 +5,7 @@ try:
     import fftw3f
     REAL = np.float32
 
+
     class convolver(object):
 
         plans = {}
@@ -217,11 +218,13 @@ class RichardsonLucy(object):
         perfect = obs.copy()
         import time
         calc = obs.copy()
+        np.seterr('warn')
         for i in range(niter):
             start = time.time()
             if self.debug: print "RL: iter",i,
             calc = self.convolver.convolve( perfect )
             if self.debug: score( obs, calc )
+            calc[:] = np.where( calc < 1./65535, 1./65535, calc)
             np.divide( obs, calc, calc ) 
             correction = self.convolver.convolve_transp( calc )
             np.multiply( perfect, correction, perfect)
