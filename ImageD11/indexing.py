@@ -50,9 +50,9 @@ def write_ubi_file(filename, ubilist):
     """ save 3x3 matrices into file """
     f=open(filename,"w")
     for u in ubilist:
-        f.write("%f %f %f\n"  %(u[0,0],u[0,1],u[0,2]))
-        f.write("%f %f %f\n"  %(u[1,0],u[1,1],u[1,2]))
-        f.write("%f %f %f\n\n"%(u[2,0],u[2,1],u[2,2]))
+        f.write("%f %f %f\n"  %(u[0][0],u[0][1],u[0][2]))
+        f.write("%f %f %f\n"  %(u[1][0],u[1][1],u[1][2]))
+        f.write("%f %f %f\n\n"%(u[2][0],u[2][1],u[2][2]))
     f.close()
 
 def ubitocellpars(ubi):
