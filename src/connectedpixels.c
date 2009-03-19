@@ -534,7 +534,7 @@ static PyObject * blobproperties (PyObject *self,
    int np=0,verbose=0,type,f,s,peak,bad;
 
    int i,j, percent;
-   int safelyneed[3];
+   npy_intp safelyneed[3];
    
    if(!PyArg_ParseTupleAndKeywords(args,keywds, "O!O!i|di",kwlist,      
 				   &PyArray_Type, 
