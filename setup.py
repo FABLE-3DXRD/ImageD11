@@ -20,21 +20,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 """
-Setup script for python distutils package
-
-Can be used to generate source and binary distributions
-
-On windows (with mingw tools installed, from www.mingw.org:
-    python setup.py build --compiler=mingw32 sdist bdist bdist_wininst
-
-In Linux
-    python setup.py build sdist
-
-Once assumed you have the "g77" compiler available for fortran and that
-the usual (gnu linux/win32 x86) name mangling are done for the splines
-extension to work ... now that code went through f2c, so it should just
-work ??
-
+Setup script
 """
 
 
