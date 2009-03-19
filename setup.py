@@ -104,7 +104,7 @@ setup(name='ImageD11',
       install_requires = needed,
       packages = ["ImageD11"],
       package_dir = {"ImageD11":"ImageD11"},
-      url = ["http://fable.wiki.sourceforge.net/ImageD11"],
+      url = "http://fable.wiki.sourceforge.net/ImageD11",
       download_url = ["http://sourceforge.net/project/showfiles.php?group_id=82044&package_id=147869"],
       package_data = {"ImageD11" : ["doc/*.html"]},
       scripts = ["ImageD11/rsv_mapper.py",
@@ -135,3 +135,4 @@ setup(name='ImageD11',
                  "scripts/index_unknown.py",
                  "scripts/ImageD11Server.py",
                  "scripts/powderimagetopeaks.py"])
+
