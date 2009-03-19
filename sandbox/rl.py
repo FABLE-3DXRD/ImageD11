@@ -384,7 +384,7 @@ if __name__=="__main__":
     if not os.path.exists(filename_in): usage()
     if not os.path.exists(filename_bg): usage()
     if os.path.exists(filename_pointspread):
-        psf =  openimage( filename_pointspread ).data
+        psf =  openimage( filename_pointspread ).data.astype(REAL)
         psfr = psf.ravel()
         # Scale, normalise
         psf = (psf - psfr.min())/psfr.sum()
