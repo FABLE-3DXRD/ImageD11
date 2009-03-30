@@ -66,8 +66,8 @@ bl = Extension("_splines",
 import sys
 if sys.platform == 'win32':
     needed = [
-        'xfab>=0.0.1',
-        'fabio>=0.0.4',
+        'xfab>=0.0.2',
+        'fabio>=0.0.5',
         'numpy>=1.0.0',
         'matplotlib>=0.90.0',
         'PIL',
@@ -80,7 +80,7 @@ else: # Take care of yourself if you are on linux
 
 # See the distutils docs...
 setup(name='ImageD11', 
-      version='1.2.2',
+      version='1.3.0',
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',
