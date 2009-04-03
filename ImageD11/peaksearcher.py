@@ -621,6 +621,17 @@ def get_options(parser):
 
         return parser
 
+
+def get_help():
+    """ return the help string for online help """
+    import optparse, StringIO
+    o = get_options(optparse.OptionParser())
+    f = StringIO.StringIO()
+    o.print_help(f)
+    return f.getvalue()
+
+
+
 if __name__=="__main__":
     raise Exception("Please use the driver script peaksearch.py")
 
