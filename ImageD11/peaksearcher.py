@@ -622,14 +622,16 @@ def get_options(parser):
         return parser
 
 
-def get_help():
+def get_help(usage = True):
     """ return the help string for online help """
     import optparse, StringIO
-    o = get_options(optparse.OptionParser())
+    if usage:
+        o = get_options(optparse.OptionParser())
+    else:
+        o = get_options(optparse.OptionParser(optparse.SUPPRESS_USAGE))
     f = StringIO.StringIO()
     o.print_help(f)
     return f.getvalue()
-
 
 
 if __name__=="__main__":
