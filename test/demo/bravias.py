@@ -28,7 +28,7 @@ def fi_monoclinic(ubi, cell, mult):
     for i in range(len(mult)):
         if mult[i] == 2:
             possibles.append( cell.ringhkls(cell.ringds[i])[0] )
-    possibles = [cell.ring
+    possibles = [cell.ring]
     
 
 def ferraris_and_ivaldi(ubi, tol = 0.001):
