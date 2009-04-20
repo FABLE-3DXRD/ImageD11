@@ -137,6 +137,9 @@ def bgmaker( options ):
             im = first_image.getframe( current_num )
             print im.filename
             minim.add_image( im.data )
+        except KeyboardInterrupt:
+            print "Got a keyboard interrupt"
+            current_num = options.last + 1
         except:
             import traceback
             traceback.print_exc()
