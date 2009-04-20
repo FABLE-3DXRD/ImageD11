@@ -5,9 +5,9 @@ Routines for finding the lattice symmetry from a ubi file
 """
 import numpy as np
 
-from ImageD11.lattice_reduction import mod as lattice_mod
 
-def cosangle_rr_vec( ubi, v ):
+
+def cosangle_rr_vec( ubi, v1, v2 ):
     """
     Returns the cosine of the angle between the vector, v, in
     real and reciprocal space.
@@ -20,32 +20,53 @@ def cosangle_rr_vec( ubi, v ):
     "The derivation of the axes of the conventional unit cell from the
     dimensions of the Buerger-reduced cell"
     """
-    real = np.dot( ubi.T, v )
-    reci = np.dot( np.linalg.inv(ubi) , v )
+    real = np.dot( ubi.T, v1 )
+    reci = np.dot( np.linalg.inv(ubi) , v2 )
     return np.dot( real, reci )/np.sqrt(
         np.dot(real, real) * np.dot(reci, reci) )
 
-def find_2_folds( ubi , tol = 2.0, debug = False):
+# All the possible indices of lattice rows and planes
+rows_planes = [ (h, k, l) for h in range(-2,3)
+                          for k in range(-2,3)
+                          for l in range(-2,3) ]
+rows_planes.remove( (0,0,0) )
+rows_planes = np.array( rows_planes )
+
+from ImageD11.rc_array import rc_array
+
+def find_2_folds( ubi , tol = 1.0, debug = False):
     """
     Scans over different directions to find all the potential
     2-fold axes.
-    Default tolerance is 2 degrees.
+    Default tolerance is 0.5 degrees.
     """
-    hr = range(-2,3)
     tol_c = abs(1.0 - np.cos( tol * np.pi / 180.0))
-    axes = []
-    for h in hr:
-        for k in hr:
-            for l in hr:
-                if h==0 and k==0 and l==0:
-                    continue
-                c = cosangle_rr_vec( ubi, [h,k,l] )
-                if debug:
-                    print h, k, l, c, np.arccos(c)*180/np.pi
-                if abs(1 - c) < tol_c:
-                    # print h, k, l, c, np.arccos(c)*180/np.pi
-                    axes.append( (h,k,l) )
-    return axes
+    ub = np.linalg.inv( ubi )
+
+    real_vecs = np.dot( ubi, rows_planes.T ).T
+    reci_vecs = np.dot( ub.T , rows_planes.T ).T
+    
+    real_lens = np.sqrt((real_vecs*real_vecs).sum(axis = 1))
+    reci_lens = np.sqrt((reci_vecs*reci_vecs).sum(axis = 1))
+    nvec = len(rows_planes)
+    pairs = []
+    for v1, l1, i in zip(real_vecs, real_lens, range(nvec)):
+        print v1,l1,i
+        for v2, l2, j in zip(reci_vecs, reci_lens, range(nvec)):
+            #if j < i:
+            #    continue
+            c = np.dot(v1, v2)/ l1/ l2
+            if abs( 1 - c ) < tol_c:
+                print i, j, c, rows_planes[i],rows_planes[j]
+                pairs.append( (i,j) )
+    print pairs
+    return pairs
+
+    
+
+
+from ImageD11.lattice_reduction import mod as lattice_mod
+
 
 def r2sweep( vl ):
     """
@@ -78,35 +99,67 @@ def reduce_two_folds( vecs ):
 
 import xfab.tools
 
-def test_monoclinic( ):
-    ubi = xfab.tools.form_a_mat( [ 1, 2, 3, 89.8, 101, 90.02 ] )
-    twofolds = find_2_folds( ubi )
-    uniq = reduce_two_folds( twofolds )
-    print "Monoclinic", uniq
 
-def test_monoclinic_c( ):
-    """ a=c , alpha=gamma """
-    ubi = xfab.tools.form_a_mat( [ 4., 2., 4., 81., 95., 81. ] )
-    twofolds = find_2_folds( ubi, debug = True )
-    uniq = reduce_two_folds( twofolds )
-    print "Monoclinic_c", uniq
+mono = ( 1, 2, 3, 89.8, 107, 90.02 )
+ortho = ( 1.5, 2, 3, 90., 90., 90. )
+def transform( cell, matrix):
+    return xfab.tools.ubi_to_cell(
+        np.dot(  np.linalg.inv(matrix), 
+                 xfab.tools.form_a_mat( cell )))
 
-
-def test_orthorhombic( ):
-    ubi = xfab.tools.form_a_mat( [ 1, 2, 3, 89.8, 90.1, 90.1 ] )
-    twofolds = find_2_folds( ubi )
-    uniq = reduce_two_folds( twofolds )
-    print "Orthorhombic", uniq
-
+testcases = {
     
+    'monoclinic'   : [ mono , (0,1,0) ],
+    'monoclinic_c'   : [ transform( mono, [[1,1,0],[-1,1,0],[0,0,1]]),
+                         (1,-1,0) ],
+    
+    'orthorhombic' : [ ortho ,
+                       (1,0,0),  (0,1,0),  (0,0,1) ],
+    
+    'orthorhombic_c' : [transform( ortho, [[1,1,0],[-1,1,0],[0,0,1]]) ,
+                        (1,1,0),  (1,-1,0),  (0,0,1) ],
+    
+    'orthorhombic_i' : [ transform( ortho, [[0,1,1],[1,0,1],[1,1,0]]),
+                          (1,1,-1),  (1,-1,1),  (-1,1,1) ],
+    
+    'orthorhombic_f' : [ transform( ortho, [[-1,1,1],[1,-1,1],[1,1,-1]] ),
+                         (1,0,1),  (0,1,1),  (1,1,0) ],
+    
+    
+    }
 
-def test():
-    test_monoclinic()
-    test_monoclinic_c()
-    test_orthorhombic()
 
+def test_reduce( name, cell , expected ):
+    print ("%6.3f  "*6)%tuple(cell),
+    ubi = xfab.tools.form_a_mat( cell ).T
+    twofolds = find_2_folds( ubi )
+    lines  = [ rows_planes[t[0]] for t in twofolds]
+    planes = [ rows_planes[t[1]] for t in twofolds]
+    uniql = reduce_two_folds( planes )
+    uniqp = reduce_two_folds( lines ) 
+    # print name, uniq
+    if len(expected) != len( uniql ):
+        print name + " wrong number of axes "
+        print uniql
+        print uniqp
+    for ul, up in zip(uniql, uniqp):
+        ok = (tuple(ul) in expected) or (tuple(-ul) in expected)
+        if not ok:
+            print "PROBLEM",name, ul, up, expected
+            
+def runtests():
+    np.seterr(all='raise')
+    names = testcases.keys()
+    names.sort()
+    for name in names:
+        cell = testcases[name][0]
+        expected = testcases[name][1:]
 
+        print "Testing",name,
+        test_reduce( name, cell, expected)
+        print "passed"
+        
 
     
 if __name__=="__main__":
-    test()
+    runtests()
