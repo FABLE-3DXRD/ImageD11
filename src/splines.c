@@ -8,7 +8,8 @@ static char moduledocs [] =\
 "   parts I wanted. I promise that if it goes wrong it was not\n"\
 "   their fault.  They are not responsible for\n"\
 "   errors I might have introduced                  - JPW 2005  */"\
-  " Adpated to numpy (change of include file), JPW 2007 ";
+" Adpated to numpy (change of include file), JPW 2007 "\
+" Change to use PyArray_SimpleNew etc depreciation warn, JPW 2009 ";
 
 #include <Python.h>
 /* upgrade to numpy
@@ -30,7 +31,8 @@ void SURFIT(int*,int*,double*,double*,double*,double*,double*,double*,double*,do
 static char doc_bispev[] = " [z,ier] = _bispev(tx,ty,c,kx,ky,x,y,nux,nuy)";
 
 static PyObject *_bispev(PyObject *dummy, PyObject *args) {
-  int nx,ny,kx,ky,mx,my,lwrk,*iwrk,kwrk,ier,lwa,mxy,nux,nuy;
+  int nx,ny,kx,ky,mxy,mx,my,lwrk,*iwrk,kwrk,ier,lwa,nux,nuy;
+  npy_intp dmxy;
   double *tx,*ty,*c,*x,*y,*z,*wrk,*wa = NULL;
   PyArrayObject *ap_x = NULL,*ap_y = NULL,*ap_z = NULL,*ap_tx = NULL,\
     *ap_ty = NULL,*ap_c = NULL;
@@ -55,7 +57,8 @@ static PyObject *_bispev(PyObject *dummy, PyObject *args) {
   mx = ap_x->dimensions[0];
   my = ap_y->dimensions[0];
   mxy = mx*my;
-  ap_z = (PyArrayObject *)PyArray_FromDims(1,&mxy,PyArray_DOUBLE);
+  dmxy = mxy*1;
+  ap_z = (PyArrayObject *)PyArray_SimpleNew(1,&dmxy,PyArray_DOUBLE);
   z = (double *) ap_z->data;
   if (nux || nuy) 
     lwrk = mx*(kx+1-nux)+my*(ky+1-nuy)+(nx-kx-1)*(ny-ky-1);
@@ -96,8 +99,9 @@ static char doc_surfit[] =
  "_surfit(x,y,z,w,xb,xe,yb,ye,kx,ky,iopt,s,eps,tx,ty,nxest,nyest,wrk,lwrk1,lwrk2)";
 
 static PyObject *_surfit(PyObject *dummy, PyObject *args) {
-  int iopt,m,kx,ky,nxest,nyest,nx,ny,lwrk1,lwrk2,*iwrk,kwrk,ier,lwa,nxo,nyo,\
-    i,lc,lcest,nmax;
+  int iopt,m,kx,ky,nxest,nyest,lwrk1,lwrk2,*iwrk,kwrk,ier,lwa,nxo,nyo,\
+    i,lcest,nmax,nx,ny,lc,n;
+  npy_intp dnx,dny,dlc,dn;
   double *x,*y,*z,*w,xb,xe,yb,ye,s,*tx,*ty,*c,fp,*wrk1,*wrk2,*wa = NULL,eps;
   PyArrayObject *ap_x = NULL,*ap_y = NULL,*ap_z,*ap_w = NULL,\
     *ap_tx = NULL,*ap_ty = NULL,*ap_c = NULL;
@@ -167,14 +171,18 @@ static PyObject *_surfit(PyObject *dummy, PyObject *args) {
   }
   if (ier==10) goto fail;
   lc = (nx-kx-1)*(ny-ky-1);
-  ap_tx = (PyArrayObject *)PyArray_FromDims(1,&nx,PyArray_DOUBLE);
-  ap_ty = (PyArrayObject *)PyArray_FromDims(1,&ny,PyArray_DOUBLE);
-  ap_c = (PyArrayObject *)PyArray_FromDims(1,&lc,PyArray_DOUBLE);
+  dnx = 1*nx;
+  dny = 1*ny;
+  dlc = 1*lc;
+  ap_tx = (PyArrayObject *)PyArray_SimpleNew(1,&dnx,PyArray_DOUBLE);
+  ap_ty = (PyArrayObject *)PyArray_SimpleNew(1,&dny,PyArray_DOUBLE);
+  ap_c = (PyArrayObject *)PyArray_SimpleNew(1,&dlc,PyArray_DOUBLE);
   if (ap_tx == NULL || ap_ty == NULL || ap_c == NULL) goto fail;
   if ((iopt==0)||(nx>nxo)||(ny>nyo)) {
-    ap_wrk = (PyArrayObject *)PyArray_FromDims(1,&lc,PyArray_DOUBLE);
+    ap_wrk = (PyArrayObject *)PyArray_SimpleNew(1,&dlc,PyArray_DOUBLE);
     if (ap_wrk == NULL) goto fail;
-    /*ap_iwrk = (PyArrayObject *)PyArray_FromDims(1,&n,PyArray_INT);*/
+    dn = 1*n;
+    /*ap_iwrk = (PyArrayObject *)PyArray_SimpleNew(1,&dn,PyArray_INT);*/
   }
   memcpy(ap_tx->data,tx,nx*sizeof(double));
   memcpy(ap_ty->data,ty,ny*sizeof(double));
