@@ -50,7 +50,9 @@ class rsv(object):
         self.bounds = bounds  # boundary in reciprocal space
         self.np = np          # px per hkl
         self.metadata = kwds
-        self.allocate_vol()
+        #  Do not allocate in constructor for now - make caller care about
+        # memory usage
+        #  self.allocate_vol()
 
     def allocate_vol( self ):
         """ 
@@ -64,14 +66,24 @@ class rsv(object):
         self.MON = numpy.zeros( total, numpy.float32 )
         
         
-    def normalise( self ):
+    def normalise( self , savespace = True):
         """
         Return the normalised but avoid divide by zero
         """
-        self.NORMED = numpy.where( self.MON > 0.1, 
-                              self.SIG/(self.MON+1e-32), 
-                              0.0)
+        if savespace:
+            self.NORMED = self.SIG
+        else:
+            self.NORMED = numpy.zeros( self.SIG.shape, numpy.float32 )
+        msk = (self.MON < 0.1).astype(numpy.uint8)
+        self.NORMED = numpy.divide( self.SIG,
+                                    self.MON + msk,   # divide by mon + 1
+                                    self.NORMED )
+        self.NORMED = numpy.subtract( self.NORMED,
+                                      self.NORMED * msk, # subtract msk * data
+                                      self.NORMED )
 
+
+            
     plnames = {
         0 :0, "h":0, "H":0,
         1 :1, "k":1, "K":1,
@@ -106,8 +118,18 @@ class rsv(object):
             return self.NORMED.reshape(self.NR)[:, :, ind]
 
 
-        
-        
+def getbounds( vol, plane ):
+    """
+    Returns the extent argument to use for pylab.imshow when plotting
+    a plane
+    """
+    inds = [0,1,2]
+    inds.remove( vol.plnames[plane] )
+    imin = vol.bounds[inds[0]][0]*1.0/vol.np
+    imax = vol.bounds[inds[0]][1]*1.0/vol.np
+    jmin = vol.bounds[inds[1]][0]*1.0/vol.np
+    jmax = vol.bounds[inds[1]][1]*1.0/vol.np
+    return jmin,jmax,imin,imax
 
 
 def writevol(vol, filename):
@@ -146,30 +168,76 @@ def writevol(vol, filename):
     volout.flush()
     volout.close()
 
+    
+def writenormedvol(vol, filename):
+    """
+    Write volume in vol to filename - save only the normalised
+    to avoid using so much memory
+    
+    Compress -1 is for the zeros, which there might be a lot of
+    """
+    if not isinstance( vol, rsv ):
+        raise Exception("First arg to writevol should be an rsv object")
+    
+    if None in [vol.NR, vol.NORMED]:    
+        raise Exception("Cannot save rsv, has not data in it")
+    volout = h5py.File( filename,"w")
+    if vol.NORMED.dtype != numpy.float32:
+        logging.warning("rsv NORMED was not float32, converting")
+        vol.NORMED = vol.NORMED.astype(numpy.float32)
+    volout.create_dataset( "signal",
+                           (vol.NR[0],vol.NR[1],vol.NR[2]),
+                           vol.NORMED.dtype,
+                           data = vol.NORMED,
+                           compression = 'gzip', 
+                           compression_opts = 1)
+    volout.attrs['bounds'] = vol.bounds
+    volout.attrs['np'] = vol.np
+    for key, value in vol.metadata.iteritems():
+        volout.attrs[key]=value
+    volout.flush()
+    volout.close()
+
+
+def mem():
+    """ debug the memory usage """
+    import os
+    os.system('ps v -p %s'%(os.getpid()))
 
 def readvol(filename):
     """
     Read volume from a file
     returns an rsv object
+    Take care to allocate and read to avoid temporaries
     """
-    volf = h5py.File(filename)
-    try:
-        mon = volf['monitor']
-        sig = volf['signal']
-    except:
+    
+    volfile = h5py.File(filename)
+    if not 'signal' in volfile.listnames():
         raise Exception("Your file %s is not an rsv"%(filename))
-    mona= mon[:,:,:]
-    siga= sig[:,:,:]
-    assert mona.shape == siga.shape
-    assert len(mona.shape)==3
-    bounds = volf.attrs['bounds']
-    np = volf.attrs['np']
-    vol = rsv( mona.shape, bounds, np )
-    vol.MON = mona
-    vol.SIG = siga
-    for name, value in volf.attrs.iteritems():
+    sig = volfile['signal']
+    bounds = volfile.attrs['bounds']
+    np = volfile.attrs['np']
+    vol = rsv( sig.shape, bounds, np )
+    # allocate array empty
+    #mem()
+    vol.SIG = numpy.empty( sig.shape, sig.dtype )
+    #mem()
+    sig.read_direct( vol.SIG )
+    #mem()
+    for name, value in volfile.attrs.iteritems():
         vol.metadata[name] = value
-    volf.close()
+    #mem()
+    if 'monitor' in volfile.listnames():
+        mon = volfile['monitor']
+        assert mon.shape == vol.SIG.shape
+        vol.MON= numpy.empty( mon.shape, mon.dtype)
+        mon.read_direct( vol.MON )
+    else:
+        vol.MON = None
+        vol.NORMED = vol.SIG
+    #mem()
+    volfile.close()
+    #mem()
     return vol
 
 
