@@ -111,6 +111,8 @@ class rsv_mapper(object):
             npv[i] = (bounds[i][1]-bounds[i][0]) + 1
         self.bounds = bounds
         self.rsv = rsv.rsv( npv , bounds=bounds, np=self.np )
+        # Cross your fingers and....
+        self.rsv.allocate_vol()
 
                             
 
