@@ -358,7 +358,7 @@ def compute_tth_histo(tth, no_bins = 100,
     #print "hpk",hpk[:10]
     return tthbin, histogram, hpk
   
-def compute_k_vectors(tth, eta, wvln, **kwds):
+def compute_k_vectors(tth, eta, wvln):
     """
     generate k vectors - scattering vectors in laboratory frame
     """
@@ -382,20 +382,19 @@ def compute_g_vectors(tth,
                       omega, 
                       wvln, 
                       wedge = 0.0, 
-                      chi   = 0.0,
-                      **kwds):
+                      chi   = 0.0):
     """
     Generates spot positions in reciprocal space from 
       twotheta, wavelength, omega and eta
     Assumes single axis vertical
     ... unless a wedge angle is specified
     """
-    k = compute_k_vectors(tth, eta, wvln, **kwds)
+    k = compute_k_vectors(tth, eta, wvln)
 #    print k[:,0]
-    return compute_g_from_k( k, omega, **kwds)
+    return compute_g_from_k( k, omega, wedge, chi)
 
     
-def compute_g_from_k( k, omega, wedge=0, chi=0, **kwds):
+def compute_g_from_k( k, omega, wedge=0, chi=0):
     """
     Compute g-vectors with cached k-vectors
     """

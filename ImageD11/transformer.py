@@ -437,7 +437,9 @@ class transformer:
             self.getcolumn("eta"),
             self.getcolumn("omega")*om_sgn,
             self.parameterobj.get('wavelength'),
-            **pars)
+            wedge=self.parameterobj.get('wedge'),
+            chi=self.parameterobj.get('chi'))
+            
         self.addcolumn(gv[0],"gx")
         self.addcolumn(gv[1],"gy")
         self.addcolumn(gv[2],"gz")
