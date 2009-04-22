@@ -422,14 +422,14 @@ def compute_g_from_k( k, omega, wedge=0, chi=0):
         t[0,:]= c * k[0,:]           + s * k[2,:]
         t[1,:]=            k[1,:]
         t[2,:]=-s * k[0,:]           + c * k[2,:]
-        k=t
+        k=t.copy()
     if chi != 0.0:
         c = n.cos(radians(chi))
         s = n.sin(radians(chi))
         t[0,:]= k[0,:]  
         t[1,:]=        c * k[1,:]    + s * k[2,:]
         t[2,:]=       -s * k[1,:]    + c * k[2,:]
-        k=t
+        k=t.copy()
     # This is the reverse rotation (left handed, k back to g)
     g[0,:] = n.cos(om)*k[0,:] + n.sin(om)*k[1,:]    
     g[1,:] =-n.sin(om)*k[0,:] + n.cos(om)*k[1,:]
