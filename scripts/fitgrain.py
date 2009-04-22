@@ -80,8 +80,7 @@ if __name__=="__main__":
                                      "t_x","t_y","distance"],
                       help="Parameters to vary"  )
     parser.add_option("-x", "--fiX", action="append",
-                      dest="fixlist", type="string",
-                      default = ['chi'],
+                      dest="fixlist", type="string", default = [],
                       help="Parameters to fix (overrides vary)")
     parser.add_option("-t", "--tol", action="store",
                       dest="tol", type="float",
