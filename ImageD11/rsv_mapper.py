@@ -35,7 +35,7 @@ class rsv_mapper(object):
         """
         if len(dims)!=2: raise Exception("For 2D dims!")
         self.dims = dims
-
+        print dims
         # Experiment parameters
         if not isinstance( pars, parameters.parameters):
             raise Exception("Pars should be an ImageD11 parameters object")
@@ -97,7 +97,9 @@ class rsv_mapper(object):
         assert om.shape == tth.shape
         gv = transform.compute_g_vectors( tth, eta, om,
                                           self.pars.get('wavelength'),
-                                          **self.pars.get_parameters())
+                                          float(self.pars.get('wedge')),
+                                          float(self.pars.get('chi')))
+                                          
     
         # Rotate g-vectors into target volume
         hkls = numpy.dot( self.uspace, gv )
@@ -134,9 +136,8 @@ class rsv_mapper(object):
         tth, eta = transform.compute_tth_eta( peaks, 
                                               **self.pars.get_parameters() )
         self.k = transform.compute_k_vectors(tth, eta,
-                                             self.pars.get('wavelength'),
-                                             **self.pars.get_parameters())
-        
+                                             self.pars.get('wavelength'))
+                                             
         # FIXME
         # This should be something like domega/dk where
         #      dk [ k(omega=0) - k(omega=1) ]
@@ -159,8 +160,11 @@ class rsv_mapper(object):
         assert len(dat) == len(self.k[0]), "dimensioning issue"
     
         # hkl = ubi.( gtok. k )
-        gvm = transform.compute_g_from_k(numpy.eye(3), om,
-                                         **self.pars.get_parameters() )
+        gvm = transform.compute_g_from_k(numpy.eye(3),
+                                         # this transform module sucks
+                                         om*float(self.pars.get('omegasign')),
+                                         wedge = float(self.pars.get('wedge')),
+                                         chi = float(self.pars.get('chi')))
         tmat = numpy.dot( self.uspace , gvm )
         hkls = numpy.dot( tmat , self.k )
 

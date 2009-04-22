@@ -112,14 +112,14 @@ class correctorclass: #IGNORE:R0902
             y_im = numpy.outer(numpy.ones(dims[0]), range(dims[1]))
             # xcor is tck2
             x_im = numpy.add( x_im,
-                              bisplev.bisplev( range(2048),
-                                               range(2048),
+                              bisplev.bisplev( range(dims[1]),
+                                               range(dims[0]),
                                                self.tck2 ).T,
                               x_im)
             # ycor is tck1
             y_im = numpy.add( y_im,
-                              bisplev.bisplev( range(2048),
-                                               range(2048),
+                              bisplev.bisplev( range(dims[1]),
+                                               range(dims[0]),
                                                self.tck1 ).T,
                               y_im)
             self.pixel_lut = x_im, y_im

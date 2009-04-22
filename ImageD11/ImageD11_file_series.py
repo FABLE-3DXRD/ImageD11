@@ -43,6 +43,13 @@ def get_options(parser):
     parser.add_option("-d", "--dark", action="store", type="string",
                       dest = "dark", default = None,
                       help = "Dark image")
+    parser.add_option("-S", "--step", action="store", type="float",
+                      dest = "OMEGASTEP", default = None,
+                      help = "omega step size")
+    parser.add_option("-T", "--start", action="store", type="float",
+                      dest = "OMEGA", default = None,
+                      help = "start omega")
+
     return parser
 
 
@@ -64,7 +71,8 @@ def get_series_from_hdf( hdf_file, dark = None, flood = None ):
                                                header = {
                     'Omega': om } )
 
-def series_from_fabioseries( fabioseries, dark=None, flood=None ):
+def series_from_fabioseries( fabioseries, dark, flood, options ):
+    
     for filename in fabioseries:
         fim = fabio.openimage.openimage(filename)
         if (dark, flood) is not (None, None):
@@ -73,7 +81,12 @@ def series_from_fabioseries( fabioseries, dark=None, flood=None ):
             numpy.subtract( fim.data, dark, fim.data )
         if flood != None:
             numpy.divide( fim.data, flood, fim.data )
-        fim.header['Omega'] = float(fim.header['Omega'])
+        try:
+            fim.header['Omega'] = float(fim.header['Omega'])
+        except:
+            print filename, "get omega as",options.OMEGA
+            fim.header['Omega'] = float(options.OMEGA)
+            options.OMEGA = float(options.OMEGA) + float(options.OMEGASTEP)
         yield fim
         
 
@@ -96,7 +109,7 @@ def get_series_from_stemnum( options, args, dark = None, flood = None ):
         extn,
         digits = options.ndigits,
         padding = options.padding )
-    return series_from_fabioseries( fso , dark, flood )
+    return series_from_fabioseries( fso , dark, flood, options )
     
 
 def get_series_from_options( options, args ):
