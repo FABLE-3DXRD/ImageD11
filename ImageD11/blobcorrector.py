@@ -85,8 +85,13 @@ class correctorclass: #IGNORE:R0902
         if self.orientation == "edf":
             xcor = xin + bisplev.bisplev(yin, xin, self.tck2)
             ycor = yin + bisplev.bisplev(yin, xin, self.tck1)
-        elif self.orientation == "bruker":
-            # fit2d does a flip
+        else: 
+            # fit2d does a flip 
+            raise Exception("Spline orientations must be edf, convert "
+                            "your image to edf and remake the spline")
+            # Unreachable code - we no longer accept this complexity
+            # it means the spline file for ImageD11 bruker images
+            # is not the same as for fit2d. 
             xpos = self.xmax - xin
             xcor = xin - bisplev.bisplev(yin, xpos, self.tck2)
             ycor = yin + bisplev.bisplev(yin, xpos, self.tck1)

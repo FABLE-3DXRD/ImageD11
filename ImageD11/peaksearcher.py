@@ -39,9 +39,9 @@ import time
 
 # For benchmarking
 reallystart = time.time()
-from ImageD11.ImageD11_thread import stop_now, ImageD11_thread
+from ImageD11 import ImageD11_thread 
 
-stop_now = False
+ImageD11_thread.stop_now = False
 
 from math import sqrt
 import sys , glob , os.path
@@ -216,17 +216,21 @@ def peaksearch_driver(options, args):
     # if len(args) > 0 :
     #     # We no longer assume unlabelled arguments are filenames 
     #     file_series_object = file_series.file_series(args)
-    
+
+    # This is always the case now
+    corrfunc.orientation = "edf"
     
     if options.format in ['bruker', 'BRUKER', 'Bruker']:
         extn = ""
-        corrfunc.orientation = "bruker"
+        if options.perfect is not "N":
+            print "WARNING: Your spline file is ImageD11 specific"
+            print "... from a fabio converted to edf first"
     elif options.format == 'GE':
         extn = ""
         options.ndigits = 0
     else:
         extn = options.format
-        corrfunc.orientation = "edf"
+
     import fabio
     file_name_object = fabio.filename_object(
                 options.stem,
@@ -238,9 +242,11 @@ def peaksearch_driver(options, args):
 
     first_image = openimage( file_name_object )
     import fabio.file_series
-    file_series_object = fabio.file_series.new_file_series( first_image,
-                                                            first = options.first,
-                                                            last = options.last )
+    file_series_object = fabio.file_series.new_file_series(
+        first_image,
+        first = options.first,
+        last = options.last )
+    
     if options.outfile[-4:] != ".spt":
         options.outfile = options.outfile + ".spt"
         print "Your output file must end with .spt, changing to ",options.outfile
@@ -368,7 +374,7 @@ def peaksearch_driver(options, args):
             import Queue, threading
 
                 
-            class read_only(ImageD11_thread):
+            class read_only(ImageD11_thread.ImageD11_thread):
                 def __init__(self, queue, file_series_obj , name="read_only",
                              OMEGA=0, OMEGAOVERRIDE = False, OMEGASTEP = 1):
                     """ Reads files in file_series_obj, writes to queue """
@@ -377,14 +383,16 @@ def peaksearch_driver(options, args):
                     self.OMEGA = OMEGA
                     self.OMEGAOVERRIDE = OMEGAOVERRIDE
                     self.OMEGASTEP = OMEGASTEP
-                    ImageD11_thread.__init__(self , name=name)
+                    ImageD11_thread.ImageD11_thread.__init__(self , name=name)
                     print "Reading thread initialised",
 
                     
                 def ImageD11_run(self):
                     """ Read images and copy them to self.queue """
                     for data_object in self.file_series_obj:
-                        if self.ImageD11_stop_now(): break
+                        if self.ImageD11_stop_now():
+                            print "Reader thread stopping"
+                            break
                         if data_object is None:
                             sys.stdout.write("An image was not found\n")
                             continue
@@ -410,22 +418,27 @@ def peaksearch_driver(options, args):
                         ti.tick(filein)
                         self.queue.put((filein, data_object) , block = True)
                         ti.tock(" enqueue ")
+                        if self.ImageD11_stop_now():
+                            print "Reader thread stopping"
+                            break
+                        
                     # Flag the end of the series
                     self.queue.put( (None, None) , block = True)
 
-            class correct_one_to_many(ImageD11_thread):
+            class correct_one_to_many(ImageD11_thread.ImageD11_thread):
                 def __init__(self, queue_read, queues_out,  thresholds_list,
                              dark = None , flood = None, name="correct_one",
                              do_median = False):
                     """ Using a single reading queue retains a global ordering
-                    corrects and copies images to output queues doing correction once """
+                    corrects and copies images to output queues doing
+                    correction once """
                     self.queue_read = queue_read
                     self.queues_out = queues_out 
                     self.dark = dark
                     self.flood = flood
                     self.do_median = do_median
                     self.thresholds_list = thresholds_list
-                    ImageD11_thread.__init__(self , name=name)
+                    ImageD11_thread.ImageD11_thread.__init__(self , name=name)
                     
                 def ImageD11_run(self):
                     while not self.ImageD11_stop_now():
@@ -433,27 +446,35 @@ def peaksearch_driver(options, args):
                         filein, data_object = self.queue_read.get(block = True)
                         if filein is None:
                             for t in self.thresholds_list:
-                                self.queues_out[t].put( (None, None) , block = True)
+                                self.queues_out[t].put( (None, None) ,
+                                                        block = True)
                             # exit the while 1
                             break 
-                        data_object = correct(data_object, self.dark, self.flood,
+                        data_object = correct(data_object, self.dark,
+                                              self.flood,
                                               do_median = self.do_median)
                         ti.tick(filein+" correct ")
                         for t in self.thresholds_list:
                             # Hope that data object is read only
-                            self.queues_out[t].put((filein, data_object) , block = True)
+                            self.queues_out[t].put((filein, data_object) ,
+                                                   block = True)
                         ti.tock(" enqueue ")
+                    print "Corrector thread stopping"
 
 
 
-            class peaksearch_one(ImageD11_thread):
-                def __init__(self, q, corrfunc, threshold, li_obj, name="peaksearch_one" ):
-                    """ This will handle a single threshold and labelimage object """
+            class peaksearch_one(ImageD11_thread.ImageD11_thread):
+                def __init__(self, q, corrfunc, threshold, li_obj,
+                             name="peaksearch_one" ):
+                    """ This will handle a single threshold and labelimage
+                    object """
                     self.q = q
                     self.corrfunc = corrfunc
                     self.threshold = threshold
                     self.li_obj = li_obj
-                    ImageD11_thread.__init__(self, name=name+"_"+str(threshold))
+                    ImageD11_thread.ImageD11_thread.__init__(
+                        self,
+                        name=name+"_"+str(threshold))
 
 
                 def run(self):
@@ -501,18 +522,18 @@ def peaksearch_driver(options, args):
                         break
                 q.put((None, None), block=False)
             while nalive > 0:
-                global stop_now
                 try:
                     nalive = 0
                     for thr in my_threads:
                         if thr.isAlive():
                             nalive += 1
-                    if options.killfile is not None and os.path.exists(options.killfile):
+                    if options.killfile is not None and \
+                           os.path.exists(options.killfile):
                         raise KeyboardInterrupt()
                     time.sleep(1)
                 except KeyboardInterrupt:
                     print "Got keyboard interrupt in waiting loop"
-                    stop_now = True
+                    ImageD11_thread.stop_now = True
                     try:
                         time.sleep(1)
                     except:
@@ -527,7 +548,7 @@ def peaksearch_driver(options, args):
                     print "finishing from waiting loop"
                 except:
                     print "Caught exception in waiting loop"
-                    stop_now = True
+                    ImageD11.thread_stop_now = True
                     time.sleep(1)
                     empty_queue(read_queue)
                     for t in thresholds_list:
