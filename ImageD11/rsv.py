@@ -89,7 +89,7 @@ class rsv(object):
         1 :1, "k":1, "K":1,
         2 :2, "l":2, "L":2,
         }
-        
+       
 
     def slice(self, plane, num):
         """
@@ -110,12 +110,14 @@ class rsv(object):
             raise Exception("slice is out of volume bounds")
         if self.NORMED is None:
             self.normalise()
+        if len(self.NORMED.shape) == 1:
+            self.NORMED.reshape(self.NR)
         if p==0:
-            return self.NORMED.reshape(self.NR)[ind, :, :]
+            return self.NORMED[ind, :, :]
         if p==1:
-            return self.NORMED.reshape(self.NR)[:, ind, :]
+            return self.NORMED[:, ind, :]
         if p==2:
-            return self.NORMED.reshape(self.NR)[:, :, ind]
+            return self.NORMED[:, :, ind]
 
 
 def getbounds( vol, plane ):
@@ -204,7 +206,7 @@ def mem():
     import os
     os.system('ps v -p %s'%(os.getpid()))
 
-def readvol(filename):
+def readvol(filename, savespace=False ):
     """
     Read volume from a file
     returns an rsv object
@@ -220,9 +222,12 @@ def readvol(filename):
     vol = rsv( sig.shape, bounds, np )
     # allocate array empty
     #mem()
-    vol.SIG = numpy.empty( sig.shape, sig.dtype )
-    #mem()
-    sig.read_direct( vol.SIG )
+    if savespace:
+        vol.SIG = sig
+    else:
+        vol.SIG = numpy.empty( sig.shape, sig.dtype )
+        #mem()
+        sig.read_direct( vol.SIG )
     #mem()
     for name, value in volfile.attrs.iteritems():
         vol.metadata[name] = value
@@ -230,13 +235,19 @@ def readvol(filename):
     if 'monitor' in volfile.listnames():
         mon = volfile['monitor']
         assert mon.shape == vol.SIG.shape
-        vol.MON= numpy.empty( mon.shape, mon.dtype)
-        mon.read_direct( vol.MON )
+        if savespace:
+            vol.MON = mon
+        else:
+            vol.MON= numpy.empty( mon.shape, mon.dtype)
+            mon.read_direct( vol.MON )
     else:
         vol.MON = None
         vol.NORMED = vol.SIG
     #mem()
-    volfile.close()
+    if savespace:
+        vol.hdf_file_object = volfile
+    else:
+        volfile.close()
     #mem()
     return vol
 
