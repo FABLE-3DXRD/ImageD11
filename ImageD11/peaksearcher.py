@@ -262,8 +262,11 @@ def peaksearch_driver(options, args):
 
     # List comprehension - convert remaining args to floats - must be unique list        
     thresholds_list = [float(t) for t in options.thresholds]
-    import sets
-    thresholds_list = list(sets.Set(thresholds_list))
+    try:
+        thresholds_list = list(set(thresholds_list))
+    except:
+        import sets
+        thresholds_list = list(sets.Set(thresholds_list))
     thresholds_list.sort()
         
     li_objs={} # label image objects, dict of
