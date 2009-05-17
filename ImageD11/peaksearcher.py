@@ -375,7 +375,7 @@ def peaksearch_driver(options, args):
 
                 
             class read_only(ImageD11_thread.ImageD11_thread):
-                def __init__(self, queue, file_series_obj , name="read_only",
+                def __init__(self, queue, file_series_obj , myname="read_only",
                              OMEGA=0, OMEGAOVERRIDE = False, OMEGASTEP = 1):
                     """ Reads files in file_series_obj, writes to queue """
                     self.queue = queue 
@@ -383,7 +383,8 @@ def peaksearch_driver(options, args):
                     self.OMEGA = OMEGA
                     self.OMEGAOVERRIDE = OMEGAOVERRIDE
                     self.OMEGASTEP = OMEGASTEP
-                    ImageD11_thread.ImageD11_thread.__init__(self , name=name)
+                    ImageD11_thread.ImageD11_thread.__init__(self , 
+                                                             myname=myname)
                     print "Reading thread initialised",
 
                     
@@ -427,7 +428,7 @@ def peaksearch_driver(options, args):
 
             class correct_one_to_many(ImageD11_thread.ImageD11_thread):
                 def __init__(self, queue_read, queues_out,  thresholds_list,
-                             dark = None , flood = None, name="correct_one",
+                             dark = None , flood = None, myname="correct_one",
                              do_median = False):
                     """ Using a single reading queue retains a global ordering
                     corrects and copies images to output queues doing
@@ -438,7 +439,8 @@ def peaksearch_driver(options, args):
                     self.flood = flood
                     self.do_median = do_median
                     self.thresholds_list = thresholds_list
-                    ImageD11_thread.ImageD11_thread.__init__(self , name=name)
+                    ImageD11_thread.ImageD11_thread.__init__(self , 
+                                                             myname=myname)
                     
                 def ImageD11_run(self):
                     while not self.ImageD11_stop_now():
@@ -465,7 +467,7 @@ def peaksearch_driver(options, args):
 
             class peaksearch_one(ImageD11_thread.ImageD11_thread):
                 def __init__(self, q, corrfunc, threshold, li_obj,
-                             name="peaksearch_one" ):
+                             myname="peaksearch_one" ):
                     """ This will handle a single threshold and labelimage
                     object """
                     self.q = q
@@ -474,7 +476,7 @@ def peaksearch_driver(options, args):
                     self.li_obj = li_obj
                     ImageD11_thread.ImageD11_thread.__init__(
                         self,
-                        name=name+"_"+str(threshold))
+                        myname=myname+"_"+str(threshold))
 
 
                 def run(self):
