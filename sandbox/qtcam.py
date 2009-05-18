@@ -15,7 +15,7 @@ print "Using TANGO_HOST = ", os.environ['TANGO_HOST']
 
 import PyTango
 
-
+SLEEPER = 1000
 
 
 
@@ -98,30 +98,33 @@ class camreader( Qt.QThread ):
             except:
                 pass
             self.lock.unlock()
-            time.sleep(0.5)
+            time.sleep(SLEEPER/1000+0.1)
 
 
 class ImageQt(Qt.QImage):
 
     def __init__(self, npyar):
-
+#        start = time.time()
         data = None
         colortable = None
         assert type(npyar) == numpy.ndarray
         assert len(npyar.shape) == 3
         assert npyar.shape[2] == 3
         assert npyar.dtype == numpy.uint8
-
         h , w = npyar.shape[0:2]
-        im = numpy.zeros( (h, w, 4),
+	try: 
+            self.__data = npyar.data
+	    Qt.QImage.__init__(self, self.__data, w, h, Qt.QImage.Format_RGB888 )
+        except:
+            im = numpy.zeros( (h, w, 4),
                           numpy.uint8)
-        im[:,:,0] = npyar[:,:,2]
-        im[:,:,1] = npyar[:,:,1]
-        im[:,:,2] = npyar[:,:,0]  
-        data = im.tostring()
-        self.__data = data or im.tostring()
-        Qt.QImage.__init__(self, self.__data, w, h, Qt.QImage.Format_RGB32 )
-        
+            im[:,:,0] = npyar[:,:,2]
+            im[:,:,1] = npyar[:,:,1]
+            im[:,:,2] = npyar[:,:,0]  
+            data = im.tostring()
+            self.__data = data or im.tostring()
+            Qt.QImage.__init__(self, self.__data, w, h, Qt.QImage.Format_RGB32 )
+#        print "Cvt", time.time()-start
 
 
 class qtcam( Qt.QApplication ):
@@ -160,9 +163,10 @@ class qtcam( Qt.QApplication ):
                 Qt.SIGNAL("clicked()"),
                 self.compute )
 
+        self.update()
 
         self.timer = Qt.QTimer()
-        self.timer.setInterval( 300 )
+        self.timer.setInterval( SLEEPER )
         self.connect( self.timer,
                 Qt.SIGNAL("timeout()"),
                 self.update )
@@ -208,12 +212,12 @@ class qtcam( Qt.QApplication ):
             self.last = self.numpyarray.copy()
         self.lock.unlock()
         x, y = register_image( self.refdata, self.last )
-        print x, y
+        print "\n", x - self.refdata.shape[0], y - self.refdata.shape[1]
         Qt.QMessageBox.information (self.form, 
                 "Computed Offset", 
                 "Vertical  = %.5f  \nHorizontal = %.5f"%(
-                    self.refdata.shape[0] - x ,
-                    self.refdata.shape[1] - y), 
+                    x - self.refdata.shape[0],
+                    y - self.refdata.shape[1]), 
                 Qt.QMessageBox.Ok)
 
 
@@ -259,35 +263,38 @@ class qtcam( Qt.QApplication ):
     def array_to_display(self, ar):
         i = ImageQt( ar )
         h, w, junk = ar.shape
-        j =  Qt.QImage.scaled( i,
-                               int(w*self.scalfac),
-                               int(h*self.scalfac) )
-        pm = Qt.QPixmap.fromImage(  j )
-        return pm
+        return Qt.QPixmap.fromImage(
+            Qt.QImage.scaled( i,
+                              int(w*self.scalfac),
+                              int(h*self.scalfac) ) )
 
     
 
     def update(self, Forced=False):
-        import time
-        start = time.clock()
+        start = time.time()
+        changed = False
         try:
-            self.lock.lockForRead()
-            if self.numpyarray[0,0,0] != self.last[0,0,0]:
+            self.lock.lockForRead()            
+            if not (self.numpyarray[0,0,:]==self.last[0,0,:]).all() or Forced:
                 self.last = self.numpyarray.copy()
-                if not Forced:
-                    self.lock.unlock()
-                    return
+                changed = True
         except:
+            print "Got exception"
             pass
         self.lock.unlock()
-        diff = numpy.subtract( self.refimage, self.last/2 ) 
-        self.camlabel.setPixmap( self.array_to_display(self.last) )
-        self.difflabel.setPixmap(self.array_to_display(diff) )
+        if not changed:
+            return
+        diff = numpy.subtract( self.refimage, self.last/2 )
+        pml = self.array_to_display(self.last)
+        pmd = self.array_to_display(diff)
+        self.camlabel.setPixmap( pml )
+        self.difflabel.setPixmap( pmd )
         self.camlabel.show()
         self.difflabel.show()
         self.iframe += 1
-        print "Nframes %5d  last %.5f/s\r"%(self.iframe, time.clock()-start),
-
+        print "Nframes %5d %.5f/s\r"%(self.iframe,
+                                      time.time()-start),
+        sys.stdout.flush()
 
 if __name__=="__main__":
     qtcam(sys.argv)
