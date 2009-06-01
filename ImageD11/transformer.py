@@ -183,6 +183,7 @@ class transformer:
         self.xname = None
         self.yname = None
         self.omeganame = None
+        self.theoryds = None
         if parfile is not None:
             self.loadfileparameters(parfile)
         if fltfile is not None:
