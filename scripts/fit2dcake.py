@@ -31,7 +31,6 @@ else:
     REMOVE = "rm -f "
 
 
-
 def spr_to_median(filename, outputfilename):
     """
     Takes the median accross rows of an spr file.
@@ -51,9 +50,11 @@ def spr_to_median(filename, outputfilename):
     # print len(x_axis)
     # Final result
     o = open(outputfilename, "w")
-    med = data[:, data.shape[1]/2]
+    # use central trimean (less noisy than median)
+    d = data[:, data.shape[1]/4 : data.shape[1]*3/4]
+    med = d.sum(axis=1) / d.shape[1]
     nsum = Numeric.sum
-    d = data[:, 2:-2]
+    
     # VAR = E(X^2) - E(X)*E(X)
     EX2 = nsum(d*d, 1) / d.shape[1]
     EX = nsum(d, 1) / d.shape[1]
