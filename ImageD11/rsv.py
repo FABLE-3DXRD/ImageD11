@@ -131,7 +131,8 @@ def getbounds( vol, plane ):
     imax = vol.bounds[inds[0]][1]*1.0/vol.np
     jmin = vol.bounds[inds[1]][0]*1.0/vol.np
     jmax = vol.bounds[inds[1]][1]*1.0/vol.np
-    return jmin,jmax,imin,imax
+    # left, right, top, bottom
+    return jmin,jmax,imax,imin
 
 
 def writevol(vol, filename):
