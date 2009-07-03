@@ -154,10 +154,13 @@ class columnfile:
         self.parameters = parameters.parameters(filename=filename)
         self.ncols = 0
         self.nrows = 0
-        data = []
         i = 0
 
-        raw = open(filename,"r").readlines()
+        try:
+            raw = open(filename,"r").readlines()
+        except:
+            raise Exception("Cannot open %s for reading"%(filename))
+
         header = True
         while header:
              if len(raw[i].lstrip())==0:
@@ -176,10 +179,14 @@ class columnfile:
                  i += 1    
              else:
                  header = False
-        cc = [numpy.fromstring(v,sep=' ') for v in raw[i:]]
-        self.bigarray = numpy.array(cc).transpose()
+        try:
+            cc = [numpy.fromstring(v,sep=' ') for v in raw[i:]]
+            self.bigarray = numpy.array(cc).transpose()
+        except:
+            raise Exception("Non numeric data on all lines\n")
         (self.ncols, self.nrows) = self.bigarray.shape
 
+#         data = []
 #         try:
 #             fileobj = open(filename,"r").readlines()
 #         except:
