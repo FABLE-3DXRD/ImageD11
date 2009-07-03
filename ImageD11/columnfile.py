@@ -156,42 +156,66 @@ class columnfile:
         self.nrows = 0
         data = []
         i = 0
-        try:
-            fileobj = open(filename,"r")
-        except:
-            raise Exception("Cannot open %s for reading"%(filename))
-        for line in fileobj:
-            i += 1
-            if len(line.lstrip())==0:
-                # skip blank lines
-                continue
-            if line[0] == "#":
-                # title line
-                if line.find("=") > -1:
-                    # key = value line
-                    name, value = clean(line[1:].split("="))
-                    self.parameters.addpar(
-                        parameters.par( name, value ) )
-                else:
-                    self.titles = clean(line[1:].split())
-                    self.ncols = len(self.titles)
-                continue
-            # Assume a data line
-            try:
-                vals = [ float(v) for v in line.split() ]
-            except:
-                raise Exception("Non numeric data on line\n"+line)
-            if len(vals) != self.ncols:
-                raise Exception("Badly formatted column file\n"\
-                                    "expecting %d columns, got %d\n"\
-                                    " line %d in file %s"%
-                                (self.ncols, len(vals),
-                                 i, self.filename))
-            self.nrows += 1
-            data.append(vals)
-        self.bigarray = numpy.transpose(numpy.array(data))
-        if self.nrows > 0:
-            assert self.bigarray.shape == (self.ncols, self.nrows)
+
+        raw = open(filename,"r").readlines()
+        header = True
+        while header:
+             if len(raw[i].lstrip())==0:
+                 # skip blank lines
+                 i += 1    
+                 continue
+             if raw[i][0] == "#":
+                 # title line
+                 if raw[i].find("=") > -1:
+                     # key = value line
+                     name, value = clean(raw[i][1:].split("="))
+                     self.parameters.addpar(
+                         parameters.par( name, value ) )
+                 else:
+                     self.titles = raw[0][1:].split()
+                 i += 1    
+             else:
+                 header = False
+        cc = [numpy.fromstring(v,sep=' ') for v in raw[i:]]
+        self.bigarray = numpy.array(cc).transpose()
+        (self.ncols, self.nrows) = self.bigarray.shape
+
+#         try:
+#             fileobj = open(filename,"r").readlines()
+#         except:
+#             raise Exception("Cannot open %s for reading"%(filename))
+#         for line in fileobj:
+#             i += 1
+#             if len(line.lstrip())==0:
+#                 # skip blank lines
+#                 continue
+#             if line[0] == "#":
+#                 # title line
+#                 if line.find("=") > -1:
+#                     # key = value line
+#                     name, value = clean(line[1:].split("="))
+#                     self.parameters.addpar(
+#                         parameters.par( name, value ) )
+#                 else:
+#                     self.titles = clean(line[1:].split())
+#                     self.ncols = len(self.titles)
+#                 continue
+#             # Assume a data line
+#             try:
+#                 vals = [ float(v) for v in line.split() ]
+#             except:
+#                 raise Exception("Non numeric data on line\n"+line)
+#             if len(vals) != self.ncols:
+#                 raise Exception("Badly formatted column file\n"\
+#                                     "expecting %d columns, got %d\n"\
+#                                     " line %d in file %s"%
+#                                 (self.ncols, len(vals),
+#                                  i, self.filename))
+#             self.nrows += 1
+#             data.append(vals)
+#         self.bigarray = numpy.transpose(numpy.array(data))
+#         if self.nrows > 0:
+#             assert self.bigarray.shape == (self.ncols, self.nrows)
         self.set_attributes()
 
     def set_attributes(self):
