@@ -331,7 +331,7 @@ if __name__=="__main__":
             def __init__(self, files, c, name="converter"):
                 self.files = files
                 self.c = c
-                ImageD11_thread.__init__(self,name=name)
+                ImageD11_thread.__init__(self,myname=name)
             def ImageD11_run(self):
                 for fin, fout in self.files:
                     c.convert(fin, fout)
