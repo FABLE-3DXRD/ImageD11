@@ -74,7 +74,11 @@ def get_series_from_hdf( hdf_file, dark = None, flood = None ):
 def series_from_fabioseries( fabioseries, dark, flood, options ):
     
     for filename in fabioseries:
-        fim = fabio.openimage.openimage(filename)
+        try:
+            fim = fabio.openimage.openimage(filename)
+        except:
+            print "Missing image",filename
+            continue
         if (dark, flood) is not (None, None):
             fim.data = fim.data.astype(numpy.float32)
         if dark != None:
