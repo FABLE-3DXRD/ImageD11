@@ -2,6 +2,10 @@
 #define DEBUG 0
 /* turn to 1 to debug */
 
+#if defined( _MSC_VER ) && !defined( __cplusplus )
+# define inline __inline
+#endif // defined( _MSC_VER ) && !defined( __cplusplus )
+
 
 /* 
 # ImageD11_v1.0 Software for beamline ID11

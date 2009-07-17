@@ -49,7 +49,7 @@ from ImageD11.columnfile import columnfile
 def test(start, step):
     import sys
     if sys.platform == "win32":
-        pksh = "c:\python25\python c:\python25\scripts\peaksearch.py " 
+        pksh = "%s ..\\..\\scripts\\peaksearch.py "%( sys.executable ) 
     else:
         pksh = "peaksearch.py " 
         

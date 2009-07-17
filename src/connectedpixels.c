@@ -35,7 +35,7 @@ static char moduledocs[] =\
 #include "blobs.h"   /* Disjoint sets thing for blob finding */
 
 #include <time.h>  /* Benchmarking */
-#include <unistd.h> /* ??? */
+/* #include <unistd.h>  ??? */
 #include <stdlib.h> /* ??? */
 
 
