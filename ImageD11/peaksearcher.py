@@ -72,35 +72,7 @@ class timer:
         print " ".join(self.msgs),"%.2f/s"% (self.now-self.start)
         sys.stdout.flush()
 
-def correct(data_object, dark = None, flood = None, do_median = False ):
-    """
-    Does the dark and flood corrections
-    """
-    picture = data_object.data.astype(numpy.float32)
-    if dark != None:
-        # This is meant to be quicker
-        picture = numpy.subtract( picture , dark, picture )
-        data_object.data = picture
-    if flood != None:
-        picture = numpy.divide( picture, flood, picture )
-        data_object.data = picture
-    if do_median:
-        # We do this after corrections
-        # The expectation is that this is a median on the azimuth
-        # direction of a previously radially transformed image
-        # Gives the liquid contribution 
-        med = numpy.median( picture )
-        if True: # Suboption - save the median or not?
-            obj = fabio.deconstruct_filename( data_object.header['filename'] )
-            obj.extension = ".bkm"
-            medfilename = obj.tostring()
-            med.tofile( medfilename , sep = "\n")
-        picture = numpy.subtract( picture , med, picture )
-    return data_object
-
-
-
-
+from ImageD11.correct import correct
 
 def peaksearch( filename , 
                 data_object , 
