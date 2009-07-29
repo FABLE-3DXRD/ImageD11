@@ -190,6 +190,9 @@ class rsv_mapper(object):
                 hkls[2] + 0.5 - self.bounds[2][0]).astype(numpy.int32),
                    ind )
         # print ind.dtype
+        #
+        # TODO : mask the ind / dat / lorfac to avoid saturated pixels
+        #
         closest.put_incr( self.rsv.SIG,
                           ind,
                           dat )
