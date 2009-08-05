@@ -57,9 +57,30 @@ FLOATS = [
     "drlv2",
     "tth",
     "eta",
-    "tth_hist_prob", 
+    "tth_hist_prob"
     ]
 
+LONGFLOATS = [
+    "U11",
+    "U12",
+    "U13",
+    "U21",
+    "U22",
+    "U23",
+    "U31",
+    "U32",
+    "U33",
+    "UBI11",
+    "UBI12",
+    "UBI13",
+    "UBI21",
+    "UBI22",
+    "UBI23",
+    "UBI31",
+    "UBI32",
+    "UBI33"
+    ]
+    
 INTS = [
     "Number_of_pixels",
     "IMax_f",
@@ -72,16 +93,51 @@ INTS = [
     "h", "k", "l",
     "onfirst", "onlast", "labels",
     "labels",
-    "Grain"
+    "Grain",
+    "grainno",
+    "grain_id"
     ]
+
+EXPONENTIALS = [
+    "eps11",
+    "eps22",
+    "eps33",
+    "eps23",
+    "eps13",
+    "eps12",
+    "eps11_s",
+    "eps22_s",
+    "eps33_s",
+    "eps23_s",
+    "eps13_s",
+    "eps12_s",
+    "sig11",
+    "sig22",
+    "sig33",
+    "sig23",
+    "sig13",
+    "sig12",
+    "sig11_s",
+    "sig22_s",
+    "sig33_s",
+    "sig23_s",
+    "sig13_s",
+    "sig12_s"
+    ]
+    
+    
 FORMATS = {}
 
 
 # Make a dictionary for formatstrings when writing files
 for f in FLOATS: 
     FORMATS[f] = "%.4f" 
+for f in LONGFLOATS: 
+    FORMATS[f] = "%.12f" 
 for f in INTS:
     FORMATS[f] = "%.0f"
+for f in EXPONENTIALS:
+    FORMATS[f] = "%.4e"
 
 def clean(str_lst): 
     """ trim whitespace from titles """
