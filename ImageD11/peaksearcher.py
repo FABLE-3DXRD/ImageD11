@@ -199,7 +199,10 @@ def peaksearch_driver(options, args):
             print "... from a fabio converted to edf first"
     elif options.format == 'GE':
         extn = ""
-        options.ndigits = 0
+        # KE: This seems to be a mistake and keeps PeakSearch from working in
+        # some cases.  Should be revisited if commenting it out causes problems.
+#        options.ndigits = 0
+
     else:
         extn = options.format
 
