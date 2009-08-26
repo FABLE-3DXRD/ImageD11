@@ -217,10 +217,11 @@ def peaksearch_driver(options, args):
 
     first_image = openimage( file_name_object )
     import fabio.file_series
+    # Use traceback = True for debugging
     file_series_object = fabio.file_series.new_file_series(
         first_image,
-        first = options.first,
-        last = options.last )
+        nimages = options.last - options.first,
+        traceback = False  )
     
     if options.outfile[-4:] != ".spt":
         options.outfile = options.outfile + ".spt"
@@ -299,6 +300,15 @@ def peaksearch_driver(options, args):
                       OMEGA, OMEGASTEP, OMEGAOVERRIDE ):
             for data_object in file_series_object:
                 t = timer()
+                if not isinstance( data_object, fabio.fabioimage.fabioimage ):
+                    # Is usually an IOError
+                    if isinstance( data_object[1], IOError):
+                        sys.stdout.write(data_object[1].strerror + ': ' +
+                          data_object[1].filename + '\n')
+                    else:
+                        sys.stdout.write("A file was not found\n")
+                    continue
+                # KE: This should no longer happen
                 if data_object is None:
                     sys.stdout.write("A file was not found\n")
                     continue
@@ -372,8 +382,17 @@ def peaksearch_driver(options, args):
                         if self.ImageD11_stop_now():
                             print "Reader thread stopping"
                             break
+                        if not isinstance( data_object, fabio.fabioimage.fabioimage ):
+                            # Is usually an IOError
+                            if isinstance( data_object[1], IOError):
+                                sys.stdout.write(data_object[1].strerror +
+                                  ': ' + data_object[1].filename + '\n')
+                            else:
+                                sys.stdout.write("A file was not found\n")
+                            continue
+                        # KE: This should no longer happen
                         if data_object is None:
-                            sys.stdout.write("An image was not found\n")
+                            sys.stdout.write("A file was not found\n")
                             continue
                         ti = timer()
                         filein = data_object.filename
@@ -460,7 +479,7 @@ def peaksearch_driver(options, args):
                 def run(self):
                     while not self.ImageD11_stop_now():
                         filein, data_object = self.q.get(block = True)
-                        if data_object is None:
+                        if not isinstance( data_object, fabio.fabioimage.fabioimage ):
                             break
                         peaksearch( filein, data_object , self.corrfunc , 
                                     [self.threshold] , 
