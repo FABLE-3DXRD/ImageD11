@@ -220,7 +220,7 @@ def peaksearch_driver(options, args):
     # Use traceback = True for debugging
     file_series_object = fabio.file_series.new_file_series(
         first_image,
-        nimages = options.last - options.first,
+        nimages = options.last - options.first + 1,
         traceback = False  )
     
     if options.outfile[-4:] != ".spt":
