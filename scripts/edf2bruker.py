@@ -61,10 +61,8 @@ class darkflood:
         """ read the dark"""
         try:
             self.darkdata = openimage(darkfile)
-            self.darkfile=darkfile
+            self.darkfile = darkfile
             self.darkimage = self.darkdata.data.astype(numpy.float32)
-            if self.detrend is not None:
-                self.do_detrend( self.darkimage )
             if self.powfac != 1.0:
                 print "apply 0.96 to dark"
                 self.darkimage = numpy.power(self.darkimage, 0.96)
@@ -95,25 +93,26 @@ class darkflood:
             
     def correct(self, data, detrend = None):
         """ correct the data """
-        tin = data.dtype.char
+        tin = data.dtype
         # Start by copying
         cor = data.astype(numpy.float32).copy()
+        self.report = ""
         msk = numpy.where( cor > self.overflow,
                            65534,
                            0 )
         if self.powfac != 1.0:
-            # print "applying 0.96"
+            self.report += "powfac %f;"%(self.powfac)
             numpy.power(cor, 0.96, cor)
         if self.darkimage is not None:
-            numpy.subtract(cor, self.darkimage,cor)
-            # print cor[c0,c1]
+            numpy.subtract(cor, self.darkimage, cor)
+            self.report += "dark;"
         if self.detrend is not None:
+            assert cor.dtype == numpy.float32, cor.dtype
             cor = self.do_detrend( cor )
+            self.report += "detrend;"
         if self.flmult is not None:
             numpy.multiply(cor , self.flmult, cor)
-            # print cor[c0,c1]
-        #if self.darkoffset is not None:
-        #    cor = cor + self.darkoffset
+            self.report +="flood;"
         if self.border is not None:
             # set the edges to zero
             b=self.border
@@ -121,28 +120,36 @@ class darkflood:
             cor[:,:b]=0
             cor[-b:,:]=0
             cor[:,-b:]=0
+            self.report += "border b(%d)=0;"%(self.border)
+        if self.darkoffset is not None:
+            # print "applying offset of",self.darkoffset,
+            numpy.add(cor, self.darkoffset, cor)
+            self.report += "+darkoffset %.2f;"%(self.darkoffset)
         # Should we bother with this - yes please - noisy pixels overflow
         cor =  numpy.where(cor>0.1, cor, 0.) # truncate zero
-        cor =  numpy.where(msk > 1, msk, cor) # mask overflows
-        # print cor[c0,c1]
-        return cor.astype(tin)
+        self.report += ">0;"
+        cor =  numpy.where(msk != 0 , msk, cor) # mask overflows
+        self.report += "msk>%.2f"%(self.overflow)
+        ret = cor.astype(tin)
+        return ret
 
 
 
     def do_detrend( self, ar):
         if self.detrend is None:
             return ar
-        print "detrending"
+        # print "detrending",
         s = ar.copy()
         np = ar.shape[1]/2
         s[:,:np].sort()
         s[:,np:].sort()
-        s1 = ar.copy()
         n = self.detrend
-        o1 = s[:,:n].sum(axis=1)/n
-        o2 = s[:,np:(np+n)].sum(axis=1)/n    
-        s1[:,:np] = (s1[:,:np].T - o1 + o1.mean() ).T
-        s1[:,np:] = (s1[:,np:].T - o2 + o2.mean() ).T
+        nb = 5 # bad pixels (eg negative outliers)
+        o1 = s[:,nb:(n+nb)].sum(axis=1)/n
+        o2 = s[:,(np+nb):(np+n+nb)].sum(axis=1)/n
+        s1 = ar.copy()
+        s1[:,:np] = (ar[:,:np].T - o1 + o1.mean() ).T
+        s1[:,np:] = (ar[:,np:].T - o2 + o2.mean() ).T
         return s1
 
 
@@ -196,7 +203,6 @@ class edf2bruker:
             raise Exception(TITLE+" not found")
 
     def tlog(self, msg):
-        import time
         new = time.time()
         print "%4.2f %s"%(new-self.last_time, msg),
         self.last_time = new
@@ -248,7 +254,7 @@ class edf2bruker:
             numpy.transpose(corrected_image.astype(numpy.uint16))).tostring())
         #self.tlog("write")
         outf.close()
-        self.tlog("/s")
+        self.tlog("/s "+fileout + " " + self.darkflood.report + "\n")
 
 
 if __name__=="__main__":
@@ -320,6 +326,11 @@ if __name__=="__main__":
                           help="Number of pixels in background filter")
         
 
+        parser.add_option("-O","--darkoffset",action="store",type="float",
+                          dest="darkoffset",
+                          default=100.0,
+                          help="Offset platform to add to image")
+
         options, args = parser.parse_args()
 
 
@@ -327,6 +338,7 @@ if __name__=="__main__":
 
 
         from ImageD11.ImageD11_thread import ImageD11_thread
+        import ImageD11.ImageD11_thread 
         class threaded_converter(ImageD11_thread):
             def __init__(self, files, c, name="converter"):
                 self.files = files
@@ -334,12 +346,15 @@ if __name__=="__main__":
                 ImageD11_thread.__init__(self,myname=name)
             def ImageD11_run(self):
                 for fin, fout in self.files:
-                    c.convert(fin, fout)
-                    print fout
+                    self.c.convert(fin, fout)
+                    if self.ImageD11_stop_now():
+                        break
+
     
         # Make jthreads converters
         converters = [ edf2bruker(options.dark , options.flood ,
                                   options.template,
+                                  darkoffset=options.darkoffset,
                                   distance=options.distance,
                                   border=options.border,
                                   wvln=options.wvln,
@@ -376,11 +391,27 @@ if __name__=="__main__":
         fl = [ allfiles[j::options.jthreads] for j in range(options.jthreads) ]
 
         # Create threads
-        my_threads = [ threaded_converter( f, c) for c, f in zip(converters, fl) ]
+        my_threads = [ threaded_converter( f, c) for
+                       c, f in zip(converters, fl) ]
 
         # Off we go!
         for t in my_threads:
             t.start()
+
+        nalive = 1
+        while nalive > 0:
+            try:
+                nalive = 0
+                for t in my_threads:
+                    if t.isAlive():
+                        nalive += 1
+            except KeyboardInterrupt:
+                ImageD11.ImageD11_thread.stop_now = True
+                print "Got your control-c - terminating threads"
+                for t in my_threads:
+                    if t.isAlive():
+                        t.join(timeout=10)
+            
 
     except:
         parser.print_help()
