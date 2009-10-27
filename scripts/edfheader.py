@@ -69,7 +69,7 @@ if __name__=="__main__":
         sys.stdout.write(arg+" ")
         if len(keys)>0:
             for key in keys:
-                item=hd[hd.find(key):].split(";")[0]
+                item=hd[hd.find(key+" "):].split(";")[0]
                 sys.stdout.write(" "+item+" ")
         else:
             sys.stdout.write(hd)
