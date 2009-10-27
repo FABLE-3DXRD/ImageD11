@@ -80,7 +80,7 @@ else: # Take care of yourself if you are on linux
 
 # See the distutils docs...
 setup(name='ImageD11', 
-      version='1.3.0',
+      version='1.4.0',
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',
@@ -107,6 +107,7 @@ setup(name='ImageD11',
                  "scripts/edfheader.py",
                  "scripts/recoveromega.py",
                  "ImageD11/plot3d.py",
+                 "scripts/huber2bruker.py",
                  "scripts/id11_summarize.py",
                  "scripts/ImageD11_gui.py",
                  "scripts/bgmaker.py",
