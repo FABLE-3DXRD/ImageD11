@@ -283,8 +283,9 @@ class saintraw(object):
         """
         cof = columnfile.newcolumnfile( self.alltitles )
         dlist = [ self.data[t] for t in self.alltitles ]
-        cof.bigarray = numpy.array( dlist, numpy.float).T
-        cof.ncols, cof.nrows = cof.bigarray.shape
+        cof.bigarray = numpy.array( dlist, numpy.float )
+        cof.nrows = len( self.data[ self.alltitles[0] ] )
+        cof.ncols = len( self.alltitles ) 
         cof.set_attributes()
         return cof
 
