@@ -45,11 +45,13 @@ PARAMETERS = [
      par('z_size',   48.08150,
           helpstring = "pixel size in vertical, same units distance",
           vary=False, 
-          can_vary=False), # this could actually vary - a bit crazy?
+          can_vary=True,
+          stepsize=0.1), # this could actually vary - a bit crazy?
      par('y_size',   46.77648,
           helpstring = "pixel size in horizontal, same units as distance",
           vary=False, 
-          can_vary=False), # this could actually vary - a bit crazy?
+          can_vary=True,
+         stepsize=0.1), # this could actually vary - a bit crazy?
      par('tilt_z',    0.0,
           helpstring = "detector tilt, right handed around z",
           vary=True, 
