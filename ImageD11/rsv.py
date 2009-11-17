@@ -74,14 +74,20 @@ class rsv(object):
             self.NORMED = self.SIG
         else:
             self.NORMED = numpy.zeros( self.SIG.shape, numpy.float32 )
-        msk = (self.MON < 0.1).astype(numpy.uint8)
-        self.NORMED = numpy.divide( self.SIG,
-                                    self.MON + msk,   # divide by mon + 1
-                                    self.NORMED )
-        self.NORMED = numpy.subtract( self.NORMED,
-                                      self.NORMED * msk, # subtract msk * data
-                                      self.NORMED )
-
+        import sys
+        print self.NORMED.shape[0]
+        for i in range( self.NORMED.shape[0] ):
+            print i,"\r",
+            sys.stdout.flush()
+            msk = (self.MON[i] < 0.1).astype(numpy.uint8)
+            numpy.add( self.MON[i], msk, self.MON[i])
+            numpy.divide( self.SIG[i],
+                          self.MON[i],   # divide by mon + 1
+                          self.NORMED[i] )
+            numpy.subtract( self.MON[i], msk, self.MON[i])
+            numpy.subtract( 1, msk, msk )
+            numpy.multiply( self.NORMED[i], msk, self.NORMED[i] )
+        print i
 
             
     plnames = {
