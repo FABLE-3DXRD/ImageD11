@@ -306,11 +306,15 @@ def peaksearch_driver(options, args):
                         sys.stdout.write(data_object[1].strerror + ': ' +
                           data_object[1].filename + '\n')
                     else:
+                        print data_object
+                        sys.exit()
                         sys.stdout.write("A file was not found\n")
                     continue
                 # KE: This should no longer happen
                 if data_object is None:
-                    sys.stdout.write("A file was not found\n")
+                    print "Unreachable code"
+                    sys.stdout.write("A file was not found in unreachable code\n")
+                    sys.exit()
                     continue
                 filein = data_object.filename
                 if OMEGAOVERRIDE or not data_object.header.has_key("Omega"):
@@ -389,10 +393,11 @@ def peaksearch_driver(options, args):
                                   ': ' + data_object[1].filename + '\n')
                             else:
                                 sys.stdout.write("A file was not found\n")
+                                sys.stdout.write(str(data_object))
                             continue
                         # KE: This should no longer happen
                         if data_object is None:
-                            sys.stdout.write("A file was not found\n")
+                            sys.stdout.write("A file was not found : returned None\n")
                             continue
                         ti = timer()
                         filein = data_object.filename
