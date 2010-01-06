@@ -322,7 +322,10 @@ def peaksearch_driver(options, args):
                     OMEGA += OMEGASTEP
                     OMEGAOVERRIDE = True # once you do it once, continue
                 data_object = correct( data_object, darkimage, floodimage,
-                                       do_median = options.median)
+                                       do_median = options.median,
+                                       monitorval = options.monitorval,
+                                       monitorcol = options.monitorcol,
+                                       )
                 t.tick(filein+" io/cor")
                 peaksearch( filein, data_object , corrfunc , 
                             thresholds_list , li_objs )
@@ -431,6 +434,7 @@ def peaksearch_driver(options, args):
             class correct_one_to_many(ImageD11_thread.ImageD11_thread):
                 def __init__(self, queue_read, queues_out,  thresholds_list,
                              dark = None , flood = None, myname="correct_one",
+                             monitorcol = None, monitorval = None,
                              do_median = False):
                     """ Using a single reading queue retains a global ordering
                     corrects and copies images to output queues doing
@@ -440,6 +444,8 @@ def peaksearch_driver(options, args):
                     self.dark = dark
                     self.flood = flood
                     self.do_median = do_median
+                    self.monitorcol = monitorcol
+                    self.monitorval = monitorval
                     self.thresholds_list = thresholds_list
                     ImageD11_thread.ImageD11_thread.__init__(self , 
                                                              myname=myname)
@@ -456,7 +462,10 @@ def peaksearch_driver(options, args):
                             break 
                         data_object = correct(data_object, self.dark,
                                               self.flood,
-                                              do_median = self.do_median)
+                                              do_median = self.do_median,
+                                              monitorval = self.monitorval,
+                                              monitorcol = self.monitorcol,
+                                              )
                         ti.tick(filein+" correct ")
                         for t in self.thresholds_list:
                             # Hope that data object is read only
@@ -510,7 +519,9 @@ def peaksearch_driver(options, args):
                                              thresholds_list,
                                              dark=darkimage,
                                              flood=floodimage,
-                                             do_median = options.median)
+                                             do_median = options.median,
+                                             monitorcol = options.monitorcol,
+                                             monitorval = options.monitorval)
             corrector.start()
             my_threads = [reader, corrector]
             for t in thresholds_list[::-1]:
@@ -643,6 +654,18 @@ def get_options(parser):
                help="Computes the 1D median, writes it to file .bkm and" \
                +" subtracts it from image. For liquid background"\
                +" on radially transformed images")
+
+        parser.add_option("--monitorcol", action="store", type="string",
+                           dest="monitorcol",
+                           default = None,
+                           help="Header value for incident beam intensity")
+
+
+        parser.add_option("--monitorval", action="store", type="float",
+                          dest="monitorval",
+                          default = None,
+                          help="Incident beam intensity value to normalise to")
+
 
         return parser
 

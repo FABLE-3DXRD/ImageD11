@@ -20,7 +20,12 @@ filters["MedianFilter(5)"] = ImageFilter.MedianFilter(5)
 # fixme - subtracting median filtered
 # coarser medians - eg rebinned too
 
-def correct(data_object, dark = None, flood = None, do_median = False,
+def correct(data_object,
+            dark = None,
+            flood = None,
+            do_median = False,
+            monitorval = None,
+            monitorcol = None,
             filterlist = [] ):
     """
     Does the dark and flood corrections
@@ -34,6 +39,19 @@ def correct(data_object, dark = None, flood = None, do_median = False,
     if flood != None:
         picture = numpy.divide( picture, flood, picture )
         data_object.data = picture
+    if monitorcol is not None and monitorval is not None:
+        if not data_object.header.has_key(monitorcol):
+            print "Missing header value for normalise",monitorcol,\
+                  data_object.filename
+        else:
+            try:
+                scal = monitorval / float( data_object.header[monitorcol] )
+                picture = numpy.multiply( picture, scal, picture )
+                data_object.data = picture
+                #print "scaled",scal,
+            except:
+                print "Scale overflow",monitorcol, monitorval, dataobj.filename
+                
     if do_median:
         # We do this after corrections
         # The expectation is that this is a median on the azimuth
