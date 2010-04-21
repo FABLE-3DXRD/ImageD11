@@ -209,7 +209,7 @@ def g_to_k( g,  # g-vectors [3,:]
     npeaks = g.shape[1]
     # First deal with the pre and post rotations
     if pre is not None:
-        rg = pre.rotate_vectors_inverse(g)
+        rg = pre.rotate_vectors(g)
     else:
         rg = g
     assert rg.shape == g.shape
@@ -218,7 +218,7 @@ def g_to_k( g,  # g-vectors [3,:]
     beam[1,:] = 0.
     beam[2,:] = 0.
     if post is not None:
-        rb = post.rotate_vectors(beam)
+        rb = post.rotate_vectors_inverse(beam)
     else:
         rb = beam
     assert rb.shape == g.shape
