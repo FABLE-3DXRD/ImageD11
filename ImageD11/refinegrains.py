@@ -67,7 +67,7 @@ class refinegrains:
         "wavelength" : 0.001,
         'y_center'   : 0.2,
         'z_center'   : 0.2,
-        'distance'   : 0.2,
+        'distance'   : 200.,
         'tilt_y'     : transform.radians(0.1),
         'tilt_z'     : transform.radians(0.1),
         'tilt_x'     : transform.radians(0.1),
@@ -315,7 +315,8 @@ class refinegrains:
 #                raise
 
         #print self.tolerance
-        # self.npks = closest.score_and_refine(mat, self.gv, self.tolerance)
+        self.npks, self.avg_drlv2 = closest.score_and_refine(mat, self.gv,
+                                                             self.tolerance)
         #tm = indexing.refine(ubi,self.gv,self.tolerance,quiet=quiet)
         #print ubi, tm,ubi-tm,mat-tm
 
@@ -379,7 +380,7 @@ class refinegrains:
         deriv = []
         print "Estimating step sizes"
         for i in range(len(steps)):
-            print self.parameterobj.varylist[i],
+            print self.parameterobj.varylist[i],    
             newguess = [g for g in guess]
             newguess[i] = newguess[i] + steps[i]
             here = self.gof(newguess)
