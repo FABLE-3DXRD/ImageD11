@@ -22,7 +22,8 @@ class rsv_mapper(object):
                  splinefile = None,
                  np=16, 
                  border = 10, 
-                 omegarange = range(360) ):
+                 omegarange = range(360),
+                 maxpix = None ):
         """
         Create a new mapper intance. It will transform images into 
         reciprocal space (has its own rsv object holding the space)
@@ -32,6 +33,7 @@ class rsv_mapper(object):
         np   - Number of pixels per hkl index [16]
         border - amount to add around edge of images [10]
         omegarange - omega values to be mapped (0->360)
+        maxpix - value for saturated pixels to be ignored
         """
         if len(dims)!=2: raise Exception("For 2D dims!")
         self.dims = dims
@@ -45,6 +47,9 @@ class rsv_mapper(object):
 
         # Orientation matrix
         self.ubi = ubi
+
+        # Saturation
+        self.maxpix = maxpix
         
         # spatial
         if splinefile is None:
@@ -64,7 +69,7 @@ class rsv_mapper(object):
         # Make and cache the k vectors
         self.make_k_vecs()
         
-
+        
     def find_vol( self, border , omegarange ):
         """
         find limiting volume
@@ -189,16 +194,26 @@ class rsv_mapper(object):
         numpy.add( ind, numpy.floor(
                 hkls[2] + 0.5 - self.bounds[2][0]).astype(numpy.int32),
                    ind )
-        # print ind.dtype
         #
-        # TODO : mask the ind / dat / lorfac to avoid saturated pixels
         #
-        closest.put_incr( self.rsv.SIG,
-                          ind,
-                          dat )
-        closest.put_incr( self.rsv.MON,
-                          ind,
-                          self.lorfac)
+        #
+        if self.maxpix is not None:
+            # This excludes saturated pixels
+            msk =  numpy.where( dat > self.maxpix, 0, 1).astype(numpy.uint8)
+            numpy.multiply(dat, msk, dat)
+            closest.put_incr( self.rsv.SIG,
+                              ind,
+                              dat )
+            closest.put_incr( self.rsv.MON,
+                              ind,
+                              self.lorfac * msk)
+        else:
+            closest.put_incr( self.rsv.SIG,
+                              ind,
+                              dat )
+            closest.put_incr( self.rsv.MON,
+                              ind,
+                              self.lorfac)
         return
 
     def writevol(self, filename):
@@ -245,6 +260,10 @@ def get_options(parser):
     parser.add_option("-b", "--border", action="store", type="int",
                        dest = "border", default = 10,
                        help = "Border around images to allocate space, px [10]")
+    parser.add_option("-S", "--saturation", action="store", type="float",
+                      dest = "maxpix", default = None,
+                      help = "Saturation value for excluding pixels")
+
 
     #parser.add_option("-t", "--testcolfile", action="store", type="string",
     #                  dest = "testcolfile", default=None,
@@ -331,6 +350,7 @@ def main():
                                      options.spline,
                                      np = options.npixels,
                                      border = options.border,
+                                     maxpix = options.maxpix
                                      # FIXME omegarange
                                      )
                                 
