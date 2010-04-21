@@ -23,11 +23,11 @@ def array_diff(a1,a2):
 class test_g_to_k(unittest.TestCase):
     
     def setUp(self):
-        self.np = 5
-        self.tth = n.array([60,10,15,20,25],n.Float)
+        self.tth = n.array( [60, 10, 15, 20,25, 1.9555],n.Float)
         self.wvln = 0.5
-        self.eta = n.array([90,10,120,-20,340],n.Float)
-        self.omega = n.array([60,90,180,60,97],n.Float)
+        self.eta = n.array( [90, 10,120,-20,340, -73 ],n.Float)
+        self.omega = n.array([60,90,180, 60,97,  131],n.Float)
+        self.np = len(self.tth)
         
     def test_0_0(self):
         """ wedge,chi = 0 """
