@@ -62,6 +62,7 @@ class rsv(object):
             raise Exception("Cannot allocate rsv")
         total = self.NR[0]*self.NR[1]*self.NR[2]
         print "rsv: memory used = %.2f MB"%(total*8.0/1024/1024)
+        print "dim: %d %d %d"%(self.NR[0],self.NR[1],self.NR[2])
         self.SIG = numpy.zeros( total, numpy.float32 )
         self.MON = numpy.zeros( total, numpy.float32 )
         

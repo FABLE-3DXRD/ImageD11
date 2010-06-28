@@ -260,7 +260,7 @@ def get_options(parser):
     parser.add_option("-b", "--border", action="store", type="int",
                        dest = "border", default = 10,
                        help = "Border around images to allocate space, px [10]")
-    parser.add_option("-S", "--saturation", action="store", type="float",
+    parser.add_option("-t", "--saturation", action="store", type="float",
                       dest = "maxpix", default = None,
                       help = "Saturation value for excluding pixels")
 
@@ -268,6 +268,10 @@ def get_options(parser):
     #parser.add_option("-t", "--testcolfile", action="store", type="string",
     #                  dest = "testcolfile", default=None,
     #                  help = "A columnfile to test geometry")
+
+    parser.add_option("-c", "--subslice", action="store", type="int",
+                      dest = "subslice", default=1,
+                      help = "Number of omega subslices to repeat images")
     
     return parser
                       
@@ -338,6 +342,8 @@ def main():
 
     imagefiles = ImageD11_file_series.get_series_from_options( options, args )
 
+    print "Subslicing by",options.subslice
+
     try:
         for fim in imagefiles:
             
@@ -358,11 +364,20 @@ def main():
 
                 
             ltp = time.time()
-            om = fim.header['Omega']
-            mapper.add_image( om, fim.data )
+            om = float(fim.header['Omega'])
+            oms = float(fim.header['OmegaStep'])
+            for i in range(options.subslice):
+                print ".",
+                omv = om + i*oms/options.subslice
+                # ==1 : 0*s/1
+                # ==2 : 0*s/2 , 1*s/2
+                # ==3 : 0*s/3 , 1*s/3, 2*s/3 etc
+                mapper.add_image( omv, fim.data )
+                    
+                    
             nimage = nimage + 1
             
-            print "%d %.3f %.4f s, %.4f s"%(nimage, om, 
+            print "  %d %.3f %.4f s, %.4f s"%(nimage, om, 
                                             time.time()-ltp,
                                             time.time()-start)
             if options.images is not None:
