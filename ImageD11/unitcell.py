@@ -195,6 +195,27 @@ class unitcell:
               self.symmetry)
 
 
+    def gethkls_xfab(self,dsmax,spg):
+        """
+        Generate hkl list
+        Argument dsmax is the d* limit (eg 1/d)
+        Argument spg is the space group name, e.g. 'R3-c'
+        """
+        stl_max = dsmax/2.
+        from xfab import tools,sg
+        spg = sg.sg(sgname=spg)
+        raw_peaks = tools.genhkl_unique(self.lattice_parameters, 
+                                 spg.syscond,
+                                 0 , stl_max,
+                                 crystal_system=spg.crystal_system, 
+                                 Laue_class=spg.Laue,
+                                 output_stl=True)
+        peaks = []
+        for i in range(len(raw_peaks)):
+            peaks.append([raw_peaks[i,3]*2,(raw_peaks[i,0],raw_peaks[i,1],raw_peaks[i,2])])
+        self.peaks = peaks
+        return peaks
+
     def gethkls(self,dsmax):
         """
         Generate hkl list
@@ -252,8 +273,7 @@ class unitcell:
                     break
 
         peaks.sort()
-        #for peak in peaks:
-        #   print peak
+           
         self.peaks=peaks
         self.limit=dsmax
         return peaks

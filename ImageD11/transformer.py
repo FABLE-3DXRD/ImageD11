@@ -405,7 +405,6 @@ class transformer:
         cell = [ pars[name] for name in ['cell__a','cell__b','cell__c',
                                         'cell_alpha','cell_beta','cell_gamma']]
         lattice = pars['cell_lattice_[P,A,B,C,I,F,R]']
-        self.unitcell = unitcell.unitcell(cell, lattice)
         if "tth" not in self.colfile.titles:
             self.compute_tth_eta()
         # Find last peak in radius
@@ -416,12 +415,22 @@ class transformer:
         w = pars['wavelength']
         ds = 2*n.sin(transform.radians(highest)/2.) / w
         self.dslimit = ds
-        self.theorypeaks = self.unitcell.gethkls(ds)
-        self.unitcell.makerings(ds)
-        self.theoryds = self.unitcell.ringds
-        tths = [n.arcsin(w*dstar/2)*2 
-                for dstar in self.unitcell.ringds]
+        self.unitcell = unitcell.unitcell(cell, lattice)
+        # If the space group is provided use xfab for generate unique hkls
+        if 'cell_sg' in pars:
+            self.theorypeaks = self.unitcell.gethkls_xfab(ds,pars['cell_sg'])
+            tths = []
+            for i in range(len(self.theorypeaks)):
+                tths.append(2*n.arcsin(w*self.theorypeaks[i][0]/2.))
+        else:
+            # I have removed this part as it seems redundant ringds also calls gethkls 
+            #self.theorypeaks = self.unitcell.gethkls(ds)
+            self.unitcell.makerings(ds)
+            self.theoryds = self.unitcell.ringds
+            tths = [n.arcsin(w*dstar/2)*2 
+                    for dstar in self.unitcell.ringds]
         self.theorytth = transform.degrees(n.array(tths))
+
 
     def computegv(self):
         """
