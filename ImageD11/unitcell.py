@@ -203,12 +203,9 @@ class unitcell:
         """
         stl_max = dsmax/2.
         from xfab import tools,sg
-        spg = sg.sg(sgname=spg)
-        raw_peaks = tools.genhkl_unique(self.lattice_parameters, 
-                                 spg.syscond,
+        raw_peaks = tools.genhkl_all(self.lattice_parameters, 
                                  0 , stl_max,
-                                 crystal_system=spg.crystal_system, 
-                                 Laue_class=spg.Laue,
+                                 sgname=spg,
                                  output_stl=True)
         peaks = []
         for i in range(len(raw_peaks)):
