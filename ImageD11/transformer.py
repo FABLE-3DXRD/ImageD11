@@ -423,8 +423,10 @@ class transformer:
             for i in range(len(self.theorypeaks)):
                 tths.append(2*n.arcsin(w*self.theorypeaks[i][0]/2.))
         else:
-            # I have removed this part as it seems redundant ringds also calls gethkls 
-            #self.theorypeaks = self.unitcell.gethkls(ds)
+            # HO:  I have removed this part as it seems redundant ringds also calls gethkls 
+            # JPW: It was not redundant. theorypeaks is not defined anywhere else and you 
+            #      can't write a g-vector file without it.
+            self.theorypeaks = self.unitcell.gethkls(ds)
             self.unitcell.makerings(ds)
             self.theoryds = self.unitcell.ringds
             tths = [n.arcsin(w*dstar/2)*2 
