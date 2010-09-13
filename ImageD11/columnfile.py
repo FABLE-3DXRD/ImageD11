@@ -231,7 +231,7 @@ class columnfile:
                      self.parameters.addpar(
                          parameters.par( name, value ) )
                  else:
-                     self.titles = raw[0][1:].split()
+                     self.titles = raw[i][1:].split()
                  i += 1    
              else:
                  header = False
