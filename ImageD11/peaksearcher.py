@@ -321,6 +321,8 @@ def peaksearch_driver(options, args):
                     data_object.header["Omega"] = OMEGA
                     OMEGA += OMEGASTEP
                     OMEGAOVERRIDE = True # once you do it once, continue
+                if not OMEGAOVERRIDE and options.omegamotor != "Omega":
+                    data_object.header["Omega"] = float( data_object.header[options.omegamotor] )
                 data_object = correct( data_object, darkimage, floodimage,
                                        do_median = options.median,
                                        monitorval = options.monitorval,
@@ -410,6 +412,8 @@ def peaksearch_driver(options, args):
                                 data_object.header["Omega"] = self.OMEGA
                                 self.OMEGA += self.OMEGASTEP
                             else:
+                                if options.omegamotor != 'Omega' and data_object.header.has_key(options.omegamotor):
+                                    data_object.header["Omega"] = float(data_object.header[options.omegamotor])
                                 if not data_object.header.has_key("Omega"):
                                     # print "Computing omega as not in header"
                                     data_object.header["Omega"] = self.OMEGA
@@ -666,7 +670,12 @@ def get_options(parser):
                           default = None,
                           help="Incident beam intensity value to normalise to")
 
-
+        parser.add_option("--omega_motor", action="store", type="string",
+                          dest = "omegamotor", default = "Omega",
+           help = "Header value to use for rotation motor position [Omega]")
+        parser.add_option("--omega_motor_step", action="store", type="string",
+                          dest = "omegamotorstep", default = "OmegaStep",
+           help = "Header value to use for rotation width [OmegaStep]")
         return parser
 
 
