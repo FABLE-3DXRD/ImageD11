@@ -49,6 +49,12 @@ def get_options(parser):
     parser.add_option("-T", "--start", action="store", type="float",
                       dest = "OMEGA", default = None,
                       help = "start omega")
+    parser.add_option("--omega_motor", action="store", type="string",
+                      dest = "omegamotor", default = "Omega",
+       help = "Header value to use for rotation motor position [Omega]")
+    parser.add_option("--omega_motor_step", action="store", type="string",
+                      dest = "omegamotorstep", default = "OmegaStep",
+       help = "Header value to use for rotation width [OmegaStep]")
 
     return parser
 
@@ -85,11 +91,15 @@ def series_from_fabioseries( fabioseries, dark, flood, options ):
             numpy.subtract( fim.data, dark, fim.data )
         if flood != None:
             numpy.divide( fim.data, flood, fim.data )
-        try:
-            fim.header['Omega'] = float(fim.header['Omega'])
-        except:
-            print filename, "get omega as",options.OMEGA
+        if fim.header.has_key(options.omegamotor):
+            fim.header['Omega'] = float(fim.header[options.omegamotor])
+            try:
+                fim.header['OmegaStep'] = float(fim.header[options.omegamotorstep])
+            except:
+                fim.header['OmegaStep'] = float(options.OMEGASTEP)            
+        else:
             fim.header['Omega'] = float(options.OMEGA)
+            fim.header['OmegaStep'] = float(options.OMEGASTEP)            
             options.OMEGA = float(options.OMEGA) + float(options.OMEGASTEP)
         yield fim
         
