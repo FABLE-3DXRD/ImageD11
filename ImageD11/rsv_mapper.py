@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """
 Reciprocal space volume mapper
-
 Transfers images into reciprocal space by pixel mapping
 """
 
@@ -23,7 +22,8 @@ class rsv_mapper(object):
                  np=16, 
                  border = 10, 
                  omegarange = range(360),
-                 maxpix = None ):
+                 maxpix = None,
+                 mask = None):
         """
         Create a new mapper intance. It will transform images into 
         reciprocal space (has its own rsv object holding the space)
@@ -34,6 +34,7 @@ class rsv_mapper(object):
         border - amount to add around edge of images [10]
         omegarange - omega values to be mapped (0->360)
         maxpix - value for saturated pixels to be ignored
+        mask - fit2d style mask for removing bad pixels / border
         """
         if len(dims)!=2: raise Exception("For 2D dims!")
         self.dims = dims
@@ -50,6 +51,11 @@ class rsv_mapper(object):
 
         # Saturation
         self.maxpix = maxpix
+
+        # Mask
+        self.mask = mask
+        if self.mask is not None:
+            assert self.mask.shape == self.dims, "Mask dimensions mush match image"
         
         # spatial
         if splinefile is None:
@@ -176,11 +182,11 @@ class rsv_mapper(object):
         # Find a way to test if we are doing the transform OK
     
         # Bounds checks
-        for i in range(3):
-            assert hkls[i].min() > self.bounds[i][0], \
-                "%d %s %s"%(i, str(hkls[i].min()),str( self.bounds[i][0]))
-            assert hkls[i].max() < self.bounds[i][1], \
-                "%d %s %s"%(i, str(hkls[i].max()),str( self.bounds[i][1]))
+#        for i in range(3):
+#            assert hkls[i].min() > self.bounds[i][0], \
+#                "%d %s %s"%(i, str(hkls[i].min()),str( self.bounds[i][0]))
+#            assert hkls[i].max() < self.bounds[i][1], \
+#                "%d %s %s"%(i, str(hkls[i].max()),str( self.bounds[i][1]))
 
         NR = self.rsv.NR        
         # hkls[0] is the slowest index. integer steps of NR[1]*NR[2]
@@ -198,8 +204,25 @@ class rsv_mapper(object):
         #
         #
         if self.maxpix is not None:
-            # This excludes saturated pixels
             msk =  numpy.where( dat > self.maxpix, 0, 1).astype(numpy.uint8)
+        else:
+            msk = None
+
+        if self.mask is not None:
+            # This excludes saturated pixels
+            if msk is None:
+                msk = self.mask
+            else:
+                numpy.multiply(msk, numpy.ravel(self.mask), msk)
+                
+        # cases:
+        #    maxpix only     == msk
+        #    mask only       == msk
+        #    maxpix and mask == msk
+        #    neither      
+
+
+        if msk is not None:
             numpy.multiply(dat, msk, dat)
             closest.put_incr( self.rsv.SIG,
                               ind,
@@ -272,6 +295,10 @@ def get_options(parser):
     parser.add_option("-c", "--subslice", action="store", type="int",
                       dest = "subslice", default=1,
                       help = "Number of omega subslices to repeat images")
+
+    parser.add_option("--maskfilename", action="store", type="string",
+                      dest = "maskfilename", default=None,
+                      help = "Mask image (fit2d style)" )
     
     return parser
                       
@@ -336,6 +363,19 @@ def main():
     except:
         print "Problem with ubi file:",options.ubifile
         raise
+
+    if options.maskfilename is not None:
+        from fabio.openimage import openimage
+        try:
+            mask = ( openimage( options.maskfilename ).data == 0 )
+        except:
+            print "Problem with your mask image",options.maskfilename
+            raise
+        print "Using a mask from",options.maskfilename
+        print "percent of image used %.3f"%(100.0*mask.sum()/mask.shape[0]/mask.shape[1])
+    else:
+        mask = None
+        
     
     first_image = True
     nimage = 0
@@ -356,7 +396,8 @@ def main():
                                      options.spline,
                                      np = options.npixels,
                                      border = options.border,
-                                     maxpix = options.maxpix
+                                     maxpix = options.maxpix,
+                                     mask = mask
                                      # FIXME omegarange
                                      )
                                 
