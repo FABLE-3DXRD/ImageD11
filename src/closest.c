@@ -58,7 +58,8 @@ static char moduledocs[] = \
 " *    GV is a nx3 Numeric.Float array, and you should try to make the 3 \n"\
 " *       be the fast index for best performance\n"\
 " *       \n"\
-" * 3. From python: same as score, I hope, but ubi is overwritten\n"\
+" * 3. score_and_refine(ubi, gv, tol) \n"\
+" *    From python: same as score, I hope, but ubi is overwritten\n"\
 " *    with refined matrix following paciorek algorithm which is \n"\
 " *    in indexing.py\n"\
 " *    \n"\
@@ -74,6 +75,12 @@ static char moduledocs[] = \
 " * 6. put_incr( data, indices, values)\n"\
 " *    pretty much as numeric.put but as increments\n"\
 " *\n"\
+" * 7. weighted_refine(ubi, gv, tol, weights) \n"\
+" *    From python: same as score, but with weights, and ubi is overwritten\n"\
+" *    with refined matrix following paciorek algorithm which is \n"\
+" *    in indexing.py\n"\
+" *    \n"\
+
 " * ****************************************************************** */ ";
 
 #include <Python.h>                  /* To talk to python */
@@ -474,8 +481,8 @@ static PyObject *score_and_assign( PyObject *self, PyObject *args, PyObject *key
     printf("Problem with labels\n");
     printf("nd %d typ %d dims[0] %d  gv_dims[0] %d\n",labels->nd,
 	   labels->descr->type_num,
-	   labels->dimensions[0],
-	   gv-> dimensions[0] );
+	   (int) labels->dimensions[0],
+	   (int) gv-> dimensions[0]) ;
     PyErr_SetString(PyExc_ValueError,
 		    "Label array must be integer and same length as gv");
     return NULL;
@@ -741,6 +748,190 @@ static PyObject *refine_assigned( PyObject *self,
 
 
 
+/* weighted_refine  =========================================================== */
+
+static PyObject *weighted_refine( PyObject *self, PyObject *args, PyObject *keywds){
+   PyArrayObject *ubi=NULL, *gv=NULL, *w=NULL;
+   double u00,u11,u22,u01,u02,u10,u12,u20,u21;
+   double g0,g1,g2,h0,h1,h2,t0,t1,t2;
+   double tol,sumsq,tolsq,sumdrlv2,wt;
+   double R[3][3],H[3][3],ih[3],rh[3], UB[3][3];
+   int n,k,i,j,l;
+
+   for(i=0;i<3;i++){
+     ih[i]=0.;
+     rh[i]=0.;
+     for(j=0;j<3;j++){
+       R[i][j] = 0.;
+       H[i][j] = 0.;
+       UB[i][j] = 0.;
+     }
+   }
+
+   
+   if(!PyArg_ParseTuple(args,"O!O!dO!",
+                        &PyArray_Type, &ubi,   /* array args */
+                        &PyArray_Type, &gv,    /* array args */
+                        &tol, /* Tolerance */
+			&PyArray_Type, &w ))    /* array args */
+     return NULL;
+   
+   if(ubi->nd != 2 || ubi->descr->type_num!=PyArray_DOUBLE){
+     printf("first arg nd %d\n",ubi->nd);
+     printf("first arg type %d\n",ubi->descr->type_num);
+     PyErr_SetString(PyExc_ValueError,
+		     "First array must be 3x3 2d and double");
+     return NULL;
+   }
+   if(gv->nd != 2 || gv->descr->type_num!=PyArray_DOUBLE){
+      PyErr_SetString(PyExc_ValueError,
+		      "Second array must be 3xn 2d and double");
+      return NULL;
+   }
+   
+/*   if(gv->strides[0] != sizeof(double) || ubi->strides[0] != sizeof(double)){
+      PyErr_SetString(PyExc_ValueError,
+            "Arrays must be flat (strides == sizeof(double))");
+      return NULL;
+   } */
+
+   if(ubi->dimensions[0] != 3 || ubi->dimensions[1] != 3){
+      PyErr_SetString(PyExc_ValueError,
+            "First array must be 3x3 2d, dimensions problem");
+      return NULL;
+   }
+
+   if(gv->dimensions[1] != 3){
+      PyErr_SetString(PyExc_ValueError,
+            "Second array must be 3xn 2d and double");
+      return NULL;
+   }
+
+   if(w->nd != 1 || w->descr->type_num!=PyArray_DOUBLE){
+     PyErr_SetString(PyExc_ValueError,
+            "Weight array must be 1D float");
+      return NULL;
+   }
+
+   if(w->dimensions[0] != gv->dimensions[0]){
+     PyErr_SetString(PyExc_ValueError,
+            "Weight array must be dimension n where n matches gv");
+      return NULL;
+   }
+
+
+
+/*   if(gv->strides[1] != sizeof(double)){
+      PyErr_SetString(PyExc_ValueError,
+            "Second array must be 3xn 2d and double, and you want it aligned!!!");
+      return NULL;
+   }
+*/
+
+
+   u00=* (double *) (ubi->data + 0*ubi->strides[0] + 0*ubi->strides[1]);
+   u01=* (double *) (ubi->data + 0*ubi->strides[0] + 1*ubi->strides[1]);
+   u02=* (double *) (ubi->data + 0*ubi->strides[0] + 2*ubi->strides[1]);
+   u10=* (double *) (ubi->data + 1*ubi->strides[0] + 0*ubi->strides[1]);
+   u11=* (double *) (ubi->data + 1*ubi->strides[0] + 1*ubi->strides[1]);
+   u12=* (double *) (ubi->data + 1*ubi->strides[0] + 2*ubi->strides[1]);
+   u20=* (double *) (ubi->data + 2*ubi->strides[0] + 0*ubi->strides[1]);
+   u21=* (double *) (ubi->data + 2*ubi->strides[0] + 1*ubi->strides[1]);
+   u22=* (double *) (ubi->data + 2*ubi->strides[0] + 2*ubi->strides[1]);
+
+   n=0;
+   sumdrlv2 = 0;
+   tolsq=tol*tol;
+
+   for(k=0;k<gv->dimensions[0];k++){ /* Loop over observed peaks */
+      /* Compute hkls of this peak as h = UBI g */
+      g0 = * (double *) (gv->data + k*gv->strides[0] + 0*gv->strides[1]);
+      g1 = * (double *) (gv->data + k*gv->strides[0] + 1*gv->strides[1]);
+      g2 = * (double *) (gv->data + k*gv->strides[0] + 2*gv->strides[1]);
+      h0 = u00*g0 + u01*g1 + u02*g2;
+      h1 = u10*g0 + u11*g1 + u12*g2;
+      h2 = u20*g0 + u21*g1 + u22*g2;
+      
+      t0=h0-conv_double_to_int_fast(h0);
+      t1=h1-conv_double_to_int_fast(h1);
+      t2=h2-conv_double_to_int_fast(h2);
+      sumsq = t0*t0+t1*t1+t2*t2;
+
+      if ( (t0 > 0.501) ||
+	   (t1 > 0.501) ||
+	   (t2 > 0.501) ){
+	printf("Error in conv\nh0 = %f h1 = %f h2=%f \nt0 = %f t1 = %f t2=%f\n",
+	       t0,t1,t2,h0,h1,h2);
+	return NULL;
+      }       
+	  
+      
+      if (sumsq < tolsq){
+	n=n+1;
+	sumdrlv2 += sumsq;
+	/*   From Paciorek et al Acta A55 543 (1999)
+	 *   UB = R H-1
+	 *    where:
+	 *    R = sum_n r_n h_n^t
+	 *    H = sum_n h_n h_n^t
+	 *    r = g-vectors
+	 *    h = hkl indices
+	 *    The hkl integer indices are: */
+	ih[0] = conv_double_to_int_fast(h0);
+	ih[1] = conv_double_to_int_fast(h1);
+	ih[2] = conv_double_to_int_fast(h2);
+	/* The g-vector was: */
+	rh[0] = g0; rh[1] = g1 ; rh[2] = g2;
+	wt = *( double*) (w->data  + k*w->strides[0]);
+	for(i=0;i<3;i++){
+	  for(j=0;j<3;j++){
+	    /* Robust weight factor, fn(tol), would go here */
+	    R[i][j] = R[i][j] + wt * ih[j] * rh[i];
+	    H[i][j] = H[i][j] + wt * ih[j] * ih[i];
+	  }
+	}
+      }
+   }
+
+
+   if (inverse3x3(H)==0){
+     /* Form best fit UB */
+     for(i=0;i<3;i++)
+       for(j=0;j<3;j++)
+	 for(l=0;l<3;l++)
+	   UB[i][j] = UB[i][j] + R[i][l]*H[l][j];
+     
+     if (inverse3x3(UB)==0){
+       /*printf("Got a new UB\n");
+	 for(i=0;i<3;i++)
+	 for(j=0;j<3;j++)
+	 printf("UBi[%d][%d]=%f",i,j,UB[i][j]);
+	 printf("\n");
+       */
+
+       /* Copy result into arg */
+       for(i=0; i<3; i++)
+	 for(j=0; j<3; j++)
+	   *(double *)(ubi->data + 
+		       i*ubi->strides[0] + 
+		       j*ubi->strides[1]) = UB[i][j];
+
+       
+     }
+     
+   }
+   
+   if( n > 0){    
+       return Py_BuildValue("id",n,sumdrlv2/n);
+    }   else  {
+       return Py_BuildValue("id",n,0);
+    }
+}
+
+/* ================================================================ */
+
+
+
 void ptype(int type){
    /* Print out the type of a Numeric array from the C point of view */
   printf("Your input type was ");
@@ -950,6 +1141,11 @@ static PyMethodDef closestMethods[] = {
      "int, float refine_assigned(ubi, gv, labels, label, sigma)\n"	\
      "    refines ubi to match gv where labels==label\n" \
      "    sigma is a soft cutoff on tolerance (drlv)\n" \
+     "    returns npks, <drlv2> "},
+   { "weighted_refine", (PyCFunction) weighted_refine, METH_VARARGS, 
+     "int, float weighted_refine(ubi, gv, tol, weights )\n"	\
+     "    refines ubi to match gv \n" \
+     "    weights is the weighting to apply to peaks (eg, intensity)\n" \
      "    returns npks, <drlv2> "},
    { "put_incr", (PyCFunction) put_incr, METH_VARARGS,
      " None = put_incr( data, ind, vals )\n"\
