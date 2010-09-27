@@ -67,9 +67,7 @@ class xydisp:
         # they are in degrees
         
         self.tth = numpy.reshape( tth, dims )
-        self.eta = numpy.reshape( eta, dims )
-
-        
+        self.eta = numpy.mod(numpy.reshape( eta, dims ), 360)-180
         self.compute_rad_arc()
         
     def compute_rad_arc(self):
@@ -89,13 +87,23 @@ class xydisp:
         tthmax =  numpy.max( self.tth )
         tthmin =  numpy.min( self.tth )
         tthstep = (tthmax - tthmin)/(self.dims[0] - 1)
-        arcmax = numpy.max( arclength )
-        arcmin = numpy.min( arclength )
-        arcstep = (arcmax - arcmin)/(self.dims[1] - 1)
-
-        # Make integer pixel id images
         self.tthbin = numpy.floor( (self.tth - tthmin)/tthstep )
-        self.arcbin = numpy.floor( (arclength - arcmin)/arcstep )
+        self.tthvals = numpy.arange(tthmin,tthmax,tthstep)
+        # Ideally we want the arc bins to vary with tth?
+        #arcmax = numpy.max( arclength )
+        #arcmin = numpy.min( arclength )
+        # 4 corners of image
+        arcmin = arclength[0,0]
+        arcmax = arclength[0,0]
+        for i,j in [(-1,0),(0,-1),(-1,-1)]:
+            arcmin = min(arcmin, arclength[i,j])
+            arcmax = max(arcmax, arclength[i,j])
+
+        arcstep = (arcmax - arcmin)/(self.dims[1] - 1)
+        arcmid  = 0.5*(arcmax+arcmin)
+        # Make integer pixel id images
+
+        self.arcbin = numpy.floor((arclength - arcmid)/arcstep )+self.dims[1]/2
 
         assert self.tthbin.min() >= 0
         assert self.tthbin.max() < self.dims[0], self.tthbin.max()
@@ -119,7 +127,7 @@ class xydisp:
         im = edfimage.edfimage()
         im.data = self.dy
         im.write( "%s_dy.edf"%(stemname), force_type = numpy.float32)
-        
+        numpy.save("%s_tth.npy"%(stemname),self.tthvals)
 
 def get_options(parser):
 
