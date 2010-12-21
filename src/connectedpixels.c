@@ -996,12 +996,19 @@ static PyObject * bloboverlaps (PyObject *self,
           /* dest  = T[i]; */
           /* src   = link[i]; */
           if (link[i] == T[i]) continue;
-          if (T[i] < link[i] ) { /* copy and zero out */
-              for (j=0 ; j < NPROPERTY ; j++ ){
-                res2[NPROPERTY*(T[i]-1) + j] = res2[NPROPERTY*(link[i]-1) + j] ;
-                res2[NPROPERTY*(link[i]-1) + j] = 0;
-              } 
-              if(verbose) printf("np i %d j %d %f \n",T[i],link[i],res2[NPROPERTY*T[i] + 1]);
+          if (T[i] < link[i]) { /* copy and zero out */
+	    if (link[i] == i){ /* This is the place accumulating */
+	      for (j=0 ; j < NPROPERTY ; j++ ){
+		res2[NPROPERTY*(T[i]-1) + j] = res2[NPROPERTY*(link[i]-1) + j] ;
+		res2[NPROPERTY*(link[i]-1) + j] = 0;
+	      } 
+	    }else{
+	      /* assert this is empty */
+	      if(res2[NPROPERTY*(link[i]-1)+s_1] > 0.){
+		printf("Error in bloboverlaps, pixels lost %d\n",i);
+	      }
+	    }
+	    if(verbose) printf("np i %d j %d %f \n",T[i],link[i],res2[NPROPERTY*T[i] + 1]);
           } else {
               printf("Bad logic in bloboverlaps \n");
         }
