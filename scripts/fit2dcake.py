@@ -26,7 +26,10 @@ if sys.platform == 'win32':
     FIT2D = """D:\\fit2d_12_077_i686_WXP.exe """
     REMOVE = "del "
 else:
-    XVFB = "Xvfb :1 -ac &"
+    if not os.path.exists("/tmp/.X1-lock"):
+        XVFB = "Xvfb :1 -ac &"
+    else:
+        XVFB = "echo "
     FIT2D = "fit2d_12_081_i686_linux2.4.20"
     REMOVE = "rm -f "
 
@@ -385,6 +388,10 @@ class cakemacrogenerator:
         self.macro = self.macro + "INPUT\n" + filein + "\n"
         if self.input_extn.find("mccd") > -1:
             self.macro += "O.K.\n"
+        if self.input_extn.find("cor")>-1:
+            # hard wire for ID11, sorry
+            self.macro += "X-PIXELS\n2048\nY-PIXELS\n2048\nDATA TYPE\nREAL\nSIGNED\nNO\nBYTE SWAP\nNO\n"
+            self.macro += "STARTING BYTE\n8193\nO.K.\n"
         for name in self.input_options_names:
             value = self.input_options_values[name]
             if name.find("MASK") >= 0:
@@ -542,11 +549,10 @@ class cakemacrogenerator:
         """
         self.macro=self.macro+"EXIT\nEXIT FIT2d\nYES\n"
         import time, tempfile
-        tmpfilename=tempfile.mkstemp(dir=".")[1]+".mac"
-        tmpfilename=os.path.split(tmpfilename)[-1]
-        tmpfile=open(tmpfilename,"w")
-        tmpfile.write(self.macro)
-        tmpfile.close()
+        tmpfile = tempfile.NamedTemporaryFile(dir=".")
+        tf = open( tmpfile.name + ".mac","w")
+        tf.write(self.macro)
+        tf.close()
         # Send the display to a local black hole
         if show!="SHOW":
             os.system(XVFB)
@@ -560,10 +566,11 @@ class cakemacrogenerator:
             except KeyError:
                 os.environ["DISPLAY"]=":1"
         array=str(self.mask_pars_values["DIM1_DATA"])+"x"+str(self.mask_pars_values["DIM2_DATA"])
-        cmd = FIT2D + " -dim%s -mac%s "%(array,tmpfilename)
+        cmd = FIT2D + " -dim%s -mac%s.mac "%(array,tmpfile.name)
         print "executing",cmd
         os.system(cmd)
-        os.system(REMOVE+" "+tmpfilename)
+        os.system(REMOVE+" "+tmpfile.name+".mac")
+        tmpfile.close()
         if show is None:
             os.environ["DISPLAY"]=displaywas
         print "Finalising"
