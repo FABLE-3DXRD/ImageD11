@@ -566,7 +566,8 @@ class cakemacrogenerator:
             except KeyError:
                 os.environ["DISPLAY"]=":1"
         array=str(self.mask_pars_values["DIM1_DATA"])+"x"+str(self.mask_pars_values["DIM2_DATA"])
-        cmd = FIT2D + " -dim%s -mac%s.mac "%(array,tmpfile.name)
+        cmd = FIT2D + " -dim%s -mac%s.mac "%(array,os.path.split(
+            tmpfile.name)[-1])
         print "executing",cmd
         os.system(cmd)
         os.system(REMOVE+" "+tmpfile.name+".mac")
