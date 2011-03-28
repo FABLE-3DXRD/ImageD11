@@ -365,6 +365,40 @@ class newcolumnfile(columnfile):
         self.titles = titles
         self.ncols = len(titles)
 
+
+try:
+    import h5py, os
+    def colfile_to_hdf( colfile, hdffile, name=None ):
+        """
+        Read columnfile into hdf file
+        """
+        c = columnfile( colfile )
+        ndata = c.nrows
+        h = h5py.File( hdffile , 'a') # Appending if exists
+        if name is None:
+            # Take the file name
+            name = os.path.split(colfile)[-1]
+        try:
+            g = h.create_group( name )
+        except:
+            print name, h
+            raise
+        g.attrs['ImageD11_type'] = 'peaks'
+        for t in c.titles:
+            if t in INTS:
+                ty = numpy.int32
+            else:
+                ty = numpy.float32
+            # print "adding",t,ty
+            g.create_dataset( t, data = getattr(c, t).astype( ty ) )
+        h.close()
+        
+except ImportError:
+    def colfile_to_hdf( a,b,name=None):
+        raise Exception("You do not have h5py installed!")
+
+    
+
 def bench():
     """
     Compares the timing for reading with columfile
