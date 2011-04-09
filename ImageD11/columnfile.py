@@ -216,9 +216,8 @@ class columnfile:
             raw = open(filename,"r").readlines()
         except:
             raise Exception("Cannot open %s for reading"%(filename))
-
         header = True
-        while header:
+        while header and i < len(raw):
              if len(raw[i].lstrip())==0:
                  # skip blank lines
                  i += 1    
