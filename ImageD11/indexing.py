@@ -29,6 +29,17 @@ import math, time, sys, logging
 
 import numpy.oldnumeric.linear_algebra as LinearAlgebra
 
+def myhistogram(data, bins):
+   """
+   The numpy histogram api was changed
+   So here is an api that will not change
+   It is based on that from the old Numeric manual
+   """
+   n = numpy.searchsorted( numpy.sort(data), bins )
+   n = numpy.concatenate( [ n, [len(data)]] )
+   return n[1:] - n[:-1]
+
+
 def readubis(ubifile):
     """read ubifile and return a list of ubi arrays """
     f = open(ubifile, "r")
@@ -587,19 +598,10 @@ class indexer:
         self.ga = labels
         # For each grain we want to know how many peaks it indexes
         # This is a histogram of labels
-        try:
-            hst, edges = numpy.histogram(
-                labels,
-                n.arange(-0.5, len(self.ubis)-0.49),
-                new = True )
-            self.gas = hst
-        except: # they changed the interface to histogram. Thanks for that.    
-            hst, edges = numpy.histogram(
-                labels,
-                n.array( range(-1, len(self.ubis)))-0.5 )
-            self.gas = hst[1:]
+	bins =  n.arange(-0.5, len(self.ubis)-0.99)
+	hst = myhistogram( labels, bins )
+        self.gas = hst
         assert len(self.gas) == len(self.ubis)
-                         
         
         
 
@@ -729,7 +731,7 @@ class indexer:
                 nleft=nleft+1
 
         f.write("\n\nTotal number of peaks was %d\n"%(self.gv.shape[0]))
-        f.write("Peaks assigned to grains %d\n"%(nfitted))
+        f.write("Peaks assigned to grains %d\n"%(npk))
         f.write("Peaks assigned to rings but remaining unindexed %d\n"%(nleft))
 
         f.write("Peaks not assigned to rings at all %d\n"%(n.sum(n.where(self.ra==-1,1,0))))
