@@ -306,15 +306,9 @@ def peaksearch_driver(options, args):
                         sys.stdout.write(data_object[1].strerror + ': ' +
                           data_object[1].filename + '\n')
                     else:
-                        print data_object
+                        import traceback
+                        traceback.print_exception(data_object[0],data_object[1],data_object[2])
                         sys.exit()
-                        sys.stdout.write("A file was not found\n")
-                    continue
-                # KE: This should no longer happen
-                if data_object is None:
-                    print "Unreachable code"
-                    sys.stdout.write("A file was not found in unreachable code\n")
-                    sys.exit()
                     continue
                 filein = data_object.filename
                 if OMEGAOVERRIDE or not data_object.header.has_key("Omega"):
@@ -397,12 +391,9 @@ def peaksearch_driver(options, args):
                                 sys.stdout.write(data_object[1].strerror +
                                   ': ' + data_object[1].filename + '\n')
                             else:
-                                sys.stdout.write("A file was not found\n")
-                                sys.stdout.write(str(data_object))
-                            continue
-                        # KE: This should no longer happen
-                        if data_object is None:
-                            sys.stdout.write("A file was not found : returned None\n")
+                                import traceback
+                                traceback.print_exception(data_object[0],data_object[1],data_object[2])
+                                sys.exit()
                             continue
                         ti = timer()
                         filein = data_object.filename
@@ -423,7 +414,6 @@ def peaksearch_driver(options, args):
                         except KeyboardInterrupt:
                             raise
                         except:
-
                             continue
                         ti.tick(filein)
                         self.queue.put((filein, data_object) , block = True)
