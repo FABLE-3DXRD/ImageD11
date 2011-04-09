@@ -48,7 +48,10 @@ def mod(x,y):
     ret = x - n * y
     if __debug__:
         af  = dot(ret,ret)
-        assert b4 >= af , "Bad mod "+str(x) + " " + str(y)
+	if b4 < af and n != 0 : 
+            print "Bad mod "+str(x) + " " + str(y)
+	    print ret, b4, af, n
+	    raise Exception("problem in mod")
     return ret
 
 def sortvec_len( vl ):
