@@ -26,8 +26,8 @@ Setup script
 
 
 
-#from distutils.core import setup, Extension
-from setuptools import setup, Extension
+from distutils.core import setup, Extension
+# from setuptools import setup, Extension
 
 
 from numpy.distutils.misc_util import get_numpy_include_dirs
@@ -117,6 +117,7 @@ setup(name='ImageD11',
                  "scripts/plotedf.py",
                  "scripts/plotgrainhist.py",
                  "scripts/rubber.py",
+                 "scripts/plotImageD11map.py",
                  "scripts/cutgrains.py",
                  "scripts/edf2bruker.py",
                  "scripts/index_unknown.py",
