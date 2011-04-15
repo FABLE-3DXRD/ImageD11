@@ -139,7 +139,7 @@ def checkop(h,k,l,op,axis):
 #never mind inversion for the absence check
 
 if __name__ == "__main__":  
-    import sys
+	import sys
 	if len(sys.argv) != 8:
 		print "Usage %s h k l sg_with_spaces"%(sys.argv[0])
 		print len(sys.argv)
