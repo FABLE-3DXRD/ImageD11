@@ -34,8 +34,9 @@ Defines one class (minimum_image) which might perhaps be reused
 import fabio
 from fabio.openimage import openimage
 import numpy
+import random # to do images in random order
 
-class minimum_image:
+class minimum_image(object):
     """
     Used for forming the minimum of a series of images
     """
@@ -44,10 +45,10 @@ class minimum_image:
         file - the initial image to use a minimum
         image - a second image to make the min of the two args (??)
         """
-        self.minimum_image = None
+        self.bkg = None
         if image is not None:
             # if an image is supplied we take that as the initial minimum
-            self.minimum_image = image
+            self.bkg = image
         if filename != None:
             # if a filename is supplied we take the minimum of the
             # image in that
@@ -57,15 +58,57 @@ class minimum_image:
     def add_image(self, picture):
         """
         """
-        if self.minimum_image is None:
-            self.minimum_image = picture.copy()
+        if self.bkg is None:
+            self.bkg = picture.copy()
         else:
             # Check dimensions match
-            if self.minimum_image.shape == picture.shape:
-                self.minimum_image = numpy.minimum(self.minimum_image, 
-                                                   picture)
+            if self.bkg.shape == picture.shape:
+                numpy.minimum(self.bkg, picture, self.bkg)
             else:
                 raise Exception("Incompatible image dimensions")
+
+    def add_file(self, filename):
+        """
+        Include another file
+        """
+        try:
+            data_object = openimage(filename)
+        except IOError:
+            print filename, "not found"
+            return
+        self.add_image(data_object.data)
+
+class kbg(object):
+    """
+    Kalman style background filtering
+    """
+    def __init__(self, x0, p0, Q=0.01):
+        """
+        x0 = initial background estimate
+        p  = current noise estimate
+        p0 = initial noise estimate
+        Q  = drift rate [fixed here]
+        """
+        self.bkg = x0.astype(numpy.float32)
+        self.p = p0
+        self.p0= numpy.float32(p0)
+        self.Q = Q
+
+    def add_image(self, z):
+        """
+        Update the current estimates of background and noise
+        """
+        assert z.shape == self.bkg.shape, "Incompatible dimensions"
+        self.p = self.p + self.Q
+        # R = noise estimate for this image
+        #  ...either read noise or obs-calc for downweighting peaks
+        # Misfit of the current image
+        err = z - self.bkg
+        R = numpy.where( err > self.p0, err, self.p0)
+        # Usual Kalman updates
+        K = self.p/(self.p + R)
+        self.bkg = self.bkg + K * err
+        self.p = ( 1 - K ) * self.p
 
     def add_file(self, filename):
         """
@@ -102,6 +145,10 @@ def get_options(parser):
     parser.add_option("--ndigits", action = "store", type = "int",
                       dest = "ndigits", default = 4,
                       help = "Number of digits in file numbering [4]")
+    parser.add_option("-k", "--kalman-error", action="store", type = "float",
+            dest = "kalman_error", default = 0,
+            help = "Error value to use Kalman style filter (read noise)" )
+
     return parser
 
 def check_options( options ):
@@ -129,22 +176,33 @@ def bgmaker( options ):
 
 
     first_image = openimage( first_image_name )
-    minim = minimum_image( image = first_image.data )
     print first_image.filename
-    current_num = options.first + options.step
-    while current_num <= options.last:
+
+    allimagenumbers = range(options.first + options.step, 
+                options.last + options.step, options.step )
+
+    if options.kalman_error <= 0:
+        print "Using minimum image algorithm"
+        bko = minimum_image( image = first_image.data )
+    else:
+        print "Using Kalman algorithm with error =",options.kalman_error
+        bko = kbg( first_image.data, options.kalman_error*options.kalman_error )
+        print "Taking images in random order"
+        random.seed(42) # reproducible
+        random.shuffle( allimagenumbers )
+
+    for current_num in allimagenumbers:
         try:
             im = first_image.getframe( current_num )
             print im.filename
-            minim.add_image( im.data )
+            bko.add_image( im.data )
         except KeyboardInterrupt:
             print "Got a keyboard interrupt"
-            current_num = options.last + 1
+            break
         except:
             import traceback
             traceback.print_exc()
             print "Failed for",current_num
-        current_num = current_num + options.step
         
     # finally write out the answer
     # model header + data
@@ -155,14 +213,14 @@ def bgmaker( options ):
     if options.outfile[-3:] == "edf":
         print "writing",options.outfile,"in edf format"
         import fabio.edfimage
-        im = fabio.edfimage.edfimage( data = minim.minimum_image )
+        im = fabio.edfimage.edfimage( data = bko.bkg )
     else:
         im = first_image
         
-    im.data = minim.minimum_image
+    im.data = bko.bkg
     try:
         im.write(options.outfile, force_type = im.data.dtype)
-    except TypeError:
+    except TypeError: # WTF?
         im.write(options.outfile)
     except:
         print "problem writing"
