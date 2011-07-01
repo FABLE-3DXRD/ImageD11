@@ -76,7 +76,7 @@ PARAMETERS = [
              "same as units unit cell ",
           vary=False, 
           can_vary=True,# but you'll be lucky!
-          stepsize = 0.0001 ),
+          stepsize = 0.00001 ),
      par('wedge',0.0,
           helpstring = "wedge, rotation around y under omega",
           vary=False, 
@@ -320,7 +320,7 @@ class transformer:
         self.applyargs(args)
         # Here, pars is a dictionary of name/value pairs to pass to compute_tth_eta
         tth, eta = self.compute_tth_eta()
-        w = self.wavelength
+        w = self.parameterobj.get("wavelength")
         gof = 0.
         npeaks = 0
         for i in range(len(self.tthc)):# (twotheta_rad_cell.shape[0]):
@@ -330,13 +330,12 @@ class transformer:
             gof = gof + n.sum(diff*diff)
             npeaks = npeaks + len(diff)
         gof = gof / npeaks
-        return gof*1e3
+        return gof*1e6
 
     def fit(self,tthmin=0,tthmax=180):
         """ Apply simplex to improve fit of obs/calc tth """
         tthmin = float(tthmin)
         tthmax = float(tthmax)
-        
         import simplex
         if self.theoryds == None:
             self.addcellpeaks()
@@ -383,6 +382,7 @@ class transformer:
         s=simplex.Simplex(self.gof,guess,inc)
         newguess,error,niter=s.minimize()
         self.parameterobj.set_variable_values(newguess)
+        self.wavelength = self.parameterobj.get("wavelength")
         self.gof(newguess) 
         print newguess
 
