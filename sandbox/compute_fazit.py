@@ -67,7 +67,8 @@ class xydisp:
         # they are in degrees
         
         self.tth = numpy.reshape( tth, dims )
-        self.eta = numpy.mod(numpy.reshape( eta, dims ), 360)-180
+#        self.eta = numpy.mod(numpy.reshape( eta, dims ), 360)-180
+        self.eta = numpy.reshape( eta, dims )-eta.mean()
         self.compute_rad_arc()
         
     def compute_rad_arc(self):
@@ -88,17 +89,17 @@ class xydisp:
         tthmin =  numpy.min( self.tth )
         tthstep = (tthmax - tthmin)/(self.dims[0] - 1)
         self.tthbin = numpy.floor( (self.tth - tthmin)/tthstep )
-        self.tthvals = numpy.arange(tthmin,tthmax,tthstep)
+        self.tthvals = numpy.arange(tthmin,tthmax+tthstep*0.5,tthstep)
         # Ideally we want the arc bins to vary with tth?
         #arcmax = numpy.max( arclength )
         #arcmin = numpy.min( arclength )
         # 4 corners of image
-        arcmin = arclength[0,0]
-        arcmax = arclength[0,0]
-        for i,j in [(-1,0),(0,-1),(-1,-1)]:
-            arcmin = min(arcmin, arclength[i,j])
-            arcmax = max(arcmax, arclength[i,j])
-
+        arcmin = arclength.min()
+        arcmax = arclength.max()
+        #from matplotlib.pylab import imshow,show, colorbar
+        #imshow(arclength)
+        #colorbar()
+        #show()
         arcstep = (arcmax - arcmin)/(self.dims[1] - 1)
         arcmid  = 0.5*(arcmax+arcmin)
         # Make integer pixel id images
@@ -107,7 +108,7 @@ class xydisp:
 
         assert self.tthbin.min() >= 0
         assert self.tthbin.max() < self.dims[0], self.tthbin.max()
-        assert self.arcbin.min() >= 0
+        assert self.arcbin.min() >= 0, self.arcbin.min()
         assert self.arcbin.max() < self.dims[1]
 
         # Now convert these to displacements compared to input image

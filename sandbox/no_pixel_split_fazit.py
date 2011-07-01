@@ -148,43 +148,9 @@ def main():
 
             outsum.shape = imageshape
             # saving edf
-            #e.data=outsum
-            #e.write( "r_"+fim.filename  , force_type=numpy.float32)
-            # saving others
-            newar = outsum + outmask
-            newar.sort(axis=1)
-            newar = newar
-            if options.outdir is not None:
-                stem = os.path.join(options.outdir, 
-                      os.path.split(fim.filename)[-1].split(".")[0])
-            else:
-                stem = os.path.split(fim.filename)[-1].split(".")[0]
-                
-            maxnewar = open(stem+".max","w")
-            minnewar = open(stem+".min","w")
-            mednewar = open(stem+".med","w")
-            for i in range(len(minds)):
-                if minds[i] < 5:
-                    minnewar.write("%.6f  %12.4f\n"%(tthvals[i],0.))
-                    maxnewar.write("%.6f  %12.4f\n"%(tthvals[i],0.))
-                    mednewar.write("%.6f  %12.4f  %12.4f\n"%(tthvals[i],0.,1e3))
-                    continue
-                t = newar[i,:minds[i]/4]
-                if numpy.isnan(t.mean()):
-                    print minds[i]/4,minds[i]
-                minnewar.write("%.6f  %12.4f\n"%(tthvals[i],t.mean()))
-                t = newar[i,minds[i]/4:3*minds[i]/4]
-                mednewar.write("%.6f  %12.4f  %12.4f\n"%(tthvals[i],
-                                                         t.mean(),
-                                                         numpy.sqrt(t.std())))
-                t = newar[i,3*minds[i]/4:minds[i]-1]
-                if numpy.isnan(t.mean()):
-                    print minds[i]
-                maxnewar.write("%.6f  %12.4f\n"%(tthvals[i],t.mean()))
-            maxnewar.close()
-            minnewar.close()
-            mednewar.close()
-
+            e.data=outsum
+            e.write( "r_"+fim.filename  , force_type=numpy.float32)
+            
             print time.time()-start
 
             
