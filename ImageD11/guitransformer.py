@@ -52,7 +52,8 @@ class guitransformer:
               ( "Compute g-vectors", 0, self.computegv),
               ( "Save g-vectors", 0, self.savegv),
               ( "Save new colfile", 0, self.savecolfile),
-              ( "Write graindex finalpeaks.log",0, self.write_graindex_gv)
+              ( "Write graindex finalpeaks.log",0, self.write_graindex_gv),
+              ( "Write pyFAI data file", 0, self.write_pyFAI)
               ] )
 
     def loadfiltered(self):
@@ -260,4 +261,13 @@ class guitransformer:
     def write_graindex_gv(self):
         filename=self.parent.saver.show(title="File for graindex, try finalpeaks.log")
         self.parent.guicommander.execute("transformer","write_graindex_gv",filename)
+
+
+
+    def write_pyFAI(self):
+        tthmin = self.parent.twodplotter.a.get_xlim()[0]
+        tthmax = self.parent.twodplotter.a.get_xlim()[1]
+        filename=self.parent.saver.show(title="File for pyFAI, try data.py")
+        self.parent.guicommander.execute("transformer","write_pyFAI",filename,
+                                         tthmin,tthmax)
 

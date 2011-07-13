@@ -564,3 +564,54 @@ class transformer:
                                             ints,
                                             self.unitcell)
         
+
+    def write_pyFAI( self,filename, tthmin=0,tthmax=180):
+        """
+        Write file for Jerome Kieffer's pyFAI fitting routine to use
+        """
+        tthmin = float(tthmin)
+        tthmax = float(tthmax)
+        if self.theoryds == None: # or dirty?
+            self.addcellpeaks()
+        # Assign observed peaks to rings
+        self.wavelength = None
+        self.indices=[]  # which peaks used
+        self.tthc=[]     # computed two theta values
+        pars = self.parameterobj.get_parameters()
+        w = float(pars['wavelength'])
+        tol = float(pars['fit_tolerance'])
+        tth, eta = self.compute_tth_eta()
+        # Loop over calc peak positions
+
+        f = open(filename, "w")
+        f.write("# Peak positions from ImageD11_gui.py\n")
+        f.write("# Original columnfile was %s\n"%(self.colfile.filename))
+        f.write("pars = %s\n"%(repr(pars)))
+        f.write("data = [ \n")
+        # slow, fast == x, y in here
+        # slow is vertical z for Frelon usually
+        # fast is horizontal y for Frelon usually
+
+        z_size = float(self.parameterobj.get("z_size"))
+        y_size = float(self.parameterobj.get("z_size"))
+        z = self.getcolumn(self.xname) * z_size
+        y = self.getcolumn(self.yname) * y_size
+        
+        for i in range(len(self.theoryds)):
+            dsc=self.theoryds[i]
+            tthcalc=math.asin(dsc*w/2)*360./math.pi # degrees
+            if tthcalc>tthmax:
+                break
+            elif tthcalc < tthmin:
+                continue
+            logicals= n.logical_and( n.greater(tth, 
+                                               tthcalc-tol),
+                                     n.less(   tth , 
+                                               tthcalc+tol)  )
+
+            if sum(logicals)>0:
+                ind=n.compress(logicals,range(len(tth)))
+                for j in ind:
+                    f.write( "[%f,%f,%f],\n"%( y[j], z[j], tthcalc ) )
+        f.write("]\n")
+        f.close()
