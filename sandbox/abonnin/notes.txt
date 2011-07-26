@@ -1,0 +1,20 @@
+
+fix_omega_angles.py
+- puts the x position and omega from the peaksearch of 26000 images
+  needs fixing to run properly (interactive notes)
+
+make_point_sino.py
+- reads grainspotter log file and original flt peaksearch with xpos
+  Fits sinogram to get centre of mass of a grain
+
+select_spatial_point.py
+- Takes output of make_point_sino (x,y position, centre of rotation)
+  Selects peaks in flt file where xpos matches the sinogram
+  Can use this for re-indexing grain without bad peaks.
+
+many_peak_searches.py
+- ? not needed ? Does peaksearch per x translation
+
+search_peaks.py
+- For integrating ROI to make intensity based sinogram
+
