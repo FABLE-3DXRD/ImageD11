@@ -133,7 +133,7 @@ class refinegrains:
         ks = self.grains.keys()
         # sort by number of peaks indexed to write out
         if sort_npks:
-        #      npks
+            #        npks in x array
             gl = [ (len(self.grains[k].x), self.grains[k]) for k in ks ]
             gl.sort()
             gl = [ g[1] for g in gl[::-1] ]
@@ -141,6 +141,27 @@ class refinegrains:
             ks.sort()
             gl = [ self.grains[k] for k in ks ]
         grain.write_grain_file(filename, gl)
+
+        # Update the datafile and grain names reflect indices in grain list
+        for g in gl:
+            name, fltname = g.name.split(":")
+            assert self.scandata.has_key(fltname),"Sorry - logical flaw"
+            assert len(self.scandata.keys())==1,"Sorry - need to fix for multi data"
+            self.compute_gv( g , update_columns = True )
+            numpy.put( self.scandata[fltname].gx, g.ind, self.gv[:,0] )
+            numpy.put( self.scandata[fltname].gy, g.ind, self.gv[:,1] )
+            numpy.put( self.scandata[fltname].gz, g.ind, self.gv[:,2] )
+            hkl_real = numpy.dot(g.ubi, self.gv.T)
+            numpy.put( self.scandata[fltname].hr, g.ind, hkl_real[0,:] )
+            numpy.put( self.scandata[fltname].kr, g.ind, hkl_real[1,:] )
+            numpy.put( self.scandata[fltname].lr, g.ind, hkl_real[2,:] )
+            hkl = numpy.floor(hkl_real + 0.5)
+            numpy.put( self.scandata[fltname].h, g.ind, hkl[0,:] )
+            numpy.put( self.scandata[fltname].k, g.ind, hkl[1,:] )
+            numpy.put( self.scandata[fltname].l, g.ind, hkl[2,:] )
+            
+
+
 
 
     def makeuniq(self, symmetry):
@@ -217,7 +238,7 @@ class refinegrains:
 
             
 
-    def compute_gv(self, thisgrain  ):
+    def compute_gv(self, thisgrain , update_columns = False  ):
         """
         Makes self.gv refer be g-vectors computed for this grain in this scan
         """
@@ -241,10 +262,20 @@ class refinegrains:
                                 float(self.parameterobj.parameters['wavelength']),
                                 self.parameterobj.parameters['wedge'],
                                 self.parameterobj.parameters['chi'])
+        # update tth_per_grain and eta_per_grain
+        if update_columns:
+            name = thisgrain.name.split(":")[1]
+            numpy.put( self.scandata[name].tth_per_grain,  
+                    thisgrain.ind,
+                    self.tth)
+            numpy.put( self.scandata[name].eta_per_grain ,
+                    thisgrain.ind,  
+                    self.eta)
+                    
+
         self.OMEGA_FLOAT = True
         if not self.OMEGA_FLOAT:
             self.gv = gv.T
-            return
         if self.OMEGA_FLOAT:
             # print "setting omegas"
             mat = thisgrain.ubi.copy()
@@ -289,11 +320,8 @@ class refinegrains:
                         float(self.parameterobj.parameters['wavelength']),
                         self.parameterobj.parameters['wedge'],
                         self.parameterobj.parameters['chi'])
-            
-            
-            
             self.gv = gv.T
-            return
+        return
 
 
     def refine(self, ubi, quiet=True):
@@ -490,6 +518,7 @@ class refinegrains:
             if not scoreonly:
                 g.set_ubi( res )
 
+
     def assignlabels(self):
         """
         Fill out the appropriate labels for the spots
@@ -550,8 +579,18 @@ class refinegrains:
                 except:
                     print int_tmp.shape, tth_tmp.shape, tth.shape, eta.shape
                     raise
+
             self.scandata[s].addcolumn( tth, "tth_per_grain" )
             self.scandata[s].addcolumn( eta, "eta_per_grain" )
+            self.scandata[s].addcolumn( self.gv[:,0], "gx")
+            self.scandata[s].addcolumn( self.gv[:,1], "gy")
+            self.scandata[s].addcolumn( self.gv[:,2], "gz")
+            self.scandata[s].addcolumn( numpy.zeros(nr, numpy.float32), "hr")
+            self.scandata[s].addcolumn( numpy.zeros(nr, numpy.float32), "kr")
+            self.scandata[s].addcolumn( numpy.zeros(nr, numpy.float32), "lr")
+            self.scandata[s].addcolumn( numpy.zeros(nr, numpy.float32), "h")
+            self.scandata[s].addcolumn( numpy.zeros(nr, numpy.float32), "k")
+            self.scandata[s].addcolumn( numpy.zeros(nr, numpy.float32), "l")
 
             compute_lp_factor( self.scandata[s] )
             
@@ -563,6 +602,7 @@ class refinegrains:
                                      range(nr) )
                 #print 'x',gr.x[:10]
                 #print 'ind',ind[:10]
+                gr.ind = ind # use this to push back h,k,l later
                 try:
                     gr.x = numpy.take(self.scandata[s].xc , ind)
                     gr.y = numpy.take(self.scandata[s].yc , ind)
@@ -669,7 +709,10 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2 ):
            ("avg_intensity"    in colfile.titles):
             raw_intensities = colfile.Number_of_pixels * colfile.avg_intensity
         else:
-            raw_intensities = colfile.npixels * colfile.avg_intensity
+            try:
+                raw_intensities = colfile.npixels * colfile.avg_intensity
+            except:
+                raw_intensities = numpy.ones(colfile.nrows)
     # Lorentz factor requires eta per grain. This would be tedious to
     # compute, but should eventually be added
     if "Lorentz_per_grain" in colfile.titles:
