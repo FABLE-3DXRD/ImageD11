@@ -258,6 +258,13 @@ class edf2bruker:
             hchi = float(data_in.header["hchi"])
         except:
             hchi = -45.0
+        if corrected_image.shape[0] != corrected_image.shape[1]:
+            # we expand to square and pad the centre
+            sz = max(corrected_image.shape[0], corrected_image.shape[1])
+            sh = corrected_image.shape
+            im = numpy.zeros((sz,sz),corrected_image.dtype)
+            numpy.add( im[0:sh[0],0:sh[1]], corrected_image[0:sh[0],0:sh[1]], im[0:sh[0],0:sh[1]] )
+            corrected_image = im
         self.putitem("ANGLES",
                      "ANGLES :%14f%14f%14f%14f"%(0,om,hphi,hchi)+" "*(80-14*4-8))
         self.putitem("DISTANC",
@@ -298,10 +305,12 @@ if __name__=="__main__":
                           dest="extn",
                           default=".edf",
                           help="Filename extension, probably edf, might be cor")
-        parser.add_option("-n","--namestem",action="store",
-                        
+        parser.add_option("-n","--namestem",action="store",                        
                           type="string", dest="stem",
     help="Name of the files up the digits part, eg mydata in mydata0000.edf" )
+        parser.add_option("-N","--newnamestem",action="store",                        
+                          type="string", dest="newstem", default=None,
+                          help="Name of the files up the digits part for output")
         parser.add_option("-f","--first",action="store", 
                           type="int", dest="first",default=0,
                           help="Number of first file to process, default=0")
@@ -443,9 +452,14 @@ if __name__=="__main__":
                 files_in.append(f)
             else:
                 print "Missing image",f
-           
+
+
+        ostem = options.stem
+        if options.newstem is not None:
+            ostem = options.newstem
+            
         files_out = file_series.numbered_file_series(
-            options.stem+"_%d."%(options.run),
+            ostem+"_%d."%(options.run),
             options.first,
             options.last,
             "") # extn
