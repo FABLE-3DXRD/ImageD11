@@ -68,6 +68,8 @@ if __name__ == "__main__":
         fname="sand_flt_files.txt"
         sand_special_case(fname)
     else:
+        fname = sys.argv[1]
+        hdfname = sys.argv[2]
         print "Reading fltname x y z from your file", fname
     o = None
     for line in open(fname).readlines():
@@ -78,4 +80,4 @@ if __name__ == "__main__":
             o = combine_flt( name, x, y, z )
         else:
             o.addfltfile( name, x, y, z)
-    o.write_hdf( "trial.hdf"  )
+    o.write_hdf( hdfname )
