@@ -417,15 +417,15 @@ try:
         dat = [h[name][titles[0]][:]]
         nrows = len(dat[0])
         for t in titles[1:]:
-            print t
+            # print t
             sys.stdout.flush()
             dat.append(h[name][t][:] )
             assert len(dat[-1]) == nrows
         c = newcolumnfile(titles)
         print "make array"
         sys.stdout.flush()
-        c.bigarray = numpy.array( dat )
-        c.ncols, c.nrows = c.bigarray.shape 
+        c.bigarray = dat # numpy.array( dat )
+        c.ncols, c.nrows = len(dat),len(dat[0]) # c.bigarray.shape 
         print "set atrib"
         sys.stdout.flush()
         c.set_attributes()
