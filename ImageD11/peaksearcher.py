@@ -97,6 +97,7 @@ def peaksearch( filename ,
     for lio in labims.values():
         f = lio.sptfile
         f.write("\n\n# File %s\n" % (filename))
+        f.write("# Frame %d\n" % (data_object.currentframe) )
         f.write("# Processed on %s\n" % (time.asctime()))
         try:
             f.write("# Spatial correction from %s\n" % (corrector.splinefile))
@@ -221,7 +222,7 @@ def peaksearch_driver(options, args):
     file_series_object = fabio.file_series.new_file_series(
         first_image,
         nimages = options.last - options.first + 1,
-        traceback = False  )
+        traceback = True  )
     
     if options.outfile[-4:] != ".spt":
         options.outfile = options.outfile + ".spt"
@@ -303,8 +304,8 @@ def peaksearch_driver(options, args):
                 if not isinstance( data_object, fabio.fabioimage.fabioimage ):
                     # Is usually an IOError
                     if isinstance( data_object[1], IOError):
-                        sys.stdout.write(data_object[1].strerror + ': ' +
-                          data_object[1].filename + '\n')
+                        sys.stdout.write(data_object[1].strerror  + '\n')
+                                         # data_object[1].filename
                     else:
                         import traceback
                         traceback.print_exception(data_object[0],data_object[1],data_object[2])
@@ -388,15 +389,17 @@ def peaksearch_driver(options, args):
                         if not isinstance( data_object, fabio.fabioimage.fabioimage ):
                             # Is usually an IOError
                             if isinstance( data_object[1], IOError):
-                                sys.stdout.write(data_object[1].strerror +
-                                  ': ' + data_object[1].filename + '\n')
+#                                print data_object
+#                                print data_object[1]
+                                sys.stdout.write(str(data_object[1].strerror) + '\n')
+#                                  ': ' + data_object[1].filename + '\n')
                             else:
                                 import traceback
                                 traceback.print_exception(data_object[0],data_object[1],data_object[2])
                                 sys.exit()
                             continue
                         ti = timer()
-                        filein = data_object.filename
+                        filein = data_object.filename + "[%d]"%( data_object.currentframe )
                         try:
                             if self.OMEGAOVERRIDE:
                                 # print "Over ride due to option",self.OMEGAOVERRIDE
