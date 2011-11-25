@@ -588,7 +588,8 @@ class indexer:
         Get the best ubis from those proposed
         """
         self.drlv2 = n.zeros( self.ra.shape, numpy.float)+2
-        labels= n.ones( self.ra.shape, numpy.int32)-2
+        labels= n.ones( self.ra.shape, numpy.int32)
+        numpy.subtract(labels,2,labels)
         i = -1
         for ubi in self.ubis:
             i += 1
