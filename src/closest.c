@@ -432,7 +432,7 @@ static PyObject *score_and_assign( PyObject *self, PyObject *args, PyObject *key
   double u00,u11,u22,u01,u02,u10,u12,u20,u21;
   double g0,g1,g2, h0,h1,h2, t0,t1,t2;
   double tol,sumsq, *dp;
-  int n,k,label, *lp;
+  npy_int32 n,k,label, *lp;
   
 
    
@@ -476,11 +476,12 @@ static PyObject *score_and_assign( PyObject *self, PyObject *args, PyObject *key
     return NULL;
   }
   if(DEBUG)printf("Got drlv\n");
-  if(labels->nd != 1 || labels->descr->type_num!=PyArray_INT32 ||
+  if(labels->nd != 1 || labels->descr->type_num!=NPY_INT32 ||
      labels->dimensions[0] != gv-> dimensions[0] ){
     printf("Problem with labels\n");
-    printf("nd %d typ %d dims[0] %d  gv_dims[0] %d\n",labels->nd,
+    printf("nd %d got %d want %d dims[0] %d  gv_dims[0] %d\n",labels->nd,
 	   labels->descr->type_num,
+       NPY_INT32,
 	   (int) labels->dimensions[0],
 	   (int) gv-> dimensions[0]) ;
     PyErr_SetString(PyExc_ValueError,
