@@ -476,7 +476,9 @@ static PyObject *score_and_assign( PyObject *self, PyObject *args, PyObject *key
     return NULL;
   }
   if(DEBUG)printf("Got drlv\n");
-  if(labels->nd != 1 || labels->descr->type_num!=NPY_INT32 ||
+
+  if(labels->nd != 1 ||
+    PyArray_EquivTypenums(labels->descr->type_num,NPY_INT32)!=NPY_TRUE ||
      labels->dimensions[0] != gv-> dimensions[0] ){
     printf("Problem with labels\n");
     printf("nd %d got %d want %d dims[0] %d  gv_dims[0] %d\n",labels->nd,
