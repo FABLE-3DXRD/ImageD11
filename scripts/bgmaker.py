@@ -32,6 +32,7 @@ Defines one class (minimum_image) which might perhaps be reused
 """
 
 import fabio
+import fabio.edfimage
 from fabio.openimage import openimage
 import numpy
 import random # to do images in random order
@@ -167,7 +168,6 @@ def bgmaker( options ):
     else:
         extn = options.format
 
-    import fabio
     first_image_name = fabio.filename_object(
         options.stem,  
         num = options.first,
@@ -212,7 +212,6 @@ def bgmaker( options ):
     # which fabioimage formats know how to write themselves
     if options.outfile[-3:] == "edf":
         print "writing",options.outfile,"in edf format"
-        import fabio.edfimage
         im = fabio.edfimage.edfimage( data = bko.bkg )
     else:
         im = first_image
@@ -225,7 +224,6 @@ def bgmaker( options ):
     except:
         print "problem writing"
         print "trying to write",options.outfile,"in edf format"
-        import fabio.edfimage
         im = fabio.edfimage.edfimage( data = minim.minimum_image )
         try:
             im.write(options.outfile, force_type = im.data.dtype)
