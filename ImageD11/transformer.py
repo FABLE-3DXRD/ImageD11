@@ -15,7 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-import numpy as n
+import numpy
 import logging
 import math
 import sys, os
@@ -312,8 +312,8 @@ class transformer:
         if "tth_hist_prob" not in self.colfile.titles:
             self.compute_tth_histo()
         hpk = self.getcolumn("tth_hist_prob")
-        lp = n.log(hpk)
-        entropy = n.sum(-hpk * lp)
+        lp = numpy.log(hpk)
+        entropy = numpy.sum(-hpk * lp)
         return entropy
 
     def gof(self, args):
@@ -326,9 +326,9 @@ class transformer:
         npeaks = 0
         for i in range(len(self.tthc)):# (twotheta_rad_cell.shape[0]):
             self.tthc[i] = transform.degrees(math.asin(self.fitds[i] * w / 2) * 2)
-            diff = n.take(tth, self.indices[i]) - self.tthc[i]
+            diff = numpy.take(tth, self.indices[i]) - self.tthc[i]
 #         print "peak",i,"diff",maximum.reduce(diff),minimum.reduce(diff)
-            gof = gof + n.sum(diff * diff)
+            gof = gof + numpy.sum(diff * diff)
             npeaks = npeaks + len(diff)
         gof = gof / npeaks
         return gof * 1e6
@@ -360,15 +360,15 @@ class transformer:
                 break
             elif tthcalc < tthmin:
                 continue
-            logicals = n.logical_and(n.greater(tth,
+            logicals = numpy.logical_and(numpy.greater(tth,
                                                tthcalc - self.fit_tolerance),
-                                     n.less(tth ,
+                                     numpy.less(tth ,
                                             tthcalc + self.fit_tolerance))
 
             if sum(logicals) > 0:
                 self.tthc.append(tthcalc)
                 self.fitds.append(dsc)
-                ind = n.compress(logicals, range(len(tth)))
+                ind = numpy.compress(logicals, range(len(tth)))
                 self.indices.append(ind)
         guess = self.parameterobj.get_variable_values()
         inc = self.parameterobj.get_variable_stepsizes()
@@ -410,11 +410,11 @@ class transformer:
             self.compute_tth_eta()
         # Find last peak in radius
         if limit is None:
-            highest = n.maximum.reduce(self.getcolumn("tth"))
+            highest = numpy.maximum.reduce(self.getcolumn("tth"))
         else:
             highest = limit
         w = pars['wavelength']
-        ds = 2 * n.sin(transform.radians(highest) / 2.) / w
+        ds = 2 * numpy.sin(transform.radians(highest) / 2.) / w
         self.dslimit = ds
         self.unitcell = unitcell.unitcell(cell, lattice)
         # If the space group is provided use xfab for generate unique hkls
@@ -422,7 +422,7 @@ class transformer:
             self.theorypeaks = self.unitcell.gethkls_xfab(ds, pars['cell_sg'])
             tths = []
             for i in range(len(self.theorypeaks)):
-                tths.append(2 * n.arcsin(w * self.theorypeaks[i][0] / 2.))
+                tths.append(2 * numpy.arcsin(w * self.theorypeaks[i][0] / 2.))
         else:
             # HO:  I have removed this part as it seems redundant ringds also calls gethkls 
             # JPW: It was not redundant. theorypeaks is not defined anywhere else and you 
@@ -430,9 +430,9 @@ class transformer:
             self.theorypeaks = self.unitcell.gethkls(ds)
             self.unitcell.makerings(ds)
             self.theoryds = self.unitcell.ringds
-            tths = [n.arcsin(w * dstar / 2) * 2
+            tths = [numpy.arcsin(w * dstar / 2) * 2
                     for dstar in self.unitcell.ringds]
-        self.theorytth = transform.degrees(n.array(tths))
+        self.theorytth = transform.degrees(numpy.array(tths))
 
 
     def computegv(self):
@@ -465,7 +465,7 @@ class transformer:
         This handles omegasign in a more elegant way
         """
         # unit vector along z
-        v = n.array([0, 0, 1], n.float)
+        v = numpy.array([0, 0, 1], numpy.float)
         p = self.parameterobj.get("omegasign")
         return v * p
 
@@ -510,10 +510,10 @@ class transformer:
         xl = self.getcolumn("xl")
         yl = self.getcolumn("yl")
         zl = self.getcolumn("zl")
-        order = n.argsort(tth)
+        order = numpy.argsort(tth)
         f.write("#  gx  gy  gz  xc  yc  ds  eta  omega  spot3d_id  xl  yl  zl\n")
-        print n.maximum.reduce(ome), n.minimum.reduce(ome)
-        ds = 2 * n.sin(transform.radians(tth / 2)) / pars["wavelength"]
+        print numpy.maximum.reduce(ome), numpy.minimum.reduce(ome)
+        ds = 2 * numpy.sin(transform.radians(tth / 2)) / pars["wavelength"]
         fmt = "%f "*8 + "%d " + "%f "*3 + "\n"
         for i in order:
             f.write(fmt % (gx[i], gy[i], gz[i],
@@ -549,7 +549,7 @@ class transformer:
             ints = self.getcolumn("sum_intensity") * \
                    self.getcolumn("npixels")
         else:
-            ints = n.zeros(self.colfile.nrows)
+            ints = numpy.zeros(self.colfile.nrows)
 
         pars = self.parameterobj.get_parameters()
         if pars.has_key("omegasign"):
@@ -558,7 +558,7 @@ class transformer:
             om_sgn = 1.0
 
         write_graindex_gv.write_graindex_gv(filename,
-                                            n.array(gv),
+                                            numpy.array(gv),
                                             self.getcolumn("tth"),
                                             self.getcolumn("eta"),
                                             self.getcolumn("omega") * om_sgn,
@@ -568,7 +568,7 @@ class transformer:
 
     def write_pyFAI(self, filename, tthmin=0, tthmax=180):
         """
-        Write file for Jerome Kieffer's pyFAI fitting routine to use
+        Write file for Jerome Kieffer's pyFAI fitting routine to use and run the refinment...
         """
         try:
             import pyFAI
@@ -590,43 +590,33 @@ class transformer:
         w = float(pars['wavelength'])
         tol = float(pars['fit_tolerance'])
         tth, eta = self.compute_tth_eta()
+
         # Loop over calc peak positions
+        z = self.getcolumn('s_raw')
+        y = self.getcolumn('f_raw')
 
-#        f = open(filename, "w")
-#        f.write("# Peak positions from ImageD11_gui.py\n")
-#        f.write("# Original columnfile was %s\n" % (self.colfile.filename))
-#        f.write("pars = %s\n" % (repr(pars)))
-#        f.write("data = [ \n")
-        # slow, fast == x, y in here
-        # slow is vertical z for Frelon usually
-        # fast is horizontal y for Frelon usually
-
-        z_size = float(self.parameterobj.get("z_size"))
-        y_size = float(self.parameterobj.get("z_size"))
-        z = self.getcolumn('s_raw') #* z_size
-        y = self.getcolumn('f_raw') #* y_size
-
-        for i in range(len(self.theoryds)):
-            dsc = self.theoryds[i]
-            tthcalc = math.asin(dsc * w / 2)
+        for i, dsc in enumerate(self.theoryds):
+            tthcalc = math.asin(dsc * w / 2) * 360. / math.pi
             if tthcalc > tthmax:
                 break
             elif tthcalc < tthmin:
                 continue
-            logicals = n.logical_and(n.greater(tth,
-                                               tthcalc - tol),
-                                     n.less(tth ,
-                                               tthcalc + tol))
-
-            if sum(logicals) > 0:
-                ind = n.compress(logicals, range(len(tth)))
-                for j in ind:
-                    controlpoints.append([[z[j], y[j]]], tthcalc)
-#                    f.write("[%f,%f,%f],\n" % (z[j], y[j], tthcalc))
-#        f.write("]\n")
-#        f.close()
+            ind = numpy.nonzero(abs(tth - tthcalc) <= tol)[0]
+            if len(ind) > 0:
+                controlpoints.append_2theta_deg([[z[j], y[j]] for j in ind ], tthcalc)
         controlpoints.save(filename)
-        geoRef = pyFAI.geometryRefinement.GeometryRefinement(controlpoints.getList(), dist=0.1, splineFile=self.splineFile)
+
+        if len(controlpoints) == 0:
+            logging.error("THe number of control point found in null !!! skipping optimization ")
+            return
+
+        if "spline" in pars:
+            print("with spline")
+            #TODO: where is the spline file stored ???
+            geoRef = pyFAI.geometryRefinement.GeometryRefinement(controlpoints.getList(), dist=0.1, splineFile=self.splineFile)
+        else:
+            geoRef = pyFAI.geometryRefinement.GeometryRefinement(controlpoints.getList(), dist=0.1, pixel1=pars["z_size"] * 1e-6, pixel2=pars["y_size"] * 1e-6)
+        geoRef.wavelength = w * 1e-10
         previous = sys.maxint
         while previous > geoRef.chi2():
             previous = geoRef.chi2()
