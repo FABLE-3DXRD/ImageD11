@@ -27,7 +27,11 @@ class grain:
         self.ubi = numpy.array(ubi,numpy.float)
         self.ub = numpy.linalg.inv(ubi)
         self.u = ImageD11.indexing.ubitoU(self.ubi)
-        self.Rod = ImageD11.indexing.ubitoRod(self.ubi)
+        try:
+            self.Rod = ImageD11.indexing.ubitoRod(self.ubi)
+        except:
+            print self.ubi
+            raise
         self.mt = numpy.dot(self.ubi, self.ubi.T)
         self.rmt = numpy.linalg.inv(self.mt)
         if translation==None:
@@ -52,7 +56,7 @@ def write_grain_file(filename, list_of_grains):
     f = open(filename, "w")
     for g in list_of_grains:
         t = g.translation
-        f.write("#translation: %f %f %f\n"%(t[0],t[1],t[2]))
+        f.write("#translation: %g %g %g\n"%(t[0],t[1],t[2]))
         if hasattr(g,"name"):
             f.write("#name %s\n"%(g.name.rstrip()))
         if hasattr(g,"intensity_info"):
@@ -69,9 +73,10 @@ def write_grain_file(filename, list_of_grains):
                 f.write("#Rod %s"%(g.Rod))
         f.write("#UBI:\n")
         u = g.ubi
-        f.write("%f %f %f\n"  %(u[0,0],u[0,1],u[0,2]))
-        f.write("%f %f %f\n"  %(u[1,0],u[1,1],u[1,2]))
-        f.write("%f %f %f\n\n"%(u[2,0],u[2,1],u[2,2]))
+        # More than float32 precision
+        f.write("%.9g %.9g %.9g\n"  %(u[0,0],u[0,1],u[0,2]))
+        f.write("%.9g %.9g %.9g\n"  %(u[1,0],u[1,1],u[1,2]))
+        f.write("%.9g %.9g %.9g\n\n"%(u[2,0],u[2,1],u[2,2]))
     f.close()
 
 def read_grain_file(filename):
