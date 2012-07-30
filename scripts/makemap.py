@@ -24,11 +24,11 @@ def makemap(options):
     print "generating"
     o.generate_grains()
     print "Refining posi too"
-    o.refineubis(quiet = False , scoreonly = True)
+    # o.refineubis(quiet = False , scoreonly = True)
     print "Refining positions too"
     o.refinepositions()
     print "Done refining positions too"    
-    o.refineubis(quiet = False , scoreonly = True)
+    # o.refineubis(quiet = False , scoreonly = True)
     o.savegrains(options.newubifile, sort_npks = options.sort_npks)
     col = o.scandata[options.fltfile].writefile( options.fltfile+".new")
     if hasattr(options, "newfltfile") and options.newfltfile is not None:
