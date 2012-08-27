@@ -122,5 +122,6 @@ setup(name='ImageD11',
                  "scripts/edf2bruker.py",
                  "scripts/index_unknown.py",
                  "scripts/ImageD11Server.py",
+                 "scripts/spatialfix.py",
                  "scripts/powderimagetopeaks.py"])
 
