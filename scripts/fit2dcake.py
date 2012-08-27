@@ -1,4 +1,4 @@
-#!c:\python25\python.exe
+#!/usr/bin/python26
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 #!/usr/bin/env python
@@ -27,7 +27,7 @@ if sys.platform == 'win32':
     REMOVE = "del "
 else:
     if not os.path.exists("/tmp/.X1-lock"):
-        XVFB = "Xvfb :1 -ac &"
+        XVFB = "Xvfb :942 -ac &"
     else:
         XVFB = "echo "
     FIT2D = "fit2d_12_081_i686_linux2.4.20"
@@ -562,9 +562,9 @@ class cakemacrogenerator:
             except KeyError:
                 displaywas=":0"
             try:
-                os.environ["DISPLAY"]=os.environ["HOST"]+":1"
+                os.environ["DISPLAY"]=os.environ["HOST"]+":942"
             except KeyError:
-                os.environ["DISPLAY"]=":1"
+                os.environ["DISPLAY"]=":942"
         array=str(self.mask_pars_values["DIM1_DATA"])+"x"+str(self.mask_pars_values["DIM2_DATA"])
         cmd = FIT2D + " -dim%s -mac%s.mac "%(array,os.path.split(
             tmpfile.name)[-1])
