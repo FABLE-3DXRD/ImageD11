@@ -10,7 +10,7 @@ grain
 Used to stabilise refinements
 """
 
-from ImageD11 import refinegrains, indexing
+from ImageD11 import refinegrains, indexing, grain
 import numpy.oldnumeric as Numeric
 import sys, logging
 
@@ -32,7 +32,8 @@ def filtergrain(options):
                 logging.info("Choose %d for grain %s"%(i, gn))
             gn = o.grainnames[int(raw_input("select which grain "))]
     else:
-        gn = o.grainnames[int(options.grain)]  
+        gn = o.grainnames[int(options.grain)]
+    o.set_translation( gn, options.fltfile )
     o.compute_gv(o.grains[ (gn, options.fltfile) ] )
     if options.tol is None:
         for tol in [0.01,0.025,0.05,0.1,0.15,0.25,0.5]:
@@ -84,8 +85,8 @@ def filtergrain(options):
                 notpks.nrows, options.notindexed))
     if options.newubifile is not None:
         o.scandata[options.fltfile] = gotpks
-        matrix = o.refine(matrix,quiet=True)
-        indexing.write_ubi_file(options.newubifile,[matrix])
+#        matrix = o.refine(matrix,quiet=True)       
+        grain.write_grain_file(options.newubifile,[o.grains[(gn,options.fltfile)]])
         logging.info("Refined ubi in %s "%(
                          options.newubifile))
         
