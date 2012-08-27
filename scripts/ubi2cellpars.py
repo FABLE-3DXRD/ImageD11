@@ -44,6 +44,7 @@ for ubifile in sys.argv[1:]:
     for u,i  in zip(ul,range(len(ul))):
         print i, 
         print "%.5f "*6 % indexing.ubitocellpars(u)
+        continue
         #print u
         red = try_to_reduce(u)
         #print red
