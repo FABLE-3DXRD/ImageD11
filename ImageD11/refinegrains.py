@@ -1,4 +1,4 @@
-# Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+# Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_codepy
 
 
 # ImageD11_v1.0.6 Software for beamline ID11
@@ -25,6 +25,8 @@ from ImageD11 import transform, indexing, parameters
 from ImageD11 import grain, columnfile, closest
 
 import simplex
+
+print __file__
 
 class refinegrains:
     
@@ -78,10 +80,16 @@ class refinegrains:
         't_z' : 0.2,
         }
 
-    def __init__(self, tolerance = 0.01, intensity_tth_range = (8.4, 9.0) ):
+    def __init__(self, tolerance = 0.01, intensity_tth_range = (6.1, 6.3) , OmFloat=True, OmSlop=0.25 ):
         """
 
         """
+        self.OMEGA_FLOAT=OmFloat
+        self.slop=OmSlop
+        if self.OMEGA_FLOAT:
+            print "Using",self.slop,"degree slop"
+        else:
+            print "Omega is used as observed"
         self.tolerance=tolerance
         # list of ubi matrices (1 for each grain in each scan)
         self.grainnames = []
@@ -272,12 +280,9 @@ class refinegrains:
                     thisgrain.ind,  
                     self.eta)
                     
-
-        self.OMEGA_FLOAT = True
         if not self.OMEGA_FLOAT:
             self.gv = gv.T
         if self.OMEGA_FLOAT:
-            # print "setting omegas"
             mat = thisgrain.ubi.copy()
             junk = closest.score_and_refine(mat , gv.T,
                                             self.tolerance)
@@ -307,7 +312,7 @@ class refinegrains:
             # Take a weighted average within the omega error of the observed
             omerr = (om*sign - omega_calc)
             # print omerr[0:5]
-            omega_calc = om*sign - numpy.clip( omerr, -0.5 , 0.5 ) 
+            omega_calc = om*sign - numpy.clip( omerr, -self.slop , self.slop ) 
             # print omega_calc[0], om[0]
 
             # Now recompute with improved omegas...
@@ -531,8 +536,10 @@ class refinegrains:
             # Looks like this in one dataset only
             ng = len(self.grainnames)
             int_tmp = numpy.zeros(nr , numpy.int32 )-1
-            tth_tmp = numpy.zeros((ng, nr) ,numpy.float32 ) - 1
-            eta_tmp = numpy.zeros((ng, nr) ,numpy.float32 ) 
+            if 0: # this is pretty slow
+                tth_tmp = numpy.zeros((ng, nr) ,numpy.float32 ) - 1
+                eta_tmp = numpy.zeros((ng, nr) ,numpy.float32 )
+            
             for g, ig in zip(self.grainnames, range(ng)):
                 assert g == ig, "sorry - a bug in program"
                 gr = self.grains[ ( g, s) ]                
@@ -546,16 +553,17 @@ class refinegrains:
                 gr.om = self.scandata[s].omega
                 self.compute_gv( gr )
                 # self.tth and self.eta hold the current tth and eta values
-                tth_tmp[int(g),:] = self.tth
-                eta_tmp[int(g),:] = self.eta
-                #print "about to assign"
+                if 0:
+                    tth_tmp[int(g),:] = self.tth
+                    eta_tmp[int(g),:] = self.eta
+#                print "about to assign"
                 closest.score_and_assign( gr.ubi,
                                           self.gv,
                                           self.tolerance,
                                           drlv2,
                                           int_tmp,
                                           int(g))
-                # print "assigned"
+#                print "assigned"
                 
                  
             # Second loop after checking all grains
@@ -572,13 +580,14 @@ class refinegrains:
             
             tth = numpy.zeros( nr, numpy.float32 )-1
             eta = numpy.zeros( nr, numpy.float32 )
-            for i in range( ng ):
-                try:
-                    tth = numpy.where( int_tmp == i, tth_tmp[i,:], tth )
-                    eta = numpy.where( int_tmp == i, eta_tmp[i,:], eta )
-                except:
-                    print int_tmp.shape, tth_tmp.shape, tth.shape, eta.shape
-                    raise
+            if 0:
+                for i in range( ng ):
+                    try:
+                        tth = numpy.where( int_tmp == i, tth_tmp[i,:], tth )
+                        eta = numpy.where( int_tmp == i, eta_tmp[i,:], eta )
+                    except:
+                        print int_tmp.shape, tth_tmp.shape, tth.shape, eta.shape
+                        raise
 
             self.scandata[s].addcolumn( tth, "tth_per_grain" )
             self.scandata[s].addcolumn( eta, "eta_per_grain" )
@@ -592,7 +601,7 @@ class refinegrains:
             self.scandata[s].addcolumn( numpy.zeros(nr, numpy.float32), "k")
             self.scandata[s].addcolumn( numpy.zeros(nr, numpy.float32), "l")
 
-            compute_lp_factor( self.scandata[s] )
+
             
             # We have the labels set in self.scandata!!!
             for g in self.grainnames:
@@ -610,14 +619,28 @@ class refinegrains:
                     gr.x = numpy.take(self.scandata[s].sc , ind)
                     gr.y = numpy.take(self.scandata[s].fc , ind)
                 gr.om = numpy.take(self.scandata[s].omega , ind)
+                self.set_translation( g, s)
+                try:
+                    sign = self.parameterobj.parameters['omegasign']
+                except:
+                    sign = 1.0
+                tth,eta = transform.compute_tth_eta(
+                    numpy.array([gr.x, gr.y]),
+                    omega = gr.om * sign,
+                    **self.parameterobj.parameters)
+                self.scandata[s].tth_per_grain[ind] = tth
+                self.scandata[s].eta_per_grain[ind] = eta
                 # Compute the total integrated intensity if we have enough
                 # information available
+                compute_lp_factor( self.scandata[s] ) 
                 gr.intensity_info = compute_total_intensity( self.scandata[s] ,
                                                             ind,
                                                             self.intensity_tth_range )
                 self.grains[ ( g, s) ] = gr
                 print "Grain",g,"Scan",s,"npks=",len(ind)
                 #print 'x',gr.x[:10]
+
+
 
 def compute_lp_factor( colfile, **kwds ):
     """

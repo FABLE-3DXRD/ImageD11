@@ -7,8 +7,15 @@ import sys, os
 
 def makemap(options):
     try:
-        o = refinegrains(intensity_tth_range = tuple(options.tthrange))
+        if options.tthrange is None:
+            tthr = (0.,180.)
+        else:
+            tthr = options.tthrange
+        o = refinegrains(intensity_tth_range = tthr,
+                         OmFloat=options.omega_float,
+                         OmSlop=options.omega_slop)
     except:
+        raise
         o = refinegrains()
     o.loadparameters(options.parfile)
     print "got pars"
@@ -97,6 +104,16 @@ if __name__ == "__main__":
                       dest = "tthrange", type="float",
                       default = None,
                       help= "Two theta range for getting median intensity")
+
+    parser.add_option( "--omega_no_float", action="store_false",
+                      dest = "omega_float",
+                      default = True,
+                      help= "Use exact observed omega values")
+
+    parser.add_option( "--omega_slop", action="store", type="float",
+                      dest = "omega_slop",
+                      default = 0.5,
+                      help= "Omega slop (step) size")
 
     
     options, args = parser.parse_args()
