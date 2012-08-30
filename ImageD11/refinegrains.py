@@ -766,7 +766,7 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2 ):
         intensities = numpy.compress( ( tth_vals > min(tth_range) )&
                                       ( tth_vals < max(tth_range) ) ,
                                       intensities )
-        print "range %.5f %.5f"%tth_range,
+        print "range %.5f %.5f"%tuple(tth_range),
 
 
     if len(intensities) < 1:

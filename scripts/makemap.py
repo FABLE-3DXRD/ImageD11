@@ -11,6 +11,9 @@ def makemap(options):
             tthr = (0.,180.)
         else:
             tthr = options.tthrange
+            if len(tthr) == 1:
+                tthr = ( 0, tthr[0] )
+            print "Using tthrange",tthr
         o = refinegrains(intensity_tth_range = tthr,
                          OmFloat=options.omega_float,
                          OmSlop=options.omega_slop)
