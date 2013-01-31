@@ -573,15 +573,13 @@ class transformer:
         try:
             import pyFAI
             import pyFAI.peakPicker
-            import pyFAI.geometryRefinement
         except ImportError:
             logging.error("pyFAI module not available ... ")
             return
         controlpoints = pyFAI.peakPicker.ControlPoints()
         tthmin = float(tthmin)
         tthmax = float(tthmax)
-        if self.theoryds == None: # or dirty?
-            self.addcellpeaks()
+        self.addcellpeaks()
         # Assign observed peaks to rings
         self.wavelength = None
         self.indices = []  # which peaks used
@@ -590,37 +588,39 @@ class transformer:
         w = float(pars['wavelength'])
         tol = float(pars['fit_tolerance'])
         tth, eta = self.compute_tth_eta()
-
         # Loop over calc peak positions
         z = self.getcolumn('s_raw')
         y = self.getcolumn('f_raw')
-
         for i, dsc in enumerate(self.theoryds):
-            tthcalc = math.asin(dsc * w / 2) * 360. / math.pi
+            tthcalc = math.asin(dsc * w / 2) * 360. / math.pi # degrees
             if tthcalc > tthmax:
                 break
             elif tthcalc < tthmin:
                 continue
-            ind = numpy.nonzero(abs(tth - tthcalc) <= tol)[0]
+            ind = abs(tth - tthcalc) <= tol
             if len(ind) > 0:
-                controlpoints.append_2theta_deg([[z[j], y[j]] for j in ind ], tthcalc)
+                controlpoints.append_2theta_deg(zip(z[ind], y[ind]), tthcalc)
         controlpoints.save(filename)
 
-        if len(controlpoints) == 0:
-            logging.error("THe number of control point found in null !!! skipping optimization ")
-            return
 
-        if "spline" in pars:
-            print("with spline")
-            #TODO: where is the spline file stored ???
-            geoRef = pyFAI.geometryRefinement.GeometryRefinement(controlpoints.getList(), dist=0.1, splineFile=self.splineFile)
-        else:
-            geoRef = pyFAI.geometryRefinement.GeometryRefinement(controlpoints.getList(), dist=0.1, pixel1=pars["z_size"] * 1e-6, pixel2=pars["y_size"] * 1e-6)
-        geoRef.wavelength = w * 1e-10
-        previous = sys.maxint
-        while previous > geoRef.chi2():
-            previous = geoRef.chi2()
-            geoRef.refine2(1000000)
-            print geoRef
-        geoRef.save(os.path.splitext(filename)[0] + ".poni")
+        # There is no spline, hence return
+        return
+
+        #if len(controlpoints) == 0:
+        #    logging.error("THe number of control point found in null !!! skipping optimization ")
+        #    return
+        #
+        #if "spline" in pars:
+        #    print("with spline")
+        #    #TODO: where is the spline file stored ???
+        #    geoRef = pyFAI.geometryRefinement.GeometryRefinement(controlpoints.getList(), dist=0.1, splineFile=self.splineFile)
+        #else:
+        #    geoRef = pyFAI.geometryRefinement.GeometryRefinement(controlpoints.getList(), dist=0.1, pixel1=pars["z_size"] * 1e-6, pixel2=pars["y_size"] * 1e-6)
+        #geoRef.wavelength = w * 1e-10
+        #previous = sys.maxint
+        #while previous > geoRef.chi2():
+        #    previous = geoRef.chi2()
+        #    geoRef.refine2(1000000)
+        #    print geoRef
+        #geoRef.save(os.path.splitext(filename)[0] + ".poni")
 
