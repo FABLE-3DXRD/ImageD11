@@ -225,4 +225,8 @@ class parameters:
             else:
                 # int/float preserve type
                 self.parameters[name] = value
-                
+
+def read_par_file( filename ):
+    p = parameters()
+    p.loadparameters( filename )
+    return p
