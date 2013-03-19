@@ -1,10 +1,10 @@
 
-set SRC="\wright\eclipse_workspaces\fabulous\imaged11\trunk"
-set PYT=c:\python25\python
+set SRC="\users\wright\programming\fable\imaged11"
+set PYT=c:\python27\python
 cd %SRC%
-%PYT% setup.py build --compiler=mingw32 install 
+%PYT% setup.py build install 
 
-%PYT% setup.py build --compiler=mingw32 sdist --formats=gztar,zip bdist_wininst
+%PYT% setup.py build sdist --formats=gztar,zip bdist_wininst
 GOTO TEST
 
 REM Py2exe is not quite automatic. Doubtless this is version and computer specific...
