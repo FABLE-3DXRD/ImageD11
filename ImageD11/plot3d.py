@@ -100,19 +100,22 @@ class plot3d(Tk.Toplevel):
         self.pars=o.get_parameters()
 
     def readimage(self,image):
-        from ImageD11 import opendata, transform
-        self.imageobj=opendata.opendata(image)
+        from ImageD11 import transform
+        from fabio import openimage
+        self.imageobj=openimage.openimage(image)
         # map from 2048x2048 to 1024x1024
-        mi=1000
-        mx=1500
+        d = self.imageobj.data.astype(numpy.float32)
+        mi= d.mean() - d.std()*2
+        mx= d.mean() * d.std()*2
         shape=self.imageobj.data.shape
         d=numpy.reshape(numpy.clip(self.imageobj.data,mi,mx),shape) # makes a clipped copy
         d=(255.*(d-mi)/(mx-mi)) # scale intensity
-        self.image=numpy.zeros((1024,1024),numpy.UInt8)
+        print d.min(),d.max(),d.mean()
+        self.image=numpy.zeros((1024,1024),numpy.uint8)
         if d.shape==(2048,2048):
             # rebin 2x2
             im=(d[::2,::2]+d[::2,1::2]+d[1::2,::2]+d[1::2,1::2])/4
-            self.image=(255-im).astype(numpy.UInt8).tostring()
+            self.image=(255-im).astype(numpy.uint8).tostring()
         self.imageWidth=1024
         self.imageHeight=1024
         # make a 2D array of x,y
@@ -167,7 +170,9 @@ class plot3d(Tk.Toplevel):
 
 
     def scorecolor(self,i=0):
-        cc = [ [ 1,0,0] , [0,1,0] , [0,0,1], [1,1,0], [1,0,1], [0,1,1]]
+        cc = [ [ 1,0,0] , [0,1,0] , [0,0,1], [1,1,0], [1,0,1], [0,1,1],
+                [ 0.5,0,0] , [0,0.5,0] , [0,0,0.5], [0.5,0.5,0], [0.5,0,0.5],
+                [0,0.5,0.5]]
         if self.ubis is not None:
             from ImageD11 import indexing
             for u,i in zip(self.ubis,range(len(self.ubis))):
@@ -256,7 +261,7 @@ class plot3d(Tk.Toplevel):
                 GL.glTexCoord2f(i,j)
                 GL.glVertex3f(g1, g2, g3) 
             GL.glEnd()
-            GL.glDisable(GL.GL_TEXTURE_2D)
+#            GL.glDisable(GL.GL_TEXTURE_2D)
             
         GL.glFlush()
         GL.glEnable(GL.GL_LIGHTING)
