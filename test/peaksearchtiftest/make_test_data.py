@@ -44,8 +44,8 @@ class test_tifs(unittest.TestCase):
         results = columnfile.columnfile( "peaks_t5.flt" )
         self.assertEqual( results.nrows, self.NPK)
         if os.path.exists( 'peaks_t5.flt' ):
-            self.assertEqual( open( 'peaks_t5.flt').read(),
-                              open( 'peaks_t6.flt').read() )
+            self.assertEqual( open( 'peaks_t5.flt').read().rstrip(),
+                              open( 'peaks_t6.flt').read().rstrip() )
 
     def testpeaksearch_nooverride(self):
         os.system("peaksearch.py -n tiftest " + \
@@ -55,8 +55,8 @@ class test_tifs(unittest.TestCase):
         results = columnfile.columnfile( "peaks_t6.flt" )
         self.assertEqual( results.nrows, self.NPK)
         if os.path.exists( 'peaks_t5.flt' ):
-            self.assertEqual( open( 'peaks_t5.flt').read(),
-                              open( 'peaks_t6.flt').read() )
+            self.assertEqual( open( 'peaks_t5.flt').read().rstrip(),
+                              open( 'peaks_t6.flt').read().rstrip() )
         
     def testpeaksearch_singlethread(self):
         os.system("peaksearch.py -n tiftest " + \
@@ -66,8 +66,8 @@ class test_tifs(unittest.TestCase):
         results = columnfile.columnfile( "peaks_t7.flt" )
         self.assertEqual( results.nrows, self.NPK)
         if os.path.exists( 'peaks_t7.flt' ):
-            self.assertEqual( open( 'peaks_t7.flt').read(),
-                              open( 'peaks_t6.flt').read() )
+            self.assertEqual( open( 'peaks_t7.flt').read().rstrip(),
+                              open( 'peaks_t6.flt').read().rstrip() )
         
         
 if __name__ == '__main__':
