@@ -131,13 +131,14 @@ def axis_from_matrix( m ):
     if arg == 1:
         # identity matrix - oh bugger - direction is undefined
         angle_rad = 0.0
-        dir = n.array([0,0,1],n.float)
+        direc = n.array([0,0,1],n.float)
     else:
         angle_rad = math.acos(arg)  
-        dir = n.array([m[2,1] - m[1,2],
-                       m[0,2] - m[2,0],
-                       m[1,0] - m[0,1] ], n.float )
-    o = rotation_axis( dir , math.degrees( angle_rad ) )
+        direc = n.array([m[2,1] - m[1,2],
+                         m[0,2] - m[2,0],
+                         m[1,0] - m[0,1] ], n.float )
+        direc = direc / n.sqrt(n.dot(direc, direc))
+    o = rotation_axis( direc , math.degrees( angle_rad ) )
     if not (abs(o.matrix - m) < 1e-5).all():
         print "o.matrix\n",o.matrix
         print "m\n",m
@@ -155,7 +156,11 @@ def k_to_g( k , # scattering vectors in the laboratory
             post = rotate_identity ):
     """
     Computes g = pre . rot(axis, angle) . post . k
-    Typically in ImageD11 pre = [wedge][chi] and post = identity
+    Typically in ImageD11 post = [wedge][chi] and pre = identity
+       since g = Omega.Chi.Wedge.k
+       or    k = Wedge-1.Chi-1.Omega-1.g
+       that is to say omega is directly under the sample and 
+       wedge is at the bottom of the stack
     """
     assert k.shape[1] == angles.shape[0] , \
         "Number of vectors and scan axis must be same"+\
@@ -258,4 +263,20 @@ def g_to_k( g,  # g-vectors [3,:]
 
     return degrees(sol1), degrees(sol2), valid
     
+def wedgechi(wedge=0., chi=0.):
+    cw = n.cos(n.radians(wedge))
+    sw = n.sin(n.radians(wedge))
+    cc = n.cos(n.radians(chi))
+    sc = n.sin(n.radians(chi))
+
+    W = [[ cw ,  0  , sw ],
+         [ 0  ,  1  , 0  ],
+         [-sw ,  0  , cw ]]
     
+    C =[[         1  ,   0  ,  0   ],
+        [         0  ,  cc  , sc   ],
+        [         0  , -sc  , cc   ]]
+    return n.dot( W, C )
+    
+
+
