@@ -105,7 +105,9 @@ def test_u_n():
     import time, pylab as pl
 
     ideal, projections, theta = make_data()
-    recon = np.zeros(ideal.shape,np.float32)
+
+    rshape = (ideal.shape[0]*2, ideal.shape[1]*2)
+    recon = np.zeros(rshape,np.float32)
 
     sumtime = ncalc = 0
     dbg = False
@@ -114,8 +116,9 @@ def test_u_n():
     y = y-recon.shape[1]/2
     n = min(recon.shape)/2
     msk = np.where( x*x + y*y < n*n , 1, 0)
+    realstart = time.time()
     pl.ion()
-    for j in range(10):
+    for j in range(3):
         for proj, angle in zip(projections, theta):
             print j, angle,
             start = time.clock()
@@ -123,7 +126,7 @@ def test_u_n():
             recon = recon + update*0.9
             # clip to zero - constructing positive intensity
             recon = np.where( recon > 0, recon, 0)
-            err = (ideal - recon).ravel()
+            # err = (ideal - recon).ravel()
             if False:
                 pl.figure(1)
                 pl.clf()
@@ -133,11 +136,15 @@ def test_u_n():
             end = time.clock()
             sumtime += end-start
             ncalc +=1
-            print err.sum()
+            # print err.sum()
+            print
         # print "Waiting"
         # raw_input()
         # recon = recon.clip( 0, 10)
     print sumtime/ncalc
+    np.save("recon.npy",recon)
+    end = time.time()
+    print "Time take",realstart - end
     pl.figure(1)
     pl.clf()
     pl.subplot(221)
@@ -148,10 +155,10 @@ def test_u_n():
     pl.title("ideal")
     pl.imshow( ideal)
     pl.colorbar()
-    pl.subplot(223)
-    pl.title("difference")
-    pl.imshow(ideal-recon)
-    pl.colorbar()
+#    pl.subplot(223)
+#    pl.title("difference")
+#    pl.imshow(ideal-recon)
+#    pl.colorbar()
     print len(theta),"projections"
     pl.show()
 
