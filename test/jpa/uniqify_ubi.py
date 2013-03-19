@@ -5,7 +5,7 @@
 from ImageD11 import indexing
 from numpy.oldnumeric.linear_algebra import inverse
 from ImageD11 import closest
-import glob, sys, Numeric
+import glob, sys, numpy
 
 
 
@@ -20,8 +20,9 @@ ubifl = glob.glob(sys.argv[2])
 
 ubi_all = {}
 for fname in ubifl:
-    #print fname
+    print fname
     ubi_all[fname] = indexing.readubis(fname)
+print "OK"
 
 
 
@@ -44,23 +45,23 @@ pks = [
         ( 1,-1,-1), (-1,-1,-1)
         ]
 
-hkl = Numeric.transpose(Numeric.array(pks,Numeric.Float))
+hkl = numpy.array(pks,numpy.float).T
 
 uniq_ubis = []
 names = ubi_all.keys()
-dsu = [ (int( n.split(".")[0].split("_")[-1] ), n) for n in names ]
-dsu.sort()
-names = [d[1] for d in dsu]
+#dsu = [ (int( n.split(".")[0].split("_")[-1] ), n) for n in names ]
+#dsu.sort()
+#names = [d[1] for d in dsu]
 
 tol = 0.05
 for name in names[15:]:
     this_list = ubi_all[name]
     for ubi, i in zip(this_list,range(len(this_list))):
-        gv = Numeric.matrixmultiply(inverse(ubi),hkl)
+        gv = numpy.dot(inverse(ubi),hkl)
         seen = 0
         for j in range(len(uniq_ubis)):
             u = uniq_ubis[j][0]
-            npk=closest.score(u,Numeric.transpose(gv),tol)
+            npk=closest.score(u,gv.T,tol)
             if npk == len(pks):
                 # seen you before
                 uniq_ubis[j][1].append((name, i))
@@ -119,7 +120,7 @@ for entry in uniq_ubis:
         npix = 3
         intensity = n.sum( n.take( t.finalpeaks[avg,:]*t.finalpeaks[avg,:],
             ind))
-        print closest.score(entry[0],Numeric.transpose(t.gv),tol), intensity
+        print closest.score(entry[0],t.gv.T,tol), intensity
 
 
 # now re
