@@ -30,7 +30,9 @@ typedef double real;
 */
 typedef float real;
 #define BIGNUM FLT_MAX;
-
+#define HALF 0.5f
+#define ZERO 0.0f
+#define ONE 1.0f
 
 typedef real rmatrix[9];
 typedef real vector[3];
@@ -44,15 +46,15 @@ typedef real vector[3];
  */
 
 #define norm3( a ) \
-    (sqrt( (a)[0]*(a)[0] + (a)[1]*(a)[1] + (a)[2]*(a)[2] ))
+    ( sqrt ( (a)[0]*(a)[0] + (a)[1]*(a)[1] + (a)[2]*(a)[2] ))
 
 #define dot3( a, b )\
     (( (a)[0]*(b)[0] + (a)[1]*(b)[1] + (a)[2]*(b)[2] ))
 
 #define round3( a, b ) \
-    (b)[0] = floor( a[0] + 0.5); \
-    (b)[1] = floor( a[1] + 0.5); \
-    (b)[2] = floor( a[2] + 0.5); 
+    (b)[0] = floor( a[0] + HALF); \
+    (b)[1] = floor( a[1] + HALF); \
+    (b)[2] = floor( a[2] + HALF); 
 
 #define crossProduct(a,b,c) \
 	(c)[0] = (a)[1] * (b)[2] - (b)[1] * (a)[2]; \
@@ -121,33 +123,33 @@ typedef real vector[3];
 #define fillomegamatrix(angle, M) \
     (M)[0] = cos( angle ); \
     (M)[1] = sin( angle ); \
-    (M)[2] = 0.0; \
+    (M)[2] = ZERO; \
     (M)[3] = -sin( angle ); \
     (M)[4] = cos( angle ); \
-    (M)[5] = 0.0; \
-    (M)[6] = 0.0; \
-    (M)[7] = 0.0; \
-    (M)[8] = 1.0;  
+    (M)[5] = ZERO; \
+    (M)[6] = ZERO; \
+    (M)[7] = ZERO; \
+    (M)[8] = ONE;  
 
 #define fillwedgematrix(angle, M) \
     (M)[0] = cos( angle ); \
-    (M)[1] = 0.0; \
+    (M)[1] = ZERO; \
     (M)[2] = sin( angle ); \
-    (M)[3] = 0.0; \
-    (M)[4] = 1.0; \
-    (M)[5] = 0.0; \
+    (M)[3] = ZERO; \
+    (M)[4] = ONE; \
+    (M)[5] = ZERO; \
     (M)[6] = -sin( angle ); \
-    (M)[7] = 0.0; \
+    (M)[7] = ZERO; \
     (M)[8] = cos( angle );
 
 #define fillchimatrix(angle, M) \
-    (M)[0] = 0.0; \
-    (M)[1] = 0.0; \
-    (M)[2] = 1.0; \
-    (M)[3] = 0.0; \
+    (M)[0] = ZERO; \
+    (M)[1] = ZERO; \
+    (M)[2] = ONE; \
+    (M)[3] = ZERO; \
     (M)[4] = cos( angle ); \
     (M)[5] = -sin( angle ); \
-    (M)[6] = 0.0; \
+    (M)[6] = ZERO; \
     (M)[7] = sin( angle ); \
     (M)[8] = cos( angle );  
 
@@ -167,10 +169,10 @@ typedef real vector[3];
 
 
 #ifdef _WIN32
-/* This line is disgusting */
+/* This line is quite upsetting...: */
 __declspec(dllexport)
 #endif
-void choosegrains( vector XL[], real omega[], 
+void c_choosegrains( vector XL[], real omega[], 
         real wedge, real chi, real wvln,
         rmatrix UB[], rmatrix UBI[], vector T[], 
         int ngrains, int npks,
@@ -178,8 +180,9 @@ void choosegrains( vector XL[], real omega[],
     int i, j, gbest;
     real MdL, scal, mod_dG, scor, scormin;
     rmatrix omat, cmat, wmat, tmpmat, gomat, diffrot;
-    vector origin, dL, s, beam = {1.0,0.0,0.0}, kvec, gvec, hkl, ih, gcalc, dG, 
-           hbest = {0.,0.,0.};
+    vector origin, dL, s, beam = {ONE,ZERO,ZERO}, 
+           kvec, gvec, hkl, ih, gcalc, dG, 
+           hbest = {ZERO,ZERO,ZERO};
 
 
 
@@ -187,8 +190,8 @@ void choosegrains( vector XL[], real omega[],
     fillwedgematrix( wedge, wmat )
     fillchimatrix( chi,     cmat )
 
-//    pmat( "wmat", wmat );
-//    pmat( "cmat", cmat );
+    pmat( "wmat", wmat );
+    pmat( "cmat", cmat );
     
     for(i=0; i<npks; i++){
 
@@ -223,7 +226,7 @@ void choosegrains( vector XL[], real omega[],
             pvec( "origin",origin);
             pvec( "dL", dL );
 
-            scal = 1.0 /( MdL * wvln );    /* Go to reciprocal space */
+            scal = ONE /( MdL * wvln );    /* Go to reciprocal space */
             vec3smul( dL, scal , s);
             vec3sub( s, beam, kvec);       /* Vector in lab */
             matVec( diffrot, kvec, gvec);  /* Vector in xtal */

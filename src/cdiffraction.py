@@ -28,7 +28,7 @@ def flatfloat(a, shape=None):
         s=shape
     flat = np.array( np.array(a).ravel(), np.float32 )
     flat.shape = s
-    return flat
+    return flat 
 
 
 if __name__=="__main__":
@@ -65,6 +65,14 @@ if __name__=="__main__":
 
     labels = np.zeros( c.nrows, np.int )
     hkls = np.zeros( ( c.nrows, 3 ), np.float32 )
+
+    print XL.shape
+    print om.shape
+    print UBs.shape
+    print UBIs.shape
+    print Ts.shape
+    print labels.shape
+    print hkls.shape
 
     dll.choosegrains( 
             XL.ctypes.data_as( ctypes.POINTER( ctypes.c_float) ),
