@@ -269,8 +269,14 @@ class columnfile:
         write an ascii columned file
         """
         self.chkarray()
-        self.parameters.saveparameters(filename)
         fout = open(filename,"w+") # appending
+        # Write as "# name = value\n"
+        parnames = self.parameters.get_parameters().keys()
+        parnames.sort()
+        for p in parnames:
+            fout.write("# %s = %s\n"%(p, str(self.parameters.get(p) ) ) )
+        # self.parameters.saveparameters(filename)
+        # Now titles line
         fout.write("#")
         format_str = ""
         for title in self.titles:
@@ -295,7 +301,16 @@ class columnfile:
         self.ncols = 0
         self.nrows = 0
         i = 0
-
+        try:
+            # Check if this is a hdf file: magic number
+            magic = open(filename,"rb").read(4)
+        except:
+            raise Exception("Cannot open %s for reading"%(filename))
+        #              1 2 3 4 bytes
+        if magic == '\x89HDF':
+            print "Reading your columnfile in hdf format"
+            colfile_from_hdf( filename, obj = self )
+            return
         try:
             raw = open(filename,"r").readlines()
         except:
@@ -453,14 +468,46 @@ try:
     import h5py, os
     def colfile_to_hdf( colfile, hdffile, name=None ):
         """
-        Read columnfile into hdf file
+        Copy a columnfile into hdf file
+        FIXME TODO - add the parameters somewhere (attributes??)
         """
-        c = columnfile( colfile )
-        ndata = c.nrows
-        h = h5py.File( hdffile , 'a') # Appending if exists
+        if isinstance(colfile, columnfile):
+            c = colfile
+        else:
+            c = columnfile( colfile )
+        if isinstance(hdffile, h5py.File):
+            h = hdffile
+        else:
+            h = h5py.File( hdffile , 'a') # Appending if exists
         if name is None:
             # Take the file name
-            name = os.path.split(colfile)[-1]
+            name = os.path.split(c.filename)[-1]
+        if name in h.keys():
+            g = h[name]
+        else:
+            g = h.create_group( name )
+        g.attrs['ImageD11_type'] = 'peaks'
+        for t in c.titles:
+            if t in INTS:
+                ty = numpy.int32
+            else:
+                ty = numpy.float32
+            # print "adding",t,ty
+            dat = getattr(c, t).astype( ty )
+            if t in g.keys():
+                g[t][:] = dat
+            else:
+                g.create_dataset( t, data = dat )
+        h.close()
+
+    def colfileobj_to_hdf( cf, hdffile, name=None):
+        """
+        Save a columnfile into hdf file format
+        FIXME TODO - add the parameters somewhere (attributes??)
+        """
+        h = h5py.File(hdffile, 'a' )
+        if name is None:
+            name = str(cf.filename)
         try:
             g = h.create_group( name )
         except:
@@ -472,15 +519,72 @@ try:
                 ty = numpy.int32
             else:
                 ty = numpy.float32
-            # print "adding",t,ty
             g.create_dataset( t, data = getattr(c, t).astype( ty ) )
         h.close()
-        
+
+    def colfile_from_hdf( hdffile , name=None, obj=None ):
+        """
+        Read a columnfile from a hdf file
+        FIXME TODO - add the parameters somewhere (attributes??)
+        """
+        import time
+        h = h5py.File( hdffile, 'r' )
+        groups = h.listnames()
+        if name is not None:
+            if name in groups:
+                g = h[name]
+            else:
+                raise Exception("Did not find your "+str(name)+" in "+hdffile)
+        else:
+            assert len(groups) == 1, "Your hdf file has many groups. Which one??"
+            g = h[groups[0]]
+            name = groups[0]
+        titles = g.listnames()
+        newtitles = []
+        newtitles.sort()
+        # Put them back in the order folks might have hard wired in their
+        # programs
+        for t in ['sc', 'fc', 'omega' , 'Number_of_pixels',  'avg_intensity',
+        's_raw',  'f_raw',  'sigs',  'sigf',  'covsf' , 'sigo',  'covso',
+        'covfo',  'sum_intensity',  'sum_intensity^2',  'IMax_int',  'IMax_s',
+        'IMax_f',  'IMax_o',  'Min_s',  'Max_s',  'Min_f',  'Max_f',  'Min_o',
+        'Max_o',  'dety',  'detz',  'onfirst',  'onlast',  'spot3d_id',  'xl',
+        'yl',  'zl',  'tth',  'eta',  'gx',  'gy',  'gz']:
+            if t in titles:
+                newtitles.append(t)
+                titles.remove(t)
+        # Anything else goes in alphabetically
+        [newtitles.append(t) for t in titles]
+        assert len(newtitles) == len( g.listnames() )
+        if obj is None:
+            col = columnfile( filename=name, new=True )
+        else:
+            col = obj
+        col.titles = newtitles
+        dat = g[newtitles[0]][:]
+        col.bigarray = numpy.zeros( (len(newtitles), len(dat) ), numpy.float32)
+        col.bigarray[0] = dat
+        col.ncols = len(newtitles)
+        col.nrows = len(dat)
+        i = 1
+        for t in newtitles[1:]:
+            col.bigarray[i] = g[t][:]
+            i += 1
+        col.set_attributes()        
+        return col
+    
 except ImportError:
-    def colfile_to_hdf( a,b,name=None):
+    def hdferr():
         raise Exception("You do not have h5py installed!")
 
+    def colfile_to_hdf( a,b,name=None):
+        hdferr()
     
+    def colfile_from_hdf( hdffile , name=None ):
+        hdferr()
+
+    def colfileobj_to_hdf( cf, hdffile, name=None):
+        hdferr()
 
 def bench():
     """
