@@ -118,7 +118,7 @@ import ImageD11.simplex
 
 def get_spec_data(scan_number,
                   thespecfile,
-                  x_col = "Vscan z",
+                  x_col = "samy",
                   y_col = "pico3"):
     specdata = thespecfile.select("%d"%(scan_number))
     x = specdata.datacol( x_col )
@@ -152,20 +152,20 @@ def fitscan( xdata,
         position = 0.5*(xhigh + xlow)        
     else: # Scan is ascending
         position = 2.0*radius + 0.5*(xhigh + xlow)         
-    
+    position = -1.8
     scale = ydata.max()
     mu = mu_guess
     eta = eta_guess
     fwhm = fwhm_guess
 
-    guess = [ position, fwhm, scale , eta]
-    steps = [ 0.1, fwhm/10., scale/100, 0.01 ]
+    guess = [ position, fwhm, scale , eta, mu, radius]
+    steps = [ 0.01, fwhm/10., scale/10, 0.01, mu/10, radius/10.0 ]
 
     X = xdata
     DATA = ydata
 
     def fitfunc( args ):
-        position, fwhm, scale , eta = args
+        position, fwhm, scale , eta, mu, radius = args
         #print mu
         mu = 0.0051
         cyl_abs = convoluted_cylinder_absorbtion( X, radius, position,
@@ -182,7 +182,7 @@ def fitscan( xdata,
                                           monitor =  1,
                                           epsilon = 0.001 )
     print "\nResults"
-    names = "position fwhm scale eta"
+    names = "position fwhm scale eta mu radius"
     for name, value in zip(names.split(), result):
         print "%10s %f"%(name, value)
     mu = 0.0051
@@ -190,7 +190,7 @@ def fitscan( xdata,
         from matplotlib.pylab import plot, show, cla, legend, subplot,\
             figure, title
         
-        position, fwhm, scale, eta = result
+        position, fwhm, scale, eta, mu, radius = result
         figure(1)
         subplot(211)
         cla()
@@ -235,6 +235,12 @@ def main():
                          myspecfile )
     
         results = fitscan( x, y,
+                                    radius = 1.4, # microns
+                                    fwhm_guess = 0.1,
+                                    eta_guess = 0.5,
+                                    mu_guess = 1e-2,
+
+
                            plot = do_plot,
                            plot_title = "%s #S %d"%(filename, scan_number))
         scan_number += 1
@@ -243,11 +249,6 @@ def main():
         f.write(("%s %d "+"%f "*len(results)+" \n")%tuple( [
                     filename, scan_number]+results ))
         f.close()
-    #         radius = 1000, # microns
-    #         fwhm_guess = 1.0,
-    #         eta_guess = 0.5,
-    #         mu_guess = 5e-3,
-    #         plot = True 
     
 
 
