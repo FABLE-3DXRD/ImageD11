@@ -56,6 +56,45 @@ class test_g_to_k(unittest.TestCase):
         err = n.minimum(err1,err2)
         self.assertAlmostEqual( array_diff( err, n.zeros(self.np)), 0, 6)
 
+
+
+    def test_5_10(self):
+        """ wedge,chi = 5,10 """
+        w,c = 5.0, 10.0
+        g = transform.compute_g_vectors(self.tth, 
+                                        self.eta, 
+                                        self.omega, 
+                                        self.wvln, 
+                                        wedge=w, 
+                                        chi=c )
+        post = gv_general.axis_from_matrix( gv_general.wedgechi( wedge=w, chi=c))
+            
+
+        sol1, sol2, valid = gv_general.g_to_k( g,  #
+                                               self.wvln,
+                                               axis = n.array([0,0,-1], n.Float),
+                                               pre = None,
+                                               post = post )
+
+        c0 = n.cos(transform.radians(self.omega))
+        c1 = n.cos(transform.radians(sol1))
+        c2 = n.cos(transform.radians(sol2))
+
+        s0 = n.sin(transform.radians(self.omega))
+        s1 = n.sin(transform.radians(sol1))
+        s2 = n.sin(transform.radians(sol2))
+
+        err1 = n.absolute(c1-c0) + n.absolute(s1-s0)
+        err2 = n.absolute(c2-c0) + n.absolute(s2-s0)
+        err = n.minimum(err1,err2)
+        #print sol1
+        #print sol2
+        #print self.omega
+        self.assertAlmostEqual( array_diff( err, n.zeros(self.np)), 0, 6)
+
+
+
+
 # if False:
 class dont_test_g_to_k_many(test_g_to_k):
     
