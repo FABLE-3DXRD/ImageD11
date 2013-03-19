@@ -4,7 +4,10 @@
 from matplotlib.pylab import *
 from matplotlib.patches import Ellipse
 from ImageD11.grain import *
-    
+allaxes = [ ((1,0,0), (0,1,0)) ,
+            ((0,0,1), (1,0,0)) ,
+            ((0,1,0), (0,0,1)) ]
+
 def make_ellipses( grains , scalet = 1.0, scaler=1.0 ):
     el = []
     vol = []
@@ -17,6 +20,7 @@ def make_ellipses( grains , scalet = 1.0, scaler=1.0 ):
     # Sort by volume to plot biggest first (at back)
     tmp = zip( vol, grains)
     tmp.sort()
+    from ImageD11.indexing import ubitoU
     for vol, g in tmp[::-1]:
         size = pow(vol, 1.0/3.0)
         el.append( (Ellipse( xy = g.translation[0:2],
@@ -45,32 +49,32 @@ def graincolor( g ):
     
     B = inv(ubitoB( g.ubi ))
 
-    gcalc = dot( B, hkl.T )
+    gcalc = dot( B.T, hkl.T )
     d = calc_drlv2( g.ubi, gcalc.T )
-#    print sum(d*d)
-    red = 1 - sum(d*d)
+    red = sum(d*d)
 
     v = 1/sqrt(2)
     
-    u = array( [[ v, v, 0 ],
-                [-v, v, 0 ],
-                [ 0.0, 0.0, 1 ]] )
+    u = array( [[   v,   0,  v ],
+                [   0,   1,  0 ],
+                [  -v,   0,  v ]] )
     
-    gcalc = dot( dot(u,B) , hkl.T )
+    gcalc = dot( dot(u,B).T , hkl.T )
     d = calc_drlv2( g.ubi, gcalc.T )
-#    print sum(d*d)
-    green = 1 - sum(d*d)
+    green = sum(d*d)
     
     u2 = array([ [ 1.0, 0.0, 0 ],
-                 [ 0. , v,-v ],
-                 [ 0.0, v, v ] ])
+                 [ 0. , v,  -v ],
+                 [ 0.0, v,   v ] ])
     
-    gcalc =  dot( dot(u2 ,B) , hkl.T )
+    gcalc =  dot( dot(u2 ,B).T , hkl.T )
     d = calc_drlv2( g.ubi, gcalc.T )
- #   print sum(d*d)
-    blue = 1 - sum(d*d)
-
-    return clip( (red, green, blue), 0, 1 )
+    blue = sum(d*d)
+    #print "Grain",red,green,blue,
+    # Normalise the length of the vector to be 1
+    modc = sqrt(red*red+blue*blue+green*green)
+    #print "Grain",red,green,blue
+    return red/modc, green/modc, blue/modc
     
 
 
@@ -89,6 +93,7 @@ def plubi(uf, first = False , fig=None):
     el = make_ellipses( pl , scalet = 2.0, scaler=0.005 )
 
     ax = fig.add_subplot( 111, aspect = 'equal' )
+    
     for et, er, g in el:
         ax.add_artist(et)
         et.set_clip_box(ax.bbox)
@@ -96,10 +101,14 @@ def plubi(uf, first = False , fig=None):
         et.set_facecolor( gc )
         et.set_alpha( 0.75 )
 
-        
-    
-    ax.set_xlim( -400, 400)
-    ax.set_ylim( -400, 400)
+    min_x  = xyz[:,0].min()
+    min_y  = xyz[:,1].min()
+    max_x  = xyz[:,0].max()
+    max_y  = xyz[:,1].max()
+    dx = max( max_x - min_x, 1)
+    dy = max( max_y - min_y, 1)
+    ax.set_xlim( min_x - dx/10. , max_x + dx/10.)
+    ax.set_ylim( min_y - dy/10. , max_y + dy/10.)
 
     title(uf)
 
@@ -118,4 +127,6 @@ if __name__=="__main__":
     fig = figure()
     
     plubi(  sys.argv[1], True, fig)
-    show()
+    if len(sys.argv[2])>2:
+        savefig( sys.argv[2] )
+
