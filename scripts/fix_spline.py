@@ -38,7 +38,7 @@ def help():
     print "replaces fc and sc columns with corrected numbers"
         
 
-def main():
+def mymain():
     # If we are running from a command line:
     import sys, os
     inname = sys.argv[1]
@@ -54,9 +54,9 @@ def main():
     if splinename == 'perfect':
         cor = blobcorrector.perfect()
     else:
-        cor = blobcorrector.corrector( splinename )
+        cor = blobcorrector.correctorclass( splinename )
 
-    main( inname, outname, cor )
+    fix_flt( inname, outname, cor )
 
 if __name__=="__main__":
-    main()
+    mymain()
