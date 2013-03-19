@@ -123,5 +123,7 @@ setup(name='ImageD11',
                  "scripts/index_unknown.py",
                  "scripts/ImageD11Server.py",
                  "scripts/spatialfix.py",
+		 "scripts/refine_em.py",
+                 "scripts/avg_par.py",
                  "scripts/powderimagetopeaks.py"])
 
