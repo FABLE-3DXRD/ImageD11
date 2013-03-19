@@ -60,7 +60,7 @@ def preprocess(image, (scalex,scaley),maxi=None,mini=None):
         scalex = MAXSIZE
     if scaley > MAXSIZE:
         scaley = MAXSIZE
-    return image, (scalex, scaley)
+    return image, (int(scalex), int(scaley))
 
 
 def NumerictoImage( data, (scalex,scaley),maxi=None,mini=None):
@@ -74,7 +74,7 @@ def NumerictoImage( data, (scalex,scaley),maxi=None,mini=None):
         bits = n.transpose(image, (1,0)).tostring()
     image2 = Image.fromstring(mode, (width, height),
                                       bits, "raw", rawmode)
-    image2=image2.resize((scalesx,scalesy))
+    image2=image2.resize((int(scalesx),int(scalesy)))
     return image2,(scalesx,scalesy)
 
 
@@ -90,7 +90,7 @@ class rubber(Frame):
         if datafile==None:
             datafile=tkFileDialog.askopenfilename(initialdir=os.getcwd())
         if type(datafile)==type("string"):
-            self.datafile=datafile
+            self.datafile = datafile
             dataobj=openimage(datafile)
             self.data=dataobj.data.astype(n.Int)
             try:
@@ -110,7 +110,6 @@ class rubber(Frame):
             print "Got your background from",bkgfile,self.bkg.shape
         else:
             self.bkg = None
-
         Pack.config(self,expand=1,fill=BOTH)
         self.b=Frame(self)
         Button(self.b,text="Quit",command=self.close).pack(side=RIGHT)
@@ -265,11 +264,10 @@ class rubber(Frame):
         self.status.config(text=self.datafile)
         self.data=dataobj.data.astype(n.Int)
         pass  ## self.data.savespace(0)
-        try:
+        if self.bkg is not None:
             self.data=self.data.astype(n.Int)-self.bkg
         except:
             print "Failed to subtract bkg",self.bkg.shape,self.data.shape
-            pass
         try:
             self.omega=float(dataobj.header["Omega"])
         except:
@@ -356,6 +354,7 @@ class rubber(Frame):
             self.image,(self.scale[0],self.scale[1])=NumerictoImage(log(self.data+1),self.data.shape,self.maxi,self.mini)
         self.scale[0]*=self.zoom
         self.scale[1]*=self.zoom
+        self.scale = [int(v) for v in self.scale]
         print "Image size",self.scale
         self.displayimage = ImageTk.PhotoImage(self.image.resize(self.scale))
         if self.piccy==None:
@@ -509,7 +508,7 @@ import sys
 from fabio.openimage import openimage
 if len(sys.argv)>2:
     test = rubber(sys.argv[1],bkgfile=sys.argv[2])
-elif len(sys.argv)>2:
+elif len(sys.argv)==2:
     test = rubber(sys.argv[1])
 else:
     test = rubber()
