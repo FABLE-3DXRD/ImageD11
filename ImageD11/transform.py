@@ -303,14 +303,6 @@ def compute_grain_origins(omega, wedge = 0.0, chi = 0.0,
     t[0,:] = n.cos(om_r)*t_x - n.sin(om_r)*t_y
     t[1,:] = n.sin(om_r)*t_x + n.cos(om_r)*t_y
     t[2,:] =                                  t_z
-    if wedge != 0.0:
-        c = n.cos(radians(wedge))
-        s = n.sin(radians(wedge))
-        u = n.zeros(t.shape,n.float)
-        u[0,:]= c * t[0,:]           + -s * t[2,:]
-        u[1,:]=            t[1,:]
-        u[2,:]= s * t[0,:]           +  c * t[2,:]
-        t = u
     if chi != 0.0:
         c = n.cos(radians(chi))
         s = n.sin(radians(chi))
@@ -318,6 +310,14 @@ def compute_grain_origins(omega, wedge = 0.0, chi = 0.0,
         u[0,:]= t[0,:]  
         u[1,:]=        c * t[1,:]    + -s * t[2,:]
         u[2,:]=        s * t[1,:]    +  c * t[2,:]
+        t = u
+    if wedge != 0.0:
+        c = n.cos(radians(wedge))
+        s = n.sin(radians(wedge))
+        u = n.zeros(t.shape,n.float)
+        u[0,:]= c * t[0,:]           + -s * t[2,:]
+        u[1,:]=            t[1,:]
+        u[2,:]= s * t[0,:]           +  c * t[2,:]
         t = u
     return t
 
