@@ -2,7 +2,7 @@
 
 
 
-SRC=`dirname "$0"`
+SRC=`pwd`
 PYTHONPATH=$SRC/build/lib.linux-i686-2.5/
 
 echo "Running tests from " $SRC " with PYTHONPATH " $PYTHONPATH
@@ -70,4 +70,4 @@ cd $SRC
 echo
 echo "Just finished testing ImageD11 from" $PYT
 echo "Using PYTHONPATH=" $PYTHONPATH
-$PYT -c "import ImageD11; print ImageD11.__version__"
+$PYT -c 'import ImageD11\; print ImageD11.__version__'
