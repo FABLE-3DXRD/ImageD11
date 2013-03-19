@@ -9,8 +9,8 @@ from single crystal data. The script to use is called "index_unknown.py".
 As with most of the scripts, there is a list of options, which are more or 
 less easy to set, depending on the problem. The options are::
 
-$ index_unknown.py --help
-Usage: index_unknown.py [options]
+ $ index_unknown.py --help
+ Usage: index_unknown.py [options]
 
 Options:
   -h, --help            show this help message and exit
@@ -57,7 +57,7 @@ A more concrete explanation of the options follows::
  -r, --max_res : The maximum resolution (cut off) where peaks are put into the fft. Should be a d-spacing in angstrom. This determines the resolution of the fft.
  -s, --nsig : Threshold for peaksearching the patterson. Numbers like 10-30 seem to be useful.
 
- Six synthetic testcases are supplied with the program in 
+Six synthetic testcases are supplied with the program in 
 test/test_index_unknown/test_index_unknown.py. These generate pseudo-data 
 g-vectors and then index them using the script. Firstly there are two 
 tests of a single unknown via the gector and fft methods. Then there are 

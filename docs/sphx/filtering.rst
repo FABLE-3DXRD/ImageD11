@@ -53,7 +53,7 @@ Here is an example::
  482
  >>> **obj.writefile( "my_filtered_peaks.flt" )**
  
- Some possible filtering operations clipped out of the numpy array object 
+Some possible filtering operations clipped out of the numpy array object 
 help.
  
  >>> help(mask)
