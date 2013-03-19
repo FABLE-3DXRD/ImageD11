@@ -22,8 +22,8 @@ if os.path.exists( sys.argv[4] ):
         sys.exit()
 
 # Closest pixel indices
-si = (cf.s_raw+0.5).astype(np.int)
-fi = (cf.f_raw+0.5).astype(np.int)
+si = (cf.s_raw+0.5).astype(np.int).clip(0,2047)
+fi = (cf.f_raw+0.5).astype(np.int).clip(0,2047)
 
 # Add shifts
 cf.sc[:] = cf.s_raw + dy[ si, fi ]
