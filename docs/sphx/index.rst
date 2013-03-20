@@ -6,18 +6,17 @@
 Welcome to ImageD11's documentation!
 ====================================
 
-ImageD11 is for identifying individual grains in spotty area detector diffraction images. It identifies the spots and helps you to try to index them. 
+ImageD11 is for identifying individual grains in spotty area detector diffraction images. 
+It finds the spots and helps you to try to index them. 
 After you index the spots you can then work on extracting useful information on a grain 
-by grain basis (the program does not do that for you yet). Examples of information that 
-could be extracted include orientation, strain and crystallite size, as well as the 
-crystal structure itself. 
+by grain basis. 
 ImageD11 is intended to be complementary to the rest of the FABLE software. ImageD11 has 
 a strong focus on fast preliminary data analysis which can be carried 
 out during experiments in order to make decisions about the experimental setup etc.
 
 The package includes facilities for peak searching in two dimensional 
 area detector images using a simple threshold. 
-A graphical interface can then be used to assist with the calibration 
+A graphical interface is available to assist with the calibration 
 of the extracted peak positions and their transformation into 
 scattering vectors (or g-vectors) in reciprocal space.
 In cases where "relatively few" grains are illuminated by the beam the 
@@ -31,7 +30,7 @@ extension modules in c for increased performance.
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    installation
    programs
@@ -45,7 +44,6 @@ Contents:
    advanced
    fileformats
    batchprocessing
-
 
 
 Indices and tables
