@@ -466,7 +466,8 @@ class newcolumnfile(columnfile):
 
 try:
     import h5py, os
-    def colfile_to_hdf( colfile, hdffile, name=None ):
+    def colfile_to_hdf( colfile, hdffile, name=None, compression=None,
+                        compression_opts=None):
         """
         Copy a columnfile into hdf file
         FIXME TODO - add the parameters somewhere (attributes??)
@@ -477,8 +478,10 @@ try:
             c = columnfile( colfile )
         if isinstance(hdffile, h5py.File):
             h = hdffile
+            opened = False
         else:
             h = h5py.File( hdffile , 'a') # Appending if exists
+            opened = True
         if name is None:
             # Take the file name
             name = os.path.split(c.filename)[-1]
@@ -497,8 +500,11 @@ try:
             if t in g.keys():
                 g[t][:] = dat
             else:
-                g.create_dataset( t, data = dat )
-        h.close()
+                g.create_dataset( t, data = dat,
+                                  compression=compression,
+                                  compression_opts=compression_opts )
+        if opened:
+            h.close()
 
     def colfileobj_to_hdf( cf, hdffile, name=None):
         """
