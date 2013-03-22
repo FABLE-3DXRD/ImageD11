@@ -460,13 +460,25 @@ class indexer:
         onepercent=len(i1)/100
         if onepercent < 1: onepercent=1
         start=time.time()
+        mtol = -tol # Ugly interface - set cosine tolerance negative for all
+                    # instead of best
         for i in range(len(i1)):
             if i%onepercent == 0:
                 print "Percent done %6.3f%%   ... potential hits %-6d \r"%(i*100./len(i1),len(hits)),
             costheta=n.dot(n2,n1[i])
-            best,diff = closest.closest(costheta,cs)
-            if diff < tol:
-                hits.append( [ diff, i1[i], i2[best] ])
+            if tol > 0: # This is the original algorithm - the closest angle
+                best,diff = closest.closest(costheta,cs)
+                if diff < tol:
+                    hits.append( [ diff, i1[i], i2[best] ])
+            else:
+                assert tol < 0 "Cosine tolerance should be positive or negative"
+                for cval in cs:
+                    # 1d   scalar  1d
+                    diff = cval - costheta
+                    candidates = n.compress( abs(diff) < mtol, i2 )
+                    for c in candidates: 
+                        hits.append( [ 0.0, i1[i], c ] ) 
+
         print "Percent done %6.3f%%   ... potential hits %-6d \r"%(i*100./len(i1),len(hits)),
         print
         print "Number of trial orientations generated",len(hits)
