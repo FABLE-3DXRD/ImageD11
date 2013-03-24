@@ -152,8 +152,8 @@ def k_to_g( k , # scattering vectors in the laboratory
             angles , # eg samome in degrees
             axis = rotation_axis( n.array([0,0,1],n.float) , 0.0 ) , 
             # eg z axis 
-            pre = rotate_identity , 
-            post = rotate_identity ):
+            pre = n.eye(3) , 
+            post = n.eye(3) ):
     """
     Computes g = pre . rot(axis, angle) . post . k
     Typically in ImageD11 post = [wedge][chi] and pre = identity
@@ -168,11 +168,12 @@ def k_to_g( k , # scattering vectors in the laboratory
     assert k.shape[0] == 3 , "k must be a [:,3] array"
     #print "angles=",angles[0]
     #print "k.shape\n",k.shape,k[:,0]
-    pk =  post.rotate_vectors_inverse( k )
+    #pk =  post.rotate_vectors( k )
+    pk =  n.dot(post, k )
     #print "pk.shape\n" ,pk.shape,pk[:,0]
-    rpk = axis.rotate_vectors_inverse(pk , angles)
+    rpk = axis.rotate_vectors(pk , angles)
     #print "rpk.shape\n",rpk.shape,rpk[:,0]
-    g =   pre.rotate_vectors_inverse( rpk )
+    g =   n.dot(pre, rpk )
     #print "g.shape\n",g.shape,g[:,0]
     return g
     
@@ -185,6 +186,7 @@ def g_to_k( g,  # g-vectors [3,:]
     """
     Get the k and angles given the g in 
          g = pre . rot(axis, angle) . post . k
+         g = omega . chi . wedge . k
     ...where k will satisfy the Laue equations
     
     The recipe is:
@@ -214,7 +216,8 @@ def g_to_k( g,  # g-vectors [3,:]
     npeaks = g.shape[1]
     # First deal with the pre and post rotations
     if pre is not None:
-        rg = pre.rotate_vectors(g)
+        # rg = pre.rotate_vectors_inverse(g)
+        rg = n.dot( pre, g )
     else:
         rg = g
     assert rg.shape == g.shape
@@ -223,7 +226,8 @@ def g_to_k( g,  # g-vectors [3,:]
     beam[1,:] = 0.
     beam[2,:] = 0.
     if post is not None:
-        rb = post.rotate_vectors_inverse(beam)
+        # rb = post.rotate_vectors(beam)
+        rb = n.dot( post.T, beam )
     else:
         rb = beam
     assert rb.shape == g.shape
@@ -263,20 +267,33 @@ def g_to_k( g,  # g-vectors [3,:]
 
     return degrees(sol1), degrees(sol2), valid
     
+def wedgemat(w):
+    cw = n.cos(n.radians(w))
+    sw = n.sin(n.radians(w))
+    W = n.array([[ cw ,  0  , sw ],
+                 [ 0  ,  1  , 0  ],
+                 [-sw ,  0  , cw ]])
+    return W
+
+def chimat(c):
+    cc = n.cos(n.radians(c))
+    sc = n.sin(n.radians(c))
+    C = n.array([[ 1  ,   0  ,  0   ],
+                 [ 0  ,  cc  , sc   ],
+                 [ 0  , -sc  , cc   ]])
+    return C
+
+def chiwedge(wedge=0., chi=0.):
+    """
+    in transform:
+    g = omega . chi . wedge .k
+    """
+    return n.dot( chimat(chi), wedgemat(wedge) )
+    
 def wedgechi(wedge=0., chi=0.):
-    cw = n.cos(n.radians(wedge))
-    sw = n.sin(n.radians(wedge))
-    cc = n.cos(n.radians(chi))
-    sc = n.sin(n.radians(chi))
-
-    W = [[ cw ,  0  , sw ],
-         [ 0  ,  1  , 0  ],
-         [-sw ,  0  , cw ]]
-    
-    C =[[         1  ,   0  ,  0   ],
-        [         0  ,  cc  , sc   ],
-        [         0  , -sc  , cc   ]]
-    return n.dot( W, C )
-    
-
+    """
+    in transform:
+    g = omega . chi . wedge .k
+    """
+    raise Exception("Wrong function")
 

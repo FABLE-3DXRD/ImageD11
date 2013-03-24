@@ -40,8 +40,8 @@ class test_g_to_k(unittest.TestCase):
         sol1, sol2, valid = gv_general.g_to_k( g,  #
                                                self.wvln,
                                                axis = n.array([0,0,-1], n.Float),
-                                               pre = None,
-                                               post = None )
+                                               pre = n.eye(3),
+                                               post = n.eye(3) )
 
         c0 = n.cos(transform.radians(self.omega))
         c1 = n.cos(transform.radians(sol1))
@@ -56,19 +56,17 @@ class test_g_to_k(unittest.TestCase):
         err = n.minimum(err1,err2)
         self.assertAlmostEqual( array_diff( err, n.zeros(self.np)), 0, 6)
 
-
-
-    def test_5_10(self):
-        """ wedge,chi = 5,10 """
-        w,c = 5.0, 10.0
+    def test_10_0(self):
+        """ wedge,chi = 10,0 """
+        w=10.0
+        c=0
         g = transform.compute_g_vectors(self.tth, 
-                                        self.eta, 
-                                        self.omega, 
-                                        self.wvln, 
-                                        wedge=w, 
-                                        chi=c )
-        post = gv_general.axis_from_matrix( gv_general.wedgechi( wedge=w, chi=c))
-            
+                                            self.eta, 
+                                            self.omega, 
+                                            self.wvln, 
+                                            wedge=w, 
+                                            chi=c )
+        post = gv_general.chiwedge( wedge=w, chi=c)
 
         sol1, sol2, valid = gv_general.g_to_k( g,  #
                                                self.wvln,
@@ -87,16 +85,84 @@ class test_g_to_k(unittest.TestCase):
         err1 = n.absolute(c1-c0) + n.absolute(s1-s0)
         err2 = n.absolute(c2-c0) + n.absolute(s2-s0)
         err = n.minimum(err1,err2)
-        #print sol1
-        #print sol2
-        #print self.omega
+        self.assertAlmostEqual( array_diff( err, n.zeros(self.np)), 0, 6)
+
+    def test_0_10(self):
+        """ wedge,chi = 0,10 """
+        w=0.
+        c=10.
+        g = transform.compute_g_vectors(self.tth, 
+                                            self.eta, 
+                                            self.omega, 
+                                            self.wvln, 
+                                            wedge=w, 
+                                            chi=c )
+
+        post = gv_general.chiwedge( wedge=w, chi=c)
+
+        sol1, sol2, valid = gv_general.g_to_k( g,  #
+                                               self.wvln,
+                                               axis = n.array([0,0,-1], n.Float),
+                                               pre = None,
+                                               post = post )
+
+        c0 = n.cos(transform.radians(self.omega))
+        c1 = n.cos(transform.radians(sol1))
+        c2 = n.cos(transform.radians(sol2))
+
+        s0 = n.sin(transform.radians(self.omega))
+        s1 = n.sin(transform.radians(sol1))
+        s2 = n.sin(transform.radians(sol2))
+
+        err1 = n.absolute(c1-c0) + n.absolute(s1-s0)
+        err2 = n.absolute(c2-c0) + n.absolute(s2-s0)
+        err = n.minimum(err1,err2)
+        self.assertAlmostEqual( array_diff( err, n.zeros(self.np)), 0, 6)
+#        print "passed",w,c
+
+
+    def test_5_10(self):
+        """ wedge,chi = 5,10 """
+        w,c = 5.0, 10.0
+        g = transform.compute_g_vectors(self.tth, 
+                                        self.eta, 
+                                        self.omega, 
+                                        self.wvln, 
+                                        wedge=w, 
+                                        chi=c )
+        
+        post = gv_general.chiwedge( wedge=w, chi=c)
+
+        post = n.dot(gv_general.wedgemat(w), gv_general.chimat(c))
+    
+
+        sol1, sol2, valid = gv_general.g_to_k( g,  #
+                                               self.wvln,
+                                               axis = n.array([0,0,-1], n.Float),
+                                               pre = None,
+                                               post = post )
+
+        c0 = n.cos(transform.radians(self.omega))
+        c1 = n.cos(transform.radians(sol1))
+        c2 = n.cos(transform.radians(sol2))
+
+        s0 = n.sin(transform.radians(self.omega))
+        s1 = n.sin(transform.radians(sol1))
+        s2 = n.sin(transform.radians(sol2))
+
+        err1 = n.absolute(c1-c0) + n.absolute(s1-s0)
+        err2 = n.absolute(c2-c0) + n.absolute(s2-s0)
+        err = n.minimum(err1,err2)
+        print "\ns1",sol1
+        print "s2",sol2
+        print "omega",self.omega,"\n"
         self.assertAlmostEqual( array_diff( err, n.zeros(self.np)), 0, 6)
 
 
 
 
-# if False:
-class dont_test_g_to_k_many(test_g_to_k):
+if False:
+ class dont_test_g_to_k_many(test_g_to_k):
     
     def setUp(self):
         self.np = 5
@@ -153,12 +219,49 @@ class test_k_to_g(unittest.TestCase):
                                         self.eta, 
                                         self.wvln)
         if SANITY: print "k=",k[:,:3]
-        g_new = gv_general.k_to_g(k, self.omega)
+        g_new = gv_general.k_to_g(k, self.omega,
+                axis=gv_general.rotation_axis([0,0,-1])
+                )
         if SANITY: print g_new.shape,g_new[:,:3]
         if SANITY: print "end routine"
         if SANITY: print "*"*80
         self.assertAlmostEqual( array_diff( g_new, g_old ), 0, 6)
-        
+
+    def test_5_10(self):
+        """ wedge, chi = 5,10 """
+        w,c=5,10
+        SANITY = False
+        if SANITY: print "*"*80
+        om = n.zeros(self.np,n.Float)
+        g_old = transform.compute_g_vectors(self.tth, 
+                                            self.eta, 
+                                            self.omega, 
+                                            self.wvln, 
+                                            wedge=w, 
+                                            chi=c )
+        if SANITY: print g_old.shape,"\n", g_old[:,:3]
+        k = transform.compute_k_vectors(self.tth, 
+                                        self.eta, 
+                                        self.wvln)
+        if SANITY: print "k=",k[:,:3]
+        g_new = gv_general.k_to_g(k, self.omega, axis=
+                gv_general.rotation_axis([0,0,-1]),
+                post=gv_general.chiwedge(wedge=w,chi=c))
+        if SANITY: print g_new.shape,g_new[:,:3]
+        if SANITY: print "end routine"
+        if SANITY: print "*"*80
+        self.assertAlmostEqual( array_diff( g_new, g_old ), 0, 6)
+
+
+
+
+
+
+
+
+
+
+
 class test_rotation_axis(unittest.TestCase):
     def test_Rz0(self):
         """ zero rotation around z give identity"""
