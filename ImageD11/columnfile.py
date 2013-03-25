@@ -535,7 +535,10 @@ try:
         """
         import time
         h = h5py.File( hdffile, 'r' )
-        groups = h.listnames()
+        if hasattr(h, 'listnames'):
+            groups = h.listnames()
+        else: # API changed
+            groups = h.keys()
         if name is not None:
             if name in groups:
                 g = h[name]
@@ -546,9 +549,13 @@ try:
             assert len(groups) == 1, "Your hdf file has many groups. Which one??"
             g = h[groups[0]]
             name = groups[0]
-        titles = g.listnames()
+        if hasattr(g, 'listnames'):
+            titles = g.listnames()
+        else: # API changed
+            titles = g.keys()
+        otitles = [t for t in titles]
+        otitles.sort()
         newtitles = []
-        newtitles.sort()
         # Put them back in the order folks might have hard wired in their
         # programs
         for t in ['sc', 'fc', 'omega' , 'Number_of_pixels',  'avg_intensity',
@@ -557,12 +564,12 @@ try:
         'IMax_f',  'IMax_o',  'Min_s',  'Max_s',  'Min_f',  'Max_f',  'Min_o',
         'Max_o',  'dety',  'detz',  'onfirst',  'onlast',  'spot3d_id',  'xl',
         'yl',  'zl',  'tth',  'eta',  'gx',  'gy',  'gz']:
-            if t in titles:
+            if t in otitles:
                 newtitles.append(t)
-                titles.remove(t)
+                otitles.remove(t)
         # Anything else goes in alphabetically
-        [newtitles.append(t) for t in titles]
-        assert len(newtitles) == len( g.listnames() )
+        [newtitles.append(t) for t in otitles]
+        assert len(newtitles) == len( titles )
         if obj is None:
             col = columnfile( filename=name, new=True )
         else:
