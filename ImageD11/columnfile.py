@@ -540,6 +540,7 @@ try:
             if name in groups:
                 g = h[name]
             else:
+                print groups
                 raise Exception("Did not find your "+str(name)+" in "+hdffile)
         else:
             assert len(groups) == 1, "Your hdf file has many groups. Which one??"

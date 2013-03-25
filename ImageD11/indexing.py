@@ -471,7 +471,7 @@ class indexer:
                 if diff < tol:
                     hits.append( [ diff, i1[i], i2[best] ])
             else:
-                assert tol < 0 "Cosine tolerance should be positive or negative"
+                assert tol < 0, "Cosine tolerance should be positive or negative"
                 for cval in cs:
                     # 1d   scalar  1d
                     diff = cval - costheta
