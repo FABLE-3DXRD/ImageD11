@@ -148,13 +148,15 @@ OTHER_ANGLE            F8.3    The remaining setting angle, degrees.  This
                                will be phi if scans were in omega, or omega
                                if scans were in phi
 
-  #ICOMPONENT             I3      Twin component number in SHELXTL HKLF 5
+ICOMPONENT             I4      Twin component number in SHELXTL HKLF 5
                                convention.  In a multi-component overlap,
                                ICOMPONENT is negated for all but the last
                                record of the overlap
 
 """
 
+    
+    
 
 class saintraw(object):
     doc = docs
@@ -194,6 +196,7 @@ class saintraw(object):
         slices = []
         funcs = []
         i = 0
+        allformats = []
         for t in self.titles:
             f = self.formats[t]
             if f[0].isdigit():
@@ -204,8 +207,10 @@ class saintraw(object):
             if n > 1:
                 for j in range(n):
                     alltitles.append( t + "_%d" % (j) )
+                    allformats.append( f )
             else:
                 alltitles.append( t )
+                allformats.append( f )
             assert f[0] in ["I","F"]
             if f[0] == "I":
                 for dummy in range(n):
@@ -218,6 +223,7 @@ class saintraw(object):
                 slices.append( slice( i, i + num ) )
                 i += num
         self.alltitles = alltitles
+        self.allformats = allformats
         self.funcs = funcs
         self.slices = slices
         assert len(funcs) == len(slices)
@@ -238,7 +244,11 @@ class saintraw(object):
                 continue
             for t,s,f in zipped:
                 # Parse this line
-                self.data[t].append( f( line[s] ) )
+                try:
+                    self.data[t].append( f( line[s] ) )
+                except:
+                    print t,s,f
+                    raise
 
     def condition_filter(self, name, func):
         """

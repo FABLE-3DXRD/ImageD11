@@ -60,27 +60,6 @@ FLOATS = [
     "tth_hist_prob"
     ]
 
-LONGFLOATS = [
-    "U11",
-    "U12",
-    "U13",
-    "U21",
-    "U22",
-    "U23",
-    "U31",
-    "U32",
-    "U33",
-    "UBI11",
-    "UBI12",
-    "UBI13",
-    "UBI21",
-    "UBI22",
-    "UBI23",
-    "UBI31",
-    "UBI32",
-    "UBI33"
-    ]
-    
 INTS = [
     "Number_of_pixels",
     "IMax_f",
@@ -95,121 +74,41 @@ INTS = [
     "labels",
     "Grain",
     "grainno",
-    "grain_id"
+    "grain_id",
+    "IKEY", 
     ]
 
-EXPONENTIALS = [
-    "eps11",
-    "eps22",
-    "eps33",
-    "eps23",
-    "eps13",
-    "eps12",
-    "eps11_s",
-    "eps22_s",
-    "eps33_s",
-    "eps23_s",
-    "eps13_s",
-    "eps12_s",
-    "sig11",
-    "sig22",
-    "sig33",
-    "sig23",
-    "sig13",
-    "sig12",
-    "sig11_s",
-    "sig22_s",
-    "sig33_s",
-    "sig23_s",
-    "sig13_s",
-    "sig12_s",
-    "e11e11",
-    "e11e22",
-    "e11e33",
-    "e11e23",
-    "e11e13",
-    "e11e12",
-    "e22e22",
-    "e22e33",
-    "e22e23",
-    "e22e13",
-    "e22e12",
-    "e33e33",
-    "e33e23",
-    "e33e13",
-    "e33e12",
-    "e23e23",
-    "e23e13",
-    "e23e12",
-    "e13e13",
-    "e13e12",
-    "e12e12",
-    "e11e11_s",
-    "e11e22_s",
-    "e11e33_s",
-    "e11e23_s",
-    "e11e13_s",
-    "e11e12_s",
-    "e22e22_s",
-    "e22e33_s",
-    "e22e23_s",
-    "e22e13_s",
-    "e22e12_s",
-    "e33e33_s",
-    "e33e23_s",
-    "e33e13_s",
-    "e33e12_s",
-    "e23e23_s",
-    "e23e13_s",
-    "e23e12_s",
-    "e13e13_s",
-    "e13e12_s",
-    "e12e12_s",
-    "s11s11",
-    "s11s22",
-    "s11s33",
-    "s11s23",
-    "s11s13",
-    "s11s12",
-    "s22s22",
-    "s22s33",
-    "s22s23",
-    "s22s13",
-    "s22s12",
-    "s33s33",
-    "s33s23",
-    "s33s13",
-    "s33s12",
-    "s23s23",
-    "s23s13",
-    "s23s12",
-    "s13s13",
-    "s13s12",
-    "s12s12",
-    "s11s11_s",
-    "s11s22_s",
-    "s11s33_s",
-    "s11s23_s",
-    "s11s13_s",
-    "s11s12_s",
-    "s22s22_s",
-    "s22s33_s",
-    "s22s23_s",
-    "s22s13_s",
-    "s22s12_s",
-    "s33s33_s",
-    "s33s23_s",
-    "s33s13_s",
-    "s33s12_s",
-    "s23s23_s",
-    "s23s13_s",
-    "s23s12_s",
-    "s13s13_s",
-    "s13s12_s",
-    "s12s12_s"
-    ]
-    
-    
+# 9 elements
+ij = ["%d%d"%(i,j) for i in range(1,4) for j in range(1,4)]
+# Uij, UBIij
+LONGFLOATS  = [s+v for v in ij for s in ["U","UBI"]] 
+
+
+
+
+
+# symmetric 6 elements
+ijs = [11,22,33,23,13,12]
+#               'eps'+ij+'_s'
+EXPONENTIALS = [ h+str(v)+t for v in ijs for h,t in [ ('eps',''),
+                                                      ('eps','_s'),
+                                                      ('sig',''),
+                                                      ('sig','_s') ] ]
+
+#                              'e' ij1  'e' ij2   '_s'  for triangle ij
+EXPONENTIALS +=  ["%s%d%s%d%s"%(h,ijs[i],h,ijs[j],t) 
+                  for i in range(6) 
+                  for j in range(i,6) 
+                  for h,t in [ ('e',''),('e','_s'),('s',''),('s','_s')] ]
+
+# testing for line compression
+#from ImageD11.columnfile import LONGFLOATS as oldf
+#from ImageD11.columnfile import EXPONENTIALS as olde
+#assert set(oldf) == set(LONGFLOATS)
+#assert set(olde) == set(EXPONENTIALS)
+#print "These seem to match"
+
+   
 FORMATS = {}
 
 
