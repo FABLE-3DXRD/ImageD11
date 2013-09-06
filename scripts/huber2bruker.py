@@ -1,4 +1,4 @@
-#!/sware/exp/fable/standalone/redhate4-a64/bin/python
+#!/usr/bin/python
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 #!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
@@ -88,11 +88,12 @@ class darkflood:
             self.floodfile = floodfile
             self.floodimage = self.flooddata.data.astype(numpy.float32)
             if self.floodmultiplier is None:
-                centre = self.floodimage[100:-100,100:-100]
-                npix = centre.shape[0]*centre.shape[1]
-                self.floodmultiplier = numpy.sum(numpy.ravel(
-                        centre).astype(numpy.float32))/npix
-                self.flmult = 1 / (self.floodimage * self.floodmultiplier)
+#                centre = self.floodimage[100:-100,100:-100]
+#                npix = centre.shape[0]*centre.shape[1]
+#                self.floodmultiplier = numpy.sum(numpy.ravel(
+#                        centre).astype(numpy.float32))/npix
+                self.flmult = 1 / (self.floodimage)
+                print "using flood from",floodfile
         except:
             print "No flood file"
             self.flooddata = None
@@ -331,7 +332,7 @@ if __name__=="__main__":
         parser.add_option("-F","--Flood",action="store", 
                           type="string", dest="flood",
                           
-            default="/data/id11/inhouse/Frelon4M/F4M_Sm_July08.edf",
+            default=None,
 #           default="/data/id11/inhouse/Frelon2K/Ags_mask0000.edf",
                           help="Flood field")
         parser.add_option("-D","--distance",action="store",type="float", 
