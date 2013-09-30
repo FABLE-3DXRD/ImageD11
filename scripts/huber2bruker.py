@@ -485,6 +485,7 @@ if __name__=="__main__":
                 for t in my_threads:
                     if t.isAlive():
                         nalive += 1
+                time.sleep(1)
             except KeyboardInterrupt:
                 ImageD11.ImageD11_thread.stop_now = True
                 print "Got your control-c - terminating threads"
