@@ -215,6 +215,9 @@ class pkimage:
             return
         if headerline.find("Number_of_pixels") > 0:
             return
+        if headerline.find("Frame") > 0:
+            self.header['Frame'] = int(headerline.split()[-1])
+            return
         else: # No equals sign means a threshold level or titles
             logging.critical("Could not interpret %s"% (headerline))
             raise Exception("Cannot interpret %s"%(headerline))
@@ -262,9 +265,11 @@ class peakmerger:
 #         print line[0:5]
             if line[0:6] == "# File":
                 name = line.split()[-1]
+                if name.find("[0]") > 0:
+                    name = name.split("[")[0]
                 currentimage = pkimage(name)
                 self.images.append(currentimage)
-                imagenumber = fabio.getnum(name)
+                imagenumber = fabio.getnum(name) 
                 # imagenumber = opendata.getnum(name)
                 currentimage.linestart = i
                 currentimage.imagenumber = imagenumber
