@@ -142,19 +142,20 @@ class refinegrains:
         # sort by number of peaks indexed to write out
         if sort_npks:
             #        npks in x array
-            gl = [ (len(self.grains[k].x), self.grains[k]) for k in ks ]
+            gl = [ (len(self.grains[k].x), self.grains[k],k) for k in ks ]
             gl.sort()
-            gl = [ g[1] for g in gl[::-1] ]
+            gl = [ (g[1],g[2]) for g in gl[::-1] ]
         else:
             ks.sort()
-            gl = [ self.grains[k] for k in ks ]
-        grain.write_grain_file(filename, gl)
+            gl = [ (self.grains[k],k) for k in ks ]
+        grain.write_grain_file(filename, [g[0] for g in gl])
 
         # Update the datafile and grain names reflect indices in grain list
-        for g in gl:
+        for g,k in gl:
             name, fltname = g.name.split(":")
             assert self.scandata.has_key(fltname),"Sorry - logical flaw"
             assert len(self.scandata.keys())==1,"Sorry - need to fix for multi data"
+            self.set_translation(k[0],fltname)
             self.compute_gv( g , update_columns = True )
             numpy.put( self.scandata[fltname].gx, g.ind, self.gv[:,0] )
             numpy.put( self.scandata[fltname].gy, g.ind, self.gv[:,1] )
