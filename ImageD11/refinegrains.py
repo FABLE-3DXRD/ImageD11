@@ -251,19 +251,14 @@ class refinegrains:
         """
         Makes self.gv refer be g-vectors computed for this grain in this scan
         """
-        x  = thisgrain.x
-        y  = thisgrain.y
+        peaks_xyz  = thisgrain.peaks_xyz
         om = thisgrain.om
         try:
             sign = self.parameterobj.parameters['omegasign']
         except:
             sign = 1.0
-        if False:    
-            thisgrain.translation[0] = float( self.parameterobj.parameters['t_x'] )
-            thisgrain.translation[1] = float( self.parameterobj.parameters['t_y'] )
-            thisgrain.translation[2] = float( self.parameterobj.parameters['t_z'] )
-        
-        self.tth,self.eta = transform.compute_tth_eta( numpy.array([x, y]),
+        # translation should match grain translation here...
+        self.tth,self.eta = transform.compute_tth_eta_from_xyz( peaks_xyz,
                                       omega = om * sign,
                                       **self.parameterobj.parameters)
         
@@ -316,12 +311,16 @@ class refinegrains:
             omega_calc = om*sign - numpy.clip( omerr, -self.slop , self.slop ) 
             # print omega_calc[0], om[0]
 
-            # Now recompute with improved omegas...
-            self.tth, self.eta = transform.compute_tth_eta(
-                numpy.array([x, y]),
-                omega = omega_calc, 
-                **self.parameterobj.parameters)
-        
+
+            # Now recompute with improved omegas... (tth, eta do not change much)
+            #self.tth, self.eta = transform.compute_tth_eta(
+            #    numpy.array([x, y]),
+            #    omega = omega_calc, 
+            #    **self.parameterobj.parameters)
+            self.tth,self.eta = transform.compute_tth_eta_from_xyz( peaks_xyz,
+                                                            omega = om * sign,
+                                                **self.parameterobj.parameters)
+
             gv = transform.compute_g_vectors(self.tth, self.eta, omega_calc,
                         float(self.parameterobj.parameters['wavelength']),
                         self.parameterobj.parameters['wedge'],
@@ -529,7 +528,9 @@ class refinegrains:
         """
         Fill out the appropriate labels for the spots
         """
-        print "Assigning labels"
+        print "Assigning labels with XLYLZL"
+        import time
+        start = time.time()
         for s in self.scannames:
             self.scandata[s].labels = self.scandata[s].labels*0 - 2 # == -1
             drlv2 = self.scandata[s].drlv2*0 + 1  # == 1
@@ -541,16 +542,16 @@ class refinegrains:
                 tth_tmp = numpy.zeros((ng, nr) ,numpy.float32 ) - 1
                 eta_tmp = numpy.zeros((ng, nr) ,numpy.float32 )
             
+            peaks_xyz = transform.compute_xyz_lab([ self.scandata[s].sc, 
+                                                    self.scandata[s].fc ],
+                                                  **self.parameterobj.parameters)
+            print "Start first grain loop",time.time()-start
+            start = time.time()
             for g, ig in zip(self.grainnames, range(ng)):
                 assert g == ig, "sorry - a bug in program"
                 gr = self.grains[ ( g, s) ]                
                 self.set_translation( g, s)
-                try:
-                    gr.x = self.scandata[s].xc
-                    gr.y = self.scandata[s].yc
-                except AttributeError:
-                    gr.x = self.scandata[s].sc
-                    gr.y = self.scandata[s].fc
+                gr.peaks_xyz = peaks_xyz
                 gr.om = self.scandata[s].omega
                 self.compute_gv( gr )
                 # self.tth and self.eta hold the current tth and eta values
@@ -568,6 +569,8 @@ class refinegrains:
                 
                  
             # Second loop after checking all grains
+            print "End first grain loop",time.time()-start
+            start = time.time()
 
             print self.scandata[s].labels.shape, \
                   numpy.minimum.reduce(self.scandata[s].labels),\
@@ -581,14 +584,6 @@ class refinegrains:
             
             tth = numpy.zeros( nr, numpy.float32 )-1
             eta = numpy.zeros( nr, numpy.float32 )
-            if 0:
-                for i in range( ng ):
-                    try:
-                        tth = numpy.where( int_tmp == i, tth_tmp[i,:], tth )
-                        eta = numpy.where( int_tmp == i, eta_tmp[i,:], eta )
-                    except:
-                        print int_tmp.shape, tth_tmp.shape, tth.shape, eta.shape
-                        raise
 
             self.scandata[s].addcolumn( tth, "tth_per_grain" )
             self.scandata[s].addcolumn( eta, "eta_per_grain" )
@@ -603,7 +598,9 @@ class refinegrains:
             self.scandata[s].addcolumn( numpy.zeros(nr, numpy.float32), "l")
 
 
-            
+            print "Start second grain loop",time.time()-start
+            start = time.time()
+
             # We have the labels set in self.scandata!!!
             for g in self.grainnames:
                 gr = self.grains[ ( g, s) ]
@@ -613,33 +610,32 @@ class refinegrains:
                 #print 'x',gr.x[:10]
                 #print 'ind',ind[:10]
                 gr.ind = ind # use this to push back h,k,l later
-                try:
-                    gr.x = numpy.take(self.scandata[s].xc , ind)
-                    gr.y = numpy.take(self.scandata[s].yc , ind)
-                except AttributeError:
-                    gr.x = numpy.take(self.scandata[s].sc , ind)
-                    gr.y = numpy.take(self.scandata[s].fc , ind)
+                gr.peaks_xyz = numpy.take( peaks_xyz, ind, axis=1 )
                 gr.om = numpy.take(self.scandata[s].omega , ind)
                 self.set_translation( g, s)
                 try:
                     sign = self.parameterobj.parameters['omegasign']
                 except:
                     sign = 1.0
-                tth,eta = transform.compute_tth_eta(
-                    numpy.array([gr.x, gr.y]),
-                    omega = gr.om * sign,
-                    **self.parameterobj.parameters)
+
+                tth, eta = transform.compute_tth_eta_from_xyz( gr.peaks_xyz,
+                                                       omega = gr.om * sign,
+                                              **self.parameterobj.parameters)
+
                 self.scandata[s].tth_per_grain[ind] = tth
                 self.scandata[s].eta_per_grain[ind] = eta
-                # Compute the total integrated intensity if we have enough
-                # information available
-                compute_lp_factor( self.scandata[s] ) 
                 gr.intensity_info = compute_total_intensity( self.scandata[s] ,
                                                             ind,
                                                             self.intensity_tth_range )
                 self.grains[ ( g, s) ] = gr
                 print "Grain",g,"Scan",s,"npks=",len(ind)
                 #print 'x',gr.x[:10]
+            # Compute the total integrated intensity if we have enough
+            # information available
+            compute_lp_factor( self.scandata[s] ) 
+            print "End second grain loop",time.time()-start
+            print
+            start = time.time()
 
 
 
