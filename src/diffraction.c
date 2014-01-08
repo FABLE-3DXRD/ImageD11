@@ -24,15 +24,16 @@
 extern "C" {
 #endif
 
-/*
+
 typedef double real;
 #define BIGNUM DBL_MAX;
-*/
+  /*
 typedef float real;
 #define BIGNUM FLT_MAX;
-#define HALF 0.5f
-#define ZERO 0.0f
-#define ONE 1.0f
+  */
+#define HALF 0.5
+#define ZERO 0.0
+#define ONE 1.0
 
 typedef real rmatrix[9];
 typedef real vector[3];
@@ -118,7 +119,27 @@ typedef real vector[3];
     (c)[7] = a[2]*b[3] + a[5]*b[4] + a[8]*b[5]; \
     (c)[8] = a[2]*b[6] + a[5]*b[7] + a[8]*b[8];
 
+#define matTmat(a,b,c)\
+    (c)[0] = a[0]*b[0] + a[3]*b[3] + a[6]*b[6]; \
+    (c)[1] = a[0]*b[1] + a[3]*b[4] + a[6]*b[7]; \
+    (c)[2] = a[0]*b[2] + a[3]*b[5] + a[6]*b[8]; \
+    (c)[3] = a[1]*b[0] + a[4]*b[3] + a[7]*b[6]; \
+    (c)[4] = a[1]*b[1] + a[4]*b[4] + a[7]*b[7]; \
+    (c)[5] = a[1]*b[2] + a[4]*b[5] + a[7]*b[8]; \
+    (c)[6] = a[2]*b[0] + a[5]*b[3] + a[8]*b[6]; \
+    (c)[7] = a[2]*b[1] + a[5]*b[4] + a[8]*b[7]; \
+    (c)[8] = a[2]*b[2] + a[5]*b[5] + a[8]*b[8];
 
+#define matmatT(a,b,c)\
+    (c)[0] = a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; \
+    (c)[1] = a[0]*b[3] + a[1]*b[4] + a[2]*b[5]; \
+    (c)[2] = a[0]*b[6] + a[1]*b[7] + a[2]*b[8]; \
+    (c)[3] = a[3]*b[0] + a[4]*b[1] + a[5]*b[2]; \
+    (c)[4] = a[3]*b[3] + a[4]*b[4] + a[5]*b[5]; \
+    (c)[5] = a[3]*b[6] + a[4]*b[7] + a[5]*b[8]; \
+    (c)[6] = a[6]*b[0] + a[7]*b[1] + a[8]*b[2]; \
+    (c)[7] = a[6]*b[3] + a[7]*b[4] + a[8]*b[5]; \
+    (c)[8] = a[6]*b[6] + a[7]*b[7] + a[8]*b[8];
 
 #define fillomegamatrix(angle, M) \
     (M)[0] = cos( angle ); \
@@ -143,9 +164,9 @@ typedef real vector[3];
     (M)[8] = cos( angle );
 
 #define fillchimatrix(angle, M) \
-    (M)[0] = ZERO; \
+    (M)[0] = ONE; \
     (M)[1] = ZERO; \
-    (M)[2] = ONE; \
+    (M)[2] = ZERO; \
     (M)[3] = ZERO; \
     (M)[4] = cos( angle ); \
     (M)[5] = -sin( angle ); \
@@ -161,6 +182,8 @@ typedef real vector[3];
 #define pmat(s,v)\
     printf("%s %f %f %f %f %f %f %f %f %f\n",(s),(v)[0],(v)[1],(v)[2],\
             (v)[3],(v)[4],(v)[5],(v)[6],(v)[7],(v)[8])
+#define psca(s,v)\
+    printf("%s %f\n",(s),(v))
 #else
 #define pvec(s,v)
 #define pmat(s,v)
@@ -179,7 +202,7 @@ void c_choosegrains( vector XL[], real omega[],
         int labels[], vector hkls[]){
     int i, j, gbest;
     real MdL, scal, mod_dG, scor, scormin;
-    rmatrix omat, cmat, wmat, tmpmat, gomat, diffrot;
+    rmatrix omat, cmat, wmat, tmpmat, gomat, diffrot, wc;
     vector origin, dL, s, beam = {ONE,ZERO,ZERO}, 
            kvec, gvec, hkl, ih, gcalc, dG, 
            hbest = {ZERO,ZERO,ZERO};
@@ -190,9 +213,13 @@ void c_choosegrains( vector XL[], real omega[],
     fillwedgematrix( wedge, wmat )
     fillchimatrix( chi,     cmat )
 
+    psca( "wedge",wedge); 
     pmat( "wmat", wmat );
+    psca( "chi",chi); 
     pmat( "cmat", cmat );
-    
+    matTmatT( wmat, cmat, wc);
+    pmat( "wc", wc);
+    vec3smul(beam, ONE/wvln, beam);
     for(i=0; i<npks; i++){
 
         /* gvecs, in crystal:
@@ -205,11 +232,11 @@ void c_choosegrains( vector XL[], real omega[],
 
         pmat( "omat", omat );
 
-        matTmatT( wmat, cmat, tmpmat );
-        pmat( "tmpmat", tmpmat );
-        matTmatT( tmpmat, omat, gomat); /* Grain origin matrix */
+	/* wedgeT.chiT.omegaT */
+        matmatT( wc, omat, gomat); /* Grain origin matrix */
         pmat( "gomat", gomat );
-        matmat( omat, cmat, tmpmat );
+
+        matmat( omat, cmat, tmpmat ); /* omega.chi.wedge */
         matmat( tmpmat, wmat, diffrot);
 
         scormin = BIGNUM; /* Tolerance */
@@ -220,17 +247,18 @@ void c_choosegrains( vector XL[], real omega[],
             matVec( gomat, T[j], origin ); /* This grain origin */
             vec3sub( XL[i], origin, dL);   /* Ray vector in laboratory */
             MdL = norm3( dL );            /* Length of that vector */
-            pmat( "gomat",gomat);
             pvec( "T[j]",T[j]);
             pvec( "XL[i]",XL[i]);
             pvec( "origin",origin);
             pvec( "dL", dL );
+	    pvec( "beam",beam);
 
             scal = ONE /( MdL * wvln );    /* Go to reciprocal space */
             vec3smul( dL, scal , s);
             vec3sub( s, beam, kvec);       /* Vector in lab */
             matVec( diffrot, kvec, gvec);  /* Vector in xtal */
             matVec(UBI[j], gvec, hkl );       /* hkl indices */
+            pvec("hklfloat", hkl );
             round3(hkl, ih);               /* Nearest integers */
 
             pvec("s", s);
@@ -256,6 +284,7 @@ void c_choosegrains( vector XL[], real omega[],
                 vec3copy(ih, hbest);
             }
         }
+	/* printf("i %d, gbest %d",i,gbest); */
         labels[i] = gbest;
         vec3copy( hbest, hkls[i] );
     }
