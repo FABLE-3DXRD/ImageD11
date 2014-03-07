@@ -61,10 +61,7 @@ def write_grain_file(filename, list_of_grains):
             f.write("#name %s\n"%(g.name.rstrip()))
         if hasattr(g,"intensity_info"):
             f.write("#intensity_info %s\n"%(g.intensity_info.rstrip()))
-        if hasattr(g,"x"):
-            # Refined peaks assigned takes priority
-            f.write("#npks %d\n"%(len(g.x)))
-        elif hasattr(g,"npks"):
+        if hasattr(g,"npks"):
             f.write("#npks %d\n"%(int(g.npks)))
         if hasattr(g,"Rod"):
             try:

@@ -142,7 +142,7 @@ class refinegrains:
         # sort by number of peaks indexed to write out
         if sort_npks:
             #        npks in x array
-            gl = [ (len(self.grains[k].x), self.grains[k],k) for k in ks ]
+            gl = [ (self.grains[k].npks, self.grains[k],k) for k in ks ]
             gl.sort()
             gl = [ (g[1],g[2]) for g in gl[::-1] ]
         else:
@@ -612,6 +612,7 @@ class refinegrains:
                 gr.ind = ind # use this to push back h,k,l later
                 gr.peaks_xyz = numpy.take( peaks_xyz, ind, axis=1 )
                 gr.om = numpy.take(self.scandata[s].omega , ind)
+                gr.npks = len(gr.ind)
                 self.set_translation( g, s)
                 try:
                     sign = self.parameterobj.parameters['omegasign']
