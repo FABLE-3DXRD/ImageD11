@@ -1,0 +1,39 @@
+data_Al
+_audit_creation_method     'manual editing'
+_chemical_name_systematic
+;
+Aluminium
+;
+_chemical_formula_moiety     'Al1'
+_chemical_formula_sum       'Al1'
+_symmetry_cell_setting     'Cubic'
+_symmetry_space_group_name_H-M     'F m-3m'
+
+_cell_length_a     4.04975
+_cell_length_b     4.04975
+_cell_length_c     4.04975
+_cell_angle_alpha     90.00
+_cell_angle_beta      90.00
+_cell_angle_gamma     90.00
+_cell_volume     66.41782388
+_cell_formula_units_Z     4
+
+loop_
+    _atom_type_symbol
+    _atom_type_description
+    'Al' 'Al' 
+
+loop_
+    _atom_site_label
+    _atom_site_fract_x
+    _atom_site_fract_y
+    _atom_site_fract_z
+    _atom_site_U_iso_or_equiv
+    _atom_site_adp_type
+    _atom_site_calc_flag
+    _atom_site_refinement_flags
+    _atom_site_occupancy
+    _atom_site_disorder_assembly
+    _atom_site_disorder_group
+    _atom_site_type_symbol
+    Al 0.0000 0.0000 0.0000 0.01 Uiso d . 1 . . 'Al'
