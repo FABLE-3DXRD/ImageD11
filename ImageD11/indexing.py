@@ -542,17 +542,19 @@ class indexer:
             if i==j:
                 continue
             try:
-                self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],verbose=0,all=True)
+                self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],verbose=0,all=False)
             except:
                 print i,j,self.ring_1,self.ring_2
                 print self.gv[i]
                 print self.gv[j]
                 raise       
-            npks=[closest.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist]
-            choice = n.argmax(npks)
-            UBI = self.unitcell.UBIlist[choice]
-            npk = npks[choice]
+            npk = closest.score(self.unitcell.UBI,gv,tol)
             if npk > self.minpks:
+                self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],verbose=0,all=True)
+                npks=[closest.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist]
+                choice = n.argmax(npks)
+                UBI = self.unitcell.UBIlist[choice]
+                npk = npks[choice]
                 # See if we already have this grain...
                 try:
                     ubio=self.refine(UBI.copy())
