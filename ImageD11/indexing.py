@@ -542,27 +542,20 @@ class indexer:
             if i==j:
                 continue
             try:
-                t0=time.time()
-#            print "\n\n",diff,i,j,self.gv[i,:],self.gv[j,:]
-                self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],verbose=0)
-                UBI=self.unitcell.UBI
-                t1=time.time()
-                # n=self.score(UBI)
-                # Function call overhead actually makes a big difference here
-                npk=closest.score(UBI,gv,tol)
-                t2=time.time()
-                tor=tor+t1-t0
-                ts=ts+t2-t1
-#            print self.ring_1,self.ring_2,n
+                self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],verbose=0,all=True)
             except:
                 print i,j,self.ring_1,self.ring_2
                 print self.gv[i]
                 print self.gv[j]
-                raise
+                raise       
+            npks=[closest.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist]
+            choice = n.argmax(npks)
+            UBI = self.unitcell.UBIlist[choice]
+            npk = npks[choice]
             if npk > self.minpks:
                 # See if we already have this grain...
                 try:
-                    ubio=self.refine(self.unitcell.UBI.copy())
+                    ubio=self.refine(UBI.copy())
                     # refine the orientation
                     ind=self.getind(ubio) # indices of peaks indexed
                     ga=n.take(self.ga,ind)  # previous grain assignments

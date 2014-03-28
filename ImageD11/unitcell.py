@@ -341,7 +341,7 @@ class unitcell:
             return self.anglehkl_cache
 
 
-    def orient(self,ring1,g1,ring2,g2,verbose=0):
+    def orient(self,ring1,g1,ring2,g2,verbose=0, all = True):
         """
         Compute an orientation matrix using cell parameters and the indexing
         of two reflections
@@ -359,64 +359,76 @@ class unitcell:
         best=5.
 
         hab , angles_ab = self.getanglehkls( ring1, ring2 )
-        best = numpy.argmin( abs( angles_ab - costheta ) )
-        try:
-            h1, h2 = hab[best]
-        except:
-            print "hab=",hab
-            print "best=",best
-            print "len(hab)",len(hab)
-            print "len(angles_ab)", len(angles_ab)
-            print "costheta",costheta
-            print "abs( angles_ab - costheta ) )",abs( angles_ab - costheta ) 
-            print "len(abs( angles_ab - costheta )) )",len(abs( angles_ab - costheta ) )
-            print numpy.argmin( abs( angles_ab - costheta ) )
-            raise
-
-        if verbose==1:
-            print "Assigning h1",h1,g1,self.ds(h1),\
-                math.sqrt(numpy.dot(g1,g1)),\
-                self.ds(h1)-math.sqrt(numpy.dot(g1,g1))
-            print "Assigning h2",h2,g2,self.ds(h2),\
-                math.sqrt(numpy.dot(g2,g2)),\
-                self.ds(h1)-math.sqrt(numpy.dot(g1,g1))
-            print "Cos angle calc",self.anglehkls(h1,h2),"obs",costheta
-        try:
-            h1c=numpy.dot(self.B,h1)    
-            h2c=numpy.dot(self.B,h2)
-            t1c=unit(h1c)
-            t3c=unit(cross(h1c,h2c))
-            t2c=unit(cross(h1c,t3c))
-            t1g=unit(g1)
-            t3g=unit(cross(g1,g2))
-            t2g=unit(cross(g1,t3g))
-            T_g = numpy.transpose(numpy.array([t1g,t2g,t3g]))  # Array are stored by rows and
-            T_c = numpy.transpose(numpy.array([t1c,t2c,t3c]))  # these are columns
-            U=numpy.dot(T_g , inv(T_c))
-            UB=numpy.dot(U,self.B)
-            UBI=inv(UB)
-        except:
-            logging.error("unitcell.orient h1 %s g1 %s h2 %s g2 %s self.B %s"%(
+        diffs = abs( angles_ab - costheta )
+	if all:
+            order = numpy.argsort( diffs )
+	    best = [ order[0],]
+            for i in range(1,len(order)):
+                if diffs[order[i]] < diffs[order[0]]+1e-5:
+                    best.append(order[i])
+                else:
+                    break
+	else:
+            best = [numpy.argmin( diffs ),]
+        self.UBIlist = []
+        for b in best:
+            try:
+                h1, h2 = hab[b]
+            except:
+                print "hab=",hab
+                print "best=",b
+                print "len(hab)",len(hab)
+                print "len(angles_ab)", len(angles_ab)
+                print "costheta",costheta
+                print "abs( angles_ab - costheta ) )",abs( angles_ab - costheta ) 
+                print "len(abs( angles_ab - costheta )) )",len(abs( angles_ab - costheta ) )
+                print numpy.argmin( abs( angles_ab - costheta ) )
+                raise
+            if verbose==1:
+                print "Assigning h1",h1,g1,self.ds(h1),\
+                    math.sqrt(numpy.dot(g1,g1)),\
+                    self.ds(h1)-math.sqrt(numpy.dot(g1,g1))
+                print "Assigning h2",h2,g2,self.ds(h2),\
+                    math.sqrt(numpy.dot(g2,g2)),\
+                    self.ds(h1)-math.sqrt(numpy.dot(g1,g1))
+                print "Cos angle calc",self.anglehkls(h1,h2),"obs",costheta
+            try:
+                h1c=numpy.dot(self.B,h1)    
+                h2c=numpy.dot(self.B,h2)
+                t1c=unit(h1c)
+                t3c=unit(cross(h1c,h2c))
+                t2c=unit(cross(h1c,t3c))
+                t1g=unit(g1)
+                t3g=unit(cross(g1,g2))
+                t2g=unit(cross(g1,t3g))
+                T_g = numpy.transpose(numpy.array([t1g,t2g,t3g]))  # Array are stored by rows and
+                T_c = numpy.transpose(numpy.array([t1c,t2c,t3c]))  # these are columns
+                U=numpy.dot(T_g , inv(T_c))
+                UB=numpy.dot(U,self.B)
+                UBI=inv(UB)
+            except:
+                logging.error("unitcell.orient h1 %s g1 %s h2 %s g2 %s self.B %s"%(
                      str(h1), str(g1), str(h2), str(g2), str(self.B)))
-            print "angles_ab = ",angles_ab
-            print "hab",hab
-            print "best",best
-            print "ring1",ring1,"ring2",ring2
-            import traceback
-            traceback.print_exc()
-        if verbose==1:
-            print "UBI"
-            print UBI
-            print "Grain gi"
-            print numpy.dot(numpy.transpose(UB),UB)
-            print "Cell gi"
-            print self.gi
-            h=numpy.dot(UBI,g1)
-            print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
-            h=numpy.dot(UBI,g2)
-            print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
-        self.UBI=UBI
-        self.UB=UB
+                print "angles_ab = ",angles_ab
+                print "hab",hab
+                print "best",b
+                print "ring1",ring1,"ring2",ring2
+                import traceback
+                traceback.print_exc()
+            if verbose==1:
+                print "UBI"
+                print UBI
+                print "Grain gi"
+                print numpy.dot(numpy.transpose(UB),UB)
+                print "Cell gi"
+                print self.gi
+                h=numpy.dot(UBI,g1)
+                print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
+                h=numpy.dot(UBI,g2)
+                print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
+            self.UBI=UBI
+            self.UB=UB
+            self.UBIlist.append(UBI)
 
 
 
