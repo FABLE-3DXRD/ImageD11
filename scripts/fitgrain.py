@@ -20,7 +20,7 @@ def fitgrain(options):
     o.readubis(options.ubifile)
     o.loadfiltered(options.fltfile)
     o.generate_grains()
-    o.refineubis(quiet = False)
+    #o.refineubis(quiet = False)
     #print o.grains.keys()
     #print "#pks",o.grains[(0,"0.flt")].x.shape
     o.parameterobj.varylist = options.varylist
