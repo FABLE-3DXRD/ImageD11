@@ -106,6 +106,7 @@ class refinegrains:
         self.drlv = None
         self.parameterobj = parameters.parameters(**self.pars)
         self.intensity_tth_range = intensity_tth_range
+        self.recompute_xlylzl = False
         for k,s in self.stepsizes.items():
             self.parameterobj.stepsizes[k]=s
 
@@ -338,7 +339,6 @@ class refinegrains:
         # print "In refine",self.tolerance, self.gv.shape
         self.npks, self.avg_drlv2 = closest.score_and_refine(mat, self.gv, 
                                                              self.tolerance)
-
         if not quiet:
             import math
             try:
@@ -348,8 +348,8 @@ class refinegrains:
 #                raise
 
         #print self.tolerance
-        self.npks, self.avg_drlv2 = closest.score_and_refine(mat, self.gv,
-                                                             self.tolerance)
+#        self.npks, self.avg_drlv2 = closest.score_and_refine(mat, self.gv,
+#                                                             self.tolerance)
         #tm = indexing.refine(ubi,self.gv,self.tolerance,quiet=quiet)
         #print ubi, tm,ubi-tm,mat-tm
 
@@ -390,13 +390,21 @@ class refinegrains:
 
             # Compute gv using current parameters
             # Keep labels fixed
+            if self.recompute_xlylzl:
+                g.peaks_xyz = transform.compute_xyz_lab([ g.sc, 
+                                                          g.fc ],
+                                                        **self.parameterobj.parameters)
+
             self.compute_gv( g )
             #print self.gv.shape
-            #print self.gv[0:10,:]
+            #print self.gv[0:10,i:]
 
             # For stability, always start refining the read in one
             g.set_ubi( self.refine( self.ubisread[grainname] ) )
-            self.npks # number of peaks it got
+            #print self.npks,self.avg_drlv2 # number of peaks it got
+            
+            #print self.gv.shape
+            
 
             diffs +=  self.npks*self.avg_drlv2
             contribs+= self.npks
@@ -442,6 +450,10 @@ class refinegrains:
         names = self.parameterobj.varylist
         self.printresult(guess)
         self.grains_to_refine = self.grains.keys()
+        self.recompute_xlylzl = False
+        for n in names:
+            if n not in ['t_x', 't_y', 't_z']:
+                self.recompute_xlylzl = True
         inc = self.estimate_steps(self.gof, guess, inc)
         s=simplex.Simplex(self.gof, guess, inc)
         newguess,error,iter=s.minimize(maxiters=maxiters , monitor=1)
@@ -535,6 +547,8 @@ class refinegrains:
             self.scandata[s].labels = self.scandata[s].labels*0 - 2 # == -1
             drlv2 = self.scandata[s].drlv2*0 + 1  # == 1
             nr = self.scandata[s].nrows
+            sc = self.scandata[s].sc
+            fc = self.scandata[s].fc
             # Looks like this in one dataset only
             ng = len(self.grainnames)
             int_tmp = numpy.zeros(nr , numpy.int32 )-1
@@ -611,6 +625,8 @@ class refinegrains:
                 #print 'ind',ind[:10]
                 gr.ind = ind # use this to push back h,k,l later
                 gr.peaks_xyz = numpy.take( peaks_xyz, ind, axis=1 )
+                gr.sc = numpy.take( sc, ind)
+                gr.fc = numpy.take( fc, ind)
                 gr.om = numpy.take(self.scandata[s].omega , ind)
                 gr.npks = len(gr.ind)
                 self.set_translation( g, s)
