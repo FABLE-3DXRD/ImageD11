@@ -17,7 +17,7 @@ def getmedian(s):
             j = i
     if j == -1:
         return 0
-    return float(items[j+2])
+    return abs(float(items[j+2]))
             
 try:
     outersf = float(sys.argv[3])
