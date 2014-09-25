@@ -162,7 +162,8 @@ class cakemacrogenerator:
         "RADIAL BINS",
         "CONSERVE INT.",
         "POLARISATION",
-        "GEOMETRY COR."
+        "GEOMETRY COR.",
+        "FACTOR",
         ]
 
     integrate_pars_values = {
@@ -176,7 +177,8 @@ class cakemacrogenerator:
         "RADIAL BINS"   : 2048     ,
         "CONSERVE INT." : "NO"     ,
         "POLARISATION"  : "NO"     ,
-        "GEOMETRY COR." : "YES"
+        "GEOMETRY COR." : "YES"    ,
+        "FACTOR"        : 0.99
         }
 
     mask_pars_names = [
