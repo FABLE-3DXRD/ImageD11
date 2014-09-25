@@ -222,7 +222,7 @@ def readvol(filename, savespace=False ):
     """
     
     volfile = h5py.File(filename)
-    if not 'signal' in volfile.listnames():
+    if not 'signal' in volfile.keys():#listnames():
         raise Exception("Your file %s is not an rsv"%(filename))
     sig = volfile['signal']
     bounds = volfile.attrs['bounds']
@@ -240,7 +240,7 @@ def readvol(filename, savespace=False ):
     for name, value in volfile.attrs.iteritems():
         vol.metadata[name] = value
     #mem()
-    if 'monitor' in volfile.listnames():
+    if 'monitor' in volfile.keys():#listnames():
         mon = volfile['monitor']
         assert mon.shape == vol.SIG.shape
         if savespace:
