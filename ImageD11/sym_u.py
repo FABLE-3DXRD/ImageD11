@@ -97,8 +97,10 @@ def cubic():
     return generate_group( "z,x,y",  "-y,x,z" )
 
 def hexagonal():
-    """ P6 168 """
-    return generate_group ( "-y,x-y,z", "-x,-y,z" )
+    #""" P6 168 """
+    #return generate_group ( "-y,x-y,z", "-x,-y,z" )
+    """ P6/mmm 191"""
+    return generate_group ( "-y,x-y,z", "-x,-y,z", "y,x,-z" )
 
 def trigonal():
     """ P3 143 """
