@@ -208,21 +208,42 @@ def peaksearch_driver(options, args):
         extn = options.format
 
     import fabio
-    file_name_object = fabio.filename_object(
+
+    if options.interlaced:
+        f0 = ["%s0_%04d.edf"%(options.stem,i) for i in range(
+                options.first,
+                options.last+1)]
+        f1 = ["%s1_%04d.edf"%(options.stem,i) for i in range(
+                options.first,
+                options.last+1)]
+   
+        def fso(f0,f1):
+            for a,b in zip(f0,f1):
+                try:
+                    yield fabio.open(a)
+                    yield fabio.open(b)
+                except:
+                    print a,b
+                    raise
+        file_series_object = fso(f0,f1)     
+        first_image = openimage( f0[0] )
+
+    else:
+        file_name_object = fabio.filename_object(
                 options.stem,
                 num = options.first,
                 extension = extn,
                 digits = options.ndigits)
                 
-    # Output files:
+        # Output files:
 
-    first_image = openimage( file_name_object )
-    import fabio.file_series
+        first_image = openimage( file_name_object )
+        import fabio.file_series
     # Use traceback = True for debugging
-    file_series_object = fabio.file_series.new_file_series(
-        first_image,
-        nimages = options.last - options.first + 1,
-        traceback = True  )
+        file_series_object = fabio.file_series.new_file_series(
+            first_image,
+            nimages = options.last - options.first + 1,
+            traceback = True  )
     
     if options.outfile[-4:] != ".spt":
         options.outfile = options.outfile + ".spt"
@@ -669,7 +690,13 @@ def get_options(parser):
         parser.add_option("--omega_motor_step", action="store", type="string",
                           dest = "omegamotorstep", default = "OmegaStep",
            help = "Header value to use for rotation width [OmegaStep]")
+        parser.add_option("--interlaced", action="store_true", 
+                          dest = "interlaced", default = False,
+           help = "Interlaced DCT scan")
         return parser
+
+
+
 
 
 def get_help(usage = True):
