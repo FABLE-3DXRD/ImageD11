@@ -19,11 +19,10 @@ def filtergrain(options):
     """
     Filter a peaks file according to which peaks are indexed
     """   
-    o = refinegrains.refinegrains(tolerance=0.1)
+    o = refinegrains.refinegrains(tolerance=0.9)
     o.loadparameters(options.parfile)
     o.readubis(options.ubifile)
-    o.loadfiltered(options.fltfile)
-    o.generate_grains()
+
     if options.grain is None:
         if len(o.grainnames) == 1:
             gn = o.grainnames[0]
@@ -33,6 +32,11 @@ def filtergrain(options):
             gn = o.grainnames[int(raw_input("select which grain "))]
     else:
         gn = o.grainnames[int(options.grain)]
+    o.grainnames = [ gn, ]
+
+    o.loadfiltered(options.fltfile)
+    o.generate_grains()
+    o.assignlabels()
     o.set_translation( gn, options.fltfile )
     o.compute_gv(o.grains[ (gn, options.fltfile) ] )
     if options.tol is None:
@@ -45,29 +49,12 @@ def filtergrain(options):
     else:
         o.tolerance = options.tol
     matrix = o.grains[(gn,options.fltfile)].ubi
-
+    o.assignlabels()
     drlv2 = indexing.calc_drlv2( matrix, o.gv )    
-    
     logging.info("Total peaks before filtering %d"%
                      o.scandata[options.fltfile].nrows)    
     gotpks = o.scandata[options.fltfile].copy()
-    # Output some derived information (h,k,l etc)
-    gotpks.addcolumn(o.tth, "tth")
-    gotpks.addcolumn(o.eta, "eta")
-    gotpks.addcolumn(o.gv[:,0] , "gx")
-    gotpks.addcolumn(o.gv[:,1] , "gy")
-    gotpks.addcolumn(o.gv[:,2] , "gz")
-    # Should these calcs go to refinegrains...?
-    hkl = Numeric.dot(matrix, Numeric.transpose(o.gv))
-    gotpks.addcolumn(hkl[0,:] , "hr")
-    gotpks.addcolumn(hkl[1,:] , "kr")
-    gotpks.addcolumn(hkl[2,:] , "lr")
-    hkli = Numeric.floor(hkl+0.5).astype(Numeric.Int)
-    gotpks.addcolumn(hkli[0,:] , "h")
-    gotpks.addcolumn(hkli[1,:] , "k")
-    gotpks.addcolumn(hkli[2,:] , "l")
-    gotpks.addcolumn(drlv2, "drlv2")
-    gotpks.filter(drlv2 < o.tolerance*o.tolerance)
+    gotpks.filter(gotpks.labels == 0)
     gotpks.writefile(options.newfltfile)
     logging.info("Peaks which were indexed %d written to %s"%(
                 gotpks.nrows, options.newfltfile))

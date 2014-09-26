@@ -80,7 +80,8 @@ class refinegrains:
         't_z' : 0.2,
         }
 
-    def __init__(self, tolerance = 0.01, intensity_tth_range = (6.1, 6.3) , OmFloat=True, OmSlop=0.25 ):
+    def __init__(self, tolerance = 0.01, intensity_tth_range = (6.1, 6.3) , 
+                 OmFloat=True, OmSlop=0.25 ):
         """
 
         """
@@ -202,6 +203,12 @@ class refinegrains:
         if not "labels" in col.titles:
             col.addcolumn( numpy.ones(col.nrows, numpy.float)-2,
                            "labels" )
+        if not "sc" in col.titles:
+            assert "xc" in col.titles
+            col.addcolumn( col.xc.copy(), "sc")
+        if not "fc" in col.titles:
+            assert "yc" in col.titles
+            col.addcolumn( col.yc.copy(), "fc")
         self.scandata[filename] = col
         
         
@@ -381,7 +388,6 @@ class refinegrains:
         contribs = 0.
 
         # defaulting to fitting all grains
-        # print "refineing grains",self.grains_to_refine
         for key in self.grains_to_refine:
 
             g = self.grains[key]
@@ -391,6 +397,7 @@ class refinegrains:
             # Compute gv using current parameters
             # Keep labels fixed
             if self.recompute_xlylzl:
+                
                 g.peaks_xyz = transform.compute_xyz_lab([ g.sc, 
                                                           g.fc ],
                                                         **self.parameterobj.parameters)
