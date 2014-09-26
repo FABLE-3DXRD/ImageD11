@@ -350,7 +350,7 @@ if __name__=="__main__":
 
         parser.add_option("-t","--template",action="store", type="string", 
                           dest="template",
-             default = "/data/id11/inhouse/Frelon2K/brukertemplate.0000")
+             default = "/data/id11/3dxrd/inhouse/Frelon2K/brukertemplate.0000")
 
 
         parser.add_option("-o","--overflow",action="store",type="float", 
