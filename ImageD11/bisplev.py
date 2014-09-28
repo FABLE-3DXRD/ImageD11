@@ -1,6 +1,3 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-
 """
 Interface to the bispev bit of fitpack.
 
@@ -35,16 +32,16 @@ Pearu Peterson
 
 
 from ImageD11 import _splines
-import numpy.oldnumeric as n
+import numpy as np
 
 def myasarray(a):
     if type(a) in [type(1.0),type(1L),type(1),type(1j)]:
-        return n.asarray([a])
+        return np.asarray([a])
     elif hasattr(a, "shape") and len(a.shape)==0:
         # Takes care of mapping array(number) to array([number])
-        return n.asarray([a])
+        return np.asarray([a])
     else:
-        return n.asarray(a)
+        return np.asarray(a)
 
 def bisplev(x,y,tck,dx=0,dy=0):
     """Evaluate a bivariate B-spline and its derivatives.
@@ -80,8 +77,8 @@ def bisplev(x,y,tck,dx=0,dy=0):
 
 
 
-_surfit_cache = {'tx': n.array([],'d'),'ty': n.array([],'d'),
-                 'wrk': n.array([],'d'), 'iwrk':n.array([],'i')}
+_surfit_cache = {'tx': np.array([],'d'),'ty': np.array([],'d'),
+                 'wrk': np.array([],'d'), 'iwrk':np.array([],'i')}
 
 def bisplrep(x,y,z,w=None,xb=None,xe=None,yb=None,ye=None,kx=3,ky=3,task=0,s=None,
              eps=1e-16,tx=None,ty=None,full_output=0,nxest=None,nyest=None,quiet=1):
@@ -138,10 +135,10 @@ def bisplrep(x,y,z,w=None,xb=None,xe=None,yb=None,ye=None,kx=3,ky=3,task=0,s=Non
       representation.
     """
     x,y,z=map(myasarray,[x,y,z])
-    x,y,z=map(n.ravel,[x,y,z])  # ensure 1-d arrays.
+    x,y,z=map(np.ravel,[x,y,z])  # ensure 1-d arrays.
     m=len(x)
     if not (m==len(y)==len(z)): raise TypeError, 'len(x)==len(y)==len(z) must hold.'
-    if w is None: w=n.ones(m,'d')
+    if w is None: w=np.ones(m,'d')
     else: w=myasarray(w)
     if not len(w) == m: raise TypeError,' len(w)=%d is not equal to m=%d'%(len(w),m)
     if xb is None: xb=x[0]
@@ -149,7 +146,7 @@ def bisplrep(x,y,z,w=None,xb=None,xe=None,yb=None,ye=None,kx=3,ky=3,task=0,s=Non
     if yb is None: yb=y[0]
     if ye is None: ye=y[-1]
     if not (-1<=task<=1): raise TypeError, 'task must be either -1,0, or 1'
-    if s is None: s=m-n.sqrt(2*m)
+    if s is None: s=m-np.sqrt(2*m)
     if tx is None and task==-1: raise TypeError, 'Knots_x must be given for task=-1'
     if tx is not None: _surfit_cache['tx']=myasarray(tx)
     nx=len(_surfit_cache['tx'])
@@ -164,12 +161,12 @@ def bisplrep(x,y,z,w=None,xb=None,xe=None,yb=None,ye=None,kx=3,ky=3,task=0,s=Non
         raise TypeError, \
        'Given degree of the spline (kx,ky=%d,%d) is not supported. (1<=k<=5)'%(kx,ky)
     if m<(kx+1)*(ky+1): raise TypeError, 'm>=(kx+1)(ky+1) must hold'
-    if nxest is None: nxest=kx+n.sqrt(m/2)
-    if nyest is None: nyest=ky+n.sqrt(m/2)
+    if nxest is None: nxest=kx+np.sqrt(m/2)
+    if nyest is None: nyest=ky+np.sqrt(m/2)
     nxest,nyest=max(nxest,2*kx+3),max(nyest,2*ky+3)
     if task>=0 and s==0:
-        nxest=int(kx+n.sqrt(3*m))
-        nyest=int(ky+n.sqrt(3*m))
+        nxest=int(kx+np.sqrt(3*m))
+        nyest=int(ky+np.sqrt(3*m))
     if task==-1:
         _surfit_cache['tx']=myasarray(tx)
         _surfit_cache['ty']=myasarray(ty)

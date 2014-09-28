@@ -1,6 +1,3 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -19,7 +16,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
-""" 
+"""
 ImageD11 data object
 
 Try not to blown away, it is just a Numeric array with a
@@ -32,7 +29,7 @@ TODO : PILimage methods ??
 TODO : ROI integration - need to define the slice mapping better to
      : be compatible with fabian
 
-Added some methods from: 
+Added some methods from:
 fabian:edfimage.py by:
 Authors: Henning O. Sorensen & Erik Knudsen
          Center for Fundamental Research: Metal Structures in Four Dimensions
@@ -42,8 +39,8 @@ Authors: Henning O. Sorensen & Erik Knudsen
          email:erik.knudsen@risoe.dk
 """
 
-import numpy.oldnumeric as n
-import logging 
+import numpy as np
+import logging
 
 class data: #IGNORE:R0902
     """ Generic datatype for handling 2D images
@@ -62,31 +59,31 @@ class data: #IGNORE:R0902
             self.header["columns"] = array.shape[1]
         else:
             self.header = header
-        self.header_keys = self.header.keys()        
-    
+        self.header_keys = self.header.keys()
+
     def getheader(self):
         """ return the header"""
         return self.header
-    
+
     def getmax(self):
         """ Return data maximum value (type matches data) """
         if self.maxval == None:
-            self.maxval = n.maximum.reduce(n.ravel(self.data))
+            self.maxval = np.maximum.reduce(np.ravel(self.data))
         return self.maxval
-    
+
     def getmin(self):
         """ Return data minimum value (type matches data) """
         if self.minval == None:
-            self.minval = n.minimum.reduce(n.ravel(self.data))
+            self.minval = np.minimum.reduce(np.ravel(self.data))
         return self.minval
-    
+
     def getmean(self):
         """ return mean """
         if self.m == None:
-            d = n.ravel(self.data.astype(n.Float))
-            self.m = n.sum(d) / len(d)
+            d = np.ravel(self.data.astype(np.float))
+            self.m = np.sum(d) / len(d)
         return float(self.m)
-    
+
     def getstddev(self):
         """ return standard deviation of image """
         if self.m == None:
@@ -94,28 +91,28 @@ class data: #IGNORE:R0902
             logging.debug("recalc mean")
         if self.stddev == None:
             #  wikipedia method:
-            # "In other words, the standard deviation of a discrete 
+            # "In other words, the standard deviation of a discrete
             # uniform random variable X can be calculated as follows:
             #
-            #   1. For each value xi calculate the difference 
+            #   1. For each value xi calculate the difference
             # x_i - <x> between xi and the average value <x>.
-            d = n.ravel(self.data.astype(n.Float)) - self.m
+            d = np.ravel(self.data.astype(np.float)) - self.m
             #   2. Calculate the squares of these differences.
             S = d*d
-            #   3. Find the average of the squared differences. 
+            #   3. Find the average of the squared differences.
             # This quantity is the variance sigma2.
             N = len(S)
-            S2 = n.sum(S)/N
+            S2 = np.sum(S)/N
             #  4. Take the square root of the variance.
             import math # ensure not an array here
             self.stddev = math.sqrt(S2)
-        return float(self.stddev)    
+        return float(self.stddev)
 
     def resetvals(self):
         """ resets properties in the event of data changing """
         self.m = self.stddev = self.maxval = self.minval = None
-     
-    
+
+
     def __add__(self, other):
         if type(other) in [type(1), type(1.0)]:
             return data(self.header, self.data + other)

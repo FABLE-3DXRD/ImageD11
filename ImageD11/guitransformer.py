@@ -1,7 +1,3 @@
-
-
-
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -20,7 +16,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
-import numpy.oldnumeric as n
+import numpy as np
 from Tkinter import *
 
 from listdialog import listdialog
@@ -65,7 +61,7 @@ class guitransformer:
                 "loadfiltered",filename)
 
     def loadfileparameters(self):
-        filename=self.parent.opener.show(title= 
+        filename=self.parent.opener.show(title=
                 "File containing detector parameters",
                 filetypes=[("parameter files", "*.par"),
                            ("parameter files", "*.pars"),
@@ -106,7 +102,7 @@ class guitransformer:
         self.parent.guicommander.execute("transformer",
                                          "parameterobj.set_parameters",
                                          d.result)
-        # wtf d.fv 
+        # wtf d.fv
         vars = []
         print "d.fv",d.fv
         for v in possvars:
@@ -116,7 +112,7 @@ class guitransformer:
         logging.debug("vars: "+str(vars))
         self.parent.guicommander.execute("transformer",
                 "parameterobj.set_varylist",vars)
-        
+
     def plotyz(self):
         """
         Plots the x,y arrays being used
@@ -132,8 +128,8 @@ class guitransformer:
               ( "Filtered peaks",
                  twodplot.data(
                     x, y,
-                    { "xlabel" : xname, 
-                      "ylabel" : yname, 
+                    { "xlabel" : xname,
+                      "ylabel" : yname,
                       "title"  : "Peak positions in array"} ) ) )
 
     def chooseyz(self):
@@ -146,7 +142,7 @@ class guitransformer:
         names = self.parent.guicommander.execute("transformer",getcols)
         d = columnchooser(self.parent, names)
         print d.result
-                                                 
+
 
     def fit(self):
         tthmin = self.parent.twodplotter.a.get_xlim()[0]
@@ -178,7 +174,7 @@ class guitransformer:
                             title="Histogram - no of bins")
 
             nbins = int(d.result['no_bins'])
-            
+
             self.parent.guicommander.execute("transformer",
                                              "parameterobj.set_parameters",
                                              d.result)
@@ -186,7 +182,7 @@ class guitransformer:
             self.parent.guicommander.execute("transformer",
                                              "parameterobj.set",
                                              "no_bins", nbins)
-            
+
         bins, hist = self.parent.guicommander.execute("transformer",
                                                       "compute_tth_histo")
         self.parent.twodplotter.adddata(
@@ -209,21 +205,21 @@ class guitransformer:
         min_bin_prob = self.parent.guicommander.execute("transformer",
                                                         "parameterobj.get",
                                                         "min_bin_prob")
-        
+
         d=listdialog(self.parent,items={
-            "no_bins": nbins, 
+            "no_bins": nbins,
             "min_bin_prob": min_bin_prob},
                      title="Histogram filter")
 
-        
+
         self.parent.guicommander.execute("transformer",
                                          "parameterobj.set_parameters",
                                          d.result)
-        
+
         min_bin_prob = self.parent.guicommander.execute("transformer",
                                                         "parameterobj.get",
                                                         "min_bin_prob")
-        
+
         self.plothisto(nbins)
         self.parent.guicommander.execute("transformer",
                                          "filter_min",
@@ -238,7 +234,7 @@ class guitransformer:
               ( "HKL peaks",
                  twodplot.data(
                          tth,
-                         n.zeros(tth.shape[0]),
+                         np.zeros(tth.shape[0]),
                          {'color':'r',
                           'pointtype':'|'
                           }
@@ -247,11 +243,11 @@ class guitransformer:
     def computegv(self):
         self.parent.guicommander.execute("transformer","computegv")
 
-    def savegv(self):       
+    def savegv(self):
         filename=self.parent.saver.show(title="File to save gvectors")
         self.parent.guicommander.execute("transformer","savegv",filename)
 
-    def savecolfile(self):       
+    def savecolfile(self):
         filename=self.parent.saver.show(title="File to save newcolfile")
         self.parent.guicommander.execute("transformer",
                                          "write_colfile",

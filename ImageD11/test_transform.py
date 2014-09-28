@@ -1,9 +1,3 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-
-
-
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -24,12 +18,14 @@
 
 import unittest
 
-import transform, numpy.oldnumeric as Numeric
+import numpy as np
+
+from ImageD11 import transform
 
 class testtransform(unittest.TestCase):
     def setUp(self):
-        self.peaks = Numeric.array([ [ 10, 20 , 50, 100 ],
-                                     [ 100, 10, 50, 99  ] ], Numeric.Float)
+        self.peaks = np.array([ [ 10, 20 , 50, 100 ],
+                                [ 100, 10, 50, 99  ] ], np.float)
 
     def test_compute_tth_eta1(self):
         # Check translation of 0,0,0 has no effect
@@ -40,20 +36,20 @@ class testtransform(unittest.TestCase):
                                               y_center=yc, y_size=ys, tilt_y=ty,
                                               z_center=zc, z_size=zs, tilt_z=tz,
                                               distance=dist)
-        om = Numeric.ones(self.peaks.shape[1],Numeric.Float)
+        om = np.ones(self.peaks.shape[1], np.float)
         trans =  transform.compute_tth_eta(self.peaks,
-                                              y_center=yc, y_size=ys, tilt_y=ty,
-                                              z_center=zc, z_size=zs, tilt_z=tz,
-                                              distance=dist,
+                                           y_center=yc, y_size=ys, tilt_y=ty,
+                                           z_center=zc, z_size=zs, tilt_z=tz,
+                                           distance=dist,
                                            t_x=0.,t_y=0.,t_z=0.,
                                            omega=om,
                                            wedge=10.,
                                            chi=-11.)
 
         diff = not_trans[0] - trans[0]
-        self.assertAlmostEqual(Numeric.sum(diff*diff), 0 , 5 )
+        self.assertAlmostEqual(np.sum(diff*diff), 0, 5 )
         diff = not_trans[1] - trans[1]
-        self.assertAlmostEqual(Numeric.sum(diff*diff), 0 , 5 )
+        self.assertAlmostEqual(np.sum(diff*diff), 0, 5 )
 
 
 if __name__=="__main__":

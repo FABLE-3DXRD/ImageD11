@@ -1,16 +1,16 @@
-#!/usr/bin/python
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-#!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
+#!/usr/bin/env python
 
 """
 Adapted to print detector line required for grainsweeper.3D
 Jette Oddershede, DTU Physics, jeto@fysik.dtu.dk, April 2013
 """
 
+import sys
+
+import numpy as np
+
 from ImageD11 import transform, parameters
 
-import sys, numpy.oldnumeric as Numeric
 
 try:
     parfile = sys.argv[1]
@@ -35,7 +35,7 @@ p.loadparameters(parfile)
 
 pars = p.get_parameters()
 
-xyz = Numeric.transpose(
+xyz = np.transpose(
     transform.compute_xyz_lab([[v],[h]],
                           **pars))
 
@@ -49,4 +49,17 @@ print "detector vertical",v,"horizontal",h
 print "real space x, y, z = ", xyz
 
 print "\n"
-print "detector 2048 2048 %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f stem format %i %i %i %i" %(mm*pars['y_size'],mm*pars['z_size'],mm*xyz[0,0],mm*xyz[0,1],mm*xyz[0,2],180*pars['tilt_x']/Numeric.pi,180*pars['tilt_y']/Numeric.pi,180*pars['tilt_z']/Numeric.pi,pars['o11'],pars['o12'],pars['o21'],pars['o22'])
+print "detector 2048 2048 %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f stem
+format %i %i %i %i" % \
+    (mm*pars['y_size'],
+     mm*pars['z_size'],
+     mm*xyz[0,0],
+     mm*xyz[0,1],
+     mm*xyz[0,2],
+     180*pars['tilt_x']/np.pi,
+     180*pars['tilt_y']/np.pi,
+     180*pars['tilt_z']/np.pi,
+     pars['o11'],
+     pars['o12'],
+     pars['o21'],
+     pars['o22'])

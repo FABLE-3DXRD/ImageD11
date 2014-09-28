@@ -29,8 +29,8 @@ import simplex
 print __file__
 
 class refinegrains:
-    
-    """ 
+
+    """
     Class to refine the position and orientation of grains
     and also the detector parameters
     """
@@ -64,7 +64,7 @@ class refinegrains:
         "z_center" : 517.007049626,
         "z_size" : 4.6 }
 
-    # Default stepsizes for the 
+    # Default stepsizes for the
     stepsizes = {
         "wavelength" : 0.001,
         'y_center'   : 0.2,
@@ -80,7 +80,7 @@ class refinegrains:
         't_z' : 0.2,
         }
 
-    def __init__(self, tolerance = 0.01, intensity_tth_range = (6.1, 6.3) , 
+    def __init__(self, tolerance = 0.01, intensity_tth_range = (6.1, 6.3),
                  OmFloat=True, OmSlop=0.25 ):
         """
 
@@ -113,7 +113,7 @@ class refinegrains:
 
     def loadparameters(self, filename):
         self.parameterobj.loadparameters(filename)
-        
+
     def saveparameters(self, filename):
         self.parameterobj.saveparameters(filename)
 
@@ -138,7 +138,7 @@ class refinegrains:
     def savegrains(self, filename, sort_npks=True):
         """
         Save the refined grains
-        
+
         """
         ks = self.grains.keys()
         # sort by number of peaks indexed to write out
@@ -170,7 +170,7 @@ class refinegrains:
             numpy.put( self.scandata[fltname].h, g.ind, hkl[0,:] )
             numpy.put( self.scandata[fltname].k, g.ind, hkl[1,:] )
             numpy.put( self.scandata[fltname].l, g.ind, hkl[2,:] )
-            
+
 
 
 
@@ -178,7 +178,7 @@ class refinegrains:
     def makeuniq(self, symmetry):
         """
         Flip orientations to a particular choice
-        
+
         Be aware that if the unit cell is distorted and you do this,
         you might have problems...
         """
@@ -188,7 +188,7 @@ class refinegrains:
             self.ubisread[k] = find_uniq_u(self.ubisread[k], g)
         for k in self.grains.keys():
             self.grains[k].set_ubi( find_uniq_u(self.grains[k].ubi, g) )
-            
+
 
     def loadfiltered(self, filename):
         """
@@ -210,8 +210,6 @@ class refinegrains:
             assert "yc" in col.titles
             col.addcolumn( col.yc.copy(), "fc")
         self.scandata[filename] = col
-        
-        
 
 
     def generate_grains(self):
@@ -246,14 +244,14 @@ class refinegrains:
             y = self.scandata[scanname].fc
         om = self.scandata[scanname].omega
         # only for this grain
-        self.scandata[scanname].labels = self.scandata[scanname].labels*0 - 2 
+        self.scandata[scanname].labels = self.scandata[scanname].labels*0 - 2
         self.scandata[scanname].drlv2 = self.scandata[scanname].drlv2*0 + 1
         for g in self.grainnames:
             self.grains[(g,scanname)].x = x
             self.grains[(g,scanname)].y = y
             self.grains[(g,scanname)].om = om
 
-            
+
 
     def compute_gv(self, thisgrain , update_columns = False  ):
         """
@@ -269,7 +267,7 @@ class refinegrains:
         self.tth,self.eta = transform.compute_tth_eta_from_xyz( peaks_xyz,
                                       omega = om * sign,
                                       **self.parameterobj.parameters)
-        
+
         gv = transform.compute_g_vectors(self.tth, self.eta, om*sign,
                                 float(self.parameterobj.parameters['wavelength']),
                                 self.parameterobj.parameters['wedge'],
@@ -277,13 +275,13 @@ class refinegrains:
         # update tth_per_grain and eta_per_grain
         if update_columns:
             name = thisgrain.name.split(":")[1]
-            numpy.put( self.scandata[name].tth_per_grain,  
+            numpy.put( self.scandata[name].tth_per_grain,
                     thisgrain.ind,
                     self.tth)
             numpy.put( self.scandata[name].eta_per_grain ,
-                    thisgrain.ind,  
+                    thisgrain.ind,
                     self.eta)
-                    
+
         if not self.OMEGA_FLOAT:
             self.gv = gv.T
         if self.OMEGA_FLOAT:
@@ -292,8 +290,8 @@ class refinegrains:
                                             self.tolerance)
             hklf = numpy.dot( mat, gv )
             hkli = numpy.floor( hklf + 0.5 )
-            
-            gcalc = numpy.dot( numpy.linalg.inv(mat) , hkli ) 
+
+            gcalc = numpy.dot( numpy.linalg.inv(mat) , hkli )
             tth,[eta1,eta2],[omega1,omega2] = transform.uncompute_g_vectors(
                 gcalc , float(self.parameterobj.parameters['wavelength']),
                 self.parameterobj.parameters['wedge'],
@@ -305,9 +303,9 @@ class refinegrains:
                 eta_err = numpy.array( [ e1e, e2e ] )
             except:
                 print e1e.shape, e2e.shape, e1e
-                
+
                 raise
-            
+
             best_fitting = numpy.argmin( eta_err, axis = 0 )
 
             # These are always 1 or zero
@@ -316,14 +314,14 @@ class refinegrains:
             # Take a weighted average within the omega error of the observed
             omerr = (om*sign - omega_calc)
             # print omerr[0:5]
-            omega_calc = om*sign - numpy.clip( omerr, -self.slop , self.slop ) 
+            omega_calc = om*sign - numpy.clip( omerr, -self.slop , self.slop )
             # print omega_calc[0], om[0]
 
 
             # Now recompute with improved omegas... (tth, eta do not change much)
             #self.tth, self.eta = transform.compute_tth_eta(
             #    numpy.array([x, y]),
-            #    omega = omega_calc, 
+            #    omega = omega_calc,
             #    **self.parameterobj.parameters)
             self.tth,self.eta = transform.compute_tth_eta_from_xyz( peaks_xyz,
                                                             omega = om * sign,
@@ -340,11 +338,11 @@ class refinegrains:
     def refine(self, ubi, quiet=True):
         """
         Fit the matrix without changing the peak assignments
-        
+
         """
         mat=ubi.copy()
         # print "In refine",self.tolerance, self.gv.shape
-        self.npks, self.avg_drlv2 = closest.score_and_refine(mat, self.gv, 
+        self.npks, self.avg_drlv2 = closest.score_and_refine(mat, self.gv,
                                                              self.tolerance)
         if not quiet:
             import math
@@ -364,7 +362,7 @@ class refinegrains:
 
     def applyargs(self,args):
         self.parameterobj.set_variable_values(args)
-        
+
     def printresult(self,arg):
         # print self.parameterobj.parameters
         # return
@@ -397,8 +395,7 @@ class refinegrains:
             # Compute gv using current parameters
             # Keep labels fixed
             if self.recompute_xlylzl:
-                
-                g.peaks_xyz = transform.compute_xyz_lab([ g.sc, 
+                g.peaks_xyz = transform.compute_xyz_lab([ g.sc,
                                                           g.fc ],
                                                         **self.parameterobj.parameters)
 
@@ -409,9 +406,9 @@ class refinegrains:
             # For stability, always start refining the read in one
             g.set_ubi( self.refine( self.ubisread[grainname] ) )
             #print self.npks,self.avg_drlv2 # number of peaks it got
-            
+
             #print self.gv.shape
-            
+
 
             diffs +=  self.npks*self.avg_drlv2
             contribs+= self.npks
@@ -428,7 +425,7 @@ class refinegrains:
         deriv = []
         print "Estimating step sizes"
         for i in range(len(steps)):
-            print self.parameterobj.varylist[i],    
+            print self.parameterobj.varylist[i],
             newguess = [g for g in guess]
             newguess[i] = newguess[i] + steps[i]
             here = self.gof(newguess)
@@ -442,7 +439,7 @@ class refinegrains:
         print "steps",steps
         print "inc",inc
         return inc
-    
+
 
 
 
@@ -464,18 +461,18 @@ class refinegrains:
         inc = self.estimate_steps(self.gof, guess, inc)
         s=simplex.Simplex(self.gof, guess, inc)
         newguess,error,iter=s.minimize(maxiters=maxiters , monitor=1)
-        print 
+        print
         print "names",names
         print "ng",newguess
         for p,v in zip(names,newguess):
             # record results
-            self.parameterobj.set(p,v)    
+            self.parameterobj.set(p,v)
             print "Setting parameter",p,v
         trans =["t_x","t_y","t_z"]
         for t in trans:
             if t in names:
                 i = trans.index(t)
-                # imply that we are using this translation value, not the 
+                # imply that we are using this translation value, not the
                 # per grain values
                 # This is a f*cking mess - translations should never have been
                 # diffractometer parameters
@@ -515,13 +512,13 @@ class refinegrains:
             newguess, error, iter = s.minimize(maxiters=maxiters,monitor=1)
 
             self.grains[key].translation[0] = self.parameterobj.parameters['t_x']
-            self.grains[key].translation[1] = self.parameterobj.parameters['t_y'] 
-            self.grains[key].translation[2] = self.parameterobj.parameters['t_z'] 
+            self.grains[key].translation[1] = self.parameterobj.parameters['t_y']
+            self.grains[key].translation[2] = self.parameterobj.parameters['t_z']
             print key,self.grains[key].translation,
             self.refine(self.grains[key].ubi,quiet=False)
         self.tolerance = tolcache
 
- 
+
     def refineubis(self, quiet=True, scoreonly=False):
         #print quiet
         ks = self.grains.keys()
@@ -562,15 +559,15 @@ class refinegrains:
             if 0: # this is pretty slow
                 tth_tmp = numpy.zeros((ng, nr) ,numpy.float32 ) - 1
                 eta_tmp = numpy.zeros((ng, nr) ,numpy.float32 )
-            
-            peaks_xyz = transform.compute_xyz_lab([ self.scandata[s].sc, 
+
+            peaks_xyz = transform.compute_xyz_lab([ self.scandata[s].sc,
                                                     self.scandata[s].fc ],
                                                   **self.parameterobj.parameters)
             print "Start first grain loop",time.time()-start
             start = time.time()
             for g, ig in zip(self.grainnames, range(ng)):
                 assert g == ig, "sorry - a bug in program"
-                gr = self.grains[ ( g, s) ]                
+                gr = self.grains[ ( g, s) ]
                 self.set_translation( g, s)
                 gr.peaks_xyz = peaks_xyz
                 gr.om = self.scandata[s].omega
@@ -587,8 +584,8 @@ class refinegrains:
                                           int_tmp,
                                           int(g))
 #                print "assigned"
-                
-                 
+
+
             # Second loop after checking all grains
             print "End first grain loop",time.time()-start
             start = time.time()
@@ -596,13 +593,13 @@ class refinegrains:
             print self.scandata[s].labels.shape, \
                   numpy.minimum.reduce(self.scandata[s].labels),\
                   numpy.maximum.reduce(self.scandata[s].labels)
-            
+
             self.scandata[s].addcolumn( int_tmp , "labels" )
             self.scandata[s].addcolumn( drlv2 , "drlv2" )
             print self.scandata[s].labels.shape, \
                   numpy.minimum.reduce(self.scandata[s].labels),\
                   numpy.maximum.reduce(self.scandata[s].labels)
-            
+
             tth = numpy.zeros( nr, numpy.float32 )-1
             eta = numpy.zeros( nr, numpy.float32 )
 
@@ -625,7 +622,7 @@ class refinegrains:
             # We have the labels set in self.scandata!!!
             for g in self.grainnames:
                 gr = self.grains[ ( g, s) ]
-                
+
                 ind = numpy.compress(int_tmp == g,
                                      range(nr) )
                 #print 'x',gr.x[:10]
@@ -656,7 +653,7 @@ class refinegrains:
                 #print 'x',gr.x[:10]
             # Compute the total integrated intensity if we have enough
             # information available
-            compute_lp_factor( self.scandata[s] ) 
+            compute_lp_factor( self.scandata[s] )
             print "End second grain loop",time.time()-start
             print
             start = time.time()
@@ -677,7 +674,7 @@ def compute_lp_factor( colfile, **kwds ):
               \frac{ 1 + \cos^2{\theta} }  { \sin{2\theta } .
               \frac{ cos{\theta} { \sqrt{ \cos^2{\psi} - \sin^2{\theta} } }
               p' |F|^2
-              
+
     rho is Integrated reflection power ratio from a crystal element
     e, m 	Electronic charge and mass
     c 	Speed of light
@@ -701,14 +698,14 @@ def compute_lp_factor( colfile, **kwds ):
         except:
             print lp.shape, colfile.tth.shape, colfile.nrows, "?"
             raise
-        
+
     if "tth_per_grain" in colfile.titles and \
        "eta_per_grain" in colfile.titles:
         lpg = lf( colfile.tth_per_grain, colfile.eta_per_grain )
         assert len(lpg) == len(colfile.tth_per_grain)
         colfile.addcolumn(lpg, "Lorentz_per_grain")
-    
-    
+
+
 import math
 
 def cosd(x): return numpy.cos( x * math.pi/180 )
@@ -724,24 +721,24 @@ def lf( tth, eta ):
 
     # unreachable code here:
     #  ... problem that cos^2_p - sin^2 can be < 0
-    #       must mean that p is NOT eta 
-    
+    #       must mean that p is NOT eta
+
     cos_2t = cosd( tth )
-    
+
     cos_t  = cosd( tth/2 )
     sin_t  = sind( tth/2 )
     # our eta is their psi + 90 degrees
     cos_p  = cosd( eta + 90 )
-    
+
     bot = sin_2t * numpy.sqrt( cos_p * cos_p - sin_t * sin_t )
-    
+
     top = (1 + cos_2t * cos_2t)*cos_2t
     # Wondering if there is a div0 to fear
     # Certainly lf can be infinite, so mask this problem as 1e6
     bot = numpy.where( numpy.abs ( bot ) > 1e-6 , bot, 1e-6 )
     return top / bot
-    
-    
+
+
 def compute_total_intensity( colfile, indices, tth_range, ntrim = 2 ):
     """
     Add up the intensity in colfile for peaks given in indices
@@ -794,7 +791,7 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2 ):
         return "no peaks"
     # min, max, med, mean, stddev, n
     intensities.sort()
-    
+
     if(len(intensities)) > ntrim*2+1:
         intensities = intensities[ntrim:-ntrim]
     try:
@@ -814,7 +811,7 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2 ):
         raise
     print ret
     return ret
-    
+
 
 
 
@@ -853,10 +850,10 @@ def test_nac():
     o.refineubis(quiet = False , scoreonly = True)
     print "Refining positions too"
     o.refinepositions()
-    print "Refining positions too"    
+    print "Refining positions too"
     o.refineubis(quiet = False , scoreonly = True)
-    
-    
+
+
 
 
 if __name__ == "__main__":

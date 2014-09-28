@@ -1,7 +1,3 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -35,8 +31,8 @@ from ImageD11 import peakmerge, indexing, transformer
 
 # To autoconvert arrays to lists for Java XMLRPC
 RETURN_NUMERICS = False
-import numpy.oldnumeric as Numeric
-TYPE_NUMERIC = type(Numeric.zeros(1)) 
+import numpy as np
+TYPE_NUMERIC = type(np.zeros(1))
 
 class guicommand:
     """
@@ -58,7 +54,7 @@ mytransformer = transformer.transformer()
 myindexer = indexing.indexer()
 #
 # Your work starts here:
-#    
+#
 """
 
     def execute(self, obj, command, *args, **kwds):
@@ -98,7 +94,7 @@ myindexer = indexing.indexer()
 
         except:
             logging.error("Exception occurred " + "self" + str(self) +
-                "obj" + str(obj)+ "command" + str(command) + 
+                "obj" + str(obj)+ "command" + str(command) +
                 "func" + str(func) + "args" + str(args) + "kwds" + str(kwds))
             import traceback
             traceback.print_exc()

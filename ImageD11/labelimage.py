@@ -39,33 +39,33 @@ from math import sqrt
 
 import sys
 
-import numpy.oldnumeric as n
+import numpy as np
 
 
-# These should match the definitions in 
+# These should match the definitions in
 # /sware/exp/saxs/doc/SaxsKeywords.pdf
-def flip1(x, y): 
+def flip1(x, y):
     """ fast, slow to dety, detz"""
     return  x,  y
-def flip2(x, y): 
+def flip2(x, y):
     """ fast, slow to dety, detz"""
-    return -x,  y   
-def flip3(x, y): 
+    return -x,  y
+def flip3(x, y):
     """ fast, slow to dety, detz"""
     return  x, -y
-def flip4(x, y): 
+def flip4(x, y):
     """ fast, slow to dety, detz"""
     return -x, -y
-def flip5(x, y): 
+def flip5(x, y):
     """ fast, slow to dety, detz"""
     return  y,  x
-def flip6(x, y): 
+def flip6(x, y):
     """ fast, slow to dety, detz"""
     return  y, -x
-def flip7(x, y): 
+def flip7(x, y):
     """ fast, slow to dety, detz"""
     return -y,  x
-def flip8(x, y): 
+def flip8(x, y):
     """ fast, slow to dety, detz"""
     return -y, -x
 
@@ -78,7 +78,7 @@ class labelimage:
     For labelling spots in diffraction images
     """
 
-    titles = "#  sc  fc  omega" 
+    titles = "#  sc  fc  omega"
     format = "  %.4f"*3
     titles += "  Number_of_pixels"
     format += "  %.0f"
@@ -121,13 +121,13 @@ class labelimage:
 
         self.onfirst = 1    # Flag for first image in series
         self.onlast = 0     # Flag for last image in series
-        self.blim = n.zeros(shape, n.Int)  # 'current' blob image 
+        self.blim = np.zeros(shape, np.int)  # 'current' blob image
         self.npk = 0        #  Number of peaks on current
         self.res = None     #  properties of current
-        
+
         self.threshold = None # cache for writing files
 
-        self.lastbl = n.zeros(shape, n.Int)# 'previous' blob image
+        self.lastbl = np.zeros(shape, np.int)# 'previous' blob image
         self.lastres = None
         self.lastnp = "FIRST" # Flags initial state
 
@@ -157,13 +157,13 @@ class labelimage:
         # threshold = float - pixels above this number are put into objects
         """
         self.threshold = threshold
-        self.npk = connectedpixels.connectedpixels(data, 
-                                                  self.blim, 
+        self.npk = connectedpixels.connectedpixels(data,
+                                                  self.blim,
                                                   threshold,
                                                   self.verbose)
         if self.npk > 0:
-            self.res = connectedpixels.blobproperties(data, 
-                                                      self.blim, 
+            self.res = connectedpixels.blobproperties(data,
+                                                      self.blim,
                                                       self.npk,
                                                       omega=omega)
         else:
@@ -180,10 +180,10 @@ class labelimage:
             self.lastbl, self.blim = self.blim, self.lastbl
             self.lastnp = self.npk
             self.lastres = self.res
-            return            
+            return
         if self.npk > 0 and self.lastnp > 0:
             # Thanks to Stine West for finding a bug here
-            # 
+            #
             self.npk = connectedpixels.bloboverlaps(self.lastbl,
                                                     self.lastnp,
                                                     self.lastres,
@@ -212,7 +212,7 @@ class labelimage:
         which fabian is reading.
         This is called before mergelast, so we write self.npk/self.res
         """
-        
+
         file_obj.write("# Threshold level %f\n"%( self.threshold))
         file_obj.write("# Number_of_pixels Average_counts    s   f     sc   fc      sig_s  sig_f  cov_sf  IMax_int\n")
         ret = connectedpixels.blob_moments(self.res)
@@ -226,7 +226,7 @@ class labelimage:
                                  i[s_cen], i[f_cen],
                                  i[m_ss], i[m_ff], i[m_sf], i[mx_I]))
         file_obj.write("\n")
-        
+
     def outputpeaks(self, peaks):
         """
         Peaks are in Numeric arrays nowadays
@@ -240,13 +240,13 @@ class labelimage:
             i[s_cen], i[f_cen] = self.corrector.correct(i[s_raw], i[f_raw])
             i[dety], i[detz] = self.fs2yz(i[f_raw], i[s_raw])
             self.outfile.write(self.format % (
-                    i[s_cen], i[f_cen], i[o_raw], 
+                    i[s_cen], i[f_cen], i[o_raw],
                     i[s_1], i[avg_i],
                     i[s_raw], i[f_raw],
                     i[m_ss], i[m_ff], i[m_sf],
                     i[m_oo], i[m_so], i[m_fo],
-                    i[s_I],i[s_I2],  
-                    i[mx_I],i[mx_I_s],i[mx_I_f],i[mx_I_o], 
+                    i[s_I],i[s_I2],
+                    i[mx_I],i[mx_I_s],i[mx_I_f],i[mx_I_o],
                     i[bb_mn_s],i[bb_mx_s],i[bb_mn_f],i[bb_mx_f],
                     i[bb_mn_o],i[bb_mx_o],
                     i[dety], i[detz],
@@ -254,10 +254,10 @@ class labelimage:
             self.spot3d_id += 1
         if self.onfirst > 0:
             self.onfirst = 0
-            
-            
-            
-            
+
+
+
+
     def finalise(self):
         """
         Write out the last frame
@@ -268,7 +268,7 @@ class labelimage:
             self.outputpeaks(self.lastres)
         #if hasattr(self.sptfile, "close"):
         #    self.sptfile.close()
-        #     wonder what that does to stdout  
+        #     wonder what that does to stdout
 
 
 

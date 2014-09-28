@@ -1,12 +1,10 @@
-#!/usr/bin/python
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-#!/bliss/users/blissadm/bin/python
+#!/usr/bin/env python
 
 from Tkinter import *
-import numpy.oldnumeric as n
 import ImageTk,Image,tkSimpleDialog,tkFileDialog,os,sys
 from tkMessageBox import showinfo
+
+import numpy as np
 
 """
 TO DO
@@ -29,8 +27,8 @@ def preprocess(image, (scalex,scaley),maxi=None,mini=None):
            len(image.shape) == 3 and image.shape[2] == 3, \
            "image not correct format"
     if maxi==None:
-        themin = float(n.minimum.reduce(n.ravel(image)))
-        themax = float(n.maximum.reduce(n.ravel(image)))
+        themin = float(np.minimum.reduce(np.ravel(image)))
+        themax = float(np.maximum.reduce(np.ravel(image)))
     else:
         themin = float(mini)
         themax = float(maxi)
@@ -40,15 +38,15 @@ def preprocess(image, (scalex,scaley),maxi=None,mini=None):
         image = (zeros((DEFAULT_HEIGHT, len_x))+255).astype('B')
         for x in range(len_x):
             image[DEFAULT_HEIGHT-1-ys[x],len_x-x-1] = 0
-        image = n.transpose(image)
+        image = np.transpose(image)
     elif image.dtype.char != 'b':
         try:
             pass  ## image.savespace(0)
             image = 255 * (image - themin) / (themax-themin)
         except:
             print "Exception",themax,themin
-        image = n.where(image<256,image,255)
-        image = n.where(image>0,image,0).astype('B')
+        image = np.where(image<256,image,255)
+        image = np.where(image>0,image,0).astype('B')
 
     len_x, len_y = image.shape[:2]
 #    print "Image dimensions...  x=",len_x,"  y=",len_y
@@ -68,10 +66,10 @@ def NumerictoImage( data, (scalex,scaley),maxi=None,mini=None):
     width, height = image.shape[:2]
     if len(image.shape) == 3:
         mode = rawmode = 'RGB'
-        bits = n.transpose(image, (1,0,2)).tostring()
+        bits = np.transpose(image, (1,0,2)).tostring()
     else:
         mode = rawmode = 'L'
-        bits = n.transpose(image, (1,0)).tostring()
+        bits = np.transpose(image, (1,0)).tostring()
     image2 = Image.fromstring(mode, (width, height),
                                       bits, "raw", rawmode)
     image2=image2.resize((int(scalesx),int(scalesy)))
@@ -92,21 +90,21 @@ class rubber(Frame):
         if type(datafile)==type("string"):
             self.datafile = datafile
             dataobj=openimage(datafile)
-            self.data=dataobj.data.astype(n.Int)
+            self.data=dataobj.data.astype(np.int)
             try:
                 self.omega=float(dataobj.header["Omega"])
             except:
                 self.omega = None
         else:
-            if type(datafile)==type(n.array([10,11,12])):
+            if type(datafile)==type(np.array([10,11,12])):
                 self.data=datafile
                 self.datafile="unknown0000.edf"
         pass  ## self.data.savespace(0)
         if type(bkgfile)==type("string"):
             self.bkgfile=bkgfile
             bkgobj=openimage(bkgfile)
-            self.bkg=bkgobj.data.astype(n.Int)
-            self.data=self.data.astype(n.Int)-self.bkg
+            self.bkg=bkgobj.data.astype(np.int)
+            self.data=self.data.astype(np.int)-self.bkg
             print "Got your background from",bkgfile,self.bkg.shape
         else:
             self.bkg = None
@@ -189,7 +187,7 @@ class rubber(Frame):
         while x <= self.maxi:
             l.append(x)
             x+=step
-        self.legend=n.transpose(n.array([l],n.Float))
+        self.legend=np.transpose(np.array([l],np.float))
         self.legendimage,(scalesx,scalesy)=NumerictoImage(self.legend,(self.scale[0],10))
         self.legendimage=ImageTk.PhotoImage(self.legendimage)
         self.key.configure(image=self.legendimage)
@@ -234,10 +232,10 @@ class rubber(Frame):
             bkgfile=tkFileDialog.askopenfilename(initialdir=os.getcwd())
         self.bkgfile=bkgfile
         bkgobj=openimage(bkgfile)
-        self.bkg=bkgobj.data.astype(n.Int)
-        self.data=self.data.astype(n.Int)-self.bkg
+        self.bkg=bkgobj.data.astype(np.int)
+        self.data=self.data.astype(np.int)-self.bkg
         print "Got your background from",bkgfile,self.bkg.shape
-        
+
     def jump(self):
         number=int(self.filenum.get())
         self.datafile="%s%04d.edf"%(self.datafile[:-8],number)
@@ -262,10 +260,10 @@ class rubber(Frame):
     def readdata(self):
         dataobj=openimage(self.datafile)
         self.status.config(text=self.datafile)
-        self.data=dataobj.data.astype(n.Int)
+        self.data=dataobj.data.astype(np.int)
         pass  ## self.data.savespace(0)
         if self.bkg is not None:
-            self.data=self.data.astype(n.Int)-self.bkg
+            self.data=self.data.astype(np.int)-self.bkg
         except:
             print "Failed to subtract bkg",self.bkg.shape,self.data.shape
         try:
@@ -304,20 +302,20 @@ class rubber(Frame):
 
     def getstats(self):
         # Convert to float to avoid overflow issues
-        t=self.data.astype(n.Float)
-        sumi=n.sum(n.ravel(t))
-        sumisq=n.sum(n.ravel(t*t))
+        t=self.data.astype(np.float)
+        sumi=np.sum(np.ravel(t))
+        sumisq=np.sum(np.ravel(t*t))
         npixels=t.shape[0]*t.shape[1]
         self.average=sumi/npixels
-        self.variance=n.sqrt(sumisq/npixels - self.average*self.average)
-        self.mindata=n.minimum.reduce(n.ravel(self.data))
-        self.maxdata=n.maximum.reduce(n.ravel(self.data))
+        self.variance=np.sqrt(sumisq/npixels - self.average*self.average)
+        self.mindata=np.minimum.reduce(np.ravel(self.data))
+        self.maxdata=np.maximum.reduce(np.ravel(self.data))
         return "%d Pixels, Average = %f, Variance = %f, Min = %f, Max = %f"%(
             npixels,self.average,self.variance,self.mindata,self.maxdata)
 
     def autorange(self):
-        newmin=max(n.minimum.reduce(n.ravel(self.data)),self.average-self.variance)
-        newmax=min(n.maximum.reduce(n.ravel(self.data)),self.average+self.variance)
+        newmin=max(np.minimum.reduce(np.ravel(self.data)),self.average-self.variance)
+        newmax=min(np.maximum.reduce(np.ravel(self.data)),self.average+self.variance)
         if self.mini!=newmin or self.maxi != newmax:
             self.mini=newmin
             self.maxi=newmax
@@ -422,17 +420,17 @@ class rubber(Frame):
         ypos = self.canvasObject.canvasy(event.y)/self.zoom
         print "xpos,ypos",xpos,ypos
         from ImageD11 import transform
-        tth,eta = transform.compute_tth_eta( n.array([[xpos], [ypos ]]) ,
+        tth,eta = transform.compute_tth_eta( np.array([[xpos], [ypos ]]) ,
                                              **self.parameters )
         print "omega:",self.omega,type(self.omega)
-        om = n.array([float(self.omega)])
+        om = np.array([float(self.omega)])
         print "tth,eta,om",tth,eta,om
         self.gv = transform.compute_g_vectors(tth,eta,om,float(self.parameters['wavelength']), self.parameters['wedge'])
-        self.gv = n.transpose(self.gv)
+        self.gv = np.transpose(self.gv)
         s=""
         i=0
         for ubi in self.ubisread:
-            h=n.dot(ubi,self.gv.T)
+            h=np.dot(ubi,self.gv.T)
             print "i=%d"%(i),"hkl= %.2f %.2f %.2f"%tuple(h)
             i+=1
             s+="grain %3d\n h = %.2f k=%.2f l = %.2f\n"%(i,h[0],h[1],h[2])

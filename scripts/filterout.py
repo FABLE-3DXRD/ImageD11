@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 
-from ImageD11 import refinegrains, indexing
-import numpy.oldnumeric as Numeric
 import sys, logging
+
+from ImageD11 import refinegrains, indexing
 
 
 def filtergrain(options):
     """
     Filter a peaks file according to which peaks are indexed
-    """   
+    """
     o = refinegrains.refinegrains(options.tol)
     o.loadparameters(options.parfile)
     o.readubis(options.ubifile)
@@ -27,7 +27,7 @@ def filtergrain(options):
 
 
 if __name__=="__main__":
-    
+
     console = logging.StreamHandler(sys.stdout)
     # set a format which is simpler for console use
     formatter = logging.Formatter('%(levelname)-8s : %(message)s')
@@ -64,11 +64,11 @@ if __name__=="__main__":
     parser.description = """
 todo
     """
-    
+
     options, args = parser.parse_args()
-    
-    if None in [options.parfile, 
-                options.ubifile, 
+
+    if None in [options.parfile,
+                options.ubifile,
                 options.newfltfile,
                 options.tol,
                 options.fltfile]:
@@ -76,7 +76,7 @@ todo
         logging.error("You have not filled in all the required options")
         import sys
         sys.exit()
-        
+
     try:
         filtergrain(options)
     except:
@@ -84,6 +84,6 @@ todo
         import traceback
         logging.error("An error occurred, details follow")
         traceback.print_exc()
-    
+
 
 

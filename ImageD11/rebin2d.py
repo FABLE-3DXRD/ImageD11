@@ -1,8 +1,3 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-
-
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -99,11 +94,11 @@ class polygon:
 
 def testpolywalkandplot(vertices):
     from matplotlib.pylab import plot
-    import numpy.oldnumeric as Numeric
+    import numpy as np
     obj = polygon(vertices)
     obj.walkaroundintegervertices()
-    plot(Numeric.array(vertices)[:,0],Numeric.array(vertices)[:,1],"o")
-    plot(Numeric.array(obj.path)[:,0],Numeric.array(obj.path)[:,1],"+-")
+    plot(np.array(vertices)[:,0],np.array(vertices)[:,1],"o")
+    plot(np.array(obj.path)[:,0],np.array(obj.path)[:,1],"+-")
     print obj.area()
 
 def distance(p1,p2):

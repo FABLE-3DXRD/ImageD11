@@ -1,6 +1,3 @@
-#!/usr/bin/python26
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
 #!/usr/bin/env python
 
 """
@@ -18,9 +15,11 @@ example usage:
   4) Process your data using the parameter file you have generated
         eg: fit2dcake.py
 """
-import numpy.oldnumeric as Numeric, logging, sys, os
+import logging, sys, os
 
-import sys
+import numpy as np
+
+
 if sys.platform == 'win32':
     XVFB = "echo "
     FIT2D = """D:\\fit2d_12_077_i686_WXP.exe """
@@ -43,9 +42,9 @@ def spr_to_median(filename, outputfilename):
     data = []
     for line in open(filename,"r").readlines()[1:]:
         data.append([float(x) for x in  line.split()])
-    data = Numeric.array(data)
+    data = np.array(data)
     # print data[512,:]
-    data = Numeric.sort(data, 1)
+    data = np.sort(data, 1)
     # print data[512,:]
     x_axis = []
     for line in open(filename+"_y","r").readlines()[4:]:
@@ -56,16 +55,16 @@ def spr_to_median(filename, outputfilename):
     # use central trimean (less noisy than median)
     d = data[:, data.shape[1]/4 : data.shape[1]*3/4]
     med = d.sum(axis=1) / d.shape[1]
-    nsum = Numeric.sum
-    
+    nsum = np.sum
+
     # VAR = E(X^2) - E(X)*E(X)
     EX2 = nsum(d*d, 1) / d.shape[1]
     EX = nsum(d, 1) / d.shape[1]
     VAR = EX2 - EX * EX
     try:
-        err = Numeric.sqrt(VAR)
+        err = np.sqrt(VAR)
     except ValueError:
-        err = Numeric.sqrt(Numeric.where(VAR > 0. , VAR , 1))
+        err = np.sqrt(np.where(VAR > 0. , VAR , 1))
     #print sum(data[:,2:-2],1).shape,
     #print sum(data[:,2:-2],0).shape
     for i in range(len(x_axis)):
@@ -103,7 +102,7 @@ class cakemacrogenerator:
 
     # list of jobs to process after fit2d finishes
     do_when_finished = []
-    
+
     # Options when reading in an image on the powder diffraction menu
     input_options_names = [
         "DARK CURRENT",
@@ -115,7 +114,7 @@ class cakemacrogenerator:
         "SPATIAL DIS.",
         "SD FILE"
         ]
-    
+
     input_options_values = {
         "DARK CURRENT" : "NO",
         "DC FILE"      : None,
@@ -270,7 +269,7 @@ class cakemacrogenerator:
     def checkpars(self):
         """
         Try to catch some (potentially fatal) errors
-        """ 
+        """
         if int(self.mask_pars_values["DIM1_DATA"]) < \
            int(self.integrate_pars_values["RADIAL BINS"]) or \
            int(self.mask_pars_values["DIM2_DATA"]) < \
@@ -323,7 +322,7 @@ class cakemacrogenerator:
         "SD_FILE"                 : "SD FILE",
         "X_PIXEL_SIZE"            : "X-PIXEL SIZE",  # meters
         "Y_PIXEL_SIZE"            : "Y-PIXEL SIZE",  #
-        # "SCAN_TYPE"              : "SCAN TYPE",     
+        # "SCAN_TYPE"              : "SCAN TYPE",
              # Need to figure out how to interpret
         "CAKE_DEFAULT_1_DEGREE"   : "1 DEGREE AZ",
         "CAKE_START_AZIMUTH"      : "START AZIMUTH", # radians
@@ -407,9 +406,9 @@ class cakemacrogenerator:
         Read in a mask file if requested in input file
         """
         #print "Trying to add mask"
-        #print self.mask_pars_values["USE MASK"], 
+        #print self.mask_pars_values["USE MASK"],
         # self.mask_pars_values["MASK FILE"]
-        #print self.mask_pars_values["USE MASK"] == "YES", 
+        #print self.mask_pars_values["USE MASK"] == "YES",
         # self.mask_pars_values["MASK FILE"] is not None
         if self.mask_pars_values["USE MASK"] == "YES" and \
            self.mask_pars_values["MASK FILE"] is not None:
@@ -455,7 +454,7 @@ class cakemacrogenerator:
                   [spr_to_median, filename, filename[:-3] + "med"]
                   )
             self.ap("EXIT\nEXIT\nIMAGE PROCESSING\nGEOMETRIC\nTRANSPOSE\n")
-            self.ap("EXIT\nEXIT\nPOWDER DIFFRACTION\nOUTPUT\n") 
+            self.ap("EXIT\nEXIT\nPOWDER DIFFRACTION\nOUTPUT\n")
             self.ap(self.saving_format)
             self.ap("\nYES\n", filename, "\n")
             self.ap("O.K.\n")
@@ -509,7 +508,7 @@ class cakemacrogenerator:
     def cakefileglob(self,stem_arg,replace=False,outstem=None):
         import glob
         filelist=glob.glob("%s????.%s"%(stem_arg,self.input_extn))
-        if outstem is None: 
+        if outstem is None:
             outstem = stem_arg
         outputfilelist = [s.replace(self.input_extn,self.output_extn) for s in filelist ]
         outputfilelist = [s.replace(stem_arg,outstem) for s in outputfilelist ]
@@ -537,7 +536,7 @@ class cakemacrogenerator:
                 filein = "%s.%04d%s" % (stem_arg, i, self.input_extn)
             else:
                 filein = "%s%04d.%s" % (stem_arg, i, self.input_extn)
-            if outstem == None: 
+            if outstem == None:
                 outstem = stem_arg
             fileout = "%s%04d.%s" % (outstem, i, self.output_extn)
             self.cakeafile(filein,fileout)
@@ -587,7 +586,7 @@ if __name__=="__main__":
 
     from optparse import OptionParser
     parser=OptionParser(usage="%prog stem_name first last parfile")
-    parser.add_option("-c", "--create-parameters", action="store", 
+    parser.add_option("-c", "--create-parameters", action="store",
           type="string", dest="cpars",
           help="Generate parameter file from DEFFILE file to save in CPARS")
     parser.add_option("-d", "--def-file", action="store", type="string",

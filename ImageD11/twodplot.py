@@ -1,8 +1,3 @@
-
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -30,11 +25,7 @@ From the matplotlib examples - modified for mouse
 """
 import matplotlib
 matplotlib.use('TkAgg')
-try:
-    matplotlib.rcParams['numerix'] = 'numpy'
-except:
-    print "Might have a problem with matplotlib configuration"
-    
+
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
@@ -281,7 +272,7 @@ class twodplot(Tk.Frame):
             height = self.f.bbox.height
             x, y = event.x, height-event.y
             (self.xd,self.yd)= self.a.transData.inverted().transform((x,y))
- 
+
         # transData transforms data coords to display coords.  Use the
         # inverse method to transform back
         # print "print mouse down at", t, val
@@ -316,7 +307,7 @@ class twodplot(Tk.Frame):
             height = self.f.bbox.height
             x, y = event.x, height-event.y
             (self.xu,self.yu)= self.a.transData.inverted().transform((x,y))
-            
+
         # transData transforms data coords to display coords.  Use the
         # inverse method to transform back
         if self.xu != self.xd and self.yu != self.yd:
@@ -333,11 +324,14 @@ class twodplot(Tk.Frame):
 if __name__=="__main__":
     import epffile, powbase, mcadata, ciidata
     if len(sys.argv)<3:
-        from numpy.oldnumeric import arange, sin, sqrt
+        import numpy as np
         from math import pi
         print "Usage: %s filename format"%(sys.argv[0])
-        x=Numeric.arange(0.0,3.0,0.01)
-        dat=epffile.powderdata(x,sin(2*pi*x)+5,sqrt(sin(2*pi*x)+5),{ "title":"sin x" } )
+        x=np.arange(0.0,3.0,0.01)
+        dat=epffile.powderdata(x,
+                               np.sin(2*pi*x)+5,
+                               np.sqrt(sin(2*pi*x)+5),
+                               { "title":"sin x" })
     else:
         try:
             if sys.argv[2]=="powbase":

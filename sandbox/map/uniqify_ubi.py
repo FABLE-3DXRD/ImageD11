@@ -1,11 +1,8 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+import glob, sys, os
 
-
+import numpy as np
 
 from ImageD11 import indexing, sym_u, closest
-import glob, sys, os
-import numpy as np
-from numpy.oldnumeric.linear_algebra import inverse
 
 
 # open up a set of ubi files
@@ -28,7 +25,7 @@ for fname in ubifl:
     # Flip to standard setting
     ubi_all[fname] = [ sym_u.find_uniq_u( ubi, c ) for ubi in
                        indexing.readubis(fname) ]
-    
+
 
 # Now try to make these into a unique set.
 #
@@ -37,7 +34,7 @@ for fname in ubifl:
 #     see if these match a previous one.
 
 pks = [
-       
+
         ( 5, 3,-1), ( 5,-3, 1), (-5, 3, 1),
         (-5,-3, 1), (-5, 3,-1), ( 5,-3,-1),
         (-5,-3,-1), ( 5, 3, 1),
@@ -56,7 +53,7 @@ pks = [
         ( 3, 1,-5), ( 3,-1, 5), (-3, 1, 5),
         (-3,-1, 5), (-3, 1,-5), ( 3,-1,-5),
         (-3,-1,-5), ( 3, 1, 5),
-        
+
         ]
 #print len(pks)
 hkl = np.array(pks,np.float).T
@@ -68,7 +65,7 @@ tol = 0.25
 for name in names:
     this_list = ubi_all[name]
     for ubi, i in zip(this_list,range(len(this_list))):
-        gv = np.dot(inverse(ubi), hkl)
+        gv = np.dot(np.linalg.inv(ubi), hkl)
         seen = 0
         for j in range(len(uniq_ubis)):
             u = uniq_ubis[j][0]
@@ -117,4 +114,4 @@ for l, uo in dsu[::-1]:
         x = int(n.split("_")[0][1:])
         y = int(n.split("_")[1].split(".")[0][1:])
         print "%d %d %d"%(x,y,j)
-        
+

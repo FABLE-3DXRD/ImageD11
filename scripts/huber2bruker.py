@@ -100,7 +100,7 @@ class darkflood:
             self.floodimage= None
             self.floodfile = None
             self.floodmultiplier = None
-            
+
     def correct(self, dataobj, detrend = None):
         """ correct the data """
         tin = dataobj.data.dtype
@@ -173,13 +173,13 @@ class darkflood:
 
 class edf2bruker:
 
-    def __init__(self, 
-                 dark, 
-                 flood, 
-                 template, 
+    def __init__(self,
+                 dark,
+                 flood,
+                 template,
                  darkoffset = 100,
-                 distance = 5.0, 
-                 border = None, 
+                 distance = 5.0,
+                 border = None,
                  wvln = 0.5,
                  omegasign = 1.,
                  powfac = 1.0,
@@ -229,7 +229,7 @@ class edf2bruker:
         new = time.time()
         print "%4.2f %s"%(new-self.last_time, msg),
         self.last_time = new
-        
+
 
     def convert(self,filein,fileout):
         """ convert a file """
@@ -306,69 +306,69 @@ if __name__=="__main__":
                           dest="extn",
                           default=".edf",
                           help="Filename extension, probably edf, might be cor")
-        parser.add_option("-n","--namestem",action="store",                        
+        parser.add_option("-n","--namestem",action="store",
                           type="string", dest="stem",
     help="Name of the files up the digits part, eg mydata in mydata0000.edf" )
-        parser.add_option("-N","--newnamestem",action="store",                        
+        parser.add_option("-N","--newnamestem",action="store",
                           type="string", dest="newstem", default=None,
                           help="Name of the files up the digits part for output")
-        parser.add_option("-f","--first",action="store", 
+        parser.add_option("-f","--first",action="store",
                           type="int", dest="first",default=0,
                           help="Number of first file to process, default=0")
-        parser.add_option("-l","--last",action="store", type="int", 
+        parser.add_option("-l","--last",action="store", type="int",
                           dest="last",default=0,
                           help="Number of last file to process, default=0")
-        parser.add_option("-d","--dark",action="store", type="string", 
+        parser.add_option("-d","--dark",action="store", type="string",
                           dest="dark",
                           help="Dark current")
-        parser.add_option("-w","--wavelength",action="store", 
+        parser.add_option("-w","--wavelength",action="store",
                           type="float", dest="wvln",
                           default = 0.5,
                           help="Wavelength")
-        parser.add_option("-s","--sign of omega",action="store", 
+        parser.add_option("-s","--sign of omega",action="store",
                           type="float", dest="omegasign",
                           default = 1.0,
                    help="Sign of ID11 omega rotation, +1 is right handed")
-        parser.add_option("-F","--Flood",action="store", 
+        parser.add_option("-F","--Flood",action="store",
                           type="string", dest="flood",
-                          
+
             default=None,
 #           default="/data/id11/inhouse/Frelon2K/Ags_mask0000.edf",
                           help="Flood field")
-        parser.add_option("-D","--distance",action="store",type="float", 
+        parser.add_option("-D","--distance",action="store",type="float",
                           dest="distance",
                           default=5.0,help="Sample to detector distance")
-        parser.add_option("-b","--border",action="store",type="int", 
+        parser.add_option("-b","--border",action="store",type="int",
                           dest="border",
                           default=None,
                           help="Border of image to zero out")
 
-        parser.add_option("-p","--powfac",action="store",type="float", 
+        parser.add_option("-p","--powfac",action="store",type="float",
                           dest="powfac",
                           default=1.0,
                           help="power to raise image to (1.0 or 0.96)")
 
-        parser.add_option("-t","--template",action="store", type="string", 
+        parser.add_option("-t","--template",action="store", type="string",
                           dest="template",
              default = "/data/id11/3dxrd/inhouse/Frelon2K/brukertemplate.0000")
 
 
-        parser.add_option("-o","--overflow",action="store",type="float", 
+        parser.add_option("-o","--overflow",action="store",type="float",
                           dest="overflow",
                           default=65534,
                           help="Overflow value, greater than this set to 65534")
-        
-        parser.add_option("-j","--jthreads",action="store",type="int", 
+
+        parser.add_option("-j","--jthreads",action="store",type="int",
                           dest="jthreads",
                           default=1,
                           help="Number of threads to use for processing")
-        
 
-        parser.add_option("-R","--detRend",action="store",type="int", 
+
+        parser.add_option("-R","--detRend",action="store",type="int",
                           dest="detrend",
                           default=None,
                           help="Number of pixels in background filter")
-        
+
 
         parser.add_option("-O","--darkoffset",action="store",type="float",
                           dest="darkoffset",
@@ -398,7 +398,7 @@ if __name__=="__main__":
                           help="Apply a fit2d style mask to image")
 
 
-        
+
 
 
         options, args = parser.parse_args()
@@ -409,7 +409,7 @@ if __name__=="__main__":
 
 
         from ImageD11.ImageD11_thread import ImageD11_thread
-        import ImageD11.ImageD11_thread 
+        import ImageD11.ImageD11_thread
         class threaded_converter(ImageD11_thread):
             def __init__(self, files, c, name="converter"):
                 self.files = files
@@ -421,7 +421,7 @@ if __name__=="__main__":
                     if self.ImageD11_stop_now():
                         break
 
-    
+
         # Make jthreads converters
         converters = [ edf2bruker(options.dark , options.flood ,
                                   options.template,
@@ -437,7 +437,7 @@ if __name__=="__main__":
                                   monitorcol = options.monitorcol ,
                                   maskfilename = options.maskfilename
                                   )
-                                  
+
                        for j in range(options.jthreads)]
 
         tmp_in = file_series.numbered_file_series(
@@ -458,7 +458,7 @@ if __name__=="__main__":
         ostem = options.stem
         if options.newstem is not None:
             ostem = options.newstem
-            
+
         files_out = file_series.numbered_file_series(
             ostem+"_%d."%(options.run),
             options.first,
@@ -492,7 +492,7 @@ if __name__=="__main__":
                 for t in my_threads:
                     if t.isAlive():
                         t.join(timeout=10)
-            
+
 
     except:
         parser.print_help()

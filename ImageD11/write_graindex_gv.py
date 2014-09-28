@@ -1,7 +1,3 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright and Soren Schmidt
 #
@@ -25,7 +21,7 @@ Conversion of Soren's matlab script for making the file final.log
 which is suitable for input into graindex
 """
 
-import numpy.oldnumeric as Numeric
+import numpy as np
 
 from math import sqrt, pi
 
@@ -86,7 +82,7 @@ def write_graindex_gv(outfilename,gv,tth,eta,omega,intensity,unitcell):
     outputfile = open(outfilename,"w")
     ds_list=make_ds_list(unitcell) #
     print ds_list
-    order = Numeric.argsort(tth)
+    order = np.argsort(tth)
     nr=0
     for i in order:
         nr=nr+1

@@ -1,7 +1,3 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -23,7 +19,9 @@
 """
 Some routines for factor analysis, a bit slow, via the SVD
 """
-import glob, numpy.oldnumeric as Numeric, LinearAlgebra, struct, logging
+import glob, struct, logging
+
+import numpy as np
 
 from ImageD11 import opendata
 
@@ -35,7 +33,7 @@ class factors:
         self.obsdata = None
         self.svd = None
         self.gendata = None
-        self.x = None 
+        self.x = None
         self.nfactors=0
 
     def generatedata(self):
@@ -45,10 +43,10 @@ class factors:
         if self.svd is not None:
             l,s,r=self.svd # left , singularvals, right
             nf=self.nfactors
-            I=Numeric.identity(nf,Numeric.Float)
+            I=np.identity(nf,np.float)
             suse=I*s[:nf]
-            ls = Numeric.dot(l[:,:nf], suse)
-            self.gendata=Numeric.dot(ls,r[:nf,:])
+            ls = np.dot(l[:,:nf], suse)
+            self.gendata=np.dot(ls,r[:nf,:])
             logging.debug("generated data.shape"+str(self.gendata.shape))
 
 
@@ -59,7 +57,7 @@ class factors:
         logging.debug("In svd")
         if self.obsdata is not None:
             logging.debug("Calling svd")
-            self.svd = LinearAlgebra.singular_value_decomposition(self.obsdata)
+            self.svd = np.linalg.svd(self.obsdata)
 
     def savesvd(self,filename):
         """
@@ -74,10 +72,10 @@ class factors:
                                   s.shape[0],
                                   r.shape[0],
                                   r.shape[1]))
-            print len(l.astype(Numeric.Float).tostring())
-            out.write(l.astype(Numeric.Float).tostring())
-            out.write(s.astype(Numeric.Float).tostring())
-            out.write(r.astype(Numeric.Float).tostring())
+            print len(l.astype(np.float).tostring())
+            out.write(l.astype(np.float).tostring())
+            out.write(s.astype(np.float).tostring())
+            out.write(r.astype(np.float).tostring())
             out.close()
 
     def loadsvd(self,filename):
@@ -87,12 +85,12 @@ class factors:
         out=open(filename,"rb")
         dims=struct.unpack("lllll",out.read(struct.calcsize("lllll")))
         print dims,8*dims[0]*8*dims[1]
-        l=Numeric.fromstring(out.read(8*dims[0]*dims[1]),Numeric.Float)
-        s=Numeric.fromstring(out.read(8*dims[2]          ),Numeric.Float)
-        r=Numeric.fromstring(out.read(8*dims[3]*dims[4]),Numeric.Float)
+        l=np.fromstring(out.read(8*dims[0]*dims[1]),np.float)
+        s=np.fromstring(out.read(8*dims[2]),np.float)
+        r=np.fromstring(out.read(8*dims[3]*dims[4]),np.float)
         print l.shape,s.shape,r.shape,dims
-        l=Numeric.reshape(l,(dims[0],dims[1]))
-        r=Numeric.reshape(r,(dims[3],dims[4]))
+        l=np.reshape(l,(dims[0],dims[1]))
+        r=np.reshape(r,(dims[3],dims[4]))
         self.svd=(l,s,r)
 
 
@@ -110,7 +108,7 @@ class factors:
         fl.sort()
         print "Number of chi files is:",len(fl)
         dl=[opendata.openchi(f).data[:,1] for f in fl]
-        self.obsdata=Numeric.array(dl)
+        self.obsdata=np.array(dl)
         self.x=opendata.openchi(fl[0]).data[:,0]
         print self.x.shape,self.obsdata.shape
 
@@ -122,8 +120,8 @@ class factors:
         out.write(struct.pack("lll",self.x.shape[0],
                                     self.obsdata.shape[0],
                                     self.obsdata.shape[1]))
-        out.write(self.x.astype(Numeric.Float).tostring())
-        out.write(self.obsdata.astype(Numeric.Float).tostring())
+        out.write(self.x.astype(np.float).tostring())
+        out.write(self.obsdata.astype(np.float).tostring())
         out.close()
 
     def readobsdata(self,filename):
@@ -132,11 +130,10 @@ class factors:
         sizes=struct.unpack("lll",infile.read(struct.calcsize("lll")))
         # Type is Float therefore 8 bytes per item
         print sizes
-        self.x=Numeric.fromstring(infile.read(sizes[0]*8),Numeric.Float)
-        self.obsdata=Numeric.fromstring(infile.read(8*sizes[1]*sizes[2]),
-                                        Numeric.Float)
+        self.x=np.fromstring(infile.read(sizes[0]*8),np.float)
+        self.obsdata=np.fromstring(infile.read(8*sizes[1]*sizes[2]),np.float)
         print self.obsdata.shape
-        self.obsdata=Numeric.reshape(self.obsdata,(sizes[1],sizes[2]))
+        self.obsdata=np.reshape(self.obsdata,(sizes[1],sizes[2]))
         print self.x.shape,self.obsdata.shape
 
 

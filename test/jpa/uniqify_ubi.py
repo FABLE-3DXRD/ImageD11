@@ -1,12 +1,8 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+import glob, sys
 
+import numpy as np
 
-
-from ImageD11 import indexing
-from numpy.oldnumeric.linear_algebra import inverse
-from ImageD11 import closest
-import glob, sys, numpy
-
+from ImageD11 import closest, indexing, transformer
 
 
 # open up a set of ubi files
@@ -45,11 +41,11 @@ pks = [
         ( 1,-1,-1), (-1,-1,-1)
         ]
 
-hkl = numpy.array(pks,numpy.float).T
+hkl = np.array(pks,np.float).T
 
 uniq_ubis = []
 names = ubi_all.keys()
-#dsu = [ (int( n.split(".")[0].split("_")[-1] ), n) for n in names ]
+#dsu = [ (int( np.split(".")[0].split("_")[-1] ), n) for n in names ]
 #dsu.sort()
 #names = [d[1] for d in dsu]
 
@@ -57,7 +53,7 @@ tol = 0.05
 for name in names[15:]:
     this_list = ubi_all[name]
     for ubi, i in zip(this_list,range(len(this_list))):
-        gv = numpy.dot(inverse(ubi),hkl)
+        gv = np.dot(np.linal.inv(ubi),hkl)
         seen = 0
         for j in range(len(uniq_ubis)):
             u = uniq_ubis[j][0]
@@ -86,8 +82,7 @@ def get_z(name):
     j=int(name.split(".")[0].split("_")[-1])
     return j,z[j]
 
-from ImageD11 import transformer
-import numpy.oldnumeric as n
+
 for entry in uniq_ubis:
     print "\n\n"
     for i in range(3):
@@ -100,7 +95,7 @@ for entry in uniq_ubis:
         print j,"%7.5f"%(zh),name,i,
 
         # we have the ubi matrix here.
-        # we want to refine and score this ubi against some data 
+        # we want to refine and score this ubi against some data
         try:
             t = transformer.transformer()
             t.loadfileparameters(parfilename)
@@ -111,15 +106,14 @@ for entry in uniq_ubis:
             raise
 
         # bit of a hack - between 10 and 11 degrees
-        h = n.matrixmultiply(ubi, t.gv)
-        hint = n.floor(h + 0.5).astype(n.Int) # rounds down
+        h = np.matrixmultiply(ubi, t.gv)
+        hint = np.floor(h + 0.5).astype(np.int) # rounds down
         diff = h - hint
-        drlv2 = n.sum(diff * diff,0)
-        ind = n.compress( drlv2 < tol*tol, n.arange(t.twotheta.shape[0]))
+        drlv2 = np.sum(diff * diff,0)
+        ind = np.compress( drlv2 < tol*tol, np.arange(t.twotheta.shape[0]))
         avg = 4
         npix = 3
-        intensity = n.sum( n.take( t.finalpeaks[avg,:]*t.finalpeaks[avg,:],
-            ind))
+        intensity = np.sum((t.finalpeaks[avg,:]*t.finalpeaks[avg,:])[ind])
         print closest.score(entry[0],t.gv.T,tol), intensity
 
 

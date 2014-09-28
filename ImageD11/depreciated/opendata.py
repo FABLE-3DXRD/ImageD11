@@ -1,8 +1,3 @@
-
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -31,7 +26,7 @@ bytes???
 
 from data import data
 import gzip, bz2
-import numpy.oldnumeric as Numeric 
+import numpy as np
 
 def opendata(filename):
     """
@@ -70,7 +65,7 @@ def getnum(name):
         if first: break
     num = "".join(nl[::-1])
     return int(num)
-            
+
 def makename(stem,num,extn,width=4):
     """
     Filename creation mydata1234.edf etc
@@ -99,7 +94,7 @@ def openchi(filename):
         except:
             pass # titles
 
-    a=Numeric.array(xy,Numeric.Float)
+    a=np.array(xy,np.float)
     h['rows']=a.shape[1]
     return data(a,h)
 
@@ -116,13 +111,13 @@ def openxye(filename):
             xye.append(map(float,line.split()))
         except:
             pass
-    a=Numeric.array(xye)
+    a=np.array(xye)
     h['rows']=a.shape[1]
     h['xye']=True
     return data(a,h)
 
 def readbytestream(file,offset,x,y,nbytespp,datatype='int',signed='n',
-                   swap='n',typeout=Numeric.UInt16):
+                   swap='n',typeout=np.uint16):
     """
     Reads in a bytestream from a file (which may be a string indicating
     a filename, or an already opened file (should be "rb"))
@@ -142,17 +137,17 @@ def readbytestream(file,offset,x,y,nbytespp,datatype='int',signed='n',
     tin="dunno"
     len=nbytespp*x*y # bytes per pixel times number of pixels
     if datatype=='int' and signed=='n':
-        if nbytespp==1 : tin=Numeric.UInt8
-        if nbytespp==2 : tin=Numeric.UInt16
-        if nbytespp==4 : tin=Numeric.UInt32
+        if nbytespp==1 : tin=np.uint8
+        if nbytespp==2 : tin=np.uint16
+        if nbytespp==4 : tin=np.uint32
     if datatype=='int' and signed=='y':
-        if nbytespp==1 : tin=Numeric.Int8
-        if nbytespp==2 : tin=Numeric.Int16
-        if nbytespp==4 : tin=Numeric.Int32
+        if nbytespp==1 : tin=np.int8
+        if nbytespp==2 : tin=np.int16
+        if nbytespp==4 : tin=np.int32
     if datatype=='float':
-        tin=Numeric.Float32
+        tin=np.float32
     if datatype=='double' :
-        tin=Numeric.Float64
+        tin=np.float64
     if tin=="dunno" :
         raise SyntaxError, "Did not understand what type to try to read"
     opened=0
@@ -162,13 +157,9 @@ def readbytestream(file,offset,x,y,nbytespp,datatype='int',signed='n',
     else:
         f=file
     f.seek(offset)
+    ar = np.array(np.reshape(np.fromstring(f.read(len),tin),(x,y)),typeout)
     if swap=='y':
-        ar=Numeric.array(Numeric.reshape(
-           Numeric.byteswapped(Numeric.fromstring(f.read(len),tin)),(x,y)),typeout)
-    else:
-        ar=Numeric.array(Numeric.reshape(
-                               Numeric.fromstring(f.read(len),tin) ,(x,y)),typeout)
-    pass  ## ar.savespace(1)
+        ar.byteswap(True)
     if(opened):f.close()
     return(ar)
 
@@ -254,7 +245,7 @@ def readbruker(file):
     no=int(Header['NOVERFL'])        # now process the overflows
     if no>0:   # Read in the overflows
         # need at least Int32 sized data I guess - can reach 2^21
-        data=data.astype(Numeric.UInt32)
+        data=data.astype(np.uint32)
         # 16 character overflows, 9 characters of intensity, 7 character position
         for i in range(no):
             ov=f.read(16)
@@ -369,18 +360,18 @@ def openedf(filename):
     f.close()
     # Convert datastring to Numeric array
     numerictype = "dunno"
-    if hd["DataType"]=="UnsignedShort": numerictype=Numeric.UInt16
-    if hd["DataType"]=="FLOAT": numerictype=Numeric.Float32
-    if hd["DataType"]=="FloatValue": numerictype=Numeric.Float32
+    if hd["DataType"]=="UnsignedShort": numerictype=np.uint16
+    if hd["DataType"]=="FLOAT": numerictype=np.float32
+    if hd["DataType"]=="FloatValue": numerictype=np.float32
     if numerictype == "dunno":
         raise TypeError("Unimplemented edf filetype"+hd["DataType"])
     if hd["ByteOrder"]=="LowByteFirst":
-        ar=Numeric.reshape(
-              Numeric.fromstring(datastring,numerictype),
+        ar=np.reshape(
+              np.fromstring(datastring,numerictype),
               (hd["columns"],hd["rows"]) )
     else:
-        ar=Numeric.reshape(
-              Numeric.fromstring(datastring,numerictype).byteswap(),
+        ar=np.reshape(
+              np.fromstring(datastring,numerictype).byteswap(),
               (hd["columns"],hd["rows"]) )
     pass  ## ar.savespace(1)
     return data(ar,hd)
@@ -398,19 +389,19 @@ def writebruker(filename,dataobject):
         raise Exception("Sorry, no headerstring in your bruker dataobject")
     assert int(dataobject.header["NROWS"]) == dataobject.data.shape[0], "dimensions must match!"
     assert int(dataobject.header["NCOLS"]) == dataobject.data.shape[1], "dimensions must match!"
-    minval = Numeric.minimum.reduce(Numeric.ravel(dataobject.data))
+    minval = np.minimum.reduce(np.ravel(dataobject.data))
     assert minval >= 0 , "data must be positive! "+str(minval)
-    r = Numeric.ravel(dataobject.data)
-    d = Numeric.ravel(dataobject.data)
+    r = np.ravel(dataobject.data)
+    d = np.ravel(dataobject.data)
     bytespp = 2
-    if dataobject.data.dtype.char == Numeric.UInt16:
+    if dataobject.data.dtype.char == np.uint16:
         # 2 bytes per pixel, no overflows needed
         noverfl = 0
     else:
         # data must be positive
         twobytes = pow(2,16)-1
-        indices = Numeric.compress( r > twobytes , range(r.shape[0]) )
-        r = Numeric.where(r < twobytes, r, twobytes)
+        indices = np.compress( r > twobytes , range(r.shape[0]) )
+        r = np.where(r < twobytes, r, twobytes)
         noverfl = indices.shape[0]
     o = hs.find("NOVERFL")
     b = hs.find("NPIXELB")
@@ -421,9 +412,9 @@ def writebruker(filename,dataobject):
     # print
     out = open(filename,"wb")
     out.write(hs)
-    out.write(r.astype(Numeric.UInt16).tostring())
+    out.write(r.astype(np.uint16).tostring())
     if noverfl > 0 :
-        r = Numeric.ravel(dataobject.data)
+        r = np.ravel(dataobject.data)
         length = 0
         for i in indices:
             s = "%9d%7d"%(r[i],i)
@@ -463,7 +454,7 @@ title          = %s ;
 DATE (scan begin)= %s ;"""
     hd = dataobject.header
     hd["DataType"]="FLOAT"
-    hd["Size"]=str(Numeric.ravel(dataobject.data).shape[0]*4)
+    hd["Size"]=str(np.ravel(dataobject.data).shape[0]*4)
     keys = [s.split("=")[0].lstrip().rstrip() for s in h.split(";")]
     keys.pop()
     args = tuple([str(hd[k.lstrip().rstrip()]) for k in keys])
@@ -475,8 +466,8 @@ DATE (scan begin)= %s ;"""
         if k not in keys:
             s = "%s\n%-12s = %s ;"%(s,k,hd[k])
     return "%-4094s}\n"%(s)
-    
-    
+
+
 
 def writeedf(filename,dataobject):
     """
@@ -485,7 +476,7 @@ def writeedf(filename,dataobject):
     assert(len(h)==4096) , "bad edf header size "+str(len(h))
     f=open(filename,"wb")
     f.write(h)
-    f.write(dataobject.data.astype(Numeric.Float32).tostring())
+    f.write(dataobject.data.astype(np.float32).tostring())
     f.close()
 
 def writedata(filename,dataobject):
@@ -515,16 +506,16 @@ if __name__=="__main__":
     print "Time to read file =",t2-t2,"/s"
     print "Rows              =",testdata.header['rows']
     print "Columns           =",testdata.header['columns']
-    print "Maximum           =",Numeric.maximum.reduce(Numeric.ravel(testdata.data))
-    print "Minimum           =",Numeric.minimum.reduce(Numeric.ravel(testdata.data))
+    print "Maximum           =",np.maximum.reduce(np.ravel(testdata.data))
+    print "Minimum           =",np.minimum.reduce(np.ravel(testdata.data))
     t3=time.time()
     print "Time native ops   =",t3-t2,"/s"
-    s =sum( Numeric.ravel(testdata.data).astype(Numeric.Float32) )  # 16 bit overflows
-    sq=sum( Numeric.pow( ravel(testdata.data).astype(Numeric.Float32), 2) )
+    s =sum( np.ravel(testdata.data).astype(np.float32) )  # 16 bit overflows
+    sq=sum( np.pow( ravel(testdata.data).astype(np.float32), 2) )
     n=testdata.header['rows']*testdata.header['columns']
     print "Sum               =",s
     print "Average           =",s/n
-    print "Variance          =",Numeric.sqrt(sq/n - (s/n)*(s/n))
+    print "Variance          =",np.sqrt(sq/n - (s/n)*(s/n))
     t4=time.time()
     print "Time float ops    =",t4-t3,"/s"
     print "Total run time    =",t4-t1,"/s"

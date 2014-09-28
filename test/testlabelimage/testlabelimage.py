@@ -1,17 +1,14 @@
+import unittest
+
+import numpy as np
 
 from ImageD11 import labelimage
 from ImageD11 import columnfile
 
 
-import unittest
-
-# keep use of Numeric in mind
-import numpy.oldnumeric as n
-
-
 class test_moments(unittest.TestCase):
     def setUp(self):
-        self.data = n.array(
+        self.data = np.array(
            [[20, 20,  0,  0,  2,  0,  0,  0],
             [20, 20,  0,  0,  0,  0,  6,  0],
             [ 0,  0,  0,  0,  0,  0,  0,  0],
@@ -20,26 +17,26 @@ class test_moments(unittest.TestCase):
             [ 1,  0,  0,  0,  5,  0,  0,  0],
             [ 1,  0,  0,  0,  10, 0,  0,  0],
             [ 1,  0,  0,  0,  0,  0,  0,  0]],
-           n.Float
+           np.float
             )
         self.outfile = "momentstest.out"
         lio = labelimage.labelimage(self.data.shape , self.outfile)
         # print "go"
-        lio.peaksearch(self.data, 0.1, 1.) 
+        lio.peaksearch(self.data, 0.1, 1.)
         lio.mergelast()
-        lio.peaksearch(self.data, 0.1, 2.) 
+        lio.peaksearch(self.data, 0.1, 2.)
         lio.mergelast()
         lio.finalise()
         self.lio = lio
-    
+
 
     def tearDown(self):
         try:
             os.remove("momentest.out")
         except:
             pass
-            
-        
+
+
     def testpyvsc(self):
         from ImageD11.connectedpixels import s_1, s_I, s_I2, \
             s_fI, s_ffI, s_sI, s_ssI, s_sfI, s_oI, s_ooI, s_foI, s_soI, \
@@ -71,28 +68,28 @@ class test_moments(unittest.TestCase):
             self.assertAlmostEqual( oraw_p, i[o_raw] , 6 )
 
             # second moments - the plus 1 is the zero width = 1 pixel
-            mss_p = sqrt( i[s_ssI]/i[s_I] - sraw_p*sraw_p + 1 ) 
+            mss_p = sqrt( i[s_ssI]/i[s_I] - sraw_p*sraw_p + 1 )
             self.assertAlmostEqual( mss_p, i[m_ss] , 6 )
 
             mff_p = sqrt( i[s_ffI]/i[s_I] - fraw_p*fraw_p + 1 )
-            self.assertAlmostEqual( mff_p, i[m_ff] , 6 ) 
+            self.assertAlmostEqual( mff_p, i[m_ff] , 6 )
 
             moo_p = sqrt( i[s_ooI]/i[s_I] - oraw_p*oraw_p + 1 )
-            self.assertAlmostEqual( moo_p, i[m_oo] , 6 ) 
+            self.assertAlmostEqual( moo_p, i[m_oo] , 6 )
 
             msf_p = ( i[s_sfI]/i[s_I] - sraw_p*fraw_p )/mss_p/mff_p
-            self.assertAlmostEqual( msf_p, i[m_sf] , 6 )   
+            self.assertAlmostEqual( msf_p, i[m_sf] , 6 )
 
             mso_p = ( i[s_soI]/i[s_I] - sraw_p*oraw_p )/mss_p/moo_p
-            self.assertAlmostEqual( mso_p, i[m_so] , 6 )   
+            self.assertAlmostEqual( mso_p, i[m_so] , 6 )
 
-            mfo_p = ( i[s_foI]/i[s_I] - fraw_p*oraw_p )/mff_p/moo_p 
-            self.assertAlmostEqual( mfo_p, i[m_fo] , 6 )  
+            mfo_p = ( i[s_foI]/i[s_I] - fraw_p*oraw_p )/mff_p/moo_p
+            self.assertAlmostEqual( mfo_p, i[m_fo] , 6 )
 
 
 class test_more_moments(test_moments):
     def setUp(self):
-        self.data1 = n.array(
+        self.data1 = np.array(
            [[20, 20,  0,  0,  2,  0,  0,  0],
             [20, 20,  0,  0,  0,  0,  6,  0],
             [ 0,  0,  0,  0,  0,  0,  0,  0],
@@ -101,9 +98,9 @@ class test_more_moments(test_moments):
             [ 1,  0,  0,  0,  5,  0,  0,  0],
             [ 1,  0,  0,  0,  10, 0,  0,  0],
             [ 1,  0,  0,  0,  0,  0,  0,  0]],
-           n.Float
+           np.float
             )
-        self.data2 = n.array(
+        self.data2 = np.array(
            [[10, 00,  0,  0,  2,  0,  0,  0],
             [00, 20,  0,  0,  0,  0,  6,  0],
             [ 0,  0,  0,  0,  0,  0,  0,  0],
@@ -112,9 +109,9 @@ class test_more_moments(test_moments):
             [ 1,  0,  0,  0,  5,  0,  0,  0],
             [ 1,  0,  0,  0,  10, 0,  0,  0],
             [ 1,  0,  0,  0,  0,  0,  0,  0]],
-           n.Float
+           np.float
             )
-        self.data3 = n.array(
+        self.data3 = np.array(
            [[00, 00,  0,  0,  2,  0,  0,  0],
             [00, 10,  0,  0,  0,  0,  6,  0],
             [ 0,  0,  0,  0,  0,  0,  0,  0],
@@ -123,21 +120,21 @@ class test_more_moments(test_moments):
             [ 1,  0,  0,  0,  5,  0,  0,  0],
             [ 1,  0,  0,  0,  10, 0,  0,  0],
             [ 1,  0,  0,  0,  0,  0,  0,  0]],
-           n.Float
+           np.float
             )
         self.outfile = "momentstest.out"
         lio = labelimage.labelimage(self.data1.shape , self.outfile)
         # print "go"
-        lio.peaksearch(self.data1, 0.1, 1.) 
+        lio.peaksearch(self.data1, 0.1, 1.)
         lio.mergelast()
-        lio.peaksearch(self.data2, 0.1, 2.) 
+        lio.peaksearch(self.data2, 0.1, 2.)
         lio.mergelast()
-        lio.peaksearch(self.data3, 0.1, 3.) 
+        lio.peaksearch(self.data3, 0.1, 3.)
         lio.mergelast()
         lio.finalise()
         self.lio = lio
 
-    
+
     def tearDown(self):
         try:
             os.remove("momentest.out")
@@ -149,13 +146,13 @@ class test_more_moments(test_moments):
 class test_labelimage(unittest.TestCase):
     def setUp(self):
         self.dims = (200,300)
-        self.data1 = n.zeros(self.dims)
-        self.data2 = n.zeros(self.dims)
-        self.data3 = n.zeros(self.dims)
-        self.data4 = n.zeros(self.dims)
-        self.data5 = n.zeros(self.dims)
+        self.data1 = np.zeros(self.dims)
+        self.data2 = np.zeros(self.dims)
+        self.data3 = np.zeros(self.dims)
+        self.data4 = np.zeros(self.dims)
+        self.data5 = np.zeros(self.dims)
         self.outfile = "l2.out"
-    
+
 
     def test_1(self):
         self.data1[20:41,120:141] = 1.
@@ -171,22 +168,22 @@ class test_labelimage(unittest.TestCase):
         self.data5[55,65] = 1.
 
         lio = labelimage.labelimage(self.dims , self.outfile)
-        lio.peaksearch(self.data1, 0.1, 1.) 
+        lio.peaksearch(self.data1, 0.1, 1.)
         lio.mergelast()
-        lio.peaksearch(self.data2, 0.1, 2.) 
+        lio.peaksearch(self.data2, 0.1, 2.)
         lio.mergelast()
-        lio.peaksearch(self.data3, 0.1, 3.) 
+        lio.peaksearch(self.data3, 0.1, 3.)
         lio.mergelast()
-        lio.peaksearch(self.data4, 0.1, 4.) 
+        lio.peaksearch(self.data4, 0.1, 4.)
         lio.mergelast()
-        lio.peaksearch(self.data5, 0.1, 5.) 
+        lio.peaksearch(self.data5, 0.1, 5.)
         lio.mergelast()
         lio.finalise()
         lio.outfile.close()
-        
+
         co = columnfile.columnfile(self.outfile)
 
-        
+
 
         self.assertEqual(co.nrows,2)
         # first peaks 20->41, 120->141
@@ -210,12 +207,12 @@ class test_labelimage(unittest.TestCase):
         self.assertAlmostEqual(co.IMax_s[1], 55., 6)
         self.assertAlmostEqual(co.IMax_o[1], 3.0, 6)
 
-        
+
         mask = co.Number_of_pixels > 10
         co.filter(mask)
         self.assertEqual(co.nrows, 1)
         co.writefile("l1.out")
-    
+
 
 if __name__=="__main__":
     unittest.main()

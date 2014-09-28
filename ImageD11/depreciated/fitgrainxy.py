@@ -1,7 +1,3 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-#!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -24,7 +20,7 @@
  Class to attempt to fit the position of a grain
 """
 
-import numpy.oldnumeric as Numeric
+import numpy as np
 
 from ImageD11 import transform, indexing, closest
 
@@ -33,7 +29,7 @@ from ImageD11.grain import grain
 class fitgrainxy:
     """
     Class to attempt to fit the position of a grain
-    
+
     TODO: finish off and put in gui
     """
     def __init__(self):
@@ -41,7 +37,7 @@ class fitgrainxy:
         self.parameters = {'wedge':0.0 , 'chi':0.0} # FIXME
         self.ubisread = []
         self.gv = None
-        
+
     def loadparameters(self,filename):
         """ FIXME This needs the parameters object interface """
         lines = open(filename,"r").readlines()
@@ -63,7 +59,7 @@ class fitgrainxy:
             except TypeError:
                 out.write("%s %s\n"%(k,self.parameters[k]))
         out.close()
-        
+
     def readubis(self,filename):
         """
         Save the generated ubi matrices into a text file
@@ -77,7 +73,7 @@ class fitgrainxy:
                 u = u + [vals]
             if len(u)==3:
                 # name=filename + " " + str(i)
-                self.ubisread.append(Numeric.array(u))
+                self.ubisread.append(np.array(u))
                 i=i+1
                 u = []
         f.close()
@@ -99,7 +95,7 @@ class fitgrainxy:
             v=[float(z) for z in line.split()]
             bigarray.append(v)
         f.close()
-        self.scandata=Numeric.array(bigarray)
+        self.scandata=np.array(bigarray)
         self.allscandata=self.scandata.copy()
 
     def compute_gv(self,g):
@@ -119,7 +115,7 @@ class fitgrainxy:
         om      = self.scantitles.index("omega")
         om = self.scandata[:,om]
 
-        tth,eta = transform.compute_tth_eta( Numeric.array([x, y]) ,
+        tth,eta = transform.compute_tth_eta( np.array([x, y]) ,
                              self.parameters['y-center'],
                              self.parameters['y-size'],
                              self.parameters['tilt-y'],
@@ -134,7 +130,7 @@ class fitgrainxy:
         self.gv = transform.compute_g_vectors(tth,eta,om,
                               float(self.parameters['wavelength']),
                               self.parameters['wedge'])
-        self.gv = Numeric.transpose(self.gv)
+        self.gv = np.transpose(self.gv)
 
 
 
@@ -146,14 +142,14 @@ class fitgrainxy:
             g = grain(m)
             self.scandata=self.allscandata.copy()
             self.compute_gv(g)
-            h=Numeric.matrixmultiply(g.ubi,Numeric.transpose(self.gv))
-            hint=Numeric.floor(h+0.5).astype(Numeric.Int) # rounds down
+            h=np.dot(g.ubi,np.transpose(self.gv))
+            hint=np.floor(h+0.5).astype(np.int) # rounds down
             diff=h-hint
-            drlv=Numeric.sqrt(Numeric.sum(diff*diff,0))
-            indices = Numeric.compress(drlv < 0.05, 
+            drlv=np.sqrt(np.sum(diff*diff,0))
+            indices = np.compress(drlv < 0.05,
                                        range(self.scandata.shape[0]))
             print indices.shape,"hello"
-            self.scandata = Numeric.take(self.allscandata,indices)
+            self.scandata = self.allscandata[indices]
             npts = 10
             for i in range(npts):
                 for j in range(npts):
@@ -167,14 +163,14 @@ class fitgrainxy:
                         npks = closest.score_and_refine(mat, self.gv, tol)
                         # 2nd time with refined
                         npks = closest.score_and_refine(mat, self.gv, tol)
-                        h=Numeric.matrixmultiply(mat,Numeric.transpose(self.gv))
-                        hint=Numeric.floor(h+0.5).astype(Numeric.Int) 
+                        h=np.dot(mat,np.transpose(self.gv))
+                        hint=np.floor(h+0.5).astype(np.int)
                         # rounds down
                         diff=h-hint
-                        drlv=Numeric.sqrt(Numeric.sum(diff*diff,0))
-                        tthscore = Numeric.sum(Numeric.sum(hint*diff) *
-                                               Numeric.sum(hint*diff) /
-                                               Numeric.sum(h*h))
+                        drlv=np.sqrt(np.sum(diff*diff,0))
+                        tthscore = np.sum(np.sum(hint*diff) *
+                                          np.sum(hint*diff) /
+                                          np.sum(h*h))
                         print x,y, tol, "%5d"%(npks),sum(drlv)/drlv.shape[0],\
                         tthscore/drlv.shape[0],indexing.ubitocellpars(mat),
                     print

@@ -1,8 +1,3 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-
-
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -30,7 +25,7 @@ Mostly unimplemented dummies - see also refinegrains
 
 """
 
-import numpy.oldnumeric as Numeric
+import numpy as np
 
 class ubitool:
     def __init__(self,ubilist=None,ubifile=None,obsdata=None):
@@ -75,7 +70,7 @@ class ubitool:
         """
         Get ubi matrices from a file
         """
-        i=0; u = Numeric.zeros((3,3),Numeric.Float)
+        i=0; u = np.zeros((3,3),np.float)
         for line in open(filename,"r").readlines():
             uij = [float(x) for x in line.split()]
             if len(uij)==3:
@@ -83,4 +78,4 @@ class ubitool:
                 i=i+1
             else:
                 self.ubilist.append(u)
-                u = Numeric.zeros((3,3),Numeric.Float)
+                u = np.zeros((3,3),np.float)

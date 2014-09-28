@@ -1,7 +1,3 @@
-# Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -32,9 +28,9 @@ of memory
 # for filename -> number interpretion
 # from ImageD11 import opendata
 import fabio
-import numpy.oldnumeric as Numeric
+import numpy as np
 import time, sys
-import logging 
+import logging
 
 
 def roundfloat(x,tol):
@@ -97,23 +93,23 @@ class peak:
                 threshold = self.threshold
                 s = self.avg * self.np + other.avg * other.np
                 avg = s / np
-                omega = (self.omega  * self.np  * self.avg + 
+                omega = (self.omega  * self.np  * self.avg +
                          other.omega * other.np * other.avg) / s
-                num   = (self.num    * self.np  * self.avg + 
+                num   = (self.num    * self.np  * self.avg +
                          other.num   * other.np * other.avg) / s
-                x     = (self.x      * self.np  * self.avg + 
+                x     = (self.x      * self.np  * self.avg +
                          other.x     * other.np * other.avg) / s
-                y     = (self.y      * self.np  * self.avg + 
+                y     = (self.y      * self.np  * self.avg +
                          other.y     * other.np * other.avg) / s
-                xc    = (self.xc     * self.np  * self.avg + 
+                xc    = (self.xc     * self.np  * self.avg +
                          other.xc    * other.np * other.avg) / s
-                yc    = (self.yc     * self.np  * self.avg + 
+                yc    = (self.yc     * self.np  * self.avg +
                          other.yc    * other.np * other.avg) / s
-                sigx  = (self.sigx   * self.np  * self.avg + 
+                sigx  = (self.sigx   * self.np  * self.avg +
                          other.sigx  * other.np * other.avg) / s
-                sigy  = (self.sigy   * self.np  * self.avg + 
+                sigy  = (self.sigy   * self.np  * self.avg +
                          other.sigy  * other.np * other.avg) / s
-                covxy = (self.covxy  * self.np  * self.avg + 
+                covxy = (self.covxy  * self.np  * self.avg +
                          other.covxy * other.np * other.avg) / s
                 self.forgotten=True
                 other.forgotten=True
@@ -180,7 +176,7 @@ class pkimage:
         self.header["File"] = name
         self.linestart = None
         self.imagenumber = None
-        
+
     def addtoheader(self, headerline):
         """
         save header info in dict
@@ -269,7 +265,7 @@ class peakmerger:
                     name = name.split("[")[0]
                 currentimage = pkimage(name)
                 self.images.append(currentimage)
-                imagenumber = fabio.getnum(name) 
+                imagenumber = fabio.getnum(name)
                 # imagenumber = opendata.getnum(name)
                 currentimage.linestart = i
                 currentimage.imagenumber = imagenumber
@@ -277,8 +273,8 @@ class peakmerger:
             if line[0] == "#":
                 currentimage.addtoheader(line)
                 continue
-        self.imagenumbers = Numeric.zeros(len(self.images), Numeric.Int)
-        self.omegas       = Numeric.zeros(len(self.images), Numeric.Float)
+        self.imagenumbers = np.zeros(len(self.images), np.int)
+        self.omegas       = np.zeros(len(self.images), np.float)
         i = 0
         while i < len(self.images):
             self.imagenumbers[i] = int(self.images[i].imagenumber)
@@ -303,7 +299,7 @@ class peakmerger:
         """
         try to find "key" in the headers and return it
         """
-        ret = []       
+        ret = []
         for im  in self.images:
             try:
                 ret.append(im.header[key])
@@ -316,10 +312,10 @@ class peakmerger:
         except ValueError:
             # otherwise strings
             return ret
-            
-            
-            
-            
+
+
+
+
     def harvestpeaks(self, numlim = None, omlim = None, thresholds = None):
         """
         Harvests the peaks from the images within a range of
@@ -364,14 +360,14 @@ class peakmerger:
                         threshold = float(line.split()[-1])
                     if line[0] != '#' and len(line) > 10 and \
                                   thresholdsinrange(threshold):
-                        p = peak(line, om, threshold, 
+                        p = peak(line, om, threshold,
                                  image.imagenumber, self.tolerance)
                         peaks.append(p)
                         npks = npks + 1
                     i = i + 1
                     line = self.lines[i]
             else:
-                logging.info("Rejected peak " + 
+                logging.info("Rejected peak " +
                  str((numinrange(image.imagenumber), ominrange(om)) ))
         logging.info("Time to read into lists %f"% (
                      time.time() - start_harvest) )
@@ -490,7 +486,7 @@ class peakmerger:
                     # This peak is no longer active, it did not overlap
                     merged.append(peak1)
                 else:
-                    # This peak did overlap, we need to add it 
+                    # This peak did overlap, we need to add it
                     # for scanning the next frame
                     prevframe.append(newpeak)
             i = i + 1
@@ -527,7 +523,7 @@ class peakmerger:
         merged.sort()
         self.merged = merged
         logging.info("Finished merging peaks")
-        logging.info("You have a total of " + str(len(self.merged)) + 
+        logging.info("You have a total of " + str(len(self.merged)) +
                      " after merging")
         logging.info("merging took took %f"% (time.time() - start_merge ))
         return
@@ -550,13 +546,13 @@ class peakmerger:
         for p in self.merged:
             biglist.append(
                [ p.xc, p.yc, p.omega,
-                 p.np, p.avg, p.x, p.y, 
+                 p.np, p.avg, p.x, p.y,
                  p.sigx, p.sigy, p.covxy]
                )
         # Need to filter based on x,y
         # also based on intensity
         # also based on shape
-        self.finalpeaks = Numeric.array( Numeric.transpose(biglist) )
+        self.finalpeaks = np.array( np.transpose(biglist) )
 
     def savepeaks(self,filename):
         """
@@ -574,7 +570,7 @@ class peakmerger:
         f.close()
 
 
- 
+
 
 
 if __name__=="__main__":

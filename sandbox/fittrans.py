@@ -23,7 +23,7 @@ def k_to_g(k, omega, wedge, chi ):
     om = np.radians( omega)
     g = np.zeros( k.shape )
     cw = np.dot( chimatrix( chi ), wedgematrix( wedge ) )
-    cwk = np.dot( cw, k ) 
+    cwk = np.dot( cw, k )
     co = np.cos( np.radians( omega )) # 1D
     so = np.sin( np.radians( omega )) # 1D
     g[0,:] =  co*cwk[0,:] + so*cwk[1,:]
@@ -63,7 +63,7 @@ def XL_to_gv_old( omega, wedge, chi, XL, wavelength, tx, ty, tz):
     k = ((s1/mods).T - beam).T
     g = k_to_g( k, omega, wedge, chi )
     return g
-    
+
 def XL_to_gv( omega, wedge, chi, XL, wavelength, tx, ty, tz):
     beam = np.zeros( (3,len(omega)))
     beam[0,:] = 1
@@ -113,7 +113,7 @@ def d_XSXB_to_gv( XS, XB, tx, ty, tz, wavelength):
     # dmodxst_dt = dmodxst_dxst . dxst_dt
     # dmodxst2_dt = -2*xst[0] , -2*xst[1], -2*xst[2]
     # d(sqrt(f))/dx = 1/2 1/sqrt(f) . df/dx
-    dmodxst_dt = -xst[0]/modxst, -xst[1]/modxst , -xst[2]/modxst  
+    dmodxst_dt = -xst[0]/modxst, -xst[1]/modxst , -xst[2]/modxst
     if 0: # OK
         # [f(x+h) - f(x)] / h
         t = (XS.T - [tx+1,ty,tz]).T
@@ -140,18 +140,18 @@ def d_XSXB_to_gv( XS, XB, tx, ty, tz, wavelength):
     # g[2] = (xst[2]/modxst - XB[2])/wavelength
     #
     # Want dg/dt
-    # 
+    #
     # dg/dt = (dxst/dt*1/modxst + xst.dmodxst_dt/modxst2)/w
-    dg0_dtx = -(1/modxst + xst[0]*dmodxst_dt[0]/modxst2)/wavelength 
-    dg1_dtx = -(xst[0]*dmodxst_dt[1]/modxst2)/wavelength 
-    dg2_dtx = -(xst[0]*dmodxst_dt[2]/modxst2)/wavelength 
-    dg0_dty = -(xst[1]*dmodxst_dt[0]/modxst2)/wavelength 
-    dg1_dty = -(1/modxst + xst[1]*dmodxst_dt[1]/modxst2)/wavelength 
-    dg2_dty = -(xst[1]*dmodxst_dt[2]/modxst2)/wavelength 
-    dg0_dtz = -(xst[2]*dmodxst_dt[0]/modxst2)/wavelength 
-    dg1_dtz = -(xst[2]*dmodxst_dt[1] /modxst2)/wavelength 
-    dg2_dtz = -(1/modxst + xst[2]*dmodxst_dt[2]/modxst2)/wavelength 
-    # 
+    dg0_dtx = -(1/modxst + xst[0]*dmodxst_dt[0]/modxst2)/wavelength
+    dg1_dtx = -(xst[0]*dmodxst_dt[1]/modxst2)/wavelength
+    dg2_dtx = -(xst[0]*dmodxst_dt[2]/modxst2)/wavelength
+    dg0_dty = -(xst[1]*dmodxst_dt[0]/modxst2)/wavelength
+    dg1_dty = -(1/modxst + xst[1]*dmodxst_dt[1]/modxst2)/wavelength
+    dg2_dty = -(xst[1]*dmodxst_dt[2]/modxst2)/wavelength
+    dg0_dtz = -(xst[2]*dmodxst_dt[0]/modxst2)/wavelength
+    dg1_dtz = -(xst[2]*dmodxst_dt[1] /modxst2)/wavelength
+    dg2_dtz = -(1/modxst + xst[2]*dmodxst_dt[2]/modxst2)/wavelength
+    #
     if 0:
         delta=1
         t = (XS.T - [tx+delta,ty,tz]).T
@@ -192,7 +192,7 @@ def d_XSXB_to_gv( XS, XB, tx, ty, tz, wavelength):
 class newindexer(object):
 
     def __init__(self, fname, parfile):
-        self.colfile = columnfile( fname ) 
+        self.colfile = columnfile( fname )
         self.pars = parameters.read_par_file( parfile )
 
         self.ds_tol = 0.005
@@ -208,14 +208,14 @@ class newindexer(object):
         tx  = float(self.pars.get('t_x'))
         ty  = float(self.pars.get('t_y'))
         tz  = float(self.pars.get('t_z'))
-        wvln= float(self.pars.get('wavelength')) 
+        wvln= float(self.pars.get('wavelength'))
 
         start = time.clock()
         self.gv = XSXB_to_gv( self.XS, self.XB, tx, ty, tz, wvln)
-        #print "time for gv only",time.clock()-start 
+        #print "time for gv only",time.clock()-start
         #start = time.clock()
         ret = d_XSXB_to_gv( self.XS, self.XB, tx, ty, tz, wvln)
-        #print "time for derivs too",time.clock()-start 
+        #print "time for derivs too",time.clock()-start
         self.deriv_g_t = ret[1:]
         if 0:
             tth, eta = transform.compute_tth_eta_from_xyz(
@@ -237,7 +237,7 @@ class newindexer(object):
             dgtx = XSXB_to_gv( self.XS, self.XB, tx+delta, ty, tz, wvln)-self.gv
             dgty = XSXB_to_gv( self.XS, self.XB, tx, ty+delta, tz, wvln)-self.gv
             dgtz = XSXB_to_gv( self.XS, self.XB, tx, ty, tz+delta, wvln)-self.gv
-            def pe(a,b): 
+            def pe(a,b):
                 return abs(a-b)/abs(a+b)
             print abs((dg0_dt[0] - dgtx[0])).max()
             print abs((dg0_dt[1] - dgty[0])).max()
@@ -269,7 +269,7 @@ class newindexer(object):
         hkle = hklr - hkli
         scor = np.sqrt((hkle*hkle).sum(axis=0))
         pks = np.compress( scor < tol,  np.arange( len(gv[0]) ) )
-        print "score = ", np.take(scor, pks).sum()/len(pks), len(pks)
+        print "score = ", scor[pks].sum()/len(pks), len(pks)
         if 0:
             pylab.hist(scor, bins=128)
             pylab.show()
@@ -295,15 +295,15 @@ class newindexer(object):
             for j in range(3): # tx, ty, tz
                 #print 1+j*3+i,
                 #print ret[1+j*3+i].shape
-                grads[j, i] = np.take( ret[1+j*3+i], pks )
+                grads[j, i] = ret[1+j*3+i][pks]
             for j in range(3):
-                # gx = 0h + 1k + 2l 
+                # gx = 0h + 1k + 2l
                 # gy = 3h + 4k + 5l
                 # gz = 6h + 7k + 8l
                 # i is gx, gy, gz
                 # j is ub elements
                 #print j%3
-                grads[3+j+i*3 , i] = np.take(hkli[j], pks)
+                grads[3+j+i*3 , i] = hkli[j][pks]
         #       pylab.imshow(grads, aspect='auto' , interpolation='nearest')
         #       pylab.show()
         # grains = 12, xyz, pks
@@ -336,7 +336,7 @@ class newindexer(object):
         np.add(ub, shifts[3:], ub)
         gr.set_ubi( np.linalg.inv( np.reshape(ub,(3,3))))
         return gr
-        
+
 
     def compute_XLYLZL(self):
         self.peaks_xyz = transform.compute_xyz_lab( [self.colfile.sc,
@@ -362,7 +362,7 @@ class newindexer(object):
         self.colfile.addcolumn( self.XS[0], 'XS')
         self.colfile.addcolumn( self.XS[1], 'YS')
         self.colfile.addcolumn( self.XS[2], 'ZS')
-        
+
 
 
     def makecell(self):
@@ -376,7 +376,7 @@ class newindexer(object):
                 p['cell_gamma'] ]]
         self.cell = unitcell.unitcell(c, p['cell_lattice_[P,A,B,C,I,F,R]'])
         self.cell.makerings( limit = self.ds.max(), tol = self.ds_tol )
-        
+
     def ringassign(self, ds=None):
         if ds is None:
             ds = self.colfile.ds

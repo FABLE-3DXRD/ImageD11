@@ -1,7 +1,3 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -30,16 +26,16 @@ Also try to do a fast median filter based on pixel histograms
 """
 
 from ImageD11 import _hist
-import numpy.oldnumeric as Numeric
+import numpy as np
 import logging
 
 def hist(data,verbose=0):
     """
     Wrapper to ImageD11 histogram generators (c functions)
-    returns histogram if data is a 2D Numeric.UInt16 array
+    returns histogram if data is a 2D numpy.uint16 array
     """
-    if data.dtype.char == Numeric.UInt16:
-        h = Numeric.zeros(pow(2,16)-1,Numeric.Int)
+    if data.dtype.char == np.uint16:
+        h = np.zeros(pow(2,16)-1,np.int)
         _hist._hist(data,h,verbose)
         return h
     raise Exception("Sorry, not implemented")
@@ -47,11 +43,11 @@ def hist(data,verbose=0):
 
 def test_dvhist():
     import _hist
-    gv= Numeric.zeros((10,3),Numeric.Float)
-    h = Numeric.zeros((10,10,10),Numeric.Int)
+    gv= np.zeros((10,3),np.float)
+    h = np.zeros((10,10,10),np.int)
     _hist._dvhist(gv,h,-1,1,-1,1,-1,1,1)
 
-    logging.info("test_dvhist maximum.reduce(h)"% Numeric.maximum.reduce(h))
+    logging.info("test_dvhist maximum.reduce(h)"% np.maximum.reduce(h))
 
 
 if __name__=="__main__":

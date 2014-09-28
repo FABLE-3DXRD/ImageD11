@@ -1,8 +1,3 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-
-
-
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -26,7 +21,7 @@ Class for determining the linearity correction for a frelon4m
 Take a quadratic as a first guess
 
 Mathematically:
-   I  =  Io + a * Io * Io = Io ( 1 + a * Io ) 
+   I  =  Io + a * Io * Io = Io ( 1 + a * Io )
 
    read series of images.
 
@@ -42,7 +37,7 @@ Mathematically:
 """
 
 
-import numpy.oldnumeric as Numeric, numpy.oldnumeric.linear_algebra as LinearAlgebra
+import numpy as np
 from ImageD11 import opendata
 
 class linearity:
@@ -63,7 +58,7 @@ class linearity:
         ar = data
         scale = guessed scale factor
         """
-        t = ar.astype(Numeric.Float)
+        t = ar.astype(np.float)
         self.rawimages.append(t)
         self.scaledimages.append(scale * t * ( 1.0 + t * self.a ))
         self.scale_factors.append(scale)
@@ -80,12 +75,12 @@ class linearity:
         image
         """
         logging.info("Compute average")
-        self.average = Numeric.zeros(self.scaledimages[0].shape,
-                                     Numeric.Float)
+        self.average = np.zeros(self.scaledimages[0].shape,
+                                     np.float)
         for im in self.scaledimages:
             self.average = self.average + im
         self.average = self.average / len(self.scaledimages)
-        
+
 
     def fittoaverage(self):
         """
@@ -96,11 +91,11 @@ class linearity:
              = avg - scale * t * (1.0 + t * self.a )
 
         dc/ds = t * (1.0 + t * self.a ) = calc / scale
-        dc/da = scale * t * t 
+        dc/da = scale * t * t
         """
         logging.info("fittoaverage, self.a= "+str(self.a))
         logging.info("fittoaverage, [shift_s shift_a]")
-        
+
         for i in range(len(self.rawimages)):
             t = self.rawimages[i]
             s = self.scale_factors[i]
@@ -116,37 +111,37 @@ class linearity:
             sys.stdout.flush()
             shifts = lsq( dy , [dcds, dcda] )
             logging.info(self.names[i]+" "+str(shifts)+" "+str(s))
-            
 
 
 
-            
+
+
 def lsq(diff, gradients):
     """
-    difference 
+    difference
     gradients
     """
     nvar = len(gradients)
-    lsqmat = Numeric.zeros((nvar,nvar),Numeric.Float)
-    rhs = Numeric.zeros((nvar),Numeric.Float)
+    lsqmat = np.zeros((nvar,nvar),np.float)
+    rhs = np.zeros((nvar),np.float)
     for i in range(nvar):
         logging.debug(" lsq shapes: %d %d"%(gradients[i].ravel().shape[0],
                                             diff.ravel().shape[0]))
         try:
-            rhs[i] = Numeric.dot(gradients[i].ravel(), diff.ravel())
+            rhs[i] = np.dot(gradients[i].ravel(), diff.ravel())
         except:
             print gradients[i].ravel().shape
             print diff.ravel().shape
             raise
         for j in range(i):
             lsqmat[i,j] = lsqmat[j,i] = \
-                          Numeric.dot(gradients[i].ravel(),
+                          np.dot(gradients[i].ravel(),
                                       gradients[j].ravel())
-    inverse = LinearAlgebra.inverse(lsqmat)
-    shifts = Numeric.matrixmultiply(inverse, rhs)
+    inverse = np.linalg.inv(lsqmat)
+    shifts = np.dot(inverse, rhs)
     return shifts
 
-                              
+
 if __name__=="__main__":
     import sys, time, glob, logging
     log = logging.getLogger()
@@ -154,7 +149,7 @@ if __name__=="__main__":
 #    testscaleimage()
 #    sys.exit()
 
-    
+
     stem = sys.argv[1]
     first = int(sys.argv[2])
     last  = int(sys.argv[3])
@@ -162,7 +157,7 @@ if __name__=="__main__":
         step = int(sys.argv[4])
     except:
         step = 1
-        
+
     obj = linearity()
 
     for i in range( first , last + 1 , step ):
@@ -176,7 +171,7 @@ if __name__=="__main__":
             raise
         logging.info("%s %f"%(name,integration))
         obj.anotherimage(dataobj.data, scaling, name)
-        
+
     obj.makeaverage()
     obj.fittoaverage()
 

@@ -1,7 +1,3 @@
-
-
-
-
 # ImageD11_v1.0 Software for beamline ID11
 # Copyright (C) 2005-2007  Jon Wright
 #
@@ -30,36 +26,36 @@ from distutils.core import setup, Extension
 # from setuptools import setup, Extension
 
 
-from numpy.distutils.misc_util import get_numpy_include_dirs
+from numpy import get_include
 
-nid = get_numpy_include_dirs()
+nid = [get_include()]
 
 
 # Compiled extensions:
 
 # closest is for indexing grains
-cl = Extension("closest", 
-               sources=['src/closest.c'], 
+cl = Extension("closest",
+               sources=['src/closest.c'],
                include_dirs = nid )
 
 # connectedpixels is for peaksearching images
 
 
 
-cp = Extension("connectedpixels", 
-               sources = ['src/connectedpixels.c','src/blobs.c'], 
+cp = Extension("connectedpixels",
+               sources = ['src/connectedpixels.c','src/blobs.c'],
                include_dirs = nid)
 # No header files for distutils as sources 'src/dset.h'])
 
 
 # histogramming thing
-ch = Extension("_hist", 
+ch = Extension("_hist",
                sources = ['src/hist.c'],
                include_dirs = nid )
 
 
 # _splines is for correcting peak positions for spatial distortion
-bl = Extension("_splines", 
+bl = Extension("_splines",
                sources = ['src/splines.c', 'src/bispev.c'],
                include_dirs = nid)
 
@@ -79,7 +75,7 @@ else: # Take care of yourself if you are on linux
 #        'fabio>=0.0.4']
 
 # See the distutils docs...
-setup(name='ImageD11', 
+setup(name='ImageD11',
       version='1.4.0',
       author='Jon Wright',
       author_email='wright@esrf.fr',
@@ -113,7 +109,7 @@ setup(name='ImageD11',
                  "scripts/bgmaker.py",
                  "scripts/merge_flt.py",
                  "scripts/makemap.py",
-                 "scripts/plotlayer.py",                 
+                 "scripts/plotlayer.py",
                  "scripts/plotedf.py",
                  "scripts/plotgrainhist.py",
                  "scripts/rubber.py",

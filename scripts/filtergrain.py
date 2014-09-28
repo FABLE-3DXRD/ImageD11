@@ -1,7 +1,4 @@
-#!/usr/bin/python
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-#!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
+#!/usr/bin/env python
 
 """
 Utility script to pick out the peaks belonging to a certain
@@ -10,15 +7,17 @@ grain
 Used to stabilise refinements
 """
 
-from ImageD11 import refinegrains, indexing, grain
-import numpy.oldnumeric as Numeric
 import sys, logging
+
+import numpy as np
+
+from ImageD11 import refinegrains, indexing, grain
 
 
 def filtergrain(options):
     """
     Filter a peaks file according to which peaks are indexed
-    """   
+    """
     o = refinegrains.refinegrains(tolerance=0.9)
     o.loadparameters(options.parfile)
     o.readubis(options.ubifile)
@@ -49,10 +48,11 @@ def filtergrain(options):
     else:
         o.tolerance = options.tol
     matrix = o.grains[(gn,options.fltfile)].ubi
+
     o.assignlabels()
-    drlv2 = indexing.calc_drlv2( matrix, o.gv )    
+    drlv2 = indexing.calc_drlv2( matrix, o.gv )
     logging.info("Total peaks before filtering %d"%
-                     o.scandata[options.fltfile].nrows)    
+                     o.scandata[options.fltfile].nrows)
     gotpks = o.scandata[options.fltfile].copy()
     gotpks.filter(gotpks.labels == 0)
     gotpks.writefile(options.newfltfile)
@@ -72,13 +72,13 @@ def filtergrain(options):
                 notpks.nrows, options.notindexed))
     if options.newubifile is not None:
         o.scandata[options.fltfile] = gotpks
-#        matrix = o.refine(matrix,quiet=True)       
+#        matrix = o.refine(matrix,quiet=True)
         grain.write_grain_file(options.newubifile,[o.grains[(gn,options.fltfile)]])
         logging.info("Refined ubi in %s "%(
                          options.newubifile))
-        
+
 if __name__=="__main__":
-    
+
     console = logging.StreamHandler(sys.stdout)
     # set a format which is simpler for console use
     formatter = logging.Formatter('%(levelname)-8s : %(message)s')
@@ -120,21 +120,21 @@ if __name__=="__main__":
                       help = "Which grain to choose")
     parser.description = """
 Filtergrain should choose the peaks from a filtered
-peaks output file according to those which are closest 
+peaks output file according to those which are closest
 to a particular grain
     """
-    
+
     options, args = parser.parse_args()
-    
-    if None in [options.parfile, 
-                options.ubifile, 
+
+    if None in [options.parfile,
+                options.ubifile,
                 options.newfltfile,
                 options.fltfile]:
         parser.print_help()
         logging.error("You have not filled in all the required options")
         import sys
         sys.exit()
-        
+
     try:
         filtergrain(options)
     except:
@@ -142,6 +142,6 @@ to a particular grain
         import traceback
         logging.error("An error occurred, details follow")
         traceback.print_exc()
-    
+
 
 
