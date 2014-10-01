@@ -49,8 +49,7 @@ print "detector vertical",v,"horizontal",h
 print "real space x, y, z = ", xyz
 
 print "\n"
-print "detector 2048 2048 %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f stem
-format %i %i %i %i" % \
+print "detector 2048 2048 %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f stem format %i %i %i %i" % \
     (mm*pars['y_size'],
      mm*pars['z_size'],
      mm*xyz[0,0],

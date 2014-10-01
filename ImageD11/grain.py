@@ -34,7 +34,7 @@ class grain:
             raise
         self.mt = numpy.dot(self.ubi, self.ubi.T)
         self.rmt = numpy.linalg.inv(self.mt)
-        if translation==None:
+        if translation is None:
             # If translation has not been read from ubi file make it 
             # be None to avoid confusion with a grain which is known
             # to be at [0,0,0]
