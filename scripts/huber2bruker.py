@@ -187,7 +187,9 @@ class edf2bruker:
                  detrend = None,
                  monitorval = None,
                  monitorcol = None,
-                 maskfilename=None):
+                 maskfilename=None,
+                 omega_zero=0,
+                 chi_zero=0):
         """ converts edf (esrf id11 frelon) to bruker (esrf id11 smart6500)"""
         self.distance = distance
         self.overflow = overflow
@@ -210,6 +212,8 @@ class edf2bruker:
         self.header = im.header
         self.h = im.__headerstring__
         self.last_time = time.time()
+        self.omega_zero = omega_zero
+        self.chi_zero = chi_zero
 
     def putitem(self, TITLE, new):
         """ put something in the header"""
@@ -267,7 +271,8 @@ class edf2bruker:
             numpy.add( im[0:sh[0],0:sh[1]], corrected_image[0:sh[0],0:sh[1]], im[0:sh[0],0:sh[1]] )
             corrected_image = im
         self.putitem("ANGLES",
-                     "ANGLES :%14f%14f%14f%14f"%(0,om,hphi,hchi)+" "*(80-14*4-8))
+                     "ANGLES :%14f%14f%14f%14f"%(0,om-self.omega_zero,hphi,hchi-self.chi_zero) +
+                     " "*(80-14*4-8))
         self.putitem("DISTANC",
                      "DISTANC:%14f"%(self.distance)+" "*(80-14-8))
         self.putitem("RANGE",
@@ -397,6 +402,19 @@ if __name__=="__main__":
                           default = None,
                           help="Apply a fit2d style mask to image")
 
+        parser.add_option("--omega_zero",
+                          action="store", type="float",
+                          dest="omega_zero",
+                          default = 0.0,
+                          help="Omega zero from smart")
+
+        parser.add_option("--chi_zero",
+                          action="store", type="float",
+                          dest="chi_zero",
+                          default = 0.0,
+                          help="chi zero from smart")
+
+
 
 
 
@@ -435,7 +453,9 @@ if __name__=="__main__":
                                   detrend = options.detrend,
                                   monitorval = options.monitorval,
                                   monitorcol = options.monitorcol ,
-                                  maskfilename = options.maskfilename
+                                  maskfilename = options.maskfilename,
+                                  omega_zero = options.omega_zero,
+                                  chi_zero = options.chi_zero
                                   )
 
                        for j in range(options.jthreads)]
