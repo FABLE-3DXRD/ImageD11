@@ -47,22 +47,31 @@ for i,g1 in enumerate(g1l):
     best = None
     symubis = [np.dot(o, g1.ubi) for o in h.group]
     symus   = [xfab.tools.ubi_to_u_b(ubi)[0] for ubi in symubis]
+    asymusT   = [xfab.tools.ubi_to_u_b(ubi)[0].T for ubi in symubis]
     printed = False
     for j,g2 in enumerate(g2l):
         angle = 180.
         sg = None
         #print "g2.ubi",g2.ubi
-        for k,symu in enumerate(symus):
-            umis = np.dot( symu.T, g2.u )
-            if (abs(np.dot(umis, umis.T)- np.eye(3)).ravel()).sum() > 1e-6:
-                print i,j,k
-                print symubis[k]
-                print umis
-                1/0
-            symangle = np.degrees(np.arccos( min(1, (np.trace( umis ) - 1.0)/2.0)))
-            if symangle < angle:
-                angle = symangle
-                sg = k
+#        import pdb
+#        pdb.set_trace()
+        aumis = np.dot(asymusT, g2.u)
+        asymangle = np.degrees(np.arccos(np.clip((
+                    np.trace(aumis,axis1=1,axis2=2) - 1.0)/2.0, -1, 1)))
+        sg = np.argmin(asymangle)
+        angle = asymangle[sg]
+#        for k,symu in enumerate(symus):
+#            umis = np.dot( symu.T, g2.u )
+#            if (abs(np.dot(umis, umis.T)- np.eye(3)).ravel()).sum() > 1e-6:
+#                print i,j,k
+#                print symubis[k]
+#                print umis
+#                1/0
+#            symangle = np.degrees(np.arccos( min(1, (np.trace( umis ) - 1.0)/2.0)))
+#            print symangle, asymangle[k]
+#            if symangle < angle:
+#                angle = symangle
+#                sg = k
         dt = g1.translation - g2.translation
         da[i,j] = angle
         dt2[i,j] = np.sqrt((dt*dt).sum())
