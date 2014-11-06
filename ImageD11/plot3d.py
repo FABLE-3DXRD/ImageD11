@@ -12,8 +12,8 @@ if __name__ == '__build__':
 
 
 import string
-__version__ = string.split('$Revision$')[1]
-__date__ = string.join(string.split('$Date$')[1:3], ' ')
+#__version__ = string.split('$Revision$')[1]
+#__date__ = string.join(string.split('$Date$')[1:3], ' ')
 __author__ = 'Jon Wright <jpwright@users.sourceforge.net> from example by Tarn Weisner Burton <twburton@users.sourceforge.net>'
 
 try:
@@ -23,6 +23,15 @@ except:
     print "This demo requires the numpy extension, sorry."
     sys.exit()
 
+###### START patch for ESRF debian installation
+from Tkinter import _default_root
+from Tkinter import Tk
+if _default_root is None:
+    _default_root = Tk()
+import os
+if os.path.exists('/users/wright/fable/standalone/Togl2.0-8.4-Linux/lib'):
+    _default_root.tk.call('lappend', 'auto_path','/users/wright/fable/standalone/Togl2.0-8.4-Linux/lib')
+###### END patch for ESRF debian installation
 
 import OpenGL.GL as GL
 import OpenGL.Tk as Tk
