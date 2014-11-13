@@ -35,9 +35,41 @@ if os.path.exists('/users/wright/fable/standalone/Togl2.0-8.4-Linux/lib'):
 
 import OpenGL.GL as GL
 import OpenGL.Tk as Tk
-
+import OpenGL.GLU as GLU
 
 import sys
+
+class myOpengl(Tk.Opengl):
+
+    # Make a parallel projection
+    # mostly copied from Tk.Opengl class with small mods
+    def tkRedraw(self, *dummy):
+        """Cause the opengl widget to redraw itself."""
+        if not self.initialised: 
+            return
+        self.activate()
+        print self.distance
+        GL.glPushMatrix()			# Protect our matrix
+        self.update_idletasks()
+        self.activate()
+        w = self.winfo_width()
+        h = self.winfo_height()
+        GL.glViewport(0, 0, w, h)
+        # Clear the background and depth buffer.
+        GL.glClearColor(self.r_back, self.g_back, self.b_back, 0.)
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
+        GL.glMatrixMode(GL.GL_PROJECTION)
+        GL.glLoadIdentity()
+        r = 1.*w/h
+        GL.glOrtho( -self.distance*r, self.distance*r, -self.distance, self.distance, 
+                     -self.distance*3, self.distance*3)
+#        GLU.gluPerspective(self.fovy, float(w)/float(h), self.near, self.far)
+        GL.glMatrixMode(GL.GL_MODELVIEW)
+        self.redraw(self)
+        GL.glFlush()				# Tidy up
+        GL.glPopMatrix()			# Restore the matrix
+        self.tk.call(self._w, 'swapbuffers')
+
 
 
 class plot3d(Tk.Toplevel):
@@ -58,15 +90,16 @@ class plot3d(Tk.Toplevel):
         self.pointsize=1.
         self.npeaks=xyz.shape[0]
 
-        self.o = Tk.Opengl(self, width = 400, height = 400, double = 1)
+        self.o = myOpengl(self, width = 400, height = 400, double = 1)
         self.o.redraw = self.redraw
         self.o.autospin_allowed = 1
         self.o.fovy=5
         self.o.near=1e6
         self.o.far=1e-6
         import math
-        self.o.distance=numpy.maximum.reduce(numpy.ravel(xyz))*4 / \
-            math.tan(self.o.fovy*math.pi/180)
+        self.o.distance=3.
+#numpy.maximum.reduce(numpy.ravel(xyz))*4 / \
+#            math.tan(self.o.fovy*math.pi/180)
         print type(xyz),xyz.dtype.char,xyz.shape
         self.xyz=xyz
         f=Tk.Frame(self)
@@ -224,12 +257,13 @@ class plot3d(Tk.Toplevel):
         self.o.tkRedraw()
 
 
+
     def redraw(self,o):
         
         GL.glDisable(GL.GL_LIGHTING)
         GL.glClearColor(0., 0., 0., 0)
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
-        GL.glOrtho(-1,1,-1,1,-1,1)
+#        GL.glOrtho(-5,5,-5,5,-5,5)
         GL.glColor3f(1.0, 1.0, 1.0) # white
         GL.glPointSize(self.pointsize)
         GL.glDrawArrays(GL.GL_POINTS, 0, self.npeaks )
