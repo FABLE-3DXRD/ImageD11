@@ -342,6 +342,10 @@ class refinegrains:
         """
         mat=ubi.copy()
         # print "In refine",self.tolerance, self.gv.shape
+        # First time fits the mat
+        self.npks, self.avg_drlv2 = closest.score_and_refine(mat, self.gv,
+                                                             self.tolerance)
+        # Second time updates the score with the new mat
         self.npks, self.avg_drlv2 = closest.score_and_refine(mat, self.gv,
                                                              self.tolerance)
         if not quiet:

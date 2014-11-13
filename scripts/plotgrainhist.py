@@ -36,7 +36,11 @@ except:
     print "Usage: %s flt par ubi tol [nbins=30]"%(sys.argv[0])
     sys.exit()
 
-o=refinegrains()
+if len(sys.argv)>6:
+    o=refinegrains(OmFloat=True, OmSlop=float(sys.argv[6]))
+else:
+    o=refinegrains(OmFloat=False)
+                  
 
 o.loadparameters(par)
 o.readubis(ubi)

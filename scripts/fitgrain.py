@@ -15,7 +15,9 @@ def fitgrain(options):
     """
     Fits grains to a dataset using all peaks within tol
     """
-    o = refinegrains.refinegrains(tolerance = options.tol)
+    o = refinegrains.refinegrains(tolerance = options.tol,
+                                  OmFloat=options.omega_float,
+                                  OmSlop=options.omega_slop)
     o.loadparameters(options.parfile)
     o.readubis(options.ubifile)
     o.loadfiltered(options.fltfile)
@@ -90,6 +92,16 @@ if __name__=="__main__":
                       dest="steps", type="int",
                       default =   1000,
                       help="Number of simplex iterations")
+    parser.add_option( "--omega_no_float", action="store_false",
+                      dest = "omega_float",
+                      default = True,
+                      help= "Use exact observed omega values")
+
+    parser.add_option( "--omega_slop", action="store", type="float",
+                      dest = "omega_slop",
+                      default = 0.5,
+                      help= "Omega slop (step) size")
+
     
     parser.description = """
 Fitgrain should attempt to fit one or more grains to a dataset

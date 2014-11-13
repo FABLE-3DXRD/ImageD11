@@ -18,7 +18,9 @@ def filtergrain(options):
     """
     Filter a peaks file according to which peaks are indexed
     """
-    o = refinegrains.refinegrains(tolerance=0.9)
+    o = refinegrains.refinegrains(tolerance=0.9,
+                                  OmFloat=options.omega_float,
+                                  OmSlop=options.omega_slop)
     o.loadparameters(options.parfile)
     o.readubis(options.ubifile)
 
@@ -118,6 +120,16 @@ if __name__=="__main__":
     parser.add_option("-g","--grain", action="store",
                       dest = "grain", type="string", default=None,
                       help = "Which grain to choose")
+    parser.add_option( "--omega_no_float", action="store_false",
+                      dest = "omega_float",
+                      default = True,
+                      help= "Use exact observed omega values")
+
+    parser.add_option( "--omega_slop", action="store", type="float",
+                      dest = "omega_slop",
+                      default = 0.5,
+                      help= "Omega slop (step) size")
+
     parser.description = """
 Filtergrain should choose the peaks from a filtered
 peaks output file according to those which are closest
