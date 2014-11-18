@@ -1,3 +1,4 @@
+
 # Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_codepy
 
 
@@ -649,15 +650,18 @@ class refinegrains:
 
                 self.scandata[s].tth_per_grain[ind] = tth
                 self.scandata[s].eta_per_grain[ind] = eta
-                gr.intensity_info = compute_total_intensity( self.scandata[s] ,
-                                                            ind,
-                                                            self.intensity_tth_range )
                 self.grains[ ( g, s) ] = gr
                 print "Grain",g,"Scan",s,"npks=",len(ind)
                 #print 'x',gr.x[:10]
             # Compute the total integrated intensity if we have enough
             # information available
             compute_lp_factor( self.scandata[s] )
+            for g in self.grainnames:
+                gr = self.grains[ (g, s) ]
+                gr.intensity_info = compute_total_intensity( self.scandata[s] ,
+                                                            gr.ind,
+                                                            self.intensity_tth_range )
+
             print "End second grain loop",time.time()-start
             print
             start = time.time()
@@ -772,6 +776,7 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2 ):
 
     # risk divide by zero here...
     intensities = numpy.take( raw_intensities * lor , indices )
+    #print "Compute intensity",intensities,lor[indices]
     sigma_i = numpy.sum(intensities)
     if tth_range is not None:
         if "tth_per_grain" in colfile.titles:
