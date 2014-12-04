@@ -1,0 +1,19 @@
+For python2.7 on windows 64 bit:
+
+
+Install compiler:
+MS Windows SDK for Windows 7 and .NET Framework 3.5 SP1
+http://www.microsoft.com/en-us/download/details.aspx?id=18950
+
+Open a winpython command prompt
+
+Set up compiler:
+
+C:\Windows\System32\cmd.exe /E:ON /V:ON /T:0E /K "C:\Program Files\Microsoft SDKs\Windows\v7.0\Bin\SetEnv.cmd"
+
+Set up environment:
+
+set DISTUTILS_USE_SDK=1
+setenv /x64 /release
+
+... and "python setup.py build" should work
