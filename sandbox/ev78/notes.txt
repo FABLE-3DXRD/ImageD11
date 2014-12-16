@@ -1,0 +1,11 @@
+
+
+watch_direcs.py : finds files to run pyFAI via integrate_them.py -g
+integrate_them.py : runs pyFAI globbing
+makevols.py : reads pyFAI .dat and shutterless.txt into hdf 
+	    FIXME - do this inside integrate_them.py
+rad.py : tomo reconstruction (dodgy code)
+
+edf2nrrd.py : For regular (pyHST) tomography. Convert edf stack to 
+	    nrrd file which can be read by seg3d (youtube tomo soft)
+
