@@ -554,7 +554,7 @@ class refinegrains:
         start = time.time()
         for s in self.scannames:
             self.scandata[s].labels = self.scandata[s].labels*0 - 2 # == -1
-            drlv2 = self.scandata[s].drlv2*0 + 1  # == 1
+            drlv2 = numpy.zeros(len(self.scandata[s].drlv2), numpy.float)+1
             nr = self.scandata[s].nrows
             sc = self.scandata[s].sc
             fc = self.scandata[s].fc
@@ -570,27 +570,42 @@ class refinegrains:
                                                   **self.parameterobj.parameters)
             print "Start first grain loop",time.time()-start
             start = time.time()
+            gv = numpy.zeros(peaks_xyz.shape,numpy.float, order='F' )
+            wedge = self.parameterobj.parameters['wedge']
+            omegasign = self.parameterobj.parameters['omegasign']
+            chi   = self.parameterobj.parameters['chi']
+            wvln  = self.parameterobj.parameters['wavelength']
+            first_loop = time.time()
+            import fImageD11
+            drlv2_2 = self.scandata[s].drlv2*0 + 1  # == 1
+            int_tmp_2 = numpy.zeros(nr , numpy.int32 )-1
             for g, ig in zip(self.grainnames, range(ng)):
                 assert g == ig, "sorry - a bug in program"
                 gr = self.grains[ ( g, s) ]
                 self.set_translation( g, s)
                 gr.peaks_xyz = peaks_xyz
                 gr.om = self.scandata[s].omega
-                self.compute_gv( gr )
-                # self.tth and self.eta hold the current tth and eta values
-                if 0:
-                    tth_tmp[int(g),:] = self.tth
-                    eta_tmp[int(g),:] = self.eta
-#                print "about to assign"
-                closest.score_and_assign( gr.ubi,
-                                          self.gv,
-                                          self.tolerance,
-                                          drlv2,
-                                          int_tmp,
-                                          int(g))
+                # self.compute_gv( gr )
+                # print peaks_xyz.shape, self.scandata[s].omega.shape, gv.shape
+                fImageD11.compute_gv( peaks_xyz,
+                    self.scandata[s].omega,
+                    omegasign,
+                    wvln,
+                    wedge,
+                    chi,
+                    gr.translation,
+                    gv)
+                fImageD11.assign( gr.ubi, gv, self.tolerance, drlv2, int_tmp, int(g)) 
+#                closest.score_and_assign( gr.ubi,
+#                                          gv.T,
+#                                          self.tolerance,
+#                                          drlv2_2,
+#                                          int_tmp_2,
+#                                          int(g))
+            print time.time()-first_loop,"First loop"
 #                print "assigned"
 
-
+            self.gv = gv.T.astype(numpy.float32).copy()
             # Second loop after checking all grains
             print "End first grain loop",time.time()-start
             start = time.time()

@@ -31,7 +31,7 @@ c = columnfile(sys.argv[1])
 p = parameters()
 p.loadparameters(sys.argv[2])
 
-pks = [c.xc, c.yc]
+pks = [c.sc, c.fc]
 wvln = float(p.get("wavelength"))
 wedge = float(p.get("wedge"))
 chi =  float(p.get("chi"))
@@ -52,8 +52,10 @@ gv = compute_g_vectors(tth, eta, c.omega,
 d1 = time.time()-start   
 print d1
 
+osi = p.get('omegasign')
 start = time.time()
-gvf = fImageD11.compute_gv( xlylzl, c.omega, wvln, wedge, chi, t )
+gvf = np.zeros(xlylzl.shape,np.float, order='F')
+fImageD11.compute_gv( xlylzl, c.omega, osi, wvln, wedge, chi, t, gvf )
 d2 = time.time()-start
 print time.time()-start
 print "Ratio",d1/d2
