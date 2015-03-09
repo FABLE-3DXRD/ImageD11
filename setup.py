@@ -22,9 +22,9 @@ Setup script
 
 
 
-from distutils.core import setup, Extension
+# from distutils.core import setup, Extension
 # from setuptools import setup, Extension
-
+from numpy.distutils.core import setup, Extension
 
 from numpy import get_include
 
@@ -59,6 +59,13 @@ bl = Extension("_splines",
                sources = ['src/splines.c', 'src/bispev.c'],
                include_dirs = nid)
 
+# New fortran code - you might regret this...
+fi = Extension("fImageD11",
+		sources = ['fsrc/fImageD11.f90' ],
+		extra_f90_compile_args=["-fopenmp"],
+		libraries = ['gomp','pthread'],
+		)
+
 import sys
 if sys.platform == 'win32':
     needed = [
@@ -69,20 +76,20 @@ if sys.platform == 'win32':
         'PIL',
         ]
 else: # Take care of yourself if you are on linux
-    # You package manager is inevitable f*cked
+    # Your package manager is inevitably f*cked
     needed = []
 #        'xfab>=0.0.1',
 #        'fabio>=0.0.4']
 
 # See the distutils docs...
 setup(name='ImageD11',
-      version='1.4.0',
+      version='1.6.0',
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
-      ext_modules = [cl,cp,bl,ch],
+      ext_modules = [cl,cp,bl,ch,fi],
       install_requires = needed,
       packages = ["ImageD11"],
       package_dir = {"ImageD11":"ImageD11"},
@@ -123,4 +130,9 @@ setup(name='ImageD11',
 		 "scripts/refine_em.py",
                  "scripts/avg_par.py",
                  "scripts/powderimagetopeaks.py"])
+
+print "For windows you would need:"
+print 'set LDFLAGS="-static-libgfortran -static-libgcc -static -lgomp -shared"'
+print 'also gfortran/gcc installed (--compiler=mingw32)'
+print 'also to patch f2py to let it run'
 
