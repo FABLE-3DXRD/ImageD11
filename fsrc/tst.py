@@ -44,7 +44,7 @@ xlylzl = compute_xyz_lab( pks,
 tth, eta = compute_tth_eta_from_xyz( xlylzl,
                                      c.omega,
                                      **p.parameters)
-gv = compute_g_vectors(tth, eta, c.omega,
+gv = compute_g_vectors(tth, eta, c.omega*p.get('omegasign'),
                        wvln,
                        wedge,
                        chi)
