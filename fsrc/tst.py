@@ -27,6 +27,7 @@ from ImageD11.transform import \
 import ImageD11.transform, fImageD11, sys
 import numpy as np, time
 
+start=time.time()
 c = columnfile(sys.argv[1])
 p = parameters()
 p.loadparameters(sys.argv[2])
@@ -38,30 +39,28 @@ chi =  float(p.get("chi"))
 t = np.array( [float(p.get("t_x")),
                float(p.get("t_y")),
                float(p.get("t_z"))], np.float32)
+print "Reading %.4f"%(time.time()-start),
 start = time.time()
-xlylzl = compute_xyz_lab( pks,
+for i in range(10):
+    xlylzl = compute_xyz_lab( pks,
                           **p.parameters )
-tth, eta = compute_tth_eta_from_xyz( xlylzl,
+    tth, eta = compute_tth_eta_from_xyz( xlylzl,
                                      c.omega,
                                      **p.parameters)
-gv = compute_g_vectors(tth, eta, c.omega*p.get('omegasign'),
+    gv = compute_g_vectors(tth, eta, c.omega*p.get('omegasign'),
                        wvln,
                        wedge,
                        chi)
 
 d1 = time.time()-start   
-print d1
-
 osi = p.get('omegasign')
-start = time.time()
 gvf = np.zeros(xlylzl.shape,np.float, order='F')
-fImageD11.compute_gv( xlylzl, c.omega, osi, wvln, wedge, chi, t, gvf )
+start = time.time()
+for i in range(100):
+    fImageD11.compute_gv( xlylzl, c.omega, osi, wvln, wedge, chi, t, gvf )
 d2 = time.time()-start
-print time.time()-start
-print "Ratio",d1/d2
-print "t",t
-print "tth",tth[:4]
-print "eta",eta[:4]
-print gv[:,:4]
-print gvf[:,:4]
+print "%.4f %.4f"%(d1,d2),"Ratio %.2f"%(d1/d2)
+err = gv-gvf
+scor =abs(err).mean(axis=1)/abs(gv).mean(axis=1)
+assert (scor < 1e-6).all(), "Mismatch"
 

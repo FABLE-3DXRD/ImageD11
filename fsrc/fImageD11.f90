@@ -39,7 +39,7 @@ subroutine compute_gv( xlylzl, omega, omegasign, wvln, wedge, chi, t, gv, n )
   real(8), intent(inout):: gv(3,n)
   integer, intent(in) ::  n, omegasign
   real :: sc,cc,sw,cw,wmat(3,3),cmat(3,3), mat(3,3), u(3),d(3),v(3)
-  real :: modyz, o(3), rtth, reta, co, so, ds, sth, cth, k(3)
+  real :: modyz, o(3), co, so, ds, k(3)
   real, parameter :: PI=3.141592653589793,RAD=PI/180.0,DEG=180.0/PI
   integer :: i
 
@@ -80,6 +80,8 @@ subroutine compute_gv( xlylzl, omega, omegasign, wvln, wedge, chi, t, gv, n )
   enddo
  
 end subroutine compute_gv
+
+
 ! set LDFLAGS="-static-libgfortran -static-libgcc -static -lgomp -shared"  
 ! f2py -m fImageD11 -c fImageD11.f90 --opt=-O3 --f90flags="-fopenmp" -lgomp -lpthread
 ! export OMP_NUM_THREADS=12
