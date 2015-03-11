@@ -17,14 +17,16 @@ Optional arguments:
 Return objects:
   gv : rank-2 array('f') with bounds (3,n)
 """
-
+import sys
 from ImageD11.columnfile import columnfile
 from ImageD11.parameters import parameters
 from ImageD11.transform import \
     compute_xyz_lab, \
     compute_tth_eta_from_xyz, \
     compute_g_vectors
-import ImageD11.transform, fImageD11, sys
+import ImageD11.transform
+from ImageD11 import fImageD11
+
 import numpy as np, time
 
 start=time.time()
@@ -32,7 +34,11 @@ c = columnfile(sys.argv[1])
 p = parameters()
 p.loadparameters(sys.argv[2])
 
-pks = [c.sc, c.fc]
+try:
+    pks = [c.sc, c.fc]
+except:
+    pks = [c.xc, c.yc]
+
 wvln = float(p.get("wavelength"))
 wedge = float(p.get("wedge"))
 chi =  float(p.get("chi"))
@@ -59,7 +65,7 @@ start = time.time()
 for i in range(100):
     fImageD11.compute_gv( xlylzl, c.omega, osi, wvln, wedge, chi, t, gvf )
 d2 = time.time()-start
-print "%.4f %.4f"%(d1,d2),"Ratio %.2f"%(d1/d2)
+print "%.4f %.4f"%(d1,d2),"Ratio %.2f"%(10*d1/d2)
 err = gv-gvf
 scor =abs(err).mean(axis=1)/abs(gv).mean(axis=1)
 assert (scor < 1e-6).all(), "Mismatch"

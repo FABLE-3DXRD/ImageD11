@@ -6,27 +6,23 @@ subroutine assign( ubi, gv, tol, drlv2, labels, ig, n)
     integer, intent(in) :: n, ig
     integer, intent(inout) :: labels(n)
     real(8), intent(inout) :: drlv2(n)
-    real(8) :: dr, h(3)
-    integer :: i,j
-!$omp parallel do private(h,dr)
+    real(8) :: dr, h(3), ttol, dh(3)
+    integer :: i
+    ttol = tol*tol
+!$omp parallel do private(h,dr,dh)
     do i=1,n
-        h=matmul(ubi, gv(:,i))
-        dr = 0.
-        do j=1,3
-            dr = dr + (h(j)-nint(h(j)))*(h(j)-nint(h(j)))
-        enddo
-        if ( (dr.lt.(tol*tol)) .and. (dr.lt.drlv2(i)) ) then
-            drlv2(i) = dr
-            labels(i) = ig
-!            write(*,*)'got',h,dr,gv(:,i)
-        else if (labels(i).eq.ig) then
-            labels(i) = -1
-!            write(*,*)'missed',h,dr
-!        else
-!            write(*,*)'not',h,dr,drlv2(i),gv(:,i)
-        endif
+       h(1)=ubi(1,1)*gv(1,i) + ubi(1,2)*gv(2,i) + ubi(1,3)*gv(3,i) 
+       h(2)=ubi(2,1)*gv(1,i) + ubi(2,2)*gv(2,i) + ubi(2,3)*gv(3,i) 
+       h(3)=ubi(3,1)*gv(1,i) + ubi(3,2)*gv(2,i) + ubi(3,3)*gv(3,i) 
+       dh = floor(h+0.5) - h
+       dr =  dh(1)*dh(1) + dh(2)*dh(2) + dh(3)*dh(3)
+       if ( (dr.lt.ttol) .and. (dr.lt.drlv2(i)) ) then
+          drlv2(i) = dr
+          labels(i) = ig
+       else if (labels(i).eq.ig) then
+          labels(i) = -1
+       endif
     enddo
-    
 end subroutine assign
 
 

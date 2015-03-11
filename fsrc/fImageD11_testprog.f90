@@ -4,12 +4,16 @@
     real,allocatable :: xlylzl(:,:),omega(:)
     real :: wvln,wedge,chi,t(3),dt,ubi(3,3)
     real(8), allocatable :: gv(:,:), drlv2(:)
-    integer, allocatable :: labels(:)
-    integer :: omegasign
+    integer, allocatable :: labels(:), seed(:)
+    integer :: omegasign,ns
     integer(8) :: start, end, rate
     allocate(xlylzl(3,n))
     allocate(omega(n))
     allocate(gv(3,n))
+    call random_seed(size=ns)
+    allocate(seed(ns))
+    seed=42
+    call random_seed(put=seed)
     call random_number(xlylzl)
     call random_number(omega)
     omega= omega*180

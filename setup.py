@@ -61,10 +61,9 @@ bl = Extension("_splines",
 
 # New fortran code - you might regret this...
 fi = Extension("fImageD11",
-		sources = ['fsrc/fImageD11.f90' ],
-		extra_f90_compile_args=["-fopenmp"],
-		libraries = ['gomp','pthread'],
-		)
+               sources = ['fsrc/fImageD11.f90' ],
+               extra_f90_compile_args=["-fopenmp -ffast-math -Ofast"],
+               libraries = ['gomp','pthread'])
 
 import sys
 if sys.platform == 'win32':
