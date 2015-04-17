@@ -545,11 +545,12 @@ class refinegrains:
                 g.set_ubi( res )
 
 
-    def assignlabels(self):
+    def assignlabels(self, quiet=False):
         """
         Fill out the appropriate labels for the spots
         """
-        print "Assigning labels with XLYLZL"
+        if not quiet:
+	        print "Assigning labels with XLYLZL"
         import time
         start = time.time()
         for s in self.scannames:
@@ -568,7 +569,8 @@ class refinegrains:
             peaks_xyz = transform.compute_xyz_lab([ self.scandata[s].sc,
                                                     self.scandata[s].fc ],
                                                   **self.parameterobj.parameters)
-            print "Start first grain loop",time.time()-start
+            if not quiet:
+            	print "Start first grain loop",time.time()-start
             start = time.time()
             gv = numpy.zeros(peaks_xyz.shape,numpy.float, order='F' )
             wedge = self.parameterobj.parameters['wedge']
@@ -602,23 +604,27 @@ class refinegrains:
 #                                          drlv2_2,
 #                                          int_tmp_2,
 #                                          int(g))
-            print time.time()-first_loop,"First loop"
+            if not quiet:
+            	print time.time()-first_loop,"First loop"
 #                print "assigned"
 
             self.gv = gv.T.astype(numpy.float32).copy()
             # Second loop after checking all grains
-            print "End first grain loop",time.time()-start
+            if not quiet:
+            	print "End first grain loop",time.time()-start
             start = time.time()
 
-            print self.scandata[s].labels.shape, \
-                  numpy.minimum.reduce(self.scandata[s].labels),\
-                  numpy.maximum.reduce(self.scandata[s].labels)
+            if not quiet:
+            	print self.scandata[s].labels.shape, \
+                	  numpy.minimum.reduce(self.scandata[s].labels),\
+                  	  numpy.maximum.reduce(self.scandata[s].labels)
 
             self.scandata[s].addcolumn( int_tmp , "labels" )
             self.scandata[s].addcolumn( drlv2 , "drlv2" )
-            print self.scandata[s].labels.shape, \
-                  numpy.minimum.reduce(self.scandata[s].labels),\
-                  numpy.maximum.reduce(self.scandata[s].labels)
+            if not quiet:
+	            print self.scandata[s].labels.shape, \
+    	              numpy.minimum.reduce(self.scandata[s].labels),\
+        	          numpy.maximum.reduce(self.scandata[s].labels)
 
             tth = numpy.zeros( nr, numpy.float32 )-1
             eta = numpy.zeros( nr, numpy.float32 )
@@ -636,7 +642,8 @@ class refinegrains:
             self.scandata[s].addcolumn( numpy.zeros(nr, numpy.float32), "l")
 
 
-            print "Start second grain loop",time.time()-start
+            if not quiet:
+            	print "Start second grain loop",time.time()-start
             start = time.time()
 
             # We have the labels set in self.scandata!!!
@@ -666,7 +673,8 @@ class refinegrains:
                 self.scandata[s].tth_per_grain[ind] = tth
                 self.scandata[s].eta_per_grain[ind] = eta
                 self.grains[ ( g, s) ] = gr
-                print "Grain",g,"Scan",s,"npks=",len(ind)
+                if not quiet:
+                	print "Grain",g,"Scan",s,"npks=",len(ind)
                 #print 'x',gr.x[:10]
             # Compute the total integrated intensity if we have enough
             # information available
@@ -675,10 +683,12 @@ class refinegrains:
                 gr = self.grains[ (g, s) ]
                 gr.intensity_info = compute_total_intensity( self.scandata[s] ,
                                                             gr.ind,
-                                                            self.intensity_tth_range )
+                                                            self.intensity_tth_range,
+                                                            quiet = quiet )
 
-            print "End second grain loop",time.time()-start
-            print
+            if not quiet:
+            	print "End second grain loop",time.time()-start
+            	print
             start = time.time()
 
 
@@ -762,7 +772,7 @@ def lf( tth, eta ):
     return top / bot
 
 
-def compute_total_intensity( colfile, indices, tth_range, ntrim = 2 ):
+def compute_total_intensity( colfile, indices, tth_range, ntrim = 2, quiet = False ):
     """
     Add up the intensity in colfile for peaks given in indices
     """
@@ -781,12 +791,15 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2 ):
     # compute, but should eventually be added
     if "Lorentz_per_grain" in colfile.titles:
         lor = colfile.Lorentz_per_grain
-        print "lorentz per grain for ints",
+        if not quiet:
+	        print "lorentz per grain for ints",
     elif "Lorentz" in colfile.titles:
         lor = colfile.Lorentz
-        print "lorentz for ints",
+        if not quiet:
+        	print "lorentz for ints",
     else:
-        print "lost the lorentz",
+        if not quiet:
+        	print "lost the lorentz",
         lor = numpy.ones( colfile.nrows, numpy.float32 )
 
     # risk divide by zero here...
@@ -796,10 +809,12 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2 ):
     if tth_range is not None:
         if "tth_per_grain" in colfile.titles:
             tth = colfile.tth_per_grain
-            print "tth_per_grain for",
+            if not quiet:
+            	print "tth_per_grain for",
         elif "tth" in colfile.titles:
             tth = colfile.tth
-            print "tth for range",
+            if not quiet:
+            	print "tth for range",
         else:
             # bugger
             tth = numpy.ones(colfile.nrows)
@@ -808,7 +823,8 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2 ):
         intensities = numpy.compress( ( tth_vals > min(tth_range) )&
                                       ( tth_vals < max(tth_range) ) ,
                                       intensities )
-        print "range %.5f %.5f"%tuple(tth_range),
+        if not quiet:
+        	print "range %.5f %.5f"%tuple(tth_range),
 
 
     if len(intensities) < 1:
@@ -831,9 +847,11 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2 ):
         intensities.std(),
         intensities.shape[0])
     except:
-        print intensities
+        if not quiet:
+        	print intensities
         raise
-    print ret
+    if not quiet:
+    	print ret
     return ret
 
 
