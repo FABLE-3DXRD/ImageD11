@@ -41,9 +41,16 @@ for ubifile in sys.argv[1:]:
         print "error"
         continue
     print 
+    print "i    a       b       c     alpha    beta     gamma    volume"
+    cell_all = []
+    volume = []
     for u,i  in zip(ul,range(len(ul))):
         print i, 
-        print "%.5f "*6 % indexing.ubitocellpars(u)
+        cell = indexing.ubitocellpars(u)
+        vol = cell[0]*cell[1]*cell[2]*numpy.sin(cell[3]*numpy.pi/180.)*numpy.sin(cell[4]*numpy.pi/180.)*numpy.sin(cell[5]*numpy.pi/180.)
+        print "%.5f "*6 % cell + "%.5f" %vol
+        cell_all.append(cell)
+        volume.append(vol)
         continue
         #print u
         red = try_to_reduce(u)
@@ -53,4 +60,10 @@ for ubifile in sys.argv[1:]:
             print "Reduced ubi"
             print red
             print "%.5f "*6 % indexing.ubitocellpars(red)
+
+    cell_all = numpy.asarray(cell_all)
+    print "average"
+    (a,b,c,alpha,beta,gamma) = numpy.mean(cell_all,axis=0,keepdims=False)
+    print "%.5f "*7 %(a,b,c,alpha,beta,gamma,numpy.average(volume))
+
     
