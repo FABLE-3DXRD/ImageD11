@@ -78,9 +78,49 @@ subroutine compute_gv( xlylzl, omega, omegasign, wvln, wedge, chi, t, gv, n )
 end subroutine compute_gv
 
 
+
+subroutine compute_xlylzl( s, f, p, r, dist, xlylzl, n )
+! Computes laboratory co-ordinates
+!
+!
+  implicit none
+  real(8), intent(in) :: s(n), f(n)
+  real(8), intent(in) :: p(4), r(3,3), dist(3)
+  real(8), intent(inout):: xlylzl(3,n)
+  integer, intent(in) ::  n
+  ! parameters
+  real(8) :: s_cen, f_cen, s_size, f_size
+  ! temporaries
+  real(8) :: v(3)
+  integer :: i, j
+  ! unpack parameters
+  s_cen = p(1)
+  f_cen = p(2)
+  s_size = p(3)
+  f_size = p(4)
+  do i = 1, n
+     ! Place on the detector plane accounting for centre and size
+     ! subtraction of centre is done here and not later for fear of
+     ! rounding errors
+     v(1) = 0.0d0
+     v(2) = (f(i) - f_cen)*f_size
+     v(3) = (s(i) - s_cen)*s_size
+     ! Apply the flip and rotation, python was :
+     ! fl = dot( [[o11, o12], [o21, o22]], peaks=[[z],[y]] )
+     ! vec = [0,fl[1],fl[0]]
+     ! return dist + dot(rotmat, vec)
+     do j = 1, 3
+        ! Skip as v(1) is zero : r(1,j)*v(1)
+        xlylzl(j,i) = r(2,j)*v(2) + r(3,j)*v(3) + dist(j)
+     enddo
+  enddo
+end subroutine compute_xlylzl
+
+
 ! set LDFLAGS="-static-libgfortran -static-libgcc -static -lgomp -shared"  
 ! f2py -m fImageD11 -c fImageD11.f90 --opt=-O3 --f90flags="-fopenmp" -lgomp -lpthread
 ! export OMP_NUM_THREADS=12
 ! python tst.py ../test/nac_demo/peaks.out_merge_t200 ../test/nac_demo/nac.prm 
+! python test_xlylzl.py ../test/nac_demo/peaks.out_merge_t200 ../test/nac_demo/nac.prm
 
-! f2py -m fImageD11 -c fImageD11.f90 --f90flags="-fopenmp" -lgomp -lpthread  --fcompiler=gnu95 --compiler=mingw32
+! f2py -m fImageD11 -c fImageD11.f90 --f90flags="-fopenmp" -lgomp -lpthread  --fcompiler=gnu95 --compiler=mingw32 -DF2PY_REPORT_ON_ARRAY_COPY=1
