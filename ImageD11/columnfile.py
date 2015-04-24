@@ -283,7 +283,9 @@ class columnfile:
         Set object vars to point into the big array
         """
         if self.nrows == 0:
-            return
+            # use empty arrays for now... not sure why this was avoided in the past?
+            pass
+            #return
         for title, i in zip(self.titles, range(len(self.titles))):
             setattr(self, title, self.bigarray[i])
             assert getattr(self, title).shape == (self.nrows,)
