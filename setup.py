@@ -59,13 +59,17 @@ bl = Extension("_splines",
                sources = ['src/splines.c', 'src/bispev.c'],
                include_dirs = nid)
 
+import sys
+                  
 # New fortran code - you might regret this...
 fi = Extension("fImageD11",
                sources = ['fsrc/fImageD11.f90' ],
-               extra_f90_compile_args=["-fopenmp -ffast-math -O3"],
+#               extra_f90_compile_args=["-fopenmp -O2"],
                libraries = ['gomp','pthread'])
+# OK, I am beginning to regret it now. Patch for older numpys
+sys.argv.extend ( ['config_fc', '--fcompiler=gnu95',
+                   '--f90flags="-fopenmp -O2"'])
 
-import sys
 if sys.platform == 'win32':
     needed = [
         'xfab>=0.0.2',
