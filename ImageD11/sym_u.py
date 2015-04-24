@@ -20,6 +20,34 @@ def m_from_string(s):
         m.append(n.array(r)-t)
     return n.array(m)
 
+def fmt(c): 
+    if c == 1:
+        return "+"
+    if c == -1:
+        return "-"
+    else: 
+        return "%f"%(c)
+
+def m_to_string(m):
+    """
+    Creates a symmetry operator string from a matrix
+    """
+    st = []
+    for i in range(3):
+        needplus = 0
+        for v,s in zip([ [ 1,0,0] , [ 0,1,0], [0,0,1] ],
+                            "xyz"):
+            c = n.dot(v,m.T[i])
+            if abs(c)>0:
+                st.append( "%s%s"%(fmt(c),s))
+                needplus = 1
+        if i<2:
+            st.append(",")
+    return "".join(st)
+
+            
+            
+
 
 
 
