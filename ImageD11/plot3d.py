@@ -48,7 +48,7 @@ class myOpengl(Tk.Opengl):
         if not self.initialised: 
             return
         self.activate()
-        print self.distance
+        #print self.distance
         GL.glPushMatrix()			# Protect our matrix
         self.update_idletasks()
         self.activate()
