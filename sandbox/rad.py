@@ -1,4 +1,5 @@
-import math, numpy, time, smooth
+import math, numpy, time
+# , smooth
 from ImageD11 import closest
 from fabio.openimage import openimage
 print "Using class version"
