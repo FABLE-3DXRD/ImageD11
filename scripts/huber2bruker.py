@@ -30,6 +30,9 @@ import numpy
 from fabio.openimage import openimage
 from fabio.brukerimage import brukerimage
 from fabio import file_series
+from pyFAI import detectors, _distortion
+
+
 
 class darkflood:
     """ apply dark and flood corrections """
@@ -38,6 +41,7 @@ class darkflood:
                  darkoffset = None,
                  floodfile = None,
                  floodmultiplier = None,
+                 splinefile = None,
                  border = None,
                  powfac = 1.0,
                  overflow= 65534,
@@ -50,6 +54,8 @@ class darkflood:
         self.darkfile = darkfile
         self.darkoffset = darkoffset
         self.floodfile = floodfile
+        self.splinefile = splinefile
+        self.distnorm = None
         self.border = border
         self.floodmultiplier = None
         #
@@ -101,6 +107,19 @@ class darkflood:
             self.floodfile = None
             self.floodmultiplier = None
 
+    def readspline(self, splinefile):
+        """read the spline """
+        self.det = detectors.FReLoN(splinefile)
+        self.dis = _distortion.Distortion(self.det)
+        self.dis.calc_LUT_size()
+        self.dis.calc_LUT()
+        # remove the pixel size normalisation
+        im = numpy.ones((2048,2048),numpy.float32)
+        im2 = self.dis.correct(im)
+        im2 = numpy.where(im2<0.1,1,im2)
+        self.distnorm = 1/im2
+
+
     def correct(self, dataobj, detrend = None):
         """ correct the data """
         tin = dataobj.data.dtype
@@ -135,6 +154,10 @@ class darkflood:
             cor[-b:,:]=0
             cor[:,-b:]=0
             self.report += "border b(%d)=0;"%(self.border)
+        if self.splinefile is not None:
+            cor = self.dis.correct( cor ) 
+            numpy.multiply(cor, self.distnorm, cor)
+            self.report += "splinen;"
         if self.darkoffset is not None:
             # print "applying offset of",self.darkoffset,
             numpy.add(cor, self.darkoffset, cor)
@@ -188,6 +211,7 @@ class edf2bruker:
                  monitorval = None,
                  monitorcol = None,
                  maskfilename=None,
+                 splinefile = None,
                  omega_zero=0,
                  chi_zero=0):
         """ converts edf (esrf id11 frelon) to bruker (esrf id11 smart6500)"""
@@ -200,12 +224,14 @@ class edf2bruker:
                                    border = border,
                                    powfac = self.powfac,
                                    overflow = self.overflow,
+                                   splinefile = splinefile,
                                    detrend = detrend,
                                    monitorval = monitorval,
                                    monitorcol = monitorcol,
                                    maskfilename=maskfilename)
         self.darkflood.readdark(dark)
         self.darkflood.readflood(flood)
+        self.darkflood.readspline(splinefile)
         self.templatefile = template
         im = brukerimage()
         im.readheader(template)
@@ -402,6 +428,12 @@ if __name__=="__main__":
                           default = None,
                           help="Apply a fit2d style mask to image")
 
+        parser.add_option("--splinefile",
+                          action="store", type="string",
+                          dest="splinefile",
+                          default = None,
+                          help="Apply a spatial distortion" )
+
         parser.add_option("--omega_zero",
                           action="store", type="float",
                           dest="omega_zero",
@@ -444,6 +476,7 @@ if __name__=="__main__":
         converters = [ edf2bruker(options.dark , options.flood ,
                                   options.template,
                                   darkoffset=options.darkoffset,
+                                  splinefile=options.splinefile,
                                   distance=options.distance,
                                   border=options.border,
                                   wvln=options.wvln,
