@@ -58,14 +58,17 @@ double getval(char *p,int type){
      case    NPY_BYTE   : return *(signed char   *)p*1.;
      case    NPY_UBYTE  : return *(unsigned char   *)p*1.;
      case    NPY_SHORT  : return *(short         *)p*1.;
-     case    NPY_USHORT  : return *(unsigned short         *)p*1.;
+     case    NPY_USHORT : return *(unsigned short         *)p*1.;
      case    NPY_INT    : return *(int           *)p*1.;
      case    NPY_LONG   : return *(long          *)p*1.;
+     case    NPY_ULONG  : return *(unsigned long *)p*1.;
+     case    NPY_LONGLONG   : return *(long long     *)p*1.;
+     case    NPY_ULONGLONG  : return *(unsigned long long *)p*1.;
      case    NPY_FLOAT  : return *(float         *)p*1.;
      case    NPY_DOUBLE : return *(double        *)p*1.;
      case    NPY_UINT   : return *(unsigned int  *)p*1.;
      }
-   printf("Oh bugger in getval - unrecongnised numeric type\n");
+   printf("Oh bugger in getval - unrecognised numeric type\n");
    printf("type = %d ",type);
    exit(1);
    return 0;
