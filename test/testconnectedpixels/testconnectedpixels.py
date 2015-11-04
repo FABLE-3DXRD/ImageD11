@@ -114,8 +114,9 @@ class test_blobproperties(unittest.TestCase):
   dety, /*Filled in elsewhere  - flip to HFPO book */
   detz, /*Filled in elsewhere  - flip to HFPO book */
   NPROPERTY ,   /* Number of properties if starting at 0 */ """
-        namelist = [np.split(",")[0].lstrip().rstrip()
-                    for n in names.split("\n")]
+        nl = names.split("\n")
+        namelist = [n.split(",")[0].lstrip().rstrip()
+                    for n in nl]
         i = 0
         while i < len(namelist):
             self.assertEqual(i,getattr(connectedpixels,namelist[i]))
@@ -132,14 +133,14 @@ class test_blobproperties(unittest.TestCase):
             self.assertRaises(ValueError,
                               connectedpixels.connectedpixels,
                               *(np.transpose(data),bl,0.1))
-            np = connectedpixels.connectedpixels(
+            npx = connectedpixels.connectedpixels(
                 np.transpose(data),np.transpose(bl),0.1)
-            self.assertEqual(np,1)
+            self.assertEqual(npx,1)
             err = np.sum(np.ravel(data-bl))
             self.assertEqual(err, 7) # 8-1
             res = connectedpixels.blobproperties(data,
                                                  bl,
-                                                 np,
+                                                 npx,
                                                  omega=22.)
             from ImageD11.connectedpixels import s_1, s_I, s_I2, \
                 s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
@@ -166,12 +167,12 @@ class test_blobproperties(unittest.TestCase):
             self.assertRaises(ValueError,
                               connectedpixels.connectedpixels,
                               *(np.transpose(data),bl,0.1))
-            np = connectedpixels.connectedpixels(
+            npx = connectedpixels.connectedpixels(
                 np.transpose(data),np.transpose(bl),0.1)
-            self.assertEqual(np,2)
+            self.assertEqual(npx,2)
             err = np.sum(np.ravel(data-bl))
             self.assertEqual(err, 0)
-            res = connectedpixels.blobproperties(data, bl, np)
+            res = connectedpixels.blobproperties(data, bl, npx)
             from ImageD11.connectedpixels import s_1, s_I, s_I2, \
                 s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
                 bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
