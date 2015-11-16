@@ -431,6 +431,11 @@ class unitcell:
             self.UBIlist.append(UBI)
 
 
+def unitcell_from_parameters(pars):
+    parnames = "_a _b _c alpha beta gamma".split()
+    cell = unitcell([pars.get("cell_%s"%(s)) for s in parnames],
+                     pars.get("cell_lattice_[P,A,B,C,I,F,R]"))
+    return cell
 
 if __name__=="__main__":
     import sys,time
