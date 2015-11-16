@@ -446,6 +446,11 @@ if __name__=="__main__":
                           default = 0.0,
                           help="chi zero from smart")
 
+        parser.add_option("--ndigits",
+                          action="store", type="int",
+                          dest="ndigits",
+                          default = 4,
+                          help="Number of digits in output name")
 
 
 
@@ -514,9 +519,10 @@ if __name__=="__main__":
 
         files_out = file_series.numbered_file_series(
             ostem+"_%d."%(options.run),
-            options.first,
-            options.last,
-            "") # extn
+            options.first+1,
+            options.last+1,
+            "", # extn
+            options.ndigits )
 
         allfiles = zip(files_in, files_out)
 
