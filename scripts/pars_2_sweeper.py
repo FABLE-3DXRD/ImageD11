@@ -15,18 +15,21 @@ from ImageD11 import transform, parameters
 try:
     parfile = sys.argv[1]
 except:
-    print "Usage: %s parfile [v h] mm"
+    print "Usage: %s parfile v h mm"
     print "generates parameters for grainsweeper from parameters for ImageD11"
+    print "v and h are the detector dimension in number of pixels"
     print "mm should be 1 if par in mm and 1e-3 if par in microns"
     sys.exit()
 try:
-    v=float(sys.argv[2])
-    h=float(sys.argv[3])
+    pixv=float(sys.argv[2])
+    pixh=float(sys.argv[3])
     mm=float(sys.argv[4])
 except:
-    v=1023.5
-    h=1023.5
+    pixv=2048.
+    pixh=2048.
     mm=1
+v = (pixv-1)/2.
+h = (pixh-1)/2.
 
 print "Getting parameters from",parfile
 
@@ -49,8 +52,10 @@ print "detector vertical",v,"horizontal",h
 print "real space x, y, z = ", xyz
 
 print "\n"
-print "detector 2048 2048 %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f stem format %i %i %i %i" % \
-    (mm*pars['y_size'],
+print "detector %i %i %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f stem format %i %i %i %i" % \
+    (pixv,
+     pixh,
+     mm*pars['y_size'],
      mm*pars['z_size'],
      mm*xyz[0,0],
      mm*xyz[0,1],
