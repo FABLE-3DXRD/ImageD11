@@ -148,6 +148,17 @@ def fit_ub_t( ub, translation, hkl, peaks_Cxyz, beam_Cxyz, wavelength):
         tnew  = tnew - shifts[9:]
     return ubnew, tnew
 
+def fitagrain( gr, pars ):
+    """
+    """
+    t = gr.translation.copy()
+    ub = gr.ub.copy()
+    pks, beam = getCxyz( gr, pars )
+    # This is a little ugly. Can the wavelength live in the B matrix?
+    hi = np.round( np.dot( gr.ubi, compute_Cgve( t, pks, beam, pars.get("wavelength") ) ) )
+    ubnew, tnew = fit_ub_t( ub, t, hi, pks, beam, pars.get("wavelength"))
+    return ubnew, tnew
+
 
 def main():
     import sys, time
@@ -179,11 +190,28 @@ def main():
     write_grain_file(sys.argv[4],gl)
 
 
+def main2():
+    import sys
+    c = columnfile(sys.argv[1])
+    p = read_par_file(sys.argv[2])
+    gl = read_grain_file(sys.argv[3])
+    for i,g in enumerate(gl):
+        mask = c.labels == i
+        g.sc = np.compress( mask, c.sc )
+        g.fc = np.compress( mask, c.fc )
+        g.omega = np.compress( mask, c.omega )
+        ubnew, tnew = fitagrain( g, p )
+        g.set_ubi( np.linalg.inv( ubnew ) )
+        g.translation[:] = tnew
+        print i, len(g.sc), tnew
+    write_grain_file( sys.argv[4], gl )
+        
+
 
 
 
 if __name__=="__main__":
-    main()
+    main2()
 
 
 

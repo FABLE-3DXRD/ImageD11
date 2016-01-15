@@ -1,15 +1,9 @@
-import math, numpy, time, smooth
+import math, numpy, time
 from ImageD11 import closest
 from fabio.openimage import openimage
 print "Using class version"
 
 
-def clean(sinogram):
-    s0 = sinogram.mean(axis=0)
-    numpy.divide( sinogram, s0, sinogram)
-    s1 = sinogram.mean(axis=1)
-    c =  s1 / smooth.smooth(s1,window_len=25)
-    return (sinogram.T/c).T
 
 
 class fourier_radial(object):
@@ -91,7 +85,7 @@ class fourier_radial(object):
 
     def sino2im(self, sinogram, centrepixel ):
         # Take out high frequency in mean (some ring artifacts)
-        s = clean(sinogram)
+        s = sinogram
         cp = centrepixel
         d  = numpy.concatenate( (  s[cp:,:], s[:cp,:], ), axis=0)
         im = self.process_sinogram( d , centrepixel )    
@@ -125,6 +119,9 @@ if __name__=="__main__":
     start = time.time()
     im = o.sino2im( d, centrepixel )
     sino.data = im
-    sino.write("r_"+fname, force_type=numpy.float32)
+    sino.write(fname+"_r", force_type=numpy.float32)
+    import pylab
+    pylab.imshow(im, interpolation='nearest',aspect='auto')
+    pylab.show()
     print "per image",time.time()-start
 

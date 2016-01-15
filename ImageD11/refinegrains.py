@@ -394,6 +394,9 @@ class refinegrains:
         for key in self.grains_to_refine:
 
             g = self.grains[key]
+
+###            rotdex.fitagrain( gr, self.parameterobj )
+
             grainname = key[0]
             scanname = key[1]
 
