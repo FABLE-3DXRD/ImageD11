@@ -25,9 +25,58 @@ import numpy
 from ImageD11 import transform, indexing, parameters
 from ImageD11 import grain, columnfile, closest
 
-import simplex
+import simplex, xfab.tools
 
 print __file__
+
+
+def triclinic( cp ):
+    return cp
+
+def monoclinic_a( cp ):
+    a,b,c,al,be,ga
+    return [a,b,c,90.,be,90.]
+def monoclinic_b( cp ):
+    a,b,c,al,be,ga
+    return [a,b,c,90.,90.,ga]
+def monoclinic_c( cp ):
+    a,b,c,al,be,ga
+    return [a,b,c,90.,be,90.]
+
+def orthorhombic( cp ):
+    """ a=b, c, 90,90,90 """
+    a,b,c,al,be,ga = cp
+    return [ a, b, c, 90., 90., 90. ]
+
+def tetragonal( cp ):
+    """ a=b, c, 90,90,90 """
+    a,b,c,al,be,ga = cp
+    return [ (a+b)/2., (a+b)/2., c, 90., 90., 90. ]
+    
+def trigonalP( cp ):
+    """ a=b=c, alpha=beta=gamma """
+    a,b,c,al,be,ga = cp
+    a = (a+b+c)/3.
+    al = (al+be+ga)/3.
+    return [a,a,a,al,al,al]
+
+def trigonalH( cp ):
+    """ a=b,c, alpha=beta=90,gamma=120 """
+    a = (cp[0]+cp[1])
+    return [ a, a, cp[2], 90., 90., 120.] 
+
+hexagonal = trigonalH
+
+    
+
+def cubic( cp ):
+    """ a=b=c, alpha=beta=gamma=90 """
+    a = (cp[0]+cp[1]+cp[2])
+    return [ a, a, a, 90., 90., 90.] 
+    
+
+    
+
 
 class refinegrains:
 
@@ -82,6 +131,7 @@ class refinegrains:
         }
 
     def __init__(self, tolerance = 0.01, intensity_tth_range = (6.1, 6.3),
+                 latticesymmetry = triclinic,
                  OmFloat=True, OmSlop=0.25 ):
         """
 
@@ -104,6 +154,7 @@ class refinegrains:
         # grains in each scan
         self.grains = {}
         self.grains_to_refine = []
+        self.latticesymmetry = latticesymmetry
         # ?
         self.drlv = None
         self.parameterobj = parameters.parameters(**self.pars)
@@ -346,9 +397,21 @@ class refinegrains:
         # First time fits the mat
         self.npks, self.avg_drlv2 = closest.score_and_refine(mat, self.gv,
                                                              self.tolerance)
+        # apply symmetry to mat:
+        if self.latticesymmetry is not triclinic:
+            cp = xfab.tools.ubi_to_cell( mat )
+            U  = xfab.tools.ubi_to_u( mat )
+            mat = xfab.tools.u_to_ubi( U, self.latticesymmetry( cp ) )
+
         # Second time updates the score with the new mat
         self.npks, self.avg_drlv2 = closest.score_and_refine(mat, self.gv,
                                                              self.tolerance)
+        # apply symmetry to mat:
+        if self.latticesymmetry is not triclinic:
+            cp = xfab.tools.ubi_to_cell( mat )
+            U  = xfab.tools.ubi_to_u( mat )
+            mat = xfab.tools.u_to_ubi( U, self.latticesymmetry( cp ) )
+
         if not quiet:
             import math
             try:

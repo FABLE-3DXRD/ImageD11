@@ -15,7 +15,9 @@ def fitgrain(options):
     """
     Fits grains to a dataset using all peaks within tol
     """
+    func = getattr(refinegrains, options.latticesymmetry )
     o = refinegrains.refinegrains(tolerance = options.tol,
+                                  latticesymmetry = func, 
                                   OmFloat=options.omega_float,
                                   OmSlop=options.omega_slop)
     o.loadparameters(options.parfile)
@@ -101,6 +103,16 @@ if __name__=="__main__":
                       dest = "omega_slop",
                       default = 0.5,
                       help= "Omega slop (step) size")
+
+    lattices = ["cubic", "hexagonal", "trigonalH","trigonalP",
+                "tetragonal", "orthorhombic", "monoclinic_a",
+                "monoclinic_b","monoclinic_c","triclinic"]
+    parser.add_option("-l", "--lattice", action="store",
+                      dest="latticesymmetry", type="choice",
+                      default = "triclinic",
+                      choices = lattices,
+                      help="Lattice symmetry for choosing orientation from "+
+                      "|".join(lattices))
 
     
     parser.description = """
