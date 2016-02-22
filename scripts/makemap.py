@@ -2,6 +2,7 @@
 
 from ImageD11.indexing import readubis, write_ubi_file
 from ImageD11.refinegrains import refinegrains
+import ImageD11.refinegrains
 import sys, os
 
 
@@ -14,7 +15,9 @@ def makemap(options):
             if len(tthr) == 1:
                 tthr = ( 0, tthr[0] )
             print "Using tthrange",tthr
+        func = getattr(ImageD11.refinegrains, options.latticesymmetry )
         o = refinegrains(intensity_tth_range = tthr,
+                         latticesymmetry = func, 
                          OmFloat=options.omega_float,
                          OmSlop=options.omega_slop)
     except:
@@ -118,7 +121,16 @@ if __name__ == "__main__":
                       default = 0.5,
                       help= "Omega slop (step) size")
 
-    
+    lattices = ["cubic", "hexagonal", "trigonalH","trigonalP",
+                "tetragonal", "orthorhombic", "monoclinic_a",
+                "monoclinic_b","monoclinic_c","triclinic"]
+    parser.add_option("-l", "--lattice", action="store",
+                      dest="latticesymmetry", type="choice",
+                      default = "triclinic",
+                      choices = lattices,
+                      help="Lattice symmetry for choosing orientation from "+
+                      "|".join(lattices))
+
     options, args = parser.parse_args()
 
     for name in ["parfile" , 
