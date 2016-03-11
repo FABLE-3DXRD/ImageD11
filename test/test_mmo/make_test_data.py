@@ -5,7 +5,7 @@
 """
 Generate a series of test images
 """
-import Image
+from PIL import Image
 # make a test image
 im = Image.new( "L", ( 264, 299) ) 
 for i in [0, 1,            8, 9]: 

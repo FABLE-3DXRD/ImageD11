@@ -15,7 +15,7 @@ import sys
 from ImageD11.columnfile import columnfile
 from ImageD11.parameters import parameters
 from ImageD11.transform import compute_xyz_lab, detector_rotation_matrix
-import fImageD11
+from ImageD11 import fImageD11
 
 import numpy as np, time
 
@@ -67,8 +67,8 @@ for o11,o12,o21,o22 in [ [ 1,0,0,1],
         r = np.dot(dmat, fmat)
 
         outxyz = np.zeros( (c.nrows, 3), np.float )
-        fImageD11.compute_xlylzl( c.sc.copy(), 
-                                  c.fc.copy(),
+        fImageD11.compute_xlylzl( pks[0].copy(), 
+                                  pks[1].copy(),
                                   pars, r.T, dist,
                                   outxyz.T)
         error = np.abs(outxyz - xlylzl.T)
