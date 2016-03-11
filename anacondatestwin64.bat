@@ -46,8 +46,8 @@ cd %SRC%/test
 %PYT% test_put_incr.py
 
 cd %SRC%\test\demo
-%PYT% latred_new.py
 %PYT% test.py
+%PYT% latred_new.py
 
 cd %SRC%/test/test_index_unknown
 %PYT% test_index_unknown.py
