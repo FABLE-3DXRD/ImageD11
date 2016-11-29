@@ -210,10 +210,10 @@ def peaksearch_driver(options, args):
     import fabio
 
     if options.interlaced:
-        f0 = ["%s0_%04d.edf"%(options.stem,i) for i in range(
+        f0 = ["%s0_%04d.%s"%(options.stem,i,options.format) for i in range(
                 options.first,
                 options.last+1)]
-        f1 = ["%s1_%04d.edf"%(options.stem,i) for i in range(
+        f1 = ["%s1_%04d.%s"%(options.stem,i,options.format) for i in range(
                 options.first,
                 options.last+1)]
    
