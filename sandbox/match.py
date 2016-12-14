@@ -6,7 +6,7 @@ import sys, numpy as np, xfab.tools
 
 print "# Usage: %s grains1.map grains2.map group angletol  distancetol"%(sys.argv[0])
 print "# Matches grains using symmetry group from:  "
-print "#  [cubic|hexagonal|trigonal|tetragonal|orthorhombic|monoclinic_[a|b|c]|triclinic]"
+print "#  [cubic|hexagonal|trigonal|rhombohedralP|tetragonal|orthorhombic|monoclinic_[a|b|c]|triclinic]"
 
 
 g1l = grain.read_grain_file(sys.argv[1])
@@ -32,6 +32,10 @@ try:
 except:
     toldist = 100.0
 
+try:
+    dt0 = np.array([float(x) for x in sys.argv[6:9]])
+except:
+    dt0 = np.zeros(3)
 
 
 da=np.zeros( (len(g1l),len(g2l)), np.float)
@@ -41,43 +45,38 @@ for g in g1l + g2l:
     g.u = xfab.tools.ubi_to_u_b(g.ubi)[0]
     assert (abs(np.dot(g.u, g.u.T) - np.eye(3)).ravel()).sum() < 1e-6
     
-
+dtsum = np.zeros(3)
+ndt = 0
 for i,g1 in enumerate(g1l):
     minangle = 180.0
     best = None
     symubis = [np.dot(o, g1.ubi) for o in h.group]
-    symus   = [xfab.tools.ubi_to_u_b(ubi)[0] for ubi in symubis]
+#    symus   = [xfab.tools.ubi_to_u_b(ubi)[0] for ubi in symubis]
     asymusT   = [xfab.tools.ubi_to_u_b(ubi)[0].T for ubi in symubis]
     printed = False
+    trace = np.trace
+    pi = np.pi
     for j,g2 in enumerate(g2l):
         angle = 180.
         sg = None
-        #print "g2.ubi",g2.ubi
-#        import pdb
-#        pdb.set_trace()
         aumis = np.dot(asymusT, g2.u)
-        asymangle = np.degrees(np.arccos(np.clip((
-                    np.trace(aumis,axis1=1,axis2=2) - 1.0)/2.0, -1, 1)))
+        # print aumis.shape
+        # trace(aumis,axis1=1,axis2=2)
+        arg = (aumis[:,0,0]+aumis[:,1,1]+aumis[:,2,2] - 1. )/2.
+        asymangle = np.arccos(np.clip(arg, -1, 1))
         sg = np.argmin(asymangle)
-        angle = asymangle[sg]
-#        for k,symu in enumerate(symus):
-#            umis = np.dot( symu.T, g2.u )
-#            if (abs(np.dot(umis, umis.T)- np.eye(3)).ravel()).sum() > 1e-6:
-#                print i,j,k
-#                print symubis[k]
-#                print umis
-#                1/0
-#            symangle = np.degrees(np.arccos( min(1, (np.trace( umis ) - 1.0)/2.0)))
-#            print symangle, asymangle[k]
-#            if symangle < angle:
-#                angle = symangle
-#                sg = k
-        dt = g1.translation - g2.translation
+        angle = asymangle[sg]*180.0/pi
+        # translation
+        dt = g1.translation - g2.translation + dt0
         da[i,j] = angle
         dt2[i,j] = np.sqrt((dt*dt).sum())
-        if angle < tolangle and np.sqrt(dt2[i,j]) < toldist:
+        if angle < tolangle and dt2[i,j] < toldist:
             #print "# Found a match!", h.group[sg].ravel()
-            print i,j,"angle  %.4f"%(angle),"distance %.3f"%(dt2[i,j])
+            dtsum += dt
+            ndt += 1
+            print i,j,"angle  %.4f"%(angle),"distance %.3f"%(dt2[i,j]),"\t",
+            print 3*"%.1f "%tuple(dt),"\t",
+            print 3*"%.1f "%tuple(dtsum/ndt)
             #print "# grain ubi,t"
             #print g1.ubi,g1.translation
             #print g2.ubi,g2.translation
