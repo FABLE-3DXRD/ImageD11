@@ -4,7 +4,7 @@
 
 
 
-import numpy as n
+import numpy as np
 import logging
 
 DEBUG = False
@@ -14,11 +14,11 @@ def m_from_string(s):
     Creates a symmetry operator from a string
     """
     m = []
-    t = n.array(eval("lambda x,y,z: ( %s )"%(s))(0,0,0))
+    t = np.array(eval("lambda x,y,z: ( %s )"%(s))(0,0,0))
     for v1,v2,v3 in [ [ 1,0,0] , [ 0,1,0], [0,0,1] ]:
         r = eval("lambda x,y,z: ( %s )"%(s))(v1,v2,v3)
-        m.append(n.array(r)-t)
-    return n.array(m)
+        m.append(np.array(r)-t)
+    return np.array(m)
 
 def fmt(c): 
     if c == 1:
@@ -37,7 +37,7 @@ def m_to_string(m):
         needplus = 0
         for v,s in zip([ [ 1,0,0] , [ 0,1,0], [0,0,1] ],
                             "xyz"):
-            c = n.dot(v,m.T[i])
+            c = np.dot(v,m.T[i])
             if abs(c)>0:
                 st.append( "%s%s"%(fmt(c),s))
                 needplus = 1
@@ -58,16 +58,16 @@ class group:
         Basic group is identity
         tol is for numerical comparison of group membership
         """
-        self.group = [ n.identity(3, n.float) ]
+        self.group = [ np.identity(3, np.float) ]
         self.tol = 1e-5
     def op(self, x, y):
         """
         Normally multiplication ?
         Means of generating new thing from two others
         """
-        m = n.dot(x, y)
+        m = np.dot(x, y)
         #
-        # d = n.linalg.det(m)
+        # d = np.linalg.det(m)
         # Only appears to make sense for pure rotation matrices
         # assert abs(d-1)<1e-6, (str((d,m,x,y)))
         return m
@@ -75,7 +75,7 @@ class group:
         """
         Compare two things for equality
         """
-        return n.allclose(x, y, rtol = self.tol, atol=self.tol)
+        return np.allclose(x, y, rtol = self.tol, atol=self.tol)
     def isMember(self, item):
         """
         Decide if item is already in the group
@@ -88,7 +88,7 @@ class group:
         """
         add a new member
         """
-        item = n.asarray(item)
+        item = np.asarray(item)
         if not self.isMember(item):
             self.group.append(item)
         #else:
@@ -134,6 +134,10 @@ def trigonal():
     """ P3 143 """
     return generate_group ( "y,-x-y,z" )
 
+def rhombohedralP():
+    """ R3 primitive """
+    return generate_group("z,x,y", "-z,-y,-x")
+
 def tetragonal():
     """ P4 75"""
     return generate_group ( "-y,x,z", "-x,-y,z" )
@@ -155,7 +159,7 @@ def triclinic():
     return generate_group("-x,-y,-z" )
 
 
-def find_uniq_u(u, grp, debug=0, func=n.trace):
+def find_uniq_u(u, grp, debug=0, func=np.trace):
     uniq = u
     tmax = func(uniq)
     for o in grp.group:
@@ -165,7 +169,7 @@ def find_uniq_u(u, grp, debug=0, func=n.trace):
         if func(cand) > tmax:
             uniq = cand
             tmax = t
-    return n.array(uniq)
+    return np.array(uniq)
 
 
 def hklmax(h, hmax=1000):
@@ -181,8 +185,8 @@ def find_uniq_hkls( hkls, grp, func=hklmax):
         t = func(cand)
         msk = t > tmax
         for i in range(3):
-            uniq[i] = n.where( msk , cand[i], uniq[i] )
-        tmax = n.where( msk , t, tmax )
+            uniq[i] = np.where( msk , cand[i], uniq[i] )
+        tmax = np.where( msk , t, tmax )
     return uniq
         
 
@@ -196,7 +200,7 @@ class trans_group(group):
         """
         Identity is to not move at all
         """
-        self.group = [ n.zeros(3, n.float) ]
+        self.group = [ np.zeros(3, np.float) ]
         self.tol = tol
     def op(self, x, y):
         """
@@ -208,7 +212,7 @@ class trans_group(group):
         """
         Perform lattice reduction
         """
-        vc = n.array(v).copy() # copies
+        vc = np.array(v).copy() # copies
         for o in self.group:
             vc = self.mod(vc, o)
         # if DEBUG: print "reduced",v,vc
@@ -224,11 +228,11 @@ class trans_group(group):
         Remove y from x to give smallest possible result
         Find component of x || to y and remove it
         """
-        ly2 = n.dot(y, y)
+        ly2 = np.dot(y, y)
         if ly2 > 1e-9:
-            ny = n.dot(x,y)/ly2
+            ny = np.dot(x,y)/ly2
             parl = ny * y
-            ints = n.round_(ny)
+            ints = np.round_(ny)
             return x - ints * y
         else:
             return x
@@ -236,20 +240,21 @@ class trans_group(group):
         return group.isMember(self, self.reduce(x))
 
 def test():
-    assert n.allclose( m_from_string( "x,y,z" ), n.identity(3))
-    assert n.allclose( m_from_string( "-y,x,z" ), n.array([ [ 0,1,0],
+    assert np.allclose( m_from_string( "x,y,z" ), np.identity(3))
+    assert np.allclose( m_from_string( "-y,x,z" ), np.array([ [ 0,1,0],
                                                           [-1,0,0],
                                                           [ 0,0,1]] ))
-    assert n.allclose( m_from_string( "-y,y-x,z" ), n.array([[ 0,-1,0],
+    assert np.allclose( m_from_string( "-y,y-x,z" ), np.array([[ 0,-1,0],
                                                              [ -1, 1,0],
                                                              [ 0, 0,1]] ))
     print "testing1"
     for op in [ "x,y,z", "-y,x-y,z", "-y,x,z"]:
-        d = n.linalg.det(m_from_string(op)) 
+        d = np.linalg.det(m_from_string(op)) 
         assert d == 1.0, "Determinant = %f %s"%(d,op)
     print "testing2"    
     assert len(cubic().group) == 24, "not 24 ops found for cubic !"
-    assert len(hexagonal().group) == 6 ,"not 6 ops found for hexagonal !"
+    print  len(hexagonal().group)
+    assert len(hexagonal().group) == 12 ,"not 6 ops found for hexagonal !"
     assert len(trigonal().group) == 3 ,"not 3 ops found for trigonal !"+\
         str(trigonal().group)
     assert len(tetragonal().group) == 4 ,"not 8 ops found for tetragonal !"
@@ -259,21 +264,21 @@ def test():
         r = f().group
         assert len(r) == 2, " not 2 ops for monoclinic "
 
-    assert n.allclose( 
-        find_uniq_u( n.array( 
+    assert np.allclose( 
+        find_uniq_u( np.array( 
                 [[0,1,0],[-1,0,0],[0,0,1]]),cubic()),
-                     n.identity(3) ), "Should easily get this unique choice"
+                     np.identity(3) ), "Should easily get this unique choice"
 
     # translational groups
     g1 = trans_group()
     g2 = trans_group()
-    ops = [ n.array( [ 1,0,0], n.float) ,
-            n.array( [ 0,1,0], n.float) ,
-            n.array( [ 0,0,1], n.float) ]
+    ops = [ np.array( [ 1,0,0], np.float) ,
+            np.array( [ 0,1,0], np.float) ,
+            np.array( [ 0,0,1], np.float) ]
     for op in ops:
         g1.additem(op)
         g2.additem(op)
-    g2.additem( n.array( [ 5,6,7], n.float)  )
+    g2.additem( np.array( [ 5,6,7], np.float)  )
     for op2 in g2.group:
         found = False
         for op1 in g1.group:
@@ -297,7 +302,7 @@ def getgroup(s):
     """
     if s in ['cubic', 'hexagonal','trigonal','tetragonal',
              'orthorhombic','monoclinic_c','monoclinic_a',
-             'monoclinic_b','triclinic']:
+             'monoclinic_b','triclinic','rhombohedralP']:
         import ImageD11.sym_u
         return getattr(ImageD11.sym_u, s)
 
@@ -307,7 +312,7 @@ if __name__=="__main__":
     test()
     
 
-    u = n.array([[ 0.71850787 , 0.69517833,  0.02176059],
+    u = np.array([[ 0.71850787 , 0.69517833,  0.02176059],
                  [-0.62925889 , 0.66306714, -0.40543213],
                  [-0.29627636 , 0.27761313 , 0.91386611]])
 
