@@ -98,7 +98,7 @@ if __name__ == "__main__":
     parser.add_option("--no_sort", action="store_false",
                       dest="sort_npks", default = True,
                       help="Sort grains by number of peaks indexed")
-    lattices = ["cubic", "hexagonal", "trigonal",
+    lattices = ["cubic", "hexagonal", "trigonal","rhombohedralP",
                 "tetragonal", "orthorhombic", "monoclinic_a",
                 "monoclinic_b","monoclinic_c","triclinic"]
     parser.add_option("-s", "--sym", action="store",
