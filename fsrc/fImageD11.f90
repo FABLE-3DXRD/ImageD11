@@ -29,7 +29,7 @@ end subroutine assign
 ! compute_gv for refinegrains.py
 
 subroutine compute_gv( xlylzl, omega, omegasign, wvln, wedge, chi, t, gv, n )
-  use omp_lib
+!  use omp_lib
   implicit none
   real, intent(in) :: xlylzl(3,n), omega(n), wvln, wedge, chi, t(3)
   real(8), intent(inout):: gv(3,n)
@@ -74,7 +74,7 @@ subroutine compute_gv( xlylzl, omega, omegasign, wvln, wedge, chi, t, gv, n )
      gv(2,i)=-so*v(1) + co*v(2)
      gv(3,i)=v(3)
   enddo
- 
+
 end subroutine compute_gv
 
 
@@ -91,30 +91,56 @@ subroutine compute_xlylzl( s, f, p, r, dist, xlylzl, n )
   ! parameters
   real(8) :: s_cen, f_cen, s_size, f_size
   ! temporaries
-  real(8) :: v(3)
+  real(8) :: v2, v3
   integer :: i, j
   ! unpack parameters
   s_cen = p(1)
   f_cen = p(2)
   s_size = p(3)
   f_size = p(4)
+!$omp parallel do private(v2,v3)
   do i = 1, n
      ! Place on the detector plane accounting for centre and size
      ! subtraction of centre is done here and not later for fear of
      ! rounding errors
-     v(1) = 0.0d0
-     v(2) = (f(i) - f_cen)*f_size
-     v(3) = (s(i) - s_cen)*s_size
+     !v1 = 0.0d0
+     v2 = (f(i) - f_cen)*f_size
+     v3 = (s(i) - s_cen)*s_size
      ! Apply the flip and rotation, python was :
      ! fl = dot( [[o11, o12], [o21, o22]], peaks=[[z],[y]] )
      ! vec = [0,fl[1],fl[0]]
      ! return dist + dot(rotmat, vec)
-     do j = 1, 3
-        ! Skip as v(1) is zero : r(1,j)*v(1)
-        xlylzl(j,i) = r(2,j)*v(2) + r(3,j)*v(3) + dist(j)
-     enddo
+!     do j = 1, 3
+!        ! Skip as v(1) is zero : r(1,j)*v(1)
+!        xlylzl(j,i) = r(2,j)*v(2) + r(3,j)*v(3) + dist(j)
+!     enddo
+     xlylzl(1,i) = r(2,1)*v2 + r(3,1)*v3 + dist(1)
+     xlylzl(2,i) = r(2,2)*v2 + r(3,2)*v3 + dist(2)
+     xlylzl(3,i) = r(2,3)*v2 + r(3,3)*v3 + dist(3)
   enddo
 end subroutine compute_xlylzl
+
+
+
+subroutine misorientation( u1, u2, symops, nsymops, angle, iop )
+implicit none
+real(8), intent(in)  :: u1(9), u2(9)
+integer, intent(in)  :: nsymops
+real(8), intent(in)  :: symops( 9, nsymops )
+real(8), intent(out) :: angle
+integer, intent(out) :: iop
+! temporaries 
+real(8) :: us(9)
+integer :: i,j,k,l
+
+do l=1,nsymops
+   ! TODO
+   ! dot( op,
+
+enddo
+
+end subroutine misorientation
+
 
 
 ! set LDFLAGS="-static-libgfortran -static-libgcc -static -lgomp -shared"  
