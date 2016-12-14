@@ -63,7 +63,7 @@ for ubifile in sys.argv[1:]:
 
     cell_all = numpy.asarray(cell_all)
     print "average"
-    (a,b,c,alpha,beta,gamma) = numpy.mean(cell_all,axis=0,keepdims=False)
+    (a,b,c,alpha,beta,gamma) = numpy.mean(cell_all,axis=0)#,keepdims=False)
     print "%.5f "*7 %(a,b,c,alpha,beta,gamma,numpy.average(volume))
 
     
