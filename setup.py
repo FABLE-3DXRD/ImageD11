@@ -128,9 +128,8 @@ setup(name='ImageD11',
                  "scripts/cutgrains.py",
                  "scripts/edf2bruker.py",
                  "scripts/index_unknown.py",
-                 "scripts/ImageD11Server.py",
                  "scripts/spatialfix.py",
-		 "scripts/refine_em.py",
+        		 "scripts/refine_em.py",
                  "scripts/avg_par.py",
                  "scripts/powderimagetopeaks.py"])
 
