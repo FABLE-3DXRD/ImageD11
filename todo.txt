@@ -1,3 +1,15 @@
+# 23-3-2017
+
+Moved the repository to github.com/jonwright
+
+Started work on a spring cleaning...
+
+  - sort out the testsuites
+  - sort out the documentation (e.g. sphinx)
+  - try to update pyPI
+  ...
+
+
 # 19-3-2013
 
 Need to make a some spring cleaning
