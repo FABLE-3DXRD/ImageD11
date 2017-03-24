@@ -87,11 +87,48 @@ static char moduledocs[] = \
 /* #include "Numeric/arrayobject.h"      Access to Numeric */
 #include "numpy/arrayobject.h"     /*  upgrade to numpy */
 
-inline int conv_double_to_int_fast(double);
+int conv_double_to_int_fast(double);
 
-inline int conv_double_to_int_safe(double);
+int conv_double_to_int_safe(double);
 
 int inverse3x3(double A[3][3]);
+
+/* Utils */
+
+
+int conv_double_to_int_safe(double x){
+   int a;
+   a = floor(x+0.5);
+   return a;
+}
+
+typedef union {
+	int i;
+	double d;
+	} a_union;
+	
+int conv_double_to_int_fast(double x){
+	/*return conv_double_to_int_safe(x);*/
+   /* This was benched as about eight times faster than the safe mode!! */
+   /* Put in the reference for where this was found on the web TODO */
+   const int p=52;
+   const double c_p1 = (1L << (p/2));
+   const double c_p2 = (1L << (p-p/2));
+   const double c_mul = c_p1 * c_p2;
+   const double cs = 1.5*c_mul;
+   /* Hopefully this notes the aliasing
+    * perhaps better to just return the safe version
+    * not clear it is really faster any more?
+    */
+   a_union t;
+   t.d = x + cs;
+   return t.i;
+   /* x += cs
+   // const int a = *(int *)(&x);
+   // return (a); */
+}
+
+
 
 static PyObject *closest( PyObject *self, PyObject *args, PyObject *keywds){
    PyArrayObject *ar=NULL, *vals=NULL;
@@ -1039,41 +1076,6 @@ static PyObject *put_incr( PyObject *self,
 
 
 
-
-/* Utils */
-
-
-inline int conv_double_to_int_safe(double x){
-   int a;
-   a = floor(x+0.5);
-   return a;
-}
-
-typedef union {
-	int i;
-	double d;
-	} a_union;
-	
-inline int conv_double_to_int_fast(double x){
-	/*return conv_double_to_int_safe(x);*/
-   /* This was benched as about eight times faster than the safe mode!! */
-   /* Put in the reference for where this was found on the web TODO */
-   const int p=52;
-   const double c_p1 = (1L << (p/2));
-   const double c_p2 = (1L << (p-p/2));
-   const double c_mul = c_p1 * c_p2;
-   const double cs = 1.5*c_mul;
-   /* Hopefully this notes the aliasing
-    * perhaps better to just return the safe version
-    * not clear it is really faster any more?
-    */
-   a_union t;
-   t.d = x + cs;
-   return t.i;
-   /* x += cs
-   // const int a = *(int *)(&x);
-   // return (a); */
-}
 
 
 int inverse3x3 ( double H[3][3]){
