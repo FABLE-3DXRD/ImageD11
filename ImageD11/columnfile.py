@@ -518,5 +518,47 @@ def bench():
     
     # os.system("time -p ./a.out")
 
+
+
+
+import sqlite3 as database_module
+# Perhaps other modules follow the same api.
+# Doubtless one does not get away with using a filename?
+
+
+def colfile2db( colfilename, dbname ):
+    """
+    Read the columnfile into a database
+    Ignores parameter metadata (not used yet)
+    """
+    colf = columnfile.columnfile( colfilename )
+    dbo = database_module.connect( dbname )
+    curs = dbo.cursor()
+    # Build up columnames and types to make table
+    tablecols = []
+    # Not allowed for sql to have ^ in string
+    colf.titles = [t.replace("^","_pow_") for t in colf.titles]
+    for name in colf.titles:
+        if name in columnfile.INTS:
+            tablecols.append(name + " INTEGER")
+            continue
+        if name in columnfile.FLOATS:
+            tablecols.append(name + " REAL")
+            continue
+        tablecols.append(name + " REAL")
+    curs.execute("create table peaks \n( " + \
+                 " , ".join(tablecols)     + " ) ; \n" )
+    # Make a format string for inserting data
+    ins = "insert into peaks values ("  + \
+          ",".join(["?"]*colf.ncols)    +") ;"
+    # insert the data
+    for i in range(colf.nrows):
+        curs.execute( ins , tuple(colf.bigarray[:, i]) )
+    curs.close()
+    dbo.commit()
+    dbo.close()
+
+                                       
 if __name__ == "__main__":
     bench()
+ 
