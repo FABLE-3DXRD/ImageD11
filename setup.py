@@ -1,3 +1,4 @@
+
 # ImageD11_v1.0 Software for beamline ID11
 # Copyright (C) 2005-2007  Jon Wright
 #
@@ -24,6 +25,7 @@ Setup script
 
 # from distutils.core import setup, Extension
 # from setuptools import setup, Extension
+import setuptools
 from numpy.distutils.core import setup, Extension
 
 from numpy import get_include
@@ -68,7 +70,7 @@ fi = Extension("fImageD11",
                libraries = ['gomp','pthread'])
 # OK, I am beginning to regret it now. Patch for older numpys
 sys.argv.extend ( ['config_fc', '--fcompiler=gnu95',
-                   '--f90flags="-fopenmp -O2"'])
+                   '--f90flags="-fopenmp -O2 -shared"'])
 
 if sys.platform == 'win32':
     needed = [
@@ -76,7 +78,6 @@ if sys.platform == 'win32':
         'fabio>=0.0.5',
         'numpy>=1.0.0',
         'matplotlib>=0.90.0',
-        'PIL',
         ]
 else: # Take care of yourself if you are on linux
     # Your package manager is inevitably f*cked
