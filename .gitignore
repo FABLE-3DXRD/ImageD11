@@ -8,6 +8,7 @@ __pycache__/
 
 # vi
 *~
+*.swp
 
 # Distribution / packaging
 .Python
