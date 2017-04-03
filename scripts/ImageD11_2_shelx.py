@@ -1,9 +1,7 @@
 #!/usr/bin/python
 
 
-#!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
-
-
+#
 # ImageD11_v01.0 Software for beamline ID11
 # Copyright (C) 2005-2007  Jon Wright
 #
@@ -21,35 +19,34 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
-
 """
 Script for getting integrated intensities from .flt + .ubi file
 from the command line
 """
 
 
-from ImageD11 import columnfile
+import sys
 from math import cos, sin, radians
+from ImageD11 import columnfile
 
-def lf(pk,tth,eta):
+
+def lorfac(peak, tth, eta):
     """
     3dxrd lorentz factor
     """
-    return pk/abs(sin(radians(eta)))/abs(cos(radians(tth)))
+    return peak/abs(sin(radians(eta)))/abs(cos(radians(tth)))
 
 
-if __name__=="__main__":
-    import sys
+if __name__ == "__main__":
     try:
-        c = columnfile.columnfile(sys.argv[1])
-        assert "h" in c.titles
-        assert "sum_intensity" in c.titles
-        assert "tth" in c.titles
-        assert "eta" in c.titles
-        for i in range(c.nrows):
-            print ("%4d"*3)%(c.h[i],c.k[i],c.l[i])
-            print lf(c.sum_intensity[i], c.tth[i], c.eta[i])
+        CF = columnfile.columnfile(sys.argv[1])
+        assert "h" in CF.titles
+        assert "sum_intensity" in CF.titles
+        assert "tth" in CF.titles
+        assert "eta" in CF.titles
+        for i in range(CF.nrows):
+            print ("%4d"*3) % (CF.h[i], CF.k[i], CF.l[i])
+            print lorfac(CF.sum_intensity[i], CF.tth[i], CF.eta[i])
             # Should print the error here, if you know it
     except:
         print "Usage: %s fltfile"
