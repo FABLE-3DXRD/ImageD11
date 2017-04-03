@@ -30,18 +30,18 @@ Hopefully the gui and the gruntwork can be completely separated, eventually.
 """
 
 
-from ImageD11.guimaker import GuiMaker
-# GuiMaker is for building up the windows etc
-
 from Tkinter import *
+import logging
+import sys
+import tkFileDialog
+import os
 
-
-
-import logging, sys
+# GuiMaker is for building up the windows etc
+from ImageD11.guimaker import GuiMaker
 
 # This does not do anything unless you call it as a program:
 
-if __name__=="__main__":
+if __name__ == "__main__":
     # get the output!
     # Set up the logging stuff
     console = logging.StreamHandler(sys.stdout)
@@ -53,7 +53,8 @@ if __name__=="__main__":
     console.setLevel(logging.DEBUG)
     root = logging.getLogger('')
     root.addHandler(console)
-    root.setLevel(logging.DEBUG) # sh
+    root.setLevel(logging.DEBUG)  # sh
+
     # Help message - TODO - proper online help
     def help():
         from tkMessageBox import showinfo
@@ -62,8 +63,7 @@ if __name__=="__main__":
    See also the html documentation for programmers, somewhere like:
    file:///c:/python24/Lib/site-packages/ImageD11/doc/ImageD11.html
 """
-        showinfo("Help","Please try harder\n"+hlp)
-
+        showinfo("Help", "Please try harder\n"+hlp)
 
     # Credits message
     ImageD11credits = """Thanks to:
@@ -91,11 +91,9 @@ if __name__=="__main__":
                         Jon Wright, for writing me!
                        """
 
-
     def credits():
         from tkMessageBox import showinfo
-        showinfo("Credits",ImageD11credits)
-
+        showinfo("Credits", ImageD11credits)
 
     # GPL is stored in ImageD11/license.py as a string to be
     # displayed in the GUI if the user asks to see it
@@ -105,14 +103,10 @@ if __name__=="__main__":
 
     def showlicense():
         from ScrolledText import ScrolledText
-        win = ScrolledText(Toplevel(),width=100)
-        win.insert(END,license)
-        win.pack(expand=1,fill=BOTH)
+        win = ScrolledText(Toplevel(), width=100)
+        win.insert(END, license)
+        win.pack(expand=1, fill=BOTH)
         win.focus_set()
-
-
-    import tkFileDialog,os
-
 
     # Inherits from the GuiMaker and uses functions defined above
     class TestGuiMaker(GuiMaker):
@@ -130,12 +124,13 @@ if __name__=="__main__":
             from tkMessageBox import showinfo
             import ImageD11
             startmessage = """
-  ImageD11 version %s, Copyright (C) 2005-2007 Jon Wright
-  ImageD11 comes with ABSOLUTELY NO WARRANTY; for details select help, license.
-  This is free software, and you are welcome to redistribute it under certain conditions
+  ImageD11 version %s, Copyright (C) 2005-2017 Jon Wright
+  ImageD11 comes with ABSOLUTELY NO WARRANTY; for details select help,
+  license. This is free software, and you are welcome to redistribute it
+  under certain conditions
 
   Please send useful feedback to wright@esrf.fr
-  """%(ImageD11.__version__)
+  """ % (ImageD11.__version__)
 
             startmessage += """
   You are using version %s
@@ -143,9 +138,9 @@ if __name__=="__main__":
   There have been lots of changes recently!
 
   I would also be happily surprised if it is currently working.
-  """%(ImageD11.__version__)
-            showinfo("Welcome to ImageD11 "+ImageD11.__version__,startmessage)
-
+  """ % (ImageD11.__version__)
+            showinfo("Welcome to ImageD11 " + ImageD11.__version__,
+                     startmessage)
 
             # For the peaksearch menu
             from ImageD11 import guipeaksearch
@@ -155,7 +150,7 @@ if __name__=="__main__":
             # For the transformation menu
             from ImageD11 import guitransformer
 
-            self.transformer  = guitransformer.guitransformer(self)
+            self.transformer = guitransformer.guitransformer(self)
 
             # For the indexing - supposed to generate orientations from the
             # unitcell and g-vectors
@@ -168,37 +163,35 @@ if __name__=="__main__":
             # sys is for sys.exit
             import sys
 
-            # Configure the menubar (lists of Tuples of (name, underline_char, command_or_submenu) )
-            self.menuBar = [ ( "File", 0,
-                                [ ( "Print" , 0, self.printplot ),
-                                  ( "Exit", 1, sys.exit) ] ) ,
-                             self.peaksearcher.menuitems,
-                             self.transformer.menuitems,
-                             self.indexer.menuitems,
-                             self.solver.menuitems,
-                             ( "Plotting", 0,
-                                [ ( "Autoscale", 0, self.autoscaleplot),
-                                  ( "Clear plot",0, self.clearplot),
-                                ] ) ,
-
-                             ( "Help", 0,
-                                [ ( "Help Me!", 0, help) ,
-                                  ( "History" , 1, self.history) ,
-                                  ( "Credits" , 0, credits) ,
-                                  ( "License" , 0, showlicense)
-                                  ] ) ]
+            # Configure the menubar (lists of Tuples of (name,
+            # underline_char, command_or_submenu) )
+            self.menuBar = [("File", 0,
+                             [("Print", 0, self.printplot),
+                              ("Exit", 1, sys.exit)]),
+                            self.peaksearcher.menuitems,
+                            self.transformer.menuitems,
+                            self.indexer.menuitems,
+                            self.solver.menuitems,
+                            ("Plotting", 0,
+                             [("Autoscale", 0, self.autoscaleplot),
+                              ("Clear plot", 0, self.clearplot),
+                              ]),
+                            ("Help", 0,
+                             [("Help Me!", 0, help),
+                              ("History", 1, self.history),
+                              ("Credits", 0, credits),
+                              ("License", 0, showlicense)
+                              ])]
 
         # The twodplot object should be taking care of it's own menu
         # Stop doing it here - TODO
         def history(self):
             from ScrolledText import ScrolledText
-            win = ScrolledText(Toplevel(),width=100)
+            win = ScrolledText(Toplevel(), width=100)
             history = self.guicommander.gethistory()
-            win.insert(END,history)
-            win.pack(expand=1,fill=BOTH)
+            win.insert(END, history)
+            win.pack(expand=1, fill=BOTH)
             win.focus_set()
-
-
 
         def printplot(self):
             """
@@ -222,16 +215,17 @@ if __name__=="__main__":
             """
             Draw the gui and initialise some hidden things
             """
-            # TODO Get size of TopLevels window and position it in a sensible way
+            # TODO Get size of TopLevels window and position it in a
+            # sensible way
             #
-            # Opening and saving file widgets, normally hidden, they remember where
-            # you were for working directories
-            self.opener=tkFileDialog.Open()
-            self.saver=tkFileDialog.SaveAs()
+            # Opening and saving file widgets, normally hidden, they
+            # remember where you were for working directories
+            self.opener = tkFileDialog.Open()
+            self.saver = tkFileDialog.SaveAs()
             #
             # Draw the twodplot
             from ImageD11 import twodplot
-            self.twodplotter=twodplot.twodplot(self)
+            self.twodplotter = twodplot.twodplot(self)
             self.twodplotter.pack(side=RIGHT, expand=1, fill=BOTH)
 
     # Start up Tkinter
