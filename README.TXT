@@ -1,5 +1,5 @@
 ImageD11
-Version 1.0
+Version 1.7
 Jon Wright
 wright@esrf.fr
 
