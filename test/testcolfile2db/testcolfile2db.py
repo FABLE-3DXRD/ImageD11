@@ -2,7 +2,7 @@
 
 import unittest, os, sqlite3
 
-from ImageD11 import colfile2db, columnfile
+from ImageD11 import columnfile
 
 class t1(unittest.TestCase):
     def setUp(self):
@@ -20,7 +20,7 @@ class t1(unittest.TestCase):
     def test1(self):
         """ vague check
         """
-        colfile2db.colfile2db( "test.flt" , "test.db" )
+        columnfile.colfile2db( "test.flt" , "test.db" )
         con = sqlite3.connect("test.db")
         cur = con.cursor()
         cur.execute("select * from peaks")
@@ -36,7 +36,7 @@ class t2(unittest.TestCase):
         if os.path.exists("nac.db"):
             return
         start = time.time()
-        colfile2db.colfile2db( os.path.join("..","nac_demo","peaks.out_merge_t200") , "nac.db" )
+        columnfile.colfile2db( os.path.join("..","nac_demo","peaks.out_merge_t200") , "nac.db" )
         print "write db",time.time()-start
 
     def test1(self):

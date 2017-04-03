@@ -531,7 +531,7 @@ def colfile2db( colfilename, dbname ):
     Read the columnfile into a database
     Ignores parameter metadata (not used yet)
     """
-    colf = columnfile.columnfile( colfilename )
+    colf = columnfile( colfilename )
     dbo = database_module.connect( dbname )
     curs = dbo.cursor()
     # Build up columnames and types to make table
@@ -539,10 +539,10 @@ def colfile2db( colfilename, dbname ):
     # Not allowed for sql to have ^ in string
     colf.titles = [t.replace("^","_pow_") for t in colf.titles]
     for name in colf.titles:
-        if name in columnfile.INTS:
+        if name in INTS:
             tablecols.append(name + " INTEGER")
             continue
-        if name in columnfile.FLOATS:
+        if name in FLOATS:
             tablecols.append(name + " REAL")
             continue
         tablecols.append(name + " REAL")
