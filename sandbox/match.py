@@ -32,10 +32,13 @@ try:
 except:
     toldist = 100.0
 
-try:
-    dt0 = np.array([float(x) for x in sys.argv[6:9]])
-except:
-    dt0 = np.zeros(3)
+dt0 = np.array([0.,0.,0.])
+if len(sys.argv)>=9:
+    try:
+        dt0 = np.array([float(x) for x in sys.argv[6:9]])
+    except:
+        raise
+
 
 
 da=np.zeros( (len(g1l),len(g2l)), np.float)
