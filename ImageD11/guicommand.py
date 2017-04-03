@@ -27,7 +27,7 @@ This class will eventually offer macro recording capability.
 import logging, sys
 
 # Things to offer from gui
-from ImageD11 import peakmerge, indexing, transformer
+from ImageD11 import peakmerge, indexing, transformer, eps_sig_solver
 
 # To autoconvert arrays to lists for Java XMLRPC
 RETURN_NUMERICS = False
@@ -42,7 +42,8 @@ class guicommand:
     def __init__(self):
         self.objects = { "peakmerger" : peakmerge.peakmerger(),
                          "transformer": transformer.transformer(),
-                         "indexer"    : indexing.indexer()
+                         "indexer"    : indexing.indexer(),
+                         "solver"     : eps_sig_solver.solver(), 
                          }
 
         self.commandscript = \
@@ -52,6 +53,7 @@ from ImageD11 import peakmerge, indexing, transformer
 mypeakmerger = peakmerge.peakmerger()
 mytransformer = transformer.transformer()
 myindexer = indexing.indexer()
+mysolver  = eps_sig_solver.solver()
 #
 # Your work starts here:
 #

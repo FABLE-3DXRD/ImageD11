@@ -80,6 +80,8 @@ if __name__=="__main__":
                         Benoit Mallard for his assistance with some extreme
                         programming to debug the transformation module.
 
+                        Younes ElHachi for adding the eps_sig calculations.
+
                         John Hunter for the matplotlib plotting.
 
                         All of the pyopengl, Numeric, numpy and python teams
@@ -160,6 +162,9 @@ if __name__=="__main__":
             from ImageD11 import guiindexer
             self.indexer = guiindexer.guiindexer(self)
 
+            from ImageD11 import guisolver
+            self.solver = guisolver.guisolver(self)
+
             # sys is for sys.exit
             import sys
 
@@ -170,7 +175,7 @@ if __name__=="__main__":
                              self.peaksearcher.menuitems,
                              self.transformer.menuitems,
                              self.indexer.menuitems,
-                             #self.factors.menuitems,
+                             self.solver.menuitems,
                              ( "Plotting", 0,
                                 [ ( "Autoscale", 0, self.autoscaleplot),
                                   ( "Clear plot",0, self.clearplot),
