@@ -49,7 +49,7 @@ class guicommand:
         self.commandscript = \
 """# Create objects to manipulate - they hold your data
 #
-from ImageD11 import peakmerge, indexing, transformer
+from ImageD11 import peakmerge, indexing, transformer, eps_sig_solver
 mypeakmerger = peakmerge.peakmerger()
 mytransformer = transformer.transformer()
 myindexer = indexing.indexer()
