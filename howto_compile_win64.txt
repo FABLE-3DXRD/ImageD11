@@ -17,3 +17,17 @@ set DISTUTILS_USE_SDK=1
 setenv /x64 /release
 
 ... and "python setup.py build" should work
+
+
+=========== Using mingwpy ===============
+
+pip install -i https://pypi.anaconda.org/carlkl/simple mingwpy
+python setup.py build --compiler=mingw32
+python setup.py bdist_wheel
+cd dist
+pip install ImageD11-1.6.0-cp27-cp27m-win_amd64.whl
+
+Tested on Anaconda2 / win7 / amd64
+
+
+
