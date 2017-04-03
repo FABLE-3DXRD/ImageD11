@@ -3,7 +3,7 @@
 
 
 SRC=`pwd`
-PYTHONPATH=$SRC/build/lib.linux-i686-2.5/
+PYTHONPATH=$SRC/build/lib.linux-x86-64-2.7:$PYTHONPATH
 
 echo "Running tests from " $SRC " with PYTHONPATH " $PYTHONPATH
 
@@ -11,7 +11,7 @@ echo "Running tests from " $SRC " with PYTHONPATH " $PYTHONPATH
 
 case `hostname`  in
     lapwright) PYT=python2.5 ;;
-    *)  PYT=fable.python ;;
+    *)  PYT=python ;;
 esac
 
 cd $SRC
@@ -70,4 +70,4 @@ cd $SRC
 echo
 echo "Just finished testing ImageD11 from" $PYT
 echo "Using PYTHONPATH=" $PYTHONPATH
-$PYT -c 'import ImageD11\; print ImageD11.__version__'
+$PYT -c "import ImageD11; print ImageD11.__version__"
