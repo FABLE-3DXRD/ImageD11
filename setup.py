@@ -87,7 +87,7 @@ else: # Take care of yourself if you are on linux
 
 # See the distutils docs...
 setup(name='ImageD11',
-      version='1.6.0',
+      version='1.7.0',
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',
@@ -128,7 +128,7 @@ setup(name='ImageD11',
                  "scripts/cutgrains.py",
                  "scripts/index_unknown.py",
                  "scripts/spatialfix.py",
-       		 "scripts/refine_em.py",
+       	         "scripts/refine_em.py",
                  "scripts/avg_par.py",
                  "scripts/powderimagetopeaks.py"])
 
