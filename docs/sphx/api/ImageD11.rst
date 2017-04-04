@@ -40,15 +40,7 @@ ImageD11 Package
     :members:
     :undoc-members:
     :show-inheritance:
-
-:mod:`colfile2db` Module
-------------------------
-
-.. automodule:: ImageD11.colfile2db
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
+    
 :mod:`columnfile` Module
 ------------------------
 
@@ -64,27 +56,11 @@ ImageD11 Package
     :members:
     :undoc-members:
     :show-inheritance:
-
-:mod:`factors` Module
----------------------
-
-.. automodule:: ImageD11.factors
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
+
 :mod:`fft_index_refac` Module
 -----------------------------
 
 .. automodule:: ImageD11.fft_index_refac
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`findreflections` Module
------------------------------
-
-.. automodule:: ImageD11.findreflections
     :members:
     :undoc-members:
     :show-inheritance:
@@ -181,14 +157,6 @@ ImageD11 Package
 ---------------------
 
 .. automodule:: ImageD11.license
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`linearity` Module
------------------------
-
-.. automodule:: ImageD11.linearity
     :members:
     :undoc-members:
     :show-inheritance:

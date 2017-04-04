@@ -2,9 +2,11 @@ Getting ImageD11
 ================
 
 ImageD11 is a python module which depends on the prior installation 
-python itself and several other packages.
+python itself and several other packages. It is usually better to 
+get these from a package manager or in a batteries-included python 
+installation. Perhaps Anaconda or Python(x,y) etc.
 
-General packages that are required:
+General purpose packages that are required:
 
 - `Python itself <http://python.org/download/>`_ (2.5, 2.6 or 2.7)
 - `numpy <http://www.scipy.org/Download>`_ for numerical arrays
@@ -14,7 +16,7 @@ General packages that are required:
 
 Specific packages from fable:
 
-- fabio (from fable) for imageio
+- fabio (from fable, now silx) for imageio
 - xfab (from fable) for some crystallographic calculations
 
 Recommended packages to pick up when you are installing a system:
@@ -24,7 +26,6 @@ Recommended packages to pick up when you are installing a system:
 - pyminuit optimiser (needed for fitallb)
 - pmw python metawidgets for fabian gui
 - pyFAI for radial integration 
-- pyopencl for access to multicore and GPU's
 
 For development you also need:
 
@@ -33,8 +34,13 @@ For development you also need:
 - sphinx docutils to build this documentation
 - latex for the pdf manual
 
-Finally, you need to download ImageD11 itself. The file release area is at 
+Finally, you need to download ImageD11 itself. The file release area was historically at 
 `sourceforge <http://sourceforge.net/projects/fable/files/ImageD11>`_.
+Nowadays the sources are on  `github <http://github.com/jonwright/ImageD11>`_ and the
+package itself is on pypi. Install it using:
+.. code-block
+   pip install ImageD11
+
 
 
 Linux platforms where you have root access
