@@ -209,14 +209,6 @@ ImageD11 Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`rebin2d` Module
----------------------
-
-.. automodule:: ImageD11.rebin2d
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`refinegrains` Module
 --------------------------
 
