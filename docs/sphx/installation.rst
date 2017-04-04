@@ -38,8 +38,9 @@ Finally, you need to download ImageD11 itself. The file release area was histori
 `sourceforge <http://sourceforge.net/projects/fable/files/ImageD11>`_.
 Nowadays the sources are on  `github <http://github.com/jonwright/ImageD11>`_ and the
 package itself is on pypi. Install it using:
-.. code-block
-   pip install ImageD11
+
+.. 
+  pip install ImageD11
 
 
 
