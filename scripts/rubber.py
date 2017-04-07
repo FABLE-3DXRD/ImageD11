@@ -349,7 +349,7 @@ class rubber(Frame):
         if self.log==0:
             self.image,(self.scale[0],self.scale[1])=NumerictoImage(self.data,self.data.shape,self.maxi,self.mini)
         else:
-            self.image,(self.scale[0],self.scale[1])=NumerictoImage(log(self.data+1),self.data.shape,self.maxi,self.mini)
+            self.image,(self.scale[0],self.scale[1])=NumerictoImage(np.log(self.data+1),self.data.shape,self.maxi,self.mini)
         self.scale[0]*=self.zoom
         self.scale[1]*=self.zoom
         self.scale = [int(v) for v in self.scale]
@@ -383,21 +383,22 @@ class rubber(Frame):
     def showroi(self):
         selection=self.getbox()
         if selection != None:
-            junk=rubber(selection,Toplevel())
+            t = Toplevel()
+            junk=rubber(selection,master=t)
 
 
     def togglelog(self):
         self.keyt.update()
         if self.log==0:
             self.log=1
-            self.legendimage,(scalesx,scalesy)=NumerictoImage(log(self.legend+1),(self.scale[0],10))
+            self.legendimage,(scalesx,scalesy)=NumerictoImage(np.log(self.legend+1),(self.scale[0],10))
             self.legendimage=ImageTk.PhotoImage(self.legendimage)
             self.key.configure(image=self.legendimage)
             self.key.update()
             stri="<---%f          %f--->"%(self.mini,self.maxi)
             self.keyt.configure(text=stri)
-            self.maxi=log(self.maxi+1)
-            self.mini=log(self.mini+1)
+            self.maxi=np.log(self.maxi+1)
+            self.mini=np.log(self.mini+1)
             print self.maxi,self.mini
             self.viewinself()
         else:
@@ -408,8 +409,8 @@ class rubber(Frame):
             self.key.update()
             stri="<---%f          %f--->"%(self.mini,self.maxi)
             self.keyt.configure(text=stri)
-            self.maxi=exp(self.maxi)-1
-            self.mini=exp(self.mini)-1
+            self.maxi=np.exp(self.maxi)-1
+            self.mini=np.exp(self.mini)-1
             print self.maxi,self.mini
             self.viewinself()
 
