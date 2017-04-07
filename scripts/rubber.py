@@ -261,11 +261,11 @@ class rubber(Frame):
         dataobj=openimage(self.datafile)
         self.status.config(text=self.datafile)
         self.data=dataobj.data.astype(np.int)
-        pass  ## self.data.savespace(0)
         if self.bkg is not None:
-            self.data=self.data.astype(np.int)-self.bkg
-        except:
-            print "Failed to subtract bkg",self.bkg.shape,self.data.shape
+            try:
+                self.data=self.data.astype(np.int)-self.bkg
+            except:
+                print "Failed to subtract bkg",self.bkg.shape,self.data.shape
         try:
             self.omega=float(dataobj.header["Omega"])
         except:
