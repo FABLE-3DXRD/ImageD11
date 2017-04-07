@@ -43,13 +43,13 @@ def losedata():
 # FIXME - fit this into unit tests and kill the combinatorial explosion
 #       - add checks to see if the answers are OK or not.
 
-import os
+import os, sys
 ps = os.path.join("..","scripts")
 ps = os.path.join(ps,"peaksearch.py")
 
 print ps
 
-cmds = [ ps + " -n data -f 0 "]
+cmds = [sys.executable + " " + ps + " -n data -f 0 "]
 
 
 cmds = [cmd + "-l %d "%(last) for last in [0,1,3] for cmd in cmds]
