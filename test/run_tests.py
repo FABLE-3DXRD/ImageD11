@@ -9,7 +9,8 @@ modules = [
     "test_put_incr",
     "testscale",
     "test_ubito",
-    "test_uncomputegv",                           # failing
+    "test_uncomputegv",
+    "test_transform",
     "index_demos.generate_gv",
     "peaksearchtiftest.make_test_data",
     "test_index_unknown.test_index_unknown",
