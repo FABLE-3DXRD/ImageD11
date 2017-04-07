@@ -32,4 +32,7 @@ for M in modules:
     MOD = importlib.import_module(M)
     mySuite = unittest.loader.findTestCases( MOD )
     runner = unittest.TextTestRunner()
-    runner.run(mySuite)
+    try:
+        runner.run(mySuite)
+    except:
+        raise

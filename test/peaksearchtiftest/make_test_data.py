@@ -2,7 +2,7 @@
 from fabio import tifimage
 from ImageD11 import columnfile
 import numpy as np
-import os, unittest
+import os, unittest, sys
 
 
 class test_tifs(unittest.TestCase):
@@ -11,6 +11,9 @@ class test_tifs(unittest.TestCase):
     LAST =16
     NPK  =0 
 
+    CMD  = sys.executable + " " + os.path.join( 
+            "..","..", "scripts", "peaksearch.py " )
+    
     def setUp(self):
         blank = np.zeros((24,24),np.uint16)
         peak   = blank.copy()
@@ -37,7 +40,7 @@ class test_tifs(unittest.TestCase):
 
 
     def testpeaksearch(self):
-        os.system("peaksearch.py -n tiftest " + \
+        os.system(self.CMD + " -n tiftest " + \
                   " -t 5 -F .tif -S 0.3 " + \
                   " -T 11 -p Y --OmegaOverRide " +\
                   " -f %d -l %d"%(self.FIRST, self.LAST))
@@ -48,7 +51,7 @@ class test_tifs(unittest.TestCase):
                               open( 'peaks_t6.flt').read().rstrip() )
 
     def testpeaksearch_nooverride(self):
-        os.system("peaksearch.py -n tiftest " + \
+        os.system(self.CMD + " -n tiftest " + \
                   " -t 6 -F .tif -S 0.3 " + \
                   " -T 11 -p Y " +\
                   " -f %d -l %d"%(self.FIRST, self.LAST))
@@ -59,7 +62,7 @@ class test_tifs(unittest.TestCase):
                               open( 'peaks_t6.flt').read().rstrip() )
         
     def testpeaksearch_singlethread(self):
-        os.system("peaksearch.py -n tiftest " + \
+        os.system(self.CMD + " -n tiftest " + \
                   " -t 7 -F .tif -S 0.3 " + \
                   " -T 11 -p Y --singleThread " +\
                   " -f %d -l %d"%(self.FIRST, self.LAST))
