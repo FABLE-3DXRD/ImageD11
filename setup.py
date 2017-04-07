@@ -50,11 +50,6 @@ cp = Extension("connectedpixels",
 # No header files for distutils as sources 'src/dset.h'])
 
 
-# histogramming thing
-ch = Extension("_hist",
-               sources = ['src/hist.c'],
-               include_dirs = nid )
-
 
 # _splines is for correcting peak positions for spatial distortion
 bl = Extension("_splines",
@@ -93,7 +88,7 @@ setup(name='ImageD11',
       description='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
-      ext_modules = [cl,cp,bl,ch,fi],
+      ext_modules = [cl,cp,bl,fi],
       install_requires = needed,
       packages = ["ImageD11"],
       package_dir = {"ImageD11":"ImageD11"},
