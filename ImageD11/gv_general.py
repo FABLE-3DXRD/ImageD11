@@ -28,8 +28,9 @@ Find a generalised way to compute g-vectors backwards and forwards
 """
 import math, logging
 from numpy.linalg import det, inv
-import numpy as n
-from ImageD11.transform import degrees
+import numpy as np
+
+print "gv_general from ",__file__
 
 class rotation_axis:
     """
@@ -44,10 +45,10 @@ class rotation_axis:
         direction is the rotation direction
         angle is the angle of rotation (degrees)
         """
-        self.direction = n.array(direction)
+        self.direction = np.array(direction)
         assert self.direction.shape == (3,) , \
             "direction.shape != 3, is it a vector??"
-        mag = n.dot(self.direction, self.direction)
+        mag = np.dot(self.direction, self.direction)
         if abs(mag - 1.0) > 1e-5 :
             self.direction = self.direction / mag
             logging.warning("Non-normalised direction vector "+str(direction))
@@ -68,31 +69,31 @@ class rotation_axis:
         http://mathworld.wolfram.com/RotationFormula.html
         r' = r cos(t) + n(n.r)(1-cos(t)) + rxn sin(t)
         """
-        p = n.array(vectors, n.float)
+        p = np.array(vectors, np.float)
         assert p.shape[0] == 3
         if angles is None:
             self.to_matrix()
-            return n.dot(self.matrix, p)
-        q = n.array(angles)*math.pi/180.
+            return np.dot(self.matrix, p)
+        q = np.radians(angles)
         assert q.shape[0] == p.shape[1]
-        rp = p * n.cos(q)
+        rp = p * np.cos(q)
         assert rp.shape == p.shape
-        a_dot_p = n.dot( self.direction, p)
-        apa = n.outer(self.direction, a_dot_p)
-        rp += apa*(1-n.cos(q))
-        rp += n.sin(q)*n.transpose( n.cross( 
-                self.direction, n.transpose(p)) )
+        a_dot_p = np.dot( self.direction, p)
+        apa = np.outer(self.direction, a_dot_p)
+        rp += apa*(1-np.cos(q))
+        rp += np.sin(q)*np.transpose( np.cross( 
+                self.direction, np.transpose(p)) )
         return rp
     
     def rotate_vectors_inverse(self, vectors, angles = None):
         """
         Same as rotate vectors, but opposing sense
         """
-        p = n.array(vectors, n.float)
+        p = np.array(vectors, np.float)
         assert p.shape[0] == 3
         if angles is None:
             self.to_matrix()
-            return n.dot(self.inversematrix, p)
+            return np.dot(self.inversematrix, p)
         # Just reverse the angles here
         return self.rotate_vectors(vectors, -angles)
 
@@ -107,14 +108,14 @@ class rotation_axis:
         """ 
         # FIXME - check for caching
         dx, dy, dz = self.direction
-        e = n.array([self.direction]*3)
-        w = n.transpose(n.array( [ [ 0, -dz, dy ] , 
+        e = np.array([self.direction]*3)
+        w = np.transpose(np.array( [ [ 0, -dz, dy ] , 
                                    [dz, 0, -dx] , 
-                                   [-dy, dx, 0] ], n.float))
+                                   [-dy, dx, 0] ], np.float))
         st = math.sin( math.radians( self.angle ))
         ct = math.cos( math.radians( self.angle ))
-        self.matrix = n.identity(3, n.float)*ct - st * w  + \
-                      (1 - ct)*e*n.transpose(e)
+        self.matrix = np.identity(3, np.float)*ct - st * w  + \
+                      (1 - ct)*e*np.transpose(e)
 	self.inversematrix = inv(self.matrix)
         return self.matrix
 
@@ -131,13 +132,13 @@ def axis_from_matrix( m ):
     if arg == 1:
         # identity matrix - oh bugger - direction is undefined
         angle_rad = 0.0
-        direc = n.array([0,0,1],n.float)
+        direc = np.array([0,0,1],np.float)
     else:
         angle_rad = math.acos(arg)  
-        direc = n.array([m[2,1] - m[1,2],
+        direc = np.array([m[2,1] - m[1,2],
                          m[0,2] - m[2,0],
-                         m[1,0] - m[0,1] ], n.float )
-        direc = direc / n.sqrt(n.dot(direc, direc))
+                         m[1,0] - m[0,1] ], np.float )
+        direc = direc / np.sqrt(np.dot(direc, direc))
     o = rotation_axis( direc , math.degrees( angle_rad ) )
     if not (abs(o.matrix - m) < 1e-5).all():
         print "o.matrix\n",o.matrix
@@ -145,15 +146,15 @@ def axis_from_matrix( m ):
         raise Exception("error in axis_from_matrix")
     return o
 
-rotate_identity = rotation_axis( n.array([0,0,1],n.float) , 0.0 )
+rotate_identity = rotation_axis( np.array([0,0,1],np.float) , 0.0 )
 
 
 def k_to_g( k , # scattering vectors in the laboratory
             angles , # eg samome in degrees
-            axis = rotation_axis( n.array([0,0,1],n.float) , 0.0 ) , 
+            axis = rotation_axis( np.array([0,0,1],np.float) , 0.0 ) , 
             # eg z axis 
-            pre = n.eye(3) , 
-            post = n.eye(3) ):
+            pre = None , 
+            post = None ):
     """
     Computes g = pre . rot(axis, angle) . post . k
     Typically in ImageD11 post = [wedge][chi] and pre = identity
@@ -166,21 +167,21 @@ def k_to_g( k , # scattering vectors in the laboratory
         "Number of vectors and scan axis must be same"+\
         str(k.shape)+str(angles.shape)
     assert k.shape[0] == 3 , "k must be a [:,3] array"
-    #print "angles=",angles[0]
-    #print "k.shape\n",k.shape,k[:,0]
-    #pk =  post.rotate_vectors( k )
-    pk =  n.dot(post, k )
-    #print "pk.shape\n" ,pk.shape,pk[:,0]
-    rpk = axis.rotate_vectors(pk , angles)
-    #print "rpk.shape\n",rpk.shape,rpk[:,0]
-    g =   n.dot(pre, rpk )
-    #print "g.shape\n",g.shape,g[:,0]
-    return g
+    if post is not None:
+        pk =  np.dot(post, k )
+        rpk = axis.rotate_vectors(pk , angles)
+    else:
+        rpk = axis.rotate_vectors(k , angles)
+    if pre is not None:
+        return np.dot(pre, rpk )
+    else:
+        return rpk
+
     
     
 def g_to_k( g,  # g-vectors [3,:]
             wavelength, # Needed - depends on curve of Ewald sphere!
-            axis = n.array([0,0,1], n.float),
+            axis = np.array([0,0,1], np.float),
             pre = None,
             post = None ):
     """
@@ -217,83 +218,85 @@ def g_to_k( g,  # g-vectors [3,:]
     # First deal with the pre and post rotations
     if pre is not None:
         # rg = pre.rotate_vectors_inverse(g)
-        rg = n.dot( pre, g )
+        rg = np.dot( pre, g )
     else:
         rg = g
     assert rg.shape == g.shape
-    beam = n.zeros(rg.shape, n.float)
+    beam = np.zeros(rg.shape, np.float)
     beam[0,:] = -1./wavelength
     beam[1,:] = 0.
     beam[2,:] = 0.
     if post is not None:
         # rb = post.rotate_vectors(beam)
-        rb = n.dot( post.T, beam )
+        rb = np.dot( post.T, beam )
     else:
         rb = beam
     assert rb.shape == g.shape
     # Find the components of g with respect to our rotation axis
     # a1 = perpendicular to both axis and g
-    a1 = n.transpose(n.cross(axis, g.T))
+    a1 = np.transpose(np.cross(axis, g.T))
     # a2 perpendicular to axis, along g
-    a2 = n.transpose(n.cross(a1.T, axis))
+    a2 = np.transpose(np.cross(a1.T, axis))
     # projection of g along axis
     a0 = g - a2
     assert a0.shape == a1.shape == a2.shape == g.shape
     # Dot product with incident beam
-    rbda0 = n.sum(rb * a0, 0) 
-    rbda1 = n.sum(rb * a1, 0) 
-    rbda2 = n.sum(rb * a2, 0)
+    rbda0 = np.sum(rb * a0, 0) 
+    rbda1 = np.sum(rb * a1, 0) 
+    rbda2 = np.sum(rb * a2, 0)
     assert rbda0.shape == rbda1.shape == rbda2.shape == (g.shape[1],)
-    modg = n.sqrt(n.sum(g * g, 0))
+    modg = np.sqrt(np.sum(g * g, 0))
     kdotbeam = -modg*modg/2.
     # print kdotbeam,"uyou"
     # k.b = rbda0 + rbda1.sin(t) + rbda2.cos(t)
-    a = rbda1
-    b = rbda2
-    c = kdotbeam - rbda0
+    # a = rbda1
+    # b = rbda2
+    # c = kdotbeam - rbda0
     # From wikipedia: 
     # http://en.wikipedia.org/wiki/List_of_trigonometric_identities#Linear_combinations
     # a.sin(x) + b.cos(x) = sqrt(a*a+b*b) sin(x+p)
     # with p = atan(b/a)
-    p = n.arctan2(b,a)
-    k = n.sqrt(a*a+b*b)
-    quot = c/k
-    valid = n.logical_and( n.greater_equal( quot, -1) ,
-                           n.less_equal(    quot,  1) )
-    quot = n.where( valid, quot, 0 ) 
-    x_plus_p = n.arcsin(quot)
-    sol1 = x_plus_p + p
-    sol2 = math.pi - x_plus_p + p
-
-    return degrees(sol1), degrees(sol2), valid
+    phi = np.arctan2(rbda2,rbda1)
+    den = np.sqrt(rbda1*rbda1+rbda2*rbda2)
+    msk = (den <= 0)
+    quot = (kdotbeam - rbda0)/(den + msk)
+    valid = (~msk) & ( quot >= -1) & ( quot <= 1)
+    quot = np.where( valid, quot, 0 ) 
+    x_plus_p = np.arcsin(quot)
+    sol1 = x_plus_p + phi
+    sol2 = math.pi - x_plus_p + phi
+    # k 
+    return np.degrees(sol1), np.degrees(sol2), valid
     
 def wedgemat(w):
-    cw = n.cos(n.radians(w))
-    sw = n.sin(n.radians(w))
-    W = n.array([[ cw ,  0  , sw ],
-                 [ 0  ,  1  , 0  ],
-                 [-sw ,  0  , cw ]])
+    cw = np.cos(np.radians(w))
+    sw = np.sin(np.radians(w))
+    W = np.array([[ cw ,  0  , sw ],
+                  [ 0  ,  1  , 0  ],
+                  [-sw ,  0  , cw ]])
     return W
 
 def chimat(c):
-    cc = n.cos(n.radians(c))
-    sc = n.sin(n.radians(c))
-    C = n.array([[ 1  ,   0  ,  0   ],
-                 [ 0  ,  cc  , sc   ],
-                 [ 0  , -sc  , cc   ]])
+    cc = np.cos(np.radians(c))
+    sc = np.sin(np.radians(c))
+    C = np.array([[ 1  ,   0  ,  0   ],
+                  [ 0  ,  cc  , sc   ],
+                  [ 0  , -sc  , cc   ]])
     return C
 
-def chiwedge(wedge=0., chi=0.):
-    """
-    in transform:
-    g = omega . chi . wedge .k
-    """
-    return n.dot( chimat(chi), wedgemat(wedge) )
     
 def wedgechi(wedge=0., chi=0.):
     """
     in transform:
     g = omega . chi . wedge .k
     """
-    raise Exception("Wrong function")
+    return np.dot( wedgemat(wedge), chimat(chi) )
+
+def chiwedge(chi=0., wedge=0.):
+    """
+    in transform:
+    g = omega . chi . wedge .k
+    """
+    return np.dot( chimat(chi), wedgemat(wedge) )
+
 
