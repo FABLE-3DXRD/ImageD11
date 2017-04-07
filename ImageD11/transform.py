@@ -21,8 +21,9 @@
 Functions for transforming peaks
 """
 import logging
-
 import numpy as np
+from ImageD11 import gv_general
+from numpy import radians, degrees
 
 try:
     # crazy debug
@@ -42,14 +43,6 @@ def cross_product_2x2(a, b):
                      a[0] * b[1] - a[1] * b[0]])
 
 
-def degrees(x):
-    """Convenience function"""
-    return x * 180.0 / pi
-
-
-def radians(x):
-    """Convenience function"""
-    return x * pi / 180.0
 
 
 def detector_rotation_matrix(tilt_x, tilt_y, tilt_z):
@@ -182,9 +175,9 @@ def compute_tth_eta_from_xyz(peaks_xyz, omega,
         s1 = peaks_xyz - compute_grain_origins(omega, wedge, chi,
                                                t_x, t_y, t_z)
     # CHANGED to HFP convention 4-9-2007
-    eta = degrees(np.arctan2(-s1[1, :], s1[2, :]))
+    eta = np.degrees(np.arctan2(-s1[1, :], s1[2, :]))
     s1_perp_x = np.sqrt(s1[1, :] * s1[1, :] + s1[2, :] * s1[2, :])
-    tth = degrees(np.arctan2(s1_perp_x, s1[0, :]))
+    tth = np.degrees(np.arctan2(s1_perp_x, s1[0, :]))
     return tth, eta
 
 
@@ -208,8 +201,8 @@ def compute_xyz_from_tth_eta(tth, eta, omega,
 
     # xyz = unit vectors along the scattered vectors
     xyz = np.zeros((3, tth.shape[0]), np.float)
-    rtth = radians(tth)
-    reta = radians(eta)
+    rtth = np.radians(tth)
+    reta = np.radians(eta)
     xyz[0, :] = np.cos(rtth)
     xyz[1, :] = -np.sin(rtth) * np.sin(reta)
     xyz[2, :] = np.sin(rtth) * np.cos(reta)
@@ -287,11 +280,11 @@ def compute_grain_origins(omega, wedge=0.0, chi=0.0,
     #     (         0  ,   cos(chi)  ,  sin(chi)   )  ??? Use eta0 instead
     #     (         0  ,  -sin(chi)  ,  cos(chi)   )  ??? Use eta0 instead
     """
-    w = radians(wedge)
+    w = np.radians(wedge)
     WI = np.array([[np.cos(w),         0, -np.sin(w)],
                    [0,           1,         0],
                    [np.sin(w),         0,  np.cos(w)]], np.float)
-    c = radians(chi)
+    c = np.radians(chi)
     CI = np.array([[1,            0,         0],
                    [0,     np.cos(c), -np.sin(c)],
                    [0,     np.sin(c),  np.cos(c)]], np.float)
@@ -299,22 +292,22 @@ def compute_grain_origins(omega, wedge=0.0, chi=0.0,
     # Rotations in reverse order compared to making g-vector
     # also reverse directions. this is trans at all zero to
     # current setting. gv is scattering vector to all zero
-    om_r = radians(omega)
+    om_r = np.radians(omega)
     # This is the real rotation (right handed, g back to k)
     t[0, :] = np.cos(om_r) * t_x - np.sin(om_r) * t_y
     t[1, :] = np.sin(om_r) * t_x + np.cos(om_r) * t_y
     t[2, :] = t_z
     if chi != 0.0:
-        c = np.cos(radians(chi))
-        s = np.sin(radians(chi))
+        c = np.cos(np.radians(chi))
+        s = np.sin(np.radians(chi))
         u = np.zeros(t.shape, np.float)
         u[0, :] = t[0, :]
         u[1, :] = c * t[1, :] + -s * t[2, :]
         u[2, :] = s * t[1, :] + c * t[2, :]
         t = u
     if wedge != 0.0:
-        c = np.cos(radians(wedge))
-        s = np.sin(radians(wedge))
+        c = np.cos(np.radians(wedge))
+        s = np.sin(np.radians(wedge))
         u = np.zeros(t.shape, np.float)
         u[0, :] = c * t[0, :] + -s * t[2, :]
         u[1, :] = t[1, :]
@@ -363,8 +356,8 @@ def compute_k_vectors(tth, eta, wvln):
     """
     generate k vectors - scattering vectors in laboratory frame
     """
-    tth = radians(tth)
-    eta = radians(eta)
+    tth = np.radians(tth)
+    eta = np.radians(eta)
     c = np.cos(tth / 2)  # cos theta
     s = np.sin(tth / 2)  # sin theta
     ds = 2 * s / wvln
@@ -399,7 +392,7 @@ def compute_g_from_k(k, omega, wedge=0, chi=0):
     """
     Compute g-vectors with cached k-vectors
     """
-    om = radians(omega)
+    om = np.radians(omega)
     # G-vectors - rotate k onto the crystal axes
     g = np.zeros((3, k.shape[1]), np.float)
     t = np.zeros((3, k.shape[1]), np.float)
@@ -418,15 +411,15 @@ def compute_g_from_k(k, omega, wedge=0, chi=0):
     #     (         0  , -sin(chi)  , cos(chi)   )
     #
     if wedge != 0.0:
-        c = np.cos(radians(wedge))
-        s = np.sin(radians(wedge))
+        c = np.cos(np.radians(wedge))
+        s = np.sin(np.radians(wedge))
         t[0, :] = c * k[0, :] + s * k[2, :]
         t[1, :] = k[1, :]
         t[2, :] = -s * k[0, :] + c * k[2, :]
         k = t.copy()
     if chi != 0.0:
-        c = np.cos(radians(chi))
-        s = np.sin(radians(chi))
+        c = np.cos(np.radians(chi))
+        s = np.sin(np.radians(chi))
         t[0, :] = k[0, :]
         t[1, :] = c * k[1, :] + s * k[2, :]
         t[2, :] = -s * k[1, :] + c * k[2, :]
@@ -443,129 +436,21 @@ def uncompute_g_vectors(g, wavelength, wedge=0.0, chi=0.0):
     Given g-vectors compute tth,eta,omega
     assert uncompute_g_vectors(compute_g_vector(tth,eta,omega))==tth,eta,omega
     """
-    # print "new uncompute using wavelength",wavelength,"and wedge",wedge
-    # k = W-1 R-1 g    ...or...      g = R W k
-    #
-    # |g| = 1 / d
-    # sin(theta) = wavelength / 2 d = |g| wavelength / 2
-    #
-    ds = np.sqrt(np.sum(g * g, 0))
-    s = ds * wavelength / 2.0  # sin theta
-    #
-    #     k0 = projection of scattering vector along x in lab
-    #          must satisfy laue condition
-    #        =  - sin(theta)/d
-    #
-    k0 = np.zeros(g.shape[0], np.float)
-    k0 = -ds * s
-    #
-    # this component: k = W-1 R-1 g
-    # k = W-1 ( g0 cos(omega) - g1 sin(omega)  + 0  )
-    #         ( g0 sin(omega) + g1 cos(omega)  + 0  )
-    #         (       0       +      0         + g2 )
-    #
-    # k0 = cos(wedge)[g0 cos(omega) - g1 sin(omega)] - sin(wedge) g2
-    #
-    cw = np.cos(radians(wedge))
-    sw = np.sin(radians(wedge))
-    #
-    # k0 = cw[g0 cos(omega) - g1 sin(omega)] - sw g2
-    # (k0 + sw g2) / cw = g0 cos(omega) - g1 sin(omega)
-    #
-    lhs = (k0 + sw * g[2, :]) / cw
-    #
-    #      lhs = g0 cos(omega) - g1 sin(omega)
-    #      lhs + g1 sin(omega) = g0 cos(omega)
-    #      lhs^2 + 2 g1 lhs sin(omega) + g1^2 sin^2(omega) = g0^2 cos^2(omega)
-    #
-    #
-    #      - g0^2 + lhs^2 +
-    #        2 g1 lhs sin(omega) +
-    #          g1^2 sin^2(omega) + g0^2 sin^2(omega)  = 0
-    #
-    # Finally - solve the quadratic for sin(omega)
-    # axx + bx + c = 0
-    # x = {- b +/- sqrt(b*b-4ac) } / 2a
-    #
-    c = lhs * lhs - g[0, :] * g[0, :]
-    b = 2. * g[1, :] * lhs
-    a = g[1, :] * g[1, :] + g[0, :] * g[0, :]
-    t = b * b - 4 * a * c
-    valid = np.where(t > 0.0, 1, 0)
-    t = t * valid
-    another_valid = np.where(a < 1e-12, 1, 0)
-    a = np.where(another_valid == 1, 1, a)
-    sinomega1 = (- b - np.sqrt(t)) / (a * 2.)   # a can clearly be zero
-    sinomega2 = (- b + np.sqrt(t)) / (a * 2.)   # a can clearly be zero
-    sinomega1 = sinomega1 * (1 - another_valid)
-    sinomega2 = sinomega2 * (1 - another_valid)
-    #
-    # Now we need also cosomega to isolate the two choices of arcsin
-    #
-    #      lhs = g0 cos(omega) - g1 sin(omega)
-    #      g0 cos(omega) - lhs =  g1 sin(omega)
-    #      g0^2 cos^2(omega) - 2 lhs g0 cos(omega) + lhs^2 =  g1^2 sin^2(omega)
-    #      (g0^2+g1^2) cos^2(omega) - 2 lhs g0 cos(omega) + lhs^2 - g1^2  = 0
-    #
-    c = lhs * lhs - g[1, :] * g[1, :]
-    b = -2. * g[0, :] * lhs
-    t = b * b - 4 * a * c
-    valid = np.where(t > 0.0, 1., 0.)
-    t = t * valid
-    another_valid = np.where(a < 1e-12, 1, 0)
-    a = np.where(another_valid == 1, 1, a)
-    cosomega1 = (- b - np.sqrt(t)) / (a * 2.)   # a can clearly be zero
-    cosomega2 = (- b + np.sqrt(t)) / (a * 2.)   # a can clearly be zero
-    cosomega1 = cosomega1 * (1 - another_valid)
-    cosomega2 = cosomega2 * (1 - another_valid)
-
-    #
-    # Now we need to find out which solutions go together via sin^2 + cos^2 = 1
-    # ... turns out it could be arctan2(sin1,cos1) or arctan2(sin1,cos2)
-    #
-    hypothesis_1 = abs(sinomega1 * sinomega1 + cosomega1 * cosomega1 - 1.)
-    hypothesis_2 = abs(sinomega1 * sinomega1 + cosomega2 * cosomega2 - 1.)
-    same_sign = np.where(abs(hypothesis_1 < hypothesis_2), 1, 0)
-    omega1 = same_sign * np.arctan2(sinomega1, cosomega1) + \
-        (1. - same_sign) * np.arctan2(sinomega1, cosomega2)
-    omega2 = same_sign * np.arctan2(sinomega2, cosomega2) + \
-        (1. - same_sign) * np.arctan2(sinomega2, cosomega1)
-    #
-    # Finally re-compute cosomega and sinomega due to the
-    # flipping possibility for getting eta
-    cosomega1 = np.cos(omega1)
-    sinomega1 = np.sin(omega1)
-    cosomega2 = np.cos(omega2)
-    sinomega2 = np.sin(omega2)
-    #
-    # Now we know R-1 and W-1 , so compute k = W-1 R-1 g
-    #
-    R1g1 = np.zeros(g.shape, np.float)
-    R1g2 = np.zeros(g.shape, np.float)
-    #
-    R1g1[0, :] = cosomega1 * g[0, :] - sinomega1 * g[1, :]
-    R1g1[1, :] = sinomega1 * g[0, :] + cosomega1 * g[1, :]
-    R1g1[2, :] = g[2, :]
-    #
-    R1g2[0, :] = cosomega2 * g[0, :] - sinomega2 * g[1, :]
-    R1g2[1, :] = sinomega2 * g[0, :] + cosomega2 * g[1, :]
-    R1g2[2, :] = g[2, :]
-    #
-    #
-    k_one = np.zeros(g.shape, np.float)
-    k_two = np.zeros(g.shape, np.float)
-    #
-    # W-1 = ( cos(wedge) ,  0  , -sin(wedge) )
-    #       (         0  ,  1  ,          0  )
-    #       ( sin(wedge) ,  0  ,  cos(wedge) )
-    #
-    k_one[0, :] = cw * R1g1[0, :] - sw * R1g1[2, :]
-    k_one[1, :] = R1g1[1, :]
-    k_one[2, :] = sw * R1g1[0, :] + cw * R1g1[2, :]
-    #
-    k_two[0, :] = cw * R1g2[0, :] - sw * R1g2[2, :]
-    k_two[1, :] = R1g2[1, :]
-    k_two[2, :] = sw * R1g2[0, :] + cw * R1g2[2, :]
+    if wedge == chi == 0:
+        post = None
+    else:
+        post = gv_general.wedgechi( wedge=wedge, chi=chi )
+    omega1, omega2, valid = gv_general.g_to_k(
+        g, wavelength,axis=[0,0,-1], pre=None, post=post )
+    # we know g, omega. Compute k as ... ?
+    if post is None:
+        pre = None
+    else:
+        pre = gv_general.chiwedge( wedge=wedge, chi=chi ).T
+    k_one = gv_general.k_to_g( g, omega1, axis=[0,0,1],
+                               pre = pre, post=None)
+    k_two = gv_general.k_to_g( g, omega2, axis=[0,0,1],
+                               pre = pre, post=None)
     #
     # k[1,:] = -ds*c*sin(eta)
     # ------    -------------   .... tan(eta) = -k1/k2
@@ -575,11 +460,13 @@ def uncompute_g_vectors(g, wavelength, wedge=0.0, chi=0.0):
     eta_two = np.arctan2(-k_two[1, :], k_two[2, :])
     #
     #
-    tth = degrees(np.arcsin(s) * 2.) * valid
-    eta1 = degrees(eta_one) * valid
-    eta2 = degrees(eta_two) * valid
-    omega1 = degrees(omega1) * valid
-    omega2 = degrees(omega2) * valid
+    ds = np.sqrt(np.sum(g * g, 0))
+    s = ds * wavelength / 2.0  # sin theta
+    tth = np.degrees(np.arcsin(s) * 2.) * valid
+    eta1 = np.degrees(eta_one) * valid
+    eta2 = np.degrees(eta_two) * valid
+    omega1 = omega1 * valid
+    omega2 = omega2 * valid
     return tth, [eta1, eta2], [omega1, omega2]
 
 
@@ -632,9 +519,9 @@ def compute_lorentz_factors(tth, eta, omega, wavelength, wedge=0., chi=0.):
     # if DEBUG: print "axis orientation",u
     #
     # S = scattered vectors. Length 1/lambda.
-    S = np.array([cos(radians(tth) / 2.) * sin(radians(eta)) / wavelength,
-                  cos(radians(tth) / 2.) * cos(radians(eta)) / wavelength,
-                  sin(radians(tth) / 2.) / wavelength])
+    S = np.array([cos(np.radians(tth) / 2.) * sin(np.radians(eta)) / wavelength,
+                  cos(np.radians(tth) / 2.) * cos(np.radians(eta)) / wavelength,
+                  sin(np.radians(tth) / 2.) / wavelength])
     try:
         S_dot_u_x_So = np.dot(S, u_x_So)
     except:

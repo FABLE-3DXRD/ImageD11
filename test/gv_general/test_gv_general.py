@@ -216,8 +216,7 @@ class test_k_to_g(unittest.TestCase):
                                         self.wvln)
         if SANITY: print "k=",k[:,:3]
         g_new = gv_general.k_to_g(k, self.omega,
-                axis=gv_general.rotation_axis([0,0,-1])
-                )
+                                  axis=[0,0,-1] )
         if SANITY: print g_new.shape,g_new[:,:3]
         if SANITY: print "end routine"
         if SANITY: print "*"*80
@@ -242,7 +241,7 @@ class test_k_to_g(unittest.TestCase):
         if SANITY: print "k=",k[:,:3]
         post = gv_general.chiwedge( chi=c, wedge=w )
         g_new = gv_general.k_to_g(k, self.omega,
-                                  axis=gv_general.rotation_axis([0,0,-1]),
+                                  axis=[0,0,-1],
                                   post=post )
         if SANITY: print g_new.shape,g_new[:,:3]
         if SANITY: print "end routine"

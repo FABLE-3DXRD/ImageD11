@@ -32,6 +32,9 @@ import numpy as np
 
 print "gv_general from ",__file__
 
+def angmod(a):
+    return np.arctan2( np.sin(a), np.cos(a) )
+
 class rotation_axis:
     """
     Represents an axis - so far includes:
@@ -45,7 +48,7 @@ class rotation_axis:
         direction is the rotation direction
         angle is the angle of rotation (degrees)
         """
-        self.direction = np.array(direction)
+        self.direction = np.asarray(direction)
         assert self.direction.shape == (3,) , \
             "direction.shape != 3, is it a vector??"
         mag = np.dot(self.direction, self.direction)
@@ -151,7 +154,7 @@ rotate_identity = rotation_axis( np.array([0,0,1],np.float) , 0.0 )
 
 def k_to_g( k , # scattering vectors in the laboratory
             angles , # eg samome in degrees
-            axis = rotation_axis( np.array([0,0,1],np.float) , 0.0 ) , 
+            axis = None,
             # eg z axis 
             pre = None , 
             post = None ):
@@ -163,15 +166,19 @@ def k_to_g( k , # scattering vectors in the laboratory
        that is to say omega is directly under the sample and 
        wedge is at the bottom of the stack
     """
+    if axis is None:
+        raxis = rotation_axis( [0,0,1] )
+    else:
+        raxis = rotation_axis( axis )
     assert k.shape[1] == angles.shape[0] , \
         "Number of vectors and scan axis must be same"+\
         str(k.shape)+str(angles.shape)
     assert k.shape[0] == 3 , "k must be a [:,3] array"
     if post is not None:
         pk =  np.dot(post, k )
-        rpk = axis.rotate_vectors(pk , angles)
+        rpk = raxis.rotate_vectors(pk , angles)
     else:
-        rpk = axis.rotate_vectors(k , angles)
+        rpk = raxis.rotate_vectors(k , angles)
     if pre is not None:
         return np.dot(pre, rpk )
     else:
@@ -266,8 +273,9 @@ def g_to_k( g,  # g-vectors [3,:]
     sol1 = x_plus_p + phi
     sol2 = math.pi - x_plus_p + phi
     # k 
-    return np.degrees(sol1), np.degrees(sol2), valid
-    
+    return np.degrees(angmod(sol1)), np.degrees(angmod(sol2)), valid
+
+
 def wedgemat(w):
     cw = np.cos(np.radians(w))
     sw = np.sin(np.radians(w))
