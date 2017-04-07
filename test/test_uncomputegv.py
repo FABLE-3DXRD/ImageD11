@@ -7,10 +7,10 @@ import unittest
 class test_uncomputegv( unittest.TestCase ):
 
     def setUp(self):
-        self.tth = np.array( [60, 10, 15, 20,25, 1.9555],np.float)
+        self.tth = np.array(  [60, 10, 15,  20,  25, 1.9555],np.float)
         self.wvln = 0.5
-        self.eta = np.array( [20, 10,120,-20,340, -73 ],np.float)
-        self.omega = np.array([60,90,180, 60,97,  131],np.float)
+        self.eta = np.array(  [20, 10, 120, -20, 340, -73 ],np.float)
+        self.omega = np.array([60, 90, 180,  60, 97,  131],np.float)
         self.np = len(self.tth)
 
     def test_5_10(self):
@@ -48,19 +48,20 @@ class test_uncomputegv( unittest.TestCase ):
 #        print tth
 #        print eta
 #        print omega
-        print "#  w  c  i  tth  tth  eta  eta  omega  omega"
+        print "#  w  c   i     tth      tth     etao     etaC    omegao   omegaC    etaC2    omegaC2"
         for i in range(len(tth)):
-
-            print self.w, self.c, i,
-            best = np.argmin( np.abs(angmod(np.array(eta)[:,i] - self.eta[i] )))
+            print self.w, self.c, i, 
+            best = np.argmin( np.abs(angmod(np.array(omega)[:,i] - self.omega[i] )))
             deta = angmod(np.array(eta)[best,i] - self.eta[i] )
             domega = angmod(np.array(omega)[best,i] - self.omega[i] )
-            print self.tth[i], tth[i],self.eta[i], eta[best][i],\
-            self.omega[i], omega[best][i],eta[1-best][i],omega[1-best][i]
 
-            self.assertAlmostEqual( self.tth[i], tth[i], 6 )
-            self.assertAlmostEqual( deta, 0.0, 6 )
-            self.assertAlmostEqual( domega, 0.0, 6 )
+            print ("%8.2f "*8)%(self.tth[i], tth[i],self.eta[i], eta[best][i],\
+                self.omega[i], omega[best][i],eta[1-best][i],omega[1-best][i])
+            
+
+            self.assertAlmostEqual( self.tth[i], tth[i], 5 )
+            self.assertAlmostEqual( deta, 0.0, 5 )
+            self.assertAlmostEqual( domega, 0.0, 5 )
 
 def angmod(x):
     return np.degrees(np.arctan2( np.sin(np.radians(x)), np.cos(np.radians(x)) ))

@@ -34,7 +34,8 @@ class test_g_to_k(unittest.TestCase):
                                             chi=0.0 )
         sol1, sol2, valid = gv_general.g_to_k( g,  #
                                                self.wvln,
-                                               axis = np.array([0,0,-1], np.float),
+                                               axis = np.array([0,0,-1],
+                                                               np.float),
                                                pre = np.eye(3),
                                                post = np.eye(3) )
 
@@ -61,11 +62,12 @@ class test_g_to_k(unittest.TestCase):
                                             self.wvln,
                                             wedge=w,
                                             chi=c )
-        post = gv_general.chiwedge( wedge=w, chi=c)
+        post = gv_general.wedgechi( wedge=w, chi=c)
 
         sol1, sol2, valid = gv_general.g_to_k( g,  #
                                                self.wvln,
-                                               axis = np.array([0,0,-1], np.float),
+                                               axis = np.array([0,0,-1],
+                                                               np.float),
                                                pre = None,
                                                post = post )
 
@@ -93,11 +95,12 @@ class test_g_to_k(unittest.TestCase):
                                             wedge=w,
                                             chi=c )
 
-        post = gv_general.chiwedge( wedge=w, chi=c)
+        post = gv_general.wedgechi( wedge=w, chi=c)
 
         sol1, sol2, valid = gv_general.g_to_k( g,  #
                                                self.wvln,
-                                               axis = np.array([0,0,-1], np.float),
+                                               axis = np.array([0,0,-1],
+                                                               np.float),
                                                pre = None,
                                                post = post )
 
@@ -126,14 +129,12 @@ class test_g_to_k(unittest.TestCase):
                                         wedge=w,
                                         chi=c )
 
-        post = gv_general.chiwedge( wedge=w, chi=c)
-
-        post = np.dot(gv_general.wedgemat(w), gv_general.chimat(c))
-
+        post = gv_general.wedgechi( wedge=w, chi=c )
 
         sol1, sol2, valid = gv_general.g_to_k( g,  #
                                                self.wvln,
-                                               axis = np.array([0,0,-1], np.float),
+                                               axis = np.array([0,0,-1],
+                                                               np.float),
                                                pre = None,
                                                post = post )
 
@@ -215,16 +216,15 @@ class test_k_to_g(unittest.TestCase):
                                         self.wvln)
         if SANITY: print "k=",k[:,:3]
         g_new = gv_general.k_to_g(k, self.omega,
-                axis=gv_general.rotation_axis([0,0,-1])
-                )
+                                  axis=[0,0,-1] )
         if SANITY: print g_new.shape,g_new[:,:3]
         if SANITY: print "end routine"
         if SANITY: print "*"*80
         self.assertAlmostEqual( array_diff( g_new, g_old ), 0, 6)
 
-    def test_5_10(self):
-        """ wedge, chi = 5,10 """
-        w,c=5,10
+    def test_25_30(self):
+        """ wedge, chi = 25,30 """
+        w,c=25,30
         SANITY = False
         if SANITY: print "*"*80
         om = np.zeros(self.np,np.float)
@@ -239,9 +239,10 @@ class test_k_to_g(unittest.TestCase):
                                         self.eta,
                                         self.wvln)
         if SANITY: print "k=",k[:,:3]
-        g_new = gv_general.k_to_g(k, self.omega, axis=
-                gv_general.rotation_axis([0,0,-1]),
-                post=gv_general.chiwedge(wedge=w,chi=c))
+        post = gv_general.chiwedge( chi=c, wedge=w )
+        g_new = gv_general.k_to_g(k, self.omega,
+                                  axis=[0,0,-1],
+                                  post=post )
         if SANITY: print g_new.shape,g_new[:,:3]
         if SANITY: print "end routine"
         if SANITY: print "*"*80
@@ -277,8 +278,10 @@ class test_rotation_axis(unittest.TestCase):
                                     [ 0  , 0  , 1 ]] ) )
         o = gv_general.axis_from_matrix(m)
         self.assertAlmostEqual( array_diff (o.to_matrix(), m) , 0, 6 )
-        self.assertAlmostEqual( array_diff (o.direction , np.array([0,0,1])), 0, 6 )
-        self.assertNotAlmostEqual( array_diff (o.direction , np.array([0,1,1])), 0, 6 )
+        self.assertAlmostEqual( array_diff (o.direction , np.array([0,0,1])),
+                                0, 6 )
+        self.assertNotAlmostEqual( array_diff (o.direction , np.array([0,1,1])),
+                                   0, 6 )
         self.assertAlmostEqual( o.angle, 30.0 , 6 )
         self.assertNotAlmostEqual( o.angle, 31.0 , 6 )
 

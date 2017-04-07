@@ -124,7 +124,9 @@ def write_gve( gvecs, name):
 gv = makedata() + makedata() + makedata() + makedata() + makedata()
 
 write_gve( gv, "test.vecs")
-import os
-os.system("c:\python27\python c:\python27\Scripts\index_unknown.py -g test.vecs" + 
+import os, sys
+cmd = sys.executable + " " + os.path.join("..","..","scripts","index_unknown.py")
+print cmd
+os.system(cmd + " -g test.vecs" + 
  " -t 0.1 -f 0.05  --fft -s 20 -v 100  -m 40 -r 1. -k 10 -n 256")
 
