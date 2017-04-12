@@ -11,12 +11,13 @@ mytransformer.loadfiltered( sys.argv[1] )
 mytransformer.loadfileparameters(  sys.argv[2] )
 
 tmp = sys.argv[3]
-
+NPKS = 20
 NUL = open("/dev/null","w")
 
 def doindex( gve, x, y, z):
     global NUL
     global tmp
+    global NPKS 
     ss = sys.stdout # turns of printing
     #sys.stdout = NUL
     myindexer = indexing.indexer()
@@ -25,7 +26,7 @@ def doindex( gve, x, y, z):
         for ring2 in [1,0]:
             myindexer.parameterobj.set_parameters(  {
                 'ds_tol': 0.004, 
-                'minpks': 20, 
+                'minpks': NPKS, 
                 'max_grains': 1000, 
                 'hkl_tol': 0.02, 
                 'ring_1': ring1,
@@ -78,13 +79,13 @@ for t_x, t_y, t_z in translations:
         if ret !=0 :
             print "bad 1"
             raise
-        ret = os.system("makemap.py -u %s.ubi -U %s.map -s cubic --omega_slop=0.13 "%(tmp,tmp) +
+        ret = os.system("makemap.py -u %s.map -U %s.map -s cubic --omega_slop=0.13 "%(tmp,tmp) +
                             "-f %s.flt  -t 0.01 -p %s  "%(
                                tmp,sys.argv[2]))
         if ret !=0 :
             print "bad 1"
             raise
-        os.system("cutgrains.py %s.map %s.map 15"%(tmp,tmp))
+        os.system("cutgrains.py %s.map %s.map %d"%(tmp,tmp,NPKS))
         ret = os.system("makemap.py -u %s.map -U %s.map -s cubic --omega_slop=0.13  "%(tmp,tmp) +
                             "-f %s.flt -F %s.flt -t 0.01 -p %s "%(
                                 tmp,tmp,sys.argv[2]))
