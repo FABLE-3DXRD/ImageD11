@@ -5,6 +5,7 @@ wright@esrf.fr
 
 This is the source code for ImageD11. Probably you wanted a compiled version.
 
+Some documentation is here: https://pythonhosted.org/ImageD11/
 
 To use it, try this:
 

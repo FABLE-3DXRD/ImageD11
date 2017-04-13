@@ -6,13 +6,19 @@
 Welcome to ImageD11's documentation!
 ====================================
 
-ImageD11 is for identifying individual grains in spotty area detector diffraction images. 
+Beware: you might find some of this information is out of date or wrong. 
+Please fix anything you find that is wrong and send a pull request. 
+This documentation lives in the docs/sphx part of the sources.
+
+ImageD11 is for identifying individual grains in spotty area detector 
+diffraction images. 
 It finds the spots and helps you to try to index them. 
-After you index the spots you can then work on extracting useful information on a grain 
-by grain basis. 
-ImageD11 is intended to be complementary to the rest of the FABLE software. ImageD11 has 
-a strong focus on fast preliminary data analysis which can be carried 
-out during experiments in order to make decisions about the experimental setup etc.
+After you index the spots you can then work on extracting useful information 
+on a grain by grain basis. 
+ImageD11 is intended to be complementary to the rest of the FABLE software. 
+ImageD11 has a strong focus on fast preliminary data analysis which can be 
+carried out during experiments in order to make decisions about the 
+experimental setup etc.
 
 The package includes facilities for peak searching in two dimensional 
 area detector images using a simple threshold. 
@@ -45,6 +51,8 @@ Contents:
    fileformats
    batchprocessing
 
+Here is a pdf file with a worked example for making a centre of
+mass grain map :download:`com_guide.pdf<../com_guide.pdf>`
 
 Indices and tables
 ==================
