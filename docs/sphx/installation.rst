@@ -148,3 +148,32 @@ ImageD11 has been installed by a number of mac owners but the author is not
 sure how they did it. FIXME...
 
 
+
+Ubuntu
+------
+..
+     sudo apt-get install build-essential
+     sudo apt-get install gfortran
+     sudo apt-get install git subversion 
+     sudo apt-get install python-numpy python-matplotlib python-pillow python-pmw
+     sudo apt-get install python-scipy
+     sudo apt-get install python-setuptools
+     sudo pip install fabio
+     sudo pip install wheel
+     wget https://bootstrap.pypa.io/get-pip.py
+     sudo python get-pip.py
+
+     svn co  https://svn.code.sf.net/p/fable/code/xfab/trunk xfab
+     cd xfab/
+     python setup.py build bdist_wheel
+     sudo pip install dist/xfab-0.0.2-py2-none-any.whl
+   
+     git clone http://github.com/jonwright/ImageD11
+     cd ImageD11/
+     python setup.py build bdist_wheel
+     sudo pip install dist/ImageD11-1.7.0-cp27-cp27mu-linux_x86_64.whl 
+     cd ImageD11/
+     cd test/
+     python run_tests.py 
+
+
