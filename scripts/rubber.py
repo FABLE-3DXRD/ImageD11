@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 from Tkinter import *
-import ImageTk,Image,tkSimpleDialog,tkFileDialog,os,sys
+from PIL import ImageTk,Image
+import tkSimpleDialog,tkFileDialog,os,sys
 from tkMessageBox import showinfo
 
 import numpy as np
@@ -70,7 +71,7 @@ def NumerictoImage( data, (scalex,scaley),maxi=None,mini=None):
     else:
         mode = rawmode = 'L'
         bits = np.transpose(image, (1,0)).tostring()
-    image2 = Image.fromstring(mode, (width, height),
+    image2 = Image.frombytes(mode, (width, height),
                                       bits, "raw", rawmode)
     image2=image2.resize((int(scalesx),int(scalesy)))
     return image2,(scalesx,scalesy)
