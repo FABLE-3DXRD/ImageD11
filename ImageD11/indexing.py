@@ -325,7 +325,9 @@ class indexer:
                         best=diff
         # Report on assignments
         ds=np.array(self.ds)
-        print "Ring     (  h,  k,  l) Mult  total indexed to_index  "
+        print "Ring     (  h,  k,  l) Mult  total indexed to_index  ubis  peaks_per_ubi"
+        expeectedubis = []
+        expectedpeaks =[]
         # try reverse order instead
         for j in range(len(dsr))[::-1]:
             ind = np.compress( np.equal(self.ra,j), np.arange(self.ra.shape[0]) )
@@ -334,9 +336,26 @@ class indexer:
             n_to_index = np.sum(np.where( self.ga[ind] == -1, 1, 0))
             # diffs = abs(take(ds,ind) - dsr[j])
             h=self.unitcell.ringhkls[dsr[j]][0]
-            print "Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d"%(\
-                j,h[0],h[1],h[2],len(self.unitcell.ringhkls[dsr[j]]),
-                     self.na[j],n_indexed,n_to_index)
+            Mult = len(self.unitcell.ringhkls[dsr[j]])
+            try:
+                expected_orients = int(180./self.omega_fullrange * self.na[j]/float(Mult))
+                expected_npks = int(self.omega_fullrange/180. * Mult)
+                expeectedubis.append(expected_orients)
+                expectedpeaks.append(expected_npks)
+            except:
+                expected_orients = 'N/A'
+                expected_npks = 'N/A'
+            print "Ring %-3d (%3d,%3d,%3d)  %3d  %5d   %5d    %5d %5s     %2s"%(\
+                j,h[0],h[1],h[2],Mult,
+                     self.na[j],n_indexed,n_to_index,expected_orients,expected_npks)
+        try:
+            best2r = [expeectedubis[::-1].index(x) for x in sorted(expeectedubis)[-2:]]
+            minpks2r = expectedpeaks[::-1][best2r[0]]+expectedpeaks[::-1][best2r[1]]
+            print 'In case you use ring %d and ring %d for the indexing,'%(best2r[1],best2r[0])
+            print 'you might set the min_peaks to something between % d and % d\n'%(int(0.65*minpks2r),int(0.9*minpks2r))
+
+        except:
+            raise
         # We will only attempt to index g-vectors which have been assigned
         # to hkl rings (this gives a speedup if there
         # are a lot of spare peaks
@@ -904,6 +923,8 @@ class indexer:
         self.zr=[]
         self.xp=[]
         self.yp=[]
+        self.omega_ranges=[]
+        self.omega_fullrange = 0
         for line in f.readlines():
             try:
                 v=[float(x) for x in line.split()]
@@ -925,6 +946,23 @@ class indexer:
                 raise
 #            raise "Problem interpreting the last thing I printed"
         f.close()
+
+        self.omega_ranges.append(round(min(self.omega)))
+        sorted_omega = sorted(self.omega)
+        for i in range(len(sorted_omega)-1):
+            if sorted_omega[i+1]-sorted_omega[i] > 10:
+                self.omega_ranges.append(round(sorted_omega[i]))
+                self.omega_ranges.append(round(sorted_omega[i+1]))
+        self.omega_ranges.append(round(max(self.omega)))
+        if not quiet:
+            print '\nGot %d sets of omega values from gv file:'%(len(self.omega_ranges)/2)
+        for i in range(len(self.omega_ranges)/2):
+            self.omega_fullrange += self.omega_ranges[2*i+1]-self.omega_ranges[2*i]
+            if not quiet:
+                print '- Range %1d from %4d to %4d ==> %3d degrees'%(i+1, \
+                       self.omega_ranges[2*i], self.omega_ranges[2*i+1], \
+                       self.omega_ranges[2*i+1]-self.omega_ranges[2*i])
+
         if self.wavelength > 0:
             self.tth=np.arcsin(np.array(self.ds)*self.wavelength/2)*360/math.pi
         else:
