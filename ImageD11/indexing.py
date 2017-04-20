@@ -326,8 +326,7 @@ class indexer:
         # Report on assignments
         ds=np.array(self.ds)
         print "Ring     (  h,  k,  l) Mult  total indexed to_index  ubis  peaks_per_ubi"
-        expeectedubis = []
-        expectedpeaks =[]
+        minpks = 0
         # try reverse order instead
         for j in range(len(dsr))[::-1]:
             ind = np.compress( np.equal(self.ra,j), np.arange(self.ra.shape[0]) )
@@ -340,22 +339,17 @@ class indexer:
             try:
                 expected_orients = int(180./self.omega_fullrange * self.na[j]/float(Mult))
                 expected_npks = int(self.omega_fullrange/180. * Mult)
-                expeectedubis.append(expected_orients)
-                expectedpeaks.append(expected_npks)
+                minpks += expected_npks
             except:
                 expected_orients = 'N/A'
                 expected_npks = 'N/A'
             print "Ring %-3d (%3d,%3d,%3d)  %3d  %5d   %5d    %5d %5s     %2s"%(\
                 j,h[0],h[1],h[2],Mult,
                      self.na[j],n_indexed,n_to_index,expected_orients,expected_npks)
-        try:
-            best2r = [expeectedubis[::-1].index(x) for x in sorted(expeectedubis)[-2:]]
-            minpks2r = expectedpeaks[::-1][best2r[0]]+expectedpeaks[::-1][best2r[1]]
-            print 'In case you use ring %d and ring %d for the indexing,'%(best2r[1],best2r[0])
-            print 'you might set the min_peaks to something between % d and % d\n'%(int(0.65*minpks2r),int(0.9*minpks2r))
+        if minpks > 0:
+            print '\nmin_pks:  - Current  --> %3d'%(self.minpks)
+            print '          - Expected --> %3d\n'%(minpks)
 
-        except:
-            raise
         # We will only attempt to index g-vectors which have been assigned
         # to hkl rings (this gives a speedup if there
         # are a lot of spare peaks
