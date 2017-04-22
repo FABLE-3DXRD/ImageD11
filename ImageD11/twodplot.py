@@ -212,7 +212,7 @@ class twodplot(Tk.Frame):
                     else:
                         ret = self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],pc)
                 else:
-                    ret = self.a.plot(item.x,item.y,pc)
+                    ret = self.a.plot(item.x,item.y,pc,alpha=0.25)
             except:
                 print "plotting exception ignored"
         if self.xr!=None:
