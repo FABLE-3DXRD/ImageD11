@@ -5,7 +5,7 @@ inp = """
 direc 'Al1000'
 stem  'Al1000'
 make_image 0
-output  '.flt' '.par' '.ubi' 
+output '.gve' '.flt' '.par' '.ubi' 
 # Structural parameters
 structure_phase_0 'Al.cif'
 # Crystal/grains parameters
