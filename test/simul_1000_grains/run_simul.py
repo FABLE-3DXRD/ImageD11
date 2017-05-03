@@ -12,7 +12,8 @@ def measure(cmd):
     else:
         open("timing.log","w+").write("%f %s\n"%(end-start, cmd))
 
-os.system("rm allgrid.map timing.log")    
+os.remove("allgrid.map")
+os.remove("timing.log")    
 measure("python make_u_t.py")
 measure("PolyXSim.py -i Al1000.inp")
 measure("python grid_index.py  Al1000/Al1000.flt Al1000/Al1000.par grid")
