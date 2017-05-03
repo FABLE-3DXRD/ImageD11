@@ -12,7 +12,10 @@ mytransformer.loadfileparameters(  sys.argv[2] )
 
 tmp = sys.argv[3]
 NPKS = 9
-NUL = open("/dev/null","w")
+try:
+    NUL = open("/dev/null","w")
+except:
+    NUL = open("NUL","w")
 
 def doindex( gve, x, y, z):
     global NUL
