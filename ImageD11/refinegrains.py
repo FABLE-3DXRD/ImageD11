@@ -128,6 +128,8 @@ class refinegrains:
         't_x' : 0.2,
         't_y' : 0.2,
         't_z' : 0.2,
+        'y_size' : 0.2,
+        'z_size' : 0.2,
         }
 
     def __init__(self, tolerance = 0.01, intensity_tth_range = (6.1, 6.3),
