@@ -17,9 +17,9 @@
 
 
 import numpy as np
-from ImageD11 import closest, grain, transform
+from ImageD11 import closest, grain, transform, fImageD11
 import unitcell
-
+import scipy.optimize
 import math, time, sys, logging
 
 def unit(a):
@@ -61,38 +61,38 @@ class indexer:
             assert label in self.cf.titles, label
 
     def updatecolfile(self):
-       if "xl" not in self.cf.titles:
-          if "sc" in self.cf.titles:
-             pks = self.cf.sc, self.cf.fc
-          elif "xc" in self.cf.titles: 
-             pks = self.cf.xc, self.cf.yc
-          else:
-             raise "peaks file misses xc or sc"
-          xl,yl,zl = transform.compute_xyz_lab( pks,
-                                                **self.transformpars.parameters)
-          self.cf.addcolumn(xl,"xl")
-          self.cf.addcolumn(yl,"yl")
-          self.cf.addcolumn(zl,"zl")
-       peaks_xyz = np.array((self.cf.xl,self.cf.yl,self.cf.zl))
-       om = self.cf.omega
-       sign = self.transformpars.get("omegasign")
-       tth, eta = transform.compute_tth_eta_from_xyz(
-          peaks_xyz, om*sign,
-          **self.transformpars.parameters)
-       self.cf.addcolumn( tth, "tth", )
-       self.cf.addcolumn( eta, "eta", )
-       gx, gy, gz = transform.compute_g_vectors(
-           tth, eta, om*sign,
-           wvln  = self.transformpars.get("wavelength"),
-           wedge = self.transformpars.get("wedge"),
-           chi   = self.transformpars.get("chi") )
-       self.cf.addcolumn(gx, "gx")
-       self.cf.addcolumn(gy, "gy")
-       self.cf.addcolumn(gz, "gz")           
-       self.cf.addcolumn( np.sqrt( gx * gx + 
-                                   gy * gy + 
-                                   gz * gz ),
-                          "modg")
+        if "xl" not in self.cf.titles:
+            if "sc" in self.cf.titles:
+                pks = self.cf.sc, self.cf.fc
+            elif "xc" in self.cf.titles: 
+                pks = self.cf.xc, self.cf.yc
+            else:
+                raise "peaks file misses xc or sc"
+            xl,yl,zl = transform.compute_xyz_lab( pks,
+                                    **self.transformpars.parameters)
+            self.cf.addcolumn(xl,"xl")
+            self.cf.addcolumn(yl,"yl")
+            self.cf.addcolumn(zl,"zl")
+        self.peaks_xyz = np.array((self.cf.xl,self.cf.yl,self.cf.zl))
+        om = self.cf.omega
+        sign = self.transformpars.get("omegasign")
+        tth, eta = transform.compute_tth_eta_from_xyz(
+            self.peaks_xyz, om*sign,
+            **self.transformpars.parameters)
+        self.cf.addcolumn( tth, "tth", )
+        self.cf.addcolumn( eta, "eta", )
+        gx, gy, gz = transform.compute_g_vectors(
+            tth, eta, om*sign,
+            wvln  = self.transformpars.get("wavelength"),
+            wedge = self.transformpars.get("wedge"),
+            chi   = self.transformpars.get("chi") )
+        self.cf.addcolumn(gx, "gx")
+        self.cf.addcolumn(gy, "gy")
+        self.cf.addcolumn(gz, "gz")           
+        self.cf.addcolumn( np.sqrt( gx * gx + 
+                                    gy * gy + 
+                                    gz * gz ),
+                           "modg")
        
     
     def reset(self):
@@ -156,7 +156,7 @@ class indexer:
         print "Total peaks",self.cf.nrows,"assigned",(self.cf.ring>=0).sum()
 
 
-    def pairs(self, hkl1, hkl2, cos_tol = 0.02, hkl_tol = 0.05):
+    def pairs(self, hkl1, hkl2, cos_tol = 0.002, hkl_tol = 0.05):
         """
         We only look for reflection pairs matching a single hkl pairing
         """
@@ -203,17 +203,110 @@ class indexer:
                U = np.dot( T_g.T, T_c)
                ub =  np.dot( U, self.unitcell.B)
                ubi = np.linalg.inv( ub )
-               npks = closest.score(ubi,gvf,0.1)
+               npks = closest.score(ubi,gvf,hkl_tol)
                pairs.append( (ind1[i], ind2[k], U, ubi ) )
                print npks, ubi
+               self.refine( ubi, (0,0,0), tol=hkl_tol )
         self.pairs=pairs
         print time.time()-start,"for",len(pairs),n1.shape, n2.shape
         return pairs
 
 
+    def assign(self, ubi, translation, tol):
+        gv = np.zeros(self.peaks_xyz.shape, order='F')
+        fImageD11.compute_gv( self.peaks_xyz,
+                    self.cf.omega,
+                    self.transformpars.get('omegasign'),
+                    self.transformpars.get('wavelength'),
+                    self.transformpars.get('wedge'),  
+                    self.transformpars.get('chi'),
+                    translation,
+                    gv)
+        hkl = np.dot( ubi, gv )
+        hkli = np.floor( hkl + 0.5 )
+        e = (hkl - hkli)
+        e = (e*e).sum(axis=0)
+        inds = np.compress( e < tol*tol, np.arange(len(hkl[0])) )
+        return inds , hkli[:,inds]
 
+
+    NC = 0
+    def gof( self, p, *args ):
+        self.NC += 1
+        try:
+            hkls, inds, peaks_xyz, gobs, omega = args
+        except:
+            print args, len(args)
+            raise
+        p.shape = 4,3
+        ub = p[:3]
+        t = p[3]
+        gcalc = np.dot( ub, hkls )
+        fImageD11.compute_gv( peaks_xyz,
+                              omega,
+                              self.transformpars.get('omegasign'),
+                              self.transformpars.get('wavelength'),
+                              self.transformpars.get('wedge'),  
+                              self.transformpars.get('chi'),
+                              t,
+                              gobs)
+        #print gobs
+        #print gcalc
+        #print (gobs-gcalc).ravel()
+        #1/0
+        e = (gcalc - gobs).ravel()
+        p.shape = 12,
+ #       print p-0.1,(e*e).sum()
+        return e#(e*e).sum()
+        
+    def refine(self, ubi, translation=(0,0,0) ,
+               inds = None, hkls = None,
+               tol = 0.05):
+        """
+        Fit ubi and translation
+        ihkls = array of peak_index, h, k, l
+        tol = hkl tolerance to use in fitting
+        """
+        import time
+        self.NC =0
+        start = time.time()
+        if inds is None:
+            inds , hkls = self.assign(  ubi, translation, tol )
+
+        ub = np.linalg.inv( ubi )
+
+        x0 = np.array( list( ub.ravel() ) + [0.1,0.1,0.1] )
+        fun = self.gof
+        args = (hkls, inds, self.peaks_xyz[:,inds],
+                np.zeros( hkls.shape, order='F'),
+                self.cf.omega[inds])
+        def Dfun( x0, *args ):
+            #print "in Dfun", len(args),x0
+            epsilon = np.ones(12)*1e-6
+            epsilon[-3:] = 1.
+            return deriv( x0, fun, epsilon, *args)
+        print "Calling leastsq"
+        res, ier = scipy.optimize.leastsq( fun, x0, args, Dfun,
+                                           col_deriv=True)
+        ub = np.reshape(res[:9], (3,3))
+        t = res[-3:]
+        ubi = np.linalg.inv( ub )
+        print ub
+        print ubi
+        print t
+        ret = self.assign(ubi, t, tol)
+        print time.time()-start, ret[0].shape, self.NC/12.
  
-
+def deriv( xk, f, epsilon, *args):
+    f0 = f(*((xk,) + args))
+    grad = np.zeros((len(xk),len(f0)), float)
+    ei = np.zeros((len(xk),), float)
+    for k in range(len(xk)):
+        ei[k] = 1.0
+        d = epsilon * ei
+        grad[k] = (f(*((xk + d,) + args)) - f0) / d[k]
+        ei[k] = 0.0
+    return grad
 
 if __name__=="__main__":
    from ImageD11.columnfile import columnfile
@@ -222,6 +315,7 @@ if __name__=="__main__":
    p = read_par_file(sys.argv[1])
    c = columnfile( sys.argv[2] )
    i = indexer( p, c )
+   i.updatecolfile()
    i.tthcalc()
    print "Calling assign"
    i.assigntorings()
