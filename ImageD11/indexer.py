@@ -17,7 +17,7 @@
 
 
 import numpy as np
-from ImageD11 import closest, grain, transform, fImageD11
+from ImageD11 import closest, grain, transform, fImageD11, indexing
 import unitcell
 import scipy.optimize
 import math, time, sys, logging
@@ -156,7 +156,7 @@ class indexer:
         print "Total peaks",self.cf.nrows,"assigned",(self.cf.ring>=0).sum()
 
 
-    def pairs(self, hkl1, hkl2, cos_tol = 0.002, hkl_tol = 0.05):
+    def pairs(self, hkl1, hkl2, cos_tol = 0.02, hkl_tol = 0.1):
         """
         We only look for reflection pairs matching a single hkl pairing
         """
@@ -203,10 +203,17 @@ class indexer:
                U = np.dot( T_g.T, T_c)
                ub =  np.dot( U, self.unitcell.B)
                ubi = np.linalg.inv( ub )
+               ubio = ubi.copy()
                npks = closest.score(ubi,gvf,hkl_tol)
                pairs.append( (ind1[i], ind2[k], U, ubi ) )
+               print npks, 
+               ubi, trans = self.refine( ubi, [0.,0.,0.], tol=hkl_tol )
+               inds, hkls = self.assign( ubi, trans, hkl_tol )
+               ubi, trans = self.refine( ubi, trans, inds = inds, hkls= hkls, tol=hkl_tol )
                print npks, ubi
-               self.refine( ubi, (0,0,0), tol=hkl_tol )
+               print "cell: ",6*"%.6f "%(  indexing.ubitocellpars(ubi) )
+               print "position: ",trans
+               print
         self.pairs=pairs
         print time.time()-start,"for",len(pairs),n1.shape, n2.shape
         return pairs
@@ -272,30 +279,22 @@ class indexer:
         start = time.time()
         if inds is None:
             inds , hkls = self.assign(  ubi, translation, tol )
-
         ub = np.linalg.inv( ubi )
-
-        x0 = np.array( list( ub.ravel() ) + [0.1,0.1,0.1] )
+        x0 = np.array( list( ub.ravel() ) + list(translation ) )
         fun = self.gof
         args = (hkls, inds, self.peaks_xyz[:,inds],
                 np.zeros( hkls.shape, order='F'),
                 self.cf.omega[inds])
         def Dfun( x0, *args ):
-            #print "in Dfun", len(args),x0
             epsilon = np.ones(12)*1e-6
             epsilon[-3:] = 1.
             return deriv( x0, fun, epsilon, *args)
-        print "Calling leastsq"
         res, ier = scipy.optimize.leastsq( fun, x0, args, Dfun,
                                            col_deriv=True)
         ub = np.reshape(res[:9], (3,3))
         t = res[-3:]
         ubi = np.linalg.inv( ub )
-        print ub
-        print ubi
-        print t
-        ret = self.assign(ubi, t, tol)
-        print time.time()-start, ret[0].shape, self.NC/12.
+        return ubi, t
  
 def deriv( xk, f, epsilon, *args):
     f0 = f(*((xk,) + args))
@@ -309,20 +308,37 @@ def deriv( xk, f, epsilon, *args):
     return grad
 
 if __name__=="__main__":
-   from ImageD11.columnfile import columnfile
-   from ImageD11.parameters import read_par_file
-   import sys
-   p = read_par_file(sys.argv[1])
-   c = columnfile( sys.argv[2] )
-   i = indexer( p, c )
-   i.updatecolfile()
-   i.tthcalc()
-   print "Calling assign"
-   i.assigntorings()
-   hkl1 = [int(h) for h in sys.argv[3].split(",")]
-   hkl2 = [int(h) for h in sys.argv[4].split(",")]
-   print "Calling pairs"
-   i.pairs(hkl1, hkl2)
+    from ImageD11.columnfile import columnfile
+    from ImageD11.parameters import read_par_file
+    import ImageD11.grain
+    import sys
+    p = read_par_file(sys.argv[1])
+    c = columnfile( sys.argv[2] )
+    i = indexer( p, c )
+    if 0:
+        # \test\simul_1000_grains>python ..\..\ImageD11\indexer.py Al1000\Al1000.par Al1000\Al1000.flt allgrid.map allgridfitscipy.map
+        gl = ImageD11.grain.read_grain_file( sys.argv[3] )
+        for k,g in enumerate(gl):
+            for j, tol in enumerate([0.05,0.02,0.01,0.0075]):
+                inds, hkls = i.assign( g.ubi, g.translation, tol )
+                ubi, t = i.refine(   g.ubi, 
+                        translation=g.translation,
+                        inds = inds, hkls = hkls,
+                        tol = tol)  
+                g.translation = t
+                g.set_ubi( ubi )
+            print k, len(inds),6*"%.8f "%(indexing.ubitocellpars(ubi))
+            print "\t",t
+        ImageD11.grain.write_grain_file( sys.argv[4], gl )
+    else:
+        i.updatecolfile()
+        i.tthcalc()
+        print "Calling assign"
+        i.assigntorings()
+        hkl1 = [int(h) for h in sys.argv[3].split(",")]
+        hkl2 = [int(h) for h in sys.argv[4].split(",")]
+        print "Calling pairs"
+        i.pairs(hkl1, hkl2)
 
 
    # e.g. python indexer.py ../test/demo/eu3.pars ../test/demo/eu.flt 2,0,0 0,0,4
