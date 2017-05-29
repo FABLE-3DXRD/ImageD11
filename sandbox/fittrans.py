@@ -9,7 +9,7 @@ from matplotlib import pylab
 def k_to_g(k, omega, wedge, chi ):
     """ Rotate k vector to g vector """
     #print "k_to_g",k,omega,wedge,chi
-    om = np.radians( omega)
+    om = np.radians( omega )
     g = np.zeros( k.shape )
     cw = gv_general.chiwedge( chi, wedge )
     cwk = np.dot( cw, k )
@@ -58,15 +58,15 @@ def XL_to_gv_old( omega, wedge, chi, XL, wavelength, tx, ty, tz):
 
 def XL_to_gv( omega, wedge, chi, XL, wavelength, tx, ty, tz):
     """ Compute gv by rotation of experiment around crystal """
-    beam = np.zeros( (3,len(omega)))
-    beam[0,:] = 1
+    beam = np.zeros( (3,len(omega)), np.float)
+    beam[0,:] = 1.0
     XB = k_to_g( beam, omega, wedge, chi)
     #print "XB",XB
     XS = k_to_g( XL, omega, wedge, chi )
     #print "XS",XS
-    np.subtract(XS[0], tx, XS[0] )
-    np.subtract(XS[1], ty, XS[1] )
-    np.subtract(XS[2], tz, XS[2] )
+    np.subtract( XS[0], tx, XS[0] )
+    np.subtract( XS[1], ty, XS[1] )
+    np.subtract( XS[2], tz, XS[2] )
     modxs = np.sqrt( (XS*XS).sum(axis=0))
     g = (XS/modxs - XB)/wavelength
     return g
@@ -114,22 +114,6 @@ def d_XSXB_to_gv( XS, XB, tx, ty, tz, wavelength):
     # dmodxst2_dt = -2*xst[0] , -2*xst[1], -2*xst[2]
     # d(sqrt(f))/dx = 1/2 1/sqrt(f) . df/dx
     dmodxst_dt = -xst[0]/modxst, -xst[1]/modxst , -xst[2]/modxst
-    if 0: # OK
-        # [f(x+h) - f(x)] / h
-        t = (XS.T - [tx+1,ty,tz]).T
-        dtx = np.sqrt( ( t * t ).sum(axis=0) ) -  modxst
-        t = (XS.T - [tx,ty+1,tz]).T
-        dty = np.sqrt( ( t * t ).sum(axis=0) ) - modxst
-        t = (XS.T - [tx,ty,tz+1]).T
-        dtz = np.sqrt( ( t * t ).sum(axis=0) ) - modxst
-        print dtx[:3]
-        print dty[:3]
-        print dtz[:3]
-        pylab.plot(dtx, dmodxst_dt[0],"o")
-        pylab.plot(dty, dmodxst_dt[1],"o")
-        pylab.plot(dtz, dmodxst_dt[2],"o")
-        pylab.show()
-        1/0
     # From XSXB_to_gv
     #    g = np.array((    (xst[0]/modxst - XB[0])/wavelength,\
     #                      (xst[1]/modxst - XB[1])/wavelength,\
@@ -143,49 +127,16 @@ def d_XSXB_to_gv( XS, XB, tx, ty, tz, wavelength):
     # Want dg/dt
     #
     # dg/dt = (dxst/dt*1/modxst + xst.dmodxst_dt/modxst2)/w
-    dg0_dtx = -(1/modxst + xst[0]*dmodxst_dt[0]/modxst2)/wavelength
+    dg0_dtx = -(1./modxst + xst[0]*dmodxst_dt[0]/modxst2)/wavelength
     dg1_dtx = -(xst[0]*dmodxst_dt[1]/modxst2)/wavelength
     dg2_dtx = -(xst[0]*dmodxst_dt[2]/modxst2)/wavelength
     dg0_dty = -(xst[1]*dmodxst_dt[0]/modxst2)/wavelength
-    dg1_dty = -(1/modxst + xst[1]*dmodxst_dt[1]/modxst2)/wavelength
+    dg1_dty = -(1./modxst + xst[1]*dmodxst_dt[1]/modxst2)/wavelength
     dg2_dty = -(xst[1]*dmodxst_dt[2]/modxst2)/wavelength
     dg0_dtz = -(xst[2]*dmodxst_dt[0]/modxst2)/wavelength
     dg1_dtz = -(xst[2]*dmodxst_dt[1] /modxst2)/wavelength
-    dg2_dtz = -(1/modxst + xst[2]*dmodxst_dt[2]/modxst2)/wavelength
+    dg2_dtz = -(1./modxst + xst[2]*dmodxst_dt[2]/modxst2)/wavelength
     #
-    if 0:
-        delta=1
-        t = (XS.T - [tx+delta,ty,tz]).T
-        gt = ( t/np.sqrt( (t*t).sum(axis=0)) - XB) / wavelength
-        numeric = (gt - g)/delta
-        pylab.subplot(331)
-        pylab.plot(numeric[0], dg0_dtx,"o" )
-        pylab.subplot(332)
-        pylab.plot(numeric[1], dg1_dtx,"o" )
-        pylab.subplot(333)
-        pylab.plot(numeric[2], dg2_dtx,"o" )
-        delta=1
-        t = (XS.T - [tx,ty+delta,tz]).T
-        gt = ( t/np.sqrt( (t*t).sum(axis=0)) - XB) / wavelength
-        numeric = (gt - g)/delta
-        pylab.subplot(334)
-        pylab.plot(numeric[0], dg0_dty,"o" )
-        pylab.subplot(335)
-        pylab.plot(numeric[1], dg1_dty,"o" )
-        pylab.subplot(336)
-        pylab.plot(numeric[2], dg2_dty,"o" )
-        delta=1
-        t = (XS.T - [tx,ty,tz+delta]).T
-        gt = ( t/np.sqrt( (t*t).sum(axis=0)) - XB) / wavelength
-        numeric = (gt - g)/delta
-        pylab.subplot(337)
-        pylab.plot(numeric[0], dg0_dtz,"o" )
-        pylab.subplot(338)
-        pylab.plot(numeric[1], dg1_dtz,"o" )
-        pylab.subplot(339)
-        pylab.plot(numeric[2], dg2_dtz,"o" )
-        pylab.show()
-        1/0
            #   1       2       3       4       5       6       7       8       9
     return g,dg0_dtx,dg1_dtx,dg2_dtx,dg0_dty,dg1_dty,dg2_dty,dg0_dtz,dg1_dtz,dg2_dtz
 
@@ -208,8 +159,6 @@ class fittrans(object):
         ty  = float(self.pars.get('t_y'))
         tz  = float(self.pars.get('t_z'))
         wvln= float(self.pars.get('wavelength'))
-
-        start = time.clock()
         self.gv = XSXB_to_gv( self.XS, self.XB, tx, ty, tz, wvln)
 
     def refine(self, gr, tol=0.05):
@@ -235,13 +184,13 @@ class fittrans(object):
         hkle = hklr - hkli
         scor = np.sqrt((hkle*hkle).sum(axis=0))
         #print "before",len(pks),pks
-        use = np.compress( scor < tol,  np.arange(len(gv[0]) ))
-        #print "after",len(pks),pks
-        gr.pks = pks[use]
+        if tol is not None:
+            use = np.compress( scor < tol,  np.arange(len(gv[0]) ))
+            #print "after",len(pks),pks
+            gr.pks = pks[use]
+        else:
+            use = np.arange( len(gr.pks), dtype=np.int )
         #print "score = ", scor[pks].sum()/len(pks), len(pks), tol
-        if 0:
-            pylab.hist(scor, bins=128)
-            pylab.show()
         # peaks to use are those with scor OK
         #
         #  UB.h = gvcalc
@@ -274,15 +223,16 @@ class fittrans(object):
                 for k in range(3):
                     mtx[i,j] += (grads[i,k,:] * grads[j,k,:]).sum()
                 if j!=i:
-                    mtx[j,i]=mtx[i,j]
+                    mtx[j,i] = mtx[i,j]
         #    mtx = np.dot( grads, grads.T) # vector, outer, ?
         rhs = np.zeros( 12 )
         for i in range(12):
             for k in range(3):
                 rhs[i] += (grads[i,k]*diff[k]).sum()
+        #print mtx
+        # print rhs
         imt = np.linalg.inv( mtx )
         shifts = np.dot( imt, rhs )
-        #print shifts
         tx = tx - shifts[0]
         ty = ty - shifts[1]
         tz = tz - shifts[2]
@@ -291,6 +241,7 @@ class fittrans(object):
         np.add(ub, shifts[3:], ub)
         gr.set_ubi( np.linalg.inv( np.reshape(ub,(3,3))))
         gr.npks = len(use)
+        #1/0
         return gr
 
 
@@ -360,13 +311,24 @@ if __name__=="__main__":
     start = time.time()
     gfl = []
     ng = 0
+    # Take old peak assignments:
+    if 1:
+        print "Using existing peak assignments"
+        inds = np.arange(o.colfile.nrows,dtype=np.int)
+        for i,gref in enumerate(gl):
+            gref.pks = np.compress( o.colfile.labels == i, inds )
+        tols = [None,]*3
+    else:
+        tols = [0.05,0.01,0.0075]
     for gref in gl:
-        for i,tol in enumerate([0.05,0.01,0.0075]) :
+        for ii,tol in enumerate(tols):
+            print gref.translation
             gref = o.refine(gref, tol=tol)
+            print ii, gref.translation, gref.npks
             #print i,gref.npks
-        gref.pks = None
+#        gref.pks = None
         # re-assign after convergence
-        gref = o.refine( gref, tol=0.0075) 
+#        gref = o.refine( gref, tol=0.0075) 
         gfl.append( gref )
         ng += 1
         print ng,ng*100.0/len(gl), "%.2f   "%(time.time()-start), gref.npks,

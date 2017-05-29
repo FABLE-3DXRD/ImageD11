@@ -315,21 +315,34 @@ if __name__=="__main__":
     p = read_par_file(sys.argv[1])
     c = columnfile( sys.argv[2] )
     i = indexer( p, c )
-    if 0:
+    if sys.argv[3][:3] == "fit":
         # \test\simul_1000_grains>python ..\..\ImageD11\indexer.py Al1000\Al1000.par Al1000\Al1000.flt allgrid.map allgridfitscipy.map
-        gl = ImageD11.grain.read_grain_file( sys.argv[3] )
+        gl = ImageD11.grain.read_grain_file( sys.argv[4] )
+        inds = np.arange( len(gl), dtype=np.int )
+        allhkls = np.array( (c.h, c.k, c.l) )
         for k,g in enumerate(gl):
-            for j, tol in enumerate([0.05,0.02,0.01,0.0075]):
-                inds, hkls = i.assign( g.ubi, g.translation, tol )
-                ubi, t = i.refine(   g.ubi, 
-                        translation=g.translation,
-                        inds = inds, hkls = hkls,
-                        tol = tol)  
-                g.translation = t
-                g.set_ubi( ubi )
+            if len(sys.argv[3]) == len("fit"):
+                for j, tol in enumerate([0.05,0.02,0.01,0.0075]):
+                    inds, hkls = i.assign( g.ubi, g.translation, tol )
+                    ubi, t = i.refine(   g.ubi, 
+                                         translation=g.translation,
+                                         inds = inds, hkls = hkls,
+                                         tol = tol)  
+                    g.translation = t
+                    g.set_ubi( ubi )
+            else:
+                inds = np.compress( c.labels == k , inds )
+                hkls = np.compress( c.labels == k , allhkls )
+                for j in range(3):
+                    ubi, t = i.refine(   g.ubi, 
+                                         translation=g.translation,
+                                         inds = inds, hkls = hkls,
+                                         tol = tol)  
+                    g.translation = t
+                    g.set_ubi( ubi )
             print k, len(inds),6*"%.8f "%(indexing.ubitocellpars(ubi))
             print "\t",t
-        ImageD11.grain.write_grain_file( sys.argv[4], gl )
+        ImageD11.grain.write_grain_file( sys.argv[5], gl )
     else:
         i.updatecolfile()
         i.tthcalc()
