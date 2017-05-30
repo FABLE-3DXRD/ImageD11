@@ -112,26 +112,122 @@ def Dobs( t, sc, fc, omega, pars ):
         tth2, eta2 = transform.compute_tth_eta( (sc, fc),
                                                 omega=omega, **mypars )
         dtth[ i ] = (tth1 - tth2)/s
-        deta[ i ] = (eta1 - eta2)/s # check wraps at 180 !!!
+        deta[ i ] = angmod(eta1 - eta2)/s 
     return tth0, eta0, dtth, deta
 
 def angmod( a ):
     ar = np.radians(a)
     return np.degrees( np.arctan2( np.sin( ar ), np.cos( ar ) ) )
 
+class SVDLSQ(object):
+    def __init__(self, parnames):
+        """
+        List of parameter names for fitting.
+        """
+        self.parnames = parnames
+        self.gradients = {}
+        self.differences = []
+        self.weights = []
+        for name in self.parnames:
+            self.gradients[name] = []
+
+    def addobs(self, difference, gradients, weights):
+        """
+        Add in a series of observations with weights
+        Records these ready to solve later
+        """
+        for name in self.parnames:
+            self.gradients[name].append( gradients[name] )
+        self.differences.append( difference )
+        self.weights.append( weights )
+
+    def solve( self ):
+        """
+        Solve the least squares problem using an SVD
+        TODO ... fill in some residual and error information
+        """
+        N = len(self.parnames)
+        M = 0
+        for diff in self.differences:
+            M += len(diff)
+        A = np.zeros( (N, M), np.float )
+        b = np.zeros( M, np.float )
+        iM = 0
+        #print N, M, [len(x) for x in self.differences]
+        for i, (diff, wt) in enumerate(zip(self.differences, self.weights)):
+            b[iM:iM+len(diff)] = diff*wt
+            for j, name in enumerate(self.parnames):
+                A[j,iM:iM+len(diff)] = self.gradients[name][i]*wt
+            iM += len(diff)
+        #assert (b == np.concatenate( self.differences )).all()
+        try:
+            U, s, V = np.linalg.svd( A, full_matrices = False, compute_uv = True )
+        except np.linalg.LinAlgError:
+            print "SVD failure!!!"
+            raise
+        # 
+        invS = np.where( s > s.max()*1e-9, 1/s, 0 )
+        self.imat = np.dot(  U*invS, V )
+        solution = np.dot( self.imat , b )
+        self.U = U
+        self.s = s
+        self.V = V
+        self.errmat = np.dot( U*invS*invS, U.T )
+        if TESTING > 0:
+            lsqmat = np.dot( A, A.T )
+            errmat = np.linalg.inv( lsqmat )
+            print solution
+            print errmat
+            print svderrmat
+            assert np.allclose( self.errmat, errmat )
+        self.esds = np.sqrt( np.diag( self.errmat ) )
+        self.condition = s.max() / s.min() # sqrt ?
+        self.sh_esd = solution / self.esds
+        return solution
+
+
+
 def fitone( UB, t, sc, fc, omega, hkls, pars):
     npks = len(omega)
+
+    pnames = "t0 t1 t2".split() + ["UB%d%d"%(i,j) for i in range(3) for j in range(3)]
+    
+    S = SVDLSQ( pnames )
+    # To do : Allocate LSQ problem gradient array here and keep S in grain (?)
+    gradients = {}
+
+
+    
     ttho, etao, dtth, deta =  Dobs( t, sc, fc, omega, pars )
     tthc, etac, omegac = Dcalc( UB, hkls,
                                 pars.get('wedge'), pars.get('chi'),
                                 pars.get('wavelength'),
                                 etao, omega)
 
+    # Differences
+    errtth = tthc - ttho
+    erreta = etac - etao
+    erromega = angmod( omegac - omega )
+
+
+    if TESTING>1:
+        pl.figure()
+        pl.subplot(311)
+        pl.plot(etac,errtth, "+")
+        pl.subplot(312)
+        pl.plot(etac, erromega, "+")
+        pl.subplot(313)
+        pl.plot(etac, erreta, "+")
+        pl.show()
+        raw_input()
+
+    
     s = 1e-7
     # Gradient arrays (move to Dcalc)
     dtthUB = np.zeros((3,3,npks), np.float)
     detaUB = np.zeros((3,3,npks), np.float)
     domUB = np.zeros((3,3,npks), np.float)
+    
     for i in range(3):
         for j in range(3):
             UBc = UB.copy()
@@ -152,70 +248,30 @@ def fitone( UB, t, sc, fc, omega, hkls, pars):
             if TESTING>1:
                 pl.subplot(3,3,i*3+j+1)
                 pl.plot(detaUB[i,j])
-
-    # Differences
-    errtth = tthc - ttho
-    erreta = etac - etao
-    erromega = angmod( omegac - omega )
-
-    if TESTING>1:
-        pl.figure()
-        pl.subplot(311)
-        pl.plot(etac,errtth, "+")
-        pl.subplot(312)
-        pl.plot(etac, erromega, "+")
-        pl.subplot(313)
-        pl.plot(etac, erreta, "+")
-        pl.show()
-        raw_input()
+                
 
     
-    # Least squares - move to subroutine
-    m = np.zeros( (12,12), np.float )
-    r = np.zeros( (12,), np.float )
-    # translation
-    wtth=10   # TO DO...
-    weta=np.sin(np.radians(etac))
-    erreta *= weta
-    erromega *= weta
-    deta *= weta
-    detaUB[:,:]*= weta
-    domUB[:,:]*=weta
     for i in range(3):
-        r[i]   += np.dot( dtth[i], errtth )*wtth
-        r[i]   += np.dot( deta[i], erreta )
+        gradients["t%d"%(i)] = dtth[i]
         for j in range(3):
-            m[i,j] += np.dot( dtth[i], dtth[j] )*wtth
-            m[i,j] += np.dot( deta[i], deta[j] )
-    # ub
+            gradients["UB%d%d"%(i,j)] = dtthUB[i,j]
+    S.addobs( errtth, gradients, 10. )
     for i in range(3):
-        for j in range(3): # loop over UB
-            k = i*3+j+3
-            r[k] += np.dot( dtthUB[i,j], errtth )*wtth
-            r[k] += np.dot( detaUB[i,j], erreta )
-            r[k] += np.dot( domUB[i,j], erromega )
-            for l in range(3):
-                for o in range(3):
-                    n = l*3+o+3
-                    m[k,n] += np.dot( dtthUB[i,j], dtthUB[l,o] )*wtth
-                    m[k,n] += np.dot( detaUB[i,j], detaUB[l,o] )
-                    m[k,n] += np.dot( domUB[i,j], domUB[l,o] )
-            for l in range(3):
-                m[k,l] += np.dot( dtthUB[i,j], dtth[l] )*wtth
-                m[k,l] += np.dot( detaUB[i,j], deta[l] )
-                m[l,k] = m[k,l]
-    try:
-        im = np.linalg.inv(m)
-        sh = np.dot( im, r )
-    except:
-        print "Failed"
-        sh = np.ones(12)
-        pass
-    # End Least squares subroutine ?
-    #
-    # Apply shifts
+        gradients["t%d"%(i)] = deta[i]
+        for j in range(3):
+            gradients["UB%d%d"%(i,j)] = detaUB[i,j]
+    S.addobs( erreta, gradients, 1. )
+    for i in range(3):
+        gradients["t%d"%(i)] = 0.
+        for j in range(3):
+            gradients["UB%d%d"%(i,j)] = domUB[i,j]
+    S.addobs( erromega, gradients, 1. )
+    
+    sh = S.solve()
+    
     UBnew = np.reshape( UB.ravel() + s*sh[-9:], (3,3) )
-    return t+sh[:3], UBnew
+    
+    return t+sh[:3], UBnew, S
     
 
 def refit_makemap( colf, pars, grains ):
@@ -231,11 +287,11 @@ def refit_makemap( colf, pars, grains ):
 #        print "Cell",indexing.ubitocellpars(np.linalg.inv(g.ub))
         if i == 1004:
             TESTING=3
-        t, UB = fitone( g.ub, g.translation, sc, fc, om, hkls, pars)
-#        print "Translation",t
-#        print "1: Cell",indexing.ubitocellpars(np.linalg.inv(UB))
-        for _ in range(3):
-            t, UB = fitone( UB, t, sc, fc, om, hkls, pars)
+        t, UB, S = fitone( g.ub, g.translation, sc, fc, om, hkls, pars)
+        for ncycle in range(5):
+            t, UB, S = fitone( UB, t, sc, fc, om, hkls, pars)
+            if S.sh_esd.max() < 1e-10:
+                break
             if TESTING:
                 print "translation",t
                 print "Cell",indexing.ubitocellpars(np.linalg.inv(UB))
@@ -245,14 +301,22 @@ def refit_makemap( colf, pars, grains ):
         g.set_ubi(np.linalg.inv( UB ))
     return grains
 
+# TODO:
+#
+# - Least squares as SVD problem
+# - Allow a constraint matrix to be used
+# - Compute weights from experimental data (sig/cov etc)
+# - Compute error estimates
+# - Allow fitting of other geometrical parameters
+# - Allow refinement in terms of other parameterisation of UB (e.g. U, B)
+# - Documentation
+
+
 if __name__=="__main__":
     colfile, parfile, grainsfile, newgrainsfile = sys.argv[1:5]
     c = columnfile.columnfile( colfile )
-    c.filter(abs(c.eta_per_grain)>5)
-    c.filter(abs(c.eta_per_grain)<175)    
     p = parameters.read_par_file( parfile )
-    g = grain.read_grain_file( grainsfile )
-    
+    g = grain.read_grain_file( grainsfile )    
     grain.write_grain_file( newgrainsfile, refit_makemap( c, p, g) )
 
 
