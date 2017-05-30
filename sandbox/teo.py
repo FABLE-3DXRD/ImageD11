@@ -35,11 +35,12 @@ if TESTING:
     import pylab as pl
     pl.ion()
 
-def Dcalc( UB, hkls, wedge, chi, wavelength, etao):
+def Dcalc( UB, hkls, wedge, chi, wavelength, etao, omega):
     """
     ysign determines which solution (there are usually two)
     """
     g = np.dot( UB  , hkls )
+    assert g.dtype == np.float
     if 0:
         print g.shape
         print hkls.shape
@@ -49,15 +50,17 @@ def Dcalc( UB, hkls, wedge, chi, wavelength, etao):
             print np.dot(np.linalg.inv( UB ), g[:,i] )
 
     wc = gv_general.wedgechi( wedge=wedge, chi=chi )
+    assert wc.dtype == np.float
     omega1, omega2, valid = gv_general.g_to_k(
         g, wavelength,axis=[0,0,-1], pre=None, post=wc )
-
+    assert omega1.dtype == np.float
     cwT = gv_general.chiwedge( wedge=wedge, chi=chi ).T
     
     k1 = gv_general.k_to_g( g, omega1, axis=[0,0,1],
                             pre = cwT, post=None)
     k2 = gv_general.k_to_g( g, omega2, axis=[0,0,1],
                             pre = cwT, post=None)
+    assert k1.dtype == np.float
     #
     # k[1,:] = -ds*c*sin(eta)
     # ------    -------------   .... tan(eta) = -k1/k2
@@ -67,10 +70,19 @@ def Dcalc( UB, hkls, wedge, chi, wavelength, etao):
     eta_two = np.degrees( np.arctan2(-k2[1, :], k2[2, :]) )
 
     # pick the solution which is closest to matching in eta/omega
-    d1 = eta_one - etao
-    d2 = eta_two - etao
+    d1 = angmod(eta_one - etao)
+    d2 = angmod(eta_two - etao)
     etac   = np.where( abs(d1) < abs(d2), eta_one, eta_two)
     omegac = np.where( abs(d1) < abs(d2), omega1 , omega2 )
+
+    if TESTING > 2:
+        err = abs(etac - etao)
+        for i in range(len(err)):
+            if err[i] < 1:
+                continue
+            print i, eta_one[i], eta_two[i], omega1[i], omega2[i]
+            print "\t", etao[i], omega[i], etac[i], omegac[i]
+        
 
     mod_g = np.sqrt((g*g).sum(axis=0))
     tthc = np.degrees( 2*np.arcsin(wavelength*mod_g/2) )
@@ -113,9 +125,9 @@ def fitone( UB, t, sc, fc, omega, hkls, pars):
     tthc, etac, omegac = Dcalc( UB, hkls,
                                 pars.get('wedge'), pars.get('chi'),
                                 pars.get('wavelength'),
-                                etao)
+                                etao, omega)
 
-    s = 1e-5
+    s = 1e-7
     # Gradient arrays (move to Dcalc)
     dtthUB = np.zeros((3,3,npks), np.float)
     detaUB = np.zeros((3,3,npks), np.float)
@@ -127,17 +139,17 @@ def fitone( UB, t, sc, fc, omega, hkls, pars):
             tths1, etas1, omegas1 = Dcalc( UBc, hkls,
                                         pars.get('wedge'), pars.get('chi'),
                                         pars.get('wavelength'),
-                                        etao)
+                                           etao, omega)
             UBc = UB.copy()
             UBc[i,j] += s/2
             tths2, etas2, omegas2 = Dcalc( UBc, hkls,
                                         pars.get('wedge'), pars.get('chi'),
                                         pars.get('wavelength'),
-                                        etao)
+                                           etao, omega)
             dtthUB[i,j] = (tths1 - tths2)
             detaUB[i,j] = (etas1 - etas2)
             domUB[i,j] = (omegas1 - omegas2)
-            if TESTING:
+            if TESTING>1:
                 pl.subplot(3,3,i*3+j+1)
                 pl.plot(detaUB[i,j])
 
@@ -146,7 +158,7 @@ def fitone( UB, t, sc, fc, omega, hkls, pars):
     erreta = etac - etao
     erromega = angmod( omegac - omega )
 
-    if TESTING:
+    if TESTING>1:
         pl.figure()
         pl.subplot(311)
         pl.plot(etac,errtth, "+")
@@ -161,25 +173,37 @@ def fitone( UB, t, sc, fc, omega, hkls, pars):
     # Least squares - move to subroutine
     m = np.zeros( (12,12), np.float )
     r = np.zeros( (12,), np.float )
+    # translation
+    wtth=10   # TO DO...
+    weta=np.sin(np.radians(etac))
+    erreta *= weta
+    erromega *= weta
+    deta *= weta
+    detaUB[:,:]*= weta
+    domUB[:,:]*=weta
     for i in range(3):
-        r[i]   += np.dot( dtth[i], errtth )
+        r[i]   += np.dot( dtth[i], errtth )*wtth
         r[i]   += np.dot( deta[i], erreta )
         for j in range(3):
-            m[i,j] += np.dot( dtth[i], dtth[j] )
+            m[i,j] += np.dot( dtth[i], dtth[j] )*wtth
             m[i,j] += np.dot( deta[i], deta[j] )
     # ub
     for i in range(3):
         for j in range(3): # loop over UB
             k = i*3+j+3
-            r[k] += np.dot( dtthUB[i,j], errtth )
+            r[k] += np.dot( dtthUB[i,j], errtth )*wtth
             r[k] += np.dot( detaUB[i,j], erreta )
             r[k] += np.dot( domUB[i,j], erromega )
             for l in range(3):
                 for o in range(3):
                     n = l*3+o+3
-                    m[k,n] += np.dot( dtthUB[i,j], dtthUB[l,o] )
+                    m[k,n] += np.dot( dtthUB[i,j], dtthUB[l,o] )*wtth
                     m[k,n] += np.dot( detaUB[i,j], detaUB[l,o] )
                     m[k,n] += np.dot( domUB[i,j], domUB[l,o] )
+            for l in range(3):
+                m[k,l] += np.dot( dtthUB[i,j], dtth[l] )*wtth
+                m[k,l] += np.dot( detaUB[i,j], deta[l] )
+                m[l,k] = m[k,l]
     try:
         im = np.linalg.inv(m)
         sh = np.dot( im, r )
@@ -195,6 +219,7 @@ def fitone( UB, t, sc, fc, omega, hkls, pars):
     
 
 def refit_makemap( colf, pars, grains ):
+    global TESTING
     for i,g in enumerate( grains ):
         d = colf.copy()
         d.filter( d.labels == i )
@@ -202,25 +227,29 @@ def refit_makemap( colf, pars, grains ):
         fc = d.fc
         om = d.omega
         hkls = np.array( ( d.h, d.k, d.l ) )
-        #print "Translation",g.translation
-        #print "Cell",indexing.ubitocellpars(np.linalg.inv(g.ub))        
+#        print "Translation",g.translation
+#        print "Cell",indexing.ubitocellpars(np.linalg.inv(g.ub))
+        if i == 1004:
+            TESTING=3
         t, UB = fitone( g.ub, g.translation, sc, fc, om, hkls, pars)
-        #print "Translation",t
-        #print "Cell",indexing.ubitocellpars(np.linalg.inv(UB))
-        for i in range(3):
+#        print "Translation",t
+#        print "1: Cell",indexing.ubitocellpars(np.linalg.inv(UB))
+        for _ in range(3):
             t, UB = fitone( UB, t, sc, fc, om, hkls, pars)
             if TESTING:
                 print "translation",t
                 print "Cell",indexing.ubitocellpars(np.linalg.inv(UB))
-        print "Translation",t
-        print "Cell",indexing.ubitocellpars(np.linalg.inv(UB))
+        print "Translation %.5f %.5f %.5f"%tuple(t)
+        print "Cell %.7f %.7f %.7f %.8f %.8f %.8f"%(indexing.ubitocellpars(np.linalg.inv(UB)))
         g.translation = t
-        g.set_ubi = np.linalg.inv( UB )
+        g.set_ubi(np.linalg.inv( UB ))
     return grains
 
 if __name__=="__main__":
     colfile, parfile, grainsfile, newgrainsfile = sys.argv[1:5]
     c = columnfile.columnfile( colfile )
+    c.filter(abs(c.eta_per_grain)>5)
+    c.filter(abs(c.eta_per_grain)<175)    
     p = parameters.read_par_file( parfile )
     g = grain.read_grain_file( grainsfile )
     
