@@ -216,6 +216,9 @@ def peaksearch_driver(options, args):
         f1 = ["%s1_%04d%s"%(options.stem,i,options.format) for i in range(
                 options.first,
                 options.last+1)]
+
+        if options.iflip:
+            f1 = [a for a in f1[::-1]]
    
         def fso(f0,f1):
             for a,b in zip(f0,f1):
@@ -693,6 +696,9 @@ def get_options(parser):
         parser.add_option("--interlaced", action="store_true", 
                           dest = "interlaced", default = False,
            help = "Interlaced DCT scan")
+        parser.add_option("--iflip", action="store_true",
+                          dest="iflip", default=False,
+                          help = "Reverse second half of interlaced scan")
         return parser
 
 
