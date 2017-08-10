@@ -203,12 +203,13 @@ class fittrans(object):
         # tx, ty, ty    = 3
         # UB00 ... UB22 = 9
         # want derivative of diff w.r.t each variable
-        grads = np.empty( (12, 3, len(use)) )
+        grads = np.zeros( (12, 3, len(use)) )
         for i in range(3):
             for j in range(3): # tx, ty, tz
                 #print 1+j*3+i,
                 #print ret[1+j*3+i].shape
                 grads[j, i] = ret[1+j*3+i][use]
+           #     print grads[j,i]
             for j in range(3):
                 # gx = 0h + 1k + 2l
                 # gy = 3h + 4k + 5l
@@ -216,6 +217,7 @@ class fittrans(object):
                 # i is gx, gy, gz
                 # j is ub elements
                 grads[3+j+i*3 , i] = hkli[j][use]
+           #     print grads[3+j+i*3,i]
         # grains = 12, xyz, pks
         mtx = np.zeros( (12,12) )
         for i in range(12):
@@ -224,6 +226,7 @@ class fittrans(object):
                     mtx[i,j] += (grads[i,k,:] * grads[j,k,:]).sum()
                 if j!=i:
                     mtx[j,i] = mtx[i,j]
+
         #    mtx = np.dot( grads, grads.T) # vector, outer, ?
         rhs = np.zeros( 12 )
         for i in range(12):
@@ -322,9 +325,9 @@ if __name__=="__main__":
         tols = [0.05,0.01,0.0075]
     for gref in gl:
         for ii,tol in enumerate(tols):
-            print gref.translation
+            #print gref.translation
             gref = o.refine(gref, tol=tol)
-            print ii, gref.translation, gref.npks
+            #print ii, gref.translation, gref.npks,
             #print i,gref.npks
 #        gref.pks = None
         # re-assign after convergence
