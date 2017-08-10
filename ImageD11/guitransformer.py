@@ -235,8 +235,10 @@ class guitransformer:
                  twodplot.data(
                          tth,
                          np.zeros(tth.shape[0]),
-                         {'color':'r',
-                          'pointtype':'|'
+                         {'plotopts' : {'c':'r',
+                                      'marker':'|',
+                                      'ps': 50,
+                                      'alpha':1.0}
                           }
                  )))
 
