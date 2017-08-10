@@ -1,5 +1,5 @@
 
-import numpy as np
+import numpy as np, pylab as pl
 
 def cylinder_thickness( x, radius = 1.0 ):
     """
@@ -113,13 +113,38 @@ def convoluted_cylinder_absorbtion( x,
                    cyl_abs )
     return cyl_abs
 
+def convoluted_cylinder_thickness( x, 
+                                   radius,
+                                   position, 
+                                   fwhm,
+                                   eta ):
+    """
+    x = input positions to compute absorbtion
+    position = where the surface of the cylinder is
+    radius = of the cylinder
+    fwhm = the beam width
+    eta = the mixing parameter of pseudo voigt
+    """
+    # the cylinder absorbtion function puts x at 0
+    psv = pseudo_voigt_peak( x, position, fwhm, eta )
+    cyl = np.zeros( x.shape, np.float ) 
+    middle = x.mean()
+    for i in range(len(x)):
+        x0 = x[i]
+        np.add( cyl,
+                psv[i] * cylinder_thickness( x - x0,
+                                            radius),
+                cyl )
+    return cyl
+
+
 
 import ImageD11.simplex
 
 def get_spec_data(scan_number,
                   thespecfile,
-                  x_col = "samy",
-                  y_col = "pico3"):
+                  x_col = "py",
+                  y_col = "Ag"):
     specdata = thespecfile.select("%d"%(scan_number))
     x = specdata.datacol( x_col )
     y = specdata.datacol( y_col )
@@ -217,7 +242,8 @@ def fitscan( xdata,
 
 
 def main():
-    import sys, specfile
+    import sys
+    from PyMca5 import specfile
     filename = sys.argv[1]
     myspecfile = specfile.Specfile( filename )
     scan_number = int(sys.argv[2])
@@ -251,6 +277,64 @@ def main():
         f.close()
     
 
+Y=None
+def fit_fluo():
+    import sys
+    global Y
+    from PyMca5 import specfile
+    filename = sys.argv[1]
+    myspecfile = specfile.Specfile( filename )
+    scan_number = int(sys.argv[2])
+    motor , counter = sys.argv[3], sys.argv[4]
+    x, Y = get_spec_data(scan_number, myspecfile , x_col=motor, y_col=counter)
+    f = int(sys.argv[5])
+    x = x*f
+    position = x.mean()
+    cylinder_thickness( x, radius = 1.0 )
+    radius = 12.5
+    fwhm = 1.0
+    eta = 0.5
+    yc = convoluted_cylinder_thickness( x,radius, position, fwhm, eta )
+    bkg = Y.min()
+    scale = (Y.max()-Y.min())/(yc.max()-yc.min())
+    pl.plot( f*x,Y,"+", label=counter)
+    pl.xlabel(motor)
+#    pl.plot(x,yc*scale + bkg,"-")
+#    pl.show()
 
+    def fitfunc( args ):
+        global Y
+        radius, position, fwhm, eta, bkg, scale = args
+        yc = convoluted_cylinder_thickness( x,radius, position, fwhm, eta )
+        calc = bkg+scale*yc
+        return np.dot( calc-Y, calc-Y )
+    guess = [ radius, position, fwhm, eta, bkg, scale]
+    steps = [ 0.01,] * len(guess)
+    
+    fitter = ImageD11.simplex.Simplex( 
+        fitfunc,
+        guess,
+        steps )
+    
+    result, gof, nstep = fitter.minimize( maxiters = 1000,
+                                          monitor =  1,
+                                          epsilon = 0.001 )
+    radius, position, fwhm, eta, bkg, scale = result
+    yc = convoluted_cylinder_thickness( x,radius, position, fwhm, eta )
+    calc = bkg+scale*yc
+    pl.plot( f*x, calc,"-", label="calc")
+    h=Y.max()-Y.min()
+    i=2
+    for name, val in zip( "radius,position,fwhm,eta,bkg,scale".split(","),
+                          (radius,position,fwhm,eta,bkg,scale)):
+        print name, val,Y.min()+h*i/8.0
+        pl.text(f*x[2],Y.min()+h*i/8.0,"%s %f"%(name,val))
+        i += 1
+    pl.title("%s %d"%(filename, scan_number))
+    
+    pl.savefig("%s_%d.png"%(filename, scan_number))
+    pl.show()
+    
+                                   
 if __name__=="__main__":
-    main()
+    fit_fluo() # main()
