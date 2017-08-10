@@ -185,15 +185,16 @@ class twodplot(Tk.Frame):
             #print 'y ', item.y
             #print 'd ', item.d
             #print self.plotitems[name].d
+                
             if item.d.has_key('color'):
                 pc=item.d['color']
             else:
                 c.append(c[0])
                 pc=c.pop(0)
-            if item.d.has_key('pointtype'):
-                pc=item.d['pointtype']+pc
+            if item.d.has_key('plotopts'):
+                po = item.d['plotopts']
             else:
-                pc="."+pc
+                po = {'marker' : '.', c = pc }
             if item.d.has_key("xlabel"):
                 self.a.set_xlabel(item.d["xlabel"])
             if item.d.has_key("ylabel"):
@@ -206,13 +207,13 @@ class twodplot(Tk.Frame):
                 elif item.x.shape[0]>self.maxpoints:
                     if self.quiet=="No":
                         if tkMessageBox.askyesno("Slow plotting workaround","Shall I plot only the first %d points for increased speed?"%(self.maxpoints)):
-                            ret = self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],pc)
+                            ret = self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],**po)
                         else:
                             ret = self.a.plot(item.x,item.y,pc)
                     else:
-                        ret = self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],pc)
+                        ret = self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],**po)
                 else:
-                    ret = self.a.plot(item.x,item.y,pc,alpha=0.25)
+                    ret = self.a.plot(item.x,item.y,**po)
             except:
                 print "plotting exception ignored"
         if self.xr!=None:
