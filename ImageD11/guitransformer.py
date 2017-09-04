@@ -125,12 +125,19 @@ class guitransformer:
                                              "getcolumn", yname )
         self.parent.twodplotter.hideall()
         self.parent.twodplotter.adddata(
-              ( "Filtered peaks",
-                 twodplot.data(
-                    x, y,
-                    { "xlabel" : xname,
-                      "ylabel" : yname,
-                      "title"  : "Peak positions in array"} ) ) )
+            ( "Filtered peaks",
+              twodplot.data(
+                  x, y,
+                  { "xlabel" : xname,
+                    "ylabel" : yname,
+                    "title"  : "Peak positions in array",
+                    'plotopts' : {'color':'g',
+                                  'marker':'.',
+                                  'markersize': 1,
+                                  'linestyle' : 'none',
+                                  'alpha':0.8}
+                }
+              )))
 
     def chooseyz(self):
         """
@@ -161,7 +168,13 @@ class guitransformer:
                     eta,
                     {"xlabel":"TwoTheta / degrees",
                      "ylabel":"Azimuth / degrees",
-                     "title" :"Peak positions"}
+                     "title" :"Peak positions",
+                     'plotopts' : {'color':'g',
+                                   'marker':'.',
+                                   'markersize': 1,
+                                   'linestyle' : 'none',
+                                   'alpha':0.8}
+}
                      )))
 
     def plothisto(self, nbins = None):
@@ -192,7 +205,8 @@ class guitransformer:
                     hist,
                     {"xlabel":"TwoTheta / degrees",
                      "ylabel":"No in bin",
-                     "title" :"TwoTheta histogram"
+                     "title" :"TwoTheta histogram",
+
                      }
                      )))
 
@@ -235,10 +249,11 @@ class guitransformer:
                  twodplot.data(
                          tth,
                          np.zeros(tth.shape[0]),
-                         {'plotopts' : {'c':'r',
-                                      'marker':'|',
-                                      'ps': 50,
-                                      'alpha':1.0}
+                     {'plotopts' : {'color':'r',
+                                    'marker':'|',
+                                    'markersize': 50,
+                                    'linestyle' : 'none',
+                                    'alpha':1.0}
                           }
                  )))
 
