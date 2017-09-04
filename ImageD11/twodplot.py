@@ -194,7 +194,7 @@ class twodplot(Tk.Frame):
             if item.d.has_key('plotopts'):
                 po = item.d['plotopts']
             else:
-                po = {'marker' : '.', c = pc }
+                po = {'marker' : '.', c : pc }
             if item.d.has_key("xlabel"):
                 self.a.set_xlabel(item.d["xlabel"])
             if item.d.has_key("ylabel"):
