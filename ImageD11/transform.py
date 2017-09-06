@@ -198,59 +198,59 @@ def compute_xyz_from_tth_eta(tth, eta, omega,
 
     omega data needed if crystal translations used
     """
-
     # xyz = unit vectors along the scattered vectors
     xyz = np.zeros((3, tth.shape[0]), np.float)
     rtth = np.radians(tth)
     reta = np.radians(eta)
-    xyz[0, :] = np.cos(rtth)
+    xyz[0, :] =  np.cos(rtth)
+    #  eta = np.degrees(np.arctan2(-s1[1, :], s1[2, :]))
     xyz[1, :] = -np.sin(rtth) * np.sin(reta)
-    xyz[2, :] = np.sin(rtth) * np.cos(reta)
+    xyz[2, :] =  np.sin(rtth) * np.cos(reta)
 
-    # Find some vectors in the fast, slow directions in the detector plane
+    # Find vectors in the fast, slow directions in the detector plane
+    pks = np.array([(1, 0),
+                    (0, 1),
+                    (0, 0) ], np.float).T
+    dxyzl = compute_xyz_lab(pks, **kwds)
+    # == [xpos, ypos, zpos] shape (3,n)
+    #
+    # This was based on the recipe from Thomas in Acta Cryst ...
+    #  ... Modern Equations of ...
 
-    pks = np.array([(0, 0),
-                    (1, 0),
-                    (0, 1)])
-    # ... not sure this is needed - puts the origin at the beam center
-    # pks += np.array( [ float(kwds['z_center']) ,
-    # float(kwds['y_center'])]  )
+    ds = dxyzl[:,0] - dxyzl[:,2]  # 1,0 in plane is (1,0)-(0,0)
+    df = dxyzl[:,1] - dxyzl[:,2]  # 0,1 in plane
+    dO = dxyzl[:,2]               # origin pixel
 
-    # 3 peaks in the detector plane
-    dxyzl = compute_xyz_lab(peaks, **kwds)
+    # Cross products to get the detector normal
+    # Thomas uses an inverse matrix, but then divides out the determinant anyway
+    det_norm = np.cross( ds, df )
 
-    # Detector plane normal
-    norman = cross_product_2x2(dxyzl[1] - dxyzl[0],
-                               dxyzl[2] - dxyzl[0])
+    # Scattered rays on detector normal
+    norm = np.dot( det_norm, xyz )
+    # Check for divide by zero
+    msk = (norm == 0)
+    needmask = False
+    if msk.sum()>0:
+        norm += msk
+        needmask = True
 
-    # Equation of a plane gives:
-    #   N dot ( P - Po ) == 0
-    # ... where P is any point on the plane going through Po
-    #     that is normal to P.
-    # P is on our line, so:
-    #     P = grain_origin + t * xyz
-    # Also:
-    #     N dot( grain_origin + t * xyz - Po ) == 0
-    # ... solve for t ...
+    # Intersect ray on detector plane
+    sc = np.dot( np.cross( df, dO ), xyz ) / norm
+    fc = np.dot( np.cross( dO, ds ), xyz ) / norm
 
-    grain_origins = compute_grain_origins(omega, **kwds)
+    if (t_x != 0) or (t_y != 0) or (t_z != 0):
+        go = compute_grain_origins(omega,
+                                   wedge=wedge, chi=chi,
+                                   t_x=t_x, t_y=t_y, t_z=t_z)
+        # project these onto the detector face to give shifts
+        sct = (  xyz * np.cross( df, go.T ).T ).sum(axis=0) / norm
+        fct = (  xyz * np.cross( go.T, ds ).T ).sum(axis=0) / norm
+        sc -= sct
+        fc -= fct
 
-    N_txyz = dot(norman, dxyzl[0] - grain_origins)
-    N_xyz = dot(norman, xyz)
-
-    # If N_xyz is zero anywhere the beam is || to plane and cannot
-    # intersect.
-    # expect a div0 and set to infinity
-    N_xyz = np.where(N_xyz <= 0, 1e35, N_xyz)
-
-    t = N_txyz / N_xyz
-
-    # Now we have the teas we just wander along the lines
-    xyz_det = t * xyz
-
-    # And finally find those points in terms of our original vectors
-    sc = dot(dxyzl[1] - dxyzl[0], xyz_det - dxyzl[0])
-    fc = dot(dxyzl[2] - dxyzl[0], xyz_det - dxyzl[0])
+    if needmask:
+        fc = np.where( msk, 0, fc )
+        sc = np.where( msk, 0, sc )
 
     return fc, sc
 

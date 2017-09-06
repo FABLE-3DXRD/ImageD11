@@ -67,7 +67,7 @@ def compute_grain_origins(omega, wedge = 0.0, chi = 0.0,
 
 import ctypes, numpy as np
 
-dll = ctypes.CDLL("diffraction.so")
+dll = ctypes.CDLL("./diffraction.so")
 
 REAL = ctypes.c_double
 NPREAL = np.float64
@@ -110,7 +110,7 @@ if __name__=="__main__":
     colfile = sys.argv[1]
     grainfile = sys.argv[2]
     parfile = sys.argv[3]
-    
+
     pars = parameters()
     pars.loadparameters(parfile)
     
@@ -119,12 +119,16 @@ if __name__=="__main__":
     wvln  = float(pars.get("wavelength"))
     
     c = columnfile( colfile )
-    c.nrows = 2
-    c.bigarray = c.bigarray[:,:2]
+    try:
+        sf = c.sc,c.fc
+    except:
+        sf = c.xc,c.yc
+#    c.nrows = 2
+#    c.bigarray = c.bigarray[:,:2]
     print c.bigarray.shape
     c.set_attributes()
 
-    XL = flatfloat( compute_xyz_lab( [ c.sc, c.fc] , **pars.parameters ).T )
+    XL = flatfloat( compute_xyz_lab( sf , **pars.parameters ).T )
     om = flatfloat( np.radians(c.omega ))
 
 
@@ -165,7 +169,9 @@ if __name__=="__main__":
 
     
     import ImageD11.transform
-    peaks_xyz = ImageD11.transform.compute_xyz_lab( [c.sc, c.fc], **pars.parameters )
+    peaks_xyz = ImageD11.transform.compute_xyz_lab( sf, **pars.parameters )
+
+    
     print peaks_xyz[:,-1]
 
     print "translation",pars.get('t_x'),pars.get('t_y'),pars.get('t_z')
@@ -175,7 +181,7 @@ if __name__=="__main__":
     print origin[:,-1], origin.shape
     print "I got to the end of the script"
 
-    tth,eta = ImageD11.transform.compute_tth_eta( [c.sc, c.fc], omega=c.omega, **pars.parameters)
+    tth,eta = ImageD11.transform.compute_tth_eta( sf, omega=c.omega, **pars.parameters)
     kvecs = ImageD11.transform.compute_k_vectors(tth, eta, pars.get('wavelength'))
     print kvecs.T
     gvecs = ImageD11.transform.compute_g_from_k( kvecs, c.omega, wedge=pars.get('wedge'), 
