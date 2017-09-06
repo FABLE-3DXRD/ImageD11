@@ -12,16 +12,18 @@ ar = np.random.random( int(size) )
 
 print ar.shape
 
-N=100
-start = time.clock()
-for i in range(N):
-    s = lib.sum( ffi.cast('double *', ar.ctypes.data ),  len(ar) )
-print "FFI", s , (time.clock()-start)/N
 
 N=10
-start = time.clock()
+ar.sum()
+start = time.time()
 for i in range(N):
     sn = ar.sum()
-print "Numpy",sn, (time.clock() - start)/N
+print "Numpy",sn, (time.time() - start)/N
 #raw_input()
 
+N=10
+lib.sum( ffi.cast('double *', ar.ctypes.data ),  len(ar) )
+start = time.time()
+for i in range(N):
+    s = lib.sum( ffi.cast('double *', ar.ctypes.data ),  len(ar) )
+print "FFI", s , (time.time()-start)/N

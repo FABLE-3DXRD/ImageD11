@@ -3,6 +3,20 @@
 from cffi import FFI
 
 
+# Hum - as usual, this part sucks:
+import sys
+if sys.platform.find("win") == 0:
+    extra_compile_args = ["/openmp",]
+    extra_link_args = []
+    Libraries = []
+else:
+    extra_compile_args = ["-fopenmp","-O2"]
+    extra_link_args = ["-fopenmp"]
+    Libraries = ["gomp","pthread"]
+
+
+
+
 ffi = FFI()
 ffi.set_source(
     "_ffi_diffraction",
@@ -20,9 +34,9 @@ double sum(double numbers[],int num_elements){
    return s;
 }
     """,
-    Libraries = [] ,
-    extra_compile_args = ["/openmp",], 
-    extra_link_args = [], 
+    libraries = Libraries ,
+    extra_compile_args = extra_compile_args,
+    extra_link_args = extra_link_args, 
     )
 
 
