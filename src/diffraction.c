@@ -187,6 +187,7 @@ typedef real vector[3];
 #else
 #define pvec(s,v)
 #define pmat(s,v)
+#define psca(s,v)
 #endif 
 
 
