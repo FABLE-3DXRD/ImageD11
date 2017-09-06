@@ -19,6 +19,10 @@ setenv /x64 /release
 ... and "python setup.py build" should work
 
 
+# Using compiler from microsoft for python 2.7 I seem to need this for cffi
+
+set VS90COMNTOOLS="C:\Users\wright\AppData\Local\Programs\Common\Microsoft\Visual C++ for Python\9.0"
+
 =========== Using mingwpy ===============
 
 pip install -i https://pypi.anaconda.org/carlkl/simple mingwpy
