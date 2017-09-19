@@ -10,14 +10,14 @@ mytransformer = transformer.transformer()
 mytransformer.loadfiltered( sys.argv[1] )
 mytransformer.loadfileparameters(  sys.argv[2] )
 tmp = sys.argv[3]
-DSTOL = 0.004
+DSTOL = 0.005
 OMEGAFLOAT = 0.13
 NPKS = 9
 TOLSEQ = [ 0.03, 0.015, 0.0075]
 SYMMETRY = "cubic"
 RING1 = [1,0]
 RING2 = [1,0]
-CONSINE_TOL = 0.002
+CONSINE_TOL = -0.002
 
 # grid to search
 translations = [(t_x, t_y, t_z) 
@@ -78,8 +78,9 @@ def domap(  OmFloat,  OmSlop,
     """mapping function - does what makemap.py does"""
     global NPKS
     ss = sys.stdout # turns off printing
-    for tol in tolseq:
-        sys.stdout = NUL
+    
+
+    def fit(tol):
         o = refinegrains.refinegrains( OmFloat = OmFloat, OmSlop = OmSlop,
                                        tolerance = tol,
                                        intensity_tth_range = (0,180),
@@ -95,6 +96,11 @@ def domap(  OmFloat,  OmSlop,
             o.makeuniq( symmetry )
         o.generate_grains()
         o.refinepositions()
+        return o
+    
+    for tol in tolseq:
+        sys.stdout = NUL
+        o = fit(tol)
         gl = filter( lambda x: x.npks > NPKS, o.grains.values() )
         sys.stdout = ss
         if len(gl) == 0:
@@ -103,6 +109,8 @@ def domap(  OmFloat,  OmSlop,
         else:
             print "Keeping",len(gl),"from",len(o.grains.values()),"grains with at least",NPKS,"peaks",tol
             grain.write_grain_file( grainsfile ,  gl )
+    # re-assign after last filter
+    fit(tol)
     return len(gl)
 
 
@@ -138,8 +146,11 @@ def doindex( gve, x, y, z, w):
                 } )
             myindexer.loadpars( )
             myindexer.assigntorings( )
-            myindexer.find( )
-            myindexer.scorethem( )
+            try:
+                myindexer.find( )
+                myindexer.scorethem( )
+            except IndexError:
+                pass
     grains = [grain.grain(ubi, [x,y,z]) for ubi in myindexer.ubis]
     grain.write_grain_file("%s.ubi"%(tmp),grains)
     sys.stdout = ss

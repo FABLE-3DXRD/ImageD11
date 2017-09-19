@@ -45,4 +45,4 @@ if 1:
 if  not os.path.exists("ideal.map"):
     os.system("python res2map.py Al1000/Al1000.ubi Al1000/Al1000.res ideal.map")
 
-    os.system("python compare.py")
+os.system("python compare.py")
