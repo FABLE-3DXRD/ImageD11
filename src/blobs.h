@@ -24,11 +24,23 @@
 
 #ifndef _blobs_h
 #define _blobs_h
-int * dset_initialise(int size); /* array to hold real values of each */
-int * dset_new(int ** S);
-void dset_makeunion(int *S, int r1, int r2);
-void dset_link(int *S, int r1, int r2);
-int dset_find(int x, int *S);
+
+#ifdef _MSC_VER
+typedef __int32 int32_t;
+#else
+#include <stdint.h>
+#endif
+
+#define INTEGER int
+
+
+INTEGER * dset_initialise(INTEGER size); /* array to hold real values of each */
+INTEGER * dset_new(INTEGER ** S, INTEGER *v);
+void dset_makeunion(INTEGER *S, INTEGER r1, INTEGER r2);
+void dset_link(INTEGER *S, INTEGER r1, INTEGER r2);
+INTEGER dset_find(INTEGER x, INTEGER *S);
+INTEGER * dset_compress( INTEGER **pS, INTEGER *np );
+
 
 
   /* Spot_ID - to be generated when writing out */

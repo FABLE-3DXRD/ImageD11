@@ -19,10 +19,11 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "blobs.h"
+
 #include <stdlib.h> /* malloc */
 #include <stdio.h>
 #include <math.h> /* sqrt */
+#include "blobs.h"
 
 void compute_moments( double b[], int nb  ){
   /* Convert the blob (summing) representation to a human readable form */
@@ -172,9 +173,10 @@ void merge(double b1[], double b2[]){
  * S[:-1] = current end element 
  *
  * dset_initialise(int size) => S[:] = 0
- * dset_new(S) => new item at end of working part of array
+ * dset_new(S,v) => new item (in v) at end of working part of array
  * dset_makeunion(S,i,j) => make S[i]==S[j]
  * dset_find(i,S) => return set of i
+ * T=dset_compress(S) => remove copies
  *
  * eg: sets are 1,2,3,4,5
  *     Now say 1 and 3 are actually the same thing:
@@ -184,9 +186,9 @@ void merge(double b1[], double b2[]){
  * ********************************************************************  */
 
 
-int * dset_initialise(int size){
-   int i, *S;
-   S=(int *) ( malloc(size*sizeof(int) ) );
+INTEGER * dset_initialise(INTEGER size){
+   INTEGER i, *S;
+   S=(INTEGER *) ( malloc(size*sizeof(INTEGER) ) );
    if (S==NULL){
    printf("Memory allocation error in dset_initialise\n");
    exit(1);
@@ -196,10 +198,10 @@ int * dset_initialise(int size){
    return S;
 }
 
-int * dset_compress( int **pS, int *np ){
-    int *S, *T, i, j, npk;
-    S = (int *) *pS;
-    T = (int *) malloc( (S[S[0]-1]+3)*sizeof( int ) );
+INTEGER * dset_compress( INTEGER **pS, INTEGER *np ){
+  INTEGER *S, *T, i, j, npk;
+    S = (INTEGER *) *pS;
+    T = (INTEGER *) malloc( (S[S[0]-1]+3)*sizeof( INTEGER ) );
     if( T==NULL ){
         printf("Memory allocation error in dset_compress\n");
         exit(1);
@@ -219,17 +221,17 @@ int * dset_compress( int **pS, int *np ){
     return T;
 }
 
-int * dset_new( int ** pS, int *v){
+INTEGER * dset_new( INTEGER ** pS, INTEGER *v){
    /* S[0] will always hold the length of the array */
    /* S[:-1] holds the current element */
-   int length, current, i;
-   int *S;
-   S = (int *) * pS;
+   INTEGER length, current, i;
+   INTEGER *S;
+   S = (INTEGER *) * pS;
    length=S[0];
    current=(++S[S[0]-1]);
    *v = current;
    if(current+3>length){
-      S=(int *)(realloc(S,length*2*sizeof(int))); 
+      S=(INTEGER *)(realloc(S,length*2*sizeof(INTEGER))); 
       if(S==NULL){
       printf("Memory allocation error in dset_new\n");
       exit(1);
@@ -238,7 +240,7 @@ int * dset_new( int ** pS, int *v){
       /* Fails on gcc 4 but worked on gcc 3.x
 	 dont actually what it does or why it is there
 	 hence commented it out
-      (int *) pS = S; */
+      (INTEGER *) pS = S; */
       S[0]=length*2;
       S[length-1]=0;
       for(i=length-1;i<length*2;i++)S[i]=0;
@@ -250,8 +252,8 @@ int * dset_new( int ** pS, int *v){
 
 
 
-void dset_makeunion(int * S, int r1, int r2){
-   int a,b;
+void dset_makeunion(INTEGER * S, INTEGER r1, INTEGER r2){
+   INTEGER a,b;
    a=dset_find(r1,S);
    b=dset_find(r2,S);
    dset_link(S, a, b);
@@ -259,7 +261,7 @@ void dset_makeunion(int * S, int r1, int r2){
 
 
 
-void dset_link(int * S, int r2, int r1){
+void dset_link(INTEGER * S, INTEGER r2, INTEGER r1){
    if (r1 > r2){
      /* The higher # r1 is changed to point to the lower */
      S[r1] = r2;
@@ -273,13 +275,11 @@ void dset_link(int * S, int r2, int r1){
 
 
 
-int dset_find(int x, int *S){
-    int i;
+INTEGER dset_find(INTEGER x, INTEGER *S){
     if (x==0){
         /* oups */
         printf("Oh dear, you tried to find zero in your "\
 	         "disjoint set, and it is not there!\n");
-        for(i=0; i<5; i++) printf("S[%d]=%d ",i,S[i]);
         return 0;
    }
    if (S[x] != x){

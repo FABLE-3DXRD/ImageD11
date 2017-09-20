@@ -1,6 +1,12 @@
 
 
 
+#include <stdio.h>
+#include <stdlib.h>
+#include "blobs.h"  /* INTEGER */
+
+
+
 
 /*
 # ImageD11_v1.x Software for beamline ID11
@@ -48,7 +54,7 @@ static char connectedpixels_doc[] =\
 /* Fill in an image of peak assignments for pixels */
 
 
-void match( int *new, int *old, int *S){
+void match( INTEGER *new, INTEGER *old, INTEGER *S){
   /* printf("match %d %d\n",*new,*old); */
   if(*new == 0) { 
       *new = *old ; 
@@ -60,10 +66,11 @@ void match( int *new, int *old, int *S){
 }
 
 
-int connectedpixels( float* data, int* labels, float threshold, int verbose, 
+int connectedpixels( float* data, INTEGER* labels, float threshold, int verbose, 
         int ns, int nf, int eightconnected){
 
-  int i, j, k, *S, *T, irp, ir, ipx, np;
+  int i, j, irp, ir, ipx;
+  INTEGER k, *S, *T, np;
 
   if( verbose ){ 
       printf("Welcome to connectedpixels ");
@@ -142,8 +149,8 @@ int connectedpixels( float* data, int* labels, float threshold, int verbose,
           } /* (val > threshold) */
       } /* Mainloop j */
       /* Last pixel on the row */
-      ipx++;  
-      irp++;
+      ipx = ir+nf-1;  
+      irp = ipx-nf;
       labels[ipx]=0;
       if( data[ipx] > threshold ){
               if( eightconnected && ( labels[irp-1] > 0 ) ){

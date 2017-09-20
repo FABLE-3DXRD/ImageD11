@@ -2,12 +2,15 @@
 
 import os
 
-os.system("f2py.py -c connectedpixels.pyf connectedpixels.c blobs.c  -DF2PY_REPORT_ON_ARRAY_COPY")
+os.system("f2py -c connectedpixels.pyf connectedpixels.c blobs.c  -DF2PY_REPORT_ON_ARRAY_COPY")
 
 import connectedpixels, numpy as np
 
+BTYPE = np.intc
+
+
 a = np.arange(3*4).reshape(3,4).astype(np.float32)
-r = np.zeros( a.shape, np.int )
+r = np.zeros( a.shape, BTYPE )
 npk = connectedpixels.connectedpixels( a, r, 1.01, 1)
 print a
 print "Pks",npk
@@ -27,7 +30,7 @@ a = np.array([
     [ 0,0,1,0,1,0,0,0,0,0,0,0,0,1,0 ],
     [ 0,0,1,0,1,0,1,0,0,0,0,0,1,0,0 ],
     [ 0,0,1,0,1,1,1,0,0,0,0,0,0,0,0 ]], np.float32)
-r = np.zeros( a.shape, np.int)
+r = np.zeros( a.shape, BTYPE)
 
 npk = connectedpixels.connectedpixels( a, r, 0.5, 1, 0)
 print a
@@ -42,20 +45,20 @@ print r
 
 import ImageD11.connectedpixels , time
 np.random.seed(42)
-N=1200
-M=1500
-t=6.
+N=4096
+M=4096
+t=8.
 
 mytimer = time.clock
 
 a = np.random.random((N*M)).reshape((N,M)).astype(np.float32)*10
-bnew = np.zeros( a.shape, np.int )
+bnew = np.zeros( a.shape, BTYPE )
 start = mytimer()
 
 npknew = connectedpixels.connectedpixels( a, bnew, t, verbose=1 )
 newtime   = mytimer() - start
 
-bold = np.zeros( a.shape, np.int )
+bold = np.zeros( a.shape, BTYPE )
 start = mytimer() 
 npkold = ImageD11.connectedpixels.connectedpixels( a, bold, t )
 oldtime   = mytimer()  - start
@@ -63,7 +66,7 @@ oldtime   = mytimer()  - start
 
 
 if (bnew == bold).all() and npkold == npknew:
-    print "Matches old code"
+    print "Matches old code", npkold
     print "Old timer",oldtime,"New timer", newtime
     print "Speed up is a factor of %.2f"%(oldtime/newtime)
 else:

@@ -7,3 +7,14 @@ Define for copies : F2PY_REPORT_ON_ARRAY_COPY
 
 f2py.py -c connectedpixels.pyf c_connectedpixels.c  -DF2PY_REPORT_ON_ARRAY_COPY
 
+... or f2py is f2py.py is not found.
+
+
+# Integer types for blob label arrays, 32 or 64 bits?
+ blobs.h : INTEGER defines
+ connectedpixels.pyf:
+    integer*4  is 32 bit signed
+    integer*-4  is 32 bit unsigned
+    integer*8  is 64 bit signed
+    etc
+    
