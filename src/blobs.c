@@ -196,9 +196,30 @@ int * dset_initialise(int size){
    return S;
 }
 
+int * dset_compress( int **pS, int *np ){
+    int *S, *T, i, j, npk;
+    S = (int *) *pS;
+    T = (int *) malloc( (S[S[0]-1]+3)*sizeof( int ) );
+    if( T==NULL ){
+        printf("Memory allocation error in dset_compress\n");
+        exit(1);
+    }
+    npk = 0;
+    for( i=1 ; i<S[S[0]-1]+1 ; i++ ){
+        if( S[i] == i ){
+            T[i] = ++npk;
+        } else {
+            j = dset_find(i, S);
+            T[i] = T[j];
+            if(j>=i) printf("Issue compressing disjoint set\n");
+            if(S[j]!=j) printf("Disjoint set is squiff\n");
+        }
+    }
+    *np = npk;
+    return T;
+}
 
-
-int * dset_new( int ** pS){
+int * dset_new( int ** pS, int *v){
    /* S[0] will always hold the length of the array */
    /* S[:-1] holds the current element */
    int length, current, i;
@@ -206,6 +227,7 @@ int * dset_new( int ** pS){
    S = (int *) * pS;
    length=S[0];
    current=(++S[S[0]-1]);
+   *v = current;
    if(current+3>length){
       S=(int *)(realloc(S,length*2*sizeof(int))); 
       if(S==NULL){
@@ -252,11 +274,13 @@ void dset_link(int * S, int r2, int r1){
 
 
 int dset_find(int x, int *S){
-   if (x==0){
-    /* oh shit */
-    printf("Oh dear, you tried to find zero in your "\
-	   "disjoint set, and it is not there!\n");
-    return 0;
+    int i;
+    if (x==0){
+        /* oups */
+        printf("Oh dear, you tried to find zero in your "\
+	         "disjoint set, and it is not there!\n");
+        for(i=0; i<5; i++) printf("S[%d]=%d ",i,S[i]);
+        return 0;
    }
    if (S[x] != x){
       S[x]=dset_find(S[x],S);

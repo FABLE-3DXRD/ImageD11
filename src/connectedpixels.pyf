@@ -1,0 +1,24 @@
+
+
+python module connectedpixels
+  
+   interface
+      function connectedpixels( data, results, threshold, verbose, ns, nf, con8)
+         intent(c) connectedpixels
+         intent(c)
+         real, intent(in) :: data(ns,nf)
+         integer, intent(inout) :: results(ns,nf)
+         integer, intent(hide), depend(data) :: ns=shape(data,0)
+         integer, intent(hide), depend(data) :: nf=shape(data,1)
+         integer, optional :: con8 = 1
+         integer, optional ::  verbose = 0
+         real threshold
+! Returns 
+         integer :: connectedpixels
+         
+         threadsafe
+
+      end function connectedpixels
+   end interface
+
+end python module connectedpixels
