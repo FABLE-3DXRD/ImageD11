@@ -20,11 +20,11 @@ import unittest
 
 import numpy as np
 
-#from ImageD11 import transform
+from ImageD11 import transform
 
-import sys
-sys.path.append(".")
-import transform
+#import sys
+#sys.path.append(".")
+#import transform
 
 class testtransform(unittest.TestCase):
     def setUp(self):
