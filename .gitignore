@@ -9,6 +9,8 @@ __pycache__/
 # vi
 *~
 *.swp
+# emacs
+\#*#
 
 # Distribution / packaging
 .Python
