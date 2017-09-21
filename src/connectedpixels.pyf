@@ -3,7 +3,7 @@
 python module connectedpixels
   
    usercode '''
-#define NPROPERTY 36
+#include "blobs.h"
    '''
 
    interface
@@ -20,9 +20,9 @@ python module connectedpixels
          real threshold
 ! Returns 
          integer :: connectedpixels
-         
+! we say threadsafe but it writes in labels, so we assume no one else
+! is using at the same time
          threadsafe
-
       end function connectedpixels
    end interface
 
@@ -39,11 +39,37 @@ python module connectedpixels
          double precision, intent(out) :: results( np, NPROPERTY )
          real, intent(in) :: omega
          integer, optional :: verbose = 0
-
          threadsafe 
- 
       end subroutine blobproperties
    endinterface
+
+   interface
+      subroutine blob_moments( results, np )
+         intent(c) blob_moments
+         intent(c)
+         double precision, intent( inout ) :: results( np, NPROPERTY )
+         integer, intent(hide), depend(results) :: np=shape(results,0)
+         threadsafe
+      end subroutine blob_moments
+   end interface
+
+   interface
+      subroutine bloboverlaps( labels1, npk1, results1,    & 
+                               labels2, npk2, results2,    &
+                               verbose, ns, nf)
+          intent(c) bloboverlaps
+          intent(c)
+          integer, intent( inout ) :: labels1( ns, nf )
+          integer, intent( inout ) :: labels2( ns, nf )
+          integer, intent(hide), depend(labels1) :: ns=shape(labels1,0)
+          integer, intent(hide), depend(labels1) :: nf=shape(labels1,1) 
+          integer, intent(in) :: npk1, npk2
+          double precision, intent( inout ) :: results1( :, NPROPERTY )
+          double precision, intent( inout ) :: results2( :, NPROPERTY )
+          integer, intent(in) :: verbose = 0
+          
+      end subroutine bloboverlaps
+   end interface
 
 
    

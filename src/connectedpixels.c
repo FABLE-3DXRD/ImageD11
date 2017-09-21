@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "blobs.h"  /* INTEGER */
 
 
@@ -258,6 +259,107 @@ void blobproperties(float* data, INTEGER* labels, INTEGER np, float omega,
    if(verbose){
      printf("\nFound %d bad pixels in the blob image\n",bad);
    }
+}
+
+
+
+static char bloboverlaps_doc[] =\
+"   success = bloboverlaps (   Numeric.array(blob1, 2D, Int), n1  , res1 \n"\
+"                              Numeric.array(blob2, 2D, Int), n2  , res2,\n"\
+"                               verbose=0) \n"\
+" \n"\
+" merges the results from blob1/res1 into blob2/res2\n"\
+" blob1 would be the previous image from the series, with its results\n"\
+"   if it does not overlap it will stay untouched in res\n"\
+"   if it overlaps with next image it is passed into that ones res\n";
+
+void bloboverlaps( INTEGER* b1, INTEGER n1, double* res1, 
+                   INTEGER* b2, INTEGER n2, double* res2, 
+                   int verbose, int ns, int nf){
+
+    int i, j, safelyneed, ipx ;
+    INTEGER *link, p1, p2, ipk, jpk;
+
+  /* Initialise a disjoint set in link 
+   * image 2 has peak[i]=i ; i=1->n2
+   * image 1 has peak[i]=i+n1+1 ; i=1->n1
+   *                          0, 1, 2, 3, n2
+   *                          4, 5, 6, 7, 8, 9, n1   need 0, 4 == n1+n2+3
+   * link to hold 0->n1-1 ; n1->n2+n2-1 
+   * */
+
+
+  /* This is a disjoint merge operation ... */
+
+  safelyneed=n1+n2+3;
+  link =  (int *)malloc(safelyneed*sizeof(INTEGER));
+  link[0]=safelyneed;  
+  for( i=1 ; i<safelyneed; i++){    
+      link[i]=i;
+  } 
+  /* flag the start of image number 2 */
+  link[n2+1]=-99999; /* ==n2=0 Should never be touched by anyone */
+  /* results lists of pairs of number */
+  /* link holds a disjoint set, we label directly overlapping pixels (i==j) */
+  for( i = 0 ; i < ns ; i++ ){   
+    for( j = 0 ; j < nf ; j++ ){
+        ipx = i*nf+j;
+        if( (p1=b1[ipx]) == 0 ) continue;
+        if( (p2=b2[ipx]) == 0 ) continue;
+        if( link[p2] < 0 || link[p1+n2+1] < 0){
+            printf("Whoops!!\n");
+            return;
+        }
+        dset_makeunion( link, p2, p1+n2+1 );
+    }
+  }
+  /* Now we re-label and merge peaks scanning disjoint set */
+  for(i=1; i<safelyneed; i++){
+    if( link[i] != i && i != n2+1  ){
+        j=dset_find( i, link );
+        if(i > n2+1 && j < n2+1){ /* linking between images */
+            jpk = j-1;
+            ipk = i-n2-2;
+            assert( (n2 > jpk) && (jpk >= 0 ) && ( n1 > ipk) && ( ipk >= 0 ) );
+            merge( &res2[NPROPERTY*jpk], &res1[ipk]);
+            continue;
+        }
+        if(i > n2+1 && j > n2+1 ){ /* linking on the same image (1) */
+            jpk = j-n2-2;
+            ipk = i-n2-2;
+            assert( (n2 > jpk) && (jpk >= 0 ) && ( n1 > ipk) && ( ipk >= 0 ) );
+            merge( &res1[NPROPERTY*jpk], &res1[ipk]);
+            continue;
+        }
+        if( i < n2+1 && j < n2+1 ){ /* linking on the same image (2) */
+            jpk = j-1;
+            ipk = i-1;
+            assert( (n2 > jpk) && (jpk >= 0 ) && ( n1 > ipk) && ( ipk >= 0 ) );
+            merge( &res2[NPROPERTY*jpk], &res2[ipk]);
+            continue;
+        }
+        assert("I am not here!");
+    }
+  }
+
+  /* FIXME continue from must_do_relabel... */
+
+
+}
+
+
+
+
+
+
+
+static char blob_moments_doc [] =                        \
+  "   None = blob_moments(Numeric.array(peaks1))\n"        \
+  "   \n"                                                \
+  "   Loop over array filling out moments from sums\n";
+
+void blob_moments( double * res, int np ){
+   compute_moments( res, np );
 }
 
 

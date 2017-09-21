@@ -6,7 +6,7 @@ if sys.platform == "win32":
     f2py = "f2py.py"
 else:
     f2py = "f2py"
-os.system(f2py+" -c connectedpixels.pyf connectedpixels.c blobs.c  -DF2PY_REPORT_ON_ARRAY_COPY")
+os.system(f2py+" -I%s -c connectedpixels.pyf connectedpixels.c blobs.c  -DF2PY_REPORT_ON_ARRAY_COPY"%(os.getcwd()))
 
 import connectedpixels, numpy as np
 
@@ -94,9 +94,34 @@ else:
     pl.show()
     
 
-oldmoments = ImageD11.connectedpixels.blobproperties( a, bold, npkold, 0.0, 1 )
-newmoments = connectedpixels.blobproperties( a, bold, npkold, 0.0, 1 )
+oldmoments = ImageD11.connectedpixels.blobproperties( a, bold, npkold, 30.0  )
+newmoments = connectedpixels.blobproperties( a, bold, npkold, 30.0  )
 
 if oldmoments.shape == newmoments.shape and (oldmoments == newmoments).all():
     print "blobproperties seems OK"
+
+ImageD11.connectedpixels.blob_moments( oldmoments )
+connectedpixels.blob_moments( newmoments )
+if oldmoments.shape == newmoments.shape and (oldmoments == newmoments).all():
+    print "blob moments seems OK"
+
+
+N=200
+M=300
+b=[]
+n=[]
+m=[]
+for i in range(5):
+    anew = np.random.random((N*M)).reshape((N,M)).astype(np.float32)*10
+    bnew = np.zeros( anew.shape, BTYPE )
+    npnew = connectedpixels.connectedpixels( anew, bnew, t, verbose=0 )
+    mnew = connectedpixels.blobproperties( anew, bnew, npnew, i  )
+    if i>1:
+        connectedpixels.bloboverlaps( bnew, npnew, mnew,
+                                      b[-1],n[-1],m[-1] )
+    b.append(bnew)
+    n.append(npnew)
+    m.append(mnew)
+    
+
 
