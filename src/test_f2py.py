@@ -1,8 +1,12 @@
 
 
-import os
+import os, sys
 
-os.system("f2py -c connectedpixels.pyf connectedpixels.c blobs.c  -DF2PY_REPORT_ON_ARRAY_COPY")
+if sys.platform == "win32":
+    f2py = "f2py.py"
+else:
+    f2py = "f2py"
+os.system(f2py+" -c connectedpixels.pyf connectedpixels.c blobs.c  -DF2PY_REPORT_ON_ARRAY_COPY")
 
 import connectedpixels, numpy as np
 
