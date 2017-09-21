@@ -66,8 +66,8 @@ void match( INTEGER *new, INTEGER *old, INTEGER *S){
 }
 
 
-int connectedpixels( float* data, INTEGER* labels, float threshold, int verbose, 
-        int ns, int nf, int eightconnected){
+int connectedpixels( float* data, INTEGER* labels, float threshold, int verbose,
+     int eightconnected, int ns, int nf){
 
   int i, j, irp, ir, ipx;
   INTEGER k, *S, *T, np;
@@ -193,6 +193,71 @@ int connectedpixels( float* data, INTEGER* labels, float threshold, int verbose,
   free(S);
   free(T);
   return np;
+}
+
+
+static char blobproperties_doc[] =\
+  "res = blobproperties ( Numeric.array(data, 2D)  , \n"        \
+  "                          Numeric.array(blob, 2D, Int)  ,\n"        \
+  "                          Int np , \n" \
+  "                          Int verbose )\n"                                \
+  "\n"                                                                        \
+  "   Computes various properties of a blob image "\
+  "           (created by connectedpixels)\n" \
+  "   data  = image data \n"                                                \
+  "   blob  = integer peak assignments from connectedpixels \n"                \
+  "   np    = number of peaks to treat \n"                                \
+  "   verbose  - flag about whether to print\n"                                \
+  "  \n";
+
+
+void blobproperties(float* data, INTEGER* labels, INTEGER np, float omega,
+        int verbose, 
+        int ns, int nf, double* res){
+   int i, j, bad, ipx;
+   double fval;
+   INTEGER ipk;
+   if(verbose){
+       printf("Computing blob moments, ns %d, nf %d, np %d\n",ns,nf,np);
+   }
+  /* Initialise the results */
+   for ( i=0 ; i<np ; i++) {
+     for ( j=0 ; j<NPROPERTY; j++){
+           res[i*NPROPERTY+j]=0.;
+        } 
+     /* Set min to max +1 and vice versa */
+     res[i*NPROPERTY+bb_mn_f]=nf+1;
+     res[i*NPROPERTY+bb_mn_s]=ns+1;
+     res[i*NPROPERTY+bb_mx_f]=-1;
+     res[i*NPROPERTY+bb_mx_s]=-1;
+     /* All pixels have the same omega in this frame */
+     res[i*NPROPERTY+bb_mx_o]=omega;
+     res[i*NPROPERTY+bb_mn_o]=omega;
+   }
+   if(verbose!=0)printf("Scanning image\n");
+      
+   bad = 0;
+   /* i,j is looping along the indices data array */
+   for( i = 0 ; i < ns ; i++ ){  
+     for( j = 0 ; j < nf ; j++ ){
+       ipx = i*nf+j;
+       ipk = labels[ipx];
+       if( ipk > 0  && ipk <=np ) {
+            fval = (double) data[ipx];
+            add_pixel( &res[NPROPERTY*(ipk-1)], i, j, fval, omega);
+       }
+       else{
+         if(ipk != 0){
+           bad++;
+           if(bad<10){
+             printf("Found %d in your blob image at i=%d, j=%d\n",ipk,i,j);}
+         }
+       }
+     } /* j */
+   } /* i */
+   if(verbose){
+     printf("\nFound %d bad pixels in the blob image\n",bad);
+   }
 }
 
 

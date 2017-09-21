@@ -49,7 +49,7 @@ print r
 
 import ImageD11.connectedpixels , time
 np.random.seed(42)
-N=4096
+N=3096
 M=4096
 t=8.
 
@@ -94,6 +94,9 @@ else:
     pl.show()
     
 
+oldmoments = ImageD11.connectedpixels.blobproperties( a, bold, npkold, 0.0, 1 )
+newmoments = connectedpixels.blobproperties( a, bold, npkold, 0.0, 1 )
 
-
+if oldmoments.shape == newmoments.shape and (oldmoments == newmoments).all():
+    print "blobproperties seems OK"
 
