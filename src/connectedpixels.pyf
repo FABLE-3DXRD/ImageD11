@@ -122,7 +122,32 @@ python module connectedpixels
 
    end interface
 
+   interface 
+      subroutine closest( x, v, ibest, best, nx, nv  )
+          intent(c) closest
+          double precision, intent(in) :: x(nx)
+          double precision, intent(in) :: v(nv)
+! Note : these are intent(fortran) to pass as pointers
+          integer, intent( out ) :: ibest
+          double precision, intent( out ) :: best
+! Note : these are intent(c) to pass by reference
+          integer, intent(c, hide), depend(x) :: nx=shape(x,0)
+          integer, intent(c, hide), depend(v) :: nv=shape(v,0)
+      end subroutine closest
+   end interface
    
+   interface 
+       function score( ubi, gv, tol, ng )
+          intent(c) score
+          intent(c)
+          integer :: score
+          integer, intent(hide), depend(gv) :: ng
+          double precision, intent(in) :: ubi(3,3)
+          double precision, intent(in) :: gv(ng, 3)
+          double precision, intent(in) :: tol
+
+       end subroutine score
+   end interface
 
 
 end python module connectedpixels

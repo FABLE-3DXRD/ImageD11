@@ -3,13 +3,42 @@ import matplotlib.pylab as pl
 import os, sys
 
 if sys.platform == "win32":
-    os.remove("connectedpixels.pyd")
+    try:
+        os.remove("connectedpixels.pyd")
+    except WindowsError:
+        pass
     f2py = "f2py.py"
 else:
     f2py = "f2py"
-os.system(f2py+" -I%s -c connectedpixels.pyf connectedpixels.c blobs.c  -DF2PY_REPORT_ON_ARRAY_COPY"%(os.getcwd()))
+os.system(f2py+" -I%s -c connectedpixels.pyf connectedpixels.c blobs.c closest.c -DF2PY_REPORT_ON_ARRAY_COPY"%(os.getcwd()))
 
 import connectedpixels, numpy as np
+import ImageD11.closest
+np.random.seed(42)
+
+cosines = np.linspace( -1, 1, 3 ).astype(np.float)
+print "cosines"
+artest = np.array([ 0.99, 0.2, 0.3, 0.7, 0.8],np.float)
+oldy = ImageD11.closest.closest(artest, cosines )
+newy = connectedpixels.closest( artest, cosines )
+assert oldy == newy
+print "Closest.closest seems OK"
+
+ubitest = (np.random.random((3,3))-0.5)*10
+gvtest = np.random.random( (4000, 3) )
+def pyscore( u, g, tol ):
+    h = np.dot( u, g.T )
+    diff = (h-np.round(h))
+    drlv2 = (diff*diff).sum(axis=0)
+    n = (drlv2 < (tol*tol)).sum()
+    return n
+for tol in [0.01,0.1,0.2,0.4,0.8]:
+    ninew = connectedpixels.score( ubitest, gvtest, tol )
+    niold = ImageD11.closest.score( ubitest, gvtest, tol )
+    npyth = pyscore( ubitest, gvtest, tol )
+    assert ninew == niold, (ninew, niold)
+print "Seems that score is OK"
+
 
 print connectedpixels.s_1
 
@@ -51,7 +80,6 @@ print r
 
 
 import ImageD11.connectedpixels , time
-np.random.seed(42)
 N=3096
 M=4096
 t=8.
@@ -170,5 +198,7 @@ for i in range(NI):
     check( b0[i], b1[i], "b" )
     check( np.array(n0[i]) , np.array(n1[i]), "n")
     check( m0[i] , m1[i], "m")
+
+
 
 
