@@ -5,6 +5,54 @@ python module connectedpixels
    usercode '''
 #include "blobs.h"
    '''
+   interface
+   
+    usercode '''
+#define str(x) (#x)
+   PyDict_SetItemString(d,str(s_1)    ,PyInt_FromLong(s_1));
+   PyDict_SetItemString(d,str(s_I)    ,PyInt_FromLong(s_I));
+   PyDict_SetItemString(d,str(s_I2)   ,PyInt_FromLong(s_I2));
+   PyDict_SetItemString(d,str(s_fI)   ,PyInt_FromLong(s_fI));
+   PyDict_SetItemString(d,str(s_ffI)  ,PyInt_FromLong(s_ffI));
+   PyDict_SetItemString(d,str(s_sI)   ,PyInt_FromLong(s_sI));
+   PyDict_SetItemString(d,str(s_ssI)  ,PyInt_FromLong(s_ssI));
+   PyDict_SetItemString(d,str(s_sfI)  ,PyInt_FromLong(s_sfI));
+   PyDict_SetItemString(d,str(s_oI)   ,PyInt_FromLong(s_oI));
+   PyDict_SetItemString(d,str(s_ooI)  ,PyInt_FromLong(s_ooI));
+   PyDict_SetItemString(d,str(s_soI)  ,PyInt_FromLong(s_soI));
+   PyDict_SetItemString(d,str(s_foI)  ,PyInt_FromLong(s_foI));
+   PyDict_SetItemString(d,str(mx_I)   ,PyInt_FromLong(mx_I));
+   PyDict_SetItemString(d,str(mx_I_f) ,PyInt_FromLong(mx_I_f));
+   PyDict_SetItemString(d,str(mx_I_s) ,PyInt_FromLong(mx_I_s));
+   PyDict_SetItemString(d,str(mx_I_o) ,PyInt_FromLong(mx_I_o));
+   PyDict_SetItemString(d,str(bb_mx_f),PyInt_FromLong(bb_mx_f));
+   PyDict_SetItemString(d,str(bb_mx_s),PyInt_FromLong(bb_mx_s));
+   PyDict_SetItemString(d,str(bb_mx_o),PyInt_FromLong(bb_mx_o));
+   PyDict_SetItemString(d,str(bb_mn_f),PyInt_FromLong(bb_mn_f));
+   PyDict_SetItemString(d,str(bb_mn_s),PyInt_FromLong(bb_mn_s));
+   PyDict_SetItemString(d,str(bb_mn_o),PyInt_FromLong(bb_mn_o));
+
+   PyDict_SetItemString(d,str(avg_i),PyInt_FromLong(avg_i));
+   PyDict_SetItemString(d,str(f_raw),PyInt_FromLong(f_raw));
+   PyDict_SetItemString(d,str(s_raw),PyInt_FromLong(s_raw));
+   PyDict_SetItemString(d,str(f_cen),PyInt_FromLong(f_cen));
+   PyDict_SetItemString(d,str(s_cen),PyInt_FromLong(s_cen));
+   PyDict_SetItemString(d,str(o_raw),PyInt_FromLong(o_raw));
+   PyDict_SetItemString(d,str(m_ff),PyInt_FromLong(m_ff));
+   PyDict_SetItemString(d,str(m_ss),PyInt_FromLong(m_ss));
+   PyDict_SetItemString(d,str(m_oo),PyInt_FromLong(m_oo));
+   PyDict_SetItemString(d,str(m_sf),PyInt_FromLong(m_sf));
+   PyDict_SetItemString(d,str(m_so),PyInt_FromLong(m_so));
+   PyDict_SetItemString(d,str(m_fo),PyInt_FromLong(m_fo));
+   PyDict_SetItemString(d,str(dety),PyInt_FromLong(dety));
+   PyDict_SetItemString(d,str(detz),PyInt_FromLong(detz));
+   
+   PyDict_SetItemString(d,str(NPROPERTY),PyInt_FromLong(NPROPERTY));
+'''
+
+   end interface
+
+  
 
    interface
       function connectedpixels( data, labels, threshold, &
@@ -37,7 +85,7 @@ python module connectedpixels
          integer, intent(hide), depend(data) :: nf=shape(data,1) 
          integer, intent(in) :: np
          double precision, intent(out) :: results( np, NPROPERTY )
-         real, intent(in) :: omega
+         real, intent(in), optional :: omega = 0
          integer, optional :: verbose = 0
          threadsafe 
       end subroutine blobproperties
@@ -54,11 +102,12 @@ python module connectedpixels
    end interface
 
    interface
-      subroutine bloboverlaps( labels1, npk1, results1,    & 
+      function bloboverlaps( labels1, npk1, results1,    & 
                                labels2, npk2, results2,    &
                                verbose, ns, nf)
           intent(c) bloboverlaps
           intent(c)
+          integer :: bloboverlaps
           integer, intent( inout ) :: labels1( ns, nf )
           integer, intent( inout ) :: labels2( ns, nf )
           integer, intent(hide), depend(labels1) :: ns=shape(labels1,0)
@@ -69,8 +118,9 @@ python module connectedpixels
           integer, intent(in) :: verbose = 0
           
       end subroutine bloboverlaps
-   end interface
 
+
+   end interface
 
    
 

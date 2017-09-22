@@ -1,14 +1,17 @@
 
-
+import matplotlib.pylab as pl
 import os, sys
 
 if sys.platform == "win32":
+    os.remove("connectedpixels.pyd")
     f2py = "f2py.py"
 else:
     f2py = "f2py"
 os.system(f2py+" -I%s -c connectedpixels.pyf connectedpixels.c blobs.c  -DF2PY_REPORT_ON_ARRAY_COPY"%(os.getcwd()))
 
 import connectedpixels, numpy as np
+
+print connectedpixels.s_1
 
 BTYPE = np.intc
 
@@ -79,7 +82,6 @@ else:
     print bold
     print bnew
     print "here: looks bad, one is wrong"
-    import matplotlib.pylab as pl
     pl.subplot(221)
     pl.imshow(a>t)
     pl.subplot(224)
@@ -106,22 +108,67 @@ if oldmoments.shape == newmoments.shape and (oldmoments == newmoments).all():
     print "blob moments seems OK"
 
 
-N=200
-M=300
-b=[]
-n=[]
-m=[]
-for i in range(5):
-    anew = np.random.random((N*M)).reshape((N,M)).astype(np.float32)*10
-    bnew = np.zeros( anew.shape, BTYPE )
-    npnew = connectedpixels.connectedpixels( anew, bnew, t, verbose=0 )
-    mnew = connectedpixels.blobproperties( anew, bnew, npnew, i  )
+N=40
+M=20
+b0=[] ; n0=[] ; m0=[]; b1=[]; n1=[]; m1=[]
+t = 8
+NI = 3
+
+for i in range(NI):
+    print i,
+    aimg = np.random.random((N*M)).reshape((N,M)).astype(np.float32)*10
+    # New code
+    bnew = np.zeros( aimg.shape, BTYPE )
+    npnew = connectedpixels.connectedpixels( aimg, bnew, t, verbose=0 )
+    mnew = connectedpixels.blobproperties(   aimg, bnew, npnew, i  )
+    print "b4new",i, npnew, mnew[:,0].astype(int)
     if i>1:
-        connectedpixels.bloboverlaps( bnew, npnew, mnew,
-                                      b[-1],n[-1],m[-1] )
-    b.append(bnew)
-    n.append(npnew)
-    m.append(mnew)
-    
+        npknew = connectedpixels.bloboverlaps( bnew  ,npnew ,mnew,
+                                               b0[-1],n0[-1],m0[-1],
+                                               verbose=0)
+    print "Afternew",i, npnew, mnew[:,0].astype(int)
+    b0.append(bnew)
+    n0.append(npnew)
+    m0.append(mnew)
+    # old code
+    bold = np.zeros( aimg.shape, BTYPE )
+    npold = ImageD11.connectedpixels.connectedpixels( aimg, bold, t, verbose=0 )
+    mold = ImageD11.connectedpixels.blobproperties(   aimg, bold, npold, i  )
+    print "b4old",i, npold, mold[:,0].astype(int)
+    if i>1:
+        npkold = ImageD11.connectedpixels.bloboverlaps( bold, npold, mold,
+                                                      b1[-1],n1[-1],m1[-1],
+                                                      verbose=0)
+    print "afterold",i, npold, mold[:,0].astype(int)
+    b1.append(bold)
+    n1.append(npold)
+    m1.append(mold)
+    if npknew == npkold:
+        print "OK",
+
+def check(x,y,s):
+    print "Checking",s
+    sys.stdout.flush()
+    if (x == y).all():
+        print "OK",
+    else:
+        pl.subplot(221)
+        pl.imshow(x)
+        pl.title("old")
+        pl.colorbar()
+        pl.subplot(222)
+        pl.title("new")
+        pl.imshow(y)
+        pl.colorbar()
+        pl.subplot(223)
+        pl.imshow(x-y)
+        pl.show()
+        raise Exception("Stop here")
+
+for i in range(NI):
+    print i,
+    check( b0[i], b1[i], "b" )
+    check( np.array(n0[i]) , np.array(n1[i]), "n")
+    check( m0[i] , m1[i], "m")
 
 
