@@ -127,6 +127,9 @@ int conv_double_to_int_fast(double x){
 
 
 void closest( double x[], double v[], int *ribest, double *rbest, int nx, int nv ){
+    /* 
+     * Finds value and index in x closest to a value in v
+     */
    int i,j,ibest;
    double best;
    best=99.;
@@ -146,6 +149,9 @@ void closest( double x[], double v[], int *ribest, double *rbest, int nx, int nv
 
 
 int score(  vec ubi[3], vec gv[], double tol, int ng){
+    /*
+     * Counts g-vectors indexed by ubi within tol
+     */
    double sumsq,h,t,atol;
    int n,k,j;
    n=0;
@@ -164,4 +170,23 @@ int score(  vec ubi[3], vec gv[], double tol, int ng){
    return n;
 }
 
+
+void score_and_refine( vec ubi[3], vec gv[]){
+
+   double u00,u11,u22,u01,u02,u10,u12,u20,u21;
+   double g0,g1,g2,h0,h1,h2,t0,t1,t2;
+   double tol,sumsq,tolsq,sumdrlv2;
+   double R[3][3],H[3][3],ih[3],rh[3], UB[3][3];
+   int n,k,i,j,l;
+
+   for(i=0;i<3;i++){
+     ih[i]=0.;
+     rh[i]=0.;
+     for(j=0;j<3;j++){
+       R[i][j] = 0.;
+       H[i][j] = 0.;
+       UB[i][j] = 0.;
+     }
+   }
+}
 
