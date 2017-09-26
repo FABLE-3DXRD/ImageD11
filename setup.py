@@ -35,26 +35,14 @@ nid = [get_include()]
 
 # Compiled extensions:
 
-# closest is for indexing grains
-cl = Extension("closest",
-               sources=['src/closest.c'],
-               include_dirs = nid )
+cImageD11extension = Extension( "cImageD11",
+                                sources = [ "src/cImageD11.pyf",
+                                            "src/connectedpixels.c",
+                                            "src/closest.c",
+                                            "src/blobs.c"],
+                               include_dirs = nid + ["src",] )
+            
 
-# connectedpixels is for peaksearching images
-
-
-
-cp = Extension("connectedpixels",
-               sources = ['src/connectedpixels.c','src/blobs.c'],
-               include_dirs = nid)
-# No header files for distutils as sources 'src/dset.h'])
-
-
-
-# _splines is for correcting peak positions for spatial distortion
-bl = Extension("_splines",
-               sources = ['src/splines.c', 'src/bispev.c'],
-               include_dirs = nid)
 
 import sys
                   
@@ -82,13 +70,13 @@ else: # Take care of yourself if you are on linux
 
 # See the distutils docs...
 setup(name='ImageD11',
-      version='1.7.0',
+      version='1.8.0',
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
-      ext_modules = [cl,cp,bl,fi],
+      ext_modules = [cImageD11extension,fi],
       install_requires = needed,
       packages = ["ImageD11"],
       package_dir = {"ImageD11":"ImageD11"},

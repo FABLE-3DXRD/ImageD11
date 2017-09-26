@@ -1,7 +1,7 @@
 
 
 """
-Class to wrap the connectedpixels c extensions for labelling
+Class to wrap the cImageD11 c extensions for labelling
 blobs in images.
 """
 
@@ -25,9 +25,9 @@ blobs in images.
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  0211-1307  USA
 
 
-from ImageD11 import blobcorrector, connectedpixels
+from ImageD11 import blobcorrector, cImageD11
 # Names of property columns in array
-from ImageD11.connectedpixels import s_1, s_I, s_I2,\
+from ImageD11.cImageD11 import s_1, s_I, s_I2,\
     s_fI, s_ffI, s_sI, s_ssI, s_sfI, s_oI, s_ooI, s_foI, s_soI, \
     bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s, bb_mn_o, bb_mx_o, \
     mx_I, mx_I_f, mx_I_s, mx_I_o, dety, detz, \
@@ -157,12 +157,12 @@ class labelimage:
         # threshold = float - pixels above this number are put into objects
         """
         self.threshold = threshold
-        self.npk = connectedpixels.connectedpixels(data,
+        self.npk = cImageD11.connectedpixels(data,
                                                   self.blim,
                                                   threshold,
                                                   self.verbose)
         if self.npk > 0:
-            self.res = connectedpixels.blobproperties(data,
+            self.res = cImageD11.blobproperties(data,
                                                       self.blim,
                                                       self.npk,
                                                       omega=omega)
@@ -184,7 +184,7 @@ class labelimage:
         if self.npk > 0 and self.lastnp > 0:
             # Thanks to Stine West for finding a bug here
             #
-            self.npk = connectedpixels.bloboverlaps(self.lastbl,
+            self.npk = cImageD11.bloboverlaps(self.lastbl,
                                                     self.lastnp,
                                                     self.lastres,
                                                     self.blim,
@@ -194,7 +194,7 @@ class labelimage:
         if self.lastnp > 0:
             # Fill out the moments of the "closed" peaks
             # print "calling blobmoments with",self.lastres
-            ret = connectedpixels.blob_moments(self.lastres[:self.lastnp])
+            ret = cImageD11.blob_moments(self.lastres[:self.lastnp])
             # Write them to file
             self.outputpeaks(self.lastres[:self.lastnp])
         # lastres is now moved forward into res
@@ -215,7 +215,7 @@ class labelimage:
 
         file_obj.write("# Threshold level %f\n"%( self.threshold))
         file_obj.write("# Number_of_pixels Average_counts    s   f     sc   fc      sig_s  sig_f  cov_sf  IMax_int\n")
-        ret = connectedpixels.blob_moments(self.res)
+        ret = cImageD11.blob_moments(self.res)
 
         fs = "%d  "+ "%f  "*9 + "\n"
         for i in self.res[:self.npk]:
@@ -264,7 +264,7 @@ class labelimage:
         """
         self.onlast = 1
         if self.lastres is not None:
-            ret = connectedpixels.blob_moments(self.lastres)
+            ret = cImageD11.blob_moments(self.lastres)
             self.outputpeaks(self.lastres)
         #if hasattr(self.sptfile, "close"):
         #    self.sptfile.close()

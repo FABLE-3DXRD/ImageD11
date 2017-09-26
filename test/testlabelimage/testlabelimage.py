@@ -38,7 +38,7 @@ class test_moments(unittest.TestCase):
 
 
     def testpyvsc(self):
-        from ImageD11.connectedpixels import s_1, s_I, s_I2, \
+        from ImageD11.cImageD11 import s_1, s_I, s_I2, \
             s_fI, s_ffI, s_sI, s_ssI, s_sfI, s_oI, s_ooI, s_foI, s_soI, \
             bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s, bb_mn_o, bb_mx_o, \
             mx_I, mx_I_f, mx_I_s, mx_I_o, \
