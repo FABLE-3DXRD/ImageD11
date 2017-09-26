@@ -336,11 +336,10 @@ class refinegrains:
                     thisgrain.ind,
                     self.eta)
 
-        if not self.OMEGA_FLOAT:
-            self.gv = gv.T
         if self.OMEGA_FLOAT:
             mat = thisgrain.ubi.copy()
-            junk = cImageD11.score_and_refine(mat , gv.T,
+            gvT = numpy.ascontiguousarray(gv.T)
+            junk = cImageD11.score_and_refine(mat , gvT,
                                             self.tolerance)
             hklf = numpy.dot( mat, gv )
             hkli = numpy.floor( hklf + 0.5 )
@@ -385,7 +384,11 @@ class refinegrains:
                         float(self.parameterobj.parameters['wavelength']),
                         self.parameterobj.parameters['wedge'],
                         self.parameterobj.parameters['chi'])
-            self.gv = gv.T
+   
+
+        self.gv = numpy.ascontiguousarray(gv.T)
+
+            
         return
 
 
@@ -481,6 +484,7 @@ class refinegrains:
             #print self.npks,self.avg_drlv2 # number of peaks it got
 
             #print self.gv.shape
+
 
 
             diffs +=  self.npks*self.avg_drlv2

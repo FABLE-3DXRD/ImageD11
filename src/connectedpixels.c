@@ -7,7 +7,7 @@
 #include "blobs.h"  /* INTEGER */
 
 
-void boundscheck( jpk, n2, ipk, n1){
+void boundscheck( int jpk, int n2, int ipk, int n1){
     if( (jpk < 0) || jpk>=n2 ) {
         printf("Bounds check error, jpk, n2\n");
         exit(0);

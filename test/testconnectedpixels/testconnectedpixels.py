@@ -146,13 +146,13 @@ class testbloboverlaps(unittest.TestCase):
                           [ 1, 0, 1, 0, 0, 0, 0],
                           [ 1, 0, 1, 1, 0, 0, 0],
                           [ 1, 1, 1, 0, 0, 0, 0]])
-        bl1 = np.zeros(data1.shape, np.int)
+        bl1 = np.zeros(data1.shape, np.int32)
         np1 = cImageD11.connectedpixels(data1,bl1,0.1)
         data2 =  np.array([[ 0, 0, 0, 0, 2, 0, 2],
                           [ 0, 0, 0, 0, 2, 0, 2],
                           [ 0, 0, 0, 2, 0, 2, 0],
                           [ 0, 0, 0, 0, 2, 0, 2]])
-        bl2 = np.zeros(data2.shape, np.int)
+        bl2 = np.zeros(data2.shape, np.int32)
         np2 = cImageD11.connectedpixels(data2,bl2,0.1)
         r1 = cImageD11.blobproperties(data1, bl1, np1, omega=-10.0)
         r2 = cImageD11.blobproperties(data2, bl2, np2, omega=10.0)
@@ -183,13 +183,13 @@ class testbloboverlaps(unittest.TestCase):
                           [ 1, 0, 2, 0, 0, 1, 1],
                           [ 1, 0, 2, 2, 0, 0, 0],
                           [ 0, 0, 2, 0, 0, 0, 0]])
-        bl1 = np.zeros(data1.shape, np.int)
+        bl1 = np.zeros(data1.shape, np.int32)
         np1 = cImageD11.connectedpixels(data1,bl1,0.1)
         data2 =  np.array([[ 0, 0, 0, 0, 2, 0, 0],
                           [ 0, 0, 0, 0, 2, 2, 0],
                           [ 0, 0, 0, 2, 0, 0, 0],
                           [ 0, 0, 0, 0, 0, 0, 0]])
-        bl2 = np.zeros(data2.shape,np.int)
+        bl2 = np.zeros(data2.shape,np.int32)
         np2 = cImageD11.connectedpixels(data2,bl2,0.1)
         r1 = cImageD11.blobproperties(data1, bl1, np1)
         r2 = cImageD11.blobproperties(data2, bl2, np2)
@@ -218,13 +218,13 @@ class testbloboverlaps(unittest.TestCase):
                           [ 0, 0, 0, 0, 0, 0, 0],
                           [ 0, 1, 1, 1, 1, 1, 0],
                           [ 0, 0, 0, 0, 0, 0, 0]])
-        bl1 = np.zeros(data1.shape,np.int)
+        bl1 = np.zeros(data1.shape,np.int32)
         np1 = cImageD11.connectedpixels(data1,bl1,0.1)
         data2 =  np.array([[ 0, 0, 0, 0, 0, 0, 0],
                           [ 0, 2, 0, 0, 0, 2, 0],
                           [ 0, 2, 0, 0, 0, 2, 0],
                           [ 0, 2, 0, 0, 0, 2, 0]])
-        bl2 = np.zeros(data2.shape,np.int)
+        bl2 = np.zeros(data2.shape,np.int32)
         np2 = cImageD11.connectedpixels(data2,bl2,0.1)
         r1 = cImageD11.blobproperties(data1, bl1, np1)
         r2 = cImageD11.blobproperties(data2, bl2, np2)

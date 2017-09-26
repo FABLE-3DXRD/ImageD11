@@ -121,13 +121,13 @@ class labelimage:
 
         self.onfirst = 1    # Flag for first image in series
         self.onlast = 0     # Flag for last image in series
-        self.blim = np.zeros(shape, np.int)  # 'current' blob image
+        self.blim = np.zeros(shape, np.int32)  # 'current' blob image
         self.npk = 0        #  Number of peaks on current
         self.res = None     #  properties of current
 
         self.threshold = None # cache for writing files
 
-        self.lastbl = np.zeros(shape, np.int)# 'previous' blob image
+        self.lastbl = np.zeros(shape, np.int32)# 'previous' blob image
         self.lastres = None
         self.lastnp = "FIRST" # Flags initial state
 

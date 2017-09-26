@@ -31,7 +31,7 @@ typedef __int32 int32_t;
 #include <stdint.h>
 #endif
 
-#define INTEGER int
+#define INTEGER int32_t
 
 
 INTEGER * dset_initialise(INTEGER size); /* array to hold real values of each */

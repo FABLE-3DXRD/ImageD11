@@ -2,8 +2,8 @@
 import os, sys
 
 
-from ImageD11 import fImageD11
-import cImageD11
+from ImageD11 import fImageD11, cImageD11
+
 import numpy as np, time
 
 np.random.seed(42)

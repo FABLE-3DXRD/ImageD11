@@ -121,7 +121,8 @@ class grid:
     def fft(self):
         """ Compute the Patterson """
         start = time.time()
-        self.patty = (abs(numpy.fft.fftn(self.grid))).astype(numpy.float32)
+        self.patty = numpy.ascontiguousarray(abs(numpy.fft.fftn(self.grid)),
+                                             numpy.float32)
         logging.info("Time for fft "+str(time.time()-start))
         self.origin = self.patty[0,0,0]
         logging.info("Patterson origin height is :"+str(self.origin))

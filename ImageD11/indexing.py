@@ -649,6 +649,8 @@ class indexer:
         etacalc =np.zeros(len(self.ra),np.float)
         omegacalc = np.zeros(len(self.ra),np.float)
         i = -1
+        self.gv = np.ascontiguousarray( self.gv )
+        
         for ubi in self.ubis:
             i += 1
             # Each ubi has peaks in self.ga
@@ -962,7 +964,7 @@ class indexer:
             self.tth=np.zeros(len(self.ds))
         self.gv=np.transpose(np.array( [ self.xr , self.yr, self.zr ] ,np.float))
         self.allgv = self.gv.copy()
-        self.ga=np.zeros(len(self.ds),np.int)-1 # Grain assignments
+        self.ga=np.zeros(len(self.ds),np.int32)-1 # Grain assignments
 
         self.gvflat=np.ascontiguousarray(self.gv,'d') # Makes it contiguous in memory, hkl fast index
         if not quiet:
