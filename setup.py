@@ -30,7 +30,17 @@ from numpy.distutils.core import setup, Extension
 
 from numpy import get_include
 
-nid = [get_include()]
+nid = [get_include(),]
+import sys
+
+if sys.platform == "win32" and "--compiler=mingw32" not in sys.argv:
+    ecomparg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY"]
+    elinkarg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY"]
+    elibs = None
+else:
+    ecomparg = ["-fopenmp -O2","-DF2PY_REPORT_ON_ARRAY_COPY"]
+    elinkarg = ["-fopenmp -O2","-DF2PY_REPORT_ON_ARRAY_COPY"]
+    elibs = ["gomp","pthread"]
 
 
 # Compiled extensions:
@@ -40,7 +50,11 @@ cImageD11extension = Extension( "cImageD11",
                                             "src/connectedpixels.c",
                                             "src/closest.c",
                                             "src/blobs.c"],
-                               include_dirs = nid + ["src",] )
+                               include_dirs = nid + ["src",],
+                               extra_compile_args=ecomparg,
+                               extra_link_args=elinkarg,
+                               libraries = elibs
+                               )
             
 
 
@@ -49,11 +63,9 @@ import sys
 # New fortran code - you might regret this...
 fi = Extension("fImageD11",
                sources = ['fsrc/fImageD11.f90' ],
-#               extra_f90_compile_args=["-fopenmp -O2"],
-               libraries = ['gomp','pthread'])
-# OK, I am beginning to regret it now. Patch for older numpys
-sys.argv.extend ( ['config_fc', '--fcompiler=gnu95',
-                   '--f90flags="-fopenmp -O2 -shared"'])
+               # This is always gcc/gfortran for now
+               extra_f90_compile_args=["-fopenmp -O2"],
+               libraries = elibs)
 
 if sys.platform == 'win32':
     needed = [

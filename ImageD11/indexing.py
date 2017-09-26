@@ -614,14 +614,14 @@ class indexer:
         i = -1
         for ubi in self.ubis:
             i += 1
-            npk = cImageD11.score_and_assign( ubi, self.gv, self.hkl_tol,
+            npk = cImageD11.score_and_assign( ubi, self.gvflat, self.hkl_tol,
                                             self.drlv2, labels, i)
 
         self.ga = labels
         # For each grain we want to know how many peaks it indexes
         # This is a histogram of labels
-	bins =  np.arange(-0.5, len(self.ubis)-0.99)
-	hst = myhistogram( labels, bins )
+        bins =  np.arange(-0.5, len(self.ubis)-0.99)
+        hst = myhistogram( labels, bins )
         self.gas = hst
         assert len(self.gas) == len(self.ubis)
 

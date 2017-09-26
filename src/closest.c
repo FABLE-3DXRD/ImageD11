@@ -1,8 +1,6 @@
 
 #include <stdio.h>
 #include <math.h>
-#define DEBUG 0
-/* turn to 1 to debug */
 typedef double vec[3];
 
 
@@ -296,14 +294,14 @@ void score_and_refine( vec ubi[3], vec gv[], double tol,
 }
 
 
-
-int score_and_assign( vec ubi[3], vec gv[], double tol,
-    double drlv2[], int labels[], int label, int ng){
+int score_and_assign( vec * __restrict ubi, vec * __restrict gv, double tol,
+    double * __restrict drlv2, int * __restrict labels, int label, int ng){
 
     double h0,h1,h2,t0,t1,t2, sumsq, tolsq;
     int k,n;
     tolsq = tol*tol;
     n=0;
+    #pragma omp parallel for private(h0,h1,h2,t0,t1,t2,sumsq) reduction(+:n)
     for(k=0;k<ng;k++){
        h0 = ubi[0][0]*gv[k][0]+ubi[0][1]*gv[k][1]+ubi[0][2]*gv[k][2];
        h1 = ubi[1][0]*gv[k][0]+ubi[1][1]*gv[k][1]+ubi[1][2]*gv[k][2];
@@ -402,5 +400,7 @@ void put_incr( float data[], size_t ind[], float vals[], int boundscheck,
         }
     }
 }
+
+
 
 
