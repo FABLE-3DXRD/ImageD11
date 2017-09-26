@@ -339,9 +339,9 @@ if __name__=="__main__":
         print (6*"%.6f ")%ubitocellpars(gref.ubi)
     print time.time()-start
     grain.write_grain_file(sys.argv[4], gfl)
-    1/0
-    for i in range(2):
-        o.find_triplets( i*17 )
-    pylab.show()
+#    1/0
+#    for i in range(2):
+#        o.find_triplets( i*17 )
+#    pylab.show()
 
 # ~/ImageD11/test/simul_1000_grains % python ../../sandbox/fittrans.py Al1000/Al1000.flt Al1000/Al1000.par allgrid.map allgridfittrans.map

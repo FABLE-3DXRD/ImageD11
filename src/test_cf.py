@@ -13,7 +13,7 @@ ubis = (np.random.random(9*20).reshape((20,3,3))-0.5)*10
 
 gvf= np.array( testvecs.T,  order='F')
 
-tim = time.clock
+tim = time.time
 
 for tol in [0.01, 0.1, 0.2, 0.5]:
     int_tmpf = np.zeros( NPK, np.int32 )
