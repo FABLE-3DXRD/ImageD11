@@ -173,7 +173,7 @@ python module cImageD11
           integer, intent(hide), depend( gv ) :: ng 
           double precision, intent(in) :: tol
           double precision, intent(inout) :: drlv2(ng)
-          integer, intent(inout) :: labels(ng)
+          integer*4, intent(inout) :: labels(ng)
           integer, intent(in) :: label
        end function score_and_assign
    end interface 

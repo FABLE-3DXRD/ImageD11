@@ -607,16 +607,25 @@ class indexer:
     def fight_over_peaks(self):
         """
         Get the best ubis from those proposed
+        Use all peaks (ring assigned or not)
         """
-        self.drlv2 = np.zeros( self.ra.shape, np.float)+2
-        labels= np.ones( self.ra.shape, np.int32)
+        self.drlv2 = np.zeros( self.gv.shape[0], np.float)+2
+        labels = np.ones( self.gv.shape[0], np.int32)
         np.subtract(labels,2,labels)
         i = -1
         for ubi in self.ubis:
             i += 1
-            npk = cImageD11.score_and_assign( ubi, self.gvflat, self.hkl_tol,
-                                            self.drlv2, labels, i)
-
+            try:
+               npk = cImageD11.score_and_assign( ubi, self.gv, self.hkl_tol,
+                                                 self.drlv2, labels, i)
+            except:
+               print ubi.shape
+               print self.gv.shape
+               print self.hkl_tol
+               print self.drlv2.shape
+               print labels.shape
+               print "Error in fight_over_peaks",__file__
+               raise
         self.ga = labels
         # For each grain we want to know how many peaks it indexes
         # This is a histogram of labels
@@ -639,6 +648,8 @@ class indexer:
         i = 0
         from ImageD11 import transform
 
+        self.gv = np.ascontiguousarray( self.gv )
+
         # grain assignment
         self.fight_over_peaks()
 
@@ -649,12 +660,13 @@ class indexer:
         etacalc =np.zeros(len(self.ra),np.float)
         omegacalc = np.zeros(len(self.ra),np.float)
         i = -1
-        self.gv = np.ascontiguousarray( self.gv )
+
         
         for ubi in self.ubis:
             i += 1
             # Each ubi has peaks in self.ga
             uinverses.append( np.linalg.inv(ubi) )
+            # self.ga was filled in during fight_over_peaks
             npk , mdrlv = cImageD11.refine_assigned(
                 ubi.copy(),
                 self.gv,
