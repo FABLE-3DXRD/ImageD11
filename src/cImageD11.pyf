@@ -1,6 +1,6 @@
 
 
-python module connectedpixels
+python module cImageD11
   
    usercode '''
 #include "blobs.h"
@@ -208,4 +208,4 @@ python module connectedpixels
       end subroutine put_incr
    end interface
 
-end python module connectedpixels
+end python module cImageD11

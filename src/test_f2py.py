@@ -4,15 +4,16 @@ import os, sys
 
 if sys.platform == "win32":
     try:
-        os.remove("connectedpixels.pyd")
+        os.remove("cImageD11.pyd")
     except WindowsError:
         pass
     f2py = "f2py.py"
 else:
     f2py = "f2py"
-os.system(f2py+" -I%s -c connectedpixels.pyf connectedpixels.c blobs.c closest.c -DF2PY_REPORT_ON_ARRAY_COPY"%(os.getcwd()))
+os.system(f2py+" -I%s -c cImageD11.pyf connectedpixels.c blobs.c closest.c -DF2PY_REPORT_ON_ARRAY_COPY"%(os.getcwd()))
 
-import connectedpixels, numpy as np
+import cImageD11 as connectedpixels
+import numpy as np
 import ImageD11.closest
 np.random.seed(42)
 

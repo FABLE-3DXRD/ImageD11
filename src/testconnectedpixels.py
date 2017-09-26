@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-import connectedpixels
+import cImageD11 as connectedpixels
 
 
 class test_connectedpixels(unittest.TestCase):
