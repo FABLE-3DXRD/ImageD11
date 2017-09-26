@@ -56,21 +56,6 @@ class test_connectedpixels(unittest.TestCase):
             err = np.sum(np.ravel(data-bl))
             self.assertEqual(err, 0)
 
-    def test_2_transpose(self):
-        for t in [np.uint8, np.int8, np.uint16, np.int16,
-                  np.int32, np.uint32, np.float32, np.float]:
-            data = np.array( [[ 1, 0, 1, 0, 2, 0, 2],
-                             [ 1, 0, 1, 0, 2, 0, 2],
-                             [ 1, 0, 1, 0, 0, 2, 0],
-                             [ 1, 1, 1, 0, 2, 0, 2]],t)
-            bl = np.zeros(data.shape,np.int32)
-            self.assertRaises(ValueError,
-                              cImageD11.connectedpixels,
-                              *(np.transpose(data),bl,0.1))
-            cImageD11.connectedpixels(
-                np.transpose(data),np.transpose(bl),0.1)
-            err = np.sum(np.ravel(data-bl))
-            self.assertEqual(err, 0)
 
 
 
@@ -130,11 +115,8 @@ class test_blobproperties(unittest.TestCase):
                              [ 1, 8, 1],
                              [ 1, 1, 1]],t)
             bl = np.zeros(data.shape,np.int32)
-            self.assertRaises(ValueError,
-                              cImageD11.connectedpixels,
-                              *(np.transpose(data),bl,0.1))
             npx = cImageD11.connectedpixels(
-                np.transpose(data),np.transpose(bl),0.1)
+                data,bl,0.1)
             self.assertEqual(npx,1)
             err = np.sum(np.ravel(data-bl))
             self.assertEqual(err, 7) # 8-1
@@ -156,69 +138,6 @@ class test_blobproperties(unittest.TestCase):
 
 
 
-    def test_2_transpose(self):
-        for t in [np.uint8, np.int8, np.uint16, np.int16,
-                  np.int32, np.uint32, np.float32, np.float]:
-            data = np.array( [[ 1, 0, 1, 0, 2, 0, 2],
-                             [ 1, 0, 1, 0, 2, 0, 2],
-                             [ 1, 0, 1, 0, 0, 2, 0],
-                             [ 1, 1, 1, 0, 2, 0, 2]],t)
-            bl = np.zeros(data.shape,np.int32)
-            self.assertRaises(ValueError,
-                              cImageD11.connectedpixels,
-                              *(np.transpose(data),bl,0.1))
-            npx = cImageD11.connectedpixels(
-                np.transpose(data),np.transpose(bl),0.1)
-            self.assertEqual(npx,2)
-            err = np.sum(np.ravel(data-bl))
-            self.assertEqual(err, 0)
-            res = cImageD11.blobproperties(data, bl, npx)
-            from ImageD11.cImageD11 import s_1, s_I, s_I2, \
-                s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
-                bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
-                bb_mn_o, bb_mx_o, \
-                mx_I, mx_I_f, mx_I_s
-            #            print res,res.shape
-            self.assertAlmostEqual(res[0][s_1],9)
-            self.assertAlmostEqual(res[1][s_1],7)
-            self.assertAlmostEqual(res[0][s_I],9)
-            self.assertAlmostEqual(res[1][s_I],14)
-            self.assertAlmostEqual(res[0][s_I2],9)
-            self.assertAlmostEqual(res[1][s_I2],28)
-            # [[ 1, 0, 1, 0, 2, 0, 2],     --> Fast
-            #  [ 1, 0, 1, 0, 2, 0, 2],     |
-            #  [ 1, 0, 1, 0, 0, 2, 0],     |
-            #  [ 1, 1, 1, 0, 2, 0, 2]],t)  V Slow
-            # f*I:
-            # f= 0, 1, 2, 3, 4, 5, 6
-            # [[ 0, 0, 2, 0, 8, 0, 12],     --> Fast
-            #  [ 0, 0, 2, 0, 8, 0, 12],     |
-            #  [ 0, 0, 2, 0, 0,10, 0 ],     |
-            #  [ 0, 1, 2, 0, 8, 0, 12]],t)  V Slow
-            #         =9     =70
-            self.assertAlmostEqual(res[0][s_fI],9)
-            self.assertAlmostEqual(res[1][s_fI],70)
-            # s*I:
-            # s=
-            # 0[[ 0, 0, 0, 0, 0, 0, 0],     --> Fast
-            # 1 [ 1, 0, 1, 0, 2, 0, 2],     |
-            # 2 [ 2, 0, 2, 0, 0, 4, 0],     |
-            # 3 [ 3, 3, 3, 0, 6, 0, 6]],t)  V Slow
-            #         =15     =20
-            self.assertAlmostEqual(res[0][s_sI],15)
-            self.assertAlmostEqual(res[1][s_sI],20)
-            # Bounding box
-            self.assertAlmostEqual(res[0][bb_mn_f],0)
-            self.assertAlmostEqual(res[1][bb_mn_f],4)
-            self.assertAlmostEqual(res[0][bb_mx_f],2)
-            self.assertAlmostEqual(res[1][bb_mx_f],6)
-            self.assertAlmostEqual(res[0][bb_mn_s],0)
-            self.assertAlmostEqual(res[1][bb_mn_s],0)
-            self.assertAlmostEqual(res[0][bb_mx_s],3)
-            self.assertAlmostEqual(res[1][bb_mx_s],3)
-            self.assertAlmostEqual(res[1][bb_mn_o],0)
-            self.assertAlmostEqual(res[0][bb_mx_o],0)
-
 
 class testbloboverlaps(unittest.TestCase):
     def test1(self):
@@ -227,13 +146,13 @@ class testbloboverlaps(unittest.TestCase):
                           [ 1, 0, 1, 0, 0, 0, 0],
                           [ 1, 0, 1, 1, 0, 0, 0],
                           [ 1, 1, 1, 0, 0, 0, 0]])
-        bl1 = np.zeros(data1.shape)
+        bl1 = np.zeros(data1.shape, np.int)
         np1 = cImageD11.connectedpixels(data1,bl1,0.1)
         data2 =  np.array([[ 0, 0, 0, 0, 2, 0, 2],
                           [ 0, 0, 0, 0, 2, 0, 2],
                           [ 0, 0, 0, 2, 0, 2, 0],
                           [ 0, 0, 0, 0, 2, 0, 2]])
-        bl2 = np.zeros(data2.shape)
+        bl2 = np.zeros(data2.shape, np.int)
         np2 = cImageD11.connectedpixels(data2,bl2,0.1)
         r1 = cImageD11.blobproperties(data1, bl1, np1, omega=-10.0)
         r2 = cImageD11.blobproperties(data2, bl2, np2, omega=10.0)
@@ -264,13 +183,13 @@ class testbloboverlaps(unittest.TestCase):
                           [ 1, 0, 2, 0, 0, 1, 1],
                           [ 1, 0, 2, 2, 0, 0, 0],
                           [ 0, 0, 2, 0, 0, 0, 0]])
-        bl1 = np.zeros(data1.shape)
+        bl1 = np.zeros(data1.shape, np.int)
         np1 = cImageD11.connectedpixels(data1,bl1,0.1)
         data2 =  np.array([[ 0, 0, 0, 0, 2, 0, 0],
                           [ 0, 0, 0, 0, 2, 2, 0],
                           [ 0, 0, 0, 2, 0, 0, 0],
                           [ 0, 0, 0, 0, 0, 0, 0]])
-        bl2 = np.zeros(data2.shape)
+        bl2 = np.zeros(data2.shape,np.int)
         np2 = cImageD11.connectedpixels(data2,bl2,0.1)
         r1 = cImageD11.blobproperties(data1, bl1, np1)
         r2 = cImageD11.blobproperties(data2, bl2, np2)
@@ -299,13 +218,13 @@ class testbloboverlaps(unittest.TestCase):
                           [ 0, 0, 0, 0, 0, 0, 0],
                           [ 0, 1, 1, 1, 1, 1, 0],
                           [ 0, 0, 0, 0, 0, 0, 0]])
-        bl1 = np.zeros(data1.shape)
+        bl1 = np.zeros(data1.shape,np.int)
         np1 = cImageD11.connectedpixels(data1,bl1,0.1)
         data2 =  np.array([[ 0, 0, 0, 0, 0, 0, 0],
                           [ 0, 2, 0, 0, 0, 2, 0],
                           [ 0, 2, 0, 0, 0, 2, 0],
                           [ 0, 2, 0, 0, 0, 2, 0]])
-        bl2 = np.zeros(data2.shape)
+        bl2 = np.zeros(data2.shape,np.int)
         np2 = cImageD11.connectedpixels(data2,bl2,0.1)
         r1 = cImageD11.blobproperties(data1, bl1, np1)
         r2 = cImageD11.blobproperties(data2, bl2, np2)
@@ -326,46 +245,6 @@ class testbloboverlaps(unittest.TestCase):
 
 
 
-
-class test_roisum(unittest.TestCase):
-
-    def test_avg(self):
-        data = np.ones((10,10),np.float)
-        res = cImageD11.roisum(data,0,9,0,9)
-        self.assertAlmostEqual(1,res,0,6)
-
-    def test_for_overflow(self):
-        data = np.ones((10,10),np.uint8)+255+128
-        # Ensure the array type does indeed overflow
-        self.assertEqual(data[0,0],128)
-        # And that the sum does not
-        res = cImageD11.roisum(data,0,9,0,9)
-        self.assertAlmostEqual(128.,res,0,6)
-
-    def test_orient(self):
-        # add a testcase to work out which way up is the roi...
-        data = np.array( [[ 0, 0, 0, 1, 1, 1],
-                         [ 0, 0, 0, 1, 1, 1],
-                         [ 0, 0, 0, 1, 1, 1]], np.float)
-        self.assertAlmostEqual(cImageD11.roisum(data, 0, 2, 0, 2),
-                               0.)
-        self.assertAlmostEqual(cImageD11.roisum(data, 0, 2, 3, 5),
-                               1.)
-        self.assertRaises(ValueError,
-                          cImageD11.roisum,
-                          *(data, 3, 5, 0, 2))
-        self.assertRaises(ValueError,
-                          cImageD11.roisum,
-                          *(data, 0, 7, 0, 2))
-        self.assertRaises(ValueError,
-                          cImageD11.roisum,
-                          *(data, 0, 2, 0, 7))
-        self.assertRaises(ValueError,
-                          cImageD11.roisum,
-                          *(data, 0, 2, -1, 2))
-        self.assertRaises(ValueError,
-                          cImageD11.roisum,
-                          *(data, -1, 2, 0, 2))
 
 
 if __name__=="__main__":

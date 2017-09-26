@@ -12,7 +12,7 @@ These will be real space vectors
 import logging, time, sys
 import numpy
 
-from ImageD11 import labelimage, closest
+from ImageD11 import labelimage, cImageD11
 
 def get_options(parser):
     parser.add_option( '-n', '--ngrid',
@@ -100,7 +100,7 @@ class grid:
                   thkl[:,1]*grid.shape[1] + \
                   thkl[:,2]
 
-            closest.put_incr( flatgrid , ind.astype(numpy.intp), vol )
+            cImageD11.put_incr( flatgrid , ind.astype(numpy.intp), vol )
             # print thkl,vol
 
             # vals = numpy.take(grid.flat, ind)

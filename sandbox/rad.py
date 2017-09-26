@@ -1,6 +1,6 @@
 import math, numpy, time
 # , smooth
-from ImageD11 import closest
+from ImageD11 import cImageD11
 from fabio.openimage import openimage
 print "Using class version"
 
@@ -60,7 +60,7 @@ class fourier_radial(object):
         nim  = numpy.zeros( ( nv* nh), numpy.float32 )
         wons = numpy.ones( (len(inds)), dtype=numpy.float32 )
         # This is now more dense - bincount?
-        closest.put_incr( nim , inds, wons )
+        cImageD11.put_incr( nim , inds, wons )
         nim = nim.astype(numpy.int)
         self.nim_div = nim + (nim==0)
         
@@ -83,8 +83,8 @@ class fourier_radial(object):
         numpy.multiply( faprojc, self.conjer, faprojc)
         fimr = numpy.zeros( self.ftimlen , numpy.float32 )
         fimc = numpy.zeros( self.ftimlen , numpy.float32 )
-        closest.put_incr( fimr, self.inds, faprojr)
-        closest.put_incr( fimc, self.inds, faprojc)
+        cImageD11.put_incr( fimr, self.inds, faprojr)
+        cImageD11.put_incr( fimc, self.inds, faprojc)
         fim = fimr + fimc*1j
         fim = numpy.divide( fimr + fimc*1j, self.nim_div)
         fim.shape = self.ftimshape 

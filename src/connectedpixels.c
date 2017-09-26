@@ -7,6 +7,16 @@
 #include "blobs.h"  /* INTEGER */
 
 
+void boundscheck( jpk, n2, ipk, n1){
+    if( (jpk < 0) || jpk>=n2 ) {
+        printf("Bounds check error, jpk, n2\n");
+        exit(0);
+    }
+    if( (ipk < 0) || ipk>=n1 ) {
+        printf("Bounds check error, jpk, n1\n");
+        exit(0);
+    }
+}
 
 
 /*
@@ -277,7 +287,7 @@ int bloboverlaps( INTEGER* b1, INTEGER n1, double* res1,
                    INTEGER* b2, INTEGER n2, double* res2, 
                    int verbose, int ns, int nf){
 
-    int i, j, safelyneed, ipx ;
+    int i, j, safelyneed, ipx, k ;
     INTEGER *link, p1, p2, ipk, jpk, npk, *T;
 
   /* Initialise a disjoint set in link 
@@ -321,21 +331,23 @@ int bloboverlaps( INTEGER* b1, INTEGER n1, double* res1,
         if((i > n2+1) && (j < n2+1)){ /* linking between images */
             jpk = j-1;
             ipk = i-n2-2;
-            assert( (n2 > jpk) && (jpk >= 0 ) && ( n1 > ipk) && ( ipk >= 0 ) );
+            /* Bounds checking */
+            boundscheck( jpk, n2, ipk, n1);
             merge( &res2[NPROPERTY*jpk], &res1[NPROPERTY*ipk]);
             continue;
         }
         if((i > n2+1) && (j > n2+1) ){ /* linking on the same image (1) */
             jpk = j-n2-2;
             ipk = i-n2-2;
-            assert( (n2 > jpk) && (jpk >= 0 ) && ( n1 > ipk) && ( ipk >= 0 ) );
+            boundscheck( jpk, n1, ipk, n1);
+            assert( (n1 > jpk) && (jpk >= 0 ) && ( n1 > ipk) && ( ipk >= 0 ) );
             merge( &res1[NPROPERTY*jpk], &res1[NPROPERTY*ipk]);
             continue;
         }
         if( i < n2+1 && j < n2+1 ){ /* linking on the same image (2) */
             jpk = j-1;
             ipk = i-1;
-            assert( (n2 > jpk) && (jpk >= 0 ) && ( n1 > ipk) && ( ipk >= 0 ) );
+            boundscheck( jpk, n2, ipk, n2);
             merge( &res2[NPROPERTY*jpk], &res2[NPROPERTY*ipk]);
             continue;
         }
