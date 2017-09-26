@@ -1,6 +1,6 @@
 
 #include <stdio.h>
-
+#include <math.h>
 #define DEBUG 0
 /* turn to 1 to debug */
 typedef double vec[3];
@@ -220,12 +220,11 @@ void score_and_refine( vec ubi[3], vec gv[], double tol,
 
    double h0,h1,h2,t0,t1,t2;
    double sumsq,tolsq,sumdrlv2;
-   double R[3][3],H[3][3],rh[3], UB[3][3];
+   double R[3][3],H[3][3], UB[3][3];
    int n,k,i,j,l,ih[3];
    /* Zero some stuff for refinement */
    for(i=0;i<3;i++){
      ih[i]=0;
-     rh[i]=0.;
      for(j=0;j<3;j++){
        R[i][j] = 0.;
        H[i][j] = 0.;
@@ -396,7 +395,7 @@ void put_incr( float data[], size_t ind[], float vals[], int boundscheck,
         for( k=0; k<n; k++){
             ik = ind[k];
             if( ik<0 || ik >= m){
-                printf("Array bounds error! k=%d ind[k]=%d\n");
+	      printf("Array bounds error! k=%d ind[k]=%d\n",k,(int)ind[k]);
             } else {
                 data[ind[k]] += vals[k];
             }

@@ -287,7 +287,7 @@ int bloboverlaps( INTEGER* b1, INTEGER n1, double* res1,
                    INTEGER* b2, INTEGER n2, double* res2, 
                    int verbose, int ns, int nf){
 
-    int i, j, safelyneed, ipx, k ;
+    int i, j, safelyneed, ipx ;
     INTEGER *link, p1, p2, ipk, jpk, npk, *T;
 
   /* Initialise a disjoint set in link 
