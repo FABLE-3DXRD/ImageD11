@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from ImageD11 import connectedpixels
+from ImageD11 import cImageD11
 
 
 class test_connectedpixels(unittest.TestCase):
@@ -19,7 +19,7 @@ class test_connectedpixels(unittest.TestCase):
                              [ 0, 0, 0, 0, 0, 0, 0],
                              [ 0, 0, 0, 0, 0, 0, 0]],t)
             bl = np.zeros(data.shape,np.int32)
-            connectedpixels.connectedpixels(
+            cImageD11.connectedpixels(
                 data,
                 bl,
                 0.1)  # threshold
@@ -34,7 +34,7 @@ class test_connectedpixels(unittest.TestCase):
                              [ 1, 0, 1, 0, 0, 1, 0],
                              [ 1, 1, 1, 1, 1, 0, 1]],t)
             bl = np.zeros(data.shape,np.int32)
-            connectedpixels.connectedpixels(
+            cImageD11.connectedpixels(
                 data,
                 bl,
                 0.1)  # threshold
@@ -49,28 +49,13 @@ class test_connectedpixels(unittest.TestCase):
                              [ 1, 0, 1, 0, 0, 2, 0],
                              [ 1, 1, 1, 0, 2, 0, 2]],t)
             bl = np.zeros(data.shape,np.int32)
-            connectedpixels.connectedpixels(
+            cImageD11.connectedpixels(
                 data,
                 bl,
                 0.1)  # threshold
             err = np.sum(np.ravel(data-bl))
             self.assertEqual(err, 0)
 
-    def test_2_transpose(self):
-        for t in [np.uint8, np.int8, np.uint16, np.int16,
-                  np.int32, np.uint32, np.float32, np.float]:
-            data = np.array( [[ 1, 0, 1, 0, 2, 0, 2],
-                             [ 1, 0, 1, 0, 2, 0, 2],
-                             [ 1, 0, 1, 0, 0, 2, 0],
-                             [ 1, 1, 1, 0, 2, 0, 2]],t)
-            bl = np.zeros(data.shape,np.int32)
-            self.assertRaises(ValueError,
-                              connectedpixels.connectedpixels,
-                              *(np.transpose(data),bl,0.1))
-            connectedpixels.connectedpixels(
-                np.transpose(data),np.transpose(bl),0.1)
-            err = np.sum(np.ravel(data-bl))
-            self.assertEqual(err, 0)
 
 
 
@@ -119,7 +104,7 @@ class test_blobproperties(unittest.TestCase):
                     for n in nl]
         i = 0
         while i < len(namelist):
-            self.assertEqual(i,getattr(connectedpixels,namelist[i]))
+            self.assertEqual(i,getattr(cImageD11,namelist[i]))
             i += 1
 
     def test_find_max(self):
@@ -130,19 +115,16 @@ class test_blobproperties(unittest.TestCase):
                              [ 1, 8, 1],
                              [ 1, 1, 1]],t)
             bl = np.zeros(data.shape,np.int32)
-            self.assertRaises(ValueError,
-                              connectedpixels.connectedpixels,
-                              *(np.transpose(data),bl,0.1))
-            npx = connectedpixels.connectedpixels(
-                np.transpose(data),np.transpose(bl),0.1)
+            npx = cImageD11.connectedpixels(
+                data,bl,0.1)
             self.assertEqual(npx,1)
             err = np.sum(np.ravel(data-bl))
             self.assertEqual(err, 7) # 8-1
-            res = connectedpixels.blobproperties(data,
+            res = cImageD11.blobproperties(data,
                                                  bl,
                                                  npx,
                                                  omega=22.)
-            from ImageD11.connectedpixels import s_1, s_I, s_I2, \
+            from ImageD11.cImageD11 import s_1, s_I, s_I2, \
                 s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
                 bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
                 bb_mn_o, bb_mx_o, \
@@ -156,69 +138,6 @@ class test_blobproperties(unittest.TestCase):
 
 
 
-    def test_2_transpose(self):
-        for t in [np.uint8, np.int8, np.uint16, np.int16,
-                  np.int32, np.uint32, np.float32, np.float]:
-            data = np.array( [[ 1, 0, 1, 0, 2, 0, 2],
-                             [ 1, 0, 1, 0, 2, 0, 2],
-                             [ 1, 0, 1, 0, 0, 2, 0],
-                             [ 1, 1, 1, 0, 2, 0, 2]],t)
-            bl = np.zeros(data.shape,np.int32)
-            self.assertRaises(ValueError,
-                              connectedpixels.connectedpixels,
-                              *(np.transpose(data),bl,0.1))
-            npx = connectedpixels.connectedpixels(
-                np.transpose(data),np.transpose(bl),0.1)
-            self.assertEqual(npx,2)
-            err = np.sum(np.ravel(data-bl))
-            self.assertEqual(err, 0)
-            res = connectedpixels.blobproperties(data, bl, npx)
-            from ImageD11.connectedpixels import s_1, s_I, s_I2, \
-                s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
-                bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
-                bb_mn_o, bb_mx_o, \
-                mx_I, mx_I_f, mx_I_s
-            #            print res,res.shape
-            self.assertAlmostEqual(res[0][s_1],9)
-            self.assertAlmostEqual(res[1][s_1],7)
-            self.assertAlmostEqual(res[0][s_I],9)
-            self.assertAlmostEqual(res[1][s_I],14)
-            self.assertAlmostEqual(res[0][s_I2],9)
-            self.assertAlmostEqual(res[1][s_I2],28)
-            # [[ 1, 0, 1, 0, 2, 0, 2],     --> Fast
-            #  [ 1, 0, 1, 0, 2, 0, 2],     |
-            #  [ 1, 0, 1, 0, 0, 2, 0],     |
-            #  [ 1, 1, 1, 0, 2, 0, 2]],t)  V Slow
-            # f*I:
-            # f= 0, 1, 2, 3, 4, 5, 6
-            # [[ 0, 0, 2, 0, 8, 0, 12],     --> Fast
-            #  [ 0, 0, 2, 0, 8, 0, 12],     |
-            #  [ 0, 0, 2, 0, 0,10, 0 ],     |
-            #  [ 0, 1, 2, 0, 8, 0, 12]],t)  V Slow
-            #         =9     =70
-            self.assertAlmostEqual(res[0][s_fI],9)
-            self.assertAlmostEqual(res[1][s_fI],70)
-            # s*I:
-            # s=
-            # 0[[ 0, 0, 0, 0, 0, 0, 0],     --> Fast
-            # 1 [ 1, 0, 1, 0, 2, 0, 2],     |
-            # 2 [ 2, 0, 2, 0, 0, 4, 0],     |
-            # 3 [ 3, 3, 3, 0, 6, 0, 6]],t)  V Slow
-            #         =15     =20
-            self.assertAlmostEqual(res[0][s_sI],15)
-            self.assertAlmostEqual(res[1][s_sI],20)
-            # Bounding box
-            self.assertAlmostEqual(res[0][bb_mn_f],0)
-            self.assertAlmostEqual(res[1][bb_mn_f],4)
-            self.assertAlmostEqual(res[0][bb_mx_f],2)
-            self.assertAlmostEqual(res[1][bb_mx_f],6)
-            self.assertAlmostEqual(res[0][bb_mn_s],0)
-            self.assertAlmostEqual(res[1][bb_mn_s],0)
-            self.assertAlmostEqual(res[0][bb_mx_s],3)
-            self.assertAlmostEqual(res[1][bb_mx_s],3)
-            self.assertAlmostEqual(res[1][bb_mn_o],0)
-            self.assertAlmostEqual(res[0][bb_mx_o],0)
-
 
 class testbloboverlaps(unittest.TestCase):
     def test1(self):
@@ -227,23 +146,23 @@ class testbloboverlaps(unittest.TestCase):
                           [ 1, 0, 1, 0, 0, 0, 0],
                           [ 1, 0, 1, 1, 0, 0, 0],
                           [ 1, 1, 1, 0, 0, 0, 0]])
-        bl1 = np.zeros(data1.shape)
-        np1 = connectedpixels.connectedpixels(data1,bl1,0.1)
+        bl1 = np.zeros(data1.shape, np.int32)
+        np1 = cImageD11.connectedpixels(data1,bl1,0.1)
         data2 =  np.array([[ 0, 0, 0, 0, 2, 0, 2],
                           [ 0, 0, 0, 0, 2, 0, 2],
                           [ 0, 0, 0, 2, 0, 2, 0],
                           [ 0, 0, 0, 0, 2, 0, 2]])
-        bl2 = np.zeros(data2.shape)
-        np2 = connectedpixels.connectedpixels(data2,bl2,0.1)
-        r1 = connectedpixels.blobproperties(data1, bl1, np1, omega=-10.0)
-        r2 = connectedpixels.blobproperties(data2, bl2, np2, omega=10.0)
+        bl2 = np.zeros(data2.shape, np.int32)
+        np2 = cImageD11.connectedpixels(data2,bl2,0.1)
+        r1 = cImageD11.blobproperties(data1, bl1, np1, omega=-10.0)
+        r2 = cImageD11.blobproperties(data2, bl2, np2, omega=10.0)
 
-        connectedpixels.bloboverlaps(bl1,np1,r1,
+        cImageD11.bloboverlaps(bl1,np1,r1,
                                      bl2,np2,r2, verbose=0)
         # check r1 is zeroed
         err = np.sum(np.ravel(r1))
         self.assertAlmostEqual(err,0.,6)
-        from ImageD11.connectedpixels import s_1, s_I, s_I2, \
+        from ImageD11.cImageD11 import s_1, s_I, s_I2, \
             s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
             bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
             bb_mn_o, bb_mx_o,\
@@ -264,24 +183,24 @@ class testbloboverlaps(unittest.TestCase):
                           [ 1, 0, 2, 0, 0, 1, 1],
                           [ 1, 0, 2, 2, 0, 0, 0],
                           [ 0, 0, 2, 0, 0, 0, 0]])
-        bl1 = np.zeros(data1.shape)
-        np1 = connectedpixels.connectedpixels(data1,bl1,0.1)
+        bl1 = np.zeros(data1.shape, np.int32)
+        np1 = cImageD11.connectedpixels(data1,bl1,0.1)
         data2 =  np.array([[ 0, 0, 0, 0, 2, 0, 0],
                           [ 0, 0, 0, 0, 2, 2, 0],
                           [ 0, 0, 0, 2, 0, 0, 0],
                           [ 0, 0, 0, 0, 0, 0, 0]])
-        bl2 = np.zeros(data2.shape)
-        np2 = connectedpixels.connectedpixels(data2,bl2,0.1)
-        r1 = connectedpixels.blobproperties(data1, bl1, np1)
-        r2 = connectedpixels.blobproperties(data2, bl2, np2)
+        bl2 = np.zeros(data2.shape,np.int32)
+        np2 = cImageD11.connectedpixels(data2,bl2,0.1)
+        r1 = cImageD11.blobproperties(data1, bl1, np1)
+        r2 = cImageD11.blobproperties(data2, bl2, np2)
 
-        connectedpixels.bloboverlaps(bl1,np1,r1,
+        cImageD11.bloboverlaps(bl1,np1,r1,
                                      bl2,np2,r2, verbose=0)
         # check which peaks are zeroed
         self.assertAlmostEqual(np.sum(r1[1]),0.,6)
         self.assertAlmostEqual(np.sum(r1[2]),0.,6)
 
-        from ImageD11.connectedpixels import s_1, s_I, s_I2, \
+        from ImageD11.cImageD11 import s_1, s_I, s_I2, \
             s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
             bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
             bb_mn_o, bb_mn_f,\
@@ -299,25 +218,25 @@ class testbloboverlaps(unittest.TestCase):
                           [ 0, 0, 0, 0, 0, 0, 0],
                           [ 0, 1, 1, 1, 1, 1, 0],
                           [ 0, 0, 0, 0, 0, 0, 0]])
-        bl1 = np.zeros(data1.shape)
-        np1 = connectedpixels.connectedpixels(data1,bl1,0.1)
+        bl1 = np.zeros(data1.shape,np.int32)
+        np1 = cImageD11.connectedpixels(data1,bl1,0.1)
         data2 =  np.array([[ 0, 0, 0, 0, 0, 0, 0],
                           [ 0, 2, 0, 0, 0, 2, 0],
                           [ 0, 2, 0, 0, 0, 2, 0],
                           [ 0, 2, 0, 0, 0, 2, 0]])
-        bl2 = np.zeros(data2.shape)
-        np2 = connectedpixels.connectedpixels(data2,bl2,0.1)
-        r1 = connectedpixels.blobproperties(data1, bl1, np1)
-        r2 = connectedpixels.blobproperties(data2, bl2, np2)
+        bl2 = np.zeros(data2.shape,np.int32)
+        np2 = cImageD11.connectedpixels(data2,bl2,0.1)
+        r1 = cImageD11.blobproperties(data1, bl1, np1)
+        r2 = cImageD11.blobproperties(data2, bl2, np2)
 
-        connectedpixels.bloboverlaps(bl1,np1,r1,
+        cImageD11.bloboverlaps(bl1,np1,r1,
                                      bl2,np2,r2, verbose=0)
 
         # check which peaks are zeroed
         self.assertAlmostEqual(np.sum(r1[0]),0.,6)
         # Results pile up all in r2[0]
         self.assertAlmostEqual(np.sum(r2[1]),0.,6)
-        from ImageD11.connectedpixels import s_1, s_I, s_I2, \
+        from ImageD11.cImageD11 import s_1, s_I, s_I2, \
             s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
             bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
             mx_I, mx_I_f, mx_I_s
@@ -326,46 +245,6 @@ class testbloboverlaps(unittest.TestCase):
 
 
 
-
-class test_roisum(unittest.TestCase):
-
-    def test_avg(self):
-        data = np.ones((10,10),np.float)
-        res = connectedpixels.roisum(data,0,9,0,9)
-        self.assertAlmostEqual(1,res,0,6)
-
-    def test_for_overflow(self):
-        data = np.ones((10,10),np.uint8)+255+128
-        # Ensure the array type does indeed overflow
-        self.assertEqual(data[0,0],128)
-        # And that the sum does not
-        res = connectedpixels.roisum(data,0,9,0,9)
-        self.assertAlmostEqual(128.,res,0,6)
-
-    def test_orient(self):
-        # add a testcase to work out which way up is the roi...
-        data = np.array( [[ 0, 0, 0, 1, 1, 1],
-                         [ 0, 0, 0, 1, 1, 1],
-                         [ 0, 0, 0, 1, 1, 1]], np.float)
-        self.assertAlmostEqual(connectedpixels.roisum(data, 0, 2, 0, 2),
-                               0.)
-        self.assertAlmostEqual(connectedpixels.roisum(data, 0, 2, 3, 5),
-                               1.)
-        self.assertRaises(ValueError,
-                          connectedpixels.roisum,
-                          *(data, 3, 5, 0, 2))
-        self.assertRaises(ValueError,
-                          connectedpixels.roisum,
-                          *(data, 0, 7, 0, 2))
-        self.assertRaises(ValueError,
-                          connectedpixels.roisum,
-                          *(data, 0, 2, 0, 7))
-        self.assertRaises(ValueError,
-                          connectedpixels.roisum,
-                          *(data, 0, 2, -1, 2))
-        self.assertRaises(ValueError,
-                          connectedpixels.roisum,
-                          *(data, -1, 2, 0, 2))
 
 
 if __name__=="__main__":

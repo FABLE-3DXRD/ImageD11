@@ -6,7 +6,7 @@ Transfers images into reciprocal space by pixel mapping
 
 import numpy, logging
 from ImageD11 import parameters, transform, indexing, \
-    closest, blobcorrector, rsv
+    cImageD11, blobcorrector, rsv
 
 
 class rsv_mapper(object):
@@ -224,17 +224,17 @@ class rsv_mapper(object):
 
         if msk is not None:
             numpy.multiply(dat, msk, dat)
-            closest.put_incr( self.rsv.SIG,
+            cImageD11.put_incr( self.rsv.SIG,
                               ind,
                               dat )
-            closest.put_incr( self.rsv.MON,
+            cImageD11.put_incr( self.rsv.MON,
                               ind,
                               self.lorfac * msk)
         else:
-            closest.put_incr( self.rsv.SIG,
+            cImageD11.put_incr( self.rsv.SIG,
                               ind,
                               dat )
-            closest.put_incr( self.rsv.MON,
+            cImageD11.put_incr( self.rsv.MON,
                               ind,
                               self.lorfac)
         return

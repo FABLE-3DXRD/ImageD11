@@ -23,7 +23,7 @@
 import numpy
 
 from ImageD11 import transform, indexing, parameters
-from ImageD11 import grain, columnfile, closest
+from ImageD11 import grain, columnfile, cImageD11
 
 import simplex, xfab.tools
 
@@ -336,11 +336,10 @@ class refinegrains:
                     thisgrain.ind,
                     self.eta)
 
-        if not self.OMEGA_FLOAT:
-            self.gv = gv.T
         if self.OMEGA_FLOAT:
             mat = thisgrain.ubi.copy()
-            junk = closest.score_and_refine(mat , gv.T,
+            gvT = numpy.ascontiguousarray(gv.T)
+            junk = cImageD11.score_and_refine(mat , gvT,
                                             self.tolerance)
             hklf = numpy.dot( mat, gv )
             hkli = numpy.floor( hklf + 0.5 )
@@ -385,7 +384,11 @@ class refinegrains:
                         float(self.parameterobj.parameters['wavelength']),
                         self.parameterobj.parameters['wedge'],
                         self.parameterobj.parameters['chi'])
-            self.gv = gv.T
+   
+
+        self.gv = numpy.ascontiguousarray(gv.T)
+
+            
         return
 
 
@@ -397,7 +400,7 @@ class refinegrains:
         mat=ubi.copy()
         # print "In refine",self.tolerance, self.gv.shape
         # First time fits the mat
-        self.npks, self.avg_drlv2 = closest.score_and_refine(mat, self.gv,
+        self.npks, self.avg_drlv2 = cImageD11.score_and_refine(mat, self.gv,
                                                              self.tolerance)
         # apply symmetry to mat:
         if self.latticesymmetry is not triclinic:
@@ -406,7 +409,7 @@ class refinegrains:
             mat = xfab.tools.u_to_ubi( U, self.latticesymmetry( cp ) )
 
         # Second time updates the score with the new mat
-        self.npks, self.avg_drlv2 = closest.score_and_refine(mat, self.gv,
+        self.npks, self.avg_drlv2 = cImageD11.score_and_refine(mat, self.gv,
                                                              self.tolerance)
         # apply symmetry to mat:
         if self.latticesymmetry is not triclinic:
@@ -423,7 +426,7 @@ class refinegrains:
 #                raise
 
         #print self.tolerance
-#        self.npks, self.avg_drlv2 = closest.score_and_refine(mat, self.gv,
+#        self.npks, self.avg_drlv2 = cImageD11.score_and_refine(mat, self.gv,
 #                                                             self.tolerance)
         #tm = indexing.refine(ubi,self.gv,self.tolerance,quiet=quiet)
         #print ubi, tm,ubi-tm,mat-tm
@@ -481,6 +484,7 @@ class refinegrains:
             #print self.npks,self.avg_drlv2 # number of peaks it got
 
             #print self.gv.shape
+
 
 
             diffs +=  self.npks*self.avg_drlv2
@@ -666,7 +670,7 @@ class refinegrains:
                     gr.translation,
                     gv)
                 fImageD11.assign( gr.ubi, gv, self.tolerance, drlv2, int_tmp, int(g)) 
-#                closest.score_and_assign( gr.ubi,
+#                cImageD11.score_and_assign( gr.ubi,
 #                                          gv.T,
 #                                          self.tolerance,
 #                                          drlv2_2,

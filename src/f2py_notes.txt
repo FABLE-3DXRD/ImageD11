@@ -5,7 +5,7 @@ Define for copies : F2PY_REPORT_ON_ARRAY_COPY
 
 # Testing locally:
 
-f2py.py -c connectedpixels.pyf c_connectedpixels.c  -DF2PY_REPORT_ON_ARRAY_COPY
+f2py.py -c cImageD11.pyf ...  -DF2PY_REPORT_ON_ARRAY_COPY
 
 ... or f2py is f2py.py is not found.
 
@@ -17,4 +17,10 @@ f2py.py -c connectedpixels.pyf c_connectedpixels.c  -DF2PY_REPORT_ON_ARRAY_COPY
     integer*-4  is 32 bit unsigned
     integer*8  is 64 bit signed
     etc
-    
+
+# size_t appears to be missing in f2py 
+ c : size_t x[]
+ f2py : integer*-8 x  ??
+
+
+# Did not figure out how to do openmp for c via command line 

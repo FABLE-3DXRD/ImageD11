@@ -4,7 +4,7 @@
 Some simplistic ART algorithms
 """
 import numpy as np
-from ImageD11 import closest
+from ImageD11 import cImageD11
 import pylab as pl
 
 
@@ -45,15 +45,15 @@ def update_wtd( recon, proj, angle, msk, dbg=True ):
     r = recon.ravel()
     np.subtract( idx_lo, mn, idx_lo) # Move these to offsets in calc_proj
     np.subtract( idx_hi, mn, idx_hi)
-    closest.put_incr( calc_proj, idx_lo, r*wt_lo )
-    closest.put_incr( calc_proj, idx_hi, r*wt_hi )
+    cImageD11.put_incr( calc_proj, idx_lo, r*wt_lo )
+    cImageD11.put_incr( calc_proj, idx_hi, r*wt_hi )
     error = np.zeros( calc_proj.shape, np.float32 )
     start = (len(calc_proj)- len(proj))/2
     error[ start:start+len(proj) ] = proj
     error = error - calc_proj
     npcalc_proj = np.zeros( (mx-mn), np.float32 )
-    closest.put_incr( npcalc_proj, idx_hi, wt_hi )
-    closest.put_incr( npcalc_proj, idx_lo, wt_lo )
+    cImageD11.put_incr( npcalc_proj, idx_hi, wt_hi )
+    cImageD11.put_incr( npcalc_proj, idx_lo, wt_lo )
     npcalc_proj = np.where(npcalc_proj >0 ,npcalc_proj, 1)
     update =  np.zeros( r.shape, np.float32)
     update =  wt_hi*np.take( error/npcalc_proj, idx_hi ) 
@@ -66,8 +66,8 @@ def update_wtd( recon, proj, angle, msk, dbg=True ):
     # Now take this error off of recon according to the weights
 
     #tot    =  np.zeros( (mx-mn), np.float32 )
-    #closest.put_incr( tot, idx_hi, wt_hi)
-    #closest.put_incr( tot, idx_lo, wt_lo)
+    #cImageD11.put_incr( tot, idx_hi, wt_hi)
+    #cImageD11.put_incr( tot, idx_lo, wt_lo)
     
     
     

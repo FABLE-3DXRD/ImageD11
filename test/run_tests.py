@@ -24,7 +24,7 @@ print "HERE",HERE
 
 for M in modules:
     os.chdir(HERE)
-    print(M)
+    print("Running suite for ",M)
     if M.find(".")>-1:
         path = M.split(".")
         for direc in path[:-1]:

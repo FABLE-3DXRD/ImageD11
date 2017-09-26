@@ -1,7 +1,7 @@
 
 
 import sys, numpy, time
-from ImageD11 import closest, blobcorrector, ImageD11_file_series
+from ImageD11 import cImageD11, blobcorrector, ImageD11_file_series
 from fabio.openimage import openimage
 from fabio.edfimage import edfimage
 
@@ -103,7 +103,7 @@ def main():
                     on = on * fit2dmask
                     
                 # Number of pixels and mask are constant
-                closest.put_incr( outnp,
+                cImageD11.put_incr( outnp,
                                   indices,
                                   on )
 
@@ -135,7 +135,7 @@ def main():
 
             dm = (dataim.ravel()*fit2dmask).astype(numpy.float32)
             
-            closest.put_incr( outsum,
+            cImageD11.put_incr( outsum,
                               indices,
                               dm )
 

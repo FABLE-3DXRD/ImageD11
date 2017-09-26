@@ -17,7 +17,7 @@
 
 
 import numpy as np
-from ImageD11 import closest
+from ImageD11 import cImageD11
 from xfab.tools import ubi_to_u, u_to_rod, ubi_to_rod
 
 import math, time, sys, logging
@@ -477,7 +477,7 @@ class indexer:
                       % (i*100./len(i1),len(hits)),
             costheta=np.dot(n2,n1[i])
             if tol > 0: # This is the original algorithm - the closest angle
-                best,diff = closest.closest(costheta,cs)
+                best,diff = cImageD11.closest(costheta,cs)
                 if diff < tol:
                     hits.append( [ diff, i1[i], i2[best] ])
             else:
@@ -562,10 +562,10 @@ class indexer:
                 print self.gv[i]
                 print self.gv[j]
                 raise
-            npk = closest.score(self.unitcell.UBI,gv,tol)
+            npk = cImageD11.score(self.unitcell.UBI,gv,tol)
             if npk > self.minpks:
                 self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],verbose=0,all=True)
-                npks=[closest.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist]
+                npks=[cImageD11.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist]
                 choice = np.argmax(npks)
                 UBI = self.unitcell.UBIlist[choice]
                 npk = npks[choice]
@@ -614,14 +614,14 @@ class indexer:
         i = -1
         for ubi in self.ubis:
             i += 1
-            npk = closest.score_and_assign( ubi, self.gv, self.hkl_tol,
+            npk = cImageD11.score_and_assign( ubi, self.gvflat, self.hkl_tol,
                                             self.drlv2, labels, i)
 
         self.ga = labels
         # For each grain we want to know how many peaks it indexes
         # This is a histogram of labels
-	bins =  np.arange(-0.5, len(self.ubis)-0.99)
-	hst = myhistogram( labels, bins )
+        bins =  np.arange(-0.5, len(self.ubis)-0.99)
+        hst = myhistogram( labels, bins )
         self.gas = hst
         assert len(self.gas) == len(self.ubis)
 
@@ -649,16 +649,17 @@ class indexer:
         etacalc =np.zeros(len(self.ra),np.float)
         omegacalc = np.zeros(len(self.ra),np.float)
         i = -1
+        self.gv = np.ascontiguousarray( self.gv )
+        
         for ubi in self.ubis:
             i += 1
             # Each ubi has peaks in self.ga
             uinverses.append( np.linalg.inv(ubi) )
-            npk , mdrlv = closest.refine_assigned(
+            npk , mdrlv = cImageD11.refine_assigned(
                 ubi.copy(),
                 self.gv,
                 self.ga,
-                i,
-                -1)
+                i)
             assert npk == self.gas[i]
             f.write("Grain: %d   Npeaks=%d   <drlv>=%f\n"%(
                 i, self.gas[i], np.sqrt(mdrlv) ))
@@ -779,9 +780,9 @@ class indexer:
         """
 #      t0=time.time()
         if tol==None:
-            return closest.score(UBI,self.gvflat,self.hkl_tol)
+            return cImageD11.score(UBI,self.gvflat,self.hkl_tol)
         else:
-            return closest.score(UBI,self.gvflat,tol)
+            return cImageD11.score(UBI,self.gvflat,tol)
         # NONE OF THIS FOLLOWING CODE IS EXECUTED, EVER!
 #        t1=time.time()
 #        h=matrixmultiply(UBI,transpose(self.gv))
@@ -963,7 +964,7 @@ class indexer:
             self.tth=np.zeros(len(self.ds))
         self.gv=np.transpose(np.array( [ self.xr , self.yr, self.zr ] ,np.float))
         self.allgv = self.gv.copy()
-        self.ga=np.zeros(len(self.ds),np.int)-1 # Grain assignments
+        self.ga=np.zeros(len(self.ds),np.int32)-1 # Grain assignments
 
         self.gvflat=np.ascontiguousarray(self.gv,'d') # Makes it contiguous in memory, hkl fast index
         if not quiet:

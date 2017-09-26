@@ -12,7 +12,7 @@ These will be real space vectors
 import logging, time, sys
 import numpy
 
-from ImageD11 import labelimage, closest
+from ImageD11 import labelimage, cImageD11
 
 def get_options(parser):
     parser.add_option( '-n', '--ngrid',
@@ -100,7 +100,7 @@ class grid:
                   thkl[:,1]*grid.shape[1] + \
                   thkl[:,2]
 
-            closest.put_incr( flatgrid , ind.astype(numpy.intp), vol )
+            cImageD11.put_incr( flatgrid , ind.astype(numpy.intp), vol )
             # print thkl,vol
 
             # vals = numpy.take(grid.flat, ind)
@@ -121,7 +121,8 @@ class grid:
     def fft(self):
         """ Compute the Patterson """
         start = time.time()
-        self.patty = abs(numpy.fft.fftn(self.grid))
+        self.patty = numpy.ascontiguousarray(abs(numpy.fft.fftn(self.grid)),
+                                             numpy.float32)
         logging.info("Time for fft "+str(time.time()-start))
         self.origin = self.patty[0,0,0]
         logging.info("Patterson origin height is :"+str(self.origin))

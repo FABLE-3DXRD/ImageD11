@@ -17,7 +17,7 @@
 
 
 import numpy as np
-from ImageD11 import closest, grain, transform
+from ImageD11 import cImageD11, grain, transform
 import unitcell
 
 import math, time, sys, logging
@@ -192,7 +192,7 @@ class indexer:
                T_g[1] = unit( np.cross( this_n1, T_g[2]) )
                U = np.dot( T_g.T, T_c)
                ubi =  np.dot( U, self.unitcell.B) 
-#               npks = closest.score(ubi,gvf,0.1)
+#               npks = cImageD11.score(ubi,gvf,0.1)
                pairs.append( (ind1[i], ind2[k], U, ubi ) )
 #               print npks, ubi
         self.pairs=pairs

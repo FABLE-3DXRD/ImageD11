@@ -1,6 +1,6 @@
 
 
-from ImageD11 import closest
+from ImageD11 import cImageD11
 
 import unittest
 import numpy as np
@@ -10,25 +10,25 @@ class test1(unittest.TestCase):
         data = np.zeros(10,np.float32)
         ind  = np.arange(10).astype(np.intp)
         vals = np.ones(10,np.float32)
-        closest.put_incr( data, ind, vals )
+        cImageD11.put_incr( data, ind, vals )
         assert (data == vals).all()
-        closest.put_incr( data, ind, vals )
+        cImageD11.put_incr( data, ind, vals )
         assert (data == 2*vals).all()
 
     def test_put_twice(self):
         data = np.zeros(10,np.float32)
         ind  = np.ones(10,np.intp)
         vals = np.ones(10,np.float32)
-        closest.put_incr( data, ind, vals )
+        cImageD11.put_incr( data, ind, vals )
         assert (data == np.array( [0, 10] + [0]*8 , np.float)).all()
-        closest.put_incr( data, ind, vals )
+        cImageD11.put_incr( data, ind, vals )
         assert (data == np.array( [0, 20] + [0]*8 , np.float)).all()
 
     def test_as_flat(self):
         data = np.zeros( (10, 10), np.float32 )
         ind  = np.ones( 10 , np.intp)*50
         vals = np.ones( 10 , np.float32)
-        closest.put_incr( np.ravel(data) , ind, vals )
+        cImageD11.put_incr( np.ravel(data) , ind, vals )
         assert ( np.ravel(data)[50] == 10 )
         assert ( np.ravel(data)[49] == 0 )
         assert ( np.ravel(data)[51] == 0 )

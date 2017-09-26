@@ -1,18 +1,20 @@
 
+
 import matplotlib.pylab as pl
 import os, sys
 
 if sys.platform == "win32":
     try:
-        os.remove("connectedpixels.pyd")
+        os.remove("cImageD11.pyd")
     except WindowsError:
         pass
     f2py = "f2py.py"
 else:
     f2py = "f2py"
-os.system(f2py+" -I%s -c connectedpixels.pyf connectedpixels.c blobs.c closest.c -DF2PY_REPORT_ON_ARRAY_COPY"%(os.getcwd()))
+os.system(f2py+" -I%s -c cImageD11.pyf connectedpixels.c blobs.c closest.c -DF2PY_REPORT_ON_ARRAY_COPY"%(os.getcwd()))
 
-import connectedpixels, numpy as np
+import cImageD11 as connectedpixels
+import numpy as np
 import ImageD11.closest
 np.random.seed(42)
 
@@ -25,20 +27,71 @@ assert oldy == newy
 print "Closest.closest seems OK"
 
 ubitest = (np.random.random((3,3))-0.5)*10
-gvtest = np.random.random( (4000, 3) )
+npk = 4000
+gvtest = np.random.random( (npk, 3) )
 def pyscore( u, g, tol ):
     h = np.dot( u, g.T )
     diff = (h-np.round(h))
     drlv2 = (diff*diff).sum(axis=0)
-    n = (drlv2 < (tol*tol)).sum()
-    return n
+    m = drlv2 < (tol*tol)
+    n = m.sum()
+    if n>0:
+        return drlv2[m].mean(), n
+    else:
+        return 0,n
+
+
 for tol in [0.01,0.1,0.2,0.4,0.8]:
     ninew = connectedpixels.score( ubitest, gvtest, tol )
     niold = ImageD11.closest.score( ubitest, gvtest, tol )
-    npyth = pyscore( ubitest, gvtest, tol )
+    drlv2, npyth = pyscore( ubitest, gvtest, tol )
     assert ninew == niold, (ninew, niold)
-print "Seems that score is OK"
 
+    ubifitnew = ubitest.copy()
+    ubifitold = ubitest.copy()
+    nnew, drlv2new = connectedpixels.score_and_refine( ubifitnew, gvtest, tol )
+    nold, drlv2old = ImageD11.closest.score_and_refine( ubifitold, gvtest, tol )
+    print tol,"npks",ninew, nnew, nold
+    assert nnew == ninew
+    assert np.allclose( (drlv2new,),(drlv2,))
+    assert np.allclose( (drlv2old,),(drlv2,))
+    assert np.allclose( ubifitnew, ubifitold )
+
+    ubilist = [ (np.random.random((3,3))-0.5)*10 for i in range(3) ]
+    drlv2new = np.zeros(  npk, np.float) + 2
+    labelsnew = np.ones(  npk, np.int32) - 2 
+    drlv2old = np.zeros(  npk, np.float) + 2
+    labelsold = np.ones(  npk, np.int32) - 2 
+
+    for i,u in enumerate(ubilist):
+        nnew = connectedpixels.score_and_assign( u, gvtest, tol, drlv2new, labelsnew, i+1 )
+        nold = ImageD11.closest.score_and_assign( u, gvtest, tol, drlv2old, labelsold, i+1 )
+        assert np.allclose( drlv2new, drlv2old )
+        assert (labelsnew == labelsold).all()
+        assert nnew == nold , (nnew, nold)
+        print nnew,nold
+
+    
+    for i,u in enumerate(ubilist):
+        nnew,drlnew = connectedpixels.refine_assigned( u.copy(), gvtest, labelsnew, i )
+        nold,drlold = ImageD11.closest.refine_assigned( u.copy(), gvtest, labelsold, i, -1 )
+        gtmp = gvtest[ labelsnew == i]
+        nnew2, drlv2new = connectedpixels.score_and_refine( u.copy(), gtmp, 1.0 )
+    
+        assert (labelsnew==i).sum() == nnew
+        if np.isnan( drlold ):
+            print "skip - bad before"
+        else:
+            assert np.allclose( drlnew, drlold ), (drlold, drlnew, drlv2new)
+        assert nnew == nold , (nnew, nold)
+        print nnew,nold
+
+
+
+print "Seems that score is OK"
+print "Seems that score_and_refine is OK"
+print "Seems that score_and_assign is OK"
+print "Seems that refine_assigned is OK"
 
 print connectedpixels.s_1
 
@@ -198,6 +251,17 @@ for i in range(NI):
     check( b0[i], b1[i], "b" )
     check( np.array(n0[i]) , np.array(n1[i]), "n")
     check( m0[i] , m1[i], "m")
+
+
+# test put_incr
+vals = np.zeros(20, np.float32)
+inds = np.array( [5, 10, 15], np.int64 )
+incs = np.array( [1, 2, 3], np.float32) 
+vtst = vals.copy()
+vtst[inds] = incs
+
+connectedpixels.put_incr( vals, inds, incs )
+assert np.allclose(vals, vtst)
 
 
 
