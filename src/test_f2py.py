@@ -1,4 +1,5 @@
 
+
 import matplotlib.pylab as pl
 import os, sys
 
@@ -58,9 +59,9 @@ for tol in [0.01,0.1,0.2,0.4,0.8]:
 
     ubilist = [ (np.random.random((3,3))-0.5)*10 for i in range(3) ]
     drlv2new = np.zeros(  npk, np.float) + 2
-    labelsnew = np.ones(  npk, np.int) - 2 
+    labelsnew = np.ones(  npk, np.int32) - 2 
     drlv2old = np.zeros(  npk, np.float) + 2
-    labelsold = np.ones(  npk, np.int) - 2 
+    labelsold = np.ones(  npk, np.int32) - 2 
 
     for i,u in enumerate(ubilist):
         nnew = connectedpixels.score_and_assign( u, gvtest, tol, drlv2new, labelsnew, i+1 )
