@@ -146,8 +146,66 @@ python module connectedpixels
           double precision, intent(in) :: gv(ng, 3)
           double precision, intent(in) :: tol
 
-       end subroutine score
+       end function score
    end interface
 
+   interface 
+       subroutine score_and_refine( ubi, gv, tol, n, sumdrlv2, ng)
+          intent(c) score_and_refine
+! Note: fortran, pass by ref
+          integer, intent( out ) :: n
+          double precision, intent(out) :: sumdrlv2
+          double precision, intent(c, inout) :: ubi(3,3)
+          double precision, intent(c, in) :: gv(ng,3)
+          integer, intent(c, hide), depend( gv ) :: ng 
+          double precision, intent(c, in) :: tol
+       end subroutine score_and_refine
+
+   end interface
+
+   interface
+       function score_and_assign( ubi, gv, tol, drlv2, labels,label, ng )
+          intent(c) score_and_assign
+          intent(c)
+          integer score_and_assign
+          double precision, intent(in) :: ubi(3,3)
+          double precision, intent(in) :: gv(ng,3)
+          integer, intent(hide), depend( gv ) :: ng 
+          double precision, intent(in) :: tol
+          double precision, intent(inout) :: drlv2(ng)
+          integer, intent(inout) :: labels(ng)
+          integer, intent(in) :: label
+       end function score_and_assign
+   end interface 
+
+
+   interface
+       subroutine refine_assigned( ubi, gv, labels, label, npk, drlv2, ng )
+          intent(c) refine_assigned
+          double precision, intent(c,in) :: ubi(3,3)
+          double precision, intent(c,in) :: gv(ng,3)
+          integer, intent(c,in) :: labels(ng)
+          integer, intent(c,in) :: label
+! Note : pass by ref
+          integer, intent(out) :: npk
+          double precision, intent(out) :: drlv2
+          integer, intent(c,hide), depend( gv ) :: ng
+       end subroutine refine_assigned
+   end interface 
+
+
+   interface 
+      subroutine put_incr( data, ind, vals,  boundscheck, n, m)
+          intent(c) put_incr
+          intent(c)
+          real, intent(inout) :: data(m)
+          real, intent(in) :: vals(n)
+! Assumes 64 bit addressing, usually true
+          integer*8, dimension(n), intent(in) :: ind
+          integer, intent(hide), depend( data ) :: m
+          integer, intent(hide), depend( ind) :: n
+          integer, optional :: boundscheck = 0
+      end subroutine put_incr
+   end interface
 
 end python module connectedpixels
