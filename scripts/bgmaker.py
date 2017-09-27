@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 #!/usr/bin/python
 
 
@@ -75,7 +77,7 @@ class minimum_image(object):
         try:
             data_object = openimage(filename)
         except IOError:
-            print filename, "not found"
+            print(filename, "not found")
             return
         self.add_image(data_object.data)
 
@@ -118,7 +120,7 @@ class kbg(object):
         try:
             data_object = openimage(filename)
         except IOError:
-            print filename, "not found"
+            print(filename, "not found")
             return
         self.add_image(data_object.data)
 
@@ -176,33 +178,33 @@ def bgmaker( options ):
 
 
     first_image = openimage( first_image_name )
-    print first_image.filename
+    print(first_image.filename)
 
-    allimagenumbers = range(options.first + options.step, 
-                options.last + options.step, options.step )
+    allimagenumbers = list(range(options.first + options.step, 
+                options.last + options.step, options.step))
 
     if options.kalman_error <= 0:
-        print "Using minimum image algorithm"
+        print("Using minimum image algorithm")
         bko = minimum_image( image = first_image.data )
     else:
-        print "Using Kalman algorithm with error =",options.kalman_error
+        print("Using Kalman algorithm with error =",options.kalman_error)
         bko = kbg( first_image.data, options.kalman_error*options.kalman_error )
-        print "Taking images in random order"
+        print("Taking images in random order")
         random.seed(42) # reproducible
         random.shuffle( allimagenumbers )
 
     for current_num in allimagenumbers:
         try:
             im = first_image.getframe( current_num )
-            print im.filename
+            print(im.filename)
             bko.add_image( im.data )
         except KeyboardInterrupt:
-            print "Got a keyboard interrupt"
+            print("Got a keyboard interrupt")
             break
         except:
             import traceback
             traceback.print_exc()
-            print "Failed for",current_num
+            print("Failed for",current_num)
         
     # finally write out the answer
     # model header + data
@@ -211,7 +213,7 @@ def bgmaker( options ):
     # write as edf - we should actually have a way to flag
     # which fabioimage formats know how to write themselves
     if options.outfile[-3:] == "edf":
-        print "writing",options.outfile,"in edf format"
+        print("writing",options.outfile,"in edf format")
         im = fabio.edfimage.edfimage( data = bko.bkg )
     else:
         im = first_image
@@ -222,8 +224,8 @@ def bgmaker( options ):
     except TypeError: # WTF?
         im.write(options.outfile)
     except:
-        print "problem writing"
-        print "trying to write",options.outfile,"in edf format"
+        print("problem writing")
+        print("trying to write",options.outfile,"in edf format")
         im = fabio.edfimage.edfimage( data = minim.minimum_image )
         try:
             im.write(options.outfile, force_type = im.data.dtype)
@@ -251,4 +253,4 @@ if __name__ == "__main__":
 
     END = time.time()
 
-    print "Total time = %f /s" % (END - START)
+    print("Total time = %f /s" % (END - START))

@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 
 
 # python script to process the box scan style data
@@ -32,22 +34,22 @@ class job:
         check if job is already run or not by looking for the log file
         """
         ret = os.path.exists(os.path.join(self.wk_dir, self.name+".log"))
-        print "check",self.wk_dir, self.name+".log",ret
+        print("check",self.wk_dir, self.name+".log",ret)
         return ret
     def run(self):
         """ run the job as a command line """
         try:
-            print self.name, self.wk_dir
+            print(self.name, self.wk_dir)
             os.chdir(self.wk_dir)
             c = self.cmd() + " | tee %s.log"%(self.name)
             sys.stdout.write("running %s\n%s\n"%(self.name, c))
             ret = os.system(c)
             if ret != 0:
-                print "Failed command"
+                print("Failed command")
                 sys.exit()
             time.sleep(1)
         except:
-            print self.name, self.wk_dir, self.kwds
+            print(self.name, self.wk_dir, self.kwds)
             raise
     def cmd(self):
         """ this is the method to override"""
@@ -130,9 +132,9 @@ def makejobs( direc, home ):
     """
     qd = os.path.join(home, direc, "ImageD11_quantix")
     fd = os.path.join(home, direc, "ImageD11_frelon")
-    print "direc",direc
-    print "qd", qd
-    print "fd",fd
+    print("direc",direc)
+    print("qd", qd)
+    print("fd",fd)
     joblist = [
         mkdir( os.path.join(home, direc) ,
                "mkdir_quantix", {'dirname' : qd } ) ,
@@ -389,21 +391,21 @@ if 1:
 
 
         if not os.path.isdir(d) or d in SKIP:
-            print "skipping",d
+            print("skipping",d)
             continue
 
-        print "Entering",d        
+        print("Entering",d)        
 
         
         jl = makejobs( d , HOME )
         for j in jl:
             os.chdir( os.path.join(HOME,d) )
-            print j.name, j.wk_dir, j.kwds
+            print(j.name, j.wk_dir, j.kwds)
             if not j.chk():
-                print "running"
+                print("running")
                 j.run()
             else:
-                print "done"
+                print("done")
         
         
         

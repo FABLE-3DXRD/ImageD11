@@ -67,16 +67,18 @@ fi = Extension("fImageD11",
                extra_f90_compile_args=["-fopenmp -O2"],
                libraries = elibs)
 
-if sys.platform == 'win32':
-    needed = [
-        'xfab>=0.0.2',
-        'fabio>=0.0.5',
-        'numpy>=1.0.0',
-        'matplotlib>=0.90.0',
-        ]
-else: # Take care of yourself if you are on linux
-    # Your package manager is inevitably f*cked
-    needed = []
+# Remove list of dependencies from setup file
+#if sys.platform == 'win32':
+#    needed = [
+#        'six',
+#        'xfab>=0.0.2',
+#        'fabio>=0.0.5',
+#        'numpy>=1.0.0',
+#        'matplotlib>=0.90.0',
+#        ]
+#else: # Take care of yourself if you are on linux
+
+needed = []
 #        'xfab>=0.0.1',
 #        'fabio>=0.0.4']
 
@@ -92,7 +94,7 @@ setup(name='ImageD11',
       install_requires = needed,
       packages = ["ImageD11"],
       package_dir = {"ImageD11":"ImageD11"},
-      url = "http://fable.wiki.sourceforge.net/ImageD11",
+      url = "http://github.com/jonwright/ImageD11",
 #      download_url = ["http://sourceforge.net/project/showfiles.php?group_id=82044&package_id=147869"],
       package_data = {"ImageD11" : ["doc/*.html"]},
       scripts = ["ImageD11/rsv_mapper.py",

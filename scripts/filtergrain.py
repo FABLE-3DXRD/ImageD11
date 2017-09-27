@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 #!/usr/bin/env python
 
 """
@@ -28,9 +30,9 @@ def filtergrain(options):
         if len(o.grainnames) == 1:
             gn = o.grainnames[0]
         else:
-            for i,gn in zip(range(len(o.grainnames)),o.grainnames):
+            for i,gn in zip(list(range(len(o.grainnames))),o.grainnames):
                 logging.info("Choose %d for grain %s"%(i, gn))
-            gn = o.grainnames[int(raw_input("select which grain "))]
+            gn = o.grainnames[int(input("select which grain "))]
     else:
         gn = o.grainnames[int(options.grain)]
     o.grainnames = [ gn, ]
@@ -45,7 +47,7 @@ def filtergrain(options):
             o.tolerance = tol
             logging.info("tol %f"%(o.tolerance))
             o.refineubis(quiet=False, scoreonly=True)
-        o.tolerance = float(raw_input("Enter tolerance "))
+        o.tolerance = float(input("Enter tolerance "))
         options.tol = o.tolerance
     else:
         o.tolerance = options.tol
@@ -56,7 +58,7 @@ def filtergrain(options):
     logging.info("Total peaks before filtering %d"%
                      o.scandata[options.fltfile].nrows)
     gotpks = o.scandata[options.fltfile].copy()
-    gotpks.filter(gotpks.labels == 0)
+    gotpks.filter(gotpks.labels == gn)
     gotpks.writefile(options.newfltfile)
     logging.info("Peaks which were indexed %d written to %s"%(
                 gotpks.nrows, options.newfltfile))

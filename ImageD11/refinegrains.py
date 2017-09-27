@@ -656,7 +656,7 @@ class refinegrains:
             drlv2_2 = self.scandata[s].drlv2*0 + 1  # == 1
             int_tmp_2 = numpy.zeros(nr , numpy.int32 )-1
             for ig, g in enumerate(self.grainnames):
-                assert g == ig, "sorry - a bug in program"
+#                assert g == ig, "sorry - a bug in program"
                 gr = self.grains[ ( g, s) ]
                 self.set_translation( g, s)
                 gr.peaks_xyz = peaks_xyz

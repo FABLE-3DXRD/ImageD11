@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 #!/usr/bin/python
 
 """
@@ -34,21 +36,21 @@ def try_to_reduce(u):
 
 
 for ubifile in sys.argv[1:]:
-    print "Reading",ubifile,
+    print("Reading",ubifile, end=' ')
     try:
         ul = indexing.readubis(ubifile)
     except:
-        print "error"
+        print("error")
         continue
-    print 
-    print "i    a       b       c     alpha    beta     gamma    volume"
+    print() 
+    print("i    a       b       c     alpha    beta     gamma    volume")
     cell_all = []
     volume = []
-    for u,i  in zip(ul,range(len(ul))):
-        print i, 
+    for u,i  in zip(ul,list(range(len(ul)))):
+        print(i, end=' ') 
         cell = indexing.ubitocellpars(u)
         vol = cell[0]*cell[1]*cell[2]*numpy.sin(cell[3]*numpy.pi/180.)*numpy.sin(cell[4]*numpy.pi/180.)*numpy.sin(cell[5]*numpy.pi/180.)
-        print "%.5f "*6 % cell + "%.5f" %vol
+        print("%.5f "*6 % cell + "%.5f" %vol)
         cell_all.append(cell)
         volume.append(vol)
         continue
@@ -57,13 +59,13 @@ for ubifile in sys.argv[1:]:
         #print red
         #print u
         if (red != u).any():
-            print "Reduced ubi"
-            print red
-            print "%.5f "*6 % indexing.ubitocellpars(red)
+            print("Reduced ubi")
+            print(red)
+            print("%.5f "*6 % indexing.ubitocellpars(red))
 
     cell_all = numpy.asarray(cell_all)
-    print "average"
+    print("average")
     (a,b,c,alpha,beta,gamma) = numpy.mean(cell_all,axis=0)#,keepdims=False)
-    print "%.5f "*7 %(a,b,c,alpha,beta,gamma,numpy.average(volume))
+    print("%.5f "*7 %(a,b,c,alpha,beta,gamma,numpy.average(volume)))
 
     

@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 #!/usr/bin/python
 
 
@@ -88,7 +90,7 @@ if __name__=="__main__":
     o = indexing.indexer()
     if options.gvefilename is None or \
             not os.path.exists(options.gvefilename):
-        print "You need to supply a gvector file with the -g option"
+        print("You need to supply a gvector file with the -g option")
         sys.exit()
 
     o.readgvfile(options.gvefilename)
@@ -106,7 +108,7 @@ if __name__=="__main__":
     try:
         for i in range(options.ngrains):
             if len(cur_gvecs) < 3:
-                print "Ran out of unindexed peaks"
+                print("Ran out of unindexed peaks")
                 break
 
             # print "Peak remaining",len(cur_gvecs)
@@ -126,7 +128,7 @@ if __name__=="__main__":
                 vecs = rc_array.rc_array( np.take( vecs, order, axis = 1),
                                           direction = 'col')
                 assert g.gv.shape[1] == 3
-                print "Finding lattice from patterson"
+                print("Finding lattice from patterson")
                 # Go through and make a shortlist of lattices by scoring fft only
                 if options.score_fft:
                     test_set = vecs
@@ -146,8 +148,8 @@ if __name__=="__main__":
                         noisy = options.noisy,
                         )
                 except IndexError:
-                    print vecs, options.n_try
-                    print vecs.shape
+                    print(vecs, options.n_try)
+                    print(vecs.shape)
                     raise
             else:
                 # Test vectors are the g-vectors
@@ -183,8 +185,8 @@ if __name__=="__main__":
             n3 = np.sum(np.where(dr > t2 , 1, 0 ) )
             assert npks == n2 , "debug scoring"
             assert n3 == len(all_gvecs) - npks, "debug scoring"
-            print l.r2c
-            print "Unit cell:",(6*"%.6f ")%indexing.ubitocellpars(l.r2c)
+            print(l.r2c)
+            print("Unit cell:",(6*"%.6f ")%indexing.ubitocellpars(l.r2c))
             
             # Put this grain in the output list
             ubis.append(l.r2c)
@@ -199,16 +201,16 @@ if __name__=="__main__":
                 np.compress( drlv2 > options.tol*options.tol,
                              cur_gvecs, axis = 0),
                 direction = 'row')
-            print "Lattice found, indexes", npks, "from all",all
-            print "Number of unindexed peaks remaining %d"%(len(cur_gvecs))
-            print "Current vector shape",cur_gvecs.shape
+            print("Lattice found, indexes", npks, "from all",all)
+            print("Number of unindexed peaks remaining %d"%(len(cur_gvecs)))
+            print("Current vector shape",cur_gvecs.shape)
         if len(ubis)>0:
             indexing.write_ubi_file(options.outfile,ubis)
-            print "Wrote to file",options.outfile
+            print("Wrote to file",options.outfile)
         else:
-            print "No unit cell found, sorry, please try again"
+            print("No unit cell found, sorry, please try again")
     except:
         if len(ubis)>0:
             indexing.write_ubi_file(options.outfile,ubis)
-            print "Wrote to file",options.outfile
+            print("Wrote to file",options.outfile)
         raise 

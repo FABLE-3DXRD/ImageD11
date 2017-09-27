@@ -38,18 +38,18 @@ class p:
     def add_option(self, *args, **kwds):
         junk = []
         if len(args)==2:
-            short, long = args
+            short, int = args
             e = ET.Element("option")
-            e.text = long[2:] # strip --
+            e.text = int[2:] # strip --
             junk.append( ET.SubElement(e, "short_name") )
             junk[-1].text = short[1:] # strip -
         elif len(args) == 1:
             long = args[0]
             e = ET.Element("option")
-            e.text = long[2:] # strip --
+            e.text = int[2:] # strip --
         else:
             raise Exception("Not one or two args")
-        keys = kwds.keys()
+        keys = list(kwds.keys())
         for k in keys:
             junk.append( ET.SubElement(e, k) )
             junk[-1].text = str(kwds[k])

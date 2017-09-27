@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 #!/usr/bin/python
 
 from ImageD11.grain import read_grain_file
@@ -24,7 +26,7 @@ try:
 except:
     outersf = 1.0
 
-print "Scale factor is",outersf
+print("Scale factor is",outersf)
 for g in gf:
     #print g.translation, g.ubi
     mapfile.write("\n\n")

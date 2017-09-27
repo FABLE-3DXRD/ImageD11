@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 #!/usr/bin/python
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
@@ -79,10 +81,10 @@ class darkflood:
             self.darkfile = darkfile
             self.darkimage = self.darkdata.data.astype(numpy.float32)
             if self.powfac != 1.0:
-                print "apply 0.96 to dark"
+                print("apply 0.96 to dark")
                 self.darkimage = numpy.power(self.darkimage, 0.96)
         except:
-            print "No dark file"
+            print("No dark file")
             self.darkdata = None
             self.darkimage= None
             self.darkfile = None
@@ -99,9 +101,9 @@ class darkflood:
 #                self.floodmultiplier = numpy.sum(numpy.ravel(
 #                        centre).astype(numpy.float32))/npix
                 self.flmult = 1 / (self.floodimage)
-                print "using flood from",floodfile
+                print("using flood from",floodfile)
         except:
-            print "No flood file"
+            print("No flood file")
             self.flooddata = None
             self.floodimage= None
             self.floodfile = None
@@ -244,7 +246,7 @@ class edf2bruker:
     def putitem(self, TITLE, new):
         """ put something in the header"""
         if len(new)!=80:
-            print new
+            print(new)
             raise Exception(
        "Sorry, you are about to corrupt the bruker header, len was %d"%(
                     len(new)))
@@ -257,7 +259,7 @@ class edf2bruker:
 
     def tlog(self, msg):
         new = time.time()
-        print "%4.2f %s"%(new-self.last_time, msg),
+        print("%4.2f %s"%(new-self.last_time, msg), end=' ')
         self.last_time = new
 
 
@@ -459,7 +461,7 @@ if __name__=="__main__":
         options, args = parser.parse_args()
 
         if options.stem is None:
-            print "Fill -n option or use --help"
+            print("Fill -n option or use --help")
             sys.exit()
 
 
@@ -510,7 +512,7 @@ if __name__=="__main__":
             if os.path.exists(f):
                 files_in.append(f)
             else:
-                print "Missing image",f
+                print("Missing image",f)
 
 
         ostem = options.stem
@@ -524,7 +526,7 @@ if __name__=="__main__":
             "", # extn
             options.ndigits )
 
-        allfiles = zip(files_in, files_out)
+        allfiles = list(zip(files_in, files_out))
 
         # Divide files over threads
         fl = [ allfiles[j::options.jthreads] for j in range(options.jthreads) ]
@@ -547,7 +549,7 @@ if __name__=="__main__":
                 time.sleep(1)
             except KeyboardInterrupt:
                 ImageD11.ImageD11_thread.stop_now = True
-                print "Got your control-c - terminating threads"
+                print("Got your control-c - terminating threads")
                 for t in my_threads:
                     if t.isAlive():
                         t.join(timeout=10)

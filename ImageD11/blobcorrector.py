@@ -83,8 +83,8 @@ class correctorclass: #IGNORE:R0902
         pair of floats as arguments
         """
         if self.orientation == "edf":
-            xcor = xin + bisplev.bisplev(yin, xin, self.tck2)
-            ycor = yin + bisplev.bisplev(yin, xin, self.tck1)
+            xcor = xin + bisplev(yin, xin, self.tck2)
+            ycor = yin + bisplev(yin, xin, self.tck1)
         else: 
             # fit2d does a flip 
             raise Exception("Spline orientations must be edf, convert "
@@ -93,8 +93,8 @@ class correctorclass: #IGNORE:R0902
             # it means the spline file for ImageD11 bruker images
             # is not the same as for fit2d. 
             xpos = self.xmax - xin
-            xcor = xin - bisplev.bisplev(yin, xpos, self.tck2)
-            ycor = yin + bisplev.bisplev(yin, xpos, self.tck1)
+            xcor = xin - bisplev(yin, xpos, self.tck2)
+            ycor = yin + bisplev(yin, xpos, self.tck1)
         return xcor, ycor
 
     def make_pixel_lut(self, dims):
@@ -112,13 +112,13 @@ class correctorclass: #IGNORE:R0902
             y_im = numpy.outer(numpy.ones(dims[0]), numpy.arange(dims[1]))
             # xcor is tck2
             x_im = numpy.add( x_im,
-                              bisplev.bisplev( numpy.arange(dims[1]),
-                                               numpy.arange(dims[0]),
+                              bisplev( numpy.arange(dims[1]),
+                                         numpy.arange(dims[0]),
                                                self.tck2 ).T,
                               x_im)
             # ycor is tck1
             y_im = numpy.add( y_im,
-                              bisplev.bisplev( numpy.arange(dims[1]),
+                              bisplev( numpy.arange(dims[1]),
                                                numpy.arange(dims[0]),
                                                self.tck1 ).T,
                               y_im)
@@ -145,11 +145,11 @@ class correctorclass: #IGNORE:R0902
 
         Iterative algorithm...
         """
-        yold = yin - bisplev.bisplev(yin, xin, self.tck1)
-        xold = xin - bisplev.bisplev(yin, xin, self.tck2)
+        yold = yin - bisplev(yin, xin, self.tck1)
+        xold = xin - bisplev(yin, xin, self.tck2)
         # First guess, assumes distortion is constant
-        ytmp = yin - bisplev.bisplev(yold, xold, self.tck1)
-        xtmp = xin - bisplev.bisplev(yold, xold, self.tck2)
+        ytmp = yin - bisplev(yold, xold, self.tck1)
+        xtmp = xin - bisplev(yold, xold, self.tck2)
         # Second guess should be better
         error = math.sqrt((xtmp - xold) * (xtmp - xold) + 
                           (ytmp - yold) * (ytmp - yold)   )
@@ -158,8 +158,8 @@ class correctorclass: #IGNORE:R0902
             ntries = ntries + 1
             xold = xtmp
             yold = ytmp
-            ytmp = yin - bisplev.bisplev(yold, xold, self.tck1)
-            xtmp = xin - bisplev.bisplev(yold, xold, self.tck2)
+            ytmp = yin - bisplev(yold, xold, self.tck1)
+            xtmp = xin - bisplev(yold, xold, self.tck2)
             error = math.sqrt((xtmp - xold) * (xtmp - xold) + 
                               (ytmp - yold) * (ytmp - yold)   )
             # print error,xold,x,yold,y

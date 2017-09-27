@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 #!/usr/bin/python
 
 # Command line driver only - calls ImageD11.peaksearcher
@@ -54,9 +56,9 @@ if __name__=="__main__":
     except:
         if myparser != None:
             myparser.print_help()
-        print "\n\n And here is the problem:\n"
+        print("\n\n And here is the problem:\n")
         raise
 end = time.time()
 t = end-reallystart
-print "Total time = %f /s" % ( t )
+print("Total time = %f /s" % ( t ))
 

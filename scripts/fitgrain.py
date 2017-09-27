@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 #!/usr/bin/python
 #! /bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
