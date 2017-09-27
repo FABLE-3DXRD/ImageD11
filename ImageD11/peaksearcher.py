@@ -31,6 +31,13 @@ and the blobcorrector(+splines) for correcting them for spatial distortion
 
 Defines one function (peaksearch) which might be reused
 """
+try:
+    import Queue as queue
+except:
+    import queue
+    
+import threading
+
 
 import time
 
@@ -384,7 +391,6 @@ def peaksearch_driver(options, args):
         print("Going to use threaded version!")
         try:
             # TODO move this to a module ?
-            import queue, threading
 
                 
             class read_only(ImageD11_thread.ImageD11_thread):
