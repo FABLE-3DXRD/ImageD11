@@ -44,5 +44,5 @@ class ImageD11_thread(threading.Thread):
     def ImageD11_stop_now(self):
         global stop_now
         if stop_now:
-            print "Got a stop in",self.myname
+            print( "Got a stop in",self.myname)
         return stop_now
