@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
@@ -29,7 +30,7 @@ try:
     # crazy debug
     test = np.arccos(np.zeros(10, np.float))
 except:
-    print dir()
+    print(dir())
     raise
 
 from math import pi
@@ -525,7 +526,7 @@ def compute_lorentz_factors(tth, eta, omega, wavelength, wedge=0., chi=0.):
     try:
         S_dot_u_x_So = np.dot(S, u_x_So)
     except:
-        print S.shape, u_x_So.shape
+        print(S.shape, u_x_So.shape)
     mod_S = np.sqrt(S * S)
     mod_So = np.sqrt(So * So)
     try:
@@ -577,20 +578,20 @@ if __name__ == "__main__":
 
     for wavelength in [0.1, 0.2, 0.3]:
         for wedge in [-10., -5., 0., 5., 10.]:
-            print "Wavelength", wavelength, "wedge", wedge
-            print "tth, eta, omega   ...   " +\
+            print("Wavelength", wavelength, "wedge", wedge)
+            print("tth, eta, omega   ...   " +\
                   "tth, eta, omega   ...   " +\
-                  "tth, eta, omega"
+                  "tth, eta, omega")
             gv = compute_g_vectors(tth, eta, om, wavelength, wedge)
             t, e, o = uncompute_g_vectors(gv, wavelength, wedge)
             for i in range(tth.shape[0]):
-                print "%9.3f %9.3f %9.3f  " % (tth[i], eta[i], om[i]),
-                print "%9.3f %9.3f %9.3f  " % (t[i],
+                print("%9.3f %9.3f %9.3f  " % (tth[i], eta[i], om[i]), end=' ')
+                print("%9.3f %9.3f %9.3f  " % (t[i],
                                                mod_360(e[0][i], eta[i]),
-                                               mod_360(o[0][i], om[i])),
-                print "%9.3f %9.3f %9.3f  " % (t[i],
+                                               mod_360(o[0][i], om[i])), end=' ')
+                print("%9.3f %9.3f %9.3f  " % (t[i],
                                                mod_360(e[1][i], eta[i]),
-                                               mod_360(o[1][i], om[i])),
+                                               mod_360(o[1][i], om[i])), end=' ')
                 # Choose best fitting
                 e_eta1 = mod_360(e[0][i], eta[i]) - eta[i]
                 e_om1 = mod_360(o[0][i], om[i]) - om[i]
@@ -598,4 +599,4 @@ if __name__ == "__main__":
                 e_eta2 = mod_360(e[1][i], eta[i]) - eta[i]
                 e_om2 = mod_360(o[1][i], om[i]) - om[i]
                 score_2 = e_eta2 * e_eta2 + e_om2 * e_om2
-                print "%.5g %.5g" % (score_1, score_2)
+                print("%.5g %.5g" % (score_1, score_2))

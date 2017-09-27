@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 """
 To be moved to fabio sometime
 """
@@ -83,7 +85,7 @@ def series_from_fabioseries( fabioseries, dark, flood, options ):
         try:
             fim = fabio.openimage.openimage(filename)
         except:
-            print "Missing image",filename
+            print("Missing image",filename)
             continue
         if (dark, flood) is not (None, None):
             fim.data = fim.data.astype(numpy.float32)
@@ -91,7 +93,7 @@ def series_from_fabioseries( fabioseries, dark, flood, options ):
             numpy.subtract( fim.data, dark, fim.data )
         if flood != None:
             numpy.divide( fim.data, flood, fim.data )
-        if fim.header.has_key(options.omegamotor):
+        if options.omegamotor in fim.header:
             fim.header['Omega'] = float(fim.header[options.omegamotor])
             try:
                 fim.header['OmegaStep'] = float(fim.header[options.omegamotorstep])
@@ -140,7 +142,7 @@ def get_series_from_options( options, args ):
         else:
             dark = None
     except:
-        print "Problem with your dark",options.dark
+        print("Problem with your dark",options.dark)
         raise
     
     try:
@@ -149,7 +151,7 @@ def get_series_from_options( options, args ):
         else:
             flood = None
     except:
-        print "Problem with your flood",options.flood
+        print("Problem with your flood",options.flood)
         raise
         
 

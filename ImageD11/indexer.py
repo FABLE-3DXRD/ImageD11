@@ -1,3 +1,6 @@
+
+from __future__ import print_function
+
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2015  Jon Wright
 #
@@ -18,7 +21,7 @@
 
 import numpy as np
 from ImageD11 import closest, grain, transform, fImageD11, indexing
-import unitcell
+from . import unitcell
 import scipy.optimize
 import math, time, sys, logging
 
@@ -142,7 +145,7 @@ class indexer:
               self.cf.ring[mask] = i
               self.cf.ringerr[mask] = diff[mask]
         # Report on assignments
-        print "Ring     (  h,  k,  l) Mult  total indexed to_index  "
+        print("Ring     (  h,  k,  l) Mult  total indexed to_index  ")
         # try reverse order instead
         dsr = self.unitcell.ringds
         for j in range(len(dsr))[::-1]:
@@ -150,10 +153,10 @@ class indexer:
             n_indexed  = (self.cf.labels[ind] >  -0.5).sum()
             n_to_index = (self.cf.labels[ind] <  -0.5).sum()
             h=self.unitcell.ringhkls[dsr[j]][0]
-            print "Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d"%(\
+            print("Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d"%(\
                 j,h[0],h[1],h[2],len(self.unitcell.ringhkls[dsr[j]]),
-                     ind.sum(),n_indexed,n_to_index)
-        print "Total peaks",self.cf.nrows,"assigned",(self.cf.ring>=0).sum()
+                     ind.sum(),n_indexed,n_to_index))
+        print("Total peaks",self.cf.nrows,"assigned",(self.cf.ring>=0).sum())
 
 
     def pairs(self, hkl1, hkl2, cos_tol = 0.02, hkl_tol = 0.1):
@@ -170,7 +173,7 @@ class indexer:
         ind1 = allinds[ abs(self.cf.tth - tth1) < tthtol ]
         ind2 = allinds[ abs(self.cf.tth - tth2) < tthtol ]
         angle, cosangle = self.unitcell.anglehkls( hkl1, hkl2 )
-        print "Angle, cosangle",angle,cosangle,hkl1,hkl2
+        print("Angle, cosangle",angle,cosangle,hkl1,hkl2)
         assert angle > 1 and angle < 179, "hkls are parallel"
         g = np.array( (self.cf.gx, self.cf.gy, self.cf.gz), np.float )
         n = g/self.cf.modg
@@ -206,16 +209,16 @@ class indexer:
                ubio = ubi.copy()
                npks = closest.score(ubi,gvf,hkl_tol)
                pairs.append( (ind1[i], ind2[k], U, ubi ) )
-               print npks, 
+               print(npks, end=' ') 
                ubi, trans = self.refine( ubi, [0.,0.,0.], tol=hkl_tol )
                inds, hkls = self.assign( ubi, trans, hkl_tol )
                ubi, trans = self.refine( ubi, trans, inds = inds, hkls= hkls, tol=hkl_tol )
-               print npks, ubi
-               print "cell: ",6*"%.6f "%(  indexing.ubitocellpars(ubi) )
-               print "position: ",trans
-               print
+               print(npks, ubi)
+               print("cell: ",6*"%.6f "%(  indexing.ubitocellpars(ubi) ))
+               print("position: ",trans)
+               print()
         self.pairs=pairs
-        print time.time()-start,"for",len(pairs),n1.shape, n2.shape
+        print(time.time()-start,"for",len(pairs),n1.shape, n2.shape)
         return pairs
 
 
@@ -243,7 +246,7 @@ class indexer:
         try:
             hkls, inds, peaks_xyz, gobs, omega = args
         except:
-            print args, len(args)
+            print(args, len(args))
             raise
         p.shape = 4,3
         ub = p[:3]
@@ -340,17 +343,17 @@ if __name__=="__main__":
                                          tol = tol)  
                     g.translation = t
                     g.set_ubi( ubi )
-            print k, len(inds),6*"%.8f "%(indexing.ubitocellpars(ubi))
-            print "\t",t
+            print(k, len(inds),6*"%.8f "%(indexing.ubitocellpars(ubi)))
+            print("\t",t)
         ImageD11.grain.write_grain_file( sys.argv[5], gl )
     else:
         i.updatecolfile()
         i.tthcalc()
-        print "Calling assign"
+        print("Calling assign")
         i.assigntorings()
         hkl1 = [int(h) for h in sys.argv[3].split(",")]
         hkl2 = [int(h) for h in sys.argv[4].split(",")]
-        print "Calling pairs"
+        print("Calling pairs")
         i.pairs(hkl1, hkl2)
 
 

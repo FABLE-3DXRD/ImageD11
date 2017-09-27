@@ -1,3 +1,6 @@
+
+from __future__ import print_function
+
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 
@@ -74,7 +77,7 @@ class scale:
         try:
             self.inverse = numpy.linalg.inv(lsqmat)
         except:
-            print lsqmat
+            print(lsqmat)
             raise
         
 
@@ -121,20 +124,20 @@ def scaleseries( target, stem, first, last,
     """
     # d0 = numpy.ravel(target.data.astype(numpy.float))
     scaler = scale(target.data, thresh)
-    print "# Scaling with respect to:", sys.argv[1]
+    print("# Scaling with respect to:", sys.argv[1])
     if thresh is not None:
-        print "# Using", scaler.indices.shape[0], "pixels above threshold"
+        print("# Using", scaler.indices.shape[0], "pixels above threshold")
     else:
-        print "# Using all pixels"
-    print "# Number Filename multiplier(t=" + str(thresh) + \
-          ") offset multiplier(all) offset"
+        print("# Using all pixels")
+    print("# Number Filename multiplier(t=" + str(thresh) + \
+          ") offset multiplier(all) offset")
     if writeim is None:
         # we only look to see
         for i in range(first, last+1):
             name = "%s.%04d" % (stem, i)
             secondimage = openimage.openimage(name)
             a, b = scaler.scale(secondimage.data)
-            print i, name , a, b,
+            print(i, name , a, b, end=' ')
     else: # we correct the image
         for i in range(first, last+1):
             name = "%s.%04d" % (stem, i)
@@ -144,7 +147,7 @@ def scaleseries( target, stem, first, last,
             # write out the file
             secondimage.data = newdata
             secondimage.write( newname )
-            print name, " -> ", newname
+            print(name, " -> ", newname)
             sys.stdout.flush()
 
 

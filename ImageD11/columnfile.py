@@ -1,5 +1,8 @@
 
 
+from __future__ import print_function
+
+
 """
 columnfile represents an ascii file with titles begining "#"
 and multiple lines of data
@@ -170,7 +173,7 @@ class columnfile:
         self.chkarray()
         fout = open(filename,"w+") # appending
         # Write as "# name = value\n"
-        parnames = self.parameters.get_parameters().keys()
+        parnames = list(self.parameters.get_parameters().keys())
         parnames.sort()
         for p in parnames:
             fout.write("# %s = %s\n"%(p, str(self.parameters.get(p) ) ) )
@@ -207,7 +210,7 @@ class columnfile:
             raise Exception("Cannot open %s for reading"%(filename))
         #              1 2 3 4 bytes
         if magic == '\x89HDF':
-            print "Reading your columnfile in hdf format"
+            print("Reading your columnfile in hdf format")
             colfile_from_hdf( filename, obj = self )
             return
         try:
@@ -286,7 +289,7 @@ class columnfile:
             # use empty arrays for now... not sure why this was avoided in the past?
             pass
             #return
-        for title, i in zip(self.titles, range(len(self.titles))):
+        for i, title in enumerate(self.titles):
             setattr(self, title, self.bigarray[i])
             assert getattr(self, title).shape == (self.nrows,)
 
@@ -386,7 +389,7 @@ try:
         if name is None:
             # Take the file name
             name = os.path.split(c.filename)[-1]
-        if name in h.keys():
+        if name in list(h.keys()):
             g = h[name]
         else:
             g = h.create_group( name )
@@ -398,7 +401,7 @@ try:
                 ty = numpy.float32
             # print "adding",t,ty
             dat = getattr(c, t).astype( ty )
-            if t in g.keys():
+            if t in list(g.keys()):
                 g[t][:] = dat
             else:
                 g.create_dataset( t, data = dat,
@@ -418,7 +421,7 @@ try:
         try:
             g = h.create_group( name )
         except:
-            print name, h
+            print(name, h)
             raise
         g.attrs['ImageD11_type'] = 'peaks'
         for t in c.titles:
@@ -439,12 +442,12 @@ try:
         if hasattr(h, 'listnames'):
             groups = h.listnames()
         else: # API changed
-            groups = h.keys()
+            groups = list(h.keys())
         if name is not None:
             if name in groups:
                 g = h[name]
             else:
-                print groups
+                print(groups)
                 raise Exception("Did not find your "+str(name)+" in "+hdffile)
         else:
             assert len(groups) == 1, "Your hdf file has many groups. Which one??"
@@ -453,7 +456,7 @@ try:
         if hasattr(g, 'listnames'):
             titles = g.listnames()
         else: # API changed
-            titles = g.keys()
+            titles = list(g.keys())
         otitles = [t for t in titles]
         otitles.sort()
         newtitles = []
@@ -509,12 +512,12 @@ def bench():
     import sys, time
     start = time.time()
     colf = columnfile(sys.argv[1])
-    print colf.bigarray.shape
-    print "ImageD11", time.time() - start
+    print(colf.bigarray.shape)
+    print("ImageD11", time.time() - start)
     start = time.time()
     nolf = numpy.loadtxt(sys.argv[1])
-    print nolf.shape
-    print "numpy", time.time() - start
+    print(nolf.shape)
+    print("numpy", time.time() - start)
     
     # os.system("time -p ./a.out")
 

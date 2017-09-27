@@ -127,8 +127,8 @@ setup(name='ImageD11',
                  "scripts/avg_par.py",
                  "scripts/powderimagetopeaks.py"])
 
-print "For windows you would need:"
-print 'set LDFLAGS="-static-libgfortran -static-libgcc -static -lgomp -shared"'
-print 'also gfortran/gcc installed (--compiler=mingw32)'
-print 'also to patch f2py to let it run'
+print("For windows you would need:")
+print('set LDFLAGS="-static-libgfortran -static-libgcc -static -lgomp -shared"')
+print('also gfortran/gcc installed (--compiler=mingw32)')
+print('also to patch f2py to let it run')
 

@@ -25,7 +25,7 @@ All communication should be via parent guicommander object
 Owner of the plot3d window
 """
 
-from listdialog import listdialog
+from .listdialog import listdialog
 
 
 class guisolver:

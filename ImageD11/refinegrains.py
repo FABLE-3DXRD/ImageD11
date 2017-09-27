@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 # Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_codepy
 
 
@@ -27,7 +29,7 @@ from ImageD11 import grain, columnfile, cImageD11
 
 import simplex, xfab.tools
 
-print __file__
+print(__file__)
 
 
 def triclinic( cp ):
@@ -141,9 +143,9 @@ class refinegrains:
         self.OMEGA_FLOAT=OmFloat
         self.slop=OmSlop
         if self.OMEGA_FLOAT:
-            print "Using",self.slop,"degree slop"
+            print("Using",self.slop,"degree slop")
         else:
-            print "Omega is used as observed"
+            print("Omega is used as observed")
         self.tolerance=tolerance
         # list of ubi matrices (1 for each grain in each scan)
         self.grainnames = []
@@ -162,7 +164,7 @@ class refinegrains:
         self.parameterobj = parameters.parameters(**self.pars)
         self.intensity_tth_range = intensity_tth_range
         self.recompute_xlylzl = False
-        for k,s in self.stepsizes.items():
+        for k,s in list(self.stepsizes.items()):
             self.parameterobj.stepsizes[k]=s
 
     def loadparameters(self, filename):
@@ -178,7 +180,7 @@ class refinegrains:
         try:
             ul = grain.read_grain_file(filename)
         except:
-            print filename, type(filename)
+            print(filename, type(filename))
             raise
         for i, g in enumerate(ul):
             name = filename + "_" + str(i)
@@ -194,7 +196,7 @@ class refinegrains:
         Save the refined grains
 
         """
-        ks = self.grains.keys()
+        ks = list(self.grains.keys())
         # sort by number of peaks indexed to write out
         if sort_npks:
             #        npks in x array
@@ -209,8 +211,8 @@ class refinegrains:
         # Update the datafile and grain names reflect indices in grain list
         for g,k in gl:
             name, fltname = g.name.split(":")
-            assert self.scandata.has_key(fltname),"Sorry - logical flaw"
-            assert len(self.scandata.keys())==1,"Sorry - need to fix for multi data"
+            assert fltname in self.scandata,"Sorry - logical flaw"
+            assert len(list(self.scandata.keys()))==1,"Sorry - need to fix for multi data"
             self.set_translation(k[0],fltname)
             self.compute_gv( g , update_columns = True )
             numpy.put( self.scandata[fltname].gx, g.ind, self.gv[:,0] )
@@ -238,9 +240,9 @@ class refinegrains:
         """
         from ImageD11.sym_u import find_uniq_u, getgroup
         g = getgroup( symmetry )()
-        for k  in self.ubisread.keys():
+        for k  in list(self.ubisread.keys()):
             self.ubisread[k] = find_uniq_u(self.ubisread[k], g)
-        for k in self.grains.keys():
+        for k in list(self.grains.keys()):
             self.grains[k].set_ubi( find_uniq_u(self.grains[k].ubi, g) )
 
 
@@ -289,7 +291,7 @@ class refinegrains:
             self.reset_labels(scanname)
 
     def reset_labels(self, scanname):
-        print "resetting labels"
+        print("resetting labels")
         try:
             x = self.scandata[scanname].xc
             y = self.scandata[scanname].yc
@@ -355,7 +357,7 @@ class refinegrains:
             try:
                 eta_err = numpy.array( [ e1e, e2e ] )
             except:
-                print e1e.shape, e2e.shape, e1e
+                print(e1e.shape, e2e.shape, e1e)
 
                 raise
 
@@ -420,9 +422,9 @@ class refinegrains:
         if not quiet:
             import math
             try:
-                print "%-8d %.6f"%(self.npks,math.sqrt(self.avg_drlv2))
+                print("%-8d %.6f"%(self.npks,math.sqrt(self.avg_drlv2)))
             except:
-                print self.npks,self.avg_drlv2, mat, self.gv.shape, self.tolerance
+                print(self.npks,self.avg_drlv2, mat, self.gv.shape, self.tolerance)
 #                raise
 
         #print self.tolerance
@@ -444,7 +446,7 @@ class refinegrains:
             value = arg[i]
             try:
                 self.parameterobj.parameters[item]=value
-                print item,value
+                print(item,value)
             except:
                 # Hopefully a crystal translation
                 pass
@@ -492,7 +494,7 @@ class refinegrains:
         if contribs > 0:
             return 1e6*diffs/contribs
         else:
-            print "No contribs???", self.grains_to_refine
+            print("No contribs???", self.grains_to_refine)
             return 1e6
 
 
@@ -500,21 +502,21 @@ class refinegrains:
         assert len(guess) == len(steps)
         cen = self.gof(guess)
         deriv = []
-        print "Estimating step sizes"
+        print("Estimating step sizes")
         for i in range(len(steps)):
-            print self.parameterobj.varylist[i],
+            print(self.parameterobj.varylist[i], end=' ')
             newguess = [g for g in guess]
             newguess[i] = newguess[i] + steps[i]
             here = self.gof(newguess)
-            print "npks, avgdrlv" ,  self.npks, self.avg_drlv2,
+            print("npks, avgdrlv" ,  self.npks, self.avg_drlv2, end=' ')
             deriv.append(here - cen)
-            print "D_gof, d_par, dg/dp",here-cen, steps[i],here-cen/steps[i]
+            print("D_gof, d_par, dg/dp",here-cen, steps[i],here-cen/steps[i])
         # Make all match the one which has the biggest impact
         j = numpy.argmax(numpy.absolute(deriv))
-        print "Max step size is on", self.parameterobj.varylist[j]
+        print("Max step size is on", self.parameterobj.varylist[j])
         inc  =  [ s * abs(deriv[j]) / abs(d) for d, s in zip(deriv, steps) ]
-        print "steps",steps
-        print "inc",inc
+        print("steps",steps)
+        print("inc",inc)
         return inc
 
 
@@ -530,7 +532,7 @@ class refinegrains:
         inc = self.parameterobj.get_variable_stepsizes()
         names = self.parameterobj.varylist
         self.printresult(guess)
-        self.grains_to_refine = self.grains.keys()
+        self.grains_to_refine = list(self.grains.keys())
         self.recompute_xlylzl = False
         for n in names:
             if n not in ['t_x', 't_y', 't_z']:
@@ -538,13 +540,13 @@ class refinegrains:
         inc = self.estimate_steps(self.gof, guess, inc)
         s=simplex.Simplex(self.gof, guess, inc)
         newguess,error,iter=s.minimize(maxiters=maxiters , monitor=1)
-        print
-        print "names",names
-        print "ng",newguess
+        print()
+        print("names",names)
+        print("ng",newguess)
         for p,v in zip(names,newguess):
             # record results
             self.parameterobj.set(p,v)
-            print "Setting parameter",p,v
+            print("Setting parameter",p,v)
         trans =["t_x","t_y","t_z"]
         for t in trans:
             if t in names:
@@ -555,12 +557,12 @@ class refinegrains:
                 # diffractometer parameters
                 for g in self.getgrains():
                     self.grains[g].translation[i] = newguess[names.index(t)]
-                    print g, t,i,newguess[names.index(t)]
-        print
+                    print(g, t,i,newguess[names.index(t)])
+        print()
         self.printresult(newguess)
 
     def getgrains(self):
-        return self.grains.keys()
+        return list(self.grains.keys())
 
 
     def set_translation(self,gr,sc):
@@ -571,7 +573,7 @@ class refinegrains:
 
     def refinepositions(self, quiet=True, maxiters=100):
         self.assignlabels()
-        ks  = self.grains.keys()
+        ks  = list(self.grains.keys())
         ks.sort()
         # assignments are now fixed
         tolcache = self.tolerance
@@ -591,24 +593,24 @@ class refinegrains:
             self.grains[key].translation[0] = self.parameterobj.parameters['t_x']
             self.grains[key].translation[1] = self.parameterobj.parameters['t_y']
             self.grains[key].translation[2] = self.parameterobj.parameters['t_z']
-            print key,self.grains[key].translation,
+            print(key,self.grains[key].translation, end=' ')
             self.refine(self.grains[key].ubi,quiet=False)
         self.tolerance = tolcache
 
 
     def refineubis(self, quiet=True, scoreonly=False):
         #print quiet
-        ks = self.grains.keys()
+        ks = list(self.grains.keys())
         ks.sort()
         if not quiet:
-            print "%10s %10s"%("grainname","scanname"),
-            print "npeak   <drlv> "
+            print("%10s %10s"%("grainname","scanname"), end=' ')
+            print("npeak   <drlv> ")
         for key in ks:
             g = self.grains[key]
             grainname = key[0]
             scanname = key[1]
             if not quiet:
-                print "%10s %10s"%(grainname,scanname),
+                print("%10s %10s"%(grainname,scanname), end=' ')
             # Compute gv using current parameters, including grain position
             self.set_translation(key[0],key[1])
             self.compute_gv(g)
@@ -622,7 +624,7 @@ class refinegrains:
         Fill out the appropriate labels for the spots
         """
         if not quiet:
-	        print "Assigning labels with XLYLZL"
+	        print("Assigning labels with XLYLZL")
         import time
         start = time.time()
         for s in self.scannames:
@@ -642,7 +644,7 @@ class refinegrains:
                                                     self.scandata[s].fc ],
                                                   **self.parameterobj.parameters)
             if not quiet:
-            	print "Start first grain loop",time.time()-start
+            	print("Start first grain loop",time.time()-start)
             start = time.time()
             gv = numpy.zeros(peaks_xyz.shape,numpy.float, order='F' )
             wedge = self.parameterobj.parameters['wedge']
@@ -653,7 +655,7 @@ class refinegrains:
             import fImageD11
             drlv2_2 = self.scandata[s].drlv2*0 + 1  # == 1
             int_tmp_2 = numpy.zeros(nr , numpy.int32 )-1
-            for g, ig in zip(self.grainnames, range(ng)):
+            for ig, g in enumerate(self.grainnames):
                 assert g == ig, "sorry - a bug in program"
                 gr = self.grains[ ( g, s) ]
                 self.set_translation( g, s)
@@ -677,26 +679,26 @@ class refinegrains:
 #                                          int_tmp_2,
 #                                          int(g))
             if not quiet:
-            	print time.time()-first_loop,"First loop"
+            	print(time.time()-first_loop,"First loop")
 #                print "assigned"
 
             self.gv = gv.T.astype(numpy.float32).copy()
             # Second loop after checking all grains
             if not quiet:
-            	print "End first grain loop",time.time()-start
+            	print("End first grain loop",time.time()-start)
             start = time.time()
 
             if not quiet:
-            	print self.scandata[s].labels.shape, \
+            	print(self.scandata[s].labels.shape, \
                 	  numpy.minimum.reduce(self.scandata[s].labels),\
-                  	  numpy.maximum.reduce(self.scandata[s].labels)
+                  	  numpy.maximum.reduce(self.scandata[s].labels))
 
             self.scandata[s].addcolumn( int_tmp , "labels" )
             self.scandata[s].addcolumn( drlv2 , "drlv2" )
             if not quiet:
-	            print self.scandata[s].labels.shape, \
+	            print(self.scandata[s].labels.shape, \
     	              numpy.minimum.reduce(self.scandata[s].labels),\
-        	          numpy.maximum.reduce(self.scandata[s].labels)
+        	          numpy.maximum.reduce(self.scandata[s].labels))
 
             tth = numpy.zeros( nr, numpy.float32 )-1
             eta = numpy.zeros( nr, numpy.float32 )
@@ -715,7 +717,7 @@ class refinegrains:
 
 
             if not quiet:
-            	print "Start second grain loop",time.time()-start
+            	print("Start second grain loop",time.time()-start)
             start = time.time()
 
             # We have the labels set in self.scandata!!!
@@ -723,7 +725,7 @@ class refinegrains:
                 gr = self.grains[ ( g, s) ]
 
                 ind = numpy.compress(int_tmp == g,
-                                     range(nr) )
+                                     numpy.arange(nr) )
                 #print 'x',gr.x[:10]
                 #print 'ind',ind[:10]
                 gr.ind = ind # use this to push back h,k,l later
@@ -746,7 +748,7 @@ class refinegrains:
                 self.scandata[s].eta_per_grain[ind] = eta
                 self.grains[ ( g, s) ] = gr
                 if not quiet:
-                	print "Grain",g,"Scan",s,"npks=",len(ind)
+                	print("Grain",g,"Scan",s,"npks=",len(ind))
                 #print 'x',gr.x[:10]
             # Compute the total integrated intensity if we have enough
             # information available
@@ -759,8 +761,8 @@ class refinegrains:
                                                             quiet = quiet )
 
             if not quiet:
-            	print "End second grain loop",time.time()-start
-            	print
+            	print("End second grain loop",time.time()-start)
+            	print()
             start = time.time()
 
 
@@ -801,7 +803,7 @@ def compute_lp_factor( colfile, **kwds ):
         try:
             colfile.addcolumn(lp, "Lorentz")
         except:
-            print lp.shape, colfile.tth.shape, colfile.nrows, "?"
+            print(lp.shape, colfile.tth.shape, colfile.nrows, "?")
             raise
 
     if "tth_per_grain" in colfile.titles and \
@@ -864,14 +866,14 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2, quiet = Fal
     if "Lorentz_per_grain" in colfile.titles:
         lor = colfile.Lorentz_per_grain
         if not quiet:
-	        print "lorentz per grain for ints",
+	        print("lorentz per grain for ints", end=' ')
     elif "Lorentz" in colfile.titles:
         lor = colfile.Lorentz
         if not quiet:
-        	print "lorentz for ints",
+        	print("lorentz for ints", end=' ')
     else:
         if not quiet:
-        	print "lost the lorentz",
+        	print("lost the lorentz", end=' ')
         lor = numpy.ones( colfile.nrows, numpy.float32 )
 
     # risk divide by zero here...
@@ -882,11 +884,11 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2, quiet = Fal
         if "tth_per_grain" in colfile.titles:
             tth = colfile.tth_per_grain
             if not quiet:
-            	print "tth_per_grain for",
+            	print("tth_per_grain for", end=' ')
         elif "tth" in colfile.titles:
             tth = colfile.tth
             if not quiet:
-            	print "tth for range",
+            	print("tth for range", end=' ')
         else:
             # bugger
             tth = numpy.ones(colfile.nrows)
@@ -896,7 +898,7 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2, quiet = Fal
                                       ( tth_vals < max(tth_range) ) ,
                                       intensities )
         if not quiet:
-        	print "range %.5f %.5f"%tuple(tth_range),
+        	print("range %.5f %.5f"%tuple(tth_range), end=' ')
 
 
     if len(intensities) < 1:
@@ -920,10 +922,10 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2, quiet = Fal
         intensities.shape[0])
     except:
         if not quiet:
-        	print intensities
+        	print(intensities)
         raise
     if not quiet:
-    	print ret
+    	print(ret)
     return ret
 
 
@@ -941,7 +943,7 @@ def test_benoit():
     #o.varytranslations()
     for o.tolerance in [0.1,0.2,0.15,0.1,0.075,0.05]:
         o.refineubis(quiet=False)
-    print "***"
+    print("***")
     o.refineubis(quiet=False)
     o.varylist = ['y-center','z-center','distance','tilt-y','tilt-z','wedge','chi']
     o.fit()
@@ -952,19 +954,19 @@ def test_nac():
     import sys
     o = refinegrains()
     o.loadparameters(sys.argv[1])
-    print "got pars"
+    print("got pars")
     o.loadfiltered(sys.argv[2])
-    print "got filtered"
+    print("got filtered")
     o.readubis(sys.argv[3])
-    print "got ubis"
+    print("got ubis")
     o.tolerance = float(sys.argv[4])
-    print "generating"
+    print("generating")
     o.generate_grains()
-    print "Refining posi too"
+    print("Refining posi too")
     o.refineubis(quiet = False , scoreonly = True)
-    print "Refining positions too"
+    print("Refining positions too")
     o.refinepositions()
-    print "Refining positions too"
+    print("Refining positions too")
     o.refineubis(quiet = False , scoreonly = True)
 
 

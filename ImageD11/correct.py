@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 
 import numpy
 from PIL import ImageFilter
@@ -39,9 +41,9 @@ def correct(data_object,
         picture = numpy.divide( picture, flood, picture )
         data_object.data = picture
     if monitorcol is not None and monitorval is not None:
-        if not data_object.header.has_key(monitorcol):
-            print "Missing header value for normalise",monitorcol,\
-                  data_object.filename
+        if monitorcol not in data_object.header:
+            print("Missing header value for normalise",monitorcol,\
+                  data_object.filename)
         else:
             try:
                 scal = monitorval / float( data_object.header[monitorcol] )
@@ -49,7 +51,7 @@ def correct(data_object,
                 data_object.data = picture
                 #print "scaled",scal,
             except:
-                print "Scale overflow",monitorcol, monitorval, dataobj.filename
+                print("Scale overflow",monitorcol, monitorval, dataobj.filename)
 
     if do_median:
         # We do this after corrections
@@ -66,14 +68,14 @@ def correct(data_object,
     # Apply series of PIL filters
     if len( filterlist ) > 0:
         pim = data_object.toPIL16()
-        print "Applied",
+        print("Applied", end=' ')
         for item in filterlist:
             if item in filternames:
                 try:
                      pim = pim.filter( filters[ item ])
                 except:
                     raise
-                print item,
+                print(item, end=' ')
         data_object.data = numpy.array( pim )
     return data_object
 

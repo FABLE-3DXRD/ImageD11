@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 
 from ImageD11.columnfile import columnfile
 from ImageD11.parameters import read_par_file
@@ -137,7 +138,7 @@ def fit_ub_t( ub, translation, hkl, peaks_Cxyz, beam_Cxyz, wavelength):
         gcalc =  np.dot( ubnew , hkl ) # 3xn
         gdiff = gcalc - gobs
         if 0:
-            print (gdiff*gdiff).ravel().sum(),tnew
+            print((gdiff*gdiff).ravel().sum(),tnew)
         dg.shape = 12,3*npk
         mat = np.dot( dg, dg.T )
         rhs = np.dot( dg, gdiff.ravel() )
@@ -179,14 +180,14 @@ def main():
     hi = np.round( np.dot( ubi, gve ) )
     lastgof = 1e9
     ubn, tn = fit_ub_t( ub, t, hi, peaks_Cxyz, beam_Cxyz, w)
-    print "Before\nt=",gl[0].translation
-    print "UB=",gl[0].ub
+    print("Before\nt=",gl[0].translation)
+    print("UB=",gl[0].ub)
     gl[0].set_ubi( np.linalg.inv( ubn ) )
     gl[0].translation = tn    
     dt = time.time() - start
-    print "time calculating",dt,"gps",1/dt
-    print "After\nt=",gl[0].translation
-    print "UB=",gl[0].ub
+    print("time calculating",dt,"gps",1/dt)
+    print("After\nt=",gl[0].translation)
+    print("UB=",gl[0].ub)
     write_grain_file(sys.argv[4],gl)
 
 
@@ -203,7 +204,7 @@ def main2():
         ubnew, tnew = fitagrain( g, p )
         g.set_ubi( np.linalg.inv( ubnew ) )
         g.translation[:] = tnew
-        print i, len(g.sc), tnew
+        print(i, len(g.sc), tnew)
     write_grain_file( sys.argv[4], gl )
         
 

@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 
@@ -100,7 +102,7 @@ class group:
         """
         global DEBUG
         if DEBUG:
-            print "making new group"
+            print("making new group")
         new = True            
         while new:
             for a in self.group:
@@ -110,7 +112,7 @@ class group:
                     if self.isMember(c):
                         new=False
                     if new:
-                        if DEBUG: print "adding",c,"to group"
+                        if DEBUG: print("adding",c,"to group")
                         self.group.append(c)
 
 def generate_group(*args):
@@ -165,7 +167,7 @@ def find_uniq_u(u, grp, debug=0, func=np.trace):
     for o in grp.group:
         cand = grp.op(o, u)
         t = func(cand)
-        if debug: print t
+        if debug: print(t)
         if func(cand) > tmax:
             uniq = cand
             tmax = t
@@ -247,19 +249,19 @@ def test():
     assert np.allclose( m_from_string( "-y,y-x,z" ), np.array([[ 0,-1,0],
                                                              [ -1, 1,0],
                                                              [ 0, 0,1]] ))
-    print "testing1"
+    print("testing1")
     for op in [ "x,y,z", "-y,x-y,z", "-y,x,z"]:
         d = np.linalg.det(m_from_string(op)) 
         assert d == 1.0, "Determinant = %f %s"%(d,op)
-    print "testing2"    
+    print("testing2")    
     assert len(cubic().group) == 24, "not 24 ops found for cubic !"
-    print  len(hexagonal().group)
+    print(len(hexagonal().group))
     assert len(hexagonal().group) == 12 ,"not 6 ops found for hexagonal !"
     assert len(trigonal().group) == 3 ,"not 3 ops found for trigonal !"+\
         str(trigonal().group)
     assert len(tetragonal().group) == 4 ,"not 8 ops found for tetragonal !"
     assert len(orthorhombic().group) == 4 ,"not 4 ops found for orthorhombic !"
-    print "testing3"
+    print("testing3")
     for f in [ monoclinic_a, monoclinic_b, monoclinic_c]:
         r = f().group
         assert len(r) == 2, " not 2 ops for monoclinic "
@@ -291,7 +293,7 @@ def test():
     global DEBUG
     DEBUG = True
     g2.additem([0.1, 0.45, 10])
-    print g2.group
+    print(g2.group)
     DEBUG = False
     
 

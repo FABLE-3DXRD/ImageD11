@@ -1,3 +1,6 @@
+
+from __future__ import print_function
+
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -17,9 +20,13 @@
 
 
 import numpy as np
-from Tkinter import *
+#try:
+#    from Tkinter import *
+#except:
+#    # python3?
+#    from tkinter import *
 
-from listdialog import listdialog
+from .listdialog import listdialog
 
 from ImageD11 import twodplot
 
@@ -104,7 +111,7 @@ class guitransformer:
                                          d.result)
         # wtf d.fv
         vars = []
-        print "d.fv",d.fv
+        print("d.fv",d.fv)
         for v in possvars:
             logging.debug(str(v)+" "+str(d.fv[v]))
             if d.fv[v]==1:
@@ -148,7 +155,7 @@ class guitransformer:
     def plotcols(self):
         names = self.parent.guicommander.execute("transformer",getcols)
         d = columnchooser(self.parent, names)
-        print d.result
+        print(d.result)
 
 
     def fit(self):

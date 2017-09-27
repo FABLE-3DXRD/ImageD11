@@ -1,10 +1,7 @@
-#!/usr/bin/python
 
-# Separate this from the command line script.
 
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
+from __future__ import print_function
 
-#! /bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 
 # ImageD11_v1.0 Software for beamline ID11
@@ -69,7 +66,7 @@ class timer:
         self.now = now
     def tock(self,msg=""):
         self.tick(msg)
-        print " ".join(self.msgs),"%.2f/s"% (self.now-self.start)
+        print(" ".join(self.msgs),"%.2f/s"% (self.now-self.start))
         sys.stdout.flush()
 
 from ImageD11.correct import correct
@@ -92,9 +89,9 @@ def peaksearch( filename ,
     t = timer()
     picture = data_object.data.astype(numpy.float32)
     
-    assert data_object.header.has_key("Omega"), "Bug in peaksearch headers"
+    assert "Omega" in data_object.header, "Bug in peaksearch headers"
 
-    for lio in labims.values():
+    for lio in list(labims.values()):
         f = lio.sptfile
         f.write("\n\n# File %s\n" % (filename))
         f.write("# Frame %d\n" % (data_object.currentframe) )
@@ -105,7 +102,7 @@ def peaksearch( filename ,
             f.write("# SPLINE Y-PIXEL-SIZE %s\n" % (str(corrector.ysize)))
         except:
             pass
-        for item in data_object.header.keys():
+        for item in list(data_object.header.keys()):
             if item == "headerstring": # skip
                 continue
             try:
@@ -150,22 +147,22 @@ def peaksearch_driver(options, args):
     """
     ################## debugging still
     for a in args:
-        print "arg: "+str(a)+","+str(type(a))
-    for o in options.__dict__.keys():
+        print("arg: "+str(a)+","+str(type(a)))
+    for o in list(options.__dict__.keys()):
         if getattr(options,o) in [ "False", "FALSE", "false" ]:
             setattr(options,o,False)
         if getattr(options,o) in [ "True", "TRUE", "true" ]:
             setattr(options,o,True)
-        print "option:",str(o),str(getattr(options,o)),",",\
-        str(type( getattr(options,o) ) )
+        print("option:",str(o),str(getattr(options,o)),",",\
+        str(type( getattr(options,o) ) ))
     ###################
-    print "This peaksearcher is from",__file__
+    print("This peaksearcher is from",__file__)
 
     if options.killfile is not None and os.path.exists(options.killfile):
-        print "The purpose of the killfile option is to create that file"
-        print "only when you want peaksearcher to stop"
-        print "If the file already exists when you run peaksearcher it is"
-        print "never going to get started"
+        print("The purpose of the killfile option is to create that file")
+        print("only when you want peaksearcher to stop")
+        print("If the file already exists when you run peaksearcher it is")
+        print("never going to get started")
         raise ValueError("Your killfile "+options.killfile+" already exists")
 
     if options.thresholds is None:
@@ -177,10 +174,10 @@ def peaksearch_driver(options, args):
         # What to do about spatial
  
     if options.perfect=="N" and os.path.exists(options.spline):
-        print "Using spatial from",options.spline
+        print("Using spatial from",options.spline)
         corrfunc = blobcorrector.correctorclass(options.spline)
     else:
-        print "Avoiding spatial correction"
+        print("Avoiding spatial correction")
         corrfunc = blobcorrector.perfect()
 
 
@@ -196,8 +193,8 @@ def peaksearch_driver(options, args):
     if options.format in ['bruker', 'BRUKER', 'Bruker']:
         extn = ""
         if options.perfect is not "N":
-            print "WARNING: Your spline file is ImageD11 specific"
-            print "... from a fabio converted to edf first"
+            print("WARNING: Your spline file is ImageD11 specific")
+            print("... from a fabio converted to edf first")
     elif options.format == 'GE':
         extn = ""
         # KE: This seems to be a mistake and keeps PeakSearch from working in
@@ -226,7 +223,7 @@ def peaksearch_driver(options, args):
                     yield fabio.open(a)
                     yield fabio.open(b)
                 except:
-                    print a,b
+                    print(a,b)
                     raise
         file_series_object = fso(f0,f1)     
         first_image = openimage( f0[0] )
@@ -250,7 +247,7 @@ def peaksearch_driver(options, args):
     
     if options.outfile[-4:] != ".spt":
         options.outfile = options.outfile + ".spt"
-        print "Your output file must end with .spt, changing to ",options.outfile
+        print("Your output file must end with .spt, changing to ",options.outfile)
 
     # Omega overrides
 
@@ -284,16 +281,16 @@ def peaksearch_driver(options, args):
                               fileout = mergefile, 
                               spatial = corrfunc,
                               sptfile=spotfile) 
-        print "make labelimage",mergefile,spotfile
+        print("make labelimage",mergefile,spotfile)
     # Not sure why that was there (I think if glob was used)
     # files.sort()
     if options.dark!=None:
-        print "Using dark (background)",options.dark
+        print("Using dark (background)",options.dark)
         darkimage= openimage(options.dark).data.astype(numpy.float32)
     else:
         darkimage=None
     if options.darkoffset!=0:
-        print "Adding darkoffset",options.darkoffset
+        print("Adding darkoffset",options.darkoffset)
         if darkimage is None:
             darkimage = options.darkoffset
         else:
@@ -305,14 +302,14 @@ def peaksearch_driver(options, args):
         middle = floodimage[cen0:-cen0, cen1:-cen1]
         nmid = middle.shape[0]*middle.shape[1]
         floodavg = numpy.mean(middle)
-        print "Using flood",options.flood,"average value",floodavg
+        print("Using flood",options.flood,"average value",floodavg)
         if floodavg < 0.7 or floodavg > 1.3:
-            print "Your flood image does not seem to be normalised!!!"
+            print("Your flood image does not seem to be normalised!!!")
          
     else:
         floodimage=None
     start = time.time()
-    print "File being treated in -> out, elapsed time"
+    print("File being treated in -> out, elapsed time")
     # If we want to do read-ahead threading we fill up a Queue object with data 
     # objects
     # THERE MUST BE ONLY ONE peaksearching thread for 3D merging to work
@@ -336,7 +333,7 @@ def peaksearch_driver(options, args):
                         sys.exit()
                     continue
                 filein = data_object.filename
-                if OMEGAOVERRIDE or not data_object.header.has_key("Omega"):
+                if OMEGAOVERRIDE or "Omega" not in data_object.header:
                     data_object.header["Omega"] = OMEGA
                     OMEGA += OMEGASTEP
                     OMEGAOVERRIDE = True # once you do it once, continue
@@ -353,15 +350,15 @@ def peaksearch_driver(options, args):
             for t in thresholds_list:
                 li_objs[t].finalise()
         if options.profile_file is not None:
-            print "Profiling output"
+            print("Profiling output")
             try:
                 import cProfile as Prof
             except ImportError:
                 try:
                     import profile as Prof
                 except:
-                    print "Your package manager is having a laugh"
-                    print "install python-profile please"
+                    print("Your package manager is having a laugh")
+                    print("install python-profile please")
                     raise
             Prof.runctx( "go_for_it(file_series_object, darkimage, floodimage, \
                 corrfunc , thresholds_list, li_objs , \
@@ -384,10 +381,10 @@ def peaksearch_driver(options, args):
 
             
     else:
-        print "Going to use threaded version!"
+        print("Going to use threaded version!")
         try:
             # TODO move this to a module ?
-            import Queue, threading
+            import queue, threading
 
                 
             class read_only(ImageD11_thread.ImageD11_thread):
@@ -401,14 +398,14 @@ def peaksearch_driver(options, args):
                     self.OMEGASTEP = OMEGASTEP
                     ImageD11_thread.ImageD11_thread.__init__(self , 
                                                              myname=myname)
-                    print "Reading thread initialised",
+                    print("Reading thread initialised", end=' ')
 
                     
                 def ImageD11_run(self):
                     """ Read images and copy them to self.queue """
                     for data_object in self.file_series_obj:
                         if self.ImageD11_stop_now():
-                            print "Reader thread stopping"
+                            print("Reader thread stopping")
                             break
                         if not isinstance( data_object, fabio.fabioimage.fabioimage ):
                             # Is usually an IOError
@@ -430,9 +427,9 @@ def peaksearch_driver(options, args):
                                 data_object.header["Omega"] = self.OMEGA
                                 self.OMEGA += self.OMEGASTEP
                             else:
-                                if options.omegamotor != 'Omega' and data_object.header.has_key(options.omegamotor):
+                                if options.omegamotor != 'Omega' and options.omegamotor in data_object.header:
                                     data_object.header["Omega"] = float(data_object.header[options.omegamotor])
-                                if not data_object.header.has_key("Omega"):
+                                if "Omega" not in data_object.header:
                                     # print "Computing omega as not in header"
                                     data_object.header["Omega"] = self.OMEGA
                                     self.OMEGA += self.OMEGASTEP
@@ -446,7 +443,7 @@ def peaksearch_driver(options, args):
                         self.queue.put((filein, data_object) , block = True)
                         ti.tock(" enqueue ")
                         if self.ImageD11_stop_now():
-                            print "Reader thread stopping"
+                            print("Reader thread stopping")
                             break
                         
                     # Flag the end of the series
@@ -493,7 +490,7 @@ def peaksearch_driver(options, args):
                             self.queues_out[t].put((filein, data_object) ,
                                                    block = True)
                         ti.tock(" enqueue ")
-                    print "Corrector thread stopping"
+                    print("Corrector thread stopping")
 
 
 
@@ -522,7 +519,7 @@ def peaksearch_driver(options, args):
                     self.li_obj.finalise()
 
             # 8 MB images - max 40 MB in this queue
-            read_queue = Queue.Queue(5)
+            read_queue = queue.Queue(5)
             reader = read_only(read_queue, file_series_object,
                                OMEGA = OMEGA,
                                OMEGASTEP = OMEGASTEP,
@@ -531,8 +528,8 @@ def peaksearch_driver(options, args):
             queues = {}
             searchers = {}
             for t in thresholds_list:
-                print "make queue and peaksearch for threshold",t
-                queues[t] = Queue.Queue(3)
+                print("make queue and peaksearch for threshold",t)
+                queues[t] = queue.Queue(3)
                 searchers[t] = peaksearch_one(queues[t], corrfunc, 
                                               t, li_objs[t] )
             corrector = correct_one_to_many( read_queue,
@@ -568,7 +565,7 @@ def peaksearch_driver(options, args):
                         raise KeyboardInterrupt()
                     time.sleep(1)
                 except KeyboardInterrupt:
-                    print "Got keyboard interrupt in waiting loop"
+                    print("Got keyboard interrupt in waiting loop")
                     ImageD11_thread.stop_now = True
                     try:
                         time.sleep(1)
@@ -581,9 +578,9 @@ def peaksearch_driver(options, args):
                     for thr in my_threads:
                         if thr.isAlive():
                             thr.join(timeout=1)                        
-                    print "finishing from waiting loop"
+                    print("finishing from waiting loop")
                 except:
-                    print "Caught exception in waiting loop"
+                    print("Caught exception in waiting loop")
                     ImageD11.thread_stop_now = True
                     time.sleep(1)
                     empty_queue(read_queue)
@@ -597,7 +594,7 @@ def peaksearch_driver(options, args):
                     
 
         except ImportError:
-            print "Probably no threading module present"
+            print("Probably no threading module present")
             raise
     
 
@@ -707,12 +704,17 @@ def get_options(parser):
 
 def get_help(usage = True):
     """ return the help string for online help """
-    import optparse, StringIO
+    try:
+        import StringIO as io
+    except:
+        # python3
+        import io
+    import optparse
     if usage:
         o = get_options(optparse.OptionParser())
     else:
         o = get_options(optparse.OptionParser(optparse.SUPPRESS_USAGE))
-    f = StringIO.StringIO()
+    f = io.StringIO()
     o.print_help(f)
     return f.getvalue()
 

@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 
 """
 Class to wrap the cImageD11 c extensions for labelling
@@ -143,7 +144,7 @@ class labelimage:
         try:
             self.outfile.write(self.titles)
         except:
-            print type(self.outfile),self.outfile
+            print(type(self.outfile),self.outfile)
             raise
 
 

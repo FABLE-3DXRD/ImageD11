@@ -11,8 +11,11 @@ from this I think
 # probably programming python or maybe cookbook.
 # Most probably programming python by Mark Lutz
 """
-
-import Tkinter as Tk
+try:
+    import Tkinter as Tk
+except:
+    # python 3 ? 
+    import tkinter as Tk
 
 class GuiMaker(Tk.Frame):   # Inherit from Tk frame
     """

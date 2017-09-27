@@ -1,3 +1,6 @@
+
+from __future__ import print_function
+
 # ImageD11_v1.1 Software for beamline ID11
 # Copyright (C) 2005 - 2008  Jon Wright
 #
@@ -216,7 +219,7 @@ class transformer:
         if (self.colfile.titles[0:3] == ["xc", "yc", "omega"]):
             self.setxyomcols("xc", "yc", "omega")
         if "spot3d_id" not in self.colfile.titles:
-            self.colfile.addcolumn(range(self.colfile.nrows),
+            self.colfile.addcolumn(list(range(self.colfile.nrows)),
                                     "spot3d_id")
 
     def setxyomcols(self, xname, yname, omeganame):
@@ -337,7 +340,7 @@ class transformer:
         """ Apply simplex to improve fit of obs/calc tth """
         tthmin = float(tthmin)
         tthmax = float(tthmax)
-        import simplex
+        from . import simplex
         if self.theoryds == None:
             self.addcellpeaks()
         # Assign observed peaks to rings
@@ -350,8 +353,8 @@ class transformer:
         w = float(pars['wavelength'])
         self.wavelength = w
         self.fit_tolerance = float(pars['fit_tolerance'])
-        print "Tolerance for assigning peaks to rings", \
-            self.fit_tolerance, ", min tth", tthmin, ", max tth", tthmax
+        print("Tolerance for assigning peaks to rings", \
+            self.fit_tolerance, ", min tth", tthmin, ", max tth", tthmax)
         tth, eta = self.compute_tth_eta()
         for i in range(len(self.theoryds)):
             dsc = self.theoryds[i]
@@ -368,7 +371,7 @@ class transformer:
             if sum(logicals) > 0:
                 self.tthc.append(tthcalc)
                 self.fitds.append(dsc)
-                ind = numpy.compress(logicals, range(len(tth)))
+                ind = numpy.compress(logicals, list(range(len(tth))))
                 self.indices.append(ind)
         guess = self.parameterobj.get_variable_values()
         inc = self.parameterobj.get_variable_stepsizes()
@@ -385,7 +388,7 @@ class transformer:
         self.parameterobj.set_variable_values(newguess)
         self.wavelength = self.parameterobj.get("wavelength")
         self.gof(newguess)
-        print newguess
+        print(newguess)
 
 
     def addcellpeaks(self, limit=None):
@@ -443,7 +446,7 @@ class transformer:
         if "tth" not in self.colfile.titles:
             self.compute_tth_eta()
         pars = self.parameterobj.get_parameters()
-        if pars.has_key("omegasign"):
+        if "omegasign" in pars:
             om_sgn = pars["omegasign"]
         else:
             om_sgn = 1.0
@@ -488,7 +491,7 @@ class transformer:
         # Handle the axis direction somehow
         f.write("# axis %f %f %f\n" % tuple(self.getaxis()))
         # Put a copy of all the parameters in the gve file
-        pkl = pars.keys()
+        pkl = list(pars.keys())
         pkl.sort()
         for k in pkl:
             f.write("# %s = %s \n" % (k, pars[k]))
@@ -512,7 +515,7 @@ class transformer:
         zl = self.getcolumn("zl")
         order = numpy.argsort(tth)
         f.write("#  gx  gy  gz  xc  yc  ds  eta  omega  spot3d_id  xl  yl  zl\n")
-        print numpy.maximum.reduce(ome), numpy.minimum.reduce(ome)
+        print(numpy.maximum.reduce(ome), numpy.minimum.reduce(ome))
         ds = 2 * numpy.sin(transform.radians(tth / 2)) / pars["wavelength"]
         fmt = "%f "*8 + "%d " + "%f "*3 + "\n"
         for i in order:
@@ -552,7 +555,7 @@ class transformer:
             ints = numpy.zeros(self.colfile.nrows)
 
         pars = self.parameterobj.get_parameters()
-        if pars.has_key("omegasign"):
+        if "omegasign" in pars:
             om_sgn = pars["omegasign"]
         else:
             om_sgn = 1.0
@@ -599,7 +602,7 @@ class transformer:
                 continue
             ind = abs(tth - tthcalc) <= tol
             if len(ind) > 0:
-                controlpoints.append_2theta_deg(zip(z[ind], y[ind]), tthcalc)
+                controlpoints.append_2theta_deg(list(zip(z[ind], y[ind])), tthcalc)
         controlpoints.save(filename)
 
 

@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+
+
+from __future__ import print_function
+
 """
 Reciprocal space volume mapper
 Transfers images into reciprocal space by pixel mapping
@@ -21,7 +24,7 @@ class rsv_mapper(object):
                  splinefile = None,
                  np=16, 
                  border = 10, 
-                 omegarange = range(360),
+                 omegarange = list(range(360)),
                  maxpix = None,
                  mask = None):
         """
@@ -38,12 +41,12 @@ class rsv_mapper(object):
         """
         if len(dims)!=2: raise Exception("For 2D dims!")
         self.dims = dims
-        print dims
+        print(dims)
         # Experiment parameters
         if not isinstance( pars, parameters.parameters):
             raise Exception("Pars should be an ImageD11 parameters object")
         for key in ["distance", "wavelength"]: #etc
-            assert pars.parameters.has_key(key)
+            assert key in pars.parameters
         self.pars = pars
 
         # Orientation matrix
@@ -324,44 +327,44 @@ def main():
         raise
     except:
         parser.print_help()
-        print "\nProblem with your options:"
+        print("\nProblem with your options:")
         raise
     
     if options.output is None:
-        print "You must supply an output file (-o vol.h5)"
+        print("You must supply an output file (-o vol.h5)")
         sys.exit()
 
     if os.path.exists( options.output ):
-        print "I would overwrite your output file",options.output
-        print "If you really want that then delete it first and re-run"
+        print("I would overwrite your output file",options.output)
+        print("If you really want that then delete it first and re-run")
         sys.exit()
     
     try:
         if options.pars is None:
-            print "You must supply a parameter file, -p file.pars"
+            print("You must supply a parameter file, -p file.pars")
             sys.exit()
         pars = parameters.parameters()
         pars.loadparameters(options.pars)
-        print "Got parameters from",options.pars
+        print("Got parameters from",options.pars)
         pd = pars.get_parameters()
-        names = pd.keys()
+        names = list(pd.keys())
         names.sort()
         for name in names:
-            print "%30s   %s"%(name, pd[name])
+            print("%30s   %s"%(name, pd[name]))
     except:
-        print "Problem with parameters:",options.pars
+        print("Problem with parameters:",options.pars)
         raise
 
     try:
         if options.ubifile is None:
-            print "You must supply an input ubifile"
+            print("You must supply an input ubifile")
         ubi = indexing.readubis(options.ubifile)[0]
-        print "UBI:\n",ubi
-        print "Cell parameters:"
-        print "%.5f %.5f %.5f %.4f %.4f %.4f" % \
-              indexing.ubitocellpars(ubi)
+        print("UBI:\n",ubi)
+        print("Cell parameters:")
+        print("%.5f %.5f %.5f %.4f %.4f %.4f" % \
+              indexing.ubitocellpars(ubi))
     except:
-        print "Problem with ubi file:",options.ubifile
+        print("Problem with ubi file:",options.ubifile)
         raise
 
     if options.maskfilename is not None:
@@ -369,10 +372,10 @@ def main():
         try:
             mask = ( openimage( options.maskfilename ).data == 0 )
         except:
-            print "Problem with your mask image",options.maskfilename
+            print("Problem with your mask image",options.maskfilename)
             raise
-        print "Using a mask from",options.maskfilename
-        print "percent of image used %.3f"%(100.0*mask.sum()/mask.shape[0]/mask.shape[1])
+        print("Using a mask from",options.maskfilename)
+        print("percent of image used %.3f"%(100.0*mask.sum()/mask.shape[0]/mask.shape[1]))
     else:
         mask = None
         
@@ -382,7 +385,7 @@ def main():
 
     imagefiles = ImageD11_file_series.get_series_from_options( options, args )
 
-    print "Subslicing by",options.subslice
+    print("Subslicing by",options.subslice)
 
     try:
         for fim in imagefiles:
@@ -408,7 +411,7 @@ def main():
             om = float(fim.header['Omega'])
             oms = float(fim.header['OmegaStep'])
             for i in range(options.subslice):
-                print ".",
+                print(".", end=' ')
                 omv = om + i*oms/options.subslice
                 # ==1 : 0*s/1
                 # ==2 : 0*s/2 , 1*s/2
@@ -418,26 +421,26 @@ def main():
                     
             nimage = nimage + 1
             
-            print "  %d %.3f %.4f s, %.4f s"%(nimage, om, 
+            print("  %d %.3f %.4f s, %.4f s"%(nimage, om, 
                                             time.time()-ltp,
-                                            time.time()-start)
+                                            time.time()-start))
             if options.images is not None:
                 if nimage >= options.images:
                     break
 
     except KeyboardInterrupt:
-        print "\nCaught a control-c"
+        print("\nCaught a control-c")
         if nimage > 0:
-            print "Problem, trying to save volume so far to:",options.output
+            print("Problem, trying to save volume so far to:",options.output)
             mapper.writevol( options.output )
-            print "Saved what I had"
+            print("Saved what I had")
         sys.exit()
     except:
-        print "\nAn error occured"
+        print("\nAn error occured")
         if nimage > 0:
-            print "Problem, trying to save volume so far to:",options.output
+            print("Problem, trying to save volume so far to:",options.output)
             mapper.writevol( options.output )
-            print "Saved what I had"
+            print("Saved what I had")
         raise
 
     if nimage > 0:
