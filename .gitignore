@@ -6,7 +6,7 @@ __pycache__/
 
 # 2to3 remains
 
-*.bak
+*.bak*
 
 # C extensions
 *.so

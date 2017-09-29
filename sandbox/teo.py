@@ -1,4 +1,7 @@
 
+from __future__ import print_function
+
+from six.moves import input
 
 # Try fitting using theta/eta/omega instead of x/y/omega or gx/gy/gz
 
@@ -54,12 +57,12 @@ def Dcalc( UB, hkls, wedge, chi, wavelength, etao, omega):
     g = np.dot( UB  , hkls )
     assert g.dtype == np.float
     if 0:
-        print g.shape
-        print hkls.shape
+        print(g.shape)
+        print(hkls.shape)
         for i in range(10):
-            print g[:,i],
-            print hkls[:,i],
-            print np.dot(np.linalg.inv( UB ), g[:,i] )
+            print(g[:,i], end=' ')
+            print(hkls[:,i], end=' ')
+            print(np.dot(np.linalg.inv( UB ), g[:,i] ))
     
     # wedge/chi matrix for axis orientation
     wc = gv_general.wedgechi( wedge=wedge, chi=chi )
@@ -99,8 +102,8 @@ def Dcalc( UB, hkls, wedge, chi, wavelength, etao, omega):
         for i in range(len(err)):
             if err[i] < 1:
                 continue
-            print i, eta_one[i], eta_two[i], omega1[i], omega2[i]
-            print "\t", etao[i], omega[i], etac[i], omegac[i]
+            print(i, eta_one[i], eta_two[i], omega1[i], omega2[i])
+            print("\t", etao[i], omega[i], etac[i], omegac[i])
         
     # Two theta angles
     mod_g = np.sqrt((g*g).sum(axis=0))
@@ -204,7 +207,7 @@ class SVDLSQ(object):
         try:
             U, s, V = np.linalg.svd( A, full_matrices = False, compute_uv = True )
         except np.linalg.LinAlgError:
-            print "SVD failure!!!"
+            print("SVD failure!!!")
             raise
         # Clip out small singular values:
         invS = np.where( s > s.max()*1e-9, 1/s, 0 )
@@ -219,9 +222,9 @@ class SVDLSQ(object):
         if TESTING > 0:
             lsqmat = np.dot( A, A.T )
             errmat = np.linalg.inv( lsqmat )
-            print solution
-            print errmat
-            print svderrmat
+            print(solution)
+            print(errmat)
+            print(svderrmat)
             assert np.allclose( self.errmat, errmat )
         self.esds = np.sqrt( np.diag( self.errmat ) )
         self.condition = s.max() / s.min() # sqrt ?
@@ -260,7 +263,7 @@ def fitone( UB, t, sc, fc, omega, hkls, pars):
         pl.subplot(313)
         pl.plot(etac, erreta, "+")
         pl.show()
-        raw_input()
+        input()
 
     
     s = 1e-7
@@ -343,10 +346,10 @@ def refit_makemap( colf, pars, grains ):
             if S.sh_esd.max() < 1e-10:
                 break
             if TESTING:
-                print "translation",t
-                print "Cell",indexing.ubitocellpars(np.linalg.inv(UB))
-        print "Translation %.5f %.5f %.5f"%tuple(t)
-        print "Cell %.7f %.7f %.7f %.8f %.8f %.8f"%(indexing.ubitocellpars(np.linalg.inv(UB)))
+                print("translation",t)
+                print("Cell",indexing.ubitocellpars(np.linalg.inv(UB)))
+        print("Translation %.5f %.5f %.5f"%tuple(t))
+        print("Cell %.7f %.7f %.7f %.8f %.8f %.8f"%(indexing.ubitocellpars(np.linalg.inv(UB))))
         g.translation = t
         g.set_ubi(np.linalg.inv( UB ))
     return grains

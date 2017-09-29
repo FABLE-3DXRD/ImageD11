@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 
 from ImageD11.columnfile import columnfile
 from ImageD11 import transform, parameters, unitcell, grain, gv_general
@@ -82,7 +84,7 @@ def test_XL_to_gv():
     T = np.array( [0,0,0] )
     gnew = XL_to_gv( omega, wedge, chi, XL, wavelength, T[0],T[1],T[2])
     gold = XL_to_gv_old( omega, wedge, chi, XL, wavelength, T[0],T[1],T[2])
-    print gnew-gold
+    print(gnew-gold)
 
 #test_XL_to_gv()
 
@@ -149,7 +151,7 @@ class fittrans(object):
         
         self.ds_tol = 0.005
         self.bins=np.arange(0,0.5,0.005)
-        print "Setting up"
+        print("Setting up")
         self.compute_XLYLZL()
         self.computegv()
 
@@ -293,7 +295,7 @@ class fittrans(object):
         vol = np.sqrt(np.linalg.det(self.cell.g))
         rscp = pow(vol, 1.0/3.0)
         pylab.hist( diffs*rscp, bins = np.arange(0,0.5,0.005) )
-        print (diffs*rscp < 0.05).sum()
+        print((diffs*rscp < 0.05).sum())
         return ra, diffs
 
     def find_triplets(self, peak):
@@ -316,7 +318,7 @@ if __name__=="__main__":
     ng = 0
     # Take old peak assignments:
     if 1:
-        print "Using existing peak assignments"
+        print("Using existing peak assignments")
         inds = np.arange(o.colfile.nrows,dtype=np.int)
         for i,gref in enumerate(gl):
             gref.pks = np.compress( o.colfile.labels == i, inds )
@@ -334,10 +336,10 @@ if __name__=="__main__":
 #        gref = o.refine( gref, tol=0.0075) 
         gfl.append( gref )
         ng += 1
-        print ng,ng*100.0/len(gl), "%.2f   "%(time.time()-start), gref.npks,
-        print (3*"%.4f ")%tuple(gref.translation),
-        print (6*"%.6f ")%ubitocellpars(gref.ubi)
-    print time.time()-start
+        print(ng,ng*100.0/len(gl), "%.2f   "%(time.time()-start), gref.npks, end=' ')
+        print((3*"%.4f ")%tuple(gref.translation), end=' ')
+        print((6*"%.6f ")%ubitocellpars(gref.ubi))
+    print(time.time()-start)
     grain.write_grain_file(sys.argv[4], gfl)
 #    1/0
 #    for i in range(2):

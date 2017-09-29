@@ -8,22 +8,22 @@ import ctypes
 if "win" in sys.platform:
     timer = time.clock
     dll = ctypes.CDLL("diffracCl.dll")
-    print "# time.clock", sys.platform, sys.version
+    print("# time.clock", sys.platform, sys.version)
 else:
     timer = time.time
     dll = ctypes.CDLL("./diffracCl.so")
-    print "# time.time", sys.platform, sys.version
+    print("# time.time", sys.platform, sys.version)
 
 import pyopencl.version
-print "# pyopencl:",pyopencl.version.VERSION
+print("# pyopencl:",pyopencl.version.VERSION)
 
 class myCL:
     def __init__(self, npx):
         self.ctx = cl.create_some_context()
         for d in self.ctx.devices:
-            print "#",d.platform.name
-            print "#",d.vendor
-            print "#",d.name
+            print("#",d.platform.name)
+            print("#",d.vendor)
+            print("#",d.name)
         self.npx = npx
         self.queue = cl.CommandQueue(self.ctx)
         self.pars = numpy.zeros(14, dtype=numpy.float32)
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     example.popCorn()
     pars = make_pars(sys.argv[1]) 
     example.setpars( pars )
-    print "# Init", timer()-start
+    print("# Init", timer()-start)
     times = []
     # Warmup
     tth, eta = example.execute()
@@ -164,12 +164,12 @@ if __name__ == "__main__":
         tth, eta = example.execute()
         times.append(timer()-start)
     times = numpy.array(times)
-    print "# mean    min    max     std"
-    print "%.4f  %.4f  %.4f  %.4f"%( times.mean(), times.min(),
-            times.max(), times.std())
+    print("# mean    min    max     std")
+    print("%.4f  %.4f  %.4f  %.4f"%( times.mean(), times.min(),
+            times.max(), times.std()))
     t = numpy.median(times)
-    print "%.1f ms, %.1f fps,"%(1e3*t,1.0/t),
-    print tth.max(),tth.min()
+    print("%.1f ms, %.1f fps,"%(1e3*t,1.0/t), end=' ')
+    print(tth.max(),tth.min())
     eta_cl = eta.copy()
     eta_ct = eta.copy()
     tth_cl = tth.copy()
@@ -177,18 +177,18 @@ if __name__ == "__main__":
     o = ctp( npx )
     times = numpy.array( o.compute( tth_ct, eta_ct, pars ) )
 
-    print "# ctypes module, hopefully with openmp"
-    print "# mean    min    max     std"
-    print "%.4f  %.4f  %.4f  %.4f"%( times.mean(), times.min(),
-            times.max(), times.std())
+    print("# ctypes module, hopefully with openmp")
+    print("# mean    min    max     std")
+    print("%.4f  %.4f  %.4f  %.4f"%( times.mean(), times.min(),
+            times.max(), times.std()))
     t = numpy.median(times)
-    print "%.1f ms, %.1f fps,"%(1e3*t,1.0/t),
-    print tth.max(),tth.min()
+    print("%.1f ms, %.1f fps,"%(1e3*t,1.0/t), end=' ')
+    print(tth.max(),tth.min())
 
     # Check same ness
     eta_err = (abs(eta_cl - eta_ct)).mean()
     tth_err = (abs(tth_cl - tth_ct)).mean()
-    print "Mean diff tth,eta",tth_err,eta_err
+    print("Mean diff tth,eta",tth_err,eta_err)
     if len(sys.argv)>2:
      from matplotlib.pylab import imshow, figure, show, colorbar, title
      figure(1)

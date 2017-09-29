@@ -14,7 +14,7 @@ def readtxt(fname):
     ctrs = "diffty pico3 notsrcu".split()
     h["pico3"]=1
     h["notsrcu"]=1
-    for line in open(fname).xreadlines():
+    for line in open(fname):
         if line[0] == "#":
             if cnext is not None:
                 h[cnext] = float(line.split()[cindex])
@@ -45,8 +45,8 @@ def decidegrid(vals):
         if y!=y0: break
     blocksize = i
     if len(vals) % blocksize != 0:
-        print "Blocksize seems to be",blocksize,
-        print "you have",len(vals),"images. Problem."
+        print("Blocksize seems to be",blocksize, end=' ')
+        print("you have",len(vals),"images. Problem.")
     vals.shape = vals.shape[0]/blocksize,blocksize,vals.shape[1]
     # Find the best angular grid mapping onto this
     a0=vals[0,:,1]
@@ -103,13 +103,13 @@ if __name__=="__main__":
     HOME = "/data/visitor/ev78/id11"
     os.chdir(HOME)
     stem = sys.argv[1]
-    print stem
+    print(stem)
     txtfile = "%s/%s.txt"%(stem,stem)
     # file with motor positions and image filenames
     vals = readtxt(txtfile)
     # figure array dimensions
     vals, offset = decidegrid(vals)
-    print vals.shape
+    print(vals.shape)
     # Read 1D integrated data (pyFAI was already run on it)
     xaxis, blob = readdat( "%s/%s"%(stem,stem), vals)
 
