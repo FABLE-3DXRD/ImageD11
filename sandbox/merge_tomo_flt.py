@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 
 from numpy import arange, ones, concatenate
 from ImageD11.columnfile import columnfile
@@ -12,7 +14,7 @@ for f in sys.argv[2:]:
         c.filter(c.Number_of_pixels > 4)
         #print f.split("_")
         nums = int(f.split("_")[-3])
-        print f,nums
+        print(f,nums)
         c.addcolumn(ones(c.nrows)*nums,"dty")
         if allc is None:
             allc = c.copy()

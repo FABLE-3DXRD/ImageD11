@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 
 import pyFAI, fabio, glob, os, sys, numpy as np, pylab as pl
 
@@ -69,21 +71,21 @@ for direc in todo:
     edfs = glob.glob("*.edf")
     edfs.sort()
     sumdata = np.zeros((2048,2048),np.float32)
-    print "# Doing folder",direc,
+    print("# Doing folder",direc, end=' ')
     for e in edfs:
         np.add( sumdata, fabio.open(e).data, sumdata)
-        print e,
+        print(e, end=' ')
         sys.stdout.flush()
-    print
+    print()
     I, tth , eta = ai.integrate2d( sumdata, NTTH, NETA,
                                    mask = mask,
                                    polarization_factor=0.0,
                                    unit="2th_deg",
                             )
     fits = fitpeaks( I , tth, eta )
-    print direc,hdr(fabio.open(e)),
+    print(direc,hdr(fabio.open(e)), end=' ')
     for f in fits:
-        print (len(f)*"  %g")%tuple(f),"    ",
-    print
+        print((len(f)*"  %g")%tuple(f),"    ", end=' ')
+    print()
 #            I.sort( axis = 0 )
             

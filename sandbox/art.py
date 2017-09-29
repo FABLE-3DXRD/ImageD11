@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 
 """
 Some simplistic ART algorithms
@@ -78,7 +80,7 @@ def update_wtd( recon, proj, angle, msk, dbg=True ):
 
     update = update 
     update.shape = recon.shape
-    print update.sum(),error.sum(),
+    print(update.sum(),error.sum(), end=' ')
     if dbg:
         pl.figure()
         pl.imshow( np.reshape(update, recon.shape) )
@@ -92,7 +94,7 @@ def make_data():
     import rad, Image
     im = Image.open("phantom3.gif")
     a = np.asarray(im).astype(np.float32)
-    print a.min(),a.max()
+    print(a.min(),a.max())
     # 70 random projection
     np.random.seed(42)
     theta = np.random.random(70)*180.
@@ -120,7 +122,7 @@ def test_u_n():
     pl.ion()
     for j in range(3):
         for proj, angle in zip(projections, theta):
-            print j, angle,
+            print(j, angle, end=' ')
             start = time.clock()
             update = update_wtd( recon, proj, angle, msk, dbg=False)
             recon = recon + update*0.9
@@ -137,14 +139,14 @@ def test_u_n():
             sumtime += end-start
             ncalc +=1
             # print err.sum()
-            print
+            print()
         # print "Waiting"
         # raw_input()
         # recon = recon.clip( 0, 10)
-    print sumtime/ncalc
+    print(sumtime/ncalc)
     np.save("recon.npy",recon)
     end = time.time()
-    print "Time take",realstart - end
+    print("Time take",realstart - end)
     pl.figure(1)
     pl.clf()
     pl.subplot(221)
@@ -159,7 +161,7 @@ def test_u_n():
 #    pl.title("difference")
 #    pl.imshow(ideal-recon)
 #    pl.colorbar()
-    print len(theta),"projections"
+    print(len(theta),"projections")
     pl.show()
 
 

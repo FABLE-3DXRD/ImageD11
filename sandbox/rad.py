@@ -1,8 +1,10 @@
+
+from __future__ import print_function
 import math, numpy, time
 # , smooth
 from ImageD11 import cImageD11
 from fabio.openimage import openimage
-print "Using class version"
+print("Using class version")
 
 
 def clean(sinogram):
@@ -37,7 +39,7 @@ class fourier_radial(object):
         arshape = self.dims[0]/2+1, self.dims[1]
         nv = (arshape[0]-1)*2
         nh = arshape[0]
-        print "NV,NH",nv,nh
+        print("NV,NH",nv,nh)
         self.ftimshape = (nv, nh)
         self.ftimlen = nv*nh
         n1 = (self.dims[0]/2+1)*self.dims[1]
@@ -105,7 +107,7 @@ class fourier_radial(object):
 if __name__=="__main__":
     import sys
     if len(sys.argv) != 5:
-        print "Usage: sinogram startangle step centrepixel"
+        print("Usage: sinogram startangle step centrepixel")
         sys.exit()
     
     fname = sys.argv[1]
@@ -117,15 +119,15 @@ if __name__=="__main__":
     
     centrepixel = int( sys.argv[4] )
     end   = na*step + start
-    print "start, step, end",start, step, end
+    print("start, step, end",start, step, end)
     angles = numpy.arange(start, end, step)
     assert len(angles) == na,"%d %d  ... %d"%(nx,na,len(angles))
-    print "%.2f setup"%(time.time()-star)
+    print("%.2f setup"%(time.time()-star))
     d =  sino.data.T[:1200]
     o = fourier_radial( d.shape, angles )
     start = time.time()
     im = o.sino2im( d, centrepixel )
     sino.data = im
     sino.write("r_"+fname, force_type=numpy.float32)
-    print "per image",time.time()-start
+    print("per image",time.time()-start)
 
