@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 from ImageD11.columnfile import columnfile
 from fabio.openimage import openimage
 import sys
@@ -11,7 +13,7 @@ DATA="../data_XRD-CT/IRIS4_rect5_1_"
 def integrate_peak(number, colfile, bbs=10):
     i = list(colfile.spot3d_id.astype(int)).index( number )
     om = colfile.omega[i]
-    print "omega",i, om
+    print("omega",i, om)
     bb = [colfile.Min_s[i],
           colfile.Max_s[i],
           colfile.Min_f[i],
@@ -21,14 +23,14 @@ def integrate_peak(number, colfile, bbs=10):
 
     first_image = int(om) * 147
     last_image = first_image + 146
-    print bb
+    print(bb)
 
     s = colfile.s_raw[i]
     f = colfile.f_raw[i]
     
     intensity = []
     for j in range(first_image, last_image+1):
-        print j,
+        print(j, end=' ')
         sys.stdout.flush()
         im = openimage( DATA + "%04d.edf"%( j ) ).data
         intensity.append(im[ s-bbs:s+bbs , f-bbs:f+bbs ].mean())
