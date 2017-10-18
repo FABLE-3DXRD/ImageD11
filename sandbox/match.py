@@ -88,7 +88,7 @@ for i,g1 in enumerate(g1l):
         ja = np.argmin(da[i])
         jd = np.argmin(dt2[i])
         print "# not matched %d min angle %d  %.4f  %.3f"%(i,ja,da[i,ja],dt2[i,ja])
-        print "# not matched %d min dist  %d  %.4f  %.3f"%(i,ja,da[i,jd],dt2[i,jd])
+        print "# not matched %d min dist  %d  %.4f  %.3f"%(i,jd,da[i,jd],dt2[i,jd])
 
 
 np.save( "da",da)
