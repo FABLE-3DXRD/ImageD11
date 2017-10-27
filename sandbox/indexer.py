@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2015  Jon Wright
 #
@@ -135,7 +137,7 @@ class indexer:
               self.cf.ring[mask] = i
               self.cf.ringerr[mask] = diff[mask]
         # Report on assignments
-        print "Ring     (  h,  k,  l) Mult  total indexed to_index  "
+        print("Ring     (  h,  k,  l) Mult  total indexed to_index  ")
         # try reverse order instead
         dsr = self.unitcell.ringds
         for j in range(len(dsr))[::-1]:
@@ -143,9 +145,9 @@ class indexer:
             n_indexed  = (self.cf.labels[ind] >  -0.5).sum()
             n_to_index = (self.cf.labels[ind] <  -0.5).sum()
             h=self.unitcell.ringhkls[dsr[j]][0]
-            print "Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d"%(\
+            print("Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d"%(\
                 j,h[0],h[1],h[2],len(self.unitcell.ringhkls[dsr[j]]),
-                     ind.sum(),n_indexed,n_to_index)
+                     ind.sum(),n_indexed,n_to_index))
 
 
     def pairs(self, hkl1, hkl2, cos_tol = 0.02, hkl_tol = 0.05):
@@ -184,7 +186,7 @@ class indexer:
            # t2 is plane of both: g1x(g1xg2)
            # t3 is perpendicular to both
            if i%100==0:
-              print i,time.time()-start,len(n1.T)
+              print(i,time.time()-start,len(n1.T))
            for k in goodones:
                this_n2 = n2[:,k]
                T_g[0] = this_n1
@@ -196,7 +198,7 @@ class indexer:
                pairs.append( (ind1[i], ind2[k], U, ubi ) )
 #               print npks, ubi
         self.pairs=pairs
-        print time.time()-start,"for",len(pairs),n1.shape, n2.shape
+        print(time.time()-start,"for",len(pairs),n1.shape, n2.shape)
         return pairs
 
 

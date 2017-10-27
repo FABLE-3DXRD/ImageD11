@@ -1,12 +1,14 @@
 
+from __future__ import print_function
+
 
 from ImageD11 import sym_u
 from ImageD11 import grain
 import sys, numpy as np, xfab.tools
 
-print "# Usage: %s grains1.map grains2.map group angletol  distancetol"%(sys.argv[0])
-print "# Matches grains using symmetry group from:  "
-print "#  [cubic|hexagonal|trigonal|rhombohedralP|tetragonal|orthorhombic|monoclinic_[a|b|c]|triclinic]"
+print("# Usage: %s grains1.map grains2.map group angletol  distancetol"%(sys.argv[0]))
+print("# Matches grains using symmetry group from:  ")
+print("#  [cubic|hexagonal|trigonal|rhombohedralP|tetragonal|orthorhombic|monoclinic_[a|b|c]|triclinic]")
 
 
 g1l = grain.read_grain_file(sys.argv[1])
@@ -15,12 +17,12 @@ g2l = grain.read_grain_file(sys.argv[2])
 try:
     h = getattr( sym_u, sys.argv[3] )()
 except:
-    print "# No group!"
-    print "#Using cubic"
+    print("# No group!")
+    print("#Using cubic")
     h = sym_u.cubic()
-print "# Symmetry considered"
+print("# Symmetry considered")
 for o in h.group:
-    print o
+    print(o)
 
 try:
     tolangle = float(sys.argv[4])
@@ -77,9 +79,9 @@ for i,g1 in enumerate(g1l):
             #print "# Found a match!", h.group[sg].ravel()
             dtsum += dt
             ndt += 1
-            print i,j,"angle  %.4f"%(angle),"distance %.3f"%(dt2[i,j]),"\t",
-            print 3*"%.1f "%tuple(dt),"\t",
-            print 3*"%.1f "%tuple(dtsum/ndt)
+            print(i,j,"angle  %.4f"%(angle),"distance %.3f"%(dt2[i,j]),"\t", end=' ')
+            print(3*"%.1f "%tuple(dt),"\t", end=' ')
+            print(3*"%.1f "%tuple(dtsum/ndt))
             #print "# grain ubi,t"
             #print g1.ubi,g1.translation
             #print g2.ubi,g2.translation
@@ -87,8 +89,8 @@ for i,g1 in enumerate(g1l):
     if not printed:
         ja = np.argmin(da[i])
         jd = np.argmin(dt2[i])
-        print "# not matched %d min angle %d  %.4f  %.3f"%(i,ja,da[i,ja],dt2[i,ja])
-        print "# not matched %d min dist  %d  %.4f  %.3f"%(i,ja,da[i,jd],dt2[i,jd])
+        print("# not matched %d min angle %d  %.4f  %.3f"%(i,ja,da[i,ja],dt2[i,ja]))
+        print("# not matched %d min dist  %d  %.4f  %.3f"%(i,ja,da[i,jd],dt2[i,jd]))
 
 
 np.save( "da",da)

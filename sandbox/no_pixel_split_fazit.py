@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 
 import sys, numpy, time
 from ImageD11 import cImageD11, blobcorrector, ImageD11_file_series
@@ -43,7 +45,7 @@ def main():
         raise
     except:
         parser.print_help()
-        print "\nProblem with your options:"
+        print("\nProblem with your options:")
         raise
 
     if options.mask is not None:
@@ -60,7 +62,7 @@ def main():
     try:
         for fim in imagefiles:
             dataim = fim.data
-            print fim.filename
+            print(fim.filename)
             if first_image: # allocate volume, compute k etc
 
                 first_image = False
@@ -143,15 +145,15 @@ def main():
             # outnp = outnp.reshape( dataim.shape ).astype(numpy.int32)
             # Normalise
             numpy.multiply( outsum, scalar, outsum )
-            print dataim.max(),dataim.min(),
-            print scalar.max(),scalar.min(),outsum.min(), outsum.max( )
+            print(dataim.max(),dataim.min(), end=' ')
+            print(scalar.max(),scalar.min(),outsum.min(), outsum.max( ))
 
             outsum.shape = imageshape
             # saving edf
             e.data=outsum
             e.write( "r_"+fim.filename  , force_type=numpy.float32)
             
-            print time.time()-start
+            print(time.time()-start)
 
             
 

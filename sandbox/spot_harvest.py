@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 
 # ImageD11 Software for beamline ID11
 # Copyright (C) 2008  Jon Wright
@@ -46,7 +48,7 @@ for col in ["sc","fc","omega",  # Slow, fast and omega center positions
     # check we have the columns we need
     assert hasattr(flt, col),col
 
-print "Looking for",flt.nrows,"spots"
+print("Looking for",flt.nrows,"spots")
 
 # Now get the list of omega angles for the images
 omegas = {} ; filenames = {}; spots = {}
@@ -60,9 +62,9 @@ for line in sptfile:
         omegas[filename] = om    
         spots[om] = []
 
-oms = filenames.keys()
+oms = list(filenames.keys())
 oms.sort()
-print "Found",len(oms),"distinct omega values"
+print("Found",len(oms),"distinct omega values")
 
 
 #
@@ -130,7 +132,7 @@ def writespot(filename, roi, box, hdr, flt, ispt):
     spot3d_id - which peak this is
     """
     # Make the header
-    print "writing",filename
+    print("writing",filename)
     myheader = {"ByteOrder":hdr["ByteOrder"]}
     ks = []
     for k in edfimage.MINIMUM_KEYS:
@@ -152,7 +154,7 @@ def writespot(filename, roi, box, hdr, flt, ispt):
                    ("ROI_fast_stop" , roi[1].stop  ) ]:
         ks.append(k)
         myheader[k] = int(v)
-    km = mappings.keys()
+    km = list(mappings.keys())
     km.sort()
     for k in km:
         if k not in ks:
@@ -167,7 +169,7 @@ def writespot(filename, roi, box, hdr, flt, ispt):
                     args = [getattr(flt, a)[ispt] for a in list(v[0])]
                     myheader[k] = v[1](*args)
                 except:
-                    print v[0]
+                    print(v[0])
                     raise
     #b = box.astype(np.float32)
     #print np.maximum.reduce(b), np.minimum.reduce(b)
@@ -196,12 +198,12 @@ border = 5
 integ_int = {}
 
 for o in oms:
-    print o, filenames[o], spots[o]
+    print(o, filenames[o], spots[o])
     data_obj = openimage(filenames[o])
     if bkg is not None:
         data_obj.data = data_obj.data.astype(np.float32) - bkg.data.astype(np.float32)
-    print np.maximum.reduce(np.ravel(data_obj.data)),
-    print np.minimum.reduce(np.ravel(data_obj.data))
+    print(np.maximum.reduce(np.ravel(data_obj.data)), end=' ')
+    print(np.minimum.reduce(np.ravel(data_obj.data)))
     for i in spots[o]:
         roi = ( slice( max(0, flt.Min_s[i] - border) ,
                        min( flt.Max_s[i] + border , data_obj.dim2 ) ) ,

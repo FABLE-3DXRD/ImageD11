@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+from six.moves import input
 from ImageD11 import peakmerge, indexing, transformer
 from ImageD11 import grain
 import sys, os, numpy as np
@@ -7,7 +9,7 @@ mytransformer = transformer.transformer()
 #
 # Your work starts here:
 #    
-print "select only peaks of certain rings "
+print("select only peaks of certain rings ")
 
 mytransformer.loadfiltered( sys.argv[1] )
 mytransformer.loadfileparameters(  sys.argv[2] )
@@ -26,19 +28,19 @@ tth =    mytransformer.colfile.tth
 mytransformer.addcellpeaks()
 
 rh = mytransformer.unitcell.ringhkls
-peaks = rh.keys()
+peaks = list(rh.keys())
 peaks.sort()
 m = 0
-print "Ring ds  tth  (h k l) mult  npks  npks/mult"
+print("Ring ds  tth  (h k l) mult  npks  npks/mult")
 for i,d in enumerate(peaks):
     thistth = mytransformer.theorytth[i]
     mult = len(rh[d])
-    print "Ring %3d %2.4f %8.4f"%(i,d,thistth),"(%2d %2d %2d)"%rh[d][0],"%2d"%(mult),
+    print("Ring %3d %2.4f %8.4f"%(i,d,thistth),"(%2d %2d %2d)"%rh[d][0],"%2d"%(mult), end=' ')
     msk = ((thistth+0.2) > tth)&(tth > (thistth-0.2))
     npk = msk.sum()
-    print "%8d %8d"%(npk,1.0*npk/mult)
+    print("%8d %8d"%(npk,1.0*npk/mult))
     m += msk.sum()
-print m, tth.shape
+print(m, tth.shape)
 
 figure(2)
 plot(tth,np.log(mytransformer.colfile.sum_intensity),  ",")
@@ -46,14 +48,14 @@ show()
 
 if 1:
     while 1:
-        rings_to_use = raw_input("Enter comma separated list of rings to use")
+        rings_to_use = input("Enter comma separated list of rings to use")
         try:
             rs = [int(v) for v in rings_to_use.split(',')]
         except:
-            print "I don't understand, please try again"
+            print("I don't understand, please try again")
             continue
-        print "You entered"," ".join([str(r) for r in rs])
-        if raw_input("OK?") in ['Y','y']:
+        print("You entered"," ".join([str(r) for r in rs]))
+        if input("OK?") in ['Y','y']:
             break
 else:
     rs = [ 0, 2, 6, 10]

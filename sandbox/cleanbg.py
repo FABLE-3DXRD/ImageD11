@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 #!/usr/bin/python2.7
 
 import numpy as np, fabio
@@ -38,12 +40,12 @@ def cleanbg( stem, nimages, newstem ):
        o.name = name
        buffy[i] = o.data.copy()
        buffo.append( o )
-       print i,name
+       print(i,name)
    bg = np.clip( buffy.min( axis = 0 ), 90, 65535 ) - 90
    # Deal with images up to bufsize/2
    for i in range(bufsize/2):
        outname = newstem + "%04d.edf"%(i)
-       print "write",outname, buffo[i].name
+       print("write",outname, buffo[i].name)
        np.subtract( buffo[i].data , bg, buffo[i].data )
        buffo[i].write( outname )
 
@@ -52,7 +54,7 @@ def cleanbg( stem, nimages, newstem ):
        if i < bufsize  :
            continue
        bp = i%bufsize
-       print "open",name,bp
+       print("open",name,bp)
        o = fabio.open( name )
        o.header["Omega"] = omega
        o.header["OmegaStep"] = omegastep
@@ -65,13 +67,13 @@ def cleanbg( stem, nimages, newstem ):
        op = (i-bufsize/2-1)%bufsize
        np.subtract( buffo[op].data , bg, buffo[op].data )
        outname = newstem + "%04d.edf"%(i-bufsize/2-1)
-       print i,outname, buffo[op].name
+       print(i,outname, buffo[op].name)
        buffo[op].write( outname )
    n=i
    for i in range(bufsize/2):
        outname = newstem + "%04d.edf"%(n+i-bufsize/2)
        bp = (n+i-bufsize/2)%bufsize
-       print "write",outname, buffo[bp].name
+       print("write",outname, buffo[bp].name)
        np.subtract( buffo[bp].data , bg, buffo[bp].data )
        buffo[bp].write( outname )
 
@@ -87,24 +89,24 @@ if __name__ == "__main__":
    for indir in glob.glob( "rubydiff*"):
 #   dirs =[ sys.argv[1] , ]
 #   for indir in dirs:
-       print indir
+       print(indir)
        if not os.path.isdir(indir):
 
            continue
 
        outdir = os.path.join("diffproc", indir)
        if not os.path.exists(outdir):
-           print "mkdir",outdir
+           print("mkdir",outdir)
            os.mkdir(outdir)
        
        # check if last image exists for input:
        lastin = os.path.join(indir,indir+"1_0720.edf")
        lastout = os.path.join(outdir,indir+"1438.edf")
        if not os.path.exists( lastin ):
-           print "Missing image",lastin,"skip"
+           print("Missing image",lastin,"skip")
            continue
        if not os.path.exists( lastout ):
-           print "Missing result",lastout
+           print("Missing result",lastout)
            cleanbg( os.path.join(indir, indir), 
                     720, 
                     os.path.join(outdir,indir) )

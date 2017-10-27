@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 
 
 import numpy as np, pylab as pl
@@ -18,7 +20,7 @@ def fitstrain( surf, pkcen, pkwid ):
     sI  = roi.sum(axis=1)
     cen = sIx/( sI + (sI==0))
     if 0:
-        print surf.shape, pkcen, pkwid, lo, hi
+        print(surf.shape, pkcen, pkwid, lo, hi)
         pl.subplot(221)
         pl.imshow(np.log(roi),aspect='auto',interpolation='nearest')
         pl.colorbar()

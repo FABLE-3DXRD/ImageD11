@@ -5,7 +5,7 @@ import sys
 
 import os, time, fabio, numpy
 import pyFAI
-print pyFAI.__file__
+print(pyFAI.__file__)
 SOLID_ANGLE = True
 #print "PATH:", sys.path
 
@@ -19,12 +19,12 @@ class darkflood(object):
     """
     def __init__(self, darkfile=None, floodfile=None):
         if darkfile is None:
-            print "Warning: no dark supplied"
+            print("Warning: no dark supplied")
             self.darkobj = None
         else: 
             self.darkobj = fabio.open(darkfile)
         if floodfile is None:
-            print "Warning: no flood supplied"
+            print("Warning: no flood supplied")
             self.floodmult = None
         else: 
             self.floodobj = fabio.open(floodfile)
@@ -57,7 +57,7 @@ def edffilenameseries(stem, first=None, last=None, glob=False, extn=".edf"):
                 yield fname
                 num += 1
         if first is not None and last is None:
-            print "Starting with image",first,"then incrementing"
+            print("Starting with image",first,"then incrementing")
             num = first
             while 1:
                 fname = "%s%04d%s"%( stem, num, extn )
@@ -73,9 +73,9 @@ def calcfrom1d( integrator, tth, I, shape):
     Computes a 2D image from a 1D integrated profile
     """
     ttha = integrator.twoThetaArray(shape)
-    print ttha.ravel().shape
-    print tth.shape
-    print I.shape
+    print(ttha.ravel().shape)
+    print(tth.shape)
+    print(I.shape)
     calcimage = numpy.interp( ttha.ravel(),
                               tth*numpy.pi/180,
                               I )
@@ -97,7 +97,7 @@ def determineparfile( fname ):
         return "pyfai"
     if bytes.find("X-BEAM CENTRE") != -1:
         return "fit2d"
-    print bytes
+    print(bytes)
     raise Exception("Parameters not recognised in file: %s"%(fname))
 
 class fit2dcakepars:
@@ -153,7 +153,7 @@ class fit2dcakepars:
                 key, value = line.split(" = ")
                 value = value.rstrip() # get rid of trailing \n
             except:
-                print "$$$%s$$$"% (line)
+                print("$$$%s$$$"% (line))
                 raise
             if value == "None":
                 value = None
@@ -163,7 +163,7 @@ class fit2dcakepars:
         if key in self.option_names:
             self.options[key] = value
         else:
-            print "Failure to set {%s}=%s"%( key, value)
+            print("Failure to set {%s}=%s"%( key, value))
     def __getitem__(self, key):
         return self.options[key]
     def __setitem__(self, key, value):
@@ -179,7 +179,7 @@ def display(tth, I, img):
     imshow(img,vmin=-.21,vmax=.21)
     colorbar()
     show()
-    raw_input("continue?")
+    input("continue?")
 
 def integrate_them( o ):
     """ 
@@ -200,9 +200,9 @@ def integrate_them( o ):
     if ptype == "pyfai":
         integrator.load( o.parfile )
         if o.dark is not None:
-            print "Using dark from command line",o.dark
+            print("Using dark from command line",o.dark)
         if o.flood is not None:
-            print "Using dark from command line",o.flood
+            print("Using dark from command line",o.flood)
     elif ptype == "fit2d":
         f2d = fit2dcakepars( o.parfile )
         if f2d["SPATIAL DIS."][0] not in ["Y","y"]:
@@ -220,20 +220,20 @@ def integrate_them( o ):
             )
         integrator.rot3=0
         integrator.reset()
-        print integrator.param, integrator.detector.pixel1
+        print(integrator.param, integrator.detector.pixel1)
         # First choice is command line. Then from pars if supplied
         if o.dark is None:
             if f2d["DARK CURRENT"][0] in ["Y","y"]:
                 o.dark = f2d["DC FILE"]
-                print "Using dark from fit2d parameter file",o.dark
+                print("Using dark from fit2d parameter file",o.dark)
         else:
-            print "Using dark from command line",o.dark
+            print("Using dark from command line",o.dark)
         if o.flood is None:
             if f2d["FLAT-FIELD"][0] in ["Y","y"]:
                 o.flood = f2d["FF FILE"]
-                print "Using flood from fit2d parameter file",o.flood
+                print("Using flood from fit2d parameter file",o.flood)
         else:
-            print "Using flood from command line",o.flood
+            print("Using flood from command line",o.flood)
     # Should be in fabio utilities
     df = darkflood( o.dark, o.flood )
     # Should be in fabio
@@ -242,19 +242,19 @@ def integrate_them( o ):
     # Command line is first priority for make
     if o.mask is not None:
         mask = fabio.open( o.mask ).data
-        print "Using mask", o.mask
+        print("Using mask", o.mask)
         # assume poni file deals with this independently?
     elif ptype == "fit2d": # try in fit2d parfile
         if f2d["USE MASK"][0] in ['y','Y']:
             mask = fabio.open( f2d["MASK FILE"] ).data
-            print "Using mask",f2d["MASK FILE"]
+            print("Using mask",f2d["MASK FILE"])
         else:
             mask = None
     if mask is not None:
-        print "mask mean:",mask.mean()
+        print("mask mean:",mask.mean())
     integrator.write(os.path.splitext(o.parfile)[0]+".poni")
     for f in fs:
-        print "Processing",f,
+        print("Processing",f, end=' ')
         try:
             fo = df.correct( fabio.open(f) )
         except:
@@ -288,7 +288,7 @@ def integrate_them( o ):
                                  #delta_dummy=delta_dummy # precision of dummy
                                  )
 
-        print "wrote",outFile
+        print("wrote",outFile)
         if o.backcalc:
             calcimage = calcfrom1d( integrator, tth, I, fo.data.shape ) * integrator._polarization
             err = (calcimage - fo.data) * (1-mask)/(calcimage+mask)
@@ -325,10 +325,10 @@ def fitcen( data, cim , mask=None ):
     try:
         imat = numpy.linalg.inv( [ [ mxx, mxy], [mxy, myy] ] )
         shft = numpy.dot( imat, [rx, ry] )
-        print "Image offset estimate (pixels)", shft
-        print "Intensity mean, min, max errors", (diff*diff).mean(), diff.min(), diff.max()
+        print("Image offset estimate (pixels)", shft)
+        print("Intensity mean, min, max errors", (diff*diff).mean(), diff.min(), diff.max())
     except:
-        print "Cannot estimate beam centre error"
+        print("Cannot estimate beam centre error")
     
 
 def get_options(parser):
@@ -402,13 +402,13 @@ if __name__ == "__main__":
     except:
         if o is not None:
             o.print_help()
-        print "\nHere is the problem:\n"
+        print("\nHere is the problem:\n")
         raise
     integrate_them( options )
 
     # calcimage = calcfrom1d( integrator, tth, I, data.shape, mask)
 
-    print pyFAI.__file__
+    print(pyFAI.__file__)
 
 
     

@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 
 
 
@@ -97,14 +99,15 @@ def test():
                   [ 0 , 0 , 1 ]    )
     for i in range(3):
         assert abs(abs(p.normal[i]) - 1/np.sqrt(3))< 1e-6
-    assert p.normal[0] == p.normal[1] == p.normal[2]
+    assert np.allclose( p.normal[0], p.normal[1])
+    assert np.allclose( p.normal[0], p.normal[2])
 
     assert (p.calc( np.array([[ -1, 0, 0]] ) ) == np.array( [-1, 0, 2] )).all()
     assert (p.calc( np.array([[  2, 0, 0]] ) ) == np.array( [ 2, 0,-1] )).all()
     assert (p.calc( np.array([[  0, 2, 0]] ) ) == np.array( [ 0, 2,-1] )).all()
     assert (p.calc( np.array([[  0,-1, 0]] ) ) == np.array( [ 0,-1, 2] )).all()
     
-    print "Tests look OK"
+    print("Tests look OK")
 
 if __name__ == "__main__":
     test()

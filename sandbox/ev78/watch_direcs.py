@@ -20,13 +20,13 @@ shutterless_dark02s_edna""".split()
 
 
 def process(stem):
-    print "Checking",stem,
+    print("Checking",stem, end=' ')
     sys.stdout.flush()
     os.chdir(os.path.join(HOME, stem))
     fl = glob.glob("*")
-    edfs = filter(lambda s:s.endswith("edf"), fl)
-    dats = filter(lambda s:s.endswith("dat"), fl)
-    print len(edfs)
+    edfs = [s for s in fl if s.endswith("edf")]
+    dats = [s for s in fl if s.endswith("dat")]
+    print(len(edfs))
     if len(edfs)!=len(dats):
         os.system("../process2x2.sh %s"%(stem))        
 
@@ -40,12 +40,12 @@ while 1:
         try:
             num = int(num)
         except:
-            print "dirname does not start with a number",dirname
+            print("dirname does not start with a number",dirname)
             continue
         stem = dirname.replace("_edna","")
         process(stem)
-    lastone = checked.keys()
+    lastone = list(checked.keys())
     lastone.sort()
-    print "sleeping"
+    print("sleeping")
     time.sleep(10)
     

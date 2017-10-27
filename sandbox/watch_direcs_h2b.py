@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 
 import glob, os, sys, time, fabio
 
@@ -20,10 +22,10 @@ darks = {
 
 def convert(stem,first,last,int_time):
     nearest_int = int(10*float(int_time))
-    assert darks.has_key(nearest_int)
+    assert nearest_int in darks
     dark = darks[nearest_int]
     mycmd = CMD%(stem, first, last, FLOOD, dark)
-    print mycmd
+    print(mycmd)
     os.system("%s"%(mycmd))
 
 
@@ -32,7 +34,7 @@ def bname(s):
     return "%s_0.%04d"%(o.stem,o.num)
 
 def process(stem):
-    print "Checking",stem
+    print("Checking",stem)
     sys.stdout.flush()
     os.chdir(os.path.join(HOME, stem))
     fl = glob.glob("%s????.edf"%(stem))
@@ -66,6 +68,6 @@ while 1:
             continue
         stem = dirname.replace("_edna","")
         process(stem)
-    print "sleeping"
+    print("sleeping")
     time.sleep(10)
 #    break
