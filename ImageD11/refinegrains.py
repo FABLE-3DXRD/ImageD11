@@ -204,7 +204,6 @@ class refinegrains:
         else:
             ks.sort()
             gl = [ (self.grains[k],k) for k in ks ]
-        grain.write_grain_file(filename, [g[0] for g in gl])
 
         # Update the datafile and grain names reflect indices in grain list
         for g,k in gl:
@@ -224,8 +223,12 @@ class refinegrains:
             numpy.put( self.scandata[fltname].h, g.ind, hkl[0,:] )
             numpy.put( self.scandata[fltname].k, g.ind, hkl[1,:] )
             numpy.put( self.scandata[fltname].l, g.ind, hkl[2,:] )
-
-
+            # Count "uniq" reflections...
+            sign_eta = numpy.sign( self.scandata[fltname].eta_per_grain[g.ind] )
+            uniq_list = [ (int(h),int(k),int(l),int(s)) for
+                    (h,k,l),s in zip( hkl.T, sign_eta) ]
+            g.nuniq = len( set(uniq_list ) )
+        grain.write_grain_file(filename, [g[0] for g in gl])
 
 
 

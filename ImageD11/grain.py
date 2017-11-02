@@ -63,6 +63,8 @@ def write_grain_file(filename, list_of_grains):
             f.write("#intensity_info %s\n"%(g.intensity_info.rstrip()))
         if hasattr(g,"npks"):
             f.write("#npks %d\n"%(int(g.npks)))
+        if hasattr(g,"nuniq"):
+            f.write("#nuniq %d\n"%(int(g.nuniq)))
         if hasattr(g,"Rod"):
             try:
                 f.write("#Rod %f %f %f\n"%tuple([float(r) for r in g.Rod]))
@@ -99,7 +101,7 @@ def read_grain_file(filename):
             u = u + [vals]
         if len(u)==3:
             grainsread.append( grain(u, t) )
-            for k in ["name","npks","Rod","intensity_info"]:
+            for k in ["name","npks","nuniq","Rod","intensity_info"]:
                 if p.has_key(k):
                     setattr(grainsread[-1], k, p[k])
             p={}
