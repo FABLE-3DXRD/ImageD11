@@ -209,6 +209,46 @@ python module cImageD11
    end interface
 
 
+   interface
+      subroutine assign( ubi, gv, tol, drlv2, labels, ig, ng)
+         intent(c) assign
+	 intent(c)
+	 double precision, intent(c,in) :: ubi(3,3)
+	 double precision, intent(c,in) :: gv(ng,3)
+	 double precision, intent(c,in) :: tol
+	 double precision, intent(c,inout) :: drlv2(ng)
+	 integer*4, intent(inout) :: labels(ng)
+	 integer, intent(c,in) :: ig
+	 integer, intent(c,hide), depend( gv ) :: ng
+      end subroutine assign
+   end interface
+
+
+   interface
+      subroutine compute_gv(xlylzl,omega,omegasign,wvln,wedge,chi,t,gv,ng)
+          intent(c) compute_gv
+	  intent(c)
+	  integer, intent(c,hide), depend( xlylzl ) :: ng
+	  double precision, intent(in):: xlylzl(ng,3)
+	  double precision, intent(in):: omega(ng)
+	  double precision, intent(in):: omegasign, wvln, wedge, chi
+	  double precision, intent(in):: t(3)
+	  double precision, intent(inout):: gv(ng,3)
+      end subroutine compute_gv
+   end interface
+
+
+
+   interface
+      subroutine compute_xlylzl(s,f,p,r,dist,xlylzl,n)
+	 intent(c) compute_xlylzl
+	 intent(c)
+	 double precision, intent(in):: s(n), f(n)
+	 double precision, intent(inout):: xlylzl(n,3)
+	 double precision, intent(in):: p(4), r(9), dist(3)
+	 integer, intent(c,hide), depend( s ) :: n
+      end subroutine compute_xlylzl
+   end interface
 
 
 

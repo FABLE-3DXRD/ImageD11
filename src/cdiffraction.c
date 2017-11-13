@@ -3,7 +3,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
-#include "cImageD11.h"
+#include "cdiffraction.h"
 
 #define PI 3.14159265358979323846
 #define RAD PI/180.0
@@ -47,7 +47,7 @@ void compute_gv( double xlylzl[][3], double omega[], double omegasign,
   cc = cos(chi*RAD);
   memcpy(wmat, (double[9])  {cw, 0., -sw, 0., 1., 0., sw, 0., cw},
 	 9*sizeof(double)); 
-  memcpy(cmat, (double[9])  {1., 0.,  0., 0.,cc, sc , 0.,-sc, cc},
+  memcpy(cmat, (double[9])  {1., 0.,  0., 0.,cc, -sc , 0.,sc, cc},
 	 9*sizeof(double)); 
   //	mat = matmul(cmat, wmat)
   matmat(cmat, wmat, mat);
@@ -60,7 +60,7 @@ void compute_gv( double xlylzl[][3], double omega[], double omegasign,
     u[1] =  so*t[0] + co*t[1];
     u[2] = t[2];
     //! grain origin, difference vec, |yz| component
-    matTvec( mat, u, o);
+    matvec( mat, u, o);
     vec3sub( xlylzl[i], o, d);
     modyz =  1./sqrt(d[0]*d[0] + d[1]*d[1] + d[2]*d[2]);
     //     ! k-vector
@@ -68,7 +68,7 @@ void compute_gv( double xlylzl[][3], double omega[], double omegasign,
     k[0] = ds*(d[0]*modyz - 1. );
     k[1] = ds*d[1]*modyz;
     k[2] = ds*d[2]*modyz;
-    matmat( mat, k, v);
+    matTvec( mat, k, v);
     gv[i][0]= co*v[0] + so*v[1];
     gv[i][1]=-so*v[0] + co*v[1];
     gv[i][2]=v[2];
@@ -77,9 +77,9 @@ void compute_gv( double xlylzl[][3], double omega[], double omegasign,
 
 
 
-void compute_xlylzl( float s[], float f[], double p[4],
+void compute_xlylzl( double s[], double f[], double p[4],
 		     double r[9], double dist[3],
-		     float xlylzl[][3], int n){
+		     double xlylzl[][3], int n){
   double s_cen, f_cen, s_size, f_size, v[3];
   int i, j;
   s_cen = p[0];

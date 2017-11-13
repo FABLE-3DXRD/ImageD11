@@ -43,6 +43,6 @@ void compute_gv( double xlylzl[][3], double omega[], double omegasign,
 		 double wvln, double wedge, double chi, double t[3],
 		 double gv[][3], int n);
 
-void compute_xlylzl( float s[], float f[], double p[4],
+void compute_xlylzl( double s[], double f[], double p[4],
 		     double r[9], double dist[3],
-		     float xlylzl[][3], int n);
+		     double xlylzl[][3], int n);
