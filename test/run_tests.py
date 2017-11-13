@@ -4,7 +4,7 @@ import os, sys, unittest, importlib
 sys.path.insert(0,".")
 
 modules = [
-    "test_cImageD11"
+    "test_cImageD11",
     "gv_general.test_gv_general",
     "testcolumnfile",
     "test_put_incr",
