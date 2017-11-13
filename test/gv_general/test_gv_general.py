@@ -149,9 +149,9 @@ class test_g_to_k(unittest.TestCase):
         err1 = np.absolute(c1-c0) + np.absolute(s1-s0)
         err2 = np.absolute(c2-c0) + np.absolute(s2-s0)
         err = np.minimum(err1,err2)
-        print "\ns1",sol1
-        print "s2",sol2
-        print "omega",self.omega,"\n"
+        #print "\ns1",sol1
+        #print "s2",sol2
+        #print "omega",self.omega,"\n"
         self.assertAlmostEqual( array_diff( err, np.zeros(self.np)), 0, 6)
 
 
