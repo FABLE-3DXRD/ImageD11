@@ -1,0 +1,4 @@
+*.flt  linguist-generated
+*.html linguist-documentation
+*.pdf  linguist-generated
+*.odt  linguist-documentation
