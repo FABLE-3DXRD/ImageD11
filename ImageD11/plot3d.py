@@ -79,7 +79,7 @@ class plot3d(Tk.Toplevel):
         """
         Tk.Toplevel.__init__(self,parent)
         self.parent=parent
-        if data!=None:
+        if data is not None:
             xyz=data.copy()
         else:
             xyz=numpy.array([0,0,0])

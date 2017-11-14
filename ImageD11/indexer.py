@@ -20,8 +20,7 @@ from __future__ import print_function
 
 
 import numpy as np
-from ImageD11 import closest, grain, transform, fImageD11, indexing
-from . import unitcell
+from ImageD11 import grain, transform, cImageD11, indexing, unitcell
 import scipy.optimize
 import math, time, sys, logging
 
@@ -76,16 +75,16 @@ class indexer:
             self.cf.addcolumn(xl,"xl")
             self.cf.addcolumn(yl,"yl")
             self.cf.addcolumn(zl,"zl")
-        self.peaks_xyz = np.array((self.cf.xl,self.cf.yl,self.cf.zl))
+        self.peaks_xyzT = np.array(zip(self.cf.xl,self.cf.yl,self.cf.zl))
         om = self.cf.omega
-        sign = self.transformpars.get("omegasign")
+        osign = self.transformpars.get("omegasign")
         tth, eta = transform.compute_tth_eta_from_xyz(
-            self.peaks_xyz, om*sign,
+            self.peaks_xyzT.T, om*osign,
             **self.transformpars.parameters)
         self.cf.addcolumn( tth, "tth", )
         self.cf.addcolumn( eta, "eta", )
         gx, gy, gz = transform.compute_g_vectors(
-            tth, eta, om*sign,
+            tth, eta, om*osign,
             wvln  = self.transformpars.get("wavelength"),
             wedge = self.transformpars.get("wedge"),
             chi   = self.transformpars.get("chi") )
@@ -207,10 +206,11 @@ class indexer:
                ub =  np.dot( U, self.unitcell.B)
                ubi = np.linalg.inv( ub )
                ubio = ubi.copy()
-               npks = closest.score(ubi,gvf,hkl_tol)
+               npks = cImageD11.score(ubi,gvf,hkl_tol)
                pairs.append( (ind1[i], ind2[k], U, ubi ) )
                print(npks, end=' ') 
-               ubi, trans = self.refine( ubi, [0.,0.,0.], tol=hkl_tol )
+               
+               ubi, trans = self.refine( ubi, np.zeros(3,np.float), tol=hkl_tol )
                inds, hkls = self.assign( ubi, trans, hkl_tol )
                ubi, trans = self.refine( ubi, trans, inds = inds, hkls= hkls, tol=hkl_tol )
                print(npks, ubi)
@@ -223,8 +223,8 @@ class indexer:
 
 
     def assign(self, ubi, translation, tol):
-        gv = np.zeros(self.peaks_xyz.shape, order='F')
-        fImageD11.compute_gv( self.peaks_xyz,
+        gv = np.zeros(self.peaks_xyzT.shape, np.float )
+        cImageD11.compute_gv( self.peaks_xyzT,
                     self.cf.omega,
                     self.transformpars.get('omegasign'),
                     self.transformpars.get('wavelength'),
@@ -232,7 +232,7 @@ class indexer:
                     self.transformpars.get('chi'),
                     translation,
                     gv)
-        hkl = np.dot( ubi, gv )
+        hkl = np.dot( ubi, gv.T )
         hkli = np.floor( hkl + 0.5 )
         e = (hkl - hkli)
         e = (e*e).sum(axis=0)
@@ -244,7 +244,7 @@ class indexer:
     def gof( self, p, *args ):
         self.NC += 1
         try:
-            hkls, inds, peaks_xyz, gobs, omega = args
+            hkls, inds, peaks_xyzT, gobs, omega = args
         except:
             print(args, len(args))
             raise
@@ -252,7 +252,7 @@ class indexer:
         ub = p[:3]
         t = p[3]
         gcalc = np.dot( ub, hkls )
-        fImageD11.compute_gv( peaks_xyz,
+        cImageD11.compute_gv( peaks_xyzT,
                               omega,
                               self.transformpars.get('omegasign'),
                               self.transformpars.get('wavelength'),
@@ -264,7 +264,7 @@ class indexer:
         #print gcalc
         #print (gobs-gcalc).ravel()
         #1/0
-        e = (gcalc - gobs).ravel()
+        e = (gcalc - gobs.T).ravel()
         p.shape = 12,
  #       print p-0.1,(e*e).sum()
         return e#(e*e).sum()
@@ -285,8 +285,8 @@ class indexer:
         ub = np.linalg.inv( ubi )
         x0 = np.array( list( ub.ravel() ) + list(translation ) )
         fun = self.gof
-        args = (hkls, inds, self.peaks_xyz[:,inds],
-                np.zeros( hkls.shape, order='F'),
+        args = (hkls, inds, self.peaks_xyzT[inds],
+                np.zeros(self.peaks_xyzT[inds].shape ),
                 self.cf.omega[inds])
         def Dfun( x0, *args ):
             epsilon = np.ones(12)*1e-6
@@ -319,7 +319,8 @@ if __name__=="__main__":
     c = columnfile( sys.argv[2] )
     i = indexer( p, c )
     if sys.argv[3][:3] == "fit":
-        # \test\simul_1000_grains>python ..\..\ImageD11\indexer.py Al1000\Al1000.par Al1000\Al1000.flt allgrid.map allgridfitscipy.map
+        #                                            0                   1                  2           3    4             5
+        # \test\simul_1000_grains>python ..\..\ImageD11\indexer.py Al1000\Al1000.par Al1000\Al1000.flt fit allgrid.map allgridfitscipy.map
         gl = ImageD11.grain.read_grain_file( sys.argv[4] )
         inds = np.arange( len(gl), dtype=np.int )
         allhkls = np.array( (c.h, c.k, c.l) )

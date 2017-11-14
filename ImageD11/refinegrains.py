@@ -320,7 +320,7 @@ class refinegrains:
         except:
             sign = 1.0
         # translation should match grain translation here...
-        self.tth,self.eta = transform.compute_tth_eta_from_xyz( peaks_xyz,
+        self.tth,self.eta = transform.compute_tth_eta_from_xyz( peaks_xyz.T,
                                       omega = om * sign,
                                       **self.parameterobj.parameters)
 
@@ -378,7 +378,7 @@ class refinegrains:
             #    numpy.array([x, y]),
             #    omega = omega_calc,
             #    **self.parameterobj.parameters)
-            self.tth,self.eta = transform.compute_tth_eta_from_xyz( peaks_xyz,
+            self.tth,self.eta = transform.compute_tth_eta_from_xyz( peaks_xyz.T,
                                                             omega = om * sign,
                                                 **self.parameterobj.parameters)
 
@@ -475,7 +475,7 @@ class refinegrains:
             if self.recompute_xlylzl:
                 g.peaks_xyz = transform.compute_xyz_lab([ g.sc,
                                                           g.fc ],
-                                                        **self.parameterobj.parameters)
+                                                        **self.parameterobj.parameters).T
 
             self.compute_gv( g )
             #print self.gv.shape
@@ -636,34 +636,28 @@ class refinegrains:
             # Looks like this in one dataset only
             ng = len(self.grainnames)
             int_tmp = numpy.zeros(nr , numpy.int32 )-1
-            if 0: # this is pretty slow
-                tth_tmp = numpy.zeros((ng, nr) ,numpy.float32 ) - 1
-                eta_tmp = numpy.zeros((ng, nr) ,numpy.float32 )
-
-            peaks_xyz = transform.compute_xyz_lab([ self.scandata[s].sc,
-                                                    self.scandata[s].fc ],
-                                                  **self.parameterobj.parameters)
+            tmp = transform.compute_xyz_lab(
+                [ self.scandata[s].sc,
+                  self.scandata[s].fc ],
+                **self.parameterobj.parameters)
+            peaks_xyz = tmp.T.copy()
             if not quiet:
             	print("Start first grain loop",time.time()-start)
             start = time.time()
-            gv = numpy.zeros(peaks_xyz.shape,numpy.float, order='F' )
+            gv = numpy.zeros((nr,3),numpy.float )
             wedge = self.parameterobj.parameters['wedge']
             omegasign = self.parameterobj.parameters['omegasign']
             chi   = self.parameterobj.parameters['chi']
             wvln  = self.parameterobj.parameters['wavelength']
             first_loop = time.time()
-            import fImageD11
-            drlv2_2 = self.scandata[s].drlv2*0 + 1  # == 1
-            int_tmp_2 = numpy.zeros(nr , numpy.int32 )-1
+            drlv2 = self.scandata[s].drlv2*0 + 1  # == 1
+            int_tmp = numpy.zeros(nr , numpy.int32 )-1
             for ig, g in enumerate(self.grainnames):
-#                assert g == ig, "sorry - a bug in program"
                 gr = self.grains[ ( g, s) ]
                 self.set_translation( g, s)
                 gr.peaks_xyz = peaks_xyz
                 gr.om = self.scandata[s].omega
-                # self.compute_gv( gr )
-                # print peaks_xyz.shape, self.scandata[s].omega.shape, gv.shape
-                fImageD11.compute_gv( peaks_xyz,
+                cImageD11.compute_gv( peaks_xyz,
                     self.scandata[s].omega,
                     omegasign,
                     wvln,
@@ -671,18 +665,25 @@ class refinegrains:
                     chi,
                     gr.translation,
                     gv)
-                fImageD11.assign( gr.ubi, gv, self.tolerance, drlv2, int_tmp, int(g)) 
-#                cImageD11.score_and_assign( gr.ubi,
-#                                          gv.T,
-#                                          self.tolerance,
-#                                          drlv2_2,
-#                                          int_tmp_2,
-#                                          int(g))
+                if False: # For testing / debugging  
+                    omf  =  self.OMEGA_FLOAT 
+                    self.OMEGA_FLOAT = False
+                    self.compute_gv( gr )
+                    import pylab
+                    pylab.plot( self.gv[:,0], self.gv[:,0]-gv2[:,0], ".")
+                    pylab.plot( self.gv[:,1], self.gv[:,1]-gv2[:,1], ".")
+                    pylab.plot( self.gv[:,2], self.gv[:,2]-gv2[:,2], ".")
+                    pylab.title("C")
+                cImageD11.score_and_assign( gr.ubi,
+                                            gv,
+                                            self.tolerance,
+                                            drlv2,
+                                            int_tmp,
+                                            int(g))
             if not quiet:
             	print(time.time()-first_loop,"First loop")
-#                print "assigned"
 
-            self.gv = gv.T.astype(numpy.float32).copy()
+            self.gv = gv.copy()
             # Second loop after checking all grains
             if not quiet:
             	print("End first grain loop",time.time()-start)
@@ -729,7 +730,7 @@ class refinegrains:
                 #print 'x',gr.x[:10]
                 #print 'ind',ind[:10]
                 gr.ind = ind # use this to push back h,k,l later
-                gr.peaks_xyz = numpy.take( peaks_xyz, ind, axis=1 )
+                gr.peaks_xyz = numpy.take( peaks_xyz, ind, axis=0 )
                 gr.sc = numpy.take( sc, ind)
                 gr.fc = numpy.take( fc, ind)
                 gr.om = numpy.take(self.scandata[s].omega , ind)
@@ -740,7 +741,7 @@ class refinegrains:
                 except:
                     sign = 1.0
 
-                tth, eta = transform.compute_tth_eta_from_xyz( gr.peaks_xyz,
+                tth, eta = transform.compute_tth_eta_from_xyz( gr.peaks_xyz.T,
                                                        omega = gr.om * sign,
                                               **self.parameterobj.parameters)
 
