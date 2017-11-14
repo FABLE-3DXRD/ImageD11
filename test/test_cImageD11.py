@@ -13,7 +13,8 @@ if TEST_FORTRAN:
 
 class test_compute_gv(unittest.TestCase):
     def setUp(self):
-        N = 20
+        N = 203
+
         self.XLYLZL = np.array([ np.linspace(0,2000,N),
                                  np.linspace(10,2010,N),
                                  np.ones(N) ])
@@ -22,13 +23,12 @@ class test_compute_gv(unittest.TestCase):
 
     def runTest(self):
         tth, eta = transform.compute_tth_eta_from_xyz( self.XLYLZL,
-                                                       self.omega,
+                                                       self.omega*self.omegasign,
                                                        t_x=self.t_x,
                                                        t_y=self.t_y,
                                                        t_z=self.t_z,
                                                        wedge=self.wedge,
-                                                       chi=self.chi,
-                                                    omegasign=self.omegasign)
+                                                       chi=self.chi)
         gve1 = transform.compute_g_vectors( tth, eta, self.omega*self.omegasign,
                                             self.wvln, wedge=self.wedge,
                                             chi=self.chi)
@@ -92,8 +92,8 @@ class test_compute_gv(unittest.TestCase):
         self.chi = 10.
         self.omegasign=-1.0
         self.wvln=0.125
-        self.t_x=20.
-        self.t_y=30.
+        self.t_x=200.
+        self.t_y=300.
         self.t_z=40.
         self.runTest()
         

@@ -23,15 +23,11 @@ Setup script
 
 
 
-# from distutils.core import setup, Extension
-# from setuptools import setup, Extension
 import setuptools
+import sys
 from numpy.distutils.core import setup, Extension
-
 from numpy import get_include
 
-nid = [get_include(),]
-import sys
 
 if sys.platform == "win32" and "--compiler=mingw32" not in sys.argv:
     ecomparg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY"]
@@ -43,8 +39,9 @@ else:
     elibs = ["gomp","pthread"]
 
 
-# Compiled extensions:
+nid = [get_include(),]
 
+# Compiled extension:
 cImageD11extension = Extension( "cImageD11",
                                 sources = [ "src/cImageD11.pyf",
                                             "src/connectedpixels.c",
@@ -58,30 +55,21 @@ cImageD11extension = Extension( "cImageD11",
                                )
             
 
-
-import sys
-                  
-# New fortran code - you might regret this...
-fi = Extension("fImageD11",
-               sources = ['fsrc/fImageD11.f90' ],
-               # This is always gcc/gfortran for now
-               extra_f90_compile_args=["-fopenmp -O2"],
-               libraries = elibs)
-
-# Remove list of dependencies from setup file
+# Removed list of dependencies from setup file
+# Do a miniconda (or something) instead...
 #if sys.platform == 'win32':
 #    needed = [
 #        'six',
-#        'xfab>=0.0.2',
-#        'fabio>=0.0.5',
 #        'numpy>=1.0.0',
+#        'scipy', 
+#        'xfab>=0.0.2',
+#           'pycifrw'
+#        'fabio>=0.0.5',
 #        'matplotlib>=0.90.0',
+#        ... 
 #        ]
-#else: # Take care of yourself if you are on linux
 
 needed = []
-#        'xfab>=0.0.1',
-#        'fabio>=0.0.4']
 
 # See the distutils docs...
 setup(name='ImageD11',
@@ -91,13 +79,13 @@ setup(name='ImageD11',
       description='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
-      ext_modules = [cImageD11extension,fi],
+      ext_modules = [cImageD11extension,],
       install_requires = needed,
       packages = ["ImageD11"],
       package_dir = {"ImageD11":"ImageD11"},
       url = "http://github.com/jonwright/ImageD11",
 #      download_url = ["http://sourceforge.net/project/showfiles.php?group_id=82044&package_id=147869"],
-      package_data = {"ImageD11" : ["doc/*.html"]},
+      package_data = {"ImageD11" : ["doc/*.html", "data/*" ]},
       scripts = ["ImageD11/rsv_mapper.py",
                  "scripts/peaksearch.py",
                  "scripts/fitgrain.py",
@@ -130,8 +118,4 @@ setup(name='ImageD11',
                  "scripts/avg_par.py",
                  "scripts/powderimagetopeaks.py"])
 
-print("For windows you would need:")
-print('set LDFLAGS="-static-libgfortran -static-libgcc -static -lgomp -shared"')
-print('also gfortran/gcc installed (--compiler=mingw32)')
-print('also to patch f2py to let it run')
 
