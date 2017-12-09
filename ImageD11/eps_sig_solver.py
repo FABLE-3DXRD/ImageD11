@@ -23,7 +23,11 @@ import math
 from ImageD11 import transform, unitcell, columnfile
 from ImageD11.parameters import par, parameters
 from ImageD11.grain import read_grain_file
-from FitAllB.conversion import grain2sample, strain2stress,formStiffnessMV
+try:
+    from FitAllB.conversion import grain2sample, strain2stress,formStiffnessMV
+except:
+    print( "You need to install FitAllB")
+    print( "You will get error messages if you try to compute strain!")
 from xfab.tools import ubi_to_u_and_eps,ubi_to_cell
 
 def readubis(ubifile):
