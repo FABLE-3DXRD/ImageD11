@@ -1,6 +1,6 @@
+#!/usr/bin/env python
 
 from __future__ import print_function
-#!/usr/bin/python
 
 from ImageD11.grain import read_grain_file
 import sys, os

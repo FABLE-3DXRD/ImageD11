@@ -1,6 +1,6 @@
-
+#!/usr/bin/env python
 from __future__ import print_function
-#!/sware/exp/fable/standalone/redhate4-a64/bin/python
+
 
 """
 Removes grains from a grain file if they have less than

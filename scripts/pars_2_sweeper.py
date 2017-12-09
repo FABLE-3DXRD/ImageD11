@@ -1,6 +1,6 @@
+#!/usr/bin/env python
 
 from __future__ import print_function
-#!/usr/bin/env python
 
 """
 Adapted to print detector line required for grainsweeper.3D

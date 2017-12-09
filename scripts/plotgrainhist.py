@@ -1,6 +1,6 @@
+#!/usr/bin/env python
 
 from __future__ import print_function
-#!/usr/bin/env python
 
 # ImageD11_v1.0 Software for beamline ID11
 # Copyright (C) 2008  Jon Wright

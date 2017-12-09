@@ -1,6 +1,6 @@
-
+#!/usr/bin/env python
 from __future__ import print_function
-#!/usr/bin/python
+
 import sys
 
 from ImageD11.parameters import *

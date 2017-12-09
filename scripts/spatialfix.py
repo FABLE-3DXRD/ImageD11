@@ -1,6 +1,6 @@
+#!/usr/bin/env python
 
 from __future__ import print_function
-#!/usr/bin/python
 
 """
 Applies a new spatial correction based on spd style distortion files

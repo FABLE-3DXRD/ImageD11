@@ -1,6 +1,6 @@
+#!/usr/bin/env python
 
 from __future__ import print_function
-#!/usr bin python
 
 help = """
 Reads in a series of flt files to merge together different threshold levels

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from ImageD11.columnfile  import columnfile
 from ImageD11.grain import read_grain_file, write_grain_file

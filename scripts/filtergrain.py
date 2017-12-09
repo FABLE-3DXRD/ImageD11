@@ -1,6 +1,6 @@
+#!/usr/bin/env python
 
 from __future__ import print_function
-#!/usr/bin/env python
 
 """
 Utility script to pick out the peaks belonging to a certain

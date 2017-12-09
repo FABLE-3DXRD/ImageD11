@@ -1,9 +1,8 @@
+#!/usr/bin/env python
 
 from __future__ import print_function
-#!/usr/bin/python
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
-#!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 
 # ImageD11_v0.4 Software for beamline ID11
