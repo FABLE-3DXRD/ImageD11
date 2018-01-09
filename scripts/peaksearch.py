@@ -1,13 +1,12 @@
+#!/usr/bin/env python
 
 from __future__ import print_function
-#!/usr/bin/python
 
 # Command line driver only - calls ImageD11.peaksearcher
 # ... which can also be called by gui
 
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
-#! /bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 
 # ImageD11_v1.0 Software for beamline ID11

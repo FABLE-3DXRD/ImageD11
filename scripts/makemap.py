@@ -1,6 +1,7 @@
+#!/usr/bin/env python
 
 from __future__ import print_function
-#!/usr/bin/env fable.python
+
 
 from ImageD11.indexing import readubis, write_ubi_file
 from ImageD11.refinegrains import refinegrains

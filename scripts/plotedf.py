@@ -1,10 +1,9 @@
+#!/usr/bin/env python
 
 from __future__ import print_function
-#!/usr/bin/python
 
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
-#!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 
 # This is statement is required by the build system to query build info

@@ -1,6 +1,6 @@
+#!/usr/bin/env python
 
 from __future__ import print_function
-#!/usr/bin/env python
 try:
     from Tkinter import *
     from tkMessageBox import showinfo
