@@ -51,6 +51,29 @@ def getheader(filename):
         s=fp.read(1024)
     return h
 
+def mne(hd):
+    h = {}
+    order = []
+    for line in hd.split(";"):
+        try:
+            key,vals = line.split("=")
+        except ValueError:
+            continue
+        key = key.lstrip().rstrip()
+        h[key] = vals.split(";")[0]
+        order.append( key )
+    for k in order:
+        if k.endswith("_mne"):
+            stem = k.split("_")[0]
+            p = k.replace("_mne","_pos")
+            newkeys = h[k].split()
+            newvals = h[p].split()
+            for ik, iv in zip(newkeys, newvals):
+                kk = stem+":"+ik
+                h[kk]=iv
+                order.append( kk )
+    return h, order
+
 
 if __name__=="__main__":
     keys=[]
@@ -64,13 +87,21 @@ if __name__=="__main__":
             args += glob.glob(arg)
         else:
             args.append(arg)
+    # Print titles:
+    if len(keys)>0:
+        sys.stdout.write("# Filename ")
+        for key in keys:
+            sys.stdout.write(" %s "%(key))
+        sys.stdout.write("\n")
     for arg in args:
         hd = getheader(arg)
+        hd, order = mne( hd )
         sys.stdout.write(arg+" ")
         if len(keys)>0:
             for key in keys:
-                item=hd[hd.find(key+" "):].split(";")[0]
-                sys.stdout.write(" "+item+" ")
+                if hd.has_key(key):
+                    sys.stdout.write(" "+hd[key]+" ")
         else:
-            sys.stdout.write(hd)
+            for k in order:
+                sys.stdout.write("%s = %s ;\n"%(k, hd[k]))
         sys.stdout.write("\n")
