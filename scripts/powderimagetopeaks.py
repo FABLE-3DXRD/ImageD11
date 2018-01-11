@@ -1,4 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
+from __future__ import print_function
 
 
 
@@ -35,10 +37,10 @@ import sys
 if __name__=="__main__":
 
     def usage():
-        print "Usage: %s infile outfile stepsize"%(sys.argv[0])
-        print "Puts rows/cols of zeros into image spaced by stepsize"
-        print "Optionally do radial cuts of ~1 degree:"
-        print "Usage: %s infile outfile1 outfile2 ci cj"%(sys.argv[0])
+        print("Usage: %s infile outfile stepsize"%(sys.argv[0]))
+        print("Puts rows/cols of zeros into image spaced by stepsize")
+        print("Optionally do radial cuts of ~1 degree:")
+        print("Usage: %s infile outfile1 outfile2 ci cj"%(sys.argv[0]))
         sys.exit()
     
     try:

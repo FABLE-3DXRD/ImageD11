@@ -1,7 +1,6 @@
-#!/usr/bin/env python
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
-#!
+
+from __future__ import print_function
 
 """
 from example by Tarn Weisner Burton <twburton@users.sourceforge.net> in pyopengl
@@ -16,16 +15,15 @@ import string
 #__date__ = string.join(string.split('$Date$')[1:3], ' ')
 __author__ = 'Jon Wright <jpwright@users.sourceforge.net> from example by Tarn Weisner Burton <twburton@users.sourceforge.net>'
 
-try:
-    import numpy
-except:
-    import sys
-    print "This demo requires the numpy extension, sorry."
-    sys.exit()
+import numpy
 
 ###### START patch for ESRF debian installation
-from Tkinter import _default_root
-from Tkinter import Tk
+try: 
+    from Tkinter import _default_root
+    from Tkinter import Tk
+except:
+    from tkinter import _default_root
+    from tkinter import Tk
 if _default_root is None:
     _default_root = Tk()
 import os
@@ -81,7 +79,7 @@ class plot3d(Tk.Toplevel):
         """
         Tk.Toplevel.__init__(self,parent)
         self.parent=parent
-        if data!=None:
+        if data is not None:
             xyz=data.copy()
         else:
             xyz=numpy.array([0,0,0])
@@ -100,7 +98,7 @@ class plot3d(Tk.Toplevel):
         self.o.distance=3.
 #numpy.maximum.reduce(numpy.ravel(xyz))*4 / \
 #            math.tan(self.o.fovy*math.pi/180)
-        print type(xyz),xyz.dtype.char,xyz.shape
+        print(type(xyz),xyz.dtype.char,xyz.shape)
         self.xyz=xyz
         f=Tk.Frame(self)
         Tk.Button(f,text="Help",command=self.o.help).pack(side=Tk.LEFT)
@@ -115,7 +113,7 @@ class plot3d(Tk.Toplevel):
             side=Tk.BOTTOM,expand=Tk.NO,fill=Tk.X)
         self.ubis=ubis
         self.color=numpy.ones((xyz.shape[0],3),numpy.float)
-        print self.color.shape
+        print(self.color.shape)
         self.tex=False
         if ubis is not None:
            self.ubis = self.readubis(ubis)
@@ -152,7 +150,7 @@ class plot3d(Tk.Toplevel):
         shape=self.imageobj.data.shape
         d=numpy.reshape(numpy.clip(self.imageobj.data,mi,mx),shape) # makes a clipped copy
         d=(255.*(d-mi)/(mx-mi)) # scale intensity
-        print d.min(),d.max(),d.mean()
+        print(d.min(),d.max(),d.mean())
         self.image=numpy.zeros((1024,1024),numpy.uint8)
         if d.shape==(2048,2048):
             # rebin 2x2
@@ -180,7 +178,7 @@ class plot3d(Tk.Toplevel):
         tth,eta=transform.compute_tth_eta(p,**self.pars)
         gve = transform.compute_g_vectors(tth,eta,omega*self.pars['omegasign'],self.pars['wavelength'])
         self.pts = []
-        print "Setting up image mapping",p.shape,gve.shape
+        print("Setting up image mapping",p.shape,gve.shape)
         for i in range(pk.shape[1]):
             self.pts.append([pk[1,i]/1024.,pk[0,i]/1024.,gve[0,i],gve[1,i],gve[2,i]])
         #for p in self.pts:
@@ -217,12 +215,12 @@ class plot3d(Tk.Toplevel):
                 [0,0.5,0.5]]
         if self.ubis is not None:
             from ImageD11 import indexing
-            for u,i in zip(self.ubis,range(len(self.ubis))):
+            for u,i in zip(self.ubis,list(range(len(self.ubis)))):
                 scores=indexing.calc_drlv2(self.ubis[i],self.xyz)
-                print self.xyz.shape,scores.shape
+                print(self.xyz.shape,scores.shape)
                 ind = numpy.compress( numpy.less(scores,0.02) , 
                                       numpy.arange(self.xyz.shape[0]) )
-                print "Grain",i,scores.shape,ind.shape
+                print("Grain",i,scores.shape,ind.shape)
                 for j in range(3):
                     c=numpy.ones(self.color.shape[0])
                     numpy.put(c,ind,cc[i%len(cc)][j])
@@ -235,11 +233,11 @@ class plot3d(Tk.Toplevel):
         self.o.mainloop()
 
     def goaway(self):
-        print "Called goaway"
+        print("Called goaway")
         self.o.destroy()
         self.destroy()
         if self.parent is None: sys.exit()
-        print "Ought to be gone now..."
+        print("Ought to be gone now...")
 
     def changedata(self,xyz):
         self.xyz=xyz.copy()
@@ -320,7 +318,7 @@ if __name__=="__main__":
     try:
         lines=open(sys.argv[1],"r").readlines()
     except:
-        print "Usage %s gvector_file [ubifile] [image parfile]"%(sys.argv[0])
+        print("Usage %s gvector_file [ubifile] [image parfile]"%(sys.argv[0]))
         sys.exit()
    
     on=0

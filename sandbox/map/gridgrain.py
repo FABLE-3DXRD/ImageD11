@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 
 #
 from ImageD11 import transform, transformer, indexing, parameters
@@ -39,19 +41,19 @@ def gridgrains( ul, flt, pars,
                  peaks_xyz,
                  omega,
                  **pars)
-             if pars.has_key('omegasign'):
+             if 'omegasign' in pars:
                  om_sgn = float(pars["omegasign"])
              else:
                 om_sgn =  1.0
                 
              gv = transform.compute_g_vectors(
                  tth, eta, omega*om_sgn, **pars)
-             print tx, ty,
+             print(tx, ty, end=' ')
              for ubi in ul:
                  ns = score( ubi, gv.T, tol )
-                 print ns,
+                 print(ns, end=' ')
                  n += ns
-             print
+             print()
     return n
 
 
@@ -76,7 +78,7 @@ if __name__ == "__main__":
             pars["y_center"] = yc
             for zc in [zcen-1, zcen, zcen +1 ]:
                 pars["z_center"] = zc
-                print "\n\n# %f %f %f"%(dist, yc, zc)
+                print("\n\n# %f %f %f"%(dist, yc, zc))
                 npk = gridgrains( ul, flt, pars )
                 f.write("%f %f %f %d\n"%( dist, yc, zc, npk))
                 f.flush()

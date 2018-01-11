@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 # ImageD11_v1.0 Software for beamline ID11
 # Copyright (C) 2008  Jon Wright
 #
@@ -33,7 +35,7 @@ try:
     if len(sys.argv)>5:
         nbins = int(sys.argv[5])
 except:
-    print "Usage: %s flt par ubi tol [nbins=30]"%(sys.argv[0])
+    print("Usage: %s flt par ubi tol [nbins=30]"%(sys.argv[0]))
     sys.exit()
 
 if len(sys.argv)>6:
@@ -55,7 +57,7 @@ ng = int(maximum.reduce(d.labels))+1
 drl = [ compress(d.labels==i, d.drlv2) for i in range(ng)]
 dp5 = [sqrt(di) for di in drl]
 hl = [ hist(dpi, bins)[0] for dpi in dp5]
-print "hl0:",hl[0].shape, bins.shape
+print("hl0:",hl[0].shape, bins.shape)
 if bins.shape[0] != hl[0].shape[0]:
     bins = (bins[1:] + bins[:-1])/2
 cla()
@@ -66,15 +68,15 @@ for i in range(ng):
 
     
 
-print " "*10,
+print(" "*10, end=' ')
 for j in range(ng):
-    print "%5d"%(j),
-print
+    print("%5d"%(j), end=' ')
+print()
 for i in range(len(bins)):
-    print "%10.6f"%(bins[i]),
+    print("%10.6f"%(bins[i]), end=' ')
     for j in range(ng):
-        print "%5d"%(hl[j][i]),
-    print
+        print("%5d"%(hl[j][i]), end=' ')
+    print()
 
 
 show()

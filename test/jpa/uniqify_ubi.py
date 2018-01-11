@@ -2,7 +2,7 @@ import glob, sys
 
 import numpy as np
 
-from ImageD11 import closest, indexing, transformer
+from ImageD11 import cImageD11, indexing, transformer
 
 
 # open up a set of ubi files
@@ -57,7 +57,7 @@ for name in names[15:]:
         seen = 0
         for j in range(len(uniq_ubis)):
             u = uniq_ubis[j][0]
-            npk=closest.score(u,gv.T,tol)
+            npk=cImageD11.score(u,gv.T,tol)
             if npk == len(pks):
                 # seen you before
                 uniq_ubis[j][1].append((name, i))
@@ -114,7 +114,7 @@ for entry in uniq_ubis:
         avg = 4
         npix = 3
         intensity = np.sum((t.finalpeaks[avg,:]*t.finalpeaks[avg,:])[ind])
-        print closest.score(entry[0],t.gv.T,tol), intensity
+        print cImageD11.score(entry[0],t.gv.T,tol), intensity
 
 
 # now re

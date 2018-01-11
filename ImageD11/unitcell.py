@@ -1,3 +1,7 @@
+
+
+from __future__ import print_function
+
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 
@@ -137,17 +141,17 @@ class unitcell:
         ca= math.cos(radians(self.lattice_parameters[3]))
         cb= math.cos(radians(self.lattice_parameters[4]))
         cg= math.cos(radians(self.lattice_parameters[5]))
-        if verbose==1: print "Unit cell",self.lattice_parameters
+        if verbose==1: print("Unit cell",self.lattice_parameters)
         self.g = numpy.array( [[ a*a    ,  a*b*cg, a*c*cb ],
                                [ a*b*cg ,  b*b   , b*c*ca ],
                                [ a*c*cb ,  b*c*ca, c*c    ]],numpy.float)
-        if verbose==1: print "Metric tensor\n",self.g
+        if verbose==1: print("Metric tensor\n",self.g)
         try:
             self.gi = inv(self.g)
         except:
             raise Exception("Unit cell was degenerate, could not determine"+\
                     "reciprocal metric tensor")
-        if verbose==1: print "Reciprocal Metric tensor\n",self.gi
+        if verbose==1: print("Reciprocal Metric tensor\n",self.gi)
         self.astar=numpy.sqrt(self.gi[0,0])
         self.bstar=numpy.sqrt(self.gi[1,1])
         self.cstar=numpy.sqrt(self.gi[2,2])
@@ -155,10 +159,10 @@ class unitcell:
         self.alphas=degrees(math.acos(self.gi[1,2]/self.bstar/self.cstar))
         self.betas =degrees(math.acos(self.gi[0,2]/self.astar/self.cstar))
         self.gammas=degrees(math.acos(self.gi[0,1]/self.astar/self.bstar))
-        if verbose==1: print "Reciprocal cell"
+        if verbose==1: print("Reciprocal cell")
         if verbose==1: 
-            print self.astar, self.bstar, self.cstar, \
-                self.alphas, self.betas, self.gammas
+            print(self.astar, self.bstar, self.cstar, \
+                self.alphas, self.betas, self.gammas)
         # Equation 3 from Busing and Levy
         self.B = numpy.array ( 
             [ [ self.astar , 
@@ -169,10 +173,10 @@ class unitcell:
                 -self.cstar*math.sin(radians(self.betas))*ca ],
               [ 0 , 0  ,
                 1./c ] ] , numpy.float)
-        if verbose == 1: print self.B
+        if verbose == 1: print(self.B)
         if verbose == 1: 
-            print numpy.dot( numpy.transpose(self.B),
-                               self.B)-self.gi # this should be zero
+            print(numpy.dot( numpy.transpose(self.B),
+                               self.B)-self.gi) # this should be zero
         self.hkls = None
         self.peaks = None
         self.limit = 0
@@ -316,8 +320,8 @@ class unitcell:
                 return 0.,1.0
             if abs(costheta+1) < 1e-6:
                 return 180.,-1.0
-            print "Error in unit cell class determining angle"
-            print "h1",h1,"h2",h2,"Costheta=",costheta
+            print("Error in unit cell class determining angle")
+            print("h1",h1,"h2",h2,"Costheta=",costheta)
             raise
 
     def getanglehkls(self, ring1, ring2):
@@ -355,7 +359,7 @@ class unitcell:
         """
         costheta = numpy.dot(g1,g2)/norm2(g2)/norm2(g1)
 
-        if verbose==1: print "observed costheta",costheta
+        if verbose==1: print("observed costheta",costheta)
         best=5.
 
         hab , angles_ab = self.getanglehkls( ring1, ring2 )
@@ -375,23 +379,23 @@ class unitcell:
             try:
                 h1, h2 = hab[b]
             except:
-                print "hab=",hab
-                print "best=",b
-                print "len(hab)",len(hab)
-                print "len(angles_ab)", len(angles_ab)
-                print "costheta",costheta
-                print "abs( angles_ab - costheta ) )",abs( angles_ab - costheta ) 
-                print "len(abs( angles_ab - costheta )) )",len(abs( angles_ab - costheta ) )
-                print numpy.argmin( abs( angles_ab - costheta ) )
+                print("hab=",hab)
+                print("best=",b)
+                print("len(hab)",len(hab))
+                print("len(angles_ab)", len(angles_ab))
+                print("costheta",costheta)
+                print("abs( angles_ab - costheta ) )",abs( angles_ab - costheta )) 
+                print("len(abs( angles_ab - costheta )) )",len(abs( angles_ab - costheta ) ))
+                print(numpy.argmin( abs( angles_ab - costheta ) ))
                 raise
             if verbose==1:
-                print "Assigning h1",h1,g1,self.ds(h1),\
+                print("Assigning h1",h1,g1,self.ds(h1),\
                     math.sqrt(numpy.dot(g1,g1)),\
-                    self.ds(h1)-math.sqrt(numpy.dot(g1,g1))
-                print "Assigning h2",h2,g2,self.ds(h2),\
+                    self.ds(h1)-math.sqrt(numpy.dot(g1,g1)))
+                print("Assigning h2",h2,g2,self.ds(h2),\
                     math.sqrt(numpy.dot(g2,g2)),\
-                    self.ds(h1)-math.sqrt(numpy.dot(g1,g1))
-                print "Cos angle calc",self.anglehkls(h1,h2),"obs",costheta
+                    self.ds(h1)-math.sqrt(numpy.dot(g1,g1)))
+                print("Cos angle calc",self.anglehkls(h1,h2),"obs",costheta)
             try:
                 h1c=numpy.dot(self.B,h1)    
                 h2c=numpy.dot(self.B,h2)
@@ -409,23 +413,23 @@ class unitcell:
             except:
                 logging.error("unitcell.orient h1 %s g1 %s h2 %s g2 %s self.B %s"%(
                      str(h1), str(g1), str(h2), str(g2), str(self.B)))
-                print "angles_ab = ",angles_ab
-                print "hab",hab
-                print "best",b
-                print "ring1",ring1,"ring2",ring2
+                print("angles_ab = ",angles_ab)
+                print("hab",hab)
+                print("best",b)
+                print("ring1",ring1,"ring2",ring2)
                 import traceback
                 traceback.print_exc()
             if verbose==1:
-                print "UBI"
-                print UBI
-                print "Grain gi"
-                print numpy.dot(numpy.transpose(UB),UB)
-                print "Cell gi"
-                print self.gi
+                print("UBI")
+                print(UBI)
+                print("Grain gi")
+                print(numpy.dot(numpy.transpose(UB),UB))
+                print("Cell gi")
+                print(self.gi)
                 h=numpy.dot(UBI,g1)
-                print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
+                print("(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2]))
                 h=numpy.dot(UBI,g2)
-                print "(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2])
+                print("(%9.3f, %9.3f, %9.3f)"%(h[0],h[1],h[2]))
             self.UBI=UBI
             self.UB=UB
             self.UBIlist.append(UBI)
@@ -443,9 +447,9 @@ if __name__=="__main__":
     cell = unitcell([float(x) for x in sys.argv[1:7]],sys.argv[7])
     p=cell.gethkls(float(sys.argv[8]))
     n=len(p)
-    print "Generated",n,"peaks in",time.time()-start,"/s"
+    print("Generated",n,"peaks in",time.time()-start,"/s")
     for k in p:
         try:
-            print k[1],k[0],1/k[0],k[1]
+            print(k[1],k[0],1/k[0],k[1])
         except:
             pass

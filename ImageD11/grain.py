@@ -1,6 +1,9 @@
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
 
+from __future__ import print_function
+
+
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -30,7 +33,7 @@ class grain:
         try:
             self.Rod = ImageD11.indexing.ubitoRod(self.ubi)
         except:
-            print self.ubi
+            print(self.ubi)
             raise
         self.mt = numpy.dot(self.ubi, self.ubi.T)
         self.rmt = numpy.linalg.inv(self.mt)
@@ -102,7 +105,7 @@ def read_grain_file(filename):
         if len(u)==3:
             grainsread.append( grain(u, t) )
             for k in ["name","npks","nuniq","Rod","intensity_info"]:
-                if p.has_key(k):
+                if k in p:
                     setattr(grainsread[-1], k, p[k])
             p={}
             u = []

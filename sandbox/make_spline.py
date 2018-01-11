@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 from ImageD11.transformer import transformer
 import numpy as np, sys, os
 from scipy.interpolate import bisplrep, bisplev
@@ -45,7 +47,7 @@ def fitspline(fltfile, parfile, splinefile):
     tr = transformer()
     tr.loadfiltered( fltfile )
     tr.loadfileparameters( parfile )
-    print "fitting to assign peaks"
+    print("fitting to assign peaks")
     tr.fit()
     tr.loadfileparameters( parfile )
     tthobs, eta = tr.compute_tth_eta()
@@ -61,7 +63,7 @@ def fitspline(fltfile, parfile, splinefile):
     pix_obs = r / ps
     pix_calc = r * tthcalc/tthobs / ps
     diffs = pix_calc - pix_obs
-    print diffs
+    print(diffs)
     mask = tthcalc > 0
     xvals  = np.compress( mask, tr.colfile.s_raw )
     yvals  = np.compress( mask, tr.colfile.f_raw )
@@ -72,12 +74,12 @@ def fitspline(fltfile, parfile, splinefile):
     for i in range(2):
         m = len(yvals)
         s = (m-np.sqrt(2*m))*ss
-        print "s=",s
+        print("s=",s)
         rets = bisplrep( yvals, xvals, dsvals, w=w, kx=3, ky=3, xb=0, xe=4096, 
                          yb=0, ye=4096, full_output=0, s = s, task = 0  )
         retf = bisplrep( yvals, xvals, dfvals, w=w, kx=3, ky=3, xb=0, xe=4096, 
                          yb=0, ye=4096, full_output=0, s = s,  task = 0  )
-        print rets, retf
+        print(rets, retf)
         dscalc = [ bisplev( y, x, rets ) for y,x in zip(yvals, xvals)]
         dfcalc = [ bisplev( y, x, retf ) for y,x in zip(yvals, xvals)]
         es = dscalc - dsvals
@@ -100,30 +102,30 @@ def fitspline(fltfile, parfile, splinefile):
         pylab.hist( es, bins=128)
         pylab.hist( ef, bins=128)
         pylab.show()
-        print "stddev=",((np.std(es) + np.std(ef))/2)
+        print("stddev=",((np.std(es) + np.std(ef))/2))
 #        co = ((np.std(es) + np.std(ef))/2)*3
-        co = float(raw_input("cutoff"))
-        print "Using cutoff",co
+        co = float(input("cutoff"))
+        print("Using cutoff",co)
         m = (np.abs( es ) < co ) & (np.abs( ef ) < co ) 
         yvals = np.compress(m, yvals)
         xvals = np.compress(m, xvals)
         dsvals = np.compress(m, dsvals)
         dfvals = np.compress(m, dfvals)
         w = np.ones(len(yvals))/((np.std(es) + np.std(ef))/2)
-        print "w avg = ",w.mean()
+        print("w avg = ",w.mean())
 
     m = len(yvals)
     s = (m-np.sqrt(2*m))*ss
-    print "s=",s
+    print("s=",s)
     rets = bisplrep( yvals, xvals, dsvals, w=w, kx=3, ky=3, xb=0, xe=4096, 
                      yb=0, ye=4096, full_output=0, s = s, task = 0  )
     retf = bisplrep( yvals, xvals, dfvals, w=w, kx=3, ky=3, xb=0, xe=4096, 
                      yb=0, ye=4096, full_output=0, s = s,  task = 0  )
 
-    print rets, retf
+    print(rets, retf)
     write_spline( rets, retf, splinefile )
     pylab.show()
-    raw_input("End?")
+    input("End?")
     
     
 def testspline( fltfile, parfile, splinefile):

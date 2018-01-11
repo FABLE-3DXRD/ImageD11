@@ -17,8 +17,13 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+try:
+    from tkMessageBox import showinfo, askyesno
+except:
+    # python3?
+    from tkinter.messagebox import showinfo, askyesno
 
-from tkMessageBox import showinfo
+from . import twodplot
 
 
 class guipeaksearcher:
@@ -64,7 +69,6 @@ class guipeaksearcher:
             self.parent.guicommander.execute("peakmerger","readpeaks",filename)
         else:
             showinfo("Sorry, bad filename %s"%(filename))
-        import twodplot
         imagenumbers = self.parent.guicommander.getdata("peakmerger","imagenumbers")
         omegas = self.parent.guicommander.getdata("peakmerger","omegas")
         images = self.parent.guicommander.getdata("peakmerger","images")
@@ -87,7 +91,6 @@ class guipeaksearcher:
         calls peakmerger.harvestpeaks(image_number_range,omega_range)
         """
         # Now we need to select the range of peaks to use
-        from tkMessageBox import askyesno
         if self.quiet=="No":
             ans = askyesno("Have you selected a sensible range of images?","""
    Use the mouse to select the range of image numbers and omega angles that
@@ -122,7 +125,6 @@ class guipeaksearcher:
         """
         self.parent.guicommander.execute("peakmerger","filter")
         peaks = self.parent.guicommander.getdata("peakmerger","finalpeaks")
-        import twodplot
         if self.quiet=="No":
             self.parent.twodplotter.hideall() # get rid of image number versus omega plot
             self.parent.twodplotter.adddata(

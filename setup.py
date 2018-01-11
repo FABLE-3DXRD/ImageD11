@@ -23,78 +23,69 @@ Setup script
 
 
 
-# from distutils.core import setup, Extension
-# from setuptools import setup, Extension
 import setuptools
+import sys
 from numpy.distutils.core import setup, Extension
-
 from numpy import get_include
 
-nid = [get_include()]
+
+if sys.platform == "win32" and "--compiler=mingw32" not in sys.argv:
+    ecomparg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY"]
+    elinkarg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY"]
+    elibs = None
+else:
+    ecomparg = ["-fopenmp -O2","-DF2PY_REPORT_ON_ARRAY_COPY"]
+    elinkarg = ["-fopenmp -O2","-DF2PY_REPORT_ON_ARRAY_COPY"]
+    elibs = ["gomp","pthread"]
 
 
-# Compiled extensions:
+nid = [get_include(),]
 
-# closest is for indexing grains
-cl = Extension("closest",
-               sources=['src/closest.c'],
-               include_dirs = nid )
+# Compiled extension:
+cImageD11extension = Extension( "cImageD11",
+                                sources = [ "src/cImageD11.pyf",
+                                            "src/connectedpixels.c",
+                                            "src/closest.c",
+                                            "src/cdiffraction.c",
+                                            "src/blobs.c"],
+                               include_dirs = nid + ["src",],
+                               extra_compile_args=ecomparg,
+                               extra_link_args=elinkarg,
+                               libraries = elibs
+                               )
+            
 
-# connectedpixels is for peaksearching images
+# Removed list of dependencies from setup file
+# Do a miniconda (or something) instead...
+#if sys.platform == 'win32':
+#    needed = [
+#        'six',
+#        'numpy>=1.0.0',
+#        'scipy', 
+#        'xfab>=0.0.2',
+#           'pycifrw'
+#        'fabio>=0.0.5',
+#        'matplotlib>=0.90.0',
+#        ... 
+#        ]
 
-
-
-cp = Extension("connectedpixels",
-               sources = ['src/connectedpixels.c','src/blobs.c'],
-               include_dirs = nid)
-# No header files for distutils as sources 'src/dset.h'])
-
-
-
-# _splines is for correcting peak positions for spatial distortion
-bl = Extension("_splines",
-               sources = ['src/splines.c', 'src/bispev.c'],
-               include_dirs = nid)
-
-import sys
-                  
-# New fortran code - you might regret this...
-fi = Extension("fImageD11",
-               sources = ['fsrc/fImageD11.f90' ],
-#               extra_f90_compile_args=["-fopenmp -O2"],
-               libraries = ['gomp','pthread'])
-# OK, I am beginning to regret it now. Patch for older numpys
-sys.argv.extend ( ['config_fc', '--fcompiler=gnu95',
-                   '--f90flags="-fopenmp -O2 -shared"'])
-
-if sys.platform == 'win32':
-    needed = [
-        'xfab>=0.0.2',
-        'fabio>=0.0.5',
-        'numpy>=1.0.0',
-        'matplotlib>=0.90.0',
-        ]
-else: # Take care of yourself if you are on linux
-    # Your package manager is inevitably f*cked
-    needed = []
-#        'xfab>=0.0.1',
-#        'fabio>=0.0.4']
+needed = []
 
 # See the distutils docs...
 setup(name='ImageD11',
-      version='1.7.0',
+      version='1.8.0',
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
-      ext_modules = [cl,cp,bl,fi],
+      ext_modules = [cImageD11extension,],
       install_requires = needed,
       packages = ["ImageD11"],
       package_dir = {"ImageD11":"ImageD11"},
-      url = "http://fable.wiki.sourceforge.net/ImageD11",
+      url = "http://github.com/jonwright/ImageD11",
 #      download_url = ["http://sourceforge.net/project/showfiles.php?group_id=82044&package_id=147869"],
-      package_data = {"ImageD11" : ["doc/*.html"]},
+      package_data = {"ImageD11" : ["doc/*.html", "data/*" ]},
       scripts = ["ImageD11/rsv_mapper.py",
                  "scripts/peaksearch.py",
                  "scripts/fitgrain.py",
@@ -127,8 +118,4 @@ setup(name='ImageD11',
                  "scripts/avg_par.py",
                  "scripts/powderimagetopeaks.py"])
 
-print "For windows you would need:"
-print 'set LDFLAGS="-static-libgfortran -static-libgcc -static -lgomp -shared"'
-print 'also gfortran/gcc installed (--compiler=mingw32)'
-print 'also to patch f2py to let it run'
 

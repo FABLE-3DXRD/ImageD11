@@ -1,4 +1,6 @@
-#!/usr bin python
+#!/usr/bin/env python
+
+from __future__ import print_function
 
 help = """
 Reads in a series of flt files to merge together different threshold levels
@@ -28,8 +30,8 @@ try:
     dpix = float(sys.argv[4])
     thres = [int(v) for v in sys.argv[5:]]
 except:
-    print "Usage: pars stem outputfile pixel_tol thresholds1  thresholds2 ..."
-    print help
+    print("Usage: pars stem outputfile pixel_tol thresholds1  thresholds2 ...")
+    print(help)
     sys.exit()
 
 assert outf[-4:] == ".flt", """output file should end in ".flt" """
@@ -37,12 +39,12 @@ assert outf[-4:] == ".flt", """output file should end in ".flt" """
 thres.sort()
 thres = thres[::-1]
 
-print "Using parameters",pars
-print "Merging files",
+print("Using parameters",pars)
+print("Merging files", end=' ')
 for v in thres:
-    print "%s_t%d.flt"%(stem,v),
-print
-print "Into output file %s"%(outf)
+    print("%s_t%d.flt"%(stem,v), end=' ')
+print()
+print("Into output file %s"%(outf))
 
 #if raw_input("OK? [y/n]") not in ["Y","y"]:
 #    sys.exit()
@@ -58,12 +60,12 @@ for v in thres:
     mytransformer.loadfileparameters( pars )
     
     flt = "%s_t%d.flt"%(stem,v)
-    print flt,
+    print(flt, end=' ')
     mytransformer.loadfiltered( flt )
     mytransformer.compute_tth_eta( )
     mytransformer.addcellpeaks( )
 
-    print "npeaks", mytransformer.colfile.nrows,
+    print("npeaks", mytransformer.colfile.nrows, end=' ')
         
     # mytransformer.write_colfile(flt2)
 
@@ -79,14 +81,14 @@ for v in thres:
                 int(mytransformer.colfile.IMax_s[i]) ,
                 int(mytransformer.colfile.IMax_f[i]) )
         
-        if always_ignore.has_key(key):
+        if key in always_ignore:
             nignore = nignore + 1
             continue
         
-        if allpeaks.has_key( key ):
+        if key in allpeaks:
             if v is thres[0]:
-                print key
-                print "duplicate"
+                print(key)
+                print("duplicate")
                 #raise
             # This peak is already found
             # Should we replace it, or trash the lower threshold ??
@@ -108,12 +110,12 @@ for v in thres:
             nnew = nnew + 1
             allpeaks[key] = mytransformer.colfile.bigarray[:,i]
             
-    print "total peaks",len(allpeaks.keys()), "ignored", nignore, "new",nnew, "replacements",nold
+    print("total peaks",len(list(allpeaks.keys())), "ignored", nignore, "new",nnew, "replacements",nold)
     assert nignore + nold + nnew == mytransformer.colfile.nrows
 
                                                         
 
-keys = allpeaks.keys()
+keys = list(allpeaks.keys())
 
 keys.sort()
 
@@ -124,10 +126,10 @@ assert len(titles) == len(allpeaks[keys[0]])
 bigarray = [allpeaks[k] for k in keys]
 
 c.bigarray = numpy.array(bigarray).T
-print c.bigarray.shape
+print(c.bigarray.shape)
 c.nrows = len(keys)
 c.set_attributes()
-c.setcolumn(numpy.array(range(len(keys))),"spot3d_id")
+c.setcolumn(numpy.array(list(range(len(keys)))),"spot3d_id")
 c.writefile( outf )
 
 mytransformer = transformer.transformer()

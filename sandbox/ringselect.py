@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 import sys
 from ImageD11.columnfile import columnfile
 from ImageD11.unitcell import unitcell_from_parameters
@@ -29,7 +31,7 @@ tthe = np.abs( np.outer( tth, np.ones( len(tthc) )) - tthc)
 
 tthe_i = np.argmin( tthe, axis=1 )
 dtth = tthe.min(axis=1)
-print dtth, dtth.shape
+print(dtth, dtth.shape)
 if 0:
     import pylab
     pylab.plot( tth, eta, "+", ms=1)

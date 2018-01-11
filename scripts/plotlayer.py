@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
 
 
 
@@ -18,7 +21,7 @@ def make_ellipses( grains , scalet = 1.0, scaler=1.0 ):
         except:
             vol.append( int(g.npks) )
     # Sort by volume to plot biggest first (at back)
-    tmp = zip( vol, grains)
+    tmp = list(zip( vol, grains))
     tmp.sort()
     from ImageD11.indexing import ubitoU
     for vol, g in tmp[::-1]:

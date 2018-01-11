@@ -1,3 +1,6 @@
+
+from __future__ import print_function
+
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -149,7 +152,7 @@ class peak:
             else:
                 return False
         except:
-            print self, other
+            print(self, other)
             raise
 
     def __str__(self):
@@ -293,7 +296,7 @@ class peakmerger:
         """
         things in the headers
         """
-        return self.images[0].header.keys()
+        return list(self.images[0].header.keys())
 
     def getheaderinfo(self,key):
         """
@@ -430,7 +433,7 @@ class peakmerger:
                 # +str(i)+" "+str(peaks[i].omega)+" "+str(peaks[i-1].omega))
             i = i + 1
         #
-        nomega = len(uniq.keys())
+        nomega = len(list(uniq.keys()))
         logging.info("Number of different omegas = %d time = %f"% (
                                            nomega, time.time()-start_merge))
         # Now merge peaks with adjacent omega angles
@@ -439,7 +442,7 @@ class peakmerger:
         start_merge = time.time()
         i = 0
         merged = []
-        keys = uniq.keys()
+        keys = list(uniq.keys())
         keys.sort()
         #print keys
         prevframe = []
@@ -588,7 +591,7 @@ if __name__=="__main__":
     import profile
     profile.run('obj.readpeaks(testfile)','readpeaks.prof')
 #   object.readpeaks(testfile)
-    print "That took",time.time()-start,"/s"
+    print("That took",time.time()-start,"/s")
     profile.run('obj.harvestpeaks()','harvestpeaks.prof')
     profile.run('obj.mergepeaks()','mergepeaks.prof')
     profile.run('obj.filter()','filterpeaks.prof')

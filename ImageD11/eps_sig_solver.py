@@ -1,3 +1,6 @@
+
+from __future__ import print_function
+
 # Get Strain/Stress from ImageD11 UBI/map files
 # Copyright (C) 2015 Younes ELHACHI
 #
@@ -20,7 +23,11 @@ import math
 from ImageD11 import transform, unitcell, columnfile
 from ImageD11.parameters import par, parameters
 from ImageD11.grain import read_grain_file
-from FitAllB.conversion import grain2sample, strain2stress,formStiffnessMV
+try:
+    from FitAllB.conversion import grain2sample, strain2stress,formStiffnessMV
+except:
+    print( "You need to install FitAllB")
+    print( "You will get error messages if you try to compute strain!")
 from xfab.tools import ubi_to_u_and_eps,ubi_to_cell
 
 def readubis(ubifile):
@@ -133,7 +140,7 @@ class solver:
             self.map=read_grain_file(filename)
             self.ubis=[x.ubi for x in self.map]
         except:
-            print "error when reading %s\n",filename
+            print("error when reading %s\n",filename)
             raise
     
     
@@ -188,7 +195,7 @@ class solver:
             
             f = open(outputfile,'w')
             ''' the used parameters will be the header of the output file'''
-            for k,v in sorted(self.parameterobj.parameters.iteritems()):
+            for k,v in sorted(self.parameterobj.parameters.items()):
                 f.write(("%s %s\n")%(k,v))
             ''' write titles'''
             f.write("##############################################\n")
@@ -210,7 +217,7 @@ class solver:
                     sigM = strain2stress( np.array(epsM), self.MVStiffness() )      #write the stress tensor as a symmetric matrix in crystal co-ordinates
                     sigS = np.dot( U, np.dot( sigM, U.T ) )     #sigma in sample co-ordinates
                 except:
-                    print "couldn't compute stress! please check the crystal_symmetry parameters and elastic constants"
+                    print("couldn't compute stress! please check the crystal_symmetry parameters and elastic constants")
                     writestress = False
                     pass
                 

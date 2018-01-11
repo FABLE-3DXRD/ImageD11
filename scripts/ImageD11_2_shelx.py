@@ -1,4 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
+from __future__ import print_function
 
 
 #
@@ -45,9 +47,9 @@ if __name__ == "__main__":
         assert "tth" in CF.titles
         assert "eta" in CF.titles
         for i in range(CF.nrows):
-            print ("%4d"*3) % (CF.h[i], CF.k[i], CF.l[i])
-            print lorfac(CF.sum_intensity[i], CF.tth[i], CF.eta[i])
+            print(("%4d"*3) % (CF.h[i], CF.k[i], CF.l[i]))
+            print(lorfac(CF.sum_intensity[i], CF.tth[i], CF.eta[i]))
             # Should print the error here, if you know it
     except:
-        print "Usage: %s fltfile"
+        print("Usage: %s fltfile")
         raise

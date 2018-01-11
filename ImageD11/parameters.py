@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 
 
 
@@ -82,7 +83,7 @@ class parameters:
         self.variable_list = []
         self.stepsizes = {}
         self.par_objs = {}
-        for k,v in self.parameters.items():
+        for k,v in list(self.parameters.items()):
             self.addpar(par(k,v))
             
     def addpar(self,par):
@@ -110,7 +111,7 @@ class parameters:
         return [self.stepsizes[name] for name in self.varylist]
 
     def set_varylist(self, vl):
-        ks = self.parameters.keys()
+        ks = list(self.parameters.keys())
         for v in vl:
             assert v in ks
             assert v in self.variable_list
@@ -145,19 +146,19 @@ class parameters:
         """
         Sychronise this parameter objects list of values with another object
         """
-        for k,v in self.parameters.items():
+        for k,v in list(self.parameters.items()):
             if hasattr(other,k):
                 var = getattr(other,k)
-                print "setting: pars[%s] from %s to %s"%(k,v,var)
+                print("setting: pars[%s] from %s to %s"%(k,v,var))
                 self.parameters[k]=var
             else:
-                print "error: %s has no attribute %s, ignoring"%(other,k)
+                print("error: %s has no attribute %s, ignoring"%(other,k))
 
     def update_other(self,other):
         """
         Synchronise an object with the values in this object
         """
-        for k,v in self.parameters.items():
+        for k,v in list(self.parameters.items()):
             if hasattr(other,k):
                 var = getattr(other,k)
                 logging.debug("setting: %s.%s from %s to %s"%(other,k,var,v))
@@ -171,7 +172,7 @@ class parameters:
         Write parameters to a file
         """
         f=open(filename,"w")
-        keys=self.parameters.keys()
+        keys=list(self.parameters.keys())
         keys.sort()
         for key in keys:
             f.write("%s %s\n"%(key,str(self.parameters[key])))
@@ -188,7 +189,7 @@ class parameters:
                 name=name.replace("-","_")
                 self.parameters[name]=value
             except ValueError:
-                print "Failed to read:",line
+                print("Failed to read:",line)
         self.dumbtypecheck()
 
     def dumbtypecheck(self):
@@ -197,7 +198,7 @@ class parameters:
         specifieable
         For now it just tries to coerce to float, then does nothing
         """
-        for name, value in self.parameters.items():
+        for name, value in list(self.parameters.items()):
             if type(value) == type("string"):
                 try:
                     vf = float(value)

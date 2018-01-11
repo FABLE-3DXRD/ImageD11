@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 # Create objects to manipulate - they hold your data
 #
 import numpy as np
@@ -59,7 +61,7 @@ def grids( flt, tol, npk ):
                 myindexer.gvflat = np.reshape(np.fromstring(
                     myindexer.gv.tostring(),np.float), myindexer.gv.shape)
                 # ds for rings
-                print gv.shape
+                print(gv.shape)
                 myindexer.ds = np.sqrt( gv[:,0]*gv[:,0] +
                                         gv[:,1]*gv[:,1] +
                                         gv[:,2]*gv[:,2] )

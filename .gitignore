@@ -3,12 +3,19 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+
+# 2to3 remains
+
+*.bak*
+
 # C extensions
 *.so
 
 # vi
 *~
 *.swp
+# emacs
+\#*#
 
 # Distribution / packaging
 .Python

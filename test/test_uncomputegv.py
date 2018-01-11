@@ -48,15 +48,16 @@ class test_uncomputegv( unittest.TestCase ):
 #        print tth
 #        print eta
 #        print omega
-        print "#  w  c   i     tth      tth     etao     etaC    omegao   omegaC    etaC2    omegaC2"
+        
+        #print "#  w  c   i     tth      tth     etao     etaC    omegao   omegaC    etaC2    omegaC2"
         for i in range(len(tth)):
-            print self.w, self.c, i, 
+         #   print self.w, self.c, i, 
             best = np.argmin( np.abs(angmod(np.array(omega)[:,i] - self.omega[i] )))
             deta = angmod(np.array(eta)[best,i] - self.eta[i] )
             domega = angmod(np.array(omega)[best,i] - self.omega[i] )
 
-            print ("%8.2f "*8)%(self.tth[i], tth[i],self.eta[i], eta[best][i],\
-                self.omega[i], omega[best][i],eta[1-best][i],omega[1-best][i])
+         #   print ("%8.2f "*8)%(self.tth[i], tth[i],self.eta[i], eta[best][i],\
+         #       self.omega[i], omega[best][i],eta[1-best][i],omega[1-best][i])
             
 
             self.assertAlmostEqual( self.tth[i], tth[i], 5 )

@@ -1,3 +1,6 @@
+
+from __future__ import print_function
+
 #!/usr/bin/env python
 #
 
@@ -146,9 +149,9 @@ class Simplex:
             # Optionally, print progress information
 
             if monitor:
-                print '\r' + 72 * ' ',
-                print '\rIteration = %d   Best = %f   Worst = %f' % \
-                      (iter,self.errors[self.lowest],self.errors[self.highest]),
+                print('\r' + 72 * ' ', end=' ')
+                print('\rIteration = %d   Best = %f   Worst = %f' % \
+                      (iter,self.errors[self.lowest],self.errors[self.highest]), end=' ')
                 sys.stdout.flush()
 
             if T <= epsilon:
@@ -277,9 +280,9 @@ def myfunc(args):
 def main():
     s = Simplex(myfunc, [1, 1, 1], [2, 4, 6])
     values, err, iter = s.minimize()
-    print 'args = ', values
-    print 'error = ', err
-    print 'iterations = ', iter
+    print('args = ', values)
+    print('error = ', err)
+    print('iterations = ', iter)
 
 if __name__ == '__main__':
     main()

@@ -1,4 +1,6 @@
-#!/sware/exp/fable/standalone/redhate4-a64/bin/python
+#!/usr/bin/env python
+from __future__ import print_function
+
 
 """
 Removes grains from a grain file if they have less than
@@ -18,6 +20,6 @@ try:
             KEEP.append(g)
     write_grain_file( sys.argv[2], KEEP)
 except:
-    print __doc__
+    print(__doc__)
     raise
             

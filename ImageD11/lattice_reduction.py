@@ -1,5 +1,7 @@
 
-from ImageD11.rc_array import rc_array
+from __future__ import print_function
+
+from .rc_array import rc_array
 
 from numpy import dot, round_, array, float, allclose, asarray, fabs,\
     argmin, argmax, sqrt, argsort, take, sum, where, ndarray, eye,\
@@ -20,7 +22,7 @@ try:
 except ValueError: 
     pass
 except:
-    print "Unexpected exception when checking numpy behaviour"
+    print("Unexpected exception when checking numpy behaviour")
     raise
 
 DEBUG = False
@@ -49,8 +51,8 @@ def mod(x,y):
     if __debug__:
         af  = dot(ret,ret)
 	if b4 < af and n != 0 : 
-            print "Bad mod "+str(x) + " " + str(y)
-	    print ret, b4, af, n
+            print("Bad mod "+str(x) + " " + str(y))
+	    print(ret, b4, af, n)
 	    raise Exception("problem in mod")
     return ret
 
@@ -202,10 +204,10 @@ class lattice(object):
             else:
                 raise Exception("Direction must be row or col "+str(direction))
         except LinAlgError:
-            print "problem with vectors"
-            print v1,v2,v3
-            print "Reduced to"
-            print vl
+            print("problem with vectors")
+            print(v1,v2,v3)
+            print("Reduced to")
+            print(vl)
             raise
         assert self.c2r.shape == (3, 3)
         assert self.r2c.shape == (3, 3)
@@ -273,8 +275,8 @@ class lattice(object):
         int_err = diffs.flip( self.matrix( diffs.direction ) )
         r2 = int_err.norm2()
         if debug:
-            print vecs.shape, r2.shape, tol*tol
-            print r2[:10]
+            print(vecs.shape, r2.shape, tol*tol)
+            print(r2[:10])
         s = sum( where( r2 < tol * tol, 1, 0) )
         return s
 
@@ -338,24 +340,24 @@ def find_lattice(vecs,
     assert isinstance(test_vecs, rc_array)
     gen_dir = vecs[0].direction
     if noisy:
-        print "Finding with dir",gen_dir
+        print("Finding with dir",gen_dir)
         for i,v in enumerate(vecs):
-            print i, v
+            print(i, v)
             if i > n_try:
                 break
-        print "min_vec2",min_vec2
+        print("min_vec2",min_vec2)
     for i,j,k in iter3d(n_try):
         # if (i,j,k) == (0,1,6):
         #    print vecs[i],vecs[j],vecs[k]
         #    print gen_dir, min_vec2
         if noisy:
-            print "Try",i,j,k,
+            print("Try",i,j,k, end=' ')
         try:
             if gen_dir == 'row':
                 if dot(vecs[i], vecs[i]) < min_vec2: continue
                 if dot(vecs[j], vecs[j]) < min_vec2: continue
                 if dot(vecs[k], vecs[k]) < min_vec2: continue
-                print i,j,k,
+                print(i,j,k, end=' ')
                 l = lattice(vecs[i], vecs[j], vecs[k], 
                             direction = gen_dir,
                             min_vec2 = min_vec2)
@@ -369,7 +371,7 @@ def find_lattice(vecs,
                             direction = gen_dir,
                             min_vec2 = min_vec2)
                 except IndexError:
-                    print i,j,k,n_try,vecs.shape
+                    print(i,j,k,n_try,vecs.shape)
                     raise
                     
             else:
@@ -379,15 +381,15 @@ def find_lattice(vecs,
             scor = l.score( vecs, tol )
             frac = 1.0 * scor / vecs.nvectors()
             if noisy:
-                print "Score on vecs",scor,frac,
+                print("Score on vecs",scor,frac, end=' ')
             
             scor = l.score( test_vecs, tol )
             frac = 1.0 * scor / test_vecs.nvectors()
             if noisy:
-                print "score on test_vecs",scor,frac
+                print("score on test_vecs",scor,frac)
             if frac > fraction_indexed:
                 if noisy:
-                    print "Returning"
+                    print("Returning")
                 return l
         except BadVectors:
             pass
@@ -412,7 +414,7 @@ def search_2folds( ubi ):
     and reciprocal vectors with the same indices. In the case of 2 fold
     axes they should be parallel
     """
-    hr = range(-2,3)
+    hr = list(range(-2,3))
     for h in hr:
         for k in hr:
             for l in hr:
@@ -420,7 +422,7 @@ def search_2folds( ubi ):
                     continue
                 c = cosangle_vec( ubi, [h,k,l] )
                 if abs(c - np.floor( c + 0.5)) < 0.001:
-                    print h, k, l, c, np.arccos(c)*180/pi
+                    print(h, k, l, c, np.arccos(c)*180/pi)
 
 
 
