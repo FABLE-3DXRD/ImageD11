@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 
 import os, sys, unittest, importlib
 sys.path.insert(0,".")
@@ -21,7 +22,7 @@ modules = [
 ]
 
 HERE = os.getcwd()
-print "HERE",HERE
+print( "HERE",HERE )
 
 for M in modules:
     os.chdir(HERE)

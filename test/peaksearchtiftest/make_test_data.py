@@ -1,4 +1,4 @@
-
+from __future__ import print_function
 from fabio import tifimage
 from ImageD11 import columnfile
 import numpy as np
@@ -24,7 +24,7 @@ class test_tifs(unittest.TestCase):
             if i%2 == 0:
                 obj = tifimage.tifimage( peak, { } )
                 self.NPK += 1
-                print i, self.NPK
+                print( i, self.NPK)
             else:
                 obj = tifimage.tifimage( blank, { } )
             obj.write( 'tiftest%04d.tif'%(i))

@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 from ImageD11 import gv_general
 from ImageD11 import transform
 
@@ -189,20 +191,20 @@ class test_k_to_g(unittest.TestCase):
                                             self.wvln,
                                             wedge=0.0,
                                             chi=0.0 )
-        if SANITY: print g_old.shape, g_old[:,0]
+        if SANITY: print (g_old.shape, g_old[:,0])
         k = transform.compute_k_vectors(self.tth,
                                         self.eta,
                                         self.wvln)
-        if SANITY: print "k=",k[:,0]
+        if SANITY: print("k=",k[:,0])
         g_new = gv_general.k_to_g(k, om)
-        if SANITY: print g_new.shape,g_new[:,0]
-        if SANITY: print "end routine"
+        if SANITY: print(g_new.shape,g_new[:,0])
+        if SANITY: print( "end routine")
         self.assertAlmostEqual( array_diff( g_new, g_old ), 0, 6)
 
     def test_0_0(self):
         """ wedge, chi = 0 """
         SANITY = False
-        if SANITY: print "*"*80
+        if SANITY: print ("*"*80)
         om = np.zeros(self.np,np.float)
         g_old = transform.compute_g_vectors(self.tth,
                                             self.eta,
@@ -210,23 +212,23 @@ class test_k_to_g(unittest.TestCase):
                                             self.wvln,
                                             wedge=0.0,
                                             chi=0.0 )
-        if SANITY: print g_old.shape, g_old[:,:3]
+        if SANITY: print (g_old.shape, g_old[:,:3])
         k = transform.compute_k_vectors(self.tth,
                                         self.eta,
                                         self.wvln)
-        if SANITY: print "k=",k[:,:3]
+        if SANITY: print( "k=",k[:,:3])
         g_new = gv_general.k_to_g(k, self.omega,
                                   axis=[0,0,-1] )
-        if SANITY: print g_new.shape,g_new[:,:3]
-        if SANITY: print "end routine"
-        if SANITY: print "*"*80
+        if SANITY: print( g_new.shape,g_new[:,:3])
+        if SANITY: print( "end routine")
+        if SANITY: print( "*"*80)
         self.assertAlmostEqual( array_diff( g_new, g_old ), 0, 6)
 
     def test_25_30(self):
         """ wedge, chi = 25,30 """
         w,c=25,30
         SANITY = False
-        if SANITY: print "*"*80
+        if SANITY: print ("*"*80)
         om = np.zeros(self.np,np.float)
         g_old = transform.compute_g_vectors(self.tth,
                                             self.eta,
@@ -234,18 +236,18 @@ class test_k_to_g(unittest.TestCase):
                                             self.wvln,
                                             wedge=w,
                                             chi=c )
-        if SANITY: print g_old.shape,"\n", g_old[:,:3]
+        if SANITY: print (g_old.shape,"\n", g_old[:,:3])
         k = transform.compute_k_vectors(self.tth,
                                         self.eta,
                                         self.wvln)
-        if SANITY: print "k=",k[:,:3]
+        if SANITY: print( "k=",k[:,:3])
         post = gv_general.chiwedge( chi=c, wedge=w )
         g_new = gv_general.k_to_g(k, self.omega,
                                   axis=[0,0,-1],
                                   post=post )
-        if SANITY: print g_new.shape,g_new[:,:3]
-        if SANITY: print "end routine"
-        if SANITY: print "*"*80
+        if SANITY: print( g_new.shape,g_new[:,:3])
+        if SANITY: print( "end routine")
+        if SANITY: print( "*"*80)
         self.assertAlmostEqual( array_diff( g_new, g_old ), 0, 6)
 
 

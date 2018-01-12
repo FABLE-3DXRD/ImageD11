@@ -140,6 +140,9 @@ class peak:
             return 1
         return 0
 
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+
     def __eq__(self, other):
         """
         For deciding if peaks overlap

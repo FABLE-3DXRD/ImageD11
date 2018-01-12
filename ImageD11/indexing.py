@@ -1,5 +1,5 @@
 
-from __future__ import print_function
+from __future__ import print_function, division
 
 
 # ImageD11_v0.4 Software for beamline ID11
@@ -957,16 +957,16 @@ class indexer:
 #            raise "Problem interpreting the last thing I printed"
         f.close()
 
-        self.omega_ranges.append(round(min(self.omega)))
+        self.omega_ranges.append(int(round(min(self.omega))))
         sorted_omega = sorted(self.omega)
         for i in range(len(sorted_omega)-1):
             if sorted_omega[i+1]-sorted_omega[i] > 10:
-                self.omega_ranges.append(round(sorted_omega[i]))
-                self.omega_ranges.append(round(sorted_omega[i+1]))
-        self.omega_ranges.append(round(max(self.omega)))
+                self.omega_ranges.append(int(round(sorted_omega[i])))
+                self.omega_ranges.append(int(round(sorted_omega[i+1])))
+        self.omega_ranges.append(int(round(max(self.omega))))
         if not quiet:
             print('\nGot %d sets of omega values from gv file:'%(len(self.omega_ranges)/2))
-        for i in range(len(self.omega_ranges)/2):
+        for i in range(len(self.omega_ranges)//2): # integer division intended here
             self.omega_fullrange += self.omega_ranges[2*i+1]-self.omega_ranges[2*i]
             if not quiet:
                 print('- Range %1d from %4d to %4d ==> %3d degrees'%(i+1, \

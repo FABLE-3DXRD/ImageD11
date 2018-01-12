@@ -99,6 +99,7 @@ class guipeaksearcher:
    If all is OK, then say yes now and we will try to harvest the peaks.
    Otherwise, say no, select the right range and come back "harvestpeaks" again
    """       )
+            # FIXME? ans is ignored anyway
         # We now have the ranges in imagenumber and omega from
         # the graph
         numlim=self.parent.twodplotter.a.get_xlim()
