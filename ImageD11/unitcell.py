@@ -358,21 +358,19 @@ class unitcell:
         t3 is perpendicular to both  (unit vector along g1xg2)
         """
         costheta = numpy.dot(g1,g2)/norm2(g2)/norm2(g1)
-
         if verbose==1: print("observed costheta",costheta)
         best=5.
-
         hab , angles_ab = self.getanglehkls( ring1, ring2 )
         diffs = abs( angles_ab - costheta )
-	if all:
+        if all:
             order = numpy.argsort( diffs )
-	    best = [ order[0],]
+            best = [ order[0],]
             for i in range(1,len(order)):
                 if diffs[order[i]] < diffs[order[0]]+1e-5:
                     best.append(order[i])
                 else:
                     break
-	else:
+        else:
             best = [numpy.argmin( diffs ),]
         self.UBIlist = []
         for b in best:

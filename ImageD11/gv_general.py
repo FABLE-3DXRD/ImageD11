@@ -120,7 +120,7 @@ class rotation_axis:
         ct = math.cos( math.radians( self.angle ))
         self.matrix = np.identity(3, np.float)*ct - st * w  + \
                       (1 - ct)*e*np.transpose(e)
-	self.inversematrix = inv(self.matrix)
+        self.inversematrix = inv(self.matrix)
         return self.matrix
 
 def axis_from_matrix( m ):
