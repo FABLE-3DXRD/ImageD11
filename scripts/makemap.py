@@ -1,4 +1,7 @@
-#!/usr/bin/env fable.python
+#!/usr/bin/env python
+
+from __future__ import print_function
+
 
 from ImageD11.indexing import readubis, write_ubi_file
 from ImageD11.refinegrains import refinegrains
@@ -14,7 +17,7 @@ def makemap(options):
             tthr = options.tthrange
             if len(tthr) == 1:
                 tthr = ( 0, tthr[0] )
-            print "Using tthrange",tthr
+            print("Using tthrange",tthr)
         func = getattr(ImageD11.refinegrains, options.latticesymmetry )
         o = refinegrains(intensity_tth_range = tthr,
                          latticesymmetry = func, 
@@ -24,34 +27,34 @@ def makemap(options):
         raise
         o = refinegrains()
     o.loadparameters(options.parfile)
-    print "got pars"
+    print("got pars")
     o.loadfiltered(options.fltfile)
-    print "got filtered"
+    print("got filtered")
     o.readubis(options.ubifile)
     if options.symmetry is not "triclinic":
         # Grainspotter will have already done this
-        print "transform to uniq"
+        print("transform to uniq")
         o.makeuniq(options.symmetry)
-    print "got ubis"
+    print("got ubis")
     o.tolerance = float(options.tol)
-    print "generating"
+    print("generating")
     o.generate_grains()
-    print "Refining posi too"
+    print("Refining posi too")
     # o.refineubis(quiet = False , scoreonly = True)
-    print "Refining positions too"
+    print("Refining positions too")
     o.refinepositions()
-    print "Done refining positions too"    
+    print("Done refining positions too")    
     # o.refineubis(quiet = False , scoreonly = True)
     o.savegrains(options.newubifile, sort_npks = options.sort_npks)
     col = o.scandata[options.fltfile].writefile( options.fltfile+".new")
     if hasattr(options, "newfltfile") and options.newfltfile is not None:
-        print "re-assignlabels"
+        print("re-assignlabels")
         o.assignlabels()
         col = o.scandata[options.fltfile].copy()
-        print "Before filtering",col.nrows
+        print("Before filtering",col.nrows)
         col.filter(col.labels < -0.5)
         # print col.labels[:10]
-        print "After filtering",col.nrows
+        print("After filtering",col.nrows)
         col.writefile(options.newfltfile)
         
 

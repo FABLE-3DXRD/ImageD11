@@ -1,5 +1,6 @@
-#!/usr/bin/python
-#! /bliss/users/blissadm/python/bliss_python/suse82/bin/python
+#!/usr/bin/env python
+
+from __future__ import print_function
 
 
 """

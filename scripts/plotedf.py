@@ -1,8 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
+from __future__ import print_function
 
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
-#!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 
 # This is statement is required by the build system to query build info
@@ -16,6 +17,7 @@ if __name__ == '__build__':
 import sys
 #from Image import *
 import OpenGL.GL as OGL
+from OpenGL.GLU.projection import gluProject, gluUnProject
 import OpenGL.Tk as OTk
 import numpy as np
 import math
@@ -40,18 +42,18 @@ class edfFile:
         #self.cols=cols
         #self.data=array(fromstring(f.read(rows*cols*2),UInt16),savespace=1)
 #        self.data=fabio.open(filename).data[:1024,:1024].copy()
-        self.data=fabio.open(filename).data[:1024,:1024]
+        self.data=fabio.open(filename).data#[:1024,:1024]
         self.rows=self.data.shape[0]
         self.cols=self.data.shape[1]
         self.data=np.ravel(self.data)
         self.minI=np.minimum.reduce(np.ravel(self.data))
         self.maxI=np.maximum.reduce(np.ravel(self.data))
-        print "Opened",filename,"max=",self.maxI,"min=",self.minI
+        print("Opened",filename,"max=",self.maxI,"min=",self.minI)
 
 class myOpengl(OTk.Opengl):
 
     def __init__(self, master=None, cnf={}, **kw):
-        apply(OTk.Opengl.__init__, (self, master, cnf), kw)
+        OTk.Opengl.__init__(*(self, master, cnf), **kw)
 
     def StartRotate(self,event):
         """
@@ -64,19 +66,19 @@ class myOpengl(OTk.Opengl):
 
     def tkRotate(self, event):
         """
-        Draw selection box
+        Draw selection box ??? Not working
         """
         win_height = max( 1, self.winfo_height() )
 
         obj_c   = ( 0., 0., 0. )
-        win     = OGL.gluProject( obj_c[0], obj_c[1], obj_c[2])
-        obj     = OGL.gluUnProject( win[0], win[1] + 0.5 * win_height, win[2])
-        dist    = math.sqrt( v3distsq( obj, obj_c ) )
+        win     = gluProject( obj_c[0], obj_c[1], obj_c[2])
+        obj     = gluUnProject( win[0], win[1] + 0.5 * win_height, win[2])
+        dist    = math.sqrt( (obj_c[0]-obj[0])**2 + (obj_c[1]-obj[1])**2 + (obj_c[2]-obj[2])**2 )
         scale     = abs( dist / ( 0.5 * win_height ) )
         realy = self.winfo_height() - event.y
-        p1 = OGL.gluUnProject(event.x, realy, 0.) # Image is at z = 0
-        p2 = OGL.gluUnProject(event.x, realy, 1.) # Image is at z = 0
-        print p1[0],p1[1],p1[2]
+        p1 = gluUnProject(event.x, realy, 0.) # Image is at z = 0
+        p2 = gluUnProject(event.x, realy, 1.) # Image is at z = 0
+        print(p1[0],p1[1],p1[2])
 #               Opengl.tkRotate(self,event)
 
     def tkAutoSpin(self, event):
@@ -98,30 +100,30 @@ class checker:
             mx=self.edfFile.maxI
         shape=(self.edfFile.rows, self.edfFile.cols)
         d=np.reshape(np.clip(self.edfFile.data,mi,mx),shape) # makes a clipped copy
-        print "makeImage",mx,mi,np.maximum.reduce(np.ravel(d)),np.minimum.reduce(np.ravel(d)),d.dtype.char,
+        print("makeImage",mx,mi,np.maximum.reduce(np.ravel(d)),np.minimum.reduce(np.ravel(d)),d.dtype.char, end=' ')
         newshape = []
         for i in shape:
             j=4
-            print j,pow(2,j),i,i<pow(2,j)
+            print(j,pow(2,j),i,i<pow(2,j))
             while i > pow(2,j):
                 j+=1
             newshape.append(j)
         newshape = tuple([pow(2,v) for v in newshape])
-        print "newshape",newshape
+        print("newshape",newshape)
         d=255.*(d-mi)/(mx-mi)
         self.image=np.zeros((newshape[0],newshape[1],3),np.uint8)
-        print self.image.shape,d.shape
+        print(self.image.shape,d.shape)
         self.image[:shape[0],:shape[1],0] = d
         self.image[:shape[0],:shape[1],1] = d
         self.image[:shape[0],:shape[1],2] = d
-        print self.image.shape
+        print(self.image.shape)
 #        import pylab as pl
 #        pl.imshow(self.image)
 #        pl.show()
         self.image = self.image # .tostring()
         self.imageWidth = newshape[1]
         self.imageHeight = newshape[0]
-        print "Returning"
+        print("Returning")
 
 
     def display(self, event=None):
@@ -203,8 +205,8 @@ class checker:
         OGL.glPixelStorei(OGL.GL_UNPACK_ALIGNMENT, 1)
 ##              glTexImage2D(GL_TEXTURE_2D, 0, 3, self.imageWidth, self.imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,  self.image)
         s = self.image.tostring()
-        print len(s),self.imageWidth*self.imageHeight
-        print self.image.min(),self.image.max()
+        print(len(s),self.imageWidth*self.imageHeight)
+        print(self.image.min(),self.image.max())
         OGL.glTexImage2D(OGL.GL_TEXTURE_2D, 0, OGL.GL_RGB, self.imageWidth, self.imageHeight, 0, OGL.GL_RGB ,OGL.GL_UNSIGNED_BYTE,  self.image)
 ##              glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
 ##              glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)

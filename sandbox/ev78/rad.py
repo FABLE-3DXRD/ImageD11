@@ -28,7 +28,7 @@ class fourier_radial(object):
         arshape = self.dims[0]/2+1, self.dims[1]
         nv = (arshape[0]-1)*2
         nh = arshape[0]
-        print "NV,NH",nv,nh
+        print("NV,NH",nv,nh)
         self.ftimshape = (nv, nh)
         self.ftimlen = nv*nh
         n1 = (self.dims[0]/2+1)*self.dims[1]
@@ -110,7 +110,7 @@ def find_offset(a1, a2):
         pylab.plot(a1)
         pylab.plot(a2[::-1])
         pylab.show()
-        print numpy.argmax(c)/2.0
+        print(numpy.argmax(c)/2.0)
         1/0
     return numpy.argmax(c)/2.0
 
@@ -136,7 +136,7 @@ def difftomo(N=256):
     ipk = s[s.shape[0]/2,s.shape[1]/2].argmax()
     offset = find_offset( s[:,0,ipk], s[:,-1,ipk] )
     ioff = int(numpy.round(offset))
-    print "Offset (centre pixel) seems to be",offset,ioff
+    print("Offset (centre pixel) seems to be",offset,ioff)
     recon = numpy.zeros((N,N,s.shape[2]),numpy.float32)
     i0 = numpy.zeros(s.shape[2],numpy.float32)
     for i in range(s.shape[2]):
@@ -157,7 +157,7 @@ def difftomo(N=256):
             pylab.subplot(122)
             pylab.imshow(s[:,:,i] - i0[i])
             pylab.colorbar()
-            raw_input("next?")
+            input("next?")
     grp = h["DiffTomo/NXdata"]
     savearray( i0, "recon_bg", grp )
     savearray( recon, "recon", grp)

@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 
 
 #
@@ -6,9 +7,10 @@
 # It was copied from somewhere and modified slightly
 
 
-
-
-import Tkinter as Tk
+try:
+    import Tkinter as Tk
+except:
+    import tkinter as Tk
 
 
 
@@ -45,7 +47,7 @@ class listdialog(Tk.Toplevel):
         self.e=[]
         if items!=None:
             i=0
-            keys=items.keys()
+            keys=list(items.keys())
             keys.sort()
             self.keys=keys
             for key in keys:
@@ -54,7 +56,7 @@ class listdialog(Tk.Toplevel):
                 el.insert(Tk.END,items[key])
                 el.grid(row=i,column=1)
                 self.e.append(el)
-                if logic != None and logic.has_key(key):
+                if logic != None and key in logic:
                     val = logic[key]
                     self.logicvars[key] = Tk.IntVar()
                     self.logicvars[key].set(val)
@@ -102,11 +104,11 @@ class listdialog(Tk.Toplevel):
         for item in self.e:
             k = self.keys[i]
             retdict[k]=item.get()
-            if self.logic != None and self.logic.has_key(k):
+            if self.logic != None and k in self.logic:
                 self.fv[k]=self.logicvars[k].get()
             i=i+1
         self.result=retdict
-        print self.result
+        print(self.result)
 
 
 class columnchooser(listdialog):

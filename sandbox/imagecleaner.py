@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 import fabio, pyFAI, sys, numpy as np, scipy.ndimage, os
 
 class imagecleaner(object):
@@ -37,7 +39,7 @@ class imagecleaner(object):
                                           azimuth_range=(0,360),
                                           correctSolidAngle=False,
                                           polarization_factor=None)
-        print "pyFAI",time.time()-start,
+        print("pyFAI",time.time()-start, end=' ')
         start = time.time()
         for i in range(self.mask.shape[0]):
             sel = np.compress( self.mask[i] , surf[:,i] )
@@ -45,16 +47,16 @@ class imagecleaner(object):
                 val = np.median( sel )
                 surf[~self.mask[i],i]=val
             
-        print "fill",time.time()-start,
+        print("fill",time.time()-start, end=' ')
         start = time.time()
 #        powder = scipy.ndimage.minimum_filter1d( surf, npfilt, axis=0 )
 #        powder = scipy.ndimage.median_filter( surf, (npfilt,1) )
         powder = scipy.ndimage.percentile_filter( surf.T.copy(), percentile=10,
                                                   size=(1,npfilt))
-        print "percentile",time.time()-start,
+        print("percentile",time.time()-start, end=' ')
         start= time.time()
         powderimage = powder[ self.tthbin, self.chibin ]
-        print "splat",time.time()-start
+        print("splat",time.time()-start)
         return powderimage
         
 
@@ -99,7 +101,7 @@ if __name__=="__main__":
         pks = img - powd
         outname = os.path.join( outputfolder,
                                 os.path.split( imgfile )[-1].replace("edf","cor" ) )
-        print "Treated",imgfile, outname
+        print("Treated",imgfile, outname)
         fabio.edfimage.edfimage( pks.clip(0,65535).astype(np.uint16) ).write( outname )
         os.system("gzip --fast %s"%(outname))
         if showplot:

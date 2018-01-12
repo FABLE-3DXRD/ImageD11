@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 import glob, sys, os
 
 import numpy as np
@@ -59,12 +61,12 @@ pks = [
 hkl = np.array(pks,np.float).T
 
 uniq_ubis = []
-names = ubi_all.keys()
+names = list(ubi_all.keys())
 
 tol = 0.25
 for name in names:
     this_list = ubi_all[name]
-    for ubi, i in zip(this_list,range(len(this_list))):
+    for ubi, i in zip(this_list,list(range(len(this_list)))):
         gv = np.dot(np.linalg.inv(ubi), hkl)
         seen = 0
         for j in range(len(uniq_ubis)):
@@ -82,9 +84,9 @@ for name in names:
         if seen == 0:
             uniq_ubis.append([ubi,[(name,i)], [ubi] ])
         if seen > 1:
-            print "uniq seen more than once",ubi,i,name
+            print("uniq seen more than once",ubi,i,name)
 
-print "# Found",len(uniq_ubis),"unique ubi matrices"
+print("# Found",len(uniq_ubis),"unique ubi matrices")
 
 dsu = [ (len(uo[1]),(uo[1],uo[0])) for uo in uniq_ubis]
 dsu.sort()
@@ -99,19 +101,19 @@ for l,uo in dsu[::-1]:
         usum = usum + ubi_all[name][i]
         j += 1
     u = usum/j
-    print "%f %f %f\n"  %(u[0,0],u[0,1],u[0,2]),
-    print "%f %f %f\n"  %(u[1,0],u[1,1],u[1,2]),
-    print "%f %f %f\n\n"%(u[2,0],u[2,1],u[2,2]),
+    print("%f %f %f\n"  %(u[0,0],u[0,1],u[0,2]), end=' ')
+    print("%f %f %f\n"  %(u[1,0],u[1,1],u[1,2]), end=' ')
+    print("%f %f %f\n\n"%(u[2,0],u[2,1],u[2,2]), end=' ')
 
 j = 0
 for l, uo in dsu[::-1]:
-    print "# ", uo[1][0]
-    print "# ", uo[1][1]
-    print "# ", uo[1][2]
+    print("# ", uo[1][0])
+    print("# ", uo[1][1])
+    print("# ", uo[1][2])
     j += 1
     for name, i in uo[0]:
         n = os.path.split(name)[1]
         x = int(n.split("_")[0][1:])
         y = int(n.split("_")[1].split(".")[0][1:])
-        print "%d %d %d"%(x,y,j)
+        print("%d %d %d"%(x,y,j))
 

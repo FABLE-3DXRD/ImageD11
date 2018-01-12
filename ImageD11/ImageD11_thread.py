@@ -1,4 +1,7 @@
 
+
+from __future__ import print_function
+
 # ImageD11_v1.0 Software for beamline ID11
 # Copyright (C) 2005-2007  Jon Wright
 #
@@ -16,8 +19,13 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  0211-1307  USA
 
-
-import Queue, threading
+try:
+    import Queue
+except:
+    # python 3?
+    import queue as Queue 
+    
+import threading
 global stop_now
 stop_now = False
 
@@ -36,5 +44,5 @@ class ImageD11_thread(threading.Thread):
     def ImageD11_stop_now(self):
         global stop_now
         if stop_now:
-            print "Got a stop in",self.myname
+            print( "Got a stop in",self.myname)
         return stop_now

@@ -17,7 +17,7 @@ c = columnfile( sys.argv[1] )
 splinefile = sys.argv[2]
 dims = (2048,2048)
 sf = c.s_raw.copy(), c.f_raw.copy()
-for name in flippers.keys():
+for name in list(flippers.keys()):
     newname = sys.argv[1].replace(".flt",name)+".flt"
     newsf = np.dot( flippers[name], sf )
     origin = np.dot( flippers[name], dims ).clip(-np.inf, 0 )

@@ -1,4 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
+from __future__ import print_function
 
 
 from ImageD11 import opendata
@@ -6,7 +8,7 @@ import glob
 
 def getnumerics(d):
     ret = {}
-    for k,v in d.items():
+    for k,v in list(d.items()):
         try:
             ret[k] = float(v)
         except ValueError:
@@ -36,7 +38,7 @@ class headerfollower:
         self.reportnames = []
         for k in self.interesting:
             self.addreport(filename, k, self.header[k])
-        for h,v in self.numerics.items():
+        for h,v in list(self.numerics.items()):
             self.addreport(filename, h, v)
         
     def addreport(self, name, item, val):
@@ -44,7 +46,7 @@ class headerfollower:
         Store up the things to report in a dictionary
         Holds a list of names, then item val pairs to report
         """
-        if self.report.has_key(name):
+        if name in self.report:
             self.report[name].append( (item, val) )
         else:
             self.report[name] = [(item, val)]
@@ -54,15 +56,15 @@ class headerfollower:
         """
         pretty print the report information
         """
-        print
+        print()
         for name in self.reportnames:
-            print name
+            print(name)
             sr = self.report[name]
             sr.sort()
             for k, v in sr:
-                print "\t",k,v
-            print
-        print "Last was",self.filename
+                print("\t",k,v)
+            print()
+        print("Last was",self.filename)
                                        
     def nextfile(self,filename):
         """
@@ -75,7 +77,7 @@ class headerfollower:
             raise Exception("Filename %s introduces different header keys"%
                             (filename))
         n = getnumerics(h)
-        for k in n.keys():
+        for k in list(n.keys()):
             if k == "Omega":
                 if n[k] < self.numerics[k]:
                     self.addreport(self.filename,k,self.header[k])
@@ -95,14 +97,14 @@ class headerfollower:
         
             
 
-print "listing edf files"
+print("listing edf files")
 filelist = glob.glob("*.edf")
 
 filelist = [ (opendata.getnum(name), name) for name in filelist ]
 
 filelist.sort()
 
-print "processing, please wait"
+print("processing, please wait")
 obj = headerfollower(filelist[0][1])
 
 for n,f in filelist[1:]:

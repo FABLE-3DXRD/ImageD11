@@ -1,5 +1,8 @@
 
 
+from __future__ import print_function
+
+
 """
 Classes for finding lattice vectors
 
@@ -12,7 +15,7 @@ These will be real space vectors
 import logging, time, sys
 import numpy
 
-from ImageD11 import labelimage, closest
+from ImageD11 import labelimage, cImageD11
 
 def get_options(parser):
     parser.add_option( '-n', '--ngrid',
@@ -100,7 +103,7 @@ class grid:
                   thkl[:,1]*grid.shape[1] + \
                   thkl[:,2]
 
-            closest.put_incr( flatgrid , ind.astype(numpy.intp), vol )
+            cImageD11.put_incr( flatgrid , ind.astype(numpy.intp), vol )
             # print thkl,vol
 
             # vals = numpy.take(grid.flat, ind)
@@ -121,22 +124,23 @@ class grid:
     def fft(self):
         """ Compute the Patterson """
         start = time.time()
-        self.patty = abs(numpy.fft.fftn(self.grid))
+        self.patty = numpy.ascontiguousarray(abs(numpy.fft.fftn(self.grid)),
+                                             numpy.float32)
         logging.info("Time for fft "+str(time.time()-start))
         self.origin = self.patty[0,0,0]
         logging.info("Patterson origin height is :"+str(self.origin))
 
     def props(self):
         """ Print some properties of the Patterson """
-        print "Patterson info"
-        print self.patty.shape, type(self.patty)
+        print("Patterson info")
+        print(self.patty.shape, type(self.patty))
         p = numpy.ravel(self.patty)
         m = numpy.mean(p)
-        print "Average:",m
+        print("Average:",m)
         p2 = p*p
         self.mean = m
         v = numpy.sqrt( (numpy.sum(p2) - m*m*len(p) ) /(len(p)-1) )
-        print "Sigma",v
+        print("Sigma",v)
         self.sigma = v
 
     def peaksearch(self, peaksfile):
@@ -164,19 +168,19 @@ class grid:
         g =  sym_u.trans_group(tol = self.rlgrid*2)
         # print self.rlgrid, len(vecs)
         for i in range(len(vecs)):
-            print self.pv(vecs[i]),
+            print(self.pv(vecs[i]), end=' ')
             assert len(vecs[i]) == 3
             t = g.reduce(vecs[i])
             if numpy.dot(t, t) < self.minlen * self.minlen:
-                print "Short ",self.pv(vecs[i]), i, self.pv(t)
+                print("Short ",self.pv(vecs[i]), i, self.pv(t))
                 continue
             if not g.isMember(t):
                 g.additem(t)
-                print "Adding",self.pv(vecs[i]), i, self.pv(t)
-                print len(g.group), g.group
+                print("Adding",self.pv(vecs[i]), i, self.pv(t))
+                print(len(g.group), g.group)
             else:
-                print "Got   ",self.pv(vecs[i]), i , self.pv(t)
-        print g.group
+                print("Got   ",self.pv(vecs[i]), i , self.pv(t))
+        print(g.group)
         return g.group[1:]
 
     def read_peaks(self, peaksfile):
@@ -185,7 +189,7 @@ class grid:
         import time
         start = time.time()
         self.colfile = columnfile(peaksfile)
-        print "reading file",time.time()-start
+        print("reading file",time.time()-start)
         # hmm - is this the right way around?
         self.rlgrid = 1.0*self.cell_size/self.np
         self.px = self.colfile.omega
@@ -202,7 +206,7 @@ class grid:
                           self.pz)*self.rlgrid
         self.UBIALL = numpy.transpose(numpy.array( [self.px, self.py, self.pz] ))
         # self.UBIALL = self.reduce(self.UBIALL)
-        print "Number of peaks found",self.px.shape[0],time.time()-start
+        print("Number of peaks found",self.px.shape[0],time.time()-start)
         #        print self.UBIALL.shape, self.gv.shape
 
     def slow_score(self):
@@ -212,7 +216,7 @@ class grid:
         scores_int = numpy.floor( scores + 0.5).astype(numpy.int)
         diff = scores - scores_int
         nv = len(self.UBIALL)
-        print "scoring",nv,time.time()-start
+        print("scoring",nv,time.time()-start)
         self.tol = 0.1
         scores = numpy.sqrt(numpy.average(diff*diff, axis = 1))
         n_ind = numpy.where(numpy.absolute(diff)< self.tol, 1 , 0)
@@ -241,7 +245,7 @@ class grid:
             f.write("\n")
 
         f.close()
-        print diff.shape
+        print(diff.shape)
         return diff
 ###################################################
 ## sum_sq_x = 0
@@ -281,8 +285,8 @@ class grid:
                 sm[j,i] = sm[i,j]
         for i in range(len(diff)):
             sm[i,i] = 1.
-        print sm[:5,:5]
-        print "Scoring takes",time.time()-start
+        print(sm[:5,:5])
+        print("Scoring takes",time.time()-start)
         return sm
 
 #####
@@ -303,7 +307,7 @@ def test(options):
     np = options.np
     nsig = options.nsig
     from ImageD11 import indexing
-    print np, mr, nsig
+    print(np, mr, nsig)
     go = grid(np = np , mr = mr , nsig = nsig)
     io = indexing.indexer()
     io.readgvfile(gvfile)
@@ -328,8 +332,8 @@ def test(options):
     go.gv_to_grid_old(io.gv)
 
     diff = numpy.ravel(go.grid - go.old_grid)
-    print "All OK if this is zero",numpy.add.reduce(diff)
-    print "error at",numpy.argmax(diff),diff.max(),numpy.argmin(diff),diff.min()
+    print("All OK if this is zero",numpy.add.reduce(diff))
+    print("error at",numpy.argmax(diff),diff.max(),numpy.argmin(diff),diff.min())
 
 
 

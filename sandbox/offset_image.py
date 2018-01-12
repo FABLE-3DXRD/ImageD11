@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 import numpy as np
 REAL = np.float 
 
@@ -54,18 +56,18 @@ def register_image( rname, cname ):
         figure(3)
         imshow(cor)
         colorbar()
-        print y,x 
+        print(y,x) 
         plot( [y], [x], "+", mec='g', lw=2, ms=10 )
         show()
 
-    print x, y
+    print(x, y)
     return cur, ref, x, y
 
 def display_registered( current, reference, xf, yf ):
     merged = reference.copy()
     x, y = int(xf+0.5) , int( yf+0.5)
-    print "cur",current.shape, "ref",reference.shape,x,y
-    print  x,x+current.shape[0] , y,y+current.shape[1] 
+    print("cur",current.shape, "ref",reference.shape,x,y)
+    print(x,x+current.shape[0] , y,y+current.shape[1]) 
     merged[ x:x+current.shape[0] , y:y+current.shape[1] ] = current
     from matplotlib.pylab import imshow, show, title
     imshow(merged)
@@ -78,7 +80,7 @@ def test(filename):
     import Image
     rgb = np.asarray(Image.open(filename))
     vals = 1.0*rgb[:,:,0] + rgb[:,:,1] + rgb[:,:,2]
-    print vals.shape
+    print(vals.shape)
     cen = vals.shape[0]/2, vals.shape[1]/2
     obj = vals[ 190:263 , 460:523 ]
     fftshape = ( vals.shape[0] + obj.shape[0] + 3, vals.shape[1] + obj.shape[1] + 3 )
@@ -97,7 +99,7 @@ def test(filename):
     figure(3)
     imshow(c)
     colorbar()
-    print y,x 
+    print(y,x) 
     plot( [y], [x], "+", mec='g', lw=2, ms=10 )
     show()
     return c

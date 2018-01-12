@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 import numpy as np, pylab as pl
 
 def cylinder_thickness( x, radius = 1.0 ):
@@ -206,10 +208,10 @@ def fitscan( xdata,
     result, gof, nstep = fitter.minimize( maxiters = 1000,
                                           monitor =  1,
                                           epsilon = 0.001 )
-    print "\nResults"
+    print("\nResults")
     names = "position fwhm scale eta mu radius"
     for name, value in zip(names.split(), result):
-        print "%10s %f"%(name, value)
+        print("%10s %f"%(name, value))
     mu = 0.0051
     if plot:
         from matplotlib.pylab import plot, show, cla, legend, subplot,\
@@ -327,7 +329,7 @@ def fit_fluo():
     i=2
     for name, val in zip( "radius,position,fwhm,eta,bkg,scale".split(","),
                           (radius,position,fwhm,eta,bkg,scale)):
-        print name, val,Y.min()+h*i/8.0
+        print(name, val,Y.min()+h*i/8.0)
         pl.text(f*x[2],Y.min()+h*i/8.0,"%s %f"%(name,val))
         i += 1
     pl.title("%s %d"%(filename, scan_number))

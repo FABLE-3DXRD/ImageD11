@@ -1,3 +1,6 @@
+
+from __future__ import print_function
+
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2015  Jon Wright
 #
@@ -17,8 +20,7 @@
 
 
 import numpy as np
-from ImageD11 import closest, grain, transform, fImageD11, indexing
-import unitcell
+from ImageD11 import grain, transform, cImageD11, indexing, unitcell
 import scipy.optimize
 import math, time, sys, logging
 
@@ -73,16 +75,16 @@ class indexer:
             self.cf.addcolumn(xl,"xl")
             self.cf.addcolumn(yl,"yl")
             self.cf.addcolumn(zl,"zl")
-        self.peaks_xyz = np.array((self.cf.xl,self.cf.yl,self.cf.zl))
+        self.peaks_xyzT = np.array(zip(self.cf.xl,self.cf.yl,self.cf.zl))
         om = self.cf.omega
-        sign = self.transformpars.get("omegasign")
+        osign = self.transformpars.get("omegasign")
         tth, eta = transform.compute_tth_eta_from_xyz(
-            self.peaks_xyz, om*sign,
+            self.peaks_xyzT.T, om*osign,
             **self.transformpars.parameters)
         self.cf.addcolumn( tth, "tth", )
         self.cf.addcolumn( eta, "eta", )
         gx, gy, gz = transform.compute_g_vectors(
-            tth, eta, om*sign,
+            tth, eta, om*osign,
             wvln  = self.transformpars.get("wavelength"),
             wedge = self.transformpars.get("wedge"),
             chi   = self.transformpars.get("chi") )
@@ -142,7 +144,7 @@ class indexer:
               self.cf.ring[mask] = i
               self.cf.ringerr[mask] = diff[mask]
         # Report on assignments
-        print "Ring     (  h,  k,  l) Mult  total indexed to_index  "
+        print("Ring     (  h,  k,  l) Mult  total indexed to_index  ")
         # try reverse order instead
         dsr = self.unitcell.ringds
         for j in range(len(dsr))[::-1]:
@@ -150,10 +152,10 @@ class indexer:
             n_indexed  = (self.cf.labels[ind] >  -0.5).sum()
             n_to_index = (self.cf.labels[ind] <  -0.5).sum()
             h=self.unitcell.ringhkls[dsr[j]][0]
-            print "Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d"%(\
+            print("Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d"%(\
                 j,h[0],h[1],h[2],len(self.unitcell.ringhkls[dsr[j]]),
-                     ind.sum(),n_indexed,n_to_index)
-        print "Total peaks",self.cf.nrows,"assigned",(self.cf.ring>=0).sum()
+                     ind.sum(),n_indexed,n_to_index))
+        print("Total peaks",self.cf.nrows,"assigned",(self.cf.ring>=0).sum())
 
 
     def pairs(self, hkl1, hkl2, cos_tol = 0.02, hkl_tol = 0.1):
@@ -170,7 +172,7 @@ class indexer:
         ind1 = allinds[ abs(self.cf.tth - tth1) < tthtol ]
         ind2 = allinds[ abs(self.cf.tth - tth2) < tthtol ]
         angle, cosangle = self.unitcell.anglehkls( hkl1, hkl2 )
-        print "Angle, cosangle",angle,cosangle,hkl1,hkl2
+        print("Angle, cosangle",angle,cosangle,hkl1,hkl2)
         assert angle > 1 and angle < 179, "hkls are parallel"
         g = np.array( (self.cf.gx, self.cf.gy, self.cf.gz), np.float )
         n = g/self.cf.modg
@@ -204,24 +206,25 @@ class indexer:
                ub =  np.dot( U, self.unitcell.B)
                ubi = np.linalg.inv( ub )
                ubio = ubi.copy()
-               npks = closest.score(ubi,gvf,hkl_tol)
+               npks = cImageD11.score(ubi,gvf,hkl_tol)
                pairs.append( (ind1[i], ind2[k], U, ubi ) )
-               print npks, 
-               ubi, trans = self.refine( ubi, [0.,0.,0.], tol=hkl_tol )
+               print(npks, end=' ') 
+               
+               ubi, trans = self.refine( ubi, np.zeros(3,np.float), tol=hkl_tol )
                inds, hkls = self.assign( ubi, trans, hkl_tol )
                ubi, trans = self.refine( ubi, trans, inds = inds, hkls= hkls, tol=hkl_tol )
-               print npks, ubi
-               print "cell: ",6*"%.6f "%(  indexing.ubitocellpars(ubi) )
-               print "position: ",trans
-               print
+               print(npks, ubi)
+               print("cell: ",6*"%.6f "%(  indexing.ubitocellpars(ubi) ))
+               print("position: ",trans)
+               print()
         self.pairs=pairs
-        print time.time()-start,"for",len(pairs),n1.shape, n2.shape
+        print(time.time()-start,"for",len(pairs),n1.shape, n2.shape)
         return pairs
 
 
     def assign(self, ubi, translation, tol):
-        gv = np.zeros(self.peaks_xyz.shape, order='F')
-        fImageD11.compute_gv( self.peaks_xyz,
+        gv = np.zeros(self.peaks_xyzT.shape, np.float )
+        cImageD11.compute_gv( self.peaks_xyzT,
                     self.cf.omega,
                     self.transformpars.get('omegasign'),
                     self.transformpars.get('wavelength'),
@@ -229,7 +232,7 @@ class indexer:
                     self.transformpars.get('chi'),
                     translation,
                     gv)
-        hkl = np.dot( ubi, gv )
+        hkl = np.dot( ubi, gv.T )
         hkli = np.floor( hkl + 0.5 )
         e = (hkl - hkli)
         e = (e*e).sum(axis=0)
@@ -241,15 +244,15 @@ class indexer:
     def gof( self, p, *args ):
         self.NC += 1
         try:
-            hkls, inds, peaks_xyz, gobs, omega = args
+            hkls, inds, peaks_xyzT, gobs, omega = args
         except:
-            print args, len(args)
+            print(args, len(args))
             raise
         p.shape = 4,3
         ub = p[:3]
         t = p[3]
         gcalc = np.dot( ub, hkls )
-        fImageD11.compute_gv( peaks_xyz,
+        cImageD11.compute_gv( peaks_xyzT,
                               omega,
                               self.transformpars.get('omegasign'),
                               self.transformpars.get('wavelength'),
@@ -261,7 +264,7 @@ class indexer:
         #print gcalc
         #print (gobs-gcalc).ravel()
         #1/0
-        e = (gcalc - gobs).ravel()
+        e = (gcalc - gobs.T).ravel()
         p.shape = 12,
  #       print p-0.1,(e*e).sum()
         return e#(e*e).sum()
@@ -282,8 +285,8 @@ class indexer:
         ub = np.linalg.inv( ubi )
         x0 = np.array( list( ub.ravel() ) + list(translation ) )
         fun = self.gof
-        args = (hkls, inds, self.peaks_xyz[:,inds],
-                np.zeros( hkls.shape, order='F'),
+        args = (hkls, inds, self.peaks_xyzT[inds],
+                np.zeros(self.peaks_xyzT[inds].shape ),
                 self.cf.omega[inds])
         def Dfun( x0, *args ):
             epsilon = np.ones(12)*1e-6
@@ -316,7 +319,8 @@ if __name__=="__main__":
     c = columnfile( sys.argv[2] )
     i = indexer( p, c )
     if sys.argv[3][:3] == "fit":
-        # \test\simul_1000_grains>python ..\..\ImageD11\indexer.py Al1000\Al1000.par Al1000\Al1000.flt allgrid.map allgridfitscipy.map
+        #                                            0                   1                  2           3    4             5
+        # \test\simul_1000_grains>python ..\..\ImageD11\indexer.py Al1000\Al1000.par Al1000\Al1000.flt fit allgrid.map allgridfitscipy.map
         gl = ImageD11.grain.read_grain_file( sys.argv[4] )
         inds = np.arange( len(gl), dtype=np.int )
         allhkls = np.array( (c.h, c.k, c.l) )
@@ -340,17 +344,17 @@ if __name__=="__main__":
                                          tol = tol)  
                     g.translation = t
                     g.set_ubi( ubi )
-            print k, len(inds),6*"%.8f "%(indexing.ubitocellpars(ubi))
-            print "\t",t
+            print(k, len(inds),6*"%.8f "%(indexing.ubitocellpars(ubi)))
+            print("\t",t)
         ImageD11.grain.write_grain_file( sys.argv[5], gl )
     else:
         i.updatecolfile()
         i.tthcalc()
-        print "Calling assign"
+        print("Calling assign")
         i.assigntorings()
         hkl1 = [int(h) for h in sys.argv[3].split(",")]
         hkl2 = [int(h) for h in sys.argv[4].split(",")]
-        print "Calling pairs"
+        print("Calling pairs")
         i.pairs(hkl1, hkl2)
 
 

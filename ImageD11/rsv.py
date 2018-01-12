@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 """
 Reciprocal Space Volume
 
@@ -61,8 +63,8 @@ class rsv(object):
         if self.NR is None:
             raise Exception("Cannot allocate rsv")
         total = self.NR[0]*self.NR[1]*self.NR[2]
-        print "rsv: memory used = %.2f MB"%(total*8.0/1024/1024)
-        print "dim: %d %d %d"%(self.NR[0],self.NR[1],self.NR[2])
+        print("rsv: memory used = %.2f MB"%(total*8.0/1024/1024))
+        print("dim: %d %d %d"%(self.NR[0],self.NR[1],self.NR[2]))
         self.SIG = numpy.zeros( total, numpy.float32 )
         self.MON = numpy.zeros( total, numpy.float32 )
         
@@ -76,9 +78,9 @@ class rsv(object):
         else:
             self.NORMED = numpy.zeros( self.SIG.shape, numpy.float32 )
         import sys
-        print self.NORMED.shape[0]
+        print(self.NORMED.shape[0])
         for i in range( self.NORMED.shape[0] ):
-            print i,"\r",
+            print(i,"\r", end=' ')
             sys.stdout.flush()
             msk = (self.MON[i] < 0.1).astype(numpy.uint8)
             numpy.add( self.MON[i], msk, self.MON[i])
@@ -88,7 +90,7 @@ class rsv(object):
             numpy.subtract( self.MON[i], msk, self.MON[i])
             numpy.subtract( 1, msk, msk )
             numpy.multiply( self.NORMED[i], msk, self.NORMED[i] )
-        print i
+        print(i)
 
             
     plnames = {
@@ -102,7 +104,7 @@ class rsv(object):
         """
         return signal on plane index num 
         """
-        if not self.plnames.has_key(plane):
+        if plane not in self.plnames:
             raise Exception("Plane should be one of %s"%(
                         str(self.plnames)))
         p = self.plnames[plane]
@@ -113,7 +115,7 @@ class rsv(object):
         if abs(testnum - num)>1e-6:
             logging.info("Nearest plane to %f is %f"%(num, testnum))
         if ind < 0 or ind >= self.NR[p]:
-            print ind,num,self.np,self.bounds
+            print(ind,num,self.np,self.bounds)
             raise Exception("slice is out of volume bounds")
         if self.NORMED is None:
             self.normalise()
@@ -173,7 +175,7 @@ def writevol(vol, filename):
                            compression_opts = 1)
     volout.attrs['bounds'] = vol.bounds
     volout.attrs['np'] = vol.np
-    for key, value in vol.metadata.iteritems():
+    for key, value in vol.metadata.items():
         volout.attrs[key]=value
     volout.flush()
     volout.close()
@@ -203,7 +205,7 @@ def writenormedvol(vol, filename):
                            compression_opts = 1)
     volout.attrs['bounds'] = vol.bounds
     volout.attrs['np'] = vol.np
-    for key, value in vol.metadata.iteritems():
+    for key, value in vol.metadata.items():
         volout.attrs[key]=value
     volout.flush()
     volout.close()
@@ -222,7 +224,7 @@ def readvol(filename, savespace=False ):
     """
     
     volfile = h5py.File(filename)
-    if not 'signal' in volfile.keys():#listnames():
+    if not 'signal' in list(volfile.keys()):#listnames():
         raise Exception("Your file %s is not an rsv"%(filename))
     sig = volfile['signal']
     bounds = volfile.attrs['bounds']
@@ -237,10 +239,10 @@ def readvol(filename, savespace=False ):
         #mem()
         sig.read_direct( vol.SIG )
     #mem()
-    for name, value in volfile.attrs.iteritems():
+    for name, value in volfile.attrs.items():
         vol.metadata[name] = value
     #mem()
-    if 'monitor' in volfile.keys():#listnames():
+    if 'monitor' in list(volfile.keys()):#listnames():
         mon = volfile['monitor']
         assert mon.shape == vol.SIG.shape
         if savespace:

@@ -1,4 +1,7 @@
 
+
+from __future__ import print_function
+
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -25,7 +28,8 @@ All communication should be via parent guicommander object
 Owner of the plot3d window
 """
 
-from listdialog import listdialog
+from .listdialog import listdialog
+from . import twodplot
 
 
 class guiindexer:
@@ -84,14 +88,21 @@ class guiindexer:
         x=self.parent.guicommander.getdata("indexer","bins")
         y=self.parent.guicommander.getdata("indexer","histogram")
         self.parent.twodplotter.plotitems={} # clears plot
-        from ImageD11 import twodplot
+        import matplotlib.cm
         for yline in range(y.shape[0]):
+            color = matplotlib.cm.jet( yline*1.0/y.shape[0] )
+            print("yline, color",yline,color)
             self.parent.twodplotter.plotitems["drlv histogram"+str(yline)]=twodplot.data(
                      x[1:],y[yline,:],
                    {"xlabel" : "drlv",
                     "ylabel" : "freq",
                     "title"  : "drlv histogram",
-                    "pointtype" : "-"
+                    'plotopts' : { "linestyle" : "-",
+                                   "marker" : "o",
+                                   "markersize" : 1,
+                                   "alpha" : 0.8,
+                                   "color" : color,
+                                   }
                     }
                    ) # data
         self.parent.twodplotter.replot()
@@ -142,7 +153,7 @@ class guiindexer:
         """
         import logging
         try:
-            import plot3d
+            from . import plot3d
         except:
             import traceback
             traceback.print_last()

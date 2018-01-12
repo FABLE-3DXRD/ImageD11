@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 
 
 
@@ -97,7 +98,7 @@ def test_absence(h, k, l, sg):
 # So use an unambiguous string like "P 1 21/c 1"
 	symmop=sgstring.split()
 	if len(symmop) != 4:		
-		print "Only read %d symmops"%symops	
+		print("Only read %d symmops"%symops)	
 		raise Exception("You must supply at least 4 space separated symmetry operations"\
 			 " and optional compound operations separated by '/'")
 	
@@ -141,31 +142,31 @@ def checkop(h,k,l,op,axis):
 if __name__ == "__main__":  
 	import sys
 	if len(sys.argv) != 8:
-		print "Usage %s h k l sg_with_spaces"%(sys.argv[0])
-		print len(sys.argv)
+		print("Usage %s h k l sg_with_spaces"%(sys.argv[0]))
+		print(len(sys.argv))
 		sys.exit()
 	try:
 		h=int(sys.argv[1])
 	except:
-		print "Sorry %s is not an integer\n" % sys.argv[1]
+		print("Sorry %s is not an integer\n" % sys.argv[1])
 		sys.exit()
 	try:
 		k=int(sys.argv[2])
 	except:
-		print "Sorry %s is not an integer\n" % sys.argv[2]
+		print("Sorry %s is not an integer\n" % sys.argv[2])
 		sys.exit()
 	try:
 		l=int(sys.argv[3])
 	except:
-		print "Sorry %s is not an integer\n" % sys.argv[3]
+		print("Sorry %s is not an integer\n" % sys.argv[3])
 		sys.exit()
 		
 	
 	sgstring=sys.argv[4]+" "+sys.argv[5]+" "+sys.argv[6]+" "+sys.argv[7]
 	absent=test_absence(h,k,l,sgstring)
 	if absent is True:
-		print "The ",h,k,l,"reflection is absent in space group "+sgstring
+		print("The ",h,k,l,"reflection is absent in space group "+sgstring)
 	else:
-		print "The ",h,k,l,"reflection is present in space group "+sgstring
+		print("The ",h,k,l,"reflection is present in space group "+sgstring)
 		
 		

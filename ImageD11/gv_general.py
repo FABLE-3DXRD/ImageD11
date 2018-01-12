@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 
 
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
@@ -30,7 +31,7 @@ import math, logging
 from numpy.linalg import det, inv
 import numpy as np
 
-print "gv_general from ",__file__
+print("gv_general from ",__file__)
 
 def angmod(a):
     return np.arctan2( np.sin(a), np.cos(a) )
@@ -119,7 +120,7 @@ class rotation_axis:
         ct = math.cos( math.radians( self.angle ))
         self.matrix = np.identity(3, np.float)*ct - st * w  + \
                       (1 - ct)*e*np.transpose(e)
-	self.inversematrix = inv(self.matrix)
+        self.inversematrix = inv(self.matrix)
         return self.matrix
 
 def axis_from_matrix( m ):
@@ -144,8 +145,8 @@ def axis_from_matrix( m ):
         direc = direc / np.sqrt(np.dot(direc, direc))
     o = rotation_axis( direc , math.degrees( angle_rad ) )
     if not (abs(o.matrix - m) < 1e-5).all():
-        print "o.matrix\n",o.matrix
-        print "m\n",m
+        print("o.matrix\n",o.matrix)
+        print("m\n",m)
         raise Exception("error in axis_from_matrix")
     return o
 

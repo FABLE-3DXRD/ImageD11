@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 
 """
 Routines for finding the lattice symmetry from a ubi file
@@ -50,16 +52,16 @@ def find_2_folds( ubi , tol = 1.0, debug = False):
     reci_lens = np.sqrt((reci_vecs*reci_vecs).sum(axis = 1))
     nvec = len(rows_planes)
     pairs = []
-    for v1, l1, i in zip(real_vecs, real_lens, range(nvec)):
-        print v1,l1,i
-        for v2, l2, j in zip(reci_vecs, reci_lens, range(nvec)):
+    for v1, l1, i in zip(real_vecs, real_lens, list(range(nvec))):
+        print(v1,l1,i)
+        for v2, l2, j in zip(reci_vecs, reci_lens, list(range(nvec))):
             #if j < i:
             #    continue
             c = np.dot(v1, v2)/ l1/ l2
             if abs( 1 - c ) < tol_c:
-                print i, j, c, rows_planes[i],rows_planes[j]
+                print(i, j, c, rows_planes[i],rows_planes[j])
                 pairs.append( (i,j) )
-    print pairs
+    print(pairs)
     return pairs
 
     
@@ -130,7 +132,7 @@ testcases = {
 
 
 def test_reduce( name, cell , expected ):
-    print ("%6.3f  "*6)%tuple(cell),
+    print(("%6.3f  "*6)%tuple(cell), end=' ')
     ubi = xfab.tools.form_a_mat( cell ).T
     twofolds = find_2_folds( ubi )
     lines  = [ rows_planes[t[0]] for t in twofolds]
@@ -139,25 +141,25 @@ def test_reduce( name, cell , expected ):
     uniqp = reduce_two_folds( lines ) 
     # print name, uniq
     if len(expected) != len( uniql ):
-        print name + " wrong number of axes "
-        print uniql
-        print uniqp
+        print(name + " wrong number of axes ")
+        print(uniql)
+        print(uniqp)
     for ul, up in zip(uniql, uniqp):
         ok = (tuple(ul) in expected) or (tuple(-ul) in expected)
         if not ok:
-            print "PROBLEM",name, ul, up, expected
+            print("PROBLEM",name, ul, up, expected)
             
 def runtests():
     np.seterr(all='raise')
-    names = testcases.keys()
+    names = list(testcases.keys())
     names.sort()
     for name in names:
         cell = testcases[name][0]
         expected = testcases[name][1:]
 
-        print "Testing",name,
+        print("Testing",name, end=' ')
         test_reduce( name, cell, expected)
-        print "passed"
+        print("passed")
         
 
     

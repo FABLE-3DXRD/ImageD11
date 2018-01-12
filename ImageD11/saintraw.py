@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 
 """
 Module for read saint raw files from bruker integration
@@ -237,7 +238,7 @@ class saintraw(object):
         self.lines = open(filename,"r").readlines()
         for t in self.alltitles:
             self.data[t] = []
-        zipped = zip(self.alltitles, self.slices, self.funcs)
+        zipped = list(zip(self.alltitles, self.slices, self.funcs))
         for line in self.lines:
             if line[0] == "!":
                 # Comment line
@@ -247,7 +248,7 @@ class saintraw(object):
                 try:
                     self.data[t].append( f( line[s] ) )
                 except:
-                    print t,s,f
+                    print(t,s,f)
                     raise
 
     def condition_filter(self, name, func):
@@ -256,14 +257,14 @@ class saintraw(object):
         """
         assert len(self.lines) == len(self.data[name] )
         indices = numpy.compress( func( numpy.array( self.data[name]) ) , 
-                                  range(len(self.lines)) )
+                                  list(range(len(self.lines))) )
         self.take( indices )                                
 
     def take(self, order):
         """
         Put the peaks in the order given in order (indices)
         """
-        for t in self.data.keys():
+        for t in list(self.data.keys()):
             self.data[t] = numpy.take( self.data[t],
                                        order) 
         self.lines = list( numpy.take( self.lines,
@@ -304,15 +305,15 @@ if __name__ == "__main__":
     import sys, time
     START = time.time()
     sra = saintraw()
-    print "Making object", time.time() - START
+    print("Making object", time.time() - START)
     
     START = time.time()
     sra.read(sys.argv[1])
-    print "Reading", time.time() - START
+    print("Reading", time.time() - START)
     
-    print len(sra.data['IHKL_0'])
+    print(len(sra.data['IHKL_0']))
 
     START = time.time()
     cra = sra.tocolumnfile()
-    print cra.bigarray.shape
-    print "Convert to colfile", time.time() - START
+    print(cra.bigarray.shape)
+    print("Convert to colfile", time.time() - START)

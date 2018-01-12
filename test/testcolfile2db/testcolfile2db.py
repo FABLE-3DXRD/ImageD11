@@ -1,4 +1,4 @@
-
+from __future__ import print_function
 
 import unittest, os, sqlite3
 
@@ -37,7 +37,7 @@ class t2(unittest.TestCase):
             return
         start = time.time()
         columnfile.colfile2db( os.path.join("..","nac_demo","peaks.out_merge_t200") , "nac.db" )
-        print "write db",time.time()-start
+        print( "write db",time.time()-start)
 
     def test1(self):
         # read back
@@ -46,7 +46,7 @@ class t2(unittest.TestCase):
         cur = con.cursor()
         cur.execute("select * from peaks")
         dat = [ [ v for v in row] for row in cur]
-        print "read db",time.time()-start, len(dat[0]), len(dat)
+        print( "read db",time.time()-start, len(dat[0]), len(dat))
         
 
 if __name__=="__main__":

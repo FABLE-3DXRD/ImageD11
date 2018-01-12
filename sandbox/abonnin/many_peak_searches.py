@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 
 for i in range(180):
     f=147*i
@@ -11,5 +13,5 @@ for i in range(180):
     cmd = 'peaksearch.py -n %s -f %d -l %d -d %s -s %s -T 0 -S 0.2 -t 500 -o %s'%(
         stem, f, l, dark, spline, outfile )
 
-    print cmd
+    print(cmd)
     

@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 import sys
 from math import pi, cos, sqrt, exp, log, asin
 from numpy import dot
@@ -23,5 +25,5 @@ for line in open(sys.argv[1]).readlines():
     s = float(line[20:28])
     tth = 2*asin( sqrt(ds)*wvln/2 )
     fac = ( 1 - exp( log(t0) /cos(tth) ) )/(1 - t0)
-    print "%4d%4d%4d%8.2f%8.2f"%(h,k,l,i/fac,s/fac)
+    print("%4d%4d%4d%8.2f%8.2f"%(h,k,l,i/fac,s/fac))
 
