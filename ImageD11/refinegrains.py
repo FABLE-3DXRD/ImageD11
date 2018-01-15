@@ -1,5 +1,5 @@
 
-from __future__ import print_function
+from __future__ import print_function, division
 
 # Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_codepy
 
@@ -25,9 +25,9 @@ from __future__ import print_function
 import numpy
 
 from ImageD11 import transform, indexing, parameters
-from ImageD11 import grain, columnfile, cImageD11
+from ImageD11 import grain, columnfile, cImageD11, simplex
 
-import simplex, xfab.tools
+import xfab.tools
 
 print(__file__)
 
@@ -200,12 +200,11 @@ class refinegrains:
         # sort by number of peaks indexed to write out
         if sort_npks:
             #        npks in x array
-            gl = [ (self.grains[k].npks, self.grains[k],k) for k in ks ]
-            gl.sort()
-            gl = [ (g[1],g[2]) for g in gl[::-1] ]
+            order = numpy.argsort( [self.grains[k].npks for k in ks ])
+            ks = [ks[i] for i in order[::-1]]
         else:
             ks.sort()
-            gl = [ (self.grains[k],k) for k in ks ]
+        gl = [ (self.grains[k],k) for k in ks ]
 
         # Update the datafile and grain names reflect indices in grain list
         for g,k in gl:
@@ -918,7 +917,7 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2, quiet = Fal
         len(intensities),
         min(tth_range),
         max(tth_range),
-        intensities[ len(intensities)/2 ],
+        intensities[ len(intensities)//2 ],
         intensities.min(),
         intensities.max(),
         intensities.mean(),
