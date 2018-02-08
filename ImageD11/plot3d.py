@@ -5,39 +5,23 @@ from __future__ import print_function
 """
 from example by Tarn Weisner Burton <twburton@users.sourceforge.net> in pyopengl
 """
-# This is statement is required by the build system to query build info
-if __name__ == '__build__':
-    raise Exception
 
-
-import string
-#__version__ = string.split('$Revision$')[1]
-#__date__ = string.join(string.split('$Date$')[1:3], ' ')
 __author__ = 'Jon Wright <jpwright@users.sourceforge.net> from example by Tarn Weisner Burton <twburton@users.sourceforge.net>'
 
 import numpy
-
-###### START patch for ESRF debian installation
-try: 
-    from Tkinter import _default_root
-    from Tkinter import Tk
-except:
-    from tkinter import _default_root
-    from tkinter import Tk
-if _default_root is None:
-    _default_root = Tk()
-import os
-if os.path.exists('/users/wright/fable/standalone/Togl2.0-8.4-Linux/lib'):
-    _default_root.tk.call('lappend', 'auto_path','/users/wright/fable/standalone/Togl2.0-8.4-Linux/lib')
-###### END patch for ESRF debian installation
-
-import OpenGL.GL as GL
-import OpenGL.Tk as Tk
-import OpenGL.GLU as GLU
-
 import sys
+import os
+from pyopengltk import Opengl
+import OpenGL.GL as GL
+import OpenGL.GLU as GLU
+if sys.version_info[0] < 3:
+    import Tkinter as Tk
+else:
+    import tkinter as Tk
 
-class myOpengl(Tk.Opengl):
+
+class myOpengl(Opengl):
+
 
     # Make a parallel projection
     # mostly copied from Tk.Opengl class with small mods
@@ -66,7 +50,8 @@ class myOpengl(Tk.Opengl):
         self.redraw(self)
         GL.glFlush()				# Tidy up
         GL.glPopMatrix()			# Restore the matrix
-        self.tk.call(self._w, 'swapbuffers')
+#        self.tk.call(self._w, 'swapbuffers')
+        self.tkSwapBuffers()
 
 
 
@@ -88,7 +73,7 @@ class plot3d(Tk.Toplevel):
         self.pointsize=1.
         self.npeaks=xyz.shape[0]
 
-        self.o = myOpengl(self, width = 400, height = 400, double = 1)
+        self.o = myOpengl(self, width = 400, height = 400)
         self.o.redraw = self.redraw
         self.o.autospin_allowed = 1
         self.o.fovy=5
@@ -123,7 +108,7 @@ class plot3d(Tk.Toplevel):
            self.readspline(spline)
            self.readprms(pars)
            self.readimage(image)
-        self.changedata(xyz)
+        self.after(100, self.changedata)
 
     def readspline(self,spline):
         from ImageD11 import blobcorrector
@@ -239,13 +224,14 @@ class plot3d(Tk.Toplevel):
         if self.parent is None: sys.exit()
         print("Ought to be gone now...")
 
-    def changedata(self,xyz):
-        self.xyz=xyz.copy()
-        self.npeaks=xyz.shape[0]
+    def changedata(self,xyz=None):
+        if xyz is not None:
+            self.xyz=xyz.copy()
+            self.npeaks=xyz.shape[0]
         GL.glDisableClientState(GL.GL_VERTEX_ARRAY)
         GL.glDisableClientState(GL.GL_COLOR_ARRAY)
-        GL.glVertexPointerd(self.xyz)
-        GL.glColorPointerd(self.color)
+        GL.glVertexPointer( 3, GL.GL_FLOAT, 0, self.xyz.astype(numpy.float32).tostring() )
+        GL.glColorPointer( 3,  GL.GL_FLOAT, 0, self.color.astype(numpy.float32).tostring() )
         GL.glEnableClientState(GL.GL_VERTEX_ARRAY)
         GL.glEnableClientState(GL.GL_COLOR_ARRAY)
         self.o.tkRedraw()
@@ -261,7 +247,6 @@ class plot3d(Tk.Toplevel):
         GL.glDisable(GL.GL_LIGHTING)
         GL.glClearColor(0., 0., 0., 0)
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
-#        GL.glOrtho(-5,5,-5,5,-5,5)
         GL.glColor3f(1.0, 1.0, 1.0) # white
         GL.glPointSize(self.pointsize)
         GL.glDrawArrays(GL.GL_POINTS, 0, self.npeaks )
@@ -279,17 +264,19 @@ class plot3d(Tk.Toplevel):
         GL.glVertex3f(0.,0.,0.)
         GL.glVertex3f(hkl[0][0],hkl[0][1],hkl[0][2])
         GL.glEnd()
+
         GL.glBegin(GL.GL_LINE_LOOP)
         GL.glColor3f(0.0, 1.0, 0.0) # green
         GL.glVertex3f(0.,0.,0.)
         GL.glVertex3f(hkl[1][0],hkl[1][1],hkl[1][2])
         GL.glEnd()
+
         GL.glBegin(GL.GL_LINE_LOOP)
         GL.glColor3f(0.0, 0.0, 1.0) # blue
         GL.glVertex3f(0.,0.,0.)
         GL.glVertex3f(hkl[2][0],hkl[2][1],hkl[2][2])
-
         GL.glEnd()
+
         if self.tex:
 #            print "drawing images"
             GL.glEnable(GL.GL_TEXTURE_2D)
@@ -319,6 +306,7 @@ if __name__=="__main__":
         lines=open(sys.argv[1],"r").readlines()
     except:
         print("Usage %s gvector_file [ubifile] [image parfile]"%(sys.argv[0]))
+        raise
         sys.exit()
    
     on=0
@@ -341,4 +329,7 @@ if __name__=="__main__":
        o=plot3d(None,data=xyz,ubis=sys.argv[2],image=sys.argv[3],pars=sys.argv[4],spline=sys.argv[5])
     else:
        o=plot3d(None,data=xyz,ubis=None)
+    def runit():
+        o.changedata(o.xyz)
+    o.after(100, runit )
     o.mainloop()
