@@ -33,11 +33,11 @@ def correct(data_object,
     Also PIL filters
     """
     picture = data_object.data.astype(numpy.float32)
-    if dark != None:
+    if dark is not None:
         # This is meant to be quicker
         picture = numpy.subtract( picture , dark, picture )
         data_object.data = picture
-    if flood != None:
+    if flood is not None:
         picture = numpy.divide( picture, flood, picture )
         data_object.data = picture
     if monitorcol is not None and monitorval is not None:
