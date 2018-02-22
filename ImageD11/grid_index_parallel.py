@@ -58,6 +58,7 @@ def domap(  pars,
         gl = filter( lambda x: x.npks > gridpars['NPKS'], o.grains.values() )
         if len(gl) == 0:
             break
+        grains = gl
     if gridpars['NUL']:
         sys.stdout = ss
     return gl
