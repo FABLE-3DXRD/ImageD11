@@ -179,8 +179,9 @@ def bgmaker( options ):
     first_image = openimage( first_image_name )
     print(first_image.filename)
 
-    allimagenumbers = list(range(options.first + options.step, 
-                options.last + options.step, options.step))
+    allimagenumbers = list(range(options.first,
+                                 options.last + 1 - options.step,
+                                 options.step))
 
     if options.kalman_error <= 0:
         print("Using minimum image algorithm")
