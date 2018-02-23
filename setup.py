@@ -69,7 +69,15 @@ cImageD11extension = Extension( "cImageD11",
 #        ... 
 #        ]
 
-needed = []
+needed = ["xfab",
+          "fabio",
+          "pyopengl",
+          "matplotlib",
+          "numpy",
+          "scipy",
+          "six",
+          "h5py",
+          ]
 
 # See the distutils docs...
 setup(name='ImageD11',
