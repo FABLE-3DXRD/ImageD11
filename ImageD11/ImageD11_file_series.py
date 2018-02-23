@@ -71,9 +71,9 @@ def get_series_from_hdf( hdf_file, dark = None, flood = None ):
             data = im[:,:]
             if (dark, flood) is not (None, None):
                 data = data.astype(numpy.float32)
-            if dark != None:
+            if dark is not None:
                 numpy.subtract( data, dark, data )
-            if flood != None:
+            if flood is not None:
                 numpy.divide( data, flood, data )
             yield fabio.fabioimage.fabioimage( data = data,
                                                header = {
@@ -89,9 +89,9 @@ def series_from_fabioseries( fabioseries, dark, flood, options ):
             continue
         if (dark, flood) is not (None, None):
             fim.data = fim.data.astype(numpy.float32)
-        if dark != None:
+        if dark is not None:
             numpy.subtract( fim.data, dark, fim.data )
-        if flood != None:
+        if flood is not None:
             numpy.divide( fim.data, flood, fim.data )
         if options.omegamotor in fim.header:
             fim.header['Omega'] = float(fim.header[options.omegamotor])

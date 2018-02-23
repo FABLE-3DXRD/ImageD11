@@ -53,7 +53,7 @@ if __name__=="__main__":
         options , args = myparser.parse_args()
         peaksearcher.peaksearch_driver(options, args)
     except:
-        if myparser != None:
+        if myparser is not None:
             myparser.print_help()
         print("\n\n And here is the problem:\n")
         raise

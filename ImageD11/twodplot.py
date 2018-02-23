@@ -59,7 +59,7 @@ class twodplot(Tk.Frame):
         self.plotitems={}
         self.maxpoints=1000000 # work around slow plotting
         # print data
-        if data != None:
+        if data is not None:
             self.plotitems[data[0]]=data[1]
         self.title=None
         self.xr=self.yr=None
@@ -179,7 +179,7 @@ class twodplot(Tk.Frame):
 
     def replot(self):
         self.a.clear()
-        if self.title!= None:
+        if self.title is not None:
             self.a.set_title(self.title)
 #      b  : blue
 #      g  : green
@@ -229,9 +229,9 @@ class twodplot(Tk.Frame):
             except:
                 print("plotting exception ignored")
                 raise
-        if self.xr!=None:
+        if self.xr is not None:
             self.a.set_xlim(self.xr)
-        if self.yr!=None:
+        if self.yr is not None:
             self.a.set_ylim(self.yr)
         self.canvas.show()
 
@@ -291,7 +291,8 @@ class twodplot(Tk.Frame):
         # inverse method to transform back
         # print "print mouse down at", t, val
         # rubber banding:
-        if self.rubberbandbox!=None: self.tkc.delete(self.rubberbandbox)
+        if self.rubberbandbox is not None:
+            self.tkc.delete(self.rubberbandbox)
         self.startx=self.tkc.canvasx(event.x)
         self.starty=self.tkc.canvasx(event.y)
 
@@ -299,7 +300,7 @@ class twodplot(Tk.Frame):
         x = self.tkc.canvasx(event.x)
         y = self.tkc.canvasy(event.y)
         if (self.startx != event.x)  and (self.starty != event.y) :
-            if self.rubberbandbox!=None:
+            if self.rubberbandbox is not None:
                 self.tkc.delete(self.rubberbandbox)
             self.rubberbandbox = self.tkc.create_rectangle(self.startx, self.starty, x, y, outline='green')
             # this flushes the output, making sure that
