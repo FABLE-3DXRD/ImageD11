@@ -225,7 +225,7 @@ class unitcell:
 
         assumes [h|k|l] < 200
         """
-        if dsmax == self.limit and self.peaks!=None:
+        if dsmax == self.limit and self.peaks is not None:
             return self.peaks
         h=k=0
         l=1 # skip 0,0,0

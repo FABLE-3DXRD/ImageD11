@@ -251,7 +251,7 @@ class indexer:
         if gv is not None:
             print('gv:', gv, gv.shape, gv.dtype)
         self.wedge=0.0 # Default
-        if gv !=None:
+        if gv is not None:
             self.gvflat=np.ascontiguousarray(gv,'d')
             # Makes it contiguous in memory, hkl fast index
 

@@ -45,7 +45,7 @@ class listdialog(Tk.Toplevel):
         # create dialog body.  return widget that should have
         # initial focus.  this method should be overridden
         self.e=[]
-        if items!=None:
+        if items is not None:
             i=0
             keys=list(items.keys())
             keys.sort()
@@ -56,7 +56,7 @@ class listdialog(Tk.Toplevel):
                 el.insert(Tk.END,items[key])
                 el.grid(row=i,column=1)
                 self.e.append(el)
-                if logic != None and key in logic:
+                if logic is not None and key in logic:
                     val = logic[key]
                     self.logicvars[key] = Tk.IntVar()
                     self.logicvars[key].set(val)
@@ -104,7 +104,7 @@ class listdialog(Tk.Toplevel):
         for item in self.e:
             k = self.keys[i]
             retdict[k]=item.get()
-            if self.logic != None and k in self.logic:
+            if self.logic is not None and k in self.logic:
                 self.fv[k]=self.logicvars[k].get()
             i=i+1
         self.result=retdict

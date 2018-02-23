@@ -8,7 +8,11 @@ import sys, os, numpy as np, time, random
 import multiprocessing
 from multiprocessing import Pool
 from multiprocessing import Queue as PQueue
-import Queue # for exception
+
+if sys.version_info[0] < 3:
+    import Queue # for exception
+else:
+    import queue as Queue
 
 if "win" in sys.platform:
     nulfile = "NUL"

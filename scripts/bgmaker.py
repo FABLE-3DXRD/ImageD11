@@ -51,7 +51,7 @@ class minimum_image(object):
         if image is not None:
             # if an image is supplied we take that as the initial minimum
             self.bkg = image
-        if filename != None:
+        if filename is not None:
             # if a filename is supplied we take the minimum of the
             # image in that
             # file and the one stored

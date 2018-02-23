@@ -291,7 +291,7 @@ def peaksearch_driver(options, args):
         print("make labelimage",mergefile,spotfile)
     # Not sure why that was there (I think if glob was used)
     # files.sort()
-    if options.dark!=None:
+    if options.dark is not None:
         print("Using dark (background)",options.dark)
         darkimage= openimage(options.dark).data.astype(numpy.float32)
     else:
@@ -302,7 +302,7 @@ def peaksearch_driver(options, args):
             darkimage = options.darkoffset
         else:
             darkimage += options.darkoffset
-    if options.flood!=None:
+    if options.flood is not None:
         floodimage=openimage(options.flood).data
         cen0 = floodimage.shape[0]/6
         cen1 = floodimage.shape[0]/6

@@ -381,7 +381,7 @@ class rubber(Frame):
         stri="<---%f          %f--->"%(self.mini,self.maxi)
         self.keyt.configure(text=stri)
         self.keyt.update()
-        if self.rubberbandBox!=None:
+        if self.rubberbandBox is not None:
             z=self.zoom
             self.rubberbandBox = self.canvasObject.create_rectangle(
               z*self.startx, z*self.starty, z*self.endx, z*self.endy, outline='green')
@@ -399,7 +399,7 @@ class rubber(Frame):
 
     def showroi(self):
         selection=self.getbox()
-        if selection != None:
+        if selection is not None:
             t = Toplevel()
             junk=rubber(selection,master=t)
 

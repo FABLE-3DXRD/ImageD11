@@ -399,7 +399,7 @@ class cakemacrogenerator:
             value = self.input_options_values[name]
             if name.find("MASK") >= 0:
                 continue
-            if value != None:
+            if value is not None:
                 self.macro = self.macro + name + "\n" + str(value) + "\n"
         self.macro = self.macro + "O.K.\n"
 
@@ -425,7 +425,7 @@ class cakemacrogenerator:
         """
         for name in self.image_pars_names:
             value = self.image_pars_values[name]
-            if value != None:
+            if value is not None:
                 self.macro = self.macro + name + "\n" + str(value) + "\n"
         self.macro = self.macro + "O.K.\n"
 
@@ -435,7 +435,7 @@ class cakemacrogenerator:
         """
         for name in self.integrate_pars_names:
             value = self.integrate_pars_values[name]
-            if value != None:
+            if value is not None:
                 self.macro = self.macro + name + "\n" + str(value) + "\n"
         self.macro = self.macro + "O.K.\n"
 
@@ -557,7 +557,7 @@ class cakemacrogenerator:
         tf.write(self.macro)
         tf.close()
         # Send the display to a local black hole
-        if show!="SHOW":
+        if show != "SHOW":
             os.system(XVFB)
             time.sleep(1)
             try:
@@ -616,7 +616,7 @@ if __name__=="__main__":
 
     caker=cakemacrogenerator()
 
-    if options.cpars != None:
+    if options.cpars is not  None:
         # already imported os
         if options.deffile == None:
             f = os.path.join( os.environ["HOME"] , ".fit2d.def" )
