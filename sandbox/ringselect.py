@@ -12,15 +12,17 @@ import numpy as np
 c = columnfile(sys.argv[1])
 p = read_par_file(sys.argv[2])
 tol = float(sys.argv[3])
+tthmax = float(sys.argv[4])
+outfile = sys.argv[5]
+npx = int(sys.argv[6])
+c.filter( c.Number_of_pixels > npx )
+
 u = unitcell_from_parameters( p )
 w = p.get("wavelength")
 
-try:
-    tth = c.tth
-except:
-    tth, eta = compute_tth_eta( (c.sc, c.fc), **p.parameters)
+tth, eta = compute_tth_eta( (c.sc, c.fc), **p.parameters)
 
-dsmax = 2*np.sin(tth.max()*np.pi/360)/w
+dsmax = 2*np.sin(1.03*tth.max()*np.pi/360)/w
 u.makerings(dsmax)
 
 
@@ -40,5 +42,5 @@ if 0:
     pylab.show()
 
 m = dtth < tol
-c.filter(m & (tth<16))
-c.writefile(sys.argv[4])
+c.filter(m & (tth<tthmax))
+c.writefile(outfile)
