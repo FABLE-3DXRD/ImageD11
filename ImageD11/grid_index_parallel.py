@@ -59,7 +59,9 @@ def domap(  pars,
             o.makeuniq( gridpars['SYMMETRY'] )
         o.generate_grains()
         o.refinepositions()
-        gl = filter( lambda x: x.npks > gridpars['NPKS'], o.grains.values() )
+        # This fills in the uniq for each grain
+        o.savegrains( nulfile, sort_npks = False)
+        gl = [ g for g in o.grains.values() if g.npks > gridpars['NPKS'] ]
         if len(gl) == 0:
             break
         grains = gl

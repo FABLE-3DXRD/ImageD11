@@ -214,6 +214,10 @@ class transformer:
         Read in 3D peaks from peaksearch
         """
         self.colfile = columnfile.columnfile(filename)
+        if ( ("sc" in self.colfile.titles) and
+             ("fc" in self.colfile.titles) and
+             ("omega" in self.colfile.titles)):
+            self.setxyomcols("sc", "fc", "omega")
         if (self.colfile.titles[0:3] == ["sc", "fc", "omega"]):
             self.setxyomcols("sc", "fc", "omega")
         if (self.colfile.titles[0:3] == ["xc", "yc", "omega"]):
