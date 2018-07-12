@@ -166,6 +166,22 @@ class columnfile:
         self.filter( ~mask )
 
 
+    def sortby( self, name ):
+        """
+        Sort arrays according to column named "name"
+        """
+        col = self.getcolumn( name )
+        order = numpy.argsort( col )
+        self.reorder( order )
+        
+    def reorder( self, indices ):
+        """
+        Put array into the order given by indices
+        ... normally indices would come from np.argsort of something
+        """
+        self.bigarray = self.bigarray[:, indices]
+        self.set_attributes()
+        
     def writefile(self, filename):
         """
         write an ascii columned file
@@ -203,20 +219,16 @@ class columnfile:
         self.ncols = 0
         self.nrows = 0
         i = 0
-        try:
-            # Check if this is a hdf file: magic number
-            magic = open(filename,"rb").read(4)
-        except:
-            raise Exception("Cannot open %s for reading"%(filename))
+        # Check if this is a hdf file: magic number
+        with open(filename,"rb") as f:
+            magic = f.read(4)
         #              1 2 3 4 bytes
         if magic == '\x89HDF':
             print("Reading your columnfile in hdf format")
             colfile_from_hdf( filename, obj = self )
             return
-        try:
-            raw = open(filename,"r").readlines()
-        except:
-            raise Exception("Cannot open %s for reading"%(filename))
+        with open(filename,"r") as f:
+            raw = f.readlines()
         header = True
         while header and i < len(raw):
              if len(raw[i].lstrip())==0:
