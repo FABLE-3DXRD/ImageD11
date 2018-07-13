@@ -40,8 +40,6 @@ class testgeom( unittest.TestCase ):
         c.updateGeometry( )
 
 
-
-
 class test1( unittest.TestCase ):
     def setUp( self ):
         f=open("test.col","w")
@@ -53,6 +51,15 @@ class test1( unittest.TestCase ):
 33 7 9 0
 """)
         f.close()
+        
+    def test_to_hdf( self ): 
+        c = columnfile.columnfile( "test.col" )
+        columnfile.colfile_to_hdf( c, "testcolfile.hdf" )
+        h = columnfile.columnfile( "testcolfile.hdf" )
+        for t in c.titles:
+            assert( (c.getcolumn(t) == h.getcolumn(t)).all())
+            assert t in h.titles
+
         
     def testaddcol1( self ):
         c = columnfile.columnfile( "test.col")

@@ -222,7 +222,7 @@ class columnfile:
         with open(filename,"rb") as f:
             magic = f.read(4)
         #              1 2 3 4 bytes
-        if magic == '\x89HDF':
+        if magic == b'\x89HDF':
             print("Reading your columnfile in hdf format")
             colfile_from_hdf( filename, obj = self )
             return
