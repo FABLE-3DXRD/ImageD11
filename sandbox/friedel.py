@@ -131,8 +131,6 @@ def findpairs_2d( cf, dangle, omestep, fac = 1.5):
     # each peak has an i,j co-ordinate showing where it is on the world map
     # we want to select peaks for each pixel
     izimage, iyimage = np.mgrid[ 0:H.shape[0], 0:H.shape[1] ]
-#    print(iyimage.shape,NY,iyimage.max(),H.shape)
-#    print(izimage.shape,NZ,izimage.max(),H.shape)
     mask = H > 0
     k=0
     hits = []
@@ -163,33 +161,60 @@ def findpairs_2d( cf, dangle, omestep, fac = 1.5):
             #                  print("    ",k,cf.ds[k], cf.omega[k], cf.eta[k], cf.gx[k], cf.gy[k], cf.gz[k] )
         if len(newhits)>1:
             hits.append(newhits)
-#    print([len(h) for h in hits] )
     print(len(hits))
-        
-    
-    
-    
     if __debug__:
         # assert order is a permutation ...
         assert len( np.unique(order)  ) == cf.nrows, (len( np.unique(order)  ), cf.nrows)
         assert order.min() == 0
         assert order.max() == cf.nrows-1
-    
-
-
-    
-    if 1:
+    if 0:
         import pylab as pl
         pl.figure(1)
         pl.imshow( H, interpolation='nearest',
                    origin='low',
-                   extent=( yedges[0], yedges[-1], zedges[0], zedges[-1] )
+                   extent=( yedges[0], yedges[-1], zedges[0], zedges[-1] ),
+                   aspect = 'auto',
                    )
         pl.plot( ay, az, "+")
         pl.show()
+    start = time.time()
+    for h in hits:
+        clusterpeaks( cf, h, dangle )
+    if __debug__:
+        print( "Time clustering",time.time()-start )
+            
 
+
+def clusterpeaks( cf, pks, dangle ):
+    """
+    Cases : 
+        1)  Identical peaks (tth, eta, omega) with different dty
+            ... sort by tth and then omega
+        x)  Friedel pairs (gve, -gve)
+            ... g1 + g2 == 0
+            ... is a special case of:
+        2)  Harmonics
+            ... g2 = 2*g1
+            ... |g2| / |g1| == integer and direction(g1)==direction(g2)
+    """
+    assert len(pks) > 1
+    ome = cf.omega[ pks ]
+    ome_order = np.argsort( ome )
+    # sorted_omega
+    somega = ome[ome_order]
+    # For the most part, we expect harmonics to be on different omega steps
+    # so this sorting ought to be enough to separate them
+    inds = np.take( pks, ome_order )
+    ds  = cf.ds[ inds]
+    eta = cf.eta[inds]
+    # now identify "equivalence" or "gaps" in omega
+    #  ... then identify if they are harmonics
+
+    # START HERE : what is the output from this process....
+    #    averaged_peak (sc, fc, etc)  ... identical peaks (dty), list of contributors
+    #    harmonics...     m=1, m=2 etc
+    #   
     
-
 def findpairs( cf, dangle, omestep, fac = 1.5 ):
     """
     cf = columnfile
@@ -422,9 +447,12 @@ if __name__=="__main__":
         main()
 
 
-
-
-
+        
+# dty merging
+# cd /data/id11/jon
+# python ~/ImageD11/sandbox/friedel.py ma3918/25um_z000.hdf ma3918/tin_fitted.par  300
+# 180 deg, larger (331611 peaks):
+# python  ~/ImageD11/sandbox/friedel.py 1702/fe3o4_diff_20170212_160236_/iflip_t500.flt 1702/fe3o4_diff_20170212_160236_/fe3o4.par 1000
 
 
 
