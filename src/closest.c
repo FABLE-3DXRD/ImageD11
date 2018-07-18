@@ -393,3 +393,35 @@ void put_incr(float data[], size_t ind[], float vals[], int boundscheck,
 	}
     }
 }
+
+
+void cluster1d( double ar[], int n, int order[], double tol, // IN
+		int *nclusters, int ids[], double avgs[]){   // OUT
+  int i, ncl;
+  double dv;
+  // order is the order of the peaks to get them sorted
+  avgs[0] = ar[order[0]];
+  ncl = 1;               // number in this cluster
+  ids[0] = 0;            // cluster assignments ( in order )
+  for( i=1 ; i<n; i++){
+    dv = ar[order[i]] - ar[order[i-1]];  // difference in values
+    if( dv > tol ){    // make a new cluster
+      if( ncl > 1 ) {  // make avg for the last one 
+	avgs[ ids[i-1] ] = avgs[ids[i-1]] / ncl;
+      }
+      ids[i] = ids[i-1] + 1;         // increment id
+      ncl = 1;                       // pks in this cluster
+      avgs[ ids[i] ] = ar[order[i]]; // store value for avg
+    } else { 
+      ids[i] = ids[i-1];             // copy last id
+      ncl = ncl + 1;
+      avgs[ids[i]] = avgs[ids[i]] + ar[order[i]];  // sum on for avg
+    }
+  } // end for(i ...
+  // make the last average if necessary
+  if( ncl > 1 ) { 
+    avgs[ ids[i-1] ] /= ncl;
+  }
+  *nclusters = ids[n-1]+1;
+}
+
