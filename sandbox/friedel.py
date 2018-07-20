@@ -1,6 +1,6 @@
 
 from __future__ import print_function, division
-from ImageD11 import columnfile, parameters, transform
+from ImageD11 import columnfile, parameters, transform, cImageD11
 
 import numpy as np
 import sys, time
@@ -21,18 +21,17 @@ class binned_array(object):
         cs = np.cumsum( self.bc )
         self.bin_inds = np.concatenate( ([0,], cs) )
         
-        
     def bin(self, x):
         """Assign x values into bins """
         return np.round( (x - self.low) / self.step ).astype( int )
         
-
 
 def absanglediff( a1 , a2 ):
     ra1 = np.radians( a1 )
     ra2 = np.radians( a2 )
     er = np.arctan2( np.sin( ra1 - ra2 ), np.cos( ra1 - ra2 ) )
     return abs(np.degrees( er ))
+
 
 def findpairs_2d( cf, dangle, omestep, fac = 1.5):
     """
@@ -50,18 +49,20 @@ def findpairs_2d( cf, dangle, omestep, fac = 1.5):
     dangle is the twotheta and eta precision
     omestep is the omega step
     """
-    # Normalise the g-vectors to direction cosines
-    nve = ( np.array((cf.gx, cf.gy, cf.gz)) / cf.ds )
-    # We cut on y > 0 (could equally be x... )
+    cf.sortby( "ds" ) # sort on mod_g for later peak groupings
+    #
+    # Normalise the g-vectors to give direction cosines
+    nve =  np.array((cf.gx, cf.gy, cf.gz)) / cf.ds 
+    # cut on y > 0 (could equally be x... )
     nve = np.where( nve[1] > 0, nve, -nve )
     # World map geometry ...
     #     angle to z-axis   n.z = |n||z|cos( latitude )
     az = np.degrees( np.arccos( nve[2] ) )
     #     angle to xy-axis  x/y = tan( longitude )
-    ay = np.degrees( np.arctan2( nve[0], nve[1]) )
+    ay = np.degrees( np.arctan2( nve[0], nve[1] ) )
     # Make bins reflect the estimated precision (not ideal for now)
     # ... guess latitude error is also eta error, make bins accordingly
-    nz = int( 180/(dangle*fac) )
+    nz = int( 180.0/(dangle*fac) )
     zstep = 180.0/nz
     zedges = np.arange( az.min() - zstep/2, az.max() + zstep, zstep )
     # ... and longitude errors is roughly omega error
@@ -85,7 +86,8 @@ def findpairs_2d( cf, dangle, omestep, fac = 1.5):
         assert (yHedges == yedges).all()
         #     v   - minbin
         # Find which bin the sqpots are in
-        assert (iz == np.digitize( az, zedges )-1).all(),(iz,np.digitize( az, zedges ))
+        assert (iz == np.digitize( az, zedges )-1).all(),(
+            iz,np.digitize( az, zedges ))
         assert (iy == np.digitize( ay, yedges )-1).all()
         # H is ordered as    H.shape[0]   H.shape[1]
         #print(H.shape   ,zedges.shape, yedges.shape )
@@ -125,6 +127,7 @@ def findpairs_2d( cf, dangle, omestep, fac = 1.5):
         assert len(np.unique(order)) == cf.nrows
         assert order.min() == 0
         assert order.max() == cf.nrows-1
+    start = time.time()
     allpointers = np.concatenate( ( [0,], pointers ) )
     pimage = np.reshape( pointers, H.shape )
     # Now the peaks are sorted according to which direction they have
@@ -137,34 +140,27 @@ def findpairs_2d( cf, dangle, omestep, fac = 1.5):
     for iiy, iiz in zip( iyimage[mask], izimage[mask] ) :
         # print("Pixel",iiy, iiz)
         # In the y direction we will wrap around
-        iys = (iiy-1)%NY , iiy, (iiy+1)%NY
-        # On the z direction we do not wrap as this is a pole (fable geometry)
-        if iiz > 0:
-            if iiz < H.shape[0]-2: # can do iz - 1
-                izs = iiz - 1, iiz, iiz + 1
-            else:
-                izs = iiz - 1, iiz
-        else:
-                izs =            iiz, iiz + 1
-        npk = 0
-        newhits = []
-        for this_z in izs:
-            for this_y in iys:
-                npk += H[this_z, this_y]
+        newhits = [] 
+        if iiz <= 1 or iiz > H.shape[0]-2: # skip edges
+            continue
+        for this_y in (iiy-1)%NY , iiy, (iiy+1)%NY:
+            # On the z direction we do not wrap as this is a pole
+            #  (fable geometry)
+            for this_z in  iiz - 1, iiz, iiz + 1: 
+                pkhere = H[this_z, this_y]
+                if pkhere == 0:
+                    continue
                 # location of these peaks is:
                 plo = allpointers[ this_z * NY + this_y ]
                 phi = allpointers[ this_z * NY + this_y + 1]
                 newhits += range(plo, phi )
-                continue
-            #                print(" ", this_z, this_y, H[this_z, this_y])
-            #               for k in range(plo, phi):
-            #                  print("    ",k,cf.ds[k], cf.omega[k], cf.eta[k], cf.gx[k], cf.gy[k], cf.gz[k] )
         if len(newhits)>1:
             hits.append(newhits)
-    print(len(hits))
+    print(len(hits), "hits, %.5f s"%(time.time()-start))
     if __debug__:
         # assert order is a permutation ...
-        assert len( np.unique(order)  ) == cf.nrows, (len( np.unique(order)  ), cf.nrows)
+        assert len( np.unique(order)  ) == cf.nrows, (
+            len( np.unique(order)  ), cf.nrows)
         assert order.min() == 0
         assert order.max() == cf.nrows-1
     if 0:
@@ -178,14 +174,49 @@ def findpairs_2d( cf, dangle, omestep, fac = 1.5):
         pl.plot( ay, az, "+")
         pl.show()
     start = time.time()
-    for h in hits:
-        clusterpeaks( cf, h, dangle )
+    #
+    # convert dangle error to error in ds
+    # ... Bragg :    w  = 2*d*sin(theta)     w = wvln, d=d-spacing
+    #                ds = 2*sin(theta)/w     theta = Bragg angle
+    #                                        ds = 1/d = dstar
+    #     d(ds)/d(theta) = 2*cos(theta)/w    since d(sin) = d
+    #     d(ds) = 2*cos(theta)*d(theta)/w
+    #     d(ds) = 2*cos(theta)*(d(2theta)/2)/w
+    #     d(ds) = cos(theta)*d(2theta)/w
+    # take cos(theta) == 1
+    w = cf.parameters.get('wavelength')
+    d_ds = np.radians(dangle) / w
+    print("Converting dangle",dangle, "degrees to",d_ds, "ds_tol")
+    for p,h in enumerate(hits):
+        clusterpeaks( cf, h, d_ds )
+        if p % 100 == 0:
+            print("%8d %.2f"%( p, 100*p/len(hits)) , end="\r" )
     if __debug__:
         print( "Time clustering",time.time()-start )
             
 
+def cluster1d( ar, tol ):
+    """
+    try to figure out what goes together
+    ar  = 1d array
+    tol = order of magnitude to say things are the same
 
-def clusterpeaks( cf, pks, dangle ):
+    returns array of cluster indices:
+       [ 0,0, 2,2, 5,5, 1, 2,2, 0,0] etc
+    """
+    idx = [[0,]]
+    for i,v in enumerate(ar[1:]):
+        new_item = True
+        for j in range(len(idx)):
+            if abs(v - ar[idx[j][0]]) < tol:
+                idx[j].append( i+1 )
+                new_item = False
+                break
+        if new_item:
+            idx.append([ i+1,] )
+    return idx
+    
+def clusterpeaks( cf, pks, d_ds ):
     """
     Cases : 
         1)  Identical peaks (tth, eta, omega) with different dty
@@ -198,104 +229,27 @@ def clusterpeaks( cf, pks, dangle ):
             ... |g2| / |g1| == integer and direction(g1)==direction(g2)
     """
     assert len(pks) > 1
-    ome = cf.omega[ pks ]
-    ome_order = np.argsort( ome )
-    # sorted_omega
-    somega = ome[ome_order]
-    # For the most part, we expect harmonics to be on different omega steps
-    # so this sorting ought to be enough to separate them
-    inds = np.take( pks, ome_order )
-    ds  = cf.ds[ inds]
-    eta = cf.eta[inds]
+    # better to sort on ds and start with the smallest first ?
+    ds    = cf.ds[  pks]
+    order = np.argsort( ds ).astype( np.intc )
+    ids = np.zeros( len(pks), np.intc )
+    avgs = np.zeros( len(pks), np.float )
+    nclusters = cImageD11.cluster1d( ds , order, d_ds, ids, avgs)
+    # print(ds)
+    # print( nclusters, ids, avgs )                        
+    if 0:
+        print("# npks",len(pks),end=" ")
+        print("nclusters:",nclusters)
+        print("Average d spacings",avgs[:nclusters])
+    
     # now identify "equivalence" or "gaps" in omega
     #  ... then identify if they are harmonics
 
+    
     # START HERE : what is the output from this process....
-    #    averaged_peak (sc, fc, etc)  ... identical peaks (dty), list of contributors
+    #    averaged_peak (sc, fc, etc)  ... identical peaks (dty),
+    #                                       list of contributors
     #    harmonics...     m=1, m=2 etc
-    #   
-    
-def findpairs( cf, dangle, omestep, fac = 1.5 ):
-    """
-    cf = columnfile
-    dangle = average angle error on detector (from sample size)
-    omestep = acceptable omega error
-    """
-    cf.sortby( 'ds' )
-    allinds = np.arange( cf.nrows, dtype=np.int )
-    paired = allinds < 0
-    allpairs = []
-    
-    dang = dangle * fac
-    dome = omestep * fac
-
-    omega = cf.omega * cf.parameters.get( "omegasign" ) 
-    
-    # Find eta/omega for friedel pairs, and self ?
-    gve = np.array( (cf.gx,cf.gy,cf.gz))
-    tth, (fe1, fe2), (fo1, fo2) = transform.uncompute_g_vectors(
-        -gve,
-        cf.parameters.get("wavelength"),
-        wedge = cf.parameters.get("wedge"),
-        chi   = cf.parameters.get("chi") )
-    tth, (se1, se2), (so1, so2) = transform.uncompute_g_vectors(
-        gve,
-        cf.parameters.get("wavelength"),
-        wedge = cf.parameters.get("wedge"),
-        chi   = cf.parameters.get("chi") )
-    
-    cf.sortby( "tth" )
-    # Outer loop on tth 
-    itth = binned_array( cf.tth, 1000 )
-
-    lo_tth_bin = np.clip( itth.bin( cf.tth - dang ) , 1, itth.nbins )
-    hi_tth_bin = np.clip( itth.bin( cf.tth + dang ) + 1, 0, itth.nbins )
-    for i in range(cf.nrows):
-        lc = itth.bin_inds[lo_tth_bin[i]]
-        hc = itth.bin_inds[hi_tth_bin[i]]
-        if (hc - lc) > 0:
-            # check against eta and omega
-            e = cf.eta[lc:hc]
-            o = omega[lc:hc]
-            m1 = (absanglediff( e, fe1[i]) < dang ) & \
-                 (absanglediff( o, fo1[i]) < dome )
-            m2 = (absanglediff( e, fe2[i]) < dang ) & \
-                 (absanglediff( o, fo2[i]) < dome )
-            s1 = (absanglediff( e, se1[i]) < dang ) & \
-                 (absanglediff( o, so1[i]) < dome )
-            s2 = (absanglediff( e, se2[i]) < dang ) & \
-                 (absanglediff( o, so2[i]) < dome )
-            #print(  (absanglediff( o, so1[i]) < dome) & (absanglediff( e, se1[i]) < dang ))
-            #print(  m1 | m2 | s1 | s2 )
-            pairs = allinds[lc:hc][ m1 | m2 | s1 | s2 ]
-            if len(pairs) < 1:
-                raise Exception("Missing self!")
-            if len(pairs) == 1:
-                continue
-                pass
-            print("#",i,lc,hc,hc - lc,len(pairs),list(pairs))
-            #print(cf.tth[lc],cf.tth[hc],cf.tth[i])
-            allpairs.append( tuple( [i,]+list(pairs) ) )
-            continue
-        
-            print("%-6d     % 9.4f % 7.2f % 7.2f %9d %9d"%(
-                i,cf.tth[i], cf.eta[i], cf.omega[i],
-                cf.sum_intensity[i], cf.IMax_int[i]),
-                  cf.s_raw[i], cf.f_raw[i])
-
-            for k in pairs:
-                print("    %-6d % 9.4f % 7.2f % 7.2f %9d %9d"%(
-                    k, cf.tth[k],cf.eta[k], cf.omega[k],
-                    cf.sum_intensity[k], cf.IMax_int[k]),
-                      cf.s_raw[k], cf.f_raw[k])
-                sol, _, _ = fitpair( cf, (i, k), cf.parameters )
-                origin, vec, w = fitpair( cf, (i, k), cf.parameters, sol0=sol )
-                print("          ( % 6.2f % 6.2f % 6.2f ) +/- ( % 6.2f % 6.2f % 6.2f )"%(
-                    origin[0], origin[1], origin[2],
-                    vec[0], vec[1], vec[2]), w )
-                # A pair is two peaks and has an origin and direction vector
-                
-            print()
 
 def unit(vec):
     return vec/np.sqrt(np.dot(vec,vec))
@@ -438,9 +392,6 @@ def main():
            "and sample size ",radius)
 
     findpairs_2d( colf, dangle, omegastep )
-    1/0
-    
-    findpairs( colf, dangle , omestep=omegastep )
 
 
 if __name__=="__main__":
