@@ -104,8 +104,11 @@ def doindex( gve, x, y, z, w, gridpars):
                 } )
             myindexer.loadpars( )
             myindexer.assigntorings( )
-            myindexer.find( )
-            myindexer.scorethem( )
+            try:
+                myindexer.find( )
+                myindexer.scorethem( )
+            except:
+                pass
     # filter out crap
     vol = 1/np.linalg.det( UC.B )
     grains = [ grain.grain(ubi, [x,y,z]) for ubi in myindexer.ubis
