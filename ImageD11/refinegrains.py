@@ -409,7 +409,7 @@ class refinegrains:
         if self.latticesymmetry is not triclinic:
             cp = xfab.tools.ubi_to_cell( mat )
             U  = xfab.tools.ubi_to_u( mat )
-            mat = xfab.tools.u_to_ubi( U, self.latticesymmetry( cp ) )
+            mat = xfab.tools.u_to_ubi( U, self.latticesymmetry( cp ) ).copy()
 
         # Second time updates the score with the new mat
         self.npks, self.avg_drlv2 = cImageD11.score_and_refine(mat, self.gv,
