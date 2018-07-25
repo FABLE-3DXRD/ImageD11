@@ -5,6 +5,7 @@ import os, sys, unittest, importlib
 sys.path.insert(0,".")
 
 modules = [
+    "test_sym_u",
     "test_cImageD11",
     "gv_general.test_gv_general",
     "testcolumnfile",

@@ -142,7 +142,7 @@ def rhombohedralP():
 
 def tetragonal():
     """ P4 75"""
-    return generate_group ( "-y,x,z", "-x,-y,z" )
+    return generate_group ( "-y,x,z", "-x,y,-z" )
     
 def orthorhombic():
     """ P222 16 """
@@ -158,7 +158,7 @@ def monoclinic_b():
     return generate_group("-x,y,-z" )
 
 def triclinic():
-    return generate_group("-x,-y,-z" )
+    return generate_group("x, y, z" )
 
 
 def find_uniq_u(u, grp, debug=0, func=np.trace):
