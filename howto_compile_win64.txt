@@ -34,4 +34,7 @@ pip install ImageD11-1.6.0-cp27-cp27m-win_amd64.whl
 Tested on Anaconda2 / win7 / amd64
 
 
-
+For MacOSX (in case you have problem with the gcc compiler version)
+If the gcc version is not compatible with the compiler arguments (error on the "-fopenmp -O2") when building, just do:
+export CC=gcc-XX, where XX is the version number of gcc
+and then build and install normally
