@@ -250,6 +250,17 @@ python module cImageD11
       end subroutine compute_xlylzl
    end interface
 
-
+   interface
+      subroutine cluster1d( ar, n, order, tol, nclusters, ids, avgs)
+         intent(c) cluster1d
+	 double precision, intent(c, in) :: ar(n)
+	 integer, intent(c, hide), depend( ar ) :: n
+	 integer, intent(c, in) :: order(n)
+	 double precision, intent(c, in) :: tol
+	 integer, intent(out) :: nclusters
+	 integer, intent(c,inout) :: ids(n)
+	 double precision, intent(c, inout) :: avgs(n)
+      end subroutine cluster1d
+   end interface
 
 end python module cImageD11

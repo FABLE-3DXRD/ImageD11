@@ -158,15 +158,15 @@ class labelimage:
         # threshold = float - pixels above this number are put into objects
         """
         self.threshold = threshold
-        self.npk = cImageD11.connectedpixels(data,
-                                                  self.blim,
-                                                  threshold,
-                                                  self.verbose)
+        self.npk = cImageD11.connectedpixels(data.astype(np.float32),
+                                             self.blim,
+                                             threshold,
+                                             self.verbose)
         if self.npk > 0:
-            self.res = cImageD11.blobproperties(data,
-                                                      self.blim,
-                                                      self.npk,
-                                                      omega=omega)
+            self.res = cImageD11.blobproperties(data.astype(np.float32),
+                                                self.blim,
+                                                self.npk,
+                                                omega=omega)
         else:
             # What to do?
             self.res = None

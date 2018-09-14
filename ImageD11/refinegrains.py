@@ -36,13 +36,13 @@ def triclinic( cp ):
     return cp
 
 def monoclinic_a( cp ):
-    a,b,c,al,be,ga
+    a,b,c,al,be,ga = cp
     return [a,b,c,90.,be,90.]
 def monoclinic_b( cp ):
-    a,b,c,al,be,ga
+    a,b,c,al,be,ga = cp
     return [a,b,c,90.,90.,ga]
 def monoclinic_c( cp ):
-    a,b,c,al,be,ga
+    a,b,c,al,be,ga = cp
     return [a,b,c,90.,be,90.]
 
 def orthorhombic( cp ):
@@ -64,12 +64,11 @@ def trigonalP( cp ):
 
 def trigonalH( cp ):
     """ a=b,c, alpha=beta=90,gamma=120 """
-    a = (cp[0]+cp[1])
-    return [ a, a, cp[2], 90., 90., 120.] 
+    a,b,c,al,be,ga = cp
+    a = (a+b)/2.
+    return [ a, a, c, 90., 90., 120.] 
 
 hexagonal = trigonalH
-
-    
 
 def cubic( cp ):
     """ a=b=c, alpha=beta=gamma=90 """
@@ -410,7 +409,7 @@ class refinegrains:
         if self.latticesymmetry is not triclinic:
             cp = xfab.tools.ubi_to_cell( mat )
             U  = xfab.tools.ubi_to_u( mat )
-            mat = xfab.tools.u_to_ubi( U, self.latticesymmetry( cp ) )
+            mat = xfab.tools.u_to_ubi( U, self.latticesymmetry( cp ) ).copy()
 
         # Second time updates the score with the new mat
         self.npks, self.avg_drlv2 = cImageD11.score_and_refine(mat, self.gv,

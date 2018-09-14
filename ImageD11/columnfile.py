@@ -29,9 +29,8 @@ An equals sign "=" on a "#" line implies a parameter = value pair
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  0211-1307  USA
 
 
-from ImageD11 import parameters
-
-import numpy
+from ImageD11 import parameters, transform
+import numpy as np
 
 FLOATS = [
     "fc",
@@ -156,16 +155,32 @@ class columnfile:
         """
         col = self.getcolumn( column_name )
         if tol <= 0: # integer comparisons
-            col = col.astype( numpy.int )
+            col = col.astype( np.int )
             mskfun = lambda x, val, t: x == val
         else:        # floating point
-            mskfun = lambda x, val, t: numpy.abs( x - val ) < t 
+            mskfun = lambda x, val, t: np.abs( x - val ) < t 
         mask  = mskfun( col, values[0], tol )
         for val in values[1:]:
-            numpy.logical_or( mskfun( col, val, tol ), mask, mask)
+            np.logical_or( mskfun( col, val, tol ), mask, mask)
         self.filter( ~mask )
 
 
+    def sortby( self, name ):
+        """
+        Sort arrays according to column named "name"
+        """
+        col = self.getcolumn( name )
+        order = np.argsort( col )
+        self.reorder( order )
+        
+    def reorder( self, indices ):
+        """
+        Put array into the order given by indices
+        ... normally indices would come from np.argsort of something
+        """
+        self.bigarray = self.bigarray[:, indices]
+        self.set_attributes()
+        
     def writefile(self, filename):
         """
         write an ascii columned file
@@ -203,20 +218,16 @@ class columnfile:
         self.ncols = 0
         self.nrows = 0
         i = 0
-        try:
-            # Check if this is a hdf file: magic number
-            magic = open(filename,"rb").read(4)
-        except:
-            raise Exception("Cannot open %s for reading"%(filename))
+        # Check if this is a hdf file: magic number
+        with open(filename,"rb") as f:
+            magic = f.read(4)
         #              1 2 3 4 bytes
-        if magic == '\x89HDF':
+        if magic == b'\x89HDF':
             print("Reading your columnfile in hdf format")
             colfile_from_hdf( filename, obj = self )
             return
-        try:
-            raw = open(filename,"r").readlines()
-        except:
-            raise Exception("Cannot open %s for reading"%(filename))
+        with open(filename,"r") as f:
+            raw = f.readlines()
         header = True
         while header and i < len(raw):
              if len(raw[i].lstrip())==0:
@@ -236,49 +247,21 @@ class columnfile:
              else:
                  header = False
         try:
-            cc = [numpy.fromstring(v,sep=' ') for v in raw[i:]]
-            self.bigarray = numpy.array(cc).transpose()
+            row0 = [ float( v ) for v in raw[i].split() ]
+            lastrow = [ float( v ) for v in raw[-1].split() ]
+            if len(row0) == len(lastrow ):
+                nrows = len(raw)-i
+                last = None
+            else:
+                nrows = len(raw)-i-1 # skip the last row
+                last = -1
+            self.bigarray = np.zeros( ( len(row0), nrows ), np.float )
+            for i,line in enumerate(raw[i:last]):
+                self.bigarray[:,i] = [ float( v ) for v in line.split() ]
         except:
-            raise Exception("Non numeric data on all lines\n")
+            raise Exception("Problem interpreting your colfile")
         (self.ncols, self.nrows) = self.bigarray.shape
-
-#         data = []
-#         try:
-#             fileobj = open(filename,"r").readlines()
-#         except:
-#             raise Exception("Cannot open %s for reading"%(filename))
-#         for line in fileobj:
-#             i += 1
-#             if len(line.lstrip())==0:
-#                 # skip blank lines
-#                 continue
-#             if line[0] == "#":
-#                 # title line
-#                 if line.find("=") > -1:
-#                     # key = value line
-#                     name, value = clean(line[1:].split("="))
-#                     self.parameters.addpar(
-#                         parameters.par( name, value ) )
-#                 else:
-#                     self.titles = clean(line[1:].split())
-#                     self.ncols = len(self.titles)
-#                 continue
-#             # Assume a data line
-#             try:
-#                 vals = [ float(v) for v in line.split() ]
-#             except:
-#                 raise Exception("Non numeric data on line\n"+line)
-#             if len(vals) != self.ncols:
-#                 raise Exception("Badly formatted column file\n"\
-#                                     "expecting %d columns, got %d\n"\
-#                                     " line %d in file %s"%
-#                                 (self.ncols, len(vals),
-#                                  i, self.filename))
-#             self.nrows += 1
-#             data.append(vals)
-#         self.bigarray = numpy.transpose(numpy.array(data))
-#         if self.nrows > 0:
-#             assert self.bigarray.shape == (self.ncols, self.nrows)
+        self.parameters.dumbtypecheck()
         self.set_attributes()
 
     def set_attributes(self):
@@ -286,7 +269,8 @@ class columnfile:
         Set object vars to point into the big array
         """
         if self.nrows == 0:
-            # use empty arrays for now... not sure why this was avoided in the past?
+            # use empty arrays for now...
+            # not sure why this was avoided in the past?
             pass
             #return
         for i, title in enumerate(self.titles):
@@ -300,9 +284,9 @@ class columnfile:
         self.chkarray()
         if len(mask) != self.nrows:
             raise Exception("Mask is the wrong size")
-        self.nrows = int(numpy.sum(
-            numpy.compress(mask, numpy.ones(len(mask)))))
-        self.bigarray = numpy.compress(mask, self.bigarray, axis = 1)
+        self.nrows = int(np.sum(
+            np.compress(mask, np.ones(len(mask)))))
+        self.bigarray = np.compress(mask, self.bigarray, axis = 1)
         assert self.bigarray.shape == (self.ncols, self.nrows)
         self.set_attributes()
  
@@ -340,11 +324,14 @@ class columnfile:
             setattr(self, name,             
                     self.bigarray[self.titles.index(name)] )
         else:
+            assert self.bigarray.shape == (self.ncols, self.nrows)
             self.titles.append(name)
-            self.ncols += 1
-            lis = list(self.bigarray)
-            lis.append(col)
-            self.bigarray = numpy.array( lis )
+            data = np.asanyarray( col )
+            assert  data.shape[0] == self.nrows 
+            self.ncols += 1            
+            self.bigarray = np.append( self.bigarray,
+                                       data[np.newaxis,:],
+                                       axis=0)
             assert self.bigarray.shape == (self.ncols, self.nrows)
             self.set_attributes()
 
@@ -358,7 +345,55 @@ class columnfile:
         if name in self.titles:
             return self.bigarray[self.titles.index(name)]
         raise Exception("Name "+name+" not in file")
-    
+
+    def setparameters( self, pars ):
+        """
+        update the parameters
+        """
+        self.parameters = pars
+        self.parameters.dumbtypecheck()
+        
+    def updateGeometry(self, pars=None ):
+        """
+        changing or not the parameters it (re)-computes:
+           xl,yl,zl = ImageD11.transform.compute_xyz_lab
+           tth, eta = ImageD11.transform.compute_tth_eta
+           gx,gy,gz = ImageD11.transform.compute_g_vectors
+        """
+        if pars is not None:
+            self.setparameters( pars )
+        pars = self.parameters
+        if "sc" in self.titles:
+            pks = self.sc, self.fc
+        elif "xc" in self.titles: 
+            pks = self.xc, self.yc
+        else:
+            raise Exception("columnfile file misses xc or sc")
+        xl,yl,zl = transform.compute_xyz_lab( pks,
+                                          **pars.parameters)
+        peaks_xyz = np.array((xl,yl,zl))
+        om = self.omega *  float( pars.get("omegasign") )
+        tth, eta = transform.compute_tth_eta_from_xyz(
+            peaks_xyz, om,
+            **pars.parameters)
+        gx, gy, gz = transform.compute_g_vectors(
+            tth, eta, om,
+            wvln  = pars.get("wavelength"),
+            wedge = pars.get("wedge"),
+            chi   = pars.get("chi") )
+        modg =  np.sqrt( gx * gx + gy * gy + gz * gz )
+        self.addcolumn(xl,"xl")
+        self.addcolumn(yl,"yl")
+        self.addcolumn(zl,"zl")
+        self.addcolumn(tth, "tth", )
+        self.addcolumn(eta, "eta", )
+        self.addcolumn(gx, "gx")
+        self.addcolumn(gy, "gy")
+        self.addcolumn(gz, "gz")
+        self.addcolumn(modg, "ds") # dstar
+
+
+            
 class newcolumnfile(columnfile):
     """ Just like a columnfile, but for creating new
     files """
@@ -396,9 +431,9 @@ try:
         g.attrs['ImageD11_type'] = 'peaks'
         for t in c.titles:
             if t in INTS:
-                ty = numpy.int32
+                ty = np.int32
             else:
-                ty = numpy.float32
+                ty = np.float32
             # print "adding",t,ty
             dat = getattr(c, t).astype( ty )
             if t in list(g.keys()):
@@ -426,9 +461,9 @@ try:
         g.attrs['ImageD11_type'] = 'peaks'
         for t in c.titles:
             if t in INTS:
-                ty = numpy.int32
+                ty = np.int32
             else:
-                ty = numpy.float32
+                ty = np.float32
             g.create_dataset( t, data = getattr(c, t).astype( ty ) )
         h.close()
 
@@ -480,7 +515,7 @@ try:
             col = obj
         col.titles = newtitles
         dat = g[newtitles[0]][:]
-        col.bigarray = numpy.zeros( (len(newtitles), len(dat) ), numpy.float32)
+        col.bigarray = np.zeros( (len(newtitles), len(dat) ), np.float32)
         col.bigarray[0] = dat
         col.ncols = len(newtitles)
         col.nrows = len(dat)
@@ -507,7 +542,7 @@ except ImportError:
 def bench():
     """
     Compares the timing for reading with columfile
-    versus numpy.loadtxt
+    versus np.loadtxt
     """
     import sys, time
     start = time.time()
@@ -515,9 +550,9 @@ def bench():
     print(colf.bigarray.shape)
     print("ImageD11", time.time() - start)
     start = time.time()
-    nolf = numpy.loadtxt(sys.argv[1])
+    nolf = np.loadtxt(sys.argv[1])
     print(nolf.shape)
-    print("numpy", time.time() - start)
+    print("np", time.time() - start)
     
     # os.system("time -p ./a.out")
 

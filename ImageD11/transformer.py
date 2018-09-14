@@ -428,8 +428,10 @@ class transformer:
         if 'cell_sg' in pars:
             self.theorypeaks = self.unitcell.gethkls_xfab(ds, pars['cell_sg'])
             tths = []
+            self.theoryds = []
             for i in range(len(self.theorypeaks)):
                 tths.append(2 * numpy.arcsin(w * self.theorypeaks[i][0] / 2.))
+                self.theoryds.append( self.theorypeaks[i][0] )
         else:
             # HO:  I have removed this part as it seems redundant ringds also calls gethkls 
             # JPW: It was not redundant. theorypeaks is not defined anywhere else and you 
