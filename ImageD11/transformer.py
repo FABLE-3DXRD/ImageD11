@@ -481,11 +481,10 @@ class transformer:
     def savegv(self, filename):
         """
         Save g-vectors into a file
-        Use crappy .ass format from previous for now (testing)
+        Use crappy .ascii format from previous for now (testing)
         """
         #        self.parameterobj.update_other(self)
-        if "gz" not in self.colfile.titles:
-            self.computegv()
+        self.colfile.updateGeometry( self.parameterobj )
         if self.unitcell is None:
             self.addcellpeaks()
         f = open(filename, "w")
@@ -504,9 +503,9 @@ class transformer:
         f.write("# ds h k l\n")
         for peak in self.theorypeaks:
             f.write("%10.7f %4d %4d %4d\n" % (peak[0],
-                                            peak[1][0],
-                                            peak[1][1],
-                                            peak[1][2]))
+                                              peak[1][0],
+                                              peak[1][1],
+                                              peak[1][2]))
         tth = self.getcolumn("tth")
         ome = self.getcolumn("omega")
         eta = self.getcolumn("eta")
