@@ -19,7 +19,7 @@ pixel (f,s,omega)
 
 
 from ImageD11 import  transformer
-from ImageD11.columnfile import newcolumnfile
+from ImageD11.columnfile import newcolumnfile, columnfile
 import numpy
 import sys, time
 
@@ -54,6 +54,8 @@ allpks = open(outf,"w")
 allpeaks = {}
 always_ignore = {}
 
+goodthres = []
+
 for v in thres:
 
     mytransformer = transformer.transformer()
@@ -61,6 +63,15 @@ for v in thres:
     
     flt = "%s_t%d.flt"%(stem,v)
     print(flt, end=' ')
+    try:
+        tc = columnfile( flt )
+        if tc.nrows == 0:
+            print("Skipped",tc," no peaks")
+            continue
+    except:
+        print("Skipped",v," Exception reading",flt)
+        continue
+    goodthres.append( v )
     mytransformer.loadfiltered( flt )
     mytransformer.compute_tth_eta( )
     mytransformer.addcellpeaks( )
@@ -86,7 +97,7 @@ for v in thres:
             continue
         
         if key in allpeaks:
-            if v is thres[0]:
+            if v is goodthres[0]:
                 print(key)
                 print("duplicate")
                 #raise
