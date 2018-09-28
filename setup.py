@@ -1,6 +1,6 @@
 
 # ImageD11_v1.0 Software for beamline ID11
-# Copyright (C) 2005-2007  Jon Wright
+# Copyright (C) 2005-2018  Jon Wright
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -82,7 +82,7 @@ needed =[]#
 
 # See the distutils docs...
 setup(name='ImageD11',
-      version='1.8.0',
+      version='1.9.0',
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',
