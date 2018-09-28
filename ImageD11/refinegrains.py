@@ -329,15 +329,6 @@ class refinegrains:
                                 float(self.parameterobj.parameters['wavelength']),
                                 self.parameterobj.parameters['wedge'],
                                 self.parameterobj.parameters['chi'])
-        # update tth_per_grain and eta_per_grain
-        if update_columns:
-            name = thisgrain.name.split(":")[1]
-            numpy.put( self.scandata[name].tth_per_grain,
-                    thisgrain.ind,
-                    self.tth)
-            numpy.put( self.scandata[name].eta_per_grain ,
-                    thisgrain.ind,
-                    self.eta)
 
         if self.OMEGA_FLOAT:
             mat = thisgrain.ubi.copy()
@@ -372,7 +363,7 @@ class refinegrains:
             # print omerr[0:5]
             omega_calc = om*sign - numpy.clip( omerr, -self.slop , self.slop )
             # print omega_calc[0], om[0]
-
+            thisgrain.omega_calc = omega_calc
 
             # Now recompute with improved omegas... (tth, eta do not change much)
             #self.tth, self.eta = transform.compute_tth_eta(
@@ -388,10 +379,26 @@ class refinegrains:
                         self.parameterobj.parameters['wedge'],
                         self.parameterobj.parameters['chi'])
    
+        else:
+            thisgrain.omega_calc[:]=0
 
-        self.gv = numpy.ascontiguousarray(gv.T)
+        # update tth_per_grain and eta_per_grain
+        if update_columns:
+            name = thisgrain.name.split(":")[1]
+            numpy.put( self.scandata[name].tth_per_grain,
+                       thisgrain.ind,
+                       self.tth)
+            numpy.put( self.scandata[name].eta_per_grain ,
+                       thisgrain.ind,
+                       self.eta)
+            if self.OMEGA_FLOAT:
+                numpy.put( self.scandata[name].omegacalc_per_grain ,
+                           thisgrain.ind,
+                           omega_calc)
 
-            
+
+
+        self.gv = numpy.ascontiguousarray(gv.T)            
         return
 
 
@@ -634,6 +641,7 @@ class refinegrains:
             nr = self.scandata[s].nrows
             sc = self.scandata[s].sc
             fc = self.scandata[s].fc
+            om = self.scandata[s].omega
             # Looks like this in one dataset only
             ng = len(self.grainnames)
             int_tmp = numpy.zeros(nr , numpy.int32 )-1
@@ -658,6 +666,7 @@ class refinegrains:
                 self.set_translation( g, s)
                 gr.peaks_xyz = peaks_xyz
                 gr.om = self.scandata[s].omega
+                gr.omega_calc=self.scandata[s].omega*0 
                 cImageD11.compute_gv( peaks_xyz,
                     self.scandata[s].omega,
                     omegasign,
@@ -707,6 +716,7 @@ class refinegrains:
 
             self.scandata[s].addcolumn( tth, "tth_per_grain" )
             self.scandata[s].addcolumn( eta, "eta_per_grain" )
+            self.scandata[s].addcolumn( om*0, "omegacalc_per_grain" )
             self.scandata[s].addcolumn( self.gv[:,0], "gx")
             self.scandata[s].addcolumn( self.gv[:,1], "gy")
             self.scandata[s].addcolumn( self.gv[:,2], "gz")
@@ -748,6 +758,7 @@ class refinegrains:
 
                 self.scandata[s].tth_per_grain[ind] = tth
                 self.scandata[s].eta_per_grain[ind] = eta
+#                self.scandata[s].omegacalc_per_grain[ind] = gr.omega_calc
                 self.grains[ ( g, s) ] = gr
                 if not quiet:
                 	print("Grain",g,"Scan",s,"npks=",len(ind))
