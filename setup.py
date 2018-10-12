@@ -82,7 +82,7 @@ needed =[]#
 
 # See the distutils docs...
 setup(name='ImageD11',
-      version='1.9.0',
+      version='1.9.0-beta',
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',
