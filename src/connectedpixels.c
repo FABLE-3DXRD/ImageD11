@@ -2,7 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "blobs.h"		/* INTEGER */
+
+#include "blobs.h"		/* Disjoint sets thing for blob finding */
+
 
 void boundscheck(int jpk, int n2, int ipk, int n1)
 {
@@ -36,28 +38,13 @@ void boundscheck(int jpk, int n2, int ipk, int n1)
 
 */
 
-/* Updated to use f2py to generate bindings, 2017 */
-
-static char moduledocs[] =
-    "   C extensions for image analysis, part of ImageD11\n" "   ";
-
-#include "blobs.h"		/* Disjoint sets thing for blob finding */
 
 /* ==== connectedpixels ======================================== */
 
-static char connectedpixels_doc[] =
-    "   nblobs = connectedpixels ( data=Numeric.array(data, 2D)  , \n"
-    "                              labels=Numeric.array(blob, 2D, Int)  ,\n"
-    "                              threshold=float threshold ,\n"
-    "                              verbose=Int verbose )\n"
-    "   data is normally an image \n"
-    "   blob is an array to receive pixel -> blob assignments\n"
-    "   threshold is the value above which a pixel is considered to be in a blob\n"
-    "   verbose flags printing on stdout";
 
 /* Fill in an image of peak assignments for pixels */
-
-void match(INTEGER * new, INTEGER * old, INTEGER * S)
+DLL_LOCAL
+void match(int32_t * new, int32_t * old, int32_t * S)
 {
     /* printf("match %d %d\n",*new,*old); */
     if (*new == 0) {
@@ -69,12 +56,15 @@ void match(INTEGER * new, INTEGER * old, INTEGER * S)
     }
 }
 
-int connectedpixels(float *data, INTEGER * labels, float threshold, int verbose,
+// Exported function is in the C wrapper, not here!
+DLL_LOCAL
+int connectedpixels(float *data, int32_t * labels,
+		    float threshold, int verbose,
 		    int eightconnected, int ns, int nf)
 {
 
     int i, j, irp, ir, ipx;
-    INTEGER k, *S, *T, np;
+    int32_t k, *S, *T, np;
 
     if (verbose) {
 	printf("Welcome to connectedpixels ");
@@ -198,30 +188,21 @@ int connectedpixels(float *data, INTEGER * labels, float threshold, int verbose,
     return np;
 }
 
-static char blobproperties_doc[] =
-    "res = blobproperties ( Numeric.array(data, 2D)  , \n"
-    "                          Numeric.array(blob, 2D, Int)  ,\n"
-    "                          Int np , \n"
-    "                          Int verbose )\n"
-    "\n"
-    "   Computes various properties of a blob image "
-    "           (created by connectedpixels)\n"
-    "   data  = image data \n"
-    "   blob  = integer peak assignments from connectedpixels \n"
-    "   np    = number of peaks to treat \n"
-    "   verbose  - flag about whether to print\n" "  \n";
 
-void blobproperties(float *data, INTEGER * labels, INTEGER np, float omega,
+
+// Exported function is in the C wrapper, not here!
+DLL_LOCAL
+void blobproperties(float *data, int32_t * labels, int32_t npk, float omega,
 		    int verbose, int ns, int nf, double *res)
 {
     int i, j, bad, ipx;
     double fval;
-    INTEGER ipk;
+    int32_t ipk;
     if (verbose) {
-	printf("Computing blob moments, ns %d, nf %d, np %d\n", ns, nf, np);
+	printf("Computing blob moments, ns %d, nf %d, npk %d\n", ns, nf, npk);
     }
     /* Initialise the results */
-    for (i = 0; i < np; i++) {
+    for (i = 0; i < npk; i++) {
 	for (j = 0; j < NPROPERTY; j++) {
 	    res[i * NPROPERTY + j] = 0.;
 	}
@@ -243,7 +224,7 @@ void blobproperties(float *data, INTEGER * labels, INTEGER np, float omega,
 	for (j = 0; j < nf; j++) {
 	    ipx = i * nf + j;
 	    ipk = labels[ipx];
-	    if (ipk > 0 && ipk <= np) {
+	    if (ipk > 0 && ipk <= npk) {
 		fval = (double)data[ipx];
 		add_pixel(&res[NPROPERTY * (ipk - 1)], i, j, fval, omega);
 	    } else {
@@ -262,23 +243,14 @@ void blobproperties(float *data, INTEGER * labels, INTEGER np, float omega,
     }
 }
 
-static char bloboverlaps_doc[] =
-    "   success = bloboverlaps (   Numeric.array(blob1, 2D, Int), n1  , res1 \n"
-    "                              Numeric.array(blob2, 2D, Int), n2  , res2,\n"
-    "                               verbose=0) \n"
-    " \n"
-    " merges the results from blob1/res1 into blob2/res2\n"
-    " blob1 would be the previous image from the series, with its results\n"
-    "   if it does not overlap it will stay untouched in res\n"
-    "   if it overlaps with next image it is passed into that ones res\n";
 
-int bloboverlaps(INTEGER * b1, INTEGER n1, double *res1,
-		 INTEGER * b2, INTEGER n2, double *res2,
+int bloboverlaps(int32_t * b1, int32_t n1, double *res1,
+		 int32_t * b2, int32_t n2, double *res2,
 		 int verbose, int ns, int nf)
 {
 
     int i, j, safelyneed, ipx;
-    INTEGER *link, p1, p2, ipk, jpk, npk, *T;
+    int32_t *link, p1, p2, ipk, jpk, npk, *T;
 
     /* Initialise a disjoint set in link 
      * image 2 has peak[i]=i ; i=1->n2
@@ -292,7 +264,7 @@ int bloboverlaps(INTEGER * b1, INTEGER n1, double *res1,
     if (verbose)
 	printf("Enter bloboverlaps\n");
     safelyneed = n1 + n2 + 3;
-    link = (int *)malloc(safelyneed * sizeof(INTEGER));
+    link = (int *)malloc(safelyneed * sizeof(int32_t));
     link[0] = safelyneed;
     for (i = 1; i < safelyneed; i++) {
 	link[i] = i;
@@ -361,7 +333,7 @@ int bloboverlaps(INTEGER * b1, INTEGER n1, double *res1,
     /* Make each T[i] contain the unique ascending integer for the set */
     if (verbose)
 	printf("Compress set\n");
-    T = (int *)(malloc((n2 + 3) * sizeof(INTEGER)));
+    T = (int *)(malloc((n2 + 3) * sizeof(int32_t)));
     assert(T != NULL);
 
     npk = 0;
@@ -428,9 +400,7 @@ int bloboverlaps(INTEGER * b1, INTEGER n1, double *res1,
     return npk;
 }
 
-static char blob_moments_doc[] =
-    "   None = blob_moments(Numeric.array(peaks1))\n"
-    "   \n" "   Loop over array filling out moments from sums\n";
+
 
 void blob_moments(double *res, int np)
 {
