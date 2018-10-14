@@ -22,6 +22,7 @@ typedef double vec[3];
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+inline
 int conv_double_to_int_fast(double);
 
 int conv_double_to_int_safe(double);
@@ -82,6 +83,8 @@ typedef union {
     double d;
 } a_union;
 
+
+inline
 int conv_double_to_int_fast(double x)
 {
     /*return conv_double_to_int_safe(x); */
@@ -152,7 +155,7 @@ int score(vec ubi[3], vec gv[], double tol, int ng)
 void score_and_refine(vec ubi[3], vec gv[], double tol,
 		      int *n_arg, double *sumdrlv2_arg, int ng)
 {
-
+  /* ng = number of g vectors */
     double h0, h1, h2, t0, t1, t2;
     double sumsq, tolsq, sumdrlv2;
     double R[3][3], H[3][3], UB[3][3];
@@ -230,8 +233,8 @@ void score_and_refine(vec ubi[3], vec gv[], double tol,
     *sumdrlv2_arg = sumdrlv2;
 }
 
-int score_and_assign(vec * __restrict ubi, vec * __restrict gv, double tol,
-		     double *__restrict drlv2, int *__restrict labels,
+int score_and_assign(vec * restrict ubi, vec * restrict gv, double tol,
+		     double * restrict drlv2, int * restrict labels,
 		     int label, int ng)
 {
 
