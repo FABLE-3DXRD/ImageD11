@@ -17,11 +17,14 @@ modules = [
     "testcolfile2db.testcolfile2db",
     "testconnectedpixels.testconnectedpixels",
     "testlabelimage.testlabelimage",
-    "peaksearchtiftest.make_test_data",
-    "index_demos.generate_gv",
-    "test_index_unknown.test_index_unknown",
-]
+    "peaksearchtiftest.make_test_data"]
 
+if "all" in sys.argv:
+    modules += ["index_demos.generate_gv",
+                "test_index_unknown.test_index_unknown",
+    ]
+else:
+    print ("Add \"all\" to command line to run all tests")
 HERE = os.getcwd()
 print( "HERE",HERE )
 
