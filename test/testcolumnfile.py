@@ -119,7 +119,11 @@ class test1( unittest.TestCase ):
         assert( list(c.a)  == [ 7, 5, 4, 6, 1] )
 
     def testmissingfile(self):
-        with self.assertRaises( (IOError, FileNotFoundError) ):
+        try:
+            e = FileNotFoundError
+        except:
+            e = IOError
+        with self.assertRaises( (IOError, e) ):
             columnfile.columnfile( "a_filename_that_does_not_exist.flt") 
         
 if __name__ == '__main__':
