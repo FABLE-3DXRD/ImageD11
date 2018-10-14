@@ -802,12 +802,20 @@ class indexer:
         """
         if tol == None:
             tol = self.hkl_tol
-        ng = len(self.gv)
+        ng = len(self.gvflat)
         drlv2 = np.ones( ng , np.float)
         labels = np.full( ng , 0, np.int32)
         # we only use peaks assigned to rings for scoring here
-        drlv2 = np.where( self.ra == -1, 0, tol + 1)
-        npk = cImageD11.score_and_assign( UBI, self.gvflat, tol, drlv2, labels, 1 )
+        # already done in making gvflat in assigntorings
+        try:
+           npk = cImageD11.score_and_assign( UBI, self.gvflat, tol, drlv2, labels, 1 )
+        except:
+           print(self.gvflat.shape)
+           print('ra',self.ra.shape)
+           print(drlv2.shape)
+           print(labels.shape)
+           print("logic error in getind")
+           raise
         ind = np.compress( labels , np.arange(ng,dtype=np.int) )
         return ind
 
@@ -983,20 +991,7 @@ class indexer:
         self.allgv = self.gv.copy()
         self.ga=np.zeros(len(self.ds),np.int32)-1 # Grain assignments
 
-        self.gvflat=np.ascontiguousarray(self.gv,'d') # Makes it contiguous in memory, hkl fast index
+        self.gvflat=np.ascontiguousarray(self.gv,np.float)
+        # Makes it contiguous in memory, hkl fast index
         if not quiet:
             print("Read your gv file containing",self.gv.shape)
-#      if self.wavelength>0:
-#         print "First ten peaks"
-#         from ImageD11 import transform
-#         import math
-#         if self.gv.shape[0]>10:
-#            all=10
-#         else:
-#            all=self.gv.shape[0]
-#         to,eo,oo=transform.uncompute_g_vectors(transpose(self.gv)[:all,:],self.wavelength)
-#         print "Peak tth_calc tth_gv_obs eta_obs eta_gv_obs_1 eta_gv_obs_1 omega_obs omega_gv_obs omega_gv_obs"
-#         for i in range(all):
-#            tc=math.asin(self.ds[i]*self.wavelength/2)*360/math.pi
-#            print i,tc,to[i],self.eta[i],eo[0][i],eo[1][i],self.omega[i],oo[0][i],oo[1][i]
-#         print  "...."
