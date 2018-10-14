@@ -7,6 +7,7 @@ sys.path.insert(0,".")
 modules = [
     "test_sym_u",
     "testcol",
+    "test_localmaxlabel",
     "test_cImageD11",
     "gv_general.test_gv_general",
     "testcolumnfile",
@@ -17,6 +18,7 @@ modules = [
     "test_transform",
     "twinprob.test_twin",
     "testcolfile2db.testcolfile2db",
+    "ken_simul.testken",
     "testconnectedpixels.testconnectedpixels",
     "testlabelimage.testlabelimage",
 
