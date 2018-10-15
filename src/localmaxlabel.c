@@ -52,7 +52,7 @@ int localmaxlabel( const float* restrict im, // input
     l[dim1*(dim0-1)+i]=0;
   }
 #ifdef __SSE2__
-    one = _mm_set1_epi32(1);
+
 #pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq)
 #else
 #pragma omp parallel for private( j, p, iq, k, mx )
@@ -61,6 +61,7 @@ int localmaxlabel( const float* restrict im, // input
     lout[i]=0;     // set edges to zero: pixel j=0:
     l[i]=0;
 #ifdef __SSE2__
+    one = _mm_set1_epi32(1);
     for( j=1; j<dim1-1-4; j=j+4){ // do 4 pixels at a time with sse2
       p = i + j;
       mxp = _mm_loadu_ps(&im[p+o[0]]); // load 4 floats
