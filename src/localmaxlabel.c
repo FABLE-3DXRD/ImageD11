@@ -10,7 +10,16 @@
 #ifdef __SSE2__
 #include <x86intrin.h>
 #else
-#warning "No SSE2 instructions for lmw!"
+ #ifdef _MSC_VER
+ #pragma message ("no sse2")
+ #else
+ #warning "no sse2"
+ #endif
+#endif
+
+
+#ifdef _MSC_VER
+#define restrict __restrict
 #endif
 
 int localmaxlabel( const float* restrict im, // input
@@ -20,6 +29,7 @@ int localmaxlabel( const float* restrict im, // input
 		   int dim1){
   // Using c99 to move private variables into parallel sections
   // ...so most things are declared where needed
+  int  i; // msvc requires openmp loop variable declared outside section
   int  o[9]={ -1-dim1, -dim1, +1-dim1,  // 0,1,2
 	      -1     ,     0,      +1,  // 3,4,5
 	      -1+dim1, +dim1, +1+dim1 };// 6,7,8
@@ -35,7 +45,7 @@ int localmaxlabel( const float* restrict im, // input
   __m128i one = _mm_set1_epi32(1);
 #endif
 #pragma omp parallel for 
-  for( int i=dim1; i<(dim0-1)*dim1; i=i+dim1){    // skipping 1 pixel border
+  for( i=dim1; i<(dim0-1)*dim1; i=i+dim1){    // skipping 1 pixel border
     lout[i]=0;     // set edges to zero: pixel j=0:
     l[i]=0;
     int j;
@@ -83,14 +93,15 @@ int localmaxlabel( const float* restrict im, // input
   } // i
   // Now go through the byte array checking for max values
   // (row by row to be parallel)
-  int npka[dim0];
+  int *npka;
+  npka = (int*) malloc( sizeof(int)*dim0 );
 #pragma omp parallel for
-  for( int i=0; i<dim0; i++){
+  for( i=0; i<dim0; i++){
     npka[i] = 0;
     for( int j=0; j<dim1; j++){
       int p = dim1*i + j;
       if( l[p] == 5 ){ // pointing to self : k+1==5
-	npka[i] = npka[i]+1;
+        npka[i] = npka[i]+1;
       }
     }
   }
@@ -103,16 +114,17 @@ int localmaxlabel( const float* restrict im, // input
   }
   // Second pass with row offsets in place
 #pragma omp parallel for
-  for( int i=0; i<dim0; i++){
+  for( i=0; i<dim0; i++){
     for( int j=0; j<dim1; j++){
       int p = dim1*i + j;
       if( l[p] == 5 ){ // pointing to self : k+1==5
-	npka[i] = npka[i]+1;
-	lout[p] = npka[i]; // final label
-	l[p] = 0;        // done tagged as zero
+        npka[i] = npka[i]+1;
+        lout[p] = npka[i]; // final label
+        l[p] = 0;        // done tagged as zero
       }
     }
   }
+  free( npka );
   //
   // Now make all point to their max
   // If we re-write the paths we cannot run in parallel
@@ -120,7 +132,7 @@ int localmaxlabel( const float* restrict im, // input
   // 105 ms to always walk to max
   // 40 ms if path relabelled
 #pragma omp parallel for 
-  for( int i=0; i<dim0*dim1; i++){
+  for( i=0; i<dim0*dim1; i++){
     if( l[i] == 0 ) continue; // done
     // Now we need to walk to find a label
     int q = i + o[l[i] - 1];

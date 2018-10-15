@@ -32,13 +32,16 @@ typedef __int32 int32_t;
  */
 
 #ifdef __GNUC__
-#if __GNUC__ >= 4
+ #if __GNUC__ >= 4
    #define DLL_PUBLIC __attribute__ ((visibility ("default")))
    #define DLL_LOCAL  __attribute__ ((visibility ("hidden")))
+ #else
+   #define DLL_PUBLIC
+   #define DLL_LOCAL 
+ #endif
 #else
    #define DLL_PUBLIC
-   #define DLL_LOCAL
-#endif
+   #define DLL_LOCAL 
 #endif
 
 DLL_LOCAL
