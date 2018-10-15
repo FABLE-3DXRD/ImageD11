@@ -6,6 +6,7 @@ typedef double vec[3];
 
 #ifdef _MSC_VER
 #define restrict __restrict
+#define inline __inline
 #endif
 
 /* 

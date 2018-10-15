@@ -30,8 +30,8 @@ from numpy import get_include
 
 
 if sys.platform == "win32" and "--compiler=mingw32" not in sys.argv:
-    ecomparg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY"]
-    elinkarg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY"]
+    ecomparg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY", "/arch:SSE2"]
+    elinkarg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY", "/arch:SSE2"]
     elibs = None
 else:
     ecomparg = ["-fopenmp","-O2", "-msse2", "-std=c99",
