@@ -102,7 +102,7 @@
 }
     var ubMatrix = invert( ubiMatrix );
 
-    function premultiply3x3( a, b) {
+    function premultiply3x3(o, b, a) {
         // inplace for mouse
       var a00 = a[0]; var a01 = a[1]; var a02 = a[2];
       var a10 = a[3]; var a11 = a[4]; var a12 = a[5];
@@ -112,17 +112,17 @@
       var b10 = b[3]; var b11 = b[4]; var b12 = b[5];
       var b20 = b[6]; var b21 = b[7]; var b22 = b[8];
 
-      b[0] = b00 * a00 + b01 * a10 + b02 * a20;
-      b[1] = b00 * a01 + b01 * a11 + b02 * a21;
-      b[2] = b00 * a02 + b01 * a12 + b02 * a22;
+      o[0] = b00 * a00 + b01 * a10 + b02 * a20;
+      o[1] = b00 * a01 + b01 * a11 + b02 * a21;
+      o[2] = b00 * a02 + b01 * a12 + b02 * a22;
 
-      b[3] = b10 * a00 + b11 * a10 + b12 * a20;
-      b[4] = b10 * a01 + b11 * a11 + b12 * a21;
-      b[5] = b10 * a02 + b11 * a12 + b12 * a22;
+      o[3] = b10 * a00 + b11 * a10 + b12 * a20;
+      o[4] = b10 * a01 + b11 * a11 + b12 * a21;
+      o[5] = b10 * a02 + b11 * a12 + b12 * a22;
 
-      b[6] = b20 * a00 + b21 * a10 + b22 * a20;
-      b[7] = b20 * a01 + b21 * a11 + b22 * a21;
-      b[8] = b20 * a02 + b21 * a12 + b22 * a22;
+      o[6] = b20 * a00 + b21 * a10 + b22 * a20;
+      o[7] = b20 * a01 + b21 * a11 + b22 * a21;
+      o[8] = b20 * a02 + b21 * a12 + b22 * a22;
     }
 
     function rotateView( dX, dY ){
@@ -131,13 +131,13 @@
         if (dL > 0){
             var sa = Math.sin(dL/100.);
             var ca = Math.cos(dL/100.);
-            var ux = dY/dL;
+            var ux =-dY/dL;
             var uy = dX/dL;
             var ca1 = 1.-ca;
             R = [ ca + ux*ux*ca1, ux*uy*ca1, uy*sa,
                   ux*uy*ca1, ca+uy*uy*ca1, -ux*sa,
                   -uy*sa, ux*sa, ca ];
-            premultiply3x3( R, viewMat);
+            premultiply3x3( viewMat, R, viewMat);
             draw();
         }
     }
