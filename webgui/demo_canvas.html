@@ -73,16 +73,16 @@
 
     function invert(a) {
         out = new Array(9);
-  let a00 = a[0], a01 = a[1], a02 = a[2];
-  let a10 = a[3], a11 = a[4], a12 = a[5];
-  let a20 = a[6], a21 = a[7], a22 = a[8];
+  var a00 = a[0]; var a01 = a[1]; var a02 = a[2];
+  var a10 = a[3]; var a11 = a[4]; var a12 = a[5];
+  var a20 = a[6]; var a21 = a[7]; var a22 = a[8];
 
-  let b01 = a22 * a11 - a12 * a21;
-  let b11 = -a22 * a10 + a12 * a20;
-  let b21 = a21 * a10 - a11 * a20;
+  var b01 = a22 * a11 - a12 * a21;
+  var b11 = -a22 * a10 + a12 * a20;
+  var b21 = a21 * a10 - a11 * a20;
 
   // Calculate the determinant
-  let det = a00 * b01 + a01 * b11 + a02 * b21;
+  var det = a00 * b01 + a01 * b11 + a02 * b21;
 
   if (!det) {
     return null;
@@ -102,15 +102,15 @@
 }
     var ubMatrix = invert( ubiMatrix );
 
-    function premultiply3x3( b, a) {
+    function premultiply3x3( a, b) {
         // inplace for mouse
-      let a00 = a[0], a01 = a[1], a02 = a[2];
-      let a10 = a[3], a11 = a[4], a12 = a[5];
-      let a20 = a[6], a21 = a[7], a22 = a[8];
+      var a00 = a[0]; var a01 = a[1]; var a02 = a[2];
+      var a10 = a[3]; var a11 = a[4]; var a12 = a[5];
+      var a20 = a[6]; var a21 = a[7]; var a22 = a[8];
 
-      let b00 = b[0], b01 = b[1], b02 = b[2];
-      let b10 = b[3], b11 = b[4], b12 = b[5];
-      let b20 = b[6], b21 = b[7], b22 = b[8];
+      var b00 = b[0]; var b01 = b[1]; var b02 = b[2];
+      var b10 = b[3]; var b11 = b[4]; var b12 = b[5];
+      var b20 = b[6]; var b21 = b[7]; var b22 = b[8];
 
       b[0] = b00 * a00 + b01 * a10 + b02 * a20;
       b[1] = b00 * a01 + b01 * a11 + b02 * a21;
@@ -137,7 +137,7 @@
             R = [ ca + ux*ux*ca1, ux*uy*ca1, uy*sa,
                   ux*uy*ca1, ca+uy*uy*ca1, -ux*sa,
                   -uy*sa, ux*sa, ca ];
-            premultiply3x3( viewMat, R );
+            premultiply3x3( R, viewMat);
             draw();
         }
     }
@@ -163,7 +163,7 @@
         ch = canvas.height;
         var ctx = canvas.getContext('2d');
         ctx.clearRect(0,0,cw,ch);
-        ctx.fillStyle = 'rgba(4,25,0,255)'; 
+        ctx.fillStyle = 'rgba(4,25,0,255)';
 
         ctx.fillRect(1,1,cw/2,1);
         ctx.fillRect(1,1,1,ch/2);
