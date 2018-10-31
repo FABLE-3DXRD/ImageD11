@@ -3,6 +3,12 @@
 #include <math.h>
 typedef double vec[3];
 
+
+#ifdef _MSC_VER
+#define restrict __restrict
+#define inline __inline
+#endif
+
 /* 
 # ImageD11_v1.x Software for beamline ID11
 # Copyright (C) 2005-2017  Jon Wright
@@ -21,6 +27,8 @@ typedef double vec[3];
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+
+
 
 inline
 int conv_double_to_int_fast(double);
