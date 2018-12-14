@@ -16,6 +16,10 @@ class testsyms( unittest.TestCase ):
     def test_tetragonal(self):
         c = ImageD11.sym_u.tetragonal()
         assert len(c.group) == 8
+        
+    def test_trigonal(self):
+        c = ImageD11.sym_u.trigonal()
+        assert len(c.group) == 6
 
     def test_orthorhombic(self):
         c = ImageD11.sym_u.orthorhombic()

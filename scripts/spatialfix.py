@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-
+from six.moves import input
 """
 Applies a new spatial correction based on spd style distortion files
 """
@@ -19,7 +19,8 @@ except:
     raise
 if os.path.exists( sys.argv[4] ):
     print("About to overwrite",sys.argv[4], end=' ')
-    if input("OK? ")[0] not in 'yY':
+    response = input("OK? ")
+    if response[0] not in "yY":
         print("So I will exit then")
         sys.exit()
 

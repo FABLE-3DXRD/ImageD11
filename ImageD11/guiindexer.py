@@ -53,7 +53,8 @@ class guiindexer:
                              ( "Histogram fit quality",0, self.histogram_drlv_fit),
                              ( "Save parameters", 0, self.saveparameters),
                              ( "Save UBI matrices", 5, self.saveubis),
-                             ( "Write out indexed peaks",0,self.saveindexing)
+                             ( "Write out indexed peaks",0,self.saveindexing),
+                             ( "Reset indexer",0,self.reset),
                            ] )
         self.plot3d=None
 
@@ -176,3 +177,9 @@ class guiindexer:
         """ see indexing.saveindexing """
         filename=self.parent.saver.show(title="File to save indexing output")
         self.parent.guicommander.execute("indexer","saveindexing",filename)
+
+
+    def reset(self):
+        """ see indexing.reset """
+        self.parent.guicommander.execute("indexer","reset")
+        

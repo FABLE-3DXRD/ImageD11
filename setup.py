@@ -30,12 +30,15 @@ from numpy import get_include
 
 
 if sys.platform == "win32" and "--compiler=mingw32" not in sys.argv:
-    ecomparg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY"]
-    elinkarg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY"]
+    ecomparg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY", "/arch:SSE2"]
+    elinkarg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY", "/arch:SSE2"]
     elibs = None
 else:
-    ecomparg = ["-fopenmp -O2","-DF2PY_REPORT_ON_ARRAY_COPY"]
-    elinkarg = ["-fopenmp -O2","-DF2PY_REPORT_ON_ARRAY_COPY"]
+    ecomparg = ["-fopenmp","-O2", "-msse2", "-std=c99",
+                "-flto",
+                "-Wall", "-Wextra",
+                "-DF2PY_REPORT_ON_ARRAY_COPY"]
+    elinkarg = [a for a in ecomparg]
     elibs = ["gomp","pthread"]
 
 
@@ -47,6 +50,7 @@ cImageD11extension = Extension( "cImageD11",
                                             "src/connectedpixels.c",
                                             "src/closest.c",
                                             "src/cdiffraction.c",
+                                            "src/localmaxlabel.c",
                                             "src/blobs.c"],
                                include_dirs = nid + ["src",],
                                extra_compile_args=ecomparg,

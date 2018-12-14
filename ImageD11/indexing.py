@@ -252,7 +252,7 @@ class indexer:
             print('gv:', gv, gv.shape, gv.dtype)
         self.wedge=0.0 # Default
         if gv is not None:
-            self.gvflat=np.ascontiguousarray(gv,'d')
+            self.gvflat=np.ascontiguousarray(gv,np.float)
             # Makes it contiguous in memory, hkl fast index
 
         self.cosine_tol=cosine_tol
@@ -277,7 +277,16 @@ class indexer:
               minpks=self.minpks, uniqueness=self.uniqueness, ds_tol=self.ds_tol,
               wavelength=self.wavelength, eta_range=self.eta_range,
               max_grains=self.max_grains)
+        
+        # Add a resetting functionality, adapted from
+        # stackoverflow.com/questions/4866587/pythonic-way-to-reset-an-objects-variables
+        import copy
+        self.__pristine_dict = copy.deepcopy( self.__dict__ )
 
+    def reset( self ):
+        import copy
+        self.__dict__ = copy.deepcopy( self.__pristine_dict )
+        
 
     def loadpars(self,filename=None):
         if filename is not None:
@@ -361,7 +370,7 @@ class indexer:
         self.gvr = self.gv[ind]
         print("Using only those peaks which are assigned to rings for scoring trial matrices")
         print("Shape of scoring matrix",self.gvr.shape)
-        self.gvflat=np.ascontiguousarray(self.gvr, 'd') # Makes it contiguous
+        self.gvflat=np.ascontiguousarray(self.gvr, np.float) # Makes it contiguous
         # in memory, hkl fast index
 
     def friedelpairs(self,filename):
@@ -492,9 +501,11 @@ class indexer:
                     candidates = np.compress( abs(diff) < mtol, i2 )
                     for c in candidates:
                         hits.append( [ 0.0, i1[i], c ] )
-            print("\rPercent done %6.3f%%   ... potential hits %-6d" \
-                  % ((i+1)*100./len(i1),len(hits)), end=' ')
-            costheta=np.dot(n2,n1[i])
+            if i > onepercent:
+               print("\rPercent done %6.3f%%   ... potential hits %-6d" \
+                     % ((i+1)*100./len(i1),len(hits)), end=' ')
+               onepercent += len(i1)/100.
+
 
         print("\rPercent done %6.3f%%   ... potential hits %-6d" \
               % ((i+1)*100./len(i1),len(hits)))
@@ -538,21 +549,26 @@ class indexer:
         self.histogram=hist
 
     def scorethem(self):
+        """ decide which trials listed in hits to keep """
         start=time.time()
-        ts=0
-        tor=0
+#        ts=0
+#        tor=0
         ng=0
         tol=float(self.hkl_tol)
         gv=self.gvflat
         all=len(self.hits)
         print("Scoring",all,"potential orientations")
-        prog=0
-        ng=0
+        progress=0
         nuniq=0
-
+        onepercent = all/100.
         while len(self.hits) > 0 and ng <self.max_grains:
-            sys.stdout.write("Tested %8d    Found %8d     Rejected %8d as not being unique\r"%(prog,ng,nuniq))
-            prog=prog+1
+            if progress > onepercent:
+               sys.stdout.write(
+                  "Tested %8d    Found %8d     Rejected %8d as not being unique\r"%(
+                     progress,ng,nuniq))
+               sys.stdout.flush()
+               onepercent += all/100.
+            progress=progress+1
             diff,i,j = self.hits.pop()
             if self.ga[i]>-1 or self.ga[j]>-1:
                 # skip things which are already assigned
@@ -560,30 +576,35 @@ class indexer:
             if i==j:
                 continue
             try:
-                self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],verbose=0,all=False)
+                self.unitcell.orient(self.ring_1,
+                                     self.gv[i,:],
+                                     self.ring_2,
+                                     self.gv[j,:],
+                                     verbose=0,
+                                     all=False)
             except:
                 print(i,j,self.ring_1,self.ring_2)
                 print(self.gv[i])
                 print(self.gv[j])
+                print("Failed to find orientation in unitcell.orient")
                 raise
             npk = cImageD11.score(self.unitcell.UBI,gv,tol)
             if npk > self.minpks:
                 self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],verbose=0,all=True)
-                npks=[cImageD11.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist]
+                npks=[cImageD11.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist] 
                 choice = np.argmax(npks)
                 UBI = self.unitcell.UBIlist[choice]
                 npk = npks[choice]
+                _ = cImageD11.score_and_refine( UBI, gv, tol )
                 # See if we already have this grain...
                 try:
-                    ubio=self.refine(UBI.copy())
-                    # refine the orientation
-                    ind=self.getind(ubio) # indices of peaks indexed
+                    ind=self.getind(UBI) # indices of peaks indexed
                     ga=self.ga[ind]  # previous grain assignments
                     uniqueness=np.sum(np.where(ga==-1,1,0))*1.0/ga.shape[0]
                     if uniqueness > self.uniqueness:
 #                        print "Writing in self.ga"
                         np.put(self.ga, ind, len(self.scores)+1)
-                        self.ubis.append(ubio)
+                        self.ubis.append(UBI)
                         self.scores.append(npk)
                         ng=ng+1
                     else:
@@ -591,6 +612,11 @@ class indexer:
                     #            put(self.ga,ind,ng)
                 except:
                     raise
+        sys.stdout.write(
+           "Tested %8d    Found %8d     Rejected %8d as not being unique\r"%(
+              progress,ng,nuniq))
+        sys.stdout.flush()
+                 
         print()
         print("Number of orientations with more than",self.minpks,"peaks is",len(self.ubis))
         print("Time taken",time.time()-start)
@@ -598,6 +624,7 @@ class indexer:
             bestfitting=np.argmax(self.scores)
             print("UBI for best fitting\n",self.ubis[bestfitting])
             print("Unit cell\n",ubitocellpars(self.ubis[bestfitting]))
+            self.refine( self.ubis[bestfitting] )
             print("Indexes",self.scorelastrefined,"peaks, with <drlv2>=",self.fitlastrefined)
             print("That was the best thing I found so far")
             notaccountedfor = np.sum(np.where( np.logical_and(
@@ -784,9 +811,21 @@ class indexer:
         """
         if tol == None:
             tol = self.hkl_tol
-        drlv2 = calc_drlv2( UBI, self.gv)
-        drlv2 = np.where( self.ra == -1, tol + 1, drlv2)
-        ind = np.compress( np.less(drlv2,tol*tol) , np.arange(self.gv.shape[0]) )
+        ng = len(self.gvflat)
+        drlv2 = np.ones( ng , np.float)
+        labels = np.full( ng , 0, np.int32)
+        # we only use peaks assigned to rings for scoring here
+        # already done in making gvflat in assigntorings
+        try:
+           npk = cImageD11.score_and_assign( UBI, self.gvflat, tol, drlv2, labels, 1 )
+        except:
+           print(self.gvflat.shape)
+           print('ra',self.ra.shape)
+           print(drlv2.shape)
+           print(labels.shape)
+           print("logic error in getind")
+           raise
+        ind = np.compress( labels , np.arange(ng,dtype=np.int) )
         return ind
 
 
@@ -794,30 +833,10 @@ class indexer:
         """
         Decide which are the best orientation matrices
         """
-#      t0=time.time()
-        if tol==None:
+        if tol is None:
             return cImageD11.score(UBI,self.gvflat,self.hkl_tol)
         else:
             return cImageD11.score(UBI,self.gvflat,tol)
-        # NONE OF THIS FOLLOWING CODE IS EXECUTED, EVER!
-#        t1=time.time()
-#        h=matrixmultiply(UBI,transpose(self.gv))
-#        hint=floor(h+0.5).astype(int) # rounds down
-#        diff=h-hint
-#        drlv2=sum(diff*diff,0)
-#        tol = float(self.hkl_tol)
-#        tol = tol*tol
-#        print "%e"%(tol)
-#        for i in range(10):
-#            print h[:,i],hint[:,i],drlv2[i]
-#        ind = compress( less(drlv2,tol) , arange(self.gv.shape[0]) )
-#        ind = compress( less(drlv2[:npks],tol) , arange(npks) )
-#        t2=time.time()
-#        print n-len(ind),"Time in c",t1-t0,"Time in python",t2-t1
-#        print "Grain UBI"
-#        print UBI
-#        print "Number of peaks",ind.shape[0]
-#        return ind
 
     def refine(self,UBI):
         """
@@ -981,20 +1000,7 @@ class indexer:
         self.allgv = self.gv.copy()
         self.ga=np.zeros(len(self.ds),np.int32)-1 # Grain assignments
 
-        self.gvflat=np.ascontiguousarray(self.gv,'d') # Makes it contiguous in memory, hkl fast index
+        self.gvflat=np.ascontiguousarray(self.gv,np.float)
+        # Makes it contiguous in memory, hkl fast index
         if not quiet:
             print("Read your gv file containing",self.gv.shape)
-#      if self.wavelength>0:
-#         print "First ten peaks"
-#         from ImageD11 import transform
-#         import math
-#         if self.gv.shape[0]>10:
-#            all=10
-#         else:
-#            all=self.gv.shape[0]
-#         to,eo,oo=transform.uncompute_g_vectors(transpose(self.gv)[:all,:],self.wavelength)
-#         print "Peak tth_calc tth_gv_obs eta_obs eta_gv_obs_1 eta_gv_obs_1 omega_obs omega_gv_obs omega_gv_obs"
-#         for i in range(all):
-#            tc=math.asin(self.ds[i]*self.wavelength/2)*360/math.pi
-#            print i,tc,to[i],self.eta[i],eo[0][i],eo[1][i],self.omega[i],oo[0][i],oo[1][i]
-#         print  "...."

@@ -3,6 +3,12 @@
 #include <math.h>
 typedef double vec[3];
 
+
+#ifdef _MSC_VER
+#define restrict __restrict
+#define inline __inline
+#endif
+
 /* 
 # ImageD11_v1.x Software for beamline ID11
 # Copyright (C) 2005-2017  Jon Wright
@@ -22,61 +28,9 @@ typedef double vec[3];
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-static char moduledocs[] =
-    "/* *******************************************************************\n"
-    " * closest.c  Two useful functions for indexing grains \n"
-    " *\n"
-    " * 1. From python: closest(cosines_allowed, cosine_measured)\n"
-    " *    Take 1 peak with hkl's assigned, compute the cosines to\n"
-    " *    another powder ring (angles between this peak and peaks in\n"
-    " *    that ring). This extension finds the best peak in the\n"
-    " *    other ring to pair up with.\n"
-    " *\n"
-    " *    More generally closest(array, values) finds the closest\n"
-    " *    item in values to one of the values in array.  Returns the\n"
-    " *    difference and the index of the closest thing it finds.\n"
-    " *\n"
-    " *    Both arguments should be one dimensional Numeric arrays\n"
-    " *    of type Numeric.Float\n"
-    " *\n"
-    " * 2. From python: score(ubi, gv, tol) where ubi is an orientation\n"
-    " *    matrix and gv are an array of g-vectors. Returns the number\n"
-    " *    of g-vectors which have integer hkl peaks within tolerance\n"
-    " *    tol. Uses the conv_double_to_int_fast function in here for \n"
-    " *    factor of !EIGHT! speed increase compared to rounding in \n"
-    " *    C. In fact this gives the nearest even integer, instead\n"
-    " *    of the nearest integer, but we don't care, as a peak having\n"
-    " *    hkl of 0.5 is nowhere near being indexed anyway.\n"
-    " *\n"
-    " *    Returns and integer - number of peaks indexed\n"
-    " *    UBI is a 3x3 Numeric.Float array (figure out the transposing yourself)\n"
-    " *    GV is a nx3 Numeric.Float array, and you should try to make the 3 \n"
-    " *       be the fast index for best performance\n"
-    " *       \n"
-    " * 3. score_and_refine(ubi, gv, tol) \n"
-    " *    From python: same as score, I hope, but ubi is overwritten\n"
-    " *    with refined matrix following paciorek algorithm which is \n"
-    " *    in indexing.py\n"
-    " *    \n"
-    " * \n"
-    " * 4. score_and_assign( ubi, gv, tol, drlv, labels, (int) label)\n"
-    " *    as for score, but assignments are only made if drlv is lower than\n"
-    " *    the previous. Fills in label with the new label\n"
-    " *\n"
-    " * 5. refine_assigned( ubi, gv, labels, label, weight) \n"
-    " *    Use only the peaks where label matches labels in refinement \n"
-    " *    ...following again the Paciorek algorithm \n"
-    " *\n"
-    " * 6. put_incr( data, indices, values)\n"
-    " *    pretty much as numeric.put but as increments\n"
-    " *\n"
-    " * 7. weighted_refine(ubi, gv, tol, weights) \n"
-    " *    From python: same as score, but with weights, and ubi is overwritten\n"
-    " *    with refined matrix following paciorek algorithm which is \n"
-    " *    in indexing.py\n"
-    " *    \n"
-    " * ****************************************************************** */ ";
 
+
+inline
 int conv_double_to_int_fast(double);
 
 int conv_double_to_int_safe(double);
@@ -137,6 +91,8 @@ typedef union {
     double d;
 } a_union;
 
+
+inline
 int conv_double_to_int_fast(double x)
 {
     /*return conv_double_to_int_safe(x); */
@@ -207,7 +163,7 @@ int score(vec ubi[3], vec gv[], double tol, int ng)
 void score_and_refine(vec ubi[3], vec gv[], double tol,
 		      int *n_arg, double *sumdrlv2_arg, int ng)
 {
-
+  /* ng = number of g vectors */
     double h0, h1, h2, t0, t1, t2;
     double sumsq, tolsq, sumdrlv2;
     double R[3][3], H[3][3], UB[3][3];
@@ -285,8 +241,8 @@ void score_and_refine(vec ubi[3], vec gv[], double tol,
     *sumdrlv2_arg = sumdrlv2;
 }
 
-int score_and_assign(vec * __restrict ubi, vec * __restrict gv, double tol,
-		     double *__restrict drlv2, int *__restrict labels,
+int score_and_assign(vec * restrict ubi, vec * restrict gv, double tol,
+		     double * restrict drlv2, int * restrict labels,
 		     int label, int ng)
 {
 

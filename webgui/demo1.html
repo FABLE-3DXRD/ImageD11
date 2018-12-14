@@ -1,0 +1,426 @@
+
+<html>
+
+<head>
+    <title>Plot3D - Some WebGL programming</title>
+    <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+
+<style>
+#drop_zone {
+    width: 300px;
+    height: 35px;
+    margin: 10px;
+    padding: 10px;
+    border: 1px solid black;
+}
+</style>
+
+    <script type="text/javascript" src="data.js"></script>
+    
+    <script type="text/javascript" src="gl-matrix-min.js"></script>
+    
+    <script type="text/javascript" src="webgl-utils.js"></script>
+
+    <script id="shader-fs" type="x-shader/x-fragment">
+        #ifdef GL_ES
+        precision highp float;
+        #endif
+        varying float z, scor;
+        void main(void) {
+            float zc;
+            // At distance 0.0 we take 0.5
+            zc = 1.0 - (atan(z)+1.57079632)/3.14159/2.;
+            if( scor < 0.01 ){
+                gl_FragColor = vec4(0.0, 1.0, 1.0, 0.5);
+            } else {
+                gl_FragColor = vec4(1.0, 0.0, 0.0, 0.5);
+            }
+        }
+    </script>
+
+    <script id="shader-vs" type="x-shader/x-vertex">
+        attribute vec3 aVertexPosition;
+        uniform mat4 uMVMatrix;
+        uniform mat3 ubiMatrix;
+        uniform float ps;
+        varying float z;
+        varying float scor; 
+        void main(void) {
+            vec3 calcvec;
+            gl_Position = uMVMatrix * vec4(aVertexPosition, 1.0);
+            gl_PointSize = ps;
+            z = gl_Position[2];
+            calcvec = ubiMatrix * aVertexPosition;
+            // This is int(hkl) - hkl == error in reciprocal lattice vector
+            calcvec = floor(calcvec + 0.5)-calcvec;
+            scor = dot(calcvec,calcvec);
+        }
+    </script>
+
+
+    <script type="text/javascript">
+
+    var gl;
+
+    function initGL(canvas) {
+        try {
+            gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+            gl.viewportWidth = canvas.width;
+            gl.viewportHeight = canvas.height;
+            changeScale();
+            changePointsize();
+        } catch (e) {
+        }
+        if (!gl) {
+            alert("Could not initialise WebGL, sorry. "+e.message);
+        }
+    }
+
+
+    function getShader(gl, id) {
+        var shaderScript = document.getElementById(id);
+        if (!shaderScript) {
+            return null;
+        }
+
+        var str = "";
+        var k = shaderScript.firstChild;
+        while (k) {
+            if (k.nodeType == 3) {
+                str += k.textContent;
+            }
+            k = k.nextSibling;
+        }
+
+        var shader;
+        if (shaderScript.type == "x-shader/x-fragment") {
+            shader = gl.createShader(gl.FRAGMENT_SHADER);
+        } else if (shaderScript.type == "x-shader/x-vertex") {
+            shader = gl.createShader(gl.VERTEX_SHADER);
+        } else {
+            return null;
+        }
+
+        gl.shaderSource(shader, str);
+        gl.compileShader(shader);
+
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            alert(gl.getShaderInfoLog(shader));
+            return null;
+        }
+
+        return shader;
+    }
+
+
+    var shaderProgram;
+
+    function initShaders() {
+        var fragmentShader = getShader(gl, "shader-fs");
+        var vertexShader = getShader(gl, "shader-vs");
+
+        shaderProgram = gl.createProgram();
+        gl.attachShader(shaderProgram, vertexShader);
+        gl.attachShader(shaderProgram, fragmentShader);
+        gl.linkProgram(shaderProgram);
+
+        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+            alert("Could not initialise shaders");
+        }
+
+        gl.useProgram(shaderProgram);
+
+        shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+        gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+
+        shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+        shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+        shaderProgram.ubiMatrixUniform = gl.getUniformLocation(shaderProgram, "ubiMatrix");
+        shaderProgram.pointsize = gl.getUniformLocation(shaderProgram, "ps");
+
+    }
+
+
+    var mvMatrix = mat4.create();
+    var pMatrix = mat4.create();
+    var proj = mat4.create();
+    var ubiMatrix = mat3.create();
+    mat3.set( ubiMatrix, 
+            -4.547536, -0.407872, -1.563811, 
+            -0.790217, -6.532015, 4.003969, 
+            -2.709450, 4.464539, 6.735540) ;
+    mat3.transpose( ubiMatrix, ubiMatrix);
+
+    var mvMatrixStack = [];
+    var rTri = 0;
+
+    
+
+    var spotBuffer;
+
+    function initBuffers() {
+        spotBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER,spotBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+        spotBuffer.itemSize = 3;
+        spotBuffer.numItems = vertices.length/3;
+    }
+
+
+    function drawScene() {
+        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        mat4.identity(mvMatrix);
+        rat = gl.viewportWidth/gl.viewportHeight;
+        mat4.ortho(proj, -rat, rat, -1, 1, -1, 1);
+        mat4.multiply(mvMatrix, mvMatrix, proj);
+        mat4.multiply(mvMatrix, mvMatrix, moonRotationMatrix);
+        mat4.scale(mvMatrix, mvMatrix, [scale, scale, scale, scale]);
+        gl.bindBuffer(gl.ARRAY_BUFFER, spotBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute,spotBuffer.itemSize, gl.FLOAT, false, 0, 0);
+        gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+        gl.uniformMatrix3fv(shaderProgram.ubiMatrixUniform, false, ubiMatrix);
+        gl.uniform1f(shaderProgram.pointsize, pointsize);
+        gl.drawArrays(gl.POINTS, 0, spotBuffer.numItems);
+
+    }
+
+    var mouseDown = false;
+    var lastMouseX = null;
+    var lastMouseY = null;
+    var lastMouseW = null;
+
+    var moonRotationMatrix = mat4.create();
+    mat4.identity(moonRotationMatrix);
+
+    function handleMouseDown(event) {
+        mouseDown = true;
+        lastMouseX = event.clientX;
+        lastMouseY = event.clientY;
+    }
+
+    var scale=1;
+    var pointsize = 3;
+    var psslider;
+
+    function changeScale( e ){
+            var ls = document.getElementById( "scale" ).value;
+            scale = Math.exp( ls );
+            console.log("change scale to ", scale);
+    };
+        
+    function changePointsize( e ){
+            pointsize = e.target.value;
+            console.log("change pointsize to ", pointsize);
+    };
+
+    function onRangeChange(r,f) {
+      var n,c,m;
+      r.addEventListener("input",function(e){n=1;c=e.target.value;if(c!=m)f(e);m=c;});
+      r.addEventListener("change",function(e){if(!n)f(e);});
+    }
+
+    function fn() {
+        onRangeChange( document.getElementById( "scale" ), changeScale );
+        onRangeChange( document.getElementById( "pointsize" ), changePointsize );
+    };
+    document.onreadystatechange = function() {
+      if (document.readyState === 'complete') {
+       fn();
+      }
+    };
+
+
+    function handleMouseWheel(evt) {
+      if (!evt) evt = event;
+      if (evt.detail<0 || evt.wheelDelta>0) { 
+           document.getElementById( "scale" ).stepDown();
+      } else {
+           document.getElementById( "scale" ).stepUp()
+      }
+      changeScale();
+      evt.preventDefault();
+    }
+
+    function handleMouseUp(event) {
+        mouseDown = false;
+    }
+
+    function degToRad(degrees) {
+        return degrees * Math.PI / 180;
+    }
+
+    function handleMouseMove(event) {
+        if (!mouseDown) {
+            return;
+        }
+        var newX = event.clientX;
+        var newY = event.clientY;
+
+        var deltaX = newX - lastMouseX
+        var newRotationMatrix = mat4.create();
+        mat4.identity(newRotationMatrix);
+        mat4.rotate(newRotationMatrix, newRotationMatrix, degToRad(deltaX/2.), [0, 1, 0]);
+
+        var deltaY = newY - lastMouseY;
+        mat4.rotate(newRotationMatrix, newRotationMatrix, degToRad(deltaY/2.), [ 1, 0, 0]);
+
+        mat4.multiply(moonRotationMatrix, newRotationMatrix, moonRotationMatrix);
+
+        lastMouseX = newX
+        lastMouseY = newY;
+    }
+
+
+    function tick() {
+       requestAnimFrame(tick);
+       drawScene();
+      // animate();
+    }
+
+    var lastTime = 0;
+    function animate() {
+       var timeNow = new Date().getTime();
+       if (lastTime != 0) {
+          var elapsed = timeNow - lastTime;
+
+         rTri += (90 * elapsed) / 1000.0;
+      
+       }
+    lastTime = timeNow;
+  }
+       
+
+
+    function webGLStart() {
+        var canvas = document.getElementById("plot3d");
+        initGL(canvas);
+        initShaders();
+        initBuffers();
+
+        gl.clearColor(.1, 0.2, 0.5, 1.0);
+        gl.enable(gl.DEPTH_TEST);
+        canvas.onmousedown = handleMouseDown;
+        canvas.onmousewheel = handleMouseWheel;
+        document.onmouseup = handleMouseUp;
+        document.onmousemove = handleMouseMove;
+
+
+        // Check for the various File API support.
+        if (window.File && window.FileReader && window.FileList && window.Blob) {
+          // Great success! All the File APIs are supported.
+        } else {
+          alert('The File APIs are not fully supported in this browser.');
+        }
+          // Setup the dnd listeners.
+          var dropZone = document.getElementById('drop_zone');
+          dropZone.addEventListener('dragover', handleDragOver, false);
+          dropZone.addEventListener('drop', handleFileSelect, false);
+
+        //sdrawScene();
+        tick();
+    }
+      var reader = new FileReader();
+
+// used by initBuffers ... var vertices;
+  function receivedText(){
+      // The text is now in: reader.result
+      var i, res, line, on, verts;
+      // This is one string
+      res = reader.result.split("\n");
+      on = false;
+      for(i=0;i < res.length ; i++){
+        line = res[i];         // 12345
+        if (line.substring(0,1) == '#'){
+            if( (line.search("gx") != -1) |
+                    (line.search("xr") != -1) ){
+            on=true;
+            verts = new Array();
+            continue;
+            }
+        }
+        if(on){
+            vals = line.split(" ");
+            verts.push(vals[0]);
+            verts.push(vals[1]);
+            verts.push(vals[2]);
+        }
+      }
+      if(on){
+       vertices = verts;
+       initBuffers();
+      }
+  }
+
+
+
+  function handleFileSelect(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+
+    var files = evt.dataTransfer.files; // FileList object.
+
+    // files is a FileList of File objects. List some properties.
+    var output = [];
+    for (var i = 0, f; f = files[i]; i++) {
+
+      output.push('<li><strong>', escape(f.name), '</strong> (', f.type || 'n/a', ') - ',
+                  f.size, ' bytes, last modified: ',
+                  f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a',
+                  '</li>');
+
+      reader.onload = receivedText;
+      reader.readAsText( f );
+
+    }
+    document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+  }
+
+  function handleDragOver(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+  }
+
+
+
+
+
+
+</script>
+
+
+</head>
+
+
+<body onload="webGLStart();">
+
+    <h1>
+    WebGL based demo of plot3d from ImageD11
+    </h1>
+    <div id="drop_zone"> Drop your g-vectors here </div>    
+    </p>    
+    <canvas id="plot3d"  width="600" height="600"></canvas>
+    <div id="scale_factor" border=1px > Scale Factor: 
+        <input type="range" min="-3" max="3" value="0" step="0.05" id="scale" > 
+    </div>
+    <div id="pointsize" border=1px> Pointsize: 
+        <input type="range" min="1" max="10" value="3"  id="pointsize" > 
+        </div>
+    <p>
+    Click and drag to rotate. Zoom with mouse wheel or sliders below
+    </p> 
+    <p>
+    <output id="list"></output>
+    </p>
+
+    <p>
+    Things to fix. Linux fails drag and drop - add in file upload selector.
+    Android fails mouse move, add in touchmove http://developer.sonymobile.com/2011/11/29/xperia-phones-first-to-support-webgl/
+    Android fails sliders, find hack at http://touchpunch.furf.com/ 
+    Clean and comment the entire code. etc.
+
+</body>
+
+</html>
+

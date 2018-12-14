@@ -23,11 +23,13 @@
 #include <math.h>		/* sqrt */
 #include "blobs.h"
 
+DLL_LOCAL
 void compute_moments(double b[], int nb)
 {
     /* Convert the blob (summing) representation to a human readable form */
     int i, off;
     double ts, to, tf, us, uo, uf, vs, vo, vf, tc;
+    
 
     /* loop over a set of blobs in a flat array */
 
@@ -43,29 +45,29 @@ void compute_moments(double b[], int nb)
 	}
 
 	tc = b[s_I + off];	/* tc = total counts */
-
+	/* average intensity */
 	b[avg_i + off] = b[s_I + off] / b[s_1 + off];
 
-	/* First and second moments */
-
+	/* First moment */
 	uf = b[s_fI + off] / tc;
-	tf = b[s_ffI + off] / tc;
 	b[f_raw + off] = uf;
-	vf = tf - uf * uf;
+	/* Secoond moment */
+	tf = b[s_ffI + off] / tc;
+	vf = tf - uf * uf;    // variance : better to have returned this!
 	if ((vf + 1.0) > 0.0)
 	    b[m_ff + off] = sqrt(vf + 1.);
 	else
 	    b[m_ff + off] = 1.0;
-
+	/* first and second in other direction */
 	us = b[s_sI + off] / tc;
-	ts = b[s_ssI + off] / tc;
 	b[s_raw + off] = us;
+	ts = b[s_ssI + off] / tc;
 	vs = ts - us * us;
 	if ((vs + 1.0) > 0.0)
 	    b[m_ss + off] = sqrt(vs + 1.);
 	else
 	    b[m_ss + off] = 1.0;
-
+	/* And now in omega direction */
 	uo = b[s_oI + off] / tc;
 	to = b[s_ooI + off] / tc;
 	b[o_raw + off] = uo;
@@ -74,7 +76,7 @@ void compute_moments(double b[], int nb)
 	    b[m_oo + off] = sqrt(vo + 1.);
 	else
 	    b[m_oo + off] = 1.;
-
+	/* The three covariances */
 	b[m_so + off] =
 	    (b[s_soI + off] / tc - us * uo) / b[m_ss + off] / b[m_oo + off];
 
@@ -88,6 +90,7 @@ void compute_moments(double b[], int nb)
 
 }
 
+DLL_LOCAL
 void add_pixel(double b[], int s, int f, double I, double o)
 {
 
@@ -121,6 +124,7 @@ void add_pixel(double b[], int s, int f, double I, double o)
 
 }
 
+DLL_LOCAL
 void merge(double b1[], double b2[])
 {
     /* b2 is killed, b1 is kept */
@@ -186,30 +190,27 @@ void merge(double b1[], double b2[])
  *
  * ********************************************************************  */
 
-INTEGER *dset_initialise(INTEGER size)
+DLL_LOCAL
+int32_t *dset_initialise(int32_t size)
 {
-    INTEGER i, *S;
-    S = (INTEGER *) (malloc(size * sizeof(INTEGER)));
+    int32_t *S;
+    S = (int32_t *) (calloc(size , sizeof(int32_t)));
+    /* calloc sets to zero also */
     if (S == NULL) {
 	printf("Memory allocation error in dset_initialise\n");
 	exit(1);
     }
-    for (i = 0; i < size; i++)
-	S[i] = 0;
     S[0] = size;
     return S;
 }
 
-INTEGER *dset_compress(INTEGER ** pS, INTEGER * np)
+DLL_LOCAL
+int32_t *dset_compress(int32_t ** pS, int32_t * np)
 {
-    INTEGER *S, *T, i, j, npk;
-    S = (INTEGER *) * pS;
-    T = (INTEGER *) malloc((S[S[0] - 1] + 3) * sizeof(INTEGER));
-    if (T == NULL) {
-	printf("Memory allocation error in dset_compress\n");
-	exit(1);
-    }
-    npk = 0;
+    int32_t *S, *T, i, j, npk;
+    S = (int32_t *) * pS; // existing set
+    T = dset_initialise( S[S[0] - 1] + 3 ); // new set
+    npk = 0; // number of entries
     for (i = 1; i < S[S[0] - 1] + 1; i++) {
 	if (S[i] == i) {
 	    T[i] = ++npk;
@@ -226,18 +227,19 @@ INTEGER *dset_compress(INTEGER ** pS, INTEGER * np)
     return T;
 }
 
-INTEGER *dset_new(INTEGER ** pS, INTEGER * v)
+DLL_LOCAL
+int32_t *dset_new(int32_t ** pS, int32_t * v)
 {
     /* S[0] will always hold the length of the array */
     /* S[:-1] holds the current element */
-    INTEGER length, current, i;
-    INTEGER *S;
-    S = (INTEGER *) * pS;
+    int32_t length, current, i;
+    int32_t *S;
+    S = (int32_t *) * pS;
     length = S[0];
     current = (++S[S[0] - 1]);
     *v = current;
     if (current + 3 > length) {
-	S = (INTEGER *) (realloc(S, length * 2 * sizeof(INTEGER)));
+	S = (int32_t *) (realloc(S, length * 2 * sizeof(int32_t)));
 	if (S == NULL) {
 	    printf("Memory allocation error in dset_new\n");
 	    exit(1);
@@ -246,7 +248,7 @@ INTEGER *dset_new(INTEGER ** pS, INTEGER * v)
 	/* Fails on gcc 4 but worked on gcc 3.x
 	   dont actually what it does or why it is there
 	   hence commented it out
-	   (INTEGER *) pS = S; */
+	   (int32_t *) pS = S; */
 	S[0] = length * 2;
 	S[length - 1] = 0;
 	for (i = length - 1; i < length * 2; i++)
@@ -257,15 +259,17 @@ INTEGER *dset_new(INTEGER ** pS, INTEGER * v)
     return S;
 }
 
-void dset_makeunion(INTEGER * S, INTEGER r1, INTEGER r2)
+DLL_LOCAL
+void dset_makeunion(int32_t * S, int32_t r1, int32_t r2)
 {
-    INTEGER a, b;
+    int32_t a, b;
     a = dset_find(r1, S);
     b = dset_find(r2, S);
     dset_link(S, a, b);
 }
 
-void dset_link(INTEGER * S, INTEGER r2, INTEGER r1)
+DLL_LOCAL
+void dset_link(int32_t * S, int32_t r2, int32_t r1)
 {
     if (r1 > r2) {
 	/* The higher # r1 is changed to point to the lower */
@@ -278,7 +282,8 @@ void dset_link(INTEGER * S, INTEGER r2, INTEGER r1)
     /* if r1==r2 then they are already a union */
 }
 
-INTEGER dset_find(INTEGER x, INTEGER * S)
+DLL_LOCAL
+int32_t dset_find(int32_t x, int32_t * S)
 {
     if (x == 0) {
 	/* oups */

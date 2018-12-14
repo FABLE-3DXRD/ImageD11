@@ -74,6 +74,26 @@ python module cImageD11
       end function connectedpixels
    end interface
 
+
+   interface
+      function localmaxlabel( data, labels, wrk, ns, nf )
+         intent(c) localmaxlabel
+         intent(c)
+         real, intent(in) :: data(ns,nf)
+         integer*4, intent(inout), note(hello) :: labels(ns,nf)
+	 integer*1, intent(inout) :: wrk(ns,nf)	
+         integer, intent(hide), depend(data) :: ns=shape(data,0)
+         integer, intent(hide), depend(data) :: nf=shape(data,1)
+! Returns 
+         integer :: localmaxlabel
+! we say threadsafe but it writes in labels, so we assume no one else
+! is using at the same time
+         threadsafe
+
+      end function localmaxlabel
+   end interface
+
+
    interface
       subroutine blobproperties( data, labels, np, omega, &
                                  verbose, ns, nf, results)

@@ -27,15 +27,42 @@ typedef __int32 int32_t;
 #include <stdint.h>
 #endif
 
-#define INTEGER int32_t
+/* If we define functions as local they can be inlined at link time
+ * in a shared library (e.g. not shared and overridden by LD_PRELOAD)
+ */
 
-INTEGER *dset_initialise(INTEGER size);	/* array to hold real values of each */
-INTEGER *dset_new(INTEGER ** S, INTEGER * v);
-void dset_makeunion(INTEGER * S, INTEGER r1, INTEGER r2);
-void dset_link(INTEGER * S, INTEGER r1, INTEGER r2);
-INTEGER dset_find(INTEGER x, INTEGER * S);
-INTEGER *dset_compress(INTEGER ** pS, INTEGER * np);
+#ifdef __GNUC__
+ #if __GNUC__ >= 4
+   #define DLL_PUBLIC __attribute__ ((visibility ("default")))
+   #define DLL_LOCAL  __attribute__ ((visibility ("hidden")))
+ #else
+   #define DLL_PUBLIC
+   #define DLL_LOCAL 
+ #endif
+#else
+   #define DLL_PUBLIC
+   #define DLL_LOCAL 
+#endif
 
+DLL_LOCAL
+int32_t *dset_initialise(int32_t size);	/* array to hold real values of each */
+
+DLL_LOCAL
+int32_t *dset_new(int32_t ** S, int32_t * v);
+
+DLL_LOCAL
+void dset_makeunion(int32_t * S, int32_t r1, int32_t r2);
+
+DLL_LOCAL
+void dset_link(int32_t * S, int32_t r1, int32_t r2);
+
+DLL_LOCAL
+int32_t dset_find(int32_t x, int32_t * S);
+
+DLL_LOCAL
+int32_t *dset_compress(int32_t ** pS, int32_t * np);
+
+DLL_PUBLIC
   /* Spot_ID - to be generated when writing out */
 enum {
     s_1 = 0,			/* 1 Npix */
@@ -85,9 +112,13 @@ enum {
 
 /*void new_blob(double blob[], int i, int j, double val);*/
 
+DLL_LOCAL
 void add_pixel(double blob[], int i, int j, double val, double omega);
 
+DLL_LOCAL
 void merge(double blob1[], double blob2[]);
 
+DLL_LOCAL
 void compute_moments(double blobs[], int nblobs);
+
 #endif				/* _blobs_h */

@@ -6,6 +6,8 @@ sys.path.insert(0,".")
 
 modules = [
     "test_sym_u",
+    "testcol",
+    "test_localmaxlabel",
     "test_cImageD11",
     "gv_general.test_gv_general",
     "testcolumnfile",
@@ -14,14 +16,21 @@ modules = [
     "test_ubito",
     "test_uncomputegv",
     "test_transform",
+    "twinprob.test_twin",
     "testcolfile2db.testcolfile2db",
+    "ken_simul.testken",
     "testconnectedpixels.testconnectedpixels",
     "testlabelimage.testlabelimage",
-    "peaksearchtiftest.make_test_data",
-    "index_demos.generate_gv",
-    "test_index_unknown.test_index_unknown",
+
 ]
 
+if "all" in sys.argv:
+    modules += ["index_demos.generate_gv",
+                "test_index_unknown.test_index_unknown",
+                "peaksearchtiftest.make_test_data"
+    ]
+else:
+    print ("Add \"all\" to command line to run all tests")
 HERE = os.getcwd()
 print( "HERE",HERE )
 

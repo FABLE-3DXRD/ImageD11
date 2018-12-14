@@ -133,8 +133,8 @@ def hexagonal():
     return generate_group ( "-y,x-y,z", "-x,-y,z", "y,x,-z" )
 
 def trigonal():
-    """ P3 143 """
-    return generate_group ( "y,-x-y,z" )
+    """ P321 150 """
+    return generate_group ( "y,-x-y,z", "y,x,-z" )
 
 def rhombohedralP():
     """ R3 primitive """
@@ -255,11 +255,10 @@ def test():
         assert d == 1.0, "Determinant = %f %s"%(d,op)
     print("testing2")    
     assert len(cubic().group) == 24, "not 24 ops found for cubic !"
-    print(len(hexagonal().group))
-    assert len(hexagonal().group) == 12 ,"not 6 ops found for hexagonal !"
-    assert len(trigonal().group) == 3 ,"not 3 ops found for trigonal !"+\
+    assert len(hexagonal().group) == 12 ,"not 12 ops found for hexagonal !"
+    assert len(trigonal().group) == 6 ,"not 7 ops found for trigonal !"+\
         str(trigonal().group)
-    assert len(tetragonal().group) == 4 ,"not 8 ops found for tetragonal !"
+    assert len(tetragonal().group) == 8 ,"not 8 ops found for tetragonal !"
     assert len(orthorhombic().group) == 4 ,"not 4 ops found for orthorhombic !"
     print("testing3")
     for f in [ monoclinic_a, monoclinic_b, monoclinic_c]:
