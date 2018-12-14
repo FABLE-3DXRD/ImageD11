@@ -1,13 +1,12 @@
 build: false
 
-platform:
-- x86
-- x64
   
 environment:
   matrix:
-    - CONDA: 2.7
-    - CONDA: 3.6
+    - CONDA: C:\Miniconda
+    - CONDA: C:\Miniconda-x64
+    - CONDA: C:\Miniconda37
+    - CONDA: C:\Miniconda37-x64
 
 init:
   - "ECHO %CONDA%"
@@ -18,7 +17,6 @@ install:
   - conda update -q conda
   - conda info -a
   - conda install numpy scipy h5py matplotlib
-  - activate test-environment
   - pip install fabio xfab pycifrw pillow --no-deps
   - pip install .
 
