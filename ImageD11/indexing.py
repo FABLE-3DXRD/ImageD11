@@ -277,7 +277,16 @@ class indexer:
               minpks=self.minpks, uniqueness=self.uniqueness, ds_tol=self.ds_tol,
               wavelength=self.wavelength, eta_range=self.eta_range,
               max_grains=self.max_grains)
+        
+        # Add a resetting functionality, adapted from
+        # stackoverflow.com/questions/4866587/pythonic-way-to-reset-an-objects-variables
+        import copy
+        self.__pristine_dict = copy.deepcopy( self.__dict__ )
 
+    def reset( self ):
+        import copy
+        self.__dict__ = copy.deepcopy( self.__pristine_dict )
+        
 
     def loadpars(self,filename=None):
         if filename is not None:
