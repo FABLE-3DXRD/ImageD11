@@ -10,7 +10,7 @@ environment:
     - CONDA: 3.6
 
 init:
-  - "ECHO %CONDA%
+  - "ECHO %CONDA%"
 
 install:
   - "set PATH=%CONDA%;%CONDA%\\Scripts;%PATH%"
