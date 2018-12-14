@@ -36,6 +36,7 @@ jobs:
 
       - save_cache:
           paths:
+              key:  ImageD11-{{arch}}-{{ checksum "setup.py" }}
             - ./venv
         
       # run tests!
