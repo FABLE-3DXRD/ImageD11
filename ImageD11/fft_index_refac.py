@@ -13,14 +13,14 @@ These will be real space vectors
 """
 
 import logging, time, sys
-import numpy
+import numpy as np
 
-from ImageD11 import labelimage, cImageD11
+from ImageD11 import labelimage, cImageD11, columnfile
 
 def get_options(parser):
     parser.add_option( '-n', '--ngrid',
                        action = 'store',
-                       dest = 'np',
+                       dest = 'npx',
                        type = 'int',
                        help = 'number of points in the fft grid [128]',
                        default = 128 )
@@ -38,21 +38,83 @@ def get_options(parser):
                        default = 5)
     return parser
 
+
+def refine_vector( v, gv, tol=0.25, ncycles=25, precision=1e-6 ):
+    """
+    Refine a (single) real space lattice vector
+    Input
+      v  :  real space lattice vector
+      gv : scattering vectors (no errors)
+      tol : tolerance for initial assignment to peak
+      ncycles : how much to refine
+      precision : when to stop refining in v += s when |s|/|v| < precision
+    Returns
+      vref : refined real space lattice vector
+
+    Uses:
+      hr = v[0]*gv[i,0] + v[0]*gv[i,1] + v[1]*gv[i,2]  1 per peak
+      hi = round(hr) = calc                            1 per peak
+      diff = calc - hr                                 1 per peak
+      gradient = d(diff)/dv[i] = gv[j,i]               3 per peak
+      matrix = gradient[i].gradient[j]                 3x3 peaks^2
+      rhs = gradient . diff                            3
+
+    Solve for shifts and iterates reducing tolerance as 1/(ncycles+1)
+    Peaks that change index during refinement are removed
+    Stops on : 
+       no peaks reassigned
+       ncycles runs out
+       |shift| / |vec| < precision
+    """
+    assert gv.shape[1] == 3
+    vref = v.copy()
+    mg = (gv*gv).sum(axis=1)
+    mold = None
+    wt = 1./(mg + mg.max()*0.01)
+    for i in range(ncycles):
+        hr = np.dot( vref, gv.T )   # npks
+        hi = np.round( hr )         # npks
+        diff = hi - hr              # npks
+        m = abs(diff) < tol/(i+1)   #  keep or not ?
+        diff = (diff*wt)[m]         # select peaks used
+        grad = (gv.T*wt).T[m]
+        # lsq problem:
+        rhs = np.dot( grad.T, diff ) 
+        mat = np.dot( grad.T, grad )
+        # avoid problems if singular:
+        U,s,V = np.linalg.svd( mat )
+        one_over_s = np.where( s/s.max() < 1e-6, 1, 1./s )
+        mati = np.dot( U, np.dot(np.diag( one_over_s ), V ) )
+        vshft = np.dot( mati, rhs )
+        vref = vref + vshft
+        if mold is not None:
+            changed = mold ^ m   # XOR
+            nch = changed.sum()
+            # Down weight peaks that are different h for next round
+            if nch == 0:
+                break
+            wt[ changed ] = 0.
+        mold = m
+        slen = np.sqrt((vshft * vshft).sum())
+        vlen = np.sqrt((vref*vref).sum())
+        if abs(slen/vlen) < precision:
+            break
+    return vref
+    
+
 class grid:
-    def __init__(self, np = 128, mr = 1.0 ,nsig = 5):
+    def __init__(self, npx = 128, mr = 1.0 ,nsig = 5):
         """
         Set up the grid to use (the large unit cell)
-        np - number of points in the grid
+        npx - number of points in the grid
         mr - maximum resolution limit to consider
         """
-        self.np = np
+        self.npx = npx
         self.nsig = nsig
-        self.grid = numpy.zeros((np,np,np),numpy.float32)
-        self.old_grid = numpy.zeros((np,np,np),numpy.float32)
-        self.cell_size = np*mr/2.
+        self.grid = np.zeros((npx,npx,npx),np.float32)
+        self.old_grid = np.zeros((npx,npx,npx),np.float32)
+        self.cell_size = npx * mr / 2.
         logging.info("Using an FFT unit cell of %s"%(str(self.cell_size)))
-
-
 
     def gv_to_grid_new(self, gv):
         """
@@ -63,25 +125,19 @@ class grid:
         logging.info("Gridding data")
         self.gv = gv
         hrkrlr = self.cell_size * gv
-        hkl = numpy.floor(hrkrlr + 0.5).astype(numpy.int)
+        hkl = np.round( hrkrlr ).astype(np.int)
         # Filter to have the peaks in asym unit
         # ... do we need to do this? What about wrapping?
-        hmx = numpy.where( hkl.max(axis=1) <  self.np/2 - 2.,
-                       1, 0 )
-        hmn = numpy.where( hkl.min(axis=1) > -self.np/2 + 2.,
-                       1, 0 )
-        my_g = numpy.compress( hmx & hmn, gv, axis=0 )
-
+        hmx = hkl.max(axis=1) <  (self.npx/2. - 2.)
+        hmn = hkl.min(axis=1) >  (2. - self.npx/2.)
+        my_g = np.compress( hmx & hmn, gv, axis=0 )
         # Compute hkl indices in the fft unit cell using filtered peaks
         hrkrlr = self.cell_size * my_g
-
         # Integer part of hkl (eg 1.0 from 1.9)
-        hkl = numpy.floor(hrkrlr).astype(numpy.int)
-
+        hkl = np.floor(hrkrlr).astype(np.int)
         # Fractional part of indices ( eg 0.9 from 1.9)
         remain = hrkrlr - hkl
         grid = self.grid
-        import time
         start = time.time()
         # Loop over corners with respect to floor corner
         ng = grid.shape[0]*grid.shape[1]*grid.shape[2]
@@ -96,133 +152,101 @@ class grid:
                      (1,1,1) ]: #8
             # The corner
             thkl = hkl + cor
-            fac = 1 - numpy.absolute(remain - cor)
-            vol = numpy.absolute(fac[:,0]*fac[:,1]*fac[:,2]).astype(numpy.float32)
-            thkl = numpy.where(thkl < 0, self.np + thkl, thkl)
+            fac = 1 - abs(remain - cor)
+            vol = abs(fac[:,0]*fac[:,1]*fac[:,2]).astype(np.float32)
+            thkl = np.where(thkl < 0, self.npx + thkl, thkl)
             ind = thkl[:,0]*grid.shape[1]*grid.shape[2] + \
                   thkl[:,1]*grid.shape[1] + \
                   thkl[:,2]
 
-            cImageD11.put_incr( flatgrid , ind.astype(numpy.intp), vol )
-            # print thkl,vol
-
-            # vals = numpy.take(grid.flat, ind)
-            # print "vals",vals
-            # vals = vals + vol
-            # print "vol",vol
-            # print "ind",ind
-            # FIXME
-            # This is wrong - if ind repeats several times we
-            # only take the last value
-            # numpy.put(grid, ind, vals)
-            # print numpy.argmax(numpy.argmax(numpy.argmax(grid)))
-            # print grid[0:3,-13:-9,-4:]
-        logging.warn("Grid filling loop takes "+str(time.time()-start)+" /s")
+            cImageD11.put_incr( flatgrid , ind.astype(np.intp), vol )
+        logging.info("Grid filling loop takes "+str(time.time()-start)+" /s")
 
 
 
     def fft(self):
         """ Compute the Patterson """
         start = time.time()
-        self.patty = numpy.ascontiguousarray(abs(numpy.fft.fftn(self.grid)),
-                                             numpy.float32)
+        self.patty = np.ascontiguousarray(abs(np.fft.fftn(self.grid)),
+                                          np.float32)
         logging.info("Time for fft "+str(time.time()-start))
         self.origin = self.patty[0,0,0]
         logging.info("Patterson origin height is :"+str(self.origin))
 
     def props(self):
         """ Print some properties of the Patterson """
-        print("Patterson info")
-        print(self.patty.shape, type(self.patty))
-        p = numpy.ravel(self.patty)
-        m = numpy.mean(p)
-        print("Average:",m)
+        logging.info("Patterson info "+str(self.patty.shape)
+                     +str(type(self.patty)))
+        p = np.ravel(self.patty)
+        m = np.mean(p)
+        logging.info("Average: %f"%(m))
         p2 = p*p
         self.mean = m
-        v = numpy.sqrt( (numpy.sum(p2) - m*m*len(p) ) /(len(p)-1) )
-        print("Sigma",v)
+        v = np.sqrt( (np.sum(p2) - m*m*len(p) ) /(len(p)-1) )
+        logging.info("Sigma: %f"%(v))
         self.sigma = v
 
     def peaksearch(self, peaksfile):
         """ Peaksearch in the Patterson """
-        lio = labelimage.labelimage( (self.np, self.np),
+        lio = labelimage.labelimage( (self.npx, self.npx),
                                      peaksfile )
         logging.info("Peaksearching at %f sigma"%(self.nsig))
         thresh = self.mean + self.nsig  * self.sigma
-        for i in range(self.np):
+        for i in range(self.npx):
             lio.peaksearch(self.patty[i],
                            thresh,
                            i)
             lio.mergelast()
-            #if i%2 == 0:
-            #    print ".",
-            #    sys.stdout.flush()
-        #print
         lio.finalise()
 
-    def pv(self, v): return ("%8.4f "*3)%tuple(v)
+    def pv(self, v):
+        """ print vector """
+        return ("%8.4f "*3)%tuple(v)
 
     def reduce(self, vecs):
         raise Exception("You want lattice_reduction instead")
-        from ImageD11 import sym_u
-        g =  sym_u.trans_group(tol = self.rlgrid*2)
-        # print self.rlgrid, len(vecs)
-        for i in range(len(vecs)):
-            print(self.pv(vecs[i]), end=' ')
-            assert len(vecs[i]) == 3
-            t = g.reduce(vecs[i])
-            if numpy.dot(t, t) < self.minlen * self.minlen:
-                print("Short ",self.pv(vecs[i]), i, self.pv(t))
-                continue
-            if not g.isMember(t):
-                g.additem(t)
-                print("Adding",self.pv(vecs[i]), i, self.pv(t))
-                print(len(g.group), g.group)
-            else:
-                print("Got   ",self.pv(vecs[i]), i , self.pv(t))
-        print(g.group)
-        return g.group[1:]
 
     def read_peaks(self, peaksfile):
         """ Read in the peaks from a peaksearch """
-        from ImageD11.columnfile import columnfile
-        import time
         start = time.time()
-        self.colfile = columnfile(peaksfile)
-        print("reading file",time.time()-start)
+        colf = columnfile.columnfile(peaksfile)
+        logging.info("reading file %f/s"%(time.time()-start))
         # hmm - is this the right way around?
-        self.rlgrid = 1.0*self.cell_size/self.np
-        self.px = self.colfile.omega
-        self.px = numpy.where(self.px > self.np/2 ,
-                          self.px - self.np  ,
-                          self.px)*self.rlgrid
-        self.py = self.colfile.sc
-        self.py = numpy.where(self.py > self.np/2 ,
-                          self.py - self.np  ,
-                          self.py)*self.rlgrid
-        self.pz = self.colfile.fc
-        self.pz = numpy.where(self.pz > self.np/2 ,
-                          self.pz - self.np   ,
-                          self.pz)*self.rlgrid
-        self.UBIALL = numpy.transpose(numpy.array( [self.px, self.py, self.pz] ))
-        # self.UBIALL = self.reduce(self.UBIALL)
-        print("Number of peaks found",self.px.shape[0],time.time()-start)
-        #        print self.UBIALL.shape, self.gv.shape
-
+        self.rlgrid = 1.0*self.cell_size/self.npx
+        self.px = colf.omega
+        self.px = np.where(self.px > self.npx/2 ,
+                           self.px - self.npx  ,
+                           self.px)*self.rlgrid
+        self.py = colf.sc
+        self.py = np.where(self.py > self.npx/2 ,
+                           self.py - self.npx  ,
+                           self.py)*self.rlgrid
+        self.pz = colf.fc
+        self.pz = np.where(self.pz > self.npx/2 ,
+                           self.pz - self.npx   ,
+                           self.pz)*self.rlgrid
+        self.UBIALL = np.array( [self.px, self.py, self.pz] ).T
+        logging.info("Number of peaks found %d  %f/s"%(
+                     self.px.shape[0],time.time()-start))
+        for i in range(colf.nrows):
+            self.UBIALL[i] = refine_vector( self.UBIALL[i], self.gv )
+        logging.info("Fitting vectors %f /s"%(time.time()-start))
+        self.colfile = colf
+        
     def slow_score(self):
         import time
         start = time.time()
-        scores = numpy.dot( self.UBIALL, numpy.transpose( self.gv ) )
-        scores_int = numpy.floor( scores + 0.5).astype(numpy.int)
+        scores = np.dot( self.UBIALL, np.transpose( self.gv ) )
+        scores_int = np.floor( scores + 0.5).astype(np.int)
         diff = scores - scores_int
         nv = len(self.UBIALL)
         print("scoring",nv,time.time()-start)
         self.tol = 0.1
-        scores = numpy.sqrt(numpy.average(diff*diff, axis = 1))
-        n_ind = numpy.where(numpy.absolute(diff)< self.tol, 1 , 0)
-        nind = numpy.sum(n_ind, axis=1)
-        order = numpy.argsort(nind)[::-1]
-        mag_v = numpy.sqrt( self.px * self.px +
+        scores = np.sqrt(np.average(diff*diff, axis = 1))
+        n_ind = np.where(np.absolute(diff)< self.tol, 1 , 0)
+        nind = np.sum(n_ind, axis=1)
+        order = np.argsort(nind)[::-1]
+        mag_v = np.sqrt( self.px * self.px +
                         self.py * self.py +
                         self.pz * self.pz )
         f = open("fft.pks","w")
@@ -240,7 +264,7 @@ class grid:
                 ))
             for k in range(i+1,nv):
                 l = order[k]
-                nij = numpy.sum( n_ind[j] * n_ind[l] )
+                nij = np.sum( n_ind[j] * n_ind[l] )
                 f.write("%4d : %-7d "%(k,nij))
             f.write("\n")
 
@@ -273,15 +297,15 @@ class grid:
 
 
 
-        sm = numpy.zeros( (len(diff), len(diff)), numpy.float)
+        sm = np.zeros( (len(diff), len(diff)), np.float)
         for k in range(len(diff)):
             i = order[k]
-            sm[i,i] = numpy.dot(diff[i], diff[i])
+            sm[i,i] = np.dot(diff[i], diff[i])
         for k in range(len(diff)-1):
             i = order[k]
             for l in range(i+1, len(diff)):
                 j = order[l]
-                sm[i,j] = numpy.dot(diff[i],diff[j])/sm[i,i]/sm[j,j]
+                sm[i,j] = np.dot(diff[i],diff[j])/sm[i,i]/sm[j,j]
                 sm[j,i] = sm[i,j]
         for i in range(len(diff)):
             sm[i,i] = 1.
@@ -304,11 +328,11 @@ class grid:
 def test(options):
     gvfile = options.gvfile
     mr = options.max_res
-    np = options.np
+    npx = options.npx
     nsig = options.nsig
     from ImageD11 import indexing
-    print(np, mr, nsig)
-    go = grid(np = np , mr = mr , nsig = nsig)
+    print(npx, mr, nsig)
+    go = grid(npx = npx , mr = mr , nsig = nsig)
     io = indexing.indexer()
     io.readgvfile(gvfile)
     go.gv_to_grid_new(io.gv )
@@ -331,9 +355,9 @@ def test(options):
 
     go.gv_to_grid_old(io.gv)
 
-    diff = numpy.ravel(go.grid - go.old_grid)
-    print("All OK if this is zero",numpy.add.reduce(diff))
-    print("error at",numpy.argmax(diff),diff.max(),numpy.argmin(diff),diff.min())
+    diff = np.ravel(go.grid - go.old_grid)
+    print("All OK if this is zero",np.add.reduce(diff))
+    print("error at",np.argmax(diff),diff.max(),np.argmin(diff),diff.min())
 
 
 
@@ -344,7 +368,7 @@ if __name__=="__main__":
     import sys
     class options:
         max_res = 0.7
-        np = 128
+        npx = 128
         nsig = 10
 
     options.gvfile = sys.argv[1]

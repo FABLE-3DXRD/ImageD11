@@ -28,9 +28,10 @@ if __name__=="__main__":
     from ImageD11 import fft_index_refac, rc_array,\
         lattice_reduction, indexing
     import numpy as np
-    dot  = np.dot
     from ImageD11.fft_index_refac import grid
 
+    logging.basicConfig( level=logging.INFO )
+    
     parser = OptionParser()
 
     parser.add_option('-g', '--gve',
@@ -114,7 +115,7 @@ if __name__=="__main__":
             # print "Peak remaining",len(cur_gvecs)
             if options.use_fft:
                 # do fft
-                g = grid( np = options.np,
+                g = grid( npx = options.npx,
                           mr = options.mr,
                           nsig = options.nsig)
                 g.gv_to_grid_new(cur_gvecs)
@@ -123,7 +124,7 @@ if __name__=="__main__":
                 g.peaksearch(open("eu.patterson_pks","w"))
                 g.read_peaks("eu.patterson_pks")
                 vecs = rc_array.rc_array(g.UBIALL.T , direction='col')
-                assert vecs.shape == (3, g.colfile.nrows)
+                assert vecs.shape == (3, len(g.UBIALL))
                 order = np.argsort( g.colfile.sum_intensity )[::-1]
                 vecs = rc_array.rc_array( np.take( vecs, order, axis = 1),
                                           direction = 'col')
