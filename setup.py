@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 # ImageD11_v1.0 Software for beamline ID11
 # Copyright (C) 2005-2018  Jon Wright
 #
@@ -27,7 +29,7 @@ import setuptools
 import sys
 from numpy.distutils.core import setup, Extension
 from numpy import get_include
-
+import struct
 
 if sys.platform == "win32" and "--compiler=mingw32" not in sys.argv:
     ecomparg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY", "/arch:SSE2"]
@@ -44,6 +46,17 @@ else:
 
 nid = [get_include(),]
 
+def fix_f2py_pointer():
+    # decide if we have 32 bits or 64 bits compilation
+    nbyte = struct.calcsize("P") # 4 or 8
+    with open("src/cImageD11_template.pyf","r") as f:
+        pyf = f.read()
+    print(pyf.find( "(kind=size_t)"))
+    pyf = pyf.replace(  "(kind=size_t)" ,"*%d"%(nbyte))
+    with open("src/cImageD11.pyf", "w") as f:
+        f.write( pyf )
+
+fix_f2py_pointer()
 # Compiled extension:
 cImageD11extension = Extension( "cImageD11",
                                 sources = [ "src/cImageD11.pyf",
@@ -97,7 +110,6 @@ setup(name='ImageD11',
       packages = ["ImageD11"],
       package_dir = {"ImageD11":"ImageD11"},
       url = "http://github.com/jonwright/ImageD11",
-#      download_url = ["http://sourceforge.net/project/showfiles.php?group_id=82044&package_id=147869"],
       package_data = {"ImageD11" : ["doc/*.html", "data/*" ]},
       scripts = ["ImageD11/rsv_mapper.py",
                  "scripts/peaksearch.py",

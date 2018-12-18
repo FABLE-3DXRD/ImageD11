@@ -220,8 +220,10 @@ python module cImageD11
           intent(c)
           real, intent(inout) :: data(m)
           real, intent(in) :: vals(n)
-! Assumes 64 bit addressing, usually true
-          integer*8, dimension(n), intent(in) :: ind
+! The indexing type is 32 or 64 bits. f2py does not handle this case.
+! Use this file as a template. setup.py will replace the following line
+! as needed ... eg open(...).replace( "(kind=size_t)", "*8" or "*4" as appropriate):
+          integer(kind=size_t), dimension(n), intent(in) :: ind
           integer, intent(hide), depend( data ) :: m
           integer, intent(hide), depend( ind) :: n
           integer, optional :: boundscheck = 0
