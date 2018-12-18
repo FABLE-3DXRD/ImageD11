@@ -5,8 +5,8 @@ environment:
   matrix:
     - CONDA: C:\Miniconda
     - CONDA: C:\Miniconda-x64
-    - CONDA: C:\Miniconda37
-    - CONDA: C:\Miniconda37-x64
+    - CONDA: C:\Miniconda36
+    - CONDA: C:\Miniconda36-x64
 
 init:
   - "ECHO %CONDA%"
@@ -14,10 +14,8 @@ init:
 install:
   - "set PATH=%CONDA%;%CONDA%\\Scripts;%PATH%"
   - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
   - conda info -a
-  - conda install numpy scipy h5py matplotlib
-  - pip install fabio xfab pycifrw pillow --no-deps
+  - pip install numpy scipy h5py matplotlib fabio xfab pycifrw pillow --no-deps
   - pip install .
 
 test_script:
