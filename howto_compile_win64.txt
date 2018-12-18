@@ -9,14 +9,18 @@ Grab miniconda, git and the Microsoft Visual C++ Compiler for Python 2.7:
 Now:
     conda create -name py27_64 python=2.7
     conda activate py27_64
-    conda install numpy scipy matplotlib pyopengl pillow
-    pip install fabio xfab pycifrw --no-deps
+    conda install numpy scipy matplotlib pyopengl pillow 
+    pip install h5py fabio xfab pycifrw --no-deps
     git clone http://github.com/jonwright/ImageD11.git
     python setup.py build
-    pip install . --no-deps
+    pip install . --no-deps 
     cd test
     python run_tests.py all
     ... rejoice
+    ... improve
+    pip install . --no-deps -U
+    python run_tests.py all
+    conda deactivate
 
 Getting SxsErrors on a new computer? You might need the 2008 SP1 redistributable packages:
     http://www.microsoft.com/en-us/download/details.aspx?id=5582    x86
