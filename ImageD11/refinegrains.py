@@ -336,7 +336,7 @@ class refinegrains:
             junk = cImageD11.score_and_refine(mat , gvT,
                                             self.tolerance)
             hklf = numpy.dot( mat, gv )
-            hkli = numpy.floor( hklf + 0.5 )
+            hkli = numpy.round( hklf )
 
             gcalc = numpy.dot( numpy.linalg.inv(mat) , hkli )
             tth,[eta1,eta2],[omega1,omega2] = transform.uncompute_g_vectors(
