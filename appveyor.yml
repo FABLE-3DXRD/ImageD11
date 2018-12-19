@@ -1,23 +1,21 @@
 build: false
 
+  
 environment:
   matrix:
-    - PYTHON_VERSION: 2.7
-      MINICONDA: C:\Miniconda
-    - PYTHON_VERSION: 3.6
-      MINICONDA: C:\Miniconda3
+    - CONDA: C:\Miniconda
+    - CONDA: C:\Miniconda-x64
+    - CONDA: C:\Miniconda36
+    - CONDA: C:\Miniconda36-x64
 
 init:
-  - "ECHO %PYTHON_VERSION% %MINICONDA%"
+  - "ECHO %CONDA%"
 
 install:
-  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
+  - "set PATH=%CONDA%;%CONDA%\\Scripts;%PATH%"
   - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
   - conda info -a
-  - "conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy h5py matplotlib"
-  - activate test-environment
-  - pip install fabio xfab pycifrw pillow --no-deps
+  - pip install numpy scipy h5py matplotlib fabio xfab pycifrw pillow --no-deps
   - pip install .
 
 test_script:
