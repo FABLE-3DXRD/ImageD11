@@ -37,13 +37,15 @@ def triclinic( cp ):
 
 def monoclinic_a( cp ):
     a,b,c,al,be,ga = cp
-    return [a,b,c,90.,be,90.]
+    return [a,b,c,al,90.,90.]
+
 def monoclinic_b( cp ):
     a,b,c,al,be,ga = cp
-    return [a,b,c,90.,90.,ga]
+    return [a,b,c,90.,be.,90.]
+
 def monoclinic_c( cp ):
     a,b,c,al,be,ga = cp
-    return [a,b,c,90.,be,90.]
+    return [a,b,c,90.,90.,ga]
 
 def orthorhombic( cp ):
     """ a=b, c, 90,90,90 """
@@ -58,22 +60,22 @@ def tetragonal( cp ):
 def trigonalP( cp ):
     """ a=b=c, alpha=beta=gamma """
     a,b,c,al,be,ga = cp
-    a = (a+b+c)/3.
-    al = (al+be+ga)/3.
-    return [a,a,a,al,al,al]
+    anew = (a+b+c)/3.
+    alnew = (al+be+ga)/3.
+    return [anew,anew,anew,alnew,alnew,alnew]
 
 def trigonalH( cp ):
     """ a=b,c, alpha=beta=90,gamma=120 """
     a,b,c,al,be,ga = cp
-    a = (a+b)/2.
-    return [ a, a, c, 90., 90., 120.] 
+    anew = (a+b)/2.
+    return [ anew, anew, c, 90., 90., 120.] 
 
 hexagonal = trigonalH
 
 def cubic( cp ):
     """ a=b=c, alpha=beta=gamma=90 """
-    a = (cp[0]+cp[1]+cp[2])
-    return [ a, a, a, 90., 90., 90.] 
+    anew = (cp[0]+cp[1]+cp[2])/3.
+    return [ anew, anew, anew, 90., 90., 90.] 
     
 
     
