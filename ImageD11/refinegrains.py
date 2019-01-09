@@ -41,7 +41,7 @@ def monoclinic_a( cp ):
 
 def monoclinic_b( cp ):
     a,b,c,al,be,ga = cp
-    return [a,b,c,90.,be.,90.]
+    return [a,b,c,90.,be,90.]
 
 def monoclinic_c( cp ):
     a,b,c,al,be,ga = cp
