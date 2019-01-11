@@ -186,7 +186,7 @@ class columnfile:
         write an ascii columned file
         """
         self.chkarray()
-        fout = open(filename,"w+") # appending
+        fout = open(filename,"w") # appending
         # Write as "# name = value\n"
         parnames = list(self.parameters.get_parameters().keys())
         parnames.sort()
