@@ -7,6 +7,7 @@ sys.path.insert(0,".")
 modules = [
     "test_sym_u",
     "testcol",
+    "testlattice",
     "test_localmaxlabel",
     "test_cImageD11",
     "gv_general.test_gv_general",

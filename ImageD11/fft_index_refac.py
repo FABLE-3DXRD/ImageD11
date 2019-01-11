@@ -71,13 +71,16 @@ def refine_vector( v, gv, tol=0.25, ncycles=25, precision=1e-6 ):
     mg = (gv*gv).sum(axis=1)
     mold = None
     wt = 1./(mg + mg.max()*0.01)
+    gvt = gv.T.copy()
     for i in range(ncycles):
-        hr = np.dot( vref, gv.T )   # npks
+        hr = np.dot( vref, gvt )   # npks
         hi = np.round( hr )         # npks
         diff = hi - hr              # npks
         m = abs(diff) < tol/(i+1)   #  keep or not ?
         diff = (diff*wt)[m]         # select peaks used
-        grad = (gv.T*wt).T[m]
+        grad = (gvt*wt).T[m]
+        gvt = gvt[:,m]
+        wt = wt[m]
         # lsq problem:
         rhs = np.dot( grad.T, diff ) 
         mat = np.dot( grad.T, grad )
@@ -87,17 +90,11 @@ def refine_vector( v, gv, tol=0.25, ncycles=25, precision=1e-6 ):
         mati = np.dot( U, np.dot(np.diag( one_over_s ), V ) )
         vshft = np.dot( mati, rhs )
         vref = vref + vshft
-        if mold is not None:
-            changed = mold ^ m   # XOR
-            nch = changed.sum()
-            # Down weight peaks that are different h for next round
-            if nch == 0:
-                break
-            wt[ changed ] = 0.
-        mold = m
+        if m.sum()==0:
+            break
         slen = np.sqrt((vshft * vshft).sum())
         vlen = np.sqrt((vref*vref).sum())
-        if abs(slen/vlen) < precision:
+        if vlen < precision or abs(slen/vlen) < precision:
             break
     return vref
     
@@ -226,14 +223,17 @@ class grid:
                            self.pz - self.npx   ,
                            self.pz)*self.rlgrid
         self.UBIALL = np.array( [self.px, self.py, self.pz] ).T
-        logging.info("Number of peaks found %d  %f/s"%(
+        logging.info("Number of peaks found %d  %f/s, now fit some"%(
                      self.px.shape[0],time.time()-start))
         for i in range(colf.nrows):
+            print(".",end="")
             self.UBIALL[i] = refine_vector( self.UBIALL[i], self.gv )
+            
         logging.info("Fitting vectors %f /s"%(time.time()-start))
         self.colfile = colf
         
     def slow_score(self):
+        logging.info("running slow_score")
         import time
         start = time.time()
         scores = np.dot( self.UBIALL, np.transpose( self.gv ) )
