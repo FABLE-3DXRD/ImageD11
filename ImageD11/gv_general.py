@@ -99,7 +99,8 @@ class rotation_axis:
             self.to_matrix()
             return np.dot(self.inversematrix, p)
         # Just reverse the angles here
-        return self.rotate_vectors(vectors, -angles)
+        else:
+            return self.rotate_vectors(vectors, -angles)
 
     def to_matrix(self):
         """
@@ -252,7 +253,7 @@ def g_to_k( g,  # g-vectors [3,:]
     rbda0 = np.sum(rb * a0, 0) 
     rbda1 = np.sum(rb * a1, 0) 
     rbda2 = np.sum(rb * a2, 0)
-    assert rbda0.shape == rbda1.shape == rbda2.shape == (g.shape[1],)
+    assert rbda0.shape == rbda1.shape == rbda2.shape == (npeaks,)
     modg = np.sqrt(np.sum(g * g, 0))
     kdotbeam = -modg*modg/2.
     # print kdotbeam,"uyou"

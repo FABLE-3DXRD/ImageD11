@@ -362,11 +362,12 @@ class refinegrains:
             omega_calc = best_fitting * omega2 + ( 1 - best_fitting ) * omega1
             # Take a weighted average within the omega error of the observed
             omerr = (om*sign - omega_calc)
+            # Clip to 360 degree range
+            omerr = omerr - ( 360 * numpy.round( omerr / 360.0 ) )
             # print omerr[0:5]
             omega_calc = om*sign - numpy.clip( omerr, -self.slop , self.slop )
             # print omega_calc[0], om[0]
             thisgrain.omega_calc = omega_calc
-
             # Now recompute with improved omegas... (tth, eta do not change much)
             #self.tth, self.eta = transform.compute_tth_eta(
             #    numpy.array([x, y]),
@@ -680,6 +681,7 @@ class refinegrains:
                 if False: # For testing / debugging  
                     omf  =  self.OMEGA_FLOAT 
                     self.OMEGA_FLOAT = False
+                    gv2 = self.gv.copy()
                     self.compute_gv( gr )
                     import pylab
                     pylab.plot( self.gv[:,0], self.gv[:,0]-gv2[:,0], ".")

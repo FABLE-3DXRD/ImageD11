@@ -210,7 +210,7 @@ def refine(UBI, gv, tol, quiet=True):
         print("After refinement, it was OK before ???")
         print("\n\n\n")
         return UBI
-        raise
+        # raise
     #      for i in ind:
     #         print "( %-6.4f %-6.4f %-6.4f ) %12.8f %12.8f"%(\
     #            h[0,i],h[1,i],h[2,i],sqrt(drlv2[i]),sqrt(drlv2_old[i]))
@@ -318,7 +318,7 @@ class indexer:
         Assign the g-vectors to hkl rings
         """
         # rings are in self.unitcell
-        limit = np.maximum.reduce(self.ds)
+        limit = np.amax( self.ds )
         print("Maximum d-spacing considered",limit)
         self.unitcell.makerings(limit, tol = self.ds_tol)
         dsr = self.unitcell.ringds
@@ -789,7 +789,7 @@ class indexer:
                 npk=npk+1
             else:
                 if len(self.ubis)>0:
-                    f.write("Peak not assigned\m")
+                    f.write("Peak not assigned\n")
                     # , closest=[ % -6.4f % -6.4f % -6.4f ] for grain %d\n"%(hi[0],hi[1],hi[2],m))
                 else:
                     f.write("Peak not assigned, no grains found\n")

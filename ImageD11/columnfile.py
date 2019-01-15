@@ -363,15 +363,16 @@ class columnfile:
         if pars is not None:
             self.setparameters( pars )
         pars = self.parameters
-        if "sc" in self.titles:
+        if "sc" in self.titles and "fc" in self.titles:
             pks = self.sc, self.fc
-        elif "xc" in self.titles: 
+        elif "xc" in self.titles and "yc" in self.titles:
             pks = self.xc, self.yc
         else:
-            raise Exception("columnfile file misses xc or sc")
+            raise Exception("columnfile file misses xc/yc or sc/fc")
         xl,yl,zl = transform.compute_xyz_lab( pks,
                                           **pars.parameters)
         peaks_xyz = np.array((xl,yl,zl))
+        assert "omega" in self.titles,"No omega column"
         om = self.omega *  float( pars.get("omegasign") )
         tth, eta = transform.compute_tth_eta_from_xyz(
             peaks_xyz, om,
@@ -459,12 +460,12 @@ try:
             print(name, h)
             raise
         g.attrs['ImageD11_type'] = 'peaks'
-        for t in c.titles:
+        for t in cf.titles:
             if t in INTS:
                 ty = np.int32
             else:
                 ty = np.float32
-            g.create_dataset( t, data = getattr(c, t).astype( ty ) )
+            g.create_dataset( t, data = getattr(cf, t).astype( ty ) )
         h.close()
 
     def colfile_from_hdf( hdffile , name=None, obj=None ):

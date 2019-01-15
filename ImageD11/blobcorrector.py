@@ -92,9 +92,9 @@ class correctorclass: #IGNORE:R0902
             # Unreachable code - we no longer accept this complexity
             # it means the spline file for ImageD11 bruker images
             # is not the same as for fit2d. 
-            xpos = self.xmax - xin
-            xcor = xin - bisplev(yin, xpos, self.tck2)
-            ycor = yin + bisplev(yin, xpos, self.tck1)
+            # xpos = self.xmax - xin
+            # xcor = xin - bisplev(yin, xpos, self.tck2)
+            # ycor = yin + bisplev(yin, xpos, self.tck1)
         return xcor, ycor
 
     def make_pixel_lut(self, dims):

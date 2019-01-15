@@ -5,7 +5,7 @@ from ImageD11 import peakmerge, indexing, transformer
 from ImageD11 import grain, unitcell, refinegrains, sym_u
 import xfab.tools
 import sys, os, numpy as np, time, random
-import multiprocessing
+import multiprocessing, traceback
 from multiprocessing import Pool
 from multiprocessing import Queue as PQueue
 
@@ -289,7 +289,7 @@ def grid_index_parallel( fltfile, parfile, tmp, gridpars, translations ):
             sys.stderr.write(" Caught queue empty exception\n")
             if pa._number_left == 0:
                 break
-        except KeyBoardInterrupt:
+        except KeyboardInterrupt:
             break
     # write here to be on the safe side .... 
     grain.write_grain_file( "all"+tmp+".map", ul.uniqgrains )

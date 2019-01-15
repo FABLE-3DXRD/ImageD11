@@ -551,7 +551,6 @@ def peaksearch_driver(options, args):
             for t in thresholds_list[::-1]:
                 searchers[t].start()
                 my_threads.append(searchers[t])
-            looping = True
             nalive = len(my_threads)
             def empty_queue(q):
                 while 1:
@@ -587,7 +586,7 @@ def peaksearch_driver(options, args):
                     print("finishing from waiting loop")
                 except:
                     print("Caught exception in waiting loop")
-                    ImageD11.thread_stop_now = True
+                    ImageD11_thread.stop_now = True
                     time.sleep(1)
                     empty_queue(read_queue)
                     for t in thresholds_list:

@@ -113,7 +113,7 @@ class indexer:
         hkls or from the unit cell generating a list of hkls.
         """
         if hkls is None:
-            dslimit = np.maximum.reduce(self.cf.modg)
+            dslimit = self.cf.modg.max()
             wvln = self.transformpars.get( "wavelength" )
             ttol = self.transformpars.get( "fit_tolerance" ) # tth units
             # at limit this ttol make which ds range?
@@ -123,7 +123,7 @@ class indexer:
             self.unitcell.makerings(dslimit+dstol/2, tol = dstol)
         else:
             self.unitcell.peaks = [ (self.unitcell.ds(h),h) for h in hkls ]
-            self.unitcell.makerings( dslimit, tol=dstol, newpeaks=False )
+            self.unitcell.makerings( dslimit, tol=dstol ) # , newpeaks=False )
         self.unitcell.ringtth = [ 2 * np.degrees( np.arcsin( ds * wvln / 2 ) )
                                   for ds
                                   in self.unitcell.ringds ]
@@ -217,7 +217,7 @@ class indexer:
                print("cell: ",6*"%.6f "%(  indexing.ubitocellpars(ubi) ))
                print("position: ",trans)
                print()
-        self.pairs=pairs
+        self.pairscache=pairs
         print(time.time()-start,"for",len(pairs),n1.shape, n2.shape)
         return pairs
 

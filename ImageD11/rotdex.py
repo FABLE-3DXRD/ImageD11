@@ -77,7 +77,7 @@ def compute_dgdt( txyz, peaks_Cxyz, beam_Cxyz, wavelength):
     drdT = np.zeros((3,3,len(f)))
     # d( r/f )/dT -> r is a vector, r[0], r[1], r[2]
     #                f is a scalar
-    o = np.ones(len(f))
+    # o = np.ones(len(f))
     # please derive/explain this... note r is already r/f
     drdT[0] = ( (dfdT[0] * r).T + (1,0,0) ).T / f
     drdT[1] = ( (dfdT[1] * r).T + (0,1,0) ).T / f
@@ -130,7 +130,7 @@ def fit_ub_t( ub, translation, hkl, peaks_Cxyz, beam_Cxyz, wavelength):
     ubnew = ub.copy()
     # empirically it converges to 3 decimal places in 1 cycle
     # ...since: dgobsdt seems to depend on t we run a couple of cycles
-    for iloop in range(2):
+    for _ in range(2):
         gobs, dgobsdt = compute_dgdt( tnew, peaks_Cxyz, beam_Cxyz, wavelength )
         # Note dgdub=h does not change here
         for i in range(3):
