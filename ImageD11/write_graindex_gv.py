@@ -54,7 +54,7 @@ def make_ds_list(cell,limit=2.):
                 hmax = h
                 kmax = k
                 ds_string="(%d%d%d)"%(h,k,l)
-        ds_list.append([ky,ptype,ds_string])
+        ds_list.append([ds,ptype,ds_string])
     return ds_list
 
 def get_ds_string(g,ds_list):

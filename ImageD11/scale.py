@@ -45,8 +45,7 @@ are above a threshold (eg the central circle on the bruker)
 """
 
 
-import numpy
-from fabio.openimage import openimage
+import numpy, fabio
 
 class scale:
     def __init__( self, im1, threshold = None):
@@ -135,14 +134,14 @@ def scaleseries( target, stem, first, last,
         # we only look to see
         for i in range(first, last+1):
             name = "%s.%04d" % (stem, i)
-            secondimage = openimage.openimage(name)
+            secondimage = fabio.open(name)
             a, b = scaler.scale(secondimage.data)
             print(i, name , a, b, end=' ')
     else: # we correct the image
         for i in range(first, last+1):
             name = "%s.%04d" % (stem, i)
             newname = "cor_%s.%04d" % (stem.split("/")[-1], i)
-            secondimage = openimage.openimage(name)
+            secondimage = fabio.open(name)
             newdata = scaler.scaleimage(secondimage.data)
             # write out the file
             secondimage.data = newdata
@@ -154,7 +153,7 @@ def scaleseries( target, stem, first, last,
 if __name__ == "__main__":
 
     import sys
-    FIRSTIMAGE = openimage.openimage(sys.argv[1])
+    FIRSTIMAGE = fabio.open(sys.argv[1])
     STEM = sys.argv[2]
     FIRST = int(sys.argv[3])
     LAST  = int(sys.argv[4])

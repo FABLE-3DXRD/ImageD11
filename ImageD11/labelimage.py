@@ -208,7 +208,7 @@ class labelimage:
         if self.lastnp > 0:
             # Fill out the moments of the "closed" peaks
             # print "calling blobmoments with",self.lastres
-            ret = cImageD11.blob_moments(self.lastres[:self.lastnp])
+            cImageD11.blob_moments(self.lastres[:self.lastnp])
             # Write them to file
             self.outputpeaks(self.lastres[:self.lastnp])
         # lastres is now moved forward into res
@@ -229,7 +229,7 @@ class labelimage:
 
         file_obj.write("# Threshold level %f\n"%( self.threshold))
         file_obj.write("# Number_of_pixels Average_counts    s   f     sc   fc      sig_s  sig_f  cov_sf  IMax_int\n")
-        ret = cImageD11.blob_moments(self.res)
+        cImageD11.blob_moments(self.res)
 
         fs = "%d  "+ "%f  "*9 + "\n"
         for i in self.res[:self.npk]:
@@ -278,7 +278,7 @@ class labelimage:
         """
         self.onlast = 1
         if self.lastres is not None:
-            ret = cImageD11.blob_moments(self.lastres)
+            cImageD11.blob_moments(self.lastres)
             self.outputpeaks(self.lastres)
         #if hasattr(self.sptfile, "close"):
         #    self.sptfile.close()

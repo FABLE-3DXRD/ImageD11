@@ -157,7 +157,7 @@ class Simplex:
             if T <= epsilon:
                 # We converged!  Break out of loop!
 
-                break;
+                break
             else:
                 # Didn't converge.  Keep crunching.
 

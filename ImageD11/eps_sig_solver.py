@@ -42,7 +42,7 @@ def readubis(ubifile):
         if len(vals) == 3:
             u = u + [vals]
         if len(u)==3:
-            ubisread.append(n.array(u))
+            ubisread.append(np.array(u))
             u = []
     f.close()
     return ubisread

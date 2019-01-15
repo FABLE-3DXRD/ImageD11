@@ -5,7 +5,7 @@ from .rc_array import rc_array
 
 from numpy import dot, round_, array, float, allclose, asarray, fabs,\
     argmin, argmax, sqrt, argsort, take, sum, where, ndarray, eye,\
-    zeros, cross
+    zeros, cross, pi, arccos, floor
 from numpy.linalg import inv, LinAlgError
 
 import logging
@@ -221,7 +221,7 @@ class lattice(object):
         assert isinstance( ret, rc_array )
         assert ret.check()
         assert ret.shape == v.shape[::-1], "Shape mismatch, %s %s %s %s"%(
-            str(v.shape[::-1]),str(v.shape), str(ra.shape), v.direction)
+            str(v.shape[::-1]),str(v.shape), str(ret.shape), v.direction)
         return ret
 
     def matrix(self, direction):
@@ -401,10 +401,10 @@ def cosangle_vec( ubi, v ):
     Angle between v in real and reciprocal space
     eg, is a* parallel to a or not?
     """
-    real = np.dot( ubi.T, v )
-    reci = np.dot( np.linalg.inv(ubi) , v )
-    return np.dot( real, reci )/np.sqrt(
-        np.dot(real, real) * np.dot(reci, reci) )
+    real = dot( ubi.T, v )
+    reci = dot( inv(ubi) , v )
+    return dot( real, reci )/sqrt(
+        dot(real, real) * dot(reci, reci) )
 
 
 def search_2folds( ubi ):
@@ -421,8 +421,8 @@ def search_2folds( ubi ):
                 if h==0 and k==0 and l==0:
                     continue
                 c = cosangle_vec( ubi, [h,k,l] )
-                if abs(c - np.floor( c + 0.5)) < 0.001:
-                    print(h, k, l, c, np.arccos(c)*180/pi)
+                if abs(c - floor( c + 0.5)) < 0.001:
+                    print(h, k, l, c, arccos(c)*180/pi)
 
 
 
@@ -431,7 +431,7 @@ def get_options(parser):
                       action='store',
                       type='float',
                       dest="min_vec2",
-                      help='Minimum axis length ^2, \AA^2 [1.5]',
+                      help='Minimum axis length ^2, (angstrom^2) [1.5]',
                       default = 1.5)
     parser.add_option('-m', '--n_try',
                       action='store',

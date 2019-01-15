@@ -138,7 +138,7 @@ class rc_array(ndarray):
         """
         assert self.shape == (3,3)
         ret = inv(self)
-        return rr_array(ret, self.other_direction())
+        return rc_array(ret, self.other_direction())
 
 if __name__=="__main__":
 

@@ -122,16 +122,17 @@ class columnchooser(listdialog):
         if title:
             self.title(title)
         body = Tk.Frame(self)
-        listbox1 = Listbox(body)
-        listbox2 = Listbox(body)
+        listbox1 = Tk.Listbox(body)
+        listbox2 = Tk.Listbox(body)
         for i in items:
-            listbox1.insert(END,i)
-            listbox2.insert(END,i)
+            listbox1.insert(Tk.END,i)
+            listbox2.insert(Tk.END,i)
         body.pack(padx=5, pady=5)
+        listbox1.pack()
+        listbox2.pack()
+        self.initial_focus=body
         self.buttonbox()
         self.grab_set()
-        if not self.initial_focus:
-            self.initial_focus = self
         self.protocol("WM_DELETE_WINDOW", self.cancel)
         self.geometry("+%d+%d" % (parent.winfo_rootx()+50,
                                   parent.winfo_rooty()+50))
