@@ -143,6 +143,17 @@ python module cImageD11
    end interface
 
    interface 
+      subroutine closest_vec( x, dim, nv, ic )
+          intent(c) closest_vec
+	  intent(c)
+          double precision, intent(in) :: x(nv, dim)
+	  integer, intent(hide), depend(x) :: dim=shape(x,1)
+ 	  integer, intent(hide), depend(x) :: nv=shape(x,0)	
+          integer, intent(inout) :: ic( nv )
+      end subroutine closest_vec
+   end interface
+
+   interface 
       subroutine closest( x, v, ibest, best, nx, nv  )
           intent(c) closest
           double precision, intent(in) :: x(nx)
@@ -284,5 +295,22 @@ python module cImageD11
 	 double precision, intent(c, inout) :: avgs(n)
       end subroutine cluster1d
    end interface
+
+   interface
+      subroutine score_gvec_z( ubi, ub, gv, g0, g1, g2, e, rec, n )
+         intent(c) score_gvec_z
+	 intent(c)
+	 double precision, intent(in)    :: ubi(3,3)
+ 	 double precision, intent(in)    :: ub(3,3)
+	 integer, intent(c, hide), depend( gv ) :: n
+	 double precision, intent(in)    :: gv(n,3)
+	 double precision, intent(inout) :: g0(n,3)
+	 double precision, intent(inout) :: g1(n,3)
+	 double precision, intent(inout) :: g2(n,3)
+	 double precision, intent(inout) ::  e(n,3)
+	 integer, intent(in) :: rec
+      end subroutine cluster1d
+   end interface
+
 
 end python module cImageD11
