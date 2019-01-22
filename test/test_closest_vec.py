@@ -18,7 +18,7 @@ def closest_pyvec( X ):
 class test_closest_vec( unittest.TestCase ):
     def setUp( self ):
         np.random.seed( 42 )
-        self.data = np.random.random( (10240,12) )
+        self.data = np.random.random( (2048,12) )
 
     def test_same_as_python( self ):
         t1 = time.time()
