@@ -115,6 +115,41 @@ int conv_double_to_int_fast(double x)
        // return (a); */
 }
 
+void closest_vec( double x[], int dim, int nv, int closest[] ){
+  /*
+   * For each x it finds the closest neighbor
+   *   this will grow as n^2, which means it rapidly becomes slow
+   */
+  int i, j, k, ib;
+  double scor, best, t;
+
+#pragma omp parallel for private(i,j,k,ib,scor,best,t)
+  for(i=0; i<nv; i++){ /* source vector */
+    /* init with something */
+    j = (i+1)%nv;
+    best = 0.;
+    for( k=0; k<dim; k++){
+      t = x[i*dim+k]-x[j*dim+k];
+      best += t*t;
+    }
+    ib = j;
+    /* now check all the others */
+    for(j=0; j<nv; j++){
+      if(i==j) continue;
+      scor = 0.;
+      for( k=0; k<dim; k++){
+	t = x[i*dim+k]-x[j*dim+k];
+	scor += t*t;
+      }
+      if( scor < best){
+	ib = j;
+	best = scor;
+      }
+    }
+    closest[i] = ib;
+  }
+}
+
 void closest(double x[], double v[], int *ribest, double *rbest, int nx, int nv)
 {
     /* 
@@ -353,6 +388,7 @@ void put_incr(float data[], size_t ind[], float vals[], int boundscheck,
 
 void cluster1d( double ar[], int n, int order[], double tol, // IN
 		int *nclusters, int ids[], double avgs[]){   // OUT
+  // Used in sandbox/friedel.py
   int i, ncl;
   double dv;
   // order is the order of the peaks to get them sorted
@@ -381,3 +417,64 @@ void cluster1d( double ar[], int n, int order[], double tol, // IN
   *nclusters = ids[n-1]+1;
 }
 
+
+
+void score_gvec_z( vec ubi[3],       // in
+		   vec ub[3],        // in
+		   vec gv[],         // in
+		   vec g0[],         // inout  normed(g)
+		   vec g1[],         // inout  normed(axis x g)
+		   vec g2[],         // inout  normed(axis x (axis x g))
+		   vec e[],          // inout
+		   int recompute,    // in
+		   int n ){
+  /*  Axis is z and we hard wire it here
+   *     Compute errors in a co-ordinate system given by:
+   *         parallel to gv  (gv*imodg)
+   *         parallel to cross( axis, gv )
+   *         parallel to cross( axis, cross( axis, gv ) )
+   */
+  int i;
+  double t,txy;
+  vec g, h, d;
+  
+#pragma omp parallel for private(i,t,txy,g,h,d)
+  for(i=0; i<n; i++){
+    g[0] = gv[i][0];
+    g[1] = gv[i][1];
+    g[2] = gv[i][2];
+    // Test - is it faster to recompute or cache ?
+    //        for many ubi ? Loop over peaks or ubis or ?
+    if( recompute ){  // Fill in ub, modg, ax_x_gv, ax_ax_x_gv
+      t = 1./sqrt(g[0]*g[0]+g[1]*g[1]+g[2]*g[2]);
+      g0[i][0] = g[0]*t;
+      g0[i][1] = g[1]*t;
+      g0[i][2] = g[2]*t;
+      txy =  g[0]*g[0] + g[1]*g[1];
+      t = 1./sqrt( txy );
+      g1[i][0] = -g[1]*t;  // [-y,x,0]
+      g1[i][1] =  g[0]*t;
+      g1[i][2] =  0.;
+      t = 1./sqrt(g[0]*g[0]*g[2]*g[2] + g[1]*g[1]*g[2]*g[2] + txy*txy);
+      g2[i][0] = g[0]*g[2]*t;
+      g2[i][1] = g[1]*g[2]*t;
+      g2[i][2] = -(g[0]*g[0]+g[1]*g[1])*t; 
+    } // end recompute
+    
+    // Find integer h,k,l
+    h[0] = round( ubi[0][0]*g[0] + ubi[0][1]*g[1] + ubi[0][2]*g[2] );
+    h[1] = round( ubi[1][0]*g[0] + ubi[1][1]*g[1] + ubi[1][2]*g[2] );
+    h[2] = round( ubi[2][0]*g[0] + ubi[2][1]*g[1] + ubi[2][2]*g[2] );
+
+    // Compute diff, the computed g-vector  - original
+    d[0] = ub[0][0]*h[0] + ub[0][1]*h[1] + ub[0][2]*h[2]  - g[0];
+    d[1] = ub[1][0]*h[0] + ub[1][1]*h[1] + ub[1][2]*h[2]  - g[1];
+    d[2] = ub[2][0]*h[0] + ub[2][1]*h[1] + ub[2][2]*h[2]  - g[2];
+    
+    // Now dot this into the local co-ordinate system
+    e[i][0] = g0[i][0]*d[0] + g0[i][1]*d[1] + g0[i][2]*d[2] ;
+    e[i][1] = g1[i][0]*d[0] + g1[i][1]*d[1] + g1[i][2]*d[2] ;
+    e[i][2] = g2[i][0]*d[0] + g2[i][1]*d[1] + g2[i][2]*d[2] ; 
+  }
+}
+		 
