@@ -438,7 +438,6 @@ void score_gvec_z( vec ubi[3],       // in
   int i;
   double t,txy;
   vec g, h, d;
-  
 #pragma omp parallel for private(i,t,txy,g,h,d)
   for(i=0; i<n; i++){
     g[0] = gv[i][0];
@@ -463,9 +462,9 @@ void score_gvec_z( vec ubi[3],       // in
     } // end recompute
     
     // Find integer h,k,l
-    h[0] = round( ubi[0][0]*g[0] + ubi[0][1]*g[1] + ubi[0][2]*g[2] );
-    h[1] = round( ubi[1][0]*g[0] + ubi[1][1]*g[1] + ubi[1][2]*g[2] );
-    h[2] = round( ubi[2][0]*g[0] + ubi[2][1]*g[1] + ubi[2][2]*g[2] );
+    h[0] = (double) conv_double_to_int_fast( ubi[0][0]*g[0] + ubi[0][1]*g[1] + ubi[0][2]*g[2] );
+    h[1] = (double) conv_double_to_int_fast( ubi[1][0]*g[0] + ubi[1][1]*g[1] + ubi[1][2]*g[2] );
+    h[2] = (double) conv_double_to_int_fast( ubi[2][0]*g[0] + ubi[2][1]*g[1] + ubi[2][2]*g[2] );
 
     // Compute diff, the computed g-vector  - original
     d[0] = ub[0][0]*h[0] + ub[0][1]*h[1] + ub[0][2]*h[2]  - g[0];
