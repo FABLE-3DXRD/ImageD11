@@ -201,7 +201,7 @@ class plot3d(Tk.Toplevel):
         if self.ubis is not None:
             from ImageD11 import indexing
             for u,i in zip(self.ubis,list(range(len(self.ubis)))):
-                scores=indexing.calc_drlv2(self.ubis[i],self.xyz)
+                scores=indexing.calc_drlv2(u,self.xyz)
                 print(self.xyz.shape,scores.shape)
                 ind = numpy.compress( numpy.less(scores,0.02) , 
                                       numpy.arange(self.xyz.shape[0]) )
@@ -307,7 +307,7 @@ if __name__=="__main__":
     except:
         print("Usage %s gvector_file [ubifile] [image parfile]"%(sys.argv[0]))
         raise
-        sys.exit()
+        # sys.exit()
    
     on=0
     xyz=[]

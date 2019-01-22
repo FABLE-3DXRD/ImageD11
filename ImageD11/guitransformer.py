@@ -26,7 +26,7 @@ import numpy as np
 #    # python3?
 #    from tkinter import *
 
-from .listdialog import listdialog
+from .listdialog import listdialog, columnchooser
 
 from ImageD11 import twodplot
 
@@ -50,6 +50,7 @@ class guitransformer:
               ( "Add unit cell peaks",0, self.addcellpeaks),
               ( "Fit",0, self.fit),
               ( "Save parameters", 0, self.saveparameters),
+#              ( "Plot selected columns", 0, self.plotcols),
               ( "Plot tth histogram", 0, self.plothisto ),
               ( "Filter peaks based on tth histogram", 0, self.filterhisto ),
               ( "Compute g-vectors", 0, self.computegv),
@@ -153,7 +154,8 @@ class guitransformer:
         pass
 
     def plotcols(self):
-        names = self.parent.guicommander.execute("transformer",getcols)
+        names = self.parent.guicommander.execute("transformer","getcols")
+        print(names)
         d = columnchooser(self.parent, names)
         print(d.result)
 

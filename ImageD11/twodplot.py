@@ -65,7 +65,7 @@ class twodplot(Tk.Frame):
         self.xr=self.yr=None
         # a tk.DrawingArea
         self.canvas = FigureCanvasTkAgg(self.f, master=self)
-        self.canvas.show()
+        self.canvas.draw()
         self.tkc=self.canvas.get_tk_widget()
         self.tkc.pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
         self.tkc.bind("<ButtonPress-1>",self.on_down)
@@ -133,7 +133,7 @@ class twodplot(Tk.Frame):
             arg[0](*arg[1:])
         else:
             arg[0]()
-        self.canvas.show()
+        self.canvas.draw()
 
 
     def bindkeys(self):
@@ -233,7 +233,7 @@ class twodplot(Tk.Frame):
             self.a.set_xlim(self.xr)
         if self.yr is not None:
             self.a.set_ylim(self.yr)
-        self.canvas.show()
+        self.canvas.draw()
 
     def logy(self):
 # FIXME - clip negative values before making logscaled?
@@ -241,7 +241,7 @@ class twodplot(Tk.Frame):
             self.a.set_yscale('linear')
         else:
             self.a.set_yscale('log')
-        self.canvas.show()
+        self.canvas.draw()
 
     def logx(self):
 # FIXME - clip negative values before making logscaled?
@@ -249,7 +249,7 @@ class twodplot(Tk.Frame):
             self.a.set_xscale('linear')
         else:
             self.a.set_xscale('log')
-        self.canvas.show()
+        self.canvas.draw()
 
     def on_3(self,event):
         self.autoscale()
@@ -333,7 +333,7 @@ class twodplot(Tk.Frame):
             self.yr=yr
             self.a.set_xlim(xr)
             self.a.set_ylim(yr)
-            self.canvas.show()
+            self.canvas.draw()
 
 
 if __name__=="__main__":

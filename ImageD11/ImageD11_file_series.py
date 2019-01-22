@@ -8,7 +8,7 @@ To be moved to fabio sometime
 import fabio.file_series
 import fabio.fabioimage
 import fabio.openimage
-import numpy
+import numpy, h5py
 
 def get_options(parser):
 
@@ -158,7 +158,7 @@ def get_series_from_options( options, args ):
     if len(args) > 0 :
         # We assume unlabelled arguments are filenames 
         fso = fabio.file_series.file_series(args)
-        return series_from_fabioseries( fso, dark, flood )
+        return series_from_fabioseries( fso, dark, flood, options )
 
     if options.hdf5 is not None:
         hf = h5py.File(options.hdf5)

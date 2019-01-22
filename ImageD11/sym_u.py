@@ -36,7 +36,7 @@ def m_to_string(m):
     """
     st = []
     for i in range(3):
-        needplus = 0
+        needplus = 0  # ???
         for v,s in zip([ [ 1,0,0] , [ 0,1,0], [0,0,1] ],
                             "xyz"):
             c = np.dot(v,m.T[i])

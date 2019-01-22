@@ -541,7 +541,7 @@ class transformer:
     def write_graindex_gv(self, filename):
         from ImageD11 import write_graindex_gv
         if ("gx" not in self.colfile.titles):
-            self.compute_gv()
+            self.computegv()
         gv = [ self.getcolumn("gx"),
                self.getcolumn("gy"),
                self.getcolumn("gz") ]

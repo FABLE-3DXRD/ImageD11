@@ -681,6 +681,7 @@ class refinegrains:
                 if False: # For testing / debugging  
                     omf  =  self.OMEGA_FLOAT 
                     self.OMEGA_FLOAT = False
+                    gv2 = self.gv.copy()
                     self.compute_gv( gr )
                     import pylab
                     pylab.plot( self.gv[:,0], self.gv[:,0]-gv2[:,0], ".")

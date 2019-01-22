@@ -508,21 +508,21 @@ def compute_lorentz_factors(tth, eta, omega, wavelength, wedge=0., chi=0.):
     #     (-sin(omega) , cos(omega), 0 )
     #     (         0  ,         0 , 1 )
     #
-    W = [[cos(wedge),  0,  sin(wedge)],
+    W = [[np.cos(wedge),  0,  np.sin(wedge)],
          [0,  1,          0],
-         [-sin(wedge),  0,  cos(wedge)]]
+         [-np.sin(wedge),  0,  np.cos(wedge)]]
     #
     C = [[1,         0,      0],
-         [0,  cos(chi), sin(chi)],
-         [0, -sin(chi), cos(chi)]]
-    u = np.matrixmultiply(C, np.matrixmultiply(W, u))
+         [0,  np.cos(chi), np.sin(chi)],
+         [0, -np.sin(chi), np.cos(chi)]]
+    u = np.dot(C, np.dot(W, u))
     u_x_So = cross_product_2x2(u, So)
     # if DEBUG: print "axis orientation",u
     #
     # S = scattered vectors. Length 1/lambda.
-    S = np.array([cos(np.radians(tth) / 2.) * sin(np.radians(eta)) / wavelength,
-                  cos(np.radians(tth) / 2.) * cos(np.radians(eta)) / wavelength,
-                  sin(np.radians(tth) / 2.) / wavelength])
+    S = np.array([np.cos(np.radians(tth) / 2.) * np.sin(np.radians(eta)) / wavelength,
+                  np.cos(np.radians(tth) / 2.) * np.cos(np.radians(eta)) / wavelength,
+                  np.sin(np.radians(tth) / 2.) / wavelength])
     try:
         S_dot_u_x_So = np.dot(S, u_x_So)
     except:
