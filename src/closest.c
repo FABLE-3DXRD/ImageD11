@@ -1,4 +1,5 @@
 
+#include <omp.h>
 #include <stdio.h>
 #include <math.h>
 typedef double vec[3];
