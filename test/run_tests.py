@@ -9,6 +9,7 @@ modules = [
     "test_score_gvec_z",
     "test_sym_u",
     "testcol",
+    "test_misori",
     "testlattice",
     "test_localmaxlabel",
     "test_cImageD11",
