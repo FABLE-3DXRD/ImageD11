@@ -325,6 +325,40 @@ python module cImageD11
    end interface
 
    interface
+     function misori_monoclinic( u1, u2)
+         intent(c) misori_monoclinic
+         intent(c)
+	 double precision, intent(in) :: u1(3,3), u2(3,3)
+! Returns 
+         double precision :: misori_monoclinic
+         threadsafe
+      end function misori_monoclinic
+   end interface
+
+
+   interface
+     function misori_orthorhombic( u1, u2)
+         intent(c) misori_orthorhombic
+         intent(c)
+	 double precision, intent(in) :: u1(3,3), u2(3,3)
+! Returns 
+         double precision :: misori_orthorhombic
+         threadsafe
+      end function misori_orthorhombic
+   end interface
+
+   interface
+     function misori_tetragonal( u1, u2)
+         intent(c) misori_tetragonal
+         intent(c)
+	 double precision, intent(in) :: u1(3,3), u2(3,3)
+! Returns 
+         double precision :: misori_tetragonal
+         threadsafe
+      end function misori_tetragonal
+   end interface
+
+   interface
      subroutine misori_cubic_pairs( u, dist, n)
          intent(c) misori_cubic_pairs
          intent(c)

@@ -525,6 +525,87 @@ double misori_cubic( vec u1[3], vec u2[3] ){
   return m1;
 }
 
+double misori_orthorhombic( vec u1[3], vec u2[3] ){
+  /* Compute the trace of the smallest misorientation
+   * for orthorhombic symmetry
+   *  u1 and u2 are both orientation matrices "U"
+   *
+   * compute u1. u2.T  to get the rotation from one to the other
+   * find the flips - just abs(trace)
+   */
+  int i,k;
+  double ti, t;
+  t = 0;
+  for(i=0;i<3;i++){
+      ti = 0.;
+      for(k=0;k<3;k++){
+	ti += u1[k][i]*u2[k][i];
+      }
+      t += fabs( ti );
+  }
+  return t;
+}
+
+double misori_tetragonal( vec u1[3], vec u2[3] ){
+  /* Compute the trace of the smallest misorientation
+   * for orthorhombic symmetry
+   *  u1 and u2 are both orientation matrices "U"
+   *
+   * compute u1. u2.T  to get the rotation from one to the other
+   * find the flips for c and select ab versus ba
+   */
+  int i,j,k;
+  double m1,m2,m3;
+  vec r[3];
+  /* c-axis */
+  m3=0.;
+  for(k=0;k<3;k++){
+    m3 += u1[k][2]*u2[k][2];
+  }
+  m3 = fabs( m3 );
+  /* ab */ 
+  for(i=0;i<2;i++){
+    for(j=0;j<2;j++){
+      r[i][j]=0.;
+      for(k=0;k<3;k++){
+	r[i][j] += u1[k][i]*u2[k][j];
+      }
+    }
+  }
+  m1 = fabs( r[0][0] ) + fabs( r[1][1] );
+  m2 = fabs( r[1][0] ) + fabs( r[0][1] );
+  if( m2 > m3 ){
+    return m1+m3;
+  } else {
+    return m2+m3;
+  }
+}
+
+double misori_monoclinic( vec u1[3], vec u2[3] ){
+  /* Compute the trace of the smallest misorientation
+   * for orthorhombic symmetry
+   *  u1 and u2 are both orientation matrices "U"
+   *
+   * compute u1. u2.T  to get the rotation from one to the other
+   * find the flips - can only flip b -> -b
+   */
+  int i,k;
+  double ti, t;
+  t = 0;
+  for(i=0;i<3;i++){
+      ti = 0.;
+      for(k=0;k<3;k++){
+	ti += u1[k][i]*u2[k][i];
+      }
+      if( i == 1 ) {  /* can only flip b to -b */
+	t += fabs( ti ); 
+      } else {
+	t += ti ;
+      }
+  }
+  return t;
+}
+
 
 void misori_cubic_pairs( vec u[], double pairs[], int n ){
   /* Computes the dissimilarity matrix to use for clustering

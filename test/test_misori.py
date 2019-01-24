@@ -1,15 +1,25 @@
 
 from __future__ import print_function
-from ImageD11.cImageD11 import misori_cubic, misori_cubic_pairs
+from ImageD11.cImageD11 import misori_cubic, misori_cubic_pairs, \
+    misori_orthorhombic, misori_tetragonal, misori_monoclinic
+
 import xfab.symmetry
 import numpy as np
 import time
 import unittest, cProfile, pstats
 
+#    1: Triclinic
+#    2: Monoclinic
+#    3: Orthorhombic
+#    4: Tetragonal
+#    5: Trigonal
+#    6: Hexagonal
+#    7: Cubic
+    
 
-def misori_cubic_py( u1, u2 ):
+def misori_py( u1, u2, sym=7 ):
     # 7 is cubic
-    ans = xfab.symmetry.Umis( u1, u2, 7)
+    ans = xfab.symmetry.Umis( u1, u2, sym)
     ang = np.min( ans[:,1] )
     trc = np.cos(np.radians(ang))*2+1
     return trc
@@ -68,12 +78,48 @@ class test_random_orientations( unittest.TestCase ):
         pairs = [ (u1, u2) for u1 in U for u2 in U ]
         c = [    misori_cubic( u1, u2 ) for u1, u2 in pairs ]
         t1 = time.time()
-        p = [ misori_cubic_py( u1, u2 ) for u1, u2 in pairs ]
+        p = [ misori_py( u1, u2, 7 ) for u1, u2 in pairs ]
+        t2 = time.time()
+        if self.DOPROFILE:
+            print("C time %f s , pytime %f s"%(t1-t0, t2-t1))
+        self.assertTrue(np.allclose( np.array(c) ,np.array(c) ))
+        
+    def test_monoclinic(self):
+        U = make_random_orientations( 20 ) # xfab is a bit slow
+        t0 = time.time()
+        pairs = [ (u1, u2) for u1 in U for u2 in U ]
+        c = [    misori_monoclinic( u1, u2 ) for u1, u2 in pairs ]
+        t1 = time.time()
+        p = [ misori_py( u1, u2, 2 ) for u1, u2 in pairs ]
         t2 = time.time()
         if self.DOPROFILE:
             print("C time %f s , pytime %f s"%(t1-t0, t2-t1))
         self.assertTrue(np.allclose( np.array(c) ,np.array(c) ))
 
+    def test_orthorhombic(self):
+        U = make_random_orientations( 20 ) # xfab is a bit slow
+        t0 = time.time()
+        pairs = [ (u1, u2) for u1 in U for u2 in U ]
+        c = [    misori_orthorhombic( u1, u2 ) for u1, u2 in pairs ]
+        t1 = time.time()
+        p = [ misori_py( u1, u2, 3 ) for u1, u2 in pairs ]
+        t2 = time.time()
+        if self.DOPROFILE:
+            print("C time %f s , pytime %f s"%(t1-t0, t2-t1))
+        self.assertTrue(np.allclose( np.array(c) ,np.array(c) ))
+
+    def test_tetragonal(self):
+        U = make_random_orientations( 20 ) # xfab is a bit slow
+        t0 = time.time()
+        pairs = [ (u1, u2) for u1 in U for u2 in U ]
+        c = [    misori_tetragonal( u1, u2 ) for u1, u2 in pairs ]
+        t1 = time.time()
+        p = [ misori_py( u1, u2, 4 ) for u1, u2 in pairs ]
+        t2 = time.time()
+        if self.DOPROFILE:
+            print("C time %f s , pytime %f s"%(t1-t0, t2-t1))
+        self.assertTrue(np.allclose( np.array(c) ,np.array(c) ))
+        
     def test_cubic_reverse(self):
         N = 250
         U = make_random_orientations( N )
