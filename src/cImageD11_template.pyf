@@ -1,5 +1,6 @@
 
 
+
 python module cImageD11
   
    usercode '''
@@ -310,6 +311,27 @@ python module cImageD11
 	 double precision, intent(inout) ::  e(n,3)
 	 integer, intent(in) :: rec
       end subroutine cluster1d
+   end interface
+
+   interface
+     function misori_cubic( u1, u2)
+         intent(c) misori_cubic
+         intent(c)
+	 double precision, intent(in) :: u1(3,3), u2(3,3)
+! Returns 
+         double precision :: misori_cubic
+         threadsafe
+      end function misori_cubic
+   end interface
+
+   interface
+     subroutine misori_cubic_pairs( u, dist, n)
+         intent(c) misori_cubic_pairs
+         intent(c)
+	 double precision, intent(in) :: u(n,3,3)
+	 integer, intent( hidden ), depend(u) :: n
+	 double precision, intent(inout) :: dist( (n*(n-1)/2) )
+     end subroutine misori_cubic_pairs
    end interface
 
 

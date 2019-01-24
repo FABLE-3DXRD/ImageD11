@@ -10,6 +10,8 @@ typedef double vec[3];
 #define inline __inline
 #endif
 
+#define DEG(x) ((x)*180./3.14159265358979323846264338327950288)
+
 /* 
 # ImageD11_v1.x Software for beamline ID11
 # Copyright (C) 2005-2017  Jon Wright
@@ -477,4 +479,69 @@ void score_gvec_z( vec ubi[3],       // in
     e[i][2] = g2[i][0]*d[0] + g2[i][1]*d[1] + g2[i][2]*d[2] ; 
   }
 }
-		 
+
+
+double misori_cubic( vec u1[3], vec u2[3] ){
+  /* Compute the trace of the smallest misorientation
+   * for cubic symmetry
+   *  u1 and u2 are both orientation matrices "U"
+   *
+   * compute u1. u2.T  to get the rotation from one to the other
+   * find the permutation that will maximise the trace
+   *   one of six...
+   *      xyz   yxz   zxy 
+   *      xzy   yzx   zyx
+   */
+  int i,j,k;
+  double t[6], m1,m2,m3;
+  vec r[3];
+  for(i=0;i<3;i++){
+    for(j=0;j<3;j++){
+      r[i][j]=0.;
+      for(k=0;k<3;k++)      
+	r[i][j] += u1[k][i]*u2[k][j];
+    }
+  }
+  /* 6 possibilities, 18 entries, each appears twice
+     [0,0][1,1][2,2]   
+     [0,0][1,2][2,1]
+     [0,1][1,0][2,2]
+     [0,1][2,0][1,2]
+     [0,2][1,0][2,1]
+     [0,2][2,0][1,1]
+  */
+  t[0] = fabs(r[0][0]) + fabs(r[1][1]) + fabs(r[2][2]);
+  t[1] = fabs(r[0][0]) + fabs(r[1][2]) + fabs(r[2][1]);
+  t[2] = fabs(r[0][1]) + fabs(r[1][0]) + fabs(r[2][2]);
+  t[3] = fabs(r[0][1]) + fabs(r[2][0]) + fabs(r[1][2]);
+  t[4] = fabs(r[0][2]) + fabs(r[1][0]) + fabs(r[2][1]);
+  t[5] = fabs(r[0][2]) + fabs(r[2][0]) + fabs(r[1][1]);
+  /* select the maximum */
+  m1 = (t[0] > t[1]) ? t[0] : t[1];
+  m2 = (t[2] > t[3]) ? t[2] : t[3];
+  m3 = (t[4] > t[5]) ? t[4] : t[5];
+  m2 = ( m2 > m3 ) ? m2 : m3;
+  m1 = ( m1 > m2 ) ? m1 : m2;
+  return m1;
+}
+
+
+void misori_cubic_pairs( vec u[], double pairs[], int n ){
+  /* Computes the dissimilarity matrix to use for clustering
+   */
+  int i,j,k;
+  /* static, 1 means interleaved - leads to false sharing in pairs write
+   * but tries to deal with the rows getting shorter 
+   */
+#pragma omp parallel for private(i,j,k) schedule( static, 1 ) 
+  for(i=0;i<n;i++){
+    for(j=i+1;j<n;j++){
+      /* https://stackoverflow.com/questions/27086195/linear-index-upper-triangular-matrix */ 
+      k = (n*(n-1)/2) - (n-i)*((n-i)-1)/2 + j - i - 1; 
+      pairs[k] = misori_cubic( &u[i*3], &u[j*3] );
+    }
+  }
+    
+  
+
+}
