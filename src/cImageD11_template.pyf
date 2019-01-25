@@ -310,7 +310,7 @@ python module cImageD11
 	 double precision, intent(inout) :: g2(n,3)
 	 double precision, intent(inout) ::  e(n,3)
 	 integer, intent(in) :: rec
-      end subroutine cluster1d
+    end subroutine score_gvec_z
    end interface
 
    interface
