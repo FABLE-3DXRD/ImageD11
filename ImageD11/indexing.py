@@ -27,6 +27,28 @@ from xfab.tools import ubi_to_u, u_to_rod, ubi_to_rod
 import math, time, sys, logging
 
 
+def ubi_fit_2pks( ubi, g1, g2):
+    """
+    Refine a ubi matrix so it matches the pair of g-vectors supplied
+    (almost) accounts for cell parameters not being quite right
+    """
+    ub = np.linalg.inv( ubi )
+    h1 = np.round( np.dot( ubi, g1 ) )
+    h2 = np.round( np.dot( ubi, g2 ) )
+    g3 = np.cross( g1, g2 )
+    h3 = np.dot( ubi, g3 )    # do not round to integer
+    g1c = np.dot( ub, h1 )
+    g2c = np.dot( ub, h2 )
+    g3c = np.dot( ub, h3 )
+    R = np.outer( g1, h1 ) + np.outer( g2, h2 ) + np.outer( g3, h3 )
+    H = np.outer( h1, h1 ) + np.outer( h2, h2 ) + np.outer( h3, h3 )
+    ubfit = np.dot( R, np.linalg.inv( H ) )
+    ubifit = np.linalg.inv( ubfit )
+    return ubifit
+   
+   
+   
+
 def myhistogram(data, bins):
    """
    The numpy histogram api was changed
@@ -548,7 +570,7 @@ class indexer:
         self.bins=bins
         self.histogram=hist
 
-    def scorethem(self):
+    def scorethem(self, fitb4=False):
         """ decide which trials listed in hits to keep """
         start=time.time()
 #        ts=0
@@ -588,9 +610,15 @@ class indexer:
                 print(self.gv[j])
                 print("Failed to find orientation in unitcell.orient")
                 raise
+            if fitb4:
+               self.unitcell.UBI = ubi_fit_2pks( self.unitell.UBI, self.gv[i,:], self.gv[j,:])
             npk = cImageD11.score(self.unitcell.UBI,gv,tol)
             if npk > self.minpks:
                 self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],verbose=0,all=True)
+                if fitb4:
+                   for k in range( len(self.unitell.UBIlist) ):
+                        self.unitell.UBIlist[k] = ubi_fit_2pks( self.unitell.UBIlist[k],
+                                                                self.gv[i,:], self.gv[j,:])
                 npks=[cImageD11.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist] 
                 choice = np.argmax(npks)
                 UBI = self.unitcell.UBIlist[choice]
