@@ -11,6 +11,7 @@ modules = [
     "testcol",
     "test_misori",
     "testlattice",
+    "test_indexing",
     "test_localmaxlabel",
     "test_cImageD11",
     "gv_general.test_gv_general",
