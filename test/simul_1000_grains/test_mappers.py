@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 import sys, os
 
 args = {
@@ -9,7 +10,7 @@ args = {
     }
 
 # 1: Run makemap.py
-cmd1 = "makemap.py -f %(flt)s -p %(par)s -s cubic --omega_no_float --no_sort "%args
+cmd1 = "python ../../scripts/makemap.py -f %(flt)s -p %(par)s -s cubic --omega_no_float --no_sort "%args
 if 1:
     cmd2 = "-U allgrid_makemap.map -t 0.015 -u %(ubi)s"%args
     os.system(cmd1+cmd2)
@@ -30,12 +31,12 @@ if 1:
     # 2: Run sandbox/fittrans using assigned grains
     cmd = "python ../../sandbox/fittrans.py %(flt)s.new %(par)s %(ubi)s allgrid_fittrans.map "%args
     os.system( cmd)
-    print cmd
+    print( cmd)
 if 1:
     # 3: Run ImageD11/indexer using assigned grains
     cmd = "python ../../ImageD11/indexer.py %(par)s %(flt)s.new fit %(ubi)s allgrid_indexer.map"%args
     os.system(cmd)
-    print cmd
+    print (cmd)
 # 4: Run sandbox/teo.py  using assigned grains
 if 1:
     cmd = "python ../../sandbox/teo.py %(flt)s.new %(par)s %(ubi)s allgrid_teo.map"%(args)

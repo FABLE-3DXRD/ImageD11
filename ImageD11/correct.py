@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 
-import numpy
+import numpy, fabio
 from PIL import ImageFilter
 
 # These don't work
@@ -51,7 +51,7 @@ def correct(data_object,
                 data_object.data = picture
                 #print "scaled",scal,
             except:
-                print("Scale overflow",monitorcol, monitorval, dataobj.filename)
+                print("Scale overflow",monitorcol, monitorval, data_object.filename)
 
     if do_median:
         # We do this after corrections
