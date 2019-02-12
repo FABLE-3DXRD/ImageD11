@@ -5,7 +5,7 @@ import numpy as np, fabio
 import silx.gui.qt , silx.gui.plot
 
 from ImageD11.peakmerge import peakmerger
-
+qapp=None
 
 class sptview(object):
 
@@ -17,6 +17,8 @@ class sptview(object):
         self.drawUI()
 
     def select_image(self, i):
+        if i < 0 or  i > len(self.pm.images)-1:
+            return False
         im = self.pm.images[i]
         self.currentnum = i
         j = im.imagenumber
@@ -25,48 +27,65 @@ class sptview(object):
         self.pkx = [ p.x for p in self.pm.allpeaks ]
         self.pky = [ p.y for p in self.pm.allpeaks ]
         self.pkI = [ p.avg for p in self.pm.allpeaks ]
+        return True
 
     def next(self):
-        self.select_image( self.currentnum + 1)
-        self.changeframe()
+        if self.select_image( self.currentnum + 1):
+            self.changeframe()
+        else:
+            self.warn("No next image")
 
     def prev(self):
-        self.select_image( self.currentnum - 1)
-        self.changeframe()
+        if self.select_image( self.currentnum - 1):
+            self.changeframe()
+        else:
+            self.warn("No previous image")
 
     def drawUI(self):
-        w1 = silx.gui.qt.QWidget()
-        l = silx.gui.qt.QLabel( self.fname )
+        self.window = silx.gui.qt.QWidget()
+        self.window.setWindowTitle("spot viewer")
+        self.widget = silx.gui.qt.QWidget(self.window)
+#        self.window.setCentralWidget( self.widget )
+        self.layout = silx.gui.qt.QGridLayout()
+        self.widget.setLayout( self.layout )
+        self.spot_label = silx.gui.qt.QLabel( self.fname )
         self.framelabel = silx.gui.qt.QLabel( self.frame.filename )
-        n = silx.gui.qt.QPushButton( "next" )
-        p = silx.gui.qt.QPushButton( "prev" )
-        n.clicked.connect( self.next )
-        p.clicked.connect( self.prev )
-        ui = silx.gui.qt.QVBoxLayout(w1)
-        ui.addWidget(l)
-        ui.addWidget(self.framelabel)
-        ui.addWidget(n)
-        ui.addWidget(p)
-        self.w = w1
-        self.win = silx.gui.plot.Plot2D( parent=None, backend='gl' )
-        self.imglabel = self.win.addImage( self.frame.data, z=0, origin=(-0.5,-0.5),
+        self.framelabel.setAlignment( silx.gui.qt.Qt.AlignCenter )
+        self.layout.addWidget(self.spot_label, 0, 0, 1, 3)
+        self.layout.addWidget(self.framelabel, 1, 1)
+        self.n = silx.gui.qt.QPushButton( "next" )
+        self.p = silx.gui.qt.QPushButton( "prev" )
+        self.n.clicked.connect( self.next )
+        self.p.clicked.connect( self.prev )
+        self.layout.addWidget(self.p, 1, 0 )
+        self.layout.addWidget(self.n, 1, 2 )
+        self.plot = silx.gui.plot.Plot2D(  backend='gl')
+        self.imglabel = self.plot.addImage( self.frame.data, z=0, origin=(-0.5,-0.5),
             colormap=silx.gui.colors.Colormap(name='magma'))
-        self.plotlabel = self.win.addScatter( self.pky, self.pkx, self.pkI, z=1, symbol='o',
+        self.plotlabel = self.plot.addScatter( self.pky, self.pkx, self.pkI, z=1, symbol='o',
             colormap=silx.gui.colors.Colormap(name='viridis'))
-        self.win.getScatter( self.plotlabel ).setSymbolSize(10)
-        self.win.show()
-        self.w.show()
-        
+        self.plot.getScatter( self.plotlabel ).setSymbolSize(10)
+        self.plot.setKeepDataAspectRatio(True)
+        self.layout.addWidget(self.plot, 2, 0, 1, 3)
+        self.widget.show()
+        self.plot.show()
+        #self.window.setVisible(True)
+        #self.window.show()
+
     def changeframe(self):
         d = self.frame.data
-        im = self.axes.getImage( self.imglabel )
+        im = self.plot.getImage( self.imglabel )
         im.setData(d)
-        pl = self.axes.getScatter( self.plotlabel )
-        pl.setData( self.pkx, self.pky, self.pkI )
+        pl = self.plot.getScatter( self.plotlabel )
+        pl.setData( self.pky, self.pkx, self.pkI )
         self.framelabel.setText( self.frame.filename )
 
+    def warn(self, message):
+        silx.gui.qt.QMessageBox.warning(None, "Warning", message)
 
 if __name__=="__main__":
+    global app
     qapp = silx.gui.qt.QApplication([])
-    sptview( sys.argv[1] )
-    qapp.exec_()
+    s=sptview( sys.argv[1] )
+    s.window.show()
+    sys.exit(qapp.exec_())
