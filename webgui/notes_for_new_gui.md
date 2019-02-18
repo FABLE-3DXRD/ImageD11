@@ -19,6 +19,7 @@ This is also a moment to review what is in the program in terms of functionality
 - single threshold blob identification (was peaksearch.py)
 - multi-threshold merging (was merge_flt.py)
 - localmax labeling algorithm (not yet user visible)
+- One True PeakSearch : local max tends to over-segment background
 - saving output : ...
 
 ### Peak search output
@@ -26,7 +27,7 @@ This is also a moment to review what is in the program in terms of functionality
 Per frame. Should be much smaller than the frame itself. Can back reference to the frame data.
 
 For each spot: 
--   Pixel indices?
+-   Pixel indices? 
 -   slow / fast / sum_i / sum_1 / bounding_box
 -   implicit "assigned to background" 
 -   1D integration ? 
@@ -49,18 +50,22 @@ Some data storage notes for pixel indices. Per peak requirement appears to be of
     >>> print( "Diff indices",len(zlib.compress( dI.astype(numpy.uint32) ) ) )
     Diff indices 81
 
-This is 10 bytes for some hypothetical peak. If we use the localmaxlabel code to label all pixels as belonging to a local maximum then we run into a problem (144K peaks for some typical image and labels compresses to 680 Kb). There must be a threshold to decide whether a peak should be stored or not and so there must be a way to decide what is "signal" and what is "noise". 
-
-
-
-
-
-
+This is 10 kbytes for some hypothetical peak. If we use the localmaxlabel code to label all pixels as belonging to a local maximum then we run into a problem (144K peaks for some typical image and labels compresses to 680 Kb). There must be a threshold to decide whether a peak should be stored or not and so there must be a way to decide what is "signal" and what is "noise". 
 
 Per scan dimension (over omega, diffractometer_y, sample_z, etc)
-- Links to say peaks are overlapping, thought to the the same
+- Links to say peaks are overlapping, thought to the the same peak
 
+Storage requirements:
+- Peaks : Nimages * npk_per_image * sizeof(pk)
+- Links : Nimages * npk_per_image * ndims * sizeof(link)
 
+Will need some code to make the unique peaks out of the peaks + links.
+
+TODO: pixel index format
+
+TODO: linking nD
+
+TODO: UI
 
 ### calibration and scattering vectors
 
@@ -98,11 +103,41 @@ GONIOMETER_KAPPA '.' goniometer 0 0 0 rotation 0 -1 0
   @units="degrees
   @vector=[0, 0, 1] 
 
-### 
+Most simple (to program) will be to make an internal format that (theoretically) imports and exports to those formats, in order to be independent from other libraries. Some work done in grewgg.
+
+### Grain mapping - big beam
+
+Centre of mass + position refinement in makemap.py. There is also FitAllB and a series of test programs that are tested in the test/simul_1000_grains folder. Mostly needs a better UI. Perhaps look at nlopt or other more professional minimisers. minuit in FitAllB is good but hard to install. Scipy has a range of minimisers.
+
+### Grain mapping - smaller beam Difftomo
+
+Need some gui for seeing grains and sinograms and doing selections on each. Thus far we had things doing:
+
+- point_by_point peak counting (uniq or total) : TODO look at intensities
+- sinogram reconstruction for indexed peaks
+
+### Unknown indexing
+
+Need some gui for seeing lattices (e.g. list of real space vectors, cross tables) and 3D viewer.
+
+### Data integration
+
+Was the "fabric" program. Perhaps out of scope for now. Can orientations be sent to dials?
+
+### Results display
+
+TODO: color grains according to orientation
+
+TODO: group orientations / grains together if they are the same
+
+TODO: check for twin relations and coincident lattices systematically.
+
+TODO: Look at the Rint for intensities
+
 
 ## Historical background 
 
-This seems to be a hard thing to make. Historically we had/have:
+A uI  seems to be a hard thing to make. Historically we had/have:
 
 - Tkinter for a gui with: matplotlib for 2D plotting, pyopengl/togl for 3D plotting, and a home-made macro recorder. Still runs but now uses home-made pyopengltk for 3D which still has opengl problems.
 
@@ -120,7 +155,7 @@ This seems to be the good choice for cross platform desktop applications. Jon wo
 
 There are plenty of recipes for making a program that someone goes and runs. Probably it will have a web backend in the future, if not already.
 
-There are alot of developments around silx at ESRF that seem to use pyqt for gui. Probably you can use silx without using the gui.
+There are a lot of developments around silx at ESRF that seem to use pyqt for gui. Probably you can use silx without using the gui.
 
 ### Jupyter
 
@@ -152,7 +187,7 @@ Drawbacks / concerns:
 - Fast moving technologies
 - Can you see it running on OAR from a debian desktop ?
 - Can you make a standalone exe ?
-- ipynb has some drawbacks as you can edit cells that were previously run
+- ipynb has some drawbacks as you can edit cells that were previously run (not reproducible)
 
 ### Bokeh
 
