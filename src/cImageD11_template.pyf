@@ -123,6 +123,20 @@ python module cImageD11
    end interface
 
    interface
+      subroutine clip_std( data, np, mean, var, nclip, verbose)
+         intent(c) clip_std
+         real, intent(in,c) :: data(np)
+         integer, intent(hide,c), depend(data) :: np=shape(data,0)
+         real, intent(out) :: mean
+         real, intent(out) :: var
+	 real, intent(in,c) :: nclip
+         integer, intent(in,c) :: verbose = 0
+         threadsafe 
+      end subroutine clip_std
+   endinterface
+
+
+   interface
       function bloboverlaps( labels1, npk1, results1,    & 
                                labels2, npk2, results2,    &
                                verbose, ns, nf)
