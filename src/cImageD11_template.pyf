@@ -368,5 +368,19 @@ python module cImageD11
      end subroutine misori_cubic_pairs
    end interface
 
+   interface
+     function count_shared( pi, ni, pj, nj )
+         intent(c) count_shared
+         intent(c)
+	 integer, intent(in) :: pi(ni)
+	 integer, intent( hidden ), depend(pi) :: ni
+	 integer, intent(in) :: pj(nj)
+	 integer, intent( hidden ), depend(pj) :: nj
+	 ! return value is int too
+	 integer :: count_shared
+	 threadsafe
+     end function count_shared
+   end interface
+
 
 end python module cImageD11

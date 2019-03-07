@@ -622,7 +622,28 @@ void misori_cubic_pairs( vec u[], double pairs[], int n ){
       pairs[k] = misori_cubic( &u[i*3], &u[j*3] );
     }
   }
-    
-  
+}
 
+
+int count_shared( int pi[], int ni, int pj[], int nj ){
+  /* Given two sorted arrays compute how many collisions 
+   * For comparing list of grain - peak indices for overlap
+   */
+
+  int i,j,c;
+  i = 0;
+  j = 0;
+  c = 0;
+  while( (i < ni) && (j < nj) ){
+    if( pi[i] > pj[j] ){
+      j++;
+    }else if( pi[i] < pj[j] ){
+      i++;
+    }else{
+      i++;
+      j++;
+      c++;
+    }
+  }
+  return c;
 }
