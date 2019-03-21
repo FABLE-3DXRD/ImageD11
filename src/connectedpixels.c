@@ -434,3 +434,32 @@ void clip_std( float im[], int np, float *mean, float *var,
   }
     
 }
+
+
+void clean_mask( int8_t msk[],
+		 int8_t ret[],
+		 int ns,
+		 int nf){
+  /* cleans pixels with no 4 connected neighbors */
+  int i,j,n,p,q;
+  /* set zero for default */
+  memset( ret, 0, ns*nf*sizeof(int8_t));
+  /*  printf("yop %d %d\n",ns,nf); */
+  for( i=0; i<ns; i++){
+    p = i*ns;
+    for( j=0; j<nf; j++){
+      q = p+j;
+      /* printf("%d:%d\n",q,msk[q]); */
+      if(msk[q]!=0){
+	/* Count neighbors */
+	n=0;
+	/* printf("%d %d\n",q,msk[q]); */
+	if((i>0)      && (msk[q-nf]!=0)) n++;
+	if((i<(ns-1)) && (msk[q+nf]!=0)) n++;
+	if((j>0)      && (msk[q-1] !=0)) n++;
+	if((j<(nf-1)) && (msk[q+1] !=0)) n++;
+	if(n != 0)ret[q]=1;
+      }
+    }
+  }
+}

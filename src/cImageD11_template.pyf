@@ -96,6 +96,24 @@ python module cImageD11
 
 
    interface
+      function localmaxlabel_nosse( data, labels, wrk, ns, nf )
+         intent(c) localmaxlabel_nosse
+         intent(c)
+         real, intent(in) :: data(ns,nf)
+         integer*4, intent(inout), note(hello) :: labels(ns,nf)
+	 integer*1, intent(inout) :: wrk(ns,nf)	
+         integer, intent(hide), depend(data) :: ns=shape(data,0)
+         integer, intent(hide), depend(data) :: nf=shape(data,1)
+! Returns 
+         integer :: localmaxlabel_nosse
+! we say threadsafe but it writes in labels, so we assume no one else
+! is using at the same time
+         threadsafe
+      end function localmaxlabel_nosse
+   end interface
+
+
+   interface
       subroutine blobproperties( data, labels, np, omega, &
                                  verbose, ns, nf, results)
          intent(c) blobproperties
@@ -394,6 +412,19 @@ python module cImageD11
 	 integer :: count_shared
 	 threadsafe
      end function count_shared
+   end interface
+
+
+   interface
+     subroutine clean_mask( msk, ret, ns, nf )
+         intent(c) clean_mask
+         intent(c)
+	 integer*1, intent(in)  :: msk( ns, nf )
+         integer, intent(hide), depend(msk) :: ns=shape(msk,0)
+         integer, intent(hide), depend(msk) :: nf=shape(msk,1)
+	 integer*1, intent(inout), dimension(ns, nf) :: ret	
+	 threadsafe
+     end function clean_mask
    end interface
 
 
