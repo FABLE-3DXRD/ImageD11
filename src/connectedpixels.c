@@ -408,34 +408,6 @@ void blob_moments(double *res, int np)
 }
 
 
-void clip_std( float im[], int np, float *mean, float *var,
-	       float nclip, int verbose){
-
-  int i, n, icyc;
-  double M1, M2, t, K;
-  /* first estimate mean and stddev
-   */
-  M1 = 0.;
-  M2 = 0.;
-  K = im[0];
-  /* wikipedia - guess mean as first element and remove
-   * it to behave better numerically ...
-   */
-#pragma omp parallel for private( t ), reduction(+: M1, M2)
-  for( i=0; i<np; i++){
-    t = im[i] - K;
-    M1 += t;
-    M2 += t*t;
-  }
-  *mean = M1/np + K;
-  *var  = ( M2 - M1*M1/np )/np;
-  if(verbose){
-    printf("K %f  mean %f var %f\n",K,*mean,*var);
-  }
-    
-}
-
-
 void clean_mask( int8_t msk[],
 		 int8_t ret[],
 		 int ns,
