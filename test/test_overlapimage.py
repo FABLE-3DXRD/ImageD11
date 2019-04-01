@@ -60,7 +60,7 @@ rc    = cImageD11.blobproperties( float_im, labelc, nc, 0 )
 cImageD11.blob_moments(rc)
 end2   = time.time()
 print(nc,"%.3f %.3f"%((end1-end0)*1000,(end2-end1)*1000))
-wfloatim = np.where( float_im > 1000, float_im, 0)
+wfloatim = np.where( float_im > 1000, float_im, float_im)
 end0 = time.time()
 nw    = cImageD11.localmaxlabel( wfloatim, labelm, work )
 end1   = time.time()
@@ -71,6 +71,8 @@ print(nw,"%.3f %.3f"%((end1-end0)*1000,(end2-end1)*1000))
 
 pks=np.array(pks).T
 import pylab as pl
+pl.imshow( pl.log(float_im), origin='lower',
+           interpolation='nearest', aspect='auto') 
 pl.plot( pks[1], pks[0],"+",label="ideal" )
 pl.plot( rc[:,cImageD11.f_raw],rc[:,cImageD11.s_raw],"x",
          label="connect")

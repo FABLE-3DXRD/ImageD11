@@ -1,6 +1,8 @@
 
+#include <stdint.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 
 /**
@@ -15,10 +17,10 @@
  * @param *s2  Sum of selected pixel^2
  */
 void sigma_cut( float img[], int npx,
-		float cut, float mean,
-		int *s0, float *s1, float *s2){
+		float cut, 
+		int *s0, double *s1, double *s2){
   int i;
-  float t;
+  double t;
   *s0 = npx;
   *s1 = 0.;
   *s2 = 0.;
@@ -26,7 +28,7 @@ void sigma_cut( float img[], int npx,
     if( img[i] > cut){      
       *s0 = *s0 - 1;
     } else {
-      t = img[i] - mean;
+      t = img[i];
       *s1 = *s1 + t;
       *s2 = *s2 + (t * t);
     }
@@ -37,7 +39,7 @@ void sigma_cut( float img[], int npx,
 void threshold_image( float img[], int npx,
 		      float nsigma,
 		      char  msk[] ){
-  float s1, s2, cut, mean, std;
+  double s1, s2, cut, mean, std;
   int i, s0;
   s0=npx;
   s1=0.;
@@ -48,15 +50,16 @@ void threshold_image( float img[], int npx,
       s2 = s2 + (img[i] * img[i]);
   }
   mean = s1/s0;
-  std  = sqrt(s2*s0 - s1*s1)/s0;
+  std  = sqrt(s2/s0 - mean*mean);
   cut  = mean + nsigma * std;
-  printf("mean %f std %f cut %f %d %f %f\n", mean, std, cut,s0,s1,s2);
+  printf("mean %f std %f cut %f %d %f %f \n", mean, std, cut,s0,s1,s2);
   for( i = 0; i < 5; i++ ){
-    sigma_cut( img, npx, cut, mean, &s0, &s1, &s2);
-    mean = s1/s0 + mean;
+    cut  = mean + nsigma * std;
+    sigma_cut( img, npx, cut, &s0, &s1, &s2);
+    mean = s1/s0;
     std  = sqrt(s2*s0 - s1*s1)/s0;
     cut  = mean + nsigma * std;
-    printf("mean %f std %f cut %f %d %f %f\n", mean, std, cut,s0,s1,s2);    
+    printf("mean %f std %f cut %f %f %d %f %f\n", mean, std, cut, cut,s0,s1,s2);    
   }
   for( i = 0; i < npx; i++ ){
     if( img[i] > cut){
@@ -67,3 +70,43 @@ void threshold_image( float img[], int npx,
   }
 }
 		 
+
+void histogram_image( float img[],
+		      int npx,
+		      float low,
+		      float step,
+		      int32_t hist[],
+		      int nhist){
+  int i, ibin, s;
+  float ostep, rbin, w;
+  memset( hist, 0, nhist * sizeof( int32_t ) );
+  ostep = 1./step;
+  for( i=0; i<npx; i++){
+    rbin = (img[i] - low)*ostep;
+    if( rbin < (nhist-1) ){
+      ibin = (int) rbin;
+      hist[ibin]++; 
+    }
+  }
+  /* 1: Locate median in the histogram */
+  i=0;
+  s=0;
+  w=0;
+  rbin = low;
+  while( s < (npx/2) ){
+    s = s + hist[i];
+    w = w + hist[i]*rbin;
+    i = i + 1;
+    rbin = rbin + step;
+  }
+  /* 2: Compute mean and std of values less than the median
+   *    based on the values from the histogram
+   *
+  mean = w/s; 
+std = ???
+  */
+  
+  
+     
+  
+}
