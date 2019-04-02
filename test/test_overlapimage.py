@@ -1,6 +1,6 @@
 
 from __future__ import print_function, division
-
+import sys
 import numpy as np, fabio, time, os
 from ImageD11 import cImageD11
 print(cImageD11.__file__)
@@ -68,16 +68,16 @@ rw    = cImageD11.blobproperties( wfloatim, labelm, nw, 0 )
 cImageD11.blob_moments(rw)
 end2   = time.time()
 print(nw,"%.3f %.3f"%((end1-end0)*1000,(end2-end1)*1000))
-
-pks=np.array(pks).T
-import pylab as pl
-pl.imshow( pl.log(float_im), origin='lower',
-           interpolation='nearest', aspect='auto') 
-pl.plot( pks[1], pks[0],"+",label="ideal" )
-pl.plot( rc[:,cImageD11.f_raw],rc[:,cImageD11.s_raw],"x",
-         label="connect")
-pl.plot( rw[:,cImageD11.f_raw],rw[:,cImageD11.s_raw],"o",
-         label="watershed",
-         markerfacecolor='None')
-pl.legend()
-pl.show()
+if 0:
+    pks=np.array(pks).T
+    import pylab as pl
+    pl.imshow( pl.log(float_im), origin='lower',
+               interpolation='nearest', aspect='auto') 
+    pl.plot( pks[1], pks[0],"+",label="ideal" )
+    pl.plot( rc[:,cImageD11.f_raw],rc[:,cImageD11.s_raw],"x",
+    label="connect")
+    pl.plot( rw[:,cImageD11.f_raw],rw[:,cImageD11.s_raw],"o",
+             label="watershed",
+             markerfacecolor='None')
+    pl.legend()
+    pl.show()

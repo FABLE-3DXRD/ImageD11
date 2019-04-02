@@ -1,5 +1,5 @@
 
-
+from __future__ import print_function
 from ImageD11 import cImageD11
 import fabio
 import numpy as np
@@ -118,53 +118,70 @@ class test_sparse_connected_pixels( unittest.TestCase ):
         i = self.s.row.astype( np.uint16 )
         j = self.s.col.astype( np.uint16 )
         v = self.s.data
-        self.assertTrue( (self.s.todense() == self.a).all() )
-        dstart = time.time()
+        self.assertTrue( (self.s.todense() == self.a).all() ) 
         dl = np.zeros( self.a.shape, 'i' )
+        nd = cImageD11.connectedpixels(  self.a , dl, self.threshold )
+        dstart = time.time()
         nd = cImageD11.connectedpixels(  self.a , dl, self.threshold )
         dend = time.time()
         sl = np.zeros( v.shape, 'i' )
+        ns = cImageD11.sparse_connectedpixels( v, i, j, self.threshold, sl)
+        sbegin = time.time()
         ns = cImageD11.sparse_connectedpixels( v, i, j, self.threshold, sl)
         send = time.time()
         sld = scipy.sparse.coo_matrix( (sl, (i, j)), shape=self.a.shape)
         testcase = (sld.todense() == dl).all()
 
         densetime = dend - dstart
-        sparsetime = send-dend
-        print("sparse_connectedpixels: %.3f ms vs %.3f ms, speedup %.1f"%(
-            1e3*sparsetime, 1e3*densetime, densetime/sparsetime))
-
+        sparsetime = send-sbegin
+        print("sp_cp: %.3f ms vs %.3f ms, ratio %.1f nnz %d"%(
+            1e3*sparsetime, 1e3*densetime, densetime/sparsetime, sld.nnz),
+            " t=%.0f"%(self.threshold))
         if ~testcase:
             import pylab as pl
             pl.ioff()
             pl.figure()
-            pl.subplot(131)
+            pl.subplot(311)
             pl.title("t=%f"%(self.threshold))
             pl.imshow( dl, interpolation='nearest')
             pl.colorbar()
-            pl.subplot(132)
+            pl.subplot(312)
             pl.imshow( sld.todense(), interpolation='nearest')
             pl.colorbar()
-            pl.subplot(133)
+            pl.subplot(313)
             pl.imshow( sld.todense() - dl, interpolation='nearest')
             pl.colorbar()
             pl.show()
         self.assertTrue( testcase )
-"""     
+   
 class test_sparse_connected_pixels_overlapim1(test_sparse_connected_pixels):
     def setUp(self):
         im = fabio.open("testoverlaps0000.edf").data.astype( np.float32 )
-        self.a = np.where( im > 1000, im, 0 )
+        self.a = np.where( im > 1500, im, 0 )
         self.s = scipy.sparse.coo_matrix( self.a )
-        self.threshold = 1500.
+        self.threshold = 2000.1
 
 class test_sparse_connected_pixels_overlapim2(test_sparse_connected_pixels):
     def setUp(self):
-        im = fabio.open("testoverlaps0000.edf").data.astype( np.float32 )[:128,:128]
-        self.a = np.where( im > 1000.5, im, 0 )
+        im = fabio.open("testoverlaps0000.edf").data.astype( np.float32 )
+        self.a = np.where( im > 2000.1, im, 0 )
         self.s = scipy.sparse.coo_matrix( self.a )
-        self.threshold = 1000.5
-"""     
+        self.threshold = 2000.1
+
+class test_sparse_connected_pixels_overlapim3(test_sparse_connected_pixels):
+    def setUp(self):
+        im = fabio.open("testoverlaps0000.edf").data.astype( np.float32 )
+        self.a = np.where( im > 500.1, im, 0 )
+        self.s = scipy.sparse.coo_matrix( self.a )
+        self.threshold = 500.1
+
+class test_sparse_connected_pixels_overlapim4(test_sparse_connected_pixels):
+    def setUp(self):
+        im = fabio.open("testoverlaps0000.edf").data.astype( np.float32 )
+        self.a = np.where( im > 5000.1, im, 0 )
+        self.s = scipy.sparse.coo_matrix( self.a )
+        self.threshold = 5000.1
+        
 
 if __name__=="__main__":
     unittest.main()

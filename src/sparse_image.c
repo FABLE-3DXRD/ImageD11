@@ -165,71 +165,69 @@ int sparse_connectedpixels( float v[],
 			    float threshold,
 			    int32_t labels[]  /* nnz */
 			    ){
-  int k, p, pp;
+  int k, p, pp, ir;
   int32_t *S, *T, np;
   /* Read k = kurrent
           p = prev */
-  k = sparse_is_sorted( i, j, nnz, 0 );
-  if( k!= 0){
-    /* BAD */
-    k = sparse_is_sorted( i, j, nnz, 1 );
-    return k;
-  } else {
-    //printf( "OK, k=%d nnz=%d\n",k, nnz);
+  if(0){
+    k = sparse_is_sorted( i, j, nnz, 0 );
+    if( k!= 0){
+      /* BAD */
+      k = sparse_is_sorted( i, j, nnz, 1 );
+      return k;
+    } else {
+      //printf( "OK, k=%d nnz=%d\n",k, nnz);
+    }
   }
   pp=0;
   p=0;
-  memset( labels, 0, nnz*sizeof( int32_t ));
-  S = dset_initialise( nnz+2 );
-
+  S = dset_initialise( 16384 );
+  /* Main loop */
   for( k=0; k<nnz; k++){
-    //printf( "k %d, v[k] %f",k, v[k]);
     labels[k] = 0;
-    if( v[k] > threshold ){
-      /* Decide on label for this one ... 
-       *
-       * 4 neighbors : k-1 is prev
-       */
-        
-        p = k-1; // previous pixel
-	if( (i[p] ==  i[k]   )   &&
-	    (j[p] == (j[k]-1))   &&
-	    ( labels[p] > 0 ) ) {
-	  match(&labels[k], &labels[p], S);
-	}
-	/* pp should be in row above, before j-1 */
-	while( (pp<k) && ((i[k]-i[pp]) > 1) ) pp++;
-	/* out if nothing on row above */
-	if( i[pp] == i[k] ) {
-	  if( labels[k] == 0){
-	    S = dset_new( &S, &labels[k] );
-	    continue;
-	  }
-	}
-	/* Now bring pp to j[k]-1 */
-	while( (j[k]-j[pp]) > 1 ) pp++;
-	/* Now look for the 3 in row above */
-	p = pp;
-	while( (j[p] - j[k]) < 2){
-	  if( (  i[p] == (i[k]-1))   &&   // same row
-	      (abs(j[p]-j[k]) < 2) ){     // col is +/- 1
-	    if( labels[p] > 0) {
-	      // Union p, k
-	      match( &labels[k], &labels[p], S);
-	    }
-	  }
-	  p++;
-	}
-	if( labels[k] == 0) dset_new( &S, &labels[k]);
+    if( v[k] <= threshold) {
+      continue;
     }
+    /* Decide on label for this one ... 
+     *
+     * 4 neighbors : k-1 is prev
+     */
+    p = k-1; /* previous pixel, same row */
+    if( ( i[p]    == i[k])   &&
+	((j[p]+1) == j[k])) {
+      if ( labels[p] > 0 ) {
+	match( &labels[k], &labels[p], S);
+      }
+    }
+    ir = i[k]-1;
+    /* pp should be on row above, on or after j-1 */
+    while( ir > i[pp]  ) pp++;
+    /* out if nothing on row above */
+    if( i[pp] == i[k] ) {
+      if( labels[k] == 0){
+	S = dset_new( &S, &labels[k] );
+	continue;
+      }
+    }
+    /* Locate previous pixel on row above */ 
+    while( ((j[k]-j[pp]) > 1)&&(i[pp]==ir) ) pp++;
+    for( p = pp; p < (pp+3); p++ ){
+      if( (j[p] - j[k]) > 1) break;
+      if( (i[p] == ir)   &&   // same row
+	  ( labels[p] > 0) ) {
+	// Union p, k
+	match( &labels[k], &labels[p], S);
+      }
+    }
+    if( labels[k] == 0) dset_new( &S, &labels[k]);
   } // end loop over data
   T = dset_compress( &S, &np );
   // renumber labels
   for( k=0; k<nnz; k++){
     if( labels[k] > 0 ){
-      if( T[labels[k]] == 0 ){
+      /* if( T[labels[k]] == 0 ){
 	printf("Error in sparse_connectedpixels\n");
-      }
+	} */
       labels[k] = T[labels[k]];
     }
   }
