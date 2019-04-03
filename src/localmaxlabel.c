@@ -1,7 +1,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-
+#include "cImageD11.h"
 
 #include <omp.h>
 
@@ -16,14 +16,6 @@
  #endif
 #endif
 
-
-#ifdef _MSC_VER
-#define restrict __restrict
-    typedef unsigned char uint8_t;
-    typedef signed long int32_t;
-#else
-#include <stdint.h>
-#endif
 
 int localmaxlabel( const float* restrict im, // input
 		   int32_t*  restrict lout,  // output
@@ -156,6 +148,18 @@ int localmaxlabel( const float* restrict im, // input
   return npk;
 }
 
+#define NOISY 0
+
+#if defined(NOISY) && (NOISY == 1)
+double tic, toc;
+void clk( char* msg ){
+  toc = my_get_time();
+  printf("%s %.6f ms\n",msg, 1e3*(toc-tic));
+  tic = my_get_time();
+}
+#else
+#define clk(x)
+#endif
 
 int localmaxlabel_nosse( const float* restrict im, // input
 			 int32_t*  restrict lout,  // output
@@ -173,6 +177,7 @@ int localmaxlabel_nosse( const float* restrict im, // input
 	      -1     ,     0,      +1,  // 3,4,5
 	      -1+dim1, +dim1, +1+dim1 };// 6,7,8
   // Set edges to zero (background label)
+  clk("localmaxlabel_nosse");
   for( i=0; i<dim0; i++){ // first and last row here:
     lout[i]=0;            // ends of rows are below
     l[i]=0;
@@ -201,6 +206,7 @@ int localmaxlabel_nosse( const float* restrict im, // input
   } // i
   // Now go through the byte array checking for max values
   // (row by row to be parallel)
+  clk("First loop to neighbor");
   npka = (int*) malloc( sizeof(int)*dim0 );
 #pragma omp parallel for private( j, p )
   for( i=0; i<dim0; i++){
@@ -212,6 +218,7 @@ int localmaxlabel_nosse( const float* restrict im, // input
       }
     }
   }
+  clk("Second loop");
   npk = 0;
   for(i=0;i<dim0;i++){
     t = npk;
@@ -219,6 +226,7 @@ int localmaxlabel_nosse( const float* restrict im, // input
     npka[i] = t;
     //    printf("%d %d\n",npk,npka[i]);
   }
+  clk("Reduction");
   // Second pass with row offsets in place
 #pragma omp parallel for private(j, p )
   for( i=0; i<dim0; i++){
@@ -231,6 +239,7 @@ int localmaxlabel_nosse( const float* restrict im, // input
       }
     }
   }
+  clk("Another pass");
   free( npka );
   //
   // Now make all point to their max
@@ -249,6 +258,7 @@ int localmaxlabel_nosse( const float* restrict im, // input
     lout[i] = lout[q]; // take label from max
     l[i] = 0; // sharing problem here??
   }
+  clk("Last pass");
   return npk;
 }
 

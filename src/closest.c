@@ -2,13 +2,11 @@
 #include <omp.h>
 #include <stdio.h>
 #include <math.h>
+#include "cImageD11.h"
+
 typedef double vec[3];
 
 
-#ifdef _MSC_VER
-#define restrict __restrict
-#define inline __inline
-#endif
 
 #define DEG(x) ((x)*180./3.14159265358979323846264338327950288)
 

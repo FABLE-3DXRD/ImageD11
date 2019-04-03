@@ -125,6 +125,7 @@ class test_sparse_connected_pixels( unittest.TestCase ):
             print(self.s.col)
         
     def testOK( self ):
+        #import pdb; pdb.set_trace()
         i = self.s.row.astype( np.uint16 )
         j = self.s.col.astype( np.uint16 )
         v = self.s.data
@@ -163,7 +164,43 @@ class test_sparse_connected_pixels( unittest.TestCase ):
             pl.colorbar()
             pl.show()
         self.assertTrue( testcase )
-   
+
+    def testsplat( self ):
+        i = self.s.row.astype( np.uint16 )
+        j = self.s.col.astype( np.uint16 )
+        v = self.s.data
+        self.assertTrue( (self.s.todense() == self.a).all() ) 
+        sl = np.zeros( v.shape, 'i' )
+        sls = np.zeros( v.shape, 'i' )
+        ns = cImageD11.sparse_connectedpixels( v, i, j, self.threshold, sl)
+        s0 = timer()
+        ns = cImageD11.sparse_connectedpixels( v, i, j, self.threshold, sl)
+        s1 = timer()
+        ns = cImageD11.sparse_connectedpixels_splat( v, i, j, self.threshold, sls)
+        s2 = timer()
+        ns = cImageD11.sparse_connectedpixels_splat( v, i, j, self.threshold, sls)
+        s3 = timer()
+        sld = scipy.sparse.coo_matrix( (sl, (i, j)), shape=self.a.shape)
+        testcase = (sls == sl).all()
+        print("\nsparse_connectedpixels       %.3f ms"%(1e3*(s1-s0)),
+              "\nsparse_connectedpixels_splat %.3f ms"%(1e3*(s3-s2)))
+        if ~testcase:
+            import pylab as pl
+            pl.ioff()
+            pl.figure()
+            pl.subplot(311)
+            pl.title("t=%f"%(self.threshold))
+            pl.imshow( dl, interpolation='nearest')
+            pl.colorbar()
+            pl.subplot(312)
+            pl.imshow( sld.todense(), interpolation='nearest')
+            pl.colorbar()
+            pl.subplot(313)
+            pl.imshow( sld.todense() - dl, interpolation='nearest')
+            pl.colorbar()
+            pl.show()
+        self.assertTrue( testcase )
+        
 class test_sparse_connected_pixels_overlapim1(test_sparse_connected_pixels):
     def setUp(self):
         im = fabio.open("testoverlaps0000.edf").data.astype( np.float32 )

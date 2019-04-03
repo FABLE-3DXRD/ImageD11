@@ -20,34 +20,15 @@
 
 #ifndef _blobs_h
 #define _blobs_h
+#include "cImageD11.h"
 
-#ifdef _MSC_VER
-typedef __int8 int8_t;
-typedef unsigned __int16 uint16_t;
-typedef __int32 int32_t;
-#else
-#include <stdint.h>
-#endif
-
-/* If we define functions as local they can be inlined at link time
- * in a shared library (e.g. not shared and overridden by LD_PRELOAD)
- */
-
-#ifdef __GNUC__
- #if __GNUC__ >= 4
-   #define DLL_PUBLIC __attribute__ ((visibility ("default")))
-   #define DLL_LOCAL  __attribute__ ((visibility ("hidden")))
- #else
-   #define DLL_PUBLIC
-   #define DLL_LOCAL 
- #endif
-#else
-   #define DLL_PUBLIC
-   #define DLL_LOCAL 
-#endif
-
-DLL_LOCAL
+/* DLL_LOCAL
 void match(int32_t * new, int32_t * old, int32_t * S);
+*/
+#define match( X, Y, Z) do {						\
+    if((X)==0) {(X) = (Y);}						\
+    else {if ((X) != (Y)){ dset_makeunion((Z), (X), (Y)); } }		\
+  } while(0)
 
 DLL_LOCAL
 int32_t *dset_initialise(int32_t size);	/* array to hold real values of each */

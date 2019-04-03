@@ -471,5 +471,23 @@ python module cImageD11
       end function sparse_connectedpixels
    end interface
 
+   interface
+      function sparse_connectedpixels_splat( v, i, j, nnz, threshold, labels )
+         intent(c) sparse_connectedpixels_splat
+         intent(c)
+         real, intent(in), dimension(nnz) :: v
+         integer(kind=-2), intent(in), dimension(nnz) :: i
+         integer(kind=-2), intent(in), dimension(nnz) :: j
+	 integer, intent(hide), depend(i) :: nnz = shape( i, 0)
+         real threshold
+         integer, intent(inout), dimension(nnz) :: labels
+	 ! Returns 
+         integer :: sparse_connectedpixels_splat
+! we say threadsafe but it writes in labels, so we assume no one else
+! is using at the same time
+         threadsafe
+      end function sparse_connectedpixels_splat
+   end interface
+
 
 end python module cImageD11

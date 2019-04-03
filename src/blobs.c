@@ -23,11 +23,10 @@
 #include <math.h>		/* sqrt */
 #include "blobs.h"
 
-/* Fill in an image of peak assignments for pixels */
+/* Fill in an image of peak assignments for pixels 
 DLL_LOCAL
 void match(int32_t * new, int32_t * old, int32_t * S)
 {
-    /* printf("match %d %d\n",*new,*old); */
     if (*new == 0) {
 	*new = *old;
     } else {
@@ -36,7 +35,7 @@ void match(int32_t * new, int32_t * old, int32_t * S)
 	}
     }
 }
-
+*/
 
 DLL_LOCAL
 void compute_moments(double b[], int nb)
@@ -311,3 +310,27 @@ int32_t dset_find(int32_t x, int32_t * S)
     }
     return S[x];
 }
+
+
+
+#ifdef _MSC_VER
+
+ #include <windows.h>
+ double my_get_time()
+ {
+    LARGE_INTEGER t, f;
+    QueryPerformanceCounter(&t);
+    QueryPerformanceFrequency(&f);
+    return (double)t.QuadPart/(double)f.QuadPart;
+ }
+
+#else
+ #include <sys/time.h>
+
+ double my_get_time()
+ {
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    return t.tv_sec + t.tv_usec*1e-6;
+ }
+#endif

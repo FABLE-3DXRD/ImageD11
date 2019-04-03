@@ -1,7 +1,7 @@
 
 from __future__ import division, print_function
 import numpy as np, time
-from ImageD11.cImageD11 import localmaxlabel 
+from ImageD11.cImageD11 import localmaxlabel , localmaxlabel_nosse 
 import unittest
 
 def localmax( im, out=None ):
@@ -118,15 +118,42 @@ class test_localmaxlabel( unittest.TestCase ):
         end = time.time()
         pytime = (end-start)*1000.
         l2 = np.zeros(im.shape,np.int32)
+        l3 = np.zeros(im.shape,np.int32)
         wk = np.zeros(im.shape,np.int8)
         start = time.time()
         npks = localmaxlabel(im, l2 , wk )
         end=time.time()
+        stime = (end-start)*1000.
+        start = time.time()
+        npks = localmaxlabel_nosse(im, l3 , wk )
+        end=time.time()
         ctime = (end-start)*1000.
         self.assertEqual( (l2==l1).all(), True )
-        print("Timing python %.3f ms, c %.3f ms"%(pytime,ctime))
+        self.assertEqual( (l3==l1).all(), True )
+        print("Timing python %.3f ms, c %.3f ms, sse %.3f"%(pytime,ctime,stime))
+    def test2( self):
+        im = make_test_image(N=2048)
+        l2 = np.zeros(im.shape,np.int32)
+        l3 = np.zeros(im.shape,np.int32)
+        wk = np.zeros(im.shape,np.int8)
+        start = time.time()
+        for i in range(10):
+            npks = localmaxlabel(im, l2 , wk )
+        end=time.time()
+        stime = (end-start)*100.
+        start = time.time()
+        for i in range(10):
+            npks = localmaxlabel_nosse(im, l3 , wk )
+        end=time.time()
+        ctime = (end-start)*100.
+        self.assertEqual( (l2==l3).all(), True )
+        print("Timing 2048 c %.3f ms, sse %.3f"%(ctime,stime))
 
+        
 if __name__== "__main__":
-
+    import sys
+    if len(sys.argv)>1:
+        demo()
     unittest.main()
+
 

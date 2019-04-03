@@ -101,7 +101,7 @@ int connectedpixels(float *data, int32_t * labels,
 		labels[ir] = labels[irp];
 	    }
 	    if (eightconnected && (labels[irp + 1] > 0)) {
-		match(&labels[ir], &labels[irp + 1], S);
+		match(labels[ir], labels[irp + 1], S);
 	    }
 	    if (labels[ir] == 0) {
 		S = dset_new(&S, &labels[ir]);
@@ -115,16 +115,16 @@ int connectedpixels(float *data, int32_t * labels,
 	    if (data[ipx] > threshold) {
 		/* Pixel needs to be assigned */
 		if (eightconnected && (labels[irp - 1] > 0)) {
-		    match(&labels[ipx], &labels[irp - 1], S);
+		    match(labels[ipx], labels[irp - 1], S);
 		}
 		if (labels[irp] > 0) {
-		    match(&labels[ipx], &labels[irp], S);
+		    match(labels[ipx], labels[irp], S);
 		}
 		if (eightconnected && (labels[irp + 1] > 0)) {
-		    match(&labels[ipx], &labels[irp + 1], S);
+		    match(labels[ipx], labels[irp + 1], S);
 		}
 		if (labels[ipx - 1] > 0) {
-		    match(&labels[ipx], &labels[ipx - 1], S);
+		    match(labels[ipx], labels[ipx - 1], S);
 		}
 		if (labels[ipx] == 0) {	/* Label is new ! */
 		    S = dset_new(&S, &labels[ipx]);
@@ -137,13 +137,13 @@ int connectedpixels(float *data, int32_t * labels,
 	labels[ipx] = 0;
 	if (data[ipx] > threshold) {
 	    if (eightconnected && (labels[irp - 1] > 0)) {
-		match(&labels[ipx], &labels[irp - 1], S);
+		match(labels[ipx], labels[irp - 1], S);
 	    }
 	    if (labels[irp] > 0) {
-		match(&labels[ipx], &labels[irp], S);
+		match(labels[ipx], labels[irp], S);
 	    }
 	    if (labels[ipx - 1] > 0) {
-		match(&labels[ipx], &labels[ipx - 1], S);
+		match(labels[ipx], labels[ipx - 1], S);
 	    }
 	    if (labels[ipx] == 0) {	/* Label is new ! */
 		S = dset_new(&S, &labels[ipx]);
