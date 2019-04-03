@@ -1,3 +1,45 @@
+
+# 26-2-2019
+
+Overhaul or new package?
+
+peaksearcher:
+  return to image-by-image processing
+    background?  
+      pixels at radius / azimuth. Assume azimuth doesn't matter.
+      Histogram of intensity values (different intensities) at each tth
+       ... characterize this distribution
+         - tail = Bragg peaks
+         - azimuthal components?
+      powder1D with a few fourier components in azimuth
+  record pixel labelling for peaks
+  merge across frames in nDimensions and more intelligent overlaps
+    (fraction of pixels in peak, central part of intensity)
+
+Geometry:
+  General purpose package - look at GREWGG
+  Geometry of transations+rotations is in both ImageCIF and NeXus
+
+Indexing:
+  Identification of scattering vectors / g-vectors as groups of peaks:
+    h, -h, 2h, -2h,  h@180, ...
+  Known unit cells (angles between g or grainspotter)
+    assigned to 2theta rings
+  Unknown (index_unknown code)
+    using 2theta rings and typical powder methods
+    additional zone searching information from 3D
+
+Refinement:
+  Geometrical for strains from far-field
+    Diffractometer zeros, camera distortions
+  Intensities (point groups needed)
+    Rint, Rmerge
+  Difftomo for grain shapes
+
+
+
+
+
 # 23-3-2017
 
 Moved the repository to github.com/jonwright
