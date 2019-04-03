@@ -42,19 +42,6 @@ void boundscheck(int jpk, int n2, int ipk, int n1)
 /* ==== connectedpixels ======================================== */
 
 
-/* Fill in an image of peak assignments for pixels */
-DLL_LOCAL
-void match(int32_t * new, int32_t * old, int32_t * S)
-{
-    /* printf("match %d %d\n",*new,*old); */
-    if (*new == 0) {
-	*new = *old;
-    } else {
-	if (*new != *old) {
-	    dset_makeunion(S, *old, *new);
-	}
-    }
-}
 
 // Exported function is in the C wrapper, not here!
 DLL_LOCAL
