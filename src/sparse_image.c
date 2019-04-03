@@ -230,6 +230,7 @@ int sparse_connectedpixels( float * restrict v,
   if(NOISY) mid = my_get_time();
   T = dset_compress( &S, &np );
   // renumber labels
+#pragma omp parallel for private(k) shared(labels)
   for( k=0; k<nnz; k++){
     if( labels[k] > 0 ){
       /* if( T[labels[k]] == 0 ){
@@ -280,7 +281,9 @@ int sparse_connectedpixels_splat( float * restrict v,
   /* Create a scratch area the size of the image with calloc */
   imax = i[0];
   jmax = j[0];
+#ifndef _MSC_VER
 #pragma omp parallel for reduction(max: imax, jmax) private(k) schedule(dynamic, 4096)
+#endif
   for( k=1; k<nnz; k++ ){
     if( i[k] > imax ) imax = i[k];
     if( j[k] > jmax ) jmax = j[k];
@@ -354,23 +357,26 @@ int sparse_connectedpixels_splat( float * restrict v,
   }
   T = dset_compress( &S, &np );
   // renumber labels
+#pragma omp parallel for private(ik,jk,p) shared( labels )
   for( k=0; k<nnz; k++){
     ik = i[k]+1; /* the plus 1 is because we padded Z */
     jk = j[k]+1;
     p = ik*jdim+jk;
     if( Z[p] > 0 ){
-      /* if( T[labels[k]] == 0 ){
-	printf("Error in sparse_connectedpixels\n");
-	} */
       labels[k] = T[Z[p]];
     }
+  }
+  if(NOISY){
+    mid=my_get_time();
+    printf("Relabelling %f ms\n", 1000*(mid-start));
+    start= my_get_time();
   }
   free(S);
   free(T);
   free(Z);
   if(NOISY){
-    end=my_get_time();
-    printf("Relabelling %f ms\n", 1000*(end-mid));
+    mid=my_get_time();
+    printf("Free %f ms\n", 1000*(mid-start));
   }
   return np;
 }

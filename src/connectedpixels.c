@@ -156,6 +156,7 @@ int connectedpixels(float *data, int32_t * labels,
      */
     T = dset_compress(&S, &np);
     /* Now scan through image re-assigning labels as needed */
+	#pragma omp parallel for private(j,ipx,k) shared(labels)
     for (i = 0; i < ns; i++) {
 	for (j = 0; j < nf; j++) {
 	    ipx = i * nf + j;
