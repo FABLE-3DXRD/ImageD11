@@ -49,8 +49,8 @@ void array_stats( float img[], int npx,
     }
   }
   /* results */
-  *mean = s1 / npx + y0;
-  *var  = (s2 - (s1*s1/npx))/npx;
+  *mean = (float) (s1 / npx + y0);
+  *var  = (float) ((s2 - (s1*s1/npx))/npx);
   *minval = mini;
   *maxval = maxi;
 }
