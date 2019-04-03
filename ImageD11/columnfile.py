@@ -303,6 +303,20 @@ class columnfile:
         cnw.set_attributes()
         return cnw
 
+    def copyrows(self, rows):
+        """
+        Returns a copy of select rows of the columnfile
+        """
+        cnw = columnfile(self.filename, new = True)
+        self.chkarray()
+        cnw.bigarray = self.bigarray[:, rows]
+        cnw.titles = [t for t in self.titles ]
+        cnw.parameters = self.parameters
+        (cnw.ncols, cnw.nrows) = cnw.bigarray.shape
+        cnw.set_attributes()
+        return cnw
+        
+
     def chkarray(self):
         """
         Ensure self.bigarray holds our attributes
@@ -516,7 +530,7 @@ try:
             col = obj
         col.titles = newtitles
         dat = g[newtitles[0]][:]
-        col.bigarray = np.zeros( (len(newtitles), len(dat) ), np.float32)
+        col.bigarray = np.zeros( (len(newtitles), len(dat) ), np.float)
         col.bigarray[0] = dat
         col.ncols = len(newtitles)
         col.nrows = len(dat)

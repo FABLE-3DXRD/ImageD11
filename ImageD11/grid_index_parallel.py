@@ -80,6 +80,10 @@ def doindex( gve, x, y, z, w, gridpars):
     TOLSEQ = gridpars['TOLSEQ']
     COSTOL = gridpars[ 'COSTOL']
     DSTOL  = gridpars[ 'DSTOL']
+    if "2RFIT" in gridpars:
+        DOFIT = gridpars[ '2RFIT' ]
+    else:
+        DOFIT = False
     ss = sys.stdout # turns off printing
     if gridpars['NUL']:
         NUL = open(nulfile,"w")
@@ -89,8 +93,9 @@ def doindex( gve, x, y, z, w, gridpars):
         unitcell = UC,
         gv = gve.T
         )
-    myindexer.ds = np.sqrt( (gve * gve).sum(axis=0) )
-    myindexer.ga = np.zeros(len(myindexer.ds),np.int)-1 # Grain assignments
+    # added in indexer.__init__
+    #myindexer.ds = np.sqrt( (gve * gve).sum(axis=0) )
+    #myindexer.ga = np.zeros(len(myindexer.ds),np.int)-1 # Grain assignments
     for ring1 in gridpars['RING1']:
         for ring2 in gridpars['RING2']:
             myindexer.parameterobj.set_parameters(  {
@@ -106,7 +111,7 @@ def doindex( gve, x, y, z, w, gridpars):
             myindexer.assigntorings( )
             try:
                 myindexer.find( )
-                myindexer.scorethem( )
+                myindexer.scorethem( fitb4 = DOFIT )
             except:
                 pass
     # filter out crap

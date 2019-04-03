@@ -75,7 +75,7 @@ class indexer:
             self.cf.addcolumn(xl,"xl")
             self.cf.addcolumn(yl,"yl")
             self.cf.addcolumn(zl,"zl")
-        self.peaks_xyzT = np.array(zip(self.cf.xl,self.cf.yl,self.cf.zl))
+        self.peaks_xyzT = np.array((self.cf.xl,self.cf.yl,self.cf.zl)).T.copy()
         om = self.cf.omega
         osign = self.transformpars.get("omegasign")
         tth, eta = transform.compute_tth_eta_from_xyz(

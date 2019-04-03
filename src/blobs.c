@@ -23,6 +23,21 @@
 #include <math.h>		/* sqrt */
 #include "blobs.h"
 
+/* Fill in an image of peak assignments for pixels */
+DLL_LOCAL
+void match(int32_t * new, int32_t * old, int32_t * S)
+{
+    /* printf("match %d %d\n",*new,*old); */
+    if (*new == 0) {
+	*new = *old;
+    } else {
+	if (*new != *old) {
+	    dset_makeunion(S, *old, *new);
+	}
+    }
+}
+
+
 DLL_LOCAL
 void compute_moments(double b[], int nb)
 {

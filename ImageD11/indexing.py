@@ -27,6 +27,28 @@ from xfab.tools import ubi_to_u, u_to_rod, ubi_to_rod
 import math, time, sys, logging
 
 
+def ubi_fit_2pks( ubi, g1, g2):
+    """
+    Refine a ubi matrix so it matches the pair of g-vectors supplied
+    (almost) accounts for cell parameters not being quite right
+    """
+    ub = np.linalg.inv( ubi )
+    h1 = np.round( np.dot( ubi, g1 ) )
+    h2 = np.round( np.dot( ubi, g2 ) )
+    g3 = np.cross( g1, g2 )
+    h3 = np.dot( ubi, g3 )    # do not round to integer
+    g1c = np.dot( ub, h1 )
+    g2c = np.dot( ub, h2 )
+    g3c = np.dot( ub, h3 )
+    R = np.outer( g1, h1 ) + np.outer( g2, h2 ) + np.outer( g3, h3 )
+    H = np.outer( h1, h1 ) + np.outer( h2, h2 ) + np.outer( h3, h3 )
+    ubfit = np.dot( R, np.linalg.inv( H ) )
+    ubifit = np.linalg.inv( ubfit )
+    return ubifit
+   
+   
+   
+
 def myhistogram(data, bins):
    """
    The numpy histogram api was changed
@@ -221,7 +243,12 @@ def refine(UBI, gv, tol, quiet=True):
     #      print "Mean drlv old",sum(sqrt(drlv2_old))/drlv2_old.shape[0]
     return UBIo
 
-
+def indexer_from_colfile( colfile, **kwds ):
+    uc = unitcell.unitcell_from_parameters( colfile.parameters )
+    w = float( colfile.parameters.get("wavelength") )
+    gv = np.array( (colfile.gx,colfile.gy,colfile.gz), np.float)
+    kwds.update( {"unitcell": uc, "wavelength":w, "gv":gv.T } )
+    return indexer( **kwds )
 
 
 class indexer:
@@ -248,12 +275,14 @@ class indexer:
         """
         self.unitcell=unitcell
         self.gv=gv
-        if gv is not None:
+        if gv is not None: # do init
             print('gv:', gv, gv.shape, gv.dtype)
-        self.wedge=0.0 # Default
-        if gv is not None:
-            self.gvflat=np.ascontiguousarray(gv,np.float)
-            # Makes it contiguous in memory, hkl fast index
+            assert gv.shape[1] == 3
+            self.gv = gv.astype( np.float )
+            self.ds = np.sqrt( (gv*gv).sum(axis=1) )
+            self.ga = np.zeros(len(self.ds),np.int32)-1 # Grain assignments
+            self.gvflat=np.ascontiguousarray(gv, np.float)
+            self.wedge=0.0 # Default
 
         self.cosine_tol=cosine_tol
         self.wavelength=wavelength
@@ -322,23 +351,21 @@ class indexer:
         print("Maximum d-spacing considered",limit)
         self.unitcell.makerings(limit, tol = self.ds_tol)
         dsr = self.unitcell.ringds
-        self.ra = np.zeros(self.gv.shape[0],np.int)-1
-        self.na = np.zeros(len(dsr),np.int)
+        # npks
+        npks = len(self.ds)
+        self.ra = np.zeros(npks, np.int32)-1
+        self.na = np.zeros(len(dsr), np.int32)
         print("Ring assignment array shape",self.ra.shape)
         tol = float(self.ds_tol)
-        for i in range(self.ra.shape[0]):
-            # Assign the peak to a ring (or no ring)
-            ds = self.ds[i]
-            best = 999.
-            for j in range(len(dsr)):
-                diff = abs(ds-dsr[j])
-                if diff < tol:
-                    if diff < best:
-                        self.ra[i]=j
-                        best=diff
+        best = np.zeros(npks, np.float)+tol
+        for j, dscalc in enumerate(dsr):
+            dserr = abs(self.ds - dscalc)
+            sel = dserr < best
+            self.ra[sel]=j
+            best[sel] = dserr[sel]
         # Report on assignments
         ds=np.array(self.ds)
-        print("Ring     (  h,  k,  l) Mult  total indexed to_index  ubis  peaks_per_ubi")
+        print("Ring     (  h,  k,  l) Mult  total indexed to_index  ubis  peaks_per_ubi   tth")
         minpks = 0
         # try reverse order instead
         for j in range(len(dsr))[::-1]:
@@ -356,9 +383,10 @@ class indexer:
             except:
                 expected_orients = 'N/A'
                 expected_npks = 'N/A'
-            print("Ring %-3d (%3d,%3d,%3d)  %3d  %5d   %5d    %5d %5s     %2s"%(\
+            tth = 2*np.degrees(np.arcsin(dsr[j]*self.wavelength/2))
+            print("Ring %-3d (%3d,%3d,%3d)  %3d  %5d   %5d    %5d %5s     %2s  %.2f"%(
                 j,h[0],h[1],h[2],Mult,
-                     self.na[j],n_indexed,n_to_index,expected_orients,expected_npks))
+                self.na[j],n_indexed,n_to_index,expected_orients,expected_npks,tth))
         if minpks > 0:
             print('\nmin_pks:  - Current  --> %3d'%(self.minpks))
             print('          - Expected --> %3d\n'%(minpks))
@@ -548,7 +576,7 @@ class indexer:
         self.bins=bins
         self.histogram=hist
 
-    def scorethem(self):
+    def scorethem(self, fitb4=False):
         """ decide which trials listed in hits to keep """
         start=time.time()
 #        ts=0
@@ -588,9 +616,15 @@ class indexer:
                 print(self.gv[j])
                 print("Failed to find orientation in unitcell.orient")
                 raise
+            if fitb4:
+               self.unitcell.UBI = ubi_fit_2pks( self.unitell.UBI, self.gv[i,:], self.gv[j,:])
             npk = cImageD11.score(self.unitcell.UBI,gv,tol)
             if npk > self.minpks:
                 self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],verbose=0,all=True)
+                if fitb4:
+                   for k in range( len(self.unitell.UBIlist) ):
+                        self.unitell.UBIlist[k] = ubi_fit_2pks( self.unitell.UBIlist[k],
+                                                                self.gv[i,:], self.gv[j,:])
                 npks=[cImageD11.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist] 
                 choice = np.argmax(npks)
                 UBI = self.unitcell.UBIlist[choice]
@@ -975,7 +1009,7 @@ class indexer:
                 raise
 #            raise "Problem interpreting the last thing I printed"
         f.close()
-
+        self.ds = np.array( self.ds )
         self.omega_ranges.append(int(round(min(self.omega))))
         sorted_omega = sorted(self.omega)
         for i in range(len(sorted_omega)-1):

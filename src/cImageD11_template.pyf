@@ -96,6 +96,24 @@ python module cImageD11
 
 
    interface
+      function localmaxlabel_nosse( data, labels, wrk, ns, nf )
+         intent(c) localmaxlabel_nosse
+         intent(c)
+         real, intent(in) :: data(ns,nf)
+         integer*4, intent(inout), note(hello) :: labels(ns,nf)
+	 integer*1, intent(inout) :: wrk(ns,nf)	
+         integer, intent(hide), depend(data) :: ns=shape(data,0)
+         integer, intent(hide), depend(data) :: nf=shape(data,1)
+! Returns 
+         integer :: localmaxlabel_nosse
+! we say threadsafe but it writes in labels, so we assume no one else
+! is using at the same time
+         threadsafe
+      end function localmaxlabel_nosse
+   end interface
+
+
+   interface
       subroutine blobproperties( data, labels, np, omega, &
                                  verbose, ns, nf, results)
          intent(c) blobproperties
@@ -121,6 +139,7 @@ python module cImageD11
          threadsafe
       end subroutine blob_moments
    end interface
+
 
    interface
       function bloboverlaps( labels1, npk1, results1,    & 
@@ -310,7 +329,7 @@ python module cImageD11
 	 double precision, intent(inout) :: g2(n,3)
 	 double precision, intent(inout) ::  e(n,3)
 	 integer, intent(in) :: rec
-      end subroutine cluster1d
+    end subroutine score_gvec_z
    end interface
 
    interface
@@ -325,6 +344,40 @@ python module cImageD11
    end interface
 
    interface
+     function misori_monoclinic( u1, u2)
+         intent(c) misori_monoclinic
+         intent(c)
+	 double precision, intent(in) :: u1(3,3), u2(3,3)
+! Returns 
+         double precision :: misori_monoclinic
+         threadsafe
+      end function misori_monoclinic
+   end interface
+
+
+   interface
+     function misori_orthorhombic( u1, u2)
+         intent(c) misori_orthorhombic
+         intent(c)
+	 double precision, intent(in) :: u1(3,3), u2(3,3)
+! Returns 
+         double precision :: misori_orthorhombic
+         threadsafe
+      end function misori_orthorhombic
+   end interface
+
+   interface
+     function misori_tetragonal( u1, u2)
+         intent(c) misori_tetragonal
+         intent(c)
+	 double precision, intent(in) :: u1(3,3), u2(3,3)
+! Returns 
+         double precision :: misori_tetragonal
+         threadsafe
+      end function misori_tetragonal
+   end interface
+
+   interface
      subroutine misori_cubic_pairs( u, dist, n)
          intent(c) misori_cubic_pairs
          intent(c)
@@ -332,6 +385,90 @@ python module cImageD11
 	 integer, intent( hidden ), depend(u) :: n
 	 double precision, intent(inout) :: dist( (n*(n-1)/2) )
      end subroutine misori_cubic_pairs
+   end interface
+
+   interface
+     function count_shared( pi, ni, pj, nj )
+         intent(c) count_shared
+         intent(c)
+	 integer, intent(in) :: pi(ni)
+	 integer, intent( hidden ), depend(pi) :: ni
+	 integer, intent(in) :: pj(nj)
+	 integer, intent( hidden ), depend(pj) :: nj
+	 ! return value is int too
+	 integer :: count_shared
+	 threadsafe
+     end function count_shared
+   end interface
+
+
+   interface
+     subroutine clean_mask( msk, ret, ns, nf )
+         intent(c) clean_mask
+         intent(c)
+	 integer*1, intent(in)  :: msk( ns, nf )
+         integer, intent(hide), depend(msk) :: ns=shape(msk,0)
+         integer, intent(hide), depend(msk) :: nf=shape(msk,1)
+	 integer*1, intent(inout), dimension(ns, nf) :: ret	
+	 threadsafe
+     end function clean_mask
+   end interface
+
+
+   interface
+      subroutine array_stats( img, npx, minval, maxval, mean, var )
+         intent(c) array_stats
+         real, intent(c, in), dimension(npx) :: img
+         integer, intent(c, hide), depend(img) :: npx = shape(img,0)
+	 ! these are intent(fortran) pointers
+         real, intent(out) :: minval, maxval, mean, var
+         threadsafe	  
+      end subroutine array_stats
+   end interface
+
+   interface
+      subroutine array_histogram( img, npx, low, high, hist, nhist )
+         intent(c) array_histogram
+	 intent(c)
+         real, intent(in), dimension(npx) :: img
+         integer, intent(hide), depend(img) :: npx = shape(img,0)
+         real, intent(in) :: low, high
+	 integer*4, intent(inout), dimension(nhist) :: hist
+	 integer, intent(hide), depend(hist) :: nhist = shape(hist, 0 )
+         threadsafe	  
+      end subroutine array_histogram
+   end interface
+
+   interface
+      function sparse_is_sorted( i, j, nnz, verbose )
+         intent(c) sparse_is_sorted
+	 intent(c)
+         integer(kind=-2), intent(in), dimension(nnz) :: i
+	 integer(kind=-2), intent(in), dimension(nnz) :: j
+	 integer, intent(hide), depend(i) :: nnz = shape( i, 0)
+         integer, optional ::  verbose = 0
+         threadsafe
+	 ! returns
+	 integer sparse_is_sorted
+      end function spare_is_sorted
+   end interface
+
+   interface
+      function sparse_connectedpixels( v, i, j, nnz, threshold, labels )
+         intent(c) sparse_connectedpixels
+         intent(c)
+         real, intent(in), dimension(nnz) :: v
+         integer(kind=-2), intent(in), dimension(nnz) :: i
+         integer(kind=-2), intent(in), dimension(nnz) :: j
+	 integer, intent(hide), depend(i) :: nnz = shape( i, 0)
+         real threshold
+         integer, intent(inout), dimension(nnz) :: labels
+	 ! Returns 
+         integer :: sparse_connectedpixels
+! we say threadsafe but it writes in labels, so we assume no one else
+! is using at the same time
+         threadsafe
+      end function sparse_connectedpixels
    end interface
 
 

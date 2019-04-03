@@ -3,7 +3,7 @@ from __future__ import print_function
 
 from ImageD11.columnfile  import columnfile
 from ImageD11.grain import read_grain_file, write_grain_file
-import sys, os, multiprocessing
+import sys, os, multiprocessing, platform
 
 try:
     c = columnfile( sys.argv[1] )
@@ -21,12 +21,19 @@ for i in range(len(g)):
     d = c.copy()
     d.filter( d.labels == i )
     d.writefile("%d.flt"%(i))
-    cmd = "fitgrain.py -p %s -u %d.ubi -U %d.ubi -P %d.par -f %d.flt -x t_z"%(
+    cmd = "%s %s/fitgrain.py"%( sys.executable, os.path.split(__file__)[0] )
+    cmd += " -p %s -u %d.ubi -U %d.ubi -P %d.par -f %d.flt -x t_z"%(
         parfile,i,i,i,i)
     for extra_arg in sys.argv[4:]:
         cmd += " "+extra_arg
     cmds.append( cmd )
 
-p = multiprocessing.Pool( multiprocessing.cpu_count() )
-p.map( os.system, cmds )
+if platform.system() != "Windows":
+    p = multiprocessing.Pool( multiprocessing.cpu_count() )
+    p.map( os.system, cmds )
+else:
+    for cmd in cmds:
+        print(cmd)
+        os.system(cmd)
+
 

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-
+#include <string.h>
 #include "blobs.h"		/* Disjoint sets thing for blob finding */
 
 
@@ -42,19 +42,6 @@ void boundscheck(int jpk, int n2, int ipk, int n1)
 /* ==== connectedpixels ======================================== */
 
 
-/* Fill in an image of peak assignments for pixels */
-DLL_LOCAL
-void match(int32_t * new, int32_t * old, int32_t * S)
-{
-    /* printf("match %d %d\n",*new,*old); */
-    if (*new == 0) {
-	*new = *old;
-    } else {
-	if (*new != *old) {
-	    dset_makeunion(S, *old, *new);
-	}
-    }
-}
 
 // Exported function is in the C wrapper, not here!
 DLL_LOCAL
@@ -405,4 +392,33 @@ int bloboverlaps(int32_t * b1, int32_t n1, double *res1,
 void blob_moments(double *res, int np)
 {
     compute_moments(res, np);
+}
+
+
+void clean_mask( int8_t msk[],
+		 int8_t ret[],
+		 int ns,
+		 int nf){
+  /* cleans pixels with no 4 connected neighbors */
+  int i,j,n,p,q;
+  /* set zero for default */
+  memset( ret, 0, ns*nf*sizeof(int8_t));
+  /*  printf("yop %d %d\n",ns,nf); */
+  for( i=0; i<ns; i++){
+    p = i*ns;
+    for( j=0; j<nf; j++){
+      q = p+j;
+      /* printf("%d:%d\n",q,msk[q]); */
+      if(msk[q]!=0){
+	/* Count neighbors */
+	n=0;
+	/* printf("%d %d\n",q,msk[q]); */
+	if((i>0)      && (msk[q-nf]!=0)) n++;
+	if((i<(ns-1)) && (msk[q+nf]!=0)) n++;
+	if((j>0)      && (msk[q-1] !=0)) n++;
+	if((j<(nf-1)) && (msk[q+1] !=0)) n++;
+	if(n != 0)ret[q]=1;
+      }
+    }
+  }
 }

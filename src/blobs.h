@@ -22,6 +22,8 @@
 #define _blobs_h
 
 #ifdef _MSC_VER
+typedef __int8 int8_t;
+typedef unsigned __int16 uint16_t;
 typedef __int32 int32_t;
 #else
 #include <stdint.h>
@@ -43,6 +45,9 @@ typedef __int32 int32_t;
    #define DLL_PUBLIC
    #define DLL_LOCAL 
 #endif
+
+DLL_LOCAL
+void match(int32_t * new, int32_t * old, int32_t * S);
 
 DLL_LOCAL
 int32_t *dset_initialise(int32_t size);	/* array to hold real values of each */
@@ -78,7 +83,7 @@ enum {
     s_soI,			/* 11 sum omega * s * intensity */
     s_foI,			/* 12 sum omega * f * intensity */
 
-    mx_I,			/* 13  Max intensity */
+    mx_I,			/* 13 Max intensity */
     mx_I_f,			/* 14 fast at Max intensity */
     mx_I_s,			/* 15 slow at Max intensity */
     mx_I_o,			/* 16 omega at max I */
