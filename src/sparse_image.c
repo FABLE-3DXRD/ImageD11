@@ -23,8 +23,8 @@
  * @param *s2  Sum of pixel^2
  */
 void array_stats( float img[], int npx,
-		  float *minval, float *maxval,
-		  float *mean, float *var){
+                  float *minval, float *maxval,
+                  float *mean, float *var){
   int i;
   /* Use double to reduce rounding and subtraction errors */  
   double t, s1, s2, y0; 
@@ -79,11 +79,11 @@ void array_stats( float img[], int npx,
  * @param nhist  Number of bins in the histogram
  */
 void array_histogram( float img[],
-		      int npx,
-		      float low,
-		      float high,
-		      int32_t hist[],
-		      int nhist){
+              int npx,
+              float low,
+              float high,
+              int32_t hist[],
+              int nhist){
   int i, ibin;
   float ostep;
   memset( hist, 0, nhist * sizeof( int32_t ) );
@@ -130,8 +130,8 @@ void array_histogram( float img[],
  *         -k for first duplicate
  */
 int sparse_is_sorted( uint16_t i[],
-		      uint16_t j[],
-		      int nnz ){
+              uint16_t j[],
+              int nnz ){
   int k, es, ed;
   es = nnz+1;
   ed = nnz+1;
@@ -145,11 +145,11 @@ int sparse_is_sorted( uint16_t i[],
     }
     if (i[k] == i[k-1]) { /* Same row, j must be gt prev */
       if( j[k] < j[k-1] ){ /* bad */
-	es = (k < es) ? k : es;
+    es = (k < es) ? k : es;
       } else if (j[k] == j[k-1] ){
-	ed = (k < ed) ? k : ed;
+    ed = (k < ed) ? k : ed;
       } else {
-	continue;
+    continue;
       }
     }
   }
@@ -167,12 +167,12 @@ int sparse_is_sorted( uint16_t i[],
 
 #define NOISY 0
 int sparse_connectedpixels( float * restrict v,
-			    uint16_t * restrict i,
-			    uint16_t * restrict j,
-			    int nnz,
-			    float threshold,
-			    int32_t * restrict labels  /* nnz */
-			    ){
+                            uint16_t * restrict i,
+                            uint16_t * restrict j,
+                            int nnz,
+                            float threshold,
+                            int32_t * restrict labels  /* nnz */
+                            ){
   int k, p, pp, ir;
   int32_t *S, *T, np;
   /* Read k = kurrent
@@ -199,8 +199,8 @@ int sparse_connectedpixels( float * restrict v,
      */
     p = k-1; /* previous pixel, same row */
     if( ((j[p]+1) == j[k])   &&
-	( i[p]    == i[k])   &&
-	( labels[p] > 0 )) {
+    ( i[p]    == i[k])   &&
+    ( labels[p] > 0 )) {
       labels[k] = labels[p];
     }
     ir = i[k]-1;
@@ -209,20 +209,20 @@ int sparse_connectedpixels( float * restrict v,
     /* out if nothing on row above */
     if( i[pp] == i[k] ) {
       if( labels[k] == 0){
-	S = dset_new( &S, &labels[k] );
-	continue;
+    S = dset_new( &S, &labels[k] );
+    continue;
       }
     }
     /* Locate previous pixel on row above */ 
     while( ((j[k]-j[pp]) > 1)&&(i[pp]==ir) ) pp++;
     for( p = pp; j[p] <= j[k]+1; p++ ){
       if( i[p] == ir ){
-	if ( labels[p] > 0) {
-	  // Union p, k
-	  match( labels[k], labels[p], S);
-	}
+    if ( labels[p] > 0) {
+      // Union p, k
+      match( labels[k], labels[p], S);
+    }
       } else {
-	break; // not same row
+    break; // not same row
       }
     }
     if( labels[k] == 0) dset_new( &S, &labels[k]);
@@ -234,8 +234,8 @@ int sparse_connectedpixels( float * restrict v,
   for( k=0; k<nnz; k++){
     if( labels[k] > 0 ){
       /* if( T[labels[k]] == 0 ){
-	printf("Error in sparse_connectedpixels\n");
-	} */
+    printf("Error in sparse_connectedpixels\n");
+    } */
       labels[k] = T[labels[k]];
     }
   }
@@ -257,14 +257,17 @@ int sparse_connectedpixels( float * restrict v,
 
 #define NOISY 0
 int sparse_connectedpixels_splat( float * restrict v,
-				  uint16_t * restrict i,
-				  uint16_t * restrict j,
-				  int nnz,
-				  float threshold,
-				  int32_t * restrict labels  /* nnz */
-				  ){
-  int k, p, pp, ir, imax, jmax, idim, jdim, ik, jk;
-  int32_t *S, *T, np, *Z;
+                  uint16_t * restrict i,
+                  uint16_t * restrict j,
+                  int nnz,
+                  float threshold,
+                  int32_t * restrict labels,  /* nnz */
+                  int32_t * restrict Z, /* workspace, at least (imax+2)*(jmax+2) */
+                  int imax,
+                  int jmax
+                  ){
+  int k, p, pp, ir, idim, jdim, ik, jk;
+  int32_t *S, *T, np;
   /* Read k = kurrent
           p = prev */
   double start, mid, end;
@@ -278,25 +281,10 @@ int sparse_connectedpixels_splat( float * restrict v,
     printf("check sorted %.3f ms\n",(mid-start)*1000);
     start = my_get_time();
   }
-  /* Create a scratch area the size of the image with calloc */
-  imax = i[0];
-  jmax = j[0];
-#ifndef _MSC_VER
-#pragma omp parallel for reduction(max: imax, jmax) private(k) schedule(dynamic, 4096)
-#endif
-  for( k=1; k<nnz; k++ ){
-    if( i[k] > imax ) imax = i[k];
-    if( j[k] > jmax ) jmax = j[k];
-  }
   idim = imax + 2;
   jdim = jmax + 2;
-  if(NOISY){
-    mid = my_get_time();
-    printf("nnz %d idim %d jdim %d setup %.3f ms\n",nnz, idim, jdim, (mid-start)*1000);
-    start = my_get_time();
-  }
-  /* This is not! delivered with zeros, we put a border in too */
-  Z = (float *) malloc(idim*jdim* sizeof(float));
+  /* This is not! delivered with zeros, we put a border in too 
+   *  Z = (int32_t *) malloc(idim*jdim* sizeof(int32_t));
   /* later we will write into Z as a scratch area for labels (filled at very end) */
   pp=0;
   p=0;
@@ -307,7 +295,7 @@ int sparse_connectedpixels_splat( float * restrict v,
     start = my_get_time();
   }
   /* zero the parts of Z that we will read from (pixel neighbors) */
-#pragma omp parallel for private(p, k, ik, jk) schedule(dynamic, 4096)
+#pragma omp parallel for private(p, k, ik, jk) shared(Z)
   for( k=0; k<nnz; k++){
     ik = i[k]+1; /* the plus 1 is because we padded Z */
     jk = j[k]+1;
@@ -344,8 +332,8 @@ int sparse_connectedpixels_splat( float * restrict v,
     ir = (ik-1)*jdim + jk;
     for( pp = ir-1; pp <= ir + 1; pp++ ){
       if( Z[pp] > 0 ){
-	// Union p, k
-	match( Z[p], Z[pp], S);
+        // Union p, k
+        match( Z[p], Z[pp], S);
       }
     } 
     if( Z[p] == 0) dset_new( &S, &Z[p]);
@@ -373,7 +361,6 @@ int sparse_connectedpixels_splat( float * restrict v,
   }
   free(S);
   free(T);
-  free(Z);
   if(NOISY){
     mid=my_get_time();
     printf("Free %f ms\n", 1000*(mid-start));
