@@ -45,7 +45,6 @@ int localmaxlabel(const float *restrict im,	// input
 	l[dim1 * (dim0 - 1) + i] = 0;
     }
 #ifdef __SSE2__
-
 #pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq)
 #else
 #pragma omp parallel for private( j, p, iq, k, mx )
@@ -53,10 +52,13 @@ int localmaxlabel(const float *restrict im,	// input
     for (i = dim1; i < (dim0 - 1) * dim1; i = i + dim1) {	// skipping 1 pixel border
 	lout[i] = 0;		// set edges to zero: pixel j=0:
 	l[i] = 0;
+	
 #ifdef __SSE2__
 	one = _mm_set1_epi32(1);
+	//AVX __m256i _mm256_set1_epi32 (int a)
 	for (j = 1; j < dim1 - 1 - 4; j = j + 4) {	// do 4 pixels at a time with sse2
 	    p = i + j;
+	    //AVX __m256 _mm256_loadu_ps (float const * mem_addr)
 	    mxp = _mm_loadu_ps(&im[p + o[0]]);	// load 4 floats
 	    iqp = one;		// current selection
 	    ik = one;		// to increment
@@ -64,13 +66,18 @@ int localmaxlabel(const float *restrict im,	// input
 		ik = _mm_add_epi32(ik, one);	// ik++ 
 		mxq = _mm_loadu_ps(&im[p + o[k]]);	// load vector of floats
 		msk = _mm_cmpgt_ps(mxq, mxp);	// 1 for q > p
+		//AVX __m256 _mm256_cmp_ps (__m256 a, __m256 b, const int imm8=_CMP_GT_OQ)
 		// apply mask to max (mxq/mxp) and to index (iqp/ik)
 		mxp = _mm_or_ps(_mm_and_ps(msk, mxq), _mm_andnot_ps(msk, mxp));
+		//AVX __m256 _mm256_or_ps (__m256 a, __m256 b)
+		//AVX __m256 _mm256_and_ps (__m256 a, __m256 b)
+		//AVX __m256 _mm256_andnot_ps (__m256 a, __m256 b)
 		iqp = (__m128i) _mm_or_ps(_mm_and_ps(msk, (__m128) ik),
 					  _mm_andnot_ps(msk, (__m128) iqp));
 	    }			// k neighbors
 	    // Write results (note epi16 is sse2)
 	    l[p] = (uint8_t) _mm_extract_epi16(iqp, 0);
+	    //AVX int _mm256_extract_epi16 (__m256i a, const int index)
 	    l[p + 1] = (uint8_t) _mm_extract_epi16(iqp, 2);
 	    l[p + 2] = (uint8_t) _mm_extract_epi16(iqp, 4);
 	    l[p + 3] = (uint8_t) _mm_extract_epi16(iqp, 6);
