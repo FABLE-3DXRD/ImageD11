@@ -46,7 +46,7 @@ class test_tifs(unittest.TestCase):
                   " -f %d -l %d"%(self.FIRST, self.LAST))
         results = columnfile.columnfile( "peaks_t5.flt" )
         self.assertEqual( results.nrows, self.NPK)
-        if os.path.exists( 'peaks_t5.flt' ):
+        if os.path.exists( 'peaks_t6.flt' ):
             self.assertEqual( open( 'peaks_t5.flt').read().rstrip(),
                               open( 'peaks_t6.flt').read().rstrip() )
 
@@ -68,7 +68,7 @@ class test_tifs(unittest.TestCase):
                   " -f %d -l %d"%(self.FIRST, self.LAST))
         results = columnfile.columnfile( "peaks_t7.flt" )
         self.assertEqual( results.nrows, self.NPK)
-        if os.path.exists( 'peaks_t7.flt' ):
+        if os.path.exists( 'peaks_t6.flt' ):
             self.assertEqual( open( 'peaks_t7.flt').read().rstrip(),
                               open( 'peaks_t6.flt').read().rstrip() )
         
