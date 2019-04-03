@@ -1,4 +1,3 @@
-
 from __future__ import print_function
 
 import os, sys, unittest, importlib
@@ -27,14 +26,14 @@ modules = [
     "testcolfile2db.testcolfile2db",
     "ken_simul.testken",
     "testconnectedpixels.testconnectedpixels",
-    "testlabelimage.testlabelimage",
-
+    "testlabelimage.testlabelimage"
 ]
 
 if "all" in sys.argv:
     modules += ["index_demos.generate_gv",
                 "test_index_unknown.test_index_unknown",
-                "peaksearchtiftest.make_test_data"
+                "peaksearchtiftest.make_test_data",
+                "test_mmo.make_test_data_mmo",
     ]
 else:
     print ("Add \"all\" to command line to run all tests")
