@@ -37,13 +37,11 @@ void match(int32_t * new, int32_t * old, int32_t * S)
 }
 */
 
-DLL_LOCAL
-void compute_moments(double b[], int nb)
+DLL_LOCAL void compute_moments(double b[], int nb)
 {
     /* Convert the blob (summing) representation to a human readable form */
     int i, off;
     double ts, to, tf, us, uo, uf, vs, vo, vf, tc;
-    
 
     /* loop over a set of blobs in a flat array */
 
@@ -67,7 +65,7 @@ void compute_moments(double b[], int nb)
 	b[f_raw + off] = uf;
 	/* Secoond moment */
 	tf = b[s_ffI + off] / tc;
-	vf = tf - uf * uf;    // variance : better to have returned this!
+	vf = tf - uf * uf;	// variance : better to have returned this!
 	if ((vf + 1.0) > 0.0)
 	    b[m_ff + off] = sqrt(vf + 1.);
 	else
@@ -104,8 +102,7 @@ void compute_moments(double b[], int nb)
 
 }
 
-DLL_LOCAL
-void add_pixel(double b[], int s, int f, double I, double o)
+DLL_LOCAL void add_pixel(double b[], int s, int f, double I, double o)
 {
 
     b[s_1] += 1;		/* Npix */
@@ -138,8 +135,7 @@ void add_pixel(double b[], int s, int f, double I, double o)
 
 }
 
-DLL_LOCAL
-void merge(double b1[], double b2[])
+DLL_LOCAL void merge(double b1[], double b2[])
 {
     /* b2 is killed, b1 is kept */
     int i;
@@ -204,11 +200,10 @@ void merge(double b1[], double b2[])
  *
  * ********************************************************************  */
 
-DLL_LOCAL
-int32_t *dset_initialise(int32_t size)
+DLL_LOCAL int32_t *dset_initialise(int32_t size)
 {
     int32_t *S;
-    S = (int32_t *) (calloc(size , sizeof(int32_t)));
+    S = (int32_t *) (calloc(size, sizeof(int32_t)));
     /* calloc sets to zero also */
     if (S == NULL) {
 	printf("Memory allocation error in dset_initialise\n");
@@ -218,13 +213,12 @@ int32_t *dset_initialise(int32_t size)
     return S;
 }
 
-DLL_LOCAL
-int32_t *dset_compress(int32_t ** pS, int32_t * np)
+DLL_LOCAL int32_t *dset_compress(int32_t ** pS, int32_t * np)
 {
     int32_t *S, *T, i, j, npk;
-    S = (int32_t *) * pS; // existing set
-    T = dset_initialise( S[S[0] - 1] + 3 ); // new set
-    npk = 0; // number of entries
+    S = (int32_t *) * pS;	// existing set
+    T = dset_initialise(S[S[0] - 1] + 3);	// new set
+    npk = 0;			// number of entries
     for (i = 1; i < S[S[0] - 1] + 1; i++) {
 	if (S[i] == i) {
 	    T[i] = ++npk;
@@ -241,8 +235,7 @@ int32_t *dset_compress(int32_t ** pS, int32_t * np)
     return T;
 }
 
-DLL_LOCAL
-int32_t *dset_new(int32_t ** pS, int32_t * v)
+DLL_LOCAL int32_t *dset_new(int32_t ** pS, int32_t * v)
 {
     /* S[0] will always hold the length of the array */
     /* S[:-1] holds the current element */
@@ -273,8 +266,7 @@ int32_t *dset_new(int32_t ** pS, int32_t * v)
     return S;
 }
 
-DLL_LOCAL
-void dset_makeunion(int32_t * S, int32_t r1, int32_t r2)
+DLL_LOCAL void dset_makeunion(int32_t * S, int32_t r1, int32_t r2)
 {
     int32_t a, b;
     a = dset_find(r1, S);
@@ -282,8 +274,7 @@ void dset_makeunion(int32_t * S, int32_t r1, int32_t r2)
     dset_link(S, a, b);
 }
 
-DLL_LOCAL
-void dset_link(int32_t * S, int32_t r2, int32_t r1)
+DLL_LOCAL void dset_link(int32_t * S, int32_t r2, int32_t r1)
 {
     if (r1 > r2) {
 	/* The higher # r1 is changed to point to the lower */
@@ -296,8 +287,7 @@ void dset_link(int32_t * S, int32_t r2, int32_t r1)
     /* if r1==r2 then they are already a union */
 }
 
-DLL_LOCAL
-int32_t dset_find(int32_t x, int32_t * S)
+DLL_LOCAL int32_t dset_find(int32_t x, int32_t * S)
 {
     if (x == 0) {
 	/* oups */
@@ -311,26 +301,24 @@ int32_t dset_find(int32_t x, int32_t * S)
     return S[x];
 }
 
-
-
 #ifdef _MSC_VER
 
- #include <windows.h>
- double my_get_time()
- {
+#include <windows.h>
+double my_get_time()
+{
     LARGE_INTEGER t, f;
     QueryPerformanceCounter(&t);
     QueryPerformanceFrequency(&f);
-    return (double)t.QuadPart/(double)f.QuadPart;
- }
+    return (double)t.QuadPart / (double)f.QuadPart;
+}
 
 #else
- #include <sys/time.h>
+#include <sys/time.h>
 
- double my_get_time()
- {
+double my_get_time()
+{
     struct timeval t;
     gettimeofday(&t, NULL);
-    return t.tv_sec + t.tv_usec*1e-6;
- }
+    return t.tv_sec + t.tv_usec * 1e-6;
+}
 #endif
