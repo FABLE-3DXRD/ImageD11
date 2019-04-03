@@ -23,7 +23,7 @@
 
 #ifdef _MSC_VER
 typedef __int8 int8_t;
-typedef (unsigned __int16) uint16_t;
+typedef unsigned __int16 uint16_t;
 typedef __int32 int32_t;
 #else
 #include <stdint.h>

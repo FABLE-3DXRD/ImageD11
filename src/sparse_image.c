@@ -5,7 +5,7 @@
 #include <stdio.h>  /* printf */
 #include <stdlib.h>  /* abs(int) */
 #include <string.h> /* memset */
-
+#include <omp.h>
 #include "blobs.h"
 
 
@@ -26,29 +26,38 @@ void array_stats( float img[], int npx,
 		  float *minval, float *maxval,
 		  float *mean, float *var){
   int i;
-  float mini, maxi;
-  /* Use double to reduce rounding and subtraction errors */
+  /* Use double to reduce rounding and subtraction errors */  
   double t, s1, s2, y0; 
-  
-  s1 = 0.;
-  s2 = 0.;
+  float mini, maxi;
   mini = img[0];
   maxi = img[0];
+  s1 = 0.;
+  s2 = 0.;
   y0 = img[0];  
-  
-#pragma omp parallel for private(t) reduction(min:mini), reduction(max:maxi) reduction(+:s1,s2)
-  for( i = 0; i < npx; i++ ){
-    t = img[i] - y0;
-    s1 = s1 + t;
-    s2 = s2 + t * t;
-    if( img[i] < mini ){
-      mini = img[i];
+    /* Merge results - openmp 2.0 for windows has no min/max     */
+#ifdef _MSC_VER
+#pragma omp parallel for private(t) reduction(+:s1,s2)
+    for( i = 0; i < npx; i++ ){
+      t = img[i] - y0;
+      s1 = s1 + t;
+      s2 = s2 + t * t;
     }
-    if( img[i] > maxi ){
-      maxi = img[i];
+    /* Just use serial - openmp 2.0 */
+    for( i = 0; i < npx; i++ ){
+      if( img[i] < mini) mini = img[i];
+      if( img[i] > maxi) maxi = img[i];
     }
-  }
-  /* results */
+#else
+#pragma omp parallel for private(t) reduction(+:s1,s2) reduction(min: mini) reduction(max: maxi)
+    for( i = 0; i < npx; i++ ){
+      t = img[i] - y0;
+      s1 = s1 + t;
+      s2 = s2 + t * t;
+      if( img[i] < mini ) mini = img[i];
+      if( img[i] > maxi ) maxi = img[i];
+    }
+#endif
+    /* results */
   *mean = (float) (s1 / npx + y0);
   *var  = (float) ((s2 - (s1*s1/npx))/npx);
   *minval = mini;

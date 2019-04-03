@@ -7,13 +7,23 @@ import scipy.sparse
 import unittest
 import time
 
+import platform
+if platform.system() == "Windows":
+    timer = time.clock
+else:
+    timer = time.time
+
 class test_array_stats( unittest.TestCase ):
     def test1( self ):
         ar = np.arange( 6*4, dtype=np.float32 ).reshape( 6,4 )
         mini, maxi, mean, var = cImageD11.array_stats( ar.ravel() )
-        self.assertTrue( np.allclose( 
-            (mini, maxi, mean, var),
-            (ar.min(), ar.max(), ar.mean(), ar.var()) ))
+        t = np.allclose( (mini, maxi, mean, var),
+                (ar.min(), ar.max(), ar.mean(), ar.var()) )
+        if not t:
+            print((mini, maxi, mean, var))
+            print((ar.min(), ar.max(), ar.mean(), ar.var()) )
+        self.assertTrue(t)
+        
     def test2( self ):
         ar = np.ones( 6*4, dtype=np.float32 ).reshape( 6,4 )
         mini, maxi, mean, var = cImageD11.array_stats( ar.ravel() )
@@ -22,11 +32,11 @@ class test_array_stats( unittest.TestCase ):
             (ar.min(), ar.max(), ar.mean(), ar.var()) ))
     def test3( self ):
         ar = np.arange( 2048*2048, dtype=np.float32 ).reshape( 2048, 2048 )
-        start = time.time() 
+        start = timer() 
         mini, maxi, mean, var = cImageD11.array_stats( ar.ravel() )
-        endc = time.time()
+        endc = timer()
         check = ar.min(), ar.max(), ar.mean(), ar.var()
-        endn = time.time()
+        endn = timer()
         self.assertTrue( np.allclose( (mini, maxi, mean, var), check ) )
         numpytime = endn - endc
         ctime = endc - start
@@ -38,12 +48,12 @@ class test_array_histogram( unittest.TestCase ):
     def test1(self):
         N = 255
         a = (np.random.random( (2048, 2048))*(N-0.1)).astype(np.float32)
-        start = time.time()
+        start = timer()
         hc = np.zeros( N, dtype=np.int32 )
         cImageD11.array_histogram( a.ravel(), 0., N, hc )
-        endc= time.time()
+        endc= timer()
         hn = np.bincount( a.ravel().astype(int) )
-        endn = time.time()
+        endn = timer()
         if( hc.shape[0] != hn.shape[0]):
             print("shape error")
             print( a.max())
@@ -121,14 +131,14 @@ class test_sparse_connected_pixels( unittest.TestCase ):
         self.assertTrue( (self.s.todense() == self.a).all() ) 
         dl = np.zeros( self.a.shape, 'i' )
         nd = cImageD11.connectedpixels(  self.a , dl, self.threshold )
-        dstart = time.time()
+        dstart = timer()
         nd = cImageD11.connectedpixels(  self.a , dl, self.threshold )
-        dend = time.time()
+        dend = timer()
         sl = np.zeros( v.shape, 'i' )
         ns = cImageD11.sparse_connectedpixels( v, i, j, self.threshold, sl)
-        sbegin = time.time()
+        sbegin = timer()
         ns = cImageD11.sparse_connectedpixels( v, i, j, self.threshold, sl)
-        send = time.time()
+        send = timer()
         sld = scipy.sparse.coo_matrix( (sl, (i, j)), shape=self.a.shape)
         testcase = (sld.todense() == dl).all()
 
