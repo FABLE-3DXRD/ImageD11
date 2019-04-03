@@ -266,11 +266,11 @@ int sparse_connectedpixels_splat( float * restrict v,
                   int imax,
                   int jmax
                   ){
-  int k, p, pp, ir, idim, jdim, ik, jk;
+  int k, p, pp, ir, jdim, ik, jk;
   int32_t *S, *T, np;
   /* Read k = kurrent
           p = prev */
-  double start, mid, end;
+  double start, mid;
   if(NOISY){
     start = my_get_time();
     k = sparse_is_sorted( i, j, nnz );
@@ -281,11 +281,11 @@ int sparse_connectedpixels_splat( float * restrict v,
     printf("check sorted %.3f ms\n",(mid-start)*1000);
     start = my_get_time();
   }
-  idim = imax + 2;
+
   jdim = jmax + 2;
   /* This is not! delivered with zeros, we put a border in too 
    *  Z = (int32_t *) malloc(idim*jdim* sizeof(int32_t));
-  /* later we will write into Z as a scratch area for labels (filled at very end) */
+   * later we will write into Z as a scratch area for labels (filled at very end) */
   pp=0;
   p=0;
   S = dset_initialise( 16384 );
