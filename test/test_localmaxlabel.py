@@ -122,88 +122,72 @@ def demo():
 
 class test_localmaxlabel( unittest.TestCase ):
     def setUp( self ):
-        pass
+        self.im = make_test_image(128)[:107,:109].copy()
+        self.dopy = True
     def test1( self):
-        im = make_test_image(256)
-        start = time.time()
-        l1 = localmax(im)
-        end = time.time()
-        pytime = (end-start)*1000.
-        l2 = np.zeros(im.shape,np.int32)
-        l3 = np.zeros(im.shape,np.int32)
-        wk = np.zeros(im.shape,np.int8)
-        start = time.time()
-        npks = localmaxlabel(im.copy(), l2 , wk, cpu=0 )
-        end=time.time()
-        stime = (end-start)*1000.
-        start = time.time()
-        npks = localmaxlabel(im, l3 , wk, cpu=1 )
-        end=time.time()
-        ctime = (end-start)*1000.
-        if (l2==l1).all() and (l3==l1).all():
-            print("Timing python %.3f ms, c %.3f ms, sse %.3f"%(pytime,ctime,stime))
-            self.assertTrue(True)
-        else:
-            print( "Fail",(l2==l1).all(), (l3==l1).all(), (l2==l3).all())
-            self.assertTrue(False)
-    def test2( self):
-        im = make_test_image(128)[:107,:109].copy()
-        start = time.time()
-        l1 = localmax(im)
-        end = time.time()
-        pytime = (end-start)*1000.
-        l2 = np.zeros(im.shape,np.int32)
-        l3 = np.zeros(im.shape,np.int32)
-        wk = np.zeros(im.shape,np.int8)
-        start = time.time()
-        npks = localmaxlabel(im.copy(), l2 , wk, cpu=0 )
-        end=time.time()
-        stime = (end-start)*1000.
-        start = time.time()
-        npks = localmaxlabel(im, l3 , wk, cpu=1 )
-        end=time.time()
-        ctime = (end-start)*1000.
-        if (l2==l1).all() and (l3==l1).all():
-            print("Timing python %.3f ms, c %.3f ms, sse %.3f"%(pytime,ctime,stime))
-            self.assertTrue(True)
-        else:
-            print( "Fail",(l2==l1).all(), (l3==l1).all(), (l2==l3).all())
-            import pylab as pl
-            pl.subplot(221)
-            pl.imshow(l1)
-            pl.title("reference")
-            pl.subplot(222)
-            pl.imshow(l2)
-            pl.title("ansi")
-            pl.subplot(223)
-            pl.imshow(l3)
-            pl.title("sse")
-            pl.subplot(224)
-            pl.imshow(im)
-            pl.title("problem image")
-            pl.show()
-            self.assertTrue(False)
+        im = self.im
+        if self.dopy:
+            start = time.time()
+            l1 = localmax(im)
+            end = time.time()
+            pytime = (end-start)*1000.
+        l = [l1,]
+        wk = [0,]
+        times = [pytime,]
+        names = ["python",]
+        for cpu, name in [(0,"ansi"),(1,"sse2"),(2,"avx2")]:
+            li = np.zeros(im.shape,np.int32)
+            wi = np.zeros(im.shape,np.int8)
+            start = time.time()
+            print("cpu",cpu)
+            npks = localmaxlabel(im.copy(), li , wi, cpu=cpu )
+            end=time.time()
+            ctime = (end-start)*1000.
+            l.append( li )
+            times.append( ctime )
+            names.append( name )
+        lref = l[0]
+        print("Timing",end=" ")
+        for i in range(len(names)):
+            print( "%s %.3f ms"%( names[i], times[i]), end=" ")
+        print()
+        for li in l[1:]:
+            self.assertTrue((lref == l1).all())
     def test3( self):
         print("in test 2")
-        sys.stdout.flush()
         im = make_test_image(N=2048)
+        l1 = np.zeros(im.shape,np.int32)
         l2 = np.zeros(im.shape,np.int32)
         l3 = np.zeros(im.shape,np.int32)
         wk = np.zeros(im.shape,np.int8)
         start = time.time()
         for i in range(10):
-            npks = localmaxlabel(im, l2 , wk )
+            npks = localmaxlabel(im, l1 , wk )
         end=time.time()
-        npks = localmaxlabel(im, l2 , wk, 10 )
+        npks = localmaxlabel(im, l1 , wk, 10 )
         ctime = (end-start)*100.
         start = time.time()
         for i in range(10):
-            npks = localmaxlabel(im, l3 , wk, 1 )
+            npks = localmaxlabel(im, l2 , wk, 1 )
         end=time.time()
-        npks = localmaxlabel(im, l3 , wk, 11 )
+        npks = localmaxlabel(im, l2 , wk, 11 )
         stime = (end-start)*100.
+        start=time.time()
+        for i in range(10):
+            npks = localmaxlabel(im, l3 , wk, 2 )
+        end=time.time()
+        npks = localmaxlabel(im, l3 , wk, 12 )
+        atime = (end-start)*100.
+        if not (l2 == l3).all():
+            import pylab as pl
+            pl.imshow(l2)
+            pl.imshow(l3)
+            pl.show()
         self.assertEqual( (l2==l3).all(), True )
-        print("Timing 2048 c %.3f ms, sse %.3f"%(ctime,stime))
+        
+        self.assertEqual( (l1==l3).all(), True )
+        print("Timing 2048 c %.3f ms, sse %.3f, avx %.3f"%(
+            ctime,stime,atime))
 
 
 

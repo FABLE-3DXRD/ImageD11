@@ -36,7 +36,7 @@ if sys.platform == "win32" and "--compiler=mingw32" not in sys.argv:
     elinkarg = []
     elibs = None
 else:
-    ecomparg = ["-fopenmp","-O2", "-msse2", "-std=c99",
+    ecomparg = ["-fopenmp","-O2", "-mavx2" , "-std=c99",
                 # "-flto", "-Wextra" ,
                 "-Wall", 
                 "-DF2PY_REPORT_ON_ARRAY_COPY"]
