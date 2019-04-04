@@ -70,7 +70,7 @@ PyDict_SetItemString(d,str(NPROPERTY),PyInt_FromLong(NPROPERTY));
         threadsafe
     end function connectedpixels
 
-    function localmaxlabel( data, labels, wrk, ns, nf )
+    function localmaxlabel( data, labels, wrk, ns, nf, cpu )
         intent(c) localmaxlabel
         intent(c)
         real, intent(in) :: data(ns,nf)
@@ -78,27 +78,13 @@ PyDict_SetItemString(d,str(NPROPERTY),PyInt_FromLong(NPROPERTY));
         integer*1, intent(inout) :: wrk(ns,nf)
         integer, intent(hide), depend(data) :: ns=shape(data,0)
         integer, intent(hide), depend(data) :: nf=shape(data,1)
+        integer, optional ::  cpu = 0
         ! Returns
         integer :: localmaxlabel
         ! we say threadsafe but it writes in labels, so we assume no one else
         ! is using at the same time
         threadsafe
     end function localmaxlabel
-
-    function localmaxlabel_nosse( data, labels, wrk, ns, nf )
-        intent(c) localmaxlabel_nosse
-        intent(c)
-        real, intent(in) :: data(ns,nf)
-        integer*4, intent(inout), note(hello) :: labels(ns,nf)
-        integer*1, intent(inout) :: wrk(ns,nf)
-        integer, intent(hide), depend(data) :: ns=shape(data,0)
-        integer, intent(hide), depend(data) :: nf=shape(data,1)
-        ! Returns
-        integer :: localmaxlabel_nosse
-        ! we say threadsafe but it writes in labels, so we assume no one else
-        ! is using at the same time
-        threadsafe
-    end function localmaxlabel_nosse
 
     subroutine blobproperties( data, labels, np, omega, &
                                verbose, ns, nf, results)
