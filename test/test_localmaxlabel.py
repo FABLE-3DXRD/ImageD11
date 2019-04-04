@@ -50,16 +50,7 @@ def localmax( im, out=None ):
     # Now relabel each pixel to point to the max...
     pon=False
     for i in range(1,im.shape[0]-1):
-#        print(i, end=" " )
-        sys.stdout.flush()
-#        if i == 81:
-#            pon = True
         for j in range(1,im.shape[1]-1):
-#            if pon :
-#                print( "j",j, end=" " )
-#                sys.stdout.flush()
-#            if pon and j == 95:
-#                import pdb; pdb.set_trace()                            
             adr = out[i,j]
             if adr == 0:
                 continue
@@ -178,12 +169,18 @@ class test_localmaxlabel( unittest.TestCase ):
         else:
             print( "Fail",(l2==l1).all(), (l3==l1).all(), (l2==l3).all())
             import pylab as pl
-            pl.subplot(131)
+            pl.subplot(221)
             pl.imshow(l1)
-            pl.subplot(132)
+            pl.title("reference")
+            pl.subplot(222)
+            pl.imshow(l2)
+            pl.title("ansi")
+            pl.subplot(223)
             pl.imshow(l3)
-            pl.subplot(133)
+            pl.title("sse")
+            pl.subplot(224)
             pl.imshow(im)
+            pl.title("problem image")
             pl.show()
             self.assertTrue(False)
     def test3( self):

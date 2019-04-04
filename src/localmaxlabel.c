@@ -39,7 +39,7 @@ void neighbormax(const float *restrict im,	// input
 	lout[dim1 * (dim0 - 1) + i] = 0;
 	l[dim1 * (dim0 - 1) + i] = 0;
     }
-//nopragma omp parallel for private( j, p, iq, k, mx ) */
+#pragma omp parallel for private( j, p, iq, k, mx ) 
     for (i = dim1; i < (dim0 - 1) * dim1; i = i + dim1) {	// skipping 1 pixel border
 	lout[i] = 0;		// set edges to zero: pixel j=0:
 	l[i] = 0;
@@ -82,7 +82,7 @@ void neighbormax_sse2(const float *restrict im,	// input
     lout[dim1 * (dim0 - 1) + i] = 0;
     l[dim1 * (dim0 - 1) + i] = 0;
   }
-//nopragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq)
+#pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq)
   for (i = dim1; i < (dim0 - 1) * dim1; i = i + dim1) {	// skipping 1 pixel border
     lout[i] = 0;		// set edges to zero: pixel j=0:
     l[i] = 0;
@@ -179,7 +179,7 @@ int localmaxlabel(const float *restrict im,	// input
     // Now go through the byte array checking for max values
     // (row by row to be parallel)
     npka = (int *)malloc(sizeof(int) * dim0);
-//nopragma omp parallel for private( i, j, p, k ) shared( npka ) 
+#pragma omp parallel for private( i, j, p, k ) shared( npka ) 
     for (i = 0; i < dim0; i++) {
       k = 0;
       for (j = 0; j < dim1; j++) {
@@ -188,7 +188,7 @@ int localmaxlabel(const float *restrict im,	// input
 	  k ++;
 	}
       }
-//nopragma omp critical 
+#pragma omp critical 
       npka[i] = k;
     }
     npk = 0;
@@ -205,7 +205,7 @@ int localmaxlabel(const float *restrict im,	// input
 	//    printf("%d %d\n",npk,npka[i]);
     }
     // Second pass with row offsets in place
-//nopragma omp parallel for private( t, j, p ) 
+#pragma omp parallel for private( t, j, p ) 
     for (i = 0; i < dim0; i++) {
         t = npka[i];
 	for (j = 0; j < dim1; j++) {
@@ -233,16 +233,16 @@ int localmaxlabel(const float *restrict im,	// input
     // This is the same for all versions (optimised or not)
     //  ... perhaps re-write to be a manual loop and fill in
     //  ... the steps that are thread local
-    /*
-//nopragma omp parallel private( q, i, tid, nt, k, lo, hi )
+    
+#pragma omp parallel private( q, i, tid, nt, k, lo, hi )
 {
   tid = omp_get_thread_num();
   nt = omp_get_num_threads();
   lo = dim0*dim1*tid/nt;
   hi = dim0*dim1*(tid+1)/nt;
-    */
-    lo = 0;
-    hi = dim0*dim1;
+    
+  //    lo = 0;
+  //  hi = dim0*dim1;
   for (i = lo; i < hi ; i++) {
     if (l[i] == 0)
       continue;		// done
@@ -266,55 +266,11 @@ int localmaxlabel(const float *restrict im,	// input
     }
     l[i] = 0;		// sharing problems??
   }
- 
+ }
     if( noisy ){
       toc = my_get_time();
       printf("    write %.3f ms\n", 1000*(toc-tic));
       tic = toc;
-    }
- 
+    } 
     return npk;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
