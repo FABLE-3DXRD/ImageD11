@@ -80,7 +80,9 @@ sources = [ "src/connectedpixels.c",
 
 # Get base args from system (mostly linux):
 if sysconfig.get_config_var("CFLAGS") is not None:
-    extn_kwds["extra_compile_args"] += sysconfig.get_config_var("CFLAGS").split()
+    # sysconfig.get_config_var("CFLAGS").split()
+    # These turned out to be rather poor
+    extn_kwds["extra_compile_args"] += ["-O2","-fwrapv",'-Wall', '-Wstrict-prototypes']
 
 # MSVC compilers
 if (platform.system() == "Windows") and ("--compiler=mingw32" not in sys.argv):
