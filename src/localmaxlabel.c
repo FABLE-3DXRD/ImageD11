@@ -10,7 +10,11 @@
  #include <intrin.h>
  #define cast128i(X)  (_mm_castps_si128((X)))
  #ifdef __AVX2__
+  #include <immintrin.h>
   #define cast256i(X)  (_mm256_castps_si256(X))
+
+/* _mm256_extractf128_si256 */
+
  #endif
 #else				// gcc/clang
  #ifdef __SSE2__
@@ -142,6 +146,7 @@ void neighbormax_avx2(const float *restrict im,	// input
 		      int dim1,
 		      int o[10]){
   __m256i one, iqp, ik, imsk;
+  __m128i iqplo, iqphi;
   __m256 mxp, mxq, msk;
   int i, j, p, iq, k;
   float mx;
@@ -152,7 +157,7 @@ void neighbormax_avx2(const float *restrict im,	// input
     lout[dim1 * (dim0 - 1) + i] = 0;
     l[dim1 * (dim0 - 1) + i] = 0;
   }
-#pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq, imsk)
+#pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq, imsk, iqplo, iqphi)
   for (i = dim1; i < (dim0 - 1) * dim1; i = i + dim1) {	// skipping 1 pixel border
     lout[i] = 0;		// set edges to zero: pixel j=0:
     l[i] = 0;
@@ -172,14 +177,29 @@ void neighbormax_avx2(const float *restrict im,	// input
 	iqp = _mm256_or_si256(_mm256_and_si256(imsk, ik), _mm256_andnot_si256(imsk, iqp));
       }			// k neighbors
       // Write results (note epi16 is sse2)
-      l[p]     = (uint8_t) _mm256_extract_epi16(iqp, 0);
-      l[p + 1] = (uint8_t) _mm256_extract_epi16(iqp, 2);
-      l[p + 2] = (uint8_t) _mm256_extract_epi16(iqp, 4);
-      l[p + 3] = (uint8_t) _mm256_extract_epi16(iqp, 6);
-      l[p + 4] = (uint8_t) _mm256_extract_epi16(iqp, 8);
-      l[p + 5] = (uint8_t) _mm256_extract_epi16(iqp,10);
-      l[p + 6] = (uint8_t) _mm256_extract_epi16(iqp,12);
-      l[p + 7] = (uint8_t) _mm256_extract_epi16(iqp,14);
+      #ifdef _MSC_VER
+      // actually not only msvc, so a specific version
+      iqplo = _mm256_extractf128_si256 (iqp, 0);
+      // epi16 + cast is sse2, epi8 would be sse4.1
+      l[p]     = (uint8_t) _mm_extract_epi16(iqplo, 0);
+      l[p + 1] = (uint8_t) _mm_extract_epi16(iqplo, 2);
+      l[p + 2] = (uint8_t) _mm_extract_epi16(iqplo, 4);
+      l[p + 3] = (uint8_t) _mm_extract_epi16(iqplo, 6);
+
+      l[p + 4] = (uint8_t) _mm_extract_epi16(iqphi, 0);
+      l[p + 5] = (uint8_t) _mm_extract_epi16(iqphi, 2);
+      l[p + 6] = (uint8_t) _mm_extract_epi16(iqphi, 4);
+      l[p + 7] = (uint8_t) _mm_extract_epi16(iqphi, 6);
+      #else      
+      l[p]     = (uint8_t) _mm256_extract_epi8(iqp, 0);
+      l[p + 1] = (uint8_t) _mm256_extract_epi8(iqp, 4);
+      l[p + 2] = (uint8_t) _mm256_extract_epi8(iqp, 8);
+      l[p + 3] = (uint8_t) _mm256_extract_epi8(iqp,12);
+      l[p + 4] = (uint8_t) _mm256_extract_epi8(iqp,16);
+      l[p + 5] = (uint8_t) _mm256_extract_epi8(iqp,20);
+      l[p + 6] = (uint8_t) _mm256_extract_epi8(iqp,24);
+      l[p + 7] = (uint8_t) _mm256_extract_epi8(iqp,28);
+      #endif
       // Count peaks in here? ... was better in separate loop
     }
     for (; j < dim1 - 1; j++) {	// end of simd loop, continues on j from for
