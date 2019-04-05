@@ -18,10 +18,10 @@
  #ifdef __SSE2__
   #include <x86intrin.h>
   #include <emmintrin.h>
-  #define cast128i(X)  ((_mm128i)(X))
+  #define cast128i(X)  ((__m128i)(X))
   #ifdef __AVX2__
    #include <immintrin.h>
-   #define cast256i(X)  ((_mm256i)(X))
+   #define cast256i(X)  ((__m256i)(X))
   #endif
  #else
   #warning "no sse2"
@@ -136,7 +136,7 @@ void neighbormax_sse2(const float *restrict im,	// input
   }				// i
 }
 
-
+#ifdef __AVX2__
 void neighbormax_avx2(const float *restrict im,	// input
 		      int32_t * restrict lout,	// output
 		      uint8_t * restrict l,	// workspace temporary
@@ -201,9 +201,17 @@ void neighbormax_avx2(const float *restrict im,	// input
     l[i + dim1 - 1] = 0;
   }				// i
 }
-
-
-
+#else
+void neighbormax_avx2(const float *restrict im,	// input
+		      int32_t * restrict lout,	// output
+		      uint8_t * restrict l,	// workspace temporary
+		      int dim0,	// Image dimensions
+		      int dim1,
+		      int o[10]){
+  printf("Not compiled with AVX2!\n");
+}
+#endif
+//AVX2
 
 int localmaxlabel(const float *restrict im,	// input
 		  int32_t * restrict lout,	// output

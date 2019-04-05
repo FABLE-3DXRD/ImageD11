@@ -39,12 +39,13 @@ def fix_f2py_pointer(nbyte):
     with open("src/cImageD11_template.pyf","r") as f:
         pyf = f.read()
     pyf = pyf.replace(  "(kind=size_t)" ,"*%d"%(nbyte))
+    # we also create versions for newer and older cpu
     pyfsse = pyf.replace(  "python module cImageD11" , "python module cImageD11_sse2" )
     with open("src/cImageD11_sse2.pyf", "w") as f:
         f.write( pyfsse )
     pyfavx = pyf.replace(  "python module cImageD11" , "python module cImageD11_avx2" )
     with open("src/cImageD11_avx2.pyf", "w") as f:
-        f.write( pyfavvx )
+        f.write( pyfavx )
 # And do this:
 fix_f2py_pointer(nbyte)
 
@@ -63,19 +64,19 @@ fix_f2py_pointer(nbyte)
 # in __init__.py decide which one to load (requires a decision about sse2/avx)
 #
 # Potentially 3 versions: nothing, SSE2, AVX2
-#  ... but we will only build for the second two
+#  ... but we will only build for the second two for now, sse2 is really old
 
 extn_kwds = {
     "include_dirs" : [get_include(), "src"],
-    "sources"      : [  "src/cImageD11.pyf",
-                        "src/connectedpixels.c",
-                        "src/closest.c",
-                        "src/cdiffraction.c",
-                        "src/localmaxlabel.c",
-                        "src/sparse_image.c",
-                        "src/blobs.c"],
-    "extra_compile_args" : [ "-DF2PY_REPORT_ON_ARRAY_COPY", ],
+    "extra_compile_args" :  ["-DF2PY_REPORT_ON_ARRAY_COPY", ],
 }
+sources = [ "src/connectedpixels.c",
+            "src/closest.c",
+            "src/cdiffraction.c",
+            "src/localmaxlabel.c",
+            "src/sparse_image.c",
+            "src/blobs.c" ]
+    
 
 # Get base args from system (mostly linux):
 if sysconfig.get_config_var("CFLAGS") is not None:
@@ -83,40 +84,41 @@ if sysconfig.get_config_var("CFLAGS") is not None:
 
 # MSVC compilers
 if (platform.system() == "Windows") and ("--compiler=mingw32" not in sys.argv):
-    extn_kwds["extra_compile_args"].append(  "/openmp" )
+    extn_kwds["extra_compile_args"] += [ "/openmp", ]
     if nbyte == 4:
-        ecomparg.append( "/arch:SSE2" )
+        extn_kwds["extra_compile_args"] += [ "/arch:SSE2", ]
     # else sse2 is always available on 64 bit windows    
     avx2_kwds = extn_kwds.copy()
+    #
     #    /arch:AVX2 option was introduced in Visual Studio 2013 Update 2, version 12.0.34567.1.
     # Visual C++    CPython
     # 14.0          3.5, 3.6
     # 10.0          3.3, 3.4
     # 9.0           2.6, 2.7, 3.0, 3.1, 3.2
     if sys.version_info[:2] > ( 3, 4 ):
-        avx2_kwds["extra_compile_args"] = extn_kwds["extra_compile_args"] + [ "/arch:AVX2", ]
+        avx2_kwds["extra_compile_args"] += [ "/arch:AVX2", ]
         assert (len(avx2_kwds["extra_compile_args"])==len(extn_kwds["extra_compile_args"])+1)
     else:
         print("Warning: your compiler does not have AVX2, try mingw32 instead")
 # gcc compilers
 elif (platform.system() == "Linux") or ("--compiler=mingw32" in sys.argv):
-    extn_kwds["extra_compile_args"] += ["-fopenmp", "-O2", "-std=c99", "-msse2" ] 
+    extn_kwds["extra_compile_args"] += ["-fopenmp", "-O2", "-std=c99", "-msse2"]
     extn_kwds["extra_link_args"] = extn_kwds["extra_compile_args"]
-    extn_kwds["libraries"] = ["gomp","pthread"]
+    extn_kwds["libraries"] = ("gomp","pthread")
     avx2_kwds = extn_kwds.copy()
-    avx2_kwds["extra_compile_args"].append( "-mavx2" )
+    avx2_kwds["extra_compile_args"] = extn_kwds["extra_compile_args"] + ["-mavx2",]
     assert (len(avx2_kwds["extra_compile_args"])==len(extn_kwds["extra_compile_args"])+1)
     avx2_kwds["extra_link_args"] = avx2_kwds["extra_compile_args"]
 else:
     raise Exception("Sorry, your platform/compiler is not supported")
 
+extn_kwds['sources'] = ["src/cImageD11_sse2.pyf",] + sources
+avx2_kwds['sources'] = ["src/cImageD11_avx2.pyf",] + sources
 
 # Compiled extensions:
 extensions = [ Extension( "cImageD11_sse2", **extn_kwds), 
                Extension( "cImageD11_avx2", **avx2_kwds) ]
 
-if platform.system() == "Linux":
-    assert len( elinkarg)  == len(ecomparg)
 
 # Removed list of dependencies from setup file
 #  borked something, not sure what or why

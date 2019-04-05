@@ -4,6 +4,7 @@ import numpy as np, time
 from ImageD11.cImageD11 import localmaxlabel
 import unittest, sys
 
+
 def localmax( im, out=None ):
     """ reference implementation 
     ... very slow 
