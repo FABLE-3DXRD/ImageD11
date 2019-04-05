@@ -4,18 +4,28 @@
 #include "cImageD11.h"
 
 #include <omp.h>
-#include <emmintrin.h>
-#include <immintrin.h>
 
 // Most compilers should have this!
 #ifdef _MSC_VER
-#include <intrin.h>
+ #include <intrin.h>
+ #define cast128i(X)  (_mm_castps_si128((X)))
+ #ifdef __AVX2__
+  #define cast256i(X)  (_mm256_castps_si256(X))
+ #else
+  #warning "no avx2"
+ #endif
 #else				// gcc/clang
-#ifdef __SSE2__
-#include <x86intrin.h>
-#else
-#warning "no sse2"
-#endif
+ #ifdef __SSE2__
+  #include <x86intrin.h>
+  #include <emmintrin.h>
+  #define cast128i(X)  ((_mm128i)(X))
+  #ifdef __AVX2__
+   #include <immintrin.h>
+   #define cast256i(X)  ((_mm256i)(X))
+  #endif
+ #else
+  #warning "no sse2"
+ #endif
 #endif
 
 /**
@@ -71,7 +81,7 @@ void neighbormax_sse2(const float *restrict im,	// input
 		      int dim0,	// Image dimensions
 		      int dim1,
 		      int o[10]){
-  __m128i one, iqp, ik;
+  __m128i one, iqp, ik, imsk;
   __m128 mxp, mxq, msk;
   int i, j, p, iq, k;
   float mx;
@@ -82,7 +92,7 @@ void neighbormax_sse2(const float *restrict im,	// input
     lout[dim1 * (dim0 - 1) + i] = 0;
     l[dim1 * (dim0 - 1) + i] = 0;
   }
-#pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq)
+#pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq, imsk)
   for (i = dim1; i < (dim0 - 1) * dim1; i = i + dim1) {	// skipping 1 pixel border
     lout[i] = 0;		// set edges to zero: pixel j=0:
     l[i] = 0;
@@ -98,8 +108,8 @@ void neighbormax_sse2(const float *restrict im,	// input
 	msk = _mm_cmpgt_ps(mxq, mxp);	// SSE 1 for q > p
 	// apply mask to max (mxq/mxp) and to index (iqp/ik)
 	mxp = _mm_or_ps(_mm_and_ps(msk, mxq), _mm_andnot_ps(msk, mxp));
-	iqp = (__m128i) _mm_or_ps(_mm_and_ps(msk, (__m128) ik),
-				  _mm_andnot_ps(msk, (__m128) iqp));
+  imsk = cast128i( msk );	// SSE 1 for q > p
+	iqp = _mm_or_si128(_mm_and_si128(imsk, ik),  _mm_andnot_si128(imsk, iqp));
       }			// k neighbors
       // Write results (note epi16 is sse2)
       l[p] = (uint8_t) _mm_extract_epi16(iqp, 0);
@@ -133,7 +143,7 @@ void neighbormax_avx2(const float *restrict im,	// input
 		      int dim0,	// Image dimensions
 		      int dim1,
 		      int o[10]){
-  __m256i one, iqp, ik;
+  __m256i one, iqp, ik, imsk;
   __m256 mxp, mxq, msk;
   int i, j, p, iq, k;
   float mx;
@@ -144,7 +154,7 @@ void neighbormax_avx2(const float *restrict im,	// input
     lout[dim1 * (dim0 - 1) + i] = 0;
     l[dim1 * (dim0 - 1) + i] = 0;
   }
-#pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq)
+#pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq, imsk)
   for (i = dim1; i < (dim0 - 1) * dim1; i = i + dim1) {	// skipping 1 pixel border
     lout[i] = 0;		// set edges to zero: pixel j=0:
     l[i] = 0;
@@ -160,8 +170,8 @@ void neighbormax_avx2(const float *restrict im,	// input
 	msk = _mm256_cmp_ps(mxq, mxp, _CMP_GT_OQ);	// AVX for q > p
 	// apply mask to max (mxq/mxp) and to index (iqp/ik)
 	mxp = _mm256_or_ps(_mm256_and_ps(msk, mxq), _mm256_andnot_ps(msk, mxp));
-	iqp = (__m256i) _mm256_or_ps(_mm256_and_ps(msk, (__m256) ik),
-				  _mm256_andnot_ps(msk, (__m256) iqp));
+	imsk = cast256i(msk);	// AVX for q > p
+	iqp = _mm256_or_si256(_mm256_and_si256(imsk, ik), _mm256_andnot_si256(imsk, iqp));
       }			// k neighbors
       // Write results (note epi16 is sse2)
       l[p]     = (uint8_t) _mm256_extract_epi16(iqp, 0);
