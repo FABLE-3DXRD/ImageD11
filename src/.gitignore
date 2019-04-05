@@ -1,1 +1,3 @@
 cImageD11.pyf
+cImageD11_avx2.pyf
+cImageD11_sse2.pyf
