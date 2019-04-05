@@ -11,8 +11,6 @@
  #define cast128i(X)  (_mm_castps_si128((X)))
  #ifdef __AVX2__
   #define cast256i(X)  (_mm256_castps_si256(X))
- #else
-  #warning "no avx2"
  #endif
 #else				// gcc/clang
  #ifdef __SSE2__
