@@ -96,7 +96,7 @@ if (platform.system() == "Windows") and ("--compiler=mingw32" not in sys.argv):
     # 10.0          3.3, 3.4
     # 9.0           2.6, 2.7, 3.0, 3.1, 3.2
     if sys.version_info[:2] > ( 3, 4 ):
-        avx2_kwds["extra_compile_args"] += [ "/arch:AVX2", ]
+        avx2_kwds["extra_compile_args"] = extn_kwds["extra_compile_args"] + [ "/arch:AVX2", ]
         assert (len(avx2_kwds["extra_compile_args"])==len(extn_kwds["extra_compile_args"])+1)
     else:
         print("Warning: your compiler does not have AVX2, try mingw32 instead")
