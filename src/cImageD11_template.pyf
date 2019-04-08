@@ -5,11 +5,14 @@ python module cImageD11
 
 usercode '''
 #include "blobs.h"
+#include "check_cpu_auto.c"
 '''
 ! Fortran starts here I guess?
 interface
 
 usercode '''
+/* This runs inside the init part of the module as it is after interface */
+
 #define str(x) (#x)
 PyDict_SetItemString(d,str(s_1)    ,PyInt_FromLong(s_1));
 PyDict_SetItemString(d,str(s_I)    ,PyInt_FromLong(s_I));
@@ -50,6 +53,11 @@ PyDict_SetItemString(d,str(dety),PyInt_FromLong(dety));
 PyDict_SetItemString(d,str(detz),PyInt_FromLong(detz));
 
 PyDict_SetItemString(d,str(NPROPERTY),PyInt_FromLong(NPROPERTY));
+
+readcpuid();
+PyDict_SetItemString(d,str(got_SSE2),PyInt_FromLong( (long) have_SSE2() ));
+PyDict_SetItemString(d,str(got_AVX2),PyInt_FromLong( (long) have_AVX2() ));
+
 '''
 
     function connectedpixels( data, labels, threshold, &

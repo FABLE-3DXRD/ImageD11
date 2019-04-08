@@ -91,6 +91,7 @@ if (platform.system() == "Windows") and ("--compiler=mingw32" not in sys.argv):
         extn_kwds["extra_compile_args"] += [ "/arch:SSE2", ]
     # else sse2 is always available on 64 bit windows    
     avx2_kwds = extn_kwds.copy()
+    extn_kwds["extra_link_args"] = extn_kwds["extra_compile_args"]
     #
     #    /arch:AVX2 option was introduced in Visual Studio 2013 Update 2, version 12.0.34567.1.
     # Visual C++    CPython
@@ -100,6 +101,7 @@ if (platform.system() == "Windows") and ("--compiler=mingw32" not in sys.argv):
     if sys.version_info[:2] > ( 3, 4 ):
         avx2_kwds["extra_compile_args"] = extn_kwds["extra_compile_args"] + [ "/arch:AVX2", ]
         assert (len(avx2_kwds["extra_compile_args"])==len(extn_kwds["extra_compile_args"])+1)
+        avx2_kwds["extra_link_args"] = avx2_kwds["extra_compile_args"]
     else:
         print("Warning: your compiler does not have AVX2, try mingw32 instead")
 # gcc compilers
