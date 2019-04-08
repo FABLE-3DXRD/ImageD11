@@ -16,7 +16,8 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda info -a
   - pip install numpy scipy h5py matplotlib fabio xfab pycifrw pillow --no-deps
-  - pip install .
+  - python setup.py build install
+
 
 test_script:
   - cd test
