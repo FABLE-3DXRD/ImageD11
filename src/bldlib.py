@@ -22,7 +22,7 @@ avx2libname = "cImageD11_"+tmpdir+"_avx2"
 sse2libname = "cImageD11_"+tmpdir+"_sse2"
 
 if plat == "Linux":
-    arg=["-O2", "-fopenmp", "-fPIC" ]
+    arg=["-O2", "-fopenmp", "-fPIC", "-std=c99" ]
     sse2arg = arg + ["-msse2"]
     avx2arg = arg + ["-mavx2"]
 elif plat == "Windows":
