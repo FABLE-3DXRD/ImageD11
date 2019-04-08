@@ -17,6 +17,7 @@
     #include <cpuid.h>
 #endif
 #include "cImageD11.h"
+#include "check_cpu_auto.h"
 
 /* Use static globals here 
 /* Results of calls to cpuid 
@@ -41,7 +42,7 @@
  * EAX=8FFFFFFFh: AMD Easter Egg
  */
 
-#define NCALL 7
+#define NCALL 8
 
 static uint32_t idBits[4 * NCALL];
 static int needread = 1;
@@ -69,11 +70,6 @@ void readcpuid( ) {
       #elif defined(_WIN32)
       __cpuidex( &idBits[i*4], i, 0 );
       #endif
-      if(0){
-          printf("Did read %d, Got ",i);
-          for(j=0;j<4;j++){ printf("%08x ",idBits[i*4+j]);}
-          printf("\n",i);
-      }
         if( i > idBits[EAXMAX] ) break;
       i++;
       
@@ -160,12 +156,9 @@ int flag_AVX512F(){
  return (idBits[29] & ( 1 << 16))>0;
 }
 
-
-#define have_SSE flag_SSE
-#define have_SSE2 flag_SSE2
-#define have_SSE3 flag_SSE3
-#define have_SSE41 flag_SSE41
-#define have_SSE42 flag_SSE42
+int have_SSE2(){
+  return (flag_SSE2()>0);
+}
 int have_AVX(){
     return (flag_XSAVE()>0)&(flag_OSXSAVE()>0)&(flag_AVX()>0);
 }

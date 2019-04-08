@@ -2,6 +2,12 @@
 from __future__ import print_function
 
 f = open("check_cpu_auto.c", "w")
+h = open("check_cpu_auto.h", "w")
+
+h.write("""
+void readcpuid(void);
+uint32_t maxcall(void);
+""")
 
 f.write("""
 /** 
@@ -22,6 +28,7 @@ f.write("""
     #include <cpuid.h>
 #endif
 #include "cImageD11.h"
+#include "check_cpu_auto.h"
 
 /* Use static globals here 
 /* Results of calls to cpuid 
@@ -46,7 +53,7 @@ f.write("""
  * EAX=8FFFFFFFh: AMD Easter Egg
  */
 
-#define NCALL 7
+#define NCALL 8
 
 static uint32_t idBits[4 * NCALL];
 static int needread = 1;
@@ -74,11 +81,6 @@ void readcpuid( ) {
       #elif defined(_WIN32)
       __cpuidex( &idBits[i*4], i, 0 );
       #endif
-      if(0){
-          printf("Did read %d, Got ",i);
-          for(j=0;j<4;j++){ printf("%08x ",idBits[i*4+j]);}
-          printf("\\n",i);
-      }
         if( i > idBits[EAXMAX] ) break;
       i++;
       
@@ -136,14 +138,17 @@ for name, byte, bit in [
            " if(needread) readcpuid();\n" + \
            " return (idBits[%d] & ( 1 << %d))>0;\n}\n"%(byte,bit)
     f.write(func)
-    
-f.write( """
+    h.write("int flag_%s(void);\n"%(name))
 
-#define have_SSE flag_SSE
-#define have_SSE2 flag_SSE2
-#define have_SSE3 flag_SSE3
-#define have_SSE41 flag_SSE41
-#define have_SSE42 flag_SSE42
+h.write("int have_SSE2(void);\n")
+h.write("int have_AVX(void);\n")
+h.write("int have_AVX2(void);\n")
+h.write("int have_AVX512F(void);\n")
+
+f.write( """
+int have_SSE2(){
+  return (flag_SSE2()>0);
+}
 int have_AVX(){
     return (flag_XSAVE()>0)&(flag_OSXSAVE()>0)&(flag_AVX()>0);
 }
@@ -157,5 +162,6 @@ int have_AVX512F(){
 """)
 
 f.close()
+h.close()
 
 

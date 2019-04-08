@@ -20,16 +20,43 @@ from __future__ import print_function
 
 """
 Setup script
+
+Do:
+  python setup.py build
+   -> it will build the libraries in the src folder
+   -> generate sse2 and avx2 wrappers
+   -> compile them here
+
 """
 
+# For pip / bdist_wheel etc
 import setuptools
-import sys, sysconfig, platform
+import os, sys, sysconfig, platform, struct
+# For using f2py
 from numpy.distutils.core import setup, Extension
+from numpy.distutils.command.build_ext import build_ext
 from numpy import get_include
-import struct
+
+if "build" in sys.argv:
+    os.chdir("src")
+    os.system("python write_check.py")
+    os.system("python bldlib.py")
+    os.chdir("..")
+    
+import src.bldlib
 
 # For 32 or 64 bits
 nbyte = struct.calcsize("P") # 4 or 8
+           
+class custom_build_ext( build_ext ):    
+    def build_extension(self, ext):
+        print("IMAGED11:using compiler",self.compiler.compiler_type)
+        if ext.name.find("sse2")>0:
+            ext.extra_compiler_args = src.bldlib.sse2arg
+        if ext.name.find("avx2")>0:
+            ext.extra_compiler_args = src.bldlib.avx2arg    
+        ext.extra_link_args = list(ext.extra_compiler_args)
+        build_ext.build_extension(self, ext)
 
 # We use size_t somewhere so it can address >2Gb on 64 bit
 # systems. This doesn't work on 32 bit, so we decide what
@@ -49,75 +76,17 @@ def fix_f2py_pointer(nbyte):
 # And do this:
 fix_f2py_pointer(nbyte)
 
-# We have some files with sse2 or avx2 instructions
-# These can only run on machines that actually have sse2 or avx2
-#
-# For distribution we will want to compile with or without and choose
-# at runtime. Because of the way inline and linkers work it will be 
-# safer to compiler *everything* with the same compiler options and
-# have a whole extension module per option. Then decide the one to
-# use at runtime.
-# https://randomascii.wordpress.com/2016/12/05/vc-archavx-option-unsafe-at-any-speed/
-# e.g: mixing options can make a mess in the long run
-# 
-# We therefore build cImageD11_XXX.[so|pyd]
-# in __init__.py decide which one to load (requires a decision about sse2/avx)
-#
-# Potentially 3 versions: nothing, SSE2, AVX2
-#  ... but we will only build for the second two for now, sse2 is really old
 
-extn_kwds = {
-    "include_dirs" : [get_include(), "src"],
-    "extra_compile_args" :  ["-DF2PY_REPORT_ON_ARRAY_COPY", ],
-}
-sources = [ "src/connectedpixels.c",
-            "src/closest.c",
-            "src/cdiffraction.c",
-            "src/localmaxlabel.c",
-            "src/sparse_image.c",
-            "src/blobs.c" ]
-    
-
-# Get base args from system (mostly linux):
-if sysconfig.get_config_var("CFLAGS") is not None:
-    # sysconfig.get_config_var("CFLAGS").split()
-    # These turned out to be rather poor
-    extn_kwds["extra_compile_args"] += ["-O2","-fwrapv",'-Wall', '-Wstrict-prototypes']
-
-# MSVC compilers
-if (platform.system() == "Windows") and ("--compiler=mingw32" not in sys.argv):
-    extn_kwds["extra_compile_args"] += [ "/openmp", ]
-    if nbyte == 4:
-        extn_kwds["extra_compile_args"] += [ "/arch:SSE2", ]
-    # else sse2 is always available on 64 bit windows    
-    avx2_kwds = extn_kwds.copy()
-    extn_kwds["extra_link_args"] = extn_kwds["extra_compile_args"]
-    #
-    #    /arch:AVX2 option was introduced in Visual Studio 2013 Update 2, version 12.0.34567.1.
-    # Visual C++    CPython
-    # 14.0          3.5, 3.6
-    # 10.0          3.3, 3.4
-    # 9.0           2.6, 2.7, 3.0, 3.1, 3.2
-    if sys.version_info[:2] > ( 3, 4 ):
-        avx2_kwds["extra_compile_args"] = extn_kwds["extra_compile_args"] + [ "/arch:AVX2", ]
-        assert (len(avx2_kwds["extra_compile_args"])==len(extn_kwds["extra_compile_args"])+1)
-        avx2_kwds["extra_link_args"] = avx2_kwds["extra_compile_args"]
-    else:
-        print("Warning: your compiler does not have AVX2, try mingw32 instead")
-# gcc compilers
-elif (platform.system() == "Linux") or ("--compiler=mingw32" in sys.argv):
-    extn_kwds["extra_compile_args"] += ["-fopenmp", "-O2", "-std=c99", "-msse2"]
-    extn_kwds["extra_link_args"] = extn_kwds["extra_compile_args"]
-    extn_kwds["libraries"] = ("gomp","pthread")
-    avx2_kwds = extn_kwds.copy()
-    avx2_kwds["extra_compile_args"] = extn_kwds["extra_compile_args"] + ["-mavx2",]
-    assert (len(avx2_kwds["extra_compile_args"])==len(extn_kwds["extra_compile_args"])+1)
-    avx2_kwds["extra_link_args"] = avx2_kwds["extra_compile_args"]
-else:
-    raise Exception("Sorry, your platform/compiler is not supported")
-
-extn_kwds['sources'] = ["src/cImageD11_sse2.pyf",] + sources
-avx2_kwds['sources'] = ["src/cImageD11_avx2.pyf",] + sources
+extn_kwds = {'sources' : ["src/cImageD11_sse2.pyf",],
+             'libraries' : [src.bldlib.sse2libname],
+             'include_dirs' : [get_include(), 'src' ],
+             'library_dirs' : ['src'],
+             }
+avx2_kwds = {'sources' : ["src/cImageD11_avx2.pyf",] ,
+             'libraries' : [src.bldlib.avx2libname],
+             'include_dirs':[get_include(), 'src' ],
+             'library_dirs' : ['src'],
+             }
 
 # Compiled extensions:
 extensions = [ Extension( "cImageD11_sse2", **extn_kwds), 
@@ -138,6 +107,7 @@ setup(name='ImageD11',
       description='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
+      cmdclass = {'build_ext': custom_build_ext },
       ext_modules = extensions,
       install_requires = needed,
       packages = ["ImageD11"],

@@ -1,0 +1,19 @@
+
+void readcpuid(void);
+uint32_t maxcall(void);
+int flag_SSE(void);
+int flag_SSE2(void);
+int flag_SSE3(void);
+int flag_FMA3(void);
+int flag_SSE41(void);
+int flag_SSE42(void);
+int flag_MOVBE(void);
+int flag_XSAVE(void);
+int flag_OSXSAVE(void);
+int flag_AVX(void);
+int flag_AVX2(void);
+int flag_AVX512F(void);
+int have_SSE2(void);
+int have_AVX(void);
+int have_AVX2(void);
+int have_AVX512F(void);
