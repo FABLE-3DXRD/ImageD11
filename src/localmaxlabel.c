@@ -185,7 +185,7 @@ void neighbormax_avx2(const float *restrict im,	// input
       l[p + 1] = (uint8_t) _mm_extract_epi16(iqplo, 2);
       l[p + 2] = (uint8_t) _mm_extract_epi16(iqplo, 4);
       l[p + 3] = (uint8_t) _mm_extract_epi16(iqplo, 6);
-
+      iqphi = _mm256_extractf128_si256 (iqp, 1);
       l[p + 4] = (uint8_t) _mm_extract_epi16(iqphi, 0);
       l[p + 5] = (uint8_t) _mm_extract_epi16(iqphi, 2);
       l[p + 6] = (uint8_t) _mm_extract_epi16(iqphi, 4);
@@ -339,14 +339,13 @@ int localmaxlabel(const float *restrict im,	// input
     // This is the same for all versions (optimised or not)
     //  ... perhaps re-write to be a manual loop and fill in
     //  ... the steps that are thread local
-    
-#pragma omp parallel private( q, i, tid, nt, k, lo, hi )
+ 
+ #pragma omp parallel private( q, i, tid, nt, k, lo, hi )
 {
   tid = omp_get_thread_num();
   nt = omp_get_num_threads();
   lo = dim0*dim1*tid/nt;
   hi = dim0*dim1*(tid+1)/nt;
-  
   for (i = lo; i < hi ; i++) {
     if (l[i] == 0)
       continue;		// done
@@ -370,7 +369,7 @@ int localmaxlabel(const float *restrict im,	// input
     }
     l[i] = 0;		// sharing problems??
   }
- }
+}
     if( noisy ){
       toc = my_get_time();
       printf("    write %.3f ms\n", 1000*(toc-tic));
