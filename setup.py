@@ -20,93 +20,72 @@ from __future__ import print_function
 
 """
 Setup script
+
+Do:
+  python setup.py build --force
+   -> it will build static libraries in the src folder
+   -> compile wrappers them here
 """
 
-
-
-
+# For pip / bdist_wheel etc
 import setuptools
-import sys
+import os, sys
+# Need to use numpy.distutils so it works for f2py
 from numpy.distutils.core import setup, Extension
 from numpy import get_include
-import struct
+# Get the path for the static libraries        
+import src.bldlib
 
-if sys.platform == "win32" and "--compiler=mingw32" not in sys.argv:
-    ecomparg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY", "/arch:sse2"]
-    elinkarg = []
-    elibs = None
-else:
-    ecomparg = ["-fopenmp","-O2", "-msse2", "-std=c99",
-                "-flto",
-                "-Wall", "-Wextra",
-                "-DF2PY_REPORT_ON_ARRAY_COPY"]
-    elinkarg = [a for a in ecomparg]
-    elibs = ["gomp","pthread"]
+if "build" in sys.argv:
+    """ Ugly - requires setup.py build 
+    Should learn to use build_clib at some point
+    """
+    os.chdir("src")
+    print("Call write_check")
+    os.system("python write_check.py")
+    print("Call bldlib")
+    # transmit compiler from command line
+    ok = os.system("python bldlib.py "+ " ".join(sys.argv))
+    os.chdir("..")
+    if ok != 0:
+        print("Return was",ok)
+        sys.exit(ok)
+    else:
+        print("Seems to build OK")
 
 
-nid = [get_include(),]
+ekwds = { 'include_dirs' : [get_include(), 'src' ],
+          'library_dirs' : ['./src'],
+          'extra_compile_args' : src.bldlib.arg,
+          'extra_link_args' : src.bldlib.arg
+        }
 
-def fix_f2py_pointer():
-    # decide if we have 32 bits or 64 bits compilation
-    nbyte = struct.calcsize("P") # 4 or 8
-    with open("src/cImageD11_template.pyf","r") as f:
-        pyf = f.read()
-    print(pyf.find( "(kind=size_t)"))
-    pyf = pyf.replace(  "(kind=size_t)" ,"*%d"%(nbyte))
-    with open("src/cImageD11.pyf", "w") as f:
-        f.write( pyf )
+# Compiled extensions:
+extensions = [ Extension( "cImageD11_sse2", 
+                          sources = ["src/cImageD11_sse2.pyf",],
+                          libraries = [src.bldlib.sse2libname],
+                          **ekwds ),
+               Extension( "cImageD11_avx2", 
+                          sources = ["src/cImageD11_avx2.pyf",],
+                          libraries = [src.bldlib.avx2libname],
+                          **ekwds) ]
 
-fix_f2py_pointer()
-# Compiled extension:
-cImageD11extension = Extension( "cImageD11",
-                                sources = [ "src/cImageD11.pyf",
-                                            "src/connectedpixels.c",
-                                            "src/closest.c",
-                                            "src/cdiffraction.c",
-                                            "src/localmaxlabel.c",
-                                            "src/sparse_image.c",
-                                            "src/blobs.c"],
-                               include_dirs = nid + ["src",],
-                               extra_compile_args=ecomparg,
-                               extra_link_args=elinkarg,
-                               libraries = elibs
-                               )
-            
 
 # Removed list of dependencies from setup file
-# Do a miniconda (or something) instead...
-#if sys.platform == 'win32':
-#    needed = [
-#        'six',
-#        'numpy>=1.0.0',
-#        'scipy', 
-#        'xfab>=0.0.2',
-#           'pycifrw'
-#        'fabio>=0.0.5',
-#        'matplotlib>=0.90.0',
-#        ... 
-#        ]
-
-needed =[]#
-# ["xfab",
-#          "fabio",
-#          "pyopengl",
-#          "matplotlib",
-#          "numpy",
-#          "scipy",
-#          "six",
-#          "h5py",
-#          ]
+#  borked something, not sure what or why
+needed =[]
+# ["xfab", "fabio", "pyopengl",  "matplotlib", "numpy", "scipy", "six", "h5py",
+#  "pyopengltk", "FitAllB", ... ]
 
 # See the distutils docs...
 setup(name='ImageD11',
-      version='1.9.0',
+      version='1.9.1',
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
-      ext_modules = [cImageD11extension,],
+      ext_modules = extensions,
       install_requires = needed,
       packages = ["ImageD11"],
       package_dir = {"ImageD11":"ImageD11"},

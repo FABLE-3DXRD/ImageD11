@@ -5,7 +5,6 @@
 #include <string.h>
 #include "blobs.h"		/* Disjoint sets thing for blob finding */
 
-
 void boundscheck(int jpk, int n2, int ipk, int n1)
 {
     if ((jpk < 0) || jpk >= n2) {
@@ -38,16 +37,13 @@ void boundscheck(int jpk, int n2, int ipk, int n1)
 
 */
 
-
 /* ==== connectedpixels ======================================== */
-
-
 
 // Exported function is in the C wrapper, not here!
 DLL_LOCAL
-int connectedpixels(float *data, int32_t * labels,
-		    float threshold, int verbose,
-		    int eightconnected, int ns, int nf)
+    int connectedpixels(float *data, int32_t * labels,
+			float threshold, int verbose,
+			int eightconnected, int ns, int nf)
 {
 
     int i, j, irp, ir, ipx;
@@ -101,7 +97,7 @@ int connectedpixels(float *data, int32_t * labels,
 		labels[ir] = labels[irp];
 	    }
 	    if (eightconnected && (labels[irp + 1] > 0)) {
-		match(&labels[ir], &labels[irp + 1], S);
+		match(labels[ir], labels[irp + 1], S);
 	    }
 	    if (labels[ir] == 0) {
 		S = dset_new(&S, &labels[ir]);
@@ -115,16 +111,16 @@ int connectedpixels(float *data, int32_t * labels,
 	    if (data[ipx] > threshold) {
 		/* Pixel needs to be assigned */
 		if (eightconnected && (labels[irp - 1] > 0)) {
-		    match(&labels[ipx], &labels[irp - 1], S);
+		    match(labels[ipx], labels[irp - 1], S);
 		}
 		if (labels[irp] > 0) {
-		    match(&labels[ipx], &labels[irp], S);
+		    match(labels[ipx], labels[irp], S);
 		}
 		if (eightconnected && (labels[irp + 1] > 0)) {
-		    match(&labels[ipx], &labels[irp + 1], S);
+		    match(labels[ipx], labels[irp + 1], S);
 		}
 		if (labels[ipx - 1] > 0) {
-		    match(&labels[ipx], &labels[ipx - 1], S);
+		    match(labels[ipx], labels[ipx - 1], S);
 		}
 		if (labels[ipx] == 0) {	/* Label is new ! */
 		    S = dset_new(&S, &labels[ipx]);
@@ -137,13 +133,13 @@ int connectedpixels(float *data, int32_t * labels,
 	labels[ipx] = 0;
 	if (data[ipx] > threshold) {
 	    if (eightconnected && (labels[irp - 1] > 0)) {
-		match(&labels[ipx], &labels[irp - 1], S);
+		match(labels[ipx], labels[irp - 1], S);
 	    }
 	    if (labels[irp] > 0) {
-		match(&labels[ipx], &labels[irp], S);
+		match(labels[ipx], labels[irp], S);
 	    }
 	    if (labels[ipx - 1] > 0) {
-		match(&labels[ipx], &labels[ipx - 1], S);
+		match(labels[ipx], labels[ipx - 1], S);
 	    }
 	    if (labels[ipx] == 0) {	/* Label is new ! */
 		S = dset_new(&S, &labels[ipx]);
@@ -156,6 +152,7 @@ int connectedpixels(float *data, int32_t * labels,
      */
     T = dset_compress(&S, &np);
     /* Now scan through image re-assigning labels as needed */
+#pragma omp parallel for private(j,ipx,k) shared(labels)
     for (i = 0; i < ns; i++) {
 	for (j = 0; j < nf; j++) {
 	    ipx = i * nf + j;
@@ -175,12 +172,10 @@ int connectedpixels(float *data, int32_t * labels,
     return np;
 }
 
-
-
 // Exported function is in the C wrapper, not here!
 DLL_LOCAL
-void blobproperties(float *data, int32_t * labels, int32_t npk, float omega,
-		    int verbose, int ns, int nf, double *res)
+    void blobproperties(float *data, int32_t * labels, int32_t npk, float omega,
+			int verbose, int ns, int nf, double *res)
 {
     int i, j, bad, ipx;
     double fval;
@@ -229,7 +224,6 @@ void blobproperties(float *data, int32_t * labels, int32_t npk, float omega,
 	printf("\nFound %d bad pixels in the blob image\n", bad);
     }
 }
-
 
 int bloboverlaps(int32_t * b1, int32_t n1, double *res1,
 		 int32_t * b2, int32_t n2, double *res2,
@@ -387,38 +381,38 @@ int bloboverlaps(int32_t * b1, int32_t n1, double *res1,
     return npk;
 }
 
-
-
 void blob_moments(double *res, int np)
 {
     compute_moments(res, np);
 }
 
-
-void clean_mask( int8_t msk[],
-		 int8_t ret[],
-		 int ns,
-		 int nf){
-  /* cleans pixels with no 4 connected neighbors */
-  int i,j,n,p,q;
-  /* set zero for default */
-  memset( ret, 0, ns*nf*sizeof(int8_t));
-  /*  printf("yop %d %d\n",ns,nf); */
-  for( i=0; i<ns; i++){
-    p = i*ns;
-    for( j=0; j<nf; j++){
-      q = p+j;
-      /* printf("%d:%d\n",q,msk[q]); */
-      if(msk[q]!=0){
-	/* Count neighbors */
-	n=0;
-	/* printf("%d %d\n",q,msk[q]); */
-	if((i>0)      && (msk[q-nf]!=0)) n++;
-	if((i<(ns-1)) && (msk[q+nf]!=0)) n++;
-	if((j>0)      && (msk[q-1] !=0)) n++;
-	if((j<(nf-1)) && (msk[q+1] !=0)) n++;
-	if(n != 0)ret[q]=1;
-      }
+void clean_mask(int8_t msk[], int8_t ret[], int ns, int nf)
+{
+    /* cleans pixels with no 4 connected neighbors */
+    int i, j, n, p, q;
+    /* set zero for default */
+    memset(ret, 0, ns * nf * sizeof(int8_t));
+    /*  printf("yop %d %d\n",ns,nf); */
+    for (i = 0; i < ns; i++) {
+	p = i * ns;
+	for (j = 0; j < nf; j++) {
+	    q = p + j;
+	    /* printf("%d:%d\n",q,msk[q]); */
+	    if (msk[q] != 0) {
+		/* Count neighbors */
+		n = 0;
+		/* printf("%d %d\n",q,msk[q]); */
+		if ((i > 0) && (msk[q - nf] != 0))
+		    n++;
+		if ((i < (ns - 1)) && (msk[q + nf] != 0))
+		    n++;
+		if ((j > 0) && (msk[q - 1] != 0))
+		    n++;
+		if ((j < (nf - 1)) && (msk[q + 1] != 0))
+		    n++;
+		if (n != 0)
+		    ret[q] = 1;
+	    }
+	}
     }
-  }
 }

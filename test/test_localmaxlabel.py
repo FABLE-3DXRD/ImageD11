@@ -1,28 +1,35 @@
 
 from __future__ import division, print_function
 import numpy as np, time
-from ImageD11.cImageD11 import localmaxlabel 
-import unittest
+from ImageD11.cImageD11 import localmaxlabel
+import unittest, sys
+
 
 def localmax( im, out=None ):
     """ reference implementation 
     ... very slow 
     """
     neighbours = [ (-1,-1),(-1,0), (-1,1),
-                   (0,-1),         (0,1),
+                   (0,-1), (0,0),   (0,1),
                    (1,-1), (1,0),  (1,1) ]
     out = np.arange( im.shape[0]*im.shape[1], dtype=np.int )
     out.shape = im.shape
     out0 = out.copy()    # pointers
-    print("running python localmax")
+    print("running python localmax", im.shape,end=" " )
     for i in range(1,im.shape[0]-1):
         for j in range(1,im.shape[1]-1):
-            mx = im[i,j]
-            for k,l in neighbours:
-                if im[i+k,j+l] > mx:
-                    out[i,j] = out0[i+k,j+l]
-                    mx = im[i+k,j+l]
+            mx = -1e10
+            for k in range(i-1,i+2):
+                for l in range(j-1,j+2):
+                    try:
+                        if im[k,l] > mx:
+                            out[i,j] = out0[k,l]
+                            mx = im[k,l]
+                    except:
+                        print(i,j,k,l,im.shape)
+                        raise
             # now out addresses a neighbour
+    print("1", end=" " )
     # Maximal pixels
     maxpx = (out==out0)
     # Final labels
@@ -32,13 +39,17 @@ def localmax( im, out=None ):
     labels[-1]=0
     labels[:,0]=0
     labels[:,-1]=0
+    print("2", end=" " )
     for i in range(1,im.shape[0]-1):
         for j in range(1,im.shape[1]-1):
             if maxpx[i,j]:
                 npk += 1
                 labels[i,j]=npk
                 out[i,j]=0
+    print("3", end=" " )
+    sys.stdout.flush()
     # Now relabel each pixel to point to the max...
+    pon=False
     for i in range(1,im.shape[0]-1):
         for j in range(1,im.shape[1]-1):
             adr = out[i,j]
@@ -46,7 +57,7 @@ def localmax( im, out=None ):
                 continue
             while 1:
                 adrnew = out.flat[adr]
-                if adrnew == 0:
+                if adrnew == 0 or labels.flat[adr]==0:
                     break
                 adr = adrnew
             l = labels.flat[adr] # take from peak
@@ -59,6 +70,8 @@ def localmax( im, out=None ):
                     break
                 out.flat[adr] = 0
                 adr = adrnew
+    print(".", end=" " )                            
+    print ("ok")
     return labels
 
 
@@ -93,7 +106,7 @@ def demo():
     l1 = localmax(im)
     l2 = np.zeros(im.shape,np.int32)
     wk = np.zeros(im.shape,np.int8)
-    npks = localmaxlabel(im, l2 , wk )
+    npks = localmaxlabel(im, l2 , wk, cpu=0 )
     ax1 = pl.subplot(2,2,1)
     pl.imshow(im)
     pl.xlim( 0,im.shape[0])
@@ -110,23 +123,86 @@ def demo():
 
 class test_localmaxlabel( unittest.TestCase ):
     def setUp( self ):
-        pass
+        self.im = make_test_image(128)[:107,:109].copy()
+        self.dopy = True
     def test1( self):
-        im = make_test_image()
-        start = time.time()
-        l1 = localmax(im)
-        end = time.time()
-        pytime = (end-start)*1000.
+        im = self.im
+        if self.dopy:
+            start = time.time()
+            l1 = localmax(im)
+            end = time.time()
+            pytime = (end-start)*1000.
+        l = [l1,]
+        wk = [0,]
+        times = [pytime,]
+        names = ["python",]
+        for cpu, name in [(0,"ansi"),(1,"sse2"),(2,"avx2")]:
+            li = np.zeros(im.shape,np.int32)
+            wi = np.zeros(im.shape,np.int8)
+            start = time.time()
+            print("cpu",cpu)
+            npks = localmaxlabel(im.copy(), li , wi, cpu=cpu )
+            end=time.time()
+            ctime = (end-start)*1000.
+            l.append( li )
+            times.append( ctime )
+            names.append( name )
+        lref = l[0]
+        print("Timing",end=" ")
+        for i in range(len(names)):
+            print( "%s %.3f ms"%( names[i], times[i]), end=" ")
+        print()
+        for li in l[1:]:
+            self.assertTrue((lref == l1).all())
+    def test3( self):
+        print("in test 2")
+        im = make_test_image(N=2048)
+        l1 = np.zeros(im.shape,np.int32)
         l2 = np.zeros(im.shape,np.int32)
+        l3 = np.zeros(im.shape,np.int32)
         wk = np.zeros(im.shape,np.int8)
         start = time.time()
-        npks = localmaxlabel(im, l2 , wk )
+        for i in range(10):
+            npks = localmaxlabel(im, l1 , wk )
         end=time.time()
-        ctime = (end-start)*1000.
-        self.assertEqual( (l2==l1).all(), True )
-        print("Timing python %.3f ms, c %.3f ms"%(pytime,ctime))
+        npks = localmaxlabel(im, l1 , wk, 10 )
+        ctime = (end-start)*100.
+        start = time.time()
+        for i in range(10):
+            npks = localmaxlabel(im, l2 , wk, 1 )
+        end=time.time()
+        npks = localmaxlabel(im, l2 , wk, 11 )
+        stime = (end-start)*100.
+        start=time.time()
+        for i in range(10):
+            npks = localmaxlabel(im, l3 , wk, 2 )
+        end=time.time()
+        npks = localmaxlabel(im, l3 , wk, 12 )
+        atime = (end-start)*100.
+        if not (l2 == l3).all():
+            import pylab as pl
+            pl.imshow(l2)
+            pl.imshow(l3)
+            pl.show()
+        self.assertEqual( (l2==l3).all(), True )
+        
+        self.assertEqual( (l1==l3).all(), True )
+        print("Timing 2048 c %.3f ms, sse %.3f, avx %.3f"%(
+            ctime,stime,atime))
 
+
+
+        
 if __name__== "__main__":
-
+    import sys
+    if len(sys.argv)>1:
+        demo()
     unittest.main()
+
+else:
+    im = make_test_image(256)
+    l2 = np.zeros( im.shape, 'i' )
+    wk = np.zeros( im.shape, np.uint8 )
+    npks = localmaxlabel(im, l2 , wk )
+    
 
