@@ -33,8 +33,8 @@ f.write("""
 #include "check_cpu_auto.h"
 
 /* DO NOT Use static globals here 
-/* Results of calls to cpuid 
-/* Stuff to look for : EAX call, A|B|C|D, bit position 
+ * Results of calls to cpuid 
+ * Stuff to look for : EAX call, A|B|C|D, bit position 
  *  0  : {B,D,C} = name, A = maxcall
  *  1  :  4A, 5B, 6C, 7D
  *      A = Processor information
@@ -66,7 +66,7 @@ void readcpuid( unsigned int leaf, unsigned int subleaf, unsigned int idBits[4] 
   // MSVC and gcc both provide a __cpuid function
   for(j=0;j<4;j++) idBits[j]=0;
   #if defined(__GNUC__)
-   __get_cpuid_count( leaf, subleaf, &idBits[0], &idBits[1], &idBits[2], &idBits[3]);
+   __cpuid_count( leaf, subleaf, idBits[0], idBits[1], idBits[2], idBits[3]);
   #elif defined(_WIN32)
   __cpuidex( &idBits[0], leaf, subleaf );
   #endif
