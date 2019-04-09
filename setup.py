@@ -32,7 +32,6 @@ import setuptools
 import os, sys
 # Need to use numpy.distutils so it works for f2py
 from numpy.distutils.core import setup, Extension
-from numpy.distutils.command.build_ext import build_ext
 from numpy import get_include
 # Get the path for the static libraries        
 import src.bldlib
@@ -48,21 +47,6 @@ if "build" in sys.argv:
     if ok != 0:
         print("Returns was",ok)
         sys.exit(ok)
-
-class custom_build_ext( build_ext ):    
-    """ Set compiler switches per extension module (sse2/avx2 etc) 
-    """
-    def build_extension(self, ext):
-        print("IMAGED11:using compiler",self.compiler.compiler_type)
-        if ext.name.find("sse2")>0:
-            ext.extra_compile_args = src.bldlib.sse2arg
-            ext.extra_link_args = src.bldlib.lsse2arg
-        if ext.name.find("avx2")>0:
-            ext.extra_compile_args = src.bldlib.avx2arg
-            ext.extra_link_args = src.bldlib.lavx2arg
-        print("IMAGED11:COMPILE ARGS:", ext.extra_compile_args)
-        print("IMAGED11:LINK ARGS:", ext.extra_link_args)
-        build_ext.build_extension(self, ext)
 
 
 ekwds = { 'include_dirs' : [get_include(), 'src' ],
@@ -94,7 +78,6 @@ setup(name='ImageD11',
       description='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
-      cmdclass = {'build_ext': custom_build_ext },
       ext_modules = extensions,
       install_requires = needed,
       packages = ["ImageD11"],
