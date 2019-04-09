@@ -146,6 +146,7 @@ void neighbormax_avx(const float *restrict im,	// input
 		      int dim1,
 		      int o[10]){
   __m256i iqpi;
+  __m128i iqplo, iqphi;
   __m256 mxp, mxq, msk, one, iqp, ik;
   int i, j, p, iq, k;
   float mx;
@@ -156,7 +157,7 @@ void neighbormax_avx(const float *restrict im,	// input
     lout[dim1 * (dim0 - 1) + i] = 0;
     l[dim1 * (dim0 - 1) + i] = 0;
   }
-#pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq, iqpi)
+#pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq, iqpi, iqplo, iqphi)
   for (i = dim1; i < (dim0 - 1) * dim1; i = i + dim1) {	// skipping 1 pixel border
     lout[i] = 0;		// set edges to zero: pixel j=0:
     l[i] = 0;
@@ -176,14 +177,16 @@ void neighbormax_avx(const float *restrict im,	// input
 	iqp = _mm256_or_ps(_mm256_and_ps(msk,  ik), _mm256_andnot_ps(msk, iqp));
       }			// k neighbors
       iqpi =  _mm256_cvtps_epi32(iqp);
-      l[p+0] = (uint8_t) _mm256_extract_epi32(iqpi, 0);
-      l[p+1] = (uint8_t) _mm256_extract_epi32(iqpi, 1);
-      l[p+2] = (uint8_t) _mm256_extract_epi32(iqpi, 2);
-      l[p+3] = (uint8_t) _mm256_extract_epi32(iqpi, 3);
-      l[p+4] = (uint8_t) _mm256_extract_epi32(iqpi, 4);
-      l[p+5] = (uint8_t) _mm256_extract_epi32(iqpi, 5);
-      l[p+6] = (uint8_t) _mm256_extract_epi32(iqpi, 6);
-      l[p+7] = (uint8_t) _mm256_extract_epi32(iqpi, 7);
+      iqplo = _mm256_extractf128_si256( iqpi, 0);
+      l[p+0] = (uint8_t) _mm_extract_epi16(iqplo, 0);
+      l[p+1] = (uint8_t) _mm_extract_epi16(iqplo, 2);
+      l[p+2] = (uint8_t) _mm_extract_epi16(iqplo, 4);
+      l[p+3] = (uint8_t) _mm_extract_epi16(iqplo, 6);
+      iqphi = _mm256_extractf128_si256( iqpi, 1);
+      l[p+4] = (uint8_t) _mm_extract_epi16(iqphi, 0);
+      l[p+5] = (uint8_t) _mm_extract_epi16(iqphi, 2);
+      l[p+6] = (uint8_t) _mm_extract_epi16(iqphi, 4);
+      l[p+7] = (uint8_t) _mm_extract_epi16(iqphi, 6);
       // Count peaks in here? ... was better in separate loop
     }
     for (; j < dim1 - 1; j++) {	// end of simd loop, continues on j from for
