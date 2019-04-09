@@ -2,6 +2,12 @@
 
 /* To compare to numpy
 
+__m256i _mm256_cvtepu16_epi32 (__m128i a)
+__m256 _mm256_cvtepi32_ps (__m256i a)
+
+SSE: __m128 _mm_cvtpu16_ps (__m64 a)
+
+
 AVX
 __m256 _mm256_sub_ps (__m256 a, __m256 b)
 __m256 _mm256_mul_ps (__m256 a, __m256 b)
@@ -18,8 +24,11 @@ __m256 _mm256_mul_ps (__m256 a, __m256 b)
   _mm256_storeu_ps (float const * mem_addr)
   unaligned load/store (32 byte boundary)
 */
-
+#ifdef _MSC_VER
+ #include <intrin.h>
+ #else
 #include <immintrin.h>
+#endif
 
 #ifdef __FMA__
 void darkflat_fma( float *img,

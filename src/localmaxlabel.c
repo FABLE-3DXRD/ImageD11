@@ -226,7 +226,12 @@ void neighbormax_avx2(const float *restrict im,	// input
 		      int dim0,	// Image dimensions
 		      int dim1,
 		      int o[10]){
-  printf("Not compiled with AVX2!\n");
+    neighbormax_sse2( im,	// input
+		       lout,	// output
+		       l,	// workspace temporary
+		      dim0,	// Image dimensions
+		       dim1,
+		       o);
 }
 #endif
 //AVX2

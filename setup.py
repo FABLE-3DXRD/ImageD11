@@ -22,75 +22,62 @@ from __future__ import print_function
 Setup script
 
 Do:
-  python setup.py build
-   -> it will build the libraries in the src folder
-   -> generate sse2 and avx2 wrappers
-   -> compile them here
-
+  python setup.py build --force
+   -> it will build static libraries in the src folder
+   -> compile wrappers them here
 """
 
 # For pip / bdist_wheel etc
 import setuptools
-import os, sys, sysconfig, platform, struct
-# For using f2py
+import os, sys
+# Need to use numpy.distutils so it works for f2py
 from numpy.distutils.core import setup, Extension
 from numpy.distutils.command.build_ext import build_ext
 from numpy import get_include
-
-if "build" in sys.argv:
-    os.chdir("src")
-    os.system("python write_check.py")
-    os.system("python bldlib.py")
-    os.chdir("..")
-    
+# Get the path for the static libraries        
 import src.bldlib
 
-# For 32 or 64 bits
-nbyte = struct.calcsize("P") # 4 or 8
-           
+if "build" in sys.argv:
+    """ Ugly - requires setup.py build 
+    Should learn to use build_clib at some point
+    """
+    os.chdir("src")
+    os.system("python write_check.py")
+    ok = os.system("python bldlib.py")
+    os.chdir("..")
+    if ok != 0:
+        print("Returns was",ok)
+        sys.exit(ok)
+
 class custom_build_ext( build_ext ):    
+    """ Set compiler switches per extension module (sse2/avx2 etc) 
+    """
     def build_extension(self, ext):
         print("IMAGED11:using compiler",self.compiler.compiler_type)
         if ext.name.find("sse2")>0:
-            ext.extra_compiler_args = src.bldlib.sse2arg
+            ext.extra_compile_args = src.bldlib.sse2arg
+            ext.extra_link_args = src.bldlib.lsse2arg
         if ext.name.find("avx2")>0:
-            ext.extra_compiler_args = src.bldlib.avx2arg    
-        ext.extra_link_args = list(ext.extra_compiler_args)
+            ext.extra_compile_args = src.bldlib.avx2arg
+            ext.extra_link_args = src.bldlib.lavx2arg
+        print("IMAGED11:COMPILE ARGS:", ext.extra_compile_args)
+        print("IMAGED11:LINK ARGS:", ext.extra_link_args)
         build_ext.build_extension(self, ext)
 
-# We use size_t somewhere so it can address >2Gb on 64 bit
-# systems. This doesn't work on 32 bit, so we decide what
-# to do according to the python version building the extension
-def fix_f2py_pointer(nbyte):
-    # decide if we have 32 bits or 64 bits compilation
-    with open("src/cImageD11_template.pyf","r") as f:
-        pyf = f.read()
-    pyf = pyf.replace(  "(kind=size_t)" ,"*%d"%(nbyte))
-    # we also create versions for newer and older cpu
-    pyfsse = pyf.replace(  "python module cImageD11" , "python module cImageD11_sse2" )
-    with open("src/cImageD11_sse2.pyf", "w") as f:
-        f.write( pyfsse )
-    pyfavx = pyf.replace(  "python module cImageD11" , "python module cImageD11_avx2" )
-    with open("src/cImageD11_avx2.pyf", "w") as f:
-        f.write( pyfavx )
-# And do this:
-fix_f2py_pointer(nbyte)
 
-
-extn_kwds = {'sources' : ["src/cImageD11_sse2.pyf",],
-             'libraries' : [src.bldlib.sse2libname],
-             'include_dirs' : [get_include(), 'src' ],
-             'library_dirs' : ['src'],
-             }
-avx2_kwds = {'sources' : ["src/cImageD11_avx2.pyf",] ,
-             'libraries' : [src.bldlib.avx2libname],
-             'include_dirs':[get_include(), 'src' ],
-             'library_dirs' : ['src'],
-             }
+ekwds = { 'include_dirs' : [get_include(), 'src' ],
+          'library_dirs' : ['./src'],
+        }
 
 # Compiled extensions:
-extensions = [ Extension( "cImageD11_sse2", **extn_kwds), 
-               Extension( "cImageD11_avx2", **avx2_kwds) ]
+extensions = [ Extension( "cImageD11_sse2", 
+                          sources = ["src/cImageD11_sse2.pyf",],
+                          libraries = [src.bldlib.sse2libname],
+                          **ekwds ),
+               Extension( "cImageD11_avx2", 
+                          sources = ["src/cImageD11_avx2.pyf",],
+                          libraries = [src.bldlib.avx2libname],
+                          **ekwds) ]
 
 
 # Removed list of dependencies from setup file

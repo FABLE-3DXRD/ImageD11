@@ -1,7 +1,7 @@
 cImageD11.pyf
-cImageD11_avx2.pyf
-cImageD11_sse2.pyf
-Linux_64bit_2.7_avx2
-Linux_64bit_2.7_sse2
+Linux_??bit_?.?_*
+Windows_??bit_?.?_*
+cImageD11_????module.c
 *.a
 *.o
+*.lib

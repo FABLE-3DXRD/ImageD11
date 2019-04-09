@@ -56,7 +56,10 @@ static int needread = 1;
  */
 void readcpuid( ) {
   // MSVC and gcc both provide a __cpuid function
-  uint32_t j, i, a, b, c, d;
+  uint32_t j, i;
+  #ifdef __GNUC__
+  uint32_t  a, b, c, d;
+  #endif
   if( needread ){
     for(j=0;j<4*NCALL;j++) idBits[j]=0;
     i = 0;
@@ -156,16 +159,16 @@ int flag_AVX512F(){
  return (idBits[29] & ( 1 << 16))>0;
 }
 
-int have_SSE2(){
+int i_have_SSE2(){
   return (flag_SSE2()>0);
 }
-int have_AVX(){
+int i_have_AVX(){
     return (flag_XSAVE()>0)&(flag_OSXSAVE()>0)&(flag_AVX()>0);
 }
-int have_AVX2(){
+int i_have_AVX2(){
     return (flag_AVX()>0)&(flag_MOVBE()>0)&(flag_FMA3()>0)&(flag_AVX2()>0);
 }
-int have_AVX512F(){
+int i_have_AVX512F(){
     return (flag_OSXSAVE()>0)&(flag_AVX512F()>0);
 }
 

@@ -1,14 +1,33 @@
 
+
+"""
+We started using some intrinsics in the C code to make it run faster
+when processors support specific instructions.  This makes it less
+portable and harder to build. These notes explain how things could 
+work. 
+
+If a CPU has some feature (sse2, avx2, fma, etc) then we will want
+to use it in specific places that we are aware of. We might as well
+also let the compiler use those instructions everywhere else where
+we have not written specific things too. That means:
+
+- compile everything as avx2 -> avx2 version
+- compile everything as sse2 -> sse2 version
+- compile everything as ansi -> ansi version
+
+So we are going to build a series of extensions and use #ifdef inside
+them.
+
+Which one we get is determined by the cImageD11.py module.
+"""
+
+
+
+
+
+
 import os, sys, platform
-
-# patch for debugging
-import distutils.spawn
-old_spawn = distutils.spawn.spawn
-def my_spawn(*args, **kwargs):
-    print( " ".join(args[0]) ) # <-- this is your command right here 
-    old_spawn(*args, **kwargs)
-distutils.spawn.spawn = my_spawn
-
+import setuptools
 import distutils.ccompiler
 
 sources = ("blobs.c cdiffraction.c check_cpu_auto.c closest.c connectedpixels.c "+\
@@ -21,21 +40,27 @@ tmpdir = "%s_%s_%s"%(plat, bits, vers)
 avx2libname = "cImageD11_"+tmpdir+"_avx2"
 sse2libname = "cImageD11_"+tmpdir+"_sse2"
 
+
 if plat == "Linux":
     arg=["-O2", "-fopenmp", "-fPIC", "-std=c99" ]
     sse2arg = arg + ["-msse2"]
     avx2arg = arg + ["-mavx2"]
+    # link args
+    lsse2arg = arg + ["-msse2"]
+    lavx2arg = arg + ["-mavx2"]
 elif plat == "Windows":
-    arg=["/Ox", "/Openmp" ]
-    sse2arg = arg + ["/arch:SSE2","/Ox"]
-    avx2arg = arg + ["/arch:AVX2","/Ox"]
+    arg=["/Ox", "/openmp" ]
+    # the /arch switches are ignored by the older MSVC compilers
+    sse2arg = arg + ["/arch:SSE2",]
+    avx2arg = arg + ["/arch:AVX2",]
+    lsse2arg = []
+    lavx2arg = []
 else:
     avx2arg = sse2arg = arg = [ ]
 
 def run_cc( cc, plat, bits, vers, name, flags, libname ):
-    cc.compile( sources , output_dir=tmpdir, extra_preargs = flags )
-    objs = [os.path.join(tmpdir, f.replace(".c",cc.obj_extension)) for f in sources]    
-    cc.create_static_lib( objs, libname, output_dir="." )
+    objs = cc.compile( sources , output_dir=tmpdir+vers, extra_preargs = flags )
+    ok = cc.create_static_lib( objs, libname, output_dir="." )
     return libname
 
 if __name__=="__main__":
@@ -43,4 +68,3 @@ if __name__=="__main__":
     cc.add_include_dir( "." )
     sse2lib = run_cc(cc, plat, bits, vers, "sse2", sse2arg, sse2libname )
     avx2lib = run_cc(cc, plat, bits, vers, "avx2", avx2arg, avx2libname )
-

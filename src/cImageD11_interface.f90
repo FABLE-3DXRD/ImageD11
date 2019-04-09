@@ -1,64 +1,6 @@
 
 
 
-python module cImageD11
-
-
-usercode '''
-#include "blobs.h"
-'''
-! Fortran starts here I guess?
-interface
-
-usercode '''
-/* This runs inside the init part of the module as it is after interface */
-
-#define str(x) (#x)
-PyDict_SetItemString(d,str(s_1)    ,PyInt_FromLong(s_1));
-PyDict_SetItemString(d,str(s_I)    ,PyInt_FromLong(s_I));
-PyDict_SetItemString(d,str(s_I2)   ,PyInt_FromLong(s_I2));
-PyDict_SetItemString(d,str(s_fI)   ,PyInt_FromLong(s_fI));
-PyDict_SetItemString(d,str(s_ffI)  ,PyInt_FromLong(s_ffI));
-PyDict_SetItemString(d,str(s_sI)   ,PyInt_FromLong(s_sI));
-PyDict_SetItemString(d,str(s_ssI)  ,PyInt_FromLong(s_ssI));
-PyDict_SetItemString(d,str(s_sfI)  ,PyInt_FromLong(s_sfI));
-PyDict_SetItemString(d,str(s_oI)   ,PyInt_FromLong(s_oI));
-PyDict_SetItemString(d,str(s_ooI)  ,PyInt_FromLong(s_ooI));
-PyDict_SetItemString(d,str(s_soI)  ,PyInt_FromLong(s_soI));
-PyDict_SetItemString(d,str(s_foI)  ,PyInt_FromLong(s_foI));
-PyDict_SetItemString(d,str(mx_I)   ,PyInt_FromLong(mx_I));
-PyDict_SetItemString(d,str(mx_I_f) ,PyInt_FromLong(mx_I_f));
-PyDict_SetItemString(d,str(mx_I_s) ,PyInt_FromLong(mx_I_s));
-PyDict_SetItemString(d,str(mx_I_o) ,PyInt_FromLong(mx_I_o));
-PyDict_SetItemString(d,str(bb_mx_f),PyInt_FromLong(bb_mx_f));
-PyDict_SetItemString(d,str(bb_mx_s),PyInt_FromLong(bb_mx_s));
-PyDict_SetItemString(d,str(bb_mx_o),PyInt_FromLong(bb_mx_o));
-PyDict_SetItemString(d,str(bb_mn_f),PyInt_FromLong(bb_mn_f));
-PyDict_SetItemString(d,str(bb_mn_s),PyInt_FromLong(bb_mn_s));
-PyDict_SetItemString(d,str(bb_mn_o),PyInt_FromLong(bb_mn_o));
-
-PyDict_SetItemString(d,str(avg_i),PyInt_FromLong(avg_i));
-PyDict_SetItemString(d,str(f_raw),PyInt_FromLong(f_raw));
-PyDict_SetItemString(d,str(s_raw),PyInt_FromLong(s_raw));
-PyDict_SetItemString(d,str(f_cen),PyInt_FromLong(f_cen));
-PyDict_SetItemString(d,str(s_cen),PyInt_FromLong(s_cen));
-PyDict_SetItemString(d,str(o_raw),PyInt_FromLong(o_raw));
-PyDict_SetItemString(d,str(m_ff),PyInt_FromLong(m_ff));
-PyDict_SetItemString(d,str(m_ss),PyInt_FromLong(m_ss));
-PyDict_SetItemString(d,str(m_oo),PyInt_FromLong(m_oo));
-PyDict_SetItemString(d,str(m_sf),PyInt_FromLong(m_sf));
-PyDict_SetItemString(d,str(m_so),PyInt_FromLong(m_so));
-PyDict_SetItemString(d,str(m_fo),PyInt_FromLong(m_fo));
-PyDict_SetItemString(d,str(dety),PyInt_FromLong(dety));
-PyDict_SetItemString(d,str(detz),PyInt_FromLong(detz));
-
-PyDict_SetItemString(d,str(NPROPERTY),PyInt_FromLong(NPROPERTY));
-
-PyDict_SetItemString(d,str(got_SSE2),PyInt_FromLong( (long) 1 ));
-PyDict_SetItemString(d,str(got_AVX2),PyInt_FromLong( (long) 1 ));
-
-'''
-
     function connectedpixels( data, labels, threshold, &
                               verbose, con8, ns, nf)
         intent(c) connectedpixels
@@ -199,19 +141,28 @@ PyDict_SetItemString(d,str(got_AVX2),PyInt_FromLong( (long) 1 ));
         integer, intent(c,hide), depend( gv ) :: ng
     end subroutine refine_assigned
 
-    subroutine put_incr( data, ind, vals,  boundscheck, n, m)
-        intent(c) put_incr
+    subroutine put_incr64( data, ind, vals,  boundscheck, n, m)
+        intent(c) put_incr64
         intent(c)
         real, intent(inout) :: data(m)
         real, intent(in) :: vals(n)
-        ! The indexing type is 32 or 64 bits. f2py does not handle this case.
-        ! Use this file as a template. setup.py will replace the following line
-        ! as needed ... eg open(...).replace( "(kind=size_t)", "*8" or "*4" as appropriate):
-        integer(kind=size_t), dimension(n), intent(in) :: ind
+        integer(kind=8), dimension(n), intent(in) :: ind
         integer, intent(hide), depend( data ) :: m
         integer, intent(hide), depend( ind) :: n
         integer, optional :: boundscheck = 0
     end subroutine put_incr
+
+    subroutine put_incr32( data, ind, vals,  boundscheck, n, m)
+        intent(c) put_incr32
+        intent(c)
+        real, intent(inout) :: data(m)
+        real, intent(in) :: vals(n)
+        integer(kind=4), dimension(n), intent(in) :: ind
+        integer, intent(hide), depend( data ) :: m
+        integer, intent(hide), depend( ind) :: n
+        integer, optional :: boundscheck = 0
+    end subroutine put_incr
+
 
     subroutine assign( ubi, gv, tol, drlv2, labels, ig, ng)
         intent(c) assign
@@ -399,4 +350,4 @@ PyDict_SetItemString(d,str(got_AVX2),PyInt_FromLong( (long) 1 ));
 
 
 end interface
-end python module cImageD11
+

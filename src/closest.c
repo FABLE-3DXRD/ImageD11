@@ -360,12 +360,10 @@ void refine_assigned(vec ubi[3], vec gv[], int labels[], int label,
     }
 }
 
-/* weighted_refine was never used */
-
-void put_incr(float data[], size_t ind[], float vals[], int boundscheck,
+void put_incr64(float data[], int64_t ind[], float vals[], int boundscheck,
 	      int n, int m)
 {
-    int k, ik;
+    int64_t k, ik;
     if (boundscheck == 0) {
 	for (k = 0; k < n; k++)
 	    data[ind[k]] += vals[k];
@@ -380,6 +378,26 @@ void put_incr(float data[], size_t ind[], float vals[], int boundscheck,
 	}
     }
 }
+
+void put_incr32(float data[], int32_t ind[], float vals[], int boundscheck,
+	      int n, int m)
+{
+    int32_t k, ik;
+    if (boundscheck == 0) {
+	for (k = 0; k < n; k++)
+	    data[ind[k]] += vals[k];
+    } else {
+	for (k = 0; k < n; k++) {
+	    ik = ind[k];
+	    if (ik < 0 || ik >= m) {
+		printf("Array bounds error! k=%d ind[k]=%d\n", k, (int)ind[k]);
+	    } else {
+		data[ind[k]] += vals[k];
+	    }
+	}
+    }
+}
+
 
 void cluster1d(double ar[], int n, int order[], double tol,	// IN
 	       int *nclusters, int ids[], double avgs[])
