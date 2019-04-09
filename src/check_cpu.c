@@ -14,10 +14,10 @@ int main(){
     char name[13];  
     cpuidProcessorName( name );
     printf("%s,  maxcall %d\n",name, maxcall());
-    printf("SSE2 %d\n", have_SSE2());
-    printf("SSE42 %d\n", have_SSE42());
-    printf("AVX %d\n", have_AVX());
-    printf("AVX2 %d\n", have_AVX2());
-    printf("AVX512F %d\n", have_AVX512F());
+    printf("SSE2 %d\n", i_have_SSE2());
+    printf("SSE42 %d\n", i_have_SSE42());
+    printf("AVX %d\n", i_have_AVX());
+    printf("AVX2 %d\n", i_have_AVX2());
+    printf("AVX512F %d\n", i_have_AVX512F());
     return 0;
 }
