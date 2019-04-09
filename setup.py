@@ -44,7 +44,8 @@ if "build" in sys.argv:
     print("Call write_check")
     os.system("python write_check.py")
     print("Call bldlib")
-    ok = os.system("python bldlib.py")
+    # transmit compiler from command line
+    ok = os.system("python bldlib.py "+ " ".join(sys.argv))
     os.chdir("..")
     if ok != 0:
         print("Return was",ok)

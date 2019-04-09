@@ -41,7 +41,14 @@ avx2libname = "cImageD11_"+tmpdir+"_avx2"
 sse2libname = "cImageD11_"+tmpdir+"_sse2"
 
 
-if plat == "Linux":
+compiler = None
+for a in sys.argv:
+    if "mingw32" in a:
+        compiler = "mingw32"
+
+
+
+if plat == "Linux" or compiler == "mingw32":
     arg=["-O2", "-fopenmp", "-fPIC", "-std=c99" ]
     sse2arg = arg + ["-msse2"]
     avx2arg = arg + ["-mavx2"]
@@ -59,7 +66,7 @@ else:
     avx2arg = sse2arg = arg = [ ]
 
 def run_cc( cc, plat, bits, vers, name, flags, libname ):
-    objs = cc.compile( sources ,
+    objs = cc.compile( sources , 
                        output_dir=libname.replace("cImageD11_",""),
                        extra_preargs = flags )
     ok = cc.create_static_lib( objs, libname, output_dir="." )
@@ -74,7 +81,7 @@ def make_pyf( inp, name ):
     
 
 if __name__=="__main__":
-    cc = distutils.ccompiler.new_compiler( verbose=1  )
+    cc = distutils.ccompiler.new_compiler( verbose=1 , compiler=compiler )
     cc.add_include_dir( "." )
     sse2lib = run_cc(cc, plat, bits, vers, "sse2", sse2arg, sse2libname )
     avx2lib = run_cc(cc, plat, bits, vers, "avx2", avx2arg, avx2libname )

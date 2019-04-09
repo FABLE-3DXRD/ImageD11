@@ -301,7 +301,7 @@ DLL_LOCAL int32_t dset_find(int32_t x, int32_t * S)
     return S[x];
 }
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
 
 #include <windows.h>
 double my_get_time()
