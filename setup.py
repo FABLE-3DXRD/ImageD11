@@ -65,8 +65,8 @@ extensions = [ Extension( "cImageD11_sse2",
                           sources = ["src/cImageD11_sse2.pyf",],
                           libraries = [src.bldlib.sse2libname],
                           **ekwds ),
-               Extension( "cImageD11_avx2", 
-                          sources = ["src/cImageD11_avx2.pyf",],
+               Extension( "cImageD11_avx",
+                          sources = ["src/cImageD11_avx.pyf",],
                           libraries = [src.bldlib.avx2libname],
                           **ekwds) ]
 
