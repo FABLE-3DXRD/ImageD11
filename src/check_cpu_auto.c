@@ -19,8 +19,8 @@
 #include "cImageD11.h"
 #include "check_cpu_auto.h"
 
-uint32_t idBits[4 * NCALL];
-int needread = 1;
+static uint32_t idBits[4 * NCALL];
+static int needread = 1;
 
 /* Use static globals here 
 /* Results of calls to cpuid 

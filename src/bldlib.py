@@ -30,8 +30,8 @@ import os, sys, platform
 import setuptools
 import distutils.ccompiler
 
-sources = ("blobs.c cdiffraction.c check_cpu_auto.c closest.c " + \
-    "connectedpixels.c darkflat.c localmaxlabel.c sparse_image.c").split()
+sources = ("blobs.c cdiffraction.c closest.c connectedpixels.c"+
+ " darkflat.c localmaxlabel.c sparse_image.c").split()
 
 plat = platform.system()
 bits = platform.architecture()[0]

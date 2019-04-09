@@ -5,8 +5,6 @@
 
 #define NCALL 8
 
-extern uint32_t idBits[4 * NCALL];
-extern int needread;
 
 #define EAXMAX 0
 

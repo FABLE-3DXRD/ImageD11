@@ -5,7 +5,7 @@
 usercode '''
 
 #include "blobs.h"
-#include "check_cpu_auto.h"
+#include "check_cpu_auto.c"
 
 '''
 interface
@@ -60,9 +60,9 @@ PyDict_SetItemString(d,str(got_AVX2),PyInt_FromLong(i_have_AVX2()));
 PyDict_SetItemString(d,str(got_SSE2),PyInt_FromLong(i_have_SSE2()));
 
 '''
+end interface
 
-
-     
+interface
     function connectedpixels( data, labels, threshold, &
                               verbose, con8, ns, nf)
         intent(c) connectedpixels
