@@ -30,8 +30,8 @@ import os, sys, platform
 import setuptools
 import distutils.ccompiler
 
-sources = ("blobs.c cdiffraction.c check_cpu_auto.c closest.c connectedpixels.c "+\
-    "darkflat.c localmaxlabel.c sparse_image.c").split()
+sources = ("blobs.c cdiffraction.c check_cpu_auto.c closest.c " + \
+    "connectedpixels.c darkflat.c localmaxlabel.c sparse_image.c").split()
 
 plat = platform.system()
 bits = platform.architecture()[0]
@@ -59,12 +59,24 @@ else:
     avx2arg = sse2arg = arg = [ ]
 
 def run_cc( cc, plat, bits, vers, name, flags, libname ):
-    objs = cc.compile( sources , output_dir=tmpdir+vers, extra_preargs = flags )
+    objs = cc.compile( sources ,
+                       output_dir=libname.replace("cImageD11_",""),
+                       extra_preargs = flags )
     ok = cc.create_static_lib( objs, libname, output_dir="." )
     return libname
+
+def make_pyf( inp, name ):
+    out = open(name+".pyf", "w")
+    out.write("python module %s\n"%(name))
+    out.write( open(inp , "r").read() )
+    out.write("end python module %s\n"%(name))
+    out.close()
+    
 
 if __name__=="__main__":
     cc = distutils.ccompiler.new_compiler( verbose=1  )
     cc.add_include_dir( "." )
     sse2lib = run_cc(cc, plat, bits, vers, "sse2", sse2arg, sse2libname )
     avx2lib = run_cc(cc, plat, bits, vers, "avx2", avx2arg, avx2libname )
+    make_pyf( "cImageD11_interface.pyf", "cImageD11_sse2")
+    make_pyf( "cImageD11_interface.pyf", "cImageD11_avx2")

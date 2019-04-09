@@ -41,16 +41,22 @@ if "build" in sys.argv:
     Should learn to use build_clib at some point
     """
     os.chdir("src")
+    print("Call write_check")
     os.system("python write_check.py")
+    print("Call bldlib")
     ok = os.system("python bldlib.py")
     os.chdir("..")
     if ok != 0:
-        print("Returns was",ok)
+        print("Return was",ok)
         sys.exit(ok)
+    else:
+        print("Seems to build OK")
 
 
 ekwds = { 'include_dirs' : [get_include(), 'src' ],
           'library_dirs' : ['./src'],
+          'extra_compile_args' : src.bldlib.arg,
+          'extra_link_args' : src.bldlib.arg
         }
 
 # Compiled extensions:

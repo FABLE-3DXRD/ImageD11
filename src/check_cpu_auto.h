@@ -1,4 +1,15 @@
 
+
+#ifndef _write_check_h
+#define _write_check_h
+
+#define NCALL 8
+
+extern uint32_t idBits[4 * NCALL];
+extern int needread;
+
+#define EAXMAX 0
+
 void readcpuid(void);
 uint32_t maxcall(void);
 int flag_SSE(void);
@@ -14,6 +25,8 @@ int flag_AVX(void);
 int flag_AVX2(void);
 int flag_AVX512F(void);
 int i_have_SSE2(void);
+int i_have_SSE42(void);
 int i_have_AVX(void);
 int i_have_AVX2(void);
 int i_have_AVX512F(void);
+#endif

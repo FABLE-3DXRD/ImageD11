@@ -5,3 +5,5 @@ cImageD11_????module.c
 *.a
 *.o
 *.lib
+cImageD11_avx2.pyf
+cImageD11_sse2.pyf

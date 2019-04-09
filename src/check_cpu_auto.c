@@ -19,6 +19,9 @@
 #include "cImageD11.h"
 #include "check_cpu_auto.h"
 
+uint32_t idBits[4 * NCALL];
+int needread = 1;
+
 /* Use static globals here 
 /* Results of calls to cpuid 
 /* Stuff to look for : EAX call, A|B|C|D, bit position 
@@ -32,7 +35,8 @@
  *  3  : Processor Serial Number
  * EAX=4 and EAX=Bh: Intel thread/core and cache topology
  * EAX=7, ECX=0: Extended Features
- * EAX=80000000h: Get Highest Extended Function Implemented : The highest calling parameter is returned in EAX.
+ * EAX=80000000h: Get Highest Extended Function Implemented : 
+ *                The highest calling parameter is returned in EAX.
  * EAX=80000001h: Extended Processor Info and Feature Bits
  * EAX=80000002h,80000003h,80000004h: Processor Brand String
  * EAX=80000005h: L1 Cache and TLB Identifiers
@@ -42,18 +46,13 @@
  * EAX=8FFFFFFFh: AMD Easter Egg
  */
 
-#define NCALL 8
-
-static uint32_t idBits[4 * NCALL];
-static int needread = 1;
-
-#define EAXMAX 0
 
 
 /**
  * Calls cpuid and stores results of eax,ebx,ecx,edx in idBits[op*4:op*4+4]
  * __cpuid_count needed for > XXX
  */
+#include <stdio.h>
 void readcpuid( ) {
   // MSVC and gcc both provide a __cpuid function
   uint32_t j, i;
@@ -74,6 +73,11 @@ void readcpuid( ) {
       __cpuidex( &idBits[i*4], i, 0 );
       #endif
         if( i > idBits[EAXMAX] ) break;
+
+/*      printf("readcpiud : %d ",i);
+      for(j=0;j<4;j++){ printf(" %08x ", idBits[i*4+j]); }
+      printf("\n");
+*/
       i++;
       
     }
@@ -161,6 +165,9 @@ int flag_AVX512F(){
 
 int i_have_SSE2(){
   return (flag_SSE2()>0);
+}
+int i_have_SSE42(){
+  return (flag_SSE42()>0);
 }
 int i_have_AVX(){
     return (flag_XSAVE()>0)&(flag_OSXSAVE()>0)&(flag_AVX()>0);
