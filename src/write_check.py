@@ -1,5 +1,5 @@
 
-from __future__ import print_function
+from __future__ import print_function, division
 
 f = open("check_cpu_auto.c", "w")
 h = open("check_cpu_auto.h", "w")
@@ -8,14 +8,8 @@ h.write("""
 
 #ifndef _write_check_h
 #define _write_check_h
+void readcpuid( unsigned int leaf, unsigned int subleaf, unsigned int idBits[4] );
 
-#define NCALL 8
-
-
-#define EAXMAX 0
-
-void readcpuid(void);
-uint32_t maxcall(void);
 """)
 
 f.write("""
@@ -26,10 +20,9 @@ f.write("""
  *
  * https://en.wikipedia.org/wiki/CPUID
  *
- * See: http://newbiz.github.io/cpp/2010/12/20/Playing-with-cpuid.html
- * ... with corrections and modifications...
  */
 
+#include <stdio.h>
 
 #ifdef _MSC_VER
     #include <intrin.h>
@@ -39,10 +32,7 @@ f.write("""
 #include "cImageD11.h"
 #include "check_cpu_auto.h"
 
-static uint32_t idBits[4 * NCALL];
-static int needread = 1;
-
-/* Use static globals here 
+/* DO NOT Use static globals here 
 /* Results of calls to cpuid 
 /* Stuff to look for : EAX call, A|B|C|D, bit position 
  *  0  : {B,D,C} = name, A = maxcall
@@ -67,42 +57,19 @@ static int needread = 1;
  */
 
 
-
 /**
  * Calls cpuid and stores results of eax,ebx,ecx,edx in idBits[op*4:op*4+4]
  * __cpuid_count needed for > XXX
  */
-#include <stdio.h>
-void readcpuid( ) {
+void readcpuid( unsigned int leaf, unsigned int subleaf, unsigned int idBits[4] ) {
+  int j;
   // MSVC and gcc both provide a __cpuid function
-  uint32_t j, i;
-  #ifdef __GNUC__
-  uint32_t  a, b, c, d;
+  for(j=0;j<4;j++) idBits[j]=0;
+  #if defined(__GNUC__)
+   __get_cpuid_count( leaf, subleaf, &idBits[0], &idBits[1], &idBits[2], &idBits[3]);
+  #elif defined(_WIN32)
+  __cpuidex( &idBits[0], leaf, subleaf );
   #endif
-  if( needread ){
-    for(j=0;j<4*NCALL;j++) idBits[j]=0;
-    i = 0;
-    while(i<=NCALL){
-      #if defined(__GNUC__)
-      __cpuid_count( i, 0, a, b, c, d);
-      idBits[i*4  ] = a;
-      idBits[i*4+1] = b;
-      idBits[i*4+2] = c;
-      idBits[i*4+3] = d;
-      #elif defined(_WIN32)
-      __cpuidex( &idBits[i*4], i, 0 );
-      #endif
-        if( i > idBits[EAXMAX] ) break;
-
-/*      printf("readcpiud : %d ",i);
-      for(j=0;j<4;j++){ printf(" %08x ", idBits[i*4+j]); }
-      printf("\\n");
-*/
-      i++;
-      
-    }
-    needread = 0;
-  }
 }
 
 
@@ -112,7 +79,8 @@ void readcpuid( ) {
  *             contain the name of the processor.
  */
 void cpuidProcessorName( char* name ){
-  readcpuid();
+  unsigned int idBits[4];
+  readcpuid( 0, 0, idBits );
   name[0]  = (idBits[1]    ) & 0xFF;
   name[1]  = (idBits[1]>> 8) & 0xFF;
   name[2]  = (idBits[1]>>16) & 0xFF;
@@ -128,10 +96,6 @@ void cpuidProcessorName( char* name ){
   name[12] = 0;
 }
 
-uint32_t maxcall(){
-    readcpuid();
-    return idBits[0];
-}
 
 
 """)
@@ -151,8 +115,9 @@ for name, byte, bit in [
     ("AVX512F",29,16),
     ]:
     func = "int flag_%s(){\n"%(name) + \
-           " if(needread) readcpuid();\n" + \
-           " return (idBits[%d] & ( 1 << %d))>0;\n}\n"%(byte,bit)
+           " unsigned int idBits[4];\n" + \
+           " readcpuid( %d , 0, idBits );\n"%(byte//4) + \
+           " return (idBits[%d] & ( 1 << %d))>0;\n}\n"%(byte%4,bit)
     f.write(func)
     h.write("int flag_%s(void);\n"%(name))
 

@@ -2,14 +2,8 @@
 
 #ifndef _write_check_h
 #define _write_check_h
+void readcpuid( unsigned int leaf, unsigned int subleaf, unsigned int idBits[4] );
 
-#define NCALL 8
-
-
-#define EAXMAX 0
-
-void readcpuid(void);
-uint32_t maxcall(void);
 int flag_SSE(void);
 int flag_SSE2(void);
 int flag_SSE3(void);

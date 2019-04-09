@@ -13,7 +13,7 @@ int main(){
     int i;
     char name[13];  
     cpuidProcessorName( name );
-    printf("%s,  maxcall %d\n",name, maxcall());
+    printf("%s\n",name);
     printf("SSE2 %d\n", i_have_SSE2());
     printf("SSE42 %d\n", i_have_SSE42());
     printf("AVX %d\n", i_have_AVX());

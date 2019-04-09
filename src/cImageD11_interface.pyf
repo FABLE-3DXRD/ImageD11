@@ -55,7 +55,6 @@ PyDict_SetItemString(d,str(detz),PyInt_FromLong(detz));
 
 PyDict_SetItemString(d,str(NPROPERTY),PyInt_FromLong(NPROPERTY));
 
-readcpuid();
 PyDict_SetItemString(d,str(got_AVX2),PyInt_FromLong(i_have_AVX2()));
 PyDict_SetItemString(d,str(got_SSE2),PyInt_FromLong(i_have_SSE2()));
 
