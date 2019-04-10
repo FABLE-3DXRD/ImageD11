@@ -50,10 +50,10 @@ for a in sys.argv:
 
 if plat == "Linux" or compiler == "mingw32":
     arg=["-O2", "-fopenmp", "-fPIC", "-std=c99" ]
-    sse2arg = arg + ["-msse2"]
+    sse2arg = arg + ["-msse4.2"]
     avx2arg = arg + ["-mavx"]
     # link args
-    lsse2arg = arg + ["-msse2"]
+    lsse2arg = arg + ["-msse4.2"]
     lavx2arg = arg + ["-mavx"]
 elif plat == "Windows":
     arg=["/Ox", "/openmp" ]

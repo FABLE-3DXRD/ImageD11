@@ -1,6 +1,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 #include "cImageD11.h"
 
 #include <omp.h>
@@ -20,6 +21,7 @@
  #ifdef __SSE2__
   #include <x86intrin.h>
   #include <emmintrin.h>
+  #include <xmmintrin.h>
   #define cast128i(X)  ((__m128i)(X))
   #ifdef __AVX__
    #include <immintrin.h>
@@ -37,35 +39,60 @@
  *  otherwise o[ l-1 ] give the offset
  */
 
+#define pick(A,B,I,J) \
+  if( (A) > (B) ){    \
+  (B)=(A);            \
+  (I)=(J);            \
+  }
+
 void neighbormax(const float *restrict im,	// input
 		 int32_t * restrict lout,	// output
 		 uint8_t * restrict l,	// workspace temporary
 		 int dim0,	// Image dimensions
 		 int dim1,
 		 int o[10]){
-    int i, j, p, iq, k;
-    float mx;    
+  int i, j, p, iq, k0, k1, k2;
+  float mx0, mx1, mx2;
+    assert( (o[1]+1) == o[4] );
+    assert( (o[2]+1) == o[5] );
+    assert( (o[3]+1) == o[6] );
+    assert( (o[1]+2) == o[7] );
+    assert( (o[2]+2) == o[8] );
+    assert( (o[3]+2) == o[9] );
+    
+    /* The image borders */
     for (i = 0; i < dim0; i++) {	// first and last row here:
 	lout[i] = 0;		// ends of rows are below
 	l[i] = 0;
 	lout[dim1 * (dim0 - 1) + i] = 0;
 	l[dim1 * (dim0 - 1) + i] = 0;
-    }
-#pragma omp parallel for private( j, p, iq, k, mx ) 
+    }  
+#pragma omp parallel for private( j, p, iq, k0, k1, k2, mx0, mx1, mx2 )
     for (i = dim1; i < (dim0 - 1) * dim1; i = i + dim1) {	// skipping 1 pixel border
 	lout[i] = 0;		// set edges to zero: pixel j=0:
 	l[i] = 0;
+
+	p=i+1;
+	mx0 = im[ p + o[1] ];
+	k0 = 1;
+	pick( im[ p + o[2] ] , mx0 , k0, 2 );
+	pick( im[ p + o[3] ] , mx0 , k0, 3 );
+	mx1 = im[ p + o[4] ];
+	pick( im[ p + o[5] ] , mx1 , k1, 5 );
+	pick( im[ p + o[6] ] , mx1 , k1, 6 );
 	for (j = 1; j < dim1 - 1; j++) {
 	    p = i + j;
-	    mx = im[p + o[1]];
-	    iq = 1;
-	    for (k = 2; k < 10; k++) {
-		if (im[p + o[k]] > mx) {
-		    iq = k;
-		    mx = im[p + o[k]];
-		}
-	    }
-	    l[p] = iq;
+	    mx2 = im[p + o[7]];
+	    k2 = 7;
+	    pick( im[ p + o[8] ] , mx2 , k2, 8 );
+	    pick( im[ p + o[9] ] , mx2 , k2, 9 );
+	    pick( mx1, mx0, k0, k1);
+	    pick( mx2, mx0, k0, k2);
+	    l[p] = k0;
+	    mx0 = mx1;
+	    k0 = k1-3;
+	    mx1 = mx2;
+	    k1 = k2-3;
 	}
 	// set edges to zero: pixel j=dim1:
 	lout[i + dim1 - 1] = 0;
@@ -77,7 +104,7 @@ void neighbormax(const float *restrict im,	// input
 
 
 
-void neighbormax_sse2(const float *restrict im,	// input
+void neighbormax_sse2_old(const float *restrict im,	// input
 		      int32_t * restrict lout,	// output
 		      uint8_t * restrict l,	// workspace temporary
 		      int dim0,	// Image dimensions
@@ -137,6 +164,68 @@ void neighbormax_sse2(const float *restrict im,	// input
     l[i + dim1 - 1] = 0;
   }				// i
 }
+
+
+#define pick_sse2(A,B,I,J,M)	        \
+  (M) = _mm_cmpgt_ps( (A), (B) );       \
+  (B) = _mm_blendv_ps( (B), (A), (M) ); \
+  (I) = _mm_blendv_ps( (I), (J), (M) ); \
+
+
+
+void neighbormax_sse2(const float *restrict im,	// input
+		      int32_t * restrict lout,	// output
+		      uint8_t * restrict l,	// workspace temporary
+		      int dim0,	// Image dimensions
+		      int dim1,
+		      int o[10]){
+  __m128 mxq, msk, one, iqp, ik, mxp;
+  int i, j, p, iq, k;
+  float mx;
+  // Set edges to zero (background label)
+  for (i = 0; i < dim0; i++) {	// first and last row here:
+    lout[i] = 0;		// ends of rows are below
+    l[i] = 0;
+    lout[dim1 * (dim0 - 1) + i] = 0;
+    l[dim1 * (dim0 - 1) + i] = 0;
+  }
+#pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq)
+  for (i = dim1; i < (dim0 - 1) * dim1; i = i + dim1) {	// skipping 1 pixel border
+    lout[i] = 0;		// set edges to zero: pixel j=0:
+    l[i] = 0;
+    p = i+1;
+    one = _mm_set1_ps( 1.0 );    
+    for (j = 1; j < dim1 - 1 - 4; j = j + 4) {	// do 4 pixels at a time with sse2
+      p = i + j;
+      mxp = _mm_loadu_ps(&im[p + o[1]]);	// SSE load 4 floats
+      iqp = one;
+      ik  = one;
+      for (k = 2; k < 10; k++) {
+	ik  = _mm_add_ps(ik, one );
+	mxq = _mm_loadu_ps(&im[p + o[k]]);
+	pick_sse2( mxq,  mxp, iqp, ik, msk);
+      }			// k neighbors
+      // Write results (note epi16 is sse2)
+      _mm_stream_si32( (int*) &l[p],  _mm_cvtsi64_si32( _mm_cvtps_pi8( iqp )));
+    }
+    for (; j < dim1 - 1; j++) {	// end of simd loop, continues on j from for
+      p = i + j;
+      mx = im[p + o[1]];
+      iq = 1;
+      for (k = 2; k < 10; k++) {
+	if (im[p + o[k]] > mx) {
+	  iq = k;
+	  mx = im[p + o[k]];
+	}
+      }
+      l[p] = iq;
+    }
+    // set edges to zero: pixel j=dim1:
+    lout[i + dim1 - 1] = 0;
+    l[i + dim1 - 1] = 0;
+  }				// i
+}
+
 
 #ifdef __AVX__
 void neighbormax_avx(const float *restrict im,	// input
@@ -236,10 +325,15 @@ int localmaxlabel(const float *restrict im,	// input
     int *npka;
     int noisy=0;
     double tic, toc;
-    int o[10] = { 0, // special case
+    /*    int o[10] = { 0, // special case
 		  -1 - dim1, -dim1, +1 - dim1,	// 1,2,3
 		  -1, 0, +1,		// 4,5,6
 		  -1 + dim1, +dim1, +1 + dim1
+		  }; */				// 7,8,9
+    int o[10] = { 0, // special case
+		  -1 - dim1, -1, -1 + dim1,
+		  -dim1, 0, +dim1,
+		  +1 - dim1, +1, +1 +dim1
     };				// 7,8,9
 
     // Fill in l to point to the maximum neighbor
