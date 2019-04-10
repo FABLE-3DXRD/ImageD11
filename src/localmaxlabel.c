@@ -208,7 +208,7 @@ void neighbormax_sse2(const float *restrict im,	// input
 	pick_sse2( mxq,  mxp, iqp, ik, msk);
       }			// k neighbors
       // Write results (note epi16 is sse2)
-      _mm_stream_si32( (int*) &l[p], _mm_cvtsi128_si32(_mm_shuffle_epi8( _mm_cvtps_epi32( iqp ), smsk));
+      _mm_stream_si32( (int*) &l[p], _mm_cvtsi128_si32(_mm_shuffle_epi8( _mm_cvtps_epi32( iqp ), smsk)));
 //      _mm_stream_si32( (int*) &l[p],  _mm_cvtsi64_si32( _mm_cvtps_pi8( iqp )));
     }
     for (; j < dim1 - 1; j++) {	// end of simd loop, continues on j from for
@@ -238,10 +238,12 @@ void neighbormax_avx(const float *restrict im,	// input
 		      int dim1,
 		      int o[10]){
   __m256i iqpi;
-  __m128i iqplo, iqphi;
+  __m128i iqplo, iqphi, smsk;
   __m256 mxp, mxq, msk, one, iqp, ik;
   int i, j, p, iq, k;
   float mx;
+    smsk = _mm_set_epi8( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 8, 4, 0 );
+
   // Set edges to zero (background label)
   for (i = 0; i < dim0; i++) {	// first and last row here:
     lout[i] = 0;		// ends of rows are below
@@ -270,6 +272,10 @@ void neighbormax_avx(const float *restrict im,	// input
       }			// k neighbors
       iqpi =  _mm256_cvtps_epi32(iqp);
       iqplo = _mm256_extractf128_si256( iqpi, 0);
+      iqphi = _mm256_extractf128_si256( iqpi, 1);
+      _mm_stream_si32( (int*) &l[p], _mm_cvtsi128_si32(_mm_shuffle_epi8( iqplo , smsk)));
+      _mm_stream_si32( (int*) &l[p+4], _mm_cvtsi128_si32(_mm_shuffle_epi8( iqphi , smsk)));
+/*
       l[p+0] = (uint8_t) _mm_extract_epi16(iqplo, 0);
       l[p+1] = (uint8_t) _mm_extract_epi16(iqplo, 2);
       l[p+2] = (uint8_t) _mm_extract_epi16(iqplo, 4);
@@ -278,7 +284,7 @@ void neighbormax_avx(const float *restrict im,	// input
       l[p+4] = (uint8_t) _mm_extract_epi16(iqphi, 0);
       l[p+5] = (uint8_t) _mm_extract_epi16(iqphi, 2);
       l[p+6] = (uint8_t) _mm_extract_epi16(iqphi, 4);
-      l[p+7] = (uint8_t) _mm_extract_epi16(iqphi, 6);
+      l[p+7] = (uint8_t) _mm_extract_epi16(iqphi, 6);*/
       // Count peaks in here? ... was better in separate loop
     }
     for (; j < dim1 - 1; j++) {	// end of simd loop, continues on j from for
