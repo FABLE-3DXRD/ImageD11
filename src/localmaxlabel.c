@@ -180,6 +180,7 @@ void neighbormax_sse2(const float *restrict im,	// input
 		      int dim1,
 		      int o[10]){
   __m128 mxq, msk, one, iqp, ik, mxp;
+  __m128i smsk;
   int i, j, p, iq, k;
   float mx;
   // Set edges to zero (background label)
@@ -189,6 +190,7 @@ void neighbormax_sse2(const float *restrict im,	// input
     lout[dim1 * (dim0 - 1) + i] = 0;
     l[dim1 * (dim0 - 1) + i] = 0;
   }
+  smsk = _mm_set_epi8( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 8, 4, 0 );
 #pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq)
   for (i = dim1; i < (dim0 - 1) * dim1; i = i + dim1) {	// skipping 1 pixel border
     lout[i] = 0;		// set edges to zero: pixel j=0:
@@ -206,7 +208,8 @@ void neighbormax_sse2(const float *restrict im,	// input
 	pick_sse2( mxq,  mxp, iqp, ik, msk);
       }			// k neighbors
       // Write results (note epi16 is sse2)
-      _mm_stream_si32( (int*) &l[p],  _mm_cvtsi64_si32( _mm_cvtps_pi8( iqp )));
+      _mm_stream_si32( (int*) &l[p], _mm_cvtsi128_si32(_mm_shuffle_epi8( _mm_cvtps_epi32( iqp ), smsk));
+//      _mm_stream_si32( (int*) &l[p],  _mm_cvtsi64_si32( _mm_cvtps_pi8( iqp )));
     }
     for (; j < dim1 - 1; j++) {	// end of simd loop, continues on j from for
       p = i + j;
