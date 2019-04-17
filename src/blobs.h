@@ -96,6 +96,18 @@ enum {
     NPROPERTY			/* Number of properties if starting at 0 */
 };
 
+DLL_PUBLIC
+enum {
+  s2D_1 = 0,
+  s2D_I,
+  s2D_fI,
+  s2D_sI,
+  s2D_ffI,
+  s2D_sfI,
+  s2D_ssI,
+  NPROPERTY2D
+};
+
 /*void new_blob(double blob[], int i, int j, double val);*/
 
 DLL_LOCAL

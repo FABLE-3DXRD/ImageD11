@@ -58,6 +58,8 @@ PyDict_SetItemString(d,str(NPROPERTY),PyInt_FromLong(NPROPERTY));
 PyDict_SetItemString(d,str(got_AVX),PyInt_FromLong(i_have_AVX()));
 PyDict_SetItemString(d,str(got_SSE2),PyInt_FromLong(i_have_SSE2()));
 
+
+
 '''
 end interface
 
@@ -111,6 +113,32 @@ interface
         threadsafe
     end subroutine blobproperties
 
+    subroutine sparse_blob2Dproperties( v, i, j, nnz, labels, npk, results)
+    	intent(c) sparse_blob2Dproperties
+        intent(c)
+        real, intent(in), dimension(nnz) :: v
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(v) :: nnz = shape( v, 0)
+	integer, intent(in), dimension(nnz) :: labels
+        integer, intent(in) :: npk
+        double precision, intent(out) :: results( npk, NPROPERTY2D )
+    end subroutine sparse_blob2Dproperties
+
+    function sparse_localmaxlabel( v, i, j, nnz, MV, iMV, labels)
+    	intent(c) sparse_localmaxlabel
+        intent(c)
+        real, intent(in), dimension(nnz) :: v
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(v) :: nnz = shape( v, 0)
+	real, intent(inout) :: MV( nnz )	 
+	integer, intent(inout) :: iMV( nnz )
+	integer, intent(inout) :: labels( nnz )
+	! returns
+	integer ::  sparse_localmaxlabel
+    end function sparse_localmaxlabel
+    
     subroutine blob_moments( results, np )
         intent(c) blob_moments
         intent(c)
