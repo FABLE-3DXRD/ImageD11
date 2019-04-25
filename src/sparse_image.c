@@ -3,6 +3,7 @@
 #include <stdio.h>		/* printf */
 #include <stdlib.h>		/* abs(int) */
 #include <string.h>		/* memset */
+#include <assert.h>		
 #include <omp.h>
 #include "blobs.h"
 
@@ -491,3 +492,135 @@ int sparse_localmaxlabel(float *restrict v,
   return pp;
 }
 
+
+
+int sparse_overlaps(uint16_t * restrict i1,
+		    uint16_t * restrict j1,
+		    int * restrict k1,
+		    int nnz1,
+		    uint16_t * restrict i2,
+		    uint16_t * restrict j2,
+		    int * restrict k2,
+		    int nnz2
+
+   )
+{
+  /*
+   * Identify the overlapping pixels that are common to both
+   *   i1[k1]==i2[k2] ; j1[k1]==j2[k2];
+   *   fill in k1/k2
+   */
+  int p1, p2, nhit;
+  p1 = 0;
+  p2 = 0;
+  nhit = 0;
+  while( (p1<nnz1) && (p2<nnz2) ){
+    /* Three cases:
+     * k1 and k2 are the same pixel or one or the other is ahead */
+    if( i1[p1] > i2[p2] ){
+      p2++;
+    } else if( i1[p1] < i2[p2] ) {
+      p1++;
+    } else { /* i1==i2 */
+      if( j1[p1] > j2[p2] ){
+	p2++;
+      } else if( j1[p1] < j2[p2] ){
+	p1++;
+      } else { /* i1=i2,j1=j2 */
+	k1[nhit] = p1;
+	k2[nhit] = p2;
+	nhit++;
+	p1++;
+	p2++;
+      }
+    }
+  }
+  for(p1=nhit; p1<nnz1 ; p1++) k1[p1]=0;
+  for(p2=nhit; p2<nnz2 ; p2++) k2[p2]=0;
+  return nhit;
+}
+
+/**
+ * On entry i, j = labels for paired pixels
+ *  ... overwrite in place
+ * On exit  i, j, oi = sorted pair labels, oi = count
+ * o, tmp are workspaces
+ */
+int  compress_duplicates( int * restrict i,
+			  int * restrict j,
+			  int * restrict oi,
+			  int * restrict oj,
+			  int * restrict tmp,
+			  int n,
+			  int nt){
+  int k, vmax, c, t, ik, jk;
+  /* First sort on j */
+  vmax = i[0];
+  for( k=0; k<n; k++ ){   /* length of histogram */
+    if( i[k] > vmax ) vmax = i[k];
+    if( j[k] > vmax ) vmax = j[k];
+  }
+  assert( vmax < nt );
+  for( k=0; k<=vmax; k++){ /* Zero the histogram */
+    tmp[k] = 0;
+  }
+  for( k=0; k<n; k++ ){   /* Make the histogram */
+    tmp[j[k]] = tmp[j[k]] + 1;
+  }
+  c = 0;
+  for( k=0; k<=vmax; k++ ){ /* Cumsum */
+    t = tmp[k];
+    tmp[k] = c;
+    c = c + t;
+  }
+  for( k=0; k<n; k++ ){   /* Now the order is: */
+    oi[tmp[j[k]]] = i[k];
+    oj[tmp[j[k]]] = j[k];
+    tmp[j[k]]++;
+  }
+  /* Now sort on i */
+  for( k=0; k<=vmax; k++){ /* Zero the histogram */
+    tmp[k] = 0;
+  }
+  for( k=0; k<n; k++ ){   /* Make the histogram */
+    tmp[i[k]]++;
+  }
+  c = 0;
+  for( k=0; k<=vmax; k++ ){ /* Cumsum */
+    t = tmp[k];
+    tmp[k] = c;
+    c = c + t;
+  }
+  for( k=0; k<n; k++ ){   /* Now the order is: */
+    /* t = order to read the original array to get sorted on j */
+    j[tmp[oi[k]]] = oj[k];
+    i[tmp[oi[k]]] = oi[k];
+    tmp[oi[k]]++;
+  }
+  /* init */
+  ik = i[0];
+  jk = j[0];
+  t = 1;  /* nhits */
+  c = 0;  /* write pos */
+  for( k=1; k<n; k++ ){
+    if( (ik == i[k]) && (jk == j[k]) ){
+      t++;   /* add one */
+    } else {
+      /* write prev */
+      i[c] = ik;
+      j[c] = jk;
+      oi[c] = t;
+      /* init next */
+      c++;
+      t=1;
+      ik=i[k];
+      jk=j[k];
+    }
+  }
+  /* write last */
+  i[c] = ik;
+  j[c] = jk;
+  oi[c] = t;
+  c++;
+  return c;
+}

@@ -55,6 +55,15 @@ PyDict_SetItemString(d,str(detz),PyInt_FromLong(detz));
 
 PyDict_SetItemString(d,str(NPROPERTY),PyInt_FromLong(NPROPERTY));
 
+PyDict_SetItemString(d,str(s2D_1),PyInt_FromLong(s2D_1));
+PyDict_SetItemString(d,str(s2D_I),PyInt_FromLong(s2D_I));
+PyDict_SetItemString(d,str(s2D_fI),PyInt_FromLong(s2D_fI));
+PyDict_SetItemString(d,str(s2D_sI),PyInt_FromLong(s2D_sI));
+PyDict_SetItemString(d,str(s2D_ffI),PyInt_FromLong(s2D_ffI));
+PyDict_SetItemString(d,str(s2D_sfI),PyInt_FromLong(s2D_sfI));
+PyDict_SetItemString(d,str(s2D_ssI),PyInt_FromLong(s2D_ssI));
+PyDict_SetItemString(d,str(PROP2D),PyInt_FromLong(NPROPERTY2D));
+
 PyDict_SetItemString(d,str(got_AVX),PyInt_FromLong(i_have_AVX()));
 PyDict_SetItemString(d,str(got_SSE2),PyInt_FromLong(i_have_SSE2()));
 
@@ -163,6 +172,32 @@ interface
         integer, intent(in) :: verbose = 0
     end subroutine bloboverlaps
 
+    function sparse_overlaps( i1, j1, k1, nnz1, &
+    	     		      i2, j2, k2, nnz2 )
+        intent(c) sparse_overlaps
+	intent(c)
+	integer(kind=-2), dimension(nnz1), intent(c) :: i1, j1
+	integer, intent(inout), dimension(nnz1) :: k1
+	integer, intent(hide), depend(i1), intent(c) :: nnz1=shape(i1,0)
+	integer(kind=-2), dimension(nnz2), intent(c) :: i2, j2
+	integer, intent(inout), dimension(nnz2) :: k2
+	integer, intent(hide), depend(i2), intent(c) :: nnz2=shape(i2,0)
+	! returns
+	integer :: sparse_overlaps
+    end function sparse_overlaps
+
+    function compress_duplicates( i, j, oi, oj, tmp, n, nt )
+    	intent(c) compress_duplicates
+	intent(c)
+	integer, dimension(n), intent(c) :: i, j
+	integer, dimension(n), intent(c, inout) :: oi, oj
+	integer, dimension(nt), intent(c, inout) :: tmp
+	integer, intent(hide), depend(i) :: n = shape(i,0)
+	integer, intent(hide), depend(tmp) :: nt = shape(tmp,0)
+	! returns
+	integer :: compress_duplicates
+    end function compress_duplicates
+    
     subroutine closest_vec( x, dim, nv, ic )
         intent(c) closest_vec
         intent(c)

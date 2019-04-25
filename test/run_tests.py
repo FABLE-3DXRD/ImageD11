@@ -26,7 +26,8 @@ modules = [
     "testcolfile2db.testcolfile2db",
     "ken_simul.testken",
     "testconnectedpixels.testconnectedpixels",
-    "testlabelimage.testlabelimage"
+    "testlabelimage.testlabelimage",
+    "test_compress_duplicates",
 ]
 
 if "all" in sys.argv:

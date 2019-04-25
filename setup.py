@@ -56,8 +56,10 @@ if "build" in sys.argv:
 
 ekwds = { 'include_dirs' : [get_include(), 'src' ],
           'library_dirs' : ['./src'],
-          'extra_compile_args' : src.bldlib.arg,
-          'extra_link_args' : src.bldlib.arg
+          'extra_compile_args' : src.bldlib.arg + \
+               ["-DF2PY_REPORT_ON_ARRAY_COPY=1.",],
+          'extra_link_args' : src.bldlib.arg + \
+               ["-DF2PY_REPORT_ON_ARRAY_COPY=1.",],
         }
 
 # Compiled extensions:
