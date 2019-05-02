@@ -115,10 +115,16 @@ class group:
                         if DEBUG: print("adding",c,"to group")
                         self.group.append(c)
 
+symcache = {}
+
 def generate_group(*args):
+    global symcache
+    if args in symcache:
+        return symcache[args]
     g=group()
     for a in args:
         g.additem(m_from_string(a))
+    symcache[args]=g
     return g
 
 
