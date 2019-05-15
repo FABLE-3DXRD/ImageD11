@@ -36,16 +36,18 @@ from numpy import get_include
 # Get the path for the static libraries        
 import src.bldlib
 
+
+
 if "build" in sys.argv:
     """ Ugly - requires setup.py build 
     Should learn to use build_clib at some point
     """
     os.chdir("src")
     print("Call write_check")
-    os.system("python write_check.py")
+    os.system(sys.executable+" write_check.py")
     print("Call bldlib")
     # transmit compiler from command line
-    ok = os.system("python bldlib.py "+ " ".join(sys.argv))
+    ok = os.system(sys.executable+" bldlib.py "+ " ".join(sys.argv))
     os.chdir("..")
     if ok != 0:
         print("Return was",ok)
