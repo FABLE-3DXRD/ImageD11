@@ -81,7 +81,7 @@ needed =[]
 
 # See the distutils docs...
 setup(name='ImageD11',
-      version='1.9.1',
+      version='1.9.2',
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',
