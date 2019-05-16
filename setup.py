@@ -36,16 +36,18 @@ from numpy import get_include
 # Get the path for the static libraries        
 import src.bldlib
 
+
+
 if "build" in sys.argv:
     """ Ugly - requires setup.py build 
     Should learn to use build_clib at some point
     """
     os.chdir("src")
     print("Call write_check")
-    os.system("python write_check.py")
+    os.system(sys.executable+" write_check.py")
     print("Call bldlib")
     # transmit compiler from command line
-    ok = os.system("python bldlib.py "+ " ".join(sys.argv))
+    ok = os.system(sys.executable+" bldlib.py "+ " ".join(sys.argv))
     os.chdir("..")
     if ok != 0:
         print("Return was",ok)
@@ -56,8 +58,10 @@ if "build" in sys.argv:
 
 ekwds = { 'include_dirs' : [get_include(), 'src' ],
           'library_dirs' : ['./src'],
-          'extra_compile_args' : src.bldlib.arg,
-          'extra_link_args' : src.bldlib.arg
+          'extra_compile_args' : src.bldlib.arg + \
+               ["-DF2PY_REPORT_ON_ARRAY_COPY=1.",],
+          'extra_link_args' : src.bldlib.arg + \
+               ["-DF2PY_REPORT_ON_ARRAY_COPY=1.",],
         }
 
 # Compiled extensions:
@@ -65,8 +69,8 @@ extensions = [ Extension( "cImageD11_sse2",
                           sources = ["src/cImageD11_sse2.pyf",],
                           libraries = [src.bldlib.sse2libname],
                           **ekwds ),
-               Extension( "cImageD11_avx2", 
-                          sources = ["src/cImageD11_avx2.pyf",],
+               Extension( "cImageD11_avx",
+                          sources = ["src/cImageD11_avx.pyf",],
                           libraries = [src.bldlib.avx2libname],
                           **ekwds) ]
 
@@ -79,7 +83,7 @@ needed =[]
 
 # See the distutils docs...
 setup(name='ImageD11',
-      version='1.9.1',
+      version='1.9.2',
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',

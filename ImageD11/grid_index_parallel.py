@@ -31,6 +31,9 @@ def domap(  pars,
     """
     mapping function - does what makemap.py does, but in a function
     """
+    if 'FITPOS' not in gridpars:
+        gridpars['FITPOS']=True
+        
     OmSlop = gridpars['OMEGAFLOAT']
     OmFloat= OmSlop > 0
     #
@@ -58,7 +61,13 @@ def domap(  pars,
         if gridpars['SYMMETRY'] is not "triclinic":
             o.makeuniq( gridpars['SYMMETRY'] )
         o.generate_grains()
-        o.refinepositions()
+        if gridpars['FITPOS']:
+            o.refinepositions()
+        else:
+            o.assignlabels()
+            for key in o.grains.keys():
+                g = o.grains[key]
+                g.set_ubi( o.refine( g.ubi, quiet=False ) )
         # This fills in the uniq for each grain
         o.savegrains( nulfile, sort_npks = False)
         gl = [ g for g in o.grains.values() if g.npks > gridpars['NPKS'] ]
@@ -322,6 +331,7 @@ gridpars = {
     'RING1'  : [5,10],
     'RING2' : [5,10],
     'NUL' : True,
+    'FITPOS' : True,
     'tolangle' : 0.25,
     'toldist' : 100.,
 }

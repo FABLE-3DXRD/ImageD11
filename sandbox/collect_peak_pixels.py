@@ -6,7 +6,8 @@ import numpy as np
 import scipy.sparse, h5py
 import fabio
 from ImageD11 import cImageD11
-
+#from .
+import sparse_peak_searching
 import sys, os, glob
 
 # Estimate a noise level and determine a threshold
@@ -37,7 +38,7 @@ def fix_frelon_lines(img, cut=None, block=256):
         cut = sigma_cut( img, nsigma=2 )
     assert img.shape[1]%block == 0
     blocked = np.reshape( np.where(img<cut, img, 0),
-                          (img.shape[0]*img.shape[1]/block, block) )
+                          (img.shape[0]*img.shape[1]//block, block) )
     drift = blocked.mean( axis=1 )
     corrected = np.reshape(img, blocked.shape) - drift[:, np.newaxis]
     return np.reshape( corrected, img.shape )
@@ -59,151 +60,89 @@ def binary_clean( mask ):
     return (mask > 0) & (m > 1)
 
 
-def to_scipy_csr( data, mask ):
+def to_coo( data, mask, name ):
     """
     Convert an image (2D, probably float) and mask (0 versus !0)
-    to a sparse csr array (could be more efficient...)
+    to a sparse array (could be more efficient...)
     """
     m = mask.astype(np.bool)
-    j = np.outer(np.ones(  data.shape[0], dtype=np.int32),
-                 np.arange(data.shape[1], dtype=np.int32)  )
-    indices = j[m]
-    indptr = np.concatenate( ((0,), np.cumsum( m.sum( axis=1 ))))
-    values = data[m]
-    obj = scipy.sparse.csr_matrix( ( values, indices, indptr ),
-                                   shape = data.shape )
+    j = np.outer(np.ones(  data.shape[0], dtype=np.uint16),
+                 np.arange(data.shape[1], dtype=np.uint16)  )
+    ind0, ind1 = j.T[m], j[m]
+    # round to the nearest 0.125
+    values = np.round( data[m] * 8 ) / 8
+    obj = sparse_peak_searching.sparse_frame( ind0, ind1, values,
+                                              shape = data.shape,
+                                              name = name)
     return obj
 
-
-def write_csr_to_hdf( vals, fname, pname, opts ):
-    """
-    vals = sparse values to be stored
-    fname = hdf file
-    pname = hdf path
-
-    opts = compression options
-         { shuffle : [True|False],
-           compression : ["gzip" | "lzf" | ...  ],
-           compression_opts : [ 0-9 | None] }
-
-    Saves :
-       data/indices/indptr from scipy.sparse.csr_matrix
-       .attrs["h5sparse_shape"]=shape
-       .attrs["h5sparse_format"]='csr'
-
-    TODO?: labels for peak labelling
-
-    See also:
-       https://github.com/appier/h5sparse
-       https://falexwolf.de/blog/171212_sparse_matrices_with_h5py/
-       https://anndata.readthedocs.io/en/latest/
-       ... Jerome Kieffer mentioned NXsparse for Nexus/SILX ...
-    """
-    h = h5py.File( fname )
-    g = h.require_group( pname )
-    g.require_dataset( "data",  
-                       vals.data.shape,
-                       vals.data.dtype,
-                       data=vals.data,
-                       **opts )
-    g.require_dataset( "indices",
-                       vals.indices.shape,
-                       vals.indices.dtype,
-                       data=vals.indices,                      
-                       **opts )
-    g.require_dataset( "indptr",
-                       vals.indptr.shape,
-                       vals.indptr.dtype,
-                       data=vals.indptr,
-                       **opts )
-    g.attrs['h5sparse_format']="csr"
-    g.attrs['h5sparse_shape']=vals.shape
-    h.close()
     
-                       
-def read_csr_from_hdf( fname, pname ):
-    """
-    Reads a sparse matrix from a hdf file(fname)/group(pname)
-    """
-    h = h5py.File( fname )
-    p = h[pname]
-    shape = p.attrs['h5sparse_shape']
-    assert p.attrs['h5sparse_format'] == 'csr'
-    vals = p['data'][:]
-    indices = p['indices'][:]
-    indptr = p['indptr'][:]
-    obj = scipy.sparse.csr_matrix( ( vals, indices, indptr ), shape=shape )
-    return obj
-    
-    
-def check_eq_csr( o1, o2 ):
-    """ For debugging : compare two sparse images as equal or not """
-    if o1.nnz != o2.nnz:
-        return False
-    if ~(o1.indptr == o2.indptr).all():
-        return False
-    if ~(o1.indices == o2.indices).all():
-        return False
-    return np.allclose(o1.data, o2.data)
-
-
-def csr_join( args ):
-    """ 
-    Concatenate a bunch of csr together
-    """
-    shapes = [a.shape for a in args]
-    s0 = np.sum( [ a.shape[0] for a in args] ) # nrows
-    s1 = a[0].shape[1]                         # ncols
-    for a in args:
-        assert a.shape[1] == s1
-    nnz = np.sum( [ a.nnz for a in args ] )
-    ip  = np.zeros( s0+1, np.int32 )
-    i0=1
-    for a in args:
-        ip[i0:i0+s1] = a.indptr[1:] + ip[i0-1]
-        i0 += s1
-    data    = np.concatenate( [ a.data    for a in args] )
-    indices = np.concatenate( [ a.indices for a in args] )
-    obj = scipy.sparse.csr_matrix( (data, indices, ip), shape = (s0, s1) )
-    return obj
-    
-def segment( fname , bg):
+def segment( fname, bg ):
     """ Does a segmentation of a single file/frame """
-    imb = fabio.open(fname).data - bg
-    imc=fix_frelon_lines( imb, block=128 )
-    s=sigma_cut(imc)
+    imo = fabio.open(fname)
+    imb = imo.data.astype( np.float32 )  - bg
+    #print (type(imb))
+    imc = fix_frelon_lines( imb, block=128 )
+    s = sigma_cut(imc)
     m = imc > s
-    cleanmask=m.astype(np.int8)
+    cleanmask = m.astype(np.int8)
     cImageD11.clean_mask( m.astype(np.int8), cleanmask )
-    spar = to_scipy_csr( imc, cleanmask )
+    spar = to_coo( imc, cleanmask, fname )
+    spar.sigma_cut = s
+    spar.con_labels()
+    spar.max_labels()
+    print(fname,spar.nmlabel)
     return spar
 
-def segment_folder( folder , nimages=900, extn=".edf.gz",
-                    opts =  { "compression" : "lzf",
-                              "shuffle" : True }):
+def write_frames_to_hdf( frames,
+                         hdfname,
+                         hdffolder,
+                         opts ):
+    h = h5py.File( hdfname, "w" )
+    for f in frames:
+        f.tohdf( h )
+    h.close()
+
+
+
+def segment_folder( folder , nimages=900
+                    , extn=".edf.gz" ):
     print("Starting", folder)
+    bg = fabio.open("pks/bkg.edf").data
     start = time.time()
     fnames = [ os.path.join( folder, folder + "%04d%s"%(i, extn)) for i
-               in range(nimages) ]
-    bg = fabio.open("pks/bkg.edf").data
+               in range(nimages) ]    
     spars = [segment(fname, bg) for fname in fnames ]
+    return (spars, folder)
+
+
+def dofolder(f):
+    start = time.time()
+    spars, folder = segment_folder( f )
     print("Segmented", folder, time.time()-start)
-    blob3d = csr_join( spars )
-    hname = "hdfs/%s.hdf"%(folder)
-    write_csr_to_hdf( blob3d, hname, folder, opts )
+    hname = "hdfs3/%s.hdf"%(folder)
+    opts =  { "compression" : "gzip",
+              "compression_opts" : 4 }
+    sparse_peak_searching.sparse_frames_to_hdf( hname, f, spars )
+    #write_frames_to_hdf( spars, hname, folder, opts )
     print("Wrote", folder, time.time()-start)
-    return hname
+
+if __name__=="__main__":
+    folders =[ f for f in sorted( glob.glob("Au6_s0*") ) if os.path.isdir(f) ]
+    if not os.path.exists("hdfs3"):
+        os.mkdir("hdfs3")
+    if 1:
+        import multiprocessing
+        p = multiprocessing.Pool( processes = multiprocessing.cpu_count() )
+        for x in p.map(dofolder, folders):
+            pass
+    else:
+        for x in folders:
+            dofolder(x)
 
 
 
 
-
-
-folders = sorted( glob.glob("Au6_s0*") )
-import multiprocessing
-p = multiprocessing.Pool( multiprocessing.cpu_count()//2 )
-for x in p.imap( segment_folder, folders ):
-    print("Done",x)
 
     
 

@@ -1,6 +1,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 #include "cImageD11.h"
 
 #include <omp.h>
@@ -9,7 +10,7 @@
 #ifdef _MSC_VER
  #include <intrin.h>
  #define cast128i(X)  (_mm_castps_si128((X)))
- #ifdef __AVX2__
+ #ifdef __AVX__
   #include <immintrin.h>
   #define cast256i(X)  (_mm256_castps_si256(X))
 
@@ -20,8 +21,9 @@
  #ifdef __SSE2__
   #include <x86intrin.h>
   #include <emmintrin.h>
+  #include <xmmintrin.h>
   #define cast128i(X)  ((__m128i)(X))
-  #ifdef __AVX2__
+  #ifdef __AVX__
    #include <immintrin.h>
    #define cast256i(X)  ((__m256i)(X))
   #endif
@@ -37,35 +39,60 @@
  *  otherwise o[ l-1 ] give the offset
  */
 
+#define pick(A,B,I,J) \
+  if( (A) > (B) ){    \
+  (B)=(A);            \
+  (I)=(J);            \
+  }
+
 void neighbormax(const float *restrict im,	// input
 		 int32_t * restrict lout,	// output
 		 uint8_t * restrict l,	// workspace temporary
 		 int dim0,	// Image dimensions
 		 int dim1,
 		 int o[10]){
-    int i, j, p, iq, k;
-    float mx;    
+  int i, j, p, iq, k0, k1, k2;
+  float mx0, mx1, mx2;
+    assert( (o[1]+1) == o[4] );
+    assert( (o[2]+1) == o[5] );
+    assert( (o[3]+1) == o[6] );
+    assert( (o[1]+2) == o[7] );
+    assert( (o[2]+2) == o[8] );
+    assert( (o[3]+2) == o[9] );
+    
+    /* The image borders */
     for (i = 0; i < dim0; i++) {	// first and last row here:
 	lout[i] = 0;		// ends of rows are below
 	l[i] = 0;
 	lout[dim1 * (dim0 - 1) + i] = 0;
 	l[dim1 * (dim0 - 1) + i] = 0;
-    }
-#pragma omp parallel for private( j, p, iq, k, mx ) 
+    }  
+#pragma omp parallel for private( j, p, iq, k0, k1, k2, mx0, mx1, mx2 )
     for (i = dim1; i < (dim0 - 1) * dim1; i = i + dim1) {	// skipping 1 pixel border
 	lout[i] = 0;		// set edges to zero: pixel j=0:
 	l[i] = 0;
+
+	p=i+1;
+	mx0 = im[ p + o[1] ];
+	k0 = 1;
+	pick( im[ p + o[2] ] , mx0 , k0, 2 );
+	pick( im[ p + o[3] ] , mx0 , k0, 3 );
+	mx1 = im[ p + o[4] ];
+	pick( im[ p + o[5] ] , mx1 , k1, 5 );
+	pick( im[ p + o[6] ] , mx1 , k1, 6 );
 	for (j = 1; j < dim1 - 1; j++) {
 	    p = i + j;
-	    mx = im[p + o[1]];
-	    iq = 1;
-	    for (k = 2; k < 10; k++) {
-		if (im[p + o[k]] > mx) {
-		    iq = k;
-		    mx = im[p + o[k]];
-		}
-	    }
-	    l[p] = iq;
+	    mx2 = im[p + o[7]];
+	    k2 = 7;
+	    pick( im[ p + o[8] ] , mx2 , k2, 8 );
+	    pick( im[ p + o[9] ] , mx2 , k2, 9 );
+	    pick( mx1, mx0, k0, k1);
+	    pick( mx2, mx0, k0, k2);
+	    l[p] = k0;
+	    mx0 = mx1;
+	    k0 = k1-3;
+	    mx1 = mx2;
+	    k1 = k2-3;
 	}
 	// set edges to zero: pixel j=dim1:
 	lout[i + dim1 - 1] = 0;
@@ -77,7 +104,7 @@ void neighbormax(const float *restrict im,	// input
 
 
 
-void neighbormax_sse2(const float *restrict im,	// input
+void neighbormax_sse2_old(const float *restrict im,	// input
 		      int32_t * restrict lout,	// output
 		      uint8_t * restrict l,	// workspace temporary
 		      int dim0,	// Image dimensions
@@ -138,16 +165,22 @@ void neighbormax_sse2(const float *restrict im,	// input
   }				// i
 }
 
-#ifdef __AVX2__
-void neighbormax_avx2(const float *restrict im,	// input
+
+#define pick_sse2(A,B,I,J,M)	        \
+  (M) = _mm_cmpgt_ps( (A), (B) );       \
+  (B) = _mm_blendv_ps( (B), (A), (M) ); \
+  (I) = _mm_blendv_ps( (I), (J), (M) ); \
+
+
+
+void neighbormax_sse2(const float *restrict im,	// input
 		      int32_t * restrict lout,	// output
 		      uint8_t * restrict l,	// workspace temporary
 		      int dim0,	// Image dimensions
 		      int dim1,
 		      int o[10]){
-  __m256i one, iqp, ik, imsk;
-  __m128i iqplo, iqphi;
-  __m256 mxp, mxq, msk;
+  __m128 mxq, msk, one, iqp, ik, mxp;
+  __m128i smsk;
   int i, j, p, iq, k;
   float mx;
   // Set edges to zero (background label)
@@ -157,49 +190,101 @@ void neighbormax_avx2(const float *restrict im,	// input
     lout[dim1 * (dim0 - 1) + i] = 0;
     l[dim1 * (dim0 - 1) + i] = 0;
   }
-#pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq, imsk, iqplo, iqphi)
+  smsk = _mm_set_epi8( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 8, 4, 0 );
+#pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq)
   for (i = dim1; i < (dim0 - 1) * dim1; i = i + dim1) {	// skipping 1 pixel border
     lout[i] = 0;		// set edges to zero: pixel j=0:
     l[i] = 0;
-    one = _mm256_set1_epi32(1); // AVX
+    p = i+1;
+    one = _mm_set1_ps( 1.0 );    
+    for (j = 1; j < dim1 - 1 - 4; j = j + 4) {	// do 4 pixels at a time with sse2
+      p = i + j;
+      mxp = _mm_loadu_ps(&im[p + o[1]]);	// SSE load 4 floats
+      iqp = one;
+      ik  = one;
+      for (k = 2; k < 10; k++) {
+	ik  = _mm_add_ps(ik, one );
+	mxq = _mm_loadu_ps(&im[p + o[k]]);
+	pick_sse2( mxq,  mxp, iqp, ik, msk);
+      }			// k neighbors
+      // Write results (note epi16 is sse2)
+      _mm_stream_si32( (int*) &l[p], _mm_cvtsi128_si32(_mm_shuffle_epi8( _mm_cvtps_epi32( iqp ), smsk)));
+//      _mm_stream_si32( (int*) &l[p],  _mm_cvtsi64_si32( _mm_cvtps_pi8( iqp )));
+    }
+    for (; j < dim1 - 1; j++) {	// end of simd loop, continues on j from for
+      p = i + j;
+      mx = im[p + o[1]];
+      iq = 1;
+      for (k = 2; k < 10; k++) {
+	if (im[p + o[k]] > mx) {
+	  iq = k;
+	  mx = im[p + o[k]];
+	}
+      }
+      l[p] = iq;
+    }
+    // set edges to zero: pixel j=dim1:
+    lout[i + dim1 - 1] = 0;
+    l[i + dim1 - 1] = 0;
+  }				// i
+}
+
+
+#ifdef __AVX__
+void neighbormax_avx(const float *restrict im,	// input
+		      int32_t * restrict lout,	// output
+		      uint8_t * restrict l,	// workspace temporary
+		      int dim0,	// Image dimensions
+		      int dim1,
+		      int o[10]){
+  __m256i iqpi;
+  __m128i iqplo, iqphi, smsk;
+  __m256 mxp, mxq, msk, one, iqp, ik;
+  int i, j, p, iq, k;
+  float mx;
+    smsk = _mm_set_epi8( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 8, 4, 0 );
+
+  // Set edges to zero (background label)
+  for (i = 0; i < dim0; i++) {	// first and last row here:
+    lout[i] = 0;		// ends of rows are below
+    l[i] = 0;
+    lout[dim1 * (dim0 - 1) + i] = 0;
+    l[dim1 * (dim0 - 1) + i] = 0;
+  }
+#pragma omp parallel for private( j, p, iq, k, mx, mxp, iqp, ik, one, msk, mxq, iqpi, iqplo, iqphi)
+  for (i = dim1; i < (dim0 - 1) * dim1; i = i + dim1) {	// skipping 1 pixel border
+    lout[i] = 0;		// set edges to zero: pixel j=0:
+    l[i] = 0;
+//    one = _mm256_set1_epi32(1); // AVX
+    one = _mm256_set1_ps(1.0); // AVX
     for (j = 1; j < dim1 - 1 - 8; j = j + 8) {	// do 8 pixels at a time with sse2
       p = i + j;
       mxp = _mm256_loadu_ps(&im[p + o[1]]);	// AVX load 8 floats
       iqp = one;		// current selection
       ik = one;		// to increment
       for (k = 2; k < 10; k++) {
-	ik = _mm256_add_epi32(ik, one);	// AVX2+ 
+	ik = _mm256_add_ps(ik, one);	// AVX 
 	mxq = _mm256_loadu_ps(&im[p + o[k]]);	// load vector of floats
 	msk = _mm256_cmp_ps(mxq, mxp, _CMP_GT_OQ);	// AVX for q > p
 	// apply mask to max (mxq/mxp) and to index (iqp/ik)
 	mxp = _mm256_or_ps(_mm256_and_ps(msk, mxq), _mm256_andnot_ps(msk, mxp));
-	imsk = cast256i(msk);	// AVX for q > p
-	iqp = _mm256_or_si256(_mm256_and_si256(imsk, ik), _mm256_andnot_si256(imsk, iqp));
+	iqp = _mm256_or_ps(_mm256_and_ps(msk,  ik), _mm256_andnot_ps(msk, iqp));
       }			// k neighbors
-      // Write results (note epi16 is sse2)
-      #ifdef _MSC_VER
-      // actually not only msvc, so a specific version
-      iqplo = _mm256_extractf128_si256 (iqp, 0);
-      // epi16 + cast is sse2, epi8 would be sse4.1
-      l[p]     = (uint8_t) _mm_extract_epi16(iqplo, 0);
-      l[p + 1] = (uint8_t) _mm_extract_epi16(iqplo, 2);
-      l[p + 2] = (uint8_t) _mm_extract_epi16(iqplo, 4);
-      l[p + 3] = (uint8_t) _mm_extract_epi16(iqplo, 6);
-      iqphi = _mm256_extractf128_si256 (iqp, 1);
-      l[p + 4] = (uint8_t) _mm_extract_epi16(iqphi, 0);
-      l[p + 5] = (uint8_t) _mm_extract_epi16(iqphi, 2);
-      l[p + 6] = (uint8_t) _mm_extract_epi16(iqphi, 4);
-      l[p + 7] = (uint8_t) _mm_extract_epi16(iqphi, 6);
-      #else      
-      l[p]     = (uint8_t) _mm256_extract_epi8(iqp, 0);
-      l[p + 1] = (uint8_t) _mm256_extract_epi8(iqp, 4);
-      l[p + 2] = (uint8_t) _mm256_extract_epi8(iqp, 8);
-      l[p + 3] = (uint8_t) _mm256_extract_epi8(iqp,12);
-      l[p + 4] = (uint8_t) _mm256_extract_epi8(iqp,16);
-      l[p + 5] = (uint8_t) _mm256_extract_epi8(iqp,20);
-      l[p + 6] = (uint8_t) _mm256_extract_epi8(iqp,24);
-      l[p + 7] = (uint8_t) _mm256_extract_epi8(iqp,28);
-      #endif
+      iqpi =  _mm256_cvtps_epi32(iqp);
+      iqplo = _mm256_extractf128_si256( iqpi, 0);
+      iqphi = _mm256_extractf128_si256( iqpi, 1);
+      _mm_stream_si32( (int*) &l[p], _mm_cvtsi128_si32(_mm_shuffle_epi8( iqplo , smsk)));
+      _mm_stream_si32( (int*) &l[p+4], _mm_cvtsi128_si32(_mm_shuffle_epi8( iqphi , smsk)));
+/*
+      l[p+0] = (uint8_t) _mm_extract_epi16(iqplo, 0);
+      l[p+1] = (uint8_t) _mm_extract_epi16(iqplo, 2);
+      l[p+2] = (uint8_t) _mm_extract_epi16(iqplo, 4);
+      l[p+3] = (uint8_t) _mm_extract_epi16(iqplo, 6);
+      iqphi = _mm256_extractf128_si256( iqpi, 1);
+      l[p+4] = (uint8_t) _mm_extract_epi16(iqphi, 0);
+      l[p+5] = (uint8_t) _mm_extract_epi16(iqphi, 2);
+      l[p+6] = (uint8_t) _mm_extract_epi16(iqphi, 4);
+      l[p+7] = (uint8_t) _mm_extract_epi16(iqphi, 6);*/
       // Count peaks in here? ... was better in separate loop
     }
     for (; j < dim1 - 1; j++) {	// end of simd loop, continues on j from for
@@ -220,7 +305,7 @@ void neighbormax_avx2(const float *restrict im,	// input
   }				// i
 }
 #else
-void neighbormax_avx2(const float *restrict im,	// input
+void neighbormax_avx(const float *restrict im,	// input
 		      int32_t * restrict lout,	// output
 		      uint8_t * restrict l,	// workspace temporary
 		      int dim0,	// Image dimensions
@@ -234,7 +319,7 @@ void neighbormax_avx2(const float *restrict im,	// input
 		       o);
 }
 #endif
-//AVX2
+//AVX
 
 int localmaxlabel(const float *restrict im,	// input
 		  int32_t * restrict lout,	// output
@@ -249,17 +334,22 @@ int localmaxlabel(const float *restrict im,	// input
     int *npka;
     int noisy=0;
     double tic, toc;
-    int o[10] = { 0, // special case
+    /*    int o[10] = { 0, // special case
 		  -1 - dim1, -dim1, +1 - dim1,	// 1,2,3
 		  -1, 0, +1,		// 4,5,6
 		  -1 + dim1, +dim1, +1 + dim1
+		  }; */				// 7,8,9
+    int o[10] = { 0, // special case
+		  -1 - dim1, -1, -1 + dim1,
+		  -dim1, 0, +dim1,
+		  +1 - dim1, +1, +1 +dim1
     };				// 7,8,9
 
     // Fill in l to point to the maximum neighbor
     // Fills edges in lout to zero too
     //   cpu 0 = vanilla, silent
     //   cpu 1 = sse
-    //   cpu 2 = avx2
+    //   cpu 2 = avx
     //   
     if( cpu > 9){
       cpu -= 10;
@@ -268,8 +358,8 @@ int localmaxlabel(const float *restrict im,	// input
     }
     switch(cpu){
     case 2:
-      if(noisy) printf("Using avx2 instructions\n");
-      neighbormax_avx2( im, lout, l, dim0, dim1, o);
+      if(noisy) printf("Using avx instructions\n");
+      neighbormax_avx( im, lout, l, dim0, dim1, o);
       break;
     case 1:
       if(noisy) printf("Using sse2 instructions\n");

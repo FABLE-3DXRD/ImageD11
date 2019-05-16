@@ -37,7 +37,7 @@ plat = platform.system()
 bits = platform.architecture()[0]
 vers = "%d.%d"%(sys.version_info[:2])
 tmpdir = "%s_%s_%s"%(plat, bits, vers)
-avx2libname = "cImageD11_"+tmpdir+"_avx2"
+avx2libname = "cImageD11_"+tmpdir+"_avx"
 sse2libname = "cImageD11_"+tmpdir+"_sse2"
 
 
@@ -50,16 +50,16 @@ for a in sys.argv:
 
 if plat == "Linux" or compiler == "mingw32":
     arg=["-O2", "-fopenmp", "-fPIC", "-std=c99" ]
-    sse2arg = arg + ["-msse2"]
-    avx2arg = arg + ["-mavx2"]
+    sse2arg = arg + ["-msse4.2"]
+    avx2arg = arg + ["-mavx"]
     # link args
-    lsse2arg = arg + ["-msse2"]
-    lavx2arg = arg + ["-mavx2"]
+    lsse2arg = arg + ["-msse4.2"]
+    lavx2arg = arg + ["-mavx"]
 elif plat == "Windows":
     arg=["/Ox", "/openmp" ]
     # the /arch switches are ignored by the older MSVC compilers
     sse2arg = arg + ["/arch:SSE2",]
-    avx2arg = arg + ["/arch:AVX2",]
+    avx2arg = arg + ["/arch:AVX",]
     lsse2arg = []
     lavx2arg = []
 else:
@@ -84,6 +84,6 @@ if __name__=="__main__":
     cc = distutils.ccompiler.new_compiler( verbose=1 , compiler=compiler )
     cc.add_include_dir( "." )
     sse2lib = run_cc(cc, plat, bits, vers, "sse2", sse2arg, sse2libname )
-    avx2lib = run_cc(cc, plat, bits, vers, "avx2", avx2arg, avx2libname )
+    avx2lib = run_cc(cc, plat, bits, vers, "avx", avx2arg, avx2libname )
     make_pyf( "cImageD11_interface.pyf", "cImageD11_sse2")
-    make_pyf( "cImageD11_interface.pyf", "cImageD11_avx2")
+    make_pyf( "cImageD11_interface.pyf", "cImageD11_avx")

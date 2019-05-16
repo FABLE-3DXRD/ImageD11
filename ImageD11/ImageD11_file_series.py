@@ -9,6 +9,7 @@ import fabio.file_series
 import fabio.fabioimage
 import fabio.openimage
 import numpy, h5py
+import gzip, bz2
 
 def get_options(parser):
 
@@ -169,3 +170,59 @@ def get_series_from_options( options, args ):
                                      dark, flood) 
     
 
+
+def getedfheader(filename):
+    """
+    Reads a header from an edf file in 1024 byte chunks.
+    Assumes enclosing { }
+    Returns string enclosed
+    Adds a filename key at the top
+    """
+    h = "filename = "
+    if filename[-3:]==".gz":
+        fp=gzip.GzipFile(filename,"rb")
+    elif filename [-4:]==".bz2":
+        fp=bz2.BZ2File(filename,"rb")
+    else:
+        try:
+            fp=open(filename,"rb")
+        except IOError:
+            return ""
+    h=h+filename+";\n"
+    s=fp.read(1024)
+    if s.find("{")==-1:
+        raise Exception("Not an edf file")
+    while 1:
+        if s.find("}")>=0:
+            h=h+s[0:s.find("}")+2]
+            break
+        else:
+            h=h+s
+        s=fp.read(1024)
+    return h
+
+def motor_mne(hd):
+    """
+    expands the _mne and _pos header items of edf headers
+    """
+    h = {}
+    order = []
+    for line in hd.split(";"):
+        try:
+            key,vals = line.split("=")
+        except ValueError:
+            continue
+        key = key.lstrip().rstrip()
+        h[key] = vals.split(";")[0]
+        order.append( key )
+    for k in order:
+        if k.endswith("_mne"):
+            stem = k.split("_")[0]
+            p = k.replace("_mne","_pos")
+            newkeys = h[k].split()
+            newvals = h[p].split()
+            for ik, iv in zip(newkeys, newvals):
+                kk = stem+":"+ik
+                h[kk]=iv
+                order.append( kk )
+    return h, order

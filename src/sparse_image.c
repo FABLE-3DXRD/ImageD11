@@ -3,6 +3,7 @@
 #include <stdio.h>		/* printf */
 #include <stdlib.h>		/* abs(int) */
 #include <string.h>		/* memset */
+#include <assert.h>		
 #include <omp.h>
 #include "blobs.h"
 
@@ -161,7 +162,12 @@ int sparse_is_sorted(uint16_t i[], uint16_t j[], int nnz)
  */
 
 #define NOISY 0
-int sparse_connectedpixels(float *restrict v, uint16_t * restrict i, uint16_t * restrict j, int nnz, float threshold, int32_t * restrict labels	/* nnz */
+int sparse_connectedpixels(float *restrict v,
+			   uint16_t * restrict i,
+			   uint16_t * restrict j,
+			   int nnz,
+			   float threshold,
+			   int32_t * restrict labels	/* nnz */
     )
 {
     int k, p, pp, ir;
@@ -250,8 +256,13 @@ int sparse_connectedpixels(float *restrict v, uint16_t * restrict i, uint16_t * 
  */
 
 #define NOISY 0
-int sparse_connectedpixels_splat(float *restrict v, uint16_t * restrict i, uint16_t * restrict j, int nnz, float threshold, int32_t * restrict labels,	/* nnz */
-				 int32_t * restrict Z,	/* workspace, at least (imax+2)*(jmax+2) */
+int sparse_connectedpixels_splat(float *restrict v,
+				 uint16_t * restrict i,
+				 uint16_t * restrict j,
+				 int nnz, float threshold,
+				 int32_t * restrict labels,	/* nnz */
+				 int32_t * restrict Z,
+				 /* workspace, at least (imax+2)*(jmax+2) */
 				 int imax, int jmax)
 {
     int k, p, pp, ir, jdim, ik, jk;
@@ -356,4 +367,260 @@ int sparse_connectedpixels_splat(float *restrict v, uint16_t * restrict i, uint1
 	printf("Free %f ms\n", 1000 * (mid - start));
     }
     return np;
+}
+
+
+
+
+/* blob_properties for sparse - in image only... */
+void sparse_blob2Dproperties(float * restrict data,
+			     uint16_t * restrict i,
+			     uint16_t * restrict j,
+			     int nnz,
+			     int32_t * restrict labels,
+			     int32_t npk,
+			     double * restrict res){
+  int k, kpk, f, s;
+  double fval;
+  /* init to zero */
+  for(k=0; k<(npk*NPROPERTY2D); k++) {
+    res[k]=0.0;
+  }
+  /*  printf("nnz : %d\n",nnz); */
+  for(k=0; k<nnz; k++){
+    kpk = (labels[k]-1) * NPROPERTY2D;
+    fval = (double) data[k];
+    s = (int) i[k];
+    f = (int) j[k];
+    res[ kpk + s2D_1 ] += 1.;
+    res[ kpk + s2D_I ] += fval;
+    res[ kpk + s2D_fI ] += (fval * f);
+    res[ kpk + s2D_sI ] += (fval * s);
+    res[ kpk + s2D_ffI ] += (fval * f * f );
+    res[ kpk + s2D_sfI ] += (fval * s * f );
+    res[ kpk + s2D_ssI ] += (fval * s * s );
+  }
+}
+
+
+
+
+int sparse_localmaxlabel(float *restrict v,
+			 uint16_t * restrict i,
+			 uint16_t * restrict j,
+			 int nnz,
+			 float * restrict MV, // neighbor Max Val (of 3x3 square)
+			 int32_t * restrict iMV,  // Which neighbor is higher?
+			 int32_t * restrict labels  // Which neighbor is higher?
+    )
+{
+  int k, p, pp, ir;
+  /* Read k = kurrent
+     p = prev */
+  if(NOISY){
+    k = sparse_is_sorted(i, j, nnz);
+    if (k != 0){
+      printf("Not sorted! k=%d\n", k );
+    }
+  }
+  /* prev row */
+  pp = 0;
+  p = 0;
+  /* Main loop */
+  for (k = 0; k < nnz; k++) {
+    iMV[k] = k;   /* iMV[k] == k tags a max */
+    MV[k] = v[k]; /* MV[k] is value of that max - a temporary */
+    /* previous row first */
+    ir = i[k] - 1;
+    /* pp should be on row above, on or after j-1 */
+    while (ir > i[pp])
+      pp++;
+    /* skip if nothing on row above */
+    if (i[pp] < i[k]) {
+      /* Locate previous pixel on row above */
+      while (((j[k] - j[pp]) > 1) && (i[pp] == ir))
+	pp++;
+      /* Now the 3 pixels on the row above, if they are present */
+      for (p = pp; j[p] <= j[k] + 1; p++) {
+	if (i[p] != ir ) break;
+	if( v[k] > v[p] ){ /* This one is higher */
+	  /* Steal if we are higher than neighbor currently points to */
+	  if( v[k] > MV[p] ){
+	    iMV[p] = k;
+	    MV[p] = v[k];
+	  }
+	} else {
+	  if( v[p] > MV[k] ){
+	    iMV[k] = p;
+	    MV[k] = v[p];	    
+	  }
+	}
+      } /* 3 previous */
+    } /* row above */
+    /* 4 preceding neighbors : k-1 is prev */
+    p = k - 1;	
+    if( (i[k] == i[p] ) && (j[k] == (j[p]+1) ) ){ /* previous pixel, same row */
+      if( v[k] >  v[p] ){ /* This one is higher */
+	/* Steal if we are higher than neighbor currently points to */
+	if( v[k] > MV[p] ){
+	  iMV[p] = k;
+	  MV[p] = v[k];
+	}
+      } else if( v[p] > MV[k] ) { /* Previous one was higher */
+       	iMV[k] = p;
+	MV[k] = v[p];
+      }
+    }
+  }				// end loop over data
+  /* Count max values and assign unique labels */
+  pp = 0;
+  for( k=0; k<nnz; k++){
+    labels[k] = -1;
+    if( iMV[k] == k ){
+      pp = pp + 1; /* Labels start at one */
+      labels[k] = pp;
+    }
+  }
+  /* Now make all labels point to their root */
+  for( k=0; k<nnz; k++){
+    p = iMV[k];
+    while( iMV[p] != p ){
+      p = iMV[p];
+    }
+    labels[k] = labels[p];
+  }
+  return pp;
+}
+
+
+
+int sparse_overlaps(uint16_t * restrict i1,
+		    uint16_t * restrict j1,
+		    int * restrict k1,
+		    int nnz1,
+		    uint16_t * restrict i2,
+		    uint16_t * restrict j2,
+		    int * restrict k2,
+		    int nnz2
+
+   )
+{
+  /*
+   * Identify the overlapping pixels that are common to both
+   *   i1[k1]==i2[k2] ; j1[k1]==j2[k2];
+   *   fill in k1/k2
+   */
+  int p1, p2, nhit;
+  p1 = 0;
+  p2 = 0;
+  nhit = 0;
+  while( (p1<nnz1) && (p2<nnz2) ){
+    /* Three cases:
+     * k1 and k2 are the same pixel or one or the other is ahead */
+    if( i1[p1] > i2[p2] ){
+      p2++;
+    } else if( i1[p1] < i2[p2] ) {
+      p1++;
+    } else { /* i1==i2 */
+      if( j1[p1] > j2[p2] ){
+	p2++;
+      } else if( j1[p1] < j2[p2] ){
+	p1++;
+      } else { /* i1=i2,j1=j2 */
+	k1[nhit] = p1;
+	k2[nhit] = p2;
+	nhit++;
+	p1++;
+	p2++;
+      }
+    }
+  }
+  for(p1=nhit; p1<nnz1 ; p1++) k1[p1]=0;
+  for(p2=nhit; p2<nnz2 ; p2++) k2[p2]=0;
+  return nhit;
+}
+
+/**
+ * On entry i, j = labels for paired pixels
+ *  ... overwrite in place
+ * On exit  i, j, oi = sorted pair labels, oi = count
+ * o, tmp are workspaces
+ */
+int  compress_duplicates( int * restrict i,
+			  int * restrict j,
+			  int * restrict oi,
+			  int * restrict oj,
+			  int * restrict tmp,
+			  int n,
+			  int nt){
+  int k, vmax, c, t, ik, jk;
+  /* First sort on j */
+  vmax = i[0];
+  for( k=0; k<n; k++ ){   /* length of histogram */
+    if( i[k] > vmax ) vmax = i[k];
+    if( j[k] > vmax ) vmax = j[k];
+  }
+  assert( vmax < nt );
+  for( k=0; k<=vmax; k++){ /* Zero the histogram */
+    tmp[k] = 0;
+  }
+  for( k=0; k<n; k++ ){   /* Make the histogram */
+    tmp[j[k]] = tmp[j[k]] + 1;
+  }
+  c = 0;
+  for( k=0; k<=vmax; k++ ){ /* Cumsum */
+    t = tmp[k];
+    tmp[k] = c;
+    c = c + t;
+  }
+  for( k=0; k<n; k++ ){   /* Now the order is: */
+    oi[tmp[j[k]]] = i[k];
+    oj[tmp[j[k]]] = j[k];
+    tmp[j[k]]++;
+  }
+  /* Now sort on i */
+  for( k=0; k<=vmax; k++){ /* Zero the histogram */
+    tmp[k] = 0;
+  }
+  for( k=0; k<n; k++ ){   /* Make the histogram */
+    tmp[i[k]]++;
+  }
+  c = 0;
+  for( k=0; k<=vmax; k++ ){ /* Cumsum */
+    t = tmp[k];
+    tmp[k] = c;
+    c = c + t;
+  }
+  for( k=0; k<n; k++ ){   /* Now the order is: */
+    /* t = order to read the original array to get sorted on j */
+    j[tmp[oi[k]]] = oj[k];
+    i[tmp[oi[k]]] = oi[k];
+    tmp[oi[k]]++;
+  }
+  /* init */
+  ik = i[0];
+  jk = j[0];
+  t = 1;  /* nhits */
+  c = 0;  /* write pos */
+  for( k=1; k<n; k++ ){
+    if( (ik == i[k]) && (jk == j[k]) ){
+      t++;   /* add one */
+    } else {
+      /* write prev */
+      i[c] = ik;
+      j[c] = jk;
+      oi[c] = t;
+      /* init next */
+      c++;
+      t=1;
+      ik=i[k];
+      jk=j[k];
+    }
+  }
+  /* write last */
+  i[c] = ik;
+  j[c] = jk;
+  oi[c] = t;
+  c++;
+  return c;
 }
