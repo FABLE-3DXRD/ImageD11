@@ -628,6 +628,9 @@ class indexer:
                 npks=[cImageD11.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist] 
                 choice = np.argmax(npks)
                 UBI = self.unitcell.UBIlist[choice]
+                if npks[choice] < npk:
+                    print("Error in indexing: debug please!")
+                    #import pdb; pdb.set_trace()
                 npk = npks[choice]
                 _ = cImageD11.score_and_refine( UBI, gv, tol )
                 # See if we already have this grain...
