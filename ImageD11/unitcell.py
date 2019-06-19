@@ -436,27 +436,29 @@ class unitcell:
         # trim to uniq list? What about small distortions...
         self.UBIlist = ubi_equiv( self.UBIlist, UBlist )
 
-HKL0 = np.array( [ [0,0,1,1,1,0,1], 
-                   [0,1,0,1,0,1,1],
-                   [1,0,0,0,1,0,1] ], np.float ) # first unit cell
+HKL0 = np.array( [ [0,0,1,1,-1,1,-1,0, 0, 1, -1, 1, 1],
+                   [0,1,0,1, 1,0, 0,1,-1, 1,  1,-1, 1],
+                   [1,0,0,0, 0,1, 1,1, 1, 1,  1, 1,-1] ], np.float ) # first unit cell
                  
 def ubi_equiv( ubilist, ublist, tol=1e-8):
+    """ Two ubi are considered equivalent if they both index the peaks
+    in the HKL0 array exactly"""
     if len(ubilist) == 1:
         return ubilist
     order = np.argsort( [np.trace( ubi ) for ubi in ubilist ] ) # low to high
     uniq = [ ubilist[ order[-1] ], ]
     refgv = [ np.dot( ublist[ order[-1]] , HKL0 ), ]
-    for i in order[1:][::-1]:
-        ubi = ubilist[order[i]]
+    for i in order[:-1][::-1]:
+        ubi = ubilist[i]
         score = 1
-        for pks in refgv:
+        for pks in refgv: # pks is (n,3) for an orientation
             hcalc = np.dot( ubi, pks )
             score = min(score, np.abs( np.round( hcalc ) - hcalc).sum() )
-            if score <= tol:
+            if score <= tol: # matches a previous grain
                 break
-        if score > tol:
+        if score > tol: # is a new orientation
             uniq.append( ubi )
-            refgv.append( np.dot( np.linalg.inv( uniq[-1] ) , HKL0 ) )
+            refgv.append( np.dot( np.linalg.inv( ubi ) , HKL0 ) )
     return uniq
     
 
