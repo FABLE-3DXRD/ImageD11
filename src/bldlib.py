@@ -31,7 +31,7 @@ import setuptools
 import distutils.ccompiler
 
 sources = ("blobs.c cdiffraction.c closest.c connectedpixels.c"+
- " darkflat.c localmaxlabel.c sparse_image.c").split()
+ " darkflat.c localmaxlabel.c sparse_image.c splat.c").split()
 
 plat = platform.system()
 bits = platform.architecture()[0]
