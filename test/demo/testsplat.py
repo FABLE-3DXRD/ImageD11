@@ -1,6 +1,14 @@
 from __future__ import print_function, division
 from ImageD11 import cImageD11, indexing
-from time import perf_counter_ns
+
+
+try:
+    from time import perf_counter_ns
+except:
+    from time import time
+    def perf_counter_ns():
+        return time()*1e9
+
 import numpy as np
 i = indexing.indexer()
 i.readgvfile("eu3.gve")
