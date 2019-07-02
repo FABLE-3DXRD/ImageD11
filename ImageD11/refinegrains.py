@@ -667,9 +667,6 @@ class refinegrains:
             for ig, g in enumerate(self.grainnames):
                 gr = self.grains[ ( g, s) ]
                 self.set_translation( g, s)
-                gr.peaks_xyz = peaks_xyz
-                gr.om = self.scandata[s].omega
-                gr.omega_calc=self.scandata[s].omega*0 
                 cImageD11.compute_gv( peaks_xyz,
                     self.scandata[s].omega,
                     omegasign,
@@ -678,16 +675,6 @@ class refinegrains:
                     chi,
                     gr.translation,
                     gv)
-                if False: # For testing / debugging  
-                    omf  =  self.OMEGA_FLOAT 
-                    self.OMEGA_FLOAT = False
-                    gv2 = self.gv.copy()
-                    self.compute_gv( gr )
-                    import pylab
-                    pylab.plot( self.gv[:,0], self.gv[:,0]-gv2[:,0], ".")
-                    pylab.plot( self.gv[:,1], self.gv[:,1]-gv2[:,1], ".")
-                    pylab.plot( self.gv[:,2], self.gv[:,2]-gv2[:,2], ".")
-                    pylab.title("C")
                 cImageD11.score_and_assign( gr.ubi,
                                             gv,
                                             self.tolerance,
@@ -749,6 +736,7 @@ class refinegrains:
                 gr.sc = numpy.take( sc, ind)
                 gr.fc = numpy.take( fc, ind)
                 gr.om = numpy.take(self.scandata[s].omega , ind)
+                gr.omega_calc = gr.om.copy()
                 gr.npks = len(gr.ind)
                 self.set_translation( g, s)
                 try:
