@@ -1,30 +1,34 @@
-
+from __future__ import print_function, division
 
 from ImageD11 import sym_u
 from ImageD11 import grain
 import sys, numpy as np, xfab.tools
 
-print "# Usage: %s grains1.map grains2.map group angletol  distancetol"%(sys.argv[0])
-print "# Matches grains using symmetry group from:  "
-print "#  [cubic|hexagonal|trigonal|rhombohedralP|tetragonal|orthorhombic|monoclinic_[a|b|c]|triclinic]"
+print ("# Usage: %s grains1.map grains2.map group angletol  distancetol"%(sys.argv[0]))
+print ("# Matches grains using symmetry group from:  ")
+print ("#  [cubic|hexagonal|trigonal|rhombohedralP|tetragonal|orthorhombic|monoclinic_[a|b|c]|triclinic]")
 
 
 g1l = grain.read_grain_file(sys.argv[1])
 g2l = grain.read_grain_file(sys.argv[2])
+for g in g1l + g2l:
+    if g.translation is None:
+        g.translation = np.zeros(3)
 
-print "read in the grains"
+print( "read in the grains")
 
 try:
     h = getattr( sym_u, sys.argv[3] )()
 except:
-    print "# No group!"
-    print "#Using cubic"
+    print( "# No group!")
+    print( "#Using cubic")
     h = sym_u.cubic()
-print "# Symmetry considered"
-for o in h.group:
-    print o
+    print ("Made a cubic group")
 
-print "Made a cubic group"
+print ( "# Symmetry considered")
+for o in h.group:
+    print(o)
+
 try:
     tolangle = float(sys.argv[4])
 except:
@@ -92,15 +96,12 @@ for i,g1 in enumerate(g1l):
             #print "# Found a match!", h.group[sg].ravel()
             dtsum += dt
             ndt += 1
-            print i,j,"angle  %.4f"%(angle),"distance %.3f"%(np.sqrt(dT2[j])),"\t",
-            print 3*"%.1f "%tuple(dt),"\t",
-            print 3*"%.1f "%tuple(dtsum/ndt)
-            #print "# grain ubi,t"
-            #print g1.ubi,g1.translation
-            #print g2.ubi,g2.translation
+            print( i,j,"angle  %.4f"%(angle),"distance %.3f"%(np.sqrt(dT2[j])),"\t", end="")
+            print( 3*"%.1f "%tuple(dt),"\t",end="")
+            print( 3*"%.1f "%tuple(dtsum/ndt))
             printed = True
     if not printed:
-        print "# not matched %d "%(i)
+        print ("# not matched %d "%(i))
 
 
 
