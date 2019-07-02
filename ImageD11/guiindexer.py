@@ -30,6 +30,41 @@ Owner of the plot3d window
 
 from .listdialog import listdialog
 from . import twodplot
+import threading
+try:
+    import Tkinter as Tk
+except:
+    import tkinter as Tk
+
+
+class run_idx:
+    def __init__(self, parent, idxer):
+        self.top = Tk.Toplevel(parent)
+        self.label = Tk.Label(self.top, text="Found so far %8d"%(0))
+        self.label.pack()
+        self.btn = Tk.Button(self.top, text="Stop", command=self.stop)
+        self.btn.pack()
+        self.idxer = idxer
+        self.thr = threading.Thread( target=self.idxer.score_all_pairs )
+        self.thr.start()
+        self.top.after(1000, self.update)
+
+    def stop(self):
+        self.label.configure(text="Got a stop, so far %8d"%(len(self.idxer.ubis)))
+        self.btn.configure(text='Stopping')
+        self.idxer.stop=True
+        self.thr.join()
+        self.top.destroy()
+
+    def update(self):
+        self.label.configure( text="Tested %8d of %8d\nFound so far %8d"%(
+            self.idxer.tried,
+            self.idxer.npairs,
+            len(self.idxer.ubis)) )
+        if self.idxer.tried == self.idxer.npairs:
+            self.top.destroy()
+        else:
+            self.top.after(1000, self.update)
 
 
 class guiindexer:
@@ -50,6 +85,7 @@ class guiindexer:
                              ( "Make Friedel pair file", 5, self.makefriedel),
                              ( "Generate trial orientations",0, self.find),
                              ( "Score trial orientations",0, self.scorethem),
+                             ( "Auto-find",2, self.autofind),
                              ( "Histogram fit quality",0, self.histogram_drlv_fit),
                              ( "Save parameters", 0, self.saveparameters),
                              ( "Save UBI matrices", 5, self.saveubis),
@@ -57,6 +93,11 @@ class guiindexer:
                              ( "Reset indexer",0,self.reset),
                            ] )
         self.plot3d=None
+
+    def autofind(self):
+        self.parent.guicommander.commandscript += "myindexer.score_all_pairs()\n"
+        run_idx( self.parent, self.parent.guicommander.objects['indexer'])
+
 
     def loadgv(self):
         """ see indexing.readgvfile """
