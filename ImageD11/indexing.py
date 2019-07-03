@@ -456,6 +456,7 @@ class indexer:
         pairs.sort()
         self.tried = 0
         self.npairs = len(pairs)
+        self.stop=False
         for mu, oc, r1, r2 in pairs:
             try:
                 self.ring_1 = r1
