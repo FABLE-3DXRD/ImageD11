@@ -13,7 +13,9 @@ print("#  [cubic|hexagonal|trigonal|rhombohedralP|tetragonal|orthorhombic|monocl
 
 g1l = grain.read_grain_file(sys.argv[1])
 g2l = grain.read_grain_file(sys.argv[2])
-
+for g in g1l + g2l:
+    if g.translation is None:
+        g.translation = np.zeros(3)
 try:
     h = getattr( sym_u, sys.argv[3] )()
 except:

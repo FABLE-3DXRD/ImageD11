@@ -273,6 +273,8 @@ class indexer:
         gv would be a 3*n array of points in reciprocal space
         The rest of the arguments are parameters.
         """
+        # This stop variable allows computation to be run in a thread...
+        self.stop = False
         self.unitcell=unitcell
         self.gv=gv
         if gv is not None: # do init
@@ -438,12 +440,52 @@ class indexer:
                     out.write("%f %f %f %f %f %f    "%(self.eta[a],self.omega[a],self.tth[a],self.gv[a][0],self.gv[a][1],self.gv[a][2]))
                     out.write("\n")
 
-
+    def score_all_pairs(self):
+        """
+        Generate all the potential pairs of rings and go score them too
+        """
+        self.assigntorings()
+        # Which rings have peaks assigned to them?
+        rings = [r for r in set( self.ra ) if r >= 0 ]
+        # What are the multiplicities of these rings? We will use low multiplicity first
+        mults = {r:len(self.unitcell.ringhkls[self.unitcell.ringds[r]]) for r in rings}
+        # How many peaks per ring? We will use the sparse rings first...
+        # why? We assume these are the strongest peaks on a weak high angle ring
+        # occupation = {r:self.na[r] for r in rings}
+        pairs = [(int(mults[r1]*mults[r2]),int(self.na[r1]*self.na[r2]),r1,r2) for r1 in rings for r2 in rings]
+        pairs.sort()
+        self.tried = 0
+        self.npairs = len(pairs)
+        self.stop=False
+        for mu, oc, r1, r2 in pairs:
+            try:
+                self.ring_1 = r1
+                self.ring_2 = r2
+                self.find()
+                self.scorethem()
+                self.tried += 1
+            except KeyboardInterrupt:
+                break
+            if self.stop:
+                break
+            print(r1,r2,self.stop)
+        print("\nTested",self.tried,"pairs and found",len(self.ubis),"grains so far")
 
     def find(self):
         """
         Dig out the potential hits
         """
+        # Optionally only used unindexed peaks here. Make this obligatory
+        # Need indices of gvectors to test.
+        # Bug out early when there are none
+        iall = np.arange(self.gv.shape[0])
+        i1 = np.compress(np.logical_and(np.equal(self.ra,self.ring_1),
+                                      self.ga==-1  ) , iall).tolist()
+        i2 = np.compress(np.logical_and(np.equal(self.ra,self.ring_2),
+                                      self.ga==-1  ) , iall).tolist()
+        if len(i1) == 0 or len(i2) == 0:
+            print("no peaks left for those rings")
+            return
         # Which are the rings being used for indexing
         hkls1 = self.unitcell.ringhkls[self.unitcell.ringds[int(self.ring_1)]]
         hkls2 = self.unitcell.ringhkls[self.unitcell.ringds[int(self.ring_2)]]
@@ -470,14 +512,7 @@ class indexer:
         for c in coses:
             print(math.acos(c)*180/math.pi,c)
         #
-        # Need indices of gvectors to test
-        iall = np.arange(self.gv.shape[0])
         #
-        # Optionally only used unindexed peaks here? Make this obligatory
-        i1 = np.compress(np.logical_and(np.equal(self.ra,self.ring_1),
-                                      self.ga==-1  ) , iall).tolist()
-        i2 = np.compress(np.logical_and(np.equal(self.ra,self.ring_2),
-                                      self.ga==-1  ) , iall).tolist()
         print("Number of peaks in ring 1:",len(i1))
         print("Number of peaks in ring 2:",len(i2))
         print("Minimum number of peaks to identify a grain",self.minpks)
