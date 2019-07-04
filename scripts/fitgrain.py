@@ -46,26 +46,11 @@ def fitgrain(options):
     o.savegrains(options.newubifile, sort_npks=False)
 
 def get_options(parser):
-    parser.add_argument("-p",  "--parfile", action="store",
-                      dest="parfile", 
-                      type=ImageD11options.ParameterFileType(mode='r'),
-                      help="Name of input parameter file")
-    parser.add_argument("-u",  "--ubifile", action="store",
-                      dest="ubifile", 
-                      type=ImageD11options.UbiFileType(mode='r'),
-                      help="Name of ubi file")
-    parser.add_argument("-f",  "--fltfile", action="store",
-                      dest="fltfile", 
-                      type=ImageD11options.ColumnFileType(mode='r'),
-                      help="Name of flt file")
+    parser = refinegrains.get_options( parser )
     parser.add_argument("-P", "--newparfile", action="store",
                       dest="newparfile", 
                       type=ImageD11options.ParameterFileType(mode='w'),
                       help="Name of new parameter file")
-    parser.add_argument("-U", "--newubifile", action="store",
-                      dest="newubifile", 
-                      type=ImageD11options.UbiFileType(mode='w'),
-                      help="Name of new ubi file")
     parser.add_argument("-v", "--vary", action="append",
                       dest="varylist", type=str,
                       default =    [ "y_center","z_center",
@@ -75,33 +60,11 @@ def get_options(parser):
     parser.add_argument("-x", "--fiX", action="append",
                       dest="fixlist", type=str, default = [],
                       help="Parameters to fix (overrides vary)")
-    parser.add_argument("-t", "--tol", action="store",
-                      dest="tol", type=float,
-                      default = 0.25,
-                      help="Tolerance to use in peak assignment, default=%f"%(0.25))
-    parser.add_argument("-s", "--steps", action="store",
+    parser.add_argument("-S", "--steps", action="store",
                       dest="steps", type=int,
                       default =   1000,
                       help="Number of simplex iterations")
-    parser.add_argument( "--omega_no_float", action="store_false",
-                      dest = "omega_float",
-                      default = True,
-                      help= "Use exact observed omega values")
-    parser.add_argument( "--omega_slop", action="store", type=float,
-                      dest = "omega_slop",
-                      default = 0.5,
-                      help= "Omega slop (step) size")
-
-    lattices = ["cubic", "hexagonal", "trigonalH","trigonalP",
-                "tetragonal", "orthorhombic", "monoclinic_a",
-                "monoclinic_b","monoclinic_c","triclinic"]
-    parser.add_argument("-l", "--lattice", action="store",
-                      dest="latticesymmetry", #type="choice",
-                      default = "triclinic",
-                      choices = lattices,
-                      help="Lattice symmetry for choosing orientation from "+
-                      "|".join(lattices))
-
+    
     parser.description = """
 Fitgrain should attempt to fit one or more grains to a dataset
 using the parameters specified on the command line.

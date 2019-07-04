@@ -60,63 +60,14 @@ def makemap(options):
         
 
 def get_options(parser):
-    parser.add_argument("-p",  "--parfile", action="store",
-                      dest="parfile", 
-                      type=ImageD11options.ParameterFileType(mode='r'),
-                      help="Name of parameter file")
-    parser.add_argument("-u",  "--ubifile", action="store",
-                      dest="ubifile", 
-                      type=ImageD11options.UbiFileType(mode='r'),
-                      help="Name of ubi file")
-    parser.add_argument("-U",  "--newubifile", action="store",
-                      dest="newubifile", 
-                      type=ImageD11options.UbiFileType(mode='w'),
-                      help="Name of new ubi file to output")
-    parser.add_argument("-f",  "--fltfile", action="store",
-                      dest="fltfile", 
-                      type=ImageD11options.ColumnFileType(mode='r'),
-                      help="Name of flt file")
-    parser.add_argument("-F",  "--newfltfile", action="store",
-                      dest="newfltfile", 
-                      type=ImageD11options.ColumnFileType(mode='w'),
-                      help="Name of flt file containing unindexed peaks")
-    parser.add_argument("-t", "--tol", action="store",
-                      dest="tol", type=float,
-                      default =   0.5,
-                      help="Tolerance to use in peak assignment")
+    parser = ImageD11.refinegrains.get_options(parser)
     parser.add_argument("--no_sort", action="store_false",
                       dest="sort_npks", default = True,
                       help="Sort grains by number of peaks indexed")
-    lattices = ["cubic", "hexagonal", "trigonal","rhombohedralP",
-                "tetragonal", "orthorhombic", "monoclinic_a",
-                "monoclinic_b","monoclinic_c","triclinic"]
-    parser.add_argument("-s", "--sym", action="store",
-                      dest="symmetry", # type="choice",
-                      default = "triclinic",
-                      choices = lattices,
-                      help="Lattice symmetry for choosing orientation")
-
-    parser.add_argument("-l", "--lattice", action="store",
-                      dest="latticesymmetry", #type="choice",
-                      default = "triclinic",
-                      choices = lattices,
-                      help="Lattice symmetry for constraints "+
-                      "|".join(lattices))
-
     parser.add_argument( "--tthrange", action="append",
                       dest = "tthrange", type=float,
                       default = None,
                       help= "Two theta range for getting median intensity")
-
-    parser.add_argument( "--omega_no_float", action="store_false",
-                      dest = "omega_float",
-                      default = True,
-                      help= "Use exact observed omega values")
-
-    parser.add_argument( "--omega_slop", action="store", type=float,
-                      dest = "omega_slop",
-                      default = 0.5,
-                      help= "Omega slop (step) size")
     return parser
 
 

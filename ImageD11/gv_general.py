@@ -31,7 +31,8 @@ import math, logging
 from numpy.linalg import det, inv
 import numpy as np
 
-print("gv_general from ",__file__)
+# Use python -v myscript.py args
+# print("gv_general from ",__file__)
 
 def angmod(a):
     return np.arctan2( np.sin(a), np.cos(a) )
