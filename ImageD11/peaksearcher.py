@@ -31,33 +31,27 @@ and the blobcorrector(+splines) for correcting them for spatial distortion
 
 Defines one function (peaksearch) which might be reused
 """
-try:
-    import Queue as queue
-except:
-    import queue
-    
-import threading
-
-
-import time
 
 # For benchmarking
+import time
 reallystart = time.time()
-from ImageD11 import ImageD11_thread 
 
-ImageD11_thread.stop_now = False
-
+from six.moves import queue
+# import threading
 from math import sqrt
 import sys , glob , os.path
-
-from ImageD11 import blobcorrector
-from ImageD11.labelimage import labelimage
 import numpy
 
 # Generic file format opener from fabio
 import fabio
 from fabio.openimage import openimage
 from fabio import fabioimage
+
+from ImageD11 import blobcorrector, ImageD11options
+from ImageD11.correct import correct
+from ImageD11.labelimage import labelimage
+from ImageD11 import ImageD11_thread 
+ImageD11_thread.stop_now = False
 
 
 class timer:
@@ -76,7 +70,6 @@ class timer:
         print(" ".join(self.msgs),"%.2f/s"% (self.now-self.start))
         sys.stdout.flush()
 
-from ImageD11.correct import correct
 
 def peaksearch( filename , 
                 data_object , 
@@ -155,7 +148,7 @@ def peaksearch_driver(options, args):
     ################## debugging still
     for a in args:
         print("arg: "+str(a)+","+str(type(a)))
-    for o in list(options.__dict__.keys()):
+    for o in list(options.__dict__.keys()): # FIXME
         if getattr(options,o) in [ "False", "FALSE", "false" ]:
             setattr(options,o,False)
         if getattr(options,o) in [ "True", "TRUE", "true" ]:
@@ -356,35 +349,9 @@ def peaksearch_driver(options, args):
                             thresholds_list , li_objs )
             for t in thresholds_list:
                 li_objs[t].finalise()
-        if options.profile_file is not None:
-            print("Profiling output")
-            try:
-                import cProfile as Prof
-            except ImportError:
-                try:
-                    import profile as Prof
-                except:
-                    print("Your package manager is having a laugh")
-                    print("install python-profile please")
-                    raise
-            Prof.runctx( "go_for_it(file_series_object, darkimage, floodimage, \
-                corrfunc , thresholds_list, li_objs , \
-                OMEGA, OMEGASTEP, OMEGAOVERRIDE )",
-                globals(),
-                locals(),
-                options.profile_file )
-            import pstats
-            try:
-                p = pstats.Stats(options.profile_file,
-                            stream = open(options.profile_file+".txt","w"))
-            except:
-                p = pstats.Stats(options.profile_file)
-            p.strip_dirs().sort_stats(-1).print_stats()
-
-        else:
-            go_for_it(file_series_object, darkimage, floodimage, 
-                      corrfunc , thresholds_list, li_objs,
-                      OMEGA, OMEGASTEP, OMEGAOVERRIDE )
+        go_for_it(file_series_object, darkimage, floodimage, 
+                  corrfunc , thresholds_list, li_objs,
+                  OMEGA, OMEGASTEP, OMEGAOVERRIDE )
 
             
     else:
@@ -606,99 +573,102 @@ def peaksearch_driver(options, args):
 
 def get_options(parser):
         """ Add our options to a parser object """
-        parser.add_option("-n", "--namestem", action="store",
-            dest="stem", type="string", default="data",
+        parser.add_argument("-n", "--namestem", action="store",
+            dest="stem", type=str, default="data",
             help="Name of the files up the digits part  "+\
                  "eg mydata in mydata0000.edf" )
-        parser.add_option("-F", "--format", action="store",
-            dest="format",default=".edf", type="string",
+        parser.add_argument("-F", "--format", action="store",
+            dest="format",default=".edf", type=str,
             help="Image File format, eg edf or bruker" )
-        parser.add_option("-f", "--first", action="store",
-            dest="first", default=0, type="int",
+        parser.add_argument("-f", "--first", action="store",
+            dest="first", default=0, type=int,
             help="Number of first file to process, default=0")
-        parser.add_option("-l", "--last", action="store",
-            dest="last", type="int",default =0,
+        parser.add_argument("-l", "--last", action="store",
+            dest="last", type=int,default =0,
             help="Number of last file to process")
-        parser.add_option("-o", "--outfile", action="store",
-            dest="outfile",default="peaks.spt", type="string",
+        parser.add_argument("-o", "--outfile", action="store",
+            dest="outfile",default="peaks.spt", type=str,
             help="Output filename, default=peaks.spt")
-        parser.add_option("-d", "--darkfile", action="store",
-            dest="dark", default=None,  type="string",
+        parser.add_argument("-d", "--darkfile", action="store",
+            dest="dark", default=None,  type=ImageD11options.ImageFileType(mode='r'),
             help="Dark current filename, to be subtracted, default=None")
         dod = 0
-        parser.add_option("-D", "--darkfileoffset", action="store",
-            dest="darkoffset", default=dod, type="float",
+        parser.add_argument("-D", "--darkfileoffset", action="store",
+            dest="darkoffset", default=dod, type=float,
             help=
          "Constant to subtract from dark to avoid overflows, default=%d"%(dod))
-        s="/data/opid11/inhouse/Frelon2K/spatial2k.spline"
-        parser.add_option("-s", "--splinefile", action="store",
-            dest="spline", default=s, type="string",
-            help="Spline file for spatial distortion, default=%s" % (s))
-        parser.add_option("-p", "--perfect_images", action="store",
-               type="choice", choices=["Y","N"], default="N", dest="perfect",
+        # s="/data/opid11/inhouse/Frelon2K/spatial2k.spline"
+        parser.add_argument("-s", "--splinefile", action="store",
+            dest="spline", default=None, type=ImageD11options.SplineFileType(mode='r'),
+            help="Spline file for spatial distortion, default=None" )
+        parser.add_argument("-p", "--perfect_images", action="store",
+               choices=["Y","N"], default="Y", dest="perfect",
                           help="Ignore spline Y|N, default=N")
-        parser.add_option("-O", "--flood", action="store", type="string",
+        parser.add_argument("-O", "--flood", action="store", 
+                            type=ImageD11options.ImageFileType(mode='r'),
                           default=None, dest="flood",
                           help="Flood file, default=None")
-        parser.add_option("-t", "--threshold", action="append", type="float",
+        parser.add_argument("-t", "--threshold", action="append", type=float,
              dest="thresholds", default=None,
              help="Threshold level, you can have several")
-        parser.add_option("--OmegaFromHeader", action="store_false",
+        parser.add_argument("--OmegaFromHeader", action="store_false",
                           dest="OMEGAOVERRIDE", default=False, 
                           help="Read Omega values from headers [default]")
-        parser.add_option("--OmegaOverRide", action="store_true",
+        parser.add_argument("--OmegaOverRide", action="store_true",
                           dest="OMEGAOVERRIDE", default=False, 
                           help="Override Omega values from headers")
-        parser.add_option("--singleThread", action="store_true",
+        parser.add_argument("--singleThread", action="store_true",
                           dest="oneThread", default=False, 
                           help="Do single threaded processing")
-        parser.add_option("--profile", action="store", type="string",
-                          dest="profile_file", default=None, 
- help="Write profiling information (you will want singleThread too)")
-        parser.add_option("-S","--step", action="store",
-                          dest="OMEGASTEP", default=1.0, type="float",
+        # if you want to do this then instead I think you want
+        # python -m cProfile -o xx.prof peaksearch.py ...
+        # python -m pstats xx.prof
+        #    ... sort
+        #    ... stats
+#        parser.add_argument("--profile", action="store", 
+#                        type=ImageD11options.ProfilingFileType,
+#                          dest="profile_file", default=None, 
+# help="Write profiling information (you will want singleThread too)")
+        parser.add_argument("-S","--step", action="store",
+                          dest="OMEGASTEP", default=1.0, type=float,
  help="Step size in Omega when you have no header info")
-        parser.add_option("-T","--start", action="store",
-                          dest="OMEGA", default=0.0, type="float",
+        parser.add_argument("-T","--start", action="store",
+                          dest="OMEGA", default=0.0, type=float,
  help="Start position in Omega when you have no header info")
-        parser.add_option("-k","--killfile", action="store",
-                          dest="killfile", default=None, type="string",
+        parser.add_argument("-k","--killfile", action="store",
+                          dest="killfile", default=None, 
+                          type=ImageD11options.FileType(),
  help="Name of file to create stop the peaksearcher running")
-        parser.add_option("--ndigits", action="store", type="int",
+        parser.add_argument("--ndigits", action="store", type=int,
                 dest = "ndigits", default = 4,
                 help = "Number of digits in file numbering [4]")
-        parser.add_option("-P", "--padding", action="store",
-               type="choice", choices=["Y","N"], default="Y", dest="padding",
+        parser.add_argument("-P", "--padding", action="store",
+             choices=["Y","N"], default="Y", dest="padding",
                           help="Is the image number to padded Y|N, e.g. "\
-                    "should 1 be 0001 or just 1 in image name, default=Y")
-        
-        parser.add_option("-m", "--median1D", action="store_true",
+                    "should 1 be 0001 or just 1 in image name, default=Y")        
+        parser.add_argument("-m", "--median1D", action="store_true",
                default=False, dest="median",
                help="Computes the 1D median, writes it to file .bkm and" \
                +" subtracts it from image. For liquid background"\
                +" on radially transformed images")
-
-        parser.add_option("--monitorcol", action="store", type="string",
+        parser.add_argument("--monitorcol", action="store", type=str,
                            dest="monitorcol",
                            default = None,
                            help="Header value for incident beam intensity")
-
-
-        parser.add_option("--monitorval", action="store", type="float",
+        parser.add_argument("--monitorval", action="store", type=float,
                           dest="monitorval",
                           default = None,
                           help="Incident beam intensity value to normalise to")
-
-        parser.add_option("--omega_motor", action="store", type="string",
+        parser.add_argument("--omega_motor", action="store", type=str,
                           dest = "omegamotor", default = "Omega",
            help = "Header value to use for rotation motor position [Omega]")
-        parser.add_option("--omega_motor_step", action="store", type="string",
+        parser.add_argument("--omega_motor_step", action="store", type=str,
                           dest = "omegamotorstep", default = "OmegaStep",
            help = "Header value to use for rotation width [OmegaStep]")
-        parser.add_option("--interlaced", action="store_true", 
+        parser.add_argument("--interlaced", action="store_true", 
                           dest = "interlaced", default = False,
            help = "Interlaced DCT scan")
-        parser.add_option("--iflip", action="store_true",
+        parser.add_argument("--iflip", action="store_true",
                           dest="iflip", default=False,
                           help = "Reverse second half of interlaced scan")
         return parser
@@ -714,11 +684,11 @@ def get_help(usage = True):
     except:
         # python3
         import io
-    import optparse
+    import argparse
     if usage:
-        o = get_options(optparse.OptionParser())
+        o = get_options(argparse.ArgumentParser())
     else:
-        o = get_options(optparse.OptionParser(optparse.SUPPRESS_USAGE))
+        o = get_options(argparse.ArgumentParser(usage=argparse.SUPPRESS))
     f = io.StringIO()
     o.print_help(f)
     return f.getvalue()

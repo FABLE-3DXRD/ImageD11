@@ -8,8 +8,8 @@ Wrapper script to refine a single grain using
 all peaks in a dataset (so that hkl assignments
 are not a problem).
 """
-
-from ImageD11 import refinegrains, indexing
+from argparse import ArgumentParser
+from ImageD11 import refinegrains, indexing, ImageD11options
 import logging, sys
 
 def fitgrain(options):
@@ -45,6 +45,68 @@ def fitgrain(options):
     # Keep the original ordering and add translation information
     o.savegrains(options.newubifile, sort_npks=False)
 
+def get_options(parser):
+    parser.add_argument("-p",  "--parfile", action="store",
+                      dest="parfile", 
+                      type=ImageD11options.ParameterFileType(mode='r'),
+                      help="Name of input parameter file")
+    parser.add_argument("-u",  "--ubifile", action="store",
+                      dest="ubifile", 
+                      type=ImageD11options.UbiFileType(mode='r'),
+                      help="Name of ubi file")
+    parser.add_argument("-f",  "--fltfile", action="store",
+                      dest="fltfile", 
+                      type=ImageD11options.ColumnFileType(mode='r'),
+                      help="Name of flt file")
+    parser.add_argument("-P", "--newparfile", action="store",
+                      dest="newparfile", 
+                      type=ImageD11options.ParameterFileType(mode='w'),
+                      help="Name of new parameter file")
+    parser.add_argument("-U", "--newubifile", action="store",
+                      dest="newubifile", 
+                      type=ImageD11options.UbiFileType(mode='w'),
+                      help="Name of new ubi file")
+    parser.add_argument("-v", "--vary", action="append",
+                      dest="varylist", type=str,
+                      default =    [ "y_center","z_center",
+                                     "tilt_y","tilt_x","tilt_z","wedge",
+                                     "t_x","t_y","distance"],
+                      help="Parameters to vary"  )
+    parser.add_argument("-x", "--fiX", action="append",
+                      dest="fixlist", type=str, default = [],
+                      help="Parameters to fix (overrides vary)")
+    parser.add_argument("-t", "--tol", action="store",
+                      dest="tol", type=float,
+                      default = 0.25,
+                      help="Tolerance to use in peak assignment, default=%f"%(0.25))
+    parser.add_argument("-s", "--steps", action="store",
+                      dest="steps", type=int,
+                      default =   1000,
+                      help="Number of simplex iterations")
+    parser.add_argument( "--omega_no_float", action="store_false",
+                      dest = "omega_float",
+                      default = True,
+                      help= "Use exact observed omega values")
+    parser.add_argument( "--omega_slop", action="store", type=float,
+                      dest = "omega_slop",
+                      default = 0.5,
+                      help= "Omega slop (step) size")
+
+    lattices = ["cubic", "hexagonal", "trigonalH","trigonalP",
+                "tetragonal", "orthorhombic", "monoclinic_a",
+                "monoclinic_b","monoclinic_c","triclinic"]
+    parser.add_argument("-l", "--lattice", action="store",
+                      dest="latticesymmetry", #type="choice",
+                      default = "triclinic",
+                      choices = lattices,
+                      help="Lattice symmetry for choosing orientation from "+
+                      "|".join(lattices))
+
+    parser.description = """
+Fitgrain should attempt to fit one or more grains to a dataset
+using the parameters specified on the command line.
+    """
+    return parser
 
 
 if __name__=="__main__":
@@ -60,68 +122,11 @@ if __name__=="__main__":
     root.addHandler(console)
     root.setLevel(logging.DEBUG) # should we process everything...?
 
-    from optparse import OptionParser
 
-    parser = OptionParser()
-    parser.add_option("-p",  "--parfile", action="store",
-                      dest="parfile", type="string",
-                      help="Name of parameter file")
-    parser.add_option("-u",  "--ubifile", action="store",
-                      dest="ubifile", type="string",
-                      help="Name of ubi file")
-    parser.add_option("-f",  "--fltfile", action="store",
-                      dest="fltfile", type="string",
-                      help="Name of flt file")
-    parser.add_option("-P", "--newparfile", action="store",
-                      dest="newparfile", type="string",
-                      help="Name of new parameter file")
-    parser.add_option("-U", "--newubifile", action="store",
-                      dest="newubifile", type="string",
-                      help="Name of new ubi file")
-    parser.add_option("-v", "--vary", action="append",
-                      dest="varylist", type="string",
-                      default =    [ "y_center","z_center",
-                                     "tilt_y","tilt_x","tilt_z","wedge",
-                                     "t_x","t_y","distance"],
-                      help="Parameters to vary"  )
-    parser.add_option("-x", "--fiX", action="append",
-                      dest="fixlist", type="string", default = [],
-                      help="Parameters to fix (overrides vary)")
-    parser.add_option("-t", "--tol", action="store",
-                      dest="tol", type="float",
-                      default =   1.0,
-                      help="Tolerance to use in peak assignment")
-    parser.add_option("-s", "--steps", action="store",
-                      dest="steps", type="int",
-                      default =   1000,
-                      help="Number of simplex iterations")
-    parser.add_option( "--omega_no_float", action="store_false",
-                      dest = "omega_float",
-                      default = True,
-                      help= "Use exact observed omega values")
-
-    parser.add_option( "--omega_slop", action="store", type="float",
-                      dest = "omega_slop",
-                      default = 0.5,
-                      help= "Omega slop (step) size")
-
-    lattices = ["cubic", "hexagonal", "trigonalH","trigonalP",
-                "tetragonal", "orthorhombic", "monoclinic_a",
-                "monoclinic_b","monoclinic_c","triclinic"]
-    parser.add_option("-l", "--lattice", action="store",
-                      dest="latticesymmetry", type="choice",
-                      default = "triclinic",
-                      choices = lattices,
-                      help="Lattice symmetry for choosing orientation from "+
-                      "|".join(lattices))
-
+    parser = get_options( ArgumentParser() )
     
-    parser.description = """
-Fitgrain should attempt to fit one or more grains to a dataset
-using the parameters specified on the command line.
-    """
     
-    options, args = parser.parse_args()
+    options = parser.parse_args()
 
     for name in ["parfile" , "newparfile",
                  "ubifile", "newubifile",

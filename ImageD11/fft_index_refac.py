@@ -18,22 +18,22 @@ import numpy as np
 from ImageD11 import labelimage, cImageD11, columnfile
 
 def get_options(parser):
-    parser.add_option( '-n', '--ngrid',
+    parser.add_argument( '-n', '--ngrid',
                        action = 'store',
                        dest = 'npx',
-                       type = 'int',
+                       type = int,
                        help = 'number of points in the fft grid [128]',
                        default = 128 )
-    parser.add_option( '-r', '--max_res',
+    parser.add_argument( '-r', '--max_res',
                        action = 'store',
                        dest = 'mr',
-                       type = 'float',
+                       type = float,
              help = 'Maximum resolution limit for fft (d-spacing) [1.0]',
                        default = 1.0)
-    parser.add_option( '-s', '--nsig',
+    parser.add_argument( '-s', '--nsig',
                        action = 'store',
                        dest = 'nsig',
-                       type = 'float',
+                       type = float,
              help = 'Number of sigma for patterson peaksearch threshold [5]',
                        default = 5)
     return parser
