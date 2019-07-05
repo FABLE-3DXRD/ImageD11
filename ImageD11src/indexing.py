@@ -225,12 +225,12 @@ def refine(UBI, gv, tol, quiet=True):
     try:
         fitlastrefined=math.sqrt(np.sum(contribs)/contribs.shape[0])
         if not quiet:
-            print("after %.8f %5d"%(fitlastrefined,contribs.shape[0]))
+            logging.debug("after %.8f %5d"%(fitlastrefined,contribs.shape[0]))
     except:
-        print("\n\n\n")
-        print("No contributing reflections for\n",UBI)
-        print("After refinement, it was OK before ???")
-        print("\n\n\n")
+        logging.error("\n\n\n")
+        logging.error("No contributing reflections for %s\n",str(UBI))
+        logging.error("After refinement, it was OK before ???")
+        logging.error("\n\n\n")
         return UBI
         # raise
     #      for i in ind:
@@ -278,7 +278,7 @@ class indexer:
         self.unitcell=unitcell
         self.gv=gv
         if gv is not None: # do init
-            print('gv:', gv, gv.shape, gv.dtype)
+            logging.info('gv: %s %s %s', str(gv), str(gv.shape), str(gv.dtype))
             assert gv.shape[1] == 3
             self.gv = gv.astype( np.float )
             self.ds = np.sqrt( (gv*gv).sum(axis=1) )
@@ -333,8 +333,6 @@ class indexer:
         if filename is not None:
             self.parameterobj.saveparameters(filename)
 
-
-
     def out_of_eta_range(self,eta):
         """ decide if an eta is going to be kept """
         e = mod_360(float(eta), 0)
@@ -350,7 +348,7 @@ class indexer:
         """
         # rings are in self.unitcell
         limit = np.amax( self.ds )
-        print("Maximum d-spacing considered",limit)
+        print("Assign to rings, maximum d-spacing considered",limit)
         self.unitcell.makerings(limit, tol = self.ds_tol)
         dsr = self.unitcell.ringds
         # npks
@@ -468,7 +466,7 @@ class indexer:
                 break
             if self.stop:
                 break
-            print(r1,r2,self.stop)
+            print("Tried r1=%d r2=%d attempt %d of %d, got %d grains"%(r1,r2,self.tried,len(pairs),len(self.ubis)))
         print("\nTested",self.tried,"pairs and found",len(self.ubis),"grains so far")
 
     def find(self):
@@ -484,14 +482,14 @@ class indexer:
         i2 = np.compress(np.logical_and(np.equal(self.ra,self.ring_2),
                                       self.ga==-1  ) , iall).tolist()
         if len(i1) == 0 or len(i2) == 0:
-            print("no peaks left for those rings")
+            logging.info("no peaks left for those rings")
             return
         # Which are the rings being used for indexing
         hkls1 = self.unitcell.ringhkls[self.unitcell.ringds[int(self.ring_1)]]
         hkls2 = self.unitcell.ringhkls[self.unitcell.ringds[int(self.ring_2)]]
-        print("hkls of rings being used for indexing")
-        print("Ring 1:",hkls1)
-        print("Ring 2:",hkls2)
+        logging.info("hkls of rings being used for indexing")
+        logging.info("Ring 1: %s",str(hkls1))
+        logging.info("Ring 2: %s",str(hkls2))
         cosangles=[]
         for h1 in hkls1:
             for h2 in hkls2:
@@ -508,14 +506,14 @@ class indexer:
                 continue
             if abs(coses[-1]-a) > 1e-5:
                 coses.append(a)
-        print("Possible angles and cosines between peaks in rings:")
+        logging.info("Possible angles and cosines between peaks in rings:")
         for c in coses:
-            print(math.acos(c)*180/math.pi,c)
+            logging.info("%.6f %.6f"%(math.acos(c)*180/math.pi,c))
         #
         #
-        print("Number of peaks in ring 1:",len(i1))
-        print("Number of peaks in ring 2:",len(i2))
-        print("Minimum number of peaks to identify a grain",self.minpks)
+        logging.info("Number of peaks in ring 1: %d",len(i1))
+        logging.info("Number of peaks in ring 2: %d",len(i2))
+        logging.info("Minimum number of peaks to identify a grain %d",self.minpks)
         # print self.gv.shape
         # ntry=0
         # nhits=0
@@ -542,38 +540,24 @@ class indexer:
         # found=0
         hits=[]
         start = time.time()
-        onepercent=len(i1)/100.
-#        if onepercent < 1: onepercent=1
         start=time.time()
         mtol = -tol # Ugly interface - set cosine tolerance negative for all
                     # instead of best
         for i in range(len(i1)):
-            if i == 0:
-                print("Percent done %6.3f%%   ... potential hits %-6d" \
-                      % (i*100./len(i1),len(hits)), end=' ')
             costheta=np.dot(n2,n1[i])
             if tol > 0: # This is the original algorithm - the closest angle
                 best,diff = cImageD11.closest(costheta,cs)
                 if diff < tol:
                     hits.append( [ diff, i1[i], i2[best] ])
             else:
-                assert tol < 0, "Cosine tolerance should be positive or negative"
                 for cval in cs:
                     # 1d   scalar  1d
                     diff = cval - costheta
                     candidates = np.compress( abs(diff) < mtol, i2 )
                     for c in candidates:
                         hits.append( [ 0.0, i1[i], c ] )
-            if i > onepercent:
-               print("\rPercent done %6.3f%%   ... potential hits %-6d" \
-                     % ((i+1)*100./len(i1),len(hits)), end=' ')
-               onepercent += len(i1)/100.
-
-
-        print("\rPercent done %6.3f%%   ... potential hits %-6d" \
-              % ((i+1)*100./len(i1),len(hits)))
-        print("Number of trial orientations generated",len(hits))
-        print("Time taken",time.time()-start)
+        logging.info("Number of trial orientations generated %d",len(hits))
+        logging.info("Time taken %.6f /s",time.time()-start)
         self.hits=hits
 
     def histogram_drlv_fit(self,UBI=None,bins=None):
@@ -605,38 +589,23 @@ class indexer:
             positions =  np.searchsorted(drlv,bins)
             hist[j,:] =  positions[1:]-positions[:-1]
             j=j+1
-        #for i in range(bins.shape[0]-1):
-        #   print "%10.7f - %10.7f   %10d"%(bins[i],bins[i+1],hist[i])
-        #print sum(hist),hist.shape,bins.shape
         self.bins=bins
         self.histogram=hist
 
     def scorethem(self, fitb4=False):
         """ decide which trials listed in hits to keep """
         start=time.time()
-#        ts=0
-#        tor=0
         ng=0
         tol=float(self.hkl_tol)
         gv=self.gvflat
         all=len(self.hits)
-        print("Scoring",all,"potential orientations")
+        logging.info("Scoring %d potential orientations",all)
         progress=0
         nuniq=0
-        onepercent = all/100.
-        while len(self.hits) > 0 and ng <self.max_grains:
-            if progress > onepercent:
-               sys.stdout.write(
-                  "Tested %8d    Found %8d     Rejected %8d as not being unique\r"%(
-                     progress,ng,nuniq))
-               sys.stdout.flush()
-               onepercent += all/100.
-            progress=progress+1
+        while len(self.hits) > 0 and ng < self.max_grains:
             diff,i,j = self.hits.pop()
-            if self.ga[i]>-1 or self.ga[j]>-1:
-                # skip things which are already assigned
-                continue
-            if i==j:
+            if self.ga[i]>-1 or self.ga[j]>-1 or i==j:
+                # skip things which are already assigned or errors
                 continue
             try:
                 self.unitcell.orient(self.ring_1,
@@ -646,16 +615,16 @@ class indexer:
                                      verbose=0,
                                      all=False)
             except:
-                print(i,j,self.ring_1,self.ring_2)
-                print(self.gv[i])
-                print(self.gv[j])
-                print("Failed to find orientation in unitcell.orient")
+                logging.error(str(i,j,self.ring_1,self.ring_2))
+                logging.error(str(self.gv[i]))
+                logging.error(str(self.gv[j]))
+                logging.error("Failed to find orientation in unitcell.orient")
                 raise
-            if fitb4:
+            if fitb4: # FIXME : this does not work
                self.unitcell.UBI = ubi_fit_2pks( self.unitell.UBI, self.gv[i,:], self.gv[j,:])
             npk = cImageD11.score(self.unitcell.UBI,gv,tol)
             if npk > self.minpks:
-                self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],verbose=0,all=True)
+                self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:], verbose=0, all=True)
                 if fitb4:
                    for k in range( len(self.unitell.UBIlist) ):
                         self.unitell.UBIlist[k] = ubi_fit_2pks( self.unitell.UBIlist[k],
@@ -664,7 +633,7 @@ class indexer:
                 choice = np.argmax(npks)
                 UBI = self.unitcell.UBIlist[choice]
                 if npks[choice] < npk:
-                    print("Error in indexing: debug please!")
+                    logging.error("Error in indexing: debug please!")
                     #import pdb; pdb.set_trace()
                 npk = npks[choice]
                 _ = cImageD11.score_and_refine( UBI, gv, tol )
@@ -674,38 +643,29 @@ class indexer:
                     ga=self.ga[ind]  # previous grain assignments
                     uniqueness=np.sum(np.where(ga==-1,1,0))*1.0/ga.shape[0]
                     if uniqueness > self.uniqueness:
-#                        print "Writing in self.ga"
                         np.put(self.ga, ind, len(self.scores)+1)
                         self.ubis.append(UBI)
                         self.scores.append(npk)
+                        logging.info("new grain %d pks, UBI %s",npk,str(UBI.ravel()))
                         ng=ng+1
                     else:
                         nuniq=nuniq+1
-                    #            put(self.ga,ind,ng)
                 except:
                     raise
-        sys.stdout.write(
-           "Tested %8d    Found %8d     Rejected %8d as not being unique\r"%(
-              progress,ng,nuniq))
-        sys.stdout.flush()
                  
-        print()
-        print("Number of orientations with more than",self.minpks,"peaks is",len(self.ubis))
-        print("Time taken",time.time()-start)
+        logging.info("Number of orientations with more than %d peaks is %d",self.minpks,len(self.ubis))
+        logging.info("Time taken %.3f/s",time.time()-start)
         if len(self.ubis)>0:
             bestfitting=np.argmax(self.scores)
-            print("UBI for best fitting\n",self.ubis[bestfitting])
-            print("Unit cell\n",ubitocellpars(self.ubis[bestfitting]))
+            logging.info("UBI for best fitting\n%s",str(self.ubis[bestfitting]))
+            logging.info("Unit cell: %s\n",str(ubitocellpars(self.ubis[bestfitting])))
             self.refine( self.ubis[bestfitting] )
-            print("Indexes",self.scorelastrefined,"peaks, with <drlv2>=",self.fitlastrefined)
-            print("That was the best thing I found so far")
-            notaccountedfor = np.sum(np.where( np.logical_and(
-                self.ga==-1, self.ra!=-1),1,0))
-            print("Number of peaks assigned to rings but not indexed = ",\
-                  notaccountedfor)
-            #self.histogram(self.ubis[bestfitting])
+            logging.info("Indexes %d peaks, with <drlv2>=%f",self.scorelastrefined,self.fitlastrefined)
+            logging.info("That was the best thing I found so far")
+            notaccountedfor =  ((self.ga < 0) & (self.ra >= 0)).sum()
+            logging.info("Number of peaks assigned to rings but not indexed = %d", notaccountedfor)
         else:
-            print("Try again, either with larger tolerance or fewer minimum peaks")
+            logging.info("Try again, either with larger tolerance or fewer minimum peaks")
 
     def fight_over_peaks(self):
         """

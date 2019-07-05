@@ -6,7 +6,8 @@ from __future__ import print_function
 from ImageD11.indexing import readubis, write_ubi_file
 from ImageD11.refinegrains import refinegrains
 import ImageD11.refinegrains
-import sys, os
+from ImageD11 import ImageD11options
+import sys, os, argparse
 
 
 def makemap(options):
@@ -58,6 +59,16 @@ def makemap(options):
         col.writefile(options.newfltfile)
         
 
+def get_options(parser):
+    parser = ImageD11.refinegrains.get_options(parser)
+    parser.add_argument("--no_sort", action="store_false",
+                      dest="sort_npks", default = True,
+                      help="Sort grains by number of peaks indexed")
+    parser.add_argument( "--tthrange", action="append",
+                      dest = "tthrange", type=float,
+                      default = None,
+                      help= "Two theta range for getting median intensity")
+    return parser
 
 
 if __name__ == "__main__":
@@ -74,67 +85,10 @@ if __name__ == "__main__":
     root.addHandler(console)
     root.setLevel(logging.DEBUG) # should we process everything...?
 
-    from optparse import OptionParser
 
-    parser = OptionParser()
-  
+    parser = get_options( argparse.ArgumentParser() )
     
-    parser.add_option("-p",  "--parfile", action="store",
-                      dest="parfile", type="string",
-                      help="Name of parameter file")
-    parser.add_option("-u",  "--ubifile", action="store",
-                      dest="ubifile", type="string",
-                      help="Name of ubi file")
-    parser.add_option("-U",  "--newubifile", action="store",
-                      dest="newubifile", type="string",
-                      help="Name of new ubi file to output")
-    parser.add_option("-f",  "--fltfile", action="store",
-                      dest="fltfile", type="string",
-                      help="Name of flt file")
-    parser.add_option("-F",  "--newfltfile", action="store",
-                      dest="newfltfile", type="string",
-                      help="Name of flt file containing unindexed peaks")
-    parser.add_option("-t", "--tol", action="store",
-                      dest="tol", type="float",
-                      default =   0.5,
-                      help="Tolerance to use in peak assignment")
-    parser.add_option("--no_sort", action="store_false",
-                      dest="sort_npks", default = True,
-                      help="Sort grains by number of peaks indexed")
-    lattices = ["cubic", "hexagonal", "trigonal","rhombohedralP",
-                "tetragonal", "orthorhombic", "monoclinic_a",
-                "monoclinic_b","monoclinic_c","triclinic"]
-    parser.add_option("-s", "--sym", action="store",
-                      dest="symmetry", type="choice",
-                      default = "triclinic",
-                      choices = lattices,
-                      help="Lattice symmetry for choosing orientation")
-    parser.add_option( "--tthrange", action="append",
-                      dest = "tthrange", type="float",
-                      default = None,
-                      help= "Two theta range for getting median intensity")
-
-    parser.add_option( "--omega_no_float", action="store_false",
-                      dest = "omega_float",
-                      default = True,
-                      help= "Use exact observed omega values")
-
-    parser.add_option( "--omega_slop", action="store", type="float",
-                      dest = "omega_slop",
-                      default = 0.5,
-                      help= "Omega slop (step) size")
-
-    lattices = ["cubic", "hexagonal", "trigonalH","trigonalP",
-                "tetragonal", "orthorhombic", "monoclinic_a",
-                "monoclinic_b","monoclinic_c","triclinic"]
-    parser.add_option("-l", "--lattice", action="store",
-                      dest="latticesymmetry", type="choice",
-                      default = "triclinic",
-                      choices = lattices,
-                      help="Lattice symmetry for choosing orientation from "+
-                      "|".join(lattices))
-
-    options, args = parser.parse_args()
+    options = parser.parse_args()
 
     for name in ["parfile" , 
                  "ubifile", 

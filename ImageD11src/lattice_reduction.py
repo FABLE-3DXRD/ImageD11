@@ -427,27 +427,27 @@ def search_2folds( ubi ):
 
 
 def get_options(parser):
-    parser.add_option('-v', '--min_vec2',
+    parser.add_argument('-v', '--min_vec2',
                       action='store',
-                      type='float',
+                      type=float,
                       dest="min_vec2",
                       help='Minimum axis length ^2, (angstrom^2) [1.5]',
                       default = 1.5)
-    parser.add_option('-m', '--n_try',
+    parser.add_argument('-m', '--n_try',
                       action='store',
-                      type='int',
+                      type=int,
                       dest="n_try",
                       default=None,
                       help='Number of vectors to test in finding lattice [all]')
-    parser.add_option('-f', '--fraction_indexed',
+    parser.add_argument('-f', '--fraction_indexed',
                       action='store',
-                      type='float',
+                      type=float,
                       dest="fraction_indexed",
                       default=0.9,
                       help='Fraction of peaks to be indexed')
-    parser.add_option('-t','--tol',
+    parser.add_argument('-t','--tol',
                       action='store',
-                      type='float',
+                      type=float,
                       default = 0.1,
                       dest="tol",
                       help='tolerance in hkl error for indexing')

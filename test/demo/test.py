@@ -1,3 +1,6 @@
+
+import logging
+logging.basicConfig(level=logging.INFO)
 # Create objects to manipulate - they hold your data
 #
 from ImageD11 import peakmerge, indexing, transformer
