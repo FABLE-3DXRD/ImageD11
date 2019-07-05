@@ -28,7 +28,7 @@ import numpy as np
 
 from .listdialog import listdialog, columnchooser
 
-from ImageD11 import twodplot
+from . import twodplot
 
 
 import logging

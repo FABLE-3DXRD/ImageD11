@@ -47,8 +47,9 @@ import os
 
 # GuiMaker is for building up the windows etc
 
-from ImageD11.guimaker import GuiMaker
-from ImageD11 import twodplot, guicommand, guipeaksearch, guiindexer, guisolver, __version__
+from ImageD11.tkGui.guimaker import GuiMaker
+from ImageD11.tkGui import twodplot,  guipeaksearch, guitransformer, guiindexer, guisolver
+from ImageD11 import __version__, guicommand
 from ImageD11.license import license
 
 # This does not do anything unless you call it as a program:
@@ -150,8 +151,6 @@ if __name__ == "__main__":
 
             self.peaksearcher = guipeaksearch.guipeaksearcher(self)
 
-            # For the transformation menu
-            from ImageD11 import guitransformer
 
             self.transformer = guitransformer.guitransformer(self)
 

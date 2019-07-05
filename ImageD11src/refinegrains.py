@@ -24,12 +24,14 @@ from __future__ import print_function, division
 
 import numpy
 
-from ImageD11 import transform, indexing, parameters
+from ImageD11 import transform, indexing, parameters, ImageD11options
 from ImageD11 import grain, columnfile, cImageD11, simplex
 
 import xfab.tools
 
-print(__file__)
+# print(__file__)
+
+    
 
 
 def triclinic( cp ):
@@ -78,7 +80,56 @@ def cubic( cp ):
     return [ anew, anew, anew, 90., 90., 90.] 
     
 
-    
+def get_options(parser):
+    parser.add_argument("-p",  "--parfile", action="store",
+                      dest="parfile", 
+                      type=ImageD11options.ParameterFileType(mode='r'),
+                      help="Name of input parameter file")
+    parser.add_argument("-u",  "--ubifile", action="store",
+                      dest="ubifile", 
+                      type=ImageD11options.UbiFileType(mode='r'),
+                      help="Name of ubi file")
+    parser.add_argument("-U",  "--newubifile", action="store",
+                      dest="newubifile", 
+                      type=ImageD11options.UbiFileType(mode='w'),
+                      help="Name of new ubi file to output")
+    parser.add_argument("-f",  "--fltfile", action="store",
+                      dest="fltfile", 
+                      type=ImageD11options.ColumnFileType(mode='r'),
+                      help="Name of flt file")
+    parser.add_argument("-F",  "--newfltfile", action="store",
+                      dest="newfltfile", 
+                      type=ImageD11options.ColumnFileType(mode='w'),
+                      help="Name of flt file containing unindexed peaks")
+    lattices = ["cubic", "hexagonal", "trigonalH","trigonalP",
+                "tetragonal", "orthorhombic", "monoclinic_a",
+                "monoclinic_b","monoclinic_c","triclinic"]
+    parser.add_argument("-s", "--sym", action="store",
+                      dest="symmetry", # type="choice",
+                      default = "triclinic",
+                      choices = lattices,
+                      help="Lattice symmetry for choosing orientation")
+    parser.add_argument("-l", "--lattice", action="store",
+                      dest="latticesymmetry", #type="choice",
+                      default = "triclinic",
+                      choices = lattices,
+                      help="Lattice symmetry for choosing orientation from "+
+                      "|".join(lattices))
+    parser.add_argument("-t", "--tol", action="store",
+                      dest="tol", type=float,
+                      default = 0.25,
+                      help="Tolerance to use in peak assignment, default=%f"%(0.25))
+    parser.add_argument( "--omega_no_float", action="store_false",
+                      dest = "omega_float",
+                      default = True,
+                      help= "Use exact observed omega values")
+
+    parser.add_argument( "--omega_slop", action="store", type=float,
+                      dest = "omega_slop",
+                      default = 0.5,
+                      help= "Omega slop (step) size")
+
+    return parser
 
 
 class refinegrains:
