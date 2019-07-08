@@ -198,10 +198,10 @@ class rsv_mapper(object):
         assert ind.dtype == numpy.intp
         # hkls[1] is faster. Steps by NR[2] only
         numpy.add( ind, NR[2]*numpy.floor(
-                hkls[1] + 0.5 - self.bounds[1][0]).astype(numpy.int32),
+                hkls[1] + 0.5 - self.bounds[1][0]).astype(numpy.intp),
                    ind )
         numpy.add( ind, numpy.floor(
-                hkls[2] + 0.5 - self.bounds[2][0]).astype(numpy.int32),
+                hkls[2] + 0.5 - self.bounds[2][0]).astype(numpy.intp),
                    ind )
         #
         #
