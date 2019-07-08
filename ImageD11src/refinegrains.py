@@ -869,37 +869,33 @@ def compute_lp_factor( colfile, **kwds ):
         colfile.addcolumn(lpg, "Lorentz_per_grain")
 
 
-import math
-
-def cosd(x): return numpy.cos( x * math.pi/180 )
-def sind(x): return numpy.sin( x * math.pi/180 )
-
 def lf( tth, eta ):
+    """
+    INPUT: 2*theta and eta in degrees. Can be floats or numpy arrays.
 
-    sin_2t  = sind( tth )
-    sin_eta = sind( numpy.abs( eta ) )
-    sin2_t  = sind( tth/2 )*sind( tth/2 )
-    # pure guesswork
-    return  sin_2t * ( sin_eta + sin2_t )
+    OUTPUT: Lorentz scaling factor for intensity. Same data type as input.
 
-    # unreachable code here:
-    #  ... problem that cos^2_p - sin^2 can be < 0
-    #       must mean that p is NOT eta
+    EXPLANATION:
+    Compute the Lorentz Factor defined for 3DXRD as
 
-    cos_2t = cosd( tth )
+    	L( theta,eta ) = sin( 2*theta )*|sin( eta )|
 
-    cos_t  = cosd( tth/2 )
-    sin_t  = sind( tth/2 )
-    # our eta is their psi + 90 degrees
-    cos_p  = cosd( eta + 90 )
+    This is verified by:
 
-    bot = sin_2t * numpy.sqrt( cos_p * cos_p - sin_t * sin_t )
+        * Kabsch, W. (1988). Evaluation of single-crystal X-ray diraction data
+          from a position-sensitive detector
+        * Poulsen, H. F. (2004). 3DXRD { a new probe for materials science.
+          Roskilde: Riso National Laboratory
 
-    top = (1 + cos_2t * cos_2t)*cos_2t
-    # Wondering if there is a div0 to fear
-    # Certainly lf can be infinite, so mask this problem as 1e6
-    bot = numpy.where( numpy.abs ( bot ) > 1e-6 , bot, 1e-6 )
-    return top / bot
+    and can be derived with support of
+        * Als-Nielsen, J. and McMorrow, D. (2017). Elements of Modern X-ray Physics
+
+    MODIFIED: 7 Feb 2019 by Axel Henningsson.
+    """
+
+    sin_tth = numpy.sin( numpy.radians(tth) )
+    sin_eta = numpy.sin( numpy.radians(eta) )
+    return sin_tth*abs( sin_eta )
 
 
 def compute_total_intensity( colfile, indices, tth_range, ntrim = 2, quiet = False ):
