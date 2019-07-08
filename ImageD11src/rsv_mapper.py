@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 
 from __future__ import print_function
 
@@ -9,7 +9,7 @@ Transfers images into reciprocal space by pixel mapping
 
 import numpy, logging
 from ImageD11 import parameters, transform, indexing, \
-    cImageD11, blobcorrector, rsv
+    cImageD11, blobcorrector, rsv, ImageD11options
 
 
 class rsv_mapper(object):
@@ -299,11 +299,11 @@ def get_options(parser):
     #                  dest = "testcolfile", default=None,
     #                  help = "A columnfile to test geometry")
 
-    parser.add_argument("-c", "--subslice", action="store", type="int",
+    parser.add_argument("-c", "--subslice", action="store", type=int,
                       dest = "subslice", default=1,
                       help = "Number of omega subslices to repeat images")
 
-    parser.add_argument("--maskfilename", action="store", type="string",
+    parser.add_argument("--maskfilename", action="store", type=str,
                       dest = "maskfilename", default=None,
                       help = "Mask image (fit2d style)" )
     
