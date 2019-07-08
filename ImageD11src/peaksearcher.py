@@ -297,8 +297,8 @@ def peaksearch_driver(options, args):
             darkimage += options.darkoffset
     if options.flood is not None:
         floodimage=openimage(options.flood).data
-        cen0 = floodimage.shape[0]/6
-        cen1 = floodimage.shape[0]/6
+        cen0 = int(floodimage.shape[0]/6)
+        cen1 = int(floodimage.shape[0]/6)
         middle = floodimage[cen0:-cen0, cen1:-cen1]
         nmid = middle.shape[0]*middle.shape[1]
         floodavg = numpy.mean(middle)
