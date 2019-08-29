@@ -84,7 +84,6 @@ class sptview(object):
         silx.gui.qt.QMessageBox.warning(None, "Warning", message)
 
 if __name__=="__main__":
-    global app
     qapp = silx.gui.qt.QApplication([])
     s=sptview( sys.argv[1] )
     s.window.show()

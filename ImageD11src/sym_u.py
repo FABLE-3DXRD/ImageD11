@@ -36,13 +36,11 @@ def m_to_string(m):
     """
     st = []
     for i in range(3):
-        needplus = 0  # ???
         for v,s in zip([ [ 1,0,0] , [ 0,1,0], [0,0,1] ],
                             "xyz"):
             c = np.dot(v,m.T[i])
             if abs(c)>0:
                 st.append( "%s%s"%(fmt(c),s))
-                needplus = 1
         if i<2:
             st.append(",")
     return "".join(st)
@@ -267,8 +265,8 @@ class trans_group(group):
         """
         Identity is to not move at all
         """
-        self.group = [ np.zeros(3, np.float) ]
-        self.tol = tol
+        group.__init__(self,tol)
+        
     def op(self, x, y):
         """
         Means of generating new thing from two others

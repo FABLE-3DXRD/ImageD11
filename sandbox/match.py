@@ -64,7 +64,6 @@ for i,g1 in enumerate(g1l):
     trace = np.trace
     pi = np.pi
     for j,g2 in enumerate(g2l):
-        angle = 180.
         sg = None
         aumis = np.dot(asymusT, g2.u)
         # print aumis.shape

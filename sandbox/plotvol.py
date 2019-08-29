@@ -54,7 +54,6 @@ class plotvol(Tk.Toplevel):
 
     def tkTranslate(self, event):
         self.activate()
-        pass
         
             
         

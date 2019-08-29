@@ -371,7 +371,7 @@ void put_incr64(float data[], int64_t ind[], float vals[], int boundscheck,
 	for (k = 0; k < n; k++) {
 	    ik = ind[k];
 	    if (ik < 0 || ik >= m) {
-		printf("Array bounds error! k=%d ind[k]=%d\n", k, (int)ind[k]);
+		printf("Array bounds error! k=%d ind[k]=%d\n", (int)k, (int)ind[k]);
 	    } else {
 		data[ind[k]] += vals[k];
 	    }
@@ -390,7 +390,7 @@ void put_incr32(float data[], int32_t ind[], float vals[], int boundscheck,
 	for (k = 0; k < n; k++) {
 	    ik = ind[k];
 	    if (ik < 0 || ik >= m) {
-		printf("Array bounds error! k=%d ind[k]=%d\n", k, (int)ind[k]);
+		printf("Array bounds error! k=%d ind[k]=%d\n", (int)k, (int)ind[k]);
 	    } else {
 		data[ind[k]] += vals[k];
 	    }

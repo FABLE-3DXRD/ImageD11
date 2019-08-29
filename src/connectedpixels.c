@@ -391,7 +391,9 @@ void clean_mask(int8_t msk[], int8_t ret[], int ns, int nf)
     /* cleans pixels with no 4 connected neighbors */
     int i, j, n, p, q;
     /* set zero for default */
-    memset(ret, 0, ns * nf * sizeof(int8_t));
+    memset(ret, 0, (long) ns * nf * sizeof(int8_t)); 
+	              /* long for lint: if you are overflowing int here
+				     you have a very large image ! */
     /*  printf("yop %d %d\n",ns,nf); */
     for (i = 0; i < ns; i++) {
 	p = i * ns;

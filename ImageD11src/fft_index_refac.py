@@ -297,21 +297,21 @@ class grid:
 
 
 
-        sm = np.zeros( (len(diff), len(diff)), np.float)
-        for k in range(len(diff)):
-            i = order[k]
-            sm[i,i] = np.dot(diff[i], diff[i])
-        for k in range(len(diff)-1):
-            i = order[k]
-            for l in range(i+1, len(diff)):
-                j = order[l]
-                sm[i,j] = np.dot(diff[i],diff[j])/sm[i,i]/sm[j,j]
-                sm[j,i] = sm[i,j]
-        for i in range(len(diff)):
-            sm[i,i] = 1.
-        print(sm[:5,:5])
-        print("Scoring takes",time.time()-start)
-        return sm
+        # sm = np.zeros( (len(diff), len(diff)), np.float)
+        # for k in range(len(diff)):
+        #     i = order[k]
+        #     sm[i,i] = np.dot(diff[i], diff[i])
+        # for k in range(len(diff)-1):
+        #     i = order[k]
+        #     for l in range(i+1, len(diff)):
+        #         j = order[l]
+        #         sm[i,j] = np.dot(diff[i],diff[j])/sm[i,i]/sm[j,j]
+        #         sm[j,i] = sm[i,j]
+        # for i in range(len(diff)):
+        #     sm[i,i] = 1.
+        # print(sm[:5,:5])
+        # print("Scoring takes",time.time()-start)
+        # return sm
 
 #####
 #        To Do

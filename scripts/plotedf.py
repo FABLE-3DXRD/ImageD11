@@ -120,7 +120,7 @@ class checker:
 #        import pylab as pl
 #        pl.imshow(self.image)
 #        pl.show()
-        self.image = self.image # .tostring()
+        # self.image = self.image # .tostring()
         self.imageWidth = newshape[1]
         self.imageHeight = newshape[0]
         print("Returning")

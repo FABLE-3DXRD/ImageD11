@@ -137,8 +137,7 @@ def fit_ub_t( ub, translation, hkl, peaks_Cxyz, beam_Cxyz, wavelength):
             dg[i+9] = dgobsdt[i]       # translation at 9,10,11
         gcalc =  np.dot( ubnew , hkl ) # 3xn
         gdiff = gcalc - gobs
-        if 0:
-            print((gdiff*gdiff).ravel().sum(),tnew)
+        #    print((gdiff*gdiff).ravel().sum(),tnew)
         dg.shape = 12,3*npk
         mat = np.dot( dg, dg.T )
         rhs = np.dot( dg, gdiff.ravel() )
