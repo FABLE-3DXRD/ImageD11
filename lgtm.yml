@@ -1,0 +1,9 @@
+path_classifiers:
+  - exclude: "ImageD11src/depreciated/*"
+queries:
+  - exclude: "py/unreachable-statement"
+extraction:
+  python:
+    python_setup:
+      version: 3
+      
