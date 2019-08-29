@@ -1,5 +1,5 @@
 path_classifiers:
-   exclude: "ImageD11src/depreciated/*"
+  - exclude: "ImageD11src/depreciated/*"
 queries:
   - exclude: "py/unreachable-statement"
 extraction:
