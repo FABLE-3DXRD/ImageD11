@@ -84,7 +84,6 @@ for i,g1 in enumerate(g1l):
         #if dt2 > toldist2:
         #    continue
         
-        angle = 180.
         sg = None
         aumis = np.dot(asymusT, g2.u)
         arg = (aumis[:,0,0]+aumis[:,1,1]+aumis[:,2,2] - 1. )/2.

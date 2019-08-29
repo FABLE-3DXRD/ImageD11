@@ -59,6 +59,7 @@ def correct(data_object,
         # direction of a previously radially transformed image
         # Gives the liquid contribution
         med = numpy.median( picture )
+        # FIXME
         if True: # Suboption - save the median or not?
             obj = fabio.deconstruct_filename( data_object.header['filename'] )
             obj.extension = ".bkm"

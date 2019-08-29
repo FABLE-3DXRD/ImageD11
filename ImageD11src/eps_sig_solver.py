@@ -219,7 +219,7 @@ class solver:
                 except:
                     print("couldn't compute stress! please check the crystal_symmetry parameters and elastic constants")
                     writestress = False
-                    pass
+                
                 
                 ''' writing down the results'''
                 

@@ -86,15 +86,15 @@ void array_histogram(float img[],
     /* Compute the multiplier to get the bin numbers */
     ostep = nhist / (high - low);
     for (i = 0; i < npx; i++) {
-	ibin = (int)floor((img[i] - low) * ostep);
-	/* clip into range at ends */
-	if (ibin < 0) {
-	    ibin = 0;
-	}
-	if (ibin >= nhist) {
-	    ibin = nhist - 1;
-	}
-	hist[ibin] = hist[ibin] + 1;
+	    ibin = (int)floorf((img[i] - low) * ostep);
+	    /* clip into range at ends */
+	    if (ibin < 0) {
+  	    ibin = 0;
+	    }
+	    if (ibin >= nhist) {
+  	    ibin = nhist - 1;
+	    }
+	    hist[ibin] = hist[ibin] + 1;
     }
 }
 

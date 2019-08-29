@@ -540,7 +540,6 @@ class indexer:
         # found=0
         hits=[]
         start = time.time()
-        start=time.time()
         mtol = -tol # Ugly interface - set cosine tolerance negative for all
                     # instead of best
         for i in range(len(i1)):

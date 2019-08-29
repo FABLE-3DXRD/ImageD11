@@ -1,5 +1,5 @@
 
-from __future__ import print_function
+from __future__ import print_function, division
 
 
 """
@@ -57,7 +57,7 @@ def update_wtd( recon, proj, angle, msk, dbg=True ):
     cImageD11.put_incr( npcalc_proj, idx_hi, wt_hi )
     cImageD11.put_incr( npcalc_proj, idx_lo, wt_lo )
     npcalc_proj = np.where(npcalc_proj >0 ,npcalc_proj, 1)
-    update =  np.zeros( r.shape, np.float32)
+    # update =  np.zeros( r.shape, np.float32)
     update =  wt_hi*np.take( error/npcalc_proj, idx_hi ) 
     update += wt_lo*np.take( error/npcalc_proj, idx_lo )    
 
@@ -78,7 +78,7 @@ def update_wtd( recon, proj, angle, msk, dbg=True ):
     #pl.colorbar()
     #pl.show()
 
-    update = update 
+    # update = update 
     update.shape = recon.shape
     print(update.sum(),error.sum(), end=' ')
     if dbg:

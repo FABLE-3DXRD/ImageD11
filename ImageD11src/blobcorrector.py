@@ -50,7 +50,6 @@ def readfit2dfloats(filep, nfl):
             i = i + 14
             if j == nfl: 
                 break
-        i = i + 1
     return ret
 
 class correctorclass: #IGNORE:R0902
@@ -197,8 +196,8 @@ class correctorclass: #IGNORE:R0902
         if myline[:7] != "SPATIAL":
             raise SyntaxError(name + \
                 ": file does not seem to be a fit2d spline file")
-        myline = fin.readline() # BLANK LINE
-        myline = fin.readline() # VALID REGION
+        fin.readline() # BLANK LINE
+        fin.readline() # VALID REGION
         myline = fin.readline() # the actual valid region, 
                                # assuming xmin,ymin,xmax,ymax
         logging.debug("xmin,ymin,xmax,ymax, read: "+myline)
@@ -210,8 +209,8 @@ class correctorclass: #IGNORE:R0902
         logging.debug("gridspace, xsize, ysize: "+myline)
         self.gridspacing, self.xsize, self.ysize = \
          [float(z) for z in  myline.split()]
-        myline = fin.readline() # BLANK
-        myline = fin.readline() # X-DISTORTION
+        fin.readline() # BLANK
+        fin.readline() # X-DISTORTION
         myline = fin.readline() # two integers nx1,ny1
         logging.debug("nx1, ny1 read: "+myline)
         nx1, ny1 = [int(z) for z in myline.split()]
@@ -220,8 +219,8 @@ class correctorclass: #IGNORE:R0902
         ty1 = numpy.array(readfit2dfloats(fin, ny1), numpy.float32)
         cf1 = numpy.array(readfit2dfloats(fin, (nx1 - 4) * (ny1 - 4)),  
                           numpy.float32)
-        myline = fin.readline() #BLANK
-        myline = fin.readline() # Y-DISTORTION
+        fin.readline() #BLANK
+        fin.readline() # Y-DISTORTION
         myline = fin.readline() # two integers nx2, ny2
         nx2 , ny2 = [int(z) for z in myline.split()]
         tx2 = numpy.array(readfit2dfloats(fin, nx2), numpy.float32)

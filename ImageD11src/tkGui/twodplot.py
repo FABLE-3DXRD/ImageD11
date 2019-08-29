@@ -138,16 +138,16 @@ class twodplot(Tk.Frame):
 
     def bindkeys(self):
         return
-        self.bind_all('<Left>' ,lambda e: self.keypress(self.a.panx,1 )  )
-        self.bind_all('<Right>',lambda e: self.keypress(self.a.panx,-1)  )
-        self.bind_all('<Up>'   ,lambda e: self.keypress(self.a.pany,-1 ) )
-        self.bind_all('<Down>' ,lambda e: self.keypress(self.a.pany,1)   )
-        self.bind_all('<Shift-Left>' ,lambda e: self.keypress(self.a.zoomx,-1 )  )
-        self.bind_all('<Shift-Right>',lambda e: self.keypress(self.a.zoomx,1)  )
-        self.bind_all('<Shift-Up>'   ,lambda e: self.keypress(self.a.zoomy,1 ) )
-        self.bind_all('<Shift-Down>' ,lambda e: self.keypress(self.a.zoomy,-1)   )
-        self.bind_all('<Next>' , lambda e : self.keypress(self.autoscale)   )
-        self.bind_all('<Prior>', lambda e : self.keypress(self.autoscaley, e )  )
+        # self.bind_all('<Left>' ,lambda e: self.keypress(self.a.panx,1 )  )
+        # self.bind_all('<Right>',lambda e: self.keypress(self.a.panx,-1)  )
+        # self.bind_all('<Up>'   ,lambda e: self.keypress(self.a.pany,-1 ) )
+        # self.bind_all('<Down>' ,lambda e: self.keypress(self.a.pany,1)   )
+        # self.bind_all('<Shift-Left>' ,lambda e: self.keypress(self.a.zoomx,-1 )  )
+        # self.bind_all('<Shift-Right>',lambda e: self.keypress(self.a.zoomx,1)  )
+        # self.bind_all('<Shift-Up>'   ,lambda e: self.keypress(self.a.zoomy,1 ) )
+        # self.bind_all('<Shift-Down>' ,lambda e: self.keypress(self.a.zoomy,-1)   )
+        # self.bind_all('<Next>' , lambda e : self.keypress(self.autoscale)   )
+        # self.bind_all('<Prior>', lambda e : self.keypress(self.autoscaley, e )  )
 
     def autoscaley(self,e):
         print(dir(self.a.dataLim))
@@ -215,17 +215,17 @@ class twodplot(Tk.Frame):
                 self.a.set_title(item.d["title"])
             try:
                 if  "plottype" in item.d:
-                    ret = self.a.hist(item.y,item.x)
+                    self.a.hist(item.y,item.x)
                 elif item.x.shape[0]>self.maxpoints:
                     if self.quiet=="No":
                         if messagebox.askyesno("Slow plotting workaround","Shall I plot only the first %d points for increased speed?"%(self.maxpoints)):
-                            ret = self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],**po)
+                            self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],**po)
                         else:
-                            ret = self.a.plot(item.x,item.y,**po)
+                            self.a.plot(item.x,item.y,**po)
                     else:
-                        ret = self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],**po)
+                        self.a.plot(item.x[:self.maxpoints],item.y[:self.maxpoints],**po)
                 else:
-                    ret = self.a.plot(item.x,item.y,**po)
+                    self.a.plot(item.x,item.y,**po)
             except:
                 print("plotting exception ignored")
                 raise

@@ -1,5 +1,5 @@
 
-from __future__ import print_function
+from __future__ import print_function, division
 #!/usr/bin/python2.7
 
 import numpy as np, fabio
@@ -43,7 +43,7 @@ def cleanbg( stem, nimages, newstem ):
        print(i,name)
    bg = np.clip( buffy.min( axis = 0 ), 90, 65535 ) - 90
    # Deal with images up to bufsize/2
-   for i in range(bufsize/2):
+   for i in range(bufsize//2):
        outname = newstem + "%04d.edf"%(i)
        print("write",outname, buffo[i].name)
        np.subtract( buffo[i].data , bg, buffo[i].data )
@@ -64,15 +64,15 @@ def cleanbg( stem, nimages, newstem ):
        buffy[bp] = o.data.copy()
        bg = np.clip( buffy.min( axis = 0 ), 90, 65535 ) - 90
        # Out image is i - bufsize/2
-       op = (i-bufsize/2-1)%bufsize
+       op = (i-bufsize//2-1)%bufsize
        np.subtract( buffo[op].data , bg, buffo[op].data )
        outname = newstem + "%04d.edf"%(i-bufsize/2-1)
        print(i,outname, buffo[op].name)
        buffo[op].write( outname )
    n=i
-   for i in range(bufsize/2):
+   for i in range(bufsize//2):
        outname = newstem + "%04d.edf"%(n+i-bufsize/2)
-       bp = (n+i-bufsize/2)%bufsize
+       bp = (n+i-bufsize//2)%bufsize
        print("write",outname, buffo[bp].name)
        np.subtract( buffo[bp].data , bg, buffo[bp].data )
        buffo[bp].write( outname )

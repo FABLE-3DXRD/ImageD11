@@ -248,7 +248,7 @@ if 1:
 #    x^2 + y^2 = 2*Ry
 # ... x>>y : x^2 = 2Ry
 # so Y = x^2/(2R)
-x = np.linspace( -.5e-3, .5e-3, 100)
+#x = np.linspace( -.5e-3, .5e-3, 100)
 x = np.linspace( -25e-6, 25e-6, 100)
 #pl.plot( 1e6*x, 1e6*x*x/(2*R_SI), "-" )
 E = 40 

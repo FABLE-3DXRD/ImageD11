@@ -67,7 +67,7 @@ class indexer:
           elif "xc" in self.cf.titles: 
              pks = self.cf.xc, self.cf.yc
           else:
-             raise "peaks file misses xc or sc"
+             raise Exception("peaks file misses xc or sc")
           xl,yl,zl = transform.compute_xyz_lab( pks,
                                                 **self.transformpars.parameters)
           self.cf.addcolumn(xl,"xl")

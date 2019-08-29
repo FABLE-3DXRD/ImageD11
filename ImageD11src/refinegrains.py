@@ -235,7 +235,7 @@ class refinegrains:
             print(filename, type(filename))
             raise
         for i, g in enumerate(ul):
-            name = filename + "_" + str(i)
+            # name = filename + "_" + str(i)
             # Hmmm .... multiple grain files?
             name = i
             self.grainnames.append(i)

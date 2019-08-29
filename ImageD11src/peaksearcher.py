@@ -258,13 +258,9 @@ def peaksearch_driver(options, args):
     # Make a blobimage the same size as the first image to process
 
 
-    # List comprehension - convert remaining args to floats - must be unique list        
-    thresholds_list = [float(t) for t in options.thresholds]
-    try:
-        thresholds_list = list(set(thresholds_list))
-    except:
-        import sets
-        thresholds_list = list(sets.Set(thresholds_list))
+    # List comprehension - convert remaining args to floats 
+    # must be unique list so go via a set
+    thresholds_list = list( set( [float(t) for t in options.thresholds] ) )
     thresholds_list.sort()
         
     li_objs={} # label image objects, dict of
