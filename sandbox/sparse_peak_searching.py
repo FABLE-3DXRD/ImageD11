@@ -9,59 +9,142 @@ from ImageD11 import cImageD11
 
 class sparse_frame( object ):
     """
-    Holds the output of an image segmentation
+    Indices / shape mapping
     """
-    def __init__(self, row, col, pixels, shape=None, name="none"):
-        """
-        Sparse matrix, follows scipy.sparse.coo_matrix
-        row = slow index (uint16)
-        col = fast index (uint16)
-        data = intensity
-        nnz  = number of entries
-        """
-        self.row = np.array(row, dtype=np.uint16)
-        self.col = np.array(col, dtype=np.uint16)
-        self.pixels = pixels
+    def __init__(self, row, col, shape, itype=np.uint16, pixels=None):
+        """ row = slow direction
+        col = fast direction
+        shape = size of full image
+        itype = the integer type to store the indices
+                our c codes currently use unsigned short...
+        nnz is implicit as len(row)==len(col) """
+        self.check( row, col, shape, itype )
+        self.shape = shape
+        self.row = np.asarray(row, dtype = itype )
+        self.col = np.asarray(col, dtype = itype )
         self.nnz = len(self.row)
-        self.cplabels=None # flags for done/not done
-        self.mxlabels=None
-        self.name=name
-        if shape is None:
-            self.shape = (self.row.max(), self.col.max())
+        # Things we could have using those indices:
+        #   raw pixel intensities
+        #   corrected intensities
+        #   smoothed pixel intensities
+        #   labelling via different algorithms
+        self.pixels = {}
+        if pixels is not None:
+            for k,v in pixels.iteritems():
+                assert len(v) == self.nnz
+                self.pixels[k] = v
+        
+    def check(self, row, col, shape, itype):
+        """ Ensure the index data makes sense and fits """
+        lo = numpy.iinfo(itype).min
+        hi = numpy.iinfo(itype).max
+        assert len(shape) == 2
+        assert shape[0] >= lo and shape[0] < hi
+        assert shape[1] >= lo and shape[1] < hi
+        assert np.min(row) >= lo and np.max(row) < hi
+        assert np.min(col) >= lo and np.max(col) < hi
+        assert len(row) == len(col)
+        
+    def is_sorted(self):
+        """ Tests whether the data are sorted into slow/fast order
+        rows are slow direction
+        columns are fast """
+        # TODO: non uint16 cases
+        assert self.row.dtype == np.uint16 and \
+            cImageD11.sparse_is_sorted( self.row, self.col ) == 0
+
+    def to_dense(self, data, out=None):
+        """ returns the full 2D image 
+        Does not handle repeated indices
+        e.g.  obj.to_dense( obj.pixels['raw_intensity'] )
+        """
+        if out is None:
+            out = np.zeros( self.shape, data.dtype )
         else:
-            self.shape = shape
-            assert self.row.max() <= self.shape[0]
-            assert self.col.max() <= self.shape[1]
-                
-    def check(self):
-        """
-        Verify data type and that indices are sorted
-        """
-        assert self.row.dtype == np.uint16
-        assert self.col.dtype == np.uint16
-        assert cImageD11.sparse_is_sorted( self.row, self.col ) == 0
-        for ar in (self.row, self.col, self.pixels):
-            assert len(ar.shape)==1
-            assert ar.shape[0] == self.nnz
+            assert out.shape == self.shape
+        assert len(data) == self.nnz
+        adr = self.row.astype(np.intp) * self.shape[1] + self.col
+        out.flat[adr] = data    
+        return out
 
-    def threshold(self, threshold):
-        m = self.pixels > t
-        return sparse_frame( self.row[m], self.col[m], self.pixels[m] )
+    def mask( self, msk ):
+        """ returns a subset of itself """
+        return sparse_frame( self.row[msk],
+                             self.col[msk],
+                             self.shape, self.row.dtype,
+                             pixels= { name: pixval[msk] for (name, pixval)
+                                       in self.pixels.items()} )
 
-    def con_labels( self, threshold=None ):
+    def set_pixels( self, name, values ):
+        """ Named arrays sharing these labels """
+        assert len(values) == self.nnz
+        self.pixels[name] = values
+
+    def sort_by( self, name ):
+        """ Not sure when you would do this. For sorting 
+        by a peak labelling to get pixels per peak """
+        assert name in self.pixels
+        order = np.argsort( self.pixels[name] )
+        self.reorder( self, order )
+
+    def sort( self ):
+        """ Puts you into slow / fast looping order """
+        order = np.lexsort( ( self.col, self.row ) )
+        self.reorder( self, order )
+
+    def reorder( self, order ):
+        """ Put the pixels into a different order """
+        assert len(order) == self.nnz
+        self.row = self.row[order]
+        self.col = self.col[order]
+        self.pixels = { name, pixval[order] for (name, pixval)
+                        in self.pixels.items() }
+        
+    def threshold(self, threshold, name='data'):
+        """
+        returns a new sparse frame with pixels > threshold
+        """
+        return self.mask( self.pixels[name] > threshold )
+
+
+class sparse_labelling( object ):
+    """ Augments a sparse frame with some labels """
+    
+    def __init__(self, frame):
+        self.frame = frame
+        
+    def moments(self):
+        return cImageD11.sparse_blob2Dproperties(
+            self.frame.pixels[self.intensity_name],
+            self.frame.row,
+            self.frame.col,
+            self.frame.pixels[self.label_name],
+            self.nlabels )
+    
+    
+class sparse_connected_pixels( sparse_labelling ):
+    
+    def __init__(self, frame, threshold, name='data'):
+        """
+        guesses threshold as min val-1 or given threshold
+        adds an array named [cplabels_tx.xxx]
+        self.nclabel number of connected objects
+        """
+        sparse_labelling.__init__(self, frame)
+        self.name = name
         if threshold is None:
-            self.threshold = self.pixels.min()-1
-        self.cplabels = np.zeros( self.nnz, 'i' )
-        self.nclabel = cImageD11.sparse_connectedpixels(
+            self.threshold = self.frame.pixels[name].min()-1
+        self.labels = np.zeros( self.nnz, 'i' )
+        self.nlabel = cImageD11.sparse_connectedpixels(
             self.pixels, self.row, self.col,
             self.threshold,   self.cplabels )
         
     def con_moments( self ):
         if self.cplabels is None:
             self.con_labels()
-        return cImageD11.sparse_blob2Dproperties(
-            self.pixels, self.row, self.col, self.cplabels, self.nclabel )
 
+
+class sparse_localmax( labelling ):
     def max_labels( self ):
         self.mxlabels = np.zeros(self.nnz, 'i' )
         vmx = np.zeros( self.nnz, np.float32 )

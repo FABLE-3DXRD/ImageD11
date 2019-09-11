@@ -8,6 +8,36 @@
 #include "blobs.h"
 
 /**
+ * Fill in the indices i,j from a mask
+ *
+ * @param mask int8_t
+ * @param irow, jcol uint16_t
+ */
+
+int mask_to_coo( int8_t msk[], int ns, int nf,
+	    uint16_t i[], uint16_t j[], int nnz){
+  int mi, mj, npx;
+  npx = 0;
+  if( (ns < 1) || (ns > 65535) ) return 1;
+  if( (nf < 1) || (nf > 65535) ) return 2;
+  if( nnz < 1 ) return 3;
+  for( mi = 0; mi < ns; mi++){
+    for( mj = 0; mj < nf ; mj++){
+      if( msk[ mi*nf + mj ] != 0 ){
+	i[npx]=(uint16_t) mi;
+	j[npx]=(uint16_t) mj;
+	npx++;
+	if( npx > nnz ){
+	  return 4; /* error */
+	}
+      }
+    }
+  }
+  return 0;
+}
+
+
+/**
  * Go through the data to compute sum and sum2 for mean and std 
  * Also find min and max. Uses openmp for reductions
  * 

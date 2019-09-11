@@ -401,15 +401,30 @@ interface
         threadsafe
     end function count_shared
 
-    subroutine clean_mask( msk, ret, ns, nf )
+    function clean_mask( msk, ret, ns, nf )
         intent(c) clean_mask
         intent(c)
         integer*1, intent(in)  :: msk( ns, nf )
         integer, intent(hide), depend(msk) :: ns=shape(msk,0)
         integer, intent(hide), depend(msk) :: nf=shape(msk,1)
         integer*1, intent(inout), dimension(ns, nf) :: ret
+	! returns an int
+	integer :: clean_mask
         threadsafe
     end function clean_mask
+
+    function mask_to_coo( msk, ns, nf, i, j, nnz )
+        intent(c) mask_to_coo
+        intent(c)
+        integer*1, intent(in)  :: msk( ns, nf )
+        integer, intent(hide), depend(msk) :: ns=shape(msk,0)
+        integer, intent(hide), depend(msk) :: nf=shape(msk,1)
+        integer(kind=-2), intent(inout), dimension(nnz) :: i, j
+	integer, intent(hide), depend(i) :: nnz=shape(i,0)
+	! returns an int
+	integer :: mask_to_coo
+        threadsafe
+    end function mask_to_coo
 
     subroutine array_stats( img, npx, minval, maxval, mean, var )
         intent(c) array_stats

@@ -386,25 +386,25 @@ void blob_moments(double *res, int np)
     compute_moments(res, np);
 }
 
-void clean_mask(int8_t msk[], int8_t ret[], int ns, int nf)
+int clean_mask(int8_t msk[], int8_t ret[], int ns, int nf)
 {
     /* cleans pixels with no 4 connected neighbors */
-    int i, j, n, p, q;
+    int i, j, n, p, q, npx;
+    npx = 0;
     /* set zero for default */
     memset(ret, 0, (long) ns * nf * sizeof(int8_t)); 
 	              /* long for lint: if you are overflowing int here
 				     you have a very large image ! */
-    /*  printf("yop %d %d\n",ns,nf); */
+    /* printf("yop %d %d\n",ns,nf); */
     for (i = 0; i < ns; i++) {
-	p = i * ns;
+	p = i * nf;
 	for (j = 0; j < nf; j++) {
 	    q = p + j;
 	    /* printf("%d:%d\n",q,msk[q]); */
 	    if (msk[q] != 0) {
 		/* Count neighbors */
 		n = 0;
-		/* printf("%d %d\n",q,msk[q]); */
-		if ((i > 0) && (msk[q - nf] != 0))
+		if ((i > 0) && (msk[q - nf] != 0)) 
 		    n++;
 		if ((i < (ns - 1)) && (msk[q + nf] != 0))
 		    n++;
@@ -412,9 +412,13 @@ void clean_mask(int8_t msk[], int8_t ret[], int ns, int nf)
 		    n++;
 		if ((j < (nf - 1)) && (msk[q + 1] != 0))
 		    n++;
-		if (n != 0)
+		/* printf("(%d,%d) %d %d %d\n",i,j,q,msk[q],n); */
+		if (n != 0){ 
 		    ret[q] = 1;
+		    npx++;
+		}
 	    }
 	}
     }
+    return npx;
 }

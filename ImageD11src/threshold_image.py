@@ -39,6 +39,6 @@ def binary_clean( mask ):
     Remove the one pixel stuff
     """
     ret = np.zeros(mask.shape, np.int8)
-    cImageD11.clean_mask( mask.astype( np.int8 ), ret )
-    return ret
+    npx = cImageD11.clean_mask( mask.astype( np.int8 ), ret )
+    return npx, ret
     
