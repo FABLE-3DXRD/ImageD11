@@ -30,14 +30,15 @@ class sparse_frame( object ):
         #   labelling via different algorithms
         self.pixels = {}
         if pixels is not None:
-            for k,v in pixels.iteritems():
+            for k,v in pixels.items():
+                print(v.shape, self.nnz)
                 assert len(v) == self.nnz
                 self.pixels[k] = v
         
     def check(self, row, col, shape, itype):
         """ Ensure the index data makes sense and fits """
-        lo = numpy.iinfo(itype).min
-        hi = numpy.iinfo(itype).max
+        lo = np.iinfo(itype).min
+        hi = np.iinfo(itype).max
         assert len(shape) == 2
         assert shape[0] >= lo and shape[0] < hi
         assert shape[1] >= lo and shape[1] < hi
@@ -97,7 +98,7 @@ class sparse_frame( object ):
         assert len(order) == self.nnz
         self.row = self.row[order]
         self.col = self.col[order]
-        self.pixels = { name, pixval[order] for (name, pixval)
+        self.pixels = { (name, pixval[order]) for (name, pixval)
                         in self.pixels.items() }
         
     def threshold(self, threshold, name='data'):
@@ -144,7 +145,7 @@ class sparse_connected_pixels( sparse_labelling ):
             self.con_labels()
 
 
-class sparse_localmax( labelling ):
+class sparse_localmax( sparse_labelling ):
     def max_labels( self ):
         self.mxlabels = np.zeros(self.nnz, 'i' )
         vmx = np.zeros( self.nnz, np.float32 )

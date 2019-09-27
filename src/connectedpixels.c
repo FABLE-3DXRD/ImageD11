@@ -386,7 +386,7 @@ void blob_moments(double *res, int np)
     compute_moments(res, np);
 }
 
-int clean_mask(int8_t msk[], int8_t ret[], int ns, int nf)
+int clean_mask_old(int8_t msk[], int8_t ret[], int ns, int nf)
 {
     /* cleans pixels with no 4 connected neighbors */
     int i, j, n, p, q, npx;
@@ -396,29 +396,76 @@ int clean_mask(int8_t msk[], int8_t ret[], int ns, int nf)
 	              /* long for lint: if you are overflowing int here
 				     you have a very large image ! */
     /* printf("yop %d %d\n",ns,nf); */
+
+#pragma omp parallel for private(p,i,j,q,n) reduction(+:npx)
     for (i = 0; i < ns; i++) {
 	p = i * nf;
+	/* j=0, -1 special */
 	for (j = 0; j < nf; j++) {
 	    q = p + j;
-	    /* printf("%d:%d\n",q,msk[q]); */
 	    if (msk[q] != 0) {
-		/* Count neighbors */
-		n = 0;
-		if ((i > 0) && (msk[q - nf] != 0)) 
-		    n++;
-		if ((i < (ns - 1)) && (msk[q + nf] != 0))
-		    n++;
-		if ((j > 0) && (msk[q - 1] != 0))
-		    n++;
-		if ((j < (nf - 1)) && (msk[q + 1] != 0))
-		    n++;
-		/* printf("(%d,%d) %d %d %d\n",i,j,q,msk[q],n); */
-		if (n != 0){ 
-		    ret[q] = 1;
-		    npx++;
-		}
+			/* Count neighbors */
+			if (((i > 0)        && (msk[q - nf] != 0)) ||
+			   ((i < (ns - 1)) && (msk[q + nf] != 0))  ||
+			   ((j > 0)        && (msk[q - 1]  != 0))  ||
+			   ((j < (nf - 1)) && (msk[q + 1]  != 0)) ){
+			    ret[q] = 1;
+			    npx++;
+			}
 	    }
 	}
     }
     return npx;
+}
+
+int clean_mask(int8_t msk[], int8_t ret[], int ns, int nf)
+{
+    /* cleans pixels with no 4 connected neighbors */
+    int i, j, npx, p;
+    npx = 0;
+	/*       top
+	 * prev  now  next
+	 *       bot
+	 */
+#pragma omp parallel for private(p,i,j)
+	for(i=0;i<ns;i++){
+		p = i*nf;
+		for(j=0;j<nf;j++) 		ret[p+j] = msk[p+j];
+		for(j=1;j<nf;j++) 		ret[p+j] += msk[p+j-1];
+		for(j=0;j<(nf-1);j++)	ret[p+j] += msk[p+j+1];
+		if( i > 1){
+			for(j=0;j<nf;j++) 	ret[p+j] += msk[p-nf+j];		
+		}
+		if( i < (ns-1)){
+			for(j=0;j<nf;j++) 	ret[p+j] += msk[p+nf+j];		
+		}
+	}
+#pragma omp parallel for private(p,i,j) reduction(+:npx)
+    for (i = 0; i < ns*nf; i++) {
+		if(ret[i]>1){ 
+			ret[i] = 1;
+			npx++;
+		} else {
+			ret[i] = 0;
+		}
+	}
+    return npx;
+}
+
+
+
+
+int make_clean_mask(float img[], float cut, int8_t msk[], int8_t ret[], int ns, int nf)
+{
+    /* cleans pixels with no 4 connected neighbors */
+    int i;
+#pragma omp parallel for
+    for (i = 0; i < ns*nf; i++) {
+     	if(img[i] > cut) {
+			msk[i] = 1;
+		 } else  {
+			msk[i] = 0;
+		}
+	}
+	return clean_mask(&msk[0], &ret[0], ns, nf);
 }

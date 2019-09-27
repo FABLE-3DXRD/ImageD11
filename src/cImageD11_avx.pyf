@@ -1,3 +1,4 @@
+python module cImageD11_avx
 
 
 
@@ -552,3 +553,4 @@ end interface
 
 
 
+end python module cImageD11_avx

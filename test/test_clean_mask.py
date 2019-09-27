@@ -26,10 +26,12 @@ class test_clean_mask( unittest.TestCase ):
     def test1(self):
         testmask = np.zeros( self.src.shape, np.int8 )
         npx = cImageD11.clean_mask( self.src.astype(np.int8), testmask )
-        #print('npx=',npx)
-        #print( self.src)
-        #print(testmask)
-        #print(testmask.sum())
+        if 0:
+            print('npx=',npx)
+            print( self.src)
+            print(self.src.view(dtype=np.int8))
+            print(testmask)
+            print(testmask.sum())
         self.assertTrue( self.target.sum() == npx )
         self.assertTrue( (testmask == self.target).all() )
     def test_coo(self):
