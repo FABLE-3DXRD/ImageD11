@@ -418,35 +418,84 @@ int clean_mask_old(int8_t msk[], int8_t ret[], int ns, int nf)
     return npx;
 }
 
-int clean_mask(int8_t msk[], int8_t ret[], int ns, int nf)
+
+
+
+
+
+int clean_mask(const int8_t *restrict msk, int8_t *restrict ret, int ns, int nf)
 {
     /* cleans pixels with no 4 connected neighbors */
-    int i, j, npx, p;
-    npx = 0;
-	/*       top
-	 * prev  now  next
-	 *       bot
-	 */
-#pragma omp parallel for private(p,i,j)
-	for(i=0;i<ns;i++){
-		p = i*nf;
-		for(j=0;j<nf;j++) 		ret[p+j] = msk[p+j];
-		for(j=1;j<nf;j++) 		ret[p+j] += msk[p+j-1];
-		for(j=0;j<(nf-1);j++)	ret[p+j] += msk[p+j+1];
-		if( i > 1){
-			for(j=0;j<nf;j++) 	ret[p+j] += msk[p-nf+j];		
-		}
-		if( i < (ns-1)){
-			for(j=0;j<nf;j++) 	ret[p+j] += msk[p+nf+j];		
+    int i, j, q, npx;
+	int8_t t;
+	npx = 0;
+#pragma omp parallel for private(i)
+	for(i=0; i<ns*nf; i++){
+		if(msk[i]>0){
+			ret[i] = 1;
+		} else {
+		    ret[i] = 0;
 		}
 	}
-#pragma omp parallel for private(p,i,j) reduction(+:npx)
-    for (i = 0; i < ns*nf; i++) {
-		if(ret[i]>1){ 
-			ret[i] = 1;
-			npx++;
-		} else {
-			ret[i] = 0;
+	i = 0;
+	for(j=0; j<nf; j++){
+		q = i*nf+j;
+		if(ret[q]>0){
+			t = msk[q+nf];
+			if(j>0)     t+=msk[q-1];
+			if(j<(nf-1))t+=msk[q+1];
+			if(t>0){
+				npx++;
+			} else {
+				ret[q] = 0;
+			}
+		}
+	}
+#pragma omp parallel for private(i,j,q,t) reduction(+:npx)
+	for(i=1; i<(ns-1); i++){
+		/* j==0 */
+		q = i*nf;
+		if(ret[q]>0){
+			t = msk[q-nf] + msk[q+nf] + msk[q+1];
+			if(t>0){
+					npx++;
+				} else {
+					ret[q] = 0;
+			}
+		}
+		for(j=1; j<(nf-1); j++){
+ 			q = i*nf+j;
+			if(ret[q]>0){
+				t = msk[q-nf] + msk[q+nf] + msk[q-1] + msk[q+1];
+				if(t>0){
+					npx++;
+				} else {
+					ret[q] = 0;
+				}
+			}
+		}
+		q = (i+1)*nf - 1;
+		if(ret[q]>0){
+			t = msk[q-nf] + msk[q+nf] + msk[q-1];
+			if(t>0){
+				npx++;
+			} else {
+				ret[q] = 0;
+			}
+		}
+	}
+	i = ns-1;
+	for(j=0; j<nf; j++){
+		q = i*nf+j;
+		if(ret[q]>0){
+			t = msk[q-nf];
+			if(j>0)     t+=msk[q-1];
+			if(j<(nf-1))t+=msk[q+1];
+			if(t>0){
+				npx++;
+			} else {
+				ret[q] = 0;
+			}
 		}
 	}
     return npx;
@@ -454,8 +503,7 @@ int clean_mask(int8_t msk[], int8_t ret[], int ns, int nf)
 
 
 
-
-int make_clean_mask(float img[], float cut, int8_t msk[], int8_t ret[], int ns, int nf)
+int make_clean_mask(float * restrict img, float cut, int8_t * restrict msk, int8_t * restrict ret, int ns, int nf)
 {
     /* cleans pixels with no 4 connected neighbors */
     int i;

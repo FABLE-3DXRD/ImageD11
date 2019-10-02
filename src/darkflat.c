@@ -30,6 +30,18 @@ __m256 _mm256_mul_ps (__m256 a, __m256 b)
   unaligned load/store (32 byte boundary)
 */
 
+void uint16_to_float_darksub( float *restrict img,
+                        const float *restrict drk,
+                        const uint16_t *restrict data,
+                        int npx ){
+    int i;
+#pragma omp parallel for simd
+    for(i=0;i<npx;i++){
+        img[i] = ((float)data[i]) - drk[i];
+    }
+}
+
+
 void frelon_lines( float *img, int ns, int nf, float cut ){
     int i, j, p, npx;
     float rowsum, avg;
@@ -54,7 +66,7 @@ void frelon_lines( float *img, int ns, int nf, float cut ){
     }
 }
 
-void frelon_lines_sub( float *img, float* drk, int ns, int nf, float cut ){
+void frelon_lines_sub( float * restrict img, float * restrict drk, int ns, int nf, float cut ){
     int i, j, p, npx;
     float rowsum, avg;
     avg = img[0];
@@ -79,7 +91,7 @@ void frelon_lines_sub( float *img, float* drk, int ns, int nf, float cut ){
     }
 }
 
-void array_mean_var_cut( float img[], int npx, float *mean, float *std,
+void array_mean_var_cut( float * restrict img, int npx, float *mean, float *std,
                          int n, float cut, int verbose ){
     int i, nactive;
     float t, s1, s2, wt, y0;
@@ -210,3 +222,43 @@ void array_histogram(float img[],
 	    hist[ibin] = hist[ibin] + 1;
     }
 }
+
+/* This is the go-to algorithm
+    Ordering is via the reads
+    It does not look like it is thread safe ??
+    */
+void array_bincount( float * restrict img, int npx, int * restrict ib, 
+                    float * restrict h, int nh){
+    int i;
+    for( i=0; i<nh; i++ ) 
+        h[i]=0.0;
+#pragma omp parallel for 
+    for( i=0; i<npx; i++) {
+        h[ib[i]] += img[i];
+    }
+}
+
+
+/* This is a come-from algorithm
+    Ordering is via the writes
+     */
+    
+void csr_one_dot( const float * restrict img, /* source data */
+                  const int   * restrict indices, 
+                  const int   * restrict indptr,
+                        float * restrict dest, 
+                        int nrow){
+    int i, j;
+/*   printf("Got nrow %d\n",nrow) */
+#pragma omp parallel for private(i,j) schedule(guided)
+    for( i=0; i<nrow; i++ ) {
+        dest[i]=0.0;
+        for( j=indptr[i]; j<indptr[i+1]; j++ ){
+            dest[i]+=img[indices[j]];
+        }
+    }
+}
+
+
+
+

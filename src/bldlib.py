@@ -79,11 +79,14 @@ def make_pyf( inp, name ):
     out.write("end python module %s\n"%(name))
     out.close()
     
-
-if __name__=="__main__":
+def main():
     cc = distutils.ccompiler.new_compiler( verbose=1 , compiler=compiler )
     cc.add_include_dir( "." )
     sse2lib = run_cc(cc, plat, bits, vers, "sse2", sse2arg, sse2libname )
     avx2lib = run_cc(cc, plat, bits, vers, "avx", avx2arg, avx2libname )
     make_pyf( "cImageD11_interface.pyf", "cImageD11_sse2")
     make_pyf( "cImageD11_interface.pyf", "cImageD11_avx")
+
+
+if __name__=="__main__":
+    main()

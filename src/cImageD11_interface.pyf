@@ -409,7 +409,7 @@ interface
         integer, intent(hide), depend(msk) :: nf=shape(msk,1)
         integer*1, intent(inout), dimension(ns, nf) :: ret
 	! returns an int
-	integer :: clean_mask
+        integer :: clean_mask
         threadsafe
     end function clean_mask
 
@@ -547,6 +547,35 @@ interface
         threadsafe
     end subroutine array_mean_var_cut
 
+    subroutine array_bincount( img, npx, ib, h, nh )
+        intent(c) array_bincount
+        intent(c)
+        real, intent(in), dimension(npx) :: img
+        integer, intent(hide), depend(img) :: npx = shape(img,0)
+        integer, intent(in), dimension(npx) :: ib
+        real, intent(inout), dimension(nh) :: h
+        integer, intent(hide), depend(h) :: nh = shape(h,0)
+        threadsafe
+    end subroutine array_bincount
+
+    subroutine uint16_to_float_darksub( img, drk, data, npx )
+        intent(c) uint16_to_float_darksub
+        intent(c)
+        real, intent(inout), dimension(npx) :: img
+        real, intent(in), dimension(npx) :: drk
+        integer(kind=-2), intent(in), dimension(npx) :: data
+        integer, intent(hide), depend( img ) :: npx
+    end subroutine uint16_to_float_darksub
+
+    subroutine csr_one_dot(img,indices,indptr,dest,nrow)
+        intent(c) csr_one_dot
+        intent(c)
+        real, intent(in), dimension(:) :: img
+        integer, intent(in), dimension(:) :: indices, indptr
+        real, intent(inout), dimension(nrow) :: dest
+        integer, intent(hide), depend(dest) :: nrow = shape(dest,0)
+    end subroutine
+                    
 
 end interface
 

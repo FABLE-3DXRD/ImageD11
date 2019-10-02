@@ -14,7 +14,7 @@
  * @param irow, jcol uint16_t
  */
 
-int mask_to_coo( int8_t msk[], int ns, int nf,
+int mask_to_coo_old( int8_t msk[], int ns, int nf,
 	    uint16_t i[], uint16_t j[], int nnz){
   int mi, mj, npx;
   npx = 0;
@@ -35,6 +35,56 @@ int mask_to_coo( int8_t msk[], int ns, int nf,
   }
   return 0;
 }
+
+
+int mask_to_coo( int8_t msk[], int ns, int nf,
+	    uint16_t i[], uint16_t j[], int nnz){
+  int mi, mj, idx;
+  /* vla temporary */
+  int nrow[ns];
+  if( (ns < 1) || (ns > 65535) ) return 1;
+  if( (nf < 1) || (nf > 65535) ) return 2;
+  if( nnz < 1 ) return 3;
+  /* pixels per row */
+#pragma omp parallel for private(mi,mj)
+  for( mi = 0; mi < ns; mi++){
+    nrow[mi] = 0;
+    for( mj = 0; mj < nf ; mj++){
+      if( msk[ mi*nf + mj ] != 0 ){
+        nrow[mi]++;
+      }
+    }
+  }
+  /* cumsum */
+  for( mi=1; mi<ns; mi++){
+    nrow[mi] += nrow[mi-1];
+  }
+  if( nrow[ns-1] != nnz){ 
+    return 4 ;
+    }
+  /* fill in */
+#pragma omp parallel for private(mi,mj,idx)
+  for(mi = 0; mi < ns; mi++){
+    if(mi==0){ 
+      idx = 0; 
+    } else { 
+      idx = nrow[mi-1]; 
+    }
+    if(nrow[mi] > idx){
+      for( mj = 0; mj < nf ; mj++){
+        if( msk[ mi*nf + mj ] != 0 ){
+          i[idx] = (uint16_t) mi;
+  	      j[idx] = (uint16_t) mj;
+	        idx++; 
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+
+
 
 
 
