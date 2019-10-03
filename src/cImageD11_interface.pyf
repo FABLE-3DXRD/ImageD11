@@ -427,16 +427,18 @@ interface
         threadsafe
     end function make_clean_mask
 
-    function mask_to_coo( msk, ns, nf, i, j, nnz )
+    function mask_to_coo( msk, ns, nf, i, j, nnz, w )
         intent(c) mask_to_coo
         intent(c)
         integer*1, intent(in)  :: msk( ns, nf )
         integer, intent(hide), depend(msk) :: ns=shape(msk,0)
         integer, intent(hide), depend(msk) :: nf=shape(msk,1)
         integer(kind=-2), intent(inout), dimension(nnz) :: i, j
-	integer, intent(hide), depend(i) :: nnz=shape(i,0)
-	! returns an int
-	integer :: mask_to_coo
+        integer, intent(inout) :: w(ns)
+    	integer, intent(hide), depend(i) :: nnz=shape(i,0)
+	    integer, intent(inout) :: w(ns)
+        ! returns an int
+	    integer :: mask_to_coo
         threadsafe
     end function mask_to_coo
 

@@ -55,9 +55,10 @@ def threshold_image(im, nsigma=2, fix_lines=False, mskmem=None, block=256,
     if verbose:
         print("mask raw:",mask.sum())
     npx, clean_mask = binary_clean( mask, out=mskmem )
-    i = np.zeros( npx, np.uint16)
-    j = np.zeros( npx, np.uint16)
-    ok = cImageD11.mask_to_coo( clean_mask.astype(np.int8), i, j )
+    i = np.empty( npx, np.uint16)
+    j = np.empty( npx, np.uint16)
+    tmp = np.empty( im.shape[0], np.int32 )
+    ok = cImageD11.mask_to_coo( clean_mask.astype(np.int8), i, j, tmp )
     if verbose:
         print("mask clean",clean_mask.sum())
     assert ok == 0
