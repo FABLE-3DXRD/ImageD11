@@ -41,7 +41,8 @@ int mask_to_coo( int8_t msk[], int ns, int nf,
 	    uint16_t i[], uint16_t j[], int nnz){
   int mi, mj, idx;
   /* vla temporary */
-  int nrow[ns];
+  int *nrow;
+  nrow = (int*) malloc(ns*sizeof(int)); 
   if( (ns < 1) || (ns > 65535) ) return 1;
   if( (nf < 1) || (nf > 65535) ) return 2;
   if( nnz < 1 ) return 3;
@@ -80,6 +81,7 @@ int mask_to_coo( int8_t msk[], int ns, int nf,
       }
     }
   }
+  free(nrow);
   return 0;
 }
 

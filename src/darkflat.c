@@ -1,5 +1,6 @@
 /* stdint */
-#include  <stdint.h>
+#include "cImageD11.h"
+
 #include  <stdlib.h>
 #include  <stdio.h>
 #include  <string.h>
@@ -30,12 +31,18 @@ __m256 _mm256_mul_ps (__m256 a, __m256 b)
   unaligned load/store (32 byte boundary)
 */
 
+#if _OPENMP >= 201307
+#define SIMD simd
+#else
+#define SIMD
+#endif
+
 void uint16_to_float_darksub( float *restrict img,
                         const float *restrict drk,
                         const uint16_t *restrict data,
                         int npx ){
     int i;
-#pragma omp parallel for simd
+#pragma omp parallel for SIMD
     for(i=0;i<npx;i++){
         img[i] = ((float)data[i]) - drk[i];
     }
@@ -51,7 +58,6 @@ void frelon_lines( float *img, int ns, int nf, float cut ){
         rowsum = 0.;
         npx = 0;
         p = i*nf;
-        #pragma omp simd
         for( j = 0; j<nf ; j++){
             if ( img[p+j] < cut ){
                 rowsum += img[p+j];
@@ -60,7 +66,6 @@ void frelon_lines( float *img, int ns, int nf, float cut ){
         }
         if( npx > 0 )
             avg = rowsum / npx;
-        #pragma omp simd
         for( j = 0; j<nf ; j++)
            img[p+j] = img[p+j] - avg;
     }
@@ -75,7 +80,6 @@ void frelon_lines_sub( float * restrict img, float * restrict drk, int ns, int n
         rowsum = 0.;
         npx = 0;
         p = i*nf;
-        #pragma omp simd
         for( j = 0; j<nf ; j++){
             img[p+j] = img[p+j] - drk[p+j];
             if ( img[p+j] < cut ){
@@ -85,7 +89,6 @@ void frelon_lines_sub( float * restrict img, float * restrict drk, int ns, int n
         }
         if( npx > 0 )
             avg = rowsum / npx;
-        #pragma omp simd
         for( j = 0; j<nf ; j++)
            img[p+j] = img[p+j] - avg;
     }
@@ -100,7 +103,7 @@ void array_mean_var_cut( float * restrict img, int npx, float *mean, float *std,
     s2 = 0;
     if (verbose) printf("Args, img[0] %f npx %d n %d cut %f verbose %d\n", \
                            img[0], npx,  n, cut, verbose);
-#pragma omp parallel for simd private(t) reduction(+:s1,s2)
+#pragma omp parallel for SIMD private(t) reduction(+:s1,s2)
     for (i = 0; i < npx; i++) {
          t = img[i] - y0;
          s1 = s1 + t;
@@ -116,7 +119,7 @@ void array_mean_var_cut( float * restrict img, int npx, float *mean, float *std,
         s1 = 0;
         s2 = 0;
         nactive = 0;
-#pragma omp parallel for simd private(t) reduction(+:s1,s2,nactive)
+#pragma omp parallel for SIMD private(t) reduction(+:s1,s2,nactive)
         for (i = 0; i < npx; i++) {
             if( img[i] < wt ){
                t = img[i] - y0;
