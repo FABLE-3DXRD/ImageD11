@@ -18,3 +18,23 @@ if nbyte == 8:
 
 if nbyte == 4:
     put_incr = put_incr32
+
+# Add / fix the docstrings
+
+from ImageD11 import cImageD11_docstrings
+
+def fix_doc( oldstring, to_be_added ):
+    if oldstring.find("Wrapper for"):
+        head, tail = oldstring.split("Wrapper for")
+        iname = tail.find("\n")
+        return head + tail[:iname] + " " + to_be_added + tail[iname:]
+    else:
+        return oldstring + to_be_added
+
+
+for name in cImageD11_docstrings.__all__:
+    doc = getattr( cImageD11_docstrings, name )
+    if name in globals():
+        func = globals()[name]
+        func.__doc__ = fix_doc( func.__doc__, doc )
+        

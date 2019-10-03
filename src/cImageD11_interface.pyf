@@ -76,6 +76,10 @@ interface
     function connectedpixels( data, labels, threshold, &
                               verbose, con8, ns, nf)
         intent(c) connectedpixels
+!DOC connectedpixels Determines which pixels in data are above the
+!DOC user supplied threshold and assigns them into connected objects 
+!DOC which are output in labels. Connectivity is 3x3 box (8) by default
+!DOC and reduces to a +(4) is con8==0
         intent(c)
         real, intent(in) :: data(ns,nf)
         integer, intent(inout) :: labels(ns,nf)
@@ -93,6 +97,10 @@ interface
 
     function localmaxlabel( data, labels, wrk, ns, nf, cpu )
         intent(c) localmaxlabel
+!DOC localmaxlabel assigns a label for each pixel so they are grouped
+!DOC to the local maximum. Equal values choose to assign towards the earlier
+!DOC value in memory.
+!DOC cpu arg (1)0=C, (1)1=SSE2, (1)2=AVX2; if > 9 prints timing
         intent(c)
         real, intent(in) :: data(ns,nf)
         integer*4, intent(inout), note(hello) :: labels(ns,nf)
@@ -110,6 +118,10 @@ interface
     subroutine blobproperties( data, labels, np, omega, &
                                verbose, ns, nf, results)
         intent(c) blobproperties
+!DOC blobproperties fills the array results with properties of each labelled
+!DOC object described by data (pixel values) and labels. The omega value
+!DOC is the angle for this frame.
+!DOC results are FIXME
         intent(c)
         real, intent(in) :: data(ns, nf)
         integer, intent(in) :: labels(ns, nf)
@@ -124,6 +136,16 @@ interface
 
     subroutine sparse_blob2Dproperties( v, i, j, nnz, labels, npk, results)
     	intent(c) sparse_blob2Dproperties
+!DOC sparse_blob2Dproperties fills the array results with properties of each labelled
+!DOC object described by v and labels (pixel values and blob) and positions i,j in the image.
+!DOC results are: 
+!DOC   results[ipk,s2D_1]   = sum (1), number of pixels
+!DOC   results[ipk,s2D_I]   = sum (I), total intensity
+!DOC   results[ipk,s2D_fI]  = sum (f*I), intensity weighted fast index
+!DOC   results[ipk,s2D_sI]  = sum (s*I), intensity weighted slow index
+!DOC   results[ipk,s2D_ffI] = sum (f*f*I), intensity weighted fast^2 index
+!DOC   results[ipk,s2D_sfI] = sum (s*f*I), intensity weighted slow*fast index
+!DOC   results[ipk,s2D_ssI] = sum (s*s*I), intensity weighted slow^2 index
         intent(c)
         real, intent(in), dimension(nnz) :: v
         integer(kind=-2), intent(in), dimension(nnz) :: i
@@ -136,6 +158,9 @@ interface
 
     function sparse_localmaxlabel( v, i, j, nnz, MV, iMV, labels)
     	intent(c) sparse_localmaxlabel
+!DOC sparse_localmaxlabel assigns labels to sparse array in sorted coo format
+!DOC supplied in (v,(i,j)). MV and iMV are temporaries.
+!DOC single threaded 
         intent(c)
         real, intent(in), dimension(nnz) :: v
         integer(kind=-2), intent(in), dimension(nnz) :: i
