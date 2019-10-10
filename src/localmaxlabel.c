@@ -77,6 +77,7 @@ void neighbormax(const float *restrict im,	// input
 	k0 = 1;
 	pick( im[ p + o[2] ] , mx0 , k0, 2 );
 	pick( im[ p + o[3] ] , mx0 , k0, 3 );
+	k1 = 4;
 	mx1 = im[ p + o[4] ];
 	pick( im[ p + o[5] ] , mx1 , k1, 5 );
 	pick( im[ p + o[6] ] , mx1 , k1, 6 );
@@ -434,7 +435,6 @@ int localmaxlabel(const float *restrict im,	// input
     // This is the same for all versions (optimised or not)
     //  ... perhaps re-write to be a manual loop and fill in
     //  ... the steps that are thread local
- 
  #pragma omp parallel private( q, i, tid, nt, k, lo, hi )
 {
   tid = omp_get_thread_num();
