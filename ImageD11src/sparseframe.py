@@ -179,8 +179,8 @@ class sparse_localmax( sparse_labelling ):
         adds an array names mxlabels
         """
         sparse_labelling.__init__(self, frame, name=name)
-        vmx = np.zeros( self.nnz, np.float32 )
-        imx = np.zeros( self.nnz, 'i')
+        vmx = np.zeros( self.frame.nnz, np.float32 )
+        imx = np.zeros( self.frame.nnz, 'i')
         self.nlabel = cImageD11.sparse_localmaxlabel(
             self.frame.pixels[self.name], self.frame.row, self.frame.col,
             vmx, imx, self.labels )
