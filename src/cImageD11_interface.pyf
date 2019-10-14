@@ -76,6 +76,10 @@ interface
     function connectedpixels( data, labels, threshold, &
                               verbose, con8, ns, nf)
         intent(c) connectedpixels
+!DOC connectedpixels Determines which pixels in data are above the
+!DOC user supplied threshold and assigns them into connected objects 
+!DOC which are output in labels. Connectivity is 3x3 box (8) by default
+!DOC and reduces to a +(4) is con8==0
         intent(c)
         real, intent(in) :: data(ns,nf)
         integer, intent(inout) :: labels(ns,nf)
@@ -93,6 +97,10 @@ interface
 
     function localmaxlabel( data, labels, wrk, ns, nf, cpu )
         intent(c) localmaxlabel
+!DOC localmaxlabel assigns a label for each pixel so they are grouped
+!DOC to the local maximum. Equal values choose to assign towards the earlier
+!DOC value in memory.
+!DOC cpu arg (1)0=C, (1)1=SSE2, (1)2=AVX2; if > 9 prints timing
         intent(c)
         real, intent(in) :: data(ns,nf)
         integer*4, intent(inout), note(hello) :: labels(ns,nf)
@@ -110,6 +118,10 @@ interface
     subroutine blobproperties( data, labels, np, omega, &
                                verbose, ns, nf, results)
         intent(c) blobproperties
+!DOC blobproperties fills the array results with properties of each labelled
+!DOC object described by data (pixel values) and labels. The omega value
+!DOC is the angle for this frame.
+!DOC results are FIXME
         intent(c)
         real, intent(in) :: data(ns, nf)
         integer, intent(in) :: labels(ns, nf)
@@ -124,6 +136,16 @@ interface
 
     subroutine sparse_blob2Dproperties( v, i, j, nnz, labels, npk, results)
     	intent(c) sparse_blob2Dproperties
+!DOC sparse_blob2Dproperties fills the array results with properties of each labelled
+!DOC object described by v and labels (pixel values and blob) and positions i,j in the image.
+!DOC results are: 
+!DOC   results[ipk,s2D_1]   = sum (1), number of pixels
+!DOC   results[ipk,s2D_I]   = sum (I), total intensity
+!DOC   results[ipk,s2D_fI]  = sum (f*I), intensity weighted fast index
+!DOC   results[ipk,s2D_sI]  = sum (s*I), intensity weighted slow index
+!DOC   results[ipk,s2D_ffI] = sum (f*f*I), intensity weighted fast^2 index
+!DOC   results[ipk,s2D_sfI] = sum (s*f*I), intensity weighted slow*fast index
+!DOC   results[ipk,s2D_ssI] = sum (s*s*I), intensity weighted slow^2 index
         intent(c)
         real, intent(in), dimension(nnz) :: v
         integer(kind=-2), intent(in), dimension(nnz) :: i
@@ -136,6 +158,9 @@ interface
 
     function sparse_localmaxlabel( v, i, j, nnz, MV, iMV, labels)
     	intent(c) sparse_localmaxlabel
+!DOC sparse_localmaxlabel assigns labels to sparse array in sorted coo format
+!DOC supplied in (v,(i,j)). MV and iMV are temporaries.
+!DOC single threaded 
         intent(c)
         real, intent(in), dimension(nnz) :: v
         integer(kind=-2), intent(in), dimension(nnz) :: i
@@ -149,6 +174,8 @@ interface
     end function sparse_localmaxlabel
     
     subroutine blob_moments( results, np )
+!DOC blob_moments fills in the reduced moments in results array.
+!DOC ... FIXME - this would be clearer in python, fast anyway.
         intent(c) blob_moments
         intent(c)
         double precision, intent( inout ) :: results( np, NPROPERTY )
@@ -159,6 +186,10 @@ interface
     function bloboverlaps( labels1, npk1, results1,    &
                            labels2, npk2, results2,    &
                            verbose, ns, nf)
+!DOC bloboverlaps determines the overlaps between labels1 and labels2
+!DOC for an image series. Peaks in labels2 may be merged if they were
+!DOC joined by a peak on labels1. Results in results1 are accumulated
+!DOC into results2 if peaks are overlapped.
         intent(c) bloboverlaps
         intent(c)
         integer :: bloboverlaps
@@ -173,29 +204,36 @@ interface
     end subroutine bloboverlaps
 
     function sparse_overlaps( i1, j1, k1, nnz1, &
-    	     		      i2, j2, k2, nnz2 )
+    	     		          i2, j2, k2, nnz2 )
+!DOC sparse_overlaps identifies the pixels in i1,j1 which overlap i2,j2. 
+!DOC The list of overlaps is returned in k1/k2 such that i1[k1]==i2[k2]
+!DOC and j1[k1]==j2[k2]. Probably assumes that sparse_is_sorted was true.
         intent(c) sparse_overlaps
-	intent(c)
-	integer(kind=-2), dimension(nnz1), intent(c) :: i1, j1
-	integer, intent(inout), dimension(nnz1) :: k1
-	integer, intent(hide), depend(i1), intent(c) :: nnz1=shape(i1,0)
-	integer(kind=-2), dimension(nnz2), intent(c) :: i2, j2
-	integer, intent(inout), dimension(nnz2) :: k2
-	integer, intent(hide), depend(i2), intent(c) :: nnz2=shape(i2,0)
-	! returns
-	integer :: sparse_overlaps
+    	intent(c)
+    	integer(kind=-2), dimension(nnz1), intent(c) :: i1, j1
+    	integer, intent(inout), dimension(nnz1) :: k1
+    	integer, intent(hide), depend(i1), intent(c) :: nnz1=shape(i1,0)
+    	integer(kind=-2), dimension(nnz2), intent(c) :: i2, j2
+    	integer, intent(inout), dimension(nnz2) :: k2
+    	integer, intent(hide), depend(i2), intent(c) :: nnz2=shape(i2,0)
+    	! returns
+    	integer :: sparse_overlaps
     end function sparse_overlaps
 
     function compress_duplicates( i, j, oi, oj, tmp, n, nt )
+!DOC compress_duplicates removes duplicate i,j labels. On entry then
+!DOC i and j are set as the labels from two images. They are sorted
+!DOC and on exit i,j hold the unique pairs and oi holds the count
+!DOC for the number of overlaps. oj and tmp are temporaries.
     	intent(c) compress_duplicates
-	intent(c)
-	integer, dimension(n), intent(c) :: i, j
-	integer, dimension(n), intent(c, inout) :: oi, oj
-	integer, dimension(nt), intent(c, inout) :: tmp
-	integer, intent(hide), depend(i) :: n = shape(i,0)
-	integer, intent(hide), depend(tmp) :: nt = shape(tmp,0)
-	! returns
-	integer :: compress_duplicates
+	    intent(c)
+	    integer, dimension(n), intent(c) :: i, j
+	    integer, dimension(n), intent(c, inout) :: oi, oj
+	    integer, dimension(nt), intent(c, inout) :: tmp
+	    integer, intent(hide), depend(i) :: n = shape(i,0)
+	    integer, intent(hide), depend(tmp) :: nt = shape(tmp,0)
+	    ! returns
+	    integer :: compress_duplicates
     end function compress_duplicates
     
     subroutine closest_vec( x, dim, nv, ic )
@@ -401,15 +439,46 @@ interface
         threadsafe
     end function count_shared
 
-    subroutine clean_mask( msk, ret, ns, nf )
+    function clean_mask( msk, ret, ns, nf )
         intent(c) clean_mask
         intent(c)
         integer*1, intent(in)  :: msk( ns, nf )
         integer, intent(hide), depend(msk) :: ns=shape(msk,0)
         integer, intent(hide), depend(msk) :: nf=shape(msk,1)
         integer*1, intent(inout), dimension(ns, nf) :: ret
+	! returns an int
+        integer :: clean_mask
         threadsafe
     end function clean_mask
+
+    function make_clean_mask( img, cut, msk, ret, ns, nf )
+        intent(c) make_clean_mask
+        intent(c)
+        real, intent(in), dimension(ns,nf) :: img
+        real, intent(in) :: cut
+        integer*1, intent(in)  :: msk( ns, nf )
+        integer, intent(hide), depend(msk) :: ns=shape(msk,0)
+        integer, intent(hide), depend(msk) :: nf=shape(msk,1)
+        integer*1, intent(inout), dimension(ns, nf) :: ret
+	! returns an int
+	integer :: make_clean_mask
+        threadsafe
+    end function make_clean_mask
+
+    function mask_to_coo( msk, ns, nf, i, j, nnz, w )
+        intent(c) mask_to_coo
+        intent(c)
+        integer*1, intent(in)  :: msk( ns, nf )
+        integer, intent(hide), depend(msk) :: ns=shape(msk,0)
+        integer, intent(hide), depend(msk) :: nf=shape(msk,1)
+        integer(kind=-2), intent(inout), dimension(nnz) :: i, j
+        integer, intent(inout) :: w(ns)
+    	integer, intent(hide), depend(i) :: nnz=shape(i,0)
+	    integer, intent(inout) :: w(ns)
+        ! returns an int
+	    integer :: mask_to_coo
+        threadsafe
+    end function mask_to_coo
 
     subroutine array_stats( img, npx, minval, maxval, mean, var )
         intent(c) array_stats
@@ -473,6 +542,7 @@ interface
     end function sparse_connectedpixels_splat
 
     subroutine splat( rgba, w, h, gve, ng, u, npx )
+!D Draws gve into rgba image
         intent(c) splat
         intent(c)
         integer(kind=-1), dimension(w,h,4) :: rgba
@@ -484,6 +554,70 @@ interface
         integer :: npx
     end subroutine splat
 
+    subroutine frelon_lines(img, ns, nf, cut)
+!D Subtracts the average value of (pixels < cut) per row
+        intent(c) frelon_lines
+        intent(c)
+        real, intent(inout), dimension(ns,nf) :: img
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        real, intent(in) :: cut
+        threadsafe
+    end subroutine frelon_lines
+
+    subroutine frelon_lines_sub(img, drk, ns, nf, cut)
+!D Subtracts drk from img and then same as frelon_lines
+        intent(c) frelon_lines_sub
+        intent(c)
+        real, intent(inout), dimension(ns,nf) :: img, drk
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        real, intent(in) :: cut
+        threadsafe
+    end subroutine frelon_lines
+    
+    subroutine array_mean_var_cut( img, npx, mean, var, n, cut, verbose )
+        intent(c) array_mean_var_cut
+        real, intent(in,c), dimension(npx) :: img
+        integer, intent(hide,c), depend(img) :: npx = shape(img,0)
+        real, intent(out) :: mean, var
+        integer, intent(in,c), optional :: n = 3
+        integer, intent(in,c), optional :: verbose = 0
+        real, intent(in,c), optional :: cut = 3.
+        threadsafe
+    end subroutine array_mean_var_cut
+
+    subroutine array_bincount( img, npx, ib, h, nh )
+        intent(c) array_bincount
+        intent(c)
+        real, intent(in), dimension(npx) :: img
+        integer, intent(hide), depend(img) :: npx = shape(img,0)
+        integer, intent(in), dimension(npx) :: ib
+        real, intent(inout), dimension(nh) :: h
+        integer, intent(hide), depend(h) :: nh = shape(h,0)
+        threadsafe
+    end subroutine array_bincount
+
+    subroutine uint16_to_float_darksub( img, drk, data, npx )
+        intent(c) uint16_to_float_darksub
+        intent(c)
+        real, intent(inout), dimension(npx) :: img
+        real, intent(in), dimension(npx) :: drk
+        integer(kind=-2), intent(in), dimension(npx) :: data
+        integer, intent(hide), depend( img ) :: npx
+    end subroutine uint16_to_float_darksub
+
+    subroutine csr_one_dot(img,indices,indptr,dest,nrow)
+        intent(c) csr_one_dot
+        intent(c)
+        real, intent(in), dimension(:) :: img
+        integer, intent(in), dimension(:) :: indices, indptr
+        real, intent(inout), dimension(nrow) :: dest
+        integer, intent(hide), depend(dest) :: nrow = shape(dest,0)
+    end subroutine
+                    
+
 end interface
+
 
 

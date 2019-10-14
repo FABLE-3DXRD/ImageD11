@@ -4,6 +4,7 @@ import os, sys, unittest, importlib
 sys.path.insert(0,".")
 
 modules = [
+    "test_clean_mask",
     "test_closest_vec",
     "test_score_gvec_z",
     "test_sym_u",

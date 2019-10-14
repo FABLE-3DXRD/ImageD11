@@ -61,7 +61,7 @@ void neighbormax(const float *restrict im,	// input
     assert( (o[3]+2) == o[9] );
     
     /* The image borders */
-    for (i = 0; i < dim0; i++) {	// first and last row here:
+    for (i = 0; i < dim1; i++) {	// first and last row here:
 	lout[i] = 0;		// ends of rows are below
 	l[i] = 0;
 	lout[dim1 * (dim0 - 1) + i] = 0;
@@ -77,6 +77,7 @@ void neighbormax(const float *restrict im,	// input
 	k0 = 1;
 	pick( im[ p + o[2] ] , mx0 , k0, 2 );
 	pick( im[ p + o[3] ] , mx0 , k0, 3 );
+	k1 = 4;
 	mx1 = im[ p + o[4] ];
 	pick( im[ p + o[5] ] , mx1 , k1, 5 );
 	pick( im[ p + o[6] ] , mx1 , k1, 6 );
@@ -115,7 +116,7 @@ void neighbormax_sse2_old(const float *restrict im,	// input
   int i, j, p, iq, k;
   float mx;
   // Set edges to zero (background label)
-  for (i = 0; i < dim0; i++) {	// first and last row here:
+  for (i = 0; i < dim1; i++) {	// first and last row here:
     lout[i] = 0;		// ends of rows are below
     l[i] = 0;
     lout[dim1 * (dim0 - 1) + i] = 0;
@@ -184,7 +185,7 @@ void neighbormax_sse2(const float *restrict im,	// input
   int i, j, p, iq, k;
   float mx;
   // Set edges to zero (background label)
-  for (i = 0; i < dim0; i++) {	// first and last row here:
+  for (i = 0; i < dim1; i++) {	// first and last row here:
     lout[i] = 0;		// ends of rows are below
     l[i] = 0;
     lout[dim1 * (dim0 - 1) + i] = 0;
@@ -245,7 +246,7 @@ void neighbormax_avx(const float *restrict im,	// input
     smsk = _mm_set_epi8( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 8, 4, 0 );
 
   // Set edges to zero (background label)
-  for (i = 0; i < dim0; i++) {	// first and last row here:
+  for (i = 0; i < dim1; i++) {	// first and last row here:
     lout[i] = 0;		// ends of rows are below
     l[i] = 0;
     lout[dim1 * (dim0 - 1) + i] = 0;
@@ -434,7 +435,6 @@ int localmaxlabel(const float *restrict im,	// input
     // This is the same for all versions (optimised or not)
     //  ... perhaps re-write to be a manual loop and fill in
     //  ... the steps that are thread local
- 
  #pragma omp parallel private( q, i, tid, nt, k, lo, hi )
 {
   tid = omp_get_thread_num();

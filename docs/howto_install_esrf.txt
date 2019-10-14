@@ -1,0 +1,44 @@
+
+The new way (modules):
+
+1) Search for "modulefile(4)" to locate manual (or man module)
+
+2) "module load fable"
+ -> modulefile is from /sware/exp/modules/debian9/fable/.version
+ -> writes a fable_py27.pth in users ~.local/lib/python2.7/site-packages
+ sets $FABLE_ROOT
+ sets $FABLE_PY27
+
+3) Check you are clean and where it goes for install:
+
+$ git pull
+$ git status  # <--- clean please !
+
+4) Install it (from a devel machine):
+
+$ env | grep FABLE
+OK for FABLE_ROOT   
+$ /usr/bin/python2.7 python setup.py build
+$ /usr/bin/python2.7 -m pip install . --prefix=$FABLE_ROOT
+
+5) Verify:
+
+$ which peaksearch.py            # is it in $PATH?
+$ head `which peaksearch.py`     # is the #!   OK?
+$ python -c "import ImageD11.cImageD11_sse2 as e;print(e.__file__)"
+$ cd test && python run_tests.py
+
+
+===============================================================================
+The old way (install_debianX.sh)
+
+$ python setup.py build --force install \
+   --prefix=/sware/exp/fable/standalone/debian8 \
+   --exec-prefix=/sware/exp/fable/standalone/debian8
+
+Then in fable.bash (or .bashrc etc):
+
+export PATH=/sware/exp/fable/standalone/debian8/bin
+export PYTHONPATH=/sware/exp/fable/standalone/debian8/lib/python2.7/site-packages
+
+/sware only writeable from the devel machines.

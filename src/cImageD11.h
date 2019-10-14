@@ -3,6 +3,16 @@
 #ifndef _cImageD11_h
 #define _cImageD11_h
 
+#if _OPENMP >= 201307
+#define SIMDCLAUSE simd
+#define SIMDFOR omp simd
+#else
+#define SIMDCLAUSE
+#define SIMDFOR ignore
+#endif
+
+
+
 #ifdef __GNUC__
  #if __GNUC__ >= 4
    #define DLL_PUBLIC __attribute__ ((visibility ("default")))

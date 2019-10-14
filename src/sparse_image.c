@@ -8,95 +8,63 @@
 #include "blobs.h"
 
 /**
- * Go through the data to compute sum and sum2 for mean and std 
- * Also find min and max. Uses openmp for reductions
- * 
- * @param img Input data array  (1D or 2D.ravel(), so sparse or dense)
- * @param npx length of data array (contiguous)
- * @param *minval minimum of the pixels
- * @param *maxval maximum of the pixels
- * @param *s1  Sum of all pixel
- * @param *s2  Sum of pixel^2
+ * Fill in the indices i,j from a mask
+ *
+ * @param mask int8_t
+ * @param irow, jcol uint16_t
  */
-void array_stats(float img[], int npx,
-		 float *minval, float *maxval, float *mean, float *var)
-{
-    int i;
-    /* Use double to reduce rounding and subtraction errors */
-    double t, s1, s2, y0;
-    float mini, maxi;
-    mini = img[0];
-    maxi = img[0];
-    s1 = 0.;
-    s2 = 0.;
-    y0 = img[0];
-    /* Merge results - openmp 2.0 for windows has no min/max     */
-#ifdef _MSC_VER
-#pragma omp parallel for private(t) reduction(+:s1,s2)
-    for (i = 0; i < npx; i++) {
-	t = img[i] - y0;
-	s1 = s1 + t;
-	s2 = s2 + t * t;
+
+int mask_to_coo( int8_t msk[], int ns, int nf,
+	    uint16_t i[], uint16_t j[], int nnz, int nrow[]){
+  int mi, mj, idx;
+/*  int *nrow;
+  nrow = (int*) malloc(ns*sizeof(int)); */
+  if( (ns < 1) || (ns > 65535) ) return 1;
+  if( (nf < 1) || (nf > 65535) ) return 2;
+  if( nnz < 1 ) return 3;
+  /* pixels per row */
+#pragma omp parallel for private(mi,mj)
+  for( mi = 0; mi < ns; mi++){
+    nrow[mi] = 0;
+    for( mj = 0; mj < nf ; mj++){
+      if( msk[ mi*nf + mj ] != 0 ){
+        nrow[mi]++;
+      }
     }
-    /* Just use serial - openmp 2.0 */
-    for (i = 0; i < npx; i++) {
-	if (img[i] < mini)
-	    mini = img[i];
-	if (img[i] > maxi)
-	    maxi = img[i];
+  }
+  /* cumsum */
+  for( mi=1; mi<ns; mi++){
+    nrow[mi] += nrow[mi-1];
+  }
+  if( nrow[ns-1] != nnz){ 
+    return 4 ;
     }
-#else
-#pragma omp parallel for private(t) reduction(+:s1,s2) reduction(min: mini) reduction(max: maxi)
-    for (i = 0; i < npx; i++) {
-	t = img[i] - y0;
-	s1 = s1 + t;
-	s2 = s2 + t * t;
-	if (img[i] < mini)
-	    mini = img[i];
-	if (img[i] > maxi)
-	    maxi = img[i];
+  /* fill in */
+#pragma omp parallel for private(mi,mj,idx)
+  for(mi = 0; mi < ns; mi++){
+    if(mi==0){ 
+      idx = 0; 
+    } else { 
+      idx = nrow[mi-1]; 
     }
-#endif
-    /* results */
-    *mean = (float)(s1 / npx + y0);
-    *var = (float)((s2 - (s1 * s1 / npx)) / npx);
-    *minval = mini;
-    *maxval = maxi;
+    if(nrow[mi] > idx){
+      for( mj = 0; mj < nf ; mj++){
+        if( msk[ mi*nf + mj ] != 0 ){
+          i[idx] = (uint16_t) mi;
+  	      j[idx] = (uint16_t) mj;
+	        idx++; 
+        }
+      }
+    }
+  }
+/*  free(nrow); */
+  return 0;
 }
 
-/**
- * Go through the data to compute a histogram of the values
- * Previous call of array_stats would help to set up this call 
- *  compare to np.bincount - this does not gain much
- *  better implementations can be done 
- *
- * @param img[]  Input data array  (1D or 2D.ravel(), so sparse or dense)
- * @param npx    length of data array (contiguous)
- * @param low    Lower edge of first bin
- * @param high   Upper edge of last bin
- * @param hist[] Histogram to be output
- * @param nhist  Number of bins in the histogram
- */
-void array_histogram(float img[],
-		     int npx, float low, float high, int32_t hist[], int nhist)
-{
-    int i, ibin;
-    float ostep;
-    memset(hist, 0, nhist * sizeof(int32_t));
-    /* Compute the multiplier to get the bin numbers */
-    ostep = nhist / (high - low);
-    for (i = 0; i < npx; i++) {
-	    ibin = (int)floorf((img[i] - low) * ostep);
-	    /* clip into range at ends */
-	    if (ibin < 0) {
-  	    ibin = 0;
-	    }
-	    if (ibin >= nhist) {
-  	    ibin = nhist - 1;
-	    }
-	    hist[ibin] = hist[ibin] + 1;
-    }
-}
+
+
+
+
 
 /* 
  * https://fr.mathworks.com/help/matlab/ref/sparse.html

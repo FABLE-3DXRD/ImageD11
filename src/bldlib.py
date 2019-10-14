@@ -72,18 +72,50 @@ def run_cc( cc, plat, bits, vers, name, flags, libname ):
     ok = cc.create_static_lib( objs, libname, output_dir="." )
     return libname
 
+def write_docs( inp, outf ):
+    """ One single block of !DOC per item, first word is key
+    """
+    with open(inp , "r") as pyf:
+        fname = None
+        docs = {}
+        for line in pyf.readlines():
+            if line.startswith("!DOC"):
+                if fname is not None:
+                    docs[fname] += line[5:] 
+                else:
+                    words = line.split()
+                    fname = words[1]
+                    docs[fname] = " ".join(words[2:]) + "\n"
+            else:
+                fname = None
+    with open(outf, "w") as docf:
+        keys = list(docs.keys())
+        keys.sort()
+        for fname in keys:
+            docf.write( '%s = """%s"""\n'%(fname, docs[fname]))
+        docf.write("__all__ = [" + ",".join(['"%s"'%(k) for k in keys ])+  "]")
+        
+
 def make_pyf( inp, name ):
     out = open(name+".pyf", "w")
     out.write("python module %s\n"%(name))
-    out.write( open(inp , "r").read() )
+    pyf = open(inp , "r").read() 
+    out.write( pyf )
     out.write("end python module %s\n"%(name))
     out.close()
-    
 
-if __name__=="__main__":
+def docs():
+    write_docs( "cImageD11_interface.pyf", os.path.join("..","ImageD11src", "cImageD11_docstrings.py"))
+
+
+def main():
     cc = distutils.ccompiler.new_compiler( verbose=1 , compiler=compiler )
     cc.add_include_dir( "." )
-    sse2lib = run_cc(cc, plat, bits, vers, "sse2", sse2arg, sse2libname )
-    avx2lib = run_cc(cc, plat, bits, vers, "avx", avx2arg, avx2libname )
+    docs()
     make_pyf( "cImageD11_interface.pyf", "cImageD11_sse2")
     make_pyf( "cImageD11_interface.pyf", "cImageD11_avx")
+    sse2lib = run_cc(cc, plat, bits, vers, "sse2", sse2arg, sse2libname )
+    avx2lib = run_cc(cc, plat, bits, vers, "avx", avx2arg, avx2libname )
+
+if __name__=="__main__":
+    main()

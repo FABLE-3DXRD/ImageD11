@@ -20,6 +20,8 @@ import sys
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 import gzip, bz2
+
+
 def getheader(filename):
     """
     Reads a header from an edf file in 1024 byte chunks.
@@ -38,7 +40,7 @@ def getheader(filename):
         except IOError:
             return ""
     h=h+filename+";\n"
-    s=fp.read(1024)
+    s=fp.read(1024).decode()
     if s.find("{")==-1:
         raise Exception("Not an edf file")
     while 1:
@@ -47,7 +49,7 @@ def getheader(filename):
             break
         else:
             h=h+s
-        s=fp.read(1024)
+        s=fp.read(1024).decode()
     return h
 
 def mne(hd):
@@ -73,8 +75,7 @@ def mne(hd):
                 order.append( kk )
     return h, order
 
-
-if __name__=="__main__":
+def main():
     keys=[]
     args = []
     for arg in sys.argv[1:]:
@@ -104,3 +105,7 @@ if __name__=="__main__":
             for k in order:
                 sys.stdout.write("%s = %s ;\n"%(k, hd[k]))
         sys.stdout.write("\n")
+
+
+if __name__=="__main__":
+    main()

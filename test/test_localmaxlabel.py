@@ -15,7 +15,7 @@ def localmax( im, out=None ):
     out = np.arange( im.shape[0]*im.shape[1], dtype=np.int )
     out.shape = im.shape
     out0 = out.copy()    # pointers
-    print("running python localmax", im.shape,end=" " )
+#    print("running python localmax", im.shape,end=" " )
     for i in range(1,im.shape[0]-1):
         for j in range(1,im.shape[1]-1):
             mx = -1e10
@@ -29,7 +29,7 @@ def localmax( im, out=None ):
                         print(i,j,k,l,im.shape)
                         raise
             # now out addresses a neighbour
-    print("1", end=" " )
+ #   print("1", end=" " )
     # Maximal pixels
     maxpx = (out==out0)
     # Final labels
@@ -39,15 +39,15 @@ def localmax( im, out=None ):
     labels[-1]=0
     labels[:,0]=0
     labels[:,-1]=0
-    print("2", end=" " )
+  #  print("2", end=" " )
     for i in range(1,im.shape[0]-1):
         for j in range(1,im.shape[1]-1):
             if maxpx[i,j]:
                 npk += 1
                 labels[i,j]=npk
                 out[i,j]=0
-    print("3", end=" " )
-    sys.stdout.flush()
+  #  print("3", end=" " )
+  #  sys.stdout.flush()
     # Now relabel each pixel to point to the max...
     pon=False
     for i in range(1,im.shape[0]-1):
@@ -70,8 +70,8 @@ def localmax( im, out=None ):
                     break
                 out.flat[adr] = 0
                 adr = adrnew
-    print(".", end=" " )                            
-    print ("ok")
+   # print(".", end=" " )                            
+   # print ("ok")
     return labels
 
 
@@ -140,7 +140,7 @@ class test_localmaxlabel( unittest.TestCase ):
             li = np.zeros(im.shape,np.int32)
             wi = np.zeros(im.shape,np.int8)
             start = time.time()
-            print("cpu",cpu)
+    #        print("cpu",cpu)
             npks = localmaxlabel(im.copy(), li , wi, cpu=cpu )
             end=time.time()
             ctime = (end-start)*1000.
@@ -155,7 +155,7 @@ class test_localmaxlabel( unittest.TestCase ):
         for li in l[1:]:
             self.assertTrue((lref == l1).all())
     def test3( self):
-        print("in test 2")
+     #   print("in test 2")
         im = make_test_image(N=2048)
         l1 = np.zeros(im.shape,np.int32)
         l2 = np.zeros(im.shape,np.int32)
@@ -184,13 +184,40 @@ class test_localmaxlabel( unittest.TestCase ):
             pl.imshow(l2)
             pl.imshow(l3)
             pl.show()
-        self.assertEqual( (l2==l3).all(), True )
-        
+        self.assertEqual( (l2==l3).all(), True )  
         self.assertEqual( (l1==l3).all(), True )
         print("Timing 2048 c %.3f ms, sse %.3f, avx %.3f"%(
             ctime,stime,atime))
 
+    def testbug(self):
+        ''' case caught with image from Mariana Mar Lucas,
+        caused a segfault'''
+        for cpu in [0,1,2]:
+            im = np.array([
+                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                [ 0, 2, 0, 0, 0, 0, 0, 0],
+                [ 0, 1, 1, 0, 0, 0, 0, 0],
+                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                [ 0, 0, 0, 0, 0, 0, 0, 0]], np.float32)
+            la = np.empty( im.shape, 'i' )
+            wk = np.empty( im.shape, 'b' )
+            localmaxlabel( im, la, wk, cpu )
+            self.assertEqual(la[1,1],1)
 
+    def testsmall(self):
+        ''' sse / avx issue for tiny? '''
+#        print("testsmall, fixme, segfault/infinite loop so no CI")
+        for cpu in [0,1,2]:#11,12]:
+            im = np.array([
+                [ 0, 0, 0, 0, 0],
+                [ 0, 2, 0, 0, 0],
+                [ 0, 1, 1, 0, 0],
+                [ 0, 0, 0, 0, 0]], np.float32)
+            la = np.empty( im.shape, 'i' )
+            wk = np.empty( im.shape, 'b' )
+            localmaxlabel( im, la, wk, cpu )
+            self.assertEqual(la[1,1],1)
 
         
 if __name__== "__main__":
