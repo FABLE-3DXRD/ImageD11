@@ -36,6 +36,15 @@ from numpy import get_include
 # Get the path for the static libraries        
 import src.bldlib
 
+def get_version():
+    with open("ImageD11src/__init__.py","r") as f:
+        for line in f.readlines():
+            if line.find("__version__")>-1:
+                return eval(line.split("=")[1].strip())
+
+print("check |%s|"%get_version())
+
+
 
 
 if "build" in sys.argv:
@@ -83,7 +92,7 @@ needed =[]
 
 # See the distutils docs...
 setup(name='ImageD11',
-      version='1.9.3',
+      version=get_version(),
       author='Jon Wright',
       author_email='wright@esrf.fr',
       description='ImageD11',
