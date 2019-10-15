@@ -42,10 +42,8 @@ class sptview(object):
             self.warn("No previous image")
 
     def drawUI(self):
-        self.window = silx.gui.qt.QWidget()
-        self.window.setWindowTitle("spot viewer")
-        self.widget = silx.gui.qt.QWidget(self.window)
-#        self.window.setCentralWidget( self.widget )
+        self.widget = silx.gui.qt.QWidget()
+        self.widget.setWindowTitle("spot viewer")
         self.layout = silx.gui.qt.QGridLayout()
         self.widget.setLayout( self.layout )
         self.spot_label = silx.gui.qt.QLabel( self.fname )
@@ -62,15 +60,13 @@ class sptview(object):
         self.plot = silx.gui.plot.Plot2D(  backend='gl')
         self.imglabel = self.plot.addImage( self.frame.data, z=0, origin=(-0.5,-0.5),
             colormap=silx.gui.colors.Colormap(name='magma'))
-        self.plotlabel = self.plot.addScatter( self.pky, self.pkx, self.pkI, z=1, symbol='o',
+        self.plotlabel = self.plot.addScatter( self.pky, self.pkx, self.pkI, z=1, symbol='+',
             colormap=silx.gui.colors.Colormap(name='viridis'))
         self.plot.getScatter( self.plotlabel ).setSymbolSize(10)
         self.plot.setKeepDataAspectRatio(True)
         self.layout.addWidget(self.plot, 2, 0, 1, 3)
         self.widget.show()
         self.plot.show()
-        #self.window.setVisible(True)
-        #self.window.show()
 
     def changeframe(self):
         d = self.frame.data
@@ -86,5 +82,5 @@ class sptview(object):
 if __name__=="__main__":
     qapp = silx.gui.qt.QApplication([])
     s=sptview( sys.argv[1] )
-    s.window.show()
+    s.widget.show()
     sys.exit(qapp.exec_())
