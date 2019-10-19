@@ -21,14 +21,11 @@ them.
 Which one we get is determined by the cImageD11.py module.
 """
 
-
-
-
-
-
 import os, sys, platform
 import setuptools
 import distutils.ccompiler
+
+need_build = True
 
 sources = ("blobs.c cdiffraction.c closest.c connectedpixels.c"+
  " darkflat.c localmaxlabel.c sparse_image.c splat.c").split()
@@ -39,7 +36,7 @@ vers = "%d.%d"%(sys.version_info[:2])
 tmpdir = "%s_%s_%s"%(plat, bits, vers)
 avx2libname = "cImageD11_"+tmpdir+"_avx"
 sse2libname = "cImageD11_"+tmpdir+"_sse2"
-
+# ansi ?
 
 compiler = None
 for a in sys.argv:
@@ -116,6 +113,8 @@ def main():
     make_pyf( "cImageD11_interface.pyf", "cImageD11_avx")
     sse2lib = run_cc(cc, plat, bits, vers, "sse2", sse2arg, sse2libname )
     avx2lib = run_cc(cc, plat, bits, vers, "avx", avx2arg, avx2libname )
+    return 0
+
 
 if __name__=="__main__":
     main()
