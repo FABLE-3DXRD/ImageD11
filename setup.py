@@ -33,6 +33,9 @@ import os, sys
 # Need to use numpy.distutils so it works for f2py
 from numpy.distutils.core import setup, Extension
 from numpy import get_include
+from distutils.command.sdist import sdist
+
+
 # Get the path for the static libraries        
 import src.bldlib, src.create_cpu_check
 
@@ -96,17 +99,29 @@ extensions = [ Extension( "cImageD11_sse2",
 
 
 
-# Removed list of dependencies from setup file
-#  borked something, not sure what or why
-needed =[]
-# ["xfab", "fabio", "pyopengl",  "matplotlib", "numpy", "scipy", "six", "h5py",
-#  "pyopengltk", "FitAllB", ... ]
+# Things we depend on. This generally borks things if pip
+# tries to do source installs of all of these.
+
+needed =[
+    "six",
+    "numpy",
+    "scipy",
+    "pillow",
+    "h5py",
+    "matplotlib",
+    "xfab",
+    "fabio",
+    "pyopengl",
+    "pyopengltk",
+    ]
+    # , "FitAllB", ... ]
 
 # See the distutils docs...
 setup(name='ImageD11',
       version=get_version(),
       author='Jon Wright',
       author_email='wright@esrf.fr',
+      cmdclass={'sdist': sdist},
       description='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
