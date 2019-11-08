@@ -170,7 +170,7 @@ Use the history from Help>History to capture the commands run when you click on 
 Separating_U_from_UBI
 =====================
 
-UBI is inverse of (UB), so (UB)^{-1}=B^{-1}U^{-1}, but U^{-1} is also transpose(U), so inevitably it gets flipped, even if you know what "B" is. There is now a ubitocellpars routine in (svn) indexing.py, which you can use to construct a "B" matrix according to some convention. "B" is chosen as a Cholesky factor of the product (UBI).(UBI)^T (=g, the metric tensor). Since you are free to chose "B" however you like (x along a, y along b*, z orthogonal etc) then you also chose "U" however you like (eg x along a*, y along b, z orthogonal). Take a triclinic or hexagonal unit cell instead of cubic and you see the mess. So perhaps this is not the "U" you want - please correct it - or add some sort of "U" labelling::
+UBI is inverse of (UB), so :math:`(UB)^{-1}=B^{-1}U^{-1}`, but U^{-1} is also transpose(U), so inevitably it gets flipped, even if you know what "B" is. There is now a ubitocellpars routine in (svn) indexing.py, which you can use to construct a "B" matrix according to some convention. "B" is chosen as a Cholesky factor of the product (UBI).(UBI)^T (=g, the metric tensor). Since you are free to chose "B" however you like (x along a, y along b*, z orthogonal etc) then you also chose "U" however you like (eg x along a*, y along b, z orthogonal). Take a triclinic or hexagonal unit cell instead of cubic and you see the mess. So perhaps this is not the "U" you want - please correct it - or add some sort of "U" labelling::
 
  import Numeric as n
  import LinearAlgebra as l
