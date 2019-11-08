@@ -1,15 +1,13 @@
+========
 Advanced
 ========
-Take advanced to mean without graphical interface, without prejudice to 
-people who prefer touching mice to keyboards. 
-The program was mainly developed for online analysis during experiments to get an idea if the setup and sample etc are OK. Other programs exist which might to a better job (eg GRAINDEX [link]) and you should consider trying for serious data analysis. Notably [Grainspotter] reads ImageD11 gve files and tends to make a better indexing. 
-Nevertheless, the free nature of ImageD11 and convenience of the python language could tempt you to process large volumes of data using the functions in the program. Currently the indexing module is the most easily accessible for script writers. The other modules should be separated from the gui very soon. 
-edit?]#Using_the_indexing_module_interactively?
+
+Take advanced to mean without graphical interface, without prejudice to people who prefer touching mice to keyboards. The program was mainly developed for online analysis during experiments to get an idea if the setup and sample etc are OK. Other programs exist which might to a better job, and you should consider trying them for serious data analysis. Notably, `Grainspotter <https://sourceforge.net/p/fable/wiki/grainspotter/>`_ reads ImageD11 gve files and tends to make a better indexing. Nevertheless, the free nature of ImageD11 and convenience of the python language could tempt you to process large volumes of data using the functions in the program. Currently the indexing module is the most easily accessible for script writers. The other modules should be separated from the gui very soon.
 
 Using the indexing module interactively
+---------------------------------------
 
-An example interactive session is given here. A trial orientation is 
-generated from one g-vector file and then used to index another::
+An example interactive session is given here. A trial orientation is generated from one g-vector file and then used to index another::
 
   fable4:~/id11/lab6grains % /bliss/users/blissadm/bin/python
   Python 2.4 (#3, Mar 11 2005, 10:10:40)
@@ -99,7 +97,7 @@ generated from one g-vector file and then used to index another::
   >>> # These look a bit too good to be true...?
   
 Got an orientation now - test it on another dataset (could be another 
-rotation or a different detector etc).
+rotation or a different detector etc)::
 
   >>> # Anyway, apply these to another dataset with weak peaks in it too (peak.gve)...
   >>> another_indexing_object = indexing.indexer()
@@ -167,22 +165,12 @@ rotation or a different detector etc).
 Transformations and peak merging without the gui
 ================================================
 
-Use the history from the Tk gui...
+Use the history from Help>History to capture the commands run when you click on the gui.
 
 Separating_U_from_UBI
 =====================
 
-Seems to come up a lot for some people? 
-UBI is inverse of (UB), so (UB)^{-1}=B^{-1}U^{-1}, but U^{-1} is also 
-transpose(U), so inevitably it gets flipped, even if you know what "B" is. 
-There is now a ubitocellpars routine in (svn) indexing.py, which you can 
-use to construct a "B" matrix according to some convention. "B" is chosen 
-as a Cholesky factor of the product (UBI).(UBI)^T (=g, the metric tensor). 
-Since you are free to chose "B" however you like (x along a, y along b*, z 
-orthogonal etc) then you also chose "U" however you like (eg x along a*, y 
-along b, z orthogonal). Take a triclinic or hexagonal unit cell instead of 
-cubic and you see the mess. So perhaps this is not the "U" you want - 
-please correct it - or add some sort of "U" labelling::
+UBI is inverse of (UB), so (UB)^{-1}=B^{-1}U^{-1}, but U^{-1} is also transpose(U), so inevitably it gets flipped, even if you know what "B" is. There is now a ubitocellpars routine in (svn) indexing.py, which you can use to construct a "B" matrix according to some convention. "B" is chosen as a Cholesky factor of the product (UBI).(UBI)^T (=g, the metric tensor). Since you are free to chose "B" however you like (x along a, y along b*, z orthogonal etc) then you also chose "U" however you like (eg x along a*, y along b, z orthogonal). Take a triclinic or hexagonal unit cell instead of cubic and you see the mess. So perhaps this is not the "U" you want - please correct it - or add some sort of "U" labelling::
 
  import Numeric as n
  import LinearAlgebra as l
