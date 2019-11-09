@@ -1,9 +1,9 @@
 Getting ImageD11
 ================
 
-ImageD11 is a python module which depends on the prior installation 
-python itself and several other packages. It is usually better to 
-get these from a package manager or in a batteries-included python 
+ImageD11 is a python module which depends on the prior installation
+python itself and several other packages. It is usually better to
+get these from a package manager or in a batteries-included python
 installation. Perhaps Anaconda or Python(x,y) etc.
 
 General purpose packages that are required:
@@ -37,12 +37,8 @@ For development you also need:
 Finally, you need to download ImageD11 itself. The file release area was historically at 
 `sourceforge <http://sourceforge.net/projects/fable/files/ImageD11>`_.
 Nowadays the sources are on  `github <http://github.com/jonwright/ImageD11>`_ and the
-package itself is on pypi. Install it using:
-
-.. 
+package itself is on pypi. Install it using:: 
   pip install ImageD11
-
-
 
 Linux platforms where you have root access
 ------------------------------------------
@@ -53,45 +49,31 @@ There are some hints at the `scipy site
 <http://scipy.github.com/download.html>`_ about how the packages are named for
 different vendors. 
 
-On debian based systems (also ubuntu etc):
-
-..
+On debian based systems (also ubuntu etc)::
   sudo apt-get install python-numpy python-numpy-dev python-image python-scipy python-matplotlib python-opengl build-essential
 
-To install the bleeding edge version do an svn checkout:
-
-.. 
+To install the bleeding edge version do an svn checkout::
   svn co http://fable.svn.sourceforge.net/projects/ImageD11/trunk fabio
   svn co http://fable.svn.sourceforge.net/projects/ImageD11/trunk xfab
   svn co http://fable.svn.sourceforge.net/projects/ImageD11/trunk ImageD11
 
-Then you can install system wide via:
-
-..
+Then you can install system wide via::
   cd fabio
   python setup.py build install
   cd ../xfab
   python setup.py build install
   cd ../ImageD11
   python setup.py build install
- 
-Or in some local area by adding that location as --prefix
 
-..
+Or in some local area by adding that location as --prefix::
   export PATH=$PATH:/somewhere/bin export PYTHONPATH=/somewhere/lib/python2.6/site-packages
   python setup.py build install --prefix=/somewhere 
 
 Historically the pyopengl builds are broken for the Togl widget. 
-Get it from Togl.sourceforge.net and do something like the following:
-
-..
- tar -zxf Togl2.0-8.4-Linux.tar.gz 
- cd Togl2.0-8.4-Linux/lib 
- cp -r Togl2.0 /usr/lib/pymodules/python2.6/OpenGL/Tk/linux2-tk8.5
-
-  
-
-
+Get it from Togl.sourceforge.net and do something like the following::
+  tar -zxf Togl2.0-8.4-Linux.tar.gz 
+  cd Togl2.0-8.4-Linux/lib 
+  cp -r Togl2.0 /usr/lib/pymodules/python2.6/OpenGL/Tk/linux2-tk8.5
 
 Linux platforms where you don't have root access
 ------------------------------------------------
@@ -115,7 +97,8 @@ If you can succeed to do that you'll probably now agree you were better off
 to talk to the sysadmin or buy the Enthought version.
 
 It should be possible to install using "easy_install" or "pip" via
-the pypi package index. FIXME: add the command for doing that.
+the pypi package index::
+  pip install ImageD11
 
 Windows
 -------
@@ -123,9 +106,8 @@ Windows
 The easiest solution is to install a "batteries included" distribution of
 python. For example:
 
-- The fable gui http://sourceforge.net/projects/fable
-- Enthought python distribution http://www.enthought.com/products/epd.php
-- pythonxy www.pythonxy.com
+- The fable gui https://sourceforge.net/projects/fable
+- Enthought python distribution https://www.enthought.com/products/epd.php
 - Anaconda https://store.continuum.io/cshop/anaconda
 
 The author usually installs the python binaries from www.python.org and then 
@@ -148,10 +130,10 @@ ImageD11 has been installed by a number of mac owners but the author is not
 sure how they did it. FIXME...
 
 
-
 Ubuntu
 ------
-..
+To install on Ubuntu::
+
      sudo apt-get install build-essential
      sudo apt-get install gfortran
      sudo apt-get install git subversion 
@@ -167,7 +149,7 @@ Ubuntu
      cd xfab/
      python setup.py build bdist_wheel
      sudo pip install dist/xfab-0.0.2-py2-none-any.whl
-   
+  
      git clone http://github.com/jonwright/ImageD11
      cd ImageD11/
      python setup.py build bdist_wheel
@@ -175,5 +157,4 @@ Ubuntu
      cd ImageD11/
      cd test/
      python run_tests.py 
-
 
