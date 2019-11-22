@@ -101,6 +101,7 @@ class sparse_frame( object ):
 
     def set_pixels( self, name, values ):
         """ Named arrays sharing these labels """
+        assert isinstance( values, Container )
         assert len(values.data) == self.nnz
         self.pixels[name] = values
 
@@ -108,7 +109,7 @@ class sparse_frame( object ):
         """ Not sure when you would do this. For sorting 
         by a peak labelling to get pixels per peak """
         assert name in self.pixels
-        order = np.argsort( self.pixels.data[name] )
+        order = np.argsort( self.pixels[name].data )
         self.reorder( self, order )
 
     def sort( self ):
