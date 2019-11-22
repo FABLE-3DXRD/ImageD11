@@ -94,8 +94,10 @@ class sparse_frame( object ):
         return sparse_frame( self.row[msk],
                              self.col[msk],
                              self.shape, self.row.dtype,
-                             pixels= { name: Container( pixval.data[msk], pixval.header )
-                                       for (name, pixval) in self.pixels.items()} )
+                             pixels= {
+                                 name: Container( pixval.data[msk],
+                                                  **pixval.header )
+                                 for (name, pixval) in self.pixels.items()} )
 
     def set_pixels( self, name, values ):
         """ Named arrays sharing these labels """
@@ -119,7 +121,8 @@ class sparse_frame( object ):
         assert len(order) == self.nnz
         self.row = self.row[order]
         self.col = self.col[order]
-        self.pixels = { (name, Container( pixval.data[order], pixval.header) )
+        self.pixels = { (name, Container( pixval.data[order],
+                                          **pixval.header) )
                          for (name, pixval) in self.pixels.items() }
         
     def threshold(self, threshold, name='intensity'):
