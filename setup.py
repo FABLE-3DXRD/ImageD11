@@ -33,8 +33,11 @@ import os, sys
 # Need to use numpy.distutils so it works for f2py
 from numpy.distutils.core import setup, Extension
 from numpy import get_include
+from distutils.command.sdist import sdist
+
+
 # Get the path for the static libraries        
-import src.bldlib
+import src.bldlib, src.create_cpu_check
 
 def get_version():
     with open("ImageD11src/__init__.py","r") as f:
@@ -42,27 +45,37 @@ def get_version():
             if line.find("__version__")>-1:
                 return eval(line.split("=")[1].strip())
 
-print("check |%s|"%get_version())
+print("Building version |%s|"%get_version())
 
-
-
-
-if "build" in sys.argv:
-    """ Ugly - requires setup.py build 
+def build_clibs():
+    """ 
     Should learn to use build_clib at some point
+    Have not figured out to have per c-file args without
+    caching the o-files (avx vs sse issue)
     """
+    if not src.bldlib.need_build:
+        return
     os.chdir("src")
-    print("Call write_check")
-    os.system(sys.executable+" write_check.py")
+    print("Call create_cpu_check")
+    src.create_cpu_check.main()
+    # os.system(sys.executable+" write_check.py")
     print("Call bldlib")
     # transmit compiler from command line
-    ok = os.system(sys.executable+" bldlib.py "+ " ".join(sys.argv))
+    # ok = os.system(sys.executable+" bldlib.py "+ " ".join(sys.argv))
+    ok = src.bldlib.main()
     os.chdir("..")
     if ok != 0:
         print("Return was",ok)
         sys.exit(ok)
     else:
         print("Seems to build OK")
+    src.bldlib.need_build = False
+
+# Issue 66, try to get pip install to work.
+#   ... but only recompile once and when needed
+for arg in ("build", "bdist_wheel", "bdist_egg", "develop","--force"):
+    if arg in sys.argv and src.bldlib.need_build:
+        build_clibs()
 
 
 ekwds = { 'include_dirs' : [get_include(), 'src' ],
@@ -84,17 +97,31 @@ extensions = [ Extension( "cImageD11_sse2",
                           **ekwds) ]
 
 
-# Removed list of dependencies from setup file
-#  borked something, not sure what or why
-needed =[]
-# ["xfab", "fabio", "pyopengl",  "matplotlib", "numpy", "scipy", "six", "h5py",
-#  "pyopengltk", "FitAllB", ... ]
+
+
+# Things we depend on. This generally borks things if pip
+# tries to do source installs of all of these.
+
+needed =[
+    "six",
+    "numpy",
+    "scipy",
+    "pillow",
+    "h5py",
+    "matplotlib",
+    "xfab",
+    "fabio",
+    "pyopengl",
+    "pyopengltk",
+    ]
+    # , "FitAllB", ... ]
 
 # See the distutils docs...
 setup(name='ImageD11',
       version=get_version(),
       author='Jon Wright',
       author_email='wright@esrf.fr',
+      cmdclass={'sdist': sdist},
       description='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory

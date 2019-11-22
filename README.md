@@ -3,7 +3,7 @@ Windows: [![Build status](https://ci.appveyor.com/api/projects/status/4pdlvsj2gr
 Linux: [![CircleCI](https://circleci.com/gh/jonwright/ImageD11.svg?style=svg)](https://circleci.com/gh/jonwright/ImageD11)
 
 ImageD11
-Version 1.9.3
+Version 1.9.5
 Jon Wright
 wright@esrf.fr
 
