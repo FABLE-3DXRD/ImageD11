@@ -372,7 +372,7 @@ void sparse_blob2Dproperties(float * restrict data,
 
 
 
-
+#define CHECKSANITY 0
 int sparse_localmaxlabel(float *restrict v,
 			 uint16_t * restrict i,
 			 uint16_t * restrict j,
@@ -380,7 +380,7 @@ int sparse_localmaxlabel(float *restrict v,
 			 float * restrict MV, // neighbor Max Val (of 3x3 square)
 			 int32_t * restrict iMV,  // Which neighbor is higher?
 			 int32_t * restrict labels  // Which neighbor is higher?
-    )
+			 )
 {
   int k, p, pp, ir;
   /* Read k = kurrent
@@ -394,22 +394,31 @@ int sparse_localmaxlabel(float *restrict v,
   /* prev row */
   pp = 0;
   p = 0;
+  /* First pixel -  we assume it is a max, it will be stolen later
+     has no previous...*/
+  iMV[0] = 0;
+  MV[0] = v[0];
   /* Main loop */
-  for (k = 0; k < nnz; k++) {
+  for (k = 1; k < nnz; k++) {
     iMV[k] = k;   /* iMV[k] == k tags a max */
     MV[k] = v[k]; /* MV[k] is value of that max - a temporary */
     /* previous row first */
-    ir = i[k] - 1;
+    ir = ((int)i[k]) - 1;
     /* pp should be on row above, on or after j-1 */
-    while (ir > i[pp])
+    while (ir > i[pp]){
       pp++;
+      if(CHECKSANITY){ assert( (pp >= 0) && (pp < nnz ) );}
+    }
     /* skip if nothing on row above */
     if (i[pp] < i[k]) {
       /* Locate previous pixel on row above */
-      while (((j[k] - j[pp]) > 1) && (i[pp] == ir))
+      while (((j[k] - j[pp]) > 1) && (i[pp] == ir)){
 	pp++;
+	if(CHECKSANITY){ assert( (pp >= 0) && (pp < nnz ) );}
+      }
       /* Now the 3 pixels on the row above, if they are present */
       for (p = pp; j[p] <= j[k] + 1; p++) {
+	if(CHECKSANITY){ assert( (p >= 0) && (p < nnz ) );}
 	if (i[p] != ir ) break;
 	if( v[k] > v[p] ){ /* This one is higher */
 	  /* Steal if we are higher than neighbor currently points to */
@@ -426,7 +435,8 @@ int sparse_localmaxlabel(float *restrict v,
       } /* 3 previous */
     } /* row above */
     /* 4 preceding neighbors : k-1 is prev */
-    p = k - 1;	
+    p = k - 1;
+    if(CHECKSANITY){ assert( (p >= 0) && (p < nnz ) );}
     if( (i[k] == i[p] ) && (j[k] == (j[p]+1) ) ){ /* previous pixel, same row */
       if( v[k] >  v[p] ){ /* This one is higher */
 	/* Steal if we are higher than neighbor currently points to */
@@ -435,11 +445,11 @@ int sparse_localmaxlabel(float *restrict v,
 	  MV[p] = v[k];
 	}
       } else if( v[p] > MV[k] ) { /* Previous one was higher */
-       	iMV[k] = p;
+	iMV[k] = p;
 	MV[k] = v[p];
       }
     }
-  }				// end loop over data
+  } // end loop over data
   /* Count max values and assign unique labels */
   pp = 0;
   for( k=0; k<nnz; k++){
@@ -454,6 +464,7 @@ int sparse_localmaxlabel(float *restrict v,
     p = iMV[k];
     while( iMV[p] != p ){
       p = iMV[p];
+      if(CHECKSANITY){ assert( (p >= 0) && (p < nnz ) );}
     }
     labels[k] = labels[p];
   }
