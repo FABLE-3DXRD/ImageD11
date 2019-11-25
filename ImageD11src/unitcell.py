@@ -1,6 +1,6 @@
 
 
-from __future__ import print_function
+from __future__ import print_function, division
 
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
@@ -27,14 +27,14 @@ from __future__ import print_function
 #
 #
 #
+import logging, math
 
 import numpy as np 
-
 from numpy.linalg import inv
+from xfab import tools, sg
 
-import math
 
-import logging
+
 
 def radians(x):
     return x*math.pi/180.
@@ -206,7 +206,6 @@ class unitcell:
         Argument spg is the space group name, e.g. 'R3-c'
         """
         stl_max = dsmax/2.
-        from xfab import tools,sg
         raw_peaks = tools.genhkl_all(self.lattice_parameters, 
                                  0 , stl_max,
                                  sgname=spg,
@@ -215,6 +214,7 @@ class unitcell:
         for i in range(len(raw_peaks)):
             peaks.append([raw_peaks[i,3]*2,(raw_peaks[i,0],raw_peaks[i,1],raw_peaks[i,2])])
         self.peaks = peaks
+        self.limit = dsmax
         return peaks
 
     def gethkls(self,dsmax):
