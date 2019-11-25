@@ -13,6 +13,37 @@ if platform.system() == "Windows":
 else:
     timer = time.time
 
+
+class test_array_bounds_localmax( unittest.TestCase):
+    def setUp(self):
+        self.row = np.array([  0,   1,  26,  27, 143, 144, 147, 147,
+                               188, 188, 196, 196, 196,
+       197, 197, 197, 197, 197, 198, 198, 198, 198, 198, 198, 199, 199,
+       199, 200, 200, 201], dtype=np.uint16)
+        self.col = np.array([  1,   1, 321, 321, 332, 332, 696, 697,
+                               616, 617, 767, 768, 769,
+       767, 768, 769, 770, 771,   1,   2, 767, 768, 769, 770, 768, 769,
+       770, 772, 773, 773], dtype=np.uint16)
+        self.vals = np.array([ 18.757812,  20.311476,  20.125   ,
+                               20.809525,  30.141733,
+        18.84375 ,  20.023438,  20.023438,  19.328125,  19.328125,
+        22.373016,  30.491804,  44.491806,  33.220474, 126.64    ,
+       134.64    ,  39.64    ,  22.64    ,  20.882812,  19.882812,
+        44.04762 , 109.70248 , 129.70248 ,  32.702477,  43.264   ,
+        41.264   ,  33.264   ,  20.593496,  33.5935  ,  35.02362 ],
+      dtype=np.float32)
+    def test1(self):
+        import h5py
+        nnz = self.row.shape[0]
+        labels = np.zeros( nnz, "i" )
+        vmx = np.zeros( nnz, np.float32 )
+        imx = np.zeros( nnz, 'i')
+        nlabel = cImageD11.sparse_localmaxlabel(
+            self.vals, self.row, self.col,
+            vmx, imx, labels )
+        self.assertTrue( nlabel > 0)
+        # This does a double-free on exit
+
 class test_array_stats( unittest.TestCase ):
     def test1( self ):
         ar = np.arange( 6*4, dtype=np.float32 ).reshape( 6,4 )
