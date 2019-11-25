@@ -109,7 +109,7 @@ needed =[
     "pillow",
     "h5py",
     "matplotlib",
-    "xfab",
+    "xfab>=0.0.4",
     "fabio",
     "pyopengl",
     "pyopengltk",
