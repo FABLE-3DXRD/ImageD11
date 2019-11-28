@@ -12,11 +12,12 @@ init:
   - "ECHO %CONDA%"
 
 install:
-  - "set PATH=%CONDA%;%CONDA%\\Scripts;%PATH%"
+  - "SET PATH=%CONDA%;%CONDA%\\Scripts;%CONDA%\\Library\\bin;%CONDA%\\DLLS;%PATH%"
   - conda config --set always_yes yes --set changeps1 no
   - conda info -a
-  - pip install numpy scipy h5py matplotlib fabio xfab pycifrw pillow --no-deps
-  - python setup.py build install
+  - python -m pip install numpy
+  - python setup.py build
+  - python -m pip install .
 
 
 test_script:
