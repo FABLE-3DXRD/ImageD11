@@ -29,6 +29,7 @@ modules = [
     "testconnectedpixels.testconnectedpixels",
     "testlabelimage.testlabelimage",
     "test_compress_duplicates",
+    "eps_sig.test_eps"
 ]
 
 if "all" in sys.argv:
