@@ -276,7 +276,7 @@ def grid_index_parallel( fltfile, parfile, tmp, gridpars, translations ):
 
     NPR =  multiprocessing.cpu_count() - 1
     tsplit = [ translations[i::NPR] for i in range(NPR) ]
-    args = [("%s.flt"%(tmp), sys.argv[2], t, gridpars) for i,t in enumerate(tsplit) ]
+    args = [("%s.flt"%(tmp), parfile, t, gridpars) for i,t in enumerate(tsplit) ]
     q = PQueue()
     p = Pool(processes=NPR, initializer=wrap_test_many_points_init, initargs=[q])
     print( "Using a pool of",NPR,"processes" )
@@ -317,34 +317,36 @@ if __name__=="__main__":
 import sys, random
 from ImageD11.grid_index_parallel import grid_index_parallel
 
-fltfile = sys.argv[1]
-parfile = sys.argv[2]
-tmp     = sys.argv[3]
-
-gridpars = {
-    'DSTOL' : 0.004,
-    'OMEGAFLOAT' : 0.13,
-    'COSTOL' : 0.002,
-    'NPKS' : int(  sys.argv[4] ),
-    'TOLSEQ' : [ 0.02, 0.015, 0.01],
-    'SYMMETRY' : "cubic",
-    'RING1'  : [5,10],
-    'RING2' : [5,10],
-    'NUL' : True,
-    'FITPOS' : True,
-    'tolangle' : 0.25,
-    'toldist' : 100.,
-}
+if __name__=="__main__":
+    # You need this idiom to use multiprocessing on windows (script is imported again)
+    gridpars = {
+        'DSTOL' : 0.004,
+        'OMEGAFLOAT' : 0.13,
+        'COSTOL' : 0.002,
+        'NPKS' : int(  sys.argv[4] ),
+        'TOLSEQ' : [ 0.02, 0.015, 0.01],
+        'SYMMETRY' : "cubic",
+        'RING1'  : [5,10],
+        'RING2' : [5,10],
+        'NUL' : True,
+        'FITPOS' : True,
+        'tolangle' : 0.25,
+        'toldist' : 100.,
+    }
             
-# grid to search
-translations = [(t_x, t_y, t_z) 
+    # grid to search
+    translations = [(t_x, t_y, t_z) 
         for t_x in range(-500, 501, 50)
         for t_y in range(-500, 501, 50) 
         for t_z in range(-500, 501, 50) ]
-# Cylinder: 
-# translations = [( x,y,z) for (x,y,z) in translations if (x*x+y*y)< 500*500 ]
-#
-random.seed(42) # reproducible
-random.shuffle(translations)
-grid_index_parallel( fltfile, parfile, tmp, gridpars, translations )
+    # Cylinder: 
+    # translations = [( x,y,z) for (x,y,z) in translations if (x*x+y*y)< 500*500 ]
+    #
+    random.seed(42) # reproducible
+    random.shuffle(translations)
+
+    fltfile = sys.argv[1]
+    parfile = sys.argv[2]
+    tmp     = sys.argv[3]
+    grid_index_parallel( fltfile, parfile, tmp, gridpars, translations )
 """)

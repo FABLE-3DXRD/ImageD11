@@ -3,15 +3,19 @@ Windows: [![Build status](https://ci.appveyor.com/api/projects/status/4pdlvsj2gr
 Linux: [![CircleCI](https://circleci.com/gh/jonwright/ImageD11.svg?style=svg)](https://circleci.com/gh/jonwright/ImageD11)
 
 ImageD11
-Version 1.9.5
+Version 1.9.6
 Jon Wright
 wright@esrf.fr
 
 This is the source code for ImageD11. Probably you wanted a compiled version.
 
+Perhaps you can try to get it via:
+
+ pip install ImageD11
+
 Some (dated) documentation is here: https://pythonhosted.org/ImageD11/
 
-If you are at ESRF you could try "module load fable"
+If you are at ESRF on a linux computer you could try "module load fable"
 
 To use it, try this:
 
