@@ -53,7 +53,7 @@ if plat == "Linux" or compiler == "mingw32":
     lsse2arg = arg + ["-msse4.2"]
     lavx2arg = arg + ["-mavx"]
 elif plat == "Windows":
-    arg=["/Ox", "/openmp" ]
+    arg=["/O2", "/openmp" ]
     # the /arch switches are ignored by the older MSVC compilers
     sse2arg = arg + ["/arch:SSE2",]
     avx2arg = arg + ["/arch:AVX",]

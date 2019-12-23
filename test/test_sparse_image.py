@@ -5,13 +5,9 @@ import fabio
 import numpy as np
 import scipy.sparse
 import unittest
-import time
+import timeit
 
-import platform
-if platform.system() == "Windows":
-    timer = time.clock
-else:
-    timer = time.time
+timer = timeit.default_timer
 
 
 class test_array_bounds_localmax( unittest.TestCase):
@@ -62,16 +58,34 @@ class test_array_stats( unittest.TestCase ):
             (mini, maxi, mean, var),
             (ar.min(), ar.max(), ar.mean(), ar.var()) ))
     def test3( self ):
-        ar = np.arange( 2048*2048, dtype=np.float32 ).reshape( 2048, 2048 )
-        start = timer() 
+        ar = np.random.random( 2048*2048).astype( np.float32 ).reshape( 2048, 2048 )
+        nloop = 10
+        ctime = 0
+        nt = 0
         mini, maxi, mean, var = cImageD11.array_stats( ar.ravel() )
-        endc = timer()
+        for i in range(nloop):
+            start = timer()
+            mini, maxi, mean, var = cImageD11.array_stats( ar.ravel() )
+            endc = timer()
+            dt = endc - start
+            ctime += dt
+            nt += 1
+            if ctime > 0.1:
+                break
+        ctime /= nt
+        check = ar.min(), ar.max(), ar.mean(), ar.var()
+        start = timer()
         check = ar.min(), ar.max(), ar.mean(), ar.var()
         endn = timer()
-        self.assertTrue( np.allclose( (mini, maxi, mean, var), check ) )
-        numpytime = endn - endc
-        ctime = endc - start
-        print("array_stats: %.3f ms vs %.3f ms, speedup %.1f"%(
+        numpytime = endn - start
+        ok = np.allclose( (mini, maxi, mean, var), check )
+        if not ok:
+            for (a,b) in  zip((mini, maxi, mean, var), check ):
+                print( np.allclose(a,b),a,b )
+        self.assertTrue( ok )
+        MB_s = ar.nbytes / ctime / 1_000_000
+        FPS  = ar.nbytes / ctime / (2048*2048*4) # Frelon float32 frame
+        print("array_stats: %.1f MB/s %.1f FPS(4M,f32) %.3f ms vs %.3f ms, speedup %.1f"%( MB_s, FPS,
             1e3*ctime, 1e3*numpytime, numpytime/ctime))
 
 
