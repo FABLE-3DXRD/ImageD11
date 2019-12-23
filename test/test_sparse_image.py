@@ -83,7 +83,7 @@ class test_array_stats( unittest.TestCase ):
             for (a,b) in  zip((mini, maxi, mean, var), check ):
                 print( np.allclose(a,b),a,b )
         self.assertTrue( ok )
-        MB_s = ar.nbytes / ctime / 1_000_000
+        MB_s = ar.nbytes / ctime / 1000000
         FPS  = ar.nbytes / ctime / (2048*2048*4) # Frelon float32 frame
         print("array_stats: %.1f MB/s %.1f FPS(4M,f32) %.3f ms vs %.3f ms, speedup %.1f"%( MB_s, FPS,
             1e3*ctime, 1e3*numpytime, numpytime/ctime))
