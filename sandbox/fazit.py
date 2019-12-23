@@ -3,11 +3,10 @@
 fast radial regrouping method proposed by Peter Boesecke
 """
 import numpy as np, pylab as pl
-import timeit
+import timeit, sys
 from ImageD11 import cImageD11
 
 timer = timeit.default_timer
-
 
 try:
     from numba import jit, prange
@@ -26,6 +25,9 @@ except:
     def prange(*a):
         return range(*a)
 
+if sys.version_info[0] == 2:
+    prange = range
+
 # 2018 code:
 #   compute radius / azimuth
 #        integer bin for radius
@@ -34,7 +36,7 @@ except:
 #   Re-order an input array to write output
 #    no splits or sums n->n mapping
 #
-@jit(nopython=True, parallel=True)
+@jit(nopython=True, parallel=sys.version_info[0]>2)
 def compute_r_chi( dims, pars ):
     """
     Replace this with pyFAI / ImageD11 / whatever
@@ -125,7 +127,7 @@ assert (trans.ravel() == gdata.flat[lut]).all()
 
 
 
-@jit(nopython=True, parallel=True, nogil=True)
+@jit(nopython=True, parallel=sys.version_info[0]>2, nogil=True)
 def fazit_sortedwrite( lut, adrout, data, out ):
     npx = lut.size
     for i in prange(npx):
@@ -137,7 +139,7 @@ def fazit_sortedwrite( lut, adrout, data, out ):
 trans = measure( fazit_sortedwrite, "Sorted write  ", lut, adrout  )
 assert (trans.ravel() == gdata.flat[lut]).all()
 
-@jit(nopython=True, parallel=True, nogil=True)
+@jit(nopython=True, parallel=sys.version_info[0]>2, nogil=True)
 def fazit_sortedread( lut, adrout, data, out ):
     npx = lut.size
     for i in prange(npx):
@@ -150,7 +152,7 @@ trans = measure( fazit_sortedread,  "Sorted read   ", lut, adrout  )
 assert (trans.ravel() == gdata.flat[lut]).all()
 
 
-@jit(nopython=True, parallel=True, nogil=True)
+@jit(nopython=True, parallel=sys.version_info[0]>2, nogil=True)
 def fazit_both( lut, adrout, data, out ):
     npx = lut.size
     for i in prange(npx):
@@ -166,7 +168,7 @@ assert (trans.ravel() == gdata.flat[lut]).all()
 trans = measure( fazit_both,        "sort in  both ", ao, adrout  )
 assert (trans.ravel() == gdata.flat[lut]).all()
 
-@jit(nopython=True, parallel=True, nogil=True)
+@jit(nopython=True, parallel=sys.version_info[0]>2, nogil=True)
 def fazit_u32_i16( u32, i16, data, out ):
     ns = i16.shape[0]
     nf = i16.shape[1]
