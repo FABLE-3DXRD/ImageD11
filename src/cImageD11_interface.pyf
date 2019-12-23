@@ -596,6 +596,35 @@ interface
         integer, intent(hide), depend( img ) :: npx
     end subroutine uint16_to_float_darksub
 
+    subroutine reorder_u16_a32(data, adr, out, N)
+    	intent(c) reorder_u16_a32
+	intent(c)
+	integer(kind=-2), dimension(N), intent(in) :: data
+	integer*4, dimension(N), intent(in) :: adr
+	integer(kind=-2), dimension(N), intent(inout) :: out
+	integer, intent(hide), depend(data) :: N
+    end subroutine reorder_u16_a32
+
+    subroutine reorderlut_u16_a32(data, adr, out, N)
+    	intent(c) reorderlut_u16_a32
+	intent(c)
+	integer(kind=-2), dimension(N), intent(in) :: data
+	integer*4, dimension(N), intent(in) :: adr
+	integer(kind=-2), dimension(N), intent(inout) :: out
+	integer, intent(hide), depend(data) :: N
+    end subroutine reorderlut_u16_a32
+
+    subroutine reorder_u16_a32_a16(data, adr0, adr1, out, ns, nf)
+    	intent(c) reorder_u16_a32_a16
+	intent(c)
+	integer(kind=-2), dimension(ns,nf), intent(in) :: data
+	integer*4, dimension(ns), intent(in) :: adr0
+	integer*2, dimension(ns,nf), intent(in) :: adr1
+	integer(kind=-2), dimension(ns,nf), intent(inout) :: out
+	integer, intent(hide), depend(adr1) :: ns = shape(adr1,0)
+	integer, intent(hide), depend(adr1) :: nf = shape(adr1,1)
+    end subroutine reorder_u16_a32_a16
+
 end interface
 
 

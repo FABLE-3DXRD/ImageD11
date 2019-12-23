@@ -4,7 +4,7 @@ fast radial regrouping method proposed by Peter Boesecke
 """
 import numpy as np, pylab as pl
 import timeit
-
+from ImageD11 import cImageD11
 
 timer = timeit.default_timer
 
@@ -60,8 +60,9 @@ def compute_r_chi( dims, pars ):
 
 
 N = 2048
-dims = ( N, N )
-pars = 1022.1, 1018.5, 2.25
+M = 2048
+dims = ( N, M )
+pars = 1022.1, 1018.5, 1.25
 t0 = timer()
 rad, chi = compute_r_chi( dims, pars )
 t1 = timer()
@@ -78,11 +79,11 @@ adrout = np.argsort(lut).astype(np.uint32)
 # TODO: optimise the order to apply lut
 #      assert len(set(lut)) == len(lut)
 
-gdata = (np.random.random(  (N,N)  )*256).astype( np.uint16 )
+gdata = (np.random.random(  (N,M)  )*256).astype( np.uint16 )
 for i in range(0,N,256):
     gdata[i:i+120] += 256
 
-p = np.empty( (N,N), np.float32 )
+p = np.empty( (N,M), np.float32 )
 pk = 50
 while pk < rad.max():
     dr = ((rad - pk)**2)/20.
@@ -96,17 +97,31 @@ def measure( func, name, lut, adrout ):
     t = [timer(),]
     w, r = func( lut, adrout, data, out )
     t.append( timer() )
-    for i in range(5):
+    for i in range(50):
         func ( lut, adrout, data, out )
         t.append(timer())
+        if(t[-1]-t[1]) > 0.5:
+            break
     t = np.array(t)
     dt = t[1:] - t[:-1]
     # print(dt)
     t = np.min(dt)
     te = dt[1:].std()
-    print(name, "%.3f ms (std %.3f), write %.2f MB/s, read %.2f MB/s %g MB"%(t*1e3, te*1e3, w/t/1e6, r/t/1e6,r/1e6) ) 
+    s = name + "% 6.3f ms (std %.3f), write % 7.0f MB/s, read % 7.0f MB/s %g MB"%(
+        t*1e3, te*1e3, w/t/1e6, r/t/1e6,r/1e6)
+    print(s)
     return out
 
+
+
+def fazit_numpy_write( lut, adrout, data, out ):
+    out.ravel()[:] = data.ravel()[lut]
+    writes = out.itemsize * out.size
+    reads =  data.itemsize*data.size + lut.itemsize*lut.size
+    return writes, reads
+
+trans = measure( fazit_numpy_write, "Numpy  write ", lut, adrout  )
+assert (trans.ravel() == gdata.flat[lut]).all()
 
 
 
@@ -144,7 +159,7 @@ def fazit_both( lut, adrout, data, out ):
     reads =  data.itemsize*data.size + adrout.itemsize*adrout.size + lut.itemsize*lut.size
     return writes, reads
 
-ao = np.arange( N*N, dtype=np.uint32 )
+ao = np.arange( N*M, dtype=np.uint32 )
 trans = measure( fazit_both,        "sort out both ", lut, ao  )
 assert (trans.ravel() == gdata.flat[lut]).all()
 
@@ -168,9 +183,43 @@ def fazit_u32_i16( u32, i16, data, out ):
 trans = measure( fazit_sortedread,  "Sorted read   ", lut, adrout  )
 assert (trans.ravel() == gdata.flat[lut]).all()
 
+
+def fazit_f2py( lut, adrout, data, out):
+    cImageD11.reorder_u16_a32( data.ravel(), adrout, out.ravel())
+    writes = out.nbytes
+    reads = data.nbytes + adrout.nbytes
+    return writes, reads
+
+trans= measure( fazit_f2py, "f2py sort read", lut, adrout )
+assert (trans.ravel() == gdata.flat[lut]).all()
+
+def fazit_f2py_lut( lut, adrout, data, out):
+    cImageD11.reorderlut_u16_a32( data.ravel(), lut.ravel(), out.ravel())
+    writes = out.nbytes
+    reads = data.nbytes + lut.nbytes
+    return writes, reads
+
+trans= measure( fazit_f2py_lut, "f2py sortwrite", lut, adrout )
+assert (trans.ravel() == gdata.flat[lut]).all()
+
+
+def fazit_f2py_i16( u32, i16, data, out):
+    cImageD11.reorder_u16_a32_a16( data.reshape(i16.shape),
+                                   u32,
+                                   i16,
+                                   out.reshape(i16.shape) )
+    writes = out.nbytes
+    reads = data.nbytes + u32.nbytes + i16.nbytes
+    return writes, reads
+
+
 k = 1
 while k<2048:
-    a =  adrout.reshape(N*k,N//k)
+    try:
+        a =  adrout.reshape(N*k,M//k)
+    except:
+        k *=2
+        continue
     u32 = a[:,0].copy().astype(np.int32)
     i16 = np.zeros(a.shape, np.int16)
     da = a[:,1:].astype(int) - a[:,:-1]
@@ -178,8 +227,12 @@ while k<2048:
     assert np.alltrue( i16[:,1:] == da ) , "clipping issue"
     if k == 1:
         print("highest jump was",abs(da).max())
-    trans = measure( fazit_u32_i16,        "u32 i16 %4d "%(k), u32, i16  )
+    trans = measure( fazit_u32_i16,        "u32 i16  %4d "%(k), u32, i16  )
     assert (trans.ravel() == gdata.flat[lut]).all()
+
+    trans = measure( fazit_f2py_i16,        "f2pyi16  %4d "%(k), u32, i16  )
+    assert (trans.ravel() == gdata.flat[lut]).all()
+  
     k *= 2
 
 

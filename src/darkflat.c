@@ -225,3 +225,51 @@ void array_histogram(float img[],
 	    hist[ibin] = hist[ibin] + 1;
     }
 }
+
+
+void reorder_u16_a32( uint16_t * restrict data,
+		      uint32_t * restrict adr,
+		      uint16_t * restrict out,
+		      int N
+		     ){
+  int i;
+  /*  printf("Hello, got N=%d\n",N);*/
+#pragma omp parallel for
+  for(i=0 ; i<N ; i++){
+    out[ adr[i] ] = data[i];
+  }
+}
+
+void reorderlut_u16_a32( uint16_t * restrict data,
+			 uint32_t * restrict lut,
+			 uint16_t * restrict out,
+			 int N
+		     ){
+  int i;
+  /*  printf("Hello, got N=%d\n",N);*/
+#pragma omp parallel for
+  for(i=0 ; i<N ; i++){
+    out[ i ] = data[lut[i]];
+  }
+}
+
+
+void reorder_u16_a32_a16( uint16_t * restrict data,
+			  uint32_t * restrict a0,
+			  int16_t  * restrict a1,
+			  uint16_t * restrict out,
+			  int ns, int nf
+		     ){
+  int i, j, p;
+  /*  printf("Hello, got ns=%d nf=%d\n",ns, nf);*/
+#pragma omp parallel for private(p, j) 
+  for(i=0 ; i<ns ; i++){
+    p = a0[i];
+    for(j=0 ; j<nf ; j++){
+      p += a1[i*nf + j];
+      out[ p ] = data[i*nf+j];
+    }
+  }
+}
+
+
