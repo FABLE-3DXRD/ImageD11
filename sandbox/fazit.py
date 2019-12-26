@@ -1,4 +1,6 @@
 
+
+from __future__ import print_function, division
 """
 fast radial regrouping method proposed by Peter Boesecke
 """
@@ -109,10 +111,34 @@ def measure( func, name, lut, adrout ):
     # print(dt)
     t = np.min(dt)
     te = dt[1:].std()
-    s = name + "% 6.3f ms (std %.3f), write % 7.0f MB/s, read % 7.0f MB/s %g MB"%(
+    s = name + "% 6.3f ms (std % 6.2f), write % 7.0f MB/s, read % 7.0f MB/s %g MB"%(
         t*1e3, te*1e3, w/t/1e6, r/t/1e6,r/1e6)
     print(s)
     return out
+
+ao = np.arange( N*M, dtype=np.uint32 )
+# lut is sorted for reads. Use cachelen blocks instead
+a32 = lut.copy()
+a32.shape = a32.size//32 , 32
+maxread = a32.max( axis=1 )
+run_order = np.argsort( maxread )
+print(run_order.shape)
+l32 = a32[ run_order ].ravel()
+print(l32.shape)
+i32 = ao.reshape( a32.shape )[ run_order ].ravel()
+assert l32.shape == lut.shape
+
+# lut is sorted for reads. Use cachelen blocks instead
+d32 = adrout.copy()
+d32.shape = d32.size//32 , 32
+maxread = d32.max( axis=1 )
+run_order = np.argsort( maxread )
+print(run_order.shape)
+m32 = d32[ run_order ].ravel()
+print(l32.shape)
+j32 = ao.reshape( d32.shape )[ run_order ].ravel()
+assert j32.shape == lut.shape
+assert m32.shape == lut.shape
 
 
 
@@ -161,12 +187,38 @@ def fazit_both( lut, adrout, data, out ):
     reads =  data.itemsize*data.size + adrout.itemsize*adrout.size + lut.itemsize*lut.size
     return writes, reads
 
-ao = np.arange( N*M, dtype=np.uint32 )
-trans = measure( fazit_both,        "sort out both ", lut, ao  )
+@jit(nopython=True, parallel=sys.version_info[0]>2, nogil=True)
+def fazit_b32out( lut, a32, data, out ):
+    npx = lut.size
+    for i in prange(0,npx//32):
+        p = a32[i]
+        for j in range(32):
+            out.flat[p+j] = data.flat[lut.flat[i*32+j]]
+    writes = out.itemsize * out.size
+    reads =  data.itemsize*data.size + a32.itemsize*a32.size + lut.itemsize*lut.size
+    return writes, reads
+
+
+
+
+
+trans = measure( fazit_both,        "sort write 2Id", lut, ao  )
 assert (trans.ravel() == gdata.flat[lut]).all()
 
-trans = measure( fazit_both,        "sort in  both ", ao, adrout  )
+trans = measure( fazit_both,        "sort reads 2Id", ao, adrout  )
 assert (trans.ravel() == gdata.flat[lut]).all()
+
+trans = measure( fazit_both,        "sort blk32r2Id", j32 , m32)
+assert (trans.ravel() == gdata.flat[lut]).all()
+
+trans = measure( fazit_both,        "sort blk32o2Id", l32 , i32)
+assert (trans.ravel() == gdata.flat[lut]).all()
+
+io32 = i32.reshape(i32.size//32,32)[:,0].copy()
+trans = measure( fazit_b32out ,     "sort b32o   Id", l32 , io32)
+assert (trans.ravel() == gdata.flat[lut]).all()
+
+
 
 @jit(nopython=True, parallel=sys.version_info[0]>2, nogil=True)
 def fazit_u32_i16( u32, i16, data, out ):
@@ -238,6 +290,10 @@ while k<2048:
     k *= 2
 
 
+
+
+
+    
 if 0:
     pl.subplot(221)
     pl.imshow(arg.reshape(N,N))
