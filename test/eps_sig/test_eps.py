@@ -2,7 +2,7 @@
 from __future__ import print_function, division
 
 
-import unittest
+import unittest, os
 import numpy as np
 from ImageD11.grain import read_grain_file
 
@@ -10,13 +10,14 @@ from ImageD11.grain import read_grain_file
 
 class test_eps_grain( unittest.TestCase):
     def setUp(self):
-        self.testdata = np.loadtxt("test.out", skiprows = 30)
+        pth = os.path.split(__file__)[0]
+        self.testdata = np.loadtxt(os.path.join(pth,"test.out"), skiprows = 30)
         self.titles = list( 
             "cell__a cell__b cell__c cell_alpha cell_beta cell_gamma u11 u12 u13 u21 u22 u23 u31 u32 u33".split() + 
             "eps11_c eps22_c eps33_c eps12_c eps13_c eps23_c eps11_s eps22_s eps33_s eps12_s eps13_s eps23_s".split() + 
             "sig11_c sig22_c sig33_c sig12_c sig13_c sig23_c sig11_s sig22_s sig33_s sig12_s sig13_s sig23_s".split() 
             )
-        self.grains = read_grain_file("CuAlBe_scan10.map")
+        self.grains = read_grain_file(os.path.join(pth,"CuAlBe_scan10.map"))
         a = 5.77
         self.dzero = ( a, a, a, 90., 90., 90. )
 

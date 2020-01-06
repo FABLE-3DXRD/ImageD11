@@ -587,17 +587,6 @@ interface
         threadsafe
     end subroutine array_mean_var_cut
 
-    subroutine array_bincount( img, npx, ib, h, nh )
-        intent(c) array_bincount
-        intent(c)
-        real, intent(in), dimension(npx) :: img
-        integer, intent(hide), depend(img) :: npx = shape(img,0)
-        integer, intent(in), dimension(npx) :: ib
-        real, intent(inout), dimension(nh) :: h
-        integer, intent(hide), depend(h) :: nh = shape(h,0)
-        threadsafe
-    end subroutine array_bincount
-
     subroutine uint16_to_float_darksub( img, drk, data, npx )
         intent(c) uint16_to_float_darksub
         intent(c)
@@ -607,15 +596,34 @@ interface
         integer, intent(hide), depend( img ) :: npx
     end subroutine uint16_to_float_darksub
 
-    subroutine csr_one_dot(img,indices,indptr,dest,nrow)
-        intent(c) csr_one_dot
-        intent(c)
-        real, intent(in), dimension(:) :: img
-        integer, intent(in), dimension(:) :: indices, indptr
-        real, intent(inout), dimension(nrow) :: dest
-        integer, intent(hide), depend(dest) :: nrow = shape(dest,0)
-    end subroutine
-                    
+    subroutine reorder_u16_a32(data, adr, out, N)
+    	intent(c) reorder_u16_a32
+	intent(c)
+	integer(kind=-2), dimension(N), intent(in) :: data
+	integer*4, dimension(N), intent(in) :: adr
+	integer(kind=-2), dimension(N), intent(inout) :: out
+	integer, intent(hide), depend(data) :: N
+    end subroutine reorder_u16_a32
+
+    subroutine reorderlut_u16_a32(data, adr, out, N)
+    	intent(c) reorderlut_u16_a32
+	intent(c)
+	integer(kind=-2), dimension(N), intent(in) :: data
+	integer*4, dimension(N), intent(in) :: adr
+	integer(kind=-2), dimension(N), intent(inout) :: out
+	integer, intent(hide), depend(data) :: N
+    end subroutine reorderlut_u16_a32
+
+    subroutine reorder_u16_a32_a16(data, adr0, adr1, out, ns, nf)
+    	intent(c) reorder_u16_a32_a16
+	intent(c)
+	integer(kind=-2), dimension(ns,nf), intent(in) :: data
+	integer*4, dimension(ns), intent(in) :: adr0
+	integer*2, dimension(ns,nf), intent(in) :: adr1
+	integer(kind=-2), dimension(ns,nf), intent(inout) :: out
+	integer, intent(hide), depend(adr1) :: ns = shape(adr1,0)
+	integer, intent(hide), depend(adr1) :: nf = shape(adr1,1)
+    end subroutine reorder_u16_a32_a16
 
 end interface
 

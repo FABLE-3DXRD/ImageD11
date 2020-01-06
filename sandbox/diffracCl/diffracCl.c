@@ -27,6 +27,7 @@
 #define DISTANCE 4
 #define R 5
 
+
 #include <math.h>
 
 
@@ -41,29 +42,30 @@
 /* This line is disgusting */
 __declspec(dllexport)
 #endif
-void ttheta(  float *tth,
-              float *eta,
-              float *p ,
-              int nx,
-              int ny)
+void ttheta(  float * restrict tth,
+              float * restrict eta,
+              float * restrict p ,
+              int ns,
+              int nf)
 {
     // data[i,j] => i == slow, j == fast
-    int i, j, address,row;
-    float s,f,x,y,z,th,et;
-#pragma omp parallel for private(s,f,x,y,z,j,address,i)
-    for(i=0;i<nx;i++) {
+    int i, j, a,row;
+    float s,f,x,y,z,th,et,OPI;
+    OPI = 1.0/PI;
+#pragma omp parallel for private(s,f,x,y,z,j,a,i)
+    for(i=0; i<ns; i++) {
         s  = (i - p[SC]) * p[SS];
-        for(j=0;j<ny;j++){
-            address = i*nx + j;
+	a = i*nf;
+        for(j=0; j<nf; j++, a++){
             f  = (j - p[FC]) * p[FS];
             /*  |R0  R1  R2| |0|
                 |R3  R4  R5|.|f|
                 |R6  R7  R8| |s| */
-                z  = p[R+7]*f + p[R+8]*s;
-                y  = p[R+4]*f + p[R+5]*s;
-                eta[address] = atan2f( z, y )/PI;
-                x  = p[R+1]*f + p[R+2]*s + p[DISTANCE];
-                tth[address] = atan2f( sqrtf(y*y+z*z)  , x )/PI;
+	    z  = p[R+7]*f + p[R+8]*s;
+	    y  = p[R+4]*f + p[R+5]*s;
+	    eta[a] = atan2f( z, y )*OPI;
+	    x  = p[R+1]*f + p[R+2]*s + p[DISTANCE];
+	    tth[a] = atan2f( sqrtf(y*y+z*z)  , x )*OPI;
         }
     }
 }

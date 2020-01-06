@@ -13,7 +13,7 @@ modules = [
     "testlattice",
     "test_indexing",
     "test_localmaxlabel",
-    "test_overlapimage",
+#not a unittest    "test_overlapimage",
     "test_sparse_image",
     "test_cImageD11",
     "gv_general.test_gv_general",

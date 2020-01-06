@@ -4,6 +4,7 @@
 #include  <stdio.h>
 #include  <string.h>
 
+#include <float.h>
 #include <math.h>
 
 #include "cImageD11.h"
@@ -152,47 +153,45 @@ void array_stats(float img[], int npx,
 {
     int i;
     /* Use double to reduce rounding and subtraction errors */
-    double t, s1, s2, y0;
-    float mini, maxi;
-    mini = img[0];
-    maxi = img[0];
-    s1 = 0.;
-    s2 = 0.;
+    double t, s1, s2, y0,ts1, ts2;
+    float mini, maxi, tmin, tmax ;
+    mini = FLT_MAX;
+    maxi = FLT_MIN;
+    s1 = 0.; 
+    s2 = 0.; 
     y0 = img[0];
     /* Merge results - openmp 2.0 for windows has no min/max     */
-#ifdef _MSC_VER
-#pragma omp parallel for private(t) reduction(+:s1,s2)
+#pragma omp parallel private(i, t, ts1, ts2, tmin, tmax )
+{
+    tmin = FLT_MAX;
+    tmax = FLT_MIN;
+    ts1 = 0.;
+    ts2 = 0.;
+#pragma omp for 
     for (i = 0; i < npx; i++) {
 	t = img[i] - y0;
-	s1 = s1 + t;
-	s2 = s2 + t * t;
-    }
-    /* Just use serial - openmp 2.0 */
-    for (i = 0; i < npx; i++) {
-	if (img[i] < mini)
-	    mini = img[i];
-	if (img[i] > maxi)
-	    maxi = img[i];
-    }
-#else
-#pragma omp parallel for private(t) reduction(+:s1,s2) reduction(min: mini) reduction(max: maxi)
-    for (i = 0; i < npx; i++) {
-	t = img[i] - y0;
-	s1 = s1 + t;
-	s2 = s2 + t * t;
-	if (img[i] < mini)
-	    mini = img[i];
-	if (img[i] > maxi)
-	    maxi = img[i];
-    }
-#endif
+	ts1 = ts1 + t;
+	ts2 = ts2 + t * t;
+	if (img[i] < tmin)
+	    tmin = img[i];
+	if (img[i] > tmax)
+	    tmax = img[i];
+    } // for
+#pragma omp critical
+{
+    s1 += ts1;
+    s2 += ts2;
+    if( tmin < mini) mini = tmin;
+    if( tmax > maxi) maxi = tmax;
+}
+}// parallel
     /* results */
     *mean = (float)(s1 / npx + y0);
     *var = (float)((s2 - (s1 * s1 / npx)) / npx);
     *minval = mini;
     *maxval = maxi;
-}
 
+} 
 /**
  * Go through the data to compute a histogram of the values
  * Previous call of array_stats would help to set up this call 
@@ -227,42 +226,50 @@ void array_histogram(float img[],
     }
 }
 
-/* This is the go-to algorithm
-    Ordering is via the reads
-    It does not look like it is thread safe ??
-    */
-void array_bincount( float * restrict img, int npx, int * restrict ib, 
-                    float * restrict h, int nh){
-    int i;
-    for( i=0; i<nh; i++ ) 
-        h[i]=0.0;
-#pragma omp parallel for 
-    for( i=0; i<npx; i++) {
-        h[ib[i]] += img[i];
-    }
+
+void reorder_u16_a32( uint16_t * restrict data,
+		      uint32_t * restrict adr,
+		      uint16_t * restrict out,
+		      int N
+		     ){
+  int i;
+  /*  printf("Hello, got N=%d\n",N);*/
+#pragma omp parallel for
+  for(i=0 ; i<N ; i++){
+    out[ adr[i] ] = data[i];
+  }
+}
+
+void reorderlut_u16_a32( uint16_t * restrict data,
+			 uint32_t * restrict lut,
+			 uint16_t * restrict out,
+			 int N
+		     ){
+  int i;
+  /*  printf("Hello, got N=%d\n",N);*/
+#pragma omp parallel for
+  for(i=0 ; i<N ; i++){
+    out[ i ] = data[lut[i]];
+  }
 }
 
 
-/* This is a come-from algorithm
-    Ordering is via the writes
-     */
-    
-void csr_one_dot( const float * restrict img, /* source data */
-                  const int   * restrict indices, 
-                  const int   * restrict indptr,
-                        float * restrict dest, 
-                        int nrow){
-    int i, j;
-/*   printf("Got nrow %d\n",nrow) */
-#pragma omp parallel for private(i,j) schedule(guided)
-    for( i=0; i<nrow; i++ ) {
-        dest[i]=0.0;
-        for( j=indptr[i]; j<indptr[i+1]; j++ ){
-            dest[i]+=img[indices[j]];
-        }
+void reorder_u16_a32_a16( uint16_t * restrict data,
+			  uint32_t * restrict a0,
+			  int16_t  * restrict a1,
+			  uint16_t * restrict out,
+			  int ns, int nf
+		     ){
+  int i, j, p;
+  /*  printf("Hello, got ns=%d nf=%d\n",ns, nf);*/
+#pragma omp parallel for private(p, j) 
+  for(i=0 ; i<ns ; i++){
+    p = a0[i];
+    for(j=0 ; j<nf ; j++){
+      p += a1[i*nf + j];
+      out[ p ] = data[i*nf+j];
     }
+  }
 }
-
-
 
 
