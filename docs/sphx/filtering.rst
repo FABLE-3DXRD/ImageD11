@@ -1,6 +1,12 @@
 Filtering
 =========
 
+There is a new gui option, try doing:
+ python -m ImageD11.silxGui.silx_colfile.py mypeaks.flt
+
+
+
+
 How to clean up a peaksearch output to only get the nice peaks, or 
 whatever criteria you like::
 
