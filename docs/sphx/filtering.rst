@@ -5,8 +5,6 @@ There is a new gui option, try doing:
  python -m ImageD11.silxGui.silx_colfile.py mypeaks.flt
 
 
-
-
 How to clean up a peaksearch output to only get the nice peaks, or 
 whatever criteria you like::
 
@@ -24,10 +22,7 @@ whatever criteria you like::
  f.filter(m)
  f.writefile(sys.argv[2])
 
-Since version 1.0 of ImageD11 a "columnfile" facility has been added. This 
-python object allows for easy filtering of your data by generating 
-attributes representing the names of columns, and also a filter function. 
-Here is an example::
+Since version 1.0 of ImageD11 a "columnfile" facility has been added. This python object allows for easy filtering of your data by generating attributes representing the names of columns, and also a filter function. Here is an example::
 
  D:\wright\Grain_Stuff\sim_test\simdata_oPPA_5grains>python
  Python 2.4.4 (#71, Oct 18 2006, 08:34:43) [MSC v.1310 32 bit (Intel)] on win32
@@ -60,7 +55,7 @@ Here is an example::
  >>> **obj.writefile( "my_filtered_peaks.flt" )**
  
 Some possible filtering operations clipped out of the numpy array object 
-help.
+help::
  
  >>> help(mask)
  Help on ndarray object:

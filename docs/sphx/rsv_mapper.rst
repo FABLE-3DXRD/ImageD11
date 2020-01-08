@@ -1,6 +1,5 @@
-
 =====================================================
- rsv_mapper.py
+rsv_mapper.py
 =====================================================
 :Info: 
 :Author: Jon Wright <wright@esrf.fr>
@@ -10,18 +9,10 @@
 
 Introduction
 ============
-We wish to convert a series of diffraction images into
-a 3D reciprocal space volume. The rsv_mapper.py script
-which is in ImageD11 accomplishes this task.
 
-The program reads the geometry and computes k vectors for
-each pixel in the image and stores these in a cache. 
-Then for each image, a rotation matrix is constructed representing
-the rotation of the crystal axes compared to the laboratory axes.
-This matrix includes the current rotation of the crystal due to 
-the diffractometer and also the orientation matrix. 
-By applying the matrix, we can get to hkl values, or reciprocal
-space co-ordinates, to use directly as array indices.
+We wish to convert a series of diffraction images into a 3D reciprocal space volume. The rsv_mapper.py script which is in ImageD11 accomplishes this task.
+
+The program reads the geometry and computes k vectors for each pixel in the image and stores these in a cache. Then for each image, a rotation matrix is constructed representingthe rotation of the crystal axes compared to the laboratory axes. This matrix includes the current rotation of the crystal due to the diffractometer and also the orientation matrix. By applying the matrix, we can get to hkl values, or reciprocalspace co-ordinates, to use directly as array indices.
 
 The pixel values are accumulated in a 3D array and a second array
 counts the number of contributing pixels. This volume is written 
@@ -31,21 +22,19 @@ Running the program
 ===================
 
 In common with many other scripts in ImageD11 you type::
-   rsv_mapper.py --help 
+
+ $ rsv_mapper.py --help 
 
  Usage: rsv_mapper.py [options]
  
  Options:
   -h, --help            show this help message and exit
 
-The following options are all used to describe a series
-of images corresponding to a rotation experiment. They are the same
-for peaksearch.py::
+The following options are all used to describe a series of images corresponding to a rotation experiment. They are the same for peaksearch.py::
 
   -5 HDF5, --hdf5=HDF5  hdf file containing input image series
 
-This reads the series of images from an hdf file, in the event that
-you have them in that format (it is currently unlikely for raw data)::
+This reads the series of images from an hdf file, in the event that you have them in that format (it is currently unlikely for raw data)::
 
   -n STEM, --stem=STEM  stem name for input image series
   -f FIRST, --first=FIRST
@@ -67,19 +56,11 @@ you have them in that format (it is currently unlikely for raw data)::
   -T OMEGA, --start=OMEGA
                         start omega
 
-Some particular points to note: the dark and flood and spline 
-images are quite important at this stage for avoiding artifacts. 
-If your images are not already corrected it is important to 
-use the right ones.::
+Some particular points to note: the dark and flood and spline images are quite important at this stage for avoiding artifacts. If your images are not already corrected it is important to use the right ones::
 
   -p PARS, --pars=PARS  ImageD11 parameter file for experiment
 
-See the transform module documentation. You need good instrument 
-parameters to map the pixels to correct positions in reciprocal space.
-The program *does not* recompute k vectors based on the crystal
-translation, so it is better to set this to zero and align your
-crystal as well as you can.::
-
+See the transform module documentation. You need good instrument parameters to map the pixels to correct positions in reciprocal space. The program *does not* recompute k vectors based on the crystal translation, so it is better to set this to zero and align your crystal as well as you can::
 
   -u UBIFILE, --ubifile=UBIFILE
                         Name of ubi file (first matrix is used)
@@ -87,8 +68,8 @@ crystal as well as you can.::
 An orientation matrix in ImageD11's format. This means the matrix
 which is used to make scattering vectors onto crystal axes (the
 axes you will use in reciprocal space)::
-   hkl = (UBI).(g)
 
+   hkl = (UBI).(g)
   -x NPIXELS, --npixels=NPIXELS
                         Number of pixels in reciprocal space map per integer
                         hkl [16]
@@ -98,9 +79,11 @@ axes you will use in reciprocal space)::
 
 This option removes a border around the images. Useful in the case that
 the detector image does not go to the edge::
+
   -b BORDER, --border=BORDER
                         Border around images to allocate space, px [10]
-FIXME: radius and mask
+
+FIXME: radius and mask::
 
   -o OUTPUT, --output=OUTPUT
                         Name of hdf5 output file
@@ -122,11 +105,6 @@ Things to do
 + Radius and mask active pixel selections?
 + Process only specific planes
 + Rebin the image before processing (an optimisation)
-+ Split pixels in 3D (at least add in a couple of 
-intermediate angular steps)
++ Split pixels in 3D (at least add in a couple of intermediate angular steps)
 + Apply a polarisation correction
 + Write directly a format which can be read by chimera
-
-
-
-
