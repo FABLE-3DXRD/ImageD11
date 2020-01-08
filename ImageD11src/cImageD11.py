@@ -1,11 +1,12 @@
 
 
 # check for avx2 and import cImageD11 module
-import platform, sys, struct
+import platform, sys, struct, logging
+from ImageD11 import cImageD11_docstrings
 from ImageD11 import cImageD11_sse2
 if cImageD11_sse2.got_AVX:  
     from ImageD11 import cImageD11_avx
-    print("Using AVX codes")
+    logging.info("Using AVX codes")
     from ImageD11.cImageD11_avx import *
 else:
     from ImageD11.cImageD11_sse2 import *
@@ -21,9 +22,8 @@ if nbyte == 4:
 
 # Add / fix the docstrings
 
-from ImageD11 import cImageD11_docstrings
-
 def fix_doc( oldstring, to_be_added ):
+    """ Adds a description of the function to the f2py string """
     if oldstring.find("Wrapper for"):
         head, tail = oldstring.split("Wrapper for")
         iname = tail.find("\n")

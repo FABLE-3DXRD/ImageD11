@@ -3,7 +3,6 @@
 
 
 usercode '''
-
 #include "blobs.h"
 #include "check_cpu_auto.c"
 
@@ -615,7 +614,7 @@ interface
     end subroutine reorderlut_u16_a32
 
     subroutine reorder_u16_a32_a16(data, adr0, adr1, out, ns, nf)
-    	intent(c) reorder_u16_a32_a16
+    intent(c) reorder_u16_a32_a16
 	intent(c)
 	integer(kind=-2), dimension(ns,nf), intent(in) :: data
 	integer*4, dimension(ns), intent(in) :: adr0
@@ -625,7 +624,24 @@ interface
 	integer, intent(hide), depend(adr1) :: nf = shape(adr1,1)
     end subroutine reorder_u16_a32_a16
 
+    subroutine cimaged11_omp_set_num_threads(n)
+!DOC cimaged11_omp_set_num_threads Sets the openmp number of threads to use. 
+!DOC Change if you use multiprocessing or do not like os.environ['OMP_NUM_THREADS']
+!DOC see also: multiprocessing.cpu_count(), os.cpu_count()
+    intent(c) cimaged11_omp_set_num_threads
+    intent(c)
+    integer, intent(in) :: n
+    end subroutine cImaged11_set_omp_num_threads
+
+    function cimaged11_omp_get_max_threads()
+!DOC cimaged11_omp_get_max_threads reads the openmp max number of threads to use.
+    intent(c) cimaged11_omp_get_max_threads
+    intent(c)
+    integer :: cimaged11_omp_get_max_threads
+    end function cImaged11_omp_get_max_threads
+
 end interface
+
 
 
 

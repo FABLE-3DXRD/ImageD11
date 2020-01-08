@@ -13,12 +13,18 @@
 * #endif
 */
 
+
 #ifdef _OPENMP
+#include <omp.h> 
 #if _OPENMP >= 201307
 #define GOT_OMP_SIMD
 #endif
 #endif
 
+/* If we define functions as local they can be inlined at link time
+ * in a shared library (e.g. not shared and overridden by LD_PRELOAD)
+ * unlcear if/how this works currently across compilers...
+ */
 
 #ifdef __GNUC__
  #if __GNUC__ >= 4
@@ -33,9 +39,6 @@
    #define DLL_LOCAL 
 #endif
 
-DLL_LOCAL
-double my_get_time(void);
-/* implemented in blobs.c */
 
 #ifdef _MSC_VER
  typedef __int8 int8_t;
@@ -50,11 +53,13 @@ double my_get_time(void);
  #define inline __inline
 #else
 #include <stdint.h>
-
-/* If we define functions as local they can be inlined at link time
- * in a shared library (e.g. not shared and overridden by LD_PRELOAD)
- */
-
 #endif
+
+
+/* implemented in imaged11utils.c */
+void cimaged11_omp_set_num_threads( int );
+int cimaged11_omp_get_max_threads( void );
+DLL_LOCAL
+double my_get_time(void);
 
 #endif
