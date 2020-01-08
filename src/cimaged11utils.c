@@ -39,6 +39,8 @@ double my_get_time()
 }
 
 #else
+
+#include <stdlib.h>
 #include <sys/time.h>
 
 double my_get_time()
