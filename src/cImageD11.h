@@ -3,6 +3,9 @@
 #ifndef _cImageD11_h
 #define _cImageD11_h
 
+#include <stdlib.h>
+
+
 /* These did not expand properly anyway
 * #if _OPENMP >= 201307
 * #define SIMDCLAUSE simd
