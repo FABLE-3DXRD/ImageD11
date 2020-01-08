@@ -3,14 +3,21 @@
 #ifndef _cImageD11_h
 #define _cImageD11_h
 
-#if _OPENMP >= 201307
-#define SIMDCLAUSE simd
-#define SIMDFOR omp simd
-#else
-#define SIMDCLAUSE
-#define SIMDFOR ignore
-#endif
+/* These did not expand properly anyway
+* #if _OPENMP >= 201307
+* #define SIMDCLAUSE simd
+* #define SIMDFOR omp simd
+* #else
+* #define SIMDCLAUSE
+* #define SIMDFOR ignore
+* #endif
+*/
 
+#ifdef _OPENMP
+#if _OPENMP >= 201307
+#define GOT_OMP_SIMD
+#endif
+#endif
 
 
 #ifdef __GNUC__
@@ -28,6 +35,7 @@
 
 DLL_LOCAL
 double my_get_time(void);
+/* implemented in blobs.c */
 
 #ifdef _MSC_VER
  typedef __int8 int8_t;

@@ -9,7 +9,7 @@
 
 #include "cImageD11.h"
 
-/* To compare to numpy
+/* To compare to numpy (numba ought to do this anyway)
 
 __m256i _mm256_cvtepu16_epi32 (__m128i a)
 __m256 _mm256_cvtepi32_ps (__m256i a)
@@ -40,7 +40,11 @@ void uint16_to_float_darksub( float *restrict img,
                         const uint16_t *restrict data,
                         int npx ){
     int i;
-#pragma omp parallel for SIMDCLAUSE
+#ifdef GOT_OMP_SIMD
+#pragma omp parallel for simd
+#else
+#pragma omp parallel for
+#endif
     for(i=0;i<npx;i++){
         img[i] = ((float)data[i]) - drk[i];
     }
@@ -51,12 +55,14 @@ void frelon_lines( float *img, int ns, int nf, float cut ){
     int i, j, p, npx;
     float rowsum, avg;
     avg = img[0];
-    #pragma omp parallel for private(i,j,rowsum,avg,npx,p)
+    #pragma omp parallel for private(i,j,rowsum,npx,p) firstprivate(avg)
     for( i = 0; i < ns ; i++){
         rowsum = 0.;
         npx = 0;
         p = i*nf;
-        #pragma SIMDFOR
+#ifdef GOT_OMP_SIMD
+        #pragma omp simd
+#endif
         for( j = 0; j<nf ; j++){
             if ( img[p+j] < cut ){
                 rowsum += img[p+j];
@@ -65,7 +71,9 @@ void frelon_lines( float *img, int ns, int nf, float cut ){
         }
         if( npx > 0 )
             avg = rowsum / npx;
-        #pragma SIMDFOR
+#ifdef GOT_OMP_SIMD
+        #pragma omp simd
+#endif
         for( j = 0; j<nf ; j++)
            img[p+j] = img[p+j] - avg;
     }
@@ -75,12 +83,14 @@ void frelon_lines_sub( float * restrict img, float * restrict drk, int ns, int n
     int i, j, p, npx;
     float rowsum, avg;
     avg = img[0];
-    #pragma omp parallel for private(i,j,rowsum,avg,npx,p)
+    #pragma omp parallel for private(i,j,rowsum,npx,p) firstprivate(avg)
     for( i = 0; i < ns ; i++){
         rowsum = 0.;
         npx = 0;
         p = i*nf;
-        #pragma SIMDFOR
+#ifdef GOT_OMP_SIMD
+        #pragma omp simd
+#endif
         for( j = 0; j<nf ; j++){
             img[p+j] = img[p+j] - drk[p+j];
             if ( img[p+j] < cut ){
@@ -90,7 +100,9 @@ void frelon_lines_sub( float * restrict img, float * restrict drk, int ns, int n
         }
         if( npx > 0 )
             avg = rowsum / npx;
-        #pragma SIMDFOR
+#ifdef GOT_OMP_SIMD
+        #pragma omp simd
+#endif
         for( j = 0; j<nf ; j++)
            img[p+j] = img[p+j] - avg;
     }
@@ -105,7 +117,11 @@ void array_mean_var_cut( float * restrict img, int npx, float *mean, float *std,
     s2 = 0;
     if (verbose) printf("Args, img[0] %f npx %d n %d cut %f verbose %d\n", \
                            img[0], npx,  n, cut, verbose);
-#pragma omp parallel for SIMDCLAUSE private(t) reduction(+:s1,s2)
+#ifdef GOT_OMP_SIMD
+#pragma omp parallel for simd private(t) reduction(+:s1,s2)
+#else
+#pragma omp parallel for private(t) reduction(+:s1,s2)
+#endif
     for (i = 0; i < npx; i++) {
          t = img[i] - y0;
          s1 = s1 + t;
@@ -121,7 +137,11 @@ void array_mean_var_cut( float * restrict img, int npx, float *mean, float *std,
         s1 = 0;
         s2 = 0;
         nactive = 0;
-#pragma omp parallel for SIMDCLAUSE private(t) reduction(+:s1,s2,nactive)
+#ifdef GOT_OMP_SIMD
+#pragma omp parallel for simd private(t) reduction(+:s1,s2,nactive)
+#else
+#pragma omp parallel for private(t) reduction(+:s1,s2,nactive)
+#endif
         for (i = 0; i < npx; i++) {
             if( img[i] < wt ){
                t = img[i] - y0;
@@ -167,7 +187,11 @@ void array_stats(float img[], int npx,
     tmax = FLT_MIN;
     ts1 = 0.;
     ts2 = 0.;
-#pragma omp for 
+#ifdef GOT_OMP_SIMD
+#pragma omp for simd
+#else
+#pragma omp for
+#endif
     for (i = 0; i < npx; i++) {
 	t = img[i] - y0;
 	ts1 = ts1 + t;

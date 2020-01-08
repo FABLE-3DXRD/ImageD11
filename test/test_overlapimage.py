@@ -60,7 +60,11 @@ rc    = cImageD11.blobproperties( float_im, labelc, nc, 0 )
 cImageD11.blob_moments(rc)
 end2   = time.time()
 print(nc,"%.3f %.3f"%((end1-end0)*1000,(end2-end1)*1000))
-wfloatim = np.where( float_im > 1000, float_im, float_im)
+
+wfloatim = np.where( float_im > 1000, float_im, 0)
+#import scipy.ndimage as ndi
+#wfloatim= (float_im - ndi.gaussian_filter( float_im , 32)).clip(0,1e9)
+
 end0 = time.time()
 nw    = cImageD11.localmaxlabel( wfloatim, labelm, work )
 end1   = time.time()
@@ -73,11 +77,27 @@ if 0:
     import pylab as pl
     pl.imshow( pl.log(float_im), origin='lower',
                interpolation='nearest', aspect='auto') 
-    pl.plot( pks[1], pks[0],"+",label="ideal" )
-    pl.plot( rc[:,cImageD11.f_raw],rc[:,cImageD11.s_raw],"x",
+    pl.plot( pks[1], pks[0],"r+",label="ideal" )
+    pl.plot( rc[:,cImageD11.f_raw],rc[:,cImageD11.s_raw],"wx",
     label="connect")
-    pl.plot( rw[:,cImageD11.f_raw],rw[:,cImageD11.s_raw],"o",
+    pl.plot( rw[:,cImageD11.f_raw],rw[:,cImageD11.s_raw],"ko",
              label="watershed",
              markerfacecolor='None')
+    pl.legend()
+    pl.figure()
+    dci= [ np.sqrt(np.min( (pks[1]-x)**2 + (pks[0]-y)**2 ))
+           for x,y in zip( rc[:, cImageD11.f_raw],rc[:, cImageD11.s_raw])]
+    pl.subplot(121)
+    pl.plot( rc[:, cImageD11.s_raw],
+                dci , '.', label= "sconnected")
+    pl.plot( rc[:, cImageD11.f_raw],
+                dci , '.', label= "fconnected")
+    dwi= [ np.sqrt(np.min( (pks[1]-x)**2 + (pks[0]-y)**2 ))
+           for x,y in zip( rw[:, cImageD11.f_raw],rw[:, cImageD11.s_raw])]
+    pl.subplot(122)
+    pl.plot( rw[:, cImageD11.s_raw],
+                dwi , '.', label= "slocalmax")
+    pl.plot( rw[:, cImageD11.f_raw],
+                dwi , '.', label= "flocalmax")
     pl.legend()
     pl.show()
