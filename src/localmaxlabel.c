@@ -25,7 +25,7 @@ int neighbormax(const float *restrict im,	// input
 		 int dim0,	// Image dimensions
 		int dim1){
   // Fill in the first label as npeaks on this row
-  int i, j, p, iq, k0, k1, k2, npks;
+  int i, j, p, k0, k1, k2, npks;
   float mx0, mx1, mx2;
 
     npks = 0;
@@ -36,7 +36,7 @@ int neighbormax(const float *restrict im,	// input
 	lout[dim1 * (dim0 - 1) + i] = 0;
 	l[dim1 * (dim0 - 1) + i] = 0;
     }
-#pragma omp parallel for private( j, p, iq, k0, k1, k2, mx0, mx1, mx2 ) reduction(+:npks)
+#pragma omp parallel for private( j, p, k0, k1, k2, mx0, mx1, mx2 ) reduction(+:npks)
     for (i = dim1; i < (dim0 - 1) * dim1; i = i + dim1) {
       // skipping 1 pixel border
 	lout[i] = 0;		// set edges to zero: pixel j=0:

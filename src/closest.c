@@ -176,10 +176,10 @@ void score_and_refine(vec ubi[3], vec gv[], double tol,
 		      int *n_arg, double *sumdrlv2_arg, int ng)
 {
     /* ng = number of g vectors */
-    double h0, h1, h2, t0, t1, t2;
+    double h0, h1, h2, t0, t1, t2, ih[3];
     double sumsq, tolsq, sumdrlv2;
     double R[3][3], H[3][3], UB[3][3];
-    int n, k, i, j, l, ih[3];
+    int n, k, i, j, l;
     /* Zero some stuff for refinement */
     for (i = 0; i < 3; i++) {
 	ih[i] = 0;
@@ -290,9 +290,9 @@ void refine_assigned(vec ubi[3], vec gv[], int labels[], int label,
 		     int *npk, double *sumdrlv2, int ng)
 {
     /* Skip the part about weights, not used */
-    double sumsqtot, sumsq, h[3], t[3];
+    double sumsqtot, sumsq, h[3], t[3], ih[3];
     double R[3][3], H[3][3], UB[3][3];
-    int i, j, n, k, l, ih[3];
+    int i, j, n, k, l;
     n = 0;
     sumsqtot = 0;
     for (k = 0; k < ng; k++) {
