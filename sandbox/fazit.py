@@ -98,9 +98,8 @@ gdata += p.astype(np.uint16)
 def measure( func, name, lut, adrout ):
     data = gdata.copy()
     out  = np.zeros_like(data)
-    t = [timer(),]
     w, r = func( lut, adrout, data, out )
-    t.append( timer() )
+    t = [timer(),]
     for i in range(50):
         func ( lut, adrout, data, out )
         t.append(timer())
@@ -115,6 +114,21 @@ def measure( func, name, lut, adrout ):
         t*1e3, te*1e3, w/t/1e6, r/t/1e6,r/1e6)
     print(s)
     return out
+
+@jit(nopython=True, parallel=sys.version_info[0]>2, nogil=True)
+def memcp(a,b):
+    for i in prange(a.size):
+	b.flat[i] = a.flat[i]
+
+dest = np.empty_like(gdata)
+memcp(gdata,dest)
+t = [timer(),]
+for i in range(10):
+   memcp(gdata, dest)
+   t.append(timer())
+t = np.array(t)
+t = t[1:]-t[:-1]
+print("memcpy %.2f s %.2f MB/s"%( t.min(), gdata.nbytes/t.min()/1e6 ))
 
 ao = np.arange( N*M, dtype=np.uint32 )
 # lut is sorted for reads. Use cachelen blocks instead
