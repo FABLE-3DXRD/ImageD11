@@ -27,9 +27,9 @@ typedef double vec[3];
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-inline int conv_double_to_int_fast(double);
+inline double conv_double_to_int_fast(double);
 
-int conv_double_to_int_safe(double);
+double conv_double_to_int_safe(double);
 
 int inverse3x3(double A[3][3]);
 
@@ -75,38 +75,18 @@ int inverse3x3(double H[3][3])
     }
 }
 
-int conv_double_to_int_safe(double x)
+double conv_double_to_int_safe(double x)
 {
-    int a;
-    a = (int)floor(x + 0.5);
-    return a;
+    return floor(x + 0.5);
 }
 
-typedef union {
-    int i;
-    double d;
-} a_union;
-
-inline int conv_double_to_int_fast(double x)
+/* See
+ * https://stackoverflow.com/questions/59632005/why-does-this-code-beat-rint-and-how-to-i-protect-it-from-ffast-math-and-frie  
+ */
+#define MAGIC 6755399441055744.0
+inline double conv_double_to_int_fast(double x)
 {
-    /*return conv_double_to_int_safe(x); */
-    /* This was benched as about eight times faster than the safe mode!! */
-    /* Put in the reference for where this was found on the web TODO */
-    const int p = 52;
-    const double c_p1 = (1L << (p / 2));
-    const double c_p2 = (1L << (p - p / 2));
-    const double c_mul = c_p1 * c_p2;
-    const double cs = 1.5 * c_mul;
-    /* Hopefully this notes the aliasing
-     * perhaps better to just return the safe version
-     * not clear it is really faster any more?
-     */
-    a_union t;
-    t.d = x + cs;
-    return t.i;
-    /* x += cs
-       // const int a = *(int *)(&x);
-       // return (a); */
+  return ((x+MAGIC)-MAGIC);
 }
 
 void closest_vec(double x[], int dim, int nv, int closest[])
@@ -172,18 +152,19 @@ int score(vec ubi[3], vec gv[], double tol, int ng)
     /*
      * Counts g-vectors indexed by ubi within tol
      */
-    double sumsq, h, atol;
-    int n, k, j;
+  double sumsq, h0,h1,h2, atol;
+    int n, k;
     n = 0;
     atol = tol * tol;
+#pragma omp parallel for reduction(+:n) private(k,h0,h1,h2,sumsq)
     for (k = 0; k < ng; k++) {
-	sumsq = 0.;
-	for (j = 0; j < 3; j++) {
-	    h = ubi[j][0] * gv[k][0] + ubi[j][1] * gv[k][1] +
-		ubi[j][2] * gv[k][2];
-	    h -= conv_double_to_int_fast(h);
-	    sumsq += h * h;
-	}
+	h0 = ubi[0][0]*gv[k][0]+ubi[0][1]*gv[k][1]+ubi[0][2]*gv[k][2];
+	h0 -= conv_double_to_int_fast(h0);
+	h1 = ubi[1][0]*gv[k][0]+ubi[1][1]*gv[k][1]+ubi[1][2]*gv[k][2];
+	h1 -= conv_double_to_int_fast(h1);
+	h2 = ubi[2][0]*gv[k][0]+ubi[2][1]*gv[k][1]+ubi[2][2]*gv[k][2];
+	h2 -= conv_double_to_int_fast(h2);
+	sumsq = h0*h0 + h1*h1 + h2*h2;
 	if (sumsq < atol) {
 	    n = n + 1;
 	}
