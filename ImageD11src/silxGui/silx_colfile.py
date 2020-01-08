@@ -25,7 +25,10 @@ class silxqtcolfile( object ):
         | xaxis | yaxis | color | apply_mask |
         """
         self.win = silx.gui.qt.QWidget()
-        self.scatter_widget = silx.gui.plot.ScatterView( ) # backend='gl' )       
+        self.scatter_widget = silx.gui.plot.ScatterView( backend='gl' )
+        # import pdb; pdb.set_trace()
+        if not self.scatter_widget._plot()._backend.isValid():
+            self.scatter_widget = silx.gui.plot.ScatterView( backend='matplotlib' )
         self.scatter_widget.setColormap( silx.gui.colors.Colormap(name='viridis') )
         self.scatter_widget.getMaskToolsWidget().parent().setFloating(True)
         self.scatter_widget.getMaskToolsWidget().show()
