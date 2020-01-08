@@ -115,7 +115,7 @@ int localmaxlabel(const float *restrict im,	// input
       tic = toc;
     }
     // Now pass with row offsets in place
-#pragma omp parallel for private( nt, t, j, p, ) schedule(dynamic)
+#pragma omp parallel for private( nt, t, j, p ) schedule(dynamic)
     for (i = 0; i < (dim0-1); i++) {
         t = lout[i*dim1];
 	nt = lout[(i+1)*dim1];

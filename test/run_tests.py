@@ -51,7 +51,14 @@ for M in modules:
         for direc in path[:-1]:
             os.chdir( direc )
         M = path[-1]
-    MOD = importlib.import_module(M)
+    try:
+        MOD = importlib.import_module(M)
+    except:
+        print( "Error importing",M )
+        print("Current folder is",os.getcwd() )
+        print("Try removing .pyc files or __pycache__ folder if there is one")
+        print("---RAISING----")
+        raise
     mySuite = unittest.loader.findTestCases( MOD )
     runner = unittest.TextTestRunner()
     try:
