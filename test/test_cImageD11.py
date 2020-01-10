@@ -2,7 +2,7 @@
 
 
 
-from ImageD11 import cImageD11,  transform
+from ImageD11 import cImageD11,  transform, parameters
 
 import unittest
 import numpy as np
@@ -39,7 +39,7 @@ class test_compute_gv(unittest.TestCase):
                              self.wvln,
                              self.wedge,self.chi,
                              t,gve2)
-        
+
         #        print t, self.wedge,self.chi
 #        for i in range( len(tth)):
 #            print i, gve1[:,i],gve1[:,i]-gve2[i],gve1[:,i]-gve3[:,i]
@@ -55,7 +55,7 @@ class test_compute_gv(unittest.TestCase):
                                  t,
                                  gve3)
 
-        
+
     def test_5_10(self):
         self.wedge = 5.
         self.chi = 10.
@@ -65,7 +65,7 @@ class test_compute_gv(unittest.TestCase):
         self.t_y=30.
         self.t_z=40.
         self.runTest()
-        
+
     def test_5_0(self):
         self.wedge = 5.
         self.chi = 0.
@@ -86,7 +86,7 @@ class test_compute_gv(unittest.TestCase):
         self.t_z=40.
         self.runTest()
 
-        
+
     def test_5_10m(self):
         self.wedge = 5.
         self.chi = 10.
@@ -96,7 +96,7 @@ class test_compute_gv(unittest.TestCase):
         self.t_y=300.
         self.t_z=40.
         self.runTest()
-        
+
     def test_5_0_tt(self):
         self.wedge = 5.
         self.chi = 0.
@@ -106,7 +106,7 @@ class test_compute_gv(unittest.TestCase):
         self.t_y=300.
         self.t_z=-400.
         self.runTest()
-        
+
     def test_0_0_t0(self):
         self.wedge = 0.
         self.chi = 0.
@@ -127,7 +127,71 @@ class test_compute_gv(unittest.TestCase):
         self.t_z=400.
         self.runTest()
 
-        
+
+
+class test_compute_xlylzl(unittest.TestCase):
+    def setUp(self):
+        npk = 10240
+        self.sc = np.random.random( npk )*2048
+        self.fc = np.random.random( npk )*2048
+        self.pars = parameters.parameters()
+        self.pars.set('z_center', 980. )
+        self.pars.set('y_center', 1010. )
+        self.pars.set('z_size', 48. )
+        self.pars.set('y_size', 49. )
+        self.pars.set('distance', 100100. )
+
+    def test1(self):
+        pks = self.sc, self.fc
+        p = self.pars
+        testtilts = [-0.5, 0., 0.24]
+        tilts = [(x,y,z) for x in testtilts for y in testtilts for z in testtilts]
+        pars = np.array( ( p.get("z_center"),
+                           p.get("y_center"),
+                           p.get("z_size"),
+                           p.get("y_size")))
+        dist = np.array( (p.get("distance"),0.,0.))
+        ok = 0
+        for o11,o12,o21,o22 in [ [ 1,0,0,1],
+                                 [-1,0,0,1],
+                                 [-1,0,0,-1],
+                                 [ 1,0,0,-1],
+                                 [ 0,1,1,0],
+                                 [ 0,-1,1,0],
+                                 [ 0,-1,-1,0],
+                                 [ 0,1,-1,0]]:
+            for tx,ty,tz in tilts:
+                p.parameters['tilt_x']=tx
+                p.parameters['tilt_y']=ty
+                p.parameters['tilt_z']=tz
+                p.parameters['o11']=o11
+                p.parameters['o12']=o12
+                p.parameters['o21']=o21
+                p.parameters['o22']=o22
+
+                xlylzl = transform.compute_xyz_lab( pks,
+                                  **p.parameters )
+
+                dmat = transform.detector_rotation_matrix(
+                    p.get('tilt_x'), p.get('tilt_y'), p.get('tilt_z'))
+                fmat = np.array( [[ 1,   0,   0],
+                                  [ 0, p.get('o22'), p.get('o21')],
+                                  [ 0, p.get('o12'), p.get('o11')]])
+                r = np.dot(dmat, fmat)
+
+                outxyz = np.zeros( (len(self.sc), 3), np.float )
+                cImageD11.compute_xlylzl( self.sc,
+                                          self.fc,
+                                          pars, r.ravel(), dist,
+                                          outxyz)
+                error = np.abs(outxyz - xlylzl.T)
+                self.assertTrue( error.max() < 1e-6 )
+                ok += 1
+        print("tested xlylzl %d times"%(ok))
+
+
+
+
 if __name__ ==  "__main__":
     unittest.main()
 
