@@ -7,7 +7,6 @@ fast radial regrouping method proposed by Peter Boesecke
 import numpy as np, pylab as pl
 import timeit, sys
 from ImageD11 import cImageD11
-
 timer = timeit.default_timer
 
 try:
@@ -72,7 +71,7 @@ rad, chi = compute_r_chi( dims, pars )
 t1 = timer()
 rad, chi = compute_r_chi( dims, pars )
 t2 = timer()
-print(t1-t0,t2-t1)
+print("Setting up, r_chi",t1-t0,t2-t1)
 
 arg = np.round( rad.ravel() / pars[2] ) + chi.ravel()/2/np.pi
 start=timer()
@@ -96,25 +95,40 @@ while pk < rad.max():
 gdata += p.astype(np.uint16)
 
 def measure( func, name, lut, adrout ):
-    data = gdata.copy()
-    out  = np.zeros_like(data)
-    t = [timer(),]
-    w, r = func( lut, adrout, data, out )
-    t.append( timer() )
+    NFRAME = 500//8 # overfill the cache (500 MB)
+    data = [gdata.copy() for i in range(NFRAME)] 
+    out  = np.zeros_like(data[0])
+    w, r = func( lut, adrout, data[NFRAME-1], out )
+    dt = []
     for i in range(50):
-        func ( lut, adrout, data, out )
-        t.append(timer())
-        if(t[-1]-t[1]) > 0.5:
+        d = data[i%NFRAME]
+        t0 = timer()
+        func ( lut, adrout, d, out )
+        dt.append(timer()-t0)
+        if np.sum(dt) > 0.5:
             break
-    t = np.array(t)
-    dt = t[1:] - t[:-1]
-    # print(dt)
-    t = np.min(dt)
-    te = dt[1:].std()
+    dt = np.array(dt)
+    t =  dt.min()
+    te = dt.std()
     s = name + "% 6.3f ms (std % 6.2f), write % 7.0f MB/s, read % 7.0f MB/s %g MB"%(
         t*1e3, te*1e3, w/t/1e6, r/t/1e6,r/1e6)
     print(s)
     return out
+
+@jit(nopython=True, parallel=sys.version_info[0]>2, nogil=True)
+def memcp(a,b):
+    for i in prange(a.size):
+	    b.flat[i] = a.flat[i]
+
+dest = np.empty_like(gdata)
+memcp(gdata,dest)
+t = [timer(),]
+for i in range(10):
+   memcp(gdata, dest)
+   t.append(timer())
+t = np.array(t)
+t = t[1:]-t[:-1]
+print("memcpy %.2f s %.2f MB/s"%( t.min(), gdata.nbytes/t.min()/1e6 ))
 
 ao = np.arange( N*M, dtype=np.uint32 )
 # lut is sorted for reads. Use cachelen blocks instead
@@ -279,14 +293,15 @@ while k<2048:
     da = a[:,1:].astype(int) - a[:,:-1]
     i16[:,1:] = da
     assert np.alltrue( i16[:,1:] == da ) , "clipping issue"
-    if k == 1:
+    if k  == 1:
         print("highest jump was",abs(da).max())
     trans = measure( fazit_u32_i16,        "u32 i16  %4d "%(k), u32, i16  )
     assert (trans.ravel() == gdata.flat[lut]).all()
-
-    trans = measure( fazit_f2py_i16,        "f2pyi16  %4d "%(k), u32, i16  )
-    assert (trans.ravel() == gdata.flat[lut]).all()
-  
+    for nthr in (1,2,4,6,8,10,12):
+        cImageD11.cimaged11_omp_set_num_threads(nthr)
+        gthr = cImageD11.cimaged11_omp_get_max_threads()
+        trans = measure( fazit_f2py_i16,        "f2pyi16 %2d%4d"%(k, nthr), u32, i16  )
+        assert (trans.ravel() == gdata.flat[lut]).all()
     k *= 2
 
 

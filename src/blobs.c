@@ -301,24 +301,3 @@ DLL_LOCAL int32_t dset_find(int32_t x, int32_t * S)
     return S[x];
 }
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
-
-#include <windows.h>
-double my_get_time()
-{
-    LARGE_INTEGER t, f;
-    QueryPerformanceCounter(&t);
-    QueryPerformanceFrequency(&f);
-    return (double)t.QuadPart / (double)f.QuadPart;
-}
-
-#else
-#include <sys/time.h>
-
-double my_get_time()
-{
-    struct timeval t;
-    gettimeofday(&t, NULL);
-    return t.tv_sec + t.tv_usec * 1e-6;
-}
-#endif

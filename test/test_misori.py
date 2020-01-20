@@ -5,9 +5,9 @@ from ImageD11.cImageD11 import misori_cubic, misori_cubic_pairs, \
 
 import xfab.symmetry
 import numpy as np
-import time
+import timeit
 import unittest, cProfile, pstats
-
+timer = timeit.default_timer
 #    1: Triclinic
 #    2: Monoclinic
 #    3: Orthorhombic
@@ -48,6 +48,7 @@ def make_random_orientations( N ):
 
 class test_random_orientations( unittest.TestCase ):
     DOPROFILE = False
+    DOBENCH   = True
     def setUp(self):
         np.random.seed(42)
         if self.DOPROFILE:
@@ -74,63 +75,63 @@ class test_random_orientations( unittest.TestCase ):
         
     def test_cubic(self):
         U = make_random_orientations( 20 ) # xfab is a bit slow
-        t0 = time.time()
+        t0 = timer()
         pairs = [ (u1, u2) for u1 in U for u2 in U ]
         c = [    misori_cubic( u1, u2 ) for u1, u2 in pairs ]
-        t1 = time.time()
+        t1 = timer()
         p = [ misori_py( u1, u2, 7 ) for u1, u2 in pairs ]
-        t2 = time.time()
-        if self.DOPROFILE:
+        t2 = timer()
+        if self.DOBENCH:
             print("C time %f s , pytime %f s"%(t1-t0, t2-t1))
         self.assertTrue(np.allclose( np.array(c) ,np.array(c) ))
         
     def test_monoclinic(self):
         U = make_random_orientations( 20 ) # xfab is a bit slow
-        t0 = time.time()
+        t0 = timer()
         pairs = [ (u1, u2) for u1 in U for u2 in U ]
         c = [    misori_monoclinic( u1, u2 ) for u1, u2 in pairs ]
-        t1 = time.time()
+        t1 = timer()
         p = [ misori_py( u1, u2, 2 ) for u1, u2 in pairs ]
-        t2 = time.time()
-        if self.DOPROFILE:
+        t2 = timer()
+        if self.DOBENCH:
             print("C time %f s , pytime %f s"%(t1-t0, t2-t1))
         self.assertTrue(np.allclose( np.array(c) ,np.array(c) ))
 
     def test_orthorhombic(self):
         U = make_random_orientations( 20 ) # xfab is a bit slow
-        t0 = time.time()
+        t0 = timer()
         pairs = [ (u1, u2) for u1 in U for u2 in U ]
         c = [    misori_orthorhombic( u1, u2 ) for u1, u2 in pairs ]
-        t1 = time.time()
+        t1 = timer()
         p = [ misori_py( u1, u2, 3 ) for u1, u2 in pairs ]
-        t2 = time.time()
-        if self.DOPROFILE:
+        t2 = timer()
+        if self.DOBENCH:
             print("C time %f s , pytime %f s"%(t1-t0, t2-t1))
         self.assertTrue(np.allclose( np.array(c) ,np.array(c) ))
 
     def test_tetragonal(self):
         U = make_random_orientations( 20 ) # xfab is a bit slow
-        t0 = time.time()
+        t0 = timer()
         pairs = [ (u1, u2) for u1 in U for u2 in U ]
         c = [    misori_tetragonal( u1, u2 ) for u1, u2 in pairs ]
-        t1 = time.time()
+        t1 = timer()
         p = [ misori_py( u1, u2, 4 ) for u1, u2 in pairs ]
-        t2 = time.time()
-        if self.DOPROFILE:
+        t2 = timer()
+        if self.DOBENCH:
             print("C time %f s , pytime %f s"%(t1-t0, t2-t1))
         self.assertTrue(np.allclose( np.array(c) ,np.array(c) ))
         
     def test_cubic_reverse(self):
         N = 250
         U = make_random_orientations( N )
-        t0 = time.time()
+        t0 = timer()
         for u1 in U:
             for u2 in U:
                 tr1 = misori_cubic( u1, u2 )
                 tr2 = misori_cubic( u2, u1 )
                 self.assertAlmostEqual( tr1, tr2 )
-        t1 = time.time()
-        if self.DOPROFILE:
+        t1 = timer()
+        if self.DOBENCH:
             print("C %d pairs in %f s,  %f s per pair"%(
                 N*N*2, t1-t0, (t1-t0)/N))
 
@@ -138,15 +139,15 @@ class test_random_orientations( unittest.TestCase ):
         N = 500
         U = make_random_orientations( N )
         m0 = []
-        t0 = time.time()
+        t0 = timer()
         for i in range(N):
             for j in range(i+1,N):
                 m0.append( misori_cubic( U[i], U[j] ) )
-        t1 = time.time()
+        t1 = timer()
         m1 = np.zeros( len(m0), float )
         misori_cubic_pairs( U, m1 )
-        t2 = time.time()
-        if self.DOPROFILE:
+        t2 = timer()
+        if self.DOBENCH:
             print( "time for distance matrix",t1-t0, t2-t1)
         self.assertTrue( np.allclose( m0, m1 ) )
 

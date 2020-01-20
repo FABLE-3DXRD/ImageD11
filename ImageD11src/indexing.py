@@ -45,9 +45,9 @@ def ubi_fit_2pks( ubi, g1, g2):
     ubfit = np.dot( R, np.linalg.inv( H ) )
     ubifit = np.linalg.inv( ubfit )
     return ubifit
-   
-   
-   
+
+
+
 
 def myhistogram(data, bins):
    """
@@ -308,16 +308,22 @@ class indexer:
               minpks=self.minpks, uniqueness=self.uniqueness, ds_tol=self.ds_tol,
               wavelength=self.wavelength, eta_range=self.eta_range,
               max_grains=self.max_grains)
-        
+
         # Add a resetting functionality, adapted from
         # stackoverflow.com/questions/4866587/pythonic-way-to-reset-an-objects-variables
         import copy
         self.__pristine_dict = copy.deepcopy( self.__dict__ )
 
     def reset( self ):
+        """
+        To get a really clean indexer just create a new one (e.g. via __init__)
+        This was added for the gui to help it forget what happened before
+        but keep parameters as they were set
+        """
         import copy
         self.__dict__ = copy.deepcopy( self.__pristine_dict )
-        
+        self.__pristine_dict = copy.deepcopy( self.__dict__ )
+
 
     def loadpars(self,filename=None):
         if filename is not None:
@@ -628,7 +634,7 @@ class indexer:
                    for k in range( len(self.unitell.UBIlist) ):
                         self.unitell.UBIlist[k] = ubi_fit_2pks( self.unitell.UBIlist[k],
                                                                 self.gv[i,:], self.gv[j,:])
-                npks=[cImageD11.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist] 
+                npks=[cImageD11.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist]
                 choice = np.argmax(npks)
                 UBI = self.unitcell.UBIlist[choice]
                 if npks[choice] < npk:
@@ -651,7 +657,7 @@ class indexer:
                         nuniq=nuniq+1
                 except:
                     raise
-                 
+
         logging.info("Number of orientations with more than %d peaks is %d",self.minpks,len(self.ubis))
         logging.info("Time taken %.3f/s",time.time()-start)
         if len(self.ubis)>0:
@@ -723,7 +729,7 @@ class indexer:
         omegacalc = np.zeros(len(self.ra),np.float)
         i = -1
 
-        
+
         for ubi in self.ubis:
             i += 1
             # Each ubi has peaks in self.ga

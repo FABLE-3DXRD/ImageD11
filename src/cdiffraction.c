@@ -11,29 +11,6 @@
 
 #define NOISY 0
 
-void assign(double ubi[9], double gv[][3], double tol,
-	    double drlv2[], int labels[], int ig, int n)
-{
-    int i;
-    double dr, h[3], ttol, dh[3];
-    ttol = tol * tol;
-#pragma omp parallel for private(h,dr,dh)
-    for (i = 0; i < n; i++) {
-	matvec(ubi, gv[i], h);
-	dh[0] = fabs(floor(h[0] + 0.5) - h[0]);
-	dh[1] = fabs(floor(h[1] + 0.5) - h[1]);
-	dh[2] = fabs(floor(h[2] + 0.5) - h[2]);
-	dr = dh[0] + dh[1] + dh[2];
-	dr = dr * dr;
-	if ((dr < ttol) && (dr < drlv2[i])) {
-	    drlv2[i] = dr;
-	    labels[i] = ig;
-	} else if (labels[i] == ig) {
-	    labels[i] = -1;
-	}			// end if
-    }				//    end for
-}				// end function assign
-
 void compute_gv(double xlylzl[][3], double omega[], double omegasign,
 		double wvln, double wedge, double chi, double t[3],
 		double gv[][3], int n)
@@ -77,7 +54,7 @@ void compute_gv(double xlylzl[][3], double omega[], double omegasign,
 	u[2] = t[2];
 	// grain origin, difference vec, |yz| component
 	matvec(mat, u, o);
-	// d is difference vector 
+	// d is difference vector
 	vec3sub(xlylzl[i], o, d);
 	modyz = 1. / sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
 	//     ! k-vector
@@ -130,11 +107,11 @@ void compute_xlylzl(double s[], double f[], double p[4],
     }				// enddo
 }				// end subroutine compute_xlylzl
 
-/* 
-! set LDFLAGS="-static-libgfortran -static-libgcc -static -lgomp -shared"  
+/*
+! set LDFLAGS="-static-libgfortran -static-libgcc -static -lgomp -shared"
 ! f2py -m fImageD11 -c fImageD11.f90 --opt=-O3 --f90flags="-fopenmp" -lgomp -lpthread
 ! export OMP_NUM_THREADS=12
-! python tst.py ../test/nac_demo/peaks.out_merge_t200 ../test/nac_demo/nac.prm 
+! python tst.py ../test/nac_demo/peaks.out_merge_t200 ../test/nac_demo/nac.prm
 ! python test_xlylzl.py ../test/nac_demo/peaks.out_merge_t200 ../test/nac_demo/nac.prm
 
 ! f2py -m fImageD11 -c fImageD11.f90 --f90flags="-fopenmp" -lgomp -lpthread  --fcompiler=gnu95 --compiler=mingw32 -DF2PY_REPORT_ON_ARRAY_COPY=1
