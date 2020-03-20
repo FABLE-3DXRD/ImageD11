@@ -1,18 +1,31 @@
 
 from scipy.spatial.transform import Rotation, RotationSpline
 from ImageD11 import grain, columnfile, cImageD11, transform
-import sys, numpy as np, pylab as pl
+import sys, numpy as np, pylab as pl, os
 
-c = columnfile.columnfile( sys.argv[1] )
+folder = os.path.split(os.getcwd())[-1]
+
+c = columnfile.columnfile( folder + "_t500.flt")# sys.argv[1] )
 c.sortby('omega')
-c.parameters.loadparameters( sys.argv[2] )
+c.parameters.loadparameters( "../e2.par" ) # sys.argv[2] )
 c.parameters.parameters['t_x']=0.
 c.parameters.parameters['t_y']=0.
 c.parameters.parameters['t_z']=0.
 c.updateGeometry()
 c.filter( abs( np.sin( np.radians( c.eta ))) > 0.05 )
 
-g = grain.read_grain_file( sys.argv[3] )[0] 
+g = grain.read_grain_file( folder+".map" )[0]# sys.argv[3] )[0] 
+
+try:
+    NROT = int(sys.argv[1])
+except:
+    NROT = 1
+try:
+    JUMP = float(sys.argv[2]) #-116.5
+except:
+    JUMP = None
+
+
 
 gv = np.array( (c.gx, c.gy, c.gz) ).T.copy()
 
@@ -239,6 +252,26 @@ def residual( pars, x, cgr, cda, omega_obs, plot=False ):
             pl.plot( oj, [x.as_euler('XYZ',degrees=True)[0] for x in r], 'o-', label='rx')
             pl.plot( oj, [x.as_euler('XYZ',degrees=True)[1] for x in r], 'o-', label='ry')
             pl.plot( oj, [x.as_euler('XYZ',degrees=True)[2] for x in r], 'o-', label='rz')
+        pl.figure()
+        if NROT == 1:
+            ubi = np.linalg.inv( aub )
+        else:
+            ub = np.dot( aub[0](0).as_dcm(), aub[1] )
+            ubi = np.linalg.inv( ub )
+        gve = transform.compute_g_vectors( ttho, etao, c.omega,
+                                           pars['wavelength'].value,
+                                           wedge = pars['wedge'].value )
+        h,k,l = np.dot( ubi, gve )
+        
+
+        pl.scatter( abs(h-np.round(h)), abs(k-np.round(k)), c=abs(l-np.round(l)), s = pow( c.sum_intensity, 1/3))
+        pl.axes().set_aspect('equal')
+        pl.xlim(-0.6,0.6)
+        pl.ylim(-0.6,0.6)
+        pl.xticks(np.linspace(-0.5,0.5,3))
+        pl.yticks(np.linspace(-0.5,0.5,3))
+        pl.grid(True)
+        pl.colorbar()
         pl.show()
     return e
     
@@ -266,10 +299,6 @@ for name, val in zip( 'a,b,c,al,be,ga'.split(','),
     p.add( name, val, vary= True)
 
     
-JUMP = -116.5
-NROT = 6
-#JUMP = None
-#NROT = 1
 for i in range(NROT):
     p.add('rx%d'%(i),0,vary=True)
     p.add('ry%d'%(i),0,vary=True)
@@ -305,8 +334,12 @@ out = lmfit.minimize( residual, p, args=(x, og, od, c.omega ),
                       iter_cb=iter_cb,
                      )
 print(lmfit.fit_report( out ))
+
+
+
 p = out.params
 residual(  p, x, og, od, c.omega , plot=True)
+sys.exit()
 p['tilt_x'].vary = True
 p['tilt_y'].vary = True
 p['tilt_z'].vary = True
