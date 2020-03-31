@@ -22,7 +22,7 @@ int mask_to_coo( int8_t msk[], int ns, int nf,
   if( (ns < 1) || (ns > 65535) ) return 1;
   if( (nf < 1) || (nf > 65535) ) return 2;
   if( nnz < 1 ) return 3;
-  /* pixels per row */
+  /* pixels per row , 2D image */
 #pragma omp parallel for private(mi,mj)
   for( mi = 0; mi < ns; mi++){
     nrow[mi] = 0;
@@ -98,9 +98,6 @@ int sparse_is_sorted(uint16_t i[], uint16_t j[], int nnz)
     int k, es, ed;
     es = nnz + 1;
     ed = nnz + 1;
-#ifndef _MSC_VER
-#pragma omp parallel for private(k) reduction(min: es, ed)
-#endif
     for (k = 1; k < nnz; k++) {
 	if (i[k] < i[k - 1]) {	/* bad, not sorted */
 	    es = (k < es) ? k : es;
@@ -199,7 +196,6 @@ int sparse_connectedpixels(float *restrict v,
 	mid = my_get_time();
     T = dset_compress(&S, &np);
     // renumber labels
-#pragma omp parallel for private(k) shared(labels)
     for (k = 0; k < nnz; k++) {
 	if (labels[k] > 0) {
 	    /* if( T[labels[k]] == 0 ){
@@ -263,7 +259,6 @@ int sparse_connectedpixels_splat(float *restrict v,
 	start = my_get_time();
     }
     /* zero the parts of Z that we will read from (pixel neighbors) */
-#pragma omp parallel for private(p, k, ik, jk) shared(Z)
     for (k = 0; k < nnz; k++) {
 	ik = i[k] + 1;		/* the plus 1 is because we padded Z */
 	jk = j[k] + 1;
@@ -314,7 +309,6 @@ int sparse_connectedpixels_splat(float *restrict v,
     }
     T = dset_compress(&S, &np);
     // renumber labels
-#pragma omp parallel for private(ik,jk,p) shared( labels )
     for (k = 0; k < nnz; k++) {
 	ik = i[k] + 1;		/* the plus 1 is because we padded Z */
 	jk = j[k] + 1;
