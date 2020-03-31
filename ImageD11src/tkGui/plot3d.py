@@ -320,9 +320,12 @@ if __name__=="__main__":
                 pass
         if line.find("xr yr zr")>0 or line.find("gx  gy  gz  ")>0:
             on=1
-   
-    npeaks = len(xyz)
-    xyz=numpy.array(xyz)
+        xyz=numpy.array(xyz)
+    if len(xyz) == 0 and lines[0][0]=="#":
+        from ImageD11 import columnfile
+        c = columnfile.columnfile( sys.argv[1] )
+        xyz = numpy.array( (c.gx, c.gy, c.gz )).T
+    npeaks = len(xyz)            
     if len(sys.argv)==3:
        o=plot3d(None,data=xyz,ubis=sys.argv[2])
     elif len(sys.argv)==6:
