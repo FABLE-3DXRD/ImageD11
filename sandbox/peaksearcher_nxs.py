@@ -23,7 +23,11 @@ from __future__ import print_function
 
 
 """
-Script for peaksearching images from the command line
+
+Adaptation of ImageD11src/peaksearcher.py by James Ball, Mar 2020
+
+
+Script for peaksearching images from a supplied nexus file
 
 Uses the connectedpixels extension for finding blobs above a threshold
 and the blobcorrector(+splines) for correcting them for spatial distortion
@@ -37,14 +41,11 @@ reallystart = time.time()
 
 from six.moves import queue
 # import threading
-from math import sqrt
-import sys , glob , os.path
+import sys , os.path
 import numpy
 
 # Generic file format opener from fabio
-import fabio
 from fabio.openimage import openimage
-from fabio import fabioimage
 
 from ImageD11 import blobcorrector, ImageD11options
 from ImageD11.correct import correct
@@ -62,11 +63,11 @@ class timer:
         self.msgs.append(msg)
     def tick(self ,msg=""):
         now = time.time()
-        self.msgs.append("%s %.2f/s " %(msg ,no w -self.now))
+        self.msgs.append("%s %.2f/s " %(msg ,now-self.now))
         self.now = now
     def tock(self ,msg=""):
         self.tick(msg)
-        print(" ".join(self.msgs) ,"%.2f/s "% (self.no w -self.start))
+        print(" ".join(self.msgs) ,"%.2f/s "% (self.now-self.start))
         sys.stdout.flush()
 
 
@@ -167,7 +168,7 @@ def peaksearch_driver(options, args):
     if options.thresholds is None:
         raise ValueError("No thresholds supplied [-t 1234]")
 
-    if len(args) == 0 and options.stem is None:
+    if len(args) == 0 and options.nexusfile is None:
         raise ValueError("No files to process")
 
         # What to do about spatial
@@ -187,72 +188,34 @@ def peaksearch_driver(options, args):
     # This is always the case now
     corrfunc.orientation = "edf"
 
-    if options.format in ['bruker', 'BRUKER', 'Bruker']:
-        extn = ""
-        if options.perfect is not "N":
-            print("WARNING: Your spline file is ImageD11 specific")
-            print("... from a fabio converted to edf first")
-    elif options.format == 'GE':
-        extn = ""
-        # KE: This seems to be a mistake and keeps PeakSearch from working in
-        # some cases.  Should be revisited if commenting it out causes problems.
-    #        options.ndigits = 0
+    import h5py
 
-    else:
-        extn = options.format
+    # Read list of files and list of motor positions from Nexus file:
+    nexus_path = options.nexusfile
+    nexus_file = h5py.File(nexus_path, "r")
+    group = nexus_file[options.group_path]
+    omega_dset = group.get(options.omega_dset)
+    image_dset = group.get(options.image_dset)
+    omega_list = [x for x in omega_dset[..., :]]
+    image_list = [x.decode("utf-8") for x in image_dset[..., :]]
 
     import fabio
 
-    if options.interlaced:
-        f0 = ["%s0_%04d%s" % (options.stem, i, options.format) for i in range(
-            options.first,
-            options.last + 1)]
-        f1 = ["%s1_%04d%s" % (options.stem, i, options.format) for i in range(
-            options.first,
-            options.last + 1)]
+    # Output files:
 
-        if options.iflip:
-            f1 = [a for a in f1[::-1]]
+    import fabio.file_series
+    # Use traceback = True for debugging
+    first_image = openimage(image_list[0])
 
-        def fso(f0, f1):
-            for a, b in zip(f0, f1):
-                try:
-                    yield fabio.open(a)
-                    yield fabio.open(b)
-                except:
-                    print(a, b)
-                    raise
-
-        file_series_object = fso(f0, f1)
-        first_image = openimage(f0[0])
-
-    else:
-        file_name_object = fabio.filename_object(
-            options.stem,
-            num=options.first,
-            extension=extn,
-            digits=options.ndigits)
-
-        # Output files:
-
-        first_image = openimage(file_name_object)
-        import fabio.file_series
-        # Use traceback = True for debugging
-        file_series_object = fabio.file_series.new_file_series(
-            first_image,
-            nimages=options.last - options.first + 1,
-            traceback=True)
+    file_series_object = fabio.file_series.new_file_series(
+        first_image,
+        nimages=len(image_list),
+        traceback=True)
 
     if options.outfile[-4:] != ".spt":
         options.outfile = options.outfile + ".spt"
         print("Your output file must end with .spt, changing to ", options.outfile)
 
-    # Omega overrides
-
-    # global OMEGA, OMEGASTEP, OMEGAOVERRIDE
-    OMEGA = options.OMEGA
-    OMEGASTEP = options.OMEGASTEP
-    OMEGAOVERRIDE = options.OMEGAOVERRIDE
     # Make a blobimage the same size as the first image to process
 
     # List comprehension - convert remaining args to floats
@@ -274,8 +237,6 @@ def peaksearch_driver(options, args):
                                 spatial=corrfunc,
                                 sptfile=spotfile)
         print("make labelimage", mergefile, spotfile)
-    # Not sure why that was there (I think if glob was used)
-    # files.sort()
     if options.dark is not None:
         print("Using dark (background)", options.dark)
         darkimage = openimage(options.dark).data.astype(numpy.float32)
@@ -310,9 +271,8 @@ def peaksearch_driver(options, args):
     if options.oneThread:
         # Wrap in a function to allow profiling (perhaps? what about globals??)
         def go_for_it(file_series_object, darkimage, floodimage,
-                      corrfunc, thresholds_list, li_objs,
-                      OMEGA, OMEGASTEP, OMEGAOVERRIDE):
-            for data_object in file_series_object:
+                      corrfunc, thresholds_list, li_objs):
+            for inc, data_object in enumerate(file_series_object):
                 t = timer()
                 if not isinstance(data_object, fabio.fabioimage.fabioimage):
                     # Is usually an IOError
@@ -325,12 +285,9 @@ def peaksearch_driver(options, args):
                         sys.exit()
                     continue
                 filein = data_object.filename
-                if OMEGAOVERRIDE or "Omega" not in data_object.header:
-                    data_object.header["Omega"] = OMEGA
-                    OMEGA += OMEGASTEP
-                    OMEGAOVERRIDE = True  # once you do it once, continue
-                if not OMEGAOVERRIDE and options.omegamotor != "Omega":
-                    data_object.header["Omega"] = float(data_object.header[options.omegamotor])
+
+                data_object.header["Omega"] = float(omega_list[inc])
+
                 data_object = correct(data_object, darkimage, floodimage,
                                       do_median=options.median,
                                       monitorval=options.monitorval,
@@ -343,8 +300,7 @@ def peaksearch_driver(options, args):
                 li_objs[t].finalise()
 
         go_for_it(file_series_object, darkimage, floodimage,
-                  corrfunc, thresholds_list, li_objs,
-                  OMEGA, OMEGASTEP, OMEGAOVERRIDE)
+                  corrfunc, thresholds_list, li_objs)
 
 
     else:
@@ -353,21 +309,17 @@ def peaksearch_driver(options, args):
             # TODO move this to a module ?
 
             class read_only(ImageD11_thread.ImageD11_thread):
-                def __init__(self, queue, file_series_obj, myname="read_only",
-                             OMEGA=0, OMEGAOVERRIDE=False, OMEGASTEP=1):
+                def __init__(self, queue, file_series_obj, myname="read_only"):
                     """ Reads files in file_series_obj, writes to queue """
                     self.queue = queue
                     self.file_series_obj = file_series_obj
-                    self.OMEGA = OMEGA
-                    self.OMEGAOVERRIDE = OMEGAOVERRIDE
-                    self.OMEGASTEP = OMEGASTEP
                     ImageD11_thread.ImageD11_thread.__init__(self,
                                                              myname=myname)
                     print("Reading thread initialised", end=' ')
 
                 def ImageD11_run(self):
                     """ Read images and copy them to self.queue """
-                    for data_object in self.file_series_obj:
+                    for inc, data_object in enumerate(self.file_series_obj):
                         if self.ImageD11_stop_now():
                             print("Reader thread stopping")
                             break
@@ -386,19 +338,7 @@ def peaksearch_driver(options, args):
                         ti = timer()
                         filein = data_object.filename + "[%d]" % (data_object.currentframe)
                         try:
-                            if self.OMEGAOVERRIDE:
-                                # print "Over ride due to option",self.OMEGAOVERRIDE
-                                data_object.header["Omega"] = self.OMEGA
-                                self.OMEGA += self.OMEGASTEP
-                            else:
-                                if options.omegamotor != 'Omega' and options.omegamotor in data_object.header:
-                                    data_object.header["Omega"] = float(data_object.header[options.omegamotor])
-                                if "Omega" not in data_object.header:
-                                    # print "Computing omega as not in header"
-                                    data_object.header["Omega"] = self.OMEGA
-                                    self.OMEGA += self.OMEGASTEP
-                                    self.OMEGAOVERRIDE = True
-                            # print "Omega = ", data_object.header["Omega"],data_object.filename
+                            data_object.header["Omega"] = float(omega_list[inc])
                         except KeyboardInterrupt:
                             raise
                         except:
@@ -481,10 +421,7 @@ def peaksearch_driver(options, args):
 
             # 8 MB images - max 40 MB in this queue
             read_queue = queue.Queue(5)
-            reader = read_only(read_queue, file_series_object,
-                               OMEGA=OMEGA,
-                               OMEGASTEP=OMEGASTEP,
-                               OMEGAOVERRIDE=OMEGAOVERRIDE)
+            reader = read_only(read_queue, file_series_object)
             reader.start()
             queues = {}
             searchers = {}
@@ -562,19 +499,18 @@ def peaksearch_driver(options, args):
 
 def get_options(parser):
     """ Add our options to a parser object """
-    parser.add_argument("-n", "--namestem", action="store",
-                        dest="stem", type=str, default="data",
-                        help="Name of the files up the digits part  " + \
-                             "eg mydata in mydata0000.edf")
-    parser.add_argument("-F", "--format", action="store",
-                        dest="format", default=".edf", type=str,
-                        help="Image File format, eg edf or bruker")
-    parser.add_argument("-f", "--first", action="store",
-                        dest="first", default=0, type=int,
-                        help="Number of first file to process, default=0")
-    parser.add_argument("-l", "--last", action="store",
-                        dest="last", type=int, default=0,
-                        help="Number of last file to process")
+    parser.add_argument("-n", "--nexusfile", action="store",
+                        dest="nexusfile", type=str, default=None,
+                        help="The Nexus file path")
+    parser.add_argument("-g", "--group_path", action="store",
+                        dest="group_path", type=str, default=None,
+                        help="Internal NXS path to datasets group")
+    parser.add_argument("--image_dset", action="store",
+                        dest="image_dset", type=str, default=None,
+                        help="Name of image files dataset")
+    parser.add_argument("--omega_dset", action="store",
+                        dest="omega_dset", type=str, default=None,
+                        help="Name of omegas dataset")
     parser.add_argument("-o", "--outfile", action="store",
                         dest="outfile", default="peaks.spt", type=str,
                         help="Output filename, default=peaks.spt")
@@ -586,7 +522,6 @@ def get_options(parser):
                         dest="darkoffset", default=dod, type=float,
                         help=
                         "Constant to subtract from dark to avoid overflows, default=%d" % (dod))
-    # s="/data/opid11/inhouse/Frelon2K/spatial2k.spline"
     parser.add_argument("-s", "--splinefile", action="store",
                         dest="spline", default=None, type=ImageD11options.SplineFileType(mode='r'),
                         help="Spline file for spatial distortion, default=None")
@@ -600,41 +535,13 @@ def get_options(parser):
     parser.add_argument("-t", "--threshold", action="append", type=float,
                         dest="thresholds", default=None,
                         help="Threshold level, you can have several")
-    parser.add_argument("--OmegaFromHeader", action="store_false",
-                        dest="OMEGAOVERRIDE", default=False,
-                        help="Read Omega values from headers [default]")
-    parser.add_argument("--OmegaOverRide", action="store_true",
-                        dest="OMEGAOVERRIDE", default=False,
-                        help="Override Omega values from headers")
     parser.add_argument("--singleThread", action="store_true",
                         dest="oneThread", default=False,
                         help="Do single threaded processing")
-    # if you want to do this then instead I think you want
-    # python -m cProfile -o xx.prof peaksearch.py ...
-    # python -m pstats xx.prof
-    #    ... sort
-    #    ... stats
-    #        parser.add_argument("--profile", action="store",
-    #                        type=ImageD11options.ProfilingFileType,
-    #                          dest="profile_file", default=None,
-    # help="Write profiling information (you will want singleThread too)")
-    parser.add_argument("-S", "--step", action="store",
-                        dest="OMEGASTEP", default=1.0, type=float,
-                        help="Step size in Omega when you have no header info")
-    parser.add_argument("-T", "--start", action="store",
-                        dest="OMEGA", default=0.0, type=float,
-                        help="Start position in Omega when you have no header info")
     parser.add_argument("-k", "--killfile", action="store",
                         dest="killfile", default=None,
                         type=ImageD11options.FileType(),
                         help="Name of file to create stop the peaksearcher running")
-    parser.add_argument("--ndigits", action="store", type=int,
-                        dest="ndigits", default=4,
-                        help="Number of digits in file numbering [4]")
-    parser.add_argument("-P", "--padding", action="store",
-                        choices=["Y", "N"], default="Y", dest="padding",
-                        help="Is the image number to padded Y|N, e.g. " \
-                             "should 1 be 0001 or just 1 in image name, default=Y")
     parser.add_argument("-m", "--median1D", action="store_true",
                         default=False, dest="median",
                         help="Computes the 1D median, writes it to file .bkm and" \
@@ -648,12 +555,6 @@ def get_options(parser):
                         dest="monitorval",
                         default=None,
                         help="Incident beam intensity value to normalise to")
-    parser.add_argument("--omega_motor", action="store", type=str,
-                        dest="omegamotor", default="Omega",
-                        help="Header value to use for rotation motor position [Omega]")
-    parser.add_argument("--omega_motor_step", action="store", type=str,
-                        dest="omegamotorstep", default="OmegaStep",
-                        help="Header value to use for rotation width [OmegaStep]")
     parser.add_argument("--interlaced", action="store_true",
                         dest="interlaced", default=False,
                         help="Interlaced DCT scan")
