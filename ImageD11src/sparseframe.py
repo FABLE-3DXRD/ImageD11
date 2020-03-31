@@ -244,7 +244,7 @@ def sparse_connected_pixels( frame,
     if threshold is None:
         threshold = frame.pixels[data_name].header["threshold"]
     nlabel = cImageD11.sparse_connectedpixels(
-        frame.pixels[data_name], frame.row, rame.col,
+        frame.pixels[data_name].data, frame.row, frame.col,
         threshold,  labels )
     px = Container( labels, **{ "data_name": data_name,
                                 "threshold": threshold,
