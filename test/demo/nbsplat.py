@@ -34,13 +34,13 @@ def nbsplat(
         nbsplat_manycolor( rgba, i, j, colors, order, npx )
     
 
-@numba.njit(boundscheck = False )
+@numba.njit()#boundscheck = False )
 def nbsplat_onecolor( rgba, i, j, fg, order, npx):
     for k in order:
         rgba[ i[k]-npx:i[k]+npx+1 , j[k]-npx:j[k]+npx+1  ] = fg
     
 
-@numba.njit(boundscheck = False )
+@numba.njit()#boundscheck = False )
 def nbsplat_manycolor( rgba, i, j, c, order, npx):
     for k in order:
         rgba[ i[k]-npx:i[k]+npx+1 , j[k]-npx:j[k]+npx+1  ] = c[k]
