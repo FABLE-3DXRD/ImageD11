@@ -15,12 +15,14 @@ def nbsplat(
     astart = start = timer()
     h,w,d = rgba.shape
     rve = np.dot( M, gve )
+    npk = len(gve[0])
     msk = (abs(rve[0]) < (w//2 - npx)) & (abs(rve[1]) < (h//2 - npx) )
+    idx = np.arange( npk, dtype=np.int )[msk]
     if zsort:
         start = timer()
-        order = np.argsort( rve[2] )[msk]
+        order = idx[ np.argsort( rve[2][msk] ) ]
     else:
-        order = np.arange( len(rve[2]), dtype(np.int) )[msk]
+        order = idx
     start = timer()
     i = (rve[1]+h//2).astype(np.int16)
     j = (rve[0]+w//2).astype(np.int16)
