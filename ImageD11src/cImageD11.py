@@ -3,7 +3,9 @@
 # check for avx2 and import cImageD11 module
 import platform, sys, struct, logging
 from ImageD11 import cImageD11_docstrings
-if platform.machine() == 'x86_64':
+if platform.machine() == 'ppc64le':
+    from ImageD11.cImageD11_ppc64le import *
+else:
     from ImageD11 import cImageD11_sse2
     if cImageD11_sse2.got_AVX:
         from ImageD11 import cImageD11_avx
@@ -11,8 +13,6 @@ if platform.machine() == 'x86_64':
         from ImageD11.cImageD11_avx import *
     else:
         from ImageD11.cImageD11_sse2 import *
-elif platform.machine() == 'ppc64le':
-    from ImageD11.cImageD11_ppc64le import *
 
 # For 32 or 64 bits
 nbyte = struct.calcsize("P") # 4 or 8
