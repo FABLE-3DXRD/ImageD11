@@ -116,14 +116,14 @@ def main():
     cc = distutils.ccompiler.new_compiler( verbose=1 , compiler=compiler )
     cc.add_include_dir( "." )
     docs()
-    if platform.machine() == 'x86_64':
+    if platform.machine() == 'ppc64le':
+        make_pyf( "cImageD11_interface.pyf", "cImageD11_ppc64le")
+        ppc64lelib = run_cc(cc, plat, bits, vers, "ppc64le", ppc64learg, ppc64lelibname )
+    else: # if platform.machine() == 'x86_64':
         make_pyf( "cImageD11_interface.pyf", "cImageD11_sse2")
         make_pyf( "cImageD11_interface.pyf", "cImageD11_avx")
         sse2lib = run_cc(cc, plat, bits, vers, "sse2", sse2arg, sse2libname )
         avx2lib = run_cc(cc, plat, bits, vers, "avx", avx2arg, avx2libname )
-    elif platform.machine() == 'ppc64le':
-        make_pyf( "cImageD11_interface.pyf", "cImageD11_ppc64le")
-        ppc64lelib = run_cc(cc, plat, bits, vers, "ppc64le", ppc64learg, ppc64lelibname )
     return 0
 
 
