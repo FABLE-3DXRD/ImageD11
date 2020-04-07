@@ -32,10 +32,12 @@ sources = ("blobs.c cdiffraction.c cimaged11utils.c closest.c connectedpixels.c"
 
 plat = platform.system()
 bits = platform.architecture()[0]
+mach = platform.machine()
 vers = "%d.%d"%(sys.version_info[:2])
-tmpdir = "%s_%s_%s"%(plat, bits, vers)
+tmpdir = "%s_%s_%s_%s"%(plat, bits, mach, vers)
 avx2libname = "cImageD11_"+tmpdir+"_avx"
 sse2libname = "cImageD11_"+tmpdir+"_sse2"
+ppc64lelibname = "cImageD11_"+tmpdir+"_ppc64le"
 # ansi ?
 
 compiler = None
@@ -45,13 +47,17 @@ for a in sys.argv:
 
 
 
+
+
 if plat == "Linux" or compiler == "mingw32":
     arg=["-O2", "-fopenmp", "-fPIC", "-std=c99" ]
     sse2arg = arg + ["-msse4.2"]
     avx2arg = arg + ["-mavx"]
+    ppc64learg = arg + ["-mcpu=power9"]
     # link args
     lsse2arg = arg + ["-msse4.2"]
     lavx2arg = arg + ["-mavx"]
+    ppc64learg = arg + ["-mcpu=power9"]
 elif plat == "Windows":
     arg=["/O2", "/openmp" ]
     # the /arch switches are ignored by the older MSVC compilers
@@ -60,7 +66,7 @@ elif plat == "Windows":
     lsse2arg = []
     lavx2arg = []
 else:
-    avx2arg = sse2arg = arg = [ ]
+    ppc64learg = avx2arg = sse2arg = arg = [ ]
 
 def run_cc( cc, plat, bits, vers, name, flags, libname ):
     objs = cc.compile( sources , 
@@ -110,10 +116,14 @@ def main():
     cc = distutils.ccompiler.new_compiler( verbose=1 , compiler=compiler )
     cc.add_include_dir( "." )
     docs()
-    make_pyf( "cImageD11_interface.pyf", "cImageD11_sse2")
-    make_pyf( "cImageD11_interface.pyf", "cImageD11_avx")
-    sse2lib = run_cc(cc, plat, bits, vers, "sse2", sse2arg, sse2libname )
-    avx2lib = run_cc(cc, plat, bits, vers, "avx", avx2arg, avx2libname )
+    if platform.machine() == 'x86_64':
+        make_pyf( "cImageD11_interface.pyf", "cImageD11_sse2")
+        make_pyf( "cImageD11_interface.pyf", "cImageD11_avx")
+        sse2lib = run_cc(cc, plat, bits, vers, "sse2", sse2arg, sse2libname )
+        avx2lib = run_cc(cc, plat, bits, vers, "avx", avx2arg, avx2libname )
+    elif platform.machine() == 'ppc64le':
+        make_pyf( "cImageD11_interface.pyf", "cImageD11_ppc64le")
+        ppc64lelib = run_cc(cc, plat, bits, vers, "ppc64le", ppc64learg, ppc64lelibname )
     return 0
 
 

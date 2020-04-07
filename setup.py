@@ -29,7 +29,7 @@ Do:
 
 # For pip / bdist_wheel etc
 import setuptools
-import os, sys
+import os, sys, platform
 # Need to use numpy.distutils so it works for f2py
 from numpy.distutils.core import setup, Extension
 from numpy import get_include
@@ -87,14 +87,21 @@ ekwds = { 'include_dirs' : [get_include(), 'src' ],
         }
 
 # Compiled extensions:
-extensions = [ Extension( "cImageD11_sse2", 
-                          sources = ["src/cImageD11_sse2.pyf",],
-                          libraries = [src.bldlib.sse2libname],
-                          **ekwds ),
-               Extension( "cImageD11_avx",
-                          sources = ["src/cImageD11_avx.pyf",],
-                          libraries = [src.bldlib.avx2libname],
-                          **ekwds) ]
+if platform.machine() == "x86_64":
+    extensions = [ Extension( "cImageD11_sse2", 
+                              sources = ["src/cImageD11_sse2.pyf",],
+                              libraries = [src.bldlib.sse2libname],
+                              **ekwds ),
+                   Extension( "cImageD11_avx",
+                              sources = ["src/cImageD11_avx.pyf",],
+                              libraries = [src.bldlib.avx2libname],
+                              **ekwds) ]
+else:
+    extensions = [ Extension( "cImageD11_ppc64le", 
+                              sources = ["src/cImageD11_ppc64le.pyf",],
+                              libraries = [src.bldlib.ppc64lelibname],
+                              **ekwds ),
+    ]
 
 
 
