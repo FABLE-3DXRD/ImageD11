@@ -105,60 +105,85 @@ class dataset:
     
 class splat3dview:
     def __init__(self, w=2000, h=1500):
+        self.w = self.h = None
         self.resize(w,h)
-        #self.w = w                 # width
-        #self.h = h                 # height
         self.bg = (0,0,0,0)        # background
         self.fg = (255,255,255,0)  # foreground
-        self.ps = 12                # pointsize
+        self.ps = 1                # pointsize
         self.origin = (0,0,0)      # origin in reciprocal space
         self.scale = 0.7*min(w,h)    # scale for Angstrom to px
         self.zsort = True
         self.u0 = np.eye(3, dtype=np.float )
         self.u  = np.eye(3, dtype=np.float )
         self.zname = "gz"
+        self.need_redraw = True
 
     def resize(self, w, h):
-        self.w = w
-        self.h = h
-        self.rgba = np.zeros((h,w,4),np.uint8)
+        if w != self.w or h != self.h:
+            self.w = w
+            self.h = h
+            self.rgba = np.zeros((h,w,4),np.uint8)
 
     def rotate(self, dx, dy, axes="XYZ"):
+        self.need_redraw = True
         r = Rotation.from_euler(axes, (dx, dy, 0),
                                 degrees=True )
         self.u = r.as_dcm()
 
     def resetrot(self):
+        self.need_redraw = True
         self.u0 = np.dot(self.u, self.u0)
         self.u = np.eye(3, dtype=np.float)
         
     def matrix(self):
         return self.scale*np.dot(self.u, self.u0)
 
+
+    
     def drawPixMapOnWidget(self, datas, target ):
-        start = timer()
-        #print("self.zsort",self.zsort)
-        nbsplat.nbsplat( self.rgba,
-                         datas.xyz(),
-                         self.matrix(),
-                         self.ps,
-                         self.zsort,
-                         self.fg,
-                         self.bg,
-                         datas.colors )
-        # recompute or cache ? self.colors
-        # order should be here too.
-        # print("draw",timer()-start)
-        # fixme - can we write on i.bits() directly ?
-        i = QtGui.QImage( self.rgba, self.w, self.h,
-                          QtGui.QImage.Format_RGB32 )
-        p = QtGui.QPixmap.fromImage(i)
-        # print("draw",timer()-start)#,self.rx,self.ry,self.rz)
-        target.setPixmap( p )
+        if self.need_redraw:
+            start = timer()
+            w, h = target.width(), target.height()
+            self.resize( w, h )
+            #print("wh %d %d %d %d"%(
+            #    self.w,target.width(),self.h,target.height()))
+            DOPROF=False
+            if DOPROF:
+                import cProfile, pstats
+                x = cProfile.Profile()
+                x.enable()
+            nbsplat.nbsplat( self.rgba,
+                             datas.xyz(),
+                             self.matrix(),
+                             self.ps,
+                             self.zsort,
+                             self.fg,
+                             self.bg,
+                             datas.colors )
+            # recompute or cache ? self.colors
+            # order should be here too.
+            # print("draw",timer()-start)
+            # fixme - can we write on i.bits() directly ?
+            p = rgbtopm( self.rgba ) 
+            target.setPixmap( p )
+            if DOPROF:
+                x.disable()
+                p = pstats.Stats( x, stream = sys.stdout).sort_stats("tottime")
+                p.reverse_order()
+                p.print_stats()
+            print("drawPixMapOnWidget %.3f ms %s"%(
+                1e3*(timer()-start), self.need_redraw))#, end="\r")
+            sys.stdout.flush()
+            self.need_redraw = False
+            return(timer()-start)
+        return 0
 
-
-
-
+def rgbtopm( rgb ):
+    i = QtGui.QImage(rgb, rgb.shape[1], rgb.shape[0],
+                     QtGui.QImage.Format_RGB32 )
+    return QtGui.QPixmap.fromImage(i)
+            
+    
 def colormap(x, colors):
     # fixme: load save or matplotlib or select
     xmin = x.min()
@@ -187,6 +212,8 @@ class Example( QtWidgets.QWidget ):
         self.ex = 0
         self.ey = 0
         self.doRot = False
+        self.animate()
+        self.show()
         
     def mousePressEvent(self, e):
         #print('down', e.x(),e.y(),e.button() )
@@ -210,7 +237,7 @@ class Example( QtWidgets.QWidget ):
         if e.modifiers() == QtCore.Qt.ShiftModifier:
             axes="ZYX" 
         if e.modifiers() == QtCore.Qt.ControlModifier:
-            axes="YZX" 
+            axes="XZY" 
         self.rotateview( e.x(), e.y(), axes  )
 
     def rotateview(self, ex, ey, axes="XYZ"):
@@ -218,9 +245,8 @@ class Example( QtWidgets.QWidget ):
         self.ey = ey
         dx = (self.x0 - self.ex)/10.  # 0.1 deg/px
         dy = (self.y0 - self.ey)/10.
-        self.vu.rotate(-dy, dx, axes )
-        self.vu.drawPixMapOnWidget( self.da, self.lbl )
-
+        self.vu.rotate( dy, -dx, axes )
+        
     rotateactions = {
         QtCore.Qt.Key_X : ( 90, 0, "XYZ"),
         QtCore.Qt.Key_Y : ( 90, 0, "YZX"),
@@ -232,7 +258,7 @@ class Example( QtWidgets.QWidget ):
         QtCore.Qt.Key_D : "drlv2",
         QtCore.Qt.Key_E : "eta",
         QtCore.Qt.Key_T : "tth",
-        QtCore.Qt.Key_G : "gz",
+        QtCore.Qt.Key_V : "gz",
         QtCore.Qt.Key_O : "omega",
         QtCore.Qt.Key_L : "labels",
         }
@@ -241,18 +267,17 @@ class Example( QtWidgets.QWidget ):
     def hlp(self):
         h = """ X,Y,Z = Rotate by 90 in X, Y, Z
 Shift/Control = modify mouse rotate
-A = color by avg_intensity
-D = color by drlv2
-L = color by grain label
-E = color by eta
-O = color by omega
-T = color by tth
-G = color by gz
-S = Sort on z or not
-Up Arrow = Zoom in
-Down Arrow = Zoom out
-Right Arrow = Bigger Points
-Left Arrow = Smaller Points
++ = Zoom in
+- = Zoom out
+[0-9] = Pointsize
+A : "avg_intensity",
+D : "drlv2",
+E : "eta",
+T : "tth",
+V : "gz",
+O : "omega",
+L : "labels",
+S = Toggle zsort
 Q = Quit
 """
         print(h)
@@ -264,6 +289,7 @@ Q = Quit
         
     def keyPressEvent(self,e):
         k = e.key()
+        print("Got key",k)
         if k == QtCore.Qt.Key_H:
             self.hlp()
         if self.doRot and k == QtCore.Qt.Key_Shift:
@@ -274,42 +300,72 @@ Q = Quit
             self.close()
         if k == QtCore.Qt.Key_S:
             self.vu.zsort = not self.vu.zsort
-        if k == QtCore.Qt.Key_Up:
+            self.status.setText( "zsort %s"%(str(self.vu.zsort)))
+        if k == QtCore.Qt.Key_Plus:
             self.vu.scale = self.vu.scale * ( 1 + 1/8)
-        if k == QtCore.Qt.Key_Down:
+            self.status.setText( "Scale %f"%(self.vu.scale))
+        if k == QtCore.Qt.Key_Minus:
             self.vu.scale = self.vu.scale * ( 1 - 1/8)
-        if k == QtCore.Qt.Key_Left:
-            self.vu.ps = max(self.vu.ps-1, 1)
-        if k == QtCore.Qt.Key_Right:
-            self.vu.ps = min(self.vu.ps+1, 100)
+            self.status.setText( "Scale %f"%(self.vu.scale))
+        if k >= QtCore.Qt.Key_0 and k <= QtCore.Qt.Key_9:
+            self.vu.ps = int(k - QtCore.Qt.Key_0)
+            self.status.setText( "Pointsize %d"%(self.vu.ps))
         if k in self.rotateactions:
             d1,d2,a = self.rotateactions[k]
-            print("Rotate by",d1,d2,a)
+            self.status.setText("Rotated by %d %d %s"%(d1,d2,a))
             self.vu.rotate( d1, d2, a)
             self.vu.resetrot()
         if k in self.coloractions:
             if self.coloractions[k] in self.da.colf.titles:
-                print("color by",self.coloractions[k])
+                self.status.setText("color by %s"%(self.coloractions[k]))
                 colormap( self.da.get( self.coloractions[k]),
                           self.da.colors )
-        self.vu.drawPixMapOnWidget( self.da, self.lbl )
-
+            else:
+                self.status.setText("No column %s"%(self.coloractions[k]))
+        self.vu.need_redraw=True
+            
     def keyReleaseEvent(self,e):
         if self.doRot and e.key() == QtCore.Qt.Key_Shift:
             self.x0 = self.ex
             self.y0 = self.ey
             self.vu.resetrot()
+
     
     def initUI(self):
+        
+        self.layout = QtWidgets.QVBoxLayout()
+        
         self.lbl = QtWidgets.QLabel(self)
         self.lbl.resize( self.vu.w, self.vu.h )
+        self.lbl.setMinimumSize( 128, 128 )
+        e = QtWidgets.QSizePolicy.Expanding
+        self.lbl.setSizePolicy( e, e )        
+        self.layout.addWidget( self.lbl )
+
+        self.status = QtWidgets.QLabel(self)
+        self.status.setText("Hello")
+        self.layout.addWidget( self.status )
+
+        self.buttons = QtWidgets.QHBoxLayout()
+        hb= QtWidgets.QPushButton("Help", self)
+        hb.clicked.connect( self.hlp )
+        self.buttons.addWidget(hb)
+        qb= QtWidgets.QPushButton("Quit", self)
+        qb.clicked.connect( self.close )
+        self.buttons.addWidget(qb)
+        
+        self.layout.addLayout( self.buttons )
+        self.setLayout( self.layout )
+
+        
+    def animate(self):
         self.vu.drawPixMapOnWidget( self.da, self.lbl)
-        self.show()
-        
-        
-        
-            
-        
+        QtCore.QTimer.singleShot(1000//24, self.animate )
+
+
+    def resizeEvent(self, evt):
+        self.vu.need_redraw=True
+
         
 
 

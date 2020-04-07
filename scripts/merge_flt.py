@@ -115,11 +115,11 @@ for v in thres:
                 always_ignore[key] = 1
             else:
                 # Replace the stronger peak with the weaker peak
-                allpeaks[key] = mytransformer.colfile.bigarray[:,i]
+                allpeaks[key] = mytransformer.colfile.bigarray[:,i].copy()
                 nold = nold + 1
         else:
             nnew = nnew + 1
-            allpeaks[key] = mytransformer.colfile.bigarray[:,i]
+            allpeaks[key] = mytransformer.colfile.bigarray[:,i].copy()
             
     print("total peaks",len(list(allpeaks.keys())), "ignored", nignore, "new",nnew, "replacements",nold)
     assert nignore + nold + nnew == mytransformer.colfile.nrows
@@ -136,7 +136,7 @@ assert len(titles) == len(allpeaks[keys[0]])
 
 bigarray = [allpeaks[k] for k in keys]
 
-c.bigarray = numpy.array(bigarray).T
+c.bigarray = numpy.array(bigarray).T.copy()
 print(c.bigarray.shape)
 c.nrows = len(keys)
 c.set_attributes()
