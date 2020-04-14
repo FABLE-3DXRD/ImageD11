@@ -764,6 +764,15 @@ interface
         threadsafe
     end subroutine reorder_u16_a32_a16
 
+    subroutine quickorient( ubi, bt )
+!DOC quickorient takes two g-vectors in UBI[0] and UBI[1]
+!DOC and overwrites with UBI orientation using cache in bt (from h1,h2)
+    	intent(c) quickorient
+	intent(c)
+	double precision, dimension(3,3), intent (inout) :: ubi
+	double precision, dimension(3,3), intent (in) :: bt
+    end subroutine orient
+
 end interface
 
 
