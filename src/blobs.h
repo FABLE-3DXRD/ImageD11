@@ -99,12 +99,16 @@ enum {
 DLL_PUBLIC
 enum {
   s2D_1 = 0,
-  s2D_I,
-  s2D_fI,
-  s2D_sI,
-  s2D_ffI,
-  s2D_sfI,
-  s2D_ssI,
+  s2D_I = 1,
+  s2D_fI = 2,
+  s2D_sI = 3,
+  s2D_ffI = 4,
+  s2D_sfI = 5,
+  s2D_ssI = 6,
+  s2D_bb_mx_f = 7,
+  s2D_bb_mx_s = 8,
+  s2D_bb_mn_f = 9,
+  s2D_bb_mn_s = 10,
   NPROPERTY2D
 };
 

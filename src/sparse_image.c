@@ -340,16 +340,26 @@ void sparse_blob2Dproperties(float * restrict data,
 			     uint16_t * restrict j,
 			     int nnz,
 			     int32_t * restrict labels,
-			     int32_t npk,
-			     double * restrict res){
-  int k, kpk, f, s;
+			     double * restrict res,
+			     int32_t npk){
+  int p, k, kpk, f, s;
   double fval;
   /* init to zero */
-  for(k=0; k<(npk*NPROPERTY2D); k++) {
-    res[k]=0.0;
+  for(k=0; k<npk*NPROPERTY2D; k++) {
+      res[k]=0.0;
+  }
+  for(k=0; k<npk; k++) {
+    res[k*NPROPERTY2D+s2D_bb_mn_f ] = 65534.;
+    res[k*NPROPERTY2D+s2D_bb_mn_s ] = 65534.;    
   }
   /*  printf("nnz : %d\n",nnz); */
   for(k=0; k<nnz; k++){
+    if (labels[k] == 0){
+      continue; /* background pixel */
+    }
+    if (labels[k] > npk){
+      printf("Error,k %d,labels[k] %d, npk %d \n",k,labels[k],npk);
+    }
     kpk = (labels[k]-1) * NPROPERTY2D;
     fval = (double) data[k];
     s = (int) i[k];
@@ -361,6 +371,12 @@ void sparse_blob2Dproperties(float * restrict data,
     res[ kpk + s2D_ffI ] += (fval * f * f );
     res[ kpk + s2D_sfI ] += (fval * s * f );
     res[ kpk + s2D_ssI ] += (fval * s * s );
+
+    if( res[ kpk + s2D_bb_mx_s ] < s ) res[ kpk + s2D_bb_mx_s ] = s;
+    if( res[ kpk + s2D_bb_mx_f ] < f ) res[ kpk + s2D_bb_mx_f ] = f;
+    if( res[ kpk + s2D_bb_mn_s ] > s ) res[ kpk + s2D_bb_mn_s ] = s;
+    if (res[ kpk + s2D_bb_mn_f ] > f ) res[ kpk + s2D_bb_mn_f ] = f;
+    
   }
 }
 
