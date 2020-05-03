@@ -12,6 +12,26 @@ class setupRandom(object):
         self.ubi0 = np.random.random((3,3)) + np.eye(3)
         self.ub0 = np.linalg.inv( self.ubi0 )
 
+class test_m(setupRandom, unittest.TestCase):
+    def test_lab(self):
+        forwards = finite_strain.DeformationGradientTensor( self.ubi, self.ub0 )
+        backward = finite_strain.DeformationGradientTensor( self.ubi0, self.ub )
+        for i in range(5):
+            m = i * 0.5
+            ef = forwards.finite_strain_lab( m )
+            # this is a bit misleading - negative m puts you in the other frame
+            eb = backward.finite_strain_ref( -m )
+            self.assertTrue( np.allclose( ef, -eb ) )
+    def test_ref(self):
+        forwards = finite_strain.DeformationGradientTensor( self.ubi, self.ub0 )
+        backward = finite_strain.DeformationGradientTensor( self.ubi0, self.ub )
+        for i in range(5):
+            m = i * 0.5
+            ef = forwards.finite_strain_ref( m )
+            eb = backward.finite_strain_lab( -m )
+            self.assertTrue( np.allclose( ef, -eb ) )
+            
+        
 class test_polar(setupRandom, unittest.TestCase):
     def test_polar(self):
         dgt = finite_strain.DeformationGradientTensor( self.ubi, self.ub0 )
