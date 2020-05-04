@@ -16,15 +16,6 @@ NAMES = {
     }
 
 
-class Container( object ):
-    """ More-or-less a fabio image style wrapper
-        data = numpy array
-        header = metadata to write to h5py attrs """
-    def __init__(self, data, **kw ):
-        self.data = data
-        self.header = kw
-        
-
 class sparse_frame( object ):
     """
     Indices / shape mapping
@@ -36,7 +27,8 @@ class sparse_frame( object ):
         itype = the integer type to store the indices
                 our c codes currently use unsigned short...
         nnz is implicit as len(row)==len(col)
-        pixels = named Containers (arrays + metadata)
+        pixels = numpy arrays in a dict to name them
+                 throw in a ary.attrs if you want to save some
         """
         self.check( row, col, shape, itype )
         self.shape = shape
@@ -52,9 +44,9 @@ class sparse_frame( object ):
         if pixels is not None:
             for name, val in pixels.items():
                 # print(val.data.shape, self.nnz)
-                assert len(val.data) == self.nnz
-                assert isinstance( val, Container )
+                assert len(val) == self.nnz
                 self.pixels[name] = val
+
         
     def check(self, row, col, shape, itype):
         """ Ensure the index data makes sense and fits """
@@ -75,11 +67,20 @@ class sparse_frame( object ):
         assert self.row.dtype == np.uint16 and \
             cImageD11.sparse_is_sorted( self.row, self.col ) == 0
 
-    def to_dense(self, data, out=None):
+    def to_dense(self, data=None, out=None):
         """ returns the full 2D image 
+        data = name in self.pixels or 1D array matching self.nnz
         Does not handle repeated indices
         e.g.  obj.to_dense( obj.pixels['raw_intensity'] )
         """
+        if data in self.pixels:
+            data = self.pixels[data] # give back this array
+        else:
+            ks = list( self.pixels.keys() )
+            if len(ks)==1:
+                data = self.pixels[ks[0]] # default for only one
+            else:
+                data = np.ones( self.nnz, np.bool ) # give a mask
         if out is None:
             out = np.zeros( self.shape, data.dtype )
         else:
@@ -91,25 +92,26 @@ class sparse_frame( object ):
 
     def mask( self, msk ):
         """ returns a subset of itself """
+        newpx = {}
+        for name, px in self.pixels.items():
+            newpx[name] = px[msk]
+            if hasattr( px, "attrs" ):
+                newpx[name].attrs = dict( px.attrs )
         return sparse_frame( self.row[msk],
                              self.col[msk],
                              self.shape, self.row.dtype,
-                             pixels= {
-                                 name: Container( pixval.data[msk],
-                                                  **pixval.header )
-                                 for (name, pixval) in self.pixels.items()} )
+                             pixels = newpx )
 
     def set_pixels( self, name, values ):
         """ Named arrays sharing these labels """
-        assert isinstance( values, Container )
-        assert len(values.data) == self.nnz
+        assert len(values) == self.nnz
         self.pixels[name] = values
 
     def sort_by( self, name ):
         """ Not sure when you would do this. For sorting 
         by a peak labelling to get pixels per peak """
         assert name in self.pixels
-        order = np.argsort( self.pixels[name].data )
+        order = np.argsort( self.pixels[name] )
         self.reorder( self, order )
 
     def sort( self ):
@@ -118,43 +120,46 @@ class sparse_frame( object ):
         self.reorder( self, order )
 
     def reorder( self, order ):
-        """ Put the pixels into a different order """
+        """ Put the pixels into a different order (in place) """
         assert len(order) == self.nnz
-        self.row = self.row[order]
-        self.col = self.col[order]
-        self.pixels = { (name, Container( pixval.data[order],
-                                          **pixval.header) )
-                         for (name, pixval) in self.pixels.items() }
+        self.row[:] = self.row[order]
+        self.col[:] = self.col[order]
+        for name, px in self.pixels.items():
+            px[:] = px[order]
         
     def threshold(self, threshold, name='intensity'):
         """
         returns a new sparse frame with pixels > threshold
         """
-        return self.mask( self.pixels.data[name] > threshold )
+        return self.mask( self.pixels[name] > threshold )
 
     def to_hdf_group( frame, group ):
-        """ Save a 2D sparse frame to a hdf group """
+        """ Save a 2D sparse frame to a hdf group 
+        Makes 1 single frame per group
+        """
         itype = np.dtype( frame.row.dtype )
         meta = { "itype"  : itype.name,
                  "shape0" : frame.shape[0],
                  "shape1" : frame.shape[1] }
         for name, value in meta.items():
             group.attrs[name] = value
-        #opts = { "compression": "lzf" }
-        opts = {}
+        opts = { "compression": "lzf",
+                "shuffle" : True,
+                }
+        #opts = {}
         group.require_dataset( "row", shape=(frame.nnz,),
                                dtype=itype, **opts )
         group.require_dataset( "col", shape=(frame.nnz,),
                                dtype=itype, **opts )
         group['row'][:] = frame.row
         group['col'][:] = frame.col
-        for pxname in frame.pixels:
+        for pxname, px in frame.pixels.items():
             group.require_dataset( pxname, shape=(frame.nnz,),
-                                   dtype=frame.pixels[pxname].data.dtype,
+                                   dtype=px.dtype,
                                    **opts ) 
-            group[pxname][:] = frame.pixels[pxname].data
-            for name, value in frame.pixels[pxname].header.items():
-                group[pxname].attrs[ name ] = value
+            group[pxname][:] = px
+            if hasattr( px, "attrs" ):
+                group[pxname].attrs = dict( px.attrs )
 
 
     
@@ -173,8 +178,9 @@ def from_data_mask( mask, data, header ):
     col = np.empty( nnz, np.uint16 )
     cImageD11.mask_to_coo( mask, row, col, tmp )
     intensity = data[ mask > 0 ]
+    intensity.attrs = dict(header)
     return sparse_frame( row, col, data.shape, itype=np.uint16,
-                  pixels = { "intensity" : Container( intensity, **header ) } )
+                  pixels = { "intensity" : intensity } )
 
 def from_hdf_group( group ):
     itype = np.dtype( group.attrs['itype'] )
@@ -187,17 +193,18 @@ def from_hdf_group( group ):
             continue
         data = group[pxname][:]
         header = dict( group[pxname].attrs )
-        pixels[pxname] = Container( data, **header )
+        pixels[pxname] = data
+        pixels[pxname].attrs = dict( header )
     return sparse_frame( row, col, shape, itype=itype, pixels=pixels )
 
 def sparse_moments( frame, intensity_name, labels_name ):
     """ We rely on a labelling array carrying nlabel metadata (==labels.data.max())"""
-    nl = frame.pixels[ labels_name ].header[ "nlabel" ]
+    nl = frame.pixels[ labels_name ].attrs[ "nlabel" ]
     return cImageD11.sparse_blob2Dproperties(
-        frame.pixels[intensity_name].data,
+        frame.pixels[intensity_name],
         frame.row,
         frame.col,
-        frame.pixels[labels_name].data,
+        frame.pixels[labels_name],
         nl )
 
 
@@ -214,12 +221,12 @@ def overlaps(frame1, labels1, frame2, labels2):
     npx = cImageD11.sparse_overlaps( frame1.row, frame1.col, ki,
                                      frame2.row, frame2.col, kj)
     # self.data and other.data filled during init
-    row = frame1.pixels[labels1].data[ ki[:npx] ]  # my labels
-    col = frame2.pixels[labels2].data[ kj[:npx] ]  # your labels
+    row = frame1.pixels[labels1][ ki[:npx] ]  # my labels
+    col = frame2.pixels[labels2][ kj[:npx] ]  # your labels
     ect = np.empty( npx, 'i')    # ect = counts of overlaps
     tj  = np.empty( npx, 'i')    # tj = temporary  for sorting
-    n1  = frame1.pixels[labels1].header[ "nlabel" ]
-    n2  = frame2.pixels[labels2].header[ "nlabel" ]
+    n1  = frame1.pixels[labels1].attrs[ "nlabel" ]
+    n2  = frame2.pixels[labels2].attrs[ "nlabel" ]
     tmp = np.empty( max(n1, n2)+1, 'i') # for histogram
     nedge = cImageD11.compress_duplicates( row, col, ect, tj, tmp )
     # overwrites row/col in place
@@ -242,14 +249,14 @@ def sparse_connected_pixels( frame,
     """
     labels = np.zeros( frame.nnz, "i" )
     if threshold is None:
-        threshold = frame.pixels[data_name].header["threshold"]
+        threshold = frame.pixels[data_name].attrs["threshold"]
     nlabel = cImageD11.sparse_connectedpixels(
-        frame.pixels[data_name].data, frame.row, frame.col,
+        frame.pixels[data_name], frame.row, frame.col,
         threshold,  labels )
-    px = Container( labels, **{ "data_name": data_name,
-                                "threshold": threshold,
-                                "nlabel"   : nlabel } )
-    frame.set_pixels( label_name, px )
+    labels.attrs = { "data_name": data_name,
+                     "threshold": threshold,
+                     "nlabel"   : nlabel } 
+    frame.set_pixels( label_name, labels )
 
 
 def sparse_localmax( frame,
@@ -259,11 +266,11 @@ def sparse_localmax( frame,
     vmx = np.zeros( frame.nnz, np.float32 )
     imx = np.zeros( frame.nnz, 'i')
     nlabel = cImageD11.sparse_localmaxlabel(
-        frame.pixels[data_name].data, frame.row, frame.col,
+        frame.pixels[data_name], frame.row, frame.col,
         vmx, imx, labels )
-    px = Container( labels, **{ "data_name" : data_name,
-                                "nlabel" : nlabel } )
-    frame.set_pixels( label_name, px )
+    labels.attrs = { "data_name" : data_name,
+                     "nlabel" : nlabel } 
+    frame.set_pixels( label_name, labels )
 
     
                               
