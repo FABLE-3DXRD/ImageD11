@@ -68,8 +68,9 @@ class grain:
         # e.g. cell = grain.unitcell
         #      cell[4:] = 90 # degree angle for orthorhombic
         #      oups : grain._unitcell was corrupted!
-        self._ub = None
-        self._u = None
+        self._UB = None
+        self._U = None
+        self._B = None
         self._rod = None
         self._mt = None
         self._rmt = None
@@ -96,7 +97,7 @@ class grain:
         if self._U is None:
             # ubi = inv(UB) = inv(B)inv(U)
             self._U = np.dot( self.B, self.ubi ).T
-        return self._u.copy()
+        return self._U.copy()
 
     @property
     def Rod(self):
@@ -132,42 +133,67 @@ class grain:
             self._unitcell = np.array( (a,b,c,al,be,ga) )
         return self._unitcell.copy()
 
-    def eps_grain_matrix(self, dzero_cell):
-        """ dzero_cell = [a,b,c,alpha,beta,gamma]
+    def eps_grain_matrix(self, dzero_cell, m=0.5):
+        """ dzero_cell can be another grain or cell parameters
+                [a,b,c,alpha,beta,gamma]
+            m is the exponent for the Seth-Hill finite strain tensors
+            E = 1/2m (U^2m - I)
+            (Negative m reverses the reference and lab systems).
         Returns eps as a symmetric matrix
-        ... in the grain system 
+        ... in the grain reference system of dzero_cell
         """
-        B = ImageD11.unitcell.unitcell( dzero_cell ).B
+        if hasattr( dzero_cell, "ub" ):
+            B = zero_cell.ub
+        else:
+            B = ImageD11.unitcell.unitcell( dzero_cell ).B
         F = ImageD11.finite_strain.DeformationGradientTensor( self.ubi, B )
-        eps = F.finite_strain_ref( m=0.5 )
+        eps = F.finite_strain_ref( m )
         return eps
 
-    def eps_grain(self, dzero_cell):
-        """ dzero_cell = [a,b,c,alpha,beta,gamma]
-        Returns eps = [e11, e12, e13, e22, e23, e33]
-        ... in the grain system
+    def eps_grain(self, dzero_cell, m=0.5):
+        """ dzero_cell can be another grain or cell parameters
+                [a,b,c,alpha,beta,gamma]
+            m is the exponent for the Seth-Hill finite strain tensors
+            E = 1/2m (U^2m - I)
+            (Negative m reverses the reference and lab systems).
+        Returns eps as a the 6 independent entries in the symmetric matrix
+         e11 e12 e13 e22 e23 e33
+        ... in the grain reference system of dzero_cell
         """
-        return symm_to_e6( self.eps_grain_matrix( dzero_cell ) )
+        E = self.eps_grain_matrix( dzero_cell, m ) 
+        return symm_to_e6( E )
 
 
-    def eps_sample_matrix(self, dzero_cell):
-        """ dzero_cell = [a,b,c,alpha,beta,gamma]
+    def eps_sample_matrix(self, dzero_cell, m=0.5):
+        """ dzero_cell can be another grain or cell parameters:
+                [a,b,c,alpha,beta,gamma]
+            m is the exponent for the Seth-Hill finite strain tensors
+            E = 1/2m (V^2m - I)
+            (Negative m reverses the reference and lab systems).
         Returns eps as a symmetric matrix
-        ... in the sample system (z usually up axis, x along the beam at omega=0)
+        ... in the sample system (z up, x along the beam at omega=0)
         """
-        B = ImageD11.unitcell.unitcell( dzero_cell ).B
+        if hasattr( dzero_cell, "ub" ):
+            B = zero_cell.ub
+        else:
+            B = ImageD11.unitcell.unitcell( dzero_cell ).B
         F = ImageD11.finite_strain.DeformationGradientTensor( self.ubi, B )
-        eps = F.finite_strain_lab( m=0.5 )
+        eps = F.finite_strain_lab( m )
         return eps
 
-    
-    def eps_sample(self, dzero_cell):
-        """ dzero_cell = [a,b,c,alpha,beta,gamma]
-        Returns eps as [e11, e12, e13, e22, e23, e33]
-        ... in the sample system (z usually up axis, x along the beam at omega=0)
+
+    def eps_sample(self, dzero_cell, m=0.5):
+        """ dzero_cell can be another grain or cell parameters:
+                [a,b,c,alpha,beta,gamma]
+            m is the exponent for the Seth-Hill finite strain tensors
+            E = 1/2m (V^2m - I)
+            (Negative m reverses the reference and lab systems).
+        Returns eps as a the 6 independent entries in the symmetric matrix
+         e11 e12 e13 e22 e23 e33
+        ... in the sample system (z up, x along the beam at omega=0)
         """
-        Es = self.eps_sample_matrix( dzero_cell )
-        return symm_to_e6( Es )
+        E = self.eps_sample_matrix( dzero_cell, m )
+        return symm_to_e6( E )
 
         
 
