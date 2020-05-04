@@ -142,8 +142,8 @@ class grain:
         Returns eps as a symmetric matrix
         ... in the grain reference system of dzero_cell
         """
-        if hasattr( dzero_cell, "ub" ):
-            B = zero_cell.ub
+        if hasattr( dzero_cell, "UB" ):
+            B = dzero_cell.UB
         else:
             B = ImageD11.unitcell.unitcell( dzero_cell ).B
         F = ImageD11.finite_strain.DeformationGradientTensor( self.ubi, B )
@@ -160,7 +160,7 @@ class grain:
          e11 e12 e13 e22 e23 e33
         ... in the grain reference system of dzero_cell
         """
-        E = self.eps_grain_matrix( dzero_cell, m ) 
+        E = self.eps_grain_matrix( dzero_cell, m )
         return symm_to_e6( E )
 
 
@@ -173,8 +173,8 @@ class grain:
         Returns eps as a symmetric matrix
         ... in the sample system (z up, x along the beam at omega=0)
         """
-        if hasattr( dzero_cell, "ub" ):
-            B = zero_cell.ub
+        if hasattr( dzero_cell, "UB" ):
+            B = dzero_cell.UB
         else:
             B = ImageD11.unitcell.unitcell( dzero_cell ).B
         F = ImageD11.finite_strain.DeformationGradientTensor( self.ubi, B )
