@@ -107,6 +107,47 @@ void compute_xlylzl(double s[], double f[], double p[4],
     }				// enddo
 }				// end subroutine compute_xlylzl
 
+void quickorient( double UBI[9],
+		  double BT[9]
+	     ){
+  /* On entry UBI[0] is g1, UBI[1] is g2, BT is made for this to work.
+     0 1 2  == g1
+     3 4 5  == g2
+     6 7 8  <- g1xg2
+   */
+  double t0, t1, M[9];
+  /* g2 = g0xg1 */
+  M[6] = UBI[1]*UBI[5] - UBI[2]*UBI[4];
+  M[7] = UBI[2]*UBI[3] - UBI[0]*UBI[5];
+  M[8] = UBI[0]*UBI[4] - UBI[1]*UBI[3];
+  /* u0 = norm(g0) */
+  t0 = sqrt( UBI[0]*UBI[0] + UBI[1]*UBI[1] + UBI[2]*UBI[2] );
+  M[0] = UBI[0]/t0;
+  M[1] = UBI[1]/t0;
+  M[2] = UBI[2]/t0;
+  /* u3 = norm(g3) */
+  t1 = sqrt( M[6]*M[6] + M[7]*M[7] + M[8]*M[8] );
+  M[6] /= t1;
+  M[7] /= t1;
+  M[8] /= t1;
+  /* u2 = u1xu3 */
+  M[3] = M[1]*M[8] - M[2]*M[7];
+  M[4] = M[2]*M[6] - M[0]*M[8];
+  M[5] = M[0]*M[7] - M[1]*M[6];
+  /* ubi = dot( BT, (u1,u2,u2) */
+  UBI[0] = BT[0]*M[0] + BT[1]*M[3] + BT[2]*M[6];
+  UBI[1] = BT[0]*M[1] + BT[1]*M[4] + BT[2]*M[7];
+  UBI[2] = BT[0]*M[2] + BT[1]*M[5] + BT[2]*M[8];
+  UBI[3] = BT[3]*M[0] + BT[4]*M[3] + BT[5]*M[6];
+  UBI[4] = BT[3]*M[1] + BT[4]*M[4] + BT[5]*M[7];
+  UBI[5] = BT[3]*M[2] + BT[4]*M[5] + BT[5]*M[8];
+  UBI[6] = BT[6]*M[0] + BT[7]*M[3] + BT[8]*M[6];
+  UBI[7] = BT[6]*M[1] + BT[7]*M[4] + BT[8]*M[7];
+  UBI[8] = BT[6]*M[2] + BT[7]*M[5] + BT[8]*M[8];
+}
+
+
+
 /*
 ! set LDFLAGS="-static-libgfortran -static-libgcc -static -lgomp -shared"
 ! f2py -m fImageD11 -c fImageD11.f90 --opt=-O3 --f90flags="-fopenmp" -lgomp -lpthread

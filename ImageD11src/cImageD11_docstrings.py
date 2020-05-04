@@ -128,6 +128,9 @@ put_incr64 = """does the simple loop : data[ind] += vals
 not sure why this isn't in numpy
 uses 64 bit addressing
 """
+quickorient = """takes two g-vectors in UBI[0] and UBI[1]
+and overwrites with UBI orientation using cache in bt (from h1,h2)
+"""
 refine_assigned = """fits a ubi matrix to a set of g-vectors and assignments
 in labels. e.g. where(labels==label) it uses the peaks.
   ... perhaps this is not what you want for overlapping peaks in twins!
@@ -220,6 +223,7 @@ __all__ = [
     "misori_tetragonal",
     "put_incr32",
     "put_incr64",
+    "quickorient",
     "refine_assigned",
     "score",
     "score_and_assign",

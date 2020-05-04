@@ -69,7 +69,11 @@ PyDict_SetItemString(d,str(s2D_sI),PyInt_FromLong(s2D_sI));
 PyDict_SetItemString(d,str(s2D_ffI),PyInt_FromLong(s2D_ffI));
 PyDict_SetItemString(d,str(s2D_sfI),PyInt_FromLong(s2D_sfI));
 PyDict_SetItemString(d,str(s2D_ssI),PyInt_FromLong(s2D_ssI));
-PyDict_SetItemString(d,str(PROP2D),PyInt_FromLong(NPROPERTY2D));
+PyDict_SetItemString(d,str(s2D_bb_mx_f),PyInt_FromLong(s2D_bb_mx_f));
+PyDict_SetItemString(d,str(s2D_bb_mx_s),PyInt_FromLong(s2D_bb_mx_s));
+PyDict_SetItemString(d,str(s2D_bb_mn_f),PyInt_FromLong(s2D_bb_mn_f));
+PyDict_SetItemString(d,str(s2D_bb_mn_s),PyInt_FromLong(s2D_bb_mn_s));
+PyDict_SetItemString(d,str(NPROPERTY2D),PyInt_FromLong(NPROPERTY2D));
 
 PyDict_SetItemString(d,str(got_AVX),PyInt_FromLong(i_have_AVX()));
 PyDict_SetItemString(d,str(got_SSE2),PyInt_FromLong(i_have_SSE2()));
@@ -142,7 +146,7 @@ interface
         threadsafe
     end subroutine blobproperties
 
-    subroutine sparse_blob2Dproperties( v, i, j, nnz, labels, npk, results)
+    subroutine sparse_blob2Dproperties( v, i, j, nnz, labels, results, npk)
         intent(c) sparse_blob2Dproperties
 !DOC sparse_blob2Dproperties fills the array results with properties of each labelled
 !DOC object described by v and labels (pixel values and blob) and positions i,j in the image.
@@ -763,6 +767,15 @@ interface
         integer, intent(hide), depend(adr1) :: nf = shape(adr1,1)
         threadsafe
     end subroutine reorder_u16_a32_a16
+
+    subroutine quickorient( ubi, bt )
+!DOC quickorient takes two g-vectors in UBI[0] and UBI[1]
+!DOC and overwrites with UBI orientation using cache in bt (from h1,h2)
+    	intent(c) quickorient
+	intent(c)
+	double precision, dimension(3,3), intent (inout) :: ubi
+	double precision, dimension(3,3), intent (in) :: bt
+    end subroutine orient
 
 end interface
 
