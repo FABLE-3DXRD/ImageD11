@@ -277,6 +277,7 @@ class indexer:
         self.stop = False
         self.unitcell=unitcell
         self.gv=gv
+        self.ra = None
         if gv is not None: # do init
             logging.info('gv: %s %s %s', str(gv), str(gv.shape), str(gv.dtype))
             assert gv.shape[1] == 3
@@ -482,6 +483,8 @@ class indexer:
         # Optionally only used unindexed peaks here. Make this obligatory
         # Need indices of gvectors to test.
         # Bug out early when there are none
+        if self.ra is None:
+            self.assigntorings()
         iall = np.arange(self.gv.shape[0])
         i1 = np.compress(np.logical_and(np.equal(self.ra,self.ring_1),
                                       self.ga==-1  ) , iall).tolist()
@@ -620,7 +623,7 @@ class indexer:
                                      verbose=0,
                                      all=False)
             except:
-                logging.error(str(i,j,self.ring_1,self.ring_2))
+                logging.error(" ".join([str(x) for x in (i,j,self.ring_1,self.ring_2)]))
                 logging.error(str(self.gv[i]))
                 logging.error(str(self.gv[j]))
                 logging.error("Failed to find orientation in unitcell.orient")

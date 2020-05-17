@@ -373,9 +373,10 @@ class unitcell:
         costheta = np.dot( g1, g2 ) / np.sqrt( (g1*g1).sum()*(g2*g2).sum() )
         hab, c2ab, matrs =  self.getanglehkls( ring1, ring2 )
         if all:
-            lo = min(np.searchsorted(c2ab, costheta - 1e-5, side='left' ), len(c2ab)-1)
-            hi = min(np.searchsorted(c2ab, costheta + 1e-5, side='right' ), len(c2ab))
-            best = range( lo, hi )
+            isrch = np.argmin( abs(c2ab - costheta ))
+            lo = min(np.searchsorted(c2ab, c2ab[isrch] - 1e-4, side='left' ), len(c2ab)-1)
+            hi = min(np.searchsorted(c2ab, c2ab[isrch] + 1e-4, side='right' ), len(c2ab))
+            best = list(range( lo, hi ))
             if verbose == 1:
                 print("lo hi best", lo, hi, best, len(c2ab))
         else:
@@ -478,7 +479,7 @@ HKL0 = np.array( [ [0,0,1,1,-1,1,-1,0, 0, 1, -1, 1, 1],
 def ubi_equiv( ubilist, ublist, tol=1e-8):
     """ Two ubi are considered equivalent if they both index the peaks
     in the HKL0 array exactly"""
-    if len(ubilist) == 1:
+    if len(ubilist) < 2:
         return ubilist
     order = np.argsort( [np.trace( ubi ) for ubi in ubilist ] ) # low to high
     uniq = [ ubilist[ order[-1] ], ]
