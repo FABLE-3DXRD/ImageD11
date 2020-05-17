@@ -44,12 +44,28 @@ for a in sys.argv:
     if "mingw32" in a:
         compiler = "mingw32"
 
+def getfastarg(args):
+    cc = distutils.ccompiler.new_compiler( verbose=1 , compiler=compiler )
+    with open("dummy.c","w") as cfile:
+        cfile.write("\n")
+    farg = []
+    for a in ("-mcpu=native", "-mtune=native", "-march=native"):
+        try:
+            cc.compile(["dummy.c",], output_dir=".",extra_preargs=args+[a,])
+            farg.append(a)
+        except:
+            pass
+    print("Fast args are",farg)
+    return farg
+    
+        
 if plat == "Linux" or compiler == "mingw32":
     arg=["-O2", "-fopenmp", "-fPIC", "-std=c99" ]
-    fastarg = arg + ["-march=native"]
+    fa =  getfastarg(arg)
+    fastarg = arg + fa
     # link args
-    lfastarg = arg + ["-march=native"]
-elif plat == "Windows":
+    lfastarg = arg + fa
+elif plat == "Windows": # Needs to be MSVC for now. 
     arg=["/O2", "/openmp" ]
     # the /arch switches are ignored by the older MSVC compilers
     fastarg = arg + ["/arch:AVX",]
