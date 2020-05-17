@@ -87,21 +87,15 @@ ekwds = { 'include_dirs' : [get_include(), 'src' ],
         }
 
 # Compiled extensions:
-if platform.machine() == "ppc64le":
-    extensions = [ Extension( "cImageD11_ppc64le", 
-                              sources = ["src/cImageD11_ppc64le.pyf",],
-                              libraries = [src.bldlib.ppc64lelibname],
+# Name using platform.machine
+extensions = [ Extension( "cImageD11_safe", 
+                          sources = ["src/cImageD11_safe.pyf",],
+                          libraries = [src.bldlib.safelibname],
                               **ekwds ),
-                ]
-else:
-    extensions = [ Extension( "cImageD11_sse2", 
-                              sources = ["src/cImageD11_sse2.pyf",],
-                              libraries = [src.bldlib.sse2libname],
-                              **ekwds ),
-                   Extension( "cImageD11_avx",
-                              sources = ["src/cImageD11_avx.pyf",],
-                              libraries = [src.bldlib.avx2libname],
-                              **ekwds) ]
+               Extension( "cImageD11_fast",
+                           sources = ["src/cImageD11_fast.pyf",],
+                           libraries = [src.bldlib.fastlibname],
+                           **ekwds) ]
 
 
 

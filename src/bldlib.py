@@ -35,40 +35,29 @@ bits = platform.architecture()[0]
 mach = platform.machine()
 vers = "%d.%d"%(sys.version_info[:2])
 tmpdir = "%s_%s_%s_%s"%(plat, bits, mach, vers)
-avx2libname = "cImageD11_"+tmpdir+"_avx"
-sse2libname = "cImageD11_"+tmpdir+"_sse2"
-ppc64lelibname = "cImageD11_"+tmpdir+"_ppc64le"
-# ansi ?
+# Hopefully this keeps thing separate for ppc vs AMD64 etc in a build folder.
+safelibname = "cImageD11_"+tmpdir+"_safe"
+fastlibname = "cImageD11_"+tmpdir+"_fast"
 
 compiler = None
 for a in sys.argv:
     if "mingw32" in a:
         compiler = "mingw32"
 
-
-
-
-
 if plat == "Linux" or compiler == "mingw32":
     arg=["-O2", "-fopenmp", "-fPIC", "-std=c99" ]
-    sse2arg = arg + ["-msse4.2"]
-    avx2arg = arg + ["-mavx"]
-    ppc64learg = arg + ["-mcpu=power9"]
+    fastarg = arg + ["-march=native"]
     # link args
-    lsse2arg = arg + ["-msse4.2"]
-    lavx2arg = arg + ["-mavx"]
-    ppc64learg = arg + ["-mcpu=power9"]
+    lfastarg = arg + ["-march=native"]
 elif plat == "Windows":
     arg=["/O2", "/openmp" ]
     # the /arch switches are ignored by the older MSVC compilers
-    sse2arg = arg + ["/arch:SSE2",]
-    avx2arg = arg + ["/arch:AVX",]
-    lsse2arg = []
-    lavx2arg = []
+    fastarg = arg + ["/arch:AVX",]
+    lfastarg = []
 else:
-    ppc64learg = avx2arg = sse2arg = arg = [ ]
+    fastarg = lfastarg = arg = [ ]
 
-def run_cc( cc, plat, bits, vers, name, flags, libname ):
+def run_cc( cc, flags, libname ):
     objs = cc.compile( sources , 
                        output_dir=libname.replace("cImageD11_",""),
                        extra_preargs = flags )
@@ -116,14 +105,10 @@ def main():
     cc = distutils.ccompiler.new_compiler( verbose=1 , compiler=compiler )
     cc.add_include_dir( "." )
     docs()
-    if platform.machine() == 'ppc64le':
-        make_pyf( "cImageD11_interface.pyf", "cImageD11_ppc64le")
-        ppc64lelib = run_cc(cc, plat, bits, vers, "ppc64le", ppc64learg, ppc64lelibname )
-    else: # if platform.machine() == 'x86_64':
-        make_pyf( "cImageD11_interface.pyf", "cImageD11_sse2")
-        make_pyf( "cImageD11_interface.pyf", "cImageD11_avx")
-        sse2lib = run_cc(cc, plat, bits, vers, "sse2", sse2arg, sse2libname )
-        avx2lib = run_cc(cc, plat, bits, vers, "avx", avx2arg, avx2libname )
+    make_pyf( "cImageD11_interface.pyf", "cImageD11_safe")
+    safelib = run_cc(cc, arg, safelibname )
+    make_pyf( "cImageD11_interface.pyf", "cImageD11_fast")
+    fastlib = run_cc(cc, fastarg, fastlibname )
     return 0
 
 
