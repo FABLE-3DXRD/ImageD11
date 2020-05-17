@@ -73,7 +73,7 @@ def build_clibs():
 
 # Issue 66, try to get pip install to work.
 #   ... but only recompile once and when needed
-for arg in ("build", "bdist_wheel", "bdist_egg", "develop","--force"):
+for arg in ("build", "bdist_wheel", "bdist_egg", "egg_info", "develop","--force"):
     if arg in sys.argv and src.bldlib.need_build:
         build_clibs()
 
