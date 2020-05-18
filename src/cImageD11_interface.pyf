@@ -730,9 +730,9 @@ interface
     end subroutine cImaged11_set_omp_num_threads
 
     function cimaged11_omp_get_max_threads()
-!DOC cimaged11_omp_get_max_threads reads the openmp max number of threads to use.
+!DOC cimaged11_omp_get_max_threads reads the openmp max number of threads
+!
         intent(c) cimaged11_omp_get_max_threads
-        intent(c)
         integer :: cimaged11_omp_get_max_threads
     end function cImaged11_omp_get_max_threads
 

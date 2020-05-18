@@ -18,6 +18,10 @@ we have not written specific things too. That means:
 So we are going to build a series of extensions and use #ifdef inside
 them.
 
+-- May 2020 - all that gets to be a horrific mess.
+We have a "generic" build that takes the regular python option
+and a host platform build that take -mhost=native flags.
+
 Which one we get is determined by the cImageD11.py module.
 """
 
@@ -49,12 +53,14 @@ def getfastarg(args):
     with open("dummy.c","w") as cfile:
         cfile.write("\n")
     farg = []
-    for a in ("-mcpu=native", "-mtune=native", "-march=native"):
+    for a in ("-mtune=native", "-march=native", "-mcpu=native"):
         try:
             cc.compile(["dummy.c",], output_dir=".",extra_preargs=args+[a,])
             farg.append(a)
         except:
             pass
+    if len(farg) == 3:
+        farg = farg[:2] # cut out -mcpu if the others work
     print("Fast args are",farg)
     return farg
     
