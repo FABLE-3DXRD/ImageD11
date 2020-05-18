@@ -73,17 +73,14 @@ def build_clibs():
 
 # Issue 66, try to get pip install to work.
 #   ... but only recompile once and when needed
-for arg in ("build", "bdist_wheel", "bdist_egg", "egg_info", "develop","--force"):
+for arg in ("build", "bdist_wheel", "bdist_egg", "egg_info",
+            "develop","--force"):
     if arg in sys.argv and src.bldlib.need_build:
         build_clibs()
 
 
 ekwds = { 'include_dirs' : [get_include(), 'src' ],
           'library_dirs' : ['./src'],
-          'extra_compile_args' : src.bldlib.arg + \
-               ["-DF2PY_REPORT_ON_ARRAY_COPY=1.",],
-          'extra_link_args' : src.bldlib.arg + \
-               ["-DF2PY_REPORT_ON_ARRAY_COPY=1.",],
         }
 
 # Compiled extensions:
@@ -91,10 +88,14 @@ ekwds = { 'include_dirs' : [get_include(), 'src' ],
 extensions = [ Extension( "cImageD11_safe", 
                           sources = ["src/cImageD11_safe.pyf",],
                           libraries = [src.bldlib.safelibname],
-                              **ekwds ),
+                          extra_compile_args = src.bldlib.arg,
+                          extra_link_args = src.bldlib.arg,
+                          **ekwds ),
                Extension( "cImageD11_fast",
-                           sources = ["src/cImageD11_fast.pyf",],
-                           libraries = [src.bldlib.fastlibname],
+                          sources = ["src/cImageD11_fast.pyf",],
+                          libraries = [src.bldlib.fastlibname],
+                          extra_compile_args = src.bldlib.fastarg,
+                          extra_link_args = src.bldlib.lfastarg,
                            **ekwds) ]
 
 
