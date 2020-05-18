@@ -19,7 +19,7 @@ object described by data (pixel values) and labels. The omega value
 is the angle for this frame.
 results are FIXME
 """
-cimaged11_omp_get_max_threads = """reads the openmp max number of threads to use.
+cimaged11_omp_get_max_threads = """reads the openmp max number of threads
 """
 cimaged11_omp_set_num_threads = """Sets the openmp number of threads to use.
 Change if you use multiprocessing or do not like os.environ['OMP_NUM_THREADS']

@@ -13,7 +13,7 @@ Perhaps you can try to get it via:
 
  pip install ImageD11
 
-Some (dated) documentation is here: https://pythonhosted.org/ImageD11/
+Some (dated) documentation is here: https://imaged11.readthedocs.io/
 
 If you are at ESRF on a linux computer you could try "module load fable"
 
@@ -37,7 +37,6 @@ Until 2017 this code was mostly developed on sourceforge at http://sourceforge.n
 It is now developed at http://github.com/FABLE-3DXRD/ImageD11 
 
 Bug reports are always welcome!
-
 
 Good luck!
 
