@@ -68,8 +68,8 @@ if plat == "Linux" or compiler == "mingw32":
 elif plat == "Windows": # Needs to be MSVC for now. 
     arg=["/O2", "/openmp" ]
     # the /arch switches are ignored by the older MSVC compilers
-    fastarg = arg + ["/arch:AVX",]
-    lfastarg = []
+    fastarg = arg + ["/arch:AVX2",]
+    lfastarg = arg + ["/arch:AVX2",]
 else:
     fastarg = lfastarg = arg = [ ]
 
