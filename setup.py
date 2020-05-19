@@ -33,11 +33,9 @@ import os, sys, platform
 # Need to use numpy.distutils so it works for f2py
 from numpy.distutils.core import setup, Extension
 from numpy import get_include
+from numpy.distutils.misc_util import mingw32
 from distutils.command.sdist import sdist
 
-
-# Get the path for the static libraries        
-import src.bldlib, src.create_cpu_check
 
 def get_version():
     with open("ImageD11src/__init__.py","r") as f:
@@ -47,59 +45,44 @@ def get_version():
 
 print("Building version |%s|"%get_version())
 
-def build_clibs():
-    """ 
-    Should learn to use build_clib at some point
-    Have not figured out to have per c-file args without
-    caching the o-files (avx vs sse issue)
+# Compiled extensions:
+
+def eca():        
     """
-    if not src.bldlib.need_build:
-        return
-    os.chdir("src")
-    print("Call create_cpu_check")
-    src.create_cpu_check.main()
-    # os.system(sys.executable+" write_check.py")
-    print("Call bldlib")
-    # transmit compiler from command line
-    # ok = os.system(sys.executable+" bldlib.py "+ " ".join(sys.argv))
-    ok = src.bldlib.main()
-    os.chdir("..")
-    if ok != 0:
-        print("Return was",ok)
-        sys.exit(ok)
+    If you install on a personal machine then setting
+    CFLAGS=-march=native -mtune=native
+    might help?
+    """
+    if platform.system() == "Windows" and not mingw32():
+        arg = [ "/O2", "/openmp", ]
     else:
-        print("Seems to build OK")
-    src.bldlib.need_build = False
+        arg=["-O2", "-fopenmp", "-fPIC", "-std=c99" ]
+    if "CFLAGS" in os.environ:
+        arg += os.environ.get("CFLAGS").split(" ")
+    return arg
 
-# Issue 66, try to get pip install to work.
-#   ... but only recompile once and when needed
-for arg in ("build", "bdist_wheel", "bdist_egg", "egg_info",
-            "develop","--force"):
-    if arg in sys.argv and src.bldlib.need_build:
-        build_clibs()
+def ela():
+    """ Link args - just repeats compile for now """
+    return eca()
 
 
-ekwds = { 'include_dirs' : [get_include(), 'src' ],
-          'library_dirs' : ['./src'],
+# Only one built version. Too hard to make this cross plaform. See if CFLAGS
+# can be used to add extras ?
+
+cnames =  "blobs.c cdiffraction.c cimaged11utils.c closest.c " + \
+ "connectedpixels.c darkflat.c localmaxlabel.c sparse_image.c splat.c"
+csources = [os.path.join('src',c) for c in cnames.split()]
+
+ekwds = { 'sources' : [ "./src/_cImageD11.pyf" ] + csources,
+          'include_dirs' : [get_include(), 'src' ],
+          'extra_compile_args' : eca(),
+          'extra_link_args' : ela(),
         }
 
-# Compiled extensions:
+# print(ekwds)
+
 # Name using platform.machine
-extensions = [ Extension( "cImageD11_safe", 
-                          sources = ["src/cImageD11_safe.pyf",],
-                          libraries = [src.bldlib.safelibname],
-                          extra_compile_args = src.bldlib.arg,
-                          extra_link_args = src.bldlib.arg,
-                          **ekwds ),
-               Extension( "cImageD11_fast",
-                          sources = ["src/cImageD11_fast.pyf",],
-                          libraries = [src.bldlib.fastlibname],
-                          extra_compile_args = src.bldlib.fastarg,
-                          extra_link_args = src.bldlib.lfastarg,
-                           **ekwds) ]
-
-
-
+extensions = [ Extension( "_cImageD11",  **ekwds ), ]
 
 # Things we depend on. This generally borks things if pip
 # tries to do source installs of all of these.

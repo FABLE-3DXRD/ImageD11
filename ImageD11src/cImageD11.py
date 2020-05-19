@@ -3,16 +3,7 @@
 # check for avx2 and import cImageD11 module
 import struct
 from ImageD11 import cImageD11_docstrings
-
-
-from ImageD11.cImageD11_safe import *
-try:
-    from ImageD11.cImageD11_fast import *
-except ImportError as e:
-    sys.stderr.write("Using safe mode cImageD11, import of fast failed with:\n")
-    sys.stderr.write(str(e)+"\n")
-    pass
-
+from ImageD11._cImageD11 import *
 
 # For 32 or 64 bits
 nbyte = struct.calcsize("P") # 4 or 8

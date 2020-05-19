@@ -53,14 +53,16 @@ def getfastarg(args):
     with open("dummy.c","w") as cfile:
         cfile.write("\n")
     farg = []
-    for a in ("-mtune=native", "-march=native", "-mcpu=native"):
+    if platform.machine in ("x86_64", "AMD64"):
+        poss = ("-mavx2", "-mtune=native" )
+    else:
+        poss = ("-mtune=native",)
+    for a in (
         try:
             cc.compile(["dummy.c",], output_dir=".",extra_preargs=args+[a,])
             farg.append(a)
         except:
             pass
-    if len(farg) == 3:
-        farg = farg[:2] # cut out -mcpu if the others work
     print("Fast args are",farg)
     return farg
     
