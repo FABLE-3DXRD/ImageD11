@@ -12,7 +12,6 @@ python module _cImageD11
 
 usercode '''
 #include "blobs.h"
-#include "check_cpu_auto.c"
 
 '''
 interface
