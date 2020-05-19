@@ -74,8 +74,6 @@ PyDict_SetItemString(d,str(s2D_bb_mn_f),PyInt_FromLong(s2D_bb_mn_f));
 PyDict_SetItemString(d,str(s2D_bb_mn_s),PyInt_FromLong(s2D_bb_mn_s));
 PyDict_SetItemString(d,str(NPROPERTY2D),PyInt_FromLong(NPROPERTY2D));
 
-PyDict_SetItemString(d,str(got_AVX),PyInt_FromLong(i_have_AVX()));
-PyDict_SetItemString(d,str(got_SSE2),PyInt_FromLong(i_have_SSE2()));
 
 
 
