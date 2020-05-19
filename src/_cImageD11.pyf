@@ -1,5 +1,5 @@
 
-
+python module _cImageD11
 
 ! Most of this is tagged as threadsafe. That doesn't mean it is really threadsafe.
 ! If you call several functions that write the same memory at the same time they
@@ -781,4 +781,5 @@ end interface
 
 
 
+end python module _cImageD11
 
