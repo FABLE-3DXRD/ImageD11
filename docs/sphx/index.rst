@@ -30,6 +30,7 @@ Contents:
    fileformats
    batchprocessing
    rsv_mapper
+   related
 
 Here is a pdf file with a worked example for making a centre of mass grain map :download:`com_guide.pdf<../com_guide.pdf>`
 
