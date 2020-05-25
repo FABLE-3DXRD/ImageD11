@@ -56,7 +56,9 @@ def eca():
     if platform.system() == "Windows" and not mingw32():
         arg = [ "/O2", "/openmp", ]
     else:
-        arg=["-O2", "-fopenmp", "-fPIC", "-std=c99" ]
+        arg=["-O2", "-fPIC", "-std=c99" ]
+        if platform.system() is not "Darwin":
+            arg +=  ["-fopenmp", ]
     if "CFLAGS" in os.environ:
         arg += os.environ.get("CFLAGS").split(" ")
     return arg
