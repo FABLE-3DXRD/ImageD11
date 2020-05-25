@@ -43,7 +43,7 @@ def get_version():
             if line.find("__version__")>-1:
                 return eval(line.split("=")[1].strip())
 
-print("Building version |%s|"%get_version())
+print("Building version |%s|"%get_version(), "on system:", platform.system())
 
 # Compiled extensions:
 
@@ -57,7 +57,9 @@ def eca():
         arg = [ "/O2", "/openmp", ]
     else:
         arg=["-O2", "-fPIC", "-std=c99" ]
-        if platform.system() is not "Darwin":
+        if platform.system() == "Darwin":
+            arg += ["-undefined dynamic_lookup", ]
+        else:
             arg +=  ["-fopenmp", ]
     if "CFLAGS" in os.environ:
         arg += os.environ.get("CFLAGS").split(" ")
