@@ -28,18 +28,13 @@
  * in a shared library (e.g. not shared and overridden by LD_PRELOAD)
  * unlcear if/how this works currently across compilers...
  */
-
-#ifdef __GNUC__
- #if __GNUC__ >= 4
-   #define DLL_PUBLIC __attribute__ ((visibility ("default")))
-   #define DLL_LOCAL  __attribute__ ((visibility ("hidden")))
- #else
-   #define DLL_PUBLIC
-   #define DLL_LOCAL 
- #endif
-#else
-   #define DLL_PUBLIC
-   #define DLL_LOCAL 
+#define DLL_PUBLIC
+#define DLL_LOCAL 
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
+   #if __GNUC__ >= 4
+     #define DLL_PUBLIC __attribute__ ((visibility ("default")))
+     #define DLL_LOCAL  __attribute__ ((visibility ("hidden")))
+  #endif
 #endif
 
 

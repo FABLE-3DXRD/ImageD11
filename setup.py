@@ -57,9 +57,8 @@ def eca():
         arg = [ "/O2", "/openmp", ]
     else:
         arg=["-O2", "-fPIC", "-std=c99" ]
-        if platform.system() == "Darwin":
-            arg += ["-undefined dynamic_lookup", ]
-        else:
+        if platform.system() != "Darwin":
+            # Try to fix also in .travis.yml if someone can help
             arg +=  ["-fopenmp", ]
     if "CFLAGS" in os.environ:
         arg += os.environ.get("CFLAGS").split(" ")

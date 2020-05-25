@@ -4,7 +4,6 @@
 #include <stdlib.h>		/* abs(int) */
 #include <string.h>		/* memset */
 #include <assert.h>		
-#include <omp.h>
 #include "blobs.h"
 
 /**
