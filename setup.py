@@ -43,7 +43,7 @@ def get_version():
             if line.find("__version__")>-1:
                 return eval(line.split("=")[1].strip())
 
-print("Building version |%s|"%get_version())
+print("Building version |%s|"%get_version(), "on system:", platform.system())
 
 # Compiled extensions:
 
@@ -56,7 +56,10 @@ def eca():
     if platform.system() == "Windows" and not mingw32():
         arg = [ "/O2", "/openmp", ]
     else:
-        arg=["-O2", "-fopenmp", "-fPIC", "-std=c99" ]
+        arg=["-O2", "-fPIC", "-std=c99" ]
+        if platform.system() != "Darwin":
+            # Try to fix also in .travis.yml if someone can help
+            arg +=  ["-fopenmp", ]
     if "CFLAGS" in os.environ:
         arg += os.environ.get("CFLAGS").split(" ")
     return arg

@@ -4,7 +4,6 @@
 #include <assert.h>
 #include "cImageD11.h"
 
-#include <omp.h>
 
 /**
  * neighbormax assigns values in "l" to address highest pixel
@@ -152,8 +151,13 @@ int localmaxlabel(const float *restrict im,	// input
     //  ... the steps that are thread local
 #pragma omp parallel private( q, i, tid, nt, k, lo, hi )
 {
+#ifdef _OPENMP
   tid = omp_get_thread_num();
   nt = omp_get_num_threads();
+#else
+  tid = 0;
+  nt  = 1;
+#endif
   lo = dim0*dim1*tid/nt;
   hi = dim0*dim1*(tid+1)/nt;
   for (i = lo; i < hi ; i++) {

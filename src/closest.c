@@ -1,5 +1,5 @@
 
-#include <omp.h>
+
 #include <stdio.h>
 #include <math.h>
 #include "cImageD11.h"

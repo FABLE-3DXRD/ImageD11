@@ -2,6 +2,8 @@ Windows: [![Build status](https://ci.appveyor.com/api/projects/status/4pdlvsj2gr
 
 Linux: [![CircleCI](https://circleci.com/gh/jonwright/ImageD11.svg?style=svg)](https://circleci.com/gh/jonwright/ImageD11)
 
+Macos + Linux [![Build Status](https://travis-ci.com/jonwright/ImageD11.svg?branch=master)](https://travis-ci.com/jonwright/ImageD11)
+
 ImageD11
 Version 1.9.7
 Jon Wright
