@@ -7,9 +7,6 @@ jobs:
       os: osx
       osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
       language: shell       # 'language: python' is an error on Travis CI macOS
-      env: MATRIX_EVAL="brew install libomp && CC='clang -Xpreprocessor' && LDSHARED=$CC"
-before_install:
-  - eval "${MATRIX_EVAL}"
 install: 
   - pip3 install --upgrade pip  # all three OSes agree about 'pip3'
   - pip3 install .
