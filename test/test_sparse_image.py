@@ -6,8 +6,11 @@ import numpy as np
 import scipy.sparse
 import unittest
 import timeit
-
+import os
 timer = timeit.default_timer
+OVIM = os.path.join(
+    os.path.dirname(__file__),
+    "testoverlaps0000.edf" )
 
 
 class test_array_bounds_localmax( unittest.TestCase):

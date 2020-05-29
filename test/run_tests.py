@@ -67,3 +67,7 @@ for M in modules:
         runner.run(mySuite)
     except:
         raise
+
+import ImageD11
+print("ImageD11 was from",ImageD11.__file__)
+print("You might do better to run python -m pytest")   
