@@ -22,17 +22,24 @@
 #endif
 #endif
 
+/* No really, thanks for standardising C99 20 years ago */
+#define restrict __restrict
+
 /* If we define functions as local they can be inlined at link time
  * in a shared library (e.g. not shared and overridden by LD_PRELOAD)
  * unlcear if/how this works currently across compilers...
  */
-#define DLL_PUBLIC
-#define DLL_LOCAL
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
 #if __GNUC__ >= 4
 #define DLL_PUBLIC __attribute__((visibility("default")))
 #define DLL_LOCAL __attribute__((visibility("hidden")))
+#else
+#define DLL_PUBLIC
+#define DLL_LOCAL
 #endif
+#else
+#define DLL_PUBLIC
+#define DLL_LOCAL
 #endif
 
 #ifdef _MSC_VER
@@ -44,7 +51,7 @@ typedef unsigned char uint8_t;
 typedef unsigned __int16 uint16_t;
 typedef unsigned __int32 uint32_t;
 typedef unsigned __int64 uint64_t;
-#define restrict __restrict
+
 #define inline __inline
 #else
 #include <stdint.h>
