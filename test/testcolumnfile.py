@@ -39,6 +39,30 @@ class testgeom( unittest.TestCase ):
         c  = columnfile.columnfile("testgeom.flt")
         c.updateGeometry( )
 
+    def testfilter(self):
+        c = columnfile.columnfile("testgeom.flt")
+        d = c.copy()
+        d.filter( abs(d.sc-22) > .1 )
+        self.assertTrue( d.nrows == 4 )
+        d.filter( abs(d.sc-22) > .1 )
+        self.assertTrue( d.nrows == 4 )
+        self.assertTrue( c.nrows == 5 )
+        d = c.copy()
+        self.assertTrue( d.nrows == 5 )
+
+    def testfilter2(self):
+        c = columnfile.columnfile("testgeom.flt")
+        d = c.copy()
+        a = d.bigarray
+        d.filter( abs(d.sc-22) > .1 )
+        self.assertTrue( d.nrows == 4 )
+        d.filter( abs(d.sc-22) > .1 )
+        self.assertTrue( d.nrows == 4 )
+        self.assertTrue( c.nrows == 5 )
+        d = c.copy()
+        self.assertTrue( d.nrows == 5 )
+
+
 
 class test1( unittest.TestCase ):
     def setUp( self ):
