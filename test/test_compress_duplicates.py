@@ -55,8 +55,8 @@ class testpls(unittest.TestCase):
         coo = csr.tocoo()
         #print("",i,"\n",j)
         n = cImageD11.compress_duplicates( i, j, oi, oj, tmp )
-        self.assertEquals(cImageD11.sparse_is_sorted( i[:n].astype(np.uint16),
-                                                      j[:n].astype(np.uint16)
+        self.assertEqual(cImageD11.sparse_is_sorted( i[:n].astype(np.uint16),
+                                                     j[:n].astype(np.uint16)
                                                   ), 0)
         r = coo.row
         c = coo.col
