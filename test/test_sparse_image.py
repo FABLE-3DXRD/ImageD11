@@ -253,28 +253,28 @@ class test_sparse_connected_pixels( unittest.TestCase ):
         
 class test_sparse_connected_pixels_overlapim1(test_sparse_connected_pixels):
     def setUp(self):
-        im = fabio.open("testoverlaps0000.edf").data.astype( np.float32 )
+        im = fabio.open(OVIM).data.astype( np.float32 )
         self.a = np.where( im > 1500, im, 0 )
         self.s = scipy.sparse.coo_matrix( self.a )
         self.threshold = 2000.1
 
 class test_sparse_connected_pixels_overlapim2(test_sparse_connected_pixels):
     def setUp(self):
-        im = fabio.open("testoverlaps0000.edf").data.astype( np.float32 )
+        im = fabio.open(OVIM).data.astype( np.float32 )
         self.a = np.where( im > 2000.1, im, 0 )
         self.s = scipy.sparse.coo_matrix( self.a )
         self.threshold = 2000.1
 
 class test_sparse_connected_pixels_overlapim3(test_sparse_connected_pixels):
     def setUp(self):
-        im = fabio.open("testoverlaps0000.edf").data.astype( np.float32 )
+        im = fabio.open(OVIM).data.astype( np.float32 )
         self.a = np.where( im > 500.1, im, 0 )
         self.s = scipy.sparse.coo_matrix( self.a )
         self.threshold = 500.1
 
 class test_sparse_connected_pixels_overlapim4(test_sparse_connected_pixels):
     def setUp(self):
-        im = fabio.open("testoverlaps0000.edf").data.astype( np.float32 )
+        im = fabio.open(OVIM).data.astype( np.float32 )
         self.a = np.where( im > 5000.1, im, 0 )
         self.s = scipy.sparse.coo_matrix( self.a )
         self.threshold = 5000.1
