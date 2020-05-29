@@ -5,6 +5,10 @@ import numpy as np, fabio, time, os
 from ImageD11 import cImageD11
 #print(cImageD11.__file__)
 
+OVIM = os.path.join(
+    os.path.dirname(__file__),
+    "testoverlaps0000.edf" )
+
 def maketestim(): 
            
     M = 2048   # Overall image size
@@ -45,8 +49,8 @@ def maketestim():
 
     s = 30000/im.max()
     int_im = (im*s).astype( np.uint16 )
-    if not os.path.exists("testoverlaps0000.edf"):
-        fabio.edfimage.edfimage( int_im ).write( "testoverlaps0000.edf" )
+    if not os.path.exists( OVIM ):
+        fabio.edfimage.edfimage( int_im ).write( OVIM )
     return int_im
 
 def bench(int_im):
@@ -111,7 +115,7 @@ class testimexists(unittest.TestCase):
     def setUp(self):
         maketestim()
     def testit(self):
-        self.assertTrue(os.path.exists("testoverlaps0000.edf"))
+        self.assertTrue(os.path.exists(OVIM))
 
 if __name__=="__main__":
     bench(maketestim())

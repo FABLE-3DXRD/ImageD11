@@ -1,10 +1,10 @@
+==============================================
+Links to related open source software packages
+==============================================
 
-Related open source software packages
--------------------------------------
-
-Here are a list of links to other (apparently) open source software efforts which might be interesting
-if you are looking at ImageD11. No endorsement is implied. Please send a pull request to add or
-remove links here.
+Here are a list of links to other (apparently) open source software efforts
+which might be interesting if you are looking at ImageD11. No endorsement is
+implied. Please send a pull request to add or remove links here.
 
 Synchrotron + Multigrain
 ------------------------

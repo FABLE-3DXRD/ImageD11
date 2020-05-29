@@ -142,7 +142,7 @@ class columnfile(object):
     
     def __init__(self, filename = None, new = False):
         self.filename = filename
-        self.__data = None
+        self.__data = []
         self.titles = []
         if filename is not None:
             self.parameters = parameters.parameters(filename=filename)
@@ -328,9 +328,9 @@ class columnfile(object):
         if len(mask) != self.nrows:
             raise Exception("Mask is the wrong size")
         msk = np.array( mask, dtype=np.bool )
-        self.nrows = msk.sum()
-        for i,col in enumerate(self.__data):
-            self.__data[i] = col[msk]
+        # back to list here
+        self.__data = [col[msk] for col in self.__data]
+        self.nrows = len(self.__data[0])
         self.set_attributes()
  
     def copy(self):
@@ -567,14 +567,10 @@ try:
             col = columnfile( filename=name, new=True )
         else:
             col = obj
-        col.titles = newtitles
-        # print(newtitles)
-        nrows = len( g[newtitles[0]][:] )
-        ncols = len( col.titles )
-        data = [np.empty( nrows, np.float) for _ in range(ncols) ]
-        for i,name in enumerate(newtitles):
-            data[i] = g[name][:]
-        col.bigarray = data 
+        col.nrows = len( g[newtitles[0]] )
+        # ncols = len( col.titles )
+        for name in newtitles:
+            col.addcolumn( g[name][:].copy(), name )
         return col
     
 except ImportError:
