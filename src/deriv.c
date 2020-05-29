@@ -1,23 +1,22 @@
 
-#include <stdio.h>
 #include "ImageD11_cmath.h"
+#include <stdio.h>
 
 struct grain {
     double UB[9];
     double t[3];
 };
 
-double norm3(double v[3])
-{
+double norm3(double v[3]) {
     return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 }
 
 /*
 def anglevecs2D(a, b, c, d):
-    return np.arctan2( a*d - b*c, a*c + b*d) 
-    
+    return np.arctan2( a*d - b*c, a*c + b*d)
+
 def derivanglevecs2d( a, b, c, d, ab2=None, cd2=None):
-    if ab2 is None: 
+    if ab2 is None:
         ab2 = a*a+b*b
     if cd2 is None:
         cd2 = c*c+d*d
@@ -36,16 +35,9 @@ def derivanglevecs2d( a, b, c, d, ab2=None, cd2=None):
 //    a.b = dot of axis and beam
 //    ax[9]...[19] = inverse transpose matrix for conversion back
 
-int g_to_k(double h[4],
-	   double UB[9],
-	   double ax[19],
-	   double pre[9],
-	   double wvln,
-	   double g[3],
-	   double k[3],
-	   double tth_calc[10], double eta_calc[10], double omega_calc[10]
-    )
-{
+int g_to_k(double h[4], double UB[9], double ax[19], double pre[9], double wvln,
+           double g[3], double k[3], double tth_calc[10], double eta_calc[10],
+           double omega_calc[10]) {
 
     double gr[3], modg, modg2, ka[3], b, c, t;
     double gao[3], kao[3];
@@ -58,10 +50,10 @@ int g_to_k(double h[4],
     // d(tth_c) = DEGREES * tmp4 * dtmp3_dUB
     c = DEG * wvln / (2.0 * modg * sqrt(1 - t * t));
     for (i = 0; i < 3; i++)
-	for (j = 0; j < 3; j++)
-	    tth_calc[i * 3 + j + 1] = c * g[i] * h[j];
+        for (j = 0; j < 3; j++)
+            tth_calc[i * 3 + j + 1] = c * g[i] * h[j];
 
-    matvec(pre, g, gr);		// dgr_dUB
+    matvec(pre, g, gr); // dgr_dUB
     // gr is g-vector on rotating stage in orthogonal co-ordinate axes
     // scale space to wavelength
     gr[0] = gr[0] * wvln;
@@ -73,7 +65,7 @@ int g_to_k(double h[4],
     //  y along beam (not orthogonal)
     //  z makes right handed set
     // Component of gr along axis = g.axis
-    ka[0] = gr[0] * ax[0] + gr[1] * ax[1] + gr[2] * ax[2];	// AXIS READ
+    ka[0] = gr[0] * ax[0] + gr[1] * ax[1] + gr[2] * ax[2]; // AXIS READ
     // Component along beam (rotated) from Laue condition |g|^2/2
     ka[1] = -modg2 / 2.;
     // Solve quadratic for ka[0]
@@ -85,10 +77,10 @@ int g_to_k(double h[4],
     // sign to use is in hkl[3]
     t = b * b - c * 4.;
     if (t >= 0.0) {
-	ka[2] = -b + h[3] * sqrt(t) / 2.;
+        ka[2] = -b + h[3] * sqrt(t) / 2.;
     } else {
-	printf("Cannot find it!\n");
-	return 1;
+        printf("Cannot find it!\n");
+        return 1;
     }
     // Now we have gr and ka
     // Put ka into laboratory orthogonal system
@@ -102,31 +94,28 @@ int g_to_k(double h[4],
     // Now find the diffractometer angle
     // kao = kvector in orthogonal axis system
     kao[0] = ka[0];
-    gao[0] = ka[0];		// component on axis
+    gao[0] = ka[0]; // component on axis
 
     kao[1] = ka[1] * (1 - ax[9]);
     kao[2] = ka[2];
     gao[1] = ax[3] * gr[0] + ax[4] * gr[1] + ax[5] * gr[2];
     gao[2] = ax[6] * gr[0] + ax[7] * gr[1] + ax[8] * gr[2];
-    // return np.arctan2( a*d - b*c, a*c + b*d) 
-    omega_calc[0] =
-	DEG * atan2(kao[1] * gao[2] - kao[2] * gao[1],
-		    kao[1] * gao[1] - kao[2] * gao[2]);
+    // return np.arctan2( a*d - b*c, a*c + b*d)
+    omega_calc[0] = DEG * atan2(kao[1] * gao[2] - kao[2] * gao[1],
+                                kao[1] * gao[1] - kao[2] * gao[2]);
     return 0;
 }
 
-double determinant3x3(double m[9])
-{
+double determinant3x3(double m[9]) {
     return m[0] * m[4] * m[8] - m[0] * m[5] * m[7] + m[1] * m[5] * m[6] -
-	m[1] * m[3] * m[8] + m[2] * m[3] * m[7] - m[2] * m[4] * m[6];
+           m[1] * m[3] * m[8] + m[2] * m[3] * m[7] - m[2] * m[4] * m[6];
 }
 
-int inverse_mat3(double m[9], double r[9])
-{
+int inverse_mat3(double m[9], double r[9]) {
     double d;
     d = determinant3x3(m);
     if (fabs(d) == 0.0) {
-	return 1;
+        return 1;
     }
     d = 1.0 / d;
     r[0] = d * (m[4] * m[8] - m[7] * m[5]);
@@ -141,8 +130,7 @@ int inverse_mat3(double m[9], double r[9])
     return 0;
 }
 
-int make_ax(double post[9], double axis[3], double beam[3], double ax[19])
-{
+int make_ax(double post[9], double axis[3], double beam[3], double ax[19]) {
     double rb[3];
     ax[0] = axis[0];
     ax[1] = axis[1];
@@ -154,8 +142,7 @@ int make_ax(double post[9], double axis[3], double beam[3], double ax[19])
     return inverse_mat3(&ax[0], &ax[10]);
 }
 
-int main()
-{
+int main() {
     double tth_calc[10], tth_calc1[10];
     double omega_calc[10], omega_calc1[10];
     double eta_calc[10], eta_calc1[10];
@@ -167,9 +154,9 @@ int main()
 
     wvln = 0.12345;
     for (i = 0; i < 9; i++) {
-	gr.UB[i] = 0;
-	post[i] = 0;
-	pre[i] = 0;
+        gr.UB[i] = 0;
+        post[i] = 0;
+        pre[i] = 0;
     }
     gr.UB[0] = 0.22;
     gr.UB[4] = 0.57;
@@ -192,25 +179,24 @@ int main()
     beam[2] = 0.;
     make_ax(post, axis, beam, ax);
     for (i = 0; i < 19; i++)
-	printf("ax[%d]=%f\n", i, ax[i]);
+        printf("ax[%d]=%f\n", i, ax[i]);
 
-    g_to_k(h,
-	   gr.UB, ax, pre, wvln, gcalc, kcalc, tth_calc, eta_calc, omega_calc);
+    g_to_k(h, gr.UB, ax, pre, wvln, gcalc, kcalc, tth_calc, eta_calc,
+           omega_calc);
     printf("gcalc %f %f %f |%f|\n", gcalc[0], gcalc[1], gcalc[2], norm3(gcalc));
     printf("kcalc %f %f %f |%f|\n", kcalc[0], kcalc[1], kcalc[2], norm3(kcalc));
     printf("eta_calc %f omega_calc %f tth_calc %f\n", eta_calc[0],
-	   omega_calc[0], tth_calc[0]);
+           omega_calc[0], tth_calc[0]);
 
     p = 1e-8;
     for (i = 0; i < 9; i++) {
-	// Now test
-	gr_test = gr;
-	gr_test.UB[i] += p;
-	g_to_k(h, gr_test.UB, ax,
-	       pre, wvln, gcalc, kcalc, tth_calc1, eta_calc1, omega_calc1);
-	testval = (tth_calc1[0] - tth_calc[0]) / p;
-	printf(" dtth_dUB[%d] = %f ", i, tth_calc[i + 1]);
-	printf(" %f \n", testval);
+        // Now test
+        gr_test = gr;
+        gr_test.UB[i] += p;
+        g_to_k(h, gr_test.UB, ax, pre, wvln, gcalc, kcalc, tth_calc1, eta_calc1,
+               omega_calc1);
+        testval = (tth_calc1[0] - tth_calc[0]) / p;
+        printf(" dtth_dUB[%d] = %f ", i, tth_calc[i + 1]);
+        printf(" %f \n", testval);
     }
-
 }
