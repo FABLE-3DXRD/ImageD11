@@ -52,7 +52,7 @@ copt =  {
     'mingw32': ['-fopenmp', '-O2'] , 
  }
 
-lopt =  copt.copy()
+lopt =  { k : [a for a in l] for k,l in copt.items() }
 lopt['msvc'] = []
 if platform.system() == "Darwin":
     copt['unix'].remove("-fopenmp")
