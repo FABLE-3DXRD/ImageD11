@@ -3,11 +3,25 @@
 #include <stdio.h>
 
 
-/* TODO next:
- * set the color and markersize per peak
- * perhaps also a draw order (back to front, top to bottom) ?
- */
+/* F2PY_WRAPPER_START
+    subroutine splat( rgba, w, h, gve, ng, u, npx )
+!DOC splat draws gvectors into an rgba image. The horror of maintaining plot3d
+!DOC over the years motivated this code. See test/demo/tksplat
+!DOC * set the color and markersize per peak
+!DOC * perhaps also a draw order (back to front, top to bottom) ?
+        intent(c) splat
+        intent(c)
+        integer(kind=-1), dimension(w,h,4) :: rgba
+        integer,intent(hide), depend(rgba) :: h = shape(rgba, 0)
+        integer,intent(hide), depend(rgba) :: w = shape(rgba, 1)
+        double precision, intent(inout), dimension(ng,3) ::  gve
+        integer, intent(hide), depend(gve):: ng
+        double precision, intent(in), dimension(9) :: u
+        integer :: npx
+        ! NOT threadsafe, rgba will be recycled and on screen
+    end subroutine splat
 
+F2PY_WRAPPER_END */
 void splat( uint8_t rgba[], int w, int h,
             double gve[][3], int ng, double u[9],
             int npx

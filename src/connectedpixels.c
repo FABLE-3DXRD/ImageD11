@@ -5,6 +5,7 @@
 #include <string.h>
 #include "blobs.h"		/* Disjoint sets thing for blob finding */
 
+DLL_LOCAL
 void boundscheck(int jpk, int n2, int ipk, int n1)
 {
     if ((jpk < 0) || jpk >= n2) {
@@ -38,6 +39,27 @@ void boundscheck(int jpk, int n2, int ipk, int n1)
 */
 
 /* ==== connectedpixels ======================================== */
+
+/* F2PY_WRAPPER_START
+    function connectedpixels( data, labels, threshold, &
+                              verbose, con8, ns, nf)
+        intent(c) connectedpixels
+!DOC connectedpixels Determines which pixels in data are above the
+!DOC user supplied threshold and assigns them into connected objects
+!DOC which are output in labels. Connectivity is 3x3 box (8) by default
+!DOC and reduces to a +(4) is con8==0
+        intent(c)
+        real, intent(in) :: data(ns,nf)
+        integer, intent(inout) :: labels(ns,nf)
+        integer, intent(hide), depend(data) :: ns=shape(data,0)
+        integer, intent(hide), depend(data) :: nf=shape(data,1)
+        integer, optional :: con8 = 1
+        integer, optional ::  verbose = 0
+        real threshold
+        ! Returns
+        integer :: connectedpixels
+    end function connectedpixels
+F2PY_WRAPPER_END */
 
 // Exported function is in the C wrapper, not here!
 DLL_LOCAL
@@ -172,8 +194,26 @@ DLL_LOCAL
     return np;
 }
 
-// Exported function is in the C wrapper, not here!
-DLL_LOCAL
+/* F2PY_WRAPPER_START
+    subroutine blobproperties( data, labels, np, omega, &
+                               verbose, ns, nf, results)
+        intent(c) blobproperties
+!DOC blobproperties fills the array results with properties of each labelled
+!DOC object described by data (pixel values) and labels. The omega value
+!DOC is the angle for this frame.
+!DOC results are FIXME
+        intent(c)
+        real, intent(in) :: data(ns, nf)
+        integer, intent(in) :: labels(ns, nf)
+        integer, intent(hide), depend(data) :: ns=shape(data,0)
+        integer, intent(hide), depend(data) :: nf=shape(data,1)
+        integer, intent(in) :: np
+        double precision, intent(out) :: results( np, NPROPERTY )
+        real, intent(in), optional :: omega = 0
+        integer, optional :: verbose = 0
+        threadsafe
+    end subroutine blobproperties
+F2PY_WRAPPER_END */
     void blobproperties(float *data, int32_t * labels, int32_t npk, float omega,
 			int verbose, int ns, int nf, double *res)
 {
@@ -225,6 +265,28 @@ DLL_LOCAL
     }
 }
 
+/* F2PY_WRAPPER_START
+    function bloboverlaps( labels1, npk1, results1,    &
+                           labels2, npk2, results2,    &
+                           verbose, ns, nf)
+!DOC bloboverlaps determines the overlaps between labels1 and labels2
+!DOC for an image series. Peaks in labels2 may be merged if they were
+!DOC joined by a peak on labels1. Results in results1 are accumulated
+!DOC into results2 if peaks are overlapped.
+        intent(c) bloboverlaps
+        intent(c)
+        integer :: bloboverlaps
+        integer, intent( inout ) :: labels1( ns, nf )
+        integer, intent( inout ) :: labels2( ns, nf )
+        integer, intent(hide), depend(labels1) :: ns=shape(labels1,0)
+        integer, intent(hide), depend(labels1) :: nf=shape(labels1,1)
+        integer, intent(in) :: npk1, npk2
+        double precision, intent( inout ) :: results1( :, NPROPERTY )
+        double precision, intent( inout ) :: results2( :, NPROPERTY )
+        integer, intent(in) :: verbose = 0
+        threadsafe
+    end subroutine bloboverlaps
+F2PY_WRAPPER_END */
 int bloboverlaps(int32_t * b1, int32_t n1, double *res1,
 		 int32_t * b2, int32_t n2, double *res2,
 		 int verbose, int ns, int nf)
@@ -381,12 +443,36 @@ int bloboverlaps(int32_t * b1, int32_t n1, double *res1,
     return npk;
 }
 
+/* F2PY_WRAPPER_START
+    subroutine blob_moments( results, np )
+!DOC blob_moments fills in the reduced moments in results array.
+!DOC ... FIXME - this would be clearer in python, fast anyway.
+        intent(c) blob_moments
+        intent(c)
+        double precision, intent( inout ) :: results( np, NPROPERTY )
+        integer, intent(hide), depend(results) :: np=shape(results,0)
+        threadsafe
+    end subroutine blob_moments
+F2PY_WRAPPER_END */
 void blob_moments(double *res, int np)
 {
     compute_moments(res, np);
 }
 
-
+/* F2PY_WRAPPER_START
+    function clean_mask( msk, ret, ns, nf )
+!DOC clean_mask removes pixels which are not 4 connected from msk
+!DOC while copying into ret.
+        intent(c) clean_mask
+        intent(c)
+        integer*1, intent(in)  :: msk( ns, nf )
+        integer, intent(hide), depend(msk) :: ns=shape(msk,0)
+        integer, intent(hide), depend(msk) :: nf=shape(msk,1)
+        integer*1, intent(inout), dimension(ns, nf) :: ret
+        ! returns an int
+        integer :: clean_mask
+    end function clean_mask
+F2PY_WRAPPER_END */
 int clean_mask(const int8_t *restrict msk, int8_t *restrict ret, int ns, int nf)
 {
     /* cleans pixels with no 4 connected neighbors */
@@ -466,7 +552,24 @@ int clean_mask(const int8_t *restrict msk, int8_t *restrict ret, int ns, int nf)
 }
 
 
+/* F2PY_WRAPPER_START
 
+    function make_clean_mask( img, cut, msk, ret, ns, nf )
+!DOC make_clean_mask is a lot like clean msk but it generates
+!DOC the msk using img and cut.
+!DOC Beware: work in progress
+        intent(c) make_clean_mask
+        intent(c)
+        real, intent(in), dimension(ns,nf) :: img
+        real, intent(in) :: cut
+        integer*1, intent(in)  :: msk( ns, nf )
+        integer, intent(hide), depend(msk) :: ns=shape(msk,0)
+        integer, intent(hide), depend(msk) :: nf=shape(msk,1)
+        integer*1, intent(inout), dimension(ns, nf) :: ret
+        ! returns an int
+        integer :: make_clean_mask
+    end function make_clean_mask
+F2PY_WRAPPER_END */
 int make_clean_mask(float * restrict img, float cut, int8_t * restrict msk, int8_t * restrict ret, int ns, int nf)
 {
     /* cleans pixels with no 4 connected neighbors */

@@ -26,7 +26,7 @@ except:
         return range(*a)
 
 
-@jit(nopython=True, parallel=True)
+@jit(nopython=True)
 def localmax( im, labels, wk ):
     """ reference implementation 
     ... very slow 
@@ -159,12 +159,12 @@ class test_localmaxlabel( unittest.TestCase ):
         wk = [0,]
         times = [pytime,]
         names = ["python",]
-        for cpu, name in [(0,"ansi"),(1,"sse2"),(2,"avx2")]:
+        for cpu, name in [(0,"ansi")]:#,(1,"sse2"),(2,"avx2")]:
             li = np.zeros(im.shape,np.int32)
             wi = np.zeros(im.shape,np.int8)
             start = timer()
     #        print("cpu",cpu)
-            npks = localmaxlabel(im.copy(), li , wi, cpu=cpu )
+            npks = localmaxlabel(im.copy(), li , wi )
             end=timer()
             ctime = (end-start)*1000.
             l.append( li )
@@ -182,76 +182,54 @@ class test_localmaxlabel( unittest.TestCase ):
         im = make_test_image(N=2048)
         l0 = np.zeros(im.shape,np.int32)
         l1 = np.zeros(im.shape,np.int32)
-        l2 = np.zeros(im.shape,np.int32)
-        l3 = np.zeros(im.shape,np.int32)
         wp = np.zeros(im.shape,np.int32)
         wk = np.zeros(im.shape,np.int8)
+        N = 4
         if GOTNUMBA:
             npks = localmax(im, l0, wp)
             start = timer()
-            for i in range(4):
+            for i in range(N):
                 npks = localmax(im, l0, wp)
             end=timer()
-            ptime = (end-start)*1000./4
+            ptime = (end-start)*1000./N
         else:
             ptime = np.nan
+        npks = localmaxlabel(im, l1 , wk )
         start = timer()
-        for i in range(10):
+        for i in range(N):
             npks = localmaxlabel(im, l1 , wk )
         end=timer()
-        npks = localmaxlabel(im, l1 , wk, 10 )
-        ctime = (end-start)*100.
-        start = timer()
-        for i in range(10):
-            npks = localmaxlabel(im, l2 , wk, 1 )
-        end=timer()
-        npks = localmaxlabel(im, l2 , wk, 11 )
-        stime = (end-start)*100.
-        start=timer()
-        for i in range(10):
-            npks = localmaxlabel(im, l3 , wk, 2 )
-        end=timer()
-        npks = localmaxlabel(im, l3 , wk, 12 )
-        atime = (end-start)*100.
-        if not (l2 == l3).all():
-            import pylab as pl
-            pl.imshow(l2)
-            pl.imshow(l3)
-            pl.show()
-        self.assertEqual( (l2==l3).all(), True )  
-        self.assertEqual( (l1==l3).all(), True )
-        print("Timing 2048 numba %.3f ms c %.3f ms, sse %.3f, avx %.3f"%(
-            ptime, ctime,stime,atime))
+        ctime = (end-start)*1000./N
+        print("Timing 2048 numba %.3f ms c %.3f ms"%(
+            ptime, ctime))
 
     def testbug(self):
         ''' case caught with image from Mariana Mar Lucas,
         caused a segfault'''
-        for cpu in [0,1,2]:
-            im = np.array([
+        im = np.array([
                 [ 0, 0, 0, 0, 0, 0, 0, 0],
                 [ 0, 2, 0, 0, 0, 0, 0, 0],
                 [ 0, 1, 1, 0, 0, 0, 0, 0],
                 [ 0, 0, 0, 0, 0, 0, 0, 0],
                 [ 0, 0, 0, 0, 0, 0, 0, 0],
                 [ 0, 0, 0, 0, 0, 0, 0, 0]], np.float32)
-            la = np.empty( im.shape, 'i' )
-            wk = np.empty( im.shape, 'b' )
-            localmaxlabel( im, la, wk, cpu )
-            self.assertEqual(la[1,1],1)
+        la = np.empty( im.shape, 'i' )
+        wk = np.empty( im.shape, 'b' )
+        localmaxlabel( im, la, wk )
+        self.assertEqual(la[1,1],1)
 
     def testsmall(self):
         ''' sse / avx issue for tiny? '''
 #        print("testsmall, fixme, segfault/infinite loop so no CI")
-        for cpu in [0,1,2]:#11,12]:
-            im = np.array([
+        im = np.array([
                 [ 0, 0, 0, 0, 0],
                 [ 0, 2, 0, 0, 0],
                 [ 0, 1, 1, 0, 0],
                 [ 0, 0, 0, 0, 0]], np.float32)
-            la = np.empty( im.shape, 'i' )
-            wk = np.empty( im.shape, 'b' )
-            localmaxlabel( im, la, wk, cpu )
-            self.assertEqual(la[1,1],1)
+        la = np.empty( im.shape, 'i' )
+        wk = np.empty( im.shape, 'b' )
+        localmaxlabel( im, la, wk )
+        self.assertEqual(la[1,1],1)
 
         
 if __name__== "__main__":

@@ -34,7 +34,18 @@ __m256 _mm256_mul_ps (__m256 a, __m256 b)
   unaligned load/store (32 byte boundary)
 */
 
-
+/* F2PY_WRAPPER_START
+    subroutine uint16_to_float_darksub( img, drk, data, npx )
+!DOC uint16_to_float_darksub subtracts image drk(float32) from 
+!DOC raw data in data (uint16) and returns in img. 
+        intent(c) uint16_to_float_darksub
+        intent(c)
+        real, intent(inout), dimension(npx) :: img
+        real, intent(in), dimension(npx) :: drk
+        integer(kind=-2), intent(in), dimension(npx) :: data
+        integer, intent(hide), depend( img ) :: npx
+    end subroutine uint16_to_float_darksub
+F2PY_WRAPPER_END */
 void uint16_to_float_darksub( float *restrict img,
                         const float *restrict drk,
                         const uint16_t *restrict data,
@@ -50,7 +61,17 @@ void uint16_to_float_darksub( float *restrict img,
     }
 }
 
-
+/* F2PY_WRAPPER_START
+    subroutine frelon_lines(img, ns, nf, cut)
+!DOC frelon_lines Subtracts the average value of (pixels < cut) per row
+        intent(c) frelon_lines
+        intent(c)
+        real, intent(inout), dimension(ns,nf) :: img
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        real, intent(in) :: cut
+    end subroutine frelon_lines
+F2PY_WRAPPER_END */
 void frelon_lines( float *img, int ns, int nf, float cut ){
     int i, j, p, npx;
     float rowsum, avg;
@@ -79,6 +100,18 @@ void frelon_lines( float *img, int ns, int nf, float cut ){
     }
 }
 
+/* F2PY_WRAPPER_START
+    subroutine frelon_lines_sub(img, drk, ns, nf, cut)
+!DOC frelon_lines_sub Subtracts drk from img and then same as frelon_lines
+        intent(c) frelon_lines_sub
+        intent(c)
+        real, intent(inout), dimension(ns,nf) :: img, drk
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        real, intent(in) :: cut
+        threadsafe
+    end subroutine frelon_lines
+F2PY_WRAPPER_END */
 void frelon_lines_sub( float * restrict img, float * restrict drk, int ns, int nf, float cut ){
     int i, j, p, npx;
     float rowsum, avg;
@@ -108,6 +141,20 @@ void frelon_lines_sub( float * restrict img, float * restrict drk, int ns, int n
     }
 }
 
+/* F2PY_WRAPPER_START
+    subroutine array_mean_var_cut( img, npx, mean, var, n, cut, verbose )
+!DOC array_mean_var_cut computes the mean and variance of an image
+!DOC with pixels above the value mean+cut*stddev removed. This is iterated
+!DOC n times as the mean and variance change as pixels are removed.
+        intent(c) array_mean_var_cut
+        real, intent(in,c), dimension(npx) :: img
+        integer, intent(hide,c), depend(img) :: npx = shape(img,0)
+        real, intent(out) :: mean, var
+        integer, intent(in,c), optional :: n = 3
+        integer, intent(in,c), optional :: verbose = 0
+        real, intent(in,c), optional :: cut = 3.
+    end subroutine array_mean_var_cut
+F2PY_WRAPPER_END */
 void array_mean_var_cut( float * restrict img, int npx, float *mean, float *std,
                          int n, float cut, int verbose ){
     int i, nactive;
@@ -157,17 +204,24 @@ void array_mean_var_cut( float * restrict img, int npx, float *mean, float *std,
 }
 
 
-/**
- * Go through the data to compute sum and sum2 for mean and std 
- * Also find min and max. Uses openmp for reductions
- * 
- * @param img Input data array  (1D or 2D.ravel(), so sparse or dense)
- * @param npx length of data array (contiguous)
- * @param *minval minimum of the pixels
- * @param *maxval maximum of the pixels
- * @param *s1  Sum of all pixel
- * @param *s2  Sum of pixel^2
- */
+/* F2PY_WRAPPER_START
+
+    subroutine array_stats( img, npx, minval, maxval, mean, var )
+!DOC array_stats computes statistics for an image.
+!DOC  img Input data array  (1D or 2D.ravel(), so sparse or dense)
+!DOC npx length of data array (contiguous)
+!DOC *minval minimum of the pixels
+!DOC *maxval maximum of the pixels
+!DOC*s1  Sum of all pixel
+!DOC*s2  Sum of pixel^2
+        intent(c) array_stats
+        real, intent(c, in), dimension(npx) :: img
+        integer, intent(c, hide), depend(img) :: npx = shape(img,0)
+        ! these are intent(fortran) pointers
+        real, intent(out) :: minval, maxval, mean, var
+        threadsafe
+    end subroutine array_stats
+F2PY_WRAPPER_END */
 void array_stats(float img[], int npx,
 		 float *minval, float *maxval, float *mean, float *var)
 {
@@ -216,19 +270,31 @@ void array_stats(float img[], int npx,
     *maxval = maxi;
 
 } 
-/**
- * Go through the data to compute a histogram of the values
- * Previous call of array_stats would help to set up this call 
- *  compare to np.bincount - this does not gain much
- *  better implementations can be done 
- *
- * @param img[]  Input data array  (1D or 2D.ravel(), so sparse or dense)
- * @param npx    length of data array (contiguous)
- * @param low    Lower edge of first bin
- * @param high   Upper edge of last bin
- * @param hist[] Histogram to be output
- * @param nhist  Number of bins in the histogram
- */
+
+/* F2PY_WRAPPER_START
+    subroutine array_histogram( img, npx, low, high, hist, nhist )
+!DOC array_histogram computes the histogram for an image
+!DOC Go through the data to compute a histogram of the values
+!DOC  Previous call of array_stats would help to set up this call 
+!DOC   compare to np.bincount - this does not gain much
+!DOC   better implementations can be done 
+!DOC 
+!DOC img[]  Input data array  (1D or 2D.ravel(), so sparse or dense)
+!DOC npx    length of data array (contiguous)
+!DOC low    Lower edge of first bin
+!DOC high   Upper edge of last bin
+!DOC hist[] Histogram to be output
+!DOC nhist  Number of bins in the histogram
+        intent(c) array_histogram
+        intent(c)
+        real, intent(in), dimension(npx) :: img
+        integer, intent(hide), depend(img) :: npx = shape(img,0)
+        real, intent(in) :: low, high
+        integer*4, intent(inout), dimension(nhist) :: hist
+        integer, intent(hide), depend(hist) :: nhist = shape(hist, 0 )
+        threadsafe
+    end subroutine array_histogram
+F2PY_WRAPPER_END */
 void array_histogram(float img[],
 		     int npx, float low, float high, int32_t hist[], int nhist)
 {
@@ -250,7 +316,19 @@ void array_histogram(float img[],
     }
 }
 
-
+/* F2PY_WRAPPER_START
+    subroutine reorder_u16_a32(data, adr, out, N)
+!DOC reorderlut_u16_a32 called in sandbox/fazit.py simple
+!DOC loop with openmp saying out[adr[i]] in data[i]
+!DOC e.g. semi-random writing
+        intent(c) reorder_u16_a32
+        intent(c)
+        integer(kind=-2), dimension(N), intent(in) :: data
+        integer*4, dimension(N), intent(in) :: adr
+        integer(kind=-2), dimension(N), intent(inout) :: out
+        integer, intent(hide), depend(data) :: N
+    end subroutine reorder_u16_a32
+F2PY_WRAPPER_END */
 void reorder_u16_a32( uint16_t * restrict data,
 		      uint32_t * restrict adr,
 		      uint16_t * restrict out,
@@ -264,6 +342,19 @@ void reorder_u16_a32( uint16_t * restrict data,
   }
 }
 
+/* F2PY_WRAPPER_START
+    subroutine reorderlut_u16_a32(data, adr, out, N)
+!DOC reorderlut_u16_a32lut called in sandbox/fazit.py simple
+!DOC loop with openmp saying out[i] in data[adr[i]]
+!DOC e.g. semi-random reading
+        intent(c) reorderlut_u16_a32
+        intent(c)
+        integer(kind=-2), dimension(N), intent(in) :: data
+        integer*4, dimension(N), intent(in) :: adr
+        integer(kind=-2), dimension(N), intent(inout) :: out
+        integer, intent(hide), depend(data) :: N
+    end subroutine reorderlut_u16_a32
+F2PY_WRAPPER_END */
 void reorderlut_u16_a32( uint16_t * restrict data,
 			 uint32_t * restrict lut,
 			 uint16_t * restrict out,
@@ -277,7 +368,22 @@ void reorderlut_u16_a32( uint16_t * restrict data,
   }
 }
 
-
+/* F2PY_WRAPPER_START
+    subroutine reorder_u16_a32_a16(data, adr0, adr1, out, ns, nf)
+!DOC reorderlut_u16_a32_a16 called in sandbox/fazit.py 
+!DOC data - source data read in order
+!DOC adr0 - output position for the first pixel in each row
+!DOC adr1 - difference offset to output next pixel in each row
+        intent(c) reorder_u16_a32_a16
+        intent(c)
+        integer(kind=-2), dimension(ns,nf), intent(in) :: data
+        integer*4, dimension(ns), intent(in) :: adr0
+        integer*2, dimension(ns,nf), intent(in) :: adr1
+        integer(kind=-2), dimension(ns,nf), intent(inout) :: out
+        integer, intent(hide), depend(adr1) :: ns = shape(adr1,0)
+        integer, intent(hide), depend(adr1) :: nf = shape(adr1,1)
+    end subroutine reorder_u16_a32_a16
+F2PY_WRAPPER_END */
 void reorder_u16_a32_a16( uint16_t * restrict data,
 			  uint32_t * restrict a0,
 			  int16_t  * restrict a1,

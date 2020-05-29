@@ -10,6 +10,22 @@
 
 #define NOISY 0
 
+/* F2PY_WRAPPER_START
+    subroutine compute_gv(xlylzl,omega,omegasign,wvln,wedge,chi,t,gv,ng)
+!DOC compute_gv computes scattering vectors given thr positions of the spot
+!DOC in the laboratory in xlylzl[npks], the omega rotation[npks], and
+!DOC the rest of the parameters (wedge,wvln,chi,t[3] and omegasign)
+        intent(c) compute_gv
+        intent(c)
+        integer, intent(c,hide), depend( xlylzl ) :: ng
+        double precision, intent(in):: xlylzl(ng,3)
+        double precision, intent(in):: omega(ng)
+        double precision, intent(in):: omegasign, wvln, wedge, chi
+        double precision, intent(in):: t(3)
+        double precision, intent(inout):: gv(ng,3)
+        ! NOT threadsafe since gv may be shared
+    end subroutine compute_gv
+F2PY_WRAPPER_END */
 void compute_gv(double xlylzl[][3], double omega[], double omegasign,
 		double wvln, double wedge, double chi, double t[3],
 		double gv[][3], int n)
@@ -69,6 +85,26 @@ void compute_gv(double xlylzl[][3], double omega[], double omegasign,
     }				//  enddo
 }				// end subroutine compute_gv
 
+/* F2PY_WRAPPER_START
+    subroutine compute_xlylzl(s,f,p,r,dist,xlylzl,n)
+!DOC computes_xlylzl finds spot positions in the laboratory frame
+!DOC using packed parameters that are more general
+!DOC s    = slow pixel position
+!DOC f    = fast pixel position
+!DOC p    = [s_cen, f_cen, s_size, f_size]
+!DOC r[9] = dot( transform.detector_rotation_matrix, flipmatrix )
+!DOC ... with flipmatrix = [1,0,0], [0,o22,o21], [0,o12,o11]
+!DOC dist = [distancex, distancey, distancez] is 3D (beyond old model)
+!DOC ... see test/test_cImageD11.py
+        intent(c) compute_xlylzl
+        intent(c)
+        double precision, intent(in):: s(n), f(n)
+        double precision, intent(inout):: xlylzl(n,3)
+        double precision, intent(in):: p(4), r(9), dist(3)
+        integer, intent(c,hide), depend( s ) :: n
+        ! NOT threadsafe since xl may be shared
+    end subroutine compute_xlylzl
+F2PY_WRAPPER_END */
 void compute_xlylzl(double s[], double f[], double p[4],
 		    double r[9], double dist[3], double xlylzl[][3], int n)
 {
@@ -106,6 +142,20 @@ void compute_xlylzl(double s[], double f[], double p[4],
     }				// enddo
 }				// end subroutine compute_xlylzl
 
+/* F2PY_WRAPPER_START
+    subroutine quickorient( ubi, bt )
+!DOC quickorient takes two g-vectors in UBI[0] and UBI[1]
+!DOC and overwrites with UBI orientation using cache in bt (from h1,h2)
+!DOC ... computes cross product 0x1 = ubi[0]xubi[1]
+!DOC ... normalises u0=ubi0 and u2=0x1 and computes u1=u0xu2
+!DOC ... returns in UBI BT.(u1,u2,u3)
+!DOC algorithm was due to Busing and Levy
+    intent(c) quickorient
+	intent(c)
+	double precision, dimension(3,3), intent (inout) :: ubi
+	double precision, dimension(3,3), intent (in) :: bt
+    end subroutine orient
+F2PY_WRAPPER_END */
 void quickorient( double UBI[9],
 		  double BT[9]
 	     ){

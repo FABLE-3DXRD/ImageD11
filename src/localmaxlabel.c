@@ -18,6 +18,7 @@
   (I)=(J);            \
   }
 
+DLL_LOCAL
 int neighbormax(const float *restrict im,	// input
 		 int32_t * restrict lout,	// output
 		 uint8_t * restrict l,	// workspace temporary
@@ -75,12 +76,28 @@ int neighbormax(const float *restrict im,	// input
     return npks;
 }
 
+/* F2PY_WRAPPER_START
+    function localmaxlabel( data, labels, wrk, ns, nf )
+        intent(c) localmaxlabel
+!DOC localmaxlabel assigns a label for each pixel so they are grouped
+!DOC to the local maximum. Equal values choose to assign towards the earlier
+!DOC value in memory.
+!DOC cpu arg (1)0=C, (1)1=SSE2, (1)2=AVX2; if > 9 prints timing
+        intent(c)
+        real, intent(in) :: data(ns,nf)
+        integer*4, intent(inout), note(hello) :: labels(ns,nf)
+        integer*1, intent(inout) :: wrk(ns,nf)
+        integer, intent(hide), depend(data) :: ns=shape(data,0)
+        integer, intent(hide), depend(data) :: nf=shape(data,1)
+        ! Returns
+        integer :: localmaxlabel
+    end function localmaxlabel
+F2PY_WRAPPER_END */
 int localmaxlabel(const float *restrict im,	// input
 		  int32_t * restrict lout,	// output
 		  uint8_t * restrict l,	// workspace temporary
 		  int dim0,	// Image dimensions
-		  int dim1,
-		  int cpu
+		  int dim1
 		  )
 {
     // old msvc for python 2.7 requires ALL variables declared up here.  
@@ -184,11 +201,6 @@ int localmaxlabel(const float *restrict im,	// input
     l[i] = 0;		// sharing problems??
   }
 }
-
-
-
-    
- 
     if( noisy ){
       toc = my_get_time();
       printf("    write %.3f ms\n", 1000*(toc-tic));

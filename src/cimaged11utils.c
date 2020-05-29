@@ -25,6 +25,27 @@ int cimaged11_omp_get_max_threads( void ){
 }
 
 #endif
+/* F2PY_WRAPPER_START
+    subroutine cimaged11_omp_set_num_threads(n)
+!DOC cimaged11_omp_set_num_threads Sets the openmp number of threads to use.
+!DOC Change if you use multiprocessing or do not like os.environ['OMP_NUM_THREADS']
+!DOC see also: multiprocessing.cpu_count(), os.cpu_count()
+!DOC see docs/sphx/parallel.rst
+        intent(c) cimaged11_omp_set_num_threads
+        intent(c)
+        integer, intent(in) :: n
+    end subroutine cImaged11_set_omp_num_threads
+
+F2PY_WRAPPER_END */
+
+/* F2PY_WRAPPER_START
+    function cimaged11_omp_get_max_threads()
+!DOC cimaged11_omp_get_max_threads reads the openmp max number of threads
+!DOC see docs/sphx/parallel.rst
+        intent(c) cimaged11_omp_get_max_threads
+        integer :: cimaged11_omp_get_max_threads
+    end function cImaged11_omp_get_max_threads
+F2PY_WRAPPER_END */
 
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
