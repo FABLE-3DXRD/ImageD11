@@ -47,6 +47,7 @@ Contents:
    index_unknown
    refinement
    advanced
+   parallel
    fileformats
    batchprocessing
    rsv_mapper
@@ -55,6 +56,13 @@ Contents:
 
 Indices and tables
 ==================
+
+All the code docstrings can be found via:
+
+.. toctree::
+   :maxdepth: 1
+
+   api/modules
 
 * :ref:`genindex`
 * :ref:`modindex`
