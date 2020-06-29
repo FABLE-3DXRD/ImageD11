@@ -45,7 +45,6 @@ import numpy
 # Generic file format opener from fabio
 import fabio
 from fabio.openimage import openimage
-from fabio.fabioimage import fabioimage
 
 from ImageD11 import blobcorrector, ImageD11options
 from ImageD11.correct import correct
@@ -227,11 +226,14 @@ def peaksearch_driver(options, args):
 
         else:
             import fabio
-            file_name_object = fabio.filename_object(
-                options.stem,
-                num = options.first,
-                extension = extn,
-                digits = options.ndigits)
+            if options.ndigits > 0:
+                file_name_object = fabio.filename_object(
+                    options.stem,
+                    num = options.first,
+                    extension = extn,
+                    digits = options.ndigits)
+            else:
+                file_name_object = options.stem
                 
             
             first_image = openimage( file_name_object )
@@ -316,7 +318,7 @@ def peaksearch_driver(options, args):
                       OMEGA, OMEGASTEP, OMEGAOVERRIDE ):
             for data_object in file_series_object:
                 t = timer()
-                if not isinstance( data_object, fabioimage ):
+                if not hasattr( data_object, "data"):
                     # Is usually an IOError
                     if isinstance( data_object[1], IOError):
                         sys.stdout.write(data_object[1].strerror  + '\n')
@@ -374,14 +376,11 @@ def peaksearch_driver(options, args):
                         if self.ImageD11_stop_now():
                             print("Reader thread stopping")
                             break
-                        if not isinstance( data_object, fabioimage ):
+                        if not hasattr( data_object, "data" ):
                             import pdb; pdb.set_trace()
                             # Is usually an IOError
                             if isinstance( data_object[1], IOError):
-#                                print data_object
-#                                print data_object[1]
                                 sys.stdout.write(str(data_object[1].strerror) + '\n')
-#                                  ': ' + data_object[1].filename + '\n')
                             else:
                                 import traceback
                                 traceback.print_exception(data_object[0],data_object[1],data_object[2])
@@ -413,7 +412,6 @@ def peaksearch_driver(options, args):
                         if self.ImageD11_stop_now():
                             print("Reader thread stopping")
                             break
-                        
                     # Flag the end of the series
                     self.queue.put( (None, None) , block = True)
 
@@ -479,7 +477,7 @@ def peaksearch_driver(options, args):
                 def run(self):
                     while not self.ImageD11_stop_now():
                         filein, data_object = self.q.get(block = True)
-                        if not isinstance( data_object, fabioimage ):
+                        if not hasattr( data_object, "data" ):
                             break
                         peaksearch( filein, data_object , self.corrfunc , 
                                     [self.threshold] , 
