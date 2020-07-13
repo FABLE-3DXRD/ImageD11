@@ -71,11 +71,7 @@ if __name__=="__main__":
 
         d1 = inputdata.data*m1
         d2 = inputdata.data*m2
-        inputdata.data  = d1
+        inputdata.data  = d1.astype(inputdata.data.dtype)
         inputdata.write( sys.argv[2] )
-        inputdata.data  = d2
+        inputdata.data  = d2.astype(inputdata.data.dtype)
         inputdata.write( sys.argv[3] )
-
-    
- 
-
