@@ -1,5 +1,4 @@
 
-
 from __future__ import print_function, division
 """
 fast radial regrouping method proposed by Peter Boesecke
@@ -94,26 +93,32 @@ while pk < rad.max():
     pk = pk + 200 + pk/10.
 gdata += p.astype(np.uint16)
 
-def measure( func, name, lut, adrout ):
+def measure( func, name, lut, adrout, f32=False ):
     NFRAME = 500//8 # overfill the cache (500 MB)
-    data = [gdata.copy() for i in range(NFRAME)] 
+    if f32:
+        data = [gdata.copy().astype(np.float32) for i in range(NFRAME)]
+    else:
+        data = [gdata.copy() for i in range(NFRAME)]
     out  = np.zeros_like(data[0])
     w, r = func( lut, adrout, data[NFRAME-1], out )
     dt = []
-    for i in range(50):
-        d = data[i%NFRAME]
+    for i in range(NFRAME):
+        d = data[i]
         t0 = timer()
         func ( lut, adrout, d, out )
         dt.append(timer()-t0)
-        if np.sum(dt) > 0.5:
+        if np.sum(dt) > 15:
             break
     dt = np.array(dt)
-    t =  dt.min()
+    t =  np.median(dt)#.mean()
     te = dt.std()
     s = name + "% 6.3f ms (std % 6.2f), write % 7.0f MB/s, read % 7.0f MB/s %g MB"%(
         t*1e3, te*1e3, w/t/1e6, r/t/1e6,r/1e6)
     print(s)
-    return out
+    if f32:
+        return out.astype( gdata.dtype )
+    else:
+        return out
 
 @jit(nopython=True, parallel=sys.version_info[0]>2, nogil=True)
 def memcp(a,b):
@@ -267,8 +272,45 @@ def fazit_f2py_lut( lut, adrout, data, out):
     reads = data.nbytes + lut.nbytes
     return writes, reads
 
-trans= measure( fazit_f2py_lut, "f2py sortwrite", lut, adrout )
+othr = cImageD11.cimaged11_omp_get_max_threads()
+trans= measure( fazit_f2py_lut, "f sortwrite %d"%(othr), lut, adrout )
 assert (trans.ravel() == gdata.flat[lut]).all()
+
+
+def fazit_f2py32( lut, adrout, data, out ):
+    cImageD11.reorder_f32_a32( data.ravel(), adrout, out.ravel())
+    writes = out.nbytes
+    reads = data.nbytes + adrout.nbytes
+    return writes, reads
+
+trans= measure( fazit_f2py32, "f32 sort read", lut, adrout, f32=True )
+assert (trans.ravel() == gdata.flat[lut]).all()
+
+def fazit_f2py_lut32( lut, adrout, data, out):
+    cImageD11.reorderlut_f32_a32( data.ravel(), lut.ravel(), out.ravel())
+    writes = out.nbytes
+    reads = data.nbytes + lut.nbytes
+    return writes, reads
+
+othr = cImageD11.cimaged11_omp_get_max_threads()
+trans= measure( fazit_f2py_lut32, "f32 sortwrt %d"%(othr), lut, adrout, f32=True )
+assert (trans.ravel() == gdata.flat[lut]).all()
+
+    
+
+for nthr in range(7):
+    cImageD11.cimaged11_omp_set_num_threads(2**nthr)
+    gthr = cImageD11.cimaged11_omp_get_max_threads()
+    trans= measure( fazit_f2py_lut, "f sortwrite %d"%(gthr), lut, adrout )
+    assert (trans.ravel() == gdata.flat[lut]).all()
+
+cImageD11.cimaged11_omp_set_num_threads(othr)
+gthr = cImageD11.cimaged11_omp_get_max_threads()
+trans= measure( fazit_f2py_lut, "f sortwrite %d"%(gthr), lut, adrout )
+assert (trans.ravel() == gdata.flat[lut]).all()
+
+
+
 
 
 def fazit_f2py_i16( u32, i16, data, out):
@@ -293,15 +335,20 @@ while k<2048:
     da = a[:,1:].astype(int) - a[:,:-1]
     i16[:,1:] = da
     assert np.alltrue( i16[:,1:] == da ) , "clipping issue"
-    if k  == 1:
-        print("highest jump was",abs(da).max())
+    #    if k  == 1:
+    print("highest jump was",abs(da).max())
     trans = measure( fazit_u32_i16,        "u32 i16  %4d "%(k), u32, i16  )
     assert (trans.ravel() == gdata.flat[lut]).all()
-    for nthr in (1,2,4,6,8,10,12):
-        cImageD11.cimaged11_omp_set_num_threads(nthr)
+    for nthr in range(7):
+        cImageD11.cimaged11_omp_set_num_threads(2**nthr)
         gthr = cImageD11.cimaged11_omp_get_max_threads()
-        trans = measure( fazit_f2py_i16,        "f2pyi16 %2d%4d"%(k, nthr), u32, i16  )
+        trans = measure( fazit_f2py_i16,        "f2pyi16 %2d%4d"%(k, gthr), u32, i16  )
         assert (trans.ravel() == gdata.flat[lut]).all()
+
+    cImageD11.cimaged11_omp_set_num_threads(othr)
+    gthr = cImageD11.cimaged11_omp_get_max_threads()
+    trans = measure( fazit_f2py_i16,        "f2pyi16 %2d%4d"%(k, gthr), u32, i16  )
+    assert (trans.ravel() == gdata.flat[lut]).all()
     k *= 2
 
 

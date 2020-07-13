@@ -2,14 +2,25 @@
 Advanced
 ========
 
-Take advanced to mean without graphical interface, without prejudice to people who prefer touching mice to keyboards. The program was mainly developed for online analysis during experiments to get an idea if the setup and sample etc are OK. Other programs exist which might to a better job, and you should consider trying them for serious data analysis. Notably, `Grainspotter <https://sourceforge.net/p/fable/wiki/grainspotter/>`_ reads ImageD11 gve files and tends to make a better indexing. Nevertheless, the free nature of ImageD11 and convenience of the python language could tempt you to process large volumes of data using the functions in the program. Currently the indexing module is the most easily accessible for script writers. The other modules should be separated from the gui very soon.
+Take advanced to mean without graphical interface, without prejudice to people
+who prefer touching mice to keyboards. The program was mainly developed for
+online analysis during experiments to get an idea if the setup and sample etc
+are OK. Other programs exist which might to a better job, and you should
+consider trying them for serious data analysis. Notably, `Grainspotter
+<https://sourceforge.net/p/fable/wiki/grainspotter/>`_ reads ImageD11 gve files
+and tends to make a better indexing. Nevertheless, the free nature of ImageD11
+and convenience of the python language could tempt you to process large volumes
+of data using the functions in the program. Currently the indexing module is the
+most easily accessible for script writers. The other modules should be separated
+from the gui very soon.
 
 Using the indexing module interactively
 ---------------------------------------
 
-An example interactive session is given here. A trial orientation is generated from one g-vector file and then used to index another::
+An example interactive session is given here. A trial orientation is generated
+from one g-vector file and then used to index another::
 
-  fable4:~/id11/lab6grains % /bliss/users/blissadm/bin/python
+  fable4:~/id11/lab6grains % python
   Python 2.4 (#3, Mar 11 2005, 10:10:40)
   [GCC 3.3 20030226 (prerelease) (SuSE Linux)] on linux2
   Type "help", "copyright", "credits" or "license" for more information.
@@ -165,34 +176,6 @@ rotation or a different detector etc)::
 Transformations and peak merging without the gui
 ================================================
 
-Use the history from Help>History to capture the commands run when you click on the gui.
+Use the history from Help>History to capture the commands run when you click on
+the tk gui.
 
-Separating_U_from_UBI
-=====================
-
-UBI is inverse of (UB), so :math:`(UB)^{-1}=B^{-1}U^{-1}`, but :math:`U^{-1}` is also transpose(U), so inevitably it gets flipped, even if you know what "B" is. There is now a ubitocellpars routine in (svn) indexing.py, which you can use to construct a "B" matrix according to some convention. "B" is chosen as a Cholesky factor of the product :math:`(UBI)\cdot(UBI)^T` (=g, the metric tensor). Since you are free to chose "B" however you like (x along a, y along b*, z orthogonal etc) then you also chose "U" however you like (eg x along a*, y along b, z orthogonal). Take a triclinic or hexagonal unit cell instead of cubic and you see the mess. So perhaps this is not the "U" you want - please correct it - or add some sort of "U" labelling::
-
- import Numeric as n
- import LinearAlgebra as l
- def getU(ubi):
-    # start by getting metric tensor
-    g=n.matrixmultiply(ubi,n.transpose(ubi))
-    # one convention for B is a Cholesky factor of g (triangular)
-    bi=l.cholesky_decomposition(g)
-    # get inverse to separate this from u
-    b = l.inverse(bi)
-    # ubi = (UB)^{-1} = B^{-1} U^{-1}
-    # ... premultiply B.B^{-1}.U^{-1}
-    ui=n.matrixmultiply(b,ubi)
-    # transpose is inverse - roughly 50% chance I got this wrong
-    #      ... or C/fortran array ordering confuses as well
-    u=n.transpose(ui)
-    return u
- >>> ubi
-  [[2.59661965, -2.99631727, 1.24883939],
-   [-1.0962173, 0.695891380, 3.94892308],
-   [-3.0554582, -2.79602729, -0.35546775]]
- >>> getU(ubi)
- array([[ 0.6246505 , -0.26370927, -0.73503005],
-       [-0.72080294,  0.16740569, -0.67262059],
-        [ 0.3004245 ,  0.94996461, -0.08551237]]) 

@@ -16,6 +16,10 @@ array_mean_var_cut = """computes the mean and variance of an image
 with pixels above the value mean+cut*stddev removed. This is iterated
 n times as the mean and variance change as pixels are removed.
 """
+array_mean_var_msk = """computes the mean and variance of an image
+with pixels above the value mean+cut*stddev removed. This is iterated
+n times as the mean and variance change as pixels are removed.
+"""
 array_stats = """computes statistics for an image.
  img Input data array  (1D or 2D.ravel(), so sparse or dense)
 npx length of data array (contiguous)
@@ -23,6 +27,12 @@ npx length of data array (contiguous)
 *maxval maximum of the pixels
 s1  Sum of all pixel
 s2  Sum of pixel^2
+"""
+bg1d = """computes a background on a 1d signal where gain
+and sp and st are defined by the code!
+img - source data
+bg  - computed background 
+msk - mask
 """
 blob_moments = """fills in the reduced moments in results array.
 ... FIXME - this would be clearer in python, fast anyway.
@@ -166,9 +176,17 @@ refine_assigned = """fits a ubi matrix to a set of g-vectors and assignments
 in labels. e.g. where(labels==label) it uses the peaks.
   ... perhaps this is not what you want for overlapping peaks in twins!
 """
-reorderlut_u16_a32 = """called in sandbox/fazit.py simple
+reorder_f32_a32 = """called in sandbox/fazit.py simple
 loop with openmp saying out[adr[i]] in data[i]
 e.g. semi-random writing
+"""
+reorder_u16_a32 = """called in sandbox/fazit.py simple
+loop with openmp saying out[adr[i]] in data[i]
+e.g. semi-random writing
+"""
+reorderlut_f32_a32 = """lut called in sandbox/fazit.py simple
+loop with openmp saying out[i] in data[adr[i]]
+e.g. semi-random reading
 """
 reorderlut_u16_a32_a16 = """called in sandbox/fazit.py
 data - source data read in order
@@ -246,13 +264,18 @@ over the years motivated this code. See test/demo/tksplat
 * set the color and markersize per peak
 * perhaps also a draw order (back to front, top to bottom) ?
 """
+uint16_to_float_darkflm = """subtracts image drk(float32) from
+raw data in data (uint16), multiples by flm(float32) and returns in img.
+"""
 uint16_to_float_darksub = """subtracts image drk(float32) from
 raw data in data (uint16) and returns in img.
 """
 __all__ = [
     "array_histogram",
     "array_mean_var_cut",
+    "array_mean_var_msk",
     "array_stats",
+    "bg1d",
     "blob_moments",
     "bloboverlaps",
     "blobproperties",
@@ -281,7 +304,9 @@ __all__ = [
     "put_incr64",
     "quickorient",
     "refine_assigned",
-    "reorderlut_u16_a32",
+    "reorder_f32_a32",
+    "reorder_u16_a32",
+    "reorderlut_f32_a32",
     "reorderlut_u16_a32_a16",
     "reorderlut_u16_a32lut",
     "score",
@@ -295,4 +320,5 @@ __all__ = [
     "sparse_localmaxlabel",
     "sparse_overlaps",
     "splat",
+    "uint16_to_float_darkflm",
     "uint16_to_float_darksub"]

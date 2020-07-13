@@ -83,17 +83,33 @@ Compiling from source
 There are some continuous integration scripts in the source which can give some
 inspiration. See .circleci, .travis.yml and appveyor.yml
 
-The C wrapper codes are interfaced using f2py in numpy. Critical files are::
+The C wrapper codes are interfaced using f2py in numpy. 
+If you modify the C sources then the wrappers are re-built using a
+script that adds some docstrings. Critical files are currently (May 2020) ::
 
-  setup.py : drives the whole business
-  src/_cImageD11.pyf : interface declarations
+  src/makepyf.py : builds interface declarations in 
+  src/_cImageD11.pyf : interface description
+  src/_cImageD11module.c : interface made by f2py
+  ImageD11src/cImageD11.py : wrapper that adds docstrings
+  ImageD11src/cImageD11_docstrings.py
+  setup.py : drives the build
 
 To optimise for a specific machine then setup.py should look at your CFLAGS
-environment variable for anything you want to add:
+environment variable for anything you want to add::
+
   export CFLAGS=-march=native
   pip install .
 
 Please test if you do this and remember not to copy it to another machine. 
+
+Testing
+-------
+
+It should be possible to test using pytest::
+
+  python -m pytest
+
+Otherwise in the test folder there is a run_tests.py script.
 
 
 Windows

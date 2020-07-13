@@ -41,9 +41,9 @@ class sparse_frame( object ):
         #   smoothed pixel intensities
         #   labelling via different algorithms
         self.pixels = {}
+        self.meta = {}
         if pixels is not None:
             for name, val in pixels.items():
-                # print(val.data.shape, self.nnz)
                 assert len(val) == self.nnz
                 self.pixels[name] = val
 
@@ -92,20 +92,24 @@ class sparse_frame( object ):
 
     def mask( self, msk ):
         """ returns a subset of itself """
-        newpx = {}
+        spf = sparse_frame( self.row[msk],
+                            self.col[msk],
+                            self.shape, self.row.dtype )
         for name, px in self.pixels.items():
-            newpx[name] = px[msk]
-            if hasattr( px, "attrs" ):
-                newpx[name].attrs = dict( px.attrs )
-        return sparse_frame( self.row[msk],
-                             self.col[msk],
-                             self.shape, self.row.dtype,
-                             pixels = newpx )
+            if name in self.meta:
+                m = self.meta[name].copy()
+            else:
+                m = None
+            spf.set_pixels( name, px[msk], meta = m )
+        return spf
 
-    def set_pixels( self, name, values ):
+    def set_pixels( self, name, values, meta=None ):
         """ Named arrays sharing these labels """
         assert len(values) == self.nnz
         self.pixels[name] = values
+        if meta is not None:
+            self.meta[name] = meta
+            
 
     def sort_by( self, name ):
         """ Not sure when you would do this. For sorting 
@@ -158,8 +162,8 @@ class sparse_frame( object ):
                                    dtype=px.dtype,
                                    **opts ) 
             group[pxname][:] = px
-            if hasattr( px, "attrs" ):
-                group[pxname].attrs = dict( px.attrs )
+            if pxname in self.meta:
+                group[pxname].attrs = dict( self.meta[pxname] )
 
 
     
@@ -178,28 +182,28 @@ def from_data_mask( mask, data, header ):
     col = np.empty( nnz, np.uint16 )
     cImageD11.mask_to_coo( mask, row, col, tmp )
     intensity = data[ mask > 0 ]
-    intensity.attrs = dict(header)
-    return sparse_frame( row, col, data.shape, itype=np.uint16,
-                  pixels = { "intensity" : intensity } )
+    #    intensity.attrs = dict(header) # FIXME USE xarray ?
+    spf = sparse_frame( row, col, data.shape, itype=np.uint16 )
+    spf.set_pixels( "intensity" , intensity, dict( header ) )
+    return spf
 
 def from_hdf_group( group ):
     itype = np.dtype( group.attrs['itype'] )
     shape = group.attrs['shape0'], group.attrs['shape1']
     row = group['row'][:] # read it
     col = group['col'][:]
-    pixels = {}
+    spf = sparse_frame( row, col, shape, itype=itype )
     for pxname in list(group):
         if pxname in ["row", "col"]:
             continue
         data = group[pxname][:]
         header = dict( group[pxname].attrs )
-        pixels[pxname] = data
-        pixels[pxname].attrs = dict( header )
-    return sparse_frame( row, col, shape, itype=itype, pixels=pixels )
+        spf.set_pixels( pxname, data, header )
+    return spf
 
 def sparse_moments( frame, intensity_name, labels_name ):
     """ We rely on a labelling array carrying nlabel metadata (==labels.data.max())"""
-    nl = frame.pixels[ labels_name ].attrs[ "nlabel" ]
+    nl = frame.meta[ labels_name ][ "nlabel" ]
     return cImageD11.sparse_blob2Dproperties(
         frame.pixels[intensity_name],
         frame.row,
@@ -225,8 +229,8 @@ def overlaps(frame1, labels1, frame2, labels2):
     col = frame2.pixels[labels2][ kj[:npx] ]  # your labels
     ect = np.empty( npx, 'i')    # ect = counts of overlaps
     tj  = np.empty( npx, 'i')    # tj = temporary  for sorting
-    n1  = frame1.pixels[labels1].attrs[ "nlabel" ]
-    n2  = frame2.pixels[labels2].attrs[ "nlabel" ]
+    n1  = frame1.meta[labels1][ "nlabel" ]
+    n2  = frame2.meta[labels2][ "nlabel" ]
     tmp = np.empty( max(n1, n2)+1, 'i') # for histogram
     nedge = cImageD11.compress_duplicates( row, col, ect, tj, tmp )
     # overwrites row/col in place
@@ -234,8 +238,9 @@ def overlaps(frame1, labels1, frame2, labels2):
     ccol = col[:nedge]
     cdata = ect[:nedge]
     cedges = scipy.sparse.coo_matrix( ( cdata, (crow, ccol)) )
+    # really?
     return cedges
- 
+
     
 def sparse_connected_pixels( frame,
                              label_name="connectedpixels",
@@ -249,14 +254,11 @@ def sparse_connected_pixels( frame,
     """
     labels = np.zeros( frame.nnz, "i" )
     if threshold is None:
-        threshold = frame.pixels[data_name].attrs["threshold"]
+        threshold = frame.meta[data_name]["threshold"]
     nlabel = cImageD11.sparse_connectedpixels(
         frame.pixels[data_name], frame.row, frame.col,
         threshold,  labels )
-    labels.attrs = { "data_name": data_name,
-                     "threshold": threshold,
-                     "nlabel"   : nlabel } 
-    frame.set_pixels( label_name, labels )
+    frame.set_pixels( label_name, labels, { 'nlabel' : nlabel } )
 
 
 def sparse_localmax( frame,
@@ -267,10 +269,8 @@ def sparse_localmax( frame,
     imx = np.zeros( frame.nnz, 'i')
     nlabel = cImageD11.sparse_localmaxlabel(
         frame.pixels[data_name], frame.row, frame.col,
-        vmx, imx, labels )
-    labels.attrs = { "data_name" : data_name,
-                     "nlabel" : nlabel } 
-    frame.set_pixels( label_name, labels )
+        vmx, imx, labels )                   
+    frame.set_pixels( label_name, labels, { "nlabel" : nlabel }  )
 
     
                               

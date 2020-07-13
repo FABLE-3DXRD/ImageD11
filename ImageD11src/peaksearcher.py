@@ -45,12 +45,11 @@ import numpy
 # Generic file format opener from fabio
 import fabio
 from fabio.openimage import openimage
-from fabio import fabioimage
 
 from ImageD11 import blobcorrector, ImageD11options
 from ImageD11.correct import correct
 from ImageD11.labelimage import labelimage
-from ImageD11 import ImageD11_thread 
+from ImageD11 import ImageD11_thread
 ImageD11_thread.stop_now = False
 
 
@@ -180,16 +179,9 @@ def peaksearch_driver(options, args):
         print("Avoiding spatial correction")
         corrfunc = blobcorrector.perfect()
 
-
-
-    # Get list of filenames to process
-    # if len(args) > 0 :
-    #     # We no longer assume unlabelled arguments are filenames 
-    #     file_series_object = file_series.file_series(args)
-
     # This is always the case now
     corrfunc.orientation = "edf"
-    
+    scan = None
     if options.format in ['bruker', 'BRUKER', 'Bruker']:
         extn = ""
         if options.perfect is not "N":
@@ -199,52 +191,60 @@ def peaksearch_driver(options, args):
         extn = ""
         # KE: This seems to be a mistake and keeps PeakSearch from working in
         # some cases.  Should be revisited if commenting it out causes problems.
-#        options.ndigits = 0
-
+        #        options.ndigits = 0
+    elif options.format == 'py':
+        import importlib
+        sys.path.append( '.' ) 
+        scan = importlib.import_module( options.stem )
+        first_image = scan.first_image
+        file_series_object = scan.file_series_object
     else:
         extn = options.format
 
-    import fabio
-
-    if options.interlaced:
-        f0 = ["%s0_%04d%s"%(options.stem,i,options.format) for i in range(
+    if scan is None:
+        if options.interlaced:
+            f0 = ["%s0_%04d%s"%(options.stem,i,options.format) for i in range(
                 options.first,
                 options.last+1)]
-        f1 = ["%s1_%04d%s"%(options.stem,i,options.format) for i in range(
+            f1 = ["%s1_%04d%s"%(options.stem,i,options.format) for i in range(
                 options.first,
                 options.last+1)]
 
-        if options.iflip:
-            f1 = [a for a in f1[::-1]]
+            if options.iflip:
+                f1 = [a for a in f1[::-1]]
    
-        def fso(f0,f1):
-            for a,b in zip(f0,f1):
-                try:
-                    yield fabio.open(a)
-                    yield fabio.open(b)
-                except:
-                    print(a,b)
-                    raise
-        file_series_object = fso(f0,f1)     
-        first_image = openimage( f0[0] )
+            def fso(f0,f1):
+                for a,b in zip(f0,f1):
+                    try:
+                        yield fabio.open(a)
+                        yield fabio.open(b)
+                    except:
+                        print(a,b)
+                        raise
+            file_series_object = fso(f0,f1)     
+            first_image = openimage( f0[0] )
 
-    else:
-        file_name_object = fabio.filename_object(
-                options.stem,
-                num = options.first,
-                extension = extn,
-                digits = options.ndigits)
+        else:
+            import fabio
+            if options.ndigits > 0:
+                file_name_object = fabio.filename_object(
+                    options.stem,
+                    num = options.first,
+                    extension = extn,
+                    digits = options.ndigits)
+            else:
+                file_name_object = options.stem
                 
-        # Output files:
+            
+            first_image = openimage( file_name_object )
+            import fabio.file_series
+            # Use traceback = True for debugging
+            file_series_object = fabio.file_series.new_file_series(
+                first_image,
+                nimages = options.last - options.first + 1,
+                traceback = True  )
 
-        first_image = openimage( file_name_object )
-        import fabio.file_series
-    # Use traceback = True for debugging
-        file_series_object = fabio.file_series.new_file_series(
-            first_image,
-            nimages = options.last - options.first + 1,
-            traceback = True  )
-    
+    # Output files:
     if options.outfile[-4:] != ".spt":
         options.outfile = options.outfile + ".spt"
         print("Your output file must end with .spt, changing to ",options.outfile)
@@ -318,7 +318,7 @@ def peaksearch_driver(options, args):
                       OMEGA, OMEGASTEP, OMEGAOVERRIDE ):
             for data_object in file_series_object:
                 t = timer()
-                if not isinstance( data_object, fabio.fabioimage.fabioimage ):
+                if not hasattr( data_object, "data"):
                     # Is usually an IOError
                     if isinstance( data_object[1], IOError):
                         sys.stdout.write(data_object[1].strerror  + '\n')
@@ -376,13 +376,11 @@ def peaksearch_driver(options, args):
                         if self.ImageD11_stop_now():
                             print("Reader thread stopping")
                             break
-                        if not isinstance( data_object, fabio.fabioimage.fabioimage ):
+                        if not hasattr( data_object, "data" ):
+                            import pdb; pdb.set_trace()
                             # Is usually an IOError
                             if isinstance( data_object[1], IOError):
-#                                print data_object
-#                                print data_object[1]
                                 sys.stdout.write(str(data_object[1].strerror) + '\n')
-#                                  ': ' + data_object[1].filename + '\n')
                             else:
                                 import traceback
                                 traceback.print_exception(data_object[0],data_object[1],data_object[2])
@@ -414,7 +412,6 @@ def peaksearch_driver(options, args):
                         if self.ImageD11_stop_now():
                             print("Reader thread stopping")
                             break
-                        
                     # Flag the end of the series
                     self.queue.put( (None, None) , block = True)
 
@@ -480,7 +477,7 @@ def peaksearch_driver(options, args):
                 def run(self):
                     while not self.ImageD11_stop_now():
                         filein, data_object = self.q.get(block = True)
-                        if not isinstance( data_object, fabio.fabioimage.fabioimage ):
+                        if not hasattr( data_object, "data" ):
                             break
                         peaksearch( filein, data_object , self.corrfunc , 
                                     [self.threshold] , 
@@ -575,7 +572,7 @@ def get_options(parser):
                  "eg mydata in mydata0000.edf" )
         parser.add_argument("-F", "--format", action="store",
             dest="format",default=".edf", type=str,
-            help="Image File format, eg edf or bruker" )
+            help="Image File format, eg edf or bruker or GE or py" )
         parser.add_argument("-f", "--first", action="store",
             dest="first", default=0, type=int,
             help="Number of first file to process, default=0")
