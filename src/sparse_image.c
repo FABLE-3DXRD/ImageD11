@@ -404,7 +404,7 @@ void sparse_blob2Dproperties(float *restrict data, uint16_t *restrict i,
                              uint16_t *restrict j, int nnz,
                              int32_t *restrict labels, double *restrict res,
                              int32_t npk) {
-    int p, k, kpk, f, s;
+    int k, kpk, f, s;
     double fval;
     /* init to zero */
     for (k = 0; k < npk * NPROPERTY2D; k++) {
