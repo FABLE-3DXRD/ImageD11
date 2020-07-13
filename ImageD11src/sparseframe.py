@@ -178,7 +178,7 @@ def from_data_mask( mask, data, header ):
     col = np.empty( nnz, np.uint16 )
     cImageD11.mask_to_coo( mask, row, col, tmp )
     intensity = data[ mask > 0 ]
-    intensity.attrs = dict(header)
+#    intensity.attrs = dict(header) # FIXME USE xarray ?
     return sparse_frame( row, col, data.shape, itype=np.uint16,
                   pixels = { "intensity" : intensity } )
 
@@ -194,7 +194,7 @@ def from_hdf_group( group ):
         data = group[pxname][:]
         header = dict( group[pxname].attrs )
         pixels[pxname] = data
-        pixels[pxname].attrs = dict( header )
+#        pixels[pxname].attrs = dict( header )
     return sparse_frame( row, col, shape, itype=itype, pixels=pixels )
 
 def sparse_moments( frame, intensity_name, labels_name ):
