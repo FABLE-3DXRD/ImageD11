@@ -2,22 +2,24 @@
 Links to related open source software packages
 ==============================================
 
-Here are a list of links to other (apparently) open source software efforts
+Here are a list of links to other useful sites or documents
 which might be interesting if you are looking at ImageD11. No endorsement is
 implied. Please send a pull request to add or remove links here.
 
 Synchrotron + Multigrain
 ------------------------
 
-https://github.com/FABLE-3DXRD/
+https://github.com/FABLE-3DXRD/ (several sub-projects here)
 
 https://sourceforge.net/projects/fable/
+
+http://multigrain.texture.rocks/doku.php
 
 https://sourceforge.net/projects/dct/
 
 https://github.com/hexrd
 
-https://github.com/praxes/hexrd 
+https://github.com/praxes/hexrd
 
 https://github.com/marinerhemant/MIDAS
 
@@ -43,6 +45,8 @@ https://github.com/junspark/python_tools
 
 https://github.com/rachelelim/diffraction_simulator
 
+https://www.aps.anl.gov/files/APS-Uploads/SECTORS33-34/coordinates-PE-system.pdf
+
 Modelling / Microstructures
 ----------------------------
 
@@ -51,6 +55,8 @@ https://github.com/BlueQuartzSoftware/DREAM3D
 https://github.com/rquey/neper
 
 https://github.com/mrgprasad/kanapy
+
+https://materialsdatafacility.org/
 
 Pole figures / orientations
 ---------------------------
@@ -93,6 +99,8 @@ https://github.com/data-exchange/dxchange
 
 https://github.com/kiyo-masui/bitshuffle
 
+https://doi.org/10.1107/S2052252520008672 (IUCrJ Gold Standard paper)
+
 Powders and Rietveld
 --------------------
 
@@ -115,3 +123,5 @@ Tomo
 https://github.com/astra-toolbox/astra-toolbox
 
 https://github.com/tomopy/tomopy
+
+https://gitlab.esrf.fr/tomotools
