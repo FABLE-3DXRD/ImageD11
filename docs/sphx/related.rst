@@ -52,9 +52,13 @@ Modelling / Microstructures
 
 https://github.com/BlueQuartzSoftware/DREAM3D
 
+https://github.com/heprom/pymicro
+
 https://github.com/rquey/neper
 
 https://github.com/mrgprasad/kanapy
+
+https://github.com/tdegeus/GooseFFT/
 
 https://materialsdatafacility.org/
 
@@ -69,8 +73,8 @@ https://github.com/siddharth-maddali/SphereMesh
 
 https://github.com/youngung/upf
 
-General / physics
------------------
+General / physics / Crystallography
+-----------------------------------
 
 https://github.com/mantidproject/mantid
 
@@ -85,6 +89,14 @@ https://github.com/hua2001/PyStrucTrans
 https://github.com/KedoKudo/cyxtal
 
 http://ncorr.com/
+
+https://github.com/yayahjb/bgaol
+
+https://github.com/slaclab/psgeom
+
+https://github.com/stefsmeets/xcore
+
+https://github.com/McStasMcXtrace
 
 IO/File formats
 ---------------
@@ -101,12 +113,16 @@ https://github.com/kiyo-masui/bitshuffle
 
 https://doi.org/10.1107/S2052252520008672 (IUCrJ Gold Standard paper)
 
+https://github.com/yayahjb/cbflib
+
 Powders and Rietveld
 --------------------
 
 https://github.com/silx-kit/pyFAI
 
 https://subversion.xray.aps.anl.gov/trac/pyGSAS
+
+https://github.com/tproffen/DiffuseCode
 
 Electrons/ EBSD
 ---------------
@@ -117,6 +133,8 @@ https://github.com/EMsoft-org/EMsoft
 
 https://github.com/pyxem
 
+https://github.com/stefsmeets/edtools
+
 Tomo
 ----
 
@@ -125,3 +143,7 @@ https://github.com/astra-toolbox/astra-toolbox
 https://github.com/tomopy/tomopy
 
 https://gitlab.esrf.fr/tomotools
+
+https://github.com/jcesardasilva/toupy
+
+https://github.com/iternlm/microtomodenoise
