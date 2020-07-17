@@ -1,4 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
+from __future__ import print_function
 
 from Numeric import *
 
@@ -64,7 +66,7 @@ try:
    first=int(sys.argv[3])
    last=int(sys.argv[4])
 except:
-    print "Usage: %s brukertemplate stem first last [extension=mar3450] [rebinfactor=3] [outsize=2048]"%(sys.argv[0])
+    print("Usage: %s brukertemplate stem first last [extension=mar3450] [rebinfactor=3] [outsize=2048]"%(sys.argv[0]))
     sys.exit()
 
 try:
@@ -98,7 +100,7 @@ extn=".edf"
 try:
     outsize = int(sys.argv[7])
     if outsize not in [512,1024,2048]:
-        print "You should probably be aiming to make 512,1024 or 2048 bruker frames? arg 7"
+        print("You should probably be aiming to make 512,1024 or 2048 bruker frames? arg 7")
 except:
     outsize = 2048
 omegadone =[]
@@ -159,4 +161,4 @@ for num in range(first,last+1):
     # pad to 512 length, seems optional
     out.write(" "*(512-length%512))
     out.close()
-    print "Image",num,"time",(time.time()-starttime)/(num-first+1),opendata.makename(stem+".",num,""),"overfl",noverfl
+    print("Image",num,"time",(time.time()-starttime)/(num-first+1),opendata.makename(stem+".",num,""),"overfl",noverfl)

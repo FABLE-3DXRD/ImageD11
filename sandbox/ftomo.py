@@ -1,7 +1,9 @@
+
+from __future__ import print_function
 import math, numpy, time
-from ImageD11 import closest
+from ImageD11 import cImageD11
 from fabio.openimage import openimage
-print "Using class version"
+print("Using class version")
 
 
 
@@ -30,7 +32,7 @@ class fourier_radial(object):
         arshape = self.dims[0]/2+1, self.dims[1]
         nv = (arshape[0]-1)*2
         nh = arshape[0]
-        print "NV,NH",nv,nh
+        print("NV,NH",nv,nh)
         self.ftimshape = (nv, nh)
         self.ftimlen = nv*nh
         n1 = (self.dims[0]/2+1)*self.dims[1]
@@ -53,7 +55,7 @@ class fourier_radial(object):
         nim  = numpy.zeros( ( nv* nh), numpy.float32 )
         wons = numpy.ones( (len(inds)), dtype=numpy.float32 )
         # This is now more dense - bincount?
-        closest.put_incr( nim , inds, wons )
+        cImageD11.put_incr( nim , inds, wons )
         nim = nim.astype(numpy.int)
         self.nim_div = nim + (nim==0)
         
@@ -76,8 +78,8 @@ class fourier_radial(object):
         numpy.multiply( faprojc, self.conjer, faprojc)
         fimr = numpy.zeros( self.ftimlen , numpy.float32 )
         fimc = numpy.zeros( self.ftimlen , numpy.float32 )
-        closest.put_incr( fimr, self.inds, faprojr.ravel())
-        closest.put_incr( fimc, self.inds, faprojc.ravel())
+        cImageD11.put_incr( fimr, self.inds, faprojr.ravel())
+        cImageD11.put_incr( fimc, self.inds, faprojc.ravel())
         fim = fimr + fimc*1j
         fim = numpy.divide( fimr + fimc*1j, self.nim_div)
         fim.shape = self.ftimshape 
@@ -98,7 +100,7 @@ class fourier_radial(object):
 if __name__=="__main__":
     import sys
     if len(sys.argv) != 5:
-        print "Usage: sinogram startangle step centrepixel"
+        print("Usage: sinogram startangle step centrepixel")
         sys.exit()
     
     fname = sys.argv[1]
@@ -110,10 +112,10 @@ if __name__=="__main__":
     
     centrepixel = int( sys.argv[4] )
     end   = na*step + start
-    print "start, step, end",start, step, end
+    print("start, step, end",start, step, end)
     angles = numpy.arange(start, end, step)
     assert len(angles) == na,"%d %d  ... %d"%(nx,na,len(angles))
-    print "%.2f setup"%(time.time()-star)
+    print("%.2f setup"%(time.time()-star))
     d =  sino.data.T[:1200]
     o = fourier_radial( d.shape, angles )
     start = time.time()
@@ -123,5 +125,5 @@ if __name__=="__main__":
     import pylab
     pylab.imshow(im, interpolation='nearest',aspect='auto')
     pylab.show()
-    print "per image",time.time()-start
+    print("per image",time.time()-start)
 

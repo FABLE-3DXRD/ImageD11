@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -72,7 +74,7 @@ class factors:
                                   s.shape[0],
                                   r.shape[0],
                                   r.shape[1]))
-            print len(l.astype(np.float).tostring())
+            print(len(l.astype(np.float).tostring()))
             out.write(l.astype(np.float).tostring())
             out.write(s.astype(np.float).tostring())
             out.write(r.astype(np.float).tostring())
@@ -84,11 +86,11 @@ class factors:
         """
         out=open(filename,"rb")
         dims=struct.unpack("lllll",out.read(struct.calcsize("lllll")))
-        print dims,8*dims[0]*8*dims[1]
+        print(dims,8*dims[0]*8*dims[1])
         l=np.fromstring(out.read(8*dims[0]*dims[1]),np.float)
         s=np.fromstring(out.read(8*dims[2]),np.float)
         r=np.fromstring(out.read(8*dims[3]*dims[4]),np.float)
-        print l.shape,s.shape,r.shape,dims
+        print(l.shape,s.shape,r.shape,dims)
         l=np.reshape(l,(dims[0],dims[1]))
         r=np.reshape(r,(dims[3],dims[4]))
         self.svd=(l,s,r)
@@ -98,7 +100,7 @@ class factors:
     def setnfactors(self,n):
         """Decide on the number of factors in the data"""
         self.nfactors=n
-        print "Number of factors set to",self.nfactors
+        print("Number of factors set to",self.nfactors)
 
     def loadchis(self,filename):
         """
@@ -106,11 +108,11 @@ class factors:
         """
         fl=glob.glob(filename[:-8]+"????"+".chi")
         fl.sort()
-        print "Number of chi files is:",len(fl)
+        print("Number of chi files is:",len(fl))
         dl=[opendata.openchi(f).data[:,1] for f in fl]
         self.obsdata=np.array(dl)
         self.x=opendata.openchi(fl[0]).data[:,0]
-        print self.x.shape,self.obsdata.shape
+        print(self.x.shape,self.obsdata.shape)
 
     def saveobsdata(self,filename):
         """
@@ -129,12 +131,12 @@ class factors:
         infile=open(filename,"rb")
         sizes=struct.unpack("lll",infile.read(struct.calcsize("lll")))
         # Type is Float therefore 8 bytes per item
-        print sizes
+        print(sizes)
         self.x=np.fromstring(infile.read(sizes[0]*8),np.float)
         self.obsdata=np.fromstring(infile.read(8*sizes[1]*sizes[2]),np.float)
-        print self.obsdata.shape
+        print(self.obsdata.shape)
         self.obsdata=np.reshape(self.obsdata,(sizes[1],sizes[2]))
-        print self.x.shape,self.obsdata.shape
+        print(self.x.shape,self.obsdata.shape)
 
 
 if __name__=="__main__":
@@ -144,7 +146,7 @@ if __name__=="__main__":
         o.loadchis(sys.argv[1])
     else:
         o.readobsdata(sys.argv[1])
-    print dir(o)
+    print(dir(o))
     o.setnfactors(int(sys.argv[2]))
     o.factorsvd()
     o.generatedata()

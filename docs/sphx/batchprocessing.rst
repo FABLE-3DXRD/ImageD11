@@ -35,16 +35,11 @@ image numbers and header information (svn version only for now)::
 
 	 
 Usage would be::
+
  python getheader.py "mydatafiles*.edf" samz Omega > headerinfo.txt
 
-The quotes around the first command line argument are critical to stop 
-the shell expanding the "*". 
-It will create a file with the image number, filename and header 
-information you want. We will put the Omega entry as the last column and 
-last argument on the command line. 
-We now work out what the individual sweepscans were from this header 
-information file. It is sorted by image number and we assume a scan 
-corresponds to an increasing sequence of Omega angles::
+The quotes around the first command line argument are critical to stop the shell expanding the "*". 
+It will create a file with the image number, filename and header information you want. We will put the Omega entry as the last column and last argument on the command line. We now work out what the individual sweepscans were from this header information file. It is sorted by image number and we assume a scan corresponds to an increasing sequence of Omega angles::
 
  % more getscans.py
  import sys
@@ -85,25 +80,17 @@ corresponds to an increasing sequence of Omega angles::
          first = True
          last = -1e9
 		 
-Assuming you have made a directory ImageD11 in with your sample to pick 
-up the output should now have 4 shell scripts. Run each one on a 
-different machine, the peaksearch output should end up in the ImageD11 
-directory. 
+Assuming you have made a directory ImageD11 in with your sample to pick up the output should now have 4 shell scripts. Run each one on a different machine, the peaksearch output should end up in the ImageD11 directory. 
 
 Work out how to index one scan
 ==============================
 
-Take the output from the peaksearch into the gui (probably the 
-merge_txxx) file. Go through the transformation menu until you are happy 
-you have nice parameters. Save the parameter file. Save the g-vectors 
-and go through the indexing menu, finding grains. Once you are happy go 
-to the Help menu and select history. Copy and paste this into a file. 
-#Edit_the_history_file_to_take_a_command_line_argument?
+Take the output from the peaksearch into the gui (probably the merge_txxx) file. Go through the transformation menu until you are happy you have nice parameters. Save the parameter file. Save the g-vectors and go through the indexing menu, finding grains. Once you are happy go to the Help menu and select history. Copy and paste this into a file.
 
 Edit the history file to take a command line argument
+=====================================================
 
-Now edit the history file to replace the input and output file names to 
-be a variable from the command line: eg::
+Now edit the history file to replace the input and output file names to be a variable from the command line: eg::
 
  % more history.py
  # Create objects to manipulate - they hold your data

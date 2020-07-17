@@ -1,0 +1,5 @@
+0.495103 python make_u_t.py
+66.499751 PolyXSim.py -i Al1000.inp
+574.618858 python grid_index.py  Al1000/Al1000.flt Al1000/Al1000.par grid
+36.128059 makemap.py -u allgrid.map -U allgridfit.map -f Al1000/Al1000.flt -p Al1000/Al1000.par --omega_slop=0.125 -t 0.0075
+30.307235 makemap.py -u allgridfit.map -U allgridfit.map -f Al1000/Al1000.flt -p Al1000/Al1000.par --omega_slop=0.125 -t 0.0075

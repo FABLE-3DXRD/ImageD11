@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+from __future__ import print_function
 
 
 # ImageD11_v1.0 Software for beamline ID11
@@ -29,15 +30,27 @@ and on OpenGl for plotting things in 3D (reciprocal space)
 Hopefully the gui and the gruntwork can be completely separated, eventually.
 """
 
+try:
+    from Tkinter import *
+    import tkFileDialog as filedialog
+    from tkMessageBox import showinfo
+    from ScrolledText import ScrolledText
+except:
+    from tkinter import *
+    import tkinter.filedialog as filedialog
+    from tkinter.messagebox import showinfo
+    from tkinter.scrolledtext import ScrolledText
 
-from Tkinter import *
 import logging
 import sys
-import tkFileDialog
 import os
 
 # GuiMaker is for building up the windows etc
-from ImageD11.guimaker import GuiMaker
+
+from ImageD11.tkGui.guimaker import GuiMaker
+from ImageD11.tkGui import twodplot,  guipeaksearch, guitransformer, guiindexer, guisolver
+from ImageD11 import __version__, guicommand
+from ImageD11.license import license
 
 # This does not do anything unless you call it as a program:
 
@@ -57,7 +70,6 @@ if __name__ == "__main__":
 
     # Help message - TODO - proper online help
     def help():
-        from tkMessageBox import showinfo
         hlp = """Try pointing your web browser at:
    http://fable.sourceforge.net/index.php/ImageD11
    See also the html documentation for programmers, somewhere like:
@@ -92,17 +104,13 @@ if __name__ == "__main__":
                        """
 
     def credits():
-        from tkMessageBox import showinfo
         showinfo("Credits", ImageD11credits)
 
     # GPL is stored in ImageD11/license.py as a string to be
     # displayed in the GUI if the user asks to see it
 
-    from ImageD11 import license
-    license = license.license
 
     def showlicense():
-        from ScrolledText import ScrolledText
         win = ScrolledText(Toplevel(), width=100)
         win.insert(END, license)
         win.pack(expand=1, fill=BOTH)
@@ -110,7 +118,6 @@ if __name__ == "__main__":
 
     # Inherits from the GuiMaker and uses functions defined above
     class TestGuiMaker(GuiMaker):
-        from ImageD11 import guicommand
         guicommand.RETURN_NUMERICS = True
         guicommander = guicommand.guicommand()
 
@@ -121,8 +128,6 @@ if __name__ == "__main__":
             eg: show a message about the license and list of things to do
             Then build the actual gui
             """
-            from tkMessageBox import showinfo
-            import ImageD11
             startmessage = """
   ImageD11 version %s, Copyright (C) 2005-2017 Jon Wright
   ImageD11 comes with ABSOLUTELY NO WARRANTY; for details select help,
@@ -130,7 +135,7 @@ if __name__ == "__main__":
   under certain conditions
 
   Please send useful feedback to wright@esrf.fr
-  """ % (ImageD11.__version__)
+  """ % (__version__)
 
             startmessage += """
   You are using version %s
@@ -138,30 +143,22 @@ if __name__ == "__main__":
   There have been lots of changes recently!
 
   I would also be happily surprised if it is currently working.
-  """ % (ImageD11.__version__)
-            showinfo("Welcome to ImageD11 " + ImageD11.__version__,
+  """ % (__version__)
+            showinfo("Welcome to ImageD11 " + __version__,
                      startmessage)
 
             # For the peaksearch menu
-            from ImageD11 import guipeaksearch
 
             self.peaksearcher = guipeaksearch.guipeaksearcher(self)
 
-            # For the transformation menu
-            from ImageD11 import guitransformer
 
             self.transformer = guitransformer.guitransformer(self)
 
             # For the indexing - supposed to generate orientations from the
             # unitcell and g-vectors
-            from ImageD11 import guiindexer
             self.indexer = guiindexer.guiindexer(self)
 
-            from ImageD11 import guisolver
             self.solver = guisolver.guisolver(self)
-
-            # sys is for sys.exit
-            import sys
 
             # Configure the menubar (lists of Tuples of (name,
             # underline_char, command_or_submenu) )
@@ -186,7 +183,6 @@ if __name__ == "__main__":
         # The twodplot object should be taking care of it's own menu
         # Stop doing it here - TODO
         def history(self):
-            from ScrolledText import ScrolledText
             win = ScrolledText(Toplevel(), width=100)
             history = self.guicommander.gethistory()
             win.insert(END, history)
@@ -220,11 +216,10 @@ if __name__ == "__main__":
             #
             # Opening and saving file widgets, normally hidden, they
             # remember where you were for working directories
-            self.opener = tkFileDialog.Open()
-            self.saver = tkFileDialog.SaveAs()
+            self.opener = filedialog.Open()
+            self.saver = filedialog.SaveAs()
             #
             # Draw the twodplot
-            from ImageD11 import twodplot
             self.twodplotter = twodplot.twodplot(self)
             self.twodplotter.pack(side=RIGHT, expand=1, fill=BOTH)
 

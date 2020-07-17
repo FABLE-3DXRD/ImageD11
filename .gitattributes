@@ -1,0 +1,11 @@
+*.out_merge_t200 linguist-generated
+*.out  linguist-generated
+*.flt  linguist-generated
+*.gve  linguist-generated
+*.ubi  linguist-generated
+*.par  linguist-generated
+*.prm  linguist-generated
+*.pars  linguist-generated
+*.html linguist-documentation
+*.pdf  linguist-generated
+*.odt  linguist-documentation

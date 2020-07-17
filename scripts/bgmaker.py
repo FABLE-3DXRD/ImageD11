@@ -1,9 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+from __future__ import print_function
+
 
 
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
 
-#!/bliss/users/blissadm/python/bliss_python/suse82/bin/python
 
 
 # ImageD11_v0.4 Software for beamline ID11
@@ -36,6 +37,8 @@ import fabio.edfimage
 from fabio.openimage import openimage
 import numpy
 import random # to do images in random order
+import logging
+from ImageD11 import ImageD11options
 
 class minimum_image(object):
     """
@@ -50,7 +53,7 @@ class minimum_image(object):
         if image is not None:
             # if an image is supplied we take that as the initial minimum
             self.bkg = image
-        if filename != None:
+        if filename is not None:
             # if a filename is supplied we take the minimum of the
             # image in that
             # file and the one stored
@@ -75,7 +78,7 @@ class minimum_image(object):
         try:
             data_object = openimage(filename)
         except IOError:
-            print filename, "not found"
+            print(filename, "not found")
             return
         self.add_image(data_object.data)
 
@@ -118,35 +121,36 @@ class kbg(object):
         try:
             data_object = openimage(filename)
         except IOError:
-            print filename, "not found"
+            print(filename, "not found")
             return
         self.add_image(data_object.data)
 
 
 def get_options(parser):
     """ add the command line options to parser """
-    parser.add_option("-n", "--namestem", action = "store", 
-                      type = "string", dest = "stem",
+    parser.add_argument("-n", "--namestem", action = "store", 
+                      type = str, dest = "stem",
      help="Name of the files up the digits part, eg mydata in mydata0000.edf" )
-    parser.add_option("-f", "--first", action = "store", type = "int", 
+    parser.add_argument("-f", "--first", action = "store", type = int, 
                       dest = "first",default = 0,
                       help = "Number of first file to process, default=0")
-    parser.add_option("-l", "--last", action = "store", type = "int", 
+    parser.add_argument("-l", "--last", action = "store", type = int, 
                       dest = "last",default = 0, 
                       help = "Number of last file to process")
-    parser.add_option("-o", "--outfile", action = "store", type = "string", 
+    parser.add_argument("-o", "--outfile", action = "store", 
+                        type = ImageD11options.ImageFileType(mode='w'), 
                           dest = "outfile", default = "bkg.edf", 
                       help = "Output filename, default=bkg.edf")
-    parser.add_option("-F", "--Format", action = "store", 
-                      type = "string", dest = "format", default = ".edf",
+    parser.add_argument("-F", "--Format", action = "store", 
+                      type = str, dest = "format", default = ".edf",
                       help = "File format [edf|bruker]")
-    parser.add_option("-s", "--step", action = "store", type = "int", 
+    parser.add_argument("-s", "--step", action = "store", type = int,
                       dest = "step",default = 1,
                       help = "step - every nth image")
-    parser.add_option("--ndigits", action = "store", type = "int",
+    parser.add_argument("--ndigits", action = "store", type = int,
                       dest = "ndigits", default = 4,
                       help = "Number of digits in file numbering [4]")
-    parser.add_option("-k", "--kalman-error", action="store", type = "float",
+    parser.add_argument("-k", "--kalman-error", action="store", type = float,
             dest = "kalman_error", default = 0,
             help = "Error value to use Kalman style filter (read noise)" )
 
@@ -156,7 +160,8 @@ def check_options( options ):
     """ Validate the command line options """
     for att in [ "stem", "first", "last"]:
         if getattr( options, att) is None:
-            raise Exception("You must supply an option for "+att)
+            logging.error("You must supply an option for %s",att)
+            raise Exception("Missing "+att)
 
 
 def bgmaker( options ):
@@ -176,33 +181,34 @@ def bgmaker( options ):
 
 
     first_image = openimage( first_image_name )
-    print first_image.filename
+    print(first_image.filename)
 
-    allimagenumbers = range(options.first + options.step, 
-                options.last + options.step, options.step )
+    allimagenumbers = list(range(options.first,
+                                 options.last + 1 - options.step,
+                                 options.step))
 
     if options.kalman_error <= 0:
-        print "Using minimum image algorithm"
+        print("Using minimum image algorithm")
         bko = minimum_image( image = first_image.data )
     else:
-        print "Using Kalman algorithm with error =",options.kalman_error
+        print("Using Kalman algorithm with error =",options.kalman_error)
         bko = kbg( first_image.data, options.kalman_error*options.kalman_error )
-        print "Taking images in random order"
+        print("Taking images in random order")
         random.seed(42) # reproducible
         random.shuffle( allimagenumbers )
 
     for current_num in allimagenumbers:
         try:
             im = first_image.getframe( current_num )
-            print im.filename
+            print(im.filename)
             bko.add_image( im.data )
         except KeyboardInterrupt:
-            print "Got a keyboard interrupt"
+            print("Got a keyboard interrupt")
             break
         except:
             import traceback
             traceback.print_exc()
-            print "Failed for",current_num
+            print("Failed for",current_num)
         
     # finally write out the answer
     # model header + data
@@ -211,7 +217,7 @@ def bgmaker( options ):
     # write as edf - we should actually have a way to flag
     # which fabioimage formats know how to write themselves
     if options.outfile[-3:] == "edf":
-        print "writing",options.outfile,"in edf format"
+        print("writing",options.outfile,"in edf format")
         im = fabio.edfimage.edfimage( data = bko.bkg )
     else:
         im = first_image
@@ -222,8 +228,8 @@ def bgmaker( options ):
     except TypeError: # WTF?
         im.write(options.outfile)
     except:
-        print "problem writing"
-        print "trying to write",options.outfile,"in edf format"
+        print("problem writing")
+        print("trying to write",options.outfile,"in edf format")
         im = fabio.edfimage.edfimage( data = minim.minimum_image )
         try:
             im.write(options.outfile, force_type = im.data.dtype)
@@ -238,10 +244,10 @@ if __name__ == "__main__":
     START = time.time()
 
     try:
-        from optparse import OptionParser
-        MYPARSER = OptionParser()
+        from argparse import ArgumentParser
+        MYPARSER = ArgumentParser()
         MYPARSER = get_options( MYPARSER )
-        OPTS , DUMMY = MYPARSER.parse_args()
+        OPTS = MYPARSER.parse_args()
         check_options( OPTS )
         bgmaker( OPTS )
 
@@ -251,4 +257,4 @@ if __name__ == "__main__":
 
     END = time.time()
 
-    print "Total time = %f /s" % (END - START)
+    print("Total time = %f /s" % (END - START))

@@ -1,0 +1,19 @@
+
+"""
+- scripts/makemap.py
+- this code sandbox/fittrans
+- ImageD11/indeder.py : indexer.refine
+
+TO DO:
+   Improve indexing to be faster (single script with simple run through)
+
+    compare results (currently makemap is the only one that works on simul1000)
+    ... probably due to better peak assignments ? Try taking these ...
+
+    implement a version which replaces h/k/l or gx/gy/gz error with:
+        |g|, omega, azimuth
+        Fitting in U.B, translation
+          |g| (or theta or twotheta) depends on B, translation but not U
+          omega depends on U.B but not translation 
+          azimuth depends on U.B and translation
+"""

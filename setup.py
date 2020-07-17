@@ -1,6 +1,8 @@
 
+from __future__ import print_function
+
 # ImageD11_v1.0 Software for beamline ID11
-# Copyright (C) 2005-2007  Jon Wright
+# Copyright (C) 2005-2018  Jon Wright
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,117 +20,135 @@
 
 """
 Setup script
+
+To re-build the wrappers do:
+ cd src && python make_pyf.py
 """
 
-
-
-
-# from distutils.core import setup, Extension
-# from setuptools import setup, Extension
+# For pip / bdist_wheel etc
 import setuptools
-from numpy.distutils.core import setup, Extension
-
+import os, sys, platform
+from distutils.core import setup, Extension
+from distutils.command import build_ext
 from numpy import get_include
 
-nid = [get_include()]
+############################################################################
+def get_version():
+    with open("ImageD11src/__init__.py","r") as f:
+        for line in f.readlines():
+            if line.find("__version__")>-1:
+                return eval(line.split("=")[1].strip())
+
+print("Building version |%s|"%get_version(), "on system:", platform.system())
+
+#############################################################################
+# Set the openmp flag if needed. Also CFLAGS and LDSHARED from sys.argv ?
+#
+# JW https://stackoverflow.com/questions/724664/python-distutils-how-to-get-a-compiler-that-is-going-to-be-used
+
+copt =  {
+    'msvc': ['/openmp', '/O2'] , 
+    'unix': ['-fopenmp', '-O2'] , 
+    'mingw32': ['-fopenmp', '-O2'] , 
+ }
+
+lopt =  { k : [a for a in l] for k,l in copt.items() }
+lopt['msvc'] = []
+if platform.system() == "Darwin":
+    copt['unix'].remove("-fopenmp")
+    lopt['unix'].remove("-fopenmp")
 
 
-# Compiled extensions:
-
-# closest is for indexing grains
-cl = Extension("closest",
-               sources=['src/closest.c'],
-               include_dirs = nid )
-
-# connectedpixels is for peaksearching images
+# might try:
+# set CFLAGS=/arch:AVX2 for msvc
+# CFLAGS=-march=native -mtune=native
+# LDFLAGS=-march=native -mtune=native
 
 
+class build_ext_subclass( build_ext.build_ext ):
+    def build_extensions(self):
+        c = self.compiler.compiler_type
+        CF = [] ; LF=[]
+        if "CFLAGS" in os.environ:
+            CF = os.environ.get("CFLAGS").split(" ")
+        if "LDFLAGS" in os.environ:
+            LF = os.environ.get("LDFLAGS").split(" ")
+        for e in self.extensions:
+            if c in copt:
+               e.extra_compile_args = copt[ c ] + CF
+               e.extra_link_args = lopt[ c ] + LF
+        print("Customised compiler",c,e.extra_compile_args,
+                    e.extra_link_args)
+        build_ext.build_ext.build_extensions(self)
 
-cp = Extension("connectedpixels",
-               sources = ['src/connectedpixels.c','src/blobs.c'],
-               include_dirs = nid)
-# No header files for distutils as sources 'src/dset.h'])
+cnames =  "_cImageD11module.c blobs.c cdiffraction.c cimaged11utils.c"+\
+" closest.c connectedpixels.c darkflat.c localmaxlabel.c sparse_image.c "+\
+" splat.c fortranobject.c"
+csources = [os.path.join('src',c) for c in cnames.split()]
+
+extension = Extension( "_cImageD11",  csources,
+                include_dirs = [get_include(), 'src' ])
+
+################################################################################
 
 
-
-# _splines is for correcting peak positions for spatial distortion
-bl = Extension("_splines",
-               sources = ['src/splines.c', 'src/bispev.c'],
-               include_dirs = nid)
-
-import sys
-                  
-# New fortran code - you might regret this...
-fi = Extension("fImageD11",
-               sources = ['fsrc/fImageD11.f90' ],
-#               extra_f90_compile_args=["-fopenmp -O2"],
-               libraries = ['gomp','pthread'])
-# OK, I am beginning to regret it now. Patch for older numpys
-sys.argv.extend ( ['config_fc', '--fcompiler=gnu95',
-                   '--f90flags="-fopenmp -O2 -shared"'])
-
-if sys.platform == 'win32':
-    needed = [
-        'xfab>=0.0.2',
-        'fabio>=0.0.5',
-        'numpy>=1.0.0',
-        'matplotlib>=0.90.0',
-        ]
-else: # Take care of yourself if you are on linux
-    # Your package manager is inevitably f*cked
-    needed = []
-#        'xfab>=0.0.1',
-#        'fabio>=0.0.4']
-
-# See the distutils docs...
-setup(name='ImageD11',
-      version='1.7.0',
-      author='Jon Wright',
-      author_email='wright@esrf.fr',
-      description='ImageD11',
-      license = "GPL",
-      ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
-      ext_modules = [cl,cp,bl,fi],
-      install_requires = needed,
-      packages = ["ImageD11"],
-      package_dir = {"ImageD11":"ImageD11"},
-      url = "http://fable.wiki.sourceforge.net/ImageD11",
-#      download_url = ["http://sourceforge.net/project/showfiles.php?group_id=82044&package_id=147869"],
-      package_data = {"ImageD11" : ["doc/*.html"]},
-      scripts = ["ImageD11/rsv_mapper.py",
+# Try to further reduce this long list
+scripts = ["ImageD11src/rsv_mapper.py",
+           "ImageD11src/tkGui/plot3d.py",
                  "scripts/peaksearch.py",
                  "scripts/fitgrain.py",
-                 "scripts/tomapper.py",
                  "scripts/ubi2cellpars.py",
                  "scripts/filtergrain.py",
-                 "scripts/filterout.py",
-                 "ImageD11/plot3d.py",
-                 "scripts/pars_2_sweeper.py",
                  "scripts/ImageD11_2_shelx.py",
-                 "scripts/fit2dcake.py",
                  "scripts/fix_spline.py",
                  "scripts/edfheader.py",
-                 "ImageD11/plot3d.py",
-                 "scripts/huber2bruker.py",
-                 "scripts/id11_summarize.py",
                  "scripts/ImageD11_gui.py",
                  "scripts/bgmaker.py",
                  "scripts/merge_flt.py",
                  "scripts/makemap.py",
                  "scripts/plotlayer.py",
-                 "scripts/plotedf.py",
                  "scripts/plotgrainhist.py",
-                 "scripts/rubber.py",
                  "scripts/plotImageD11map.py",
                  "scripts/cutgrains.py",
                  "scripts/index_unknown.py",
                  "scripts/spatialfix.py",
        	         "scripts/refine_em.py",
                  "scripts/avg_par.py",
-                 "scripts/powderimagetopeaks.py"])
+                 "scripts/powderimagetopeaks.py"]
+                 
+################################################################################
+# Things we depend on. This generally borks things if pip
+# tries to do source installs of all of these.
 
-print "For windows you would need:"
-print 'set LDFLAGS="-static-libgfortran -static-libgcc -static -lgomp -shared"'
-print 'also gfortran/gcc installed (--compiler=mingw32)'
-print 'also to patch f2py to let it run'
+needed =[
+    "six",
+    "numpy",
+    "scipy",
+    "pillow",
+    "h5py",
+    "matplotlib",
+    "xfab>=0.0.4",
+    "fabio",
+    "pyopengl",
+    "pyopengltk",
+    ]
+    # , "FitAllB", ... ]
+
+# See the distutils docs...
+setup(name='ImageD11',
+      version=get_version(),
+      author='Jon Wright',
+      author_email='wright@esrf.fr',
+      cmdclass={'build_ext': build_ext_subclass},
+      description='ImageD11',
+      license = "GPL",
+      ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
+      ext_modules = [extension,],
+      install_requires = needed,
+      packages = ["ImageD11", "ImageD11.tkGui", "ImageD11.silxGui"],
+      package_dir = {"ImageD11":"ImageD11src"},
+      url = "http://github.com/jonwright/ImageD11",
+      package_data = {"ImageD11" : ["doc/*.html", "data/*" ]},
+      scripts = scripts )
+
 

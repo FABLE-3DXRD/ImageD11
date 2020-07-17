@@ -1,0 +1,26 @@
+
+
+Define for timing : F2PY_REPORT_ATEXIT
+Define for copies : F2PY_REPORT_ON_ARRAY_COPY
+
+# Testing locally:
+
+f2py.py -c cImageD11.pyf ...  -DF2PY_REPORT_ON_ARRAY_COPY
+
+... or f2py is f2py.py is not found.
+
+
+# Integer types for blob label arrays, 32 or 64 bits?
+ blobs.h : INTEGER defines
+ connectedpixels.pyf:
+    integer*4  is 32 bit signed
+    integer*-4  is 32 bit unsigned
+    integer*8  is 64 bit signed
+    etc
+
+# size_t appears to be missing in f2py 
+ c : size_t x[]
+ f2py : integer*-8 x  ??
+
+
+# Did not figure out how to do openmp for c via command line 

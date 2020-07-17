@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 
 import unittest, os, sys
 from ImageD11 import indexing
@@ -38,11 +39,12 @@ UBIS = [
 
 
 
-SCRIPT = os.path.join(sys.executable+" ..","..","scripts","index_unknown.py")
+SCRIPT = os.path.join(sys.executable+" "+os.path.dirname(__file__),
+                      "..","..","scripts","index_unknown.py")
 
 def generate_hkls( n ):
     """ Makes solid hkl cube """
-    lim = n/2
+    lim = int(n//2)
     r = range(-lim, lim+1)
     npk = len(r)
     hkls = np.zeros( (3,npk,npk,npk))
@@ -76,21 +78,23 @@ def write_gve( gvecs, name):
     f.close()
 
 
+
 class testGve(unittest.TestCase):
     def setUp(self):
+        d = os.path.dirname(__file__)
+        self.fnames = []
         for u, cmd in UBIS:
-            write_gve(
-                generate_gve(u),
-                u+".gve"
-                )
+            fname=os.path.join(d, u+".gve")
+            ufile=os.path.join(d, u )
+            write_gve( generate_gve(ufile), fname )
+            self.fnames.append(fname)
         
     def test1(self):
-        for u, cmd in UBIS:
-            assert os.path.exists(u+".gve")
-            e = SCRIPT +" -g %s "%(u+".gve")+cmd
-            print "\n",e
-            os.system(e)
-
+        for fname, (u,cmd) in zip(self.fnames, UBIS):
+            assert os.path.exists(fname)
+            e = SCRIPT +" -g %s "%(fname)+cmd
+            print ("\n",e)
+            assert os.system(e) == 0
 
     def tearDown(self):
         """ explicitely leave the files here for debugging """

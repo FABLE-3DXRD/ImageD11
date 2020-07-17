@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 """
 Fit2d caking python script
 
@@ -258,7 +260,7 @@ class cakemacrogenerator:
                 key, value = line.split(" = ")
                 value = value.rstrip() # get rid of trailing \n
             except:
-                print "$$$%s$$$"% (line)
+                print("$$$%s$$$"% (line))
                 raise
             if value == "None":
                 value = None
@@ -278,11 +280,11 @@ class cakemacrogenerator:
            int(self.integrate_pars_values["AZIMUTH BINS"]) or \
            int(self.mask_pars_values["DIM2_DATA"]) < \
            int(self.integrate_pars_values["AZIMUTH BINS"]):
-            print "Problem with array dimensions, check your input pars"
-            print "RADIAL BINS", self.integrate_pars_values["RADIAL BINS"]
-            print "AZIMUTH BINS", self.integrate_pars_values["AZIMUTH BINS"]
-            print "DIM1_DATA", self.mask_pars_values["DIM1_DATA"]
-            print "DIM2_DATA", self.mask_pars_values["DIM2_DATA"]
+            print("Problem with array dimensions, check your input pars")
+            print("RADIAL BINS", self.integrate_pars_values["RADIAL BINS"])
+            print("AZIMUTH BINS", self.integrate_pars_values["AZIMUTH BINS"])
+            print("DIM1_DATA", self.mask_pars_values["DIM1_DATA"])
+            print("DIM2_DATA", self.mask_pars_values["DIM2_DATA"])
             sys.exit()
 
 
@@ -292,13 +294,13 @@ class cakemacrogenerator:
         """
         #        print "Trying to set",key,value
         """
-        if key in self.integrate_pars_values.keys():
+        if key in list(self.integrate_pars_values.keys()):
             self.integrate_pars_values[key] = value
-        elif key in self.image_pars_values.keys():
+        elif key in list(self.image_pars_values.keys()):
             self.image_pars_values[key] = value
-        elif key in self.input_options_values.keys():
+        elif key in list(self.input_options_values.keys()):
             self.input_options_values[key] = value
-        elif key in self.mask_pars_values.keys():
+        elif key in list(self.mask_pars_values.keys()):
             self.mask_pars_values[key] = value
         elif key == "input_extn":
             self.input_extn = value
@@ -307,7 +309,7 @@ class cakemacrogenerator:
         elif key == "saving_format":
             self.saving_format = value
         else:
-            print "Failure to set", key, value
+            print("Failure to set", key, value)
 
     # Dictionary to translate .fit2d.def file syntax into macro syntax
 
@@ -367,9 +369,9 @@ class cakemacrogenerator:
             try:
                 key = def_file_obj.next().rstrip()
                 value = def_file_obj.next().rstrip()
-                if key in self.fit2d_def_names_to_macro_names.keys():
+                if key in list(self.fit2d_def_names_to_macro_names.keys()):
                     mykey = self.fit2d_def_names_to_macro_names[key]
-                    if key in self.fit2d_def_to_macro_converters.keys():
+                    if key in list(self.fit2d_def_to_macro_converters.keys()):
                         # We have a conversion factor to apply
                         myvalue = self.fit2d_def_to_macro_converters[key](value)
                     elif value == "FALSE":
@@ -397,7 +399,7 @@ class cakemacrogenerator:
             value = self.input_options_values[name]
             if name.find("MASK") >= 0:
                 continue
-            if value != None:
+            if value is not None:
                 self.macro = self.macro + name + "\n" + str(value) + "\n"
         self.macro = self.macro + "O.K.\n"
 
@@ -423,7 +425,7 @@ class cakemacrogenerator:
         """
         for name in self.image_pars_names:
             value = self.image_pars_values[name]
-            if value != None:
+            if value is not None:
                 self.macro = self.macro + name + "\n" + str(value) + "\n"
         self.macro = self.macro + "O.K.\n"
 
@@ -433,7 +435,7 @@ class cakemacrogenerator:
         """
         for name in self.integrate_pars_names:
             value = self.integrate_pars_values[name]
-            if value != None:
+            if value is not None:
                 self.macro = self.macro + name + "\n" + str(value) + "\n"
         self.macro = self.macro + "O.K.\n"
 
@@ -512,8 +514,8 @@ class cakemacrogenerator:
             outstem = stem_arg
         outputfilelist = [s.replace(self.input_extn,self.output_extn) for s in filelist ]
         outputfilelist = [s.replace(stem_arg,outstem) for s in outputfilelist ]
-        print filelist
-        print outputfilelist
+        print(filelist)
+        print(outputfilelist)
         if not replace:
             alreadydone = glob.glob(outstem+"*"+self.output_extn)
             # 1:1 mapping of input to output
@@ -521,7 +523,7 @@ class cakemacrogenerator:
             alreadydone = []
         for i in range(len(filelist)):
             if outputfilelist[i] not in alreadydone:
-                print "%s %s" % (filelist[i], outputfilelist[i])
+                print("%s %s" % (filelist[i], outputfilelist[i]))
                 self.cakeafile(filelist[i],outputfilelist[i])
 
 
@@ -541,7 +543,7 @@ class cakemacrogenerator:
             fileout = "%s%04d.%s" % (outstem, i, self.output_extn)
             self.cakeafile(filein,fileout)
             if i%100 == 0:
-                print i,
+                print(i, end=' ')
                 sys.stdout.flush()
 
     def run(self,show=True):
@@ -555,7 +557,7 @@ class cakemacrogenerator:
         tf.write(self.macro)
         tf.close()
         # Send the display to a local black hole
-        if show!="SHOW":
+        if show != "SHOW":
             os.system(XVFB)
             time.sleep(1)
             try:
@@ -569,13 +571,13 @@ class cakemacrogenerator:
         array=str(self.mask_pars_values["DIM1_DATA"])+"x"+str(self.mask_pars_values["DIM2_DATA"])
         cmd = FIT2D + " -dim%s -mac%s.mac "%(array,os.path.split(
             tmpfile.name)[-1])
-        print "executing",cmd
+        print("executing",cmd)
         os.system(cmd)
         os.system(REMOVE+" "+tmpfile.name+".mac")
         tmpfile.close()
         if show is None:
             os.environ["DISPLAY"]=displaywas
-        print "Finalising"
+        print("Finalising")
         for job in self.do_when_finished:
             job[0](job[1],job[2])
 
@@ -614,7 +616,7 @@ if __name__=="__main__":
 
     caker=cakemacrogenerator()
 
-    if options.cpars != None:
+    if options.cpars is not  None:
         # already imported os
         if options.deffile == None:
             f = os.path.join( os.environ["HOME"] , ".fit2d.def" )

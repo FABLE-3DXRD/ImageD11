@@ -1,4 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
+from __future__ import print_function
 
 
 # ImageD11_v1 Software for beamline ID11
@@ -18,77 +20,80 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  0211-1307  USA
 
+import os, sys, logging
+from argparse import ArgumentParser
+from ImageD11 import ImageD11options
+from ImageD11 import fft_index_refac, rc_array,\
+    lattice_reduction, indexing
+import numpy as np
+from ImageD11.fft_index_refac import grid
 
-if __name__=="__main__":
 
-    import os, sys, logging
-    from optparse import OptionParser
-    from ImageD11 import fft_index_refac, rc_array,\
-        lattice_reduction, indexing
-    import numpy as np
-    dot  = np.dot
-    from ImageD11.fft_index_refac import grid
-
-    parser = OptionParser()
-
-    parser.add_option('-g', '--gve',
+def get_options(parser):
+    parser.add_argument('-g', '--gve',
                       action = 'store',
+                      type=ImageD11options.GvectorFileType(mode='r'),
                       dest = 'gvefilename',
                       default = None,
                       help = "Filename for g-vectors")
-
-    parser.add_option('-k', '--ngrains',
+    parser.add_argument('-k', '--ngrains',
                       action = 'store',
                       dest = 'ngrains',
-                      type = 'int',
+                      type = int,
                       default = 1,
                       help = "number of grains to try to find")
-
-
-    parser.add_option('-o', '--output',
+    parser.add_argument('-o', '--output',
                       action = 'store',
+                      type=ImageD11options.UbiFileType(mode='w'),
                       default = 'grains.ubi',
                       dest = 'outfile',
                       help = "Name of ubi file to save grains in")
 
     parser = lattice_reduction.get_options(parser)
 
-    parser.add_option('--fft',
+    parser.add_argument('--fft',
                       action = 'store_true',
                       dest = 'use_fft',
                       default = False,
                       help = "Use fft to generate lattice vectors [False]")
 
-    parser.add_option('--score_fft',
+    parser.add_argument('--score_fft',
                       action = 'store_true',
                       dest = 'score_fft',
                       default = False,
                       help = "Score fft peaks using fft peaks first [True]")
 
-    parser.add_option('--no_sort',
+    parser.add_argument('--no_sort',
                       action = 'store_false',
                       dest = 'sort_gve',
                       default = True,
                       help = "Sorting the gvector by length before indexing [True]")
 
-    parser.add_option('--noisy',
+    parser.add_argument('--noisy',
                       action = 'store_true',
                       dest = 'noisy',
                       default = False,
                       help = "Print more output")
+    fft_index_refac.get_options( parser )
+    return parser
 
 
 
 
-    parser = fft_index_refac.get_options(parser)
 
-    options , args = parser.parse_args()
+
+if __name__=="__main__":
+
+    logging.basicConfig( level=logging.INFO )
+    parser = get_options( ArgumentParser() )
+
+    options = parser.parse_args()
     
     
     o = indexing.indexer()
     if options.gvefilename is None or \
             not os.path.exists(options.gvefilename):
-        print "You need to supply a gvector file with the -g option"
+        print("You need to supply a gvector file with the -g option")
         sys.exit()
 
     o.readgvfile(options.gvefilename)
@@ -106,13 +111,13 @@ if __name__=="__main__":
     try:
         for i in range(options.ngrains):
             if len(cur_gvecs) < 3:
-                print "Ran out of unindexed peaks"
+                print("Ran out of unindexed peaks")
                 break
 
             # print "Peak remaining",len(cur_gvecs)
             if options.use_fft:
                 # do fft
-                g = grid( np = options.np,
+                g = grid( npx = options.npx,
                           mr = options.mr,
                           nsig = options.nsig)
                 g.gv_to_grid_new(cur_gvecs)
@@ -121,12 +126,12 @@ if __name__=="__main__":
                 g.peaksearch(open("eu.patterson_pks","w"))
                 g.read_peaks("eu.patterson_pks")
                 vecs = rc_array.rc_array(g.UBIALL.T , direction='col')
-                assert vecs.shape == (3, g.colfile.nrows)
+                assert vecs.shape == (3, len(g.UBIALL))
                 order = np.argsort( g.colfile.sum_intensity )[::-1]
                 vecs = rc_array.rc_array( np.take( vecs, order, axis = 1),
                                           direction = 'col')
                 assert g.gv.shape[1] == 3
-                print "Finding lattice from patterson"
+                print("Finding lattice from patterson")
                 # Go through and make a shortlist of lattices by scoring fft only
                 if options.score_fft:
                     test_set = vecs
@@ -146,8 +151,8 @@ if __name__=="__main__":
                         noisy = options.noisy,
                         )
                 except IndexError:
-                    print vecs, options.n_try
-                    print vecs.shape
+                    print(vecs, options.n_try)
+                    print(vecs.shape)
                     raise
             else:
                 # Test vectors are the g-vectors
@@ -183,8 +188,8 @@ if __name__=="__main__":
             n3 = np.sum(np.where(dr > t2 , 1, 0 ) )
             assert npks == n2 , "debug scoring"
             assert n3 == len(all_gvecs) - npks, "debug scoring"
-            print l.r2c
-            print "Unit cell:",(6*"%.6f ")%indexing.ubitocellpars(l.r2c)
+            print(l.r2c)
+            print("Unit cell:",(6*"%.6f ")%indexing.ubitocellpars(l.r2c))
             
             # Put this grain in the output list
             ubis.append(l.r2c)
@@ -199,16 +204,16 @@ if __name__=="__main__":
                 np.compress( drlv2 > options.tol*options.tol,
                              cur_gvecs, axis = 0),
                 direction = 'row')
-            print "Lattice found, indexes", npks, "from all",all
-            print "Number of unindexed peaks remaining %d"%(len(cur_gvecs))
-            print "Current vector shape",cur_gvecs.shape
+            print("Lattice found, indexes", npks, "from all",all)
+            print("Number of unindexed peaks remaining %d"%(len(cur_gvecs)))
+            print("Current vector shape",cur_gvecs.shape)
         if len(ubis)>0:
             indexing.write_ubi_file(options.outfile,ubis)
-            print "Wrote to file",options.outfile
+            print("Wrote to file",options.outfile)
         else:
-            print "No unit cell found, sorry, please try again"
+            print("No unit cell found, sorry, please try again")
     except:
         if len(ubis)>0:
             indexing.write_ubi_file(options.outfile,ubis)
-            print "Wrote to file",options.outfile
+            print("Wrote to file",options.outfile)
         raise 

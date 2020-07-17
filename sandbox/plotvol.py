@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 
 import OpenGL.GL as GL
 import OpenGL.Tk as Tk
@@ -52,7 +54,6 @@ class plotvol(Tk.Toplevel):
 
     def tkTranslate(self, event):
         self.activate()
-        pass
         
             
         

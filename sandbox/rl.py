@@ -1,6 +1,8 @@
+
+from __future__ import print_function
 #!/usr/bin/env fable.python
 import numpy as np
-
+from six.moves import input
 try:
     import fftw3f
     REAL = np.float32
@@ -29,7 +31,7 @@ try:
             """
             release the memory from previous plans
             """
-            if self.plans.has_key( input.ctypes.data ):
+            if input.ctypes.data in self.plans:
                 # no idea if it leaks elsewhere
                 del self.plans[ input.ctypes.data ]
 
@@ -44,14 +46,14 @@ try:
             see also release_plan
             """
             key = input.ctypes.data
-            if self.plans.has_key( key ):
+            if key in self.plans:
                 output , plan = self.plans[key]
                 plan.execute()
                 return output
             # we've never done an fft of this array
-            if len(self.plans.keys())>6:
-                print "fftw3 is making too much cache"
-                print "needs to be programmed to reuse the same arrays"
+            if len(list(self.plans.keys()))>6:
+                print("fftw3 is making too much cache")
+                print("needs to be programmed to reuse the same arrays")
             if direct == 'forward':
                 assert input.dtype == np.float32
                 output = np.zeros( input.shape, np.complex64)
@@ -93,13 +95,13 @@ try:
 
   #  raise ImportError()
 
-    print "Using fftw3f, should perform better"
+    print("Using fftw3f, should perform better")
 
 except ImportError:
 
-    print "Using numpy fft for convolution"
-    print "You might get better performance from fftw, why not try installing:"
-    print "http://prdownload.berlios.de/pyfftw/PyFFTW3-0.2.tar.gz"
+    print("Using numpy fft for convolution")
+    print("You might get better performance from fftw, why not try installing:")
+    print("http://prdownload.berlios.de/pyfftw/PyFFTW3-0.2.tar.gz")
     REAL = np.float
 
     class convolver(object):
@@ -199,7 +201,7 @@ def score( obs, calc):
     """ See how well our model matches the data """
     diff = (obs-calc)
     d2 = (diff*diff).ravel()
-    print "score",np.sqrt(d2.mean()),
+    print("score",np.sqrt(d2.mean()), end=' ')
 
 class RichardsonLucy(object):
     def __init__(self, conv, debug=True):
@@ -221,14 +223,14 @@ class RichardsonLucy(object):
         np.seterr('warn')
         for i in range(niter):
             start = time.time()
-            if self.debug: print "RL: iter",i,
+            if self.debug: print("RL: iter",i, end=' ')
             calc = self.convolver.convolve( perfect )
             if self.debug: score( obs, calc )
             calc[:] = np.where( calc < 1./65535, 1./65535, calc)
             np.divide( obs, calc, calc ) 
             correction = self.convolver.convolve_transp( calc )
             np.multiply( perfect, correction, perfect)
-            print "%.3f"%(time.time()-start)
+            print("%.3f"%(time.time()-start))
         rescaled = undo_scale(perfect, scale, offset)
         return rescaled
 
@@ -278,7 +280,7 @@ def pa(a, name):
     and summary info
     """
     ar = a.ravel()
-    print name,ar.min(), ar.max(), ar.sum()/ar.shape[0]
+    print(name,ar.min(), ar.max(), ar.sum()/ar.shape[0])
 
     
 def test_centre_psf( ):
@@ -331,11 +333,11 @@ def testg1():
     rl = RichardsonLucy( gauss, d.shape)
     c = rl.convolve( d )
     def sm(x): return np.ravel(x).sum()
-    print sm(c), sm(d), sm(gauss)
+    print(sm(c), sm(d), sm(gauss))
     figure(2)
     imshow( c)
     colorbar()
-    raw_input("press a key")
+    input("press a key")
 
 
 def testg5():
@@ -368,7 +370,7 @@ if __name__=="__main__":
     from fabio.openimage import openimage
 
     def usage():
-        print sys.argv[0],"infile bgfilw extra_bg outfile [psfile|Gaussian_sig] [niterations=20]"
+        print(sys.argv[0],"infile bgfilw extra_bg outfile [psfile|Gaussian_sig] [niterations=20]")
         sys.exit()
 
     filename_in = sys.argv[1]

@@ -1,0 +1,70 @@
+#File names and Format
+direc 'rsvdemo'
+stem 'rsv'
+make_image 1
+output  '.edf.gz' '.flt' '.gve' '.par' '.ubi' 
+#Structural parameters
+structure_phase_0 'Fe3O4.cif'
+#Structural parameters
+# Crystal/grains parameters
+no_grains 1 
+#Total number of grains summed over all phases to be simulated. 
+#Need to match the number of U_Grains_X key word
+gen_size 0 0 0 0
+#Grain phase : If you want to let the PolyXSim appoint which grain belongs 
+# to which phase the following keyword can be used.
+gen_phase 1 1 0
+#Grain orientation : random (1) or specify specific orientation matrices (0)
+gen_U 0
+gen_pos 0 0
+
+U_grains_0 7.712806e-01 -6.337184e-01 5.939117e-02 6.130920e-01 7.146102e-01 -3.368241e-01 1.710101e-01 2.961981e-01 9.396926e-01
+size_grains_0 0.05
+pos_grains_0 0.01 -0.01 0.005
+
+sample_xyz 0.2 0.2 0.2
+gen_eps 1 0 0 0 0
+
+#Instrumentation
+#Detector pixel size [mm]
+y_size 0.2
+z_size 0.2
+#Detector size [pixels]
+dety_size 512
+detz_size 512
+#Distance from sample to detector [mm]
+distance 250.
+#Detector tilt 
+tilt_x 0.
+tilt_y 0.
+tilt_z 0.
+#Detector orientation 
+o11 1
+o12 0
+o21 0
+o22 1
+#Noise
+noise 0
+#Reflection
+lorentz_apply 1
+beampol_apply 1
+peakshape 1 0.5 0.25
+psf 1.5
+#Instrumental
+#Beam specs
+wavelength 0.1588
+beamflux 1e12
+beampol_factor 1
+beampol_direct 0
+#Beam center on detector [pixels]
+dety_center 256.0
+detz_center 256.0
+#Omega scan range [degrees]
+omega_start -90
+omega_end 90
+#Omega step size [degrees]
+omega_step 0.5
+#Omega rotation direction [degrees]
+omega_sign 1
+#Wedge angle of omega axis
+wedge 0

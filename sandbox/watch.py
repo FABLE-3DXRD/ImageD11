@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 import os, time, glob, sys
 
 firstrun = True
@@ -27,7 +29,7 @@ while 1:
         os.system("fitem_jon_chi TbAsO4_with_transition %d %d 5.9 6.27"%(
             first, last))
         os.system("cat results >> pkfits")
-    print
-    print "Control-c to exit me\r",
+    print()
+    print("Control-c to exit me\r", end=' ')
     sys.stdout.flush()
     time.sleep(30)

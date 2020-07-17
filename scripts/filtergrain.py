@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 """
 Utility script to pick out the peaks belonging to a certain
 grain
@@ -10,8 +12,10 @@ Used to stabilise refinements
 import sys, logging
 
 import numpy as np
+from argparse import ArgumentParser
 
-from ImageD11 import refinegrains, indexing, grain
+from ImageD11 import refinegrains, indexing, grain, ImageD11options
+
 
 
 def filtergrain(options):
@@ -28,9 +32,9 @@ def filtergrain(options):
         if len(o.grainnames) == 1:
             gn = o.grainnames[0]
         else:
-            for i,gn in zip(range(len(o.grainnames)),o.grainnames):
+            for i,gn in zip(list(range(len(o.grainnames))),o.grainnames):
                 logging.info("Choose %d for grain %s"%(i, gn))
-            gn = o.grainnames[int(raw_input("select which grain "))]
+            gn = o.grainnames[int(input("select which grain "))]
     else:
         gn = o.grainnames[int(options.grain)]
     o.grainnames = [ gn, ]
@@ -45,7 +49,7 @@ def filtergrain(options):
             o.tolerance = tol
             logging.info("tol %f"%(o.tolerance))
             o.refineubis(quiet=False, scoreonly=True)
-        o.tolerance = float(raw_input("Enter tolerance "))
+        o.tolerance = float(input("Enter tolerance "))
         options.tol = o.tolerance
     else:
         o.tolerance = options.tol
@@ -56,7 +60,7 @@ def filtergrain(options):
     logging.info("Total peaks before filtering %d"%
                      o.scandata[options.fltfile].nrows)
     gotpks = o.scandata[options.fltfile].copy()
-    gotpks.filter(gotpks.labels == 0)
+    gotpks.filter(gotpks.labels == gn)
     gotpks.writefile(options.newfltfile)
     logging.info("Peaks which were indexed %d written to %s"%(
                 gotpks.nrows, options.newfltfile))
@@ -79,6 +83,23 @@ def filtergrain(options):
         logging.info("Refined ubi in %s "%(
                          options.newubifile))
 
+def get_options(parser):
+    parser=refinegrains.get_options(parser)
+    parser.add_argument("-N",  "--notindexed", action="store",
+                      dest="notindexed", 
+                      type=ImageD11options.ColumnFileType(mode='w'),
+                      help="Name of flt file for unindexed peaks")
+    parser.add_argument("-g","--grain", action="store",
+                      dest = "grain", type=int, default=None,
+                      help = "Which grain to choose")
+
+    parser.description = """
+Filtergrain should choose the peaks from a filtered
+peaks output file according to those which are closest
+to a particular grain
+    """
+    return parser
+
 if __name__=="__main__":
 
     console = logging.StreamHandler(sys.stdout)
@@ -92,51 +113,10 @@ if __name__=="__main__":
     root.addHandler(console)
     root.setLevel(logging.DEBUG) # should we process everything...?
 
-    from optparse import OptionParser
 
-    parser = OptionParser()
-    parser.add_option("-p",  "--parfile", action="store",
-                      dest="parfile", type="string",
-                      help="Name of parameter file")
-    parser.add_option("-u",  "--ubifile", action="store",
-                      dest="ubifile", type="string",
-                      help="Name of ubi file")
-    parser.add_option("-U", "--newubifile", action="store",
-                      dest="newubifile", type="string",
-                      help="Name of new ubi file")
-    parser.add_option("-f",  "--fltfile", action="store",
-                      dest="fltfile", type="string",
-                      help="Name of flt file")
-    parser.add_option("-F",  "--newfltfile", action="store",
-                      dest="newfltfile", type="string",
-                      help="Name of new flt file")
-    parser.add_option("-N",  "--notindexed", action="store",
-                      dest="notindexed", type="string",
-                      help="Name of flt file for unindexed peaks")
-    parser.add_option("-t", "--tol", action="store",
-                      dest="tol", type="float",
-                      default = None,
-                      help="Tolerance to use in peak assignment")
-    parser.add_option("-g","--grain", action="store",
-                      dest = "grain", type="string", default=None,
-                      help = "Which grain to choose")
-    parser.add_option( "--omega_no_float", action="store_false",
-                      dest = "omega_float",
-                      default = True,
-                      help= "Use exact observed omega values")
+    parser = get_options( ArgumentParser() )
 
-    parser.add_option( "--omega_slop", action="store", type="float",
-                      dest = "omega_slop",
-                      default = 0.5,
-                      help= "Omega slop (step) size")
-
-    parser.description = """
-Filtergrain should choose the peaks from a filtered
-peaks output file according to those which are closest
-to a particular grain
-    """
-
-    options, args = parser.parse_args()
+    options = parser.parse_args()
 
     if None in [options.parfile,
                 options.ubifile,

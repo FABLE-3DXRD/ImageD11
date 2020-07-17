@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 
 # Generate a series of test cases for index_unknown.py
 
@@ -71,7 +72,7 @@ def makedata():
     #print dot(o,o.T)
     ub = dot( o , u.B )
 
-    print u.tostring()
+    print (u.tostring())
     meancell = pow(u.B[0,0]*u.B[1,1]*u.B[2,2], -1./3.)
     if dsmax is None:
         dsmax = 20./meancell
@@ -91,7 +92,7 @@ def makedata():
     gve = dot( ub, myh.T )
     # set wavelength to make the largest angle be 45 degrees
     if wavelength is None:
-        print "set wavelength"
+        print ("set wavelength")
         wavelength = 2*sin(pi/8.0)/dsmax
     tth, eta, omega = transform.uncompute_g_vectors( gve, wavelength ) 
     e0,e1 = eta
@@ -126,7 +127,7 @@ gv = makedata() + makedata() + makedata() + makedata() + makedata()
 write_gve( gv, "test.vecs")
 import os, sys
 cmd = sys.executable + " " + os.path.join("..","..","scripts","index_unknown.py")
-print cmd
+print( cmd)
 os.system(cmd + " -g test.vecs" + 
  " -t 0.1 -f 0.05  --fft -s 20 -v 100  -m 40 -r 1. -k 10 -n 256")
 

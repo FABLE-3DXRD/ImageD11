@@ -1,0 +1,25 @@
+build: false
+
+  
+environment:
+  matrix:
+    - CONDA: C:\Miniconda
+    - CONDA: C:\Miniconda-x64
+    - CONDA: C:\Miniconda36
+    - CONDA: C:\Miniconda36-x64
+
+init:
+  - "ECHO %CONDA%"
+
+install:
+  - "SET PATH=%CONDA%;%CONDA%\\Scripts;%CONDA%\\Library\\bin;%CONDA%\\DLLS;%PATH%"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda info -a
+  - python -m pip install numpy
+  - python setup.py build
+  - python -m pip install .
+
+
+test_script:
+  - cd test
+  - python run_tests.py

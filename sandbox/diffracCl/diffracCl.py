@@ -1,32 +1,34 @@
+from __future__ import print_function, division
 
 import pyopencl as cl
 import numpy
+import numpy as np
 import time, sys, os
 import ctypes
+import timeit
+timer = timeit.default_timer
 
 
 if "win" in sys.platform:
-    timer = time.clock
     dll = ctypes.CDLL("diffracCl.dll")
-    print "# time.clock", sys.platform, sys.version
+    print("# time.clock", sys.platform, sys.version)
 else:
-    timer = time.time
     dll = ctypes.CDLL("./diffracCl.so")
-    print "# time.time", sys.platform, sys.version
+    print("# time.time", sys.platform, sys.version)
 
 import pyopencl.version
-print "# pyopencl:",pyopencl.version.VERSION
+print("# pyopencl:",pyopencl.version.VERSION)
 
 class myCL:
     def __init__(self, npx):
         self.ctx = cl.create_some_context()
         for d in self.ctx.devices:
-            print "#",d.platform.name
-            print "#",d.vendor
-            print "#",d.name
+            print("#",d.platform.name)
+            print("#",d.vendor)
+            print("#",d.name)
         self.npx = npx
         self.queue = cl.CommandQueue(self.ctx)
-        self.pars = numpy.zeros(14, dtype=numpy.float32)
+        self.pars = np.zeros(14, dtype=np.float32)
 
     def loadProgram(self, filename):
         #read in the OpenCL source file as a string
@@ -42,7 +44,7 @@ class myCL:
 
     def popCorn(self):
         mf = cl.mem_flags
-        nb = self.npx*self.npx*4
+        nb = self.npx[0]*self.npx[1]*4
         #create OpenCL buffers
         self.par_buf = cl.Buffer(self.ctx, 
                 mf.READ_ONLY | mf.COPY_HOST_PTR,
@@ -50,37 +52,32 @@ class myCL:
 
         self.tth_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, nb )
         self.eta_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, nb )
-
+        self.tthl    = np.empty( self.npx, np.float32 )
+        self.etal    = np.empty( self.npx, np.float32 )
 
 
     def execute(self):
         # start = timer()
-        evtcompute = self.program.tthetaf4(self.queue, 
-                (self.npx/4, self.npx),
-                None, 
-                self.tth_buf, 
-                self.eta_buf,
-                self.par_buf)
+        evtcompute = self.program.tthetaf(self.queue,
+                                           self.npx,
+                                           None,
+                                           #(32,32),
+                                           self.tth_buf, 
+                                           self.eta_buf,
+                                           self.par_buf)
+#                                           is_blocking=False )
         #evtcompute.wait()
         #print timer()-start
-        self.tthl,evtt = cl.enqueue_map_buffer( self.queue,
-                    self.tth_buf,
-                    cl.map_flags.READ,
-                    0,
-                    (self.npx,self.npx),
-                    numpy.float32,
-                    'C',
-                    wait_for = [evtcompute],
-                    is_blocking=False)
-        self.etal,evte = cl.enqueue_map_buffer( self.queue,
-                    self.eta_buf,
-                    cl.map_flags.READ,
-                    0,
-                    (self.npx,self.npx),
-                    numpy.float32,
-                    'C',
-                    wait_for = [evtcompute],
-                    is_blocking=False)
+        evtt = cl.enqueue_copy( self.queue,
+                                self.tthl,
+                                self.tth_buf,
+                                wait_for = [evtcompute],
+                                is_blocking=False)
+        evte = cl.enqueue_copy( self.queue,
+                                self.etal,
+                                self.eta_buf,
+                                wait_for = [evtcompute, evtt],
+                                is_blocking=False)
         evtcompute.wait()
         evtt.wait()
         evte.wait()
@@ -89,9 +86,10 @@ class myCL:
     def setpars(self, pars ):
         self.pars = pars
         # print pars
-        cl.enqueue_write_buffer( self.queue,
-                         self.par_buf,   
-                         self.pars).wait()
+        evt = cl.enqueue_copy( self.queue,
+                               self.par_buf,   
+                               self.pars, is_blocking=True)
+        
 
 
 
@@ -116,10 +114,10 @@ class ctp:
         p = pars.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
         times = []
         # warmup
-        self.dll.ttheta(t , e , p, self.npx, self.npx )
+        self.dll.ttheta(t , e , p, self.npx[0], self.npx[1] )
         for i in range(10):
             start = timer()
-            self.dll.ttheta(t , e , p, self.npx, self.npx )
+            self.dll.ttheta(t , e , p, self.npx[0], self.npx[1] )
             times.append( timer() - start )
         return times
 
@@ -132,63 +130,61 @@ def make_pars( parfile ):
             float(p.parameters["tilt_x"]),
             float(p.parameters["tilt_y"]),
             float(p.parameters["tilt_z"]) )
-    fmat = numpy.array( [[ 1 , 0 , 0],
+    fmat = np.array( [[ 1 , 0 , 0],
           [ 0 , float(p.parameters['o11']), float(p.parameters['o12']) ],
           [ 0 , float(p.parameters['o21']), float(p.parameters['o22']) ]],
-          numpy.float32)
-    pars = numpy.array( [ float(p.parameters["y_center"]) ,
+          np.float32)
+    pars = np.array( [ float(p.parameters["y_center"]) ,
                           float(p.parameters["y_size"]) ,
                           float(p.parameters["z_center"]) ,
                           float(p.parameters["z_size"]) ,
                           float(p.parameters["distance"]) ] +
-                          list( numpy.dot( rmat, fmat).ravel() ) ,
-                                                      numpy.float32)
+                          list( np.dot( rmat, fmat).ravel() ) ,
+                                                      np.float32)
     return pars
 
 
 
 if __name__ == "__main__":
     start = timer()
-    npx = 4096
+    npx = 1024,2048
     example = myCL(npx)
     example.loadProgram("diffracCl.cl")
     example.popCorn()
     pars = make_pars(sys.argv[1]) 
     example.setpars( pars )
-    print "# Init", timer()-start
+    print("# Init", timer()-start)
     times = []
     # Warmup
     tth, eta = example.execute()
-    for i in range(100):
+    for i in range(10):
         start = timer()
-        tth, eta = example.execute()
+        tth_cl, eta_cl = example.execute()
         times.append(timer()-start)
-    times = numpy.array(times)
-    print "# mean    min    max     std"
-    print "%.4f  %.4f  %.4f  %.4f"%( times.mean(), times.min(),
-            times.max(), times.std())
-    t = numpy.median(times)
-    print "%.1f ms, %.1f fps,"%(1e3*t,1.0/t),
-    print tth.max(),tth.min()
-    eta_cl = eta.copy()
-    eta_ct = eta.copy()
-    tth_cl = tth.copy()
-    tth_ct = tth.copy()
+    times = np.array(times)
+    print("# mean    min    max     std")
+    print("%.4f  %.4f  %.4f  %.4f"%( times.mean(), times.min(),
+            times.max(), times.std()))
+    t = np.median(times)
+    print("%.1f ms, %.1f fps,"%(1e3*t,1.0/t), end=' ')
+    print(tth.max(),tth.min())
+    eta_ct = np.empty( npx, np.float32)
+    tth_ct = np.empty( npx, np.float32)
     o = ctp( npx )
-    times = numpy.array( o.compute( tth_ct, eta_ct, pars ) )
+    times = np.array( o.compute( tth_ct, eta_ct, pars ) )
 
-    print "# ctypes module, hopefully with openmp"
-    print "# mean    min    max     std"
-    print "%.4f  %.4f  %.4f  %.4f"%( times.mean(), times.min(),
-            times.max(), times.std())
-    t = numpy.median(times)
-    print "%.1f ms, %.1f fps,"%(1e3*t,1.0/t),
-    print tth.max(),tth.min()
+    print("# ctypes module, hopefully with openmp")
+    print("# mean    min    max     std")
+    print("%.4f  %.4f  %.4f  %.4f"%( times.mean(), times.min(),
+            times.max(), times.std()))
+    t = np.median(times)
+    print("%.1f ms, %.1f fps,"%(1e3*t,1.0/t), end=' ')
+    print(tth.max(),tth.min())
 
     # Check same ness
     eta_err = (abs(eta_cl - eta_ct)).mean()
     tth_err = (abs(tth_cl - tth_ct)).mean()
-    print "Mean diff tth,eta",tth_err,eta_err
+    print("Mean diff tth,eta",tth_err,eta_err)
     if len(sys.argv)>2:
      from matplotlib.pylab import imshow, figure, show, colorbar, title
      figure(1)

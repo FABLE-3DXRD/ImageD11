@@ -1,4 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
+from __future__ import print_function
 
 from ImageD11.grain import read_grain_file
 import sys, os
@@ -24,16 +26,19 @@ try:
 except:
     outersf = 1.0
 
-print "Scale factor is",outersf
+print("Scale factor is",outersf)
 for g in gf:
     #print g.translation, g.ubi
     mapfile.write("\n\n")
     o = g.translation
-    sf = pow(getmedian(g.intensity_info),0.3333)*outersf
+    try:
+        sf = pow(getmedian(g.intensity_info),0.3333)*outersf
+    except:
+        sf = outersf
     try:
         k = int(g.npks)
     except:
-        k = 0
+        k = 1
     for u in g.ubi:
         dodot(o,k)
         dodot(o+u*sf,int(g.npks))
@@ -46,7 +51,14 @@ for g in gf:
 #    dodot(o+sf*(g.ubi[0]+g.ubi[1]),k)
 
 mapfile.close()
+term = " "
+if "linux" in sys.platform:
+    term = "set term x11"
+if "win32" in sys.platform:
+    term = "set term windows"
+    
 open("gnuplot.in","w").write("""
+%s
 set ticslevel 0
 set title "Color proportional to number of peaks"
 set palette model RGB
@@ -58,7 +70,7 @@ set nokey
 set hidden3d
 #set output "ImageD11map.gif"
 splot "%s" u 1:2:3:4 w l lw 2 lc pal z
-"""%(sys.argv[2])
+"""%(term, sys.argv[2])
 # "".join(["set view 75,%d\n replot\n"%(i) for i in range(1,360,1)])
                              )
 
