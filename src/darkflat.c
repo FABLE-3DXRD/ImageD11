@@ -309,7 +309,11 @@ void array_mean_var_msk(float *restrict img,
     wt = y0 + cut * (*std);
     if (verbose > 0)
       printf("Cutting img > %f\n",wt);
-#pragma omp parallel for simd private(t) reduction(+ : s1, s2)
+#ifdef GOT_OMP_SIMD
+#pragma omp parallel for simd 
+#else
+#pragma omp parallel for 
+#endif    
     for (i = 0; i < npx; i++) {
       if (img[i] < wt){
 	msk[i] = 0;
