@@ -713,7 +713,7 @@ class refinegrains:
             chi   = self.parameterobj.parameters['chi']
             wvln  = self.parameterobj.parameters['wavelength']
             first_loop = time.time()
-            drlv2 = self.scandata[s].drlv2*0 + 1  # == 1
+            drlv2 = (self.scandata[s].drlv2*0 + 1).astype(float)  # == 1
             int_tmp = numpy.zeros(nr , numpy.int32 )-1
             for ig, g in enumerate(self.grainnames):
                 gr = self.grains[ ( g, s) ]

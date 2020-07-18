@@ -1,7 +1,7 @@
 
 
 from __future__ import print_function
-from ImageD11 import peakmerge, indexing, transformer
+from ImageD11 import peakmerge, indexing, transformer, cImageD11
 from ImageD11 import grain, unitcell, refinegrains, sym_u
 import xfab.tools
 import sys, os, numpy as np, time, random
@@ -194,7 +194,7 @@ class uniq_grain_list(object):
                 dt2  =np.dot(dt,dt)
                 if dt2 > self.dt2:
                     continue
-                aumis = np.dot(gold.asymusT, gnew.u)
+                aumis = np.dot(gold.asymusT, gnew.U)
                 arg = (aumis[:,0,0]+aumis[:,1,1]+aumis[:,2,2] - 1. )/2.
                 angle = np.arccos(np.clip(arg, -1, 1)).min()
                 if angle < self.tar:
@@ -273,8 +273,13 @@ def grid_index_parallel( fltfile, parfile, tmp, gridpars, translations ):
     """
     gridpars = initgrid( fltfile, parfile, tmp, gridpars )
     print( "Done init" )
-
-    NPR =  multiprocessing.cpu_count() - 1
+    if 'NPROC' not in gridpars or gridpars['NPROC'] is None:
+        NPR =  multiprocessing.cpu_count() - 1
+        cImageD11.cimaged11_omp_set_num_threads(2) # assume hyperthreading is useful?
+    else:
+        NPR = int(gridpars['NPROC'])
+    if 'NTHREAD' in gridpars:
+        cImageD11.cimaged11_omp_set_num_threads(int(gridpars['NTHREAD']))
     tsplit = [ translations[i::NPR] for i in range(NPR) ]
     args = [("%s.flt"%(tmp), parfile, t, gridpars) for i,t in enumerate(tsplit) ]
     q = PQueue()
@@ -332,6 +337,8 @@ if __name__=="__main__":
         'FITPOS' : True,
         'tolangle' : 0.25,
         'toldist' : 100.,
+        'NPROC' : None, # guess from cpu_count
+        'NTHREAD' : 2 ,
     }
             
     # grid to search

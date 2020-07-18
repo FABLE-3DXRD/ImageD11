@@ -46,9 +46,10 @@ print("Building version |%s|"%get_version(), "on system:", platform.system())
 #
 # JW https://stackoverflow.com/questions/724664/python-distutils-how-to-get-a-compiler-that-is-going-to-be-used
 
+
 copt =  {
     'msvc': ['/openmp', '/O2'] , 
-    'unix': ['-fopenmp', '-O2'] , 
+    'unix': ['-fopenmp', '-O2'], #, '-DF2PY_REPORT_ON_ARRAY_COPY=100'] , 
     'mingw32': ['-fopenmp', '-O2'] , 
  }
 

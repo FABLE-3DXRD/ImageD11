@@ -99,7 +99,7 @@ def main():
         sys.stdout.write(arg+" ")
         if len(keys)>0:
             for key in keys:
-                if hd.has_key(key):
+                if key in hd:
                     sys.stdout.write(" "+hd[key]+" ")
         else:
             for k in order:
@@ -109,3 +109,4 @@ def main():
 
 if __name__=="__main__":
     main()
+
