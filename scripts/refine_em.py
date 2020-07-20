@@ -14,6 +14,13 @@ except:
     print( "Usage: %s colfile.flt.new grains.map parameters.par  --omega_slop=1 etc"%(sys.argv[0]))
     sys.exit()
     
+if platform.system() != "Windows":
+    fmt = "%s %s"
+else:
+    fmt = '%s "%s"'
+
+cmd0 = fmt%( sys.executable,
+    os.path.join( os.path.split(__file__)[0], "fitgrain.py" ) )
 
 for i in range(len(g)):
     #g[i].translation[2] = 0.0
@@ -21,19 +28,13 @@ for i in range(len(g)):
     d = c.copy()
     d.filter( d.labels == i )
     d.writefile("%d.flt"%(i))
-    cmd = "%s %s/fitgrain.py"%( sys.executable, os.path.split(__file__)[0] )
-    cmd += " -p %s -u %d.ubi -U %d.ubi -P %d.par -f %d.flt -x t_z"%(
+    cmd = cmd0 + " -p %s -u %d.ubi -U %d.ubi -P %d.par -f %d.flt -x t_z"%(
         parfile,i,i,i,i)
     for extra_arg in sys.argv[4:]:
         cmd += " "+extra_arg
     cmds.append( cmd )
 
-if platform.system() != "Windows":
+if __name__=="__main__":
     p = multiprocessing.Pool( multiprocessing.cpu_count() )
     p.map( os.system, cmds )
-else:
-    for cmd in cmds:
-        print(cmd)
-        os.system(cmd)
-
 
