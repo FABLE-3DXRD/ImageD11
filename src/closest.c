@@ -201,7 +201,6 @@ int score(vec ubi[3], vec gv[], double tol, int ng) {
     int n, k;
     n = 0;
     atol = tol * tol;
-#pragma omp parallel for reduction(+ : n) private(k, h0, h1, h2, sumsq)
     for (k = 0; k < ng; k++) {
         h0 = ubi[0][0] * gv[k][0] + ubi[0][1] * gv[k][1] + ubi[0][2] * gv[k][2];
         h0 -= conv_double_to_int_fast(h0);
