@@ -34,8 +34,8 @@ def forwards_project( gr,
     cell = unitcell.unitcell( indexing.ubitocellpars( gr.ubi ), latt )
     ds_hkl = cell.gethkls( dsmax )
     hkls = np.array( [ x[1] for x in ds_hkl] )
-    gvecs = np.dot( gr.ub, hkls.T )
-    wvln, wedge, chi = [ pars.get(x) for x in "wavelength", "wedge", "chi" ]
+    gvecs = np.dot( gr.UB, hkls.T )
+    wvln, wedge, chi = [ pars.get(x) for x in ["wavelength", "wedge", "chi"] ]
     tth, (eta1, eta2), (omega1, omega2) = transform.uncompute_g_vectors(
         gvecs, wvln, wedge=wedge, chi=chi)
     osign = float(pars.get("omegasign"))
@@ -91,7 +91,7 @@ if __name__=="__main__":
         spatial = blobcorrector.correctorclass( spline )
     outfile = sys.argv[4]
     tthmax, dsmax = tth_ds_max( pars, detector_size )
-    print "# id   h   k   l    tth       eta      omega     sc       fc     s_raw    f_raw"
+    print ("# id   h   k   l    tth       eta      omega     sc       fc     s_raw    f_raw")
     peaks = []
     for gid, gr in enumerate(grains):
         newpeaks = forwards_project( gr,
@@ -101,7 +101,7 @@ if __name__=="__main__":
                                      dsmax,
                                      gid )
         peaks += newpeaks
-        print "# Grain",gid,"npks",len(newpeaks)
+        print ("# Grain",gid,"npks",len(newpeaks))
     peaks.sort()
     out = open(outfile, "w")
     out.write("# id   h   k   l    tth       eta      omega     sc       fc     s_raw    f_raw\n")
