@@ -36,7 +36,8 @@ and the blobcorrector(+splines) for correcting them for spatial distortion
 
 Defines one function (peaksearch) which might be reused
 """
-
+import h5py
+import hdf5plugin # first!
 import time
 
 # For benchmarking

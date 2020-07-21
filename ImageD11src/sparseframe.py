@@ -215,6 +215,7 @@ def sparse_moments( frame, intensity_name, labels_name ):
 def overlaps(frame1, labels1, frame2, labels2):
     """
     figures out which label of self matches which label of other
+    Assumes the zero label does not exist (background)
     Returns sparse array of:
     label in self (row)
     label in other (col)
@@ -233,11 +234,11 @@ def overlaps(frame1, labels1, frame2, labels2):
     n2  = frame2.meta[labels2][ "nlabel" ]
     tmp = np.empty( max(n1, n2)+1, 'i') # for histogram
     nedge = cImageD11.compress_duplicates( row, col, ect, tj, tmp )
-    # overwrites row/col in place
-    crow = row[:nedge]
-    ccol = col[:nedge]
+    # overwrites row/col in place : ignore the zero label (hope it is not there)
+    crow = row[:nedge]-1
+    ccol = col[:nedge]-1
     cdata = ect[:nedge]
-    cedges = scipy.sparse.coo_matrix( ( cdata, (crow, ccol)) )
+    cedges = scipy.sparse.coo_matrix( ( cdata, (crow, ccol)), shape=(n1, n2) )
     # really?
     return cedges
 
