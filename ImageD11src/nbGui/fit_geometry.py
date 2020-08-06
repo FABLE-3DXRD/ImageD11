@@ -96,19 +96,19 @@ class FitGeom(transformer.transformer):
         self.layout[1,2].on_click( self.__saveCallBack )
 
     def fitGui(self):
-		if self.__class__.interactive:
-			self.fig1 = pl.figure(1, figsize=(9,6))
-			self.ax1 = self.fig1.add_subplot()
-			tth, eta = self.compute_tth_eta()
-			self.addcellpeaks()
-			self.pt1, = self.ax1.plot( tth, eta, ",")
-			self.ax1.set(xlabel="tth", ylabel="eta")
-			self.ax1.plot( self.theorytth, [0,]*len(self.theorytth), "r|", ms=360, alpha=0.2 )
-			# Add controls
-			self.__drawWidgets()
-			display(self.layout)
-		else:
-			print('Sorry, this Gui works only in IPython notebooks!')
+        if self.__class__.interactive:
+            self.fig1 = pl.figure(1, figsize=(9,6))
+            self.ax1 = self.fig1.add_subplot()
+            tth, eta = self.compute_tth_eta()
+            self.addcellpeaks()
+            self.pt1, = self.ax1.plot( tth, eta, ",")
+            self.ax1.set(xlabel="tth", ylabel="eta")
+            self.ax1.plot( self.theorytth, [0,]*len(self.theorytth), "r|", ms=360, alpha=0.2 )
+            # Add controls
+            self.__drawWidgets()
+            display(self.layout)
+        else:
+            print('Sorry, this Gui works only in IPython notebooks!')
 
 
 
