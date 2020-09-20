@@ -35,7 +35,7 @@ import numpy as np
 
 FLOATS = [
     "fc",
-    "sc", 
+    "sc",
     "omega",
     "f_raw",
     "s_raw",
@@ -78,13 +78,13 @@ INTS = [
     "Grain",
     "grainno",
     "grain_id",
-    "IKEY", 
+    "IKEY",
     ]
 
 # 9 elements
 ij = ["%d%d"%(i,j) for i in range(1,4) for j in range(1,4)]
 # Uij, UBIij
-LONGFLOATS  = [s+v for v in ij for s in ["U","UBI"]] 
+LONGFLOATS  = [s+v for v in ij for s in ["U","UBI"]]
 
 
 
@@ -99,9 +99,9 @@ EXPONENTIALS = [ h+str(v)+t for v in ijs for h,t in [ ('eps',''),
                                                       ('sig','_s') ] ]
 
 #                              'e' ij1  'e' ij2   '_s'  for triangle ij
-EXPONENTIALS +=  ["%s%d%s%d%s"%(h,ijs[i],h,ijs[j],t) 
-                  for i in range(6) 
-                  for j in range(i,6) 
+EXPONENTIALS +=  ["%s%d%s%d%s"%(h,ijs[i],h,ijs[j],t)
+                  for i in range(6)
+                  for j in range(i,6)
                   for h,t in [ ('e',''),('e','_s'),('s',''),('s','_s')] ]
 
 # testing for line compression
@@ -111,23 +111,23 @@ EXPONENTIALS +=  ["%s%d%s%d%s"%(h,ijs[i],h,ijs[j],t)
 #assert set(olde) == set(EXPONENTIALS)
 #print "These seem to match"
 
-   
+
 FORMATS = {}
 
 
 # Make a dictionary for formatstrings when writing files
-for f in FLOATS: 
-    FORMATS[f] = "%.4f" 
-for f in LONGFLOATS: 
-    FORMATS[f] = "%.12f" 
+for f in FLOATS:
+    FORMATS[f] = "%.4f"
+for f in LONGFLOATS:
+    FORMATS[f] = "%.12f"
 for f in INTS:
     FORMATS[f] = "%.0f"
 for f in EXPONENTIALS:
     FORMATS[f] = "%.4e"
 
-def clean(str_lst): 
+def clean(str_lst):
     """ trim whitespace from titles """
-    return [s.lstrip().rstrip() for s in str_lst] 
+    return [s.lstrip().rstrip() for s in str_lst]
 
 
 def fillcols(lines, cols):
@@ -139,7 +139,7 @@ class columnfile(object):
     """
     Class to represent an ascii file containing multiple named columns
     """
-    
+
     def __init__(self, filename = None, new = False):
         self.filename = filename
         self.__data = []
@@ -158,13 +158,13 @@ class columnfile(object):
         # representation
         if not hasattr(self,"__bigarray") or len(self.__data) != len(self.__bigarray):
             self.__bigarray = np.asarray( self.__data )
-        self.__data = self.__bigarray 
+        self.__data = self.__bigarray
         return self.__bigarray
 
     def set_bigarray(self, ar):
 #        print("setting bigarray",len(ar),len(ar[0]))
 #        warnings.filter("once")
-#        warnings.warn("Setting bigarray on colfile", stacklevel=2) 
+#        warnings.warn("Setting bigarray on colfile", stacklevel=2)
         assert len(ar) == len(self.titles), \
             "Wrong length %d to set bigarray"%(len(ar))+\
             " ".join(self.titles)
@@ -178,7 +178,7 @@ class columnfile(object):
         self.set_attributes()
 
     bigarray = property(fget=get_bigarray, fset=set_bigarray)
-    
+
     def set_attributes(self):
         """
         Set object vars to point into the big array
@@ -192,7 +192,7 @@ class columnfile(object):
             setattr(self, name, self.__data[i])
             a  = getattr(self, name)
             assert len(a) == self.nrows, "%s %d %d"%(name,len(a),self.nrows)
-            
+
     def __getitem__(self, key):
         if key in self.titles:
             return self.getcolumn( key )
@@ -214,7 +214,7 @@ class columnfile(object):
             col = col.astype( np.int )
             mskfun = lambda x, val, t: x == val
         else:        # floating point
-            mskfun = lambda x, val, t: np.abs( x - val ) < t 
+            mskfun = lambda x, val, t: np.abs( x - val ) < t
         mask  = mskfun( col, values[0], tol )
         for val in values[1:]:
             np.logical_or( mskfun( col, val, tol ), mask, mask)
@@ -227,7 +227,7 @@ class columnfile(object):
         col = self.getcolumn( name )
         order = np.argsort( col )
         self.reorder( order )
-        
+
     def reorder( self, indices ):
         """
         Put array into the order given by indices
@@ -236,7 +236,7 @@ class columnfile(object):
         for col in self.__data:
             col[:] = col[indices]
         self.set_attributes()
-        
+
     def writefile(self, filename):
         """
         write an ascii columned file
@@ -287,18 +287,18 @@ class columnfile(object):
         while header and i < len(raw):
              if len(raw[i].lstrip())==0:
                  # skip blank lines
-                 i += 1    
+                 i += 1
                  continue
              if raw[i][0] == "#":
                  # title line
                  if raw[i].find("=") > -1:
                      # key = value line
-                     name, value = clean(raw[i][1:].split("="))
+                     name, value = clean(raw[i][1:].split("=",1))
                      self.parameters.addpar(
                          parameters.par( name, value ) )
                  else:
                      self.titles = raw[i][1:].split()
-                 i += 1    
+                 i += 1
              else:
                  header = False
         try:
@@ -332,7 +332,7 @@ class columnfile(object):
         self.__data = [col[msk] for col in self.__data]
         self.nrows = len(self.__data[0])
         self.set_attributes()
- 
+
     def copy(self):
         """
         Returns a (deep) copy of the columnfile
@@ -357,7 +357,7 @@ class columnfile(object):
         #cnw.ncols, cnw.nrows = cnw.bigarray.shape
         #cnw.set_attributes()
         return cnw
-        
+
     def chkarray(self):
         """
         Ensure self.bigarray holds our attributes
@@ -381,13 +381,13 @@ class columnfile(object):
         else:
             # assert self.bigarray.shape == (self.ncols, self.nrows)
             data = np.asanyarray( col )
-            assert  data.shape[0] == self.nrows 
+            assert  data.shape[0] == self.nrows
             self.titles.append(name)
             idx = len(self.titles)-1
             self.ncols += 1
             self.__data.append( data )
         setattr(self, name, self.__data[idx] )
-        
+
     # Not obvious, but might be a useful alias
     setcolumn = addcolumn
 
@@ -405,7 +405,7 @@ class columnfile(object):
         """
         self.parameters = pars
         self.parameters.dumbtypecheck()
-        
+
     def updateGeometry(self, pars=None ):
         """
         changing or not the parameters it (re)-computes:
@@ -447,7 +447,7 @@ class columnfile(object):
         self.addcolumn(modg, "ds") # dstar
 
 
-            
+
 class newcolumnfile(columnfile):
     """ Just like a columnfile, but for creating new
     files """
@@ -572,14 +572,14 @@ try:
         for name in newtitles:
             col.addcolumn( g[name][:].copy(), name )
         return col
-    
+
 except ImportError:
     def hdferr():
         raise Exception("You do not have h5py installed!")
 
     def colfile_to_hdf( a,b,name=None):
         hdferr()
-    
+
     def colfile_from_hdf( hdffile , name=None ):
         hdferr()
 
