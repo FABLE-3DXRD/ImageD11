@@ -220,7 +220,7 @@ int sparse_connectedpixels(float *restrict v, uint16_t *restrict i,
             }
         }
         if (labels[k] == 0)
-            dset_new(&S, &labels[k]);
+            S = dset_new(&S, &labels[k]);
     } // end loop over data
     if (NOISY)
         mid = my_get_time();
@@ -343,7 +343,7 @@ int sparse_connectedpixels_splat(float *restrict v, uint16_t *restrict i,
             }
         }
         if (Z[p] == 0)
-            dset_new(&S, &Z[p]);
+            S = dset_new(&S, &Z[p]);
     } // end loop over data
     if (NOISY) {
         mid = my_get_time();
