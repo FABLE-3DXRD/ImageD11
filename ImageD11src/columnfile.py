@@ -342,6 +342,7 @@ class columnfile(object):
         cnw.titles = [t for t in self.titles ]
         cnw.parameters = parameters.parameters( **self.parameters.parameters )
         cnw.bigarray = [col.copy() for col in self.__data]
+        cnw.ncols = self.ncols
         cnw.set_attributes()
         return cnw
 
