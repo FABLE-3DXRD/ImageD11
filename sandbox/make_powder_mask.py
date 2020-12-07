@@ -33,7 +33,7 @@ def make_powder_mask( parfile,
     # lim = tth * eta
     # need some idea how to cut it up...
     #  degree bins
-    m =  (eta.astype(np.int) % 2)==0
+    m =  (eta.astype(int) % 2)==0
     return m
 
 if __name__=="__main__":

@@ -53,12 +53,12 @@ class grain:
             # to be at [0,0,0]
             self.translation = None
         else:
-            self.translation = np.array(translation,np.float)
+            self.translation = np.array(translation,float)
         self.set_ubi(ubi)
 
     def set_ubi(self, ubi):
         """ Update the orientation and clear cached values """
-        self.ubi = np.array(ubi,np.float)
+        self.ubi = np.array(ubi,float)
         self.clear_cache()        
 
     def clear_cache(self):

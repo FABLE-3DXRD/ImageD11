@@ -49,7 +49,7 @@ def test_eu():
     par = read_par_file("./0.par")
     flt = columnfile( "../demo/eu.flt" )
     flt.updateGeometry(par)
-    gve = np.array( [flt.gx, flt.gy, flt.gz], np.float)
+    gve = np.array( [flt.gx, flt.gy, flt.gz], float)
     e0,e1,e2 = pkfom( gr, gve )
     flt.addcolumn( e0, "e0" )
     flt.addcolumn( e1, "e1" )

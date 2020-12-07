@@ -18,8 +18,8 @@ def spatialfix( cf, dx, dy, flip=""):
         cf.f_raw = 2048 - cf.f_raw
         print("did a horizontal flip")
     # Closest pixel indices
-    si = (cf.s_raw+0.5).astype(np.int).clip(0,2047)
-    fi = (cf.f_raw+0.5).astype(np.int).clip(0,2047)
+    si = (cf.s_raw+0.5).astype(int).clip(0,2047)
+    fi = (cf.f_raw+0.5).astype(int).clip(0,2047)
     # Add shifts
     cf.sc[:] = cf.s_raw + dy[ si, fi ]
     cf.fc[:] = cf.f_raw + dx[ si, fi ]

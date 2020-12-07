@@ -51,7 +51,7 @@ def cross(a,b):
     """
     return np.array([ a[1]*b[2]-a[2]*b[1] ,
                          a[2]*b[0]-b[2]*a[0] , 
-                         a[0]*b[1]-b[0]*a[1] ],np.float)
+                         a[0]*b[1]-b[0]*a[1] ],float)
 
 
 
@@ -145,7 +145,7 @@ class unitcell:
         if verbose==1: print("Unit cell",self.lattice_parameters)
         self.g = np.array( [[ a*a    ,  a*b*cg, a*c*cb ],
                                [ a*b*cg ,  b*b   , b*c*ca ],
-                               [ a*c*cb ,  b*c*ca, c*c    ]],np.float)
+                               [ a*c*cb ,  b*c*ca, c*c    ]],float)
         if verbose==1: print("Metric tensor\n",self.g)
         try:
             self.gi = inv(self.g)
@@ -173,7 +173,7 @@ class unitcell:
                 self.bstar*math.sin(radians(self.gammas)) , 
                 -self.cstar*math.sin(radians(self.betas))*ca ],
               [ 0 , 0  ,
-                1./c ] ] , np.float)
+                1./c ] ] , float)
         if verbose == 1: print(self.B)
         if verbose == 1: 
             print(np.dot( np.transpose(self.B),

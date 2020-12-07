@@ -28,7 +28,7 @@ from numpy import radians, degrees
 
 try:
     # crazy debug
-    test = np.arccos(np.zeros(10, np.float))
+    test = np.arccos(np.zeros(10, float))
 except:
     print(dir())
     raise
@@ -54,13 +54,13 @@ def detector_rotation_matrix(tilt_x, tilt_y, tilt_z):
     """
     r1 = np.array([[np.cos(tilt_z), -np.sin(tilt_z), 0],  # note this is r.h.
                    [np.sin(tilt_z), np.cos(tilt_z), 0],
-                   [0,    0, 1]], np.float)
+                   [0,    0, 1]], float)
     r2 = np.array([[np.cos(tilt_y), 0, np.sin(tilt_y)],
                    [0, 1,   0],
-                   [-np.sin(tilt_y), 0, np.cos(tilt_y)]], np.float)
+                   [-np.sin(tilt_y), 0, np.cos(tilt_y)]], float)
     r3 = np.array([[1,          0,       0],
                    [0,  np.cos(tilt_x), -np.sin(tilt_x)],
-                   [0,  np.sin(tilt_x), np.cos(tilt_x)]], np.float)
+                   [0,  np.sin(tilt_x), np.cos(tilt_x)]], float)
     r2r1 = np.dot(np.dot(r3, r2), r1)
     return r2r1
 
@@ -100,13 +100,13 @@ def compute_xyz_lab(peaks,
     #
     detector_orientation = [[o11, o12], [o21, o22]]
     # logging.debug("detector_orientation = "+str(detector_orientation))
-    flipped = np.dot(np.array(detector_orientation, np.float),
+    flipped = np.dot(np.array(detector_orientation, float),
                      peaks_on_detector)
     #
     vec = np.array([np.zeros(flipped.shape[1]),  # place detector at zero,
                     # sample at -dist
                     flipped[1, :],             # x in search, frelon +z
-                    flipped[0, :]], np.float)     # y in search, frelon -y
+                    flipped[0, :]], float)     # y in search, frelon -y
     # Position of diffraction spots in 3d space after detector tilts about
     # the beam centre on the detector
     rotvec = np.dot(r2r1, vec)
@@ -200,7 +200,7 @@ def compute_xyz_from_tth_eta(tth, eta, omega,
     omega data needed if crystal translations used
     """
     # xyz = unit vectors along the scattered vectors
-    xyz = np.zeros((3, tth.shape[0]), np.float)
+    xyz = np.zeros((3, tth.shape[0]), float)
     rtth = np.radians(tth)
     reta = np.radians(eta)
     xyz[0, :] =  np.cos(rtth)
@@ -211,7 +211,7 @@ def compute_xyz_from_tth_eta(tth, eta, omega,
     # Find vectors in the fast, slow directions in the detector plane
     pks = np.array([(1, 0),
                     (0, 1),
-                    (0, 0) ], np.float).T
+                    (0, 0) ], float).T
     dxyzl = compute_xyz_lab(pks, **kwds)
     # == [xpos, ypos, zpos] shape (3,n)
     #
@@ -284,12 +284,12 @@ def compute_grain_origins(omega, wedge=0.0, chi=0.0,
     w = np.radians(wedge)
     WI = np.array([[np.cos(w),         0, -np.sin(w)],
                    [0,           1,         0],
-                   [np.sin(w),         0,  np.cos(w)]], np.float)
+                   [np.sin(w),         0,  np.cos(w)]], float)
     c = np.radians(chi)
     CI = np.array([[1,            0,         0],
                    [0,     np.cos(c), -np.sin(c)],
-                   [0,     np.sin(c),  np.cos(c)]], np.float)
-    t = np.zeros((3, omega.shape[0]), np.float)  # crystal translations
+                   [0,     np.sin(c),  np.cos(c)]], float)
+    t = np.zeros((3, omega.shape[0]), float)  # crystal translations
     # Rotations in reverse order compared to making g-vector
     # also reverse directions. this is trans at all zero to
     # current setting. gv is scattering vector to all zero
@@ -301,7 +301,7 @@ def compute_grain_origins(omega, wedge=0.0, chi=0.0,
     if chi != 0.0:
         c = np.cos(np.radians(chi))
         s = np.sin(np.radians(chi))
-        u = np.zeros(t.shape, np.float)
+        u = np.zeros(t.shape, float)
         u[0, :] = t[0, :]
         u[1, :] = c * t[1, :] + -s * t[2, :]
         u[2, :] = s * t[1, :] + c * t[2, :]
@@ -309,7 +309,7 @@ def compute_grain_origins(omega, wedge=0.0, chi=0.0,
     if wedge != 0.0:
         c = np.cos(np.radians(wedge))
         s = np.sin(np.radians(wedge))
-        u = np.zeros(t.shape, np.float)
+        u = np.zeros(t.shape, float)
         u[0, :] = c * t[0, :] + -s * t[2, :]
         u[1, :] = t[1, :]
         u[2, :] = s * t[0, :] + c * t[2, :]
@@ -343,7 +343,7 @@ def compute_tth_histo(tth, no_bins=100,
     histogram = histogram / len(tth)
     # Vectorised version
     # bin for each two theta
-    bins = np.floor((tth - mintth) / binsize).astype(np.int)
+    bins = np.floor((tth - mintth) / binsize).astype(int)
     # print "got bins",len(bins),len(tth),len(histogram)
     # print "bins",bins[:10]
     # print "tth",tth[:10]
@@ -362,7 +362,7 @@ def compute_k_vectors(tth, eta, wvln):
     c = np.cos(tth / 2)  # cos theta
     s = np.sin(tth / 2)  # sin theta
     ds = 2 * s / wvln
-    k = np.zeros((3, tth.shape[0]), np.float)
+    k = np.zeros((3, tth.shape[0]), float)
     # x - along incident beam
     k[0, :] = -ds * s  # this is negative x
     # y - towards door
@@ -395,8 +395,8 @@ def compute_g_from_k(k, omega, wedge=0, chi=0):
     """
     om = np.radians(omega)
     # G-vectors - rotate k onto the crystal axes
-    g = np.zeros((3, k.shape[1]), np.float)
-    t = np.zeros((3, k.shape[1]), np.float)
+    g = np.zeros((3, k.shape[1]), float)
+    t = np.zeros((3, k.shape[1]), float)
     #
     # g =  R . W . k where:
     # R = ( cos(omega) , sin(omega), 0 )
@@ -572,9 +572,9 @@ if __name__ == "__main__":
             diff = theta - target
         return theta
 
-    tth = np.array([1,  2,  3,  4,  5,  6,  7,  8,  9, 10], np.float)
-    eta = np.array([10, 40, 70, 100, 130, 160, 190, 220, 270, 340], np.float)
-    om = np.array([0, 20, 40, 100, 60, 240, 300, 20, 42, 99], np.float)
+    tth = np.array([1,  2,  3,  4,  5,  6,  7,  8,  9, 10], float)
+    eta = np.array([10, 40, 70, 100, 130, 160, 190, 220, 270, 340], float)
+    om = np.array([0, 20, 40, 100, 60, 240, 300, 20, 42, 99], float)
 
     for wavelength in [0.1, 0.2, 0.3]:
         for wedge in [-10., -5., 0., 5., 10.]:

@@ -20,9 +20,9 @@ class test1(unittest.TestCase):
         ind  = np.ones(10,np.intp)
         vals = np.ones(10,np.float32)
         cImageD11.put_incr( data, ind, vals )
-        assert (data == np.array( [0, 10] + [0]*8 , np.float)).all()
+        assert (data == np.array( [0, 10] + [0]*8 , float)).all()
         cImageD11.put_incr( data, ind, vals )
-        assert (data == np.array( [0, 20] + [0]*8 , np.float)).all()
+        assert (data == np.array( [0, 20] + [0]*8 , float)).all()
 
     def test_as_flat(self):
         data = np.zeros( (10, 10), np.float32 )

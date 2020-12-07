@@ -10,7 +10,7 @@ def find_pair( c,
                tthtol = 0.1):
     omi = np.round( c.omega / omegatol ).astype( int )
     f180 = 180./omegatol
-    indsc = np.arange(c.nrows, dtype=np.int)
+    indsc = np.arange(c.nrows, dtype=int)
     pi = []
     pj = []
     for oi in range( omi.min(), omi.max()+1):

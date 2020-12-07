@@ -66,7 +66,7 @@ print(gtest, gobs)
 #
 
 ubi0 = np.linalg.inv( ub0 )
-hkl0 = np.array((h0,k0,l0),np.float)
+hkl0 = np.array((h0,k0,l0),float)
 unitH = hkl0 / np.sqrt( np.dot(hkl0,hkl0)  )
 unitG = gtest / np.sqrt( np.dot(gtest,gtest)  )
 angles_to_test = np.linspace( -np.pi, np.pi, 360 )

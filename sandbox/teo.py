@@ -268,9 +268,9 @@ def fitone( UB, t, sc, fc, omega, hkls, pars):
     
     s = 1e-7
     # FIXME: Gradient arrays (move to Dcalc)
-    dtthUB = np.zeros((3,3,npks), np.float)
-    detaUB = np.zeros((3,3,npks), np.float)
-    domUB = np.zeros((3,3,npks), np.float)
+    dtthUB = np.zeros((3,3,npks), float)
+    detaUB = np.zeros((3,3,npks), float)
+    domUB = np.zeros((3,3,npks), float)
     
     for i in range(3):
         for j in range(3):

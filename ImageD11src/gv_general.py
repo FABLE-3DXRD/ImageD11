@@ -74,7 +74,7 @@ class rotation_axis:
         http://mathworld.wolfram.com/RotationFormula.html
         r' = r cos(t) + n(n.r)(1-cos(t)) + rxn sin(t)
         """
-        p = np.array(vectors, np.float)
+        p = np.array(vectors, float)
         assert p.shape[0] == 3
         if angles is None:
             self.to_matrix()
@@ -94,7 +94,7 @@ class rotation_axis:
         """
         Same as rotate vectors, but opposing sense
         """
-        p = np.array(vectors, np.float)
+        p = np.array(vectors, float)
         assert p.shape[0] == 3
         if angles is None:
             self.to_matrix()
@@ -117,10 +117,10 @@ class rotation_axis:
         e = np.array([self.direction]*3)
         w = np.transpose(np.array( [ [ 0, -dz, dy ] , 
                                    [dz, 0, -dx] , 
-                                   [-dy, dx, 0] ], np.float))
+                                   [-dy, dx, 0] ], float))
         st = math.sin( math.radians( self.angle ))
         ct = math.cos( math.radians( self.angle ))
-        self.matrix = np.identity(3, np.float)*ct - st * w  + \
+        self.matrix = np.identity(3, float)*ct - st * w  + \
                       (1 - ct)*e*np.transpose(e)
         self.inversematrix = inv(self.matrix)
         return self.matrix
@@ -138,7 +138,7 @@ def axis_from_matrix( m ):
     if arg == 1:
         # identity matrix - oh bugger - direction is undefined
         angle_rad = 0.0
-        direc = np.array([0,0,1],np.float)
+        direc = np.array([0,0,1],float)
     else:
         angle_rad = math.acos(arg)  
         direc = np.array([m[2,1] - m[1,2],
@@ -152,7 +152,7 @@ def axis_from_matrix( m ):
         raise Exception("error in axis_from_matrix")
     return o
 
-rotate_identity = rotation_axis( np.array([0,0,1],np.float) , 0.0 )
+rotate_identity = rotation_axis( np.array([0,0,1],float) , 0.0 )
 
 
 def k_to_g( k , # scattering vectors in the laboratory
@@ -191,7 +191,7 @@ def k_to_g( k , # scattering vectors in the laboratory
     
 def g_to_k( g,  # g-vectors [3,:]
             wavelength, # Needed - depends on curve of Ewald sphere!
-            axis = np.array([0,0,1], np.float),
+            axis = np.array([0,0,1], float),
             pre = None,
             post = None ):
     """
@@ -232,7 +232,7 @@ def g_to_k( g,  # g-vectors [3,:]
     else:
         rg = g
     assert rg.shape == g.shape
-    beam = np.zeros(rg.shape, np.float)
+    beam = np.zeros(rg.shape, float)
     beam[0,:] = -1./wavelength
     beam[1,:] = 0.
     beam[2,:] = 0.

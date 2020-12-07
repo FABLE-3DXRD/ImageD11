@@ -80,7 +80,7 @@ class data: #IGNORE:R0902
     def getmean(self):
         """ return mean """
         if self.m == None:
-            d = np.ravel(self.data.astype(np.float))
+            d = np.ravel(self.data.astype(float))
             self.m = np.sum(d) / len(d)
         return float(self.m)
 
@@ -96,7 +96,7 @@ class data: #IGNORE:R0902
             #
             #   1. For each value xi calculate the difference
             # x_i - <x> between xi and the average value <x>.
-            d = np.ravel(self.data.astype(np.float)) - self.m
+            d = np.ravel(self.data.astype(float)) - self.m
             #   2. Calculate the squares of these differences.
             S = d*d
             #   3. Find the average of the squared differences.

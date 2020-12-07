@@ -143,7 +143,7 @@ class fitgrainxy:
             self.scandata=self.allscandata.copy()
             self.compute_gv(g)
             h=np.dot(g.ubi,np.transpose(self.gv))
-            hint=np.floor(h+0.5).astype(np.int) # rounds down
+            hint=np.floor(h+0.5).astype(int) # rounds down
             diff=h-hint
             drlv=np.sqrt(np.sum(diff*diff,0))
             indices = np.compress(drlv < 0.05,
@@ -164,7 +164,7 @@ class fitgrainxy:
                         # 2nd time with refined
                         npks = closest.score_and_refine(mat, self.gv, tol)
                         h=np.dot(mat,np.transpose(self.gv))
-                        hint=np.floor(h+0.5).astype(np.int)
+                        hint=np.floor(h+0.5).astype(int)
                         # rounds down
                         diff=h-hint
                         drlv=np.sqrt(np.sum(diff*diff,0))

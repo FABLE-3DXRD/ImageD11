@@ -13,10 +13,10 @@ import numpy as np
 i = indexing.indexer()
 i.readgvfile("eu3.gve")
 
-gve = i.gv.copy().astype(np.float)
+gve = i.gv.copy().astype(float)
 #gve = np.random.random( size=(100000,3) )-0.5
 rgba = np.zeros( (512, 512, 4), np.uint8 )
-u = np.eye(3, dtype=np.float).ravel()
+u = np.eye(3, dtype=float).ravel()
 t0 = perf_counter_ns()
 cImageD11.splat( rgba, gve, u, 1 )
 t1 = perf_counter_ns()

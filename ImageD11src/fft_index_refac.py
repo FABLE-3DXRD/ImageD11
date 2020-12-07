@@ -122,7 +122,7 @@ class grid:
         logging.info("Gridding data")
         self.gv = gv
         hrkrlr = self.cell_size * gv
-        hkl = np.round( hrkrlr ).astype(np.int)
+        hkl = np.round( hrkrlr ).astype(int)
         # Filter to have the peaks in asym unit
         # ... do we need to do this? What about wrapping?
         hmx = hkl.max(axis=1) <  (self.npx/2. - 2.)
@@ -131,7 +131,7 @@ class grid:
         # Compute hkl indices in the fft unit cell using filtered peaks
         hrkrlr = self.cell_size * my_g
         # Integer part of hkl (eg 1.0 from 1.9)
-        hkl = np.floor(hrkrlr).astype(np.int)
+        hkl = np.floor(hrkrlr).astype(int)
         # Fractional part of indices ( eg 0.9 from 1.9)
         remain = hrkrlr - hkl
         grid = self.grid
@@ -237,7 +237,7 @@ class grid:
         import time
         start = time.time()
         scores = np.dot( self.UBIALL, np.transpose( self.gv ) )
-        scores_int = np.floor( scores + 0.5).astype(np.int)
+        scores_int = np.floor( scores + 0.5).astype(int)
         diff = scores - scores_int
         nv = len(self.UBIALL)
         print("scoring",nv,time.time()-start)
@@ -297,7 +297,7 @@ class grid:
 
 
 
-        # sm = np.zeros( (len(diff), len(diff)), np.float)
+        # sm = np.zeros( (len(diff), len(diff)), float)
         # for k in range(len(diff)):
         #     i = order[k]
         #     sm[i,i] = np.dot(diff[i], diff[i])

@@ -58,7 +58,7 @@ class group:
         Basic group is identity
         tol is for numerical comparison of group membership
         """
-        self.group = [ np.identity(3, np.float) ]
+        self.group = [ np.identity(3, float) ]
         self.tol = 1e-5
     def op(self, x, y):
         """
@@ -336,13 +336,13 @@ def test():
     # translational groups
     g1 = trans_group()
     g2 = trans_group()
-    ops = [ np.array( [ 1,0,0], np.float) ,
-            np.array( [ 0,1,0], np.float) ,
-            np.array( [ 0,0,1], np.float) ]
+    ops = [ np.array( [ 1,0,0], float) ,
+            np.array( [ 0,1,0], float) ,
+            np.array( [ 0,0,1], float) ]
     for op in ops:
         g1.additem(op)
         g2.additem(op)
-    g2.additem( np.array( [ 5,6,7], np.float)  )
+    g2.additem( np.array( [ 5,6,7], float)  )
     for op2 in g2.group:
         found = False
         for op1 in g1.group:
