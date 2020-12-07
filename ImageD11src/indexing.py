@@ -445,7 +445,7 @@ class indexer:
                     out.write("%f %f %f %f %f %f    "%(self.eta[a],self.omega[a],self.tth[a],self.gv[a][0],self.gv[a][1],self.gv[a][2]))
                     out.write("\n")
 
-    def score_all_pairs(self):
+    def score_all_pairs(self, n=None):
         """
         Generate all the potential pairs of rings and go score them too
         """
@@ -462,7 +462,9 @@ class indexer:
         self.tried = 0
         self.npairs = len(pairs)
         self.stop=False
+        k = 0
         for mu, oc, r1, r2 in pairs:
+            k += 1
             try:
                 self.ring_1 = r1
                 self.ring_2 = r2
@@ -472,6 +474,8 @@ class indexer:
             except KeyboardInterrupt:
                 break
             if self.stop:
+                break
+            if n is not None and k > n:
                 break
             print("Tried r1=%d r2=%d attempt %d of %d, got %d grains"%(r1,r2,self.tried,len(pairs),len(self.ubis)))
         print("\nTested",self.tried,"pairs and found",len(self.ubis),"grains so far")
@@ -549,6 +553,7 @@ class indexer:
         # found=0
         hits=[]
         start = time.time()
+        self.cosangles = cs
         mtol = -tol # Ugly interface - set cosine tolerance negative for all
                     # instead of best
         for i in range(len(i1)):
@@ -620,8 +625,7 @@ class indexer:
                                      self.gv[i,:],
                                      self.ring_2,
                                      self.gv[j,:],
-                                     verbose=0,
-                                     all=False)
+                                     verbose=0)
             except:
                 logging.error(" ".join([str(x) for x in (i,j,self.ring_1,self.ring_2)]))
                 logging.error(str(self.gv[i]))
@@ -631,19 +635,29 @@ class indexer:
             if fitb4: # FIXME : this does not work
                self.unitcell.UBI = ubi_fit_2pks( self.unitell.UBI, self.gv[i,:], self.gv[j,:])
             npk = cImageD11.score(self.unitcell.UBI,gv,tol)
+            UBI = self.unitcell.UBI.copy()
             if npk > self.minpks:
-                self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:], verbose=0, all=True)
+                self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],
+                                     verbose=0, crange=abs(self.cosine_tol))
                 if fitb4:
                    for k in range( len(self.unitell.UBIlist) ):
                         self.unitell.UBIlist[k] = ubi_fit_2pks( self.unitell.UBIlist[k],
                                                                 self.gv[i,:], self.gv[j,:])
+                if len(self.unitcell.UBIlist)==0:
+                    import pdb; pdb.set_trace()
+                    self.find()
+                    self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],
+                                     verbose=0, crange=abs(self.cosine_tol))
+                    
                 npks=[cImageD11.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist]
                 choice = np.argmax(npks)
-                UBI = self.unitcell.UBIlist[choice]
-                if npks[choice] < npk:
-                    logging.error("Error in indexing: debug please!")
-                    #import pdb; pdb.set_trace()
-                npk = npks[choice]
+                if npks[choice] > npk:
+                    # logging.error("Error in indexing: debug please!")
+                    # import pdb; pdb.set_trace()
+                    pass
+                else:
+                    UBI = self.unitcell.UBIlist[choice].copy()
+                    npk = npks[choice]
                 _ = cImageD11.score_and_refine( UBI, gv, tol )
                 # See if we already have this grain...
                 try:

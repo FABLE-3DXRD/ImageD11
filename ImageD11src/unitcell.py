@@ -346,11 +346,12 @@ class unitcell:
             h1_h2  = []
             for h1 in self.ringhkls[self.ringds[ring1]]:
                 for h2 in self.ringhkls[self.ringds[ring2]]:
-                    if h1 == h2 or h1 == tuple(-h for h in h2):
+                    a,ca = self.anglehkls(h1,h2)
+                    if abs(ca) > (1.-1.e-5):
                         continue
                     h1_h2.append((h1, h2))
                     # Note - returns angle, cosangle
-                    cangs.append( self.anglehkls(h1,h2)[1] )
+                    cangs.append(ca)
             val = filter_pairs( h1_h2, cangs, B, BI  )
             self.anglehkl_cache[key] = val
         else:
@@ -358,7 +359,7 @@ class unitcell:
         return val
 
     
-    def orient(self,ring1,g1,ring2,g2,verbose=0, all = True):
+    def orient(self,ring1,g1,ring2,g2,verbose=0, crange = -1.):
         """
         Compute an orientation matrix using cell parameters and the indexing
         of two reflections
@@ -372,13 +373,10 @@ class unitcell:
         """
         costheta = np.dot( g1, g2 ) / np.sqrt( (g1*g1).sum()*(g2*g2).sum() )
         hab, c2ab, matrs =  self.getanglehkls( ring1, ring2 )
-        if all:
-            isrch = np.argmin( abs(c2ab - costheta ))
-            lo = min(np.searchsorted(c2ab, c2ab[isrch] - 1e-4, side='left' ), len(c2ab)-1)
-            hi = min(np.searchsorted(c2ab, c2ab[isrch] + 1e-4, side='right' ), len(c2ab))
-            best = list(range( lo, hi ))
+        if crange > 0:
+            best = np.arange( len(c2ab), dtype=int)[ abs( c2ab - costheta ) < crange ]
             if verbose == 1:
-                print("lo hi best", lo, hi, best, len(c2ab))
+                print("possible best", best, len(c2ab))
         else:
             i = np.searchsorted(c2ab, costheta, side='left' )
             if i > 0 and (i == len(c2ab) or
@@ -435,31 +433,43 @@ def BTmat( h1, h2, B, BI ):
     return BT
 
 def filter_pairs( h1h2, c2a, B, BI, tol = 1e-5):
-    order = np.argsort( c2a ) # increasing
-    h1, h2 = h1h2[order[0]]
-    BT     = BTmat( h1, h2, B, BI )
+    """ remove duplicate pairs from orientation searches """
+    order = np.argsort( c2a ) # increasing in cosine of angle
+    h1, h2 = h1h2[order[0]]   # h1/h2 pair to make that angle
+    BT     = BTmat( h1, h2, B, BI ) 
     UBI    = np.array( (np.dot(B, h1), np.dot(B,h2), (0,0,0)), float )
     cImageD11.quickorient( UBI,  BT )
     UB = np.linalg.inv( UBI )
+    # keep the first one
     pairs = [ (h1, h2), ]
     cangs = [ c2a[order[0]], ]
     matrs = [ BT, ]
     gvecs = [ np.dot( UB, HKL0 ).T.copy(), ]
     nhkl = len(HKL0[0])
-    #import pdb;pdb.set_trace()
+    # check the rest.
     for i in order[1:]:
         h1, h2 = h1h2[i]
         BT     = BTmat( h1, h2, B, BI )
-        UBI    = np.array( (np.dot(B, h1), np.dot(B,h2), (0,0,0)), float )
-        cImageD11.quickorient( UBI,  BT )
+        # new angle or different UBI keep it
+        if abs(c2a[i] - cangs[-1]) > 1e-6:
+            # keep it!
+            pairs += [(h1,h2),]
+            cangs += [c2a[i],]
+            matrs += [ BT, ]
+            UBI    = np.array( (np.dot(B, h1), np.dot(B,h2), (0,0,0)), float )
+            cImageD11.quickorient( UBI,  BT )
+            gvecs += [ np.dot( np.linalg.inv(UBI), HKL0 ).T.copy(), ]
+            continue
         j = len(pairs)-1
-        while j>=0 and fabs(c2a[order[i]] - cangs[j]) < 1e-6:
+        while j>=0 and abs(c2a[i] - cangs[j]) < 1e-6: # same angle
+            UBI    = np.array( (np.dot(B, h1), np.dot(B,h2), (0,0,0)), float )
+            cImageD11.quickorient( UBI,  BT )
             if cImageD11.score( UBI, gvecs[j], 1e-8 ) < nhkl+1:
                 pairs += [ (h1, h2), ]
                 cangs += [ c2a[i], ]
                 matrs += [ BT, ]
-                gvecs += [ np.dot( np.linalg.inv(UBI) , HKL0 ).T.copy(), ]
-                j = -1 # break
+                gvecs += [ np.dot( np.linalg.inv(UBI), HKL0 ).T.copy(), ]
+                break
             else:
                 j -= 1
     return pairs, cangs, matrs
