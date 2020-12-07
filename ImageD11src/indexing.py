@@ -651,9 +651,9 @@ class indexer:
                         npk = npks[choice]
                     else:
                         logging.error("Missing orientations")
-                        import pdb; pdb.set_trace()
-                        self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],
-                                     verbose=0, crange=abs(self.cosine_tol))
+                        # import pdb; pdb.set_trace()
+                        #self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],
+                       #              verbose=0, crange=abs(self.cosine_tol))
                 else:
                     logging.error("Error in indexing: debug please!")
                 _ = cImageD11.score_and_refine( UBI, gv, tol )
