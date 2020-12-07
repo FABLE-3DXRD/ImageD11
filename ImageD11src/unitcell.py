@@ -422,22 +422,37 @@ class unitcell:
         self.UBIlist = ubi_equiv( self.UBIlist, UBlist )
 
 def BTmat( h1, h2, B, BI ):
-    """ used for computing orientations """
-    g1 = np.dot( B, h1 )
+    """ used for computing orientations 
+    """
+    g1 = np.dot( B, h1 )     # gvectors for these hkl
     g2 = np.dot( B, h2 )
     g3 = np.cross( g1, g2 )
-    u1 = unit(g1)
+    u1 = unit(g1)            # normalised
     u3 = unit(g3)
     u2 = np.cross(u1, u3)
-    BT = np.dot( BI, np.transpose((u1, u2, u3)))
+    BT = np.dot( BI, np.transpose((u1, u2, u3))) 
     return BT
 
+HKL0 = np.array( [ [0,0,1,1,-1,1,-1,0, 0, 1, -1, 1, 1, 3, 11],
+                   [0,1,0,1, 1,0, 0,1,-1, 1,  1,-1, 1, 2, 12],
+                   [1,0,0,0, 0,1, 1,1, 1, 1,  1, 1,-1, 1, 13] ], np.float ) # first unit cell
+
+
 def filter_pairs( h1h2, c2a, B, BI, tol = 1e-5):
-    """ remove duplicate pairs from orientation searches """
+    """ remove duplicate pairs from orientation searches 
+    h1h2 = pairs of reflections
+    c2a  = cos angle between them
+    B = B matrix in reciprocal space
+    BI = inverse in real space
+    """
+#    print('B',B)
+#    print('BI',BI)
     order = np.argsort( c2a ) # increasing in cosine of angle
     h1, h2 = h1h2[order[0]]   # h1/h2 pair to make that angle
-    BT     = BTmat( h1, h2, B, BI ) 
-    UBI    = np.array( (np.dot(B, h1), np.dot(B,h2), (0,0,0)), float )
+    BT     = BTmat( h1, h2, B, BI )
+    g1 = np.dot(B, h1)
+    g2 = np.dot(B, h2)
+    UBI = np.array((g1,g2,(0,0,0)),float)
     cImageD11.quickorient( UBI,  BT )
     UB = np.linalg.inv( UBI )
     # keep the first one
@@ -445,47 +460,47 @@ def filter_pairs( h1h2, c2a, B, BI, tol = 1e-5):
     cangs = [ c2a[order[0]], ]
     matrs = [ BT, ]
     gvecs = [ np.dot( UB, HKL0 ).T.copy(), ]
+    peaks = [ (g1, g2) ,]
     nhkl = len(HKL0[0])
     # check the rest.
     for i in order[1:]:
         h1, h2 = h1h2[i]
+#        print(h1,h2,c2a[i])
         BT     = BTmat( h1, h2, B, BI )
-        # new angle or different UBI keep it
-        if abs(c2a[i] - cangs[-1]) > 1e-6:
-            # keep it!
+        if abs(c2a[i] - cangs[-1]) > 1e-6:  # keep it!
+#            print("newangle")
             pairs += [(h1,h2),]
             cangs += [c2a[i],]
             matrs += [ BT, ]
-            UBI    = np.array( (np.dot(B, h1), np.dot(B,h2), (0,0,0)), float )
-            cImageD11.quickorient( UBI,  BT )
             gvecs += [ np.dot( np.linalg.inv(UBI), HKL0 ).T.copy(), ]
+            peaks += [ (np.dot(B, h1), np.dot(B, h2)),]
             continue
+        newmatrix = True
         j = len(pairs)-1
         while j>=0 and abs(c2a[i] - cangs[j]) < 1e-6: # same angle
-            UBI    = np.array( (np.dot(B, h1), np.dot(B,h2), (0,0,0)), float )
-            cImageD11.quickorient( UBI,  BT )
-            if cImageD11.score( UBI, gvecs[j], 1e-8 ) < nhkl+1:
-                pairs += [ (h1, h2), ]
-                cangs += [ c2a[i], ]
-                matrs += [ BT, ]
-                gvecs += [ np.dot( np.linalg.inv(UBI), HKL0 ).T.copy(), ]
-                break
+            g1, g2 = peaks[j]
+            UBI    = np.array( (g1, g2, (0,0,0)), float )
+            cImageD11.quickorient( UBI,  BT )        
+            score = cImageD11.score( UBI, gvecs[j], 1e-6 )
+            if score == nhkl: # seen before
+                newmatrix = False
+                j = -99
+                break # the while
             else:
-                j -= 1
+                #print('ijs',i,j,score)
+                j = j - 1
+        if newmatrix:
+#            print("newmatrix")
+            pairs += [ (h1, h2), ]
+            cangs += [ c2a[i], ]
+            matrs += [ BT, ]
+            gvecs += [ np.dot( np.linalg.inv(UBI), HKL0 ).T.copy(), ]
+            peaks += [ (np.dot(B, h1), np.dot(B, h2)),]
+#        else:
+#            print("duplicate")
+#    print("Filter pairs returned",len(pairs),"from",len(h1h2))
     return pairs, cangs, matrs
             
-
-                
-
-        
-
-
-
-        
-HKL0 = np.array( [ [0,0,1,1,-1,1,-1,0, 0, 1, -1, 1, 1],
-                   [0,1,0,1, 1,0, 0,1,-1, 1,  1,-1, 1],
-                   [1,0,0,0, 0,1, 1,1, 1, 1,  1, 1,-1] ], np.float ) # first unit cell
-
 def ubi_equiv( ubilist, ublist, tol=1e-8):
     """ Two ubi are considered equivalent if they both index the peaks
     in the HKL0 array exactly"""

@@ -643,21 +643,19 @@ class indexer:
                    for k in range( len(self.unitell.UBIlist) ):
                         self.unitell.UBIlist[k] = ubi_fit_2pks( self.unitell.UBIlist[k],
                                                                 self.gv[i,:], self.gv[j,:])
-                if len(self.unitcell.UBIlist)==0:
-                    import pdb; pdb.set_trace()
-                    self.find()
-                    self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],
-                                     verbose=0, crange=abs(self.cosine_tol))
-                    
                 npks=[cImageD11.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist]
-                choice = np.argmax(npks)
-                if npks[choice] > npk:
-                    # logging.error("Error in indexing: debug please!")
-                    # import pdb; pdb.set_trace()
-                    pass
+                if len(npks) > 0:
+                    choice = np.argmax(npks)
+                    if npks[choice] > npk:
+                        UBI = self.unitcell.UBIlist[choice].copy()
+                        npk = npks[choice]
+                    else:
+                        logging.error("Missing orientations")
+                        import pdb; pdb.set_trace()
+                        self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],
+                                     verbose=0, crange=abs(self.cosine_tol))
                 else:
-                    UBI = self.unitcell.UBIlist[choice].copy()
-                    npk = npks[choice]
+                    logging.error("Error in indexing: debug please!")
                 _ = cImageD11.score_and_refine( UBI, gv, tol )
                 # See if we already have this grain...
                 try:
@@ -668,7 +666,7 @@ class indexer:
                         np.put(self.ga, ind, len(self.scores)+1)
                         self.ubis.append(UBI)
                         self.scores.append(npk)
-                        logging.info("new grain %d pks, UBI %s",npk,str(UBI.ravel()))
+                        logging.info("new grain %d pks, i %d j %d UBI %s",npk,i,j,str(UBI.ravel()))
                         ng=ng+1
                     else:
                         nuniq=nuniq+1
