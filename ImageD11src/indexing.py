@@ -299,7 +299,7 @@ class indexer:
         self.eta_range = eta_range
         self.ubis=[]
         self.scores=[]
-
+        self.index_needs_debug = 0 # track problems quietly...
 
         # it would make more sense to inherit the parameter object - will
         # have to think about this some more - how general is it?
@@ -637,6 +637,7 @@ class indexer:
             npk = cImageD11.score(self.unitcell.UBI,gv,tol)
             UBI = self.unitcell.UBI.copy()
             if npk > self.minpks:
+                # Try to get a better orientation if we can...:
                 self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],
                                      verbose=0, crange=abs(self.cosine_tol))
                 if fitb4:
@@ -644,18 +645,15 @@ class indexer:
                         self.unitell.UBIlist[k] = ubi_fit_2pks( self.unitell.UBIlist[k],
                                                                 self.gv[i,:], self.gv[j,:])
                 npks=[cImageD11.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist]
-                if len(npks) > 0:
+                if len(npks) > 0: # if it fails we are keeping quiet...
                     choice = np.argmax(npks)
-                    if npks[choice] > npk:
+                    if npks[choice] >= npk:
                         UBI = self.unitcell.UBIlist[choice].copy()
                         npk = npks[choice]
                     else:
-                        logging.error("Missing orientations")
-                        # import pdb; pdb.set_trace()
-                        #self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],
-                       #              verbose=0, crange=abs(self.cosine_tol))
+                        self.index_needs_debug += 1
                 else:
-                    logging.error("Error in indexing: debug please!")
+                    self.index_needs_debug += 1
                 _ = cImageD11.score_and_refine( UBI, gv, tol )
                 # See if we already have this grain...
                 try:
