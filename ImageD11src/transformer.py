@@ -632,3 +632,17 @@ class transformer:
         #    print geoRef
         #geoRef.save(os.path.splitext(filename)[0] + ".poni")
 
+    def save_tth_his(self, filename, bins, hist):
+        """
+        Saves a 2 theta histogram into a file
+        bins and histogram should have been calculated previously
+        """
+        #        self.parameterobj.update_other(self)
+
+        f = open(filename, "w")
+        f.write("# Peaks: %s\n" % self.colfile.filename)
+        f.write("# N. bins: %d\n" % len(bins))
+        f.write("# 2tth intensity\n")
+        for i in range(0,len(hist)):
+            f.write("%10.7f  %.7g \n" % (bins[i], hist[i]))
+        f.close()

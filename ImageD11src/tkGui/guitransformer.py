@@ -52,6 +52,7 @@ class guitransformer:
               ( "Save parameters", 0, self.saveparameters),
 #              ( "Plot selected columns", 0, self.plotcols),
               ( "Plot tth histogram", 0, self.plothisto ),
+              ( "Export tth histogram", 0, self.savehisto ), 
               ( "Filter peaks based on tth histogram", 0, self.filterhisto ),
               ( "Compute g-vectors", 0, self.computegv),
               ( "Save g-vectors", 0, self.savegv),
@@ -218,6 +219,31 @@ class guitransformer:
 
                      }
                      )))
+
+    def savehisto(self, nbins = None):
+        if nbins is None:
+            nbins = self.parent.guicommander.execute("transformer",
+                                                     "parameterobj.get",
+                                                     "no_bins")
+            d = listdialog( self.parent,
+                            items={"no_bins": nbins},
+                            title="Histogram - no of bins")
+
+            nbins = int(d.result['no_bins'])
+
+            self.parent.guicommander.execute("transformer",
+                                             "parameterobj.set_parameters",
+                                             d.result)
+        else:
+            self.parent.guicommander.execute("transformer",
+                                             "parameterobj.set",
+                                             "no_bins", nbins)
+
+        bins, hist = self.parent.guicommander.execute("transformer",
+                                                      "compute_tth_histo")
+        filename=self.parent.saver.show(title="File to save histogram")
+        self.parent.guicommander.execute("transformer","save_tth_his",filename,bins,hist)
+
 
     def filterhisto(self):
         """ Call plot histo, then filter on it """
