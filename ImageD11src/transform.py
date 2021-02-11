@@ -352,6 +352,33 @@ def compute_tth_histo(tth, no_bins=100,
     # print "hpk",hpk[:10]
     return tthbin, histogram, hpk
 
+def compute_tth_histo_numpy(tth, no_bins=100, weight = False, weights = 0,
+                      **kwds):
+    """
+    Compute a histogram of tth values
+    Uses numpy's histogram rather that doing it by hand as above
+    New feature: weight by something (peak intensity for instance), send true for weight and weights values
+
+    Returns a normalised histogram (should make this a probability
+    *and*
+     For each datapoint, the corresponding histogram weight
+    2021-02-11 S. Merkel
+    """
+    maxtth = tth.max()
+    mintth = tth.min()
+    logging.debug("maxtth=%f , mintth=%f" % (maxtth, mintth))
+    if (weight):
+        histogram,binedges = np.histogram(tth, bins=no_bins, weights=weights, density=True)
+    else:
+        histogram,binedges = np.histogram(tth, bins=no_bins, density=True)
+    tthbin = np.mean(np.vstack([binedges[0:-1],binedges[1:]]), axis=0)
+    histogram = histogram/histogram.sum()
+    # histogram value for each peak
+    binsize = (maxtth - mintth) / (no_bins-1)
+    bins = np.floor((tth - mintth) / binsize).astype(np.int)
+    # print(len(bins), max(bins), min(bins), len(histogram))
+    hpk = np.take(histogram, bins) 
+    return tthbin, histogram, hpk
 
 def compute_k_vectors(tth, eta, wvln):
     """
