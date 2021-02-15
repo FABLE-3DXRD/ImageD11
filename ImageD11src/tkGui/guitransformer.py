@@ -27,7 +27,6 @@ import numpy as np
 #    from tkinter import *
 
 from .listdialog import listdialog, columnchooser
-
 from . import twodplot
 
 
@@ -192,11 +191,15 @@ class guitransformer:
             nbins = self.parent.guicommander.execute("transformer",
                                                      "parameterobj.get",
                                                      "no_bins")
+            doweight = self.parent.guicommander.execute("transformer",
+                                                     "parameterobj.get",
+                                                     "weight_hist_intensities")
             d = listdialog( self.parent,
-                            items={"no_bins": nbins},
+                            items={"no_bins": nbins, "weight_hist_intensities": doweight},
                             title="Histogram - no of bins")
 
             nbins = int(d.result['no_bins'])
+            doweight = int(d.result['weight_hist_intensities'])
 
             self.parent.guicommander.execute("transformer",
                                              "parameterobj.set_parameters",
@@ -225,11 +228,15 @@ class guitransformer:
             nbins = self.parent.guicommander.execute("transformer",
                                                      "parameterobj.get",
                                                      "no_bins")
+            doweight = self.parent.guicommander.execute("transformer",
+                                                     "parameterobj.get",
+                                                     "weight_hist_intensities")
             d = listdialog( self.parent,
-                            items={"no_bins": nbins},
+                            items={"no_bins": nbins, "weight_hist_intensities": doweight},
                             title="Histogram - no of bins")
 
             nbins = int(d.result['no_bins'])
+            doweight = int(d.result['weight_hist_intensities'])
 
             self.parent.guicommander.execute("transformer",
                                              "parameterobj.set_parameters",
@@ -254,10 +261,14 @@ class guitransformer:
         min_bin_prob = self.parent.guicommander.execute("transformer",
                                                         "parameterobj.get",
                                                         "min_bin_prob")
+        
+        doweight = self.parent.guicommander.execute("transformer",
+                                                     "parameterobj.get",
+                                                     "weight_hist_intensities")
 
         d=listdialog(self.parent,items={
             "no_bins": nbins,
-            "min_bin_prob": min_bin_prob},
+            "min_bin_prob": min_bin_prob,  "weight_hist_intensities": doweight},
                      title="Histogram filter")
 
 
