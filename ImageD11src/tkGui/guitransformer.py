@@ -27,8 +27,6 @@ import numpy as np
 #    from tkinter import *
 
 from .listdialog import listdialog, columnchooser
-from .listdialogseb import listdialog as listdialogseb
-
 from . import twodplot
 
 
@@ -107,7 +105,7 @@ class guitransformer:
             else:
                 logic[v]=0
         logging.debug("transformer pars: %s"% (str(pars)))
-        d = listdialogseb(self.parent,items=pars,title="Detector parameters",
+        d = listdialog(self.parent,items=pars,title="Detector parameters",
                        logic=logic)
         self.parent.guicommander.execute("transformer",
                                          "parameterobj.set_parameters",
