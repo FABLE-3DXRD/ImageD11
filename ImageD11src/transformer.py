@@ -307,7 +307,7 @@ class transformer:
         self.addcolumn(hpk, colname + "_hist_prob")
         return bins, hist
 
-    def compute_tth_histo(self, weight = False, weightscolname = None):
+    def compute_tth_histo(self):
         """ Give hardwire access to tth """
         if "tth" not in self.colfile.titles:
             self.compute_tth_eta()
