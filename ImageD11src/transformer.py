@@ -164,6 +164,10 @@ PARAMETERS = [
          helpstring="Number of bins to use in histogram based filters",
          vary=False,
          can_vary=False),
+     par('weight_hist_intensities', False,
+         helpstring="If True or 1, weight histograms by peak intensities. If False or 0, histogram by number of peaks.",
+         vary=False,
+         can_vary=False),
      ]
 
 
@@ -282,15 +286,28 @@ class transformer:
 
     def compute_histo(self, colname):
         """ Compute the histogram over twotheta for peaks previous read in
-        Filtering is moved to a separate function """
+        Filtering is moved to a separate function
+        
+        colname is most-often "tth"
+        
+        other parameters are set in the parameter object
+        no_bins = number of bins
+        weight_hist_intensities: True or False
+            False: histogram by number of measured peaks
+            True: weight by peak intensities 
+        """
         if colname not in self.colfile.titles:
             raise Exception("Cannot find column " + colname)
-        bins, hist, hpk = transform.compute_tth_histo(self.getcolumn(colname),
+        weight = self.parameterobj.get("weight_hist_intensities")
+        if (weight):
+            bins, hist, hpk = transform.compute_tth_histo(self.getcolumn(colname), weight = True, weights = self.getcolumn("sum_intensity"), **self.parameterobj.get_parameters())
+        else:
+            bins, hist, hpk = transform.compute_tth_histo(self.getcolumn(colname),
                                              **self.parameterobj.get_parameters())
         self.addcolumn(hpk, colname + "_hist_prob")
         return bins, hist
 
-    def compute_tth_histo(self):
+    def compute_tth_histo(self, weight = False, weightscolname = None):
         """ Give hardwire access to tth """
         if "tth" not in self.colfile.titles:
             self.compute_tth_eta()
