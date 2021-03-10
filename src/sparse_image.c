@@ -187,6 +187,7 @@ int sparse_connectedpixels(float *restrict v, uint16_t *restrict i,
         if (v[k] <= threshold) {
             continue;
         }
+        if (k == 0) goto newlabel;
         /* Decide on label for this one ...
          *
          * 4 neighbors : k-1 is prev
@@ -194,18 +195,15 @@ int sparse_connectedpixels(float *restrict v, uint16_t *restrict i,
         p = k - 1; /* previous pixel, same row */
         if (((j[p] + 1) == j[k]) && (i[p] == i[k]) && (labels[p] > 0)) {
             labels[k] = labels[p];
+            /* check for unions below */
         }
+        if (i[k] == 0) goto newlabel;
         ir = i[k] - 1;
         /* pp should be on row above, on or after j-1 */
         while (ir > i[pp])
             pp++;
         /* out if nothing on row above */
-        if (i[pp] == i[k]) {
-            if (labels[k] == 0) {
-                S = dset_new(&S, &labels[k]);
-                continue;
-            }
-        }
+        if (i[pp] == i[k]) goto newlabel;
         /* Locate previous pixel on row above */
         while (((j[k] - j[pp]) > 1) && (i[pp] == ir))
             pp++;
@@ -219,6 +217,7 @@ int sparse_connectedpixels(float *restrict v, uint16_t *restrict i,
                 break; // not same row
             }
         }
+newlabel:
         if (labels[k] == 0)
             S = dset_new(&S, &labels[k]);
     } // end loop over data
