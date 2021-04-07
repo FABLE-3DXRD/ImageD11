@@ -18,7 +18,7 @@ install:
   - python -m pip install --upgrade pip
   - python -m pip install numpy h5py==2.10.0 --only-binary=h5py
   - python setup.py build
-  - python -m pip install --ignore-installed certifi --upgrade --upgrade-strategy only-if-needed .
+  - python -m pip install --ignore-installed certifi --upgrade-strategy to-satisfy-only .
 
 
 test_script:
