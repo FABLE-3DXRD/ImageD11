@@ -15,7 +15,7 @@ install:
   - "SET PATH=%CONDA%;%CONDA%\\Scripts;%CONDA%\\Library\\bin;%CONDA%\\DLLS;%PATH%"
   - conda config --set always_yes yes --set changeps1 no
   - conda info -a
-  - python -m pip install numpy
+  - python -m pip install numpy h5py==2.10.0 --only-binary=h5py
   - python setup.py build
   - python -m pip install .  --ignore-installed certifi
 
