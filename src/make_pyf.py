@@ -1,6 +1,8 @@
 
 
 import os, glob, shutil, numpy.f2py
+import sys
+assert sys.version_info[0] == 2, "use python2 to make the pyf please"
 
 head  = """
 python module %s
