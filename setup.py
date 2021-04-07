@@ -132,7 +132,7 @@ needed =[
     "matplotlib",
     "xfab>=0.0.4",
     "fabio",
-    "pycifrw",
+    "PyCifRW",
     # breaks travis for macos ?? "silx",
     "pyopengl",
     "pyopengltk",
