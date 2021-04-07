@@ -130,6 +130,8 @@ needed =[
     "matplotlib",
     "xfab>=0.0.4",
     "fabio",
+    "poycifrw",
+    "silx",
     "pyopengl",
     "pyopengltk",
     ]
