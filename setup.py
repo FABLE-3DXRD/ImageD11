@@ -25,6 +25,8 @@ To re-build the wrappers do:
  cd src && python make_pyf.py
 """
 
+from io import open # this misery may never end.
+
 # For pip / bdist_wheel etc
 import setuptools
 import os, sys, platform, os.path
@@ -130,7 +132,7 @@ needed =[
     "matplotlib",
     "xfab>=0.0.4",
     "fabio",
-    "pycifrw",
+    "PyCifRW",
     # breaks travis for macos ?? "silx",
     "pyopengl",
     "pyopengltk",
