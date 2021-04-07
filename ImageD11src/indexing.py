@@ -158,7 +158,7 @@ def calc_drlv2(UBI, gv):
     returns drlv2 = (h_calc - h_int)^2
     """
     h = np.dot(UBI, np.transpose(gv))
-    hint = np.floor(h + 0.5).astype(np.int) # rounds down
+    hint = np.floor(h + 0.5).astype(int) # rounds down
     diff = h - hint
     drlv2 = np.sum(diff * diff,0)
     return drlv2
@@ -182,7 +182,7 @@ def refine(UBI, gv, tol, quiet=True):
     #      print "Scores before",self.score(UBI)
     # Need to find hkl indices for all of the peaks which are indexed
     h = np.dot(UBI, np.transpose(gv))
-    hint = np.floor(h+0.5).astype(np.int) # rounds down
+    hint = np.floor(h+0.5).astype(int) # rounds down
     diff = h - hint
     drlv2 = np.sum( diff * diff, 0)
     tol = float(tol)
@@ -200,11 +200,11 @@ def refine(UBI, gv, tol, quiet=True):
         logging.error("No contributing reflections for \n%s"%(str(UBI)))
         raise
     # drlv2_old=drlv2
-    R=np.zeros((3,3),np.float)
-    H=np.zeros((3,3),np.float)
+    R=np.zeros((3,3),float)
+    H=np.zeros((3,3),float)
     for i in ind:
         r = gv[i,:]
-        k = hint[:,i].astype(np.float)
+        k = hint[:,i].astype(float)
         #           print r,k
         R = R + np.outer(r,k)
         H = H + np.outer(k,k)
@@ -216,7 +216,7 @@ def refine(UBI, gv, tol, quiet=True):
         # A singular matrix - this sucks.
         UBIo=UBI
     h=np.dot(UBIo,np.transpose(gv))
-    hint=np.floor(h+0.5).astype(np.int) # rounds down
+    hint=np.floor(h+0.5).astype(int) # rounds down
     diff=h-hint
     drlv2=np.sum(diff*diff,0)
     ind = np.compress( np.less(drlv2,tol), np.arange(gv.shape[0]) )
@@ -246,7 +246,7 @@ def refine(UBI, gv, tol, quiet=True):
 def indexer_from_colfile( colfile, **kwds ):
     uc = unitcell.unitcell_from_parameters( colfile.parameters )
     w = float( colfile.parameters.get("wavelength") )
-    gv = np.array( (colfile.gx,colfile.gy,colfile.gz), np.float)
+    gv = np.array( (colfile.gx,colfile.gy,colfile.gz), float)
     kwds.update( {"unitcell": uc, "wavelength":w, "gv":gv.T } )
     return indexer( **kwds )
 
@@ -284,7 +284,7 @@ class indexer:
             self.gv = gv.astype( np.float )
             self.ds = np.sqrt( (gv*gv).sum(axis=1) )
             self.ga = np.zeros(len(self.ds),np.int32)-1 # Grain assignments
-            self.gvflat=np.ascontiguousarray(gv, np.float)
+            self.gvflat=np.ascontiguousarray(gv, float)
             self.wedge=0.0 # Default
 
         self.cosine_tol=cosine_tol
@@ -299,7 +299,7 @@ class indexer:
         self.eta_range = eta_range
         self.ubis=[]
         self.scores=[]
-
+        self.index_needs_debug = 0 # track problems quietly...
 
         # it would make more sense to inherit the parameter object - will
         # have to think about this some more - how general is it?
@@ -364,7 +364,7 @@ class indexer:
         self.na = np.zeros(len(dsr), np.int32)
         print("Ring assignment array shape",self.ra.shape)
         tol = float(self.ds_tol)
-        best = np.zeros(npks, np.float)+tol
+        best = np.zeros(npks, float)+tol
         for j, dscalc in enumerate(dsr):
             dserr = abs(self.ds - dscalc)
             sel = dserr < best
@@ -405,7 +405,7 @@ class indexer:
         self.gvr = self.gv[ind]
         print("Using only those peaks which are assigned to rings for scoring trial matrices")
         print("Shape of scoring matrix",self.gvr.shape)
-        self.gvflat=np.ascontiguousarray(self.gvr, np.float) # Makes it contiguous
+        self.gvflat=np.ascontiguousarray(self.gvr, float) # Makes it contiguous
         # in memory, hkl fast index
 
     def friedelpairs(self,filename):
@@ -445,7 +445,7 @@ class indexer:
                     out.write("%f %f %f %f %f %f    "%(self.eta[a],self.omega[a],self.tth[a],self.gv[a][0],self.gv[a][1],self.gv[a][2]))
                     out.write("\n")
 
-    def score_all_pairs(self):
+    def score_all_pairs(self, n=None):
         """
         Generate all the potential pairs of rings and go score them too
         """
@@ -462,7 +462,9 @@ class indexer:
         self.tried = 0
         self.npairs = len(pairs)
         self.stop=False
+        k = 0
         for mu, oc, r1, r2 in pairs:
+            k += 1
             try:
                 self.ring_1 = r1
                 self.ring_2 = r2
@@ -472,6 +474,8 @@ class indexer:
             except KeyboardInterrupt:
                 break
             if self.stop:
+                break
+            if n is not None and k > n:
                 break
             print("Tried r1=%d r2=%d attempt %d of %d, got %d grains"%(r1,r2,self.tried,len(pairs),len(self.ubis)))
         print("\nTested",self.tried,"pairs and found",len(self.ubis),"grains so far")
@@ -549,6 +553,7 @@ class indexer:
         # found=0
         hits=[]
         start = time.time()
+        self.cosangles = cs
         mtol = -tol # Ugly interface - set cosine tolerance negative for all
                     # instead of best
         for i in range(len(i1)):
@@ -587,7 +592,7 @@ class indexer:
             bins.append(-start)
             bins.reverse()
             bins=np.array(bins)
-        hist = np.zeros((len(ubilist),bins.shape[0]-1),np.int)
+        hist = np.zeros((len(ubilist),bins.shape[0]-1),int)
         j=0
         for UBI in ubilist:
             drlv2 = calc_drlv2(UBI, self.gv)
@@ -620,8 +625,7 @@ class indexer:
                                      self.gv[i,:],
                                      self.ring_2,
                                      self.gv[j,:],
-                                     verbose=0,
-                                     all=False)
+                                     verbose=0)
             except:
                 logging.error(" ".join([str(x) for x in (i,j,self.ring_1,self.ring_2)]))
                 logging.error(str(self.gv[i]))
@@ -631,19 +635,25 @@ class indexer:
             if fitb4: # FIXME : this does not work
                self.unitcell.UBI = ubi_fit_2pks( self.unitell.UBI, self.gv[i,:], self.gv[j,:])
             npk = cImageD11.score(self.unitcell.UBI,gv,tol)
+            UBI = self.unitcell.UBI.copy()
             if npk > self.minpks:
-                self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:], verbose=0, all=True)
+                # Try to get a better orientation if we can...:
+                self.unitcell.orient(self.ring_1, self.gv[i,:], self.ring_2, self.gv[j,:],
+                                     verbose=0, crange=abs(self.cosine_tol))
                 if fitb4:
                    for k in range( len(self.unitell.UBIlist) ):
                         self.unitell.UBIlist[k] = ubi_fit_2pks( self.unitell.UBIlist[k],
                                                                 self.gv[i,:], self.gv[j,:])
                 npks=[cImageD11.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist]
-                choice = np.argmax(npks)
-                UBI = self.unitcell.UBIlist[choice]
-                if npks[choice] < npk:
-                    logging.error("Error in indexing: debug please!")
-                    #import pdb; pdb.set_trace()
-                npk = npks[choice]
+                if len(npks) > 0: # if it fails we are keeping quiet...
+                    choice = np.argmax(npks)
+                    if npks[choice] >= npk:
+                        UBI = self.unitcell.UBIlist[choice].copy()
+                        npk = npks[choice]
+                    else:
+                        self.index_needs_debug += 1
+                else:
+                    self.index_needs_debug += 1
                 _ = cImageD11.score_and_refine( UBI, gv, tol )
                 # See if we already have this grain...
                 try:
@@ -654,7 +664,7 @@ class indexer:
                         np.put(self.ga, ind, len(self.scores)+1)
                         self.ubis.append(UBI)
                         self.scores.append(npk)
-                        logging.info("new grain %d pks, UBI %s",npk,str(UBI.ravel()))
+                        logging.info("new grain %d pks, i %d j %d UBI %s",npk,i,j,str(UBI.ravel()))
                         ng=ng+1
                     else:
                         nuniq=nuniq+1
@@ -680,7 +690,7 @@ class indexer:
         Get the best ubis from those proposed
         Use all peaks (ring assigned or not)
         """
-        self.drlv2 = np.zeros( self.gv.shape[0], np.float)+2
+        self.drlv2 = np.zeros( self.gv.shape[0], float)+2
         labels = np.ones( self.gv.shape[0], np.int32)
         np.subtract(labels,2,labels)
         i = -1
@@ -727,9 +737,9 @@ class indexer:
         # Printing per grain
         uinverses = []
         allind = np.array(list(range(len(self.ra))))
-        tthcalc =np.zeros(len(self.ra),np.float)
-        etacalc =np.zeros(len(self.ra),np.float)
-        omegacalc = np.zeros(len(self.ra),np.float)
+        tthcalc =np.zeros(len(self.ra),float)
+        etacalc =np.zeros(len(self.ra),float)
+        omegacalc = np.zeros(len(self.ra),float)
         i = -1
 
 
@@ -818,7 +828,7 @@ class indexer:
             if self.ga[peak] != -1:
                 m = self.ga[peak]
                 hi = np.dot(self.ubis[m],h)
-                hint = np.floor(hi+0.5).astype(np.int)
+                hint = np.floor(hi+0.5).astype(int)
                 gint = np.dot(uinverses[m], hint)
                 f.write("Grain %-5d (%3d,%3d,%3d)"%( m,
                     hint[0],hint[1],hint[2]))
@@ -852,7 +862,7 @@ class indexer:
         if tol == None:
             tol = self.hkl_tol
         ng = len(self.gvflat)
-        drlv2 = np.ones( ng , np.float)
+        drlv2 = np.ones( ng , float)
         labels = np.full( ng , 0, np.int32)
         # we only use peaks assigned to rings for scoring here
         # already done in making gvflat in assigntorings
@@ -865,7 +875,7 @@ class indexer:
            print(labels.shape)
            print("logic error in getind")
            raise
-        ind = np.compress( labels , np.arange(ng,dtype=np.int) )
+        ind = np.compress( labels , np.arange(ng,dtype=int) )
         return ind
 
 
@@ -896,7 +906,7 @@ class indexer:
         # Need to find hkl indices for all of the peaks which are indexed
         drlv2=calc_drlv2(UBI,self.gv)
         h = np.dot(UBI, np.transpose(self.gv))
-        hint = np.floor(h + 0.5).astype(np.int) # rounds down
+        hint = np.floor(h + 0.5).astype(int) # rounds down
         tol = float(self.hkl_tol)
         tol = tol*tol
         # Only use peaks which are assigned to rings for refinement
@@ -911,11 +921,11 @@ class indexer:
         #    print "No contributing reflections for\n",UBI
         #    raise
         #drlv2_old=drlv2
-        R=np.zeros((3,3),np.float)
-        H=np.zeros((3,3),np.float)
+        R=np.zeros((3,3),float)
+        H=np.zeros((3,3),float)
         for i in ind:
             r = self.gv[i,:]
-            k = hint[:,i].astype(np.float)
+            k = hint[:,i].astype(float)
 #           print r,k
             R = R + np.outer(r,k)
             H = H + np.outer(k,k)
@@ -1036,11 +1046,11 @@ class indexer:
             self.tth=np.arcsin(np.array(self.ds)*self.wavelength/2)*360/math.pi
         else:
             self.tth=np.zeros(len(self.ds))
-        self.gv=np.transpose(np.array( [ self.xr , self.yr, self.zr ] ,np.float))
+        self.gv=np.transpose(np.array( [ self.xr , self.yr, self.zr ] ,float))
         self.allgv = self.gv.copy()
         self.ga=np.zeros(len(self.ds),np.int32)-1 # Grain assignments
 
-        self.gvflat=np.ascontiguousarray(self.gv,np.float)
+        self.gvflat=np.ascontiguousarray(self.gv,float)
         # Makes it contiguous in memory, hkl fast index
         if not quiet:
             print("Read your gv file containing",self.gv.shape)

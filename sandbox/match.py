@@ -45,8 +45,8 @@ if len(sys.argv)>=9:
 
 
 
-da=np.zeros( (len(g1l),len(g2l)), np.float)
-dt2=np.zeros( (len(g1l),len(g2l)), np.float)
+da=np.zeros( (len(g1l),len(g2l)), float)
+dt2=np.zeros( (len(g1l),len(g2l)), float)
 
 for g in g1l + g2l:
     g.u = xfab.tools.ubi_to_u_b(g.ubi)[0]
@@ -90,8 +90,8 @@ for i,g1 in enumerate(g1l):
     if not printed:
         ja = np.argmin(da[i])
         jd = np.argmin(dt2[i])
-        print "# not matched %d min angle %d  %.4f  %.3f"%(i,ja,da[i,ja],dt2[i,ja])
-        print "# not matched %d min dist  %d  %.4f  %.3f"%(i,jd,da[i,jd],dt2[i,jd])
+        print( "# not matched %d min angle %d  %.4f  %.3f"%(i,ja,da[i,ja],dt2[i,ja]))
+        print( "# not matched %d min dist  %d  %.4f  %.3f"%(i,jd,da[i,jd],dt2[i,jd]))
 
 
 

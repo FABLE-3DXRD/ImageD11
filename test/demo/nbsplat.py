@@ -18,8 +18,8 @@ def nbsplat(
     order = np.empty( len(rve[0]), np.int )
     tmp = np.empty( len(rve[0]), np.int )
     npk = do_zsort_clip( rve, tmp, w//2-npx, h//2-npx, zsort, order )
-    i = (rve[1]+h//2).astype(np.int)
-    j = (rve[0]+w//2).astype(np.int)
+    i = (rve[1]+h//2).astype(int)
+    j = (rve[0]+w//2).astype(int)
     if bg is not None:
         # surprising but quite a lot quicker to use fill
         rgba.view( np.uint32 ).fill( np.array( bg, np.uint8).view(np.uint32)[0] )

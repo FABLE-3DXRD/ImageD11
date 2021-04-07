@@ -58,7 +58,7 @@ class linearity:
         ar = data
         scale = guessed scale factor
         """
-        t = ar.astype(np.float)
+        t = ar.astype(float)
         self.rawimages.append(t)
         self.scaledimages.append(scale * t * ( 1.0 + t * self.a ))
         self.scale_factors.append(scale)
@@ -76,7 +76,7 @@ class linearity:
         """
         logging.info("Compute average")
         self.average = np.zeros(self.scaledimages[0].shape,
-                                     np.float)
+                                     float)
         for im in self.scaledimages:
             self.average = self.average + im
         self.average = self.average / len(self.scaledimages)
@@ -122,8 +122,8 @@ def lsq(diff, gradients):
     gradients
     """
     nvar = len(gradients)
-    lsqmat = np.zeros((nvar,nvar),np.float)
-    rhs = np.zeros((nvar),np.float)
+    lsqmat = np.zeros((nvar,nvar),float)
+    rhs = np.zeros((nvar),float)
     for i in range(nvar):
         logging.debug(" lsq shapes: %d %d"%(gradients[i].ravel().shape[0],
                                             diff.ravel().shape[0]))

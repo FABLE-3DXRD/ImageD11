@@ -15,13 +15,13 @@ try:
     i.readgvfile(sys.argv[1])
 except:
     i.readgvfile(os.path.join(os.path.split(__file__)[0],"eu3.gve"))
-gve = i.gv.copy().astype(np.float)/3.
+gve = i.gv.copy().astype(float)/3.
 
 r = Tk.Tk(sync=1)
 w,h = r.winfo_screenwidth()*2//3,r.winfo_screenheight()*2//3
 
 rgba = np.empty((h,w,4), np.uint8)
-u = np.eye(3, dtype=np.float).ravel()
+u = np.eye(3, dtype=float).ravel()
 t0 = timer()
 cImageD11.splat( rgba, gve, u, 2 )
 t1 = timer()

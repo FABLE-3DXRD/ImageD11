@@ -57,9 +57,9 @@ def grids( flt, tol, npk ):
                     mytransformer.getcolumn("gz") ] ).T
                 myindexer.gv = gv
                 myindexer.ubis = []
-                myindexer.ga = -1*np.ones( (gv.shape[0],)  ,np.int)
+                myindexer.ga = -1*np.ones( (gv.shape[0],)  ,int)
                 myindexer.gvflat = np.reshape(np.fromstring(
-                    myindexer.gv.tostring(),np.float), myindexer.gv.shape)
+                    myindexer.gv.tostring(),float), myindexer.gv.shape)
                 # ds for rings
                 print(gv.shape)
                 myindexer.ds = np.sqrt( gv[:,0]*gv[:,0] +

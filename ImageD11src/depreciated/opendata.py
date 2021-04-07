@@ -94,7 +94,7 @@ def openchi(filename):
         except:
             pass # titles
 
-    a=np.array(xy,np.float)
+    a=np.array(xy,float)
     h['rows']=a.shape[1]
     return data(a,h)
 

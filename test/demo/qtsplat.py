@@ -82,10 +82,10 @@ class dataset:
         #print(self.gvecs.shape, pks_xyz.shape)
         for i, g in enumerate( self.grains ):
             if g.translation is None:
-                t = np.array((0,0,0), np.float)
+                t = np.array((0,0,0), float)
             else:
                 t = np.array((g.translation[0],g.translation[1],g.translation[2]),
-                             np.float)
+                             float)
             cImageD11.compute_gv( pks_xyz,
                                   self.colf.omega,
                                   self.colf.parameters.get('omegasign'),
@@ -133,7 +133,7 @@ class splat3dview:
     def resetrot(self):
         self.need_redraw = True
         self.u0 = np.dot(self.u, self.u0)
-        self.u = np.eye(3, dtype=np.float)
+        self.u = np.eye(3, dtype=float)
         
     def matrix(self):
         return self.scale*np.dot(self.u, self.u0)

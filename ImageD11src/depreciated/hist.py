@@ -35,7 +35,7 @@ def hist(data,verbose=0):
     returns histogram if data is a 2D numpy.uint16 array
     """
     if data.dtype.char == np.uint16:
-        h = np.zeros(pow(2,16)-1,np.int)
+        h = np.zeros(pow(2,16)-1,int)
         _hist._hist(data,h,verbose)
         return h
     raise Exception("Sorry, not implemented")
@@ -43,8 +43,8 @@ def hist(data,verbose=0):
 
 def test_dvhist():
     import _hist
-    gv= np.zeros((10,3),np.float)
-    h = np.zeros((10,10,10),np.int)
+    gv= np.zeros((10,3),float)
+    h = np.zeros((10,10,10),int)
     _hist._dvhist(gv,h,-1,1,-1,1,-1,1,1)
 
     logging.info("test_dvhist maximum.reduce(h)"% np.maximum.reduce(h))

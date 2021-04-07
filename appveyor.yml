@@ -1,6 +1,6 @@
 build: false
 
-  
+
 environment:
   matrix:
     - CONDA: C:\Miniconda
@@ -17,7 +17,7 @@ install:
   - conda info -a
   - python -m pip install numpy
   - python setup.py build
-  - python -m pip install .
+  - python -m pip install .  --ignore-installed certifi
 
 
 test_script:

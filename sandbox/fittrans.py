@@ -60,7 +60,7 @@ def XL_to_gv_old( omega, wedge, chi, XL, wavelength, tx, ty, tz):
 
 def XL_to_gv( omega, wedge, chi, XL, wavelength, tx, ty, tz):
     """ Compute gv by rotation of experiment around crystal """
-    beam = np.zeros( (3,len(omega)), np.float)
+    beam = np.zeros( (3,len(omega)), float)
     beam[0,:] = 1.0
     XB = k_to_g( beam, omega, wedge, chi)
     #print "XB",XB
@@ -319,7 +319,7 @@ if __name__=="__main__":
     # Take old peak assignments:
     if 1:
         print("Using existing peak assignments")
-        inds = np.arange(o.colfile.nrows,dtype=np.int)
+        inds = np.arange(o.colfile.nrows,dtype=int)
         for i,gref in enumerate(gl):
             gref.pks = np.compress( o.colfile.labels == i, inds )
         tols = [None,]*3

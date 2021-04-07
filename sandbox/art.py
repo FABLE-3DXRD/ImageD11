@@ -31,7 +31,7 @@ def update_wtd( recon, proj, angle, msk, dbg=True ):
     pos = np.zeros( x.shape, np.float32).ravel()
     np.add( x.ravel()*cth, y.ravel()*sth, pos) 
     # Lower & upper pixel:
-    idx_lo = np.floor(pos).astype(np.int)
+    idx_lo = np.floor(pos).astype(int)
     idx_hi = idx_lo+1
     # idx will go from -xxx to xxx
     mn = idx_lo.min()

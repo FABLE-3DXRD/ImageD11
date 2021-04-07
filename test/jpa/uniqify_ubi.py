@@ -41,7 +41,7 @@ pks = [
         ( 1,-1,-1), (-1,-1,-1)
         ]
 
-hkl = np.array(pks,np.float).T
+hkl = np.array(pks,float).T
 
 uniq_ubis = []
 names = ubi_all.keys()
@@ -107,7 +107,7 @@ for entry in uniq_ubis:
 
         # bit of a hack - between 10 and 11 degrees
         h = np.matrixmultiply(ubi, t.gv)
-        hint = np.floor(h + 0.5).astype(np.int) # rounds down
+        hint = np.floor(h + 0.5).astype(int) # rounds down
         diff = h - hint
         drlv2 = np.sum(diff * diff,0)
         ind = np.compress( drlv2 < tol*tol, np.arange(t.twotheta.shape[0]))

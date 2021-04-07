@@ -106,7 +106,7 @@ class rubber(Frame):
         if type(datafile)==type("string"):
             self.datafile = datafile
             dataobj=openimage(datafile)
-            self.data=dataobj.data.astype(np.int)
+            self.data=dataobj.data.astype(int)
             try:
                 self.omega=float(dataobj.header["Omega"])
             except:
@@ -119,8 +119,8 @@ class rubber(Frame):
         if type(bkgfile)==type("string"):
             self.bkgfile=bkgfile
             bkgobj=openimage(bkgfile)
-            self.bkg=bkgobj.data.astype(np.int)
-            self.data=self.data.astype(np.int)-self.bkg
+            self.bkg=bkgobj.data.astype(int)
+            self.data=self.data.astype(int)-self.bkg
             print("Got your background from",bkgfile,self.bkg.shape)
         else:
             self.bkg = None
@@ -203,7 +203,7 @@ class rubber(Frame):
         while x <= self.maxi:
             l.append(x)
             x+=step
-        self.legend=np.transpose(np.array([l],np.float))
+        self.legend=np.transpose(np.array([l],float))
         self.legendimage,(scalesx,scalesy)=NumerictoImage(self.legend,(self.scale[0],10))
         self.legendimage=ImageTk.PhotoImage(self.legendimage)
         self.key.configure(image=self.legendimage)
@@ -248,8 +248,8 @@ class rubber(Frame):
             bkgfile=filedialog.askopenfilename(initialdir=os.getcwd())
         self.bkgfile=bkgfile
         bkgobj=openimage(bkgfile)
-        self.bkg=bkgobj.data.astype(np.int)
-        self.data=self.data.astype(np.int)-self.bkg
+        self.bkg=bkgobj.data.astype(int)
+        self.data=self.data.astype(int)-self.bkg
         print("Got your background from",bkgfile,self.bkg.shape)
 
     def jump(self):
@@ -277,10 +277,10 @@ class rubber(Frame):
     def readdata(self):
         dataobj=openimage(self.datafile)
         self.status.config(text=self.datafile)
-        self.data=dataobj.data.astype(np.int)
+        self.data=dataobj.data.astype(int)
         if self.bkg is not None:
             try:
-                self.data=self.data.astype(np.int)-self.bkg
+                self.data=self.data.astype(int)-self.bkg
             except:
                 print("Failed to subtract bkg",self.bkg.shape,self.data.shape)
         try:
@@ -319,7 +319,7 @@ class rubber(Frame):
 
     def getstats(self):
         # Convert to float to avoid overflow issues
-        t=self.data.astype(np.float)
+        t=self.data.astype(float)
         sumi=np.sum(np.ravel(t))
         sumisq=np.sum(np.ravel(t*t))
         npixels=t.shape[0]*t.shape[1]

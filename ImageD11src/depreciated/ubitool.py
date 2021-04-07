@@ -70,7 +70,7 @@ class ubitool:
         """
         Get ubi matrices from a file
         """
-        i=0; u = np.zeros((3,3),np.float)
+        i=0; u = np.zeros((3,3),float)
         for line in open(filename,"r").readlines():
             uij = [float(x) for x in line.split()]
             if len(uij)==3:
@@ -78,4 +78,4 @@ class ubitool:
                 i=i+1
             else:
                 self.ubilist.append(u)
-                u = np.zeros((3,3),np.float)
+                u = np.zeros((3,3),float)

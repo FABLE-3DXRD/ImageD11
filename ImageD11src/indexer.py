@@ -209,7 +209,7 @@ class indexer:
                pairs.append( (ind1[i], ind2[k], U, ubi ) )
                print(npks, end=' ') 
                
-               ubi, trans = self.refine( ubi, np.zeros(3,np.float), tol=hkl_tol )
+               ubi, trans = self.refine( ubi, np.zeros(3,float), tol=hkl_tol )
                inds, hkls = self.assign( ubi, trans, hkl_tol )
                ubi, trans = self.refine( ubi, trans, inds = inds, hkls= hkls, tol=hkl_tol )
                print(npks, ubi)

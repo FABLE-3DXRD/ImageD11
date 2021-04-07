@@ -33,7 +33,7 @@ class test_compute_gv(unittest.TestCase):
                                             self.wvln, wedge=self.wedge,
                                             chi=self.chi)
         t = np.array( (self.t_x, self.t_y, self.t_z))
-        gve2 = np.empty( (len(tth), 3), np.float)
+        gve2 = np.empty( (len(tth), 3), float)
         cImageD11.compute_gv(self.XLYLZLT,
                              self.omega,self.omegasign,
                              self.wvln,

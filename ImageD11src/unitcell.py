@@ -29,7 +29,7 @@ from __future__ import print_function, division
 #
 import logging, math
 from math import fabs
-import numpy as np 
+import numpy as np
 from numpy.linalg import inv
 from ImageD11 import cImageD11
 from xfab import tools, sg
@@ -50,8 +50,8 @@ def cross(a,b):
     a x b has length |a||b|sin(theta)
     """
     return np.array([ a[1]*b[2]-a[2]*b[1] ,
-                         a[2]*b[0]-b[2]*a[0] , 
-                         a[0]*b[1]-b[0]*a[1] ],np.float)
+                         a[2]*b[0]-b[2]*a[0] ,
+                         a[0]*b[1]-b[0]*a[1] ],float)
 
 
 
@@ -92,7 +92,7 @@ def I(h,k,l):
 
 def F(h,k,l):
     return (h+k)%2!=0 or (h+l)%2!=0 or (k+l)%2!=0
-                                                                                
+
 def R(h,k,l):
     return (-h+k+l)%3 != 0
 
@@ -105,6 +105,42 @@ outif = {
     "I" : I ,
     "F" : F ,
     "R" : R}
+
+def orient_BL( B, h1, h2, g1, g2):
+    """Algorithm was intended to follow this one using 2 indexed
+    reflections.
+    W. R. Busing and H. A. Levy. 457. Acta Cryst. (1967). 22, 457
+    """
+    h1c=np.dot(B,h1)   # cartesian H1
+    h2c=np.dot(B,h2)   # cartesian H2
+    t1c=unit(h1c)      # unit vector along H1
+    t3c=unit(np.cross(h1c,h2c))
+    t2c=unit(np.cross(h1c,t3c))
+    t1g=unit(g1)
+    t3g=unit(np.cross(g1,g2))
+    t2g=unit(np.cross(g1,t3g))
+    T_g = np.transpose(np.array([t1g,t2g,t3g]))  # Array are stored by rows and
+    T_c = np.transpose(np.array([t1c,t2c,t3c]))  # these are columns
+    U=np.dot(T_g , np.linalg.inv(T_c))
+    UB=np.dot(U,B)
+    UBI=np.linalg.inv(UB)
+    return UBI, UB
+
+def cosangles_many(ha, hb, gi):
+    """ Finds the cosines of angles between two lists of hkls in
+    reciprocal metric gi """
+    assert len(ha[0])==3 and len(hb[0])==3
+    na = len(ha)
+    nb = len(hb)
+    hag = np.dot(ha, gi)
+    hbg = np.dot(hb, gi)
+    hagha = np.sqrt((hag*ha).sum(axis=1))
+    hbghb = np.sqrt((hbg*hb).sum(axis=1))
+    haghb = np.dot(ha, hbg.T)
+    ca = haghb / np.outer( hagha, hbghb )
+    assert ca.shape == (na, nb)
+    return ca
+
 
 def cellfromstring(s):
     items = s.split()
@@ -145,7 +181,7 @@ class unitcell:
         if verbose==1: print("Unit cell",self.lattice_parameters)
         self.g = np.array( [[ a*a    ,  a*b*cg, a*c*cb ],
                                [ a*b*cg ,  b*b   , b*c*ca ],
-                               [ a*c*cb ,  b*c*ca, c*c    ]],np.float)
+                               [ a*c*cb ,  b*c*ca, c*c    ]],float)
         if verbose==1: print("Metric tensor\n",self.g)
         try:
             self.gi = inv(self.g)
@@ -161,34 +197,34 @@ class unitcell:
         self.betas =degrees(math.acos(self.gi[0,2]/self.astar/self.cstar))
         self.gammas=degrees(math.acos(self.gi[0,1]/self.astar/self.bstar))
         if verbose==1: print("Reciprocal cell")
-        if verbose==1: 
+        if verbose==1:
             print(self.astar, self.bstar, self.cstar, \
                 self.alphas, self.betas, self.gammas)
         # Equation 3 from Busing and Levy
-        self.B = np.array ( 
-            [ [ self.astar , 
-                self.bstar*math.cos(radians(self.gammas)) , 
+        self.B = np.array (
+            [ [ self.astar ,
+                self.bstar*math.cos(radians(self.gammas)) ,
                 self.cstar*math.cos(radians(self.betas)) ] ,
-              [ 0 , 
-                self.bstar*math.sin(radians(self.gammas)) , 
+              [ 0 ,
+                self.bstar*math.sin(radians(self.gammas)) ,
                 -self.cstar*math.sin(radians(self.betas))*ca ],
               [ 0 , 0  ,
-                1./c ] ] , np.float)
+                1./c ] ] , float)
         if verbose == 1: print(self.B)
-        if verbose == 1: 
+        if verbose == 1:
             print(np.dot( np.transpose(self.B),
                                self.B)-self.gi) # this should be zero
         self.hkls = None
         self.peaks = None
         self.limit = 0
-        
-        self.ringtol = 0.001        
+
+        self.ringtol = 0.001
         # used for caching
         self.anglehkl_cache = { "ringtol" : self.ringtol ,
                                 "B" : self.B,
                                 "BI" : np.linalg.inv(self.B) }
 
-        
+
     def tostring(self):
         """
         Write out a line containing unit cell information
@@ -209,7 +245,7 @@ class unitcell:
         Argument spg is the space group name, e.g. 'R3-c'
         """
         stl_max = dsmax/2.
-        raw_peaks = tools.genhkl_all(self.lattice_parameters, 
+        raw_peaks = tools.genhkl_all(self.lattice_parameters,
                                  0 , stl_max,
                                  sgname=spg,
                                  output_stl=True)
@@ -278,7 +314,7 @@ class unitcell:
                     break
 
         peaks.sort()
-           
+
         self.peaks=peaks
         self.limit=dsmax
         return peaks
@@ -342,23 +378,17 @@ class unitcell:
         B  = self.anglehkl_cache['B']
         BI = self.anglehkl_cache['BI']
         if key not in self.anglehkl_cache:
-            cangs = []
-            h1_h2  = []
-            for h1 in self.ringhkls[self.ringds[ring1]]:
-                for h2 in self.ringhkls[self.ringds[ring2]]:
-                    if h1 == h2 or h1 == tuple(-h for h in h2):
-                        continue
-                    h1_h2.append((h1, h2))
-                    # Note - returns angle, cosangle
-                    cangs.append( self.anglehkls(h1,h2)[1] )
-            val = filter_pairs( h1_h2, cangs, B, BI  )
+            h1 = self.ringhkls[self.ringds[ring1]]
+            h2 = self.ringhkls[self.ringds[ring2]]
+            cangs = cosangles_many( h1, h2, self.gi )
+            val = filter_pairs( h1, h2, cangs, B, BI  )
             self.anglehkl_cache[key] = val
         else:
             val = self.anglehkl_cache[key]
         return val
 
-    
-    def orient(self,ring1,g1,ring2,g2,verbose=0, all = True):
+
+    def orient(self,ring1,g1,ring2,g2,verbose=0, crange = -1.):
         """
         Compute an orientation matrix using cell parameters and the indexing
         of two reflections
@@ -372,13 +402,10 @@ class unitcell:
         """
         costheta = np.dot( g1, g2 ) / np.sqrt( (g1*g1).sum()*(g2*g2).sum() )
         hab, c2ab, matrs =  self.getanglehkls( ring1, ring2 )
-        if all:
-            isrch = np.argmin( abs(c2ab - costheta ))
-            lo = min(np.searchsorted(c2ab, c2ab[isrch] - 1e-4, side='left' ), len(c2ab)-1)
-            hi = min(np.searchsorted(c2ab, c2ab[isrch] + 1e-4, side='right' ), len(c2ab))
-            best = list(range( lo, hi ))
+        if crange > 0:
+            best = np.arange( len(c2ab), dtype=int)[ abs( c2ab - costheta ) < crange ]
             if verbose == 1:
-                print("lo hi best", lo, hi, best, len(c2ab))
+                print("possible best", best, len(c2ab))
         else:
             i = np.searchsorted(c2ab, costheta, side='left' )
             if i > 0 and (i == len(c2ab) or
@@ -424,57 +451,89 @@ class unitcell:
         self.UBIlist = ubi_equiv( self.UBIlist, UBlist )
 
 def BTmat( h1, h2, B, BI ):
-    """ used for computing orientations """
-    g1 = np.dot( B, h1 )
+    """ used for computing orientations
+    """
+    g1 = np.dot( B, h1 )     # gvectors for these hkl
     g2 = np.dot( B, h2 )
     g3 = np.cross( g1, g2 )
-    u1 = unit(g1)
+    u1 = unit(g1)            # normalised
     u3 = unit(g3)
     u2 = np.cross(u1, u3)
     BT = np.dot( BI, np.transpose((u1, u2, u3)))
     return BT
 
-def filter_pairs( h1h2, c2a, B, BI, tol = 1e-5):
-    order = np.argsort( c2a ) # increasing
-    h1, h2 = h1h2[order[0]]
-    BT     = BTmat( h1, h2, B, BI )
-    UBI    = np.array( (np.dot(B, h1), np.dot(B,h2), (0,0,0)), float )
-    cImageD11.quickorient( UBI,  BT )
-    UB = np.linalg.inv( UBI )
-    pairs = [ (h1, h2), ]
-    cangs = [ c2a[order[0]], ]
-    matrs = [ BT, ]
-    gvecs = [ np.dot( UB, HKL0 ).T.copy(), ]
-    nhkl = len(HKL0[0])
-    #import pdb;pdb.set_trace()
-    for i in order[1:]:
-        h1, h2 = h1h2[i]
-        BT     = BTmat( h1, h2, B, BI )
-        UBI    = np.array( (np.dot(B, h1), np.dot(B,h2), (0,0,0)), float )
-        cImageD11.quickorient( UBI,  BT )
-        j = len(pairs)-1
-        while j>=0 and fabs(c2a[order[i]] - cangs[j]) < 1e-6:
-            if cImageD11.score( UBI, gvecs[j], 1e-8 ) < nhkl+1:
-                pairs += [ (h1, h2), ]
-                cangs += [ c2a[i], ]
-                matrs += [ BT, ]
-                gvecs += [ np.dot( np.linalg.inv(UBI) , HKL0 ).T.copy(), ]
-                j = -1 # break
-            else:
-                j -= 1
+HKL0 = np.array( [ [0,0,1,1,-1,1,-1,0, 0, 1, -1, 1, 1, 3, 11],
+                   [0,1,0,1, 1,0, 0,1,-1, 1,  1,-1, 1, 2, 12],
+                   [1,0,0,0, 0,1, 1,1, 1, 1,  1, 1,-1, 1, 13] ], np.float ) # first unit cell
+
+
+def filter_pairs( h1, h2, c2a, B, BI, tol = 1e-5):
+    """ remove duplicate pairs for orientation searches
+    h1 = reflections of ring1, N1 peaks
+    h2 = reflections of ring2, N2 peaks
+    c2a  = cos angle between them, N1xN2
+    B = B matrix in reciprocal space
+    BI = inverse in real space
+    """
+    assert c2a.shape == (len(h1), len(h2))
+    order = np.argsort( c2a.ravel() ) # increasing in cosine of angle
+    c2as = c2a.flat[order]
+    hi, hj= np.mgrid[0:len(h1),0:len(h2)]
+    hi = hi.ravel()[order]  # to get back the peaks
+    hj = hj.ravel()[order]
+    # Results holders:
+    pairs = [  ]
+    cangs = [  ]
+    matrs = [  ]
+    # cluster the cangs assuming a sensible threshold
+    dc = (c2as[1:] - c2as[:-1]) > 1e-8  # differences
+    inds = list(np.arange( 1, len(dc) + 1, dtype=int )[dc]) + [len(c2as)-1,]
+    p = 0 # previous
+    for i in inds:
+        c = c2as[p:i]   # block is p:i
+        if abs(c2as[p]) < 0.98: # always keep the first one
+            ha = h1[hi[p]]
+            hb = h2[hj[p]]
+            pairs.append( (ha, hb) )
+            cangs.append( c2as[p] )
+            BT = BTmat( ha, hb, B, BI)
+            matrs.append( BT )
+        else:
+            p = i
+            continue
+        if len(c) == 1:
+            p = i
+            continue
+        assert (c.max()-c.min()) < 2.1e-8, "Angles blocking error in filter_pairs"
+        # here we have a bunch of hkl pairs which all give the same angle
+        # between them. They are not all the same. We generate a pair of peaks
+        # from the first one and see which other pairs index differently
+        ga = np.dot(B, ha )
+        gb = np.dot(B, hb )
+        assert abs( np.dot(ga,gb)/np.sqrt(np.dot(ga,ga)*np.dot(gb,gb)) - c2as[p] ) < 2e-8, "mixup in filter_pairs"
+        gobs = np.array( (ga, gb, (0,0,0)), float)
+        UBI = gobs.copy()
+        cImageD11.quickorient( UBI, BT )
+        gtest = [ np.dot( np.linalg.inv(UBI), HKL0 ).T, ]
+        for j in range(p+1,i):
+            ha = h1[hi[j]]
+            hb = h2[hj[j]]
+            BT = BTmat( ha, hb, B, BI)
+            newpair = True
+            for gt in gtest:
+                UBI = gobs.copy()
+                cImageD11.quickorient( UBI, BT )
+                npk = cImageD11.score(UBI, gt, 1e-6)
+                if npk == len(HKL0[0]):
+                    newpair = False
+                    break
+            if newpair:
+                pairs.append( (ha, hb) )
+                cangs.append( c2as[j] )
+                matrs.append( BT )
+                gtest.append( np.dot( np.linalg.inv(UBI), HKL0 ).T )
+        p = i
     return pairs, cangs, matrs
-            
-
-                
-
-        
-
-
-
-        
-HKL0 = np.array( [ [0,0,1,1,-1,1,-1,0, 0, 1, -1, 1, 1],
-                   [0,1,0,1, 1,0, 0,1,-1, 1,  1,-1, 1],
-                   [1,0,0,0, 0,1, 1,1, 1, 1,  1, 1,-1] ], np.float ) # first unit cell
 
 def ubi_equiv( ubilist, ublist, tol=1e-8):
     """ Two ubi are considered equivalent if they both index the peaks
@@ -496,7 +555,7 @@ def ubi_equiv( ubilist, ublist, tol=1e-8):
             uniq.append( ubi )
             refgv.append( np.dot( np.linalg.inv( ubi ) , HKL0 ) )
     return uniq
-    
+
 
 def unitcell_from_parameters(pars):
     parnames = "_a _b _c alpha beta gamma".split()
@@ -508,11 +567,5 @@ if __name__=="__main__":
     import sys,time
     start=time.time()
     cell = unitcell([float(x) for x in sys.argv[1:7]],sys.argv[7])
-    p=cell.gethkls(float(sys.argv[8]))
-    n=len(p)
-    print("Generated",n,"peaks in",time.time()-start,"/s")
-    for k in p:
-        try:
-            print(k[1],k[0],1/k[0],k[1])
-        except:
-            pass
+    cell.makerings(2)
+    cell.getanglehkls(11,12)

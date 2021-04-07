@@ -7,10 +7,10 @@ import unittest
 class test_uncomputegv( unittest.TestCase ):
 
     def setUp(self):
-        self.tth = np.array(  [60, 10, 15,  20,  25, 1.9555],np.float)
+        self.tth = np.array(  [60, 10, 15,  20,  25, 1.9555],float)
         self.wvln = 0.5
-        self.eta = np.array(  [20, 10, 120, -20, 340, -73 ],np.float)
-        self.omega = np.array([60, 90, 180,  60, 97,  131],np.float)
+        self.eta = np.array(  [20, 10, 120, -20, 340, -73 ],float)
+        self.omega = np.array([60, 90, 180,  60, 97,  131],float)
         self.np = len(self.tth)
 
     def test_5_10(self):

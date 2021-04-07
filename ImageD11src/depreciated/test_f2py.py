@@ -18,9 +18,9 @@ import numpy as np
 import ImageD11.closest
 np.random.seed(42)
 
-cosines = np.linspace( -1, 1, 3 ).astype(np.float)
+cosines = np.linspace( -1, 1, 3 ).astype(float)
 print "cosines"
-artest = np.array([ 0.99, 0.2, 0.3, 0.7, 0.8],np.float)
+artest = np.array([ 0.99, 0.2, 0.3, 0.7, 0.8],float)
 oldy = ImageD11.closest.closest(artest, cosines )
 newy = connectedpixels.closest( artest, cosines )
 assert oldy == newy
@@ -58,9 +58,9 @@ for tol in [0.01,0.1,0.2,0.4,0.8]:
     assert np.allclose( ubifitnew, ubifitold )
 
     ubilist = [ (np.random.random((3,3))-0.5)*10 for i in range(3) ]
-    drlv2new = np.zeros(  npk, np.float) + 2
+    drlv2new = np.zeros(  npk, float) + 2
     labelsnew = np.ones(  npk, np.int32) - 2 
-    drlv2old = np.zeros(  npk, np.float) + 2
+    drlv2old = np.zeros(  npk, float) + 2
     labelsold = np.ones(  npk, np.int32) - 2 
 
     for i,u in enumerate(ubilist):

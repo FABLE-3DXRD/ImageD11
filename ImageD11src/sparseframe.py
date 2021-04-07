@@ -260,6 +260,7 @@ def sparse_connected_pixels( frame,
         frame.pixels[data_name], frame.row, frame.col,
         threshold,  labels )
     frame.set_pixels( label_name, labels, { 'nlabel' : nlabel } )
+    return nlabel
 
 
 def sparse_localmax( frame,
@@ -272,6 +273,8 @@ def sparse_localmax( frame,
         frame.pixels[data_name], frame.row, frame.col,
         vmx, imx, labels )                   
     frame.set_pixels( label_name, labels, { "nlabel" : nlabel }  )
+    return nlabel
+
 
     
                               
