@@ -131,7 +131,7 @@ needed =[
     "xfab>=0.0.4",
     "fabio",
     "pycifrw",
-    "silx",
+    # breaks travis for macos ?? "silx",
     "pyopengl",
     "pyopengltk",
     ]
