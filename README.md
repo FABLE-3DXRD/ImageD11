@@ -21,16 +21,17 @@ If you are at ESRF on a linux computer you could try "module load fable"
 
 To use from git, try this:
 
- - Download and install python 3.6+, perhaps from www.python.org but probably from conda.
-`- Add the packages numpy, scipy, matplotlib, h5py, pillow, pycifrw, xfab
+ - Download and install python 3.7+, perhaps from www.python.org but probably from conda.
+ - Add the packages: numpy, scipy, matplotlib, h5py, pillow, pycifrw, xfab
 
 Then try:
  ```
- $ git clone https://github.com/myusername/ImageD11.git && cd ImageD11
+ $ git clone https://github.com/FABLE-3DXRD/ImageD11.git && cd ImageD11
  $ python setup.py build bdist_wheel
- Followed installation in your virtual or conda environment:
- $ pip install dist/ImageD11_..[version you built]..whl
+ Followed by installation in your virtual or conda environment:
+ $ pip install dist/ImageD11_[version you built].whl
  ```
+ 
 
 After it is installed, you should find a script ImageD11_gui.py, somewhere in your path.
 
