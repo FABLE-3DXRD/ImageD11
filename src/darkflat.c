@@ -59,7 +59,6 @@ void uint16_to_float_darksub(float *restrict img, const float *restrict drk,
     }
 }
 
-
 /* F2PY_WRAPPER_START
     subroutine uint16_to_float_darkflm( img, drk, flm, data, npx )
 !DOC uint16_to_float_darkflm subtracts image drk(float32) from
@@ -72,23 +71,19 @@ void uint16_to_float_darksub(float *restrict img, const float *restrict drk,
         integer, intent(hide), depend( img ) :: npx
     end subroutine uint16_to_float_darkflm
 F2PY_WRAPPER_END */
-void uint16_to_float_darkflm(float *restrict img,
-			     const float *restrict drk,
-			     const float *restrict flm,
-			     const uint16_t *restrict data,
-			     int npx ){
-  int i;
+void uint16_to_float_darkflm(float *restrict img, const float *restrict drk,
+                             const float *restrict flm,
+                             const uint16_t *restrict data, int npx) {
+    int i;
 #ifdef GOT_OMP_SIMD
 #pragma omp parallel for simd
 #else
 #pragma omp parallel for
 #endif
     for (i = 0; i < npx; i++) {
-      img[i] = (((float)data[i]) - drk[i])*flm[i];
+        img[i] = (((float)data[i]) - drk[i]) * flm[i];
     }
 }
-
-
 
 /* F2PY_WRAPPER_START
     subroutine frelon_lines(img, ns, nf, cut)
@@ -236,7 +231,6 @@ void array_mean_var_cut(float *restrict img, int npx, float *mean, float *std,
     }
 }
 
-
 /* F2PY_WRAPPER_START
     subroutine array_mean_var_msk( img, msk, npx, mean, var, n, cut, verbose )
 !DOC array_mean_var_msk computes the mean and variance of an image
@@ -252,10 +246,9 @@ void array_mean_var_cut(float *restrict img, int npx, float *mean, float *std,
         real, intent(in,c), optional :: cut = 3.
     end subroutine array_mean_var_msk
 F2PY_WRAPPER_END */
-void array_mean_var_msk(float *restrict img,
-			uint8_t *restrict msk,
-			int npx, float *mean, float *std,
-                        int n, float cut, int verbose) {
+void array_mean_var_msk(float *restrict img, uint8_t *restrict msk, int npx,
+                        float *mean, float *std, int n, float cut,
+                        int verbose) {
     int i, nactive;
     float t, s1, s2, wt, y0;
     y0 = img[0];
@@ -308,22 +301,20 @@ void array_mean_var_msk(float *restrict img,
     y0 = *mean;
     wt = y0 + cut * (*std);
     if (verbose > 0)
-      printf("Cutting img > %f\n",wt);
+        printf("Cutting img > %f\n", wt);
 #ifdef GOT_OMP_SIMD
-#pragma omp parallel for simd 
+#pragma omp parallel for simd
 #else
-#pragma omp parallel for 
-#endif    
+#pragma omp parallel for
+#endif
     for (i = 0; i < npx; i++) {
-      if (img[i] < wt){
-	msk[i] = 0;
-      }	else {
-	msk[i] = 1;
-      }
-    }  
+        if (img[i] < wt) {
+            msk[i] = 0;
+        } else {
+            msk[i] = 1;
+        }
+    }
 }
-
-
 
 /* F2PY_WRAPPER_START
 
@@ -450,8 +441,8 @@ void array_histogram(float img[], int npx, float low, float high,
     end subroutine reorder_u16_a32
 F2PY_WRAPPER_END */
 void reorder_u16_a32(const uint16_t *restrict data,
-		     const uint32_t *restrict adr,
-                     uint16_t *restrict out, int N) {
+                     const uint32_t *restrict adr, uint16_t *restrict out,
+                     int N) {
     int i;
     /*  printf("Hello, got N=%d\n",N);*/
 #pragma omp parallel for
@@ -473,8 +464,7 @@ void reorder_u16_a32(const uint16_t *restrict data,
         integer, intent(hide), depend(data) :: N
     end subroutine reorder_u16_a32
 F2PY_WRAPPER_END */
-void reorder_f32_a32(const float *restrict data,
-		     const uint32_t *restrict adr,
+void reorder_f32_a32(const float *restrict data, const uint32_t *restrict adr,
                      float *restrict out, int N) {
     int i;
     /*  printf("Hello, got N=%d\n",N);*/
@@ -507,7 +497,6 @@ void reorderlut_u16_a32(uint16_t *restrict data, uint32_t *restrict lut,
     }
 }
 
-
 /* F2PY_WRAPPER_START
     subroutine reorderlut_f32_a32(data, adr, out, N)
 !DOC reorderlut_f32_a32 lut called in sandbox/fazit.py simple
@@ -521,8 +510,7 @@ void reorderlut_u16_a32(uint16_t *restrict data, uint32_t *restrict lut,
         integer, intent(hide), depend(data) :: N
     end subroutine reorderlut_f32_a32
 F2PY_WRAPPER_END */
-void reorderlut_f32_a32(const float *restrict data,
-			uint32_t *restrict lut,
+void reorderlut_f32_a32(const float *restrict data, uint32_t *restrict lut,
                         float *restrict out, int N) {
     int i;
 #pragma omp parallel for
@@ -562,14 +550,12 @@ void reorder_u16_a32_a16(uint16_t *restrict data, uint32_t *restrict a0,
     }
 }
 
-
-
 /* F2PY_WRAPPER_START
     subroutine bgcalc(img, bg, msk, ns, nf, gain, sp, st)
 !DOC bg1d computes a background on a 1d signal where gain
 !DOC and sp and st are defined by the code!
 !DOC img - source data
-!DOC bg  - computed background 
+!DOC bg  - computed background
 !DOC msk - mask
         intent(c) bgcalc
         intent(c)
@@ -578,65 +564,60 @@ void reorder_u16_a32_a16(uint16_t *restrict data, uint32_t *restrict a0,
         integer*1, dimension(ns,nf), intent(inout) :: msk
         integer, intent(hide), depend(img) :: ns = shape(img,0)
         integer, intent(hide), depend(img) :: nf = shape(img,1)
-	real :: gain, sp, st
+        real :: gain, sp, st
     end subroutine bgcalc
 F2PY_WRAPPER_END */
-void bgcalc( const float *restrict img,
-	     float *restrict bg,
-	     uint8_t *restrict msk,
-	     int ns, int nf,
-	     float gain,
-	     float sigmap,
-	     float sigmat
-	     ){
-  int ir,i;
-  float b, diff, t;
-  /* 
-  printf("gain %f sigmap %f sigmat %f ns %d nf %d\n",
-  gain, sigmap, sigmat, ns, nf); */
-#pragma omp parallel for private(b,diff,t,ir,i)
-  for( ir=0; ir < ns ; ir++){ // in range( 1, len(data) ):
-    i = ir*nf;
-    b = img[i];
-    bg[i]=b;
-    msk[i]=1;
-    for( i=ir*nf; i<(ir+1)*nf ; i++ ){
-      diff = img[i] - b;
-      t = sigmap * fabs(b) + sigmat;
-      if (diff > t){
-	diff = t * diff / fabs(diff) / 16;
-	msk[i] = 1;
-      } else if (diff < -t){
-	diff = t * diff / fabs(diff) / 4;
-	msk[i] = 1;
-      } else {
-	msk[i] = 0;
-      }
-      b += diff * gain;
-      bg[i] = b;
+void bgcalc(const float *restrict img, float *restrict bg,
+            uint8_t *restrict msk, int ns, int nf, float gain, float sigmap,
+            float sigmat) {
+    int ir, i;
+    float b, diff, t;
+    /*
+    printf("gain %f sigmap %f sigmat %f ns %d nf %d\n",
+    gain, sigmap, sigmat, ns, nf); */
+#pragma omp parallel for private(b, diff, t, ir, i)
+    for (ir = 0; ir < ns; ir++) { // in range( 1, len(data) ):
+        i = ir * nf;
+        b = img[i];
+        bg[i] = b;
+        msk[i] = 1;
+        for (i = ir * nf; i < (ir + 1) * nf; i++) {
+            diff = img[i] - b;
+            t = sigmap * fabsf(b) + sigmat;
+            if (diff > t) {
+                diff = t * diff / fabsf(diff) / 16;
+                msk[i] = 1;
+            } else if (diff < -t) {
+                diff = t * diff / fabsf(diff) / 4;
+                msk[i] = 1;
+            } else {
+                msk[i] = 0;
+            }
+            b += diff * gain;
+            bg[i] = b;
+        }
+        i = (ir + 1) * nf - 1;
+        b = img[i];
+        bg[i] = b;
+        msk[i] = 1;
+        for (i = (ir + 1) * nf - 1; i >= ir * nf; i--) {
+            diff = img[i] - b;
+            t = sigmap * fabsf(b) + sigmat;
+            if (diff > t) {
+                diff = t * diff / fabsf(diff) / 16;
+                msk[i] += 1;
+            } else if (diff < -t) {
+                diff = t * diff / fabsf(diff) / 4;
+                msk[i] += 1;
+            } else {
+                if (msk[i] == 1) {
+                    bg[i] = b;
+                }
+                if ((msk[i] == 0) || (msk[i] == 2)) {
+                    bg[i] = (bg[i] + b) / 2;
+                }
+            }
+            b += diff * gain;
+        }
     }
-    i = (ir+1)*nf-1;
-    b = img[i];
-    bg[i] = b;
-    msk[i] = 1;
-    for(i =(ir+1)*nf-1; i>=ir*nf; i-- ){
-      diff = img[i] - b;
-      t = sigmap * fabs(b) + sigmat;
-      if (diff > t){
-	diff = t * diff / fabs(diff) / 16;
-	msk[i] += 1;
-      } else if (diff < -t) {
-	diff = t * diff / fabs(diff) / 4;
-	msk[i] += 1;
-      } else {
-	if (msk[i] == 1){
-	  bg[i] = b;
-	}
-	if ( (msk[i] == 0) || (msk[i] == 2) ){
-	  bg[i] = (bg[i]+b)/2;
-	}
-      }
-      b += diff * gain;
-    }
-  }
 }

@@ -464,7 +464,7 @@ def BTmat( h1, h2, B, BI ):
 
 HKL0 = np.array( [ [0,0,1,1,-1,1,-1,0, 0, 1, -1, 1, 1, 3, 11],
                    [0,1,0,1, 1,0, 0,1,-1, 1,  1,-1, 1, 2, 12],
-                   [1,0,0,0, 0,1, 1,1, 1, 1,  1, 1,-1, 1, 13] ], np.float ) # first unit cell
+                   [1,0,0,0, 0,1, 1,1, 1, 1,  1, 1,-1, 1, 13] ], float ) # first unit cell
 
 
 def filter_pairs( h1, h2, c2a, B, BI, tol = 1e-5):

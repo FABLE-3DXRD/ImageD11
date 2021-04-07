@@ -1,6 +1,8 @@
 
 
 import os, glob, shutil, numpy.f2py
+import sys
+assert sys.version_info[0] == 2, "use python2 to make the pyf please"
 
 head  = """
 python module %s
@@ -130,7 +132,15 @@ def write_docs( inp, outf ):
         docf.write("__all__ = [\n" + ",\n".join(['    "%s"'%(k) for k in keys ])+  "]")
 
 
-CF = r'"c:\Program Files\LLVM\bin\clang-format" --style=file -i '
+for name in ['"c:\Program Files\LLVM\bin\clang-format" ',
+             'clang-format-10',
+             'clang-format' ]:
+    if os.path.exists(name) or os.system(name+" -version")==0:
+        CF = name + ' --style=file -i '
+        break
+else:
+    raise Exception("clang-format was not found")
+
 
 def clean(sources):
     """ Runs clang-format on all the C source files
