@@ -583,12 +583,12 @@ void bgcalc(const float *restrict img, float *restrict bg,
         msk[i] = 1;
         for (i = ir * nf; i < (ir + 1) * nf; i++) {
             diff = img[i] - b;
-            t = sigmap * fabs(b) + sigmat;
+            t = sigmap * fabsf(b) + sigmat;
             if (diff > t) {
-                diff = t * diff / fabs(diff) / 16;
+                diff = t * diff / fabsf(diff) / 16;
                 msk[i] = 1;
             } else if (diff < -t) {
-                diff = t * diff / fabs(diff) / 4;
+                diff = t * diff / fabsf(diff) / 4;
                 msk[i] = 1;
             } else {
                 msk[i] = 0;
@@ -602,12 +602,12 @@ void bgcalc(const float *restrict img, float *restrict bg,
         msk[i] = 1;
         for (i = (ir + 1) * nf - 1; i >= ir * nf; i--) {
             diff = img[i] - b;
-            t = sigmap * fabs(b) + sigmat;
+            t = sigmap * fabsf(b) + sigmat;
             if (diff > t) {
-                diff = t * diff / fabs(diff) / 16;
+                diff = t * diff / fabsf(diff) / 16;
                 msk[i] += 1;
             } else if (diff < -t) {
-                diff = t * diff / fabs(diff) / 4;
+                diff = t * diff / fabsf(diff) / 4;
                 msk[i] += 1;
             } else {
                 if (msk[i] == 1) {
