@@ -22,9 +22,10 @@ If you are at ESRF on a linux computer you could try "module load fable"
 To use from git, try this:
 
  - Download and install python 3.7+, perhaps from www.python.org but probably from conda.
- - Add the packages: numpy, scipy, matplotlib, h5py, pillow, pycifrw, xfab
-
-Then try:
+ - Preload packages from conda (or your system package manager): numpy, scipy, matplotlib, h5py, pillow, pycifrw, xfab
+ - `pip install git+https://github.com/FABLE-3DXRD/ImageD11.git`
+ 
+If you want the sources then checkout like this:
  ```
  $ git clone https://github.com/FABLE-3DXRD/ImageD11.git && cd ImageD11
  $ python setup.py build bdist_wheel
