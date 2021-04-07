@@ -73,5 +73,5 @@ scan1:
 
 """
 
-y = yaml.load(my_yml)
+y = yaml.safe_load(my_yml)
 pprint.pprint(y)
