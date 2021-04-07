@@ -9,3 +9,4 @@
 *.html linguist-documentation
 *.pdf  linguist-generated
 *.odt  linguist-documentation
+*.pks  linguist-generated
