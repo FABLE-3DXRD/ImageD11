@@ -31,7 +31,7 @@ s2  Sum of pixel^2
 bg1d = """computes a background on a 1d signal where gain
 and sp and st are defined by the code!
 img - source data
-bg  - computed background 
+bg  - computed background
 msk - mask
 """
 blob_moments = """fills in the reduced moments in results array.
