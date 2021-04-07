@@ -27,7 +27,7 @@ To re-build the wrappers do:
 
 # For pip / bdist_wheel etc
 import setuptools
-import os, sys, platform
+import os, sys, platform, os.path
 from distutils.core import setup, Extension
 from distutils.command import build_ext
 from numpy import get_include
@@ -137,6 +137,12 @@ needed =[
     ]
     # , "FitAllB", ... ]
 
+ # read the contents of your README file
+this_directory = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    readme = f.read()
+
+    
 # See the distutils docs...
 setup(name='ImageD11',
       version=get_version(),
@@ -147,11 +153,18 @@ setup(name='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
       ext_modules = [extension,],
+      setup_requires = ['numpy'], # to compile
       install_requires = needed,
-      packages = ["ImageD11", "ImageD11.tkGui", "ImageD11.silxGui", "ImageD11.nbGui"],
+      packages = ["ImageD11",
+                  "ImageD11.tkGui",
+                  "ImageD11.silxGui",
+                  "ImageD11.nbGui"],
       package_dir = {"ImageD11":"ImageD11src"},
       url = "http://github.com/jonwright/ImageD11",
-      package_data = {"ImageD11" : ["doc/*.html", "data/*" ]},
-      scripts = scripts )
+      package_data = {"ImageD11" : ["doc/*.html", "data/*", "sandbox/*" ]},
+      scripts = scripts,
+      long_description = readme,
+      long_description_content_type='text/markdown',
+)
 
 
