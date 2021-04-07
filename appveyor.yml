@@ -17,7 +17,7 @@ install:
   - conda info -a
   - python -m pip install numpy h5py==2.10.0 --only-binary=h5py
   - python setup.py build
-  - python -m pip install .  --ignore-installed certifi
+  - python -m pip install .  --ignore-installed certifi --upgrade --upgrade-strategy only-if-needed mypackage
 
 
 test_script:
