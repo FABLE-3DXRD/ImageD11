@@ -317,39 +317,37 @@ def compute_grain_origins(omega, wedge=0.0, chi=0.0,
     return t
 
 
-def compute_tth_histo(tth, no_bins=100,
+def compute_tth_histo(tth, no_bins=100, weight = False, weights = None,
                       **kwds):
     """
     Compute a histogram of tth values
+    Uses numpy's histogram rather that doing it by hand as above
+    New feature: weight by something (peak intensity for instance), send true for weight and weights values
 
     Returns a normalised histogram (should make this a probability
     *and*
-     For each datapoint, the number of other points in the same bin
+     For each datapoint, the corresponding histogram weight
+ 
+    Updated and modernized 2021-02-11 S. Merkel
     """
-    tthsort = np.sort(tth)
-    maxtth = tthsort[-1]
-    mintth = tthsort[0]
-    logging.debug("maxtth=%f , mintth=%f" % (maxtth, mintth))
-    binsize = (maxtth - mintth) / (no_bins + 1)
-    tthbin = np.arange(mintth, maxtth + binsize, binsize)
-    # print len(tthbin),tthbin[:10]
-    nn = np.searchsorted(tthsort, tthbin)  # position of bin in sorted
-    nn = np.concatenate([nn, [len(tthsort)]])   # add on last position
-    histogram = (nn[1:] - nn[:-1]).astype(np.float32)
-    # this would otherwise be integer
-    logging.debug("max(histogram) = %d" % (max(histogram)))
-    # Change from max
-    # histogram = histogram/max(histogram)
-    histogram = histogram / len(tth)
-    # Vectorised version
-    # bin for each two theta
-    bins = np.floor((tth - mintth) / binsize).astype(int)
-    # print "got bins",len(bins),len(tth),len(histogram)
-    # print "bins",bins[:10]
-    # print "tth",tth[:10]
-    # print "histogram",histogram[:10]
-    hpk = np.take(histogram, bins)  # histogram value for each peak
-    # print "hpk",hpk[:10]
+    maxtth = tth.max()
+    mintth = tth.min()
+    logging.debug("Histogram: maxtth=%f , mintth=%f, bins=%d" % (maxtth, mintth, no_bins))
+    if (weight):
+        logging.debug("Weighted histogram")
+        histogram,binedges = np.histogram(tth, bins=no_bins, weights=weights, density=True)
+    else:
+        logging.debug("Un-weighted histogram")
+        histogram,binedges = np.histogram(tth, bins=no_bins, density=True)
+    tthbin = 0.5 *(binedges[:-1] + binedges[1:])
+    histogram = histogram/histogram.sum()
+    # histogram value for each peak
+    # len(hpk) = number of peaks
+    # Tried to use numpy's digitize but failed. Edges are treated differently between np.histogram and np.digitize (both are inclusive in np.histogram)
+    # Tried many combinations and gave up
+    binsize = (maxtth - mintth) / (no_bins-1)
+    bins = np.floor((tth - mintth) / binsize).astype(np.int)
+    hpk = np.take(histogram, bins)
     return tthbin, histogram, hpk
 
 

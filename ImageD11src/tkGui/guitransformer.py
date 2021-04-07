@@ -27,7 +27,6 @@ import numpy as np
 #    from tkinter import *
 
 from .listdialog import listdialog, columnchooser
-
 from . import twodplot
 
 
@@ -52,6 +51,7 @@ class guitransformer:
               ( "Save parameters", 0, self.saveparameters),
 #              ( "Plot selected columns", 0, self.plotcols),
               ( "Plot tth histogram", 0, self.plothisto ),
+              ( "Export tth histogram", 0, self.savehisto ), 
               ( "Filter peaks based on tth histogram", 0, self.filterhisto ),
               ( "Compute g-vectors", 0, self.computegv),
               ( "Save g-vectors", 0, self.savegv),
@@ -191,11 +191,15 @@ class guitransformer:
             nbins = self.parent.guicommander.execute("transformer",
                                                      "parameterobj.get",
                                                      "no_bins")
+            doweight = self.parent.guicommander.execute("transformer",
+                                                     "parameterobj.get",
+                                                     "weight_hist_intensities")
             d = listdialog( self.parent,
-                            items={"no_bins": nbins},
+                            items={"no_bins": nbins, "weight_hist_intensities": doweight},
                             title="Histogram - no of bins")
 
             nbins = int(d.result['no_bins'])
+            doweight = int(d.result['weight_hist_intensities'])
 
             self.parent.guicommander.execute("transformer",
                                              "parameterobj.set_parameters",
@@ -219,6 +223,35 @@ class guitransformer:
                      }
                      )))
 
+    def savehisto(self, nbins = None):
+        if nbins is None:
+            nbins = self.parent.guicommander.execute("transformer",
+                                                     "parameterobj.get",
+                                                     "no_bins")
+            doweight = self.parent.guicommander.execute("transformer",
+                                                     "parameterobj.get",
+                                                     "weight_hist_intensities")
+            d = listdialog( self.parent,
+                            items={"no_bins": nbins, "weight_hist_intensities": doweight},
+                            title="Histogram - no of bins")
+
+            nbins = int(d.result['no_bins'])
+            doweight = int(d.result['weight_hist_intensities'])
+
+            self.parent.guicommander.execute("transformer",
+                                             "parameterobj.set_parameters",
+                                             d.result)
+        else:
+            self.parent.guicommander.execute("transformer",
+                                             "parameterobj.set",
+                                             "no_bins", nbins)
+
+        bins, hist = self.parent.guicommander.execute("transformer",
+                                                      "compute_tth_histo")
+        filename=self.parent.saver.show(title="File to save histogram")
+        self.parent.guicommander.execute("transformer","save_tth_his",filename,bins,hist)
+
+
     def filterhisto(self):
         """ Call plot histo, then filter on it """
         nbins = self.parent.guicommander.execute("transformer",
@@ -228,10 +261,14 @@ class guitransformer:
         min_bin_prob = self.parent.guicommander.execute("transformer",
                                                         "parameterobj.get",
                                                         "min_bin_prob")
+        
+        doweight = self.parent.guicommander.execute("transformer",
+                                                     "parameterobj.get",
+                                                     "weight_hist_intensities")
 
         d=listdialog(self.parent,items={
             "no_bins": nbins,
-            "min_bin_prob": min_bin_prob},
+            "min_bin_prob": min_bin_prob,  "weight_hist_intensities": doweight},
                      title="Histogram filter")
 
 

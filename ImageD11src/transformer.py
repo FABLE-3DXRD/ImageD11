@@ -164,6 +164,10 @@ PARAMETERS = [
          helpstring="Number of bins to use in histogram based filters",
          vary=False,
          can_vary=False),
+     par('weight_hist_intensities', False,
+         helpstring="If True or 1, weight histograms by peak intensities. If False or 0, histogram by number of peaks.",
+         vary=False,
+         can_vary=False),
      ]
 
 
@@ -282,10 +286,23 @@ class transformer:
 
     def compute_histo(self, colname):
         """ Compute the histogram over twotheta for peaks previous read in
-        Filtering is moved to a separate function """
+        Filtering is moved to a separate function
+        
+        colname is most-often "tth"
+        
+        other parameters are set in the parameter object
+        no_bins = number of bins
+        weight_hist_intensities: True or False
+            False: histogram by number of measured peaks
+            True: weight by peak intensities 
+        """
         if colname not in self.colfile.titles:
             raise Exception("Cannot find column " + colname)
-        bins, hist, hpk = transform.compute_tth_histo(self.getcolumn(colname),
+        weight = self.parameterobj.get("weight_hist_intensities")
+        if (weight):
+            bins, hist, hpk = transform.compute_tth_histo(self.getcolumn(colname), weight = True, weights = self.getcolumn("sum_intensity"), **self.parameterobj.get_parameters())
+        else:
+            bins, hist, hpk = transform.compute_tth_histo(self.getcolumn(colname),
                                              **self.parameterobj.get_parameters())
         self.addcolumn(hpk, colname + "_hist_prob")
         return bins, hist
@@ -632,3 +649,17 @@ class transformer:
         #    print geoRef
         #geoRef.save(os.path.splitext(filename)[0] + ".poni")
 
+    def save_tth_his(self, filename, bins, hist):
+        """
+        Saves a 2 theta histogram into a file
+        bins and histogram should have been calculated previously
+        """
+        #        self.parameterobj.update_other(self)
+
+        f = open(filename, "w")
+        f.write("# Peaks: %s\n" % self.colfile.filename)
+        f.write("# N. bins: %d\n" % len(bins))
+        f.write("# 2tth intensity\n")
+        for i in range(0,len(hist)):
+            f.write("%10.7f  %.7g \n" % (bins[i], hist[i]))
+        f.close()
