@@ -19,8 +19,7 @@ from __future__ import print_function
 
 
 import numpy as np
-from ImageD11 import cImageD11, grain, transform
-import unitcell
+from ImageD11 import cImageD11, grain, transform, unitcell
 
 import math, time, sys, logging
 

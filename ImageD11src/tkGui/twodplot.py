@@ -337,27 +337,14 @@ class twodplot(Tk.Frame):
 
 
 if __name__=="__main__":
-    import epffile, powbase, mcadata, ciidata
-    if len(sys.argv)<3:
-        import numpy as np
-        from math import pi
-        print("Usage: %s filename format"%(sys.argv[0]))
-        x=np.arange(0.0,3.0,0.01)
-        dat=epffile.powderdata(x,
-                               np.sin(2*pi*x)+5,
-                               np.sqrt(sin(2*pi*x)+5),
-                               { "title":"sin x" })
-    else:
-        try:
-            if sys.argv[2]=="powbase":
-                dat=powbase.powbase(sys.argv[1])
-            if sys.argv[2]=="epf":
-                dat=epffile.epffile(sys.argv[1])
-            if sys.argv[2]=="mca":
-                dat=mcadata.mcadata(sys.argv[1])
-        except:
-            print("Could not read your file %s" % (sys.argv[1]))
-            raise
+
+    import numpy as np
+    from math import pi
+    x=np.arange(0.0,3.0,0.01)
+    dat=epffile.powderdata(x,
+                           np.sin(2*pi*x)+5,
+                           np.sqrt(sin(2*pi*x)+5),
+                           { "title":"sin x" })
 
     root = Tk.Tk()
     root.wm_title("Two dimensional plotting")

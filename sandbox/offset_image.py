@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import numpy as np
+from PIL import Image
 REAL = np.float 
 
 def normalise( im ):
@@ -39,7 +40,6 @@ def find_offset( c ):
 
 def register_image( rname, cname ):
     """ We take the current and place it onto reference """
-    import Image
     ref = normalise(np.asarray(Image.open(rname)).sum(axis=2, dtype=REAL))
     cur = normalise(np.asarray(Image.open(cname)).sum(axis=2, dtype=REAL))
     fftshape = ( ref.shape[0] + cur.shape[0] + 4,
@@ -77,7 +77,6 @@ def display_registered( current, reference, xf, yf ):
 
 
 def test(filename):
-    import Image
     rgb = np.asarray(Image.open(filename))
     vals = 1.0*rgb[:,:,0] + rgb[:,:,1] + rgb[:,:,2]
     print(vals.shape)

@@ -91,7 +91,8 @@ def update_wtd( recon, proj, angle, msk, dbg=True ):
 
 
 def make_data():
-    import rad, Image
+    import rad
+    from PIL import Image
     im = Image.open("phantom3.gif")
     a = np.asarray(im).astype(np.float32)
     print(a.min(),a.max())
