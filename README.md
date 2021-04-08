@@ -7,10 +7,10 @@ Version 1.9.8, Jon Wright, wright@esrf.fr
 This is the source code for ImageD11. Probably you wanted a compiled version.
 
 If your pip is up-to-date, you can try to install it like this:
-
- `python -m pip install --upgrade pip`
- `python -m pip install ImageD11`
-
+```
+ python -m pip install --upgrade pip
+ python -m pip install ImageD11
+```
 To get all the possible dependencies too, you can try:
  `python -m pip install ImageD11[full]`
 
@@ -27,7 +27,7 @@ To use from git, try this:
  
 If you want to work with the sources then you can try like this:
  ```
- $ python -m pip install --upgrade pip`
+ $ python -m pip install --upgrade pip
  $ git clone https://github.com/FABLE-3DXRD/ImageD11.git && cd ImageD11
  $ python -m pip install --editable .
  ```
