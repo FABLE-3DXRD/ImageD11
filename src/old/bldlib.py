@@ -57,7 +57,7 @@ def getfastarg(args):
         poss = ("-mavx2", "-mtune=native" )
     else:
         poss = ("-mtune=native",)
-    for a in (
+    for a in poss:
         try:
             cc.compile(["dummy.c",], output_dir=".",extra_preargs=args+[a,])
             farg.append(a)

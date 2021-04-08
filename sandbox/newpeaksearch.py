@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 import sys
 import h5py, timeit
 import numpy as np

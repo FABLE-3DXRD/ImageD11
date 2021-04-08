@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 from scipy.spatial.transform import Rotation, RotationSpline
 from ImageD11 import grain, columnfile, cImageD11, transform
 import sys, numpy as np, pylab as pl, os

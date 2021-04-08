@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 import fabio, numpy as np, h5py
 
 # read in .txt file and .dat files

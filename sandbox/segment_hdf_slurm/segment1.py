@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import os, time
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 import h5py, hdf5plugin
