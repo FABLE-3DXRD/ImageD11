@@ -32,7 +32,6 @@ import setuptools
 import os, sys, platform, os.path
 from distutils.core import setup, Extension
 from distutils.command import build_ext
-from numpy import get_include
 
 ############################################################################
 def get_version():
@@ -70,6 +69,9 @@ if platform.system() == "Darwin":
 
 class build_ext_subclass( build_ext.build_ext ):
     def build_extensions(self):
+        """ attempt to defer the numpy import until later """
+        from numpy import get_include
+        self.compiler.add_include_dir(get_include())
         c = self.compiler.compiler_type
         CF = [] ; LF=[]
         if "CFLAGS" in os.environ:
@@ -87,10 +89,11 @@ class build_ext_subclass( build_ext.build_ext ):
 cnames =  "_cImageD11module.c blobs.c cdiffraction.c cimaged11utils.c"+\
 " closest.c connectedpixels.c darkflat.c localmaxlabel.c sparse_image.c "+\
 " splat.c fortranobject.c"
+
 csources = [os.path.join('src',c) for c in cnames.split()]
 
 extension = Extension( "_cImageD11",  csources,
-                include_dirs = [get_include(), 'src' ])
+                include_dirs = [ 'src' ])
 
 ################################################################################
 
