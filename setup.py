@@ -128,7 +128,6 @@ minimal = [  # can't compile without this
     "six",
     "numpy",
     "setuptools",
-    "wheel",
     ]
 
 useful = [   # stuff you probably want, and should be able to get easily
@@ -146,6 +145,7 @@ useful = [   # stuff you probably want, and should be able to get easily
 
 more = [   
     # Used in sandbox / test / not completely essential, but should work for CI
+    "pytest",
     "numba",       # for some test cases
     "pillow",      # in sandbox
     "pyopengl",    # plot3d in tkGui
