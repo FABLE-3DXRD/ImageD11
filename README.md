@@ -9,7 +9,7 @@ This is the source code for ImageD11. Probably you wanted a compiled version.
 If your pip is up-to-date, you can try to install it like this (numpy is needed
 to compile):
 ```
- python -m pip install --upgrade pip
+ python -m pip install --upgrade pip setuptools
  python -m pip install numpy
  python -m pip install ImageD11
 ```
