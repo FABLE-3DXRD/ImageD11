@@ -142,7 +142,8 @@ useful = [   # stuff you probably want, and should be able to get easily
     # 32 bit windows binary wheel for python 3 is missing
     #   this is not quite right, but seems close
     'h5py <= 2.10.0 ; (sys_platform=="win32") and (python_version >= "3")',
-    'h5py ; (sys_platform!="win32") or (python_version >= "3")',
+    'h5py ; (sys_platform=="win32") and (python_version < "3")',
+    'h5py ; (sys_platform!="win32")',
     'pyyaml',
 ]
 
