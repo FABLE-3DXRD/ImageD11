@@ -4,7 +4,7 @@ from __future__ import print_function
 
 #
 from ImageD11 import transform, transformer, indexing, parameters
-from ImageD11.closest import score
+from ImageD11.cImageD11 import score
 import sys
 
     

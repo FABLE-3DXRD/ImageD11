@@ -6,9 +6,15 @@ Version 1.9.8, Jon Wright, wright@esrf.fr
 
 This is the source code for ImageD11. Probably you wanted a compiled version.
 
-You can try to get it via:
-
- `pip install ImageD11`
+If your pip is up-to-date, you can try to install it like this (numpy is needed
+to compile):
+```
+ python -m pip install --upgrade pip setuptools
+ python -m pip install numpy
+ python -m pip install ImageD11
+```
+To get all the possible dependencies too, you can try:
+ `python -m pip install ImageD11[full]`
 
 Some (dated) documentation is here: https://imaged11.readthedocs.io/
 
@@ -17,15 +23,15 @@ If you are at ESRF on an old linux computer you can try "module load fable".
 To use from git, try this:
 
  - Download and install python 3.7+, perhaps from www.python.org but probably from conda.
- - Preload packages from conda (or your system package manager): numpy, scipy, matplotlib, h5py, pillow, pycifrw, xfab
+ - Preload binary packages from conda (or your system package manager): 
+    numpy, scipy, matplotlib, h5py, pillow, pycifrw, xfab, pyqt, pillow, silx[full] etc
  - `pip install git+https://github.com/FABLE-3DXRD/ImageD11.git`
  
-If you want the sources then checkout like this:
+If you want to work with the sources then you can try like this:
  ```
+ $ python -m pip install --upgrade pip
  $ git clone https://github.com/FABLE-3DXRD/ImageD11.git && cd ImageD11
- $ python setup.py build bdist_wheel
- Followed by installation in your virtual or conda environment:
- $ pip install dist/ImageD11_[version you built].whl
+ $ python -m pip install --editable .
  ```
 
 After it is installed, you should find a script ImageD11_gui.py, somewhere in your path.

@@ -32,11 +32,10 @@ import setuptools
 import os, sys, platform, os.path
 from distutils.core import setup, Extension
 from distutils.command import build_ext
-from numpy import get_include
 
 ############################################################################
 def get_version():
-    with open("ImageD11src/__init__.py","r") as f:
+    with open("ImageD11/__init__.py","r") as f:
         for line in f.readlines():
             if line.find("__version__")>-1:
                 return eval(line.split("=")[1].strip())
@@ -70,6 +69,9 @@ if platform.system() == "Darwin":
 
 class build_ext_subclass( build_ext.build_ext ):
     def build_extensions(self):
+        """ attempt to defer the numpy import until later """
+        from numpy import get_include
+        self.compiler.add_include_dir(get_include())
         c = self.compiler.compiler_type
         CF = [] ; LF=[]
         if "CFLAGS" in os.environ:
@@ -87,17 +89,17 @@ class build_ext_subclass( build_ext.build_ext ):
 cnames =  "_cImageD11module.c blobs.c cdiffraction.c cimaged11utils.c"+\
 " closest.c connectedpixels.c darkflat.c localmaxlabel.c sparse_image.c "+\
 " splat.c fortranobject.c"
+
 csources = [os.path.join('src',c) for c in cnames.split()]
 
 extension = Extension( "_cImageD11",  csources,
-                include_dirs = [get_include(), 'src' ])
+                include_dirs = [ 'src' ])
 
 ################################################################################
 
-
 # Try to further reduce this long list
-scripts = ["ImageD11src/rsv_mapper.py",
-           "ImageD11src/tkGui/plot3d.py",
+scripts = ["ImageD11/rsv_mapper.py",
+           "ImageD11/tkGui/plot3d.py",
                  "scripts/peaksearch.py",
                  "scripts/fitgrain.py",
                  "scripts/ubi2cellpars.py",
@@ -123,21 +125,50 @@ scripts = ["ImageD11src/rsv_mapper.py",
 # Things we depend on. This generally borks things if pip
 # tries to do source installs of all of these.
 
-needed =[
+# sfood -I ImageD11/depreciated -I build/ -v -u >sfood.out 2>sfood.err
+
+minimal = [  # can't compile without this
     "six",
     "numpy",
-    "scipy",
-    "pillow",
-    "h5py",
-    "matplotlib",
-    "xfab>=0.0.4",
-    "fabio",
-    "PyCifRW",
-    # breaks travis for macos ?? "silx",
-    "pyopengl",
-    "pyopengltk",
+    "setuptools",
     ]
-    # , "FitAllB", ... ]
+
+useful = [   # stuff you probably want, and should be able to get easily
+    "fabio",
+    "xfab>=0.0.4", #
+       # comes from xfab : "PyCifRW", 
+    "matplotlib",  # tkGui
+    "pyopengltk",  # plot3d in tkGui
+    "scipy",       # 
+    # 32 bit windows binary wheel for python 3 is missing
+    #   this is not quite right, but seems close
+    'h5py <= 2.10.0 ; (sys_platform=="win32") and (python_version >= "3")',
+    'h5py ; (sys_platform=="win32") and (python_version < "3")',
+    'h5py ; (sys_platform!="win32")',
+    'pyyaml',
+]
+
+
+more = [   
+    # Used in sandbox / test / not completely essential, but should work for CI
+    "pytest",
+    "numba",       # for some test cases
+    "pillow",      # in sandbox
+    "lmfit",       # in sandbox 
+    "PyMca5",      # in sandbox
+    "sympy",       # for maths
+    'ipywidgets',  # for notebook nbGui
+    'pyopencl',    # (was?) in sandbox
+    'pyFAI ; python_version >= "3" ',   # pypi problematic
+    'pyFAI <= 0.18.0 ; python_version  < "3" ',
+    'silx[full] ; python_version >= "3" ',  # for silxGui
+]
+
+rare = [           #
+    "FitAllB",     # not for python3
+    "minuit",      # for fitallb
+    "PyTango",     # sandbox
+    ]
 
  # read the contents of your README file
 this_directory = os.path.abspath(os.path.dirname(__file__))
@@ -150,20 +181,21 @@ setup(name='ImageD11',
       version=get_version(),
       author='Jon Wright',
       author_email='wright@esrf.fr',
-      cmdclass={'build_ext': build_ext_subclass},
+      cmdclass={ 'build_ext' : build_ext_subclass },
       description='ImageD11',
       license = "GPL",
       ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
       ext_modules = [extension,],
-      setup_requires = ['numpy'], # to compile
-      install_requires = needed,
+      setup_requires = minimal,   # to compile
+      install_requires = minimal + useful,
+      extras_require = { 'full' : more, 'rare' : rare },
       packages = ["ImageD11",
                   "ImageD11.tkGui",
                   "ImageD11.silxGui",
                   "ImageD11.nbGui"],
-      package_dir = {"ImageD11":"ImageD11src"},
+      package_dir = {"ImageD11":"ImageD11"},
       url = "http://github.com/jonwright/ImageD11",
-      package_data = {"ImageD11" : ["doc/*.html", "data/*", "sandbox/*" ]},
+      package_data = {"ImageD11" : ["doc/*.html", "data/*", "sandbox/*.py" ]},
       scripts = scripts,
       long_description = readme,
       long_description_content_type='text/markdown',

@@ -53,10 +53,10 @@ class test_xfab_strain( unittest.TestCase ):
         c0 = 6.04
         from scipy.spatial.transform import Rotation
         r =  Rotation.from_euler("XYZ",(123,456,789),degrees=True)
-        try:
-            self.u = r.as_dcm()
-        except:
+        if hasattr(r, "as_matrix"):
             self.u = r.as_matrix()
+        else:
+            self.u = r.as_dcm()
         self.ubi = np.dot(((a0*1.1, 0,0),
                            (0,b0,0),
                            (0,0,c0)),self.u.T)
@@ -93,10 +93,10 @@ class test_xfab_largestrain( test_xfab_strain ):
         c0 = 6.04
         from scipy.spatial.transform import Rotation
         r =  Rotation.from_euler("XYZ",(1230,4560,7890),degrees=True)
-        try:
-            self.u = r.as_dcm()
-        except:
+        if hasattr(r, "as_matrix"):
             self.u = r.as_matrix()
+        else:
+            self.u = r.as_dcm()
         self.ubi = np.dot(((a0*12.1, 0,0),
                            (0,b0,0),
                            (0,0,c0)),self.u.T)

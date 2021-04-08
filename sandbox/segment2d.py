@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 import sys, timeit
 import numpy as np #, numba
 import scipy.ndimage 

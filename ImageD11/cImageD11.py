@@ -1,9 +1,23 @@
 
 
-# check for avx2 and import cImageD11 module
+# import cImageD11 compiled module and patch the docstrings
+
+import sys
 import struct
 from ImageD11 import cImageD11_docstrings
-from ImageD11._cImageD11 import *
+
+try:
+    from ImageD11._cImageD11 import *
+except ImportError:
+    print("Failed to import compiled C code for cImageD11 module")
+    print("Are you running from a source directory?")
+    print("Try something like:")
+    print("   python -m pip install --editable .")
+    print("or:")
+    print("   python setup.py develop")
+    print("or:")
+    print("   python setup.py build_ext --inplace")
+    sys.exit()
 
 # For 32 or 64 bits
 nbyte = struct.calcsize("P") # 4 or 8
