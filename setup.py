@@ -138,6 +138,7 @@ useful = [   # stuff you probably want, and should be able to get easily
     "xfab>=0.0.4", #
        # comes from xfab : "PyCifRW", 
     "matplotlib",  # tkGui
+    "pyopengltk",  # plot3d in tkGui
     "scipy",       # 
     # 32 bit windows binary wheel for python 3 is missing
     #   this is not quite right, but seems close
@@ -153,8 +154,6 @@ more = [
     "pytest",
     "numba",       # for some test cases
     "pillow",      # in sandbox
-    "pyopengl",    # plot3d in tkGui
-    "pyopengltk",  # plot3d in tkGui
     "lmfit",       # in sandbox 
     "PyMca5",      # in sandbox
     "sympy",       # for maths
