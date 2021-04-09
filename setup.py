@@ -152,7 +152,8 @@ useful = [   # stuff you probably want, and should be able to get easily
 more = [   
     # Used in sandbox / test / not completely essential, but should work for CI
     "pytest",
-    "numba",       # for some test cases
+    'numba==0.46.0 ; python_version < "3" ',       # for some test cases
+    'numba ; python_version > "3" ',               # for some test cases
     "pillow",      # in sandbox
     "lmfit",       # in sandbox 
     "PyMca5",      # in sandbox
