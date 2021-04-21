@@ -552,7 +552,7 @@ void reorder_u16_a32_a16(uint16_t *restrict data, uint32_t *restrict a0,
 
 /* F2PY_WRAPPER_START
     subroutine bgcalc(img, bg, msk, ns, nf, gain, sp, st)
-!DOC bg1d computes a background on a 1d signal where gain
+!DOC bgcalc computes a background on a 1d signal where gain
 !DOC and sp and st are defined by the code!
 !DOC img - source data
 !DOC bg  - computed background
