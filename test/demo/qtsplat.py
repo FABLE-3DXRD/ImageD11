@@ -113,8 +113,8 @@ class splat3dview:
         self.origin = (0,0,0)      # origin in reciprocal space
         self.scale = 0.7*min(w,h)    # scale for Angstrom to px
         self.zsort = True
-        self.u0 = np.eye(3, dtype=np.float )
-        self.u  = np.eye(3, dtype=np.float )
+        self.u0 = np.eye(3, dtype=float )
+        self.u  = np.eye(3, dtype=float )
         self.zname = "gz"
         self.need_redraw = True
 
@@ -128,7 +128,10 @@ class splat3dview:
         self.need_redraw = True
         r = Rotation.from_euler(axes, (dx, dy, 0),
                                 degrees=True )
-        self.u = r.as_dcm()
+        if hasattr(r, "as_dcm"):
+            self.u = r.as_dcm()
+        else:
+            self.u = r.as_matrix()
 
     def resetrot(self):
         self.need_redraw = True
