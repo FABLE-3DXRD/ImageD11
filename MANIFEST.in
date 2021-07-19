@@ -5,9 +5,9 @@ include *.sh
 include *.txt
 include *.yml
 include LICENSE
-recursive-include ImageD11src *.c
-recursive-include ImageD11src *.md
-recursive-include ImageD11src *.py
+recursive-include ImageD11 *.c
+recursive-include ImageD11 *.md
+recursive-include ImageD11 *.py
 recursive-include data *.spline
 recursive-include docs *.bat
 recursive-include docs *.docx
