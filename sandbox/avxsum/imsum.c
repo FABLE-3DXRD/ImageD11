@@ -2,7 +2,6 @@
 #include <immintrin.h>
 #include <emmintrin.h>
 #include <stdint.h> 
-#include <omp.h>
 
 int64_t imsum_avx2_2( uint16_t im[], int64_t n ){
   __m256i s0,s1,s2,s3;
@@ -148,18 +147,16 @@ int64_t imsum_sse2_1( uint16_t im[], int64_t n ){
 
 
 int64_t imsum_c( uint16_t im[], int64_t n ){
-  int i;
-  int64_t sum;
-  for( i = 0; i < n; i++)
+  int64_t sum = 0;
+  for( int i = 0; i < n; i++)
     sum += im[i];
   return sum;
 }
 
 int64_t imsum_c_simd( uint16_t im[], int64_t n ){
-  int i;
-  int64_t sum;
-#pragma omp parallel for simd reduction(+:sum)
-  for( i = 0; i < n; i++)
+  int64_t sum = 0;
+#pragma omp simd reduction(+:sum)
+  for( int i = 0; i < n; i++ )
     sum += im[i];
   return sum;
 }
