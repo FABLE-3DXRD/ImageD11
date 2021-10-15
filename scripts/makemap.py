@@ -32,7 +32,7 @@ def makemap(options):
     o.loadfiltered(options.fltfile)
     print("got filtered")
     o.readubis(options.ubifile)
-    if options.symmetry is not "triclinic":
+    if options.symmetry != "triclinic":
         # Grainspotter will have already done this
         print("transform to uniq")
         o.makeuniq(options.symmetry)
