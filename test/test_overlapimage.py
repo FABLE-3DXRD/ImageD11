@@ -51,9 +51,9 @@ def maketestim():
     int_im = (im*s).astype( np.uint16 )
     if not os.path.exists( OVIM ):
         fabio.edfimage.edfimage( int_im ).write( OVIM )
-    return int_im
+    return int_im, pks
 
-def bench(int_im):
+def bench(int_im, pks):
     im = int_im
     float_im=int_im.astype(np.float32)
     labelc = np.zeros( im.shape, np.int32 )
@@ -79,7 +79,7 @@ def bench(int_im):
     cImageD11.blob_moments(rw)
     end2   = time.time()
     print("lmtime",nw,"%.3f %.3f"%((end1-end0)*1000,(end2-end1)*1000))
-    if 0:
+    if "plot" in sys.argv:
         pks=np.array(pks).T
         import pylab as pl
         pl.imshow( pl.log(float_im), origin='lower',
@@ -88,7 +88,7 @@ def bench(int_im):
         pl.plot( rc[:,cImageD11.f_raw],rc[:,cImageD11.s_raw],"wx",
         label="connect")
         pl.plot( rw[:,cImageD11.f_raw],rw[:,cImageD11.s_raw],"ko",
-             label="watershed",
+             label="localmax",
              markerfacecolor='None')
         pl.legend()
         pl.figure()
@@ -99,6 +99,9 @@ def bench(int_im):
                 dci , '.', label= "sconnected")
         pl.plot( rc[:, cImageD11.f_raw],
                 dci , '.', label= "fconnected")
+        pl.ylabel("position error")
+        pl.title("Connected pixels = 1 blob")
+        pl.legend()
         dwi= [ np.sqrt(np.min( (pks[1]-x)**2 + (pks[0]-y)**2 ))
            for x,y in zip( rw[:, cImageD11.f_raw],rw[:, cImageD11.s_raw])]
         pl.subplot(122)
@@ -106,6 +109,7 @@ def bench(int_im):
                 dwi , '.', label= "slocalmax")
         pl.plot( rw[:, cImageD11.f_raw],
                 dwi , '.', label= "flocalmax")
+        pl.title("Localmax = split blobs")
         pl.legend()
         pl.show()
 
@@ -118,6 +122,7 @@ class testimexists(unittest.TestCase):
         self.assertTrue(os.path.exists(OVIM))
 
 if __name__=="__main__":
-    bench(maketestim())
-    unittest.main()
+    bench(*maketestim())
+    # unittest.main()
+    # this is not a unit test !
     
