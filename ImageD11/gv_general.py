@@ -143,7 +143,7 @@ def axis_from_matrix( m ):
         angle_rad = math.acos(arg)  
         direc = np.array([m[2,1] - m[1,2],
                          m[0,2] - m[2,0],
-                         m[1,0] - m[0,1] ], np.float )
+                         m[1,0] - m[0,1] ], float )
         direc = direc / np.sqrt(np.dot(direc, direc))
     o = rotation_axis( direc , math.degrees( angle_rad ) )
     if not (abs(o.matrix - m) < 1e-5).all():
