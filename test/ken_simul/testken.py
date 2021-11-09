@@ -2,7 +2,7 @@
 # Create objects to manipulate - they hold your data
 #
 from ImageD11 import indexing
-import unittest, sys
+import unittest, sys, os
 
 class fake():
     def write(self,*a,**k):
@@ -16,7 +16,8 @@ class testKen(unittest.TestCase):
         sys.stdout = fake()
         try:
             myindexer = indexing.indexer()
-            myindexer.readgvfile( 'simAl.gve' )
+            myindexer.readgvfile( os.path.join( os.path.split(__file__)[0] ,'simAl.gve' ) )
+
             myindexer.updateparameters( )
             myindexer.parameterobj.set_parameters(
                 {'minpks': '80',

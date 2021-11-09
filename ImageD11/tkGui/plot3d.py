@@ -318,9 +318,9 @@ if __name__=="__main__":
                 xyz.append( [ vals[0],vals[1],vals[2] ])
             except:
                 pass
-        if line.find("xr yr zr")>0 or line.find("gx  gy  gz  ")>0:
-            on=1
-        xyz=numpy.array(xyz)
+        if line.find("xr yr zr")>0 or line.find("gx ")>0:
+            on = 1
+    xyz=numpy.array(xyz)
     if len(xyz) == 0 and lines[0][0]=="#":
         from ImageD11 import columnfile
         c = columnfile.columnfile( sys.argv[1] )
