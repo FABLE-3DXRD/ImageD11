@@ -267,9 +267,10 @@ def segment_scans( fname,
             max_chunksize = 64
             chunksize = min( max(1, len(args) // OPTIONS.CORES // 8), max_chunksize )
             # set the timeout to be 1 second per frame plus a minute. If we can't segment at
-            # 0.1 f.p.s better to give up as this is a  for ID11
+            # 1 f.p.s better to give up. 
+            timeout = len(args) + 60
             for i, spf in mypool.map(
-                choose_parallel, args, chunksize=chunksize, timeout=(chunksize + 60)
+                choose_parallel, args, chunksize=chunksize, timeout=timeout
             ):
                 if i % 500 == 0:
                     if spf is None:
