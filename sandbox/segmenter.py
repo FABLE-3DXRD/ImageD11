@@ -210,6 +210,15 @@ def segment_scans( fname,
                 hout.attrs["h5input"] = fname
                 gin = hin[scan]
                 bad = 1
+                if "title" not in hin[scan]:
+                    print(scan,"missing title, skipping")
+                    continue
+                if "measurement" not in hin[scan]:
+                    print(scan,"missing measurement group, skipping")
+                    continue
+                if detector not in hin[scan]['measurement']:
+                    print(scan,"missing measurement/%s, skipping"%(detector))
+                    continue
                 title = hin[scan]["title"][()]
                 print("# ", scan, title)
                 print("# time now", time.ctime(), "\n#", end=" ")
@@ -230,7 +239,8 @@ def segment_scans( fname,
                     # the thing requested is not there - ignore the problem for now
                 gip = g.create_group("instrument/positioners")
                 for m in headermotors:  # fixed : scalar
-                    gip.create_dataset(m, data=gin["instrument/positioners"][m][()])
+                    if "instrument/positioners/%s"%(m) in gin:
+                        gip.create_dataset(m, data=gin["instrument/positioners"][m][()])
                 try:
                     frms = gin["measurement"][detector]
                 except:
@@ -253,16 +263,24 @@ def segment_scans( fname,
                 nimg = frms.shape[0]
                 args = [(fname, address, i) for i in range(nimg)]
             # CLOSE the input file here
-            # approx 1440 frames, 40 cores
-            chunksize = max(1, len(args) // OPTIONS.CORES // 8)
+            # max chunksize is for load balancing. Originally tuned to be 7200/40/8 == 22
+            max_chunksize = 64
+            chunksize = min( max(1, len(args) // OPTIONS.CORES // 8), max_chunksize )
+            # set the timeout to be 1 second per frame plus a minute. If we can't segment at
+            # 1 f.p.s better to give up. 
+            timeout = len(args) + 60
             for i, spf in mypool.map(
-                choose_parallel, args, chunksize=chunksize, timeout=60
+                choose_parallel, args, chunksize=chunksize, timeout=timeout
             ):
+                if i % 500 == 0:
+                    if spf is None:
+                        print("%4d 0" % (i), end=",")
+                    else:
+                        print("%4d %d" % (i, spf.nnz), end=",")
+                    sys.stdout.flush()
                 if spf is None:
                     nnz[i] = 0
                     continue
-                if i % 500 == 0:
-                    print("%4d %d" % (i, spf.nnz), end=",")
                 if spf.nnz + npx > len(row):
                     row.resize(spf.nnz + npx, axis=0)
                     col.resize(spf.nnz + npx, axis=0)
@@ -276,7 +294,6 @@ def segment_scans( fname,
                 npx += spf.nnz
             ndone += nimg
             print("\n# Done", scan, nimg, ndone)
-            sys.stdout.flush()
     return ndone
 
     # the output file should be flushed and closed when this returns
