@@ -540,6 +540,9 @@ try:
                 print(groups)
                 raise Exception("Did not find your "+str(name)+" in "+hdffile)
         else:
+            groups = [g for g in groups 
+                                if 'ImageD11_type' in h[g].attrs and 
+                                   h[g].attrs['ImageD11_type'] == 'peaks' ]
             assert len(groups) == 1, "Your hdf file has many groups. Which one??"
             g = h[groups[0]]
             name = groups[0]
@@ -569,9 +572,9 @@ try:
         else:
             col = obj
         col.nrows = len( g[newtitles[0]] )
-        # ncols = len( col.titles )
         for name in newtitles:
             col.addcolumn( g[name][:].copy(), name )
+        h.close()
         return col
 
 except ImportError:
