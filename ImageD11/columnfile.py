@@ -478,7 +478,10 @@ try:
             opened = True
         if name is None:
             # Take the file name
-            name = os.path.split(c.filename)[-1]
+            try:
+                name = os.path.split(c.filename)[-1]
+            except:
+                name = 'peaks'
         if name in list(h.keys()):
             g = h[name]
         else:
