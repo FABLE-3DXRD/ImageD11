@@ -23,7 +23,7 @@ Functions for transforming peaks
 """
 import logging
 import numpy as np
-from ImageD11 import gv_general
+from ImageD11 import gv_general, cImageD11
 from numpy import radians, degrees
 import fabio # for LUT
 
@@ -602,8 +602,60 @@ def compute_polarisation_factors(args):
     """
     n = [0, 0, 1]
 
-
-
+class Ctransform(object):
+    pnames = ( "y_center", "z_center", "y_size", "z_size",
+               "distance", "wavelength","omegasign",
+               "tilt_x","tilt_y","tilt_z",
+               "o11", "o12", "o21", "o22",
+               "wedge", "chi" )
+    def __init__(self, pars ):
+        
+        """ To Do ...:
+                origin = xyz(0,0), ds = xyz(1,0), df = xyz(0,1)
+                xyz(s,f) = origin + ds*s + df*f
+        """
+        self.pars={}
+        for p in self.pnames:
+            self.pars[p] = pars[p] # copy
+        self.reset()
+        
+    def reset(self):
+        p = self.pars
+        self.distance_vec = np.array( (p['distance'],0.,0.))
+        self.dmat = detector_rotation_matrix( p['tilt_x'], p['tilt_y'], p['tilt_z'])
+        self.fmat = np.array( [[ 1,   0,   0],
+                               [ 0, p['o22'], p['o21']],
+                               [ 0, p['o12'], p['o11']]] )
+        self.rmat = np.dot(self.dmat, self.fmat).ravel()
+        self.cen = np.array( ( p["z_center"], p["y_center"], p["z_size"], p["y_size"] ))
+                                
+    def sf2xyz(self, sc, fc, tx=0, ty=0, tz=0, out=None):
+        assert len(sc) == len(fc)
+        if out is None:
+            out = np.empty( (len(sc),3), float)
+        t = np.array( (tx,ty,tz) )
+        cImageD11.compute_xlylzl( sc, fc, self.cen, self.rmat, self.distance_vec, out)
+        return out
+    
+    def xyz2gv(self, xyz, omega, tx=0, ty=0, tz=0, out=None ):
+        assert len(omega) == len(xyz)
+        if out is None:
+            out = np.empty( (len(xyz),3), float)
+        cImageD11.compute_gv( xyz,
+                             omega, 
+                             self.pars['omegasign'], 
+                             self.pars['wavelength'], 
+                             self.pars['wedge'], 
+                             self.pars['chi'], 
+                             np.array((tx,ty,tz)), 
+                             out)
+        return out
+    
+    def sf2gv( self, sc, fc, omega, tx=0, ty=0, tz=0, out=None ):
+        xyz = self.sf2xyz( sc, fc, tx, ty, tz )
+        return self.xyz2gv( xyz, omega, tx, ty, tz, out )
+                          
+        
 class PixelLUT( object ):
 
     """ A look up table for a 2D image to store pixel-by-pixel values
@@ -611,7 +663,7 @@ class PixelLUT( object ):
     
     # parameters that can be used to create this LUT
     pnames = ( "y_center", "z_center", "y_size", "z_size",
-               "distance", "wavelength",
+               "distance", "wavelength", "omegasign",
                "tilt_x","tilt_y","tilt_z",
                "o11", "o12", "o21", "o22",
                "wedge", "chi", "dxfile", "dyfile", "spline", "shape" )
