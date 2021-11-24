@@ -314,6 +314,16 @@ class indexer:
         # stackoverflow.com/questions/4866587/pythonic-way-to-reset-an-objects-variables
         import copy
         self.__pristine_dict = copy.deepcopy( self.__dict__ )
+        
+    def __getattr__(self, name):
+        """ got some time lost setting tol which does not exist 
+        
+        this will never be clean :-(
+        """
+        if name  == 'tol':
+            raise KeyError('tol not in indexer')
+        print("WARNING: creating indexer.%s"%(name))
+        setattr(self, name, None)
 
     def reset( self ):
         """
