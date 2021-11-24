@@ -751,9 +751,9 @@ F2PY_WRAPPER_END */
 
 int tosparse_u16( uint16_t* restrict img,  uint8_t* restrict msk, uint16_t* restrict row,  
                  uint16_t* restrict col, uint16_t* restrict val, int cut, int ns, int nf ) {
-    int k = 0;
-    for( int i = 0; i < ns ; i++){
-        for( int j = 0; j < nf ; j++ ){
+    int k = 0, i, j;
+    for( i = 0; i < ns ; i++){
+        for( j = 0; j < nf ; j++ ){
             if ((msk[i*nf+j]) && (img[i*nf+j] > (uint16_t)cut)){
                 row[k] = i;
                 col[k] = j;
