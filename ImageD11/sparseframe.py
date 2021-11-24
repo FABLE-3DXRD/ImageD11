@@ -89,8 +89,10 @@ class sparse_frame( object ):
         else:
             assert out.shape == self.shape
         assert len(data) == self.nnz
-        adr = self.row.astype(np.intp) * self.shape[1] + self.col
-        out.flat[adr] = data    
+        scipy.sparse.coo_matrix((data, (self.row, self.col)), shape=(self.shape)).todense(out=out)
+        # does not handle duplicate indices if they were present:
+        #        adr = self.row.astype(np.intp) * self.shape[1] + self.col
+        #        out.flat[adr] = data    
         return out
 
     def mask( self, msk ):
