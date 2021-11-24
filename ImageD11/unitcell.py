@@ -514,7 +514,7 @@ def filter_pairs( h1, h2, c2a, B, BI, tol = 1e-5):
         gobs = np.array( (ga, gb, (0,0,0)), float)
         UBI = gobs.copy()
         cImageD11.quickorient( UBI, BT )
-        gtest = [ np.dot( np.linalg.inv(UBI), HKL0 ).T, ]
+        gtest = [ np.dot( np.linalg.inv(UBI), HKL0 ).T.copy(), ]
         for j in range(p+1,i):
             ha = h1[hi[j]]
             hb = h2[hj[j]]
@@ -531,7 +531,7 @@ def filter_pairs( h1, h2, c2a, B, BI, tol = 1e-5):
                 pairs.append( (ha, hb) )
                 cangs.append( c2as[j] )
                 matrs.append( BT )
-                gtest.append( np.dot( np.linalg.inv(UBI), HKL0 ).T )
+                gtest.append( np.dot( np.linalg.inv(UBI), HKL0 ).T.copy() )
         p = i
     return pairs, cangs, matrs
 
