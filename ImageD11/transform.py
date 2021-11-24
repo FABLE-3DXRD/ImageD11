@@ -25,10 +25,11 @@ import logging
 import numpy as np
 from ImageD11 import gv_general
 from numpy import radians, degrees
+import fabio # for LUT
 
 try:
     # crazy debug
-    test = np.arccos(np.zeros(10, float))
+    _ = np.arccos(np.zeros(10, float))
 except:
     print(dir())
     raise
@@ -49,7 +50,7 @@ def cross_product_2x2(a, b):
 def detector_rotation_matrix(tilt_x, tilt_y, tilt_z):
     """
     Return the tilt matrix to apply to peaks
-    tilts in radians
+    tilts are in radians
     typically applied to peaks rotating around beam center
     """
     r1 = np.array([[np.cos(tilt_z), -np.sin(tilt_z), 0],  # note this is r.h.
@@ -88,6 +89,8 @@ def compute_xyz_lab(peaks,
          ((-1, 0),( 0, 1)) for (-x, y)
          (( 0,-1),(-1, 0)) for (-y,-x)
       etc...
+      
+    kwds are not used (but lets you pass in a dict with other things in it)
     """
     assert len(peaks) == 2, "peaks must be a 2D array"
     # Matrix for the tilt rotations
@@ -128,7 +131,10 @@ def compute_tth_eta(peaks,
                     chi=0.0,  # == chi - 90
                     **kwds):  # spare args are ignored
     """
-    0/10 for style
+    Finds x,y,z co-ordinates of peaks in the laboratory frame
+    Computes tth/eta from these (in degrees)
+    
+    kwds are not used (left for convenience if you have a parameter dict)
     """
     peaks_xyz = compute_xyz_lab(
         peaks,
@@ -157,12 +163,15 @@ def compute_tth_eta_from_xyz(peaks_xyz, omega,
                              **kwds):  # last line is for laziness -
     """
     Peaks is a 3 d array of x,y,z peak co-ordinates
-    crystal_translation is the position of the grain giving rise
-    to a diffraction spot
-                 in x,y,z ImageD11 co-ordinates
-                 x,y with respect to axis of rotation and or beam centre ??
-                 z with respect to beam height, z centre
-    omega data needed if crystal translations used
+    crystal_translation is the position of the grain giving rise to a diffraction spot
+    in x,y,z ImageD11 co-ordinates
+         x,y is with respect to the axis of rotation (usually also beam centre).
+         z with respect to beam height, z centre
+    omega data are needed if crystal translations are used
+    
+    computed via the arctan recipe.
+    
+    returns tth/eta in degrees
     """
     assert len(peaks_xyz) == 3
     # Scattering vectors
@@ -180,6 +189,46 @@ def compute_tth_eta_from_xyz(peaks_xyz, omega,
     s1_perp_x = np.sqrt(s1[1, :] * s1[1, :] + s1[2, :] * s1[2, :])
     tth = np.degrees(np.arctan2(s1_perp_x, s1[0, :]))
     return tth, eta
+
+
+def compute_sinsqth_from_xyz(xyz):
+    """ Computes sin(theta)**2
+    x,y,z = co-ordinates of the pixel in cartesian space
+    
+    if you need grain translations then use func(peaks_xyz - compute_grain_origins(...) )
+
+    seems to be competitive with arctan2 (docs/sintheta_squared_geometry.ipynb)
+    
+    returns sin(theta)**2 
+    """
+    # R = hypotenuse of component normal to incident beam (defines x). e.g. y*y+z*z
+    R = xyz[1]*xyz[1] + xyz[2]*xyz[2]
+    # Q = hypotenuse along the scattered beam, e.g. x*x+y*y+z*z
+    Q = xyz[0]*xyz[0] + R
+    # if Q == 0 then this is undefined
+    sinsqth = 0.5*R/( Q + xyz[0]*np.sqrt(Q) ) 
+    return sinsqth
+
+
+def sinth2_sqrt_deriv(xyz):
+    """ sin(theta)**2 from xyz, and derivatives w.r.t x,y,z
+    """
+    x,y,z = xyz
+    R = z*z + y*y
+    Q = R + x*x
+    SQ = sqrt(Q)
+    R2 = R/2
+    # at x==y==0 this is undefined. ac
+    rQ_xSQ = 1/(Q + x*SQ)
+    sinth2 = R2*rQ_xSQ
+    # some simplification and collecting terms from expressions above to get:
+    sr = sinth2*rQ_xSQ
+    p = (x / SQ + 2)*sr  # p should be in the range 3sr -> 2sr for x/x to 0/sqrt(R)
+    t = (rQ_xSQ - p)     #
+    sinth2_dx =  -(SQ*sr+x*p)
+    sinth2_dy =   y*t
+    sinth2_dz =   z*t
+    return sinth2, sinth2_dx, sinth2_dy, sinth2_dz
 
 
 def compute_xyz_from_tth_eta(tth, eta, omega,
@@ -383,7 +432,6 @@ def compute_g_vectors(tth,
     ... unless a wedge angle is specified
     """
     k = compute_k_vectors(tth, eta, wvln)
-#    print k[:,0]
     return compute_g_from_k(k, omega, wedge, chi)
 
 
@@ -555,6 +603,84 @@ def compute_polarisation_factors(args):
     n = [0, 0, 1]
 
 
+
+class PixelLUT( object ):
+
+    """ A look up table for a 2D image to store pixel-by-pixel values
+    """
+    
+    # parameters that can be used to create this LUT
+    pnames = ( "y_center", "z_center", "y_size", "z_size",
+               "distance", "wavelength",
+               "tilt_x","tilt_y","tilt_z",
+               "o11", "o12", "o21", "o22",
+               "wedge", "chi", "dxfile", "dyfile", "spline", "shape" )
+                 
+    def __init__( self, pars ):
+        """
+        pars is a dictionary containing the calibration parameters
+        """
+        self.pars = {}
+        for p in self.pnames:
+            if p in pars:
+                self.pars[p] = pars[p] # make a copy
+        if 'dxfile' in pars:
+            # slow/fast coordinates on image at pixel centers
+            self.df = fabio.open( pars['dxfile'] ).data
+            self.ds = fabio.open( pars['dyfile'] ).data
+            self.shape = s = self.ds.shape # get shape from file
+            self.pars['shape'] = s
+            slow, fast = np.mgrid[ 0:s[0], 0:s[1] ]
+            self.sc = slow + self.ds
+            self.fc = fast + self.df
+        elif 'spline' in pars: # need to test this...
+            b = blobcorrector.correctorclass( self.pars['spline'] )
+            s = int(b.ymax - b.ymin), int(b.xmax - b.xmin)
+            if shape in self.pars:      # override. Probabl
+                s = self.pars['shape'] 
+            self.shape = s
+            self.fc, self.sc = b.make_pixel_lut( s ) 
+            slow, fast = np.mgrid[ 0:s[0], 0:s[1] ]
+            self.df = self.fc - fast
+            self.ds = self.sc - slow
+        else:
+            s = self.shape
+            self.sc, self.fc = np.mgrid[0:s[0], 0:s[1]]
+            self.df = None 
+            self.ds = None
+    
+        self.xyz = compute_xyz_lab( self.sc.ravel(), self.fc.ravel(), **self.pars )
+        self.sinthsq = compute_sinsqth_from_xyz( self.xyz )
+        self.tth, self.eta = compute_tth_eta_from_xyz(self.peaks_xyz, None, **self.pars)
+        # scattering angles:
+        self.tth, self.eta = compute_tth_eta( (self.sc.ravel(), self.fc.ravel()), **self.pars )
+        # scattering vectors:
+        self.k = compute_k_vectors( self.tth, self.eta, self.pars.get('wavelength') )
+        self.sinthsq.shape = s
+        self.tth.shape = s
+        self.eta.shape = s
+        self.k.shape = (3, s[0], s[1])
+        self.xyz.shape = (3, s[0], s[1])
+    
+    def spatial(self, sraw, fraw):
+        """ applies a spatial distortion to sraw, fraw (for peak centroids) """
+        if self.df is None:
+            return sraw, fraw
+        else:
+            si = np.round(sraw.astype(int)).clip( 0, self.shape[1] - 1 )
+            fi = np.round(fraw.astype(int)).clip( 0, self.shape[1] - 1 )
+            sc = sraw + self.ds[ si, fi ]
+            fc = fraw + self.df[ si, fi ]
+            return sc, fc
+        
+    def __repr__(self):
+        """ print yourself in a way we can use for eval """
+        sp = "\n".join( [ "%s : %s,"%(repr(p), repr(self.pars[p])) for p in self.pnames
+                         if p in self.pars ] )
+        return "PixelLUT( { %s } )"%(sp)    
+    
+    
+    
 if __name__ == "__main__":
     # from indexing import mod_360
     def mod_360(theta, target):
