@@ -28,8 +28,12 @@ npx length of data array (contiguous)
 s1  Sum of all pixel
 s2  Sum of pixel^2
 """
-bg1d = """computes a background on a 1d signal where gain
-and sp and st are defined by the code!
+bgcalc = """computes a background on a 1d signal where gain
+and sp and st are defined by:
+    diff = difference to neighbors or bg estimate
+    sigmap = weight for abs background value
+    sigmat = constant weight
+    gain for b += diff * gain
 img - source data
 bg  - computed background
 msk - mask
@@ -46,6 +50,8 @@ blobproperties = """fills the array results with properties of each labelled
 object described by data (pixel values) and labels. The omega value
 is the angle for this frame.
 results are FIXME
+"""
+checks = """the round to nearest int code is correct
 """
 cimaged11_omp_get_max_threads = """reads the openmp max number of threads
 see docs/sphx/parallel.rst
@@ -264,6 +270,9 @@ over the years motivated this code. See test/demo/tksplat
 * set the color and markersize per peak
 * perhaps also a draw order (back to front, top to bottom) ?
 """
+tosparse_u16 = """stores pixels from img into row/col/val.
+msk determines whether pixels are masked
+"""
 uint16_to_float_darkflm = """subtracts image drk(float32) from
 raw data in data (uint16), multiples by flm(float32) and returns in img.
 """
@@ -275,10 +284,11 @@ __all__ = [
     "array_mean_var_cut",
     "array_mean_var_msk",
     "array_stats",
-    "bg1d",
+    "bgcalc",
     "blob_moments",
     "bloboverlaps",
     "blobproperties",
+    "checks",
     "cimaged11_omp_get_max_threads",
     "cimaged11_omp_set_num_threads",
     "clean_mask",
@@ -320,5 +330,6 @@ __all__ = [
     "sparse_localmaxlabel",
     "sparse_overlaps",
     "splat",
+    "tosparse_u16",
     "uint16_to_float_darkflm",
     "uint16_to_float_darksub"]
