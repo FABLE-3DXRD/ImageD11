@@ -24,8 +24,21 @@ import numpy as np
 from . import cImageD11, unitcell
 from xfab.tools import ubi_to_u, u_to_rod, ubi_to_rod
 
-import math, time, sys, logging
+import math, time, sys
 
+loglevel = 1
+
+class logging: # because multiprocessing. FIXME. object level logging rather than module ? 
+    def log(*args):
+        print(" ".join(str(a) for a in args))
+    def debug(args):
+        if loglevel <= 0: logging.log('debug:',*args)
+    def info(*args):
+        if loglevel <= 1: logging.log('info:',*args)
+    def warning(*args):
+        if loglevel <= 2: logging.log('warning:',*args)
+    def error(*args):
+        if loglevel <= 3: logging.log('error:',*args)
 
 def ubi_fit_2pks( ubi, g1, g2):
     """
@@ -300,7 +313,7 @@ class indexer:
         self.ubis=[]
         self.scores=[]
         self.index_needs_debug = 0 # track problems quietly...
-
+        self.omega_fullrange=0 # ??
         # it would make more sense to inherit the parameter object - will
         # have to think about this some more - how general is it?
         from ImageD11 import parameters
@@ -365,14 +378,14 @@ class indexer:
         """
         # rings are in self.unitcell
         limit = np.amax( self.ds )
-        print("Assign to rings, maximum d-spacing considered",limit)
+        logging.info("Assign to rings, maximum d-spacing considered",limit)
         self.unitcell.makerings(limit, tol = self.ds_tol)
         dsr = self.unitcell.ringds
         # npks
         npks = len(self.ds)
         self.ra = np.zeros(npks, np.int32)-1
         self.na = np.zeros(len(dsr), np.int32)
-        print("Ring assignment array shape",self.ra.shape)
+        logging.info("Ring assignment array shape",self.ra.shape)
         tol = float(self.ds_tol)
         best = np.zeros(npks, float)+tol
         for j, dscalc in enumerate(dsr):
@@ -382,7 +395,7 @@ class indexer:
             best[sel] = dserr[sel]
         # Report on assignments
         ds=np.array(self.ds)
-        print("Ring     (  h,  k,  l) Mult  total indexed to_index  ubis  peaks_per_ubi   tth")
+        logging.info("Ring     (  h,  k,  l) Mult  total indexed to_index  ubis  peaks_per_ubi   tth")
         minpks = 0
         # try reverse order instead
         for j in range(len(dsr))[::-1]:
@@ -401,20 +414,20 @@ class indexer:
                 expected_orients = 'N/A'
                 expected_npks = 'N/A'
             tth = 2*np.degrees(np.arcsin(dsr[j]*self.wavelength/2))
-            print("Ring %-3d (%3d,%3d,%3d)  %3d  %5d   %5d    %5d %5s     %2s  %.2f"%(
+            logging.info("Ring %-3d (%3d,%3d,%3d)  %3d  %5d   %5d    %5d %5s     %2s  %.2f"%(
                 j,h[0],h[1],h[2],Mult,
                 self.na[j],n_indexed,n_to_index,expected_orients,expected_npks,tth))
         if minpks > 0:
-            print('\nmin_pks:  - Current  --> %3d'%(self.minpks))
-            print('          - Expected --> %3d\n'%(minpks))
+            logging.info('\nmin_pks:  - Current  --> %3d'%(self.minpks))
+            logging.info('          - Expected --> %3d\n'%(minpks))
 
         # We will only attempt to index g-vectors which have been assigned
         # to hkl rings (this gives a speedup if there
         # are a lot of spare peaks
         ind = np.compress(np.greater(self.ra,-1), np.arange(self.ra.shape[0]))
         self.gvr = self.gv[ind]
-        print("Using only those peaks which are assigned to rings for scoring trial matrices")
-        print("Shape of scoring matrix",self.gvr.shape)
+        logging.info("Using only those peaks which are assigned to rings for scoring trial matrices")
+        logging.info("Shape of scoring matrix",self.gvr.shape)
         self.gvflat=np.ascontiguousarray(self.gvr, float) # Makes it contiguous
         # in memory, hkl fast index
 
@@ -487,8 +500,8 @@ class indexer:
                 break
             if n is not None and k > n:
                 break
-            print("Tried r1=%d r2=%d attempt %d of %d, got %d grains"%(r1,r2,self.tried,len(pairs),len(self.ubis)))
-        print("\nTested",self.tried,"pairs and found",len(self.ubis),"grains so far")
+            logging.info("Tried r1=%d r2=%d attempt %d of %d, got %d grains"%(r1,r2,self.tried,len(pairs),len(self.ubis)))
+        logging.info("\nTested",self.tried,"pairs and found",len(self.ubis),"grains so far")
 
     def find(self):
         """
