@@ -28,10 +28,10 @@ import math, time, sys
 
 loglevel = 1
 
-class logging: # because multiprocessing. FIXME. object level logging rather than module ? 
+class logging(object): # because multiprocessing. FIXME. object level logging rather than module ? 
     def log(*args):
         print(" ".join(str(a) for a in args))
-    def debug(args):
+    def debug(*args):
         if loglevel <= 0: logging.log('debug:',*args)
     def info(*args):
         if loglevel <= 1: logging.log('info:',*args)
