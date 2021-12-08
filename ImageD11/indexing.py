@@ -352,7 +352,11 @@ class indexer:
     def loadpars(self,filename=None):
         if filename is not None:
             self.parameterobj.loadparameters(filename)
-        self.parameterobj.update_other(self)
+        # self.parameterobj.update_other(self) # busted CI for logging in windows + py2.7
+        for parname in self.parameterobj.parameters:
+            if hasattr(self, parname):
+                setattr(self, parname, self.parameterobj.get(parname))
+
 
     def updateparameters(self):
         self.savepars()
