@@ -184,7 +184,7 @@ def peaksearch_driver(options, args):
     scan = None
     if options.format in ['bruker', 'BRUKER', 'Bruker']:
         extn = ""
-        if options.perfect is not "N":
+        if options.perfect != "N":
             print("WARNING: Your spline file is ImageD11 specific")
             print("... from a fabio converted to edf first")
     elif options.format == 'GE':
