@@ -28,17 +28,19 @@ import math, time, sys
 
 loglevel = 1
 
-class logging: # because multiprocessing. FIXME. object level logging rather than module ? 
-    def log(*args):
+class clogging(object): # because multiprocessing. FIXME. object level logging rather than module ? 
+    def log(self, *args):
         print(" ".join(str(a) for a in args))
-    def debug(args):
+    def debug(self, *args):
         if loglevel <= 0: logging.log('debug:',*args)
-    def info(*args):
+    def info(self, *args):
         if loglevel <= 1: logging.log('info:',*args)
-    def warning(*args):
+    def warning(self, *args):
         if loglevel <= 2: logging.log('warning:',*args)
-    def error(*args):
+    def error(self, *args):
         if loglevel <= 3: logging.log('error:',*args)
+
+logging = clogging()
 
 def ubi_fit_2pks( ubi, g1, g2):
     """
@@ -352,7 +354,11 @@ class indexer:
     def loadpars(self,filename=None):
         if filename is not None:
             self.parameterobj.loadparameters(filename)
-        self.parameterobj.update_other(self)
+        # self.parameterobj.update_other(self) # busted CI for logging in windows + py2.7
+        for parname in self.parameterobj.parameters:
+            if hasattr(self, parname):
+                setattr(self, parname, self.parameterobj.get(parname))
+
 
     def updateparameters(self):
         self.savepars()
