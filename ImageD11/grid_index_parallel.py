@@ -58,7 +58,7 @@ def domap(  pars,
             o.grainnames.append(i)
             o.ubisread[name] = g.ubi
             o.translationsread[name] = g.translation
-        if gridpars['SYMMETRY'] is not "triclinic":
+        if gridpars['SYMMETRY'] != "triclinic":
             o.makeuniq( gridpars['SYMMETRY'] )
         o.generate_grains()
         if gridpars['FITPOS']:

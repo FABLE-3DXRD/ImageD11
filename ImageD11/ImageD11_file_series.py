@@ -73,7 +73,7 @@ def get_series_from_hdf( hdf_file, dark = None, flood = None ):
             im = hdf_file[group][image]
             om = float(im.attrs['Omega'])
             data = im[:,:]
-            if (dark, flood) is not (None, None):
+            if (dark, flood) != (None, None):
                 data = data.astype(numpy.float32)
             if dark is not None:
                 numpy.subtract( data, dark, data )
@@ -84,14 +84,13 @@ def get_series_from_hdf( hdf_file, dark = None, flood = None ):
                     'Omega': om } )
 
 def series_from_fabioseries( fabioseries, dark, flood, options ):
-    
     for filename in fabioseries:
         try:
             fim = fabio.openimage.openimage(filename)
         except:
             print("Missing image",filename)
             continue
-        if (dark, flood) is not (None, None):
+        if (dark, flood) != (None, None):
             fim.data = fim.data.astype(numpy.float32)
         if dark is not None:
             numpy.subtract( fim.data, dark, fim.data )
