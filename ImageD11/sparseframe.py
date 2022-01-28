@@ -2,7 +2,7 @@
 from __future__ import print_function, division
 
 import time, sys
-import h5py, scipy.sparse, numpy as np, pylab as pl
+import h5py, scipy.sparse, numpy as np #, pylab as pl
 from ImageD11 import cImageD11
 
 
@@ -287,11 +287,12 @@ class SparseScan( object ):
                                    minlength = self.total_labels+1 )[1:]
         pks['f_raw'] /= pks['sum_intensity']
         for name in 'omega','dty':
-            pks[name] = np.bincount(self.labels,
-                                    weights=self.intensity*self.motors[name][self.frame],
-                                    minlength = self.total_labels+1 )[1:]
-            pks[name] /= pks['sum_intensity']
-        return tocolf(pks)
+            if name in self.motors:
+                pks[name] = np.bincount(self.labels,
+                           weights=self.intensity*self.motors[name][self.frame],
+                           minlength = self.total_labels+1 )[1:]
+                pks[name] /= pks['sum_intensity']
+        return pks
                 
     
 def from_data_mask( mask, data, header ):
