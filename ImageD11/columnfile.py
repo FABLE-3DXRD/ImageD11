@@ -456,6 +456,18 @@ class newcolumnfile(columnfile):
         columnfile.__init__(self, filename=None, new=True)
         self.titles = titles
         self.ncols = len(titles)
+        
+        
+def colfile_from_dict( c ):
+    """ convert from a dictonary of numpy arrays """
+    titles = list(c.keys())
+    nrows = len(c[titles[0]])
+    for t in titles:
+        assert len(c[t]) == nrows, t
+    colf = newcolumnfile( titles=titles )
+    colf.nrows = nrows
+    colf.set_bigarray( [ c[t] for t in titles ] )
+    return colf
 
 
 try:
