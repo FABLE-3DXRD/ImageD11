@@ -143,3 +143,56 @@ Well, it used to be simpler than it is now. For the full pleasures of 3D  peakse
 
 On exit from connectedpixels the npks is the number of peaks found and blobs is an array of integer peak assignments (the argument is supposed to be modified during the function call). You can then have a look at blobs to see where the peaks are. In practice the peaksearch code will be doing a dark 
 and flood correction too, which can add to the confusion.
+
+For the 3D version it could be something like this::
+
+  with h5py.File('mydata.h5','r') as h:
+      frames = h['/entry/scan/detector/data'][()]
+      omegas = h['/entry/scan/omega'][()]
+  nframes, rows, cols = frames.shape
+  lio = labelimage.labelimage( (rows, cols), peaksfile )
+  for i in np.argsort(omegas):
+      lio.peaksearch(frames[i], threshold, omegas[i])
+      lio.mergelast()
+  lio.finalise()
+
+
+
+
+Various dataset input formats - python class input format
+---------------------------------------------------------
+
+Image input was handled by fabio, the code attempts to build a fabio file series from the command line.
+At some point in 2018 the ESRF control system upgraded to using hdf5 files and the peaksearch.py code
+has never quite adapted. A workaround is to have a python class defining the data for peaksearching,
+see sandbox/hdfscan.py in the source code.
+
+Example cases of input image data include:
+
+#. edf files with omega angles in headers. The image number order is the order to peasearch::
+   data0000.edf ... Omega=0
+   data0001.edf ... Omega=0.5
+   ...
+   data0360.edf ... Omega=180.
+
+#. edf files with no angles in headers (ftomo). The image number order may be wrong due to interlacing (--interlaced and --iflip options). You have to supply the omega angles in command line arguments.
+  
+#. bliss files (2018). Interlaced frames in two distant folders::
+   Omega = scanfolder/interlaced_1_1/data.h5::/measurement/rot_master/mean_pos:rot_mean
+   scanfolder/interlaced_1_1/Frelon/interlaced_1_1_Frelon0000.edf
+   scanfolder/interlaced_1_1/Frelon/interlaced_1_1_Frelon0359.edf
+   Omega = scanfolder/interlaced_1_2/data.h5::/measurement/rot_master/mean_pos:rot_mean
+   scanfolder/interlaced_1_2/Frelon/interlaced_1_2_Frelon0000.edf
+   scanfolder/interlaced_1_2/Frelon/interlaced_1_2_Frelon0359.edf 
+
+#. hdf5 files (2020). Frames in order.
+
+#. hdf5 files (2020). Interlaced rewind.
+
+#. hdf5 files (2020). Interlaced zigzag.
+   
+#. hdf5 files (2020). Interlaced forwards (e.g. mod 360).
+
+
+   
+

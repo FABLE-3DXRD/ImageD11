@@ -38,8 +38,10 @@ UBIS = [
     ]
 
 
-
-SCRIPT = os.path.join(sys.executable+' "'+os.path.dirname(__file__),
+d = os.path.dirname(__file__)
+if len(d.strip()) == 0:
+    d = '.'
+SCRIPT = os.path.join(sys.executable+' "'+d,
                       "..","..","scripts",'index_unknown.py"')
 
 def generate_hkls( n ):

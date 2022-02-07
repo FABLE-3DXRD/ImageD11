@@ -66,6 +66,73 @@ PyDict_SetItemString(d,str(NPROPERTY2D),PyInt_FromLong(NPROPERTY2D));
 end interface
 
 interface
+    subroutine compute_gv(xlylzl,omega,omegasign,wvln,wedge,chi,t,gv,ng)
+!DOC compute_gv computes scattering vectors given thr positions of the spot
+!DOC in the laboratory in xlylzl[npks], the omega rotation[npks], and
+!DOC the rest of the parameters (wedge,wvln,chi,t[3] and omegasign)
+        intent(c) compute_gv
+        intent(c)
+        integer, intent(c,hide), depend( xlylzl ) :: ng
+        double precision, intent(in):: xlylzl(ng,3)
+        double precision, intent(in):: omega(ng)
+        double precision, intent(in):: omegasign, wvln, wedge, chi
+        double precision, intent(in):: t(3)
+        double precision, intent(inout):: gv(ng,3)
+        ! NOT threadsafe since gv may be shared
+    end subroutine compute_gv
+
+    subroutine compute_xlylzl(s,f,p,r,dist,xlylzl,n)
+!DOC computes_xlylzl finds spot positions in the laboratory frame
+!DOC using packed parameters that are more general
+!DOC s    = slow pixel position
+!DOC f    = fast pixel position
+!DOC p    = [s_cen, f_cen, s_size, f_size]
+!DOC r[9] = dot( transform.detector_rotation_matrix, flipmatrix )
+!DOC ... with flipmatrix = [1,0,0], [0,o22,o21], [0,o12,o11]
+!DOC dist = [distancex, distancey, distancez] is 3D (beyond old model)
+!DOC ... see test/test_cImageD11.py
+        intent(c) compute_xlylzl
+        intent(c)
+        double precision, intent(in):: s(n), f(n)
+        double precision, intent(inout):: xlylzl(n,3)
+        double precision, intent(in):: p(4), r(9), dist(3)
+        integer, intent(c,hide), depend( s ) :: n
+        ! NOT threadsafe since xl may be shared
+    end subroutine compute_xlylzl
+
+    subroutine quickorient( ubi, bt )
+!DOC quickorient takes two g-vectors in UBI[0] and UBI[1]
+!DOC and overwrites with UBI orientation using cache in bt (from h1,h2)
+!DOC ... computes cross product 0x1 = ubi[0]xubi[1]
+!DOC ... normalises u0=ubi0 and u2=0x1 and computes u1=u0xu2
+!DOC ... returns in UBI BT.(u1,u2,u3)
+!DOC algorithm was due to Busing and Levy
+    intent(c) quickorient
+        intent(c)
+        double precision, dimension(3,3), intent (inout) :: ubi
+        double precision, dimension(3,3), intent (in) :: bt
+    end subroutine orient
+
+    subroutine cimaged11_omp_set_num_threads(n)
+!DOC cimaged11_omp_set_num_threads Sets the openmp number of
+!DOC threads to use.
+!DOC Change if you use multiprocessing or do not like
+!DOC os.environ['OMP_NUM_THREADS']
+!DOC see also: multiprocessing.cpu_count(),
+!DOC see also os.cpu_count()
+!DOC see docs/sphx/parallel.rst
+        intent(c) cimaged11_omp_set_num_threads
+        intent(c)
+        integer, intent(in) :: n
+    end subroutine cImaged11_set_omp_num_threads
+
+    function cimaged11_omp_get_max_threads()
+!DOC cimaged11_omp_get_max_threads reads the openmp max number of threads
+!DOC see docs/sphx/parallel.rst
+        intent(c) cimaged11_omp_get_max_threads
+        integer :: cimaged11_omp_get_max_threads
+    end function cImaged11_omp_get_max_threads
+
     subroutine uint16_to_float_darksub( img, drk, data, npx )
 !DOC uint16_to_float_darksub subtracts image drk(float32) from
 !DOC raw data in data (uint16) and returns in img.
@@ -240,8 +307,12 @@ interface
     end subroutine reorder_u16_a32_a16
 
     subroutine bgcalc(img, bg, msk, ns, nf, gain, sp, st)
-!DOC bg1d computes a background on a 1d signal where gain
-!DOC and sp and st are defined by the code!
+!DOC bgcalc computes a background on a 1d signal where gain
+!DOC and sp and st are defined by:
+!DOC     diff = difference to neighbors or bg estimate
+!DOC     sigmap = weight for abs background value
+!DOC     sigmat = constant weight
+!DOC     gain for b += diff * gain
 !DOC img - source data
 !DOC bg  - computed background
 !DOC msk - mask
@@ -255,319 +326,12 @@ interface
         real :: gain, sp, st
     end subroutine bgcalc
 
-    function connectedpixels( data, labels, threshold, &
-                              verbose, con8, ns, nf)
-        intent(c) connectedpixels
-!DOC connectedpixels Determines which pixels in data are above the
-!DOC user supplied threshold and assigns them into connected objects
-!DOC which are output in labels. Connectivity is 3x3 box (8) by default
-!DOC and reduces to a +(4) is con8==0
+    function verify_rounding( n )
+!DOC checks the round to nearest int code is correct
+        intent(c) verify_rounding
         intent(c)
-        real, intent(in) :: data(ns,nf)
-        integer, intent(inout) :: labels(ns,nf)
-        integer, intent(hide), depend(data) :: ns=shape(data,0)
-        integer, intent(hide), depend(data) :: nf=shape(data,1)
-        integer, optional :: con8 = 1
-        integer, optional ::  verbose = 0
-        real threshold
-        ! Returns
-        integer :: connectedpixels
-    end function connectedpixels
-
-    subroutine blobproperties( data, labels, np, omega, &
-                               verbose, ns, nf, results)
-        intent(c) blobproperties
-!DOC blobproperties fills the array results with properties of each labelled
-!DOC object described by data (pixel values) and labels. The omega value
-!DOC is the angle for this frame.
-!DOC results are FIXME
-        intent(c)
-        real, intent(in) :: data(ns, nf)
-        integer, intent(in) :: labels(ns, nf)
-        integer, intent(hide), depend(data) :: ns=shape(data,0)
-        integer, intent(hide), depend(data) :: nf=shape(data,1)
-        integer, intent(in) :: np
-        double precision, intent(out) :: results( np, NPROPERTY )
-        real, intent(in), optional :: omega = 0
-        integer, optional :: verbose = 0
-        threadsafe
-    end subroutine blobproperties
-
-    function bloboverlaps( labels1, npk1, results1,    &
-                           labels2, npk2, results2,    &
-                           verbose, ns, nf)
-!DOC bloboverlaps determines the overlaps between labels1 and labels2
-!DOC for an image series. Peaks in labels2 may be merged if they were
-!DOC joined by a peak on labels1. Results in results1 are accumulated
-!DOC into results2 if peaks are overlapped.
-        intent(c) bloboverlaps
-        intent(c)
-        integer :: bloboverlaps
-        integer, intent( inout ) :: labels1( ns, nf )
-        integer, intent( inout ) :: labels2( ns, nf )
-        integer, intent(hide), depend(labels1) :: ns=shape(labels1,0)
-        integer, intent(hide), depend(labels1) :: nf=shape(labels1,1)
-        integer, intent(in) :: npk1, npk2
-        double precision, intent( inout ) :: results1( :, NPROPERTY )
-        double precision, intent( inout ) :: results2( :, NPROPERTY )
-        integer, intent(in) :: verbose = 0
-        threadsafe
-    end subroutine bloboverlaps
-
-    subroutine blob_moments( results, np )
-!DOC blob_moments fills in the reduced moments in results array.
-!DOC ... FIXME - this would be clearer in python, fast anyway.
-        intent(c) blob_moments
-        intent(c)
-        double precision, intent( inout ) :: results( np, NPROPERTY )
-        integer, intent(hide), depend(results) :: np=shape(results,0)
-        threadsafe
-    end subroutine blob_moments
-
-    function clean_mask( msk, ret, ns, nf )
-!DOC clean_mask removes pixels which are not 4 connected from msk
-!DOC while copying into ret.
-        intent(c) clean_mask
-        intent(c)
-        integer*1, intent(in)  :: msk( ns, nf )
-        integer, intent(hide), depend(msk) :: ns=shape(msk,0)
-        integer, intent(hide), depend(msk) :: nf=shape(msk,1)
-        integer*1, intent(inout), dimension(ns, nf) :: ret
-        ! returns an int
-        integer :: clean_mask
-    end function clean_mask
-
-
-    function make_clean_mask( img, cut, msk, ret, ns, nf )
-!DOC make_clean_mask is a lot like clean msk but it generates
-!DOC the msk using img and cut.
-!DOC Beware: work in progress
-        intent(c) make_clean_mask
-        intent(c)
-        real, intent(in), dimension(ns,nf) :: img
-        real, intent(in) :: cut
-        integer*1, intent(in)  :: msk( ns, nf )
-        integer, intent(hide), depend(msk) :: ns=shape(msk,0)
-        integer, intent(hide), depend(msk) :: nf=shape(msk,1)
-        integer*1, intent(inout), dimension(ns, nf) :: ret
-        ! returns an int
-        integer :: make_clean_mask
-    end function make_clean_mask
-
-    subroutine compute_gv(xlylzl,omega,omegasign,wvln,wedge,chi,t,gv,ng)
-!DOC compute_gv computes scattering vectors given thr positions of the spot
-!DOC in the laboratory in xlylzl[npks], the omega rotation[npks], and
-!DOC the rest of the parameters (wedge,wvln,chi,t[3] and omegasign)
-        intent(c) compute_gv
-        intent(c)
-        integer, intent(c,hide), depend( xlylzl ) :: ng
-        double precision, intent(in):: xlylzl(ng,3)
-        double precision, intent(in):: omega(ng)
-        double precision, intent(in):: omegasign, wvln, wedge, chi
-        double precision, intent(in):: t(3)
-        double precision, intent(inout):: gv(ng,3)
-        ! NOT threadsafe since gv may be shared
-    end subroutine compute_gv
-
-    subroutine compute_xlylzl(s,f,p,r,dist,xlylzl,n)
-!DOC computes_xlylzl finds spot positions in the laboratory frame
-!DOC using packed parameters that are more general
-!DOC s    = slow pixel position
-!DOC f    = fast pixel position
-!DOC p    = [s_cen, f_cen, s_size, f_size]
-!DOC r[9] = dot( transform.detector_rotation_matrix, flipmatrix )
-!DOC ... with flipmatrix = [1,0,0], [0,o22,o21], [0,o12,o11]
-!DOC dist = [distancex, distancey, distancez] is 3D (beyond old model)
-!DOC ... see test/test_cImageD11.py
-        intent(c) compute_xlylzl
-        intent(c)
-        double precision, intent(in):: s(n), f(n)
-        double precision, intent(inout):: xlylzl(n,3)
-        double precision, intent(in):: p(4), r(9), dist(3)
-        integer, intent(c,hide), depend( s ) :: n
-        ! NOT threadsafe since xl may be shared
-    end subroutine compute_xlylzl
-
-    subroutine quickorient( ubi, bt )
-!DOC quickorient takes two g-vectors in UBI[0] and UBI[1]
-!DOC and overwrites with UBI orientation using cache in bt (from h1,h2)
-!DOC ... computes cross product 0x1 = ubi[0]xubi[1]
-!DOC ... normalises u0=ubi0 and u2=0x1 and computes u1=u0xu2
-!DOC ... returns in UBI BT.(u1,u2,u3)
-!DOC algorithm was due to Busing and Levy
-    intent(c) quickorient
-        intent(c)
-        double precision, dimension(3,3), intent (inout) :: ubi
-        double precision, dimension(3,3), intent (in) :: bt
-    end subroutine orient
-
-    function localmaxlabel( data, labels, wrk, ns, nf )
-        intent(c) localmaxlabel
-!DOC localmaxlabel assigns a label for each pixel so they are grouped
-!DOC to the local maximum. Equal values choose to assign towards the earlier
-!DOC value in memory.
-!DOC cpu arg (1)0=C, (1)1=SSE2, (1)2=AVX2; if > 9 prints timing
-        intent(c)
-        real, intent(in) :: data(ns,nf)
-        integer*4, intent(inout), note(hello) :: labels(ns,nf)
-        integer*1, intent(inout) :: wrk(ns,nf)
-        integer, intent(hide), depend(data) :: ns=shape(data,0)
-        integer, intent(hide), depend(data) :: nf=shape(data,1)
-        ! Returns
-        integer :: localmaxlabel
-    end function localmaxlabel
-
-    function mask_to_coo( msk, ns, nf, i, j, nnz, w )
-!DOC mask_to_coo takes a mask and converts it to a list
-!DOC of i,j coordinates in a sparse array coo format
-!DOC returns :
-!DOC    0 => success
-!DOC    1 => ns out of range ; 2 => nf out of range
-!DOC    3 => nnz < 1 empty mask
-!DOC    4 => nnz did not match this mask
-        intent(c) mask_to_coo
-        intent(c)
-        integer*1, intent(in)  :: msk( ns, nf )
-        integer, intent(hide), depend(msk) :: ns=shape(msk,0)
-        integer, intent(hide), depend(msk) :: nf=shape(msk,1)
-        integer(kind=-2), intent(inout), dimension(nnz) :: i, j
-        integer, intent(inout) :: w(ns)
-        integer, intent(hide), depend(i) :: nnz=shape(i,0)
-        integer, intent(inout) :: w(ns)
-        ! returns an int
-        integer :: mask_to_coo
-    end function mask_to_coo
-
-    function sparse_is_sorted( i, j, nnz )
-!DOC sparse_is_sorted checks whether the indices in i and j of a sparse
-!DOC coo format come in the order that they would appear inside an image
-!DOC *  @param i, j index arrays
-!DOC *  @param nnz dimension of i, j
-!DOC    returns 0 for all OK
-!DOC         k for first non-sorted element
-!DOC         -k for first duplicate
-        intent(c) sparse_is_sorted
-        intent(c)
-        integer(kind=-2), intent(in), dimension(nnz) :: i
-        integer(kind=-2), intent(in), dimension(nnz) :: j
-        integer, intent(hide), depend(i) :: nnz = shape( i, 0)
-        threadsafe
-        ! returns
-        integer sparse_is_sorted
-    end function spare_is_sorted
-
-    function sparse_connectedpixels( v, i, j, nnz, threshold, labels )
-!DOC sparse_connectedpixels runs the connectedpixels algorithm on
-!DOC a sparse image using a supplied threshold putting labels
-!DOC into labels array and returning the number of blobs found
-        intent(c) sparse_connectedpixels
-        intent(c)
-        real, intent(in), dimension(nnz) :: v
-        integer(kind=-2), intent(in), dimension(nnz) :: i
-        integer(kind=-2), intent(in), dimension(nnz) :: j
-        integer, intent(hide), depend(i) :: nnz = shape( i, 0)
-        real threshold
-        integer, intent(inout), dimension(nnz) :: labels
-        ! Returns
-        integer :: sparse_connectedpixels
-        threadsafe
-    end function sparse_connectedpixels
-
-    function sparse_connectedpixels_splat( v, i, j, nnz, th, lbl, Z,ni, nj )
-!DOC sparse_connectedpixels_splat is for debugging/timing. It splats
-!DOC the sparse array into a dense array and runs the old connectedpixels
-!DOC code on that.
-        intent(c) sparse_connectedpixels_splat
-        intent(c)
-        real, intent(in), dimension(nnz) :: v
-        integer(kind=-2), intent(in), dimension(nnz) :: i
-        integer(kind=-2), intent(in), dimension(nnz) :: j
-        integer, intent(hide), depend(i) :: nnz = shape( i, 0)
-        real th
-        integer, intent(inout), dimension(nnz) :: lbl
-        integer, intent(inout), dimension((ni+2)*(nj+2)) :: Z
-        integer :: ni, nj
-        ! Returns
-        integer :: sparse_connectedpixels_splat
-        threadsafe
-    end function sparse_connectedpixels_splat
-
-    subroutine sparse_blob2Dproperties( v, i, j, nnz, labels, results, npk)
-        intent(c) sparse_blob2Dproperties
-!DOC sparse_blob2Dproperties fills the array results with properties of
-!DOC each labelled object described by v and labels (pixel values and blob)
-!DOC and positions i,j in the image.
-!DOC results are:
-!DOC   results[ipk,s2D_1]   = sum(1), number of pixels
-!DOC   results[ipk,s2D_I]   = sum (I), total intensity
-!DOC   results[ipk,s2D_fI]  = sum (f*I), intensity weighted fast index
-!DOC   results[ipk,s2D_sI]  = sum (s*I), intensity weighted slow index
-!DOC   results[ipk,s2D_ffI] = sum (f*f*I), intensity weighted fast^2 index
-!DOC   results[ipk,s2D_sfI] = sum (s*f*I), intensity weighted slow*fast index
-!DOC   results[ipk,s2D_ssI] = sum (s*s*I), intensity weighted slow^2 index
-        intent(c)
-        real, intent(in), dimension(nnz) :: v
-        integer(kind=-2), intent(in), dimension(nnz) :: i
-        integer(kind=-2), intent(in), dimension(nnz) :: j
-        integer, intent(hide), depend(v) :: nnz = shape( v, 0)
-        integer, intent(in), dimension(nnz) :: labels
-        integer, intent(in) :: npk
-        double precision, intent(out) :: results( npk, NPROPERTY2D )
-        threadsafe
-    end subroutine sparse_blob2Dproperties
-
-    function sparse_localmaxlabel( v, i, j, nnz, MV, iMV, labels)
-        intent(c) sparse_localmaxlabel
-!DOC sparse_localmaxlabel assigns labels to sparse array in sorted coo format
-!DOC supplied in (v,(i,j)). MV and iMV are temporaries.
-!DOC single threaded
-        intent(c)
-        real, intent(in), dimension(nnz) :: v
-        integer(kind=-2), intent(in), dimension(nnz) :: i
-        integer(kind=-2), intent(in), dimension(nnz) :: j
-        integer, intent(hide), depend(v) :: nnz = shape( v, 0)
-        real, intent(inout) :: MV( nnz )
-        integer, intent(inout) :: iMV( nnz )
-        integer, intent(inout) :: labels( nnz )
-        ! returns
-        integer ::  sparse_localmaxlabel
-        threadsafe
-    end function sparse_localmaxlabel
-
-    function sparse_overlaps( i1, j1, k1, nnz1, &
-                               i2, j2, k2, nnz2 )
-!DOC sparse_overlaps identifies the pixels in i1,j1 which overlap i2,j2.
-!DOC The list of overlaps is returned in k1/k2 such that i1[k1]==i2[k2]
-!DOC and j1[k1]==j2[k2]. Probably assumes that sparse_is_sorted was true.
-        intent(c) sparse_overlaps
-        intent(c)
-        integer(kind=-2), dimension(nnz1), intent(c) :: i1, j1
-        integer, intent(inout), dimension(nnz1) :: k1
-        integer, intent(hide), depend(i1), intent(c) :: nnz1=shape(i1,0)
-        integer(kind=-2), dimension(nnz2), intent(c) :: i2, j2
-        integer, intent(inout), dimension(nnz2) :: k2
-        integer, intent(hide), depend(i2), intent(c) :: nnz2=shape(i2,0)
-        ! returns
-        integer :: sparse_overlaps
-        threadsafe
-    end function sparse_overlaps
-
-    function compress_duplicates( i, j, oi, oj, tmp, n, nt )
-!DOC compress_duplicates removes duplicate i,j labels. On entry then
-!DOC i and j are set as the labels from two images. They are sorted
-!DOC and on exit i,j hold the unique pairs and oi holds the count
-!DOC for the number of overlaps. oj and tmp are temporaries.
-        intent(c) compress_duplicates
-        intent(c)
-        integer, dimension(n), intent(c) :: i, j
-        integer, dimension(n), intent(c, inout) :: oi, oj
-        integer, dimension(nt), intent(c, inout) :: tmp
-        integer, intent(hide), depend(i) :: n = shape(i,0)
-        integer, intent(hide), depend(tmp) :: nt = shape(tmp,0)
-        ! returns
-        integer :: compress_duplicates
-        threadsafe
-    end function compress_duplicates
+        integer :: verify_rounding, n
+    end function verify_rounding
 
     subroutine closest_vec( x, dim, nv, ic )
 !DOC closest_vec finds the closest neighbors for each row of X
@@ -830,25 +594,287 @@ interface
         threadsafe
     end function count_shared
 
-    subroutine cimaged11_omp_set_num_threads(n)
-!DOC cimaged11_omp_set_num_threads Sets the openmp number of
-!DOC threads to use.
-!DOC Change if you use multiprocessing or do not like
-!DOC os.environ['OMP_NUM_THREADS']
-!DOC see also: multiprocessing.cpu_count(),
-!DOC see also os.cpu_count()
-!DOC see docs/sphx/parallel.rst
-        intent(c) cimaged11_omp_set_num_threads
+    function connectedpixels( data, labels, threshold, &
+                              verbose, con8, ns, nf)
+        intent(c) connectedpixels
+!DOC connectedpixels Determines which pixels in data are above the
+!DOC user supplied threshold and assigns them into connected objects
+!DOC which are output in labels. Connectivity is 3x3 box (8) by default
+!DOC and reduces to a +(4) is con8==0
         intent(c)
-        integer, intent(in) :: n
-    end subroutine cImaged11_set_omp_num_threads
+        real, intent(in) :: data(ns,nf)
+        integer, intent(inout) :: labels(ns,nf)
+        integer, intent(hide), depend(data) :: ns=shape(data,0)
+        integer, intent(hide), depend(data) :: nf=shape(data,1)
+        integer, optional :: con8 = 1
+        integer, optional ::  verbose = 0
+        real threshold
+        ! Returns
+        integer :: connectedpixels
+    end function connectedpixels
 
-    function cimaged11_omp_get_max_threads()
-!DOC cimaged11_omp_get_max_threads reads the openmp max number of threads
-!DOC see docs/sphx/parallel.rst
-        intent(c) cimaged11_omp_get_max_threads
-        integer :: cimaged11_omp_get_max_threads
-    end function cImaged11_omp_get_max_threads
+    subroutine blobproperties( data, labels, np, omega, &
+                               verbose, ns, nf, results)
+        intent(c) blobproperties
+!DOC blobproperties fills the array results with properties of each labelled
+!DOC object described by data (pixel values) and labels. The omega value
+!DOC is the angle for this frame.
+!DOC results are FIXME
+        intent(c)
+        real, intent(in) :: data(ns, nf)
+        integer, intent(in) :: labels(ns, nf)
+        integer, intent(hide), depend(data) :: ns=shape(data,0)
+        integer, intent(hide), depend(data) :: nf=shape(data,1)
+        integer, intent(in) :: np
+        double precision, intent(out) :: results( np, NPROPERTY )
+        real, intent(in), optional :: omega = 0
+        integer, optional :: verbose = 0
+        threadsafe
+    end subroutine blobproperties
+
+    function bloboverlaps( labels1, npk1, results1,    &
+                           labels2, npk2, results2,    &
+                           verbose, ns, nf)
+!DOC bloboverlaps determines the overlaps between labels1 and labels2
+!DOC for an image series. Peaks in labels2 may be merged if they were
+!DOC joined by a peak on labels1. Results in results1 are accumulated
+!DOC into results2 if peaks are overlapped.
+        intent(c) bloboverlaps
+        intent(c)
+        integer :: bloboverlaps
+        integer, intent( inout ) :: labels1( ns, nf )
+        integer, intent( inout ) :: labels2( ns, nf )
+        integer, intent(hide), depend(labels1) :: ns=shape(labels1,0)
+        integer, intent(hide), depend(labels1) :: nf=shape(labels1,1)
+        integer, intent(in) :: npk1, npk2
+        double precision, intent( inout ) :: results1( :, NPROPERTY )
+        double precision, intent( inout ) :: results2( :, NPROPERTY )
+        integer, intent(in) :: verbose = 0
+        threadsafe
+    end subroutine bloboverlaps
+
+    subroutine blob_moments( results, np )
+!DOC blob_moments fills in the reduced moments in results array.
+!DOC ... FIXME - this would be clearer in python, fast anyway.
+        intent(c) blob_moments
+        intent(c)
+        double precision, intent( inout ) :: results( np, NPROPERTY )
+        integer, intent(hide), depend(results) :: np=shape(results,0)
+        threadsafe
+    end subroutine blob_moments
+
+    function clean_mask( msk, ret, ns, nf )
+!DOC clean_mask removes pixels which are not 4 connected from msk
+!DOC while copying into ret.
+        intent(c) clean_mask
+        intent(c)
+        integer*1, intent(in)  :: msk( ns, nf )
+        integer, intent(hide), depend(msk) :: ns=shape(msk,0)
+        integer, intent(hide), depend(msk) :: nf=shape(msk,1)
+        integer*1, intent(inout), dimension(ns, nf) :: ret
+        ! returns an int
+        integer :: clean_mask
+    end function clean_mask
+
+
+    function make_clean_mask( img, cut, msk, ret, ns, nf )
+!DOC make_clean_mask is a lot like clean msk but it generates
+!DOC the msk using img and cut.
+!DOC Beware: work in progress
+        intent(c) make_clean_mask
+        intent(c)
+        real, intent(in), dimension(ns,nf) :: img
+        real, intent(in) :: cut
+        integer*1, intent(in)  :: msk( ns, nf )
+        integer, intent(hide), depend(msk) :: ns=shape(msk,0)
+        integer, intent(hide), depend(msk) :: nf=shape(msk,1)
+        integer*1, intent(inout), dimension(ns, nf) :: ret
+        ! returns an int
+        integer :: make_clean_mask
+    end function make_clean_mask
+
+    function localmaxlabel( data, labels, wrk, ns, nf )
+        intent(c) localmaxlabel
+!DOC localmaxlabel assigns a label for each pixel so they are grouped
+!DOC to the local maximum. Equal values choose to assign towards the earlier
+!DOC value in memory.
+!DOC cpu arg (1)0=C, (1)1=SSE2, (1)2=AVX2; if > 9 prints timing
+        intent(c)
+        real, intent(in) :: data(ns,nf)
+        integer*4, intent(inout), note(hello) :: labels(ns,nf)
+        integer*1, intent(inout) :: wrk(ns,nf)
+        integer, intent(hide), depend(data) :: ns=shape(data,0)
+        integer, intent(hide), depend(data) :: nf=shape(data,1)
+        ! Returns
+        integer :: localmaxlabel
+    end function localmaxlabel
+
+    function mask_to_coo( msk, ns, nf, i, j, nnz, w )
+!DOC mask_to_coo takes a mask and converts it to a list
+!DOC of i,j coordinates in a sparse array coo format
+!DOC returns :
+!DOC    0 => success
+!DOC    1 => ns out of range ; 2 => nf out of range
+!DOC    3 => nnz < 1 empty mask
+!DOC    4 => nnz did not match this mask
+        intent(c) mask_to_coo
+        intent(c)
+        integer*1, intent(in)  :: msk( ns, nf )
+        integer, intent(hide), depend(msk) :: ns=shape(msk,0)
+        integer, intent(hide), depend(msk) :: nf=shape(msk,1)
+        integer(kind=-2), intent(inout), dimension(nnz) :: i, j
+        integer, intent(inout) :: w(ns)
+        integer, intent(hide), depend(i) :: nnz=shape(i,0)
+        integer, intent(inout) :: w(ns)
+        ! returns an int
+        integer :: mask_to_coo
+    end function mask_to_coo
+
+    function sparse_is_sorted( i, j, nnz )
+!DOC sparse_is_sorted checks whether the indices in i and j of a sparse
+!DOC coo format come in the order that they would appear inside an image
+!DOC *  @param i, j index arrays
+!DOC *  @param nnz dimension of i, j
+!DOC    returns 0 for all OK
+!DOC         k for first non-sorted element
+!DOC         -k for first duplicate
+        intent(c) sparse_is_sorted
+        intent(c)
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(i) :: nnz = shape( i, 0)
+        threadsafe
+        ! returns
+        integer sparse_is_sorted
+    end function spare_is_sorted
+
+    function sparse_connectedpixels( v, i, j, nnz, threshold, labels )
+!DOC sparse_connectedpixels runs the connectedpixels algorithm on
+!DOC a sparse image using a supplied threshold putting labels
+!DOC into labels array and returning the number of blobs found
+        intent(c) sparse_connectedpixels
+        intent(c)
+        real, intent(in), dimension(nnz) :: v
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(i) :: nnz = shape( i, 0)
+        real threshold
+        integer, intent(inout), dimension(nnz) :: labels
+        ! Returns
+        integer :: sparse_connectedpixels
+        threadsafe
+    end function sparse_connectedpixels
+
+    function sparse_connectedpixels_splat( v, i, j, nnz, th, lbl, Z,ni, nj )
+!DOC sparse_connectedpixels_splat is for debugging/timing. It splats
+!DOC the sparse array into a dense array and runs the old connectedpixels
+!DOC code on that.
+        intent(c) sparse_connectedpixels_splat
+        intent(c)
+        real, intent(in), dimension(nnz) :: v
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(i) :: nnz = shape( i, 0)
+        real th
+        integer, intent(inout), dimension(nnz) :: lbl
+        integer, intent(inout), dimension((ni+2)*(nj+2)) :: Z
+        integer :: ni, nj
+        ! Returns
+        integer :: sparse_connectedpixels_splat
+        threadsafe
+    end function sparse_connectedpixels_splat
+
+    subroutine sparse_blob2Dproperties( v, i, j, nnz, labels, results, npk)
+        intent(c) sparse_blob2Dproperties
+!DOC sparse_blob2Dproperties fills the array results with properties of
+!DOC each labelled object described by v and labels (pixel values and blob)
+!DOC and positions i,j in the image.
+!DOC results are:
+!DOC   results[ipk,s2D_1]   = sum(1), number of pixels
+!DOC   results[ipk,s2D_I]   = sum (I), total intensity
+!DOC   results[ipk,s2D_fI]  = sum (f*I), intensity weighted fast index
+!DOC   results[ipk,s2D_sI]  = sum (s*I), intensity weighted slow index
+!DOC   results[ipk,s2D_ffI] = sum (f*f*I), intensity weighted fast^2 index
+!DOC   results[ipk,s2D_sfI] = sum (s*f*I), intensity weighted slow*fast index
+!DOC   results[ipk,s2D_ssI] = sum (s*s*I), intensity weighted slow^2 index
+        intent(c)
+        real, intent(in), dimension(nnz) :: v
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(v) :: nnz = shape( v, 0)
+        integer, intent(in), dimension(nnz) :: labels
+        integer, intent(in) :: npk
+        double precision, intent(out) :: results( npk, NPROPERTY2D )
+        threadsafe
+    end subroutine sparse_blob2Dproperties
+
+    function sparse_localmaxlabel( v, i, j, nnz, MV, iMV, labels)
+        intent(c) sparse_localmaxlabel
+!DOC sparse_localmaxlabel assigns labels to sparse array in sorted coo format
+!DOC supplied in (v,(i,j)). MV and iMV are temporaries.
+!DOC single threaded
+        intent(c)
+        real, intent(in), dimension(nnz) :: v
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(v) :: nnz = shape( v, 0)
+        real, intent(inout) :: MV( nnz )
+        integer, intent(inout) :: iMV( nnz )
+        integer, intent(inout) :: labels( nnz )
+        ! returns
+        integer ::  sparse_localmaxlabel
+        threadsafe
+    end function sparse_localmaxlabel
+
+    function sparse_overlaps( i1, j1, k1, nnz1, &
+                               i2, j2, k2, nnz2 )
+!DOC sparse_overlaps identifies the pixels in i1,j1 which overlap i2,j2.
+!DOC The list of overlaps is returned in k1/k2 such that i1[k1]==i2[k2]
+!DOC and j1[k1]==j2[k2]. Probably assumes that sparse_is_sorted was true.
+        intent(c) sparse_overlaps
+        intent(c)
+        integer(kind=-2), dimension(nnz1), intent(c) :: i1, j1
+        integer, intent(inout), dimension(nnz1) :: k1
+        integer, intent(hide), depend(i1), intent(c) :: nnz1=shape(i1,0)
+        integer(kind=-2), dimension(nnz2), intent(c) :: i2, j2
+        integer, intent(inout), dimension(nnz2) :: k2
+        integer, intent(hide), depend(i2), intent(c) :: nnz2=shape(i2,0)
+        ! returns
+        integer :: sparse_overlaps
+        threadsafe
+    end function sparse_overlaps
+
+    function compress_duplicates( i, j, oi, oj, tmp, n, nt )
+!DOC compress_duplicates removes duplicate i,j labels. On entry then
+!DOC i and j are set as the labels from two images. They are sorted
+!DOC and on exit i,j hold the unique pairs and oi holds the count
+!DOC for the number of overlaps. oj and tmp are temporaries.
+        intent(c) compress_duplicates
+        intent(c)
+        integer, dimension(n), intent(c) :: i, j
+        integer, dimension(n), intent(c, inout) :: oi, oj
+        integer, dimension(nt), intent(c, inout) :: tmp
+        integer, intent(hide), depend(i) :: n = shape(i,0)
+        integer, intent(hide), depend(tmp) :: nt = shape(tmp,0)
+        ! returns
+        integer :: compress_duplicates
+        threadsafe
+    end function compress_duplicates
+
+    function tosparse_u16( img, msk, row, col, val, cut, ns, nf)
+!DOC tosparse_u16 stores pixels from img into row/col/val.
+!DOC msk determines whether pixels are masked
+        intent(c) tosparse_u16
+        intent(c)
+        integer(kind=-2), dimension(ns, nf), intent(c) :: img, row, col, val
+        integer(kind=-1), dimension(ns, nf), intent(c) :: msk
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        integer :: cut
+        ! returns
+        integer :: tosparse_u16
+        threadsafe
+    end function tosparse_u16
 
     subroutine splat( rgba, w, h, gve, ng, u, npx )
 !DOC splat draws gvectors into an rgba image. The horror of maintaining plot3d

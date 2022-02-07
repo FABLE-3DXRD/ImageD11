@@ -13,7 +13,7 @@ def py_coo( msk ):
 class test_clean_mask( unittest.TestCase ):
     def setUp( self ):
         shape = (9,11)
-        data = np.zeros( shape, np.bool )
+        data = np.zeros( shape, bool )
         data[3:5, 3:5] = 1 # keep
         self.target = data.copy()
         data[1,1] = 1 # isolated, to be removed

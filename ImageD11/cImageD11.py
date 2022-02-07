@@ -57,5 +57,5 @@ def fill_in_docstrings():
 
 fill_in_docstrings()
 
-
+assert verify_rounding(20) == 0, "Problem with cImageD11 fast rounding code"
 

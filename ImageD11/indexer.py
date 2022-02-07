@@ -173,7 +173,7 @@ class indexer:
         angle, cosangle = self.unitcell.anglehkls( hkl1, hkl2 )
         print("Angle, cosangle",angle,cosangle,hkl1,hkl2)
         assert angle > 1 and angle < 179, "hkls are parallel"
-        g = np.array( (self.cf.gx, self.cf.gy, self.cf.gz), np.float )
+        g = np.array( (self.cf.gx, self.cf.gy, self.cf.gz), float )
         n = g/self.cf.modg
         gvf = g.T.copy()
         n1 = n[:,ind1]
@@ -222,7 +222,7 @@ class indexer:
 
 
     def assign(self, ubi, translation, tol):
-        gv = np.zeros(self.peaks_xyzT.shape, np.float )
+        gv = np.zeros(self.peaks_xyzT.shape, float )
         cImageD11.compute_gv( self.peaks_xyzT,
                     self.cf.omega,
                     self.transformpars.get('omegasign'),
@@ -321,7 +321,7 @@ if __name__=="__main__":
         #                                            0                   1                  2           3    4             5
         # \test\simul_1000_grains>python ..\..\ImageD11\indexer.py Al1000\Al1000.par Al1000\Al1000.flt fit allgrid.map allgridfitscipy.map
         gl = ImageD11.grain.read_grain_file( sys.argv[4] )
-        inds = np.arange( len(gl), dtype=np.int )
+        inds = np.arange( len(gl), dtype=int )
         allhkls = np.array( (c.h, c.k, c.l) )
         for k,g in enumerate(gl):
             if len(sys.argv[3]) == len("fit"):

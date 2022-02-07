@@ -191,14 +191,14 @@ class fittrans(object):
             #print "after",len(pks),pks
             gr.pks = pks[use]
         else:
-            use = np.arange( len(gr.pks), dtype=np.int )
+            use = np.arange( len(gr.pks), dtype=int )
         #print "score = ", scor[pks].sum()/len(pks), len(pks), tol
         # peaks to use are those with scor OK
         #
         #  UB.h = gvcalc
         #  dg/dUB = h
         #  dg/dT  = found above
-        gcalc = np.dot( gr.ub,  hkli )
+        gcalc = np.dot( gr.UB,  hkli )
         diff = np.take(gv - gcalc, use, axis=1)
         # print diff.shape, pks.shape
         # gv[0],[1],[2] = 3
@@ -242,7 +242,7 @@ class fittrans(object):
         ty = ty - shifts[1]
         tz = tz - shifts[2]
         gr.translation = [tx,ty,tz]
-        ub = gr.ub.ravel()
+        ub = gr.UB.ravel()
         np.add(ub, shifts[3:], ub)
         gr.set_ubi( np.linalg.inv( np.reshape(ub,(3,3))))
         gr.npks = len(use)

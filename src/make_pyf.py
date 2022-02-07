@@ -139,7 +139,8 @@ for name in ['"c:\Program Files\LLVM\bin\clang-format" ',
         CF = name + ' --style=file -i '
         break
 else:
-    raise Exception("clang-format was not found")
+    print("clang-format was not found, please do not send to git!")
+    CF = 'echo '
 
 
 def clean(sources):
@@ -161,6 +162,6 @@ if __name__ == "__main__":
     for ext in "ch":
         f = 'fortranobject.'+ext
         shutil.copyfile( os.path.join(f2pydir, 'src', f), f)
-    DOCF = os.path.join("..", "ImageD11src", "cImageD11_docstrings.py")
+    DOCF = os.path.join("..", "ImageD11", "cImageD11_docstrings.py")
     write_docs( PYF, DOCF )
 

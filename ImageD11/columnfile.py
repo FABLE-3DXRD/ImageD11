@@ -456,6 +456,18 @@ class newcolumnfile(columnfile):
         columnfile.__init__(self, filename=None, new=True)
         self.titles = titles
         self.ncols = len(titles)
+        
+        
+def colfile_from_dict( c ):
+    """ convert from a dictonary of numpy arrays """
+    titles = list(c.keys())
+    nrows = len(c[titles[0]])
+    for t in titles:
+        assert len(c[t]) == nrows, t
+    colf = newcolumnfile( titles=titles )
+    colf.nrows = nrows
+    colf.set_bigarray( [ c[t] for t in titles ] )
+    return colf
 
 
 try:
@@ -478,7 +490,10 @@ try:
             opened = True
         if name is None:
             # Take the file name
-            name = os.path.split(c.filename)[-1]
+            try:
+                name = os.path.split(c.filename)[-1]
+            except:
+                name = 'peaks'
         if name in list(h.keys()):
             g = h[name]
         else:
@@ -540,6 +555,9 @@ try:
                 print(groups)
                 raise Exception("Did not find your "+str(name)+" in "+hdffile)
         else:
+            groups = [g for g in groups 
+                                if 'ImageD11_type' in h[g].attrs and 
+                                   h[g].attrs['ImageD11_type'] == 'peaks' ]
             assert len(groups) == 1, "Your hdf file has many groups. Which one??"
             g = h[groups[0]]
             name = groups[0]
@@ -569,9 +587,9 @@ try:
         else:
             col = obj
         col.nrows = len( g[newtitles[0]] )
-        # ncols = len( col.titles )
         for name in newtitles:
             col.addcolumn( g[name][:].copy(), name )
+        h.close()
         return col
 
 except ImportError:

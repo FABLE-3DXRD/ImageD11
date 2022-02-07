@@ -2,7 +2,7 @@
 from __future__ import print_function, division
 
 import time, sys
-import h5py, scipy.sparse, numpy as np, pylab as pl
+import h5py, scipy.sparse, numpy as np #, pylab as pl
 from ImageD11 import cImageD11
 
 
@@ -19,6 +19,9 @@ NAMES = {
 class sparse_frame( object ):
     """
     Indices / shape mapping
+    
+    This was developed for a single 2D frame
+       See SparseScan below for something aiming towards many frames
     """
     def __init__(self, row, col, shape, itype=np.uint16, pixels=None):
         """ row = slow direction
@@ -86,8 +89,10 @@ class sparse_frame( object ):
         else:
             assert out.shape == self.shape
         assert len(data) == self.nnz
-        adr = self.row.astype(np.intp) * self.shape[1] + self.col
-        out.flat[adr] = data    
+        scipy.sparse.coo_matrix((data, (self.row, self.col)), shape=(self.shape)).todense(out=out)
+        # does not handle duplicate indices if they were present:
+        #        adr = self.row.astype(np.intp) * self.shape[1] + self.col
+        #        out.flat[adr] = data    
         return out
 
     def mask( self, msk ):
@@ -166,6 +171,129 @@ class sparse_frame( object ):
                 group[pxname].attrs = dict( self.meta[pxname] )
 
 
+class SparseScan( object ):
+    
+    omeganames = ['measurement/rot_center', 'measurement/rot',
+                  'measurement/diffrz_center', 'measurement/diffrz']
+    dtynames   = ['measurement/dty_center', 'measurement/dty',
+                  'measurement/diffty_center', 'measurement/diffty']
+    
+    def __init__( self, hname, scan ):
+        """
+        hname : file coming from a sparse segmentation
+        scan : a scan within that file
+        motors : which motor channels to (try) to read
+        
+        assumes the scan fits into memory (could be problematic)
+        """
+        with h5py.File(hname,"r") as hin:
+            grp = hin[scan]
+            self.shape = ( int(v) for v in ( grp.attrs['nframes'], 
+                                            grp.attrs['shape0'], 
+                                            grp.attrs['shape1'] ) )
+            self.motors = {}
+            for name, motors in [ ('omega',self.omeganames),
+                                  ('dty',self.dtynames) ]:
+                for motor in motors:
+                    if motor in grp:
+                        self.motors[ name ] = grp[motor][:]
+                        break
+                
+            self.nnz = grp['nnz'][:]
+            self.ipt = np.concatenate( ( (0,) , np.cumsum(self.nnz, dtype=int) ) )
+            self.frame  = grp['frame'][:]
+            self.row = grp['row'][:]
+            self.col = grp['col'][:]
+            self.intensity = grp['intensity'][:]
+            
+    def cplabel(self, threshold = 0 ):
+        """ Label pixels using the connectedpixels assigment code
+        Fills in:
+           self.nlabels = number of peaks per frame
+           self.labels  = peak labels (should be unique)
+           self.total_labels = total number of peaks
+        """
+        self.nlabels = np.zeros( len(self.nnz), np.int32 )
+        self.labels = np.zeros( len(self.row), "i")
+        nl = 0
+        # TODO: run this in parallel with threads?
+        for i, npx in enumerate( self.nnz ):
+            s = self.ipt[i]
+            e = self.ipt[i+1]
+            if npx > 0:
+                self.nlabels[i] = cImageD11.sparse_connectedpixels(
+                    self.intensity[ s : e ],
+                    self.row[ s : e ],
+                    self.col[ s : e ],
+                    threshold,
+                    self.labels[ s : e ] )
+                assert (self.labels[ s : e ] > 0).all()
+                self.labels[ s : e ] += nl
+            else:
+                self.nlabels[i] = 0
+            nl += self.nlabels[i]
+        self.total_labels = nl
+                
+    def lmlabel(self, threshold = 0 ):
+        """ Label pixels using the localmax assigment code
+        Fills in:
+           self.nlabels = number of peaks per frame
+           self.labels  = peak labels (should be unique)
+           self.total_labels = total number of peaks
+        """
+        self.nlabels = np.zeros( len(self.nnz), np.int32 )
+        self.labels = np.zeros( len(self.row), "i")
+        # temporary workspaces
+        npxmax = self.nnz.max()
+        vmx = np.zeros( npxmax, np.float32 )
+        imx = np.zeros( npxmax, 'i' )
+        nl = 0
+        # TODO: run this in parallel with threads?
+        for i, npx in enumerate( self.nnz ):
+            s = self.ipt[i]
+            e = self.ipt[i+1]
+            if npx > 0:
+                self.nlabels[i] = cImageD11.sparse_localmaxlabel(
+                    self.intensity[ s : e ],
+                    self.row[ s : e ],
+                    self.col[ s : e ],
+                    vmx[:npx],
+                    imx[:npx],
+                    self.labels[s : e] )
+                assert (self.labels[s:e] > 0).all()
+                self.labels[ s : e ] += nl
+            else:
+                self.nlabels[i] = 0
+            nl += self.nlabels[i]
+        self.total_labels = nl
+            
+    def moments(self):
+        """ Computes the center of mass in s/f/omega
+        returns a columnfile
+        """
+        pks = {}
+        pks['Number_of_pixels'] = np.bincount(self.labels, 
+                                              weights=None,
+                                              minlength = self.total_labels+1 )[1:]
+        pks['sum_intensity'] = np.bincount(self.labels, 
+                                           weights=self.intensity,
+                                           minlength = self.total_labels+1 )[1:]
+        pks['s_raw'] = np.bincount(self.labels,
+                                   weights=self.intensity*self.row,
+                                   minlength = self.total_labels+1 )[1:]
+        pks['s_raw'] /= pks['sum_intensity']
+        pks['f_raw'] = np.bincount(self.labels,
+                                   weights=self.intensity*self.col,
+                                   minlength = self.total_labels+1 )[1:]
+        pks['f_raw'] /= pks['sum_intensity']
+        for name in 'omega','dty':
+            if name in self.motors:
+                pks[name] = np.bincount(self.labels,
+                           weights=self.intensity*self.motors[name][self.frame],
+                           minlength = self.total_labels+1 )[1:]
+                pks[name] /= pks['sum_intensity']
+        return pks
+                
     
 def from_data_mask( mask, data, header ):
     """

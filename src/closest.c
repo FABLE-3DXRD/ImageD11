@@ -27,7 +27,7 @@ typedef double vec[3];
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-inline double conv_double_to_int_fast(double);
+/* inline double conv_double_to_int_fast(double); */
 
 double conv_double_to_int_safe(double);
 
@@ -82,10 +82,40 @@ double conv_double_to_int_safe(double x) { return floor(x + 0.5); }
  * https://stackoverflow.com/questions/59632005/why-does-this-code-beat-rint-and-how-to-i-protect-it-from-ffast-math-and-frie
  */
 #define MAGIC 6755399441055744.0
-DLL_LOCAL
+#define conv_double_to_int_fast(x) ((x+MAGIC)-MAGIC)
+
+/* DLL_LOCAL
 inline double conv_double_to_int_fast(double x) {
     return ((x + MAGIC) - MAGIC);
+} */
+
+/* F2PY_WRAPPER_START
+    function verify_rounding( n )
+!DOC checks the round to nearest int code is correct
+        intent(c) verify_rounding
+        intent(c)
+        integer :: verify_rounding, n
+    end function verify_rounding
+F2PY_WRAPPER_END */
+int verify_rounding( int n ){
+    int i, hfast, hslow, bad = 0;
+    double v;
+    
+    for( i = -100; i < 200; i++ ){
+        v = n + i*50.0;
+        hfast = conv_double_to_int_fast( v );
+        hslow = conv_double_to_int_safe( v );
+        if ( hfast != hslow ) bad++;
+    }
+    for( i = -100; i < 200; i++ ){
+        v = -n + i*50.0;
+        hfast = conv_double_to_int_fast( v );
+        hslow = conv_double_to_int_safe( v );
+        if ( hfast != hslow ) bad++;
+    }
+    return bad;
 }
+
 
 /* F2PY_WRAPPER_START
     subroutine closest_vec( x, dim, nv, ic )
@@ -340,7 +370,7 @@ int score_and_assign(vec *restrict ubi, vec *restrict gv, double tol,
     int k, n;
     tolsq = tol * tol;
     n = 0;
-#pragma omp parallel for private(h0, h1, h2, t0, t1, t2, sumsq) reduction(+ : n)
+#pragma omp parallel for private(h0, h1, h2, t0, t1, t2, sumsq) reduction(+ : n) schedule(static, 4096)
     for (k = 0; k < ng; k++) {
         h0 = ubi[0][0] * gv[k][0] + ubi[0][1] * gv[k][1] + ubi[0][2] * gv[k][2];
         h1 = ubi[1][0] * gv[k][0] + ubi[1][1] * gv[k][1] + ubi[1][2] * gv[k][2];

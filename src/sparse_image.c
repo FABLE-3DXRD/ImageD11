@@ -729,3 +729,75 @@ int compress_duplicates(int *restrict i, int *restrict j, int *restrict oi,
     c++;
     return c;
 }
+
+
+
+/* F2PY_WRAPPER_START
+    function tosparse_u16( img, msk, row, col, val, cut, ns, nf)
+!DOC tosparse_u16 stores pixels from img into row/col/val.
+!DOC msk determines whether pixels are masked
+        intent(c) tosparse_u16
+        intent(c)
+        integer(kind=-2), dimension(ns, nf), intent(c) :: img, row, col, val
+        integer(kind=-1), dimension(ns, nf), intent(c) :: msk
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        integer :: cut
+        ! returns
+        integer :: tosparse_u16
+        threadsafe
+    end function tosparse_u16
+F2PY_WRAPPER_END */
+
+int tosparse_u16( uint16_t* restrict img,  uint8_t* restrict msk, uint16_t* restrict row,  
+                 uint16_t* restrict col, uint16_t* restrict val, int cut, int ns, int nf ) {
+    int k = 0, i, j;
+    for( i = 0; i < ns ; i++){
+        for( j = 0; j < nf ; j++ ){
+            if ((msk[i*nf+j]) && (img[i*nf+j] > (uint16_t)cut)){
+                row[k] = i;
+                col[k] = j;
+                val[k] = img[i*nf+j];
+                k++;
+            }
+        }
+    }
+    return k;
+}
+
+    
+#ifdef AVX512
+#include <immintrin.h>
+
+int tosparse_u16_avx512( uint16_t* restrict img,  uint8_t* restrict msk, uint16_t* restrict row,  
+                  uint16_t* restrict col, uint16_t* restrict val, int cut, int ns, int nf ) {
+    int p, bit, npx = 0;
+    __m256i m0 = _mm256_setzero_si256();
+    /* sign. ho hum, need to test that: */   
+    __m512i mcut = _mm512_set1_epi16( (int16_t)( (uint16_t) cut) ); 
+    for( p = 0; p < ( ( ns * nf ) / 32 ) * 32 ;  p += 32 ) {
+        /* gcc misses loadu_epi8 and 16. Could be align error here? */
+        __mmask32 bitmask = _mm256_cmpneq_epu8_mask ( _mm256_loadu_si256 ( (__m256i_u*) &msk[ p ] ), m0 )
+                          & _mm512_cmpgt_epu16_mask ( _mm512_loadu_si512 ( (__m512i_u*) &img[ p ] ), mcut);
+        while( bitmask ){
+            bit = _lzcnt_u32( bitmask );
+            row[npx] = p / nf;
+            col[npx] = p % nf;
+            val[npx] = img[ p + bit ];
+            bitmask  &= (~( 1u << (31 - bit)));   /* clear that bit */
+            npx++;
+        }
+    }
+    /* and the end of the image */
+    while ( p < nf * ns ){
+        if( img[ p ] > (uint16_t) cut ) {
+            row[npx] = p / nf;
+            col[npx] = p % nf;
+            val[npx] = img[ p ];
+            npx++;
+        }
+        p++;
+    }
+    return npx;
+}
+#endif

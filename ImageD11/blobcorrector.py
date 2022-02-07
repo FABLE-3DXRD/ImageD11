@@ -1,10 +1,8 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
 from __future__ import print_function
 
  
-# ImageD11_v0.4 Software for beamline ID11
-# Copyright (C) 2005  Jon Wright
+# ImageD11 Software for beamline ID11
+# Copyright (C) 2021  Jon Wright
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,8 +25,11 @@ via a fit2d spline file
  
 To think about doing - valid regions? What if someone uses a 1K spline
 file for a 2K image etc?
+
+2021 : added LUT method for eiger
 """
 import logging, numpy, math
+import fabio
 from scipy.interpolate import bisplev
 
 def readfit2dfloats(filep, nfl):
@@ -269,6 +270,28 @@ class perfect(correctorclass):
 
 
 
+class eiger_spatial(object):
+    
+    def __init__(self, 
+                 dxfile="/data/id11/nanoscope/Eiger/spatial_20210415_JW/e2dx.edf",
+                 dyfile="/data/id11/nanoscope/Eiger/spatial_20210415_JW/e2dy.edf",):
+        self.dx = fabio.open(dxfile).data  # x == fast direction at ID11
+        self.dy = fabio.open(dyfile).data  # y == slow direction
+        assert self.dx.shape == self.dy.shape
+        
+    def __call__(self, pks):
+        si = np.round(pks['s_raw']).astype(int)
+        fi = np.round(pks['f_raw']).astype(int)
+        pks['fc'] = self.dx[ si, fi ] + pks['f_raw']
+        pks['sc'] = self.dy[ si, fi ] + pks['s_raw']
+        return pks
+    
+    def pixel_lut(self):
+        """ returns (slow, fast) pixel postions of an image """
+        s = self.dx.shape
+        i, j = numpy.mgrid[ 0:s[0], 0:s[1] ]
+        return self.dy + j, self.dx + i
+    
 #
 #"""
 #http://homepages.inf.ed.ac.uk/rbf/CVonline/LOCAL_COPIES/OWENS/LECT5/node5.html

@@ -7,7 +7,7 @@ import unittest
 def closest_pyvec( X ):
     nv = X.shape[0]
     nd = X.shape[1]
-    res = np.zeros( nv, np.int )
+    res = np.zeros( nv, int )
     for i in range(nv):
         dif = X - X[i]
         err = (dif*dif).sum(axis=1)

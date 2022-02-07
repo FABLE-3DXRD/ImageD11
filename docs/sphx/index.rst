@@ -52,6 +52,7 @@ Contents:
    batchprocessing
    rsv_mapper
    related
+   changelog
 
 
 Indices and tables

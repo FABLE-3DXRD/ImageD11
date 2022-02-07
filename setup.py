@@ -49,9 +49,9 @@ print("Building version |%s|"%get_version(), "on system:", platform.system())
 
 
 copt =  {
-    'msvc': ['/openmp', '/O2'] , 
-    'unix': ['-fopenmp', '-O2'], #, '-DF2PY_REPORT_ON_ARRAY_COPY=100'] , 
-    'mingw32': ['-fopenmp', '-O2'] , 
+    'msvc': ['/openmp', '/O2'] ,
+    'unix': ['-fopenmp', '-O2'], #, '-DF2PY_REPORT_ON_ARRAY_COPY=100'] ,
+    'mingw32': ['-fopenmp', '-O2'] ,
  }
 
 lopt =  { k : [a for a in l] for k,l in copt.items() }
@@ -120,7 +120,7 @@ scripts = ["ImageD11/rsv_mapper.py",
        	         "scripts/refine_em.py",
                  "scripts/avg_par.py",
                  "scripts/powderimagetopeaks.py"]
-                 
+
 ################################################################################
 # Things we depend on. This generally borks things if pip
 # tries to do source installs of all of these.
@@ -136,26 +136,22 @@ minimal = [  # can't compile without this
 useful = [   # stuff you probably want, and should be able to get easily
     "fabio",
     "xfab>=0.0.4", #
-       # comes from xfab : "PyCifRW", 
+       # comes from xfab : "PyCifRW",
     "matplotlib",  # tkGui
     "pyopengltk",  # plot3d in tkGui
-    "scipy",       # 
-    # 32 bit windows binary wheel for python 3 is missing
-    #   this is not quite right, but seems close
-    'h5py <= 2.10.0 ; (sys_platform=="win32") and (python_version >= "3")',
-    'h5py ; (sys_platform=="win32") and (python_version < "3")',
-    'h5py ; (sys_platform!="win32")',
+    "scipy",       #
+    'h5py',
     'pyyaml',
 ]
 
 
-more = [   
+more = [
     # Used in sandbox / test / not completely essential, but should work for CI
     "pytest",
     'numba==0.46.0 ; python_version < "3" ',       # for some test cases
     'numba ; python_version > "3" ',               # for some test cases
     "pillow",      # in sandbox
-    "lmfit",       # in sandbox 
+    "lmfit",       # in sandbox
     "PyMca5",      # in sandbox
     "sympy",       # for maths
     'ipywidgets',  # for notebook nbGui
@@ -176,7 +172,7 @@ this_directory = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     readme = f.read()
 
-    
+
 # See the distutils docs...
 setup(name='ImageD11',
       version=get_version(),

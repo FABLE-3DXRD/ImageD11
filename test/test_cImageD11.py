@@ -47,7 +47,7 @@ class test_compute_gv(unittest.TestCase):
         self.assertTrue( np.allclose(gve1, gve2.T ))
         #        print "Test Fortran"
         if TEST_FORTRAN:
-            gve3 = np.empty( (3, len(tth)), np.float, order='F')
+            gve3 = np.empty( (3, len(tth)), float, order='F')
             fImageD11.compute_gv(self.XLYLZL,
                                  self.omega,self.omegasign,
                                  self.wvln,
@@ -179,7 +179,7 @@ class test_compute_xlylzl(unittest.TestCase):
                                   [ 0, p.get('o12'), p.get('o11')]])
                 r = np.dot(dmat, fmat)
 
-                outxyz = np.zeros( (len(self.sc), 3), np.float )
+                outxyz = np.zeros( (len(self.sc), 3), float )
                 cImageD11.compute_xlylzl( self.sc,
                                           self.fc,
                                           pars, r.ravel(), dist,
