@@ -70,7 +70,11 @@ def domap(  pars,
                 g.set_ubi( o.refine( g.ubi, quiet=False ) )
         # This fills in the uniq for each grain
         o.savegrains( nulfile, sort_npks = False)
-        gl = [ g for g in o.grains.values() if g.npks > gridpars['NPKS'] ]
+        if 'NUNIQ' in gridpars:
+            keep = lambda g: g.nuniq > gridpars['NUNIQ'] and g.npks > gridpars['NPKS']
+        else:
+            keep = lambda g: g.npks > gridpars['NPKS']
+        gl = [ g for g in o.grains.values() if keep(g) ]
         if len(gl) == 0:
             break
         grains = gl
