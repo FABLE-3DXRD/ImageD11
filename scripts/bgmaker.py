@@ -230,7 +230,7 @@ def bgmaker( options ):
     except:
         print("problem writing")
         print("trying to write",options.outfile,"in edf format")
-        im = fabio.edfimage.edfimage( data = minim.minimum_image )
+        im = fabio.edfimage.edfimage( data = bko.minimum_image )
         try:
             im.write(options.outfile, force_type = im.data.dtype)
         except TypeError:

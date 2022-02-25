@@ -114,9 +114,9 @@ class ImageQt(Qt.QImage):
         assert npyar.shape[2] == 3
         assert npyar.dtype == numpy.uint8
         h , w = npyar.shape[0:2]
-	try: 
+        try: 
             self.__data = npyar.data
-	    Qt.QImage.__init__(self, self.__data, w, h, Qt.QImage.Format_RGB888 )
+            Qt.QImage.__init__(self, self.__data, w, h, Qt.QImage.Format_RGB888 )
         except:
             im = numpy.zeros( (h, w, 4),
                           numpy.uint8)

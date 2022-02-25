@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import numpy as n
 def compute_grain_origins(omega, wedge = 0.0, chi = 0.0,
                           t_x = 0.0, t_y = 0.0, t_z = 0.0):
@@ -29,22 +31,22 @@ def compute_grain_origins(omega, wedge = 0.0, chi = 0.0,
                     [      0,           1,         0],
                     [ n.sin(w),         0,  n.cos(w)] ] , n.float)
     c=n.radians(chi)
-    print "WI",WI
+    print ("WI",WI)
     CI = n.array( [ [      1,            0,         0],
                     [      0,     n.cos(c), -n.sin(c)],
                     [      0,     n.sin(c),  n.cos(c)] ] , n.float)
-    print "CI",CI
+    print( "CI",CI)
     t   = n.zeros((3,omega.shape[0]),n.float) # crystal translations
     # Rotations in reverse order compared to making g-vector
     # also reverse directions. this is trans at all zero to
     # current setting. gv is scattering vector to all zero
     om_r = n.radians(omega)
-    print "om_r",om_r
+    print( "om_r",om_r)
     # This is the real rotation (right handed, g back to k)
     t[0,:] = n.cos(om_r)*t_x - n.sin(om_r)*t_y
     t[1,:] = n.sin(om_r)*t_x + n.cos(om_r)*t_y
     t[2,:] =                                  t_z
-    print "om.t",t
+    print ("om.t",t)
     if chi != 0.0:
         c = n.cos(n.radians(chi))
         s = n.sin(n.radians(chi))
@@ -53,7 +55,7 @@ def compute_grain_origins(omega, wedge = 0.0, chi = 0.0,
         u[1,:]=        c * t[1,:]    + -s * t[2,:]
         u[2,:]=        s * t[1,:]    +  c * t[2,:]
         t = u
-    print "chi.om.t",t
+    print ("chi.om.t",t)
     if wedge != 0.0:
         c = n.cos(n.radians(wedge))
         s = n.sin(n.radians(wedge))
@@ -62,7 +64,7 @@ def compute_grain_origins(omega, wedge = 0.0, chi = 0.0,
         u[1,:]=            t[1,:]
         u[2,:]= s * t[0,:]           +  c * t[2,:]
         t = u
-    print "wedge.chi.om.t",t
+    print( "wedge.chi.om.t",t)
     return t
 
 import ctypes, numpy as np
@@ -125,7 +127,7 @@ if __name__=="__main__":
         sf = c.xc,c.yc
 #    c.nrows = 2
 #    c.bigarray = c.bigarray[:,:2]
-    print c.bigarray.shape
+    print (c.bigarray.shape)
     c.set_attributes()
 
     XL = flatfloat( compute_xyz_lab( sf , **pars.parameters ).T )
@@ -143,13 +145,13 @@ if __name__=="__main__":
     labels = np.zeros( c.nrows, np.int32 )
     hkls = np.zeros( ( c.nrows, 3 ), NPREAL )
 
-    print XL.shape
-    print om.shape
-    print UBs.shape
-    print UBIs.shape
-    print Ts.shape
-    print labels.shape
-    print hkls.shape
+    print( XL.shape)
+    print( om.shape)
+    print( UBs.shape)
+    print( UBIs.shape)
+    print( Ts.shape)
+    print( labels.shape)
+    print( hkls.shape)
 
     dll.c_choosegrains( 
             XL.ctypes.data_as( ctypes.POINTER( REAL) ),
@@ -172,26 +174,26 @@ if __name__=="__main__":
     peaks_xyz = ImageD11.transform.compute_xyz_lab( sf, **pars.parameters )
 
     
-    print peaks_xyz[:,-1]
+    print( peaks_xyz[:,-1])
 
-    print "translation",pars.get('t_x'),pars.get('t_y'),pars.get('t_z')
+    print( "translation",pars.get('t_x'),pars.get('t_y'),pars.get('t_z'))
     origin = compute_grain_origins(c.omega, wedge = pars.get('wedge'),
                                    chi=pars.get('chi'), t_x = pars.get('t_x'),
                                    t_y = pars.get('t_y'), t_z = pars.get('t_z'))
-    print origin[:,-1], origin.shape
-    print "I got to the end of the script"
+    print (origin[:,-1], origin.shape)
+    print( "I got to the end of the script")
 
     tth,eta = ImageD11.transform.compute_tth_eta( sf, omega=c.omega, **pars.parameters)
     kvecs = ImageD11.transform.compute_k_vectors(tth, eta, pars.get('wavelength'))
-    print kvecs.T
+    print( kvecs.T)
     gvecs = ImageD11.transform.compute_g_from_k( kvecs, c.omega, wedge=pars.get('wedge'), 
                                                  chi=pars.get('chi'))
-    print gvecs.T
+    print( gvecs.T)
     for i,gr in enumerate(grains):
         oldhkls = np.dot( gr.ubi, gvecs )
-        print "grain %d"%(i)
-        print oldhkls.T
-        print hkls
+        print( "grain %d"%(i))
+        print( oldhkls.T)
+        print( hkls)
 
 
 #C:\Users\wright\Programming\fable\ImageD11\test\makemap>c:\mingw64\bin\gcc ..\..\src\diffraction.c -O3 -march=native -ffast-math -static-libgcc -share d -o diffraction.dll

@@ -50,7 +50,7 @@ class xydisp:
         for key in self.required_pars:
             
             if key not in self.pars.parameters:
-                raise Exception("Missing parameter "+str(par))
+                raise Exception("Missing parameter "+str(key))
 
     def compute_tth_eta(self, dims):
         """

@@ -36,7 +36,8 @@ class t2(unittest.TestCase):
         if os.path.exists("nac.db"):
             return
         start = time.time()
-        columnfile.colfile2db( os.path.join("..","nac_demo","peaks.out_merge_t200") , "nac.db" )
+        columnfile.colfile2db( os.path.join( os.path.split(__file__)[0],
+            "..","nac_demo","peaks.out_merge_t200") , "nac.db" )
         print( "write db",time.time()-start)
 
     def test1(self):

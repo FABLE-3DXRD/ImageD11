@@ -341,10 +341,10 @@ if __name__=="__main__":
     import numpy as np
     from math import pi
     x=np.arange(0.0,3.0,0.01)
-    dat=epffile.powderdata(x,
-                           np.sin(2*pi*x)+5,
-                           np.sqrt(sin(2*pi*x)+5),
-                           { "title":"sin x" })
+    dat=data(x,
+             np.sin(2*pi*x)+5,
+             np.sqrt(np.sin(2*pi*x)+5),
+             { "title":"sin x" })
 
     root = Tk.Tk()
     root.wm_title("Two dimensional plotting")

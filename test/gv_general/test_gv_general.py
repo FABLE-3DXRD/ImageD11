@@ -167,7 +167,7 @@ if False:
         self.tth = np.random.random(self.np)*2+1
         self.wvln = 0.154
         self.eta = np.random.random(self.np)*360.
-        self.omega = RandomArray.random(self.np)*360.
+        self.omega = np.random.random(self.np)*360.
 
 
 

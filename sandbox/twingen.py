@@ -1,5 +1,5 @@
 
-
+from __future__ import print_function
 
 from ImageD11 import unitcell, parameters, transform
 import numpy as np
@@ -31,7 +31,7 @@ modg= np.sqrt((gve*gve).sum(axis=0))
 # print scattering vectors in order
 order = np.argsort(modg)
 for i in order[10::-1]:
-    print i,hkls.T[i],modg[i],gve.T[i]
+    print (i,hkls.T[i],modg[i],gve.T[i])
 
 
 def make_uniq( UBIlist ):
@@ -96,9 +96,9 @@ for UBi1 in uniqs:
         UB1 = np.linalg.inv( UBi1 )
         UBIs+=[x for x in get_ubis( h1, h2, UB1, u )]
 
-print len(uniqs)
+print( len(uniqs))
 uniqs2 = make_uniq( UBIs)
-print len(uniqs2)
+print( len(uniqs2))
 
 # Now do that again for each uniq one:
 UBIs=[x for x in uniqs2]
@@ -114,7 +114,7 @@ for UBi1 in uniqs2:
         UB1 = np.linalg.inv( UBi1 )
         UBIs+=[x for x in get_ubis( h1, h2, UB1, u )]
 uniqs3 = make_uniq( UBIs)
-print len(uniqs3)
+print( len(uniqs3))
 
 
 # Now do that again for each uniq one:
@@ -131,7 +131,7 @@ for UBi1 in uniqs3:
         UB1 = np.linalg.inv( UBi1 )
         UBIs+=[x for x in get_ubis( h1, h2, UB1, u )]
 uniqs4 = make_uniq( UBIs)
-print len(uniqs4)
+print( len(uniqs4))
 
 
 uniqs= uniqs4
@@ -165,8 +165,8 @@ def doplot(ubi, col):
         XX=False
 for i,ubi in enumerate(uniqs[1:]):
     col = "%s+"%(colors[i%len(colors)])
-    print i,col
-    print ubi
+    print( i,col)
+    print( ubi)
     doplot( ubi, col )
 
 doplot( uniqs[0], "ko" )

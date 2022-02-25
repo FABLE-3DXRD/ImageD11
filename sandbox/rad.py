@@ -6,12 +6,16 @@ from ImageD11 import cImageD11
 from fabio.openimage import openimage
 print("Using class version")
 
+def smooth(y, window_len=25):
+    kernel = numpy.ones(window_len) / window_len
+    convolved = numpy.convolve(y, kernel, mode='same')
+    return convolved
 
 def clean(sinogram):
     s0 = sinogram.mean(axis=0)
     numpy.divide( sinogram, s0, sinogram)
     s1 = sinogram.mean(axis=1)
-    c =  s1 / smooth.smooth(s1,window_len=25)
+    c =  s1 / smooth(s1,window_len=25)
     return (sinogram.T/c).T
 
 

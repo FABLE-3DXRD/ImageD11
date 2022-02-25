@@ -177,7 +177,7 @@ class saintraw(object):
         Parse the saint documentation for the Bruker format
         """
         self.titles = []
-        title = None
+        title = help = format = None
         for line in self.doc.split("\n"):
             if len(line.rstrip()) == 0:
                 if title is not None:

@@ -55,20 +55,20 @@ def ferraris_and_ivaldi(ubi, tol = 0.001):
     Tolerance is for grouping vector lengths.
     """
     cpar = ubitocellpars(ubi)
-    cell = unitcell( cp )
+    cell = unitcell( cpar )
     dlim = cell.ds( np.array( [7,7,7] ))
-    u.makerings( dlim , tol)
+    cell.makerings( dlim , tol)
     mult = [ len(cell.ringhkls[d]) for d in cell.ringds ]
     mx = max(mult)
     mn = min(mult)
     cases = {
         (2,  2) : fi_triclinic,
         (4,  2) : fi_monoclinic,
-        (8,  2) : fi_orthorhombic,
-        (12, 2) : fi_rhombohedral,
-        (16, 2) : fi_tetragonal,
-        (24, 2) : fi_hexagonal,
-        (48, 2) : fi_cubic
+#        (8,  2) : fi_orthorhombic,
+#        (12, 2) : fi_rhombohedral,
+#        (16, 2) : fi_tetragonal,
+#        (24, 2) : fi_hexagonal,
+#        (48, 2) : fi_cubic
     }
 
 def vecang( v1, v2 ):

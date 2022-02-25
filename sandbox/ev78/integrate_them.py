@@ -43,9 +43,9 @@ def edffilenameseries(stem, first=None, last=None, glob=False, extn=".edf"):
     """
     if glob:
         import glob, os
-	files = glob.glob("%s*%s"%(stem,extn))
+        files = glob.glob("%s*%s"%(stem,extn))
         filesdone = glob.glob("%s*%s"%(stem,".dat"))
-	filesdone = [f.replace(".dat",extn) for f in filesdone]
+        filesdone = [f.replace(".dat",extn) for f in filesdone]
         for f in files:
             if f not in filesdone:
                 yield f
@@ -381,16 +381,6 @@ def check_pars( o ):
 
 
 
-
-def polstuff():
-    # Now look for the polarisation component
-    stth = numpy.sin(integrator.twoThetaArray(data.shape))
-    cchi = numpy.cos( integrator.chiArray(data.shape)*2 )
-    pfac = cchi*stth*stth
-    #print p.min(),p.max(),stth.min(),stth.max()
-    #numpy.divide( calcimage, p , calcimage )
-    t.bench("computed image")
-    poldifference = (data - calcimage)*mask*pfac
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 from ImageD11.columnfile import columnfile
+from pylab import plot
 c = columnfile("mainphase.flt")
 c.addcolumn(c.omega.copy(), "image_number")
 c.omega[:] = (c.image_number/147).astype(int)

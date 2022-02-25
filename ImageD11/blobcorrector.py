@@ -280,8 +280,8 @@ class eiger_spatial(object):
         assert self.dx.shape == self.dy.shape
         
     def __call__(self, pks):
-        si = np.round(pks['s_raw']).astype(int)
-        fi = np.round(pks['f_raw']).astype(int)
+        si = numpy.round(pks['s_raw']).astype(int)
+        fi = numpy.round(pks['f_raw']).astype(int)
         pks['fc'] = self.dx[ si, fi ] + pks['f_raw']
         pks['sc'] = self.dy[ si, fi ] + pks['s_raw']
         return pks

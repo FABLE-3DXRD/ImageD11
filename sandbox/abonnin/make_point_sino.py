@@ -1,7 +1,7 @@
 
 from __future__ import print_function
 
-import numpy as np
+import numpy as np, pylab as pl
 
 
 def read_log(fname):
