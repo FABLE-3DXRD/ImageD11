@@ -35,8 +35,8 @@ class Scan( object ):
     edges = which nodes are adjacent to this node
     """
     def __init__(self,
-                 nodes = None,    # type: List[]
-                 edges = None,    # type: List[[int,]]
+                 nodes = None,    # a List[]
+                 edges = None,    # a List[[int,]]
                  ):      
         """
         nodes = measurement points in the scan
@@ -96,9 +96,9 @@ class Scan( object ):
         node = scan point (Image, Omega, etc)
         node = integer
         """
-        if isinstance( i, int ):
-            return self.edges[i]
-        if isinstance( i, tuple): 
+        if isinstance( node, int ):
+            return self.edges[node]
+        if isinstance( node, tuple): 
             i = self.node_index[ node ]
             return self.edges[i]
         raise TypeError("node not understood, want tuple or int row index")
@@ -211,8 +211,8 @@ def mergeScans( scan1, scan2 ):
     n2 = len(scan2)
     # "+" joins lists:
     nodes = scan1.nodes + scan2.nodes
-    edges = scan1.edges + [ (i + n1, j + n1) for i,j in edges ]
-    return Scan( nodes, edge )
+    edges = scan1.edges + [ (i + n1, j + n1) for i,j in nodes ]
+    return Scan( nodes, edges )
     
 
 class Project( object ):
