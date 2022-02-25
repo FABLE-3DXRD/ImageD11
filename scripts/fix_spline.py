@@ -23,7 +23,8 @@ from __future__ import print_function
 
 
 from six.moves import input
-
+import sys, os
+    
 
 """
 Script for repairing use of incorrect spline file
@@ -45,7 +46,6 @@ def help():
 
 def mymain():
     # If we are running from a command line:
-    import sys, os
     inname = sys.argv[1]
     if not os.path.exists(inname) or len(sys.argv) < 4:
         help()

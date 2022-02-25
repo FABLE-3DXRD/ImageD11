@@ -344,7 +344,7 @@ def test(options):
     #sys.stdout.flush()
     #ubinew = go.reduce(go.UBIALL)
     #print "After reduction", len(ubinew)
-    go.UBIALL = ubinew
+    #go.UBIALL = ubinew
     go.slow_score()
     #from matplotlib.pylab import imshow, show
     #imshow(im)

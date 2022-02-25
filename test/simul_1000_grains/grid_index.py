@@ -1,4 +1,4 @@
-
+from __future__ import print_function
 from ImageD11 import peakmerge, indexing, transformer
 from ImageD11 import grain, unitcell, refinegrains
 import sys, os, numpy as np, time, random
@@ -92,7 +92,7 @@ def domap(  OmFloat,  OmSlop,
         o.scandata["internal"] = colfile
         o.tolerance = tol
         o.readubis( grainsfile )
-        if symmetry is not "triclinic":
+        if symmetry != "triclinic":
             o.makeuniq( symmetry )
         o.generate_grains()
         o.refinepositions()
@@ -104,10 +104,10 @@ def domap(  OmFloat,  OmSlop,
         gl = filter( lambda x: x.npks > NPKS, o.grains.values() )
         sys.stdout = ss
         if len(gl) == 0:
-            print "I killed all your grains!"
+            print( "I killed all your grains!")
             break
         else:
-            print "Keeping",len(gl),"from",len(o.grains.values()),"grains with at least",NPKS,"peaks",tol
+            print( "Keeping",len(gl),"from",len(o.grains.values()),"grains with at least",NPKS,"peaks",tol)
             grain.write_grain_file( grainsfile ,  gl )
     # re-assign after last filter
     fit(tol)
@@ -193,7 +193,7 @@ for t_x, t_y, t_z in translations:
     if first:
         first=False
     ng = doindex(gve, t_x,t_y,t_z, w)
-    print "Position",t_x, t_y, t_z,"Grains", ng,
+    print ("Position",t_x, t_y, t_z,"Grains", ng,end=' ')
     ticker.tick()
     if ng > 0:
         #ret = os.system("makemap.py -u %s.ubi -U %s.map -s cubic --omega_slop=0.13 "%(tmp,tmp) +
@@ -211,10 +211,10 @@ for t_x, t_y, t_z in translations:
             totalgrains += nfit
         ticker.tick()
     if  mytransformer.colfile.nrows == 0:
-        print "All peaks indexed"
+        print ("All peaks indexed")
         break
     else:
-        print "still got",mytransformer.colfile.nrows," to index, found",totalgrains,"in total"
+        print ("still got",mytransformer.colfile.nrows," to index, found",totalgrains,"in total")
             
         
 

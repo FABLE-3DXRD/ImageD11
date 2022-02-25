@@ -167,8 +167,8 @@ class sparse_frame( object ):
                                    dtype=px.dtype,
                                    **opts ) 
             group[pxname][:] = px
-            if pxname in self.meta:
-                group[pxname].attrs = dict( self.meta[pxname] )
+            if pxname in frame.meta:
+                group[pxname].attrs = dict( frame.meta[pxname] )
 
 
 class SparseScan( object ):

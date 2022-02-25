@@ -6,7 +6,7 @@ import numpy as np
 
 ideal = read_grain_file("ideal.map")
 
-fnames = "allgrid_fittrans.map allgrid_indexer.map allgrid_makemap.map allgrid_teo.map".split()
+fnames = "f2.map allgrid_fittrans.map allgrid_indexer.map allgrid_makemap.map allgrid_teo.map".split()
 #fnames = "teo.map",
 
 def check(gl1, gl2):

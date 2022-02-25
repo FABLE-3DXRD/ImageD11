@@ -84,4 +84,4 @@ for iy in range(0,len(dtys), 31):
         else:
             print('debug please')
             print(fab.shape,fab)
-            print(h5v.shape,h5e)
+            print(h5v.shape,h5v)

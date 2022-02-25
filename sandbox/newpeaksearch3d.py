@@ -169,7 +169,7 @@ def dict_to_colfile( c ):
     colf.set_bigarray( [ c[t] for t in titles ] )
     return colf
 
-
+# /data/id11/jon/inhouse/jon/mar10/segment2d
 hdffile = "fe3o4_peaks.hdf"
 folder = "entry"
 parfile = "avg.par"

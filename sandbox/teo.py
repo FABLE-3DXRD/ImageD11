@@ -224,7 +224,7 @@ class SVDLSQ(object):
             errmat = np.linalg.inv( lsqmat )
             print(solution)
             print(errmat)
-            print(svderrmat)
+#            print(errmat)
             assert np.allclose( self.errmat, errmat )
         self.esds = np.sqrt( np.diag( self.errmat ) )
         self.condition = s.max() / s.min() # sqrt ?

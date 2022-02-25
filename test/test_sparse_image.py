@@ -234,21 +234,6 @@ class test_sparse_connected_pixels( unittest.TestCase ):
         testcase = (sls == sl).all()
         print("\nsparse_connectedpixels       %.3f ms"%(1e3*(s1-s0)),
               "\nsparse_connectedpixels_splat %.3f ms"%(1e3*(s3-s2)))
-        if ~testcase:
-            import pylab as pl
-            pl.ioff()
-            pl.figure()
-            pl.subplot(311)
-            pl.title("t=%f"%(self.threshold))
-            pl.imshow( dl, interpolation='nearest')
-            pl.colorbar()
-            pl.subplot(312)
-            pl.imshow( sld.todense(), interpolation='nearest')
-            pl.colorbar()
-            pl.subplot(313)
-            pl.imshow( sld.todense() - dl, interpolation='nearest')
-            pl.colorbar()
-            pl.show()
         self.assertTrue( testcase )
         
 class test_sparse_connected_pixels_overlapim1(test_sparse_connected_pixels):

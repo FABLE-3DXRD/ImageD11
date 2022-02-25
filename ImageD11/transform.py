@@ -216,7 +216,7 @@ def sinth2_sqrt_deriv(xyz):
     x,y,z = xyz
     R = z*z + y*y
     Q = R + x*x
-    SQ = sqrt(Q)
+    SQ = np.sqrt(Q)
     R2 = R/2
     # at x==y==0 this is undefined. ac
     rQ_xSQ = 1/(Q + x*SQ)
@@ -686,9 +686,10 @@ class PixelLUT( object ):
             self.sc = slow + self.ds
             self.fc = fast + self.df
         elif 'spline' in pars: # need to test this...
+            from ImageD11 import blobcorrector
             b = blobcorrector.correctorclass( self.pars['spline'] )
             s = int(b.ymax - b.ymin), int(b.xmax - b.xmin)
-            if shape in self.pars:      # override. Probabl
+            if 'shape' in self.pars:      # override. Probabl
                 s = self.pars['shape'] 
             self.shape = s
             self.fc, self.sc = b.make_pixel_lut( s ) 

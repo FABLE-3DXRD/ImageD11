@@ -1,3 +1,4 @@
+from __future__ import print_function
 from ImageD11.indexing import readubis
 from ImageD11.transform import uncompute_g_vectors
 from ImageD11 import unitcell
@@ -18,11 +19,11 @@ wvln = 12.3985 / energy
 ng = 0
 for g, ubi in zip(gcalc, ul):
     ng +=1
-    print "# Grain",ng, "\n# Energy",energy,"keV, wavelength %.5f"%(wvln)
+    print ("# Grain",ng, "\n# Energy",energy,"keV, wavelength %.5f"%(wvln))
     tth, eta, omega = uncompute_g_vectors( g.T, wvln )
     order = np.argsort(tth)
     # hkls = np.dot( ubi, g.T).T
-    print "#   h    k    l   tth     eta    omega"
+    print ("#   h    k    l   tth     eta    omega")
     for j in range(len(order)):
         i = order[j]
         for s in (0,1):
@@ -31,7 +32,7 @@ for g, ubi in zip(gcalc, ul):
                     abs(eta[s][i])< 45 and not unitcell.F(h,k,l):
 
                 
-                print (" %4d"*3 + " %7.2f"*3) % tuple([h,k,l,
+                print ((" %4d"*3 + " %7.2f"*3) % tuple([h,k,l,
                         tth[i],
-                        eta[s][i], omega[s][i]])
-    print
+                        eta[s][i], omega[s][i]]))
+    print()

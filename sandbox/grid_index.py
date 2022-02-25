@@ -91,7 +91,7 @@ def domap(  OmFloat,  OmSlop,
         o.scandata["internal"] = colfile
         o.tolerance = tol
         o.readubis( grainsfile )
-        if symmetry is not "triclinic":
+        if symmetry != "triclinic":
             o.makeuniq( symmetry )
         o.generate_grains()
         o.refinepositions()

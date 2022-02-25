@@ -18,9 +18,9 @@ class PeaksTableModel(QAbstractTableModel):
     """Model class that drives the population of tabular display"""
     def __init__(self):
         super(PeaksTableModel,self).__init__()
-	start = time.time()
-	self.colfile = columnfile( sys.argv[1] )
-	print time.time()-start
+        start = time.time()
+        self.colfile = columnfile( sys.argv[1] )
+        print( time.time()-start)
  
     def rowCount(self,index=QModelIndex()):
         return self.colfile.nrows
@@ -35,8 +35,8 @@ class PeaksTableModel(QAbstractTableModel):
  
     def data(self,index,role=Qt.DisplayRole):
         if role == Qt.DisplayRole:
-		return QVariant( float(self.colfile.bigarray[ index.column(), index.row()] ))
-	else:
+            return QVariant( float(self.colfile.bigarray[ index.column(), index.row()] ))
+        else:
             return QVariant()
  
     def headerData(self,section,orientation,role=Qt.DisplayRole):
