@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 import glob, sys
 import numpy as np
 from ImageD11 import grain, sym_u
