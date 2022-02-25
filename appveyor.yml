@@ -16,8 +16,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda info -a
   - python -m pip install --upgrade pip setuptools
-  - python -m pip install pytest numpy
-  - python -m pip install --ignore-installed certifi --upgrade-strategy only-if-needed --only-binary=h5py --editable .
+  - python -m pip install --no-use-pep517 --ignore-installed certifi --upgrade-strategy only-if-needed --only-binary=h5py --editable .
 
 
 test_script:
