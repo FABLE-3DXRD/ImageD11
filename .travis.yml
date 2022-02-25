@@ -6,11 +6,10 @@ jobs:
     - name: "Python 3.7.4 on macOS"
       os: osx
       osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
-      language: shell       # 'language: python' is an error on Travis CI macOS
+      language: shell       # 'language: python' is an error on Travis CI macOS, could be generic
 install: 
-  - pip3 install --upgrade pip setuptools  # all three OSes agree about 'pip3'
-  - pip3 install pytest numpy
-  - pip3 install --editable .
+  - python3 -m pip install --upgrade pip setuptools  
+  - python3 -m pip install --no-use-pep517 --editable .
 # 'python3' is a 'command not found' error on Windows but 'py' works on Windows only
 script: 
   - OMP_NUM_THREADS=2 python3 -m pytest

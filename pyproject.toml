@@ -1,3 +1,8 @@
 [build-system]
 requires = ["setuptools", "six", "wheel", "numpy"]
-build-backend = "setuptools.build_meta"
+#
+# We can't use this build-backend with --editable
+#      https://github.com/pypa/pip/issues/6375
+# ... which needs:
+#   python -m pip install --no-use-pep517 --editable
+# build-backend = "setuptools.build_meta"

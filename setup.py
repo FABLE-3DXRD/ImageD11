@@ -142,12 +142,13 @@ useful = [   # stuff you probably want, and should be able to get easily
     "scipy",       #
     'h5py',
     'pyyaml',
+    "pytest",       # for the CI
 ]
 
 
 more = [
     # Used in sandbox / test / not completely essential, but should work for CI
-    "pytest",
+
     'numba==0.46.0 ; python_version < "3" ',       # for some test cases
     'numba ; python_version > "3" ',               # for some test cases
     "pillow",      # in sandbox
