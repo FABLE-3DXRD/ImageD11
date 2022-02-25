@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 
 """ Does segmentation from a master file to produce an _sparse.h5 with
 segmented images in it """
