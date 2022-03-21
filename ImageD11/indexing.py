@@ -908,7 +908,7 @@ class indexer:
         # we only use peaks assigned to rings for scoring here
         # already done in making gvflat in assigntorings
         try:
-            npk = cImageD11.score_and_assign( UBI, self.gvflat, tol, drlv2, labels, 1 )
+            npk = cImageD11.score_and_assign( UBI, self.gv, tol, drlv2, labels, 1 )
         except:
            print(self.gvflat.shape)
            print('ra',self.ra.shape)
