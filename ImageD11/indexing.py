@@ -678,7 +678,7 @@ class indexer:
                         self.unitell.UBIlist[k] = ubi_fit_2pks( self.unitell.UBIlist[k],
                                                                 self.gv[i,:], self.gv[j,:])
                 if len(self.unitcell.UBIlist) > 1:
-                    npks=[cImageD11.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist]
+                    npks=[self.score(UBItest, tol) for UBItest in self.unitcell.UBIlist]
                     choice = np.argmax(npks)
                     if npks[choice] >= npk:
                         UBI = self.unitcell.UBIlist[choice].copy()
@@ -908,7 +908,7 @@ class indexer:
         # we only use peaks assigned to rings for scoring here
         # already done in making gvflat in assigntorings
         try:
-            npk = cImageD11.score_and_assign( UBI, self.gvflat, tol, drlv2, labels, 1 )
+            npk = cImageD11.score_and_assign( UBI, self.gv, tol, drlv2, labels, 1 )
         except:
            print(self.gvflat.shape)
            print('ra',self.ra.shape)
@@ -924,9 +924,9 @@ class indexer:
         Decide which are the best orientation matrices
         """
         if tol is None:
-            return cImageD11.score(UBI,self.gvflat,self.hkl_tol)
+            return cImageD11.score(UBI,self.gv,self.hkl_tol)
         else:
-            return cImageD11.score(UBI,self.gvflat,tol)
+            return cImageD11.score(UBI,self.gv,tol)
 
     def refine(self,UBI):
         """
@@ -1094,6 +1094,7 @@ class indexer:
         self.ga=np.zeros(len(self.ds),np.int32)-1 # Grain assignments
 
         self.gvflat=np.ascontiguousarray(self.gv,float)
+        self.gv = self.gvflat.copy()
         # Makes it contiguous in memory, hkl fast index
         if not quiet:
             print("Read your gv file containing",self.gv.shape)
