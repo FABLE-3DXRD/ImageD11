@@ -284,6 +284,8 @@ def grid_index_parallel( fltfile, parfile, tmp, gridpars, translations ):
         NPR = int(gridpars['NPROC'])
     if 'NTHREAD' in gridpars:
         cImageD11.cimaged11_omp_set_num_threads(int(gridpars['NTHREAD']))
+    elif NPR > 1:
+        cImageD11.cimaged11_omp_set_num_threads(1)
     tsplit = [ translations[i::NPR] for i in range(NPR) ]
     args = [("%s.flt"%(tmp), parfile, t, gridpars) for i,t in enumerate(tsplit) ]
     q = PQueue()
