@@ -28,7 +28,7 @@ import math, time, sys
 
 loglevel = 1
 
-class clogging(object): # because multiprocessing. FIXME. object level logging rather than module ? 
+class clogging(object): # because multiprocessing. FIXME. object level logging rather than module ?
     def log(self, *args):
         print(" ".join(str(a) for a in args))
     def debug(self, *args):
@@ -243,7 +243,7 @@ def refine(UBI, gv, tol, quiet=True):
             logging.debug("after %.8f %5d"%(fitlastrefined,contribs.shape[0]))
     except:
         logging.error("\n\n\n")
-        logging.error("No contributing reflections for %s\n",str(UBI))
+        logging.error("No contributing reflections for %s\n"%(str(UBI)))
         logging.error("After refinement, it was OK before ???")
         logging.error("\n\n\n")
         return UBI
@@ -294,7 +294,7 @@ class indexer:
         self.gv=gv
         self.ra = None
         if gv is not None: # do init
-            logging.info('gv: %s %s %s', str(gv), str(gv.shape), str(gv.dtype))
+            logging.info('gv: %s %s %s'%( str(gv), str(gv.shape), str(gv.dtype)))
             assert gv.shape[1] == 3
             self.gv = gv.astype( np.float )
             self.ds = np.sqrt( (gv*gv).sum(axis=1) )
@@ -329,10 +329,10 @@ class indexer:
         # stackoverflow.com/questions/4866587/pythonic-way-to-reset-an-objects-variables
         import copy
         self.__pristine_dict = copy.deepcopy( self.__dict__ )
-        
+
     def __getattr__(self, name):
-        """ got some time lost setting tol which does not exist 
-        
+        """ got some time lost setting tol which does not exist
+
         this will never be clean :-(
         """
         if name  == 'tol':
@@ -384,7 +384,7 @@ class indexer:
         """
         # rings are in self.unitcell
         limit = np.amax( self.ds )
-        logging.info("Assign to rings, maximum d-spacing considered",limit)
+        logging.info("Assign to rings, maximum d-spacing considered: %f"%(limit))
         self.unitcell.makerings(limit, tol = self.ds_tol)
         dsr = self.unitcell.ringds
         # npks
@@ -530,8 +530,8 @@ class indexer:
         hkls1 = self.unitcell.ringhkls[self.unitcell.ringds[int(self.ring_1)]]
         hkls2 = self.unitcell.ringhkls[self.unitcell.ringds[int(self.ring_2)]]
         logging.info("hkls of rings being used for indexing")
-        logging.info("Ring 1: %s",str(hkls1))
-        logging.info("Ring 2: %s",str(hkls2))
+        logging.info("Ring 1: %s"%(str(hkls1)))
+        logging.info("Ring 2: %s"%(str(hkls2)))
         cosangles=[]
         for h1 in hkls1:
             for h2 in hkls2:
@@ -553,9 +553,9 @@ class indexer:
             logging.info("%.6f %.6f"%(math.acos(c)*180/math.pi,c))
         #
         #
-        logging.info("Number of peaks in ring 1: %d",len(i1))
-        logging.info("Number of peaks in ring 2: %d",len(i2))
-        logging.info("Minimum number of peaks to identify a grain %d",self.minpks)
+        logging.info("Number of peaks in ring 1: %d"%(len(i1)))
+        logging.info("Number of peaks in ring 2: %d"%(len(i2)))
+        logging.info("Minimum number of peaks to identify a grain %d"%(self.minpks))
         # print self.gv.shape
         # ntry=0
         # nhits=0
@@ -598,8 +598,8 @@ class indexer:
                     candidates = np.compress( abs(diff) < mtol, i2 )
                     for c in candidates:
                         hits.append( [ 0.0, i1[i], c ] )
-        logging.info("Number of trial orientations generated %d",len(hits))
-        logging.info("Time taken %.6f /s",time.time()-start)
+        logging.info("Number of trial orientations generated %d"%(len(hits)))
+        logging.info("Time taken %.6f /s"%(time.time()-start))
         self.hits=hits
 
     def histogram_drlv_fit(self,UBI=None,bins=None):
@@ -641,9 +641,12 @@ class indexer:
         tol=float(self.hkl_tol)
         gv=self.gvflat
         all=len(self.hits)
-        logging.info("Scoring %d potential orientations",all)
+        logging.info("Scoring %d potential orientations"%(all))
         progress=0
         nuniq=0
+        # for getind mallocs
+        drlv2tmp = np.empty( len(self.gv), float )
+        labelstmp = np.empty( len(self.gv), np.int32 )
         while len(self.hits) > 0 and ng < self.max_grains:
             diff,i,j = self.hits.pop()
             if self.ga[i]>-1 or self.ga[j]>-1 or i==j:
@@ -663,7 +666,8 @@ class indexer:
                 raise
             if fitb4: # FIXME : this does not work
                self.unitcell.UBI = ubi_fit_2pks( self.unitell.UBI, self.gv[i,:], self.gv[j,:])
-            npk = cImageD11.score(self.unitcell.UBI,gv,tol)
+            #npk = cImageD11.score(self.unitcell.UBI,gv,tol)
+            npk = self.score(self.unitcell.UBI,tol)
             UBI = self.unitcell.UBI.copy()
             if npk > self.minpks:
                 # Try to get a better orientation if we can...:
@@ -673,44 +677,44 @@ class indexer:
                    for k in range( len(self.unitell.UBIlist) ):
                         self.unitell.UBIlist[k] = ubi_fit_2pks( self.unitell.UBIlist[k],
                                                                 self.gv[i,:], self.gv[j,:])
-                npks=[cImageD11.score(UBItest,gv,tol) for UBItest in self.unitcell.UBIlist]
-                if len(npks) > 0: # if it fails we are keeping quiet...
+                if len(self.unitcell.UBIlist) > 1:
+                    npks=[self.score(UBItest, tol) for UBItest in self.unitcell.UBIlist]
                     choice = np.argmax(npks)
                     if npks[choice] >= npk:
                         UBI = self.unitcell.UBIlist[choice].copy()
                         npk = npks[choice]
-                    else:
-                        self.index_needs_debug += 1
-                else:
-                    self.index_needs_debug += 1
                 _ = cImageD11.score_and_refine( UBI, gv, tol )
                 # See if we already have this grain...
                 try:
-                    ind=self.getind(UBI) # indices of peaks indexed
+                    ind=self.getind(UBI,
+                                    drlv2tmp=drlv2tmp,
+                                    labelstmp=labelstmp,
+                                    ) # indices of peaks indexed
                     ga=self.ga[ind]  # previous grain assignments
                     uniqueness=np.sum(np.where(ga==-1,1,0))*1.0/ga.shape[0]
                     if uniqueness > self.uniqueness:
-                        np.put(self.ga, ind, len(self.scores)+1)
+                        self.ga[ind] = len(self.scores)+1
                         self.ubis.append(UBI)
                         self.scores.append(npk)
-                        logging.info("new grain %d pks, i %d j %d UBI %s",npk,i,j,str(UBI.ravel()))
+                        ubistr = (" %.6f"*9)%tuple(UBI.ravel())
+                        logging.info("new grain %d pks, i %d j %d UBI %s"%(npk,i,j,ubistr))
                         ng=ng+1
                     else:
                         nuniq=nuniq+1
                 except:
                     raise
 
-        logging.info("Number of orientations with more than %d peaks is %d",self.minpks,len(self.ubis))
-        logging.info("Time taken %.3f/s",time.time()-start)
+        logging.info("Number of orientations with more than %d peaks is %d"%(self.minpks,len(self.ubis)))
+        logging.info("Time taken %.3f/s"%(time.time()-start))
         if len(self.ubis)>0:
             bestfitting=np.argmax(self.scores)
-            logging.info("UBI for best fitting\n%s",str(self.ubis[bestfitting]))
-            logging.info("Unit cell: %s\n",str(ubitocellpars(self.ubis[bestfitting])))
+            logging.info("UBI for best fitting\n%s"%(str(self.ubis[bestfitting])))
+            logging.info("Unit cell: %s\n"%(str(ubitocellpars(self.ubis[bestfitting]))))
             self.refine( self.ubis[bestfitting] )
-            logging.info("Indexes %d peaks, with <drlv2>=%f",self.scorelastrefined,self.fitlastrefined)
+            logging.info("Indexes %d peaks, with <drlv2>=%f"%(self.scorelastrefined,self.fitlastrefined))
             logging.info("That was the best thing I found so far")
             notaccountedfor =  ((self.ga < 0) & (self.ra >= 0)).sum()
-            logging.info("Number of peaks assigned to rings but not indexed = %d", notaccountedfor)
+            logging.info("Number of peaks assigned to rings but not indexed = %d"%( notaccountedfor))
         else:
             logging.info("Try again, either with larger tolerance or fewer minimum peaks")
 
@@ -884,19 +888,27 @@ class indexer:
 
 
 
-    def getind(self,UBI,tol=None):
+    def getind(self,UBI,tol=None, drlv2tmp=None, labelstmp=None):
         """
         Returns the indices of peaks in self.gv indexed by matrix UBI
         """
         if tol == None:
             tol = self.hkl_tol
         ng = len(self.gvflat)
-        drlv2 = np.ones( ng , float)
-        labels = np.full( ng , 0, np.int32)
+        if drlv2tmp is None:
+            drlv2 = np.ones( ng , float)
+        else:
+            drlv2 = drlv2tmp
+            drlv2[:] = 1
+        if labelstmp is None:
+            labels = np.zeros( ng, np.int32 )
+        else:
+            labels = labelstmp
+            labels[:] = 0
         # we only use peaks assigned to rings for scoring here
         # already done in making gvflat in assigntorings
         try:
-           npk = cImageD11.score_and_assign( UBI, self.gvflat, tol, drlv2, labels, 1 )
+            npk = cImageD11.score_and_assign( UBI, self.gv, tol, drlv2, labels, 1 )
         except:
            print(self.gvflat.shape)
            print('ra',self.ra.shape)
@@ -904,8 +916,7 @@ class indexer:
            print(labels.shape)
            print("logic error in getind")
            raise
-        ind = np.compress( labels , np.arange(ng,dtype=int) )
-        return ind
+        return labels == 1
 
 
     def score(self,UBI,tol=None):
@@ -913,9 +924,9 @@ class indexer:
         Decide which are the best orientation matrices
         """
         if tol is None:
-            return cImageD11.score(UBI,self.gvflat,self.hkl_tol)
+            return cImageD11.score(UBI,self.gv,self.hkl_tol)
         else:
-            return cImageD11.score(UBI,self.gvflat,tol)
+            return cImageD11.score(UBI,self.gv,tol)
 
     def refine(self,UBI):
         """
@@ -1033,8 +1044,8 @@ class indexer:
         self.yp=[]
         self.omega_ranges=[]
         self.omega_fullrange = 0
-        for line in f.readlines():
-            try:
+        try:
+            for line in f.readlines():
                 v=[float(x) for x in line.split()]
                 if len(v) == 0:
                     # Skip the blank lines
@@ -1049,19 +1060,22 @@ class indexer:
                 self.ds.append(v[5])
                 self.eta.append(v[6])
                 self.omega.append(v[7])
-            except:
-                print("LINE:",line)
-                raise
+        except:
+            print("LINE:",line)
+            raise
 #            raise "Problem interpreting the last thing I printed"
         f.close()
         self.ds = np.array( self.ds )
-        self.omega_ranges.append(int(round(min(self.omega))))
-        sorted_omega = sorted(self.omega)
+        self.omega = np.array( self.omega )
+        sorted_omega = np.unique( np.round( self.omega.copy() ).astype(int) )
+        sorted_omega.sort()
+        self.omega_ranges.append( sorted_omega[0] )
+        domega = sorted_omega[1:] - sorted_omega[:-1]
         for i in range(len(sorted_omega)-1):
             if sorted_omega[i+1]-sorted_omega[i] > 10:
-                self.omega_ranges.append(int(round(sorted_omega[i])))
-                self.omega_ranges.append(int(round(sorted_omega[i+1])))
-        self.omega_ranges.append(int(round(max(self.omega))))
+                self.omega_ranges.append(sorted_omega[i])
+                self.omega_ranges.append(sorted_omega[i+1])
+        self.omega_ranges.append(sorted_omega[-1])
         if not quiet:
             print('\nGot %d sets of omega values from gv file:'%(len(self.omega_ranges)/2))
         for i in range(len(self.omega_ranges)//2): # integer division intended here
@@ -1080,6 +1094,7 @@ class indexer:
         self.ga=np.zeros(len(self.ds),np.int32)-1 # Grain assignments
 
         self.gvflat=np.ascontiguousarray(self.gv,float)
+        self.gv = self.gvflat.copy()
         # Makes it contiguous in memory, hkl fast index
         if not quiet:
             print("Read your gv file containing",self.gv.shape)
