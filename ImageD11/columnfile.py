@@ -557,8 +557,8 @@ try:
         else:
             groups = [g for g in groups 
                                 if 'ImageD11_type' in h[g].attrs and 
-                                   h[g].attrs['ImageD11_type'] == 'peaks' ]
-            assert len(groups) == 1, "Your hdf file has many groups. Which one??"
+                                   h[g].attrs['ImageD11_type'] in ('peaks', b'peaks') ]
+            assert len(groups) == 1, "Your hdf file has many groups. Which one??"+str(groups)
             g = h[groups[0]]
             name = groups[0]
         if hasattr(g, 'listnames'):

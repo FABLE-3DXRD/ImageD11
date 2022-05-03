@@ -227,13 +227,15 @@ class SparseScan( object ):
                     self.col[ s : e ],
                     threshold,
                     self.labels[ s : e ] )
-                assert (self.labels[ s : e ] > 0).all()
-                self.labels[ s : e ] += nl
+                # zero label is the background!
+                self.labels[ s : e ] = np.where( self.labels[ s : e ] > 0, 
+                                                 self.labels[ s : e ] + nl, 0 )
             else:
                 self.nlabels[i] = 0
             nl += self.nlabels[i]
         self.total_labels = nl
-                
+
+          
     def lmlabel(self, threshold = 0 ):
         """ Label pixels using the localmax assigment code
         Fills in:
@@ -272,24 +274,25 @@ class SparseScan( object ):
         returns a columnfile
         """
         pks = {}
+        i32 = self.intensity.astype(np.float32)
         pks['Number_of_pixels'] = np.bincount(self.labels, 
                                               weights=None,
                                               minlength = self.total_labels+1 )[1:]
         pks['sum_intensity'] = np.bincount(self.labels, 
-                                           weights=self.intensity,
+                                           weights=i32,
                                            minlength = self.total_labels+1 )[1:]
         pks['s_raw'] = np.bincount(self.labels,
-                                   weights=self.intensity*self.row,
+                                   weights=i32*self.row,
                                    minlength = self.total_labels+1 )[1:]
         pks['s_raw'] /= pks['sum_intensity']
         pks['f_raw'] = np.bincount(self.labels,
-                                   weights=self.intensity*self.col,
+                                   weights=i32*self.col,
                                    minlength = self.total_labels+1 )[1:]
         pks['f_raw'] /= pks['sum_intensity']
         for name in 'omega','dty':
             if name in self.motors:
                 pks[name] = np.bincount(self.labels,
-                           weights=self.intensity*self.motors[name][self.frame],
+                           weights=i32*self.motors[name][self.frame],
                            minlength = self.total_labels+1 )[1:]
                 pks[name] /= pks['sum_intensity']
         return pks
