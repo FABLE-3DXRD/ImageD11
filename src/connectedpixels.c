@@ -321,6 +321,7 @@ int bloboverlaps(int32_t *b1, int32_t n1, double *res1, int32_t *b2, int32_t n2,
                 return 0;
             }
             dset_makeunion(link, p2, p1 + n2 + 1);
+            if (verbose>10) printf( "link %d %d\n",p2, p1+n2+1 );
         }
     }
     if (verbose)
@@ -335,6 +336,7 @@ int bloboverlaps(int32_t *b1, int32_t n1, double *res1, int32_t *b2, int32_t n2,
                 /* Bounds checking */
                 boundscheck(jpk, n2, ipk, n1);
                 merge(&res2[NPROPERTY * jpk], &res1[NPROPERTY * ipk]);
+                if (verbose>10) printf( "merged res2[%d] res1[%d]\n", jpk, ipk );
                 continue;
             }
             if ((i > n2 + 1) &&
@@ -344,6 +346,7 @@ int bloboverlaps(int32_t *b1, int32_t n1, double *res1, int32_t *b2, int32_t n2,
                 boundscheck(jpk, n1, ipk, n1);
                 assert((n1 > jpk) && (jpk >= 0) && (n1 > ipk) && (ipk >= 0));
                 merge(&res1[NPROPERTY * jpk], &res1[NPROPERTY * ipk]);
+                if (verbose>10) printf( "merge res1[%d] res1[%d]\n", jpk, ipk );
                 continue;
             }
             if (i < n2 + 1 && j < n2 + 1) { /* linking on the same image (2) */
@@ -351,6 +354,7 @@ int bloboverlaps(int32_t *b1, int32_t n1, double *res1, int32_t *b2, int32_t n2,
                 ipk = i - 1;
                 boundscheck(jpk, n2, ipk, n2);
                 merge(&res2[NPROPERTY * jpk], &res2[NPROPERTY * ipk]);
+                if (verbose>10) printf( "merge res2[%d] res2[%d]\n", jpk, ipk );
                 continue;
             }
             assert("I am not here!");
@@ -370,7 +374,7 @@ int bloboverlaps(int32_t *b1, int32_t n1, double *res1, int32_t *b2, int32_t n2,
     /* Make each T[i] contain the unique ascending integer for the set */
     if (verbose)
         printf("Compress set\n");
-    T = (int *)(malloc((n2 + 3) * sizeof(int32_t)));
+    T = (int32_t *)(calloc((n2 + 3) , sizeof(int32_t)));
     assert(T != NULL);
 
     npk = 0;
@@ -385,7 +389,8 @@ int bloboverlaps(int32_t *b1, int32_t n1, double *res1, int32_t *b2, int32_t n2,
         }
     }
     if (verbose) {
-        for (i = 0; i < 10; i++)
+        printf("n1 = %d n2 = %d ",n1,n2);
+        for (i = 0; i < n2+3; i++)
             printf("T[%d]=%d ", i, T[i]);
     }
     /* T is now compressed, merge the peaks */
