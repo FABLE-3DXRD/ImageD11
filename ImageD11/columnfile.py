@@ -507,6 +507,8 @@ try:
             # print "adding",t,ty
             dat = getattr(c, t).astype( ty )
             if t in list(g.keys()):
+                if g[t].shape != dat.shape:
+                    g[t].resize( dat.shape )
                 g[t][:] = dat
             else:
                 g.create_dataset( t, data = dat,
