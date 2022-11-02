@@ -447,6 +447,60 @@ void sparse_blob2Dproperties(float *restrict data, uint16_t *restrict i,
     }
 }
 
+
+/* F2PY_WRAPPER_START
+    subroutine sparse_smooth( v, i, j, nnz, s)
+        intent(c) sparse_smooth
+!DOC sparse_smooth smooths data in coo format. Workaround for avoiding
+!DOC equal pixels on peak tails for localmaxlabel
+!DOC single threaded
+        intent(c)
+        real, intent(in), dimension(nnz) :: v
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(v) :: nnz = shape( v, 0)
+        real, intent(inout) :: s( nnz )
+        threadsafe
+    end subroutine sparse_smooth
+F2PY_WRAPPER_END */
+#define CHECKSANITY 0
+void sparse_smooth(float *restrict v,    // input image
+                  uint16_t *restrict i, // indices
+                  uint16_t *restrict j, 
+                  int nnz,              // bounds
+                  float *restrict s ) {   // smoothed output
+    int k, di, dj, r, prow, p;
+    float m;
+    m = 1.0/16.0;
+    /* First make a copy */
+    for( k = 0; k<nnz; k++){
+        s[k] = v[k]*m;
+    }
+    /*   2 1 2   == distance. 3-x:   1 2 1
+         1 0 1                       2 3 2
+         2 1 2                       1 2 1  total = 15
+         */
+    prow = 0;
+    for (k = 0; k < nnz; k++) {
+        while (i[prow] < (i[k]-1) ) {
+            prow++; /* find this row */
+        }
+        p = prow;
+        while (i[p] <= (i[k] + 1)){
+            di = i[p] - i[k];
+            dj = j[p] - j[k];
+            r = di*di + dj*dj;    //  # 1 or 1+1 for neighbors
+            if (r < 3){
+                s[k] += v[p] * ( m * (float)(3-r) );
+                }
+            p++;
+            if ( p == nnz) break;
+        }
+    }
+}
+
+
+
 /* F2PY_WRAPPER_START
     function sparse_localmaxlabel( v, i, j, nnz, MV, iMV, labels)
         intent(c) sparse_localmaxlabel
@@ -473,7 +527,7 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
                          int32_t *restrict iMV,   // Which neighbor is higher?
                          int32_t *restrict labels // Which neighbor is higher?
 ) {
-    int k, p, pp, ir;
+    int k, p, pp, ir, prow;
     /* Read k = kurrent
        p = prev */
     if (NOISY) {
@@ -483,6 +537,7 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
         }
     }
     /* prev row */
+    prow = 0;
     pp = 0;
     p = 0;
     /* First pixel -  we assume it is a max, it will be stolen later
@@ -496,12 +551,14 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
         /* previous row first */
         ir = ((int)i[k]) - 1;
         /* pp should be on row above, on or after j-1 */
+        pp = prow;
         while (ir > i[pp]) {
             pp++;
             if (CHECKSANITY) {
                 assert((pp >= 0) && (pp < nnz));
             }
         }
+        prow = pp; /* save for the next loop */
         /* skip if nothing on row above */
         if (i[pp] < i[k]) {
             /* Locate previous pixel on row above */

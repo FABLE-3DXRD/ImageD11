@@ -188,9 +188,9 @@ class SparseScan( object ):
         """
         with h5py.File(hname,"r") as hin:
             grp = hin[scan]
-            self.shape = ( int(v) for v in ( grp.attrs['nframes'], 
-                                            grp.attrs['shape0'], 
-                                            grp.attrs['shape1'] ) )
+            self.shape = tuple( [ int(v) for v in ( grp.attrs['nframes'], 
+                                                    grp.attrs['shape0'], 
+                                                    grp.attrs['shape1'] ) ] )
             self.motors = {}
             for name, motors in [ ('omega',self.omeganames),
                                   ('dty',self.dtynames) ]:
@@ -201,17 +201,31 @@ class SparseScan( object ):
                 
             self.nnz = grp['nnz'][:]
             self.ipt = np.concatenate( ( (0,) , np.cumsum(self.nnz, dtype=int) ) )
-            self.frame  = grp['frame'][:]
+            if 'frame' in grp:
+                self.frame  = grp['frame'][:]
             self.row = grp['row'][:]
             self.col = grp['col'][:]
             self.intensity = grp['intensity'][:]
             
-    def cplabel(self, threshold = 0 ):
+    def getframe(self, i):
+        # (self, row, col, shape, itype=np.uint16, pixels=None):
+        s = self.ipt[i]
+        e = self.ipt[i+1]
+        return  sparse_frame( self.row[ s: e],
+                      self.col[ s: e],
+                      self.shape[1:],
+                      pixels = { 'intensity': self.intensity[ s: e] } )
+        
+            
+    def cplabel(self, threshold = 0, countall=True ):
         """ Label pixels using the connectedpixels assigment code
         Fills in:
            self.nlabels = number of peaks per frame
            self.labels  = peak labels (should be unique)
            self.total_labels = total number of peaks
+           
+        if countall == True : labels all peaks from zero
+                    == False : labels from 1 on each frame
         """
         self.nlabels = np.zeros( len(self.nnz), np.int32 )
         self.labels = np.zeros( len(self.row), "i")
@@ -232,19 +246,26 @@ class SparseScan( object ):
                                                  self.labels[ s : e ] + nl, 0 )
             else:
                 self.nlabels[i] = 0
-            nl += self.nlabels[i]
-        self.total_labels = nl
+            if countall:
+                nl += self.nlabels[i]
+        self.total_labels = self.nlabels.sum()
 
           
-    def lmlabel(self, threshold = 0 ):
+    def lmlabel(self, threshold = 0, countall=True, smooth=True  ):
         """ Label pixels using the localmax assigment code
         Fills in:
            self.nlabels = number of peaks per frame
            self.labels  = peak labels (should be unique)
            self.total_labels = total number of peaks
+        if countall == True : labels all peaks from zero
+                    == False : labels from 1 on each frame
         """
         self.nlabels = np.zeros( len(self.nnz), np.int32 )
         self.labels = np.zeros( len(self.row), "i")
+        if smooth:
+            self.signal = np.empty( self.intensity.shape, np.float32 )
+        else:
+            self.signal = self.intensity
         # temporary workspaces
         npxmax = self.nnz.max()
         vmx = np.zeros( npxmax, np.float32 )
@@ -255,8 +276,13 @@ class SparseScan( object ):
             s = self.ipt[i]
             e = self.ipt[i+1]
             if npx > 0:
+                if smooth:
+                    cImageD11.sparse_smooth( self.intensity[ s: e], 
+                                            self.row[s:e],
+                                            self.col[s:e],
+                                            self.signal[s:e] )
                 self.nlabels[i] = cImageD11.sparse_localmaxlabel(
-                    self.intensity[ s : e ],
+                    self.signal[ s : e ],
                     self.row[ s : e ],
                     self.col[ s : e ],
                     vmx[:npx],
@@ -266,8 +292,9 @@ class SparseScan( object ):
                 self.labels[ s : e ] += nl
             else:
                 self.nlabels[i] = 0
-            nl += self.nlabels[i]
-        self.total_labels = nl
+            if countall:
+                nl += self.nlabels[i]
+        self.total_labels = self.nlabels.sum()
             
     def moments(self):
         """ Computes the center of mass in s/f/omega
@@ -407,6 +434,13 @@ def sparse_localmax( frame,
     return nlabel
 
 
+def sparse_smooth( frame, data_name='intensity' ):
+    smoothed = np.zeros( frame.nnz, np.float32 )
+    cImageD11.sparse_smooth( frame.pixels[data_name],
+                             frame.row,
+                             frame.col,
+                             smoothed )
+    return smoothed
     
                               
         

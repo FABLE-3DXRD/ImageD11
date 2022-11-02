@@ -265,6 +265,10 @@ sparse_overlaps = """identifies the pixels in i1,j1 which overlap i2,j2.
 The list of overlaps is returned in k1/k2 such that i1[k1]==i2[k2]
 and j1[k1]==j2[k2]. Probably assumes that sparse_is_sorted was true.
 """
+sparse_smooth = """smooths data in coo format. Workaround for avoiding
+equal pixels on peak tails for localmaxlabel
+single threaded
+"""
 splat = """draws gvectors into an rgba image. The horror of maintaining plot3d
 over the years motivated this code. See test/demo/tksplat
 * set the color and markersize per peak
@@ -329,6 +333,7 @@ __all__ = [
     "sparse_is_sorted",
     "sparse_localmaxlabel",
     "sparse_overlaps",
+    "sparse_smooth",
     "splat",
     "tosparse_u16",
     "uint16_to_float_darkflm",

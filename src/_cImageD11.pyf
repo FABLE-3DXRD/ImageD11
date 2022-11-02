@@ -808,6 +808,20 @@ interface
         threadsafe
     end subroutine sparse_blob2Dproperties
 
+    subroutine sparse_smooth( v, i, j, nnz, s)
+        intent(c) sparse_smooth
+!DOC sparse_smooth smooths data in coo format. Workaround for avoiding
+!DOC equal pixels on peak tails for localmaxlabel
+!DOC single threaded
+        intent(c)
+        real, intent(in), dimension(nnz) :: v
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(v) :: nnz = shape( v, 0)
+        real, intent(inout) :: s( nnz )
+        threadsafe
+    end subroutine sparse_smooth
+
     function sparse_localmaxlabel( v, i, j, nnz, MV, iMV, labels)
         intent(c) sparse_localmaxlabel
 !DOC sparse_localmaxlabel assigns labels to sparse array in sorted coo format
