@@ -788,6 +788,68 @@ int compress_duplicates(int *restrict i, int *restrict j, int *restrict oi,
 }
 
 
+#include <stdio.h>
+
+/* F2PY_WRAPPER_START
+    function coverlaps( row1, col1, labels1, nnz1, row2, col2, labels2, nnz2, mat, npk1, npk2, results)
+!DOC overlaps determines which of (row1,col1,labels1) and (row2,col2,labels2) 
+!DOC are overlapped. 
+!DOC    
+        intent(c) coverlaps
+        intent(c)
+        integer(kind=-2), dimension(nnz1), intent(c) :: row1, col1
+        integer, intent(hide), depend(row1) :: nnz1 = shape(row1,0)
+        integer(kind=-2), dimension(nnz2), intent(c) :: row2, col2 
+        integer, intent(hide), depend(row2) :: nnz2 = shape(row2,0)
+        integer, dimension(nnz1), intent(c) :: labels1
+        integer, dimension(nnz2), intent(c) :: labels2
+        integer, dimension(npk1, npk2), intent(c) :: mat
+        integer, intent(hide), depend(mat) :: npk1 = shape(mat, 0)
+        integer, intent(hide), depend(mat) :: npk2 = shape(mat, 1)
+        integer, intent(inout), dimension(*) :: results
+        ! returns
+        integer :: coverlaps
+        threadsafe
+    end function coverlaps
+F2PY_WRAPPER_END */
+
+int coverlaps( uint16_t* restrict row1, uint16_t* restrict col1, int* restrict labels1, int nnz1,
+              uint16_t* restrict row2, uint16_t* restrict col2,  int* restrict labels2, int nnz2,
+              int* restrict mat, int npk1, int npk2, int* restrict results ){
+    int npk, i1, i2;
+    uint32_t p1, p2;
+//    printf("nnz %d %d %d %d\n",nnz1,nnz2,npk1,npk2);
+    for( i1 = 0 ; i1 < npk1*npk2; i1++) {
+        mat[i1] = 0;
+    }
+    i1 = 0;
+    i2 = 0;
+    while  ((i1<nnz1) && (i2<nnz2)){
+        p1 = (((uint32_t) row1[i1])*4096) + col1[i1];
+        p2 = (((uint32_t) row2[i2])*4096) + col2[i2];
+//        printf("%d ijij %d %d %d %d %d %d %d %d\n",k,i1,i2,row1[i1],col1[i1],row2[i2],col2[i2], p1, p2);
+        if (p1 == p2){
+            mat[ (labels1[i1]-1)*npk2 + labels2[i2]-1] += 1;
+            i1++;
+            i2++;
+        } 
+        if (p1 > p2) i2++;
+        if (p1 < p2) i1++;
+    }
+    npk = 0;
+    for( i1 = 0; i1 < npk1; i1++){
+        for( i2 = 0; i2 < npk2; i2++){
+            if (mat[i1*npk2 + i2]>0){
+                results[npk*3] = i1+1;
+                results[npk*3+1] = i2+1;
+                results[npk*3+2] = mat[i1*npk2 + i2];
+                npk++;
+            }
+        }
+    }
+    return npk;
+}
+
 
 /* F2PY_WRAPPER_START
     function tosparse_u16( img, msk, row, col, val, cut, ns, nf)
@@ -858,3 +920,21 @@ int tosparse_u16_avx512( uint16_t* restrict img,  uint8_t* restrict msk, uint16_
     return npx;
 }
 #endif
+
+    
+/*    
+maxpk = nm.max()
+matmem = np.empty( (maxpk, maxpk), 'i').ravel()
+ctmem =  np.empty( (3, maxpk), 'i')
+
+def mato(k):
+    nnz1 = nm[k]
+    nnz2 = nm[k+1]
+    mat = matmem[:nnz1*nnz2].reshape((nnz1,nnz2))
+    
+    npk = olap( s.row[ s.ipt[k] : s.ipt[k+1] ],s.col[ s.ipt[k] : s.ipt[k+1] ], lam[ s.ipt[k] : s.ipt[k+1]],
+              s.row[ s.ipt[k+1] : s.ipt[k+2] ],s.col[ s.ipt[k+1] : s.ipt[k+2] ], lam[ s.ipt[k+1] : s.ipt[k+2]], 
+              mat, ctmem )
+    return npk, ctmem[:,:npk]
+    
+    */

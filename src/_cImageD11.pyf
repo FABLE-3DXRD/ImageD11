@@ -875,6 +875,27 @@ interface
         threadsafe
     end function compress_duplicates
 
+    function coverlaps( row1, col1, labels1, nnz1, row2, col2, labels2, nnz2, mat, npk1, npk2, results)
+!DOC overlaps determines which of (row1,col1,labels1) and (row2,col2,labels2) 
+!DOC are overlapped. 
+!DOC    
+        intent(c) coverlaps
+        intent(c)
+        integer(kind=-2), dimension(nnz1), intent(c) :: row1, col1
+        integer, intent(hide), depend(row1) :: nnz1 = shape(row1,0)
+        integer(kind=-2), dimension(nnz2), intent(c) :: row2, col2 
+        integer, intent(hide), depend(row2) :: nnz2 = shape(row2,0)
+        integer, dimension(nnz1), intent(c) :: labels1
+        integer, dimension(nnz2), intent(c) :: labels2
+        integer, dimension(npk1, npk2), intent(c) :: mat
+        integer, intent(hide), depend(mat) :: npk1 = shape(mat, 0)
+        integer, intent(hide), depend(mat) :: npk2 = shape(mat, 1)
+        integer, intent(inout), dimension(*) :: results
+        ! returns
+        integer :: coverlaps
+        threadsafe
+    end function coverlaps
+
     function tosparse_u16( img, msk, row, col, val, cut, ns, nf)
 !DOC tosparse_u16 stores pixels from img into row/col/val.
 !DOC msk determines whether pixels are masked
