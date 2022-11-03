@@ -808,6 +808,20 @@ interface
         threadsafe
     end subroutine sparse_blob2Dproperties
 
+    subroutine sparse_smooth( v, i, j, nnz, s)
+        intent(c) sparse_smooth
+!DOC sparse_smooth smooths data in coo format. Workaround for avoiding
+!DOC equal pixels on peak tails for localmaxlabel
+!DOC single threaded
+        intent(c)
+        real, intent(in), dimension(nnz) :: v
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(v) :: nnz = shape( v, 0)
+        real, intent(inout) :: s( nnz )
+        threadsafe
+    end subroutine sparse_smooth
+
     function sparse_localmaxlabel( v, i, j, nnz, MV, iMV, labels)
         intent(c) sparse_localmaxlabel
 !DOC sparse_localmaxlabel assigns labels to sparse array in sorted coo format
@@ -861,9 +875,31 @@ interface
         threadsafe
     end function compress_duplicates
 
+    function coverlaps( row1, col1, labels1, nnz1, row2, col2, labels2, nnz2, mat, npk1, npk2, results)
+!DOC overlaps determines which of (row1,col1,labels1) and (row2,col2,labels2) 
+!DOC are overlapped. 
+!DOC    
+        intent(c) coverlaps
+        intent(c)
+        integer(kind=-2), dimension(nnz1), intent(c) :: row1, col1
+        integer, intent(hide), depend(row1) :: nnz1 = shape(row1,0)
+        integer(kind=-2), dimension(nnz2), intent(c) :: row2, col2 
+        integer, intent(hide), depend(row2) :: nnz2 = shape(row2,0)
+        integer, dimension(nnz1), intent(c) :: labels1
+        integer, dimension(nnz2), intent(c) :: labels2
+        integer, dimension(npk1, npk2), intent(c) :: mat
+        integer, intent(hide), depend(mat) :: npk1 = shape(mat, 0)
+        integer, intent(hide), depend(mat) :: npk2 = shape(mat, 1)
+        integer, intent(inout), dimension(*) :: results
+        ! returns
+        integer :: coverlaps
+        threadsafe
+    end function coverlaps
+
     function tosparse_u16( img, msk, row, col, val, cut, ns, nf)
 !DOC tosparse_u16 stores pixels from img into row/col/val.
-!DOC msk determines whether pixels are masked
+!DOC msk determines whether pixels are masked (e.g. eiger mask)
+!DOC returns the number of pixels found
         intent(c) tosparse_u16
         intent(c)
         integer(kind=-2), dimension(ns, nf), intent(c) :: img, row, col, val
@@ -875,6 +911,23 @@ interface
         integer :: tosparse_u16
         threadsafe
     end function tosparse_u16
+
+    function tosparse_f32( img, msk, row, col, val, cut, ns, nf)
+!DOC tosparse_u16 stores pixels from img into row/col/val.
+!DOC msk determines whether pixels are masked (e.g. eiger mask)
+!DOC returns the number of pixels found
+        intent(c) tosparse_f32
+        intent(c)
+        real, dimension(ns, nf), intent(c) :: img, val
+        integer(kind=-2), dimension(ns, nf), intent(c) :: row, col
+        integer(kind=-1), dimension(ns, nf), intent(c) :: msk
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        real :: cut
+        ! returns
+        integer :: tosparse_f32
+        threadsafe
+    end function tosparse_f32
 
     subroutine splat( rgba, w, h, gve, ng, u, npx )
 !DOC splat draws gvectors into an rgba image. The horror of maintaining plot3d

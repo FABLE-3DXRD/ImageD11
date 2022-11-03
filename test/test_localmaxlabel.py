@@ -232,6 +232,29 @@ class test_localmaxlabel( unittest.TestCase ):
         self.assertEqual(la[1,1],1)
 
         
+    def testX(self):
+        ''' sse / avx issue for tiny? '''
+        im = np.array([
+                [ 0, 0, 0, 0, 0],
+                [ 0, 1, 0, 1, 0],
+                [ 0, 0, 2, 0, 0],
+                [ 0, 1, 0, 1, 0],            
+                [ 0, 0, 0, 0, 0]], np.float32)
+        la = np.empty( im.shape, 'i' )
+        wk = np.empty( im.shape, 'b' )
+        localmaxlabel( im, la, wk )
+        
+        lp = np.empty( im.shape, 'i' )
+        wp = np.empty( im.shape, 'b' )
+        npks = localmax(im, lp, wp)
+        if not (lp == la).all():
+            print(lp)
+            print(la)
+        
+        self.assertTrue( (lp == la).all() )
+
+        
+        
 if __name__== "__main__":
     import sys
     if len(sys.argv)>1:

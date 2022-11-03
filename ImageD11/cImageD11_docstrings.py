@@ -163,6 +163,10 @@ misori_tetragonal = """computes the trace of the smallest misorientation
  Looks like point group 4/mmm. What about 4/m ?
  Beware: work in progress
 """
+overlaps = """determines which of (row1,col1,labels1) and (row2,col2,labels2)
+are overlapped. 
+   
+"""
 put_incr32 = """does the simple loop : data[ind] += vals
 not sure why this isn't in numpy
 uses 32 bit addressing
@@ -265,13 +269,18 @@ sparse_overlaps = """identifies the pixels in i1,j1 which overlap i2,j2.
 The list of overlaps is returned in k1/k2 such that i1[k1]==i2[k2]
 and j1[k1]==j2[k2]. Probably assumes that sparse_is_sorted was true.
 """
+sparse_smooth = """smooths data in coo format. Workaround for avoiding
+equal pixels on peak tails for localmaxlabel
+single threaded
+"""
 splat = """draws gvectors into an rgba image. The horror of maintaining plot3d
 over the years motivated this code. See test/demo/tksplat
 * set the color and markersize per peak
 * perhaps also a draw order (back to front, top to bottom) ?
 """
 tosparse_u16 = """stores pixels from img into row/col/val.
-msk determines whether pixels are masked
+msk determines whether pixels are masked (e.g. eiger mask)
+returns the number of pixels found
 """
 uint16_to_float_darkflm = """subtracts image drk(float32) from
 raw data in data (uint16), multiples by flm(float32) and returns in img.
@@ -310,6 +319,7 @@ __all__ = [
     "misori_monoclinic",
     "misori_orthorhombic",
     "misori_tetragonal",
+    "overlaps",
     "put_incr32",
     "put_incr64",
     "quickorient",
@@ -329,6 +339,7 @@ __all__ = [
     "sparse_is_sorted",
     "sparse_localmaxlabel",
     "sparse_overlaps",
+    "sparse_smooth",
     "splat",
     "tosparse_u16",
     "uint16_to_float_darkflm",

@@ -50,6 +50,32 @@ class sparse_frame( object ):
                 assert len(val) == self.nnz
                 self.pixels[name] = val
 
+    def __repr__(self):
+        h = "Sparse Frame ( %d , %d ) nnz = %d, data: "%( self.shape[0], self.shape[1], self.nnz )
+        h += " ".join(list(self.pixels.keys()))
+        return h
+    
+    def __eq__(self, other):
+        if self.shape != other.shape:
+            print("Shape mismatch")
+            return False
+        if self.nnz != other.nnz:
+            print("nnz mismatch")
+            return False
+        if not (self.row == other.row).all():
+            print("row mismatch")
+            return False
+        if not (self.col == other.col).all():
+            print("row mismatch")
+            return False
+        for k in self.pixels.keys():
+            if not (self.pixels[k] == other.pixels[k]).all():
+                print("pixels mismatch",k)
+                print(self.pixels[k])
+                print(other.pixels[k])
+                return False
+        return True
+            
         
     def check(self, row, col, shape, itype):
         """ Ensure the index data makes sense and fits """
@@ -171,6 +197,7 @@ class sparse_frame( object ):
                 group[pxname].attrs = dict( frame.meta[pxname] )
 
 
+                
 class SparseScan( object ):
     
     omeganames = ['measurement/rot_center', 'measurement/rot',
@@ -188,9 +215,9 @@ class SparseScan( object ):
         """
         with h5py.File(hname,"r") as hin:
             grp = hin[scan]
-            self.shape = ( int(v) for v in ( grp.attrs['nframes'], 
-                                            grp.attrs['shape0'], 
-                                            grp.attrs['shape1'] ) )
+            self.shape = tuple( [ int(v) for v in ( grp.attrs['nframes'], 
+                                                    grp.attrs['shape0'], 
+                                                    grp.attrs['shape1'] ) ] )
             self.motors = {}
             for name, motors in [ ('omega',self.omeganames),
                                   ('dty',self.dtynames) ]:
@@ -201,17 +228,31 @@ class SparseScan( object ):
                 
             self.nnz = grp['nnz'][:]
             self.ipt = np.concatenate( ( (0,) , np.cumsum(self.nnz, dtype=int) ) )
-            self.frame  = grp['frame'][:]
+            if 'frame' in grp:
+                self.frame  = grp['frame'][:]
             self.row = grp['row'][:]
             self.col = grp['col'][:]
             self.intensity = grp['intensity'][:]
             
-    def cplabel(self, threshold = 0 ):
+    def getframe(self, i):
+        # (self, row, col, shape, itype=np.uint16, pixels=None):
+        s = self.ipt[i]
+        e = self.ipt[i+1]
+        return  sparse_frame( self.row[ s: e],
+                      self.col[ s: e],
+                      self.shape[1:],
+                      pixels = { 'intensity': self.intensity[ s: e] } )
+        
+            
+    def cplabel(self, threshold = 0, countall=True ):
         """ Label pixels using the connectedpixels assigment code
         Fills in:
            self.nlabels = number of peaks per frame
            self.labels  = peak labels (should be unique)
            self.total_labels = total number of peaks
+           
+        if countall == True : labels all peaks from zero
+                    == False : labels from 1 on each frame
         """
         self.nlabels = np.zeros( len(self.nnz), np.int32 )
         self.labels = np.zeros( len(self.row), "i")
@@ -232,19 +273,26 @@ class SparseScan( object ):
                                                  self.labels[ s : e ] + nl, 0 )
             else:
                 self.nlabels[i] = 0
-            nl += self.nlabels[i]
-        self.total_labels = nl
+            if countall:
+                nl += self.nlabels[i]
+        self.total_labels = self.nlabels.sum()
 
           
-    def lmlabel(self, threshold = 0 ):
+    def lmlabel(self, threshold = 0, countall=True, smooth=True  ):
         """ Label pixels using the localmax assigment code
         Fills in:
            self.nlabels = number of peaks per frame
            self.labels  = peak labels (should be unique)
            self.total_labels = total number of peaks
+        if countall == True : labels all peaks from zero
+                    == False : labels from 1 on each frame
         """
         self.nlabels = np.zeros( len(self.nnz), np.int32 )
         self.labels = np.zeros( len(self.row), "i")
+        if smooth:
+            self.signal = np.empty( self.intensity.shape, np.float32 )
+        else:
+            self.signal = self.intensity
         # temporary workspaces
         npxmax = self.nnz.max()
         vmx = np.zeros( npxmax, np.float32 )
@@ -255,8 +303,13 @@ class SparseScan( object ):
             s = self.ipt[i]
             e = self.ipt[i+1]
             if npx > 0:
+                if smooth:
+                    cImageD11.sparse_smooth( self.intensity[ s: e], 
+                                            self.row[s:e],
+                                            self.col[s:e],
+                                            self.signal[s:e] )
                 self.nlabels[i] = cImageD11.sparse_localmaxlabel(
-                    self.intensity[ s : e ],
+                    self.signal[ s : e ],
                     self.row[ s : e ],
                     self.col[ s : e ],
                     vmx[:npx],
@@ -266,8 +319,9 @@ class SparseScan( object ):
                 self.labels[ s : e ] += nl
             else:
                 self.nlabels[i] = 0
-            nl += self.nlabels[i]
-        self.total_labels = nl
+            if countall:
+                nl += self.nlabels[i]
+        self.total_labels = self.nlabels.sum()
             
     def moments(self):
         """ Computes the center of mass in s/f/omega
@@ -318,6 +372,29 @@ def from_data_mask( mask, data, header ):
     spf.set_pixels( "intensity" , intensity, dict( header ) )
     return spf
 
+
+def from_data_cut( data, cut, header={}, detectormask=None):
+    assert data.dtype in (np.uint16, np.float32)
+    if detectormask is None:
+        msk = np.ones(data.shape, bool )
+    else:
+        msk = detectormask
+    row = np.empty( data.shape, np.uint16 )
+    col = np.empty( data.shape, np.uint16 )
+    if data.dtype == np.uint16:
+        val = np.empty( data.shape, np.uint16 )
+        nnz = cImageD11.tosparse_u16( data, msk, row, col, val, cut)
+    if data.dtype == np.float32:
+        val = np.empty( data.shape, np.float32 )
+        nnz = cImageD11.tosparse_f32( data, msk, row, col, val, cut)
+    spf = sparse_frame( row.ravel()[:nnz].copy(),
+                        col.ravel()[:nnz].copy(),
+                        data.shape )
+    spf.set_pixels( 'intensity', val.ravel()[:nnz].copy(), dict(header) )
+    return spf
+
+    
+
 def from_hdf_group( group ):
     itype = np.dtype( group.attrs['itype'] )
     shape = group.attrs['shape0'], group.attrs['shape1']
@@ -343,6 +420,87 @@ def sparse_moments( frame, intensity_name, labels_name ):
         nl )
 
 
+class overlaps_linear:
+    """ Memory caching object for the linear time algorithm to find
+    peak overlaps
+    
+    Given (row1, col1, label1) and (row2, col2, label2) it finds pixels
+    where (row[i] == row2[i]) and (col1[i] == col2[i])
+    and returns (labels1[i], labels2[i], sum_pixels[i])
+    ... so the number of overlapping pixels for that pair of labels
+    """
+    def __init__(self, nnzmax=4096*4):
+        """ nnzmax = max pixels on a frame """
+        self.nnzmax = nnzmax
+        self.realloc()
+        
+    def realloc(self):
+        nnzmax = self.nnzmax
+        self.ki = np.empty( nnzmax,'i' )
+        self.kj = np.empty( nnzmax,'i' )
+        self.ect = np.empty( nnzmax, 'i' )
+        self.tj  = np.empty( nnzmax, 'i' )
+        self.tmp = np.empty( nnzmax+1,'i')
+        
+    def __call__(self, row1, col1, labels1, n1, 
+                       row2, col2, labels2, n2, checkmem=True ):
+        if checkmem:
+            assert len(row1)==len(col1)==len(labels1)
+            assert len(row2)==len(col2)==len(labels2)
+            nnz = max( max(len(row1), len(row2)), max(n1,n2))
+            if nnz > self.nnzmax:
+                self.nnzmax = nnz
+                print("realloc",nnz)
+                self.realloc()                
+        npx = cImageD11.sparse_overlaps( row1, col1, self.ki[:len(row1)],
+                                         row2, col2, self.kj[:len(row2)] )
+        r = labels1[ self.ki[:npx] ]  # my labels
+        c = labels2[ self.kj[:npx] ]  # your labels
+        nedge = cImageD11.compress_duplicates( r, c, self.ect[:npx], self.tj[:npx], self.tmp )
+        # overwrites r/c in place : ignore the zero label (hope it is not there)
+        rcl = np.zeros( (nedge, 3), 'i')
+        rcl[:,0] = r[:nedge]
+        rcl[:,1] = c[:nedge]
+        rcl[:,2] = self.ect[:nedge]
+        return rcl
+    
+
+class overlaps_matrix:
+    """   Memory caching object for the quadratic time algorithm to find
+    peak overlaps
+    
+    Given (row1, col1, label1) and (row2, col2, label2) it finds pixels
+    where (row[i] == row2[i]) and (col1[i] == col2[i])
+    and returns (labels1[i], labels2[i], sum_pixels[i])
+    ... so the number of overlapping pixels for that pair of labels
+    
+    This is easier to understand and faster for small number of peaks per frame
+    """
+    def __init__(self, npkmax=256):
+        self.npkmax = npkmax
+        self.realloc()
+        
+    def realloc(self):
+        self.matmem = np.empty( (self.npkmax* self.npkmax,), 'i')
+        # potentially n^2 overlaps. Really?
+        self.results = np.empty( (3*self.npkmax*self.npkmax), 'i')
+        
+    def __call__(self, row1, col1, labels1, n1,
+                       row2, col2, labels2, n2, checkmem=True ):
+        mx = max(n1, n2)
+        if max(n1, n2) > self.npkmax:
+            self.npkmax = mx
+            print("realloc",mx)
+            self.realloc()
+        mat = self.matmem[:n1*n2]
+        mat.shape = n1, n2
+        nov = cImageD11.coverlaps( row1, col1, labels1,
+                                   row2, col2, labels2,
+                                   mat, self.results )  
+        return self.results[:nov*3].reshape((nov,3))
+        
+    
+    
 def overlaps(frame1, labels1, frame2, labels2):
     """
     figures out which label of self matches which label of other
@@ -407,6 +565,13 @@ def sparse_localmax( frame,
     return nlabel
 
 
+def sparse_smooth( frame, data_name='intensity' ):
+    smoothed = np.zeros( frame.nnz, np.float32 )
+    cImageD11.sparse_smooth( frame.pixels[data_name],
+                             frame.row,
+                             frame.col,
+                             smoothed )
+    return smoothed
     
                               
         

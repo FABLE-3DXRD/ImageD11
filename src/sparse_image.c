@@ -447,6 +447,60 @@ void sparse_blob2Dproperties(float *restrict data, uint16_t *restrict i,
     }
 }
 
+
+/* F2PY_WRAPPER_START
+    subroutine sparse_smooth( v, i, j, nnz, s)
+        intent(c) sparse_smooth
+!DOC sparse_smooth smooths data in coo format. Workaround for avoiding
+!DOC equal pixels on peak tails for localmaxlabel
+!DOC single threaded
+        intent(c)
+        real, intent(in), dimension(nnz) :: v
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(v) :: nnz = shape( v, 0)
+        real, intent(inout) :: s( nnz )
+        threadsafe
+    end subroutine sparse_smooth
+F2PY_WRAPPER_END */
+#define CHECKSANITY 0
+void sparse_smooth(float *restrict v,    // input image
+                  uint16_t *restrict i, // indices
+                  uint16_t *restrict j, 
+                  int nnz,              // bounds
+                  float *restrict s ) {   // smoothed output
+    int k, di, dj, r, prow, p;
+    float m;
+    m = 1.0/16.0;
+    /* First make a copy */
+    for( k = 0; k<nnz; k++){
+        s[k] = v[k]*m;
+    }
+    /*   2 1 2   == distance. 3-x:   1 2 1
+         1 0 1                       2 3 2
+         2 1 2                       1 2 1  total = 15
+         */
+    prow = 0;
+    for (k = 0; k < nnz; k++) {
+        while (i[prow] < (i[k]-1) ) {
+            prow++; /* find this row */
+        }
+        p = prow;
+        while (i[p] <= (i[k] + 1)){
+            di = i[p] - i[k];
+            dj = j[p] - j[k];
+            r = di*di + dj*dj;    //  # 1 or 1+1 for neighbors
+            if (r < 3){
+                s[k] += v[p] * ( m * (float)(3-r) );
+                }
+            p++;
+            if ( p == nnz) break;
+        }
+    }
+}
+
+
+
 /* F2PY_WRAPPER_START
     function sparse_localmaxlabel( v, i, j, nnz, MV, iMV, labels)
         intent(c) sparse_localmaxlabel
@@ -473,7 +527,7 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
                          int32_t *restrict iMV,   // Which neighbor is higher?
                          int32_t *restrict labels // Which neighbor is higher?
 ) {
-    int k, p, pp, ir;
+    int k, p, pp, ir, prow, pnext;
     /* Read k = kurrent
        p = prev */
     if (NOISY) {
@@ -483,6 +537,7 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
         }
     }
     /* prev row */
+    prow = 0;
     pp = 0;
     p = 0;
     /* First pixel -  we assume it is a max, it will be stolen later
@@ -496,12 +551,14 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
         /* previous row first */
         ir = ((int)i[k]) - 1;
         /* pp should be on row above, on or after j-1 */
+//        pp = prow;
         while (ir > i[pp]) {
             pp++;
             if (CHECKSANITY) {
                 assert((pp >= 0) && (pp < nnz));
             }
         }
+  //      prow = pp; /* save for the next loop */
         /* skip if nothing on row above */
         if (i[pp] < i[k]) {
             /* Locate previous pixel on row above */
@@ -564,13 +621,26 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
     /* Now make all labels point to their root */
     for (k = 0; k < nnz; k++) {
         p = iMV[k];
+        pnext = 0;
         while (iMV[p] != p) {
-            p = iMV[p];
+            p = iMV[p]; // pointing to uphill
+            pnext++;
             if (CHECKSANITY) {
                 assert((p >= 0) && (p < nnz));
             }
         }
         labels[k] = labels[p];
+        
+        if( pnext > 0 ){ // Fill in all the pixels in L1
+            p = iMV[k];  // Back to the start
+            iMV[k] = k;  // labels[k] is set already
+            while (iMV[p] != p) {
+                labels[p] = labels[k];
+                pnext = iMV[p];
+                iMV[p] = p;
+                p = pnext;
+            }
+        }
     }
     return pp;
 }
@@ -731,11 +801,74 @@ int compress_duplicates(int *restrict i, int *restrict j, int *restrict oi,
 }
 
 
+#include <stdio.h>
+
+/* F2PY_WRAPPER_START
+    function coverlaps( row1, col1, labels1, nnz1, row2, col2, labels2, nnz2, mat, npk1, npk2, results)
+!DOC overlaps determines which of (row1,col1,labels1) and (row2,col2,labels2) 
+!DOC are overlapped. 
+!DOC    
+        intent(c) coverlaps
+        intent(c)
+        integer(kind=-2), dimension(nnz1), intent(c) :: row1, col1
+        integer, intent(hide), depend(row1) :: nnz1 = shape(row1,0)
+        integer(kind=-2), dimension(nnz2), intent(c) :: row2, col2 
+        integer, intent(hide), depend(row2) :: nnz2 = shape(row2,0)
+        integer, dimension(nnz1), intent(c) :: labels1
+        integer, dimension(nnz2), intent(c) :: labels2
+        integer, dimension(npk1, npk2), intent(c) :: mat
+        integer, intent(hide), depend(mat) :: npk1 = shape(mat, 0)
+        integer, intent(hide), depend(mat) :: npk2 = shape(mat, 1)
+        integer, intent(inout), dimension(*) :: results
+        ! returns
+        integer :: coverlaps
+        threadsafe
+    end function coverlaps
+F2PY_WRAPPER_END */
+
+int coverlaps( uint16_t* restrict row1, uint16_t* restrict col1, int* restrict labels1, int nnz1,
+              uint16_t* restrict row2, uint16_t* restrict col2,  int* restrict labels2, int nnz2,
+              int* restrict mat, int npk1, int npk2, int* restrict results ){
+    int npk, i1, i2;
+    uint32_t p1, p2;
+//    printf("nnz %d %d %d %d\n",nnz1,nnz2,npk1,npk2);
+    for( i1 = 0 ; i1 < npk1*npk2; i1++) {
+        mat[i1] = 0;
+    }
+    i1 = 0;
+    i2 = 0;
+    while  ((i1<nnz1) && (i2<nnz2)){
+        p1 = (((uint32_t) row1[i1])<<16) + col1[i1];
+        p2 = (((uint32_t) row2[i2])<<16) + col2[i2];
+//        printf("%d ijij %d %d %d %d %d %d %d %d\n",k,i1,i2,row1[i1],col1[i1],row2[i2],col2[i2], p1, p2);
+        if (p1 == p2){
+            mat[ (labels1[i1]-1)*npk2 + labels2[i2]-1] += 1;
+            i1++;
+            i2++;
+        } 
+        if (p1 > p2) i2++;
+        if (p1 < p2) i1++;
+    }
+    npk = 0;
+    for( i1 = 0; i1 < npk1; i1++){
+        for( i2 = 0; i2 < npk2; i2++){
+            if (mat[i1*npk2 + i2]>0){
+                results[npk*3] = i1+1;
+                results[npk*3+1] = i2+1;
+                results[npk*3+2] = mat[i1*npk2 + i2];
+                npk++;
+            }
+        }
+    }
+    return npk;
+}
+
 
 /* F2PY_WRAPPER_START
     function tosparse_u16( img, msk, row, col, val, cut, ns, nf)
 !DOC tosparse_u16 stores pixels from img into row/col/val.
-!DOC msk determines whether pixels are masked
+!DOC msk determines whether pixels are masked (e.g. eiger mask)
+!DOC returns the number of pixels found
         intent(c) tosparse_u16
         intent(c)
         integer(kind=-2), dimension(ns, nf), intent(c) :: img, row, col, val
@@ -755,6 +888,42 @@ int tosparse_u16( uint16_t* restrict img,  uint8_t* restrict msk, uint16_t* rest
     for( i = 0; i < ns ; i++){
         for( j = 0; j < nf ; j++ ){
             if ((msk[i*nf+j]) && (img[i*nf+j] > (uint16_t)cut)){
+                row[k] = i;
+                col[k] = j;
+                val[k] = img[i*nf+j];
+                k++;
+            }
+        }
+    }
+    return k;
+}
+
+
+/* F2PY_WRAPPER_START
+    function tosparse_f32( img, msk, row, col, val, cut, ns, nf)
+!DOC tosparse_u16 stores pixels from img into row/col/val.
+!DOC msk determines whether pixels are masked (e.g. eiger mask)
+!DOC returns the number of pixels found
+        intent(c) tosparse_f32
+        intent(c)
+        real, dimension(ns, nf), intent(c) :: img, val
+        integer(kind=-2), dimension(ns, nf), intent(c) :: row, col
+        integer(kind=-1), dimension(ns, nf), intent(c) :: msk
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        real :: cut
+        ! returns
+        integer :: tosparse_f32
+        threadsafe
+    end function tosparse_f32
+F2PY_WRAPPER_END */
+
+int tosparse_f32( float* restrict img,  uint8_t* restrict msk, uint16_t* restrict row,  
+                  uint16_t* restrict col, float* restrict val, float cut, int ns, int nf ) {
+    int k = 0, i, j;
+    for( i = 0; i < ns ; i++){
+        for( j = 0; j < nf ; j++ ){
+            if ((msk[i*nf+j]) && (img[i*nf+j] > cut)){
                 row[k] = i;
                 col[k] = j;
                 val[k] = img[i*nf+j];
@@ -801,3 +970,21 @@ int tosparse_u16_avx512( uint16_t* restrict img,  uint8_t* restrict msk, uint16_
     return npx;
 }
 #endif
+
+    
+/*    
+maxpk = nm.max()
+matmem = np.empty( (maxpk, maxpk), 'i').ravel()
+ctmem =  np.empty( (3, maxpk), 'i')
+
+def mato(k):
+    nnz1 = nm[k]
+    nnz2 = nm[k+1]
+    mat = matmem[:nnz1*nnz2].reshape((nnz1,nnz2))
+    
+    npk = olap( s.row[ s.ipt[k] : s.ipt[k+1] ],s.col[ s.ipt[k] : s.ipt[k+1] ], lam[ s.ipt[k] : s.ipt[k+1]],
+              s.row[ s.ipt[k+1] : s.ipt[k+2] ],s.col[ s.ipt[k+1] : s.ipt[k+2] ], lam[ s.ipt[k+1] : s.ipt[k+2]], 
+              mat, ctmem )
+    return npk, ctmem[:,:npk]
+    
+    */
