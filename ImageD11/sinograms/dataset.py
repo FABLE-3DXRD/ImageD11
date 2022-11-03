@@ -78,10 +78,11 @@ class DataSet:
     def __repr__(self):
         r = []
         for name in "dataroot analysisroot sample dset".split(): 
-            r.append(f'{name} = "{getattr(self, name)}"' )
+            r.append('%s = "%s"'%( name, getattr(self, name) ) )
         r.append( 'shape = ( %d, %d)'%tuple(self.shape) )
         if self.scans is not None:
-            r.append( f'# scans {len(self.scans)} from {self.scans[0]} to {self.scans[-1]}' )
+            r.append( '# scans %d from %d to %d'%(
+                len(self.scans), self.scans[0], self.scans[-1] ))
         return  "\n".join(r)
 
     
@@ -176,9 +177,10 @@ class DataSet:
         self.sparsefiles = [ name.replace( '/', '_' ).replace( '.h5', '_sparse.h5' ) for name in 
                              self.imagefiles ]
         self.shape = (self.shape[0], npts)
-        logging.info( f'imported {np.sum(self.frames_per_file) } lima filenames' )
-        logging.info( f'sinogram shape = {self.shape} imageshape = {imageshape}' )
-             
+        logging.info( 'imported %d lima filenames'%( np.sum(self.frames_per_file) ) )
+        logging.info( 'sinogram shape = ( %d , %d ) imageshape = ( %d , %d)'%(
+            self.shape[0], self.shape[1], imageshape[0], imageshape[1] ) )
+                     
             
     def import_motors_from_master(self):  #  could also get these from sparse files if saved
         """ read the motors from the lima file

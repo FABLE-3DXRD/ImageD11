@@ -10,7 +10,7 @@ Make the code parallel over lima files ... no interprocess communication intende
 
 import sys, time, os, math, logging
 
-from . import dataset
+from ImageD11.sinograms import dataset
 
 # Code to clean the 2D image and reduce it to a sparse array:
 # things we might edit
@@ -67,11 +67,11 @@ class SegmenterOptions:
                 elif name in pgrp:
                     setattr(self, name, pgrp[name][()] )
                 else:
-                    logging.warning(f"Missing {name}")
+                    logging.warning("Missing " + name )
         self.setup()
         
     def save(self, h5name, h5group):
-        logging.info(f'saving to {h5name}::{h5group}')
+        logging.info("saving to "+h5name+"::"+h5group)
         with h5py.File( h5name, "a" ) as hout:
             grp = hout.require_group( h5group )
             for name in self.jobnames:
