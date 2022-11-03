@@ -1,4 +1,5 @@
 
+from __future__ import print_function, division
 
 """ Do segmentation of lima/eiger files with no notion of metadata
 Blocking will come via lima saving, so about 1000 frames per file
@@ -42,7 +43,7 @@ class SegmenterOptions:
         self.cores_per_job = cores_per_job
                       
     def __repr__(self):
-        return "\n".join( [f"{name}:{getattr(self, name, None )}" for name in self.jobnames + self.datasetnames ] )
+        return "\n".join( ["%s:%s"%(name,getattr(self, name, None )) for name in self.jobnames + self.datasetnames ] )
                 
     def setup(self):
         self.thresholds = tuple( [ self.cut*pow(2,i) for i in range(6) ] )
@@ -302,24 +303,24 @@ def setup_slurm_array( dsname, dsgroup='/',
     files_per_job = options.files_per_core * options.cores_per_job
     jobs_needed = math.ceil( nfiles / files_per_job )
     sbat = os.path.join( sdir, "lima_segmenter_slurm.sh" )
-    command = f"python3 -m ImageD11.sinograms.lima_segmenter segment {dsname} $SLURM_ARRAY_TASK_ID"
+    command = "python3 -m ImageD11.sinograms.lima_segmenter segment %s $SLURM_ARRAY_TASK_ID"%(dsname)
     with open(sbat ,"w") as fout:
-        fout.write( f"""#!/bin/bash
+        fout.write( """#!/bin/bash
 #SBATCH --job-name=array-lima_segmenter
-#SBATCH --output={sdir}/lima_segmenter_%A_%a.out
-#SBATCH --error={sdir}/lima_segmenter_%A_%a.err
-#SBATCH --array=0-{jobs_needed}
+#SBATCH --output=%s/lima_segmenter_%A_%a.out
+#SBATCH --error=%s/lima_segmenter_%A_%a.err
+#SBATCH --array=0-%d
 #SBATCH --time=02:00:00
 # define memory needs and number of tasks for each array job
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={options.cores_per_job}
 #
 date
-echo Running on $HOSTNAME : {command}
-{command} > {sdir}/$SLURM_ARRAY_TASK_ID.log 2>&1
+echo Running on $HOSTNAME : %s
+%s > %s/lima_segmenter_%A_%a_$SLURM_ARRAY_TASK_ID.log 2>&1
 date
-""")        
-    logging.info(f"wrote {sbat}")
+"""%(sdir,sdir,jobs_needed, command, command, sdir))
+    logging.info("wrote "+sbat)
     return sbat
 
 

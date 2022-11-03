@@ -1,5 +1,5 @@
 
-
+from __future__ import print_function, division
 
 import os, h5py, numpy as np
 import fast_histogram
@@ -92,7 +92,7 @@ class DataSet:
         sattrs = set( [ name for name in vars(self) if name[0] != '_' ] )
         oattrs = set( [ name for name in vars(self) if name[0] != '_' ] )
         if sattrs != oattrs:
-            logging.info(f'Attribute mismatch {sattrs} != {oattrs}')
+            logging.info('Attribute mismatch '+str(sattrs)+' != '+str(oattrs))
             return False
         for a in sattrs:
             s = getattr( self, a )
@@ -101,20 +101,20 @@ class DataSet:
             o = getattr( other, a )
             t = type(s)
             if type(o) != type(s):
-                logging.info(f'Type mismatch {t} {a}')
+                logging.info('Type mismatch %s %s'%(str(t),str(a)))
                 return False
             if t == np.ndarray:
                 if s.shape != o.shape:
-                    logging.info(f'Shape mismatch {a} {t} {s.shape} {o.shape}')
+                    logging.info('Shape mismatch %s %s'%(str(s.shape), str(o.shape)))
                     return False
                 if ( s != o ).all():
-                    logging.info(f'Data mismatch {a}')
+                    logging.info('Data mismatch '+str(a))
                     return False
             else:
                 if s != o:
-                    logging.info(f'Data mismatch {a} {s} {o}')
+                    logging.info('Data mismatch ')
                     return False
-        logging.info(f'Dataset objects seem to match!')
+        logging.info('Dataset objects seem to match!')
         return True
                 
         
@@ -147,7 +147,7 @@ class DataSet:
             scans = list( hin['/'] )
         self.scans = [scan for scan in scans if scan.endswith('.1')]
         self.shape = (len(self.scans), self.shape[1])
-        logging.info( f'imported {len(self.scans)} scans from {hname}')
+        logging.info( 'imported %d scans from %s'%(len(self.scans),hname))
         return self.scans
     
     
@@ -165,7 +165,7 @@ class DataSet:
                 if npts is None:
                     npts = len(frames)
                 else:
-                    assert len(frames) == npts, f'scan is not regular {npts}, {self.masterfile}::{scan}'
+                    assert len(frames) == npts, 'scan is not regular %d %s :: %s'%(npts, self.masterfile, scan)
                 for vsrc in frames.virtual_sources():
                     self.imagefiles.append( vsrc.file_name )
                     self.frames_per_file.append( vsrc.src_space.shape[0] ) # not sure about this
@@ -241,7 +241,7 @@ class DataSet:
             with h5py.File( os.path.join( self.analysispath, spname ), "r" ) as hin:
                 nnz.append( hin[self.limapath]['nnz'][:] )
         self.nnz = np.concatenate( nnz ).reshape( self.shape ).astype( np.int32 )
-        logging.info(f'imported nnz, average {self.nnz.mean()}') # expensive if you are not logging it.
+        logging.info('imported nnz, average %f'%(self.nnz.mean())) # expensive if you are not logging it.
   
 
     def check_files(self, path, filenames, verbose = 0):
