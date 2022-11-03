@@ -898,7 +898,8 @@ interface
 
     function tosparse_u16( img, msk, row, col, val, cut, ns, nf)
 !DOC tosparse_u16 stores pixels from img into row/col/val.
-!DOC msk determines whether pixels are masked
+!DOC msk determines whether pixels are masked (e.g. eiger mask)
+!DOC returns the number of pixels found
         intent(c) tosparse_u16
         intent(c)
         integer(kind=-2), dimension(ns, nf), intent(c) :: img, row, col, val
@@ -910,6 +911,23 @@ interface
         integer :: tosparse_u16
         threadsafe
     end function tosparse_u16
+
+    function tosparse_f32( img, msk, row, col, val, cut, ns, nf)
+!DOC tosparse_u16 stores pixels from img into row/col/val.
+!DOC msk determines whether pixels are masked (e.g. eiger mask)
+!DOC returns the number of pixels found
+        intent(c) tosparse_f32
+        intent(c)
+        real, dimension(ns, nf), intent(c) :: img, val
+        integer(kind=-2), dimension(ns, nf), intent(c) :: row, col
+        integer(kind=-1), dimension(ns, nf), intent(c) :: msk
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        real :: cut
+        ! returns
+        integer :: tosparse_f32
+        threadsafe
+    end function tosparse_f32
 
     subroutine splat( rgba, w, h, gve, ng, u, npx )
 !DOC splat draws gvectors into an rgba image. The horror of maintaining plot3d

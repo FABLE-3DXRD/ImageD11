@@ -527,7 +527,7 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
                          int32_t *restrict iMV,   // Which neighbor is higher?
                          int32_t *restrict labels // Which neighbor is higher?
 ) {
-    int k, p, pp, ir, prow;
+    int k, p, pp, ir, prow, pnext;
     /* Read k = kurrent
        p = prev */
     if (NOISY) {
@@ -551,14 +551,14 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
         /* previous row first */
         ir = ((int)i[k]) - 1;
         /* pp should be on row above, on or after j-1 */
-        pp = prow;
+//        pp = prow;
         while (ir > i[pp]) {
             pp++;
             if (CHECKSANITY) {
                 assert((pp >= 0) && (pp < nnz));
             }
         }
-        prow = pp; /* save for the next loop */
+  //      prow = pp; /* save for the next loop */
         /* skip if nothing on row above */
         if (i[pp] < i[k]) {
             /* Locate previous pixel on row above */
@@ -621,13 +621,26 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
     /* Now make all labels point to their root */
     for (k = 0; k < nnz; k++) {
         p = iMV[k];
+        pnext = 0;
         while (iMV[p] != p) {
-            p = iMV[p];
+            p = iMV[p]; // pointing to uphill
+            pnext++;
             if (CHECKSANITY) {
                 assert((p >= 0) && (p < nnz));
             }
         }
         labels[k] = labels[p];
+        
+        if( pnext > 0 ){ // Fill in all the pixels in L1
+            p = iMV[k];  // Back to the start
+            iMV[k] = k;  // labels[k] is set already
+            while (iMV[p] != p) {
+                labels[p] = labels[k];
+                pnext = iMV[p];
+                iMV[p] = p;
+                p = pnext;
+            }
+        }
     }
     return pp;
 }
@@ -825,8 +838,8 @@ int coverlaps( uint16_t* restrict row1, uint16_t* restrict col1, int* restrict l
     i1 = 0;
     i2 = 0;
     while  ((i1<nnz1) && (i2<nnz2)){
-        p1 = (((uint32_t) row1[i1])*4096) + col1[i1];
-        p2 = (((uint32_t) row2[i2])*4096) + col2[i2];
+        p1 = (((uint32_t) row1[i1])<<16) + col1[i1];
+        p2 = (((uint32_t) row2[i2])<<16) + col2[i2];
 //        printf("%d ijij %d %d %d %d %d %d %d %d\n",k,i1,i2,row1[i1],col1[i1],row2[i2],col2[i2], p1, p2);
         if (p1 == p2){
             mat[ (labels1[i1]-1)*npk2 + labels2[i2]-1] += 1;
@@ -854,7 +867,8 @@ int coverlaps( uint16_t* restrict row1, uint16_t* restrict col1, int* restrict l
 /* F2PY_WRAPPER_START
     function tosparse_u16( img, msk, row, col, val, cut, ns, nf)
 !DOC tosparse_u16 stores pixels from img into row/col/val.
-!DOC msk determines whether pixels are masked
+!DOC msk determines whether pixels are masked (e.g. eiger mask)
+!DOC returns the number of pixels found
         intent(c) tosparse_u16
         intent(c)
         integer(kind=-2), dimension(ns, nf), intent(c) :: img, row, col, val
@@ -874,6 +888,42 @@ int tosparse_u16( uint16_t* restrict img,  uint8_t* restrict msk, uint16_t* rest
     for( i = 0; i < ns ; i++){
         for( j = 0; j < nf ; j++ ){
             if ((msk[i*nf+j]) && (img[i*nf+j] > (uint16_t)cut)){
+                row[k] = i;
+                col[k] = j;
+                val[k] = img[i*nf+j];
+                k++;
+            }
+        }
+    }
+    return k;
+}
+
+
+/* F2PY_WRAPPER_START
+    function tosparse_f32( img, msk, row, col, val, cut, ns, nf)
+!DOC tosparse_u16 stores pixels from img into row/col/val.
+!DOC msk determines whether pixels are masked (e.g. eiger mask)
+!DOC returns the number of pixels found
+        intent(c) tosparse_f32
+        intent(c)
+        real, dimension(ns, nf), intent(c) :: img, val
+        integer(kind=-2), dimension(ns, nf), intent(c) :: row, col
+        integer(kind=-1), dimension(ns, nf), intent(c) :: msk
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        real :: cut
+        ! returns
+        integer :: tosparse_f32
+        threadsafe
+    end function tosparse_f32
+F2PY_WRAPPER_END */
+
+int tosparse_f32( float* restrict img,  uint8_t* restrict msk, uint16_t* restrict row,  
+                  uint16_t* restrict col, float* restrict val, float cut, int ns, int nf ) {
+    int k = 0, i, j;
+    for( i = 0; i < ns ; i++){
+        for( j = 0; j < nf ; j++ ){
+            if ((msk[i*nf+j]) && (img[i*nf+j] > cut)){
                 row[k] = i;
                 col[k] = j;
                 val[k] = img[i*nf+j];

@@ -163,6 +163,10 @@ misori_tetragonal = """computes the trace of the smallest misorientation
  Looks like point group 4/mmm. What about 4/m ?
  Beware: work in progress
 """
+overlaps = """determines which of (row1,col1,labels1) and (row2,col2,labels2)
+are overlapped. 
+   
+"""
 put_incr32 = """does the simple loop : data[ind] += vals
 not sure why this isn't in numpy
 uses 32 bit addressing
@@ -275,7 +279,8 @@ over the years motivated this code. See test/demo/tksplat
 * perhaps also a draw order (back to front, top to bottom) ?
 """
 tosparse_u16 = """stores pixels from img into row/col/val.
-msk determines whether pixels are masked
+msk determines whether pixels are masked (e.g. eiger mask)
+returns the number of pixels found
 """
 uint16_to_float_darkflm = """subtracts image drk(float32) from
 raw data in data (uint16), multiples by flm(float32) and returns in img.
@@ -314,6 +319,7 @@ __all__ = [
     "misori_monoclinic",
     "misori_orthorhombic",
     "misori_tetragonal",
+    "overlaps",
     "put_incr32",
     "put_incr64",
     "quickorient",
