@@ -5,6 +5,7 @@ import time, sys
 import h5py, scipy.sparse, numpy as np #, pylab as pl
 from ImageD11 import cImageD11
 
+SAFE = True
 
 # see also sandbox/harvest_pixels.py
 
@@ -19,7 +20,7 @@ NAMES = {
 class sparse_frame( object ):
     """
     Indices / shape mapping
-    
+
     This was developed for a single 2D frame
        See SparseScan below for something aiming towards many frames
     """
@@ -54,7 +55,7 @@ class sparse_frame( object ):
         h = "Sparse Frame ( %d , %d ) nnz = %d, data: "%( self.shape[0], self.shape[1], self.nnz )
         h += " ".join(list(self.pixels.keys()))
         return h
-    
+
     def __eq__(self, other):
         if self.shape != other.shape:
             print("Shape mismatch")
@@ -75,19 +76,20 @@ class sparse_frame( object ):
                 print(other.pixels[k])
                 return False
         return True
-            
-        
+
+
     def check(self, row, col, shape, itype):
         """ Ensure the index data makes sense and fits """
-        lo = np.iinfo(itype).min
-        hi = np.iinfo(itype).max
-        assert len(shape) == 2
-        assert shape[0] >= lo and shape[0] < hi
-        assert shape[1] >= lo and shape[1] < hi
-        assert np.min(row) >= lo and np.max(row) < hi
-        assert np.min(col) >= lo and np.max(col) < hi
-        assert len(row) == len(col)
-        
+        if SAFE:
+            lo = np.iinfo(itype).min
+            hi = np.iinfo(itype).max
+            assert len(shape) == 2
+            assert shape[0] >= lo and shape[0] < hi
+            assert shape[1] >= lo and shape[1] < hi
+            assert np.min(row) >= lo and np.max(row) < hi
+            assert np.min(col) >= lo and np.max(col) < hi
+            assert len(row) == len(col)
+
     def is_sorted(self):
         """ Tests whether the data are sorted into slow/fast order
         rows are slow direction
@@ -97,7 +99,7 @@ class sparse_frame( object ):
             cImageD11.sparse_is_sorted( self.row, self.col ) == 0
 
     def to_dense(self, data=None, out=None):
-        """ returns the full 2D image 
+        """ returns the full 2D image
         data = name in self.pixels or 1D array matching self.nnz
         Does not handle repeated indices
         e.g.  obj.to_dense( obj.pixels['raw_intensity'] )
@@ -118,7 +120,7 @@ class sparse_frame( object ):
         scipy.sparse.coo_matrix((data, (self.row, self.col)), shape=(self.shape)).todense(out=out)
         # does not handle duplicate indices if they were present:
         #        adr = self.row.astype(np.intp) * self.shape[1] + self.col
-        #        out.flat[adr] = data    
+        #        out.flat[adr] = data
         return out
 
     def mask( self, msk ):
@@ -136,16 +138,15 @@ class sparse_frame( object ):
 
     def set_pixels( self, name, values, meta=None ):
         """ Named arrays sharing these labels """
-        assert len(values) == self.nnz
+        if SAFE: assert len(values) == self.nnz
         self.pixels[name] = values
         if meta is not None:
             self.meta[name] = meta
-            
+
 
     def sort_by( self, name ):
-        """ Not sure when you would do this. For sorting 
+        """ Not sure when you would do this. For sorting
         by a peak labelling to get pixels per peak """
-        assert name in self.pixels
         order = np.argsort( self.pixels[name] )
         self.reorder( self, order )
 
@@ -156,12 +157,12 @@ class sparse_frame( object ):
 
     def reorder( self, order ):
         """ Put the pixels into a different order (in place) """
-        assert len(order) == self.nnz
+        if SAFE: assert len(order) == self.nnz
         self.row[:] = self.row[order]
         self.col[:] = self.col[order]
         for name, px in self.pixels.items():
             px[:] = px[order]
-        
+
     def threshold(self, threshold, name='intensity'):
         """
         returns a new sparse frame with pixels > threshold
@@ -169,7 +170,7 @@ class sparse_frame( object ):
         return self.mask( self.pixels[name] > threshold )
 
     def to_hdf_group( frame, group ):
-        """ Save a 2D sparse frame to a hdf group 
+        """ Save a 2D sparse frame to a hdf group
         Makes 1 single frame per group
         """
         itype = np.dtype( frame.row.dtype )
@@ -191,71 +192,97 @@ class sparse_frame( object ):
         for pxname, px in frame.pixels.items():
             group.require_dataset( pxname, shape=(frame.nnz,),
                                    dtype=px.dtype,
-                                   **opts ) 
+                                   **opts )
             group[pxname][:] = px
             if pxname in frame.meta:
                 group[pxname].attrs = dict( frame.meta[pxname] )
 
 
-                
-class SparseScan( object ):
-    
-    omeganames = ['measurement/rot_center', 'measurement/rot',
+omeganames = ['measurement/rot_center', 'measurement/rot',
                   'measurement/diffrz_center', 'measurement/diffrz']
-    dtynames   = ['measurement/dty_center', 'measurement/dty',
+dtynames   = ['measurement/dty_center', 'measurement/dty',
                   'measurement/diffty_center', 'measurement/diffty']
-    
-    def __init__( self, hname, scan ):
+
+
+class SparseScan( object ):
+
+
+    def __init__( self, hname, scan, start = 0, n=None,
+                  names = ['row','col','intensity'],
+                  omeganames = omeganames,
+                  dtynames = dtynames ):
         """
         hname : file coming from a sparse segmentation
         scan : a scan within that file
         motors : which motor channels to (try) to read
-        
-        assumes the scan fits into memory (could be problematic)
+
+        start : first frame to read
+        n = number of frames to read
+
+        if the scan does not fit into memory use (start, n)
         """
+        self.names = names
+        self.omeganames = omeganames
+        self.dtynames = dtynames
+
         with h5py.File(hname,"r") as hin:
             grp = hin[scan]
-            self.shape = tuple( [ int(v) for v in ( grp.attrs['nframes'], 
-                                                    grp.attrs['shape0'], 
+            self.shape = tuple( [ int(v) for v in ( grp.attrs['nframes'],
+                                                    grp.attrs['shape0'],
                                                     grp.attrs['shape1'] ) ] )
+
+            self.nnz = grp['nnz'][:]
+            self.ipt = np.concatenate( ( (0,) , np.cumsum(self.nnz, dtype=int) ) )
+
+            # read the motors
             self.motors = {}
+            if n is None:
+                end = len(self.nnz)
+            else:
+                end = n
             for name, motors in [ ('omega',self.omeganames),
                                   ('dty',self.dtynames) ]:
                 for motor in motors:
                     if motor in grp:
-                        self.motors[ name ] = grp[motor][:]
+                        self.motors[ name ] = grp[motor][start:end]
                         break
-                
-            self.nnz = grp['nnz'][:]
-            self.ipt = np.concatenate( ( (0,) , np.cumsum(self.nnz, dtype=int) ) )
-            if 'frame' in grp:
-                self.frame  = grp['frame'][:]
-            self.row = grp['row'][:]
-            self.col = grp['col'][:]
-            self.intensity = grp['intensity'][:]
-            
+            # read the pixels
+            s = self.ipt[ start ]
+            if n is None:
+                e = self.ipt[-1]
+            else:
+                e = self.ipt[ n+1 ]
+
+            for name in self.names:
+                if name in grp:
+                    setattr( self, name, grp[name][s:e] )
+
     def getframe(self, i):
         # (self, row, col, shape, itype=np.uint16, pixels=None):
         s = self.ipt[i]
         e = self.ipt[i+1]
+        if s == e:
+            import pdb
+            pdb.set_trace()
         return  sparse_frame( self.row[ s: e],
                       self.col[ s: e],
                       self.shape[1:],
-                      pixels = { 'intensity': self.intensity[ s: e] } )
-        
-            
+                      pixels = { name : getattr( self, name)[s:e] for name in self.names } )
+
+
     def cplabel(self, threshold = 0, countall=True ):
         """ Label pixels using the connectedpixels assigment code
         Fills in:
            self.nlabels = number of peaks per frame
            self.labels  = peak labels (should be unique)
            self.total_labels = total number of peaks
-           
+
         if countall == True : labels all peaks from zero
                     == False : labels from 1 on each frame
         """
         self.nlabels = np.zeros( len(self.nnz), np.int32 )
         self.labels = np.zeros( len(self.row), "i")
+        self.names.append('labels')
         nl = 0
         # TODO: run this in parallel with threads?
         for i, npx in enumerate( self.nnz ):
@@ -269,7 +296,7 @@ class SparseScan( object ):
                     threshold,
                     self.labels[ s : e ] )
                 # zero label is the background!
-                self.labels[ s : e ] = np.where( self.labels[ s : e ] > 0, 
+                self.labels[ s : e ] = np.where( self.labels[ s : e ] > 0,
                                                  self.labels[ s : e ] + nl, 0 )
             else:
                 self.nlabels[i] = 0
@@ -277,7 +304,7 @@ class SparseScan( object ):
                 nl += self.nlabels[i]
         self.total_labels = self.nlabels.sum()
 
-          
+
     def lmlabel(self, threshold = 0, countall=True, smooth=True  ):
         """ Label pixels using the localmax assigment code
         Fills in:
@@ -289,6 +316,7 @@ class SparseScan( object ):
         """
         self.nlabels = np.zeros( len(self.nnz), np.int32 )
         self.labels = np.zeros( len(self.row), "i")
+        self.names.append('labels')
         if smooth:
             self.signal = np.empty( self.intensity.shape, np.float32 )
         else:
@@ -304,7 +332,7 @@ class SparseScan( object ):
             e = self.ipt[i+1]
             if npx > 0:
                 if smooth:
-                    cImageD11.sparse_smooth( self.intensity[ s: e], 
+                    cImageD11.sparse_smooth( self.intensity[ s: e],
                                             self.row[s:e],
                                             self.col[s:e],
                                             self.signal[s:e] )
@@ -322,17 +350,16 @@ class SparseScan( object ):
             if countall:
                 nl += self.nlabels[i]
         self.total_labels = self.nlabels.sum()
-            
+
     def moments(self):
         """ Computes the center of mass in s/f/omega
-        returns a columnfile
         """
         pks = {}
         i32 = self.intensity.astype(np.float32)
-        pks['Number_of_pixels'] = np.bincount(self.labels, 
+        pks['Number_of_pixels'] = np.bincount(self.labels,
                                               weights=None,
                                               minlength = self.total_labels+1 )[1:]
-        pks['sum_intensity'] = np.bincount(self.labels, 
+        pks['sum_intensity'] = np.bincount(self.labels,
                                            weights=i32,
                                            minlength = self.total_labels+1 )[1:]
         pks['s_raw'] = np.bincount(self.labels,
@@ -350,8 +377,8 @@ class SparseScan( object ):
                            minlength = self.total_labels+1 )[1:]
                 pks[name] /= pks['sum_intensity']
         return pks
-                
-    
+
+
 def from_data_mask( mask, data, header ):
     """
     Create a sparse from a dense array
@@ -393,7 +420,7 @@ def from_data_cut( data, cut, header={}, detectormask=None):
     spf.set_pixels( 'intensity', val.ravel()[:nnz].copy(), dict(header) )
     return spf
 
-    
+
 
 def from_hdf_group( group ):
     itype = np.dtype( group.attrs['itype'] )
@@ -423,7 +450,7 @@ def sparse_moments( frame, intensity_name, labels_name ):
 class overlaps_linear:
     """ Memory caching object for the linear time algorithm to find
     peak overlaps
-    
+
     Given (row1, col1, label1) and (row2, col2, label2) it finds pixels
     where (row[i] == row2[i]) and (col1[i] == col2[i])
     and returns (labels1[i], labels2[i], sum_pixels[i])
@@ -433,7 +460,7 @@ class overlaps_linear:
         """ nnzmax = max pixels on a frame """
         self.nnzmax = nnzmax
         self.realloc()
-        
+
     def realloc(self):
         nnzmax = self.nnzmax
         self.ki = np.empty( nnzmax,'i' )
@@ -441,8 +468,8 @@ class overlaps_linear:
         self.ect = np.empty( nnzmax, 'i' )
         self.tj  = np.empty( nnzmax, 'i' )
         self.tmp = np.empty( nnzmax+1,'i')
-        
-    def __call__(self, row1, col1, labels1, n1, 
+
+    def __call__(self, row1, col1, labels1, n1,
                        row2, col2, labels2, n2, checkmem=True ):
         if checkmem:
             assert len(row1)==len(col1)==len(labels1)
@@ -451,9 +478,11 @@ class overlaps_linear:
             if nnz > self.nnzmax:
                 self.nnzmax = nnz
                 print("realloc",nnz)
-                self.realloc()                
+                self.realloc()
         npx = cImageD11.sparse_overlaps( row1, col1, self.ki[:len(row1)],
                                          row2, col2, self.kj[:len(row2)] )
+        if npx == 0: # there are no overlaps
+            return 0, None
         r = labels1[ self.ki[:npx] ]  # my labels
         c = labels2[ self.kj[:npx] ]  # your labels
         nedge = cImageD11.compress_duplicates( r, c, self.ect[:npx], self.tj[:npx], self.tmp )
@@ -462,31 +491,33 @@ class overlaps_linear:
         rcl[:,0] = r[:nedge]
         rcl[:,1] = c[:nedge]
         rcl[:,2] = self.ect[:nedge]
-        return rcl
-    
+        return nedge, rcl
+
 
 class overlaps_matrix:
     """   Memory caching object for the quadratic time algorithm to find
     peak overlaps
-    
+
     Given (row1, col1, label1) and (row2, col2, label2) it finds pixels
     where (row[i] == row2[i]) and (col1[i] == col2[i])
     and returns (labels1[i], labels2[i], sum_pixels[i])
     ... so the number of overlapping pixels for that pair of labels
-    
+
     This is easier to understand and faster for small number of peaks per frame
     """
     def __init__(self, npkmax=256):
         self.npkmax = npkmax
         self.realloc()
-        
+
     def realloc(self):
         self.matmem = np.empty( (self.npkmax* self.npkmax,), 'i')
         # potentially n^2 overlaps. Really?
         self.results = np.empty( (3*self.npkmax*self.npkmax), 'i')
-        
+
     def __call__(self, row1, col1, labels1, n1,
                        row2, col2, labels2, n2, checkmem=True ):
+        assert labels1.max() < n1
+        assert labels2.max() < n2
         mx = max(n1, n2)
         if max(n1, n2) > self.npkmax:
             self.npkmax = mx
@@ -496,11 +527,11 @@ class overlaps_matrix:
         mat.shape = n1, n2
         nov = cImageD11.coverlaps( row1, col1, labels1,
                                    row2, col2, labels2,
-                                   mat, self.results )  
-        return self.results[:nov*3].reshape((nov,3))
-        
-    
-    
+                                   mat, self.results )
+        return nov, self.results[:nov*3].reshape((nov,3))
+
+
+
 def overlaps(frame1, labels1, frame2, labels2):
     """
     figures out which label of self matches which label of other
@@ -531,7 +562,7 @@ def overlaps(frame1, labels1, frame2, labels2):
     # really?
     return cedges
 
-    
+
 def sparse_connected_pixels( frame,
                              label_name="connectedpixels",
                              data_name="intensity",
@@ -560,7 +591,7 @@ def sparse_localmax( frame,
     imx = np.zeros( frame.nnz, 'i')
     nlabel = cImageD11.sparse_localmaxlabel(
         frame.pixels[data_name], frame.row, frame.col,
-        vmx, imx, labels )                   
+        vmx, imx, labels )
     frame.set_pixels( label_name, labels, { "nlabel" : nlabel }  )
     return nlabel
 
@@ -572,11 +603,11 @@ def sparse_smooth( frame, data_name='intensity' ):
                              frame.col,
                              smoothed )
     return smoothed
-    
-                              
-        
 
 
 
-        
+
+
+
+
 

@@ -33,12 +33,12 @@ class DataSet:
     
     # simple strings or ints
     ATTRNAMES = ( "dataroot", "analysisroot", "sample", "dset", "shape", "dsname", 
-                  "datapath", "analysispath", "masterfile", 
+                  "datapath", "analysispath", "masterfile",
                   "limapath"
                 )
     STRINGLISTS = ( "scans", "imagefiles", "sparsefiles" )
     # sinograms
-    NDNAMES = ( "omega", "dty", "nnz", "frames_per_file" )
+    NDNAMES = ( "omega", "dty", "nnz", "frames_per_file", "nlm" )
 
     def __init__(self,
                  dataroot = ".",
@@ -66,9 +66,9 @@ class DataSet:
         
         # These are in order !
         self.scans = None # read from master or load from analysis        
-        self.imagefiles = []        # List of strings. w.r.t self.datapath
-        self.frames_per_file = []    # how many frames in this file
-        self.sparsefiles = []       # matches to self.imagefiles
+        self.imagefiles = None        # List of strings. w.r.t self.datapath
+        self.frames_per_file = None    # how many frames in this file
+        self.sparsefiles = None       # matches to self.imagefiles
         
         self.shape = (0, 0)
         self.omega = None
@@ -81,7 +81,7 @@ class DataSet:
             r.append('%s = "%s"'%( name, getattr(self, name) ) )
         r.append( 'shape = ( %d, %d)'%tuple(self.shape) )
         if self.scans is not None:
-            r.append( '# scans %d from %d to %d'%(
+            r.append( '# scans %d from %s to %s'%(
                 len(self.scans), self.scans[0], self.scans[-1] ))
         return  "\n".join(r)
 
@@ -208,7 +208,10 @@ class DataSet:
         self.ostep = (self.omax - self.omin) / (nomega - 1)
         self.ymin = self.dty.min()
         self.ymax = self.dty.max()
-        self.ystep = (self.ymax - self.ymin) / (ny - 1)
+        if ny > 1:
+            self.ystep = (self.ymax - self.ymin) / (ny - 1)
+        else:
+            self.ystep = 1
         self.obincens = np.linspace( self.omin, self.omax, nomega )
         self.ybincens = np.linspace( self.ymin, self.ymax, ny )
         self.obinedges = np.linspace( self.omin-self.ostep/2, self.omax + self.ostep/2, nomega + 1 )
@@ -242,6 +245,27 @@ class DataSet:
                 nnz.append( hin[self.limapath]['nnz'][:] )
         self.nnz = np.concatenate( nnz ).reshape( self.shape ).astype( np.int32 )
         logging.info('imported nnz, average %f'%(self.nnz.mean())) # expensive if you are not logging it.
+        
+   
+    def compute_pixel_labels(self):
+        nlm = []
+        for spname in self.sparsefiles:
+            n, l = peaklabel.add_localmax_peaklabel( os.path.join( self.analysispath, spname ),
+                                                     self.limapath )
+            nlm.append(n)
+        self.nlm = np.concatenate( nlm ).reshape( self.shape )
+        
+        
+    def import_nlm(self):
+        """ Read the Nlmlabels 
+        These are the number of localmax peaks per frame
+        """
+        nlm = []
+        for spname in self.sparsefiles:
+            with h5py.File( os.path.join( self.analysispath, spname ), "r" ) as hin:
+                nlm.append( hin[self.limapath]['Nlmlabel'][:] )
+        self.nlm = np.concatenate( nlm ).reshape( self.shape )
+        logging.info('imported nlm, max %d'%(self.nlm.max()))
   
 
     def check_files(self, path, filenames, verbose = 0):
@@ -285,24 +309,31 @@ class DataSet:
             # The string lists
             for name in self.STRINGLISTS:
                 data = getattr( self, name, None )
-                if data is not None:
+                if data is not None and len(data):
                     sdata = np.array( data, "S" )
-                    grp.create_dataset( name, 
-                                        data = sdata,
-                                        chunks = sdata.shape,
-                                        dtype = h5py.string_dtype(),
-                                         **ZIP )
+                    ds = grp.require_dataset( name, 
+                                              shape = sdata.shape, 
+                                              chunks = sdata.shape,
+                                              dtype = h5py.string_dtype(),
+                                              **ZIP )
+                    ds[:] = sdata
             #
             for name in self.NDNAMES:
                 data = getattr(self, name, None)
                 if data is not None:
-                    chunks = guess_chunks(name, data.shape)
                     try:
-                        grp.create_dataset( name, data=data,
-                                        chunks = chunks,
-                                        **ZIP )
+                        chunks = guess_chunks(name, data.shape)
+                        ds = grp.require_dataset( name, 
+                                                  shape = data.shape, 
+                                                  chunks = chunks,
+                                                  dtype = data.dtype,
+                                                  **ZIP )
+                        ds[:] = data
                     except:
-                        print(name, chunks, data.shape)
+                        print(name)
+                        print(len(data))
+                        print(data.shape)
+                        print(chunks)
                         raise
             
 
@@ -332,6 +363,31 @@ def np2str( inp ):
 
 def load( h5name, h5group = '/' ):
     return DataSet().load( h5name, h5group )
+
+def import_from_sparse( hname ):
+    ds = DataSet()
+    with h5py.File(hname,'r') as hin:
+        scans = list(hin['/'])
+        order = np.argsort( [ float(v) for v in scans if v.endswith('.1')] )
+        scans = [ scans[i] for i in order ]
+        dty =  [ hin[scan]['instrument/positioners/dty'][()] for scan in scans ]
+        omega = [ hin[scan]['measurement/rot_center'][()] for scan in scans ]
+        nnz = [hin[scan]['nnz'][()] for scan in scans]
+        nlm = [hin[scan]['Nlmlabel'][()] for scan in scans]
+    ds.scans = scans
+    ds.omega = omega
+    ds.nnz = nnz
+    ds.omega = np.array(ds.omega)
+    ds.shape = ds.omega.shape
+    ds.nnz = np.array(nnz)
+    assert ds.nnz.shape == ds.shape
+    ds.nlm = np.array(nlm)
+    assert ds.nlm.shape == ds.shape
+    ds.dty = np.empty( ds.shape, float )
+    ds.dty[:] = np.array(dty)[:,np.newaxis]
+    assert ds.dty.shape == ds.shape
+    ds.guessbins()
+    return ds
 
 # Example
 #    s = dataset(
