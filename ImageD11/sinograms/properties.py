@@ -20,6 +20,7 @@ def remove_shm_from_resource_tracker():
     """Monkey-patch multiprocessing.resource_tracker so SharedMemory won't be tracked
     More details at: https://bugs.python.org/issue38119
     """
+    self = None
     def fix_register(name, rtype):
         if rtype == "shared_memory":
             return
@@ -298,6 +299,7 @@ def process(qin, qshm, qout, hname, scans):
     pij = {}
     mypks = {}
     pkid = {}
+    prev = None # suppress flake8 idiocy
     for i in range(start, end+1):
         scan = ImageD11.sparseframe.SparseScan( hname, scans[i] )
         mypks[i], pii[i] = props(scan, i)
@@ -426,14 +428,13 @@ def main( dsname, sparsename, pkname ):
 
 
 if __name__=="__main__":
-    import sys
     dsname = sys.argv[1]
     sparsename = sys.argv[2]
     pkname = sys.argv[3]
     main( dsname, sparsename, pkname )
 
     print("Your stuff left in shm:")
-    os.system(f'ls -l /dev/shm | grep wright')
+    os.system(f"ls -l /dev/shm | grep {os.environ['USER']}")
     print("... all done")
 
 
