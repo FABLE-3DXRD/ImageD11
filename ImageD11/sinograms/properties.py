@@ -34,7 +34,7 @@ def remove_shm_from_resource_tracker():
         del resource_tracker._CLEANUP_FUNCS["shared_memory"]
 ######################################################################################
 remove_shm_from_resource_tracker()
-NPROC = max( 1, os.cpu_count() - 1 )
+NPROC = max( 1, int(os.environ['SLURM_CPUS_PER_TASK']) - 1 )
 
 
 class tictoc:
@@ -93,11 +93,31 @@ if 0:
 ######
 
 def get_start_end( n, p ):
-    """ For splitting up the rows over processes """
-    step = (n+p)//p
-    starts = list( range( 0, n, step ) )
-    ends = starts[1:] + [n-1,]
-    return list( zip(starts, ends) )
+    """ For splitting up the scan row over processes
+    n = number of jobs
+    p = number of processes
+    
+    All processes must do at least two rows to get the overlaps between rows.
+    The work sharing is based on these overlaps.
+    
+    rows :  0  1  2  3  4  5   etc.
+    overlap  01 12 23 34 45
+    """
+    overlaps = [ (i-1,i) for i in range(1,n) ]
+    assert len(overlaps) >= p
+    joins_per_job = np.zeros(p, int)
+    for i,o in enumerate(overlaps):
+        joins_per_job[i%p] += 1
+    assert np.sum(joins_per_job) == len(overlaps)
+    start = 0
+    slices=[]
+    for i in range(p):
+        end = start + joins_per_job[i]
+        ss = overlaps[start][0]
+        se = overlaps[end-1][1]
+        slices.append( (ss, se) )
+        start += joins_per_job[i]
+    return slices
 
 def countse( se ):
     """ counts the points in a block of start/end"""
@@ -236,9 +256,12 @@ class pks_table:
         with h5py.File( h5name, 'a' ) as hout:
             grp = hout.require_group( group )
             for name in 'ipk pk_props'.split():
+                # ipk = pointer to start of a scan
+                # pk_props = peak properties
                 data = getattr( self, name ).array
                 ds = grp.require_dataset( name = name, shape = data.shape, dtype = data.dtype, **opts )
                 ds[:] = data
+            # wtf is npk?
             data = self.npk
             ds = grp.require_dataset( name = 'npk', shape = data.shape, dtype = data.dtype, **opts )
             ds[:] = data
@@ -265,7 +288,7 @@ class pks_table:
         return cc
     
 
-def process(qin, qout, hname, scans):
+def process(qin, qshm, qout, hname, scans):
     remove_shm_from_resource_tracker()
     start, end = qin.get()
     n2 = 0
@@ -288,7 +311,7 @@ def process(qin, qout, hname, scans):
         qout.put( (i, len(mypks[i][0]), n1, n2) )
         prev = scan
     # Now we are waiting for the shared memory to save the results
-    shm = qin.get()
+    shm = qshm.get()
     pkst = pks_table( **shm )
     ip = pkst.ipk.array
     rc = pkst.rc.array
@@ -345,13 +368,14 @@ def process(qin, qout, hname, scans):
     
         
 def goforit(ds, sparsename):
-    qin = mp.Queue(maxsize=NPROC*2)
+    qin = mp.Queue(maxsize=NPROC)
+    qshm = mp.Queue(maxsize=NPROC)
     qresult = mp.Queue(maxsize=len(ds.scans))
     out = []
     with mp.Pool(NPROC, initializer=process, 
-               initargs=(qin, qresult, sparsename, ds.scans)) as pool:
+               initargs=(qin, qshm, qresult, sparsename, ds.scans)) as pool:
         slices = get_start_end( len(ds.scans), NPROC )
-        for s,e in slices:
+        for i,(s,e) in enumerate(slices):
             qin.put((s,e))
         waiting = countse( slices )
         for i in tqdm.tqdm(range(waiting)):
@@ -363,7 +387,7 @@ def goforit(ds, sparsename):
         shm = mem.export()
         # workers fill the shared memory
         for i in range(NPROC):
-            qin.put( shm )
+            qshm.put( shm )
         dones = set()
         for i in tqdm.tqdm(range(NPROC)):
             # check done
@@ -374,12 +398,16 @@ def goforit(ds, sparsename):
     return out, ks, P, mem
 
 def main( dsname, sparsename, pkname ):
-    
+    global NPROC
     try:
         rmem = None
         t = tictoc()
         ds = ImageD11.sinograms.dataset.load(dsname)
-        t('read ds '+dsname)
+        t('read ds %s'%(dsname))
+        nscans = len(ds.scans)
+        if NPROC > nscans-1:
+            NPROC = nscans-1
+        print('Nscans',nscans,'NPROC', NPROC)
         peaks, ks, P, rmem = goforit(ds, sparsename)
         t('%d label and pair'%(len(rmem.pk_props.array[0])))
 #        rmem.save( pkname )        
@@ -390,6 +418,7 @@ def main( dsname, sparsename, pkname ):
         t('write hdf5')
     except Exception as e:
         print('Unhandled exception:',e)
+        raise
     finally:
         if rmem is not None:
             del rmem

@@ -516,8 +516,10 @@ class overlaps_matrix:
 
     def __call__(self, row1, col1, labels1, n1,
                        row2, col2, labels2, n2, checkmem=True ):
-        assert labels1.max() < n1
-        assert labels2.max() < n2
+        assert labels1.max()-1 < n1, "%d %d %d"%(labels1.min(),
+                                               labels1.max(),
+                                               n1)
+        assert labels2.max()-1 < n2
         mx = max(n1, n2)
         if max(n1, n2) > self.npkmax:
             self.npkmax = mx
