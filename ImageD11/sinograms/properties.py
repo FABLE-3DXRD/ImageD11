@@ -437,7 +437,7 @@ if __name__=="__main__":
     main( dsname, sparsename, pkname )
 
     print("Your stuff left in shm:")
-    os.system(f"ls -l /dev/shm | grep {os.environ['USER']}")
+    os.system("ls -l /dev/shm | grep %s"%(os.environ['USER']))
     print("... all done")
 
 

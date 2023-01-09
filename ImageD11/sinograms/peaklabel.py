@@ -46,7 +46,7 @@ def pairscans( s1, s2, omegatol = 0.01 ):
         # check omega angles match
         o1 = s1.motors['omega'][s1.omegaorder[i]]
         o2 = s2.motors['omega'][s2.omegaorder[i]]
-        assert abs( o1 - o2 ) < omegatol, f'diff {o1-o2}, tol {omegatol}'
+        assert abs( o1 - o2 ) < omegatol, 'diff %f, tol %f'%(o1-o2, omegatol)
         if (s1.nnz[s1.omegaorder[i]] == 0) or (s2.nnz[s2.omegaorder[i]] == 0):
             continue
         f0 = s1.getframe( s1.omegaorder[i] )
@@ -170,10 +170,10 @@ def build_overlap_matrix(ds, hname):
         return spscan
 
     def pr2( scan1, scan2 ):
-        assert scan1.sinorow == row1
-        assert scan2.sinorow == row2
+        #assert scan1.sinorow == row1
+        #assert scan2.sinorow == row2
         pairs = pairscans( ds, scan1, scan2 )
-        return pairs, row1, row2
+        return pairs #, row1, row2
 
     lo = 0
     hi = len(ds.scans)
