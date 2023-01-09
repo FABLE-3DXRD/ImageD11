@@ -12,42 +12,6 @@ import scipy.sparse.csgraph
 #  ...          nnz = pixels per frame. Shape = number of frames.
 #  ...          row/col/intensity
 
-opts = {
-        "chunks": (10000,),
-        "maxshape": (None,),
-        "compression": "lzf",
-        "shuffle": True,
-       }
-
-
-def add_connected_peaklabel( h5name, h5path, threshold=0 ):
-    # this will load the whole scan into memory.
-    scan = sparseframe.SparseScan( h5name, h5path )
-    scan.cplabel( threshold, countall=False )
-    with h5py.File( h5name, "a" ) as hsp:
-        grp = hsp.require_group( h5path )
-        if 'cplabel' in grp:
-            grp['cplabel'][:] = scan.labels
-            grp['Ncplabel'][:] = scan.nlabels
-        else:
-            grp.create_dataset( name = 'cplabel', data = scan.labels, **opts )
-            grp.create_dataset( name = 'Ncplabel', data = scan.nlabels )
-    return scan.nlabels, scan.labels
-
-def add_localmax_peaklabel( h5name, h5path, smooth=True ):
-    scan = sparseframe.SparseScan( h5name, h5path )
-    scan.lmlabel( smooth=smooth, countall=False )
-    with h5py.File( h5name, "a" ) as hsp:
-        grp = hsp.require_group( h5path )
-        if 'lmlabel' in grp:
-            grp['lmlabel'][:] = scan.labels
-            grp['Nlmlabel'][:] = scan.nlabels
-        else:
-            grp.create_dataset( name = 'lmlabel', data = scan.labels, **opts )
-            grp.create_dataset( name = 'Nlmlabel', data = scan.nlabels )
-    return scan.nlabels, scan.labels
-
-
 
 def pairrow( s , row):
     """
@@ -82,7 +46,7 @@ def pairscans( s1, s2, omegatol = 0.01 ):
         # check omega angles match
         o1 = s1.motors['omega'][s1.omegaorder[i]]
         o2 = s2.motors['omega'][s2.omegaorder[i]]
-        assert abs( o1 - o2 ) < omegatol
+        assert abs( o1 - o2 ) < omegatol, f'diff {o1-o2}, tol {omegatol}'
         if (s1.nnz[s1.omegaorder[i]] == 0) or (s2.nnz[s2.omegaorder[i]] == 0):
             continue
         f0 = s1.getframe( s1.omegaorder[i] )
@@ -91,6 +55,47 @@ def pairscans( s1, s2, omegatol = 0.01 ):
                     f1.row, f1.col, f1.pixels['labels'], s2.nlabels[ s2.omegaorder[i] ] )
         pairs[ s1.sinorow, s1.omegaorder[i], s2.sinorow, s2.omegaorder[i] ] =  ans
     return pairs
+
+
+
+
+if 0: # remove unused code in here
+  opts = {
+        "chunks": (10000,),
+        "maxshape": (None,),
+        "compression": "lzf",
+        "shuffle": True,
+       }
+    
+  def add_connected_peaklabel( h5name, h5path, threshold=0 ):
+    # this will load the whole scan into memory.
+    scan = sparseframe.SparseScan( h5name, h5path )
+    scan.cplabel( threshold, countall=False )
+    with h5py.File( h5name, "a" ) as hsp:
+        grp = hsp.require_group( h5path )
+        if 'cplabel' in grp:
+            grp['cplabel'][:] = scan.labels
+            grp['Ncplabel'][:] = scan.nlabels
+        else:
+            grp.create_dataset( name = 'cplabel', data = scan.labels, **opts )
+            grp.create_dataset( name = 'Ncplabel', data = scan.nlabels )
+    return scan.nlabels, scan.labels
+
+  def add_localmax_peaklabel( h5name, h5path, smooth=True ):
+    scan = sparseframe.SparseScan( h5name, h5path )
+    scan.lmlabel( smooth=smooth, countall=False )
+    with h5py.File( h5name, "a" ) as hsp:
+        grp = hsp.require_group( h5path )
+        if 'lmlabel' in grp:
+            grp['lmlabel'][:] = scan.labels
+            grp['Nlmlabel'][:] = scan.nlabels
+        else:
+            grp.create_dataset( name = 'lmlabel', data = scan.labels, **opts )
+            grp.create_dataset( name = 'Nlmlabel', data = scan.nlabels )
+    return scan.nlabels, scan.labels
+
+
+
 
 
 class IncrementalSymmetricCOOMatrix:

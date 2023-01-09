@@ -302,6 +302,8 @@ def process(qin, qshm, qout, hname, scans):
     prev = None # suppress flake8 idiocy
     for i in range(start, end+1):
         scan = ImageD11.sparseframe.SparseScan( hname, scans[i] )
+        global omega
+        scan.motors['omega'] = omega[i] 
         mypks[i], pii[i] = props(scan, i)
 #        nlabels[i] = scan.nlabels # peaks per frame information
         pkid[i] = np.concatenate(([0,], np.cumsum(scan.nlabels)))
@@ -400,11 +402,12 @@ def goforit(ds, sparsename):
     return out, ks, P, mem
 
 def main( dsname, sparsename, pkname ):
-    global NPROC
+    global NPROC, omega
     try:
         rmem = None
         t = tictoc()
         ds = ImageD11.sinograms.dataset.load(dsname)
+        omega = ds.omega
         t('read ds %s'%(dsname))
         nscans = len(ds.scans)
         if NPROC > nscans-1:
