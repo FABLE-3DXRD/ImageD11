@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import numpy as np
 from PIL import Image
-REAL = np.float 
+REAL = float 
 
 def normalise( im ):
     """ Set mean to 0, std to 1 """

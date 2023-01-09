@@ -296,7 +296,7 @@ class indexer:
         if gv is not None: # do init
             logging.info('gv: %s %s %s'%( str(gv), str(gv.shape), str(gv.dtype)))
             assert gv.shape[1] == 3
-            self.gv = gv.astype( np.float )
+            self.gv = gv.astype( float )
             self.ds = np.sqrt( (gv*gv).sum(axis=1) )
             self.ga = np.zeros(len(self.ds),np.int32)-1 # Grain assignments
             self.gvflat=np.ascontiguousarray(gv, float)

@@ -310,7 +310,7 @@ class columnfile(object):
             else:
                 nrows = len(raw)-i-1 # skip the last row
                 last = len(raw)-1
-            cols = [ np.empty( nrows , np.float ) for _ in range(len(row0))]
+            cols = [ np.empty( nrows , float ) for _ in range(len(row0))]
             fillcols( raw[i:last], cols )
             self.__data=cols
         except:
