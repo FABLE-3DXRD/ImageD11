@@ -24,12 +24,15 @@ Setup script
 To re-build the wrappers do:
  cd src && python make_pyf.py
 """
+import sys
+if sys.version_info[0] == 2:
+    print('You should run src/make_pyf.py for python2')
 
 from io import open # this misery may never end.
 
 # For pip / bdist_wheel etc
 import setuptools
-import os, sys, platform, os.path
+import os, platform, os.path
 from distutils.core import setup, Extension
 from distutils.command import build_ext
 
