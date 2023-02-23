@@ -59,6 +59,7 @@ class grain:
     def set_ubi(self, ubi):
         """ Update the orientation and clear cached values """
         self.ubi = np.array(ubi,float)
+        assert np.linalg.det(self.ubi) >= 0, 'Left handed axis system!'
         self.clear_cache()        
 
     def clear_cache(self):
