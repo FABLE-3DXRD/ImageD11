@@ -49,7 +49,11 @@ class SegmenterOptions:
         self.thresholds = tuple( [ self.cut*pow(2,i) for i in range(6) ] )
         # validate input
         if len(self.maskfile):
-            self.mask = 1 - fabio.open(self.maskfile).data
+            m = fabio.open(self.maskfile).data
+            if m.mean() > 0.5:
+                self.mask = 1 - fabio.open(self.maskfile).data
+            else:
+                self.mask = m
             print("# Opened mask", self.maskfile)
         if len(self.bgfile):
             self.bg = fabio.open(self.bgfile).data
@@ -97,6 +101,7 @@ from ImageD11 import sparseframe, cImageD11
 
 @numba.njit
 def select(img, mask, row, col, val, cut):
+    # TODO: This is in now cImageD11.tosparse_{u16|f32}
     # Choose the pixels that are > cut and put into sparse arrays
     k = 0
     for s in range(img.shape[0]):
@@ -151,7 +156,11 @@ def top_pixels(nnz, row, col, val, howmany, thresholds):
 OPTIONS = None  # global. Nasty.
 
 def choose(frm):
-    """ converts a frame to sparse frame"""
+    """ converts a frame to sparse frame
+    
+    TODO: refactor this to set up the options from outside of the 
+    slurm job and stop using a module variable
+    """
     if choose.cache is None:
         # cache the mallocs on this function. Should be one per process
         row = np.empty(OPTIONS.mask.size, np.uint16)
@@ -307,19 +316,19 @@ def setup_slurm_array( dsname, dsgroup='/',
     with open(sbat ,"w") as fout:
         fout.write( """#!/bin/bash
 #SBATCH --job-name=array-lima_segmenter
-#SBATCH --output=%s/lima_segmenter_%A_%a.out
-#SBATCH --error=%s/lima_segmenter_%A_%a.err
+#SBATCH --output=%s/lima_segmenter_%%A_%%a.out
+#SBATCH --error=%s/lima_segmenter_%%A_%%a.err
 #SBATCH --array=0-%d
 #SBATCH --time=02:00:00
 # define memory needs and number of tasks for each array job
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task={options.cores_per_job}
+#SBATCH --cpus-per-task=%d
 #
 date
 echo Running on $HOSTNAME : %s
-%s > %s/lima_segmenter_%A_%a_$SLURM_ARRAY_TASK_ID.log 2>&1
+%s > %s/lima_segmenter_$SLURM_ARRAY_TASK_ID.log 2>&1
 date
-"""%(sdir,sdir,jobs_needed, command, command, sdir))
+"""%(sdir,sdir,jobs_needed, options.cores_per_job, command, command, sdir))
     logging.info("wrote "+sbat)
     return sbat
 

@@ -17,7 +17,7 @@ except ImportError:
     print("   python setup.py develop")
     print("or:")
     print("   python setup.py build_ext --inplace")
-    sys.exit()
+    raise
 
 # For 32 or 64 bits
 nbyte = struct.calcsize("P") # 4 or 8

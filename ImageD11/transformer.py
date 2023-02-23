@@ -343,12 +343,18 @@ class transformer:
     def gof(self, args):
         """ Compute how good is the fit of obs/calc peak positions in tth """
         self.applyargs(args)
+        # 
+        if self.update_fitds:
+            cell = unitcell.unitcell_from_parameters( self.parameterobj )
         # Here, pars is a dictionary of name/value pairs to pass to compute_tth_eta
         tth, eta = self.compute_tth_eta()
         w = self.parameterobj.get("wavelength")
         gof = 0.
         npeaks = 0
         for i in range(len(self.tthc)):# (twotheta_rad_cell.shape[0]):
+            if self.update_fitds:
+                b4 = self.fitds[i]
+                self.fitds[i] = cell.ds( self.fithkls[i] )
             self.tthc[i] = transform.degrees(math.asin(self.fitds[i] * w / 2) * 2)
             diff = numpy.take(tth, self.indices[i]) - self.tthc[i]
 #         print "peak",i,"diff",maximum.reduce(diff),minimum.reduce(diff)
@@ -369,6 +375,7 @@ class transformer:
         self.indices = []  # which peaks used
         self.tthc = []     # computed two theta values
         self.fitds = []    # hmm?
+        self.fithkls = []
         self.fit_tolerance = 1.
         pars = self.parameterobj.get_parameters()
         w = float(pars['wavelength'])
@@ -392,8 +399,13 @@ class transformer:
             if sum(logicals) > 0:
                 self.tthc.append(tthcalc)
                 self.fitds.append(dsc)
+                self.fithkls.append( self.unitcell.ringhkls[dsc][0] )
                 ind = numpy.compress(logicals, list(range(len(tth))))
                 self.indices.append(ind)
+        self.update_fitds = False
+        for p in self.parameterobj.varylist:
+            if p.startswith('cell'):
+                self.update_fitds = True
         guess = self.parameterobj.get_variable_values()
         inc = self.parameterobj.get_variable_stepsizes()
         if len(guess) == 0:
@@ -410,6 +422,9 @@ class transformer:
         self.wavelength = self.parameterobj.get("wavelength")
         self.gof(newguess)
         print(newguess)
+        if self.update_fitds:
+            self.addcellpeaks()
+
 
 
     def addcellpeaks(self, limit=None):

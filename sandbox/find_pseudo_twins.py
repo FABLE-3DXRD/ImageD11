@@ -50,7 +50,7 @@ gv2  = np.dot( gl[0].ubi, hkls )
 hklr  = np.dot( gl[0].ub, gv1 )
 hkli  = hklr.copy()
 rmodg2 = 1/(gv1*gv1).sum(axis=0)
-angerr2 = np.zeros( npks, np.float )
+angerr2 = np.zeros( npks, float )
 
 
 

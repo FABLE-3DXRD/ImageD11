@@ -50,16 +50,24 @@ def runthrough( im1, t1, im2, t2):
     n2 = ImageD11.sparseframe.sparse_localmax( s2 ); t('n2')
     coo = ImageD11.sparseframe.overlaps(s1, 'localmax', s2, 'localmax'); t('coo')
     olin = ImageD11.sparseframe.overlaps_linear(max(s1.nnz, s2.nnz)+1); 
-    olinlap = olin( s1.row, s1.col, s1.pixels['localmax'], s1.meta['localmax']['nlabel'],
-                    s2.row, s2.col, s2.pixels['localmax'], s2.meta['localmax']['nlabel'] ); t('olinlap')
+    novlin, olinlap = olin( s1.row, s1.col, 
+                           s1.pixels['localmax'], 
+                           s1.meta['localmax']['nlabel'],
+                            s2.row, s2.col, 
+                           s2.pixels['localmax'], 
+                           s2.meta['localmax']['nlabel'] ); t('olinlap')
     assert olinlap.shape[0] == coo.nnz
     assert (coo.row == olinlap[:,0]-1).all()
     assert (coo.col == olinlap[:,1]-1).all()
     assert (coo.data == olinlap[:,2]).all()
     t.t = default_timer()
     omat = ImageD11.sparseframe.overlaps_matrix(max(n1,n2)+1); 
-    olinlap = omat( s1.row, s1.col, s1.pixels['localmax'], s1.meta['localmax']['nlabel'],
-                    s2.row, s2.col, s2.pixels['localmax'], s2.meta['localmax']['nlabel'] ); t('omatlap')
+    novmat, olinlap = omat( s1.row, s1.col, 
+                           s1.pixels['localmax'], 
+                           s1.meta['localmax']['nlabel'],
+                            s2.row, s2.col, 
+                           s2.pixels['localmax'],
+                           s2.meta['localmax']['nlabel'] ); t('omatlap')
     assert olinlap.shape[0] == coo.nnz
     assert (coo.row == olinlap[:,0]-1).all()
     assert (coo.col == olinlap[:,1]-1).all()

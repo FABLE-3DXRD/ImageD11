@@ -3,7 +3,7 @@ from __future__ import print_function
 
 from .rc_array import rc_array
 
-from numpy import dot, round_, array, float, allclose, asarray, fabs,\
+from numpy import dot, round_, array, allclose, asarray, fabs,\
     argmin, argmax, sqrt, argsort, take, sum, where, ndarray, eye,\
     zeros, cross, pi, arccos, floor
 from numpy.linalg import inv, LinAlgError
