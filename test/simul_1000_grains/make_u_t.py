@@ -99,6 +99,6 @@ f.write(inp)
 for i,v in enumerate(t.T):
     f.write("pos_grains_%d %f %f %f\n"%(i,v[0],v[1],v[2]))
 for i,v in enumerate(u):
-    f.write("U_grains_%d %f %f %f %f %f %f %f %f %f\n"%(i,
-                              v[0,0],v[0,1],v[0,2],v[1,0],v[1,1],v[1,2],v[2,0],v[2,1],v[2,2] ))
-    
+    f.write("U_grains_%d "%(i))
+    f.write(" ".join( repr(x) for x in v.ravel() ) )
+    f.write('\n')
