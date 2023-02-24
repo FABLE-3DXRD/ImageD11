@@ -39,8 +39,12 @@ def setup():
 
 if __name__=="__main__":
     cmds  = setup()
-#    sys.exit()
-    p = multiprocessing.Pool( multiprocessing.cpu_count() )
+    
+    if 'SLURM_CPUS_PER_TASK' in os.environ:
+        njobs = int(os.environ['SLURM_CPUS_PER_TASK'])
+    else:
+        njobs =  multiprocessing.cpu_count()
+    p = multiprocessing.Pool( njobs )
     p.map( os.system, cmds )
     sys.exit()
     for c in cmds:
