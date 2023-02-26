@@ -156,11 +156,6 @@ if __name__ == "__main__":
     sources = [s for s in glob.glob("*.c") if s.find("module")<0 ]
     clean( sources )
     makepyf( PYF , sources ) 
-    numpy.f2py.run_main( [PYF,] )
-    f2pydir = os.path.dirname(os.path.abspath(numpy.f2py.__file__))
-    for ext in "ch":
-        f = 'fortranobject.'+ext
-        shutil.copyfile( os.path.join(f2pydir, 'src', f), f)
     DOCF = os.path.join("..", "ImageD11", "cImageD11_docstrings.py")
     write_docs( PYF, DOCF )
 
