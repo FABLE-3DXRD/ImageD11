@@ -26,12 +26,16 @@ You should run src/make_pyf.py to update the pyf wrapper and docs
 import sys
 from io import open # this misery may never end.
 # For pip / bdist_wheel etc
-import setuptools
 import os, platform, os.path
-from distutils.core import setup, Extension
-from distutils.command import build_ext
+from setuptools import setup, Extension
+from setuptools.command import build_ext
 #
-import numpy.f2py   # force wrapper re-generation
+import numpy, numpy.f2py   # force wrapper re-generation
+
+if not hasattr( numpy.f2py, 'get_include'):
+    numpy.f2py.get_include = lambda : os.path.join(
+        os.path.dirname(os.path.abspath(numpy.f2py.__file__)),
+        'src')
 
 ############################################################################
 def get_version():
@@ -42,12 +46,6 @@ def get_version():
 
 print("Building version |%s|"%get_version(), "on system:", platform.system())
 ############################################################################
-
-
-
-
-
-
 
 #############################################################################
 # Set the openmp flag if needed. Also CFLAGS and LDSHARED from sys.argv ?
@@ -75,10 +73,10 @@ if platform.system() == "Darwin":
 
 
 class build_ext_subclass( build_ext.build_ext ):
-    def build_extensions(self):
-        """ attempt to defer the numpy import until later """
-        from numpy import get_include
-        self.compiler.add_include_dir(get_include())
+    def build_extension(self, ext):
+        print('Building _cImageD11 module')
+        self.compiler.add_include_dir(numpy.get_include())
+        self.compiler.add_include_dir(numpy.f2py.get_include())
         c = self.compiler.compiler_type
         CF = [] ; LF=[]
         if "CFLAGS" in os.environ:
@@ -91,11 +89,19 @@ class build_ext_subclass( build_ext.build_ext ):
                e.extra_link_args = lopt[ c ] + LF
         print("Customised compiler",c,e.extra_compile_args,
                     e.extra_link_args)
-        build_ext.build_ext.build_extensions(self)
+        if ext.sources[0].endswith('.pyf'):
+            name = ext.sources[0]
+            # generate wrappers
+            print('Creating f2py wrapper for', name)
+            numpy.f2py.run_main( ['--quiet', name])
+            ext.sources[0] = os.path.split(name)[-1].replace('.pyf', 'module.c')
+            ext.sources.append( os.path.join(numpy.f2py.get_include(), 'fortranobject.c' ) )
+        build_ext.build_ext.build_extension(self, ext)
 
-cnames =  "_cImageD11module.c blobs.c cdiffraction.c cimaged11utils.c"+\
+# note that the pyf must come first
+cnames =  "_cImageD11.pyf blobs.c cdiffraction.c cimaged11utils.c"+\
 " closest.c connectedpixels.c darkflat.c localmaxlabel.c sparse_image.c "+\
-" splat.c fortranobject.c"
+" splat.c" 
 
 csources = [os.path.join('src',c) for c in cnames.split()]
 
