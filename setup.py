@@ -21,20 +21,17 @@ from __future__ import print_function
 """
 Setup script
 
-To re-build the wrappers do:
- cd src && python make_pyf.py
+You should run src/make_pyf.py to update the pyf wrapper and docs
 """
 import sys
-if sys.version_info[0] == 2:
-    print('You should run src/make_pyf.py for python2')
-
 from io import open # this misery may never end.
-
 # For pip / bdist_wheel etc
 import setuptools
 import os, platform, os.path
 from distutils.core import setup, Extension
 from distutils.command import build_ext
+#
+import numpy.f2py   # force wrapper re-generation
 
 ############################################################################
 def get_version():
@@ -44,6 +41,13 @@ def get_version():
                 return eval(line.split("=")[1].strip())
 
 print("Building version |%s|"%get_version(), "on system:", platform.system())
+############################################################################
+
+
+
+
+
+
 
 #############################################################################
 # Set the openmp flag if needed. Also CFLAGS and LDSHARED from sys.argv ?
