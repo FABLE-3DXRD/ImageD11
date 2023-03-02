@@ -396,7 +396,7 @@ class pks_table:
         with h5py.File( h5name, 'r' ) as hin:
             grp = hin[ h5group ]
             ipk = grp[ 'ipk' ][:]
-            pk_props = grp[ 'ipk' ][:]
+            pk_props = grp[ 'pk_props' ][:]
             if 'glabel' in grp:
                 glabel = grp['glabel'][:]
                 nlabel = grp.attrs['nlabel']
@@ -432,38 +432,39 @@ class pks_table:
         """
         creates a dictionary of the 3D peaks
         """
-        assert omega.size == len(self.labels)
-        assert dty.size == len(self.labels)
+        assert omega.shape == dty.shape
+        assert omega.size > self.pk_props[4].max()
         
-        out = np.zeros( (7, labels.max()+1) , float)
-        n = numbapkmerge( labels, pks, omega, dty, out)
+        out = [ np.zeros( (self.nlabel) , float) for i in range(7) ]
+        n = numbapkmerge( self.glabel, self.pk_props, omega, dty, out)
         allpks = {
             's_raw' : out[2]/out[1],
             'f_raw' : out[3]/out[1],
             'omega' : out[4]/out[1],
-            'Number_of_pixels' : out[0].copy(),
+            'Number_of_pixels' : out[0],
             'sum_intensity' : out[1],
             'dty' : out[5]/out[1],
             'spot3d_id' : np.arange(len(out[0])),   # points back to labels in pk2d
-            'npk2d': out[6].copy(),
+            'npk2d': out[6],
         }
         return allpks
 
 
 @numba.njit
 def numbapkmerge( labels, pks, omega, dty, out):
+    s1, sI, srI, scI, soI, syI, s0 = out
     for k in range(len(labels)):
         frm = pks[ 4, k ]
         o = omega.flat[ frm ]
         y = dty.flat[ frm ]
         l = labels[ k ]
-        out[0,l] += pks[0,k]    # s1 == number of pixels in a peak
-        out[1,l] += pks[1,k]    # sI == sum of the intensity
-        out[2,l] += pks[2,k]    # srI === sum of intensity * row
-        out[3,l] += pks[3,k]    # scI === sum of intensity * column
-        out[4,l] += o * pks[1,k]
-        out[5,l] += y * pks[1,k]
-        out[6,l] += 1           # s0 == number of 2D peaks
+        s1[l] += pks[0,k]    # s1 == number of pixels in a peak
+        sI[l] += pks[1,k]    # sI == sum of the intensity
+        srI[l] += pks[2,k]    # srI === sum of intensity * row
+        scI[l] += pks[3,k]    # scI === sum of intensity * column
+        soI[l] += o * pks[1,k]
+        syI[l] += y * pks[1,k]
+        s0[l] += 1           # s0 == number of 2D peaks
     return k
     
 
