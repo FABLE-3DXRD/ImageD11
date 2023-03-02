@@ -221,6 +221,8 @@ class SparseScan( object ):
 
         if the scan does not fit into memory use (start, n)
         """
+        self.hname = hname
+        self.scan = scan
         self.names = names
         self.omeganames = omeganames
         self.dtynames = dtynames
