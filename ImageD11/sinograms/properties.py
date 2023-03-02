@@ -1,5 +1,6 @@
 
 import os
+import logging
 import sys
 import time
 import tqdm
@@ -9,8 +10,25 @@ import h5py
 import scipy.sparse
 import scipy.sparse.csgraph
 import ImageD11.sinograms.dataset
-import ImageD11.sinograms.peaklabel
 import ImageD11.sparseframe
+
+### The first part of the code is all to run in parallel on a multicore machine
+# 
+# The 2D sinogram needs to be processed. Each frame has 4 neighbors.
+# 2 in the same rotation and 2 in the previous and next rotation
+# Work is split up to be one process doing two rows and joining them
+# For each worker added you process a row twice
+#
+# A sparse matrix is built in shared memory.
+# 
+# perhaps some refactoring is needed
+#
+# it is building a sparse matrix of (npks x npks) which tags the overlaps.
+# the number of entries in the matrix depends on how many peaks are overlapping.
+#  ... so first the overlaps are counted
+#  ... then each process shares their data
+#  ... for now the matrix is not saved. Should only be about npks * noverlaps.
+#
 
 import multiprocessing as mp
 from multiprocessing import shared_memory, resource_tracker
@@ -37,6 +55,48 @@ def remove_shm_from_resource_tracker():
 remove_shm_from_resource_tracker()
 NPROC = max( 1, int(os.environ['SLURM_CPUS_PER_TASK']) - 1 )
 
+class shared_numpy_array:
+    """See: https://bugs.python.org/issue38119
+    The multiprocessing pool must stick around until the process exits
+    """
+    def __init__(self, ary=None, shape=None, dtype=None, shmname=None,
+                 fill = None):
+        if ary is not None:
+            shape = ary.shape
+            dtype = ary.dtype
+            self.nbytes = ary.nbytes
+        else:
+            self.nbytes = np.prod(shape) * np.dtype(dtype).itemsize
+        if shmname is None:
+            self.shm = shared_memory.SharedMemory(
+                create=True, size = self.nbytes )
+            self.creator=True
+        else:
+            self.shm = shared_memory.SharedMemory(
+                create=False,
+                name = shmname )
+            self.creator=False
+        self.array = np.ndarray( shape, dtype, buffer=self.shm.buf)
+        if ary is not None:
+            self.array[:] = ary
+        if fill is not None:
+            self.array[:] = fill
+            
+    def __del__(self):
+        del self.array
+        self.shm.close()
+        if self.creator:
+            try:
+                self.shm.unlink()
+            except Exception as e:
+                print('Error: ',e)
+    def export(self):
+        return { 'shape' : self.array.shape,
+                 'dtype' : self.array.dtype,
+                 'shmname' : self.shm.name }
+
+
+
 
 class tictoc:
     def __init__(self):
@@ -45,6 +105,54 @@ class tictoc:
         t = default_timer()
         print("%s : %.6f /s"%( msg, t - self.t ) )
         self.t = default_timer()
+
+
+
+
+
+def pairrow( s , row):
+    """
+    s = SparseScan
+
+    returns SparseScan which adds a dictionary of pairs:
+         sourceFrame    destFrame
+        [ idty, iomega, idty, iomega ] : nedge, array( (nedge, 3) )
+                                                     (src, dest, npixels)
+    """
+    s.omegaorder = np.argsort( s.motors["omega"] )
+    s.sinorow = row
+    olap =  ImageD11.sparseframe.overlaps_linear( s.nnz.max()+1 )
+    pairs = {}
+    for i in range(1, len(s.omegaorder)):
+        if (s.nnz[s.omegaorder[i]] == 0) or (s.nnz[s.omegaorder[i-1]] == 0):
+            continue
+        f0 = s.getframe( s.omegaorder[i-1] )
+        f1 = s.getframe( s.omegaorder[i] )
+        ans = olap( f0.row, f0.col, f0.pixels['labels'], s.nlabels[ s.omegaorder[i-1] ],
+                    f1.row, f1.col, f1.pixels['labels'], s.nlabels[ s.omegaorder[i]   ] )
+        pairs[ row, s.omegaorder[i-1], row, s.omegaorder[i] ] =  ans
+    return pairs
+
+
+
+def pairscans( s1, s2, omegatol = 0.051 ):
+    olap =  ImageD11.sparseframe.overlaps_linear( max(s1.nnz.max(), s2.nnz.max())+1 )
+    assert len(s1.nnz) == len(s2.nnz )
+    pairs = {}
+    for i in range(len(s1.nnz)):
+        # check omega angles match
+        o1 = s1.motors['omega'][s1.omegaorder[i]]
+        o2 = s2.motors['omega'][s2.omegaorder[i]]
+        assert abs( o1 - o2 ) < omegatol, 'diff %f, tol %f'%(o1-o2, omegatol)
+        if (s1.nnz[s1.omegaorder[i]] == 0) or (s2.nnz[s2.omegaorder[i]] == 0):
+            continue
+        f0 = s1.getframe( s1.omegaorder[i] )
+        f1 = s2.getframe( s2.omegaorder[i] )
+        ans = olap( f0.row, f0.col, f0.pixels['labels'], s1.nlabels[ s1.omegaorder[i] ],
+                    f1.row, f1.col, f1.pixels['labels'], s2.nlabels[ s2.omegaorder[i] ] )
+        pairs[ s1.sinorow, s1.omegaorder[i], s2.sinorow, s2.omegaorder[i] ] =  ans
+    return pairs
+
 
 def props(scan, i, firstframe=None):
     """
@@ -70,13 +178,18 @@ def props(scan, i, firstframe=None):
         f0 = scan.getframe(j)
         e = s + scan.nlabels[j]
         r[0,s:e] = np.bincount( f0.pixels['labels']-1 )
-        r[1,s:e] = np.bincount( f0.pixels['labels']-1, weights=f0.pixels['intensity'] )
+        signal = np.bincount( f0.pixels['labels']-1, weights=f0.pixels['intensity'] )
+        if signal.min() < 1:
+            print("Bad data",scan.hname, scan.scan,i,j,
+                  scan.nlabels[j], scan.nnz[j],f0.pixels['intensity'].min())
+            raise Exception( 'bad data' )
+        r[1,s:e] = signal
         r[2,s:e] = np.bincount( f0.pixels['labels']-1, weights=f0.row*f0.pixels['intensity'] )
         r[3,s:e] = np.bincount( f0.pixels['labels']-1, weights=f0.col*f0.pixels['intensity'] )
         r[4,s:e] = j + j0
         s = e
     # Matrix entries for this scan with itself:
-    pairs = ImageD11.sinograms.peaklabel.pairrow( scan, i )
+    pairs = pairrow( scan, i )
     return r, pairs
 
 ###### testing / debug
@@ -165,58 +278,35 @@ def compute_storage( peaks ):
     npk = np.array( [ (P[k],M[k][0],M[k][1]) for k in ks ] )
     return ks, npk
 
-
-class shared_numpy_array:
-    """See: https://bugs.python.org/issue38119
-    The multiprocessing pool must stick around until the process exits
-    """
-    def __init__(self, ary=None, shape=None, dtype=None, shmname=None,
-                 fill = None):
-        if ary is not None:
-            shape = ary.shape
-            dtype = ary.dtype
-            self.nbytes = ary.nbytes
-        else:
-            self.nbytes = np.prod(shape) * np.dtype(dtype).itemsize
-        if shmname is None:
-            self.shm = shared_memory.SharedMemory(
-                create=True, size = self.nbytes )
-            self.creator=True
-        else:
-            self.shm = shared_memory.SharedMemory(
-                create=False,
-                name = shmname )
-            self.creator=False
-        self.array = np.ndarray( shape, dtype, buffer=self.shm.buf)
-        if ary is not None:
-            self.array[:] = ary
-        if fill is not None:
-            self.array[:] = fill
-    def __del__(self):
-        del self.array
-        self.shm.close()
-        if self.creator:
-            try:
-                self.shm.unlink()
-            except Exception as e:
-                print('Error: ',e)
-    def export(self):
-        return { 'shape' : self.array.shape,
-                 'dtype' : self.array.dtype,
-                 'shmname' : self.shm.name }
-
-
 class pks_table:
-
-    def __init__(self, npk=None, **kwds):
-        if npk is not None:
-            self.create( npk )
-        else:
-            self.ipk = shared_numpy_array( **kwds['ipk'] )
-            self.rpk = shared_numpy_array( **kwds['rpk'] )
-            self.pk_props = shared_numpy_array( **kwds['pk_props'] )
-            self.rc = shared_numpy_array( **kwds['rc'] )
-
+    def __init__(self, 
+                 npk=None,
+                 ipk=None,
+                 pk_props=None,
+                 rc=None,
+                 rpk=None,
+                 glabel=None,
+                 nlabel=0,
+                 use_shm=False,
+                ):
+        """
+        Cases: 
+           Create from npks counting -> here
+           Read from a file          -> classmethod pks_table.load( h5name )
+           Read from shared memory   -> classmethod pks_table.fromSHM( h5name )
+        """
+        self.npk = npk
+        self.ipk = ipk
+        self.pk_props = pk_props
+        self.rc = rc
+        self.rpk = rpk
+        self.glabel = glabel
+        self.nlabel = nlabel
+        self.use_shm = use_shm
+        # otherwise create
+        if self.npk is not None:
+            self.create( self.npk )
+            
     def create(self, npk):
         # [ nscans, 3 ]
         #       number_of_peaks_in_scan
@@ -256,23 +346,55 @@ class pks_table:
                }
         with h5py.File( h5name, 'a' ) as hout:
             grp = hout.require_group( group )
-            for name in 'ipk pk_props'.split():
-                # ipk = pointer to start of a scan
-                # pk_props = peak properties
-                data = getattr( self, name ).array
-                ds = grp.require_dataset( name = name, shape = data.shape, dtype = data.dtype, **opts )
-                ds[:] = data
-            # wtf is npk?
-            data = self.npk
-            ds = grp.require_dataset( name = 'npk', shape = data.shape, dtype = data.dtype, **opts )
-            ds[:] = data
-            if hasattr(self,'cc'):
+            ds = grp.require_dataset( name = 'ipk', 
+                                     shape = self.ipk.array.shape, 
+                                     dtype = self.ipk.array.dtype, **opts )
+            ds[:] = self.ipk.array
+            ds.attrs['description']='pointer to start of a scan'
+            ds = grp.require_dataset( name = 'pk_props', 
+                                     shape = self.pk_props.array.shape, 
+                                     dtype = self.pk_props.array.dtype, **opts )
+            ds[:] = self.pk_props.array
+            ds.attrs['description']='[ ( s1, sI, srI, scI, id ),  Npks ]'
+            ds = grp.require_dataset( name = 'npk', 
+                                     shape = self.npk.shape, 
+                                     dtype = self.npk.dtype, **opts )
+            ds[:] = self.npk
+            ds.attrs['description']="[ nscans, (N_peaks_in_scan, N_pairs_ii, N_pairs_ij) ]"
+            if hasattr(self,'glabel'):
                 ds = grp.require_dataset( name = 'glabel', 
-                                         shape = self.cc[1].shape, 
-                                         dtype = self.cc[1].dtype, **opts )
-                ds[:] = self.cc[1]
-                grp.attrs['nlabel'] = self.cc[0]
-            
+                                         shape = self.glabel.shape, 
+                                         dtype = self.glabel.dtype, **opts )
+                ds[:] = self.glabel
+                grp.attrs['nlabel'] = self.nlabel
+
+                
+    @classmethod
+    def fromSHM(cls, dct):
+        return cls( ipk = shared_numpy_array( **dct['ipk'] ),
+                    rpk = shared_numpy_array( **dct['rpk'] ),
+                    pk_props = shared_numpy_array( **dct['pk_props'] ),
+                    rc = shared_numpy_array( **dct['rc'] ) )
+    
+    @classmethod
+    def load(cls, h5name, h5group='pks2d'):
+        with h5py.File( h5name, 'r' ) as hin:
+            grp = hout[ h5group ]
+            ipk = grp[ 'ipk' ][:]
+            pk_props = grp[ 'ipk' ][:]
+            if glabel in grp:
+                glabel = grp['glabel'][:]
+                nlabel = grp['glabel'].attrs['nlabel']
+            else:
+                glabel = None
+                nlabel = 0
+            # rc?
+            npk = grp['npk'][:]
+            nlabel = grp.attrs['nlabel']
+        obj = cls( ipk=ipk, pk_props=pk_props, glabel=glabel, nlabel=nlabel )
+        obj.npks = npks # hum
+        return obj                
+                
     def find_uniq(self):
         """ find the unique labels from the rc array """
         t = tictoc()
@@ -286,6 +408,7 @@ class pks_table:
         cc = scipy.sparse.csgraph.connected_components( csr )
         t('find connected components')
         self.cc = cc
+        self.nlabel, self.glabel = cc
         return cc
     
 
@@ -309,14 +432,14 @@ def process(qin, qshm, qout, hname, scans):
         pkid[i] = np.concatenate(([0,], np.cumsum(scan.nlabels)))
         n1 = sum( pii[i][k][0] for k in pii[i] )
         if i > start:
-            pij[i] = ImageD11.sinograms.peaklabel.pairscans( scan, prev ) 
+            pij[i] = pairscans( scan, prev ) 
             n2 = sum( pij[i][k][0] for k in pij[i] )
         # number of pair overlaps required for the big matrix
         qout.put( (i, len(mypks[i][0]), n1, n2) )
         prev = scan
     # Now we are waiting for the shared memory to save the results
     shm = qshm.get()
-    pkst = pks_table( **shm )
+    pkst = pks_table.fromSHM( shm )
     ip = pkst.ipk.array
     rc = pkst.rc.array
     # For each row, save our local results
@@ -402,6 +525,8 @@ def goforit(ds, sparsename):
     return out, ks, P, mem
 
 def main( dsname, sparsename, pkname ):
+    if os.path.exists(pkname):
+        logging.warning("Your output file already exists. May fail. %s"%(pkname))
     global NPROC, omega
     try:
         rmem = None
