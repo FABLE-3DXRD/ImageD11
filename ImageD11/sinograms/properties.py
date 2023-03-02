@@ -11,6 +11,7 @@ import scipy.sparse
 import scipy.sparse.csgraph
 import ImageD11.sinograms.dataset
 import ImageD11.sparseframe
+import numba
 
 ### The first part of the code is all to run in parallel on a multicore machine
 # 
@@ -67,6 +68,7 @@ class shared_numpy_array:
             self.nbytes = ary.nbytes
         else:
             self.nbytes = np.prod(shape) * np.dtype(dtype).itemsize
+            
         if shmname is None:
             self.shm = shared_memory.SharedMemory(
                 create=True, size = self.nbytes )
@@ -90,6 +92,7 @@ class shared_numpy_array:
                 self.shm.unlink()
             except Exception as e:
                 print('Error: ',e)
+                      
     def export(self):
         return { 'shape' : self.array.shape,
                  'dtype' : self.array.dtype,
@@ -303,9 +306,17 @@ class pks_table:
         self.glabel = glabel
         self.nlabel = nlabel
         self.use_shm = use_shm
+        self.shared = {}
         # otherwise create
         if self.npk is not None:
             self.create( self.npk )
+            
+    def share(self, name, *args, **kwds):
+        """puts the array into shared memory
+        returns the shared copy
+        """
+        self.shared[name] = shared_numpy_array( *args, **kwds )
+        return self.shared[name].array
             
     def create(self, npk):
         # [ nscans, 3 ]
@@ -318,26 +329,28 @@ class pks_table:
         ipk = np.empty( npk.shape[0]+1, int )
         ipk[0] = 0
         ipk[1:] = np.cumsum( npk[:,0] )
-        self.ipk = shared_numpy_array( ipk )
+        self.ipk = self.share( 'ipk', ipk )
         # pointers to r/c positions
         rpk = np.empty( npk.shape[0]+1, int )
         rpk[0] = 0
         rpk[1:] = np.cumsum( npk[:,1]+npk[:,2] )
-        self.rpk = shared_numpy_array( rpk )
-        self.pk_props = shared_numpy_array( shape=(5, s[0]), dtype=np.int64 )
-        self.rc = shared_numpy_array( shape=(3, s[1]+s[2]), dtype=np.int32 )
+        self.rpk = self.share( 'rpk', rpk )
+        self.pk_props = self.share( 'pk_props', shape=(5, s[0]), dtype=np.int64 )
+        self.rc = self.share( 'rc', shape=(3, s[1]+s[2]), dtype=np.int32 )
         
     def export(self):
-        return { 'ipk': self.ipk.export(),
-                 'rpk': self.rpk.export(),
-                 'pk_props' : self.pk_props.export(),
-                 'rc' : self.rc.export() }
-    
-    def __del__(self):
+        return { name : self.shared[name].export() for name in self.shared }
+        
+    def __del__(self):    
         del self.ipk
         del self.rpk
         del self.pk_props
         del self.rc
+        names = list(self.shared.keys())
+        for name in names:
+            o = self.shared.pop( name )
+            del o
+            
 
     def save(self, h5name, group='pks2d'):
         opts = {'compression':'gzip',
@@ -347,14 +360,14 @@ class pks_table:
         with h5py.File( h5name, 'a' ) as hout:
             grp = hout.require_group( group )
             ds = grp.require_dataset( name = 'ipk', 
-                                     shape = self.ipk.array.shape, 
-                                     dtype = self.ipk.array.dtype, **opts )
-            ds[:] = self.ipk.array
+                                     shape = self.ipk.shape, 
+                                     dtype = self.ipk.dtype, **opts )
+            ds[:] = self.ipk
             ds.attrs['description']='pointer to start of a scan'
             ds = grp.require_dataset( name = 'pk_props', 
-                                     shape = self.pk_props.array.shape, 
-                                     dtype = self.pk_props.array.dtype, **opts )
-            ds[:] = self.pk_props.array
+                                     shape = self.pk_props.shape, 
+                                     dtype = self.pk_props.dtype, **opts )
+            ds[:] = self.pk_props
             ds.attrs['description']='[ ( s1, sI, srI, scI, id ),  Npks ]'
             ds = grp.require_dataset( name = 'npk', 
                                      shape = self.npk.shape, 
@@ -371,20 +384,22 @@ class pks_table:
                 
     @classmethod
     def fromSHM(cls, dct):
-        return cls( ipk = shared_numpy_array( **dct['ipk'] ),
-                    rpk = shared_numpy_array( **dct['rpk'] ),
-                    pk_props = shared_numpy_array( **dct['pk_props'] ),
-                    rc = shared_numpy_array( **dct['rc'] ) )
+        names =  'ipk', 'rpk', 'pk_props', 'rc'
+        sharrays = { name : shared_numpy_array( **dct[name] ) for name in names }
+        arrays = { name : sharrays[name].array for name in names }
+        o = cls( **arrays )
+        o.shared = sharrays
+        return o
     
     @classmethod
     def load(cls, h5name, h5group='pks2d'):
         with h5py.File( h5name, 'r' ) as hin:
-            grp = hout[ h5group ]
+            grp = hin[ h5group ]
             ipk = grp[ 'ipk' ][:]
             pk_props = grp[ 'ipk' ][:]
-            if glabel in grp:
+            if 'glabel' in grp:
                 glabel = grp['glabel'][:]
-                nlabel = grp['glabel'].attrs['nlabel']
+                nlabel = grp.attrs['nlabel']
             else:
                 glabel = None
                 nlabel = 0
@@ -392,14 +407,16 @@ class pks_table:
             npk = grp['npk'][:]
             nlabel = grp.attrs['nlabel']
         obj = cls( ipk=ipk, pk_props=pk_props, glabel=glabel, nlabel=nlabel )
-        obj.npks = npks # hum
+        obj.npk = npk # this is ugly. Sending as arg causes allocate.
         return obj                
                 
     def find_uniq(self):
         """ find the unique labels from the rc array """
         t = tictoc()
-        n = self.ipk.array[-1]
-        coo = scipy.sparse.coo_matrix( (self.rc.array[2], (self.rc.array[0], self.rc.array[1])), shape=(n,n))
+        n = self.ipk[-1]
+        coo = scipy.sparse.coo_matrix( (self.rc[2], 
+                                        (self.rc[0], self.rc[1])), 
+                                      shape=(n,n))
         t('coo')
         csr = coo.tocsr()
         t('tocsr')
@@ -411,7 +428,50 @@ class pks_table:
         self.nlabel, self.glabel = cc
         return cc
     
+    def pk2dmerge(self, omega, dty):
+        """
+        creates a dictionary of the 3D peaks
+        """
+        assert omega.size == len(self.labels)
+        assert dty.size == len(self.labels)
+        
+        out = np.zeros( (7, labels.max()+1) , float)
+        n = numbapkmerge( labels, pks, omega, dty, out)
+        allpks = {
+            's_raw' : out[2]/out[1],
+            'f_raw' : out[3]/out[1],
+            'omega' : out[4]/out[1],
+            'Number_of_pixels' : out[0].copy(),
+            'sum_intensity' : out[1],
+            'dty' : out[5]/out[1],
+            'spot3d_id' : np.arange(len(out[0])),   # points back to labels in pk2d
+            'npk2d': out[6].copy(),
+        }
+        return allpks
 
+
+@numba.njit
+def numbapkmerge( labels, pks, omega, dty, out):
+    for k in range(len(labels)):
+        frm = pks[ 4, k ]
+        o = omega.flat[ frm ]
+        y = dty.flat[ frm ]
+        l = labels[ k ]
+        out[0,l] += pks[0,k]    # s1 == number of pixels in a peak
+        out[1,l] += pks[1,k]    # sI == sum of the intensity
+        out[2,l] += pks[2,k]    # srI === sum of intensity * row
+        out[3,l] += pks[3,k]    # scI === sum of intensity * column
+        out[4,l] += o * pks[1,k]
+        out[5,l] += y * pks[1,k]
+        out[6,l] += 1           # s0 == number of 2D peaks
+    return k
+    
+
+
+    
+    
+    
+    
 def process(qin, qshm, qout, hname, scans):
     remove_shm_from_resource_tracker()
     start, end = qin.get()
@@ -440,20 +500,20 @@ def process(qin, qshm, qout, hname, scans):
     # Now we are waiting for the shared memory to save the results
     shm = qshm.get()
     pkst = pks_table.fromSHM( shm )
-    ip = pkst.ipk.array
-    rc = pkst.rc.array
+    ip = pkst.ipk
+    rc = pkst.rc
     # For each row, save our local results
     for i in range(start, end+1):
         if (i == start) and (i > 0):
             # will be done by the previous worker
             continue
         # now copy our results to shared memory. First the peaks:
-        pkst.pk_props.array[:, ip[i]: ip[i+1] ] = mypks[i]
+        pkst.pk_props[:, ip[i]: ip[i+1] ] = mypks[i]
         #
         # find the unique starting id for each frame:
         # Where to store these in the shared memory
-        s = ipstart = pkst.rpk.array[i]
-        ipend = pkst.rpk.array[i+1]
+        s = ipstart = pkst.rpk[i]
+        ipend = pkst.rpk[i+1]
         #
         if 0: # debugging
             n1 = sum( pii[i][k][0] for k in pii[i] )
@@ -539,7 +599,7 @@ def main( dsname, sparsename, pkname ):
             NPROC = nscans-1
         print('Nscans',nscans,'NPROC', NPROC)
         peaks, ks, P, rmem = goforit(ds, sparsename)
-        t('%d label and pair'%(len(rmem.pk_props.array[0])))
+        t('%d label and pair'%(len(rmem.pk_props[0])))
 #        rmem.save( pkname )        
 #        t('cache')
         cc = rmem.find_uniq()
