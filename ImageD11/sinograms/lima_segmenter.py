@@ -11,6 +11,7 @@ Make the code parallel over lima files ... no interprocess communication intende
 
 import sys, time, os, math, logging
 
+
 from ImageD11.sinograms import dataset
 
 # Code to clean the 2D image and reduce it to a sparse array:
@@ -67,10 +68,17 @@ class SegmenterOptions:
                 if name in grp.attrs:
                     setattr(self, name, grp.attrs.get( name ) )
             for name in self.datasetnames:
-                if name in pgrp.attrs: 
-                    setattr(self, name, pgrp.attrs.get( name ) )
+                #     datasetnames = ( 'limapath', 'analysispath', 'datapath', 'imagefiles', 'sparsefiles' )
+                if name in pgrp.attrs:
+                    data = pgrp.attrs.get( name )
+                    setattr(self, name, data )
                 elif name in pgrp:
-                    setattr(self, name, pgrp[name][()] )
+                    data = pgrp[name][()]
+                    if name.endswith('s'): # plural
+                        data = [x.decode() for x in data]
+                    else:
+                        data = str(data)
+                    setattr(self, name, data )
                 else:
                     logging.warning("Missing " + name )
         self.setup()
@@ -227,11 +235,11 @@ def segment_lima( args ):
             print("# time now", time.ctime(), "\n#", end=" ")
             frms = hin[dataset]
             g = hout.require_group(dataset)
-            row = g.create_dataset("row", (1,), dtype=np.uint16, **opts)
-            col = g.create_dataset("col", (1,), dtype=np.uint16, **opts)
+            row = g.create_dataset("row", (0,), dtype=np.uint16, **opts)
+            col = g.create_dataset("col", (0,), dtype=np.uint16, **opts)
             # can go over 65535 frames in a scan
             # num = g.create_dataset("frame", (1,), dtype=np.uint32, **opts)
-            sig = g.create_dataset("intensity", (1,), dtype=frms.dtype, **opts)
+            sig = g.create_dataset("intensity", (0,), dtype=frms.dtype, **opts)
             nnz = g.create_dataset("nnz", (frms.shape[0],), dtype=np.uint32)
             g.attrs["itype"] = np.dtype(np.uint16).name
             g.attrs["nframes"] = frms.shape[0]
@@ -326,15 +334,14 @@ def setup_slurm_array( dsname, dsgroup='/',
 #
 date
 echo Running on $HOSTNAME : %s
-%s > %s/lima_segmenter_$SLURM_ARRAY_TASK_ID.log 2>&1
+OMP_NUM_THREADS=1 %s > %s/lima_segmenter_$SLURM_ARRAY_TASK_ID.log 2>&1
 date
 """%(sdir,sdir,jobs_needed, options.cores_per_job, command, command, sdir))
     logging.info("wrote "+sbat)
     return sbat
 
 
-def setup():
-    dsname = sys.argv[2]
+def setup( dsname ):
     dso = dataset.load( dsname )
     options = SegmenterOptions()
     
@@ -346,17 +353,10 @@ def setup():
     else:
         print("I don't know what to do")
     options.save( dsname, 'lima_segmenter' )
-    setup_slurm_array( dsname )
+    return setup_slurm_array( dsname )
 
     
 def segment():
-    # we will use multiple processes, each with 1 core
-    # all sub-processes better do this!
-    os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"  # not sure we want/need this here?
-    os.environ["OMP_NUM_THREADS"] = "1"
-    os.environ["NUMBA_NUM_THREADS"] = "1"
-    os.environ["MKL_NUM_THREADS"] = "1"
-
     # Uses a hdffile from dataset.py to steer the processing
     # everything is passing via this file. 
     # 
@@ -372,7 +372,7 @@ def segment():
 if __name__ == "__main__":
         
     if sys.argv[1] == 'setup':
-        setup()
+        setup( sys.argv[2] )
         
     if sys.argv[1] == 'segment':
         segment()

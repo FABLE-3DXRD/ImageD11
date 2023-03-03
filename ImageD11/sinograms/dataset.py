@@ -353,14 +353,10 @@ class DataSet:
                     setattr( self, name, data )      
             for name in self.STRINGLISTS:
                 if name in grp:
-                    data = list( grp[name][()] )
+                    data = [item.decode() for item in grp[name][()]]
                     setattr( self, name, data )
         self.guessbins()
         return self
-
-
-def np2str( inp ):
-    return inp.tobytes().decode()
 
 
 def load( h5name, h5group = '/' ):
