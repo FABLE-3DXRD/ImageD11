@@ -38,7 +38,7 @@ def pairrow( s , row):
 
 
 
-def pairscans( s1, s2, omegatol = 0.01 ):
+def pairscans( s1, s2, omegatol = 0.051 ):
     olap = sparseframe.overlaps_linear( max(s1.nnz.max(), s2.nnz.max())+1 )
     assert len(s1.nnz) == len(s2.nnz )
     pairs = {}
