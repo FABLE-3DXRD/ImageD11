@@ -310,7 +310,7 @@ class columnfile(object):
             else:
                 nrows = len(raw)-i-1 # skip the last row
                 last = len(raw)-1
-            cols = [ np.empty( nrows , np.float ) for _ in range(len(row0))]
+            cols = [ np.empty( nrows , float ) for _ in range(len(row0))]
             fillcols( raw[i:last], cols )
             self.__data=cols
         except:
@@ -507,6 +507,8 @@ try:
             # print "adding",t,ty
             dat = getattr(c, t).astype( ty )
             if t in list(g.keys()):
+                if g[t].shape != dat.shape:
+                    g[t].resize( dat.shape )
                 g[t][:] = dat
             else:
                 g.create_dataset( t, data = dat,
@@ -557,8 +559,8 @@ try:
         else:
             groups = [g for g in groups 
                                 if 'ImageD11_type' in h[g].attrs and 
-                                   h[g].attrs['ImageD11_type'] == 'peaks' ]
-            assert len(groups) == 1, "Your hdf file has many groups. Which one??"
+                                   h[g].attrs['ImageD11_type'] in ('peaks', b'peaks') ]
+            assert len(groups) == 1, "Your hdf file has many groups. Which one??"+str(groups)
             g = h[groups[0]]
             name = groups[0]
         if hasattr(g, 'listnames'):

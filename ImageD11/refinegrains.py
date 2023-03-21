@@ -308,10 +308,10 @@ class refinegrains:
         self.scannames.append(filename)
         self.scantitles[filename] = col.titles
         if not "drlv2" in col.titles:
-            col.addcolumn( numpy.ones(col.nrows, numpy.float),
+            col.addcolumn( numpy.ones(col.nrows, float),
                            "drlv2" )
         if not "labels" in col.titles:
-            col.addcolumn( numpy.ones(col.nrows, numpy.float)-2,
+            col.addcolumn( numpy.ones(col.nrows, float)-2,
                            "labels" )
         if not "sc" in col.titles:
             assert "xc" in col.titles
@@ -691,7 +691,7 @@ class refinegrains:
         start = time.time()
         for s in self.scannames:
             self.scandata[s].labels = self.scandata[s].labels*0 - 2 # == -1
-            drlv2 = numpy.zeros(len(self.scandata[s].drlv2), numpy.float)+1
+            drlv2 = numpy.zeros(len(self.scandata[s].drlv2), float)+1
             nr = self.scandata[s].nrows
             sc = self.scandata[s].sc
             fc = self.scandata[s].fc
@@ -707,7 +707,7 @@ class refinegrains:
             if not quiet:
             	print("Start first grain loop",time.time()-start)
             start = time.time()
-            gv = numpy.zeros((nr,3),numpy.float )
+            gv = numpy.zeros((nr,3), float )
             wedge = self.parameterobj.parameters['wedge']
             omegasign = self.parameterobj.parameters['omegasign']
             chi   = self.parameterobj.parameters['chi']

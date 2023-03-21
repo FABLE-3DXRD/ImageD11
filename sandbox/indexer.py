@@ -163,7 +163,7 @@ class indexer:
         ind1 = allinds[ abs(self.cf.tth - tth1) < tthtol ]
         ind2 = allinds[ abs(self.cf.tth - tth2) < tthtol ]
         angle, cosangle = self.unitcell.anglehkls( hkl1, hkl2 )
-        g = np.array( (self.cf.gx, self.cf.gy, self.cf.gz), np.float )
+        g = np.array( (self.cf.gx, self.cf.gy, self.cf.gz), float )
         n = g/self.cf.modg
         gvf = g.T.copy()
         n1 = n[:,ind1]

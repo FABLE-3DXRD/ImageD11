@@ -20,8 +20,9 @@ from __future__ import print_function
 
 
 import numpy as np
-from ImageD11 import grain, transform, cImageD11, indexing, unitcell
+from ImageD11 import grain, transform, cImageD11, indexing, unitcell, refinegrains
 import scipy.optimize
+from scipy.spatial.transform import Rotation
 import math, time, sys, logging
 
 def unit(a):
@@ -55,7 +56,6 @@ class indexer:
         self.unitcell = unitcell.unitcell(cp, 
                         self.transformpars.get("cell_lattice_[P,A,B,C,I,F,R]"))
         
-
     def loadcolfile(self, colfile):
         self.cf = colfile
         self.updatecolfile()
@@ -83,6 +83,7 @@ class indexer:
             **self.transformpars.parameters)
         self.cf.addcolumn( tth, "tth", )
         self.cf.addcolumn( eta, "eta", )
+        self.cf.addcolumn( refinegrains.lf(tth,eta), 'lf')
         gx, gy, gz = transform.compute_g_vectors(
             tth, eta, om*osign,
             wvln  = self.transformpars.get("wavelength"),
@@ -96,7 +97,6 @@ class indexer:
                                     gz * gz ),
                            "modg")
        
-    
     def reset(self):
         """ when pars change or colfile changes etc """
         if "ring" not in self.cf.titles:
@@ -104,8 +104,8 @@ class indexer:
             self.cf.addcolumn( 42*np.ones(self.cf.nrows), "ringerr" )
         if "labels" not in self.cf.titles:
             self.cf.addcolumn( -np.ones(self.cf.nrows), "labels" )
-
-       
+        self.mok = np.zeros( self.cf.nrows, bool )
+        
 
     def tthcalc(self, hkls = None):
         """
@@ -142,6 +142,9 @@ class indexer:
            if mask.sum()>0:
               self.cf.ring[mask] = i
               self.cf.ringerr[mask] = diff[mask]
+                
+                
+    def printringassign(self):
         # Report on assignments
         print("Ring     (  h,  k,  l) Mult  total indexed to_index  ")
         # try reverse order instead
@@ -151,12 +154,106 @@ class indexer:
             n_indexed  = (self.cf.labels[ind] >  -0.5).sum()
             n_to_index = (self.cf.labels[ind] <  -0.5).sum()
             h=self.unitcell.ringhkls[dsr[j]][0]
-            print("Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d"%(\
+            print("Ring %-3d (%3d,%3d,%3d)  %3d  %5d  %5d  %5d  %.4f"%(\
                 j,h[0],h[1],h[2],len(self.unitcell.ringhkls[dsr[j]]),
-                     ind.sum(),n_indexed,n_to_index))
+                     ind.sum(),n_indexed,n_to_index,
+                     self.unitcell.ringtth[j]  ))
         print("Total peaks",self.cf.nrows,"assigned",(self.cf.ring>=0).sum())
 
+        
+    def rings_2_use(self, rings = None, multimin = 12 ):
+        """Filter rings as having low multiplicity for indexing searches
+        
+        Give rings = [list of rings to use]
+        Or multimin = all rings with low multiplicity
+        """
+        ring = self.cf.ring.astype(int)
+        if rings is None:
+            mok = np.zeros( (self.cf.nrows,), bool )
+            for i, ds in enumerate( self.unitcell.ringds ):
+                mult = len(self.unitcell.ringhkls[ds])
+                if mult <= multimin:
+                    mok[ ring == i ] = True
+        else:
+            mok = np.zeros( (self.cf.nrows,), bool )
+            for r in rings:
+                mok[ ring == r ] = True
+        self.mok = mok        
 
+    def search1d(self, gvec_id, 
+                 hkl = None,
+                 angstart = -180, 
+                 angend = 180,
+                 nang = 3600,
+                 tol = 0.1,
+                ):
+        """
+        gvec_id = an integer for a row of self.colfile 
+        hkl  = hkl indices to assign to the peak (None 
+            means guess from self.cf.ring)
+        This is inspired from Bernier's fibre texture method (citation:
+        https://github.com/HEXRD/hexrd/blob/master/hexrd/findorientations.py
+        )        
+        """
+        gv = np.array( (self.cf.gx[gvec_id], 
+                        self.cf.gy[gvec_id], 
+                        self.cf.gz[gvec_id]), float)
+        print(gvec_id)
+        if hkl is None:
+            ring = self.cf.ring[gvec_id]
+            ds = self.unitcell.ringds[int(ring)]
+            hkls = self.unitcell.ringhkls[ ds ]
+            hkl = np.array( hkls[0], int )
+            print("Choosing",hkl,"from hkls", hkls)
+        assert hkl.shape == (3,)
+        g0 = np.dot( self.unitcell.B, hkl ) # non rotated g
+        # normalised vectors
+        n0 = g0/np.linalg.norm( g0 )
+        nobs = gv/np.linalg.norm( gv )
+        cosa = np.dot( n0, nobs )
+        ang  = np.arccos(cosa)
+        # if the vectors are already parallel ?
+        if ang < np.radians(0.001):
+            u0 = np.eye(3)
+        else:
+            vec  = np.cross( n0, nobs )
+            sina = np.linalg.norm( vec )
+            u0 = Rotation.from_rotvec( ang * vec / sina ).as_matrix()
+        ub0 = np.dot( u0, self.unitcell.B )
+        ubi0 = np.linalg.inv( ub0 )
+        # Now we want to rotate around nobs
+        allgve = np.array( (self.cf.gx,self.cf.gy,self.cf.gz) ).T.copy()
+        scores = []
+        ubis = []
+        gc = np.dot( ub0, hkl )
+        angs = np.radians( np.linspace( angstart, angend, nang) )
+        ubis = [ np.dot(ubi0, 
+                Rotation.from_rotvec( nobs * a ).as_matrix())
+                for a in angs ]
+        scores = [ cImageD11.score( ubi, allgve, tol )
+                  for ubi in ubis ]
+        return scores, ubis
+    
+    def choose( self, gnum, tol):
+        isig = self.cf.npixels * self.cf.avg_intensity * self.cf.lf
+        idp = np.argmax( self.mok * (self.cf.labels<0) * isig )
+        angstart = 0
+        angend = 360
+        nang = 3600
+        s,ubis=self.search1d(idp, tol=tol,
+                             angstart = angstart, angend=angend, nang=nang)
+        matfit = ubis[np.argmax(s)].copy()
+        tfit = np.zeros(3)
+        tol = 0.05
+        inds, hkls = self.assign( matfit, tfit, tol )
+        matfit, tfit = self.refine( matfit, tfit, inds, hkls, tol )
+        inds, hkls = self.assign( matfit, tfit, tol )
+        print( inds.shape, tfit ) 
+        print( indexing.ubitocellpars( matfit ) )
+        self.cf.labels[ inds ] = gnum
+        self.grains[ gnum ] = grain.grain( matfit, tfit )
+    
+        
     def pairs(self, hkl1, hkl2, cos_tol = 0.02, hkl_tol = 0.1):
         """
         We only look for reflection pairs matching a single hkl pairing
@@ -291,8 +388,8 @@ class indexer:
             epsilon = np.ones(12)*1e-6
             epsilon[-3:] = 1.
             return deriv( x0, fun, epsilon, *args)
-        res, ier = scipy.optimize.leastsq( fun, x0, args, Dfun,
-                                           col_deriv=True)
+        res, ier = scipy.optimize.leastsq( fun, x0, args, )#
+                                            # Dfun, col_deriv=True)
         ub = np.reshape(res[:9], (3,3))
         t = res[-3:]
         ubi = np.linalg.inv( ub )

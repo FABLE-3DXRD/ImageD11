@@ -102,7 +102,7 @@ except ImportError:
     print("Using numpy fft for convolution")
     print("You might get better performance from fftw, why not try installing:")
     print("http://prdownload.berlios.de/pyfftw/PyFFTW3-0.2.tar.gz")
-    REAL = np.float
+    REAL = np.float32
 
     class convolver(object):
 

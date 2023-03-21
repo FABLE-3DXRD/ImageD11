@@ -233,7 +233,7 @@ def clusterpeaks( cf, pks, d_ds ):
     ds    = cf.ds[  pks]
     order = np.argsort( ds ).astype( np.intc )
     ids = np.zeros( len(pks), np.intc )
-    avgs = np.zeros( len(pks), np.float )
+    avgs = np.zeros( len(pks), float )
     nclusters = cImageD11.cluster1d( ds , order, d_ds, ids, avgs)
     # print(ds)
     # print( nclusters, ids, avgs )                        

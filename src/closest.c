@@ -588,8 +588,8 @@ void cluster1d(double ar[], int n, int order[], double tol, // IN
 !DOC score_gvec_z reads ubi, ub, gv and recompute
 !DOC if (recompute) it fills directions to project errors per peak:
 !DOC      g0 = gv / |gv|   = unit vector along g
-!DOC      g1 = gxy / |gxy| = unit vector perpendicular to z
-!DOC      g2 ... ought to be cross( g0, g1 ) ?
+!DOC      g1 = gxy / |gxy| = unit vector perpendicular to z and g (omega)
+!DOC      g2 ... ought to be cross( g0, g1 ) ? (eta)
 !DOC For all peaks it computes h = ubi.g, rounds to nearest ih = int(h)
 !DOC and then computes gcalc = ub.ih = dot( ub, ( round( dot( ubi, g) ) ) )
 !DOC The error gv - gcalc is then projected into the co-ordinate system

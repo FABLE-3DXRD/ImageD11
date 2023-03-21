@@ -10,7 +10,7 @@ To be used for lattice reduction to apply to g-vectors and patterson
 peaks equally well and in a coherent way.
 """
 
-from numpy import dot, round_, array, float, allclose, asarray, fabs,\
+from numpy import dot, round_, array, allclose, asarray, fabs,\
     argmin, argmax, sqrt, argsort, take, sum, where, ndarray, eye,\
     zeros, cross
 from numpy.linalg import inv, LinAlgError

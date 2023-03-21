@@ -186,8 +186,7 @@ int localmaxlabel(const float *restrict im, // input
                 k++;
             }                  // Now q addresses a max or a correct label
             lout[i] = lout[q]; // take label from max
-            if (k >
-                0) { // relabel the path taken while we know the top label value
+            if (k > 0) { // relabel the path taken while we know the top label value
                 q = i + o[l[i]];
                 while (l[q]) {
                     if ((q >= lo) && (q < hi)) {
