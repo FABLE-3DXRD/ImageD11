@@ -86,6 +86,10 @@ class grain:
         return self._UB.copy()
 
     @property
+    def ub(self):
+        return self.UB
+
+    @property
     def B(self):
         if self._B is None:
             self._B = ImageD11.unitcell.unitcell( self.unitcell ).B.copy()
@@ -99,6 +103,10 @@ class grain:
             self._U = np.dot( self.B, self.ubi ).T
         return self._U.copy()
 
+    @property
+    def u(self):
+        return self.U
+    
     @property
     def Rod(self):
         """ A Rodriguez vector. 
