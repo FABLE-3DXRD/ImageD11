@@ -44,14 +44,15 @@ class SegmenterOptions:
         self.cores_per_job = cores_per_job
                       
     def __repr__(self):
-        return "\n".join( ["%s:%s"%(name,getattr(self, name, None )) for name in self.jobnames + self.datasetnames ] )
+        return "\n".join( ["%s:%s"%(name,getattr(self, name, None )) for name in 
+                           self.jobnames + self.datasetnames ] )
                 
     def setup(self):
         self.thresholds = tuple( [ self.cut*pow(2,i) for i in range(6) ] )
         # validate input
         if len(self.maskfile):
             m = fabio.open(self.maskfile).data
-            if m.mean() > 0.5:
+            if m.mean() < 0.5:
                 self.mask = 1 - fabio.open(self.maskfile).data
             else:
                 self.mask = m
@@ -75,7 +76,10 @@ class SegmenterOptions:
                 elif name in pgrp:
                     data = pgrp[name][()]
                     if name.endswith('s'): # plural
-                        data = [x.decode() for x in data]
+                        if isinstance( data, np.ndarray ):
+                            data = list(data)
+                        if isinstance( data[0], np.ndarray) or isinstance(data[0], bytes):
+                            data = [x.decode() for x in data]
                     else:
                         data = str(data)
                     setattr(self, name, data )
@@ -101,11 +105,11 @@ import functools
 import numpy as np
 import hdf5plugin
 import h5py
-import numba
 import fabio
+import numba
 # pip install ImageD11 --no-deps # if you do not have it yet:
 from ImageD11 import sparseframe, cImageD11
-
+from bslz4_to_sparse import chunk2sparse
 
 @numba.njit
 def select(img, mask, row, col, val, cut):
@@ -114,9 +118,7 @@ def select(img, mask, row, col, val, cut):
     k = 0
     for s in range(img.shape[0]):
         for f in range(img.shape[1]):
-            if img[s, f] > cut:
-                if mask[s, f]:  # skip masked
-                    continue
+            if img[s, f]*mask[s,f] > cut:
                 row[k] = s
                 col[k] = f
                 val[k] = img[s, f]
@@ -163,52 +165,70 @@ def top_pixels(nnz, row, col, val, howmany, thresholds):
 
 OPTIONS = None  # global. Nasty.
 
-def choose(frm):
-    """ converts a frame to sparse frame
-    
-    TODO: refactor this to set up the options from outside of the 
-    slurm job and stop using a module variable
-    """
-    if choose.cache is None:
+class frmtosparse:
+    def __init__(self, mask, dtype):
         # cache the mallocs on this function. Should be one per process
-        row = np.empty(OPTIONS.mask.size, np.uint16)
-        col = np.empty(OPTIONS.mask.size, np.uint16)
-        val = np.empty(OPTIONS.mask.size, frm.dtype)
-        choose.cache = row, col, val
-    else:
-        row, col, val = choose.cache
-    nnz = select(frm, OPTIONS.mask, row, col, val, OPTIONS.cut)
+        self.row = np.empty(mask.size, np.uint16)
+        self.col = np.empty(mask.size, np.uint16)
+        self.val = np.empty(mask.size, frm.dtype)
+        self.mask = mask
+    def __call__(self, frm, cut):
+        nnz = select(frm, self.mask, self.row, self.col, self.val, cut)
+        return nnz, self.row[:nnz], self.col[:nnz], self.val[:nnz]
+
+
+
+def clean(nnz, row, col, val):
+    global OPTIONS
     if nnz == 0:
-        sf = None
-    else:
-        if nnz > OPTIONS.howmany:
-            nnz = top_pixels(nnz, row, col, val, OPTIONS.howmany,  OPTIONS.thresholds)
+        return None
+    if nnz > OPTIONS.howmany:
+        nnz = top_pixels(nnz, row, col, val, OPTIONS.howmany,  OPTIONS.thresholds)
         # Now get rid of the single pixel 'peaks'
         #   (for the mallocs, data is copied here)
-        s = sparseframe.sparse_frame(row[:nnz].copy(), col[:nnz].copy(), frm.shape)
+        s = sparseframe.sparse_frame(row[:nnz].copy(), col[:nnz].copy(), 
+                                     OPTIONS.mask.shape)
         s.set_pixels("intensity", val[:nnz].copy())
-        if OPTIONS.pixels_in_spot <= 1:
-            sf = s
-        else:
-            # label them according to the connected objects
-            sparseframe.sparse_connected_pixels(
-                s, threshold=OPTIONS.cut, data_name="intensity", label_name="cp"
-            )
-            # only keep spots with more than 3 pixels ...
-            mom = sparseframe.sparse_moments(
-                s, intensity_name="intensity", labels_name="cp"
-            )
-            npx = mom[:, cImageD11.s2D_1]
-            pxcounts = npx[s.pixels["cp"] - 1]
-            pxmsk = pxcounts >= OPTIONS.pixels_in_spot
-            if pxmsk.sum() == 0:
-                sf = None
-            else:
-                sf = s.mask(pxmsk)
+    else:
+        s = sparseframe.sparse_frame(row, col, OPTIONS.mask.shape)
+        s.set_pixels("intensity", val)
+    if OPTIONS.pixels_in_spot <= 1:
+        return s
+    # label them according to the connected objects
+    s.set_pixels('f32', val.astype(np.float32))
+    sparseframe.sparse_connected_pixels( s, threshold=0, 
+        data_name="f32", label_name="cp")
+    # only keep spots with more than 3 pixels ...
+    mom = sparseframe.sparse_moments( s, 
+                                     intensity_name="f32", 
+                                     labels_name="cp" )
+    npx = mom[:, cImageD11.s2D_1]
+    pxcounts = npx[s.pixels["cp"] - 1]
+    pxmsk = pxcounts >= OPTIONS.pixels_in_spot
+    if pxmsk.sum() == 0:
+        return None
+    sf = s.mask(pxmsk)
     return sf
 
-choose.cache = None  # cache for malloc per process
-
+def reader(frms, mask, cut):
+    """
+    iterator to read chunks or frames and segment them
+    returns sparseframes
+    """
+    if '32008' in frms._filters and not frms.is_virtual:
+        print('# reading compressed chunks')
+        fun = chunk2sparse( mask, dtype = frms.dtype )
+        for i in range(frms.shape[0]):
+            filters, chunk = frms.id.read_direct_chunk((i,0,0))
+            npx, row, col, val = fun.coo(chunk, cut)
+            spf = clean( npx, row, col, val )
+            yield spf
+    else:
+        fun = frmtosparse( mask, frms.dtype )
+        for i in range(frms.shape[0]):
+            npx, row, col, val = fun( frms[i], cut )
+            spf = clean( npx, row, col, val )
+            yield spf
 
 def segment_lima( args ):
     """Does segmentation on a single hdf5
@@ -246,9 +266,8 @@ def segment_lima( args ):
             g.attrs["shape0"] = frms.shape[1]
             g.attrs["shape1"] = frms.shape[2]
             npx = 0
-            nframes = len(frms)
-            for i,frame in enumerate(frms):
-                spf = choose(frame)
+            nframes = frms.shape[0]
+            for i, spf in enumerate(reader(frms, OPTIONS.mask, OPTIONS.cut)):
                 if i % 100 == 0:
                     if spf is None:
                         print("%4d 0" % (i), end=",")
@@ -288,13 +307,19 @@ def main( options ):
         args.append( ( os.path.join( options.datapath, options.imagefiles[i] ), # src
                        os.path.join( options.analysispath, options.sparsefiles[i] ), # dest
                        options.limapath ) )
+    if 1:
+        import concurrent.futures
+        with concurrent.futures.ProcessPoolExecutor(max_workers=options.cores_per_job) as mypool:
+            donefile = sys.stdout
+            for fname in mypool.map( segment_lima, args, chunksize=1 ):
+                donefile.write(fname + "\n")
+                donefile.flush()
+    else:
+        for arg in args:
+            fname = segment_lima(arg)
+            print(fname)
+            sys.stdout.flush()
         
-    import concurrent.futures
-    with concurrent.futures.ProcessPoolExecutor(max_workers=options.cores_per_job) as mypool:
-        donefile = sys.stdout
-        for fname in mypool.map( segment_lima, args, chunksize=1 ):
-            donefile.write(fname + "\n")
-            donefile.flush()
     print("All done")
     
     

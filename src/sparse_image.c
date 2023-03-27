@@ -527,7 +527,7 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
                          int32_t *restrict iMV,   // Which neighbor is higher?
                          int32_t *restrict labels // Which neighbor is higher?
 ) {
-    int k, p, pp, ir, prow, pnext;
+    int k, p, pp, ir,  pnext;
     /* Read k = kurrent
        p = prev */
     if (NOISY) {
@@ -537,7 +537,6 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
         }
     }
     /* prev row */
-    prow = 0;
     pp = 0;
     p = 0;
     /* First pixel -  we assume it is a max, it will be stolen later
@@ -897,6 +896,45 @@ int tosparse_u16( uint16_t* restrict img,  uint8_t* restrict msk, uint16_t* rest
     }
     return k;
 }
+
+
+/* F2PY_WRAPPER_START
+    function tosparse_u32( img, msk, row, col, val, cut, ns, nf)
+!DOC tosparse_u16 stores pixels from img into row/col/val.
+!DOC msk determines whether pixels are masked (e.g. eiger mask)
+!DOC returns the number of pixels found
+        intent(c) tosparse_u32
+        intent(c)
+        integer(kind=-4), dimension(ns, nf), intent(c) :: img
+        integer(kind=-1), dimension(ns, nf), intent(c) :: msk
+        integer(kind=-2), dimension(*), intent(c) :: row, col
+        integer(kind=-4), dimension(*), intent(c) :: val
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        real :: cut
+        ! returns
+        integer :: tosparse_u32
+        threadsafe
+    end function tosparse_u32
+F2PY_WRAPPER_END */
+
+int tosparse_u32( uint32_t* restrict img, uint8_t* restrict msk, uint16_t* restrict row,  
+                  uint16_t* restrict col, uint32_t* restrict val, float cut, int ns, int nf ) {
+    int k, i;
+    uint32_t uicut;
+    uicut = cut;
+    k = 0;
+    for(i = 0; i < ns*nf ; i++ ){
+        if (msk[i] && (img[i] > uicut)){
+           row[k] = i / nf;
+           col[k] = i % nf;
+           val[k] = img[i];
+           k++;
+       }
+    }
+    return k;
+}
+
 
 
 /* F2PY_WRAPPER_START

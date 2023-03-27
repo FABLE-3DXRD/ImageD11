@@ -225,8 +225,8 @@ It returns the number of peaks and fit prior to refinement.
 score_gvec_z = """reads ubi, ub, gv and recompute
 if (recompute) it fills directions to project errors per peak:
      g0 = gv / |gv|   = unit vector along g
-     g1 = gxy / |gxy| = unit vector perpendicular to z
-     g2 ... ought to be cross( g0, g1 ) ?
+     g1 = gxy / |gxy| = unit vector perpendicular to z and g (omega)
+     g2 ... ought to be cross( g0, g1 ) ? (eta)
 For all peaks it computes h = ubi.g, rounds to nearest ih = int(h)
 and then computes gcalc = ub.ih = dot( ub, ( round( dot( ubi, g) ) ) )
 The error gv - gcalc is then projected into the co-ordinate system

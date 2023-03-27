@@ -55,7 +55,7 @@ print("Building version |%s|"%get_version(), "on system:", platform.system())
 
 copt =  {
     'msvc': ['/openmp', '/O2'] ,
-    'unix': ['-fopenmp', '-O2'], #, '-DF2PY_REPORT_ON_ARRAY_COPY=100'] ,
+    'unix': ['-fopenmp', '-O2', ], # '-DF2PY_REPORT_ON_ARRAY_COPY=100', '-DNPY_DISABLE_OPTIMIZATION=1' ] ,
     'mingw32': ['-fopenmp', '-O2'] ,
  }
 
@@ -75,8 +75,6 @@ if platform.system() == "Darwin":
 class build_ext_subclass( build_ext.build_ext ):
     def build_extension(self, ext):
         print('Building _cImageD11 module')
-        self.compiler.add_include_dir(numpy.get_include())
-        self.compiler.add_include_dir(numpy.f2py.get_include())
         c = self.compiler.compiler_type
         CF = [] ; LF=[]
         if "CFLAGS" in os.environ:
@@ -93,7 +91,9 @@ class build_ext_subclass( build_ext.build_ext ):
             name = ext.sources[0]
             # generate wrappers
             print('Creating f2py wrapper for', name)
-            numpy.f2py.run_main( ['--quiet', name])
+            numpy.f2py.run_main( [
+                #'--quiet',
+                name,])
             ext.sources[0] = os.path.split(name)[-1].replace('.pyf', 'module.c')
             ext.sources.append( os.path.join(numpy.f2py.get_include(), 'fortranobject.c' ) )
         build_ext.build_ext.build_extension(self, ext)
@@ -106,7 +106,7 @@ cnames =  "_cImageD11.pyf blobs.c cdiffraction.c cimaged11utils.c"+\
 csources = [os.path.join('src',c) for c in cnames.split()]
 
 extension = Extension( "_cImageD11",  csources,
-                include_dirs = [ 'src' ])
+                include_dirs = [ 'src',numpy.get_include(), numpy.f2py.get_include() ])
 
 ################################################################################
 

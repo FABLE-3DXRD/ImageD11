@@ -442,7 +442,7 @@ def sparse_moments( frame, intensity_name, labels_name ):
     """ We rely on a labelling array carrying nlabel metadata (==labels.data.max())"""
     nl = frame.meta[ labels_name ][ "nlabel" ]
     return cImageD11.sparse_blob2Dproperties(
-        frame.pixels[intensity_name],
+        frame.pixels[intensity_name].astype(np.float32), # limitations of f2py here.
         frame.row,
         frame.col,
         frame.pixels[labels_name],

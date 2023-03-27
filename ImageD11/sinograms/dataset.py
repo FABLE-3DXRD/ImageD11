@@ -157,6 +157,7 @@ class DataSet:
         self.imagefiles = []
         self.frames_per_file = []
         with h5py.File( self.masterfile, 'r' ) as hin:
+            bad = [ ]
             for i, scan in enumerate( self.scans ):
                 if ('measurement' not in hin[scan]) or (self.detector not in hin[scan]['measurement']):
                     continue
@@ -165,7 +166,11 @@ class DataSet:
                 if npts is None:
                     npts = len(frames)
                 else:
-                    assert len(frames) == npts, 'scan is not regular %d %s :: %s'%(npts, self.masterfile, scan)
+                    if len(frames) != npts:
+                        print('warning!, scan is not regular %d %s :: %s'%(npts, self.masterfile, scan))
+                        print('removing scan',scan)
+                        bad.append(scan)
+                        continue
                 for vsrc in frames.virtual_sources():
                     self.imagefiles.append( vsrc.file_name )
                     self.frames_per_file.append( vsrc.src_space.shape[0] ) # not sure about this
@@ -173,6 +178,7 @@ class DataSet:
                     if self.limapath is None:
                         self.limapath = vsrc.dset_name
                     assert self.limapath == vsrc.dset_name
+        self.scans = [scan for scan in self.scans if scan not in bad]
         self.frames_per_file = np.array( self.frames_per_file, int )
         self.sparsefiles = [ name.replace( '/', '_' ).replace( '.h5', '_sparse.h5' ) for name in 
                              self.imagefiles ]
@@ -353,7 +359,11 @@ class DataSet:
                     setattr( self, name, data )      
             for name in self.STRINGLISTS:
                 if name in grp:
-                    data = [item.decode() for item in grp[name][()]]
+                    stringlist = list(grp[name][()])
+                    if isinstance(stringlist[0], np.ndarray):
+                        data = [s.decode() for s in stringlist]
+                    else:
+                        data = stringlist
                     setattr( self, name, data )
         self.guessbins()
         return self
