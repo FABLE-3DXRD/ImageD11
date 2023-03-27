@@ -170,7 +170,7 @@ class frmtosparse:
         # cache the mallocs on this function. Should be one per process
         self.row = np.empty(mask.size, np.uint16)
         self.col = np.empty(mask.size, np.uint16)
-        self.val = np.empty(mask.size, frm.dtype)
+        self.val = np.empty(mask.size, dtype)
         self.mask = mask
     def __call__(self, frm, cut):
         nnz = select(frm, self.mask, self.row, self.col, self.val, cut)
