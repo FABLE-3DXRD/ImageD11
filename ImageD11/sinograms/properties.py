@@ -414,15 +414,14 @@ class pks_table:
         """ find the unique labels from the rc array """
         t = tictoc()
         n = self.ipk[-1]
+#        print("Row/col sparse array")
+#        for i in range(3):
+#            print(self.rc[i].dtype,self.rc[i].shape)
         coo = scipy.sparse.coo_matrix( (self.rc[2], 
                                         (self.rc[0], self.rc[1])), 
                                       shape=(n,n))
         t('coo')
-        csr = coo.tocsr()
-        t('tocsr')
-        csr += csr.T
-        t('transpose')
-        cc = scipy.sparse.csgraph.connected_components( csr )
+        cc = scipy.sparse.csgraph.connected_components( coo, directed=False, return_labels=True )
         t('find connected components')
         self.cc = cc
         self.nlabel, self.glabel = cc
@@ -610,7 +609,7 @@ def main( dsname, sparsename, pkname ):
         t('read ds %s'%(dsname))
         nscans = len(ds.scans)
         if NPROC > nscans-1:
-            NPROC = nscans-1
+            NPROC = max(1,nscans-1)
         print('Nscans',nscans,'NPROC', NPROC)
         peaks, ks, P, rmem = goforit(ds, sparsename)
         t('%d label and pair'%(len(rmem.pk_props[0])))
