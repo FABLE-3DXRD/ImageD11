@@ -160,6 +160,8 @@ class DataSet:
             bad = [ ]
             for i, scan in enumerate( self.scans ):
                 if ('measurement' not in hin[scan]) or (self.detector not in hin[scan]['measurement']):
+                    print('Bad scan', scan)
+                    bad.append(scan)
                     continue
                 frames = hin[scan]['measurement'][self.detector]
                 imageshape = frames.shape[1:]

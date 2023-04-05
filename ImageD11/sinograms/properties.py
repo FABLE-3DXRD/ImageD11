@@ -181,14 +181,15 @@ def props(scan, i, firstframe=None):
         f0 = scan.getframe(j)
         e = s + scan.nlabels[j]
         r[0,s:e] = np.bincount( f0.pixels['labels']-1 )
-        signal = np.bincount( f0.pixels['labels']-1, weights=f0.pixels['intensity'] )
+        wt = f0.pixels['intensity'].astype(np.int64)
+        signal = np.bincount( f0.pixels['labels']-1, weights=wt)
         if signal.min() < 1:
             print("Bad data",scan.hname, scan.scan,i,j,
                   scan.nlabels[j], scan.nnz[j],f0.pixels['intensity'].min())
             raise Exception( 'bad data' )
         r[1,s:e] = signal
-        r[2,s:e] = np.bincount( f0.pixels['labels']-1, weights=f0.row*f0.pixels['intensity'] )
-        r[3,s:e] = np.bincount( f0.pixels['labels']-1, weights=f0.col*f0.pixels['intensity'] )
+        r[2,s:e] = np.bincount( f0.pixels['labels']-1, weights=f0.row*wt )
+        r[3,s:e] = np.bincount( f0.pixels['labels']-1, weights=f0.col*wt )
         r[4,s:e] = j + j0
         s = e
     # Matrix entries for this scan with itself:
@@ -336,7 +337,7 @@ class pks_table:
         rpk[1:] = np.cumsum( npk[:,1]+npk[:,2] )
         self.rpk = self.share( 'rpk', rpk )
         self.pk_props = self.share( 'pk_props', shape=(5, s[0]), dtype=np.int64 )
-        self.rc = self.share( 'rc', shape=(3, s[1]+s[2]), dtype=np.int32 )
+        self.rc = self.share( 'rc', shape=(3, s[1]+s[2]), dtype=np.int64 )
         
     def export(self):
         return { name : self.shared[name].export() for name in self.shared }

@@ -196,14 +196,15 @@ def clean(nnz, row, col, val):
         return s
     # label them according to the connected objects
     s.set_pixels('f32', val.astype(np.float32))
-    sparseframe.sparse_connected_pixels( s, threshold=0, 
-        data_name="f32", label_name="cp")
+    npk = sparseframe.sparse_connected_pixels( s, threshold=0,
+                             data_name="f32", label_name="cp")
     # only keep spots with more than 3 pixels ...
-    mom = sparseframe.sparse_moments( s, 
-                                     intensity_name="f32", 
-                                     labels_name="cp" )
-    npx = mom[:, cImageD11.s2D_1]
-    pxcounts = npx[s.pixels["cp"] - 1]
+#    mom = sparseframe.sparse_moments( s,
+#                                     intensity_name="f32",
+#                                     labels_name="cp" )
+#    npx = mom[:, cImageD11.s2D_1]
+    npx = np.bincount(s.pixels['cp'], minlength = npk  )
+    pxcounts = npx[s.pixels["cp"]]
     pxmsk = pxcounts >= OPTIONS.pixels_in_spot
     if pxmsk.sum() == 0:
         return None
