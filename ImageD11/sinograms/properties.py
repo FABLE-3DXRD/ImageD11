@@ -7,6 +7,7 @@ import tqdm
 from timeit import default_timer
 import numpy as np
 import h5py
+import hdf5plugin
 import scipy.sparse
 import scipy.sparse.csgraph
 import ImageD11.sinograms.dataset
@@ -43,17 +44,20 @@ def remove_shm_from_resource_tracker():
     def fix_register(name, rtype):
         if rtype == "shared_memory":
             return
-        return resource_tracker._resource_tracker.register(self, name, rtype)
-    resource_tracker.register = fix_register
+        return resource_tracker._resource_tracker.register(name, rtype)
+    if resource_tracker.register is not fix_register:
+        resource_tracker.register = fix_register
     def fix_unregister(name, rtype):
         if rtype == "shared_memory":
             return
-        return resource_tracker._resource_tracker.unregister(self, name, rtype)
+        return resource_tracker._resource_tracker.unregister(name, rtype)
+    if resource_tracker.unregister is not fix_register:
+        resource_tracker.unregister = fix_register
     resource_tracker.unregister = fix_unregister
     if "shared_memory" in resource_tracker._CLEANUP_FUNCS:
         del resource_tracker._CLEANUP_FUNCS["shared_memory"]
 ######################################################################################
-remove_shm_from_resource_tracker()
+
 NPROC = max( 1, int(os.environ['SLURM_CPUS_PER_TASK']) - 1 )
 
 class shared_numpy_array:
@@ -352,32 +356,46 @@ class pks_table:
             o = self.shared.pop( name )
             del o
             
-
+    def guesschunk(self, ar, m=64*40):
+        return None
+        """ for parallel / compressed """
+        chunk = list(ar.shape)
+        nbytes = np.prod(chunk) * ar.dtype.itemsize
+        if (nbytes // m) < pow(2,16):
+            print('Guessing 1 chunk for', ar.shape, ar.dtype)
+            return tuple(chunk)
+        axsplit = np.argmax( chunk )
+        n = chunk[axsplit]
+        chunk[axsplit] = max(1, n//m)
+        print('Guessing chunks for', ar.shape, ar.dtype, chunk)
+        return tuple(chunk)
+            
     def save(self, h5name, group='pks2d'):
-        opts = {'compression':'gzip',
-                'compression_opts':2,
-                'shuffle':True,
-               }
+        opts = {} # No compression is faster 
         with h5py.File( h5name, 'a' ) as hout:
             grp = hout.require_group( group )
             ds = grp.require_dataset( name = 'ipk', 
                                      shape = self.ipk.shape, 
+                                     chunks = self.guesschunk( self.ipk ),
                                      dtype = self.ipk.dtype, **opts )
             ds[:] = self.ipk
             ds.attrs['description']='pointer to start of a scan'
             ds = grp.require_dataset( name = 'pk_props', 
                                      shape = self.pk_props.shape, 
+                                     chunks = self.guesschunk( self.pk_props ),
                                      dtype = self.pk_props.dtype, **opts )
             ds[:] = self.pk_props
             ds.attrs['description']='[ ( s1, sI, srI, scI, id ),  Npks ]'
             ds = grp.require_dataset( name = 'npk', 
                                      shape = self.npk.shape, 
+                                     chunks = self.guesschunk( self.npk ),
                                      dtype = self.npk.dtype, **opts )
             ds[:] = self.npk
             ds.attrs['description']="[ nscans, (N_peaks_in_scan, N_pairs_ii, N_pairs_ij) ]"
             if hasattr(self,'glabel'):
                 ds = grp.require_dataset( name = 'glabel', 
                                          shape = self.glabel.shape, 
+                                         chunks = self.guesschunk( self.glabel ),
                                          dtype = self.glabel.dtype, **opts )
                 ds[:] = self.glabel
                 grp.attrs['nlabel'] = self.nlabel
@@ -385,9 +403,11 @@ class pks_table:
                 
     @classmethod
     def fromSHM(cls, dct):
-        names =  'ipk', 'rpk', 'pk_props', 'rc'
-        sharrays = { name : shared_numpy_array( **dct[name] ) for name in names }
-        arrays = { name : sharrays[name].array for name in names }
+        names =  'ipk', 'rpk', 'pk_props', 'rc', 'glabel'
+        sharrays = { name : shared_numpy_array( **dct[name] ) 
+                    for name in names if name in dct }
+        arrays = { name : sharrays[name].array 
+                  for name in names if name in dct }
         o = cls( **arrays )
         o.shared = sharrays
         return o

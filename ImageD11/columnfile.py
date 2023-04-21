@@ -79,6 +79,7 @@ INTS = [
     "grainno",
     "grain_id",
     "IKEY",
+    "npk2d",
     ]
 
 # 9 elements

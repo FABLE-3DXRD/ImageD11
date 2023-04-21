@@ -2,10 +2,31 @@
 from __future__ import division, print_function
 import numpy as np
 import timeit
-from ImageD11.cImageD11 import localmaxlabel
+from ImageD11.cImageD11 import localmaxlabel, sparse_localmaxlabel
 import unittest, sys
 
 timer = timeit.default_timer
+
+def sparselocalmax( im, labels, wk ):
+    row, col = np.mgrid[ 0: im.shape[0], 0:im.shape[1] ]
+    mask = im > 0
+    row = row[mask].astype(np.uint16)
+    col = col[mask].astype(np.uint16)
+    signal = im[mask].astype(np.float32)
+    vmx = np.empty( len(signal), np.float32 )
+    imx = np.empty( len(signal), np.int32 )
+    slabel = np.empty( len(signal), np.int32 )
+    labels.fill(0)
+#    print('row',row)
+#    print('col',col)
+#    print('signal',signal)
+    nlabel = sparse_localmaxlabel( signal, row, col, vmx, imx, slabel )
+#    print('nlabel',nlabel)
+#    print('slabel',slabel)
+#    print('vmx   ',vmx)
+#    print('imx   ',imx)
+    labels[mask] = slabel
+    return nlabel
 
 
 try:
@@ -243,7 +264,6 @@ class test_localmaxlabel( unittest.TestCase ):
         la = np.empty( im.shape, 'i' )
         wk = np.empty( im.shape, 'b' )
         localmaxlabel( im, la, wk )
-        
         lp = np.empty( im.shape, 'i' )
         wp = np.empty( im.shape, 'b' )
         npks = localmax(im, lp, wp)
@@ -254,6 +274,51 @@ class test_localmaxlabel( unittest.TestCase ):
         self.assertTrue( (lp == la).all() )
 
         
+    def test_one(self):
+        im = np.array([
+            [0, 0, 0, 0, 0,],
+            [0, 0, 2, 2, 0,],
+            [0, 0, 0, 3, 0,],
+            [0, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 0,],
+            [0, 0, 0, 3, 0,],
+            [0, 0, 2, 3, 0,],
+            [0, 0, 0, 0, 0,],            
+        ])
+        la = np.empty( im.shape, 'i' )
+        wk = np.empty( im.shape, 'b' )
+        npks = localmaxlabel( im, la, wk )
+        lp = np.empty( im.shape, 'i' )
+        wp = np.empty( im.shape, 'b' )
+        localmax(im, lp, wp)
+        if npks != 2:
+            print(la)
+            assert(npks == 2), npks
+        if not (lp == la).all():
+            print(lp)
+            print(la)
+            
+            
+    def test_L_sparse(self):
+        im = np.array([
+            [0, 0, 0, 0, 0,],
+            [0, 0, 2, 2, 0,],
+            [0, 0, 0, 4, 0,],
+            [0, 0, 0, 0, 0,],
+            [0, 0, 0, 0, 0,],
+            [0, 0, 0, 3, 0,],
+            [0, 0, 2, 3, 0,],
+            [0, 0, 0, 0, 0,],            
+        ])
+        la = np.empty( im.shape, 'i' )
+        wk = np.empty( im.shape, 'b' )
+        npks = localmaxlabel( im, la, wk )
+        assert npks == 2
+        las = np.empty( im.shape, 'i' )
+        npks = sparselocalmax( im, las, wk )
+        assert npks == 2
+        m = im > 0
+        assert (las[m] == la[m]).all()
         
 if __name__== "__main__":
     import sys

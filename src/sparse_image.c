@@ -482,13 +482,13 @@ void sparse_smooth(float *restrict v,    // input image
          */
     prow = 0;
     for (k = 0; k < nnz; k++) {
-        while (i[prow] < (i[k]-1) ) {
+        while ((int)i[prow] < (int)(i[k]-1) ) {
             prow++; /* find this row */
         }
         p = prow;
         while (i[p] <= (i[k] + 1)){
-            di = i[p] - i[k];
-            dj = j[p] - j[k];
+            di = (int)i[p] - (int)i[k];
+            dj = (int)j[p] - (int)j[k];
             r = di*di + dj*dj;    //  # 1 or 1+1 for neighbors
             if (r < 3){
                 s[k] += v[p] * ( m * (float)(3-r) );
@@ -521,13 +521,16 @@ void sparse_smooth(float *restrict v,    // input image
     end function sparse_localmaxlabel
 F2PY_WRAPPER_END */
 #define CHECKSANITY 0
+#define TRACE 0
 int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
                          uint16_t *restrict j, int nnz,
                          float *restrict MV, // neighbor Max Val (of 3x3 square)
                          int32_t *restrict iMV,   // Which neighbor is higher?
                          int32_t *restrict labels // Which neighbor is higher?
 ) {
-    int k, p, pp, ir,  pnext;
+    int k, p, pp, ir, pnext;
+    float MV_LOW;
+    MV_LOW = -1e10;
     /* Read k = kurrent
        p = prev */
     if (NOISY) {
@@ -546,22 +549,21 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
     /* Main loop */
     for (k = 1; k < nnz; k++) {
         iMV[k] = k;   /* iMV[k] == k tags a max */
-        MV[k] = v[k]; /* MV[k] is value of that max - a temporary */
+        MV[k] = MV_LOW; /* MV[k] is value of that max - a temporary */
         /* previous row first */
         ir = ((int)i[k]) - 1;
         /* pp should be on row above, on or after j-1 */
-//        pp = prow;
         while (ir > i[pp]) {
             pp++;
             if (CHECKSANITY) {
                 assert((pp >= 0) && (pp < nnz));
             }
         }
-  //      prow = pp; /* save for the next loop */
+        if (TRACE) printf("k %d    i[k] %d  j[k] %d  v[k] %f MV[k] %f\n",k,i[k],j[k],v[k],MV[k]);
         /* skip if nothing on row above */
         if (i[pp] < i[k]) {
             /* Locate previous pixel on row above */
-            while (((j[k] - j[pp]) > 1) && (i[pp] == ir)) {
+            while ( ((j[pp] + 1) < j[k]) && (i[pp] == ir)) {
                 pp++;
                 if (CHECKSANITY) {
                     assert((pp >= 0) && (pp < nnz));
@@ -571,7 +573,9 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
             for (p = pp; j[p] <= j[k] + 1; p++) {
                 if (CHECKSANITY) {
                     assert((p >= 0) && (p < nnz));
+                    assert(p<k);
                 }
+                if (TRACE) printf("p %d   i[p] %d   j[p] %d  v[p] %f MV[k] %f\n",p,i[p],j[p],v[p], MV[k]);
                 if (i[p] != ir)
                     break;
                 if (v[k] > v[p]) { /* This one is higher */
@@ -582,7 +586,7 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
                         MV[p] = v[k];
                     }
                 } else {
-                    if (v[p] > MV[k]) {
+                    if (v[p] > MV[k]) { /* this one is higher than our max, point to it */
                         iMV[k] = p;
                         MV[k] = v[p];
                     }
@@ -594,19 +598,27 @@ int sparse_localmaxlabel(float *restrict v, uint16_t *restrict i,
         if (CHECKSANITY) {
             assert((p >= 0) && (p < nnz));
         }
-        if ((i[k] == i[p]) &&
-            (j[k] == (j[p] + 1))) { /* previous pixel, same row */
+        if ((i[k] == i[p]) && (j[k] == (j[p] + 1))) { /* previous pixel, same row */
+            if (TRACE) printf("p %d   i[p] %d   j[p] %d  v[p] %f\n",p,i[p],j[p],v[p]);
             if (v[k] > v[p]) {      /* This one is higher */
                 /* Steal if we are higher than neighbor currently points to */
                 if (v[k] > MV[p]) {
                     iMV[p] = k;
                     MV[p] = v[k];
                 }
-            } else if (v[p] > MV[k]) { /* Previous one was higher */
-                iMV[k] = p;
-                MV[k] = v[p];
+            } else {
+                if (v[p] > MV[k]) { /* Previous one was higher */
+                    iMV[k] = p;
+                    MV[k] = v[p];
+                }
             }
         }
+        /* Finally, check for your own value */
+        /* Steal if we are higher than neighbor currently points to */
+        if (v[k] > MV[k]) {
+            iMV[k] = k;
+            MV[k] = v[k];
+        }        
     } // end loop over data
     /* Count max values and assign unique labels */
     pp = 0;

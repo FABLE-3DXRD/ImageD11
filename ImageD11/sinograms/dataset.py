@@ -226,7 +226,7 @@ class DataSet:
         self.ybinedges = np.linspace( self.ymin-self.ystep/2, self.ymax + self.ystep/2, ny + 1 )
         
         
-    def sinohist(self, weights=None, method='fast'):
+    def sinohist(self, weights=None, method='fast', omega=None, dty=None):
         """ Bin some data onto the sinogram histogram """
         bins = len(self.obincens), len(self.ybincens)
         rng  = ( (self.obinedges[0], self.obinedges[-1]),
@@ -235,12 +235,16 @@ class DataSet:
             wt = weights.ravel()
         else:
             wt = weights
+        if omega is None:
+            omega = self.omega
+        if dty is None:
+            dty = self.dty
         if method == 'numpy':
-            ret = np.histogram2d( self.omega.ravel(), self.dty.ravel(), 
+            ret = np.histogram2d( omega.ravel(), dty.ravel(), 
                                 weights = wt, bins = bins, range=rng )
             histo = ret[0]
         elif method == 'fast':            
-            histo = fast_histogram.histogram2d( self.omega.ravel(), self.dty.ravel(), 
+            histo = fast_histogram.histogram2d( omega.ravel(), dty.ravel(), 
                                  weights = wt, bins = bins, range=rng )
         return histo
 
