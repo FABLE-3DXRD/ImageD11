@@ -184,16 +184,17 @@ def props(scan, i, firstframe=None):
             continue
         f0 = scan.getframe(j)
         e = s + scan.nlabels[j]
-        r[0,s:e] = np.bincount( f0.pixels['labels']-1 )
+        # [1:] means skip the background labels == 0 output
+        r[0,s:e] = np.bincount( f0.pixels['labels'] )[1:]
         wt = f0.pixels['intensity'].astype(np.int64)
-        signal = np.bincount( f0.pixels['labels']-1, weights=wt)
+        signal = np.bincount( f0.pixels['labels'], weights=wt)[1:]
         if signal.min() < 1:
             print("Bad data",scan.hname, scan.scan,i,j,
                   scan.nlabels[j], scan.nnz[j],f0.pixels['intensity'].min())
             raise Exception( 'bad data' )
         r[1,s:e] = signal
-        r[2,s:e] = np.bincount( f0.pixels['labels']-1, weights=f0.row*wt )
-        r[3,s:e] = np.bincount( f0.pixels['labels']-1, weights=f0.col*wt )
+        r[2,s:e] = np.bincount( f0.pixels['labels'], weights=f0.row*wt )[1:]
+        r[3,s:e] = np.bincount( f0.pixels['labels'], weights=f0.col*wt )[1:]
         r[4,s:e] = j + j0
         s = e
     # Matrix entries for this scan with itself:
@@ -431,13 +432,19 @@ class pks_table:
         obj.npk = npk # this is ugly. Sending as arg causes allocate.
         return obj                
                 
-    def find_uniq(self):
+    def find_uniq(self, outputfile=None):
         """ find the unique labels from the rc array """
         t = tictoc()
         n = self.ipk[-1]
-#        print("Row/col sparse array")
-#        for i in range(3):
-#            print(self.rc[i].dtype,self.rc[i].shape)
+        #        print("Row/col sparse array")
+        #        for i in range(3):
+        #            print(self.rc[i].dtype,self.rc[i].shape)i
+        if outputfile is not None:
+            with h5py.File(outputfile,"w") as hout:
+                hout['data']=self.rc[2]
+                hout['i'] = self.rc[0]
+                hout['j'] = self.rc[1]
+            return None, None
         coo = scipy.sparse.coo_matrix( (self.rc[2], 
                                         (self.rc[0], self.rc[1])), 
                                       shape=(n,n))
@@ -482,7 +489,23 @@ class pks_table:
         }
         return allpks
             
-
+if 0:
+    def load_and_transpose( hname, itype, vtype ):
+        """ Read in a coo file saved by pks_table.find_uniq
+        """
+        with h5py.File(hname,'r') as hin:
+            di = hin['i'] 
+            ii = np.empty( len(di)*2, itype )
+            jj = np.empty( len(di)*2, itype )
+            vv = np.empty( len(di)*2, vtype )
+            ii[:len(di)] = hin['i'][:] # this should cast when filling
+            ii[len(di):] = hin['j'][:]
+            jj[:len(di)] = hin['j'][:]
+            jj[len(di):] = hin['i'][:]
+            vv[:len(di)] = hin['data'][:]
+            vv[len(di):] = hin['data'][:]
+        return ii,jj,vv
+    
 
 @numba.njit
 def numbapkmerge( labels, pks, omega, dty, out):
@@ -502,7 +525,62 @@ def numbapkmerge( labels, pks, omega, dty, out):
     
 
 
+def pks_table_from_scan( sparsefilename, ds, row ):
+    """
+    Labels one rotation scan to a peaks table
     
+    sparsefilename = sparse pixels file
+    dataset = ImageD11.sinograms.dataset
+    row = index for dataset.scan[ row ]
+    
+    returns a pks_table.
+        You might want to call one of "save" or "pk2d" or "pk2dmerge" on the result
+    
+    This is probably not threadsafe 
+    """ 
+    sps = ImageD11.sparseframe.SparseScan( sparsefilename, ds.scans[row] )
+    peaks, pairs = ImageD11.sinograms.properties.props( sps, row )
+    # which frame/peak is which in the peaks array
+    # For the 3D merging 
+    n1 = sum( pairs[k][0] for k in pairs ) # how many overlaps were found:
+    npk = np.array(  [ ( peaks.shape[1], n1, 0), ] )
+    pkst = ImageD11.sinograms.properties.pks_table( npk = npk, use_shm=False )
+    pkst.pk_props = peaks
+    rc =  pkst.rc
+    s = 0
+    pkid = np.concatenate(([0,], np.cumsum(sps.nlabels)))
+    for (row1, frame1, row2, frame2), (npairs, ijn) in pairs.items():
+        # add entries into a sparse matrix
+        # key:   (500, 2, 501, 2893)
+        # value: (41, array([[  1,   1,   5],
+        #                    [  1,   2,   2], ...
+        if npairs == 0:
+            continue
+        #assert (row1 == i) and (row2 == i), (row1,row2,i)
+        e = s + npairs
+        assert e <= rc.shape[1]
+        #rc[ 0, s : e ] = ip[row1] + pkid[row1][frame1] + ijn[:,0] - 1       # col
+        #rc[ 1, s : e ] = ip[row2] + pkid[row2][frame2] + ijn[:,1] - 1       # row
+        rc[ 0, s : e ] = pkid[frame1] + ijn[:,0] - 1       # col
+        rc[ 1, s : e ] = pkid[frame2] + ijn[:,1] - 1       # row
+        rc[ 2, s : e ] = ijn[:,2]                          # num pixels
+        s = e
+    uni = pkst.find_uniq()
+    
+    if 0:   # future TODO : scoring overlaps better. 
+        ks = list( pairs.keys() )
+        k = ks[100]
+        ipt = pkid
+        npx1 = peaks[0][ipt[k[1]]:ipt[k[1]+1]] # number of pixels in pk1 (allpeaks)
+        npx2 = peaks[0][ipt[k[3]]:ipt[k[3]+1]] # number of pixels in pk2 (allpeaks)
+        ijo = pairs[k][1]                      # which peaks overlap each other
+        # npx1.shape, npx2.shape, ijo.shape, ijo.max(axis=0)
+        n1 = npx1[ijo[:,0]-1]     # number of pixels in pk1 (overlapping)
+        n2 = npx2[ijo[:,1]-1]     # number of pixels in pk2 (overlapping)
+        no = ijo[:,2]
+    
+    # pk3d = pkst.pk2dmerge(ds.omega, ds.dty)
+    return pkst    
     
     
     
@@ -637,7 +715,7 @@ def main( dsname, sparsename, pkname ):
 #        rmem.save( pkname )        
 #        t('cache')
         cc = rmem.find_uniq()
-        t('%d connected components'%(cc[0]))
+        t('%s connected components'%(str(cc[0])))
         rmem.save( pkname )
         t('write hdf5')
     except Exception as e:

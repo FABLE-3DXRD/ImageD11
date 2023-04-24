@@ -366,7 +366,7 @@ class DataSet:
             for name in self.STRINGLISTS:
                 if name in grp:
                     stringlist = list(grp[name][()])
-                    if isinstance(stringlist[0], np.ndarray):
+                    if hasattr(stringlist[0], 'decode') or isinstance(stringlist[0], np.ndarray):
                         data = [s.decode() for s in stringlist]
                     else:
                         data = stringlist
