@@ -198,10 +198,21 @@ class DataSet:
         self.omega = np.zeros( self.shape, float )  # list of counters for monitor?
         self.dty   = np.zeros( self.shape, float )
         with h5py.File( self.masterfile, 'r' ) as hin:
+            bad = []
             for i, scan in enumerate( self.scans ):
                 # Should always be there, if not, filter scans before you get to here
-                self.omega[i] =  hin[scan][ 'measurement' ][ self.omegamotor ][()]
+                om = hin[scan][ 'measurement' ][ self.omegamotor ][()]
+        #        print(i, scan, om.shape, self.shape[1])
+                if len(om) == self.shape[1]: 
+                    self.omega[i] =  om
+                else:
+                    self.omega[i][0] = om[0]
+                    bad.append(i)
                 self.dty[i]   =  hin[scan][ 'instrument/positioners' ][ self.dtymotor ][()]
+        for b in bad:
+            if b+2 not in bad:
+                print("replace bad scan omega",b,b+2) 
+                self.omega[b] = self.omega[b+2]
         logging.info( 'imported omega/dty' )
         self.guessbins()
 
