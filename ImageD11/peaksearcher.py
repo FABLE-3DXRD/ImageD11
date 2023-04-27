@@ -523,7 +523,7 @@ def peaksearch_driver(options, args):
                 try:
                     nalive = 0
                     for thr in my_threads:
-                        if thr.isAlive():
+                        if thr.is_alive():
                             nalive += 1
                     if options.killfile is not None and \
                            os.path.exists(options.killfile):
@@ -541,7 +541,7 @@ def peaksearch_driver(options, args):
                         q = queues[t]
                         empty_queue(q)
                     for thr in my_threads:
-                        if thr.isAlive():
+                        if thr.is_alive():
                             thr.join(timeout=1)
                     print("finishing from waiting loop")
                 except:
@@ -553,7 +553,7 @@ def peaksearch_driver(options, args):
                         q = queues[t]
                         empty_queue(q)
                     for thr in my_threads:
-                        if thr.isAlive():
+                        if thr.is_alive():
                             thr.join(timeout=1)
                     raise
 

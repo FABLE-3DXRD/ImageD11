@@ -7,6 +7,7 @@ import tqdm
 from timeit import default_timer
 import numpy as np
 import h5py
+import hdf5plugin
 import scipy.sparse
 import scipy.sparse.csgraph
 import ImageD11.sinograms.dataset
@@ -43,17 +44,20 @@ def remove_shm_from_resource_tracker():
     def fix_register(name, rtype):
         if rtype == "shared_memory":
             return
-        return resource_tracker._resource_tracker.register(self, name, rtype)
-    resource_tracker.register = fix_register
+        return resource_tracker._resource_tracker.register(name, rtype)
+    if resource_tracker.register is not fix_register:
+        resource_tracker.register = fix_register
     def fix_unregister(name, rtype):
         if rtype == "shared_memory":
             return
-        return resource_tracker._resource_tracker.unregister(self, name, rtype)
+        return resource_tracker._resource_tracker.unregister(name, rtype)
+    if resource_tracker.unregister is not fix_register:
+        resource_tracker.unregister = fix_register
     resource_tracker.unregister = fix_unregister
     if "shared_memory" in resource_tracker._CLEANUP_FUNCS:
         del resource_tracker._CLEANUP_FUNCS["shared_memory"]
 ######################################################################################
-remove_shm_from_resource_tracker()
+
 NPROC = max( 1, int(os.environ['SLURM_CPUS_PER_TASK']) - 1 )
 
 class shared_numpy_array:
@@ -180,15 +184,17 @@ def props(scan, i, firstframe=None):
             continue
         f0 = scan.getframe(j)
         e = s + scan.nlabels[j]
-        r[0,s:e] = np.bincount( f0.pixels['labels']-1 )
-        signal = np.bincount( f0.pixels['labels']-1, weights=f0.pixels['intensity'] )
+        # [1:] means skip the background labels == 0 output
+        r[0,s:e] = np.bincount( f0.pixels['labels'] )[1:]
+        wt = f0.pixels['intensity'].astype(np.int64)
+        signal = np.bincount( f0.pixels['labels'], weights=wt)[1:]
         if signal.min() < 1:
             print("Bad data",scan.hname, scan.scan,i,j,
                   scan.nlabels[j], scan.nnz[j],f0.pixels['intensity'].min())
             raise Exception( 'bad data' )
         r[1,s:e] = signal
-        r[2,s:e] = np.bincount( f0.pixels['labels']-1, weights=f0.row*f0.pixels['intensity'] )
-        r[3,s:e] = np.bincount( f0.pixels['labels']-1, weights=f0.col*f0.pixels['intensity'] )
+        r[2,s:e] = np.bincount( f0.pixels['labels'], weights=f0.row*wt )[1:]
+        r[3,s:e] = np.bincount( f0.pixels['labels'], weights=f0.col*wt )[1:]
         r[4,s:e] = j + j0
         s = e
     # Matrix entries for this scan with itself:
@@ -336,7 +342,7 @@ class pks_table:
         rpk[1:] = np.cumsum( npk[:,1]+npk[:,2] )
         self.rpk = self.share( 'rpk', rpk )
         self.pk_props = self.share( 'pk_props', shape=(5, s[0]), dtype=np.int64 )
-        self.rc = self.share( 'rc', shape=(3, s[1]+s[2]), dtype=np.int32 )
+        self.rc = self.share( 'rc', shape=(3, s[1]+s[2]), dtype=np.int64 )
         
     def export(self):
         return { name : self.shared[name].export() for name in self.shared }
@@ -351,32 +357,46 @@ class pks_table:
             o = self.shared.pop( name )
             del o
             
-
+    def guesschunk(self, ar, m=64*40):
+        return None
+        """ for parallel / compressed """
+        chunk = list(ar.shape)
+        nbytes = np.prod(chunk) * ar.dtype.itemsize
+        if (nbytes // m) < pow(2,16):
+            print('Guessing 1 chunk for', ar.shape, ar.dtype)
+            return tuple(chunk)
+        axsplit = np.argmax( chunk )
+        n = chunk[axsplit]
+        chunk[axsplit] = max(1, n//m)
+        print('Guessing chunks for', ar.shape, ar.dtype, chunk)
+        return tuple(chunk)
+            
     def save(self, h5name, group='pks2d'):
-        opts = {'compression':'gzip',
-                'compression_opts':2,
-                'shuffle':True,
-               }
+        opts = {} # No compression is faster 
         with h5py.File( h5name, 'a' ) as hout:
             grp = hout.require_group( group )
             ds = grp.require_dataset( name = 'ipk', 
                                      shape = self.ipk.shape, 
+                                     chunks = self.guesschunk( self.ipk ),
                                      dtype = self.ipk.dtype, **opts )
             ds[:] = self.ipk
             ds.attrs['description']='pointer to start of a scan'
             ds = grp.require_dataset( name = 'pk_props', 
                                      shape = self.pk_props.shape, 
+                                     chunks = self.guesschunk( self.pk_props ),
                                      dtype = self.pk_props.dtype, **opts )
             ds[:] = self.pk_props
             ds.attrs['description']='[ ( s1, sI, srI, scI, id ),  Npks ]'
             ds = grp.require_dataset( name = 'npk', 
                                      shape = self.npk.shape, 
+                                     chunks = self.guesschunk( self.npk ),
                                      dtype = self.npk.dtype, **opts )
             ds[:] = self.npk
             ds.attrs['description']="[ nscans, (N_peaks_in_scan, N_pairs_ii, N_pairs_ij) ]"
             if hasattr(self,'glabel'):
                 ds = grp.require_dataset( name = 'glabel', 
                                          shape = self.glabel.shape, 
+                                         chunks = self.guesschunk( self.glabel ),
                                          dtype = self.glabel.dtype, **opts )
                 ds[:] = self.glabel
                 grp.attrs['nlabel'] = self.nlabel
@@ -384,9 +404,11 @@ class pks_table:
                 
     @classmethod
     def fromSHM(cls, dct):
-        names =  'ipk', 'rpk', 'pk_props', 'rc'
-        sharrays = { name : shared_numpy_array( **dct[name] ) for name in names }
-        arrays = { name : sharrays[name].array for name in names }
+        names =  'ipk', 'rpk', 'pk_props', 'rc', 'glabel'
+        sharrays = { name : shared_numpy_array( **dct[name] ) 
+                    for name in names if name in dct }
+        arrays = { name : sharrays[name].array 
+                  for name in names if name in dct }
         o = cls( **arrays )
         o.shared = sharrays
         return o
@@ -410,19 +432,24 @@ class pks_table:
         obj.npk = npk # this is ugly. Sending as arg causes allocate.
         return obj                
                 
-    def find_uniq(self):
+    def find_uniq(self, outputfile=None):
         """ find the unique labels from the rc array """
         t = tictoc()
         n = self.ipk[-1]
+        #        print("Row/col sparse array")
+        #        for i in range(3):
+        #            print(self.rc[i].dtype,self.rc[i].shape)i
+        if outputfile is not None:
+            with h5py.File(outputfile,"w") as hout:
+                hout['data']=self.rc[2]
+                hout['i'] = self.rc[0]
+                hout['j'] = self.rc[1]
+            return None, None
         coo = scipy.sparse.coo_matrix( (self.rc[2], 
                                         (self.rc[0], self.rc[1])), 
                                       shape=(n,n))
         t('coo')
-        csr = coo.tocsr()
-        t('tocsr')
-        csr += csr.T
-        t('transpose')
-        cc = scipy.sparse.csgraph.connected_components( csr )
+        cc = scipy.sparse.csgraph.connected_components( coo, directed=False, return_labels=True )
         t('find connected components')
         self.cc = cc
         self.nlabel, self.glabel = cc
@@ -462,7 +489,23 @@ class pks_table:
         }
         return allpks
             
-
+if 0:
+    def load_and_transpose( hname, itype, vtype ):
+        """ Read in a coo file saved by pks_table.find_uniq
+        """
+        with h5py.File(hname,'r') as hin:
+            di = hin['i'] 
+            ii = np.empty( len(di)*2, itype )
+            jj = np.empty( len(di)*2, itype )
+            vv = np.empty( len(di)*2, vtype )
+            ii[:len(di)] = hin['i'][:] # this should cast when filling
+            ii[len(di):] = hin['j'][:]
+            jj[:len(di)] = hin['j'][:]
+            jj[len(di):] = hin['i'][:]
+            vv[:len(di)] = hin['data'][:]
+            vv[len(di):] = hin['data'][:]
+        return ii,jj,vv
+    
 
 @numba.njit
 def numbapkmerge( labels, pks, omega, dty, out):
@@ -482,7 +525,62 @@ def numbapkmerge( labels, pks, omega, dty, out):
     
 
 
+def pks_table_from_scan( sparsefilename, ds, row ):
+    """
+    Labels one rotation scan to a peaks table
     
+    sparsefilename = sparse pixels file
+    dataset = ImageD11.sinograms.dataset
+    row = index for dataset.scan[ row ]
+    
+    returns a pks_table.
+        You might want to call one of "save" or "pk2d" or "pk2dmerge" on the result
+    
+    This is probably not threadsafe 
+    """ 
+    sps = ImageD11.sparseframe.SparseScan( sparsefilename, ds.scans[row] )
+    peaks, pairs = ImageD11.sinograms.properties.props( sps, row )
+    # which frame/peak is which in the peaks array
+    # For the 3D merging 
+    n1 = sum( pairs[k][0] for k in pairs ) # how many overlaps were found:
+    npk = np.array(  [ ( peaks.shape[1], n1, 0), ] )
+    pkst = ImageD11.sinograms.properties.pks_table( npk = npk, use_shm=False )
+    pkst.pk_props = peaks
+    rc =  pkst.rc
+    s = 0
+    pkid = np.concatenate(([0,], np.cumsum(sps.nlabels)))
+    for (row1, frame1, row2, frame2), (npairs, ijn) in pairs.items():
+        # add entries into a sparse matrix
+        # key:   (500, 2, 501, 2893)
+        # value: (41, array([[  1,   1,   5],
+        #                    [  1,   2,   2], ...
+        if npairs == 0:
+            continue
+        #assert (row1 == i) and (row2 == i), (row1,row2,i)
+        e = s + npairs
+        assert e <= rc.shape[1]
+        #rc[ 0, s : e ] = ip[row1] + pkid[row1][frame1] + ijn[:,0] - 1       # col
+        #rc[ 1, s : e ] = ip[row2] + pkid[row2][frame2] + ijn[:,1] - 1       # row
+        rc[ 0, s : e ] = pkid[frame1] + ijn[:,0] - 1       # col
+        rc[ 1, s : e ] = pkid[frame2] + ijn[:,1] - 1       # row
+        rc[ 2, s : e ] = ijn[:,2]                          # num pixels
+        s = e
+    uni = pkst.find_uniq()
+    
+    if 0:   # future TODO : scoring overlaps better. 
+        ks = list( pairs.keys() )
+        k = ks[100]
+        ipt = pkid
+        npx1 = peaks[0][ipt[k[1]]:ipt[k[1]+1]] # number of pixels in pk1 (allpeaks)
+        npx2 = peaks[0][ipt[k[3]]:ipt[k[3]+1]] # number of pixels in pk2 (allpeaks)
+        ijo = pairs[k][1]                      # which peaks overlap each other
+        # npx1.shape, npx2.shape, ijo.shape, ijo.max(axis=0)
+        n1 = npx1[ijo[:,0]-1]     # number of pixels in pk1 (overlapping)
+        n2 = npx2[ijo[:,1]-1]     # number of pixels in pk2 (overlapping)
+        no = ijo[:,2]
+    
+    # pk3d = pkst.pk2dmerge(ds.omega, ds.dty)
+    return pkst    
     
     
     
@@ -610,14 +708,14 @@ def main( dsname, sparsename, pkname ):
         t('read ds %s'%(dsname))
         nscans = len(ds.scans)
         if NPROC > nscans-1:
-            NPROC = nscans-1
+            NPROC = max(1,nscans-1)
         print('Nscans',nscans,'NPROC', NPROC)
         peaks, ks, P, rmem = goforit(ds, sparsename)
         t('%d label and pair'%(len(rmem.pk_props[0])))
 #        rmem.save( pkname )        
 #        t('cache')
         cc = rmem.find_uniq()
-        t('%d connected components'%(cc[0]))
+        t('%s connected components'%(str(cc[0])))
         rmem.save( pkname )
         t('write hdf5')
     except Exception as e:

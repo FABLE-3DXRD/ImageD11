@@ -157,15 +157,22 @@ class DataSet:
         self.imagefiles = []
         self.frames_per_file = []
         with h5py.File( self.masterfile, 'r' ) as hin:
+            bad = [ ]
             for i, scan in enumerate( self.scans ):
                 if ('measurement' not in hin[scan]) or (self.detector not in hin[scan]['measurement']):
+                    print('Bad scan', scan)
+                    bad.append(scan)
                     continue
                 frames = hin[scan]['measurement'][self.detector]
                 imageshape = frames.shape[1:]
                 if npts is None:
                     npts = len(frames)
                 else:
-                    assert len(frames) == npts, 'scan is not regular %d %s :: %s'%(npts, self.masterfile, scan)
+                    if len(frames) != npts:
+                        print('warning!, scan is not regular %d %s :: %s'%(npts, self.masterfile, scan))
+                        print('removing scan',scan)
+                        bad.append(scan)
+                        continue
                 for vsrc in frames.virtual_sources():
                     self.imagefiles.append( vsrc.file_name )
                     self.frames_per_file.append( vsrc.src_space.shape[0] ) # not sure about this
@@ -173,6 +180,7 @@ class DataSet:
                     if self.limapath is None:
                         self.limapath = vsrc.dset_name
                     assert self.limapath == vsrc.dset_name
+        self.scans = [scan for scan in self.scans if scan not in bad]
         self.frames_per_file = np.array( self.frames_per_file, int )
         self.sparsefiles = [ name.replace( '/', '_' ).replace( '.h5', '_sparse.h5' ) for name in 
                              self.imagefiles ]
@@ -190,10 +198,21 @@ class DataSet:
         self.omega = np.zeros( self.shape, float )  # list of counters for monitor?
         self.dty   = np.zeros( self.shape, float )
         with h5py.File( self.masterfile, 'r' ) as hin:
+            bad = []
             for i, scan in enumerate( self.scans ):
                 # Should always be there, if not, filter scans before you get to here
-                self.omega[i] =  hin[scan][ 'measurement' ][ self.omegamotor ][()]
+                om = hin[scan][ 'measurement' ][ self.omegamotor ][()]
+        #        print(i, scan, om.shape, self.shape[1])
+                if len(om) == self.shape[1]: 
+                    self.omega[i] =  om
+                else:
+                    self.omega[i][0] = om[0]
+                    bad.append(i)
                 self.dty[i]   =  hin[scan][ 'instrument/positioners' ][ self.dtymotor ][()]
+        for b in bad:
+            if b+2 not in bad:
+                print("replace bad scan omega",b,b+2) 
+                self.omega[b] = self.omega[b+2]
         logging.info( 'imported omega/dty' )
         self.guessbins()
 
@@ -218,7 +237,7 @@ class DataSet:
         self.ybinedges = np.linspace( self.ymin-self.ystep/2, self.ymax + self.ystep/2, ny + 1 )
         
         
-    def sinohist(self, weights=None, method='fast'):
+    def sinohist(self, weights=None, method='fast', omega=None, dty=None):
         """ Bin some data onto the sinogram histogram """
         bins = len(self.obincens), len(self.ybincens)
         rng  = ( (self.obinedges[0], self.obinedges[-1]),
@@ -227,12 +246,16 @@ class DataSet:
             wt = weights.ravel()
         else:
             wt = weights
+        if omega is None:
+            omega = self.omega
+        if dty is None:
+            dty = self.dty
         if method == 'numpy':
-            ret = np.histogram2d( self.omega.ravel(), self.dty.ravel(), 
+            ret = np.histogram2d( omega.ravel(), dty.ravel(), 
                                 weights = wt, bins = bins, range=rng )
             histo = ret[0]
         elif method == 'fast':            
-            histo = fast_histogram.histogram2d( self.omega.ravel(), self.dty.ravel(), 
+            histo = fast_histogram.histogram2d( omega.ravel(), dty.ravel(), 
                                  weights = wt, bins = bins, range=rng )
         return histo
 
@@ -353,7 +376,11 @@ class DataSet:
                     setattr( self, name, data )      
             for name in self.STRINGLISTS:
                 if name in grp:
-                    data = [item.decode() for item in grp[name][()]]
+                    stringlist = list(grp[name][()])
+                    if hasattr(stringlist[0], 'decode') or isinstance(stringlist[0], np.ndarray):
+                        data = [s.decode() for s in stringlist]
+                    else:
+                        data = stringlist
                     setattr( self, name, data )
         self.guessbins()
         return self

@@ -24,7 +24,8 @@ class sparse_frame( object ):
     This was developed for a single 2D frame
        See SparseScan below for something aiming towards many frames
     """
-    def __init__(self, row, col, shape, itype=np.uint16, pixels=None):
+    def __init__(self, row, col, shape, itype=np.uint16, pixels=None,
+                 SAFE=SAFE ):
         """ row = slow direction
         col = fast direction
         shape = size of full image
@@ -34,7 +35,8 @@ class sparse_frame( object ):
         pixels = numpy arrays in a dict to name them
                  throw in a ary.attrs if you want to save some
         """
-        self.check( row, col, shape, itype )
+        if SAFE:
+            self.check( row, col, shape, itype, SAFE )
         self.shape = shape
         self.row = np.asarray(row, dtype = itype )
         self.col = np.asarray(col, dtype = itype )
@@ -78,7 +80,7 @@ class sparse_frame( object ):
         return True
 
 
-    def check(self, row, col, shape, itype):
+    def check(self, row, col, shape, itype, SAFE=SAFE):
         """ Ensure the index data makes sense and fits """
         if SAFE:
             lo = np.iinfo(itype).min
@@ -259,17 +261,17 @@ class SparseScan( object ):
                 if name in grp:
                     setattr( self, name, grp[name][s:e] )
 
-    def getframe(self, i):
+    def getframe(self, i, SAFE=SAFE):
         # (self, row, col, shape, itype=np.uint16, pixels=None):
         s = self.ipt[i]
         e = self.ipt[i+1]
         if s == e:
-            import pdb
-            pdb.set_trace()
+            return None # empty frame
         return  sparse_frame( self.row[ s: e],
                       self.col[ s: e],
                       self.shape[1:],
-                      pixels = { name : getattr( self, name)[s:e] for name in self.names } )
+                      pixels = { name : getattr( self, name)[s:e] for name in self.names },
+                             SAFE=SAFE )
 
 
     def cplabel(self, threshold = 0, countall=True ):
@@ -372,10 +374,13 @@ class SparseScan( object ):
                                    weights=i32*self.col,
                                    minlength = self.total_labels+1 )[1:]
         pks['f_raw'] /= pks['sum_intensity']
+        frame = np.empty( self.row.shape, np.int32 )
+        for i in range(len(self.nnz)):
+            frame[ self.ipt[i]:self.ipt[i+1] ] = i
         for name in 'omega','dty':
             if name in self.motors:
                 pks[name] = np.bincount(self.labels,
-                           weights=i32*self.motors[name][self.frame],
+                           weights=i32*self.motors[name][frame],
                            minlength = self.total_labels+1 )[1:]
                 pks[name] /= pks['sum_intensity']
         return pks
@@ -442,7 +447,7 @@ def sparse_moments( frame, intensity_name, labels_name ):
     """ We rely on a labelling array carrying nlabel metadata (==labels.data.max())"""
     nl = frame.meta[ labels_name ][ "nlabel" ]
     return cImageD11.sparse_blob2Dproperties(
-        frame.pixels[intensity_name],
+        frame.pixels[intensity_name].astype(np.float32), # limitations of f2py here.
         frame.row,
         frame.col,
         frame.pixels[labels_name],
