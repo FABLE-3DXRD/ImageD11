@@ -1,6 +1,6 @@
 
 """WARNING: work in progress - look at mpi and/or uncompressed data instead?"""
-
+from __future__ import print_function
 
 import os
 import h5py
@@ -124,17 +124,17 @@ if __name__=="__main__":
     start = timeit.default_timer()
     tbl = pread( None, hname )
     end = timeit.default_timer()
-    print(f"Reading took {end-start:.2f}/s")
+    print("Reading took {end-start:.2f}/s".format(**locals()))
     
     # Single threaded
     start = timeit.default_timer()
     chk = ImageD11.sinograms.properties.pks_table.load( hname )
     end = timeit.default_timer()
-    print(f"One core reading took {end-start:.2f}/s")
+    print("One core reading took {end-start:.2f}/s".format(**locals()))
 
     start = timeit.default_timer()
     assert (tbl.pk_props == chk.pk_props).all()
     assert (tbl.glabel == chk.glabel).all()
     end = timeit.default_timer()
-    print(f"Matches {end-start:.2f}/s")
+    print("Matches {end-start:.2f}/s".format(**locals()))
 

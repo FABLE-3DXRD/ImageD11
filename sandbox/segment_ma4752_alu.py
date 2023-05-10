@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 # Code to clean the 2D image and reduce it to a sparse array:
 # things we might edit
 
