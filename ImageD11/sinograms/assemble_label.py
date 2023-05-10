@@ -2,6 +2,7 @@
 """WARNING: work in progresss"""
 # FIXME!!!! import ImageD11.sinograms.dataset !!!
 
+from __future__ import print_function
 import h5py, os, time, numpy as np
 
 # given sample + dset -> make a single file with all the sparse pixels in it.
@@ -30,7 +31,7 @@ def getsparsepath( sample, dsname ):
 def getoutpath( sample, dsname ):
     return os.path.join( os.getcwd() + '/sparse', dsname + "_sparse.h5" )
 
-def testready(sample, dsname):
+def testready(experiment, sample, dsname):
     ok = []
     with h5py.File( os.path.join(experiment, sample, dsname, dsname + '.h5'), 'r' ) as hin:
         scans = list(hin['/'])
@@ -78,7 +79,7 @@ def getpixels( dset, samplename, dsetname ):
     return pixels
 
 
-def segment_scans_assemble_raw( sample, dsetname,
+def segment_scans_assemble_raw( experiment, sample, dsetname,
                    scanmotors=SCANMOTORS,
                    headermotors=HEADERMOTORS,
                    detector=DETECTORNAME ):
@@ -149,11 +150,11 @@ def segment_scans_assemble_raw( sample, dsetname,
     return outname
 
 
-
 def main( experiment, samples_dsets ):
         # experiment= '/data/visitor/hc5185/id11/20230505/RAW_DATA'
-    for sample ,dset in samples_dsets:
-        outname = segment_scans_assemble_raw(sample, f"{sample}_{ds}" )
+    for sample , dset in samples_dsets:
+        outname = segment_scans_assemble_raw(experiment, sample, "{sample}_{dset}".format(**locals()) )
+        
         
         
     

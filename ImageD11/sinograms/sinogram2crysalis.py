@@ -1,6 +1,7 @@
 
 """WARNING: work in in progress"""
 
+from __future__ import print_function
 
 import h5py
 import numpy as np
@@ -170,12 +171,12 @@ def sum_sinogram( dsname, output_name, nomega = 10, nthreads = None ):
                                  dtype = spx.dtype,
                                  data = spx,
                                  chunks = (1,spx.shape[1],spx.shape[2]),
-                                 **hdf5plugin.Bitshuffle(nelems=0, lz4=True),
+                                 **hdf5plugin.Bitshuffle(nelems=0, lz4=True)
                                 )
     return spx
 
 
- def makecmdline( 
+def makecmdline( 
     wvln = 12.3985 / 43.569,
     xbeam = 1024,
     ybeam = 1024,
@@ -192,7 +193,7 @@ def sum_sinogram( dsname, output_name, nomega = 10, nthreads = None ):
 if __name__=="__main__":
     sample = 'lpcmo_x3'
     dset = 'z50_RT'
-    dsname = f'../ds_{sample}_{dset}.h5'
+    dsname = '../ds_{sample}_{dset}.h5'.format(**locals())
     guessroot = os.getcwd()
     if guessroot.startswith( '/data' ):
         items = guessroot.split('/')
@@ -209,7 +210,7 @@ if __name__=="__main__":
         ds.save(dsname)
         ImageD11.sinograms.lima_segmenter.setup(dsname)
         
-    spx = sum_sinogram( dsname, f"sum_{sample}_{dset}.h5", nthreads = 20)
+    spx = sum_sinogram( dsname, "sum_{sample}_{dset}.h5".format(**locals()), nthreads = 20)
 
     # Dummy file opener
     def myopenimage( filename ):

@@ -3,7 +3,9 @@
 
 
 # given a dataset + parameters + unit cell (+ rings) + sparsepixels : create polefigues
-
+import numpy as np
+import pylab as pl
+import os
 import ImageD11.sinograms.dataset
 import ImageD11.sparseframe
 import ImageD11.transform
