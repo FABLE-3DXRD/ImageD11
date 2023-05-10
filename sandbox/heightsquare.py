@@ -3,7 +3,8 @@ import numpy as np
 
 def heightsquare(r,theta):
     """ Height of a projected square versus x """
-    p = ((-1,-1,1,1),(1,-1,-1,1))
+    p = ((-1,-1,1,1),
+         (1,-1,-1,1))
     s = np.sin(np.radians(theta))
     c = np.cos(radians(theta))
     m = ((c, -s),(s, c))
@@ -12,7 +13,7 @@ def heightsquare(r,theta):
     o = []
     xp = rp[0][order]
     yp = rp[1][order]
-    for v in x:
+    for v in r:
         if v < xp[0]:
             o.append(0)
             continue
@@ -43,5 +44,6 @@ if __name__=="__main__":
     plot(x,h(x,10),"-")
     plot(x,h(x,50),"-")
     plot(x,h(x,45),"-")
+    plot(x,h(x,79),"-")
     plot(x,h(x,99),"-")
     show()
