@@ -702,9 +702,9 @@ class PixelLUT( object ):
             self.df = None 
             self.ds = None
     
-        self.xyz = compute_xyz_lab( self.sc.ravel(), self.fc.ravel(), **self.pars )
+        self.xyz = compute_xyz_lab( (self.sc.ravel(), self.fc.ravel()), **self.pars )
         self.sinthsq = compute_sinsqth_from_xyz( self.xyz )
-        self.tth, self.eta = compute_tth_eta_from_xyz(self.peaks_xyz, None, **self.pars)
+        self.tth, self.eta = compute_tth_eta_from_xyz(self.xyz, None, **self.pars)
         # scattering angles:
         self.tth, self.eta = compute_tth_eta( (self.sc.ravel(), self.fc.ravel()), **self.pars )
         # scattering vectors:

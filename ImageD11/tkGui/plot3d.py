@@ -203,7 +203,7 @@ class plot3d(Tk.Toplevel):
             for u,i in zip(self.ubis,list(range(len(self.ubis)))):
                 scores=indexing.calc_drlv2(u,self.xyz)
                 print(self.xyz.shape,scores.shape)
-                ind = numpy.compress( numpy.less(scores,0.02) , 
+                ind = numpy.compress( numpy.less(scores,0.05*0.05) , 
                                       numpy.arange(self.xyz.shape[0]) )
                 print("Grain",i,scores.shape,ind.shape)
                 for j in range(3):

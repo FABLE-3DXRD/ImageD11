@@ -49,7 +49,7 @@ da=np.zeros( (len(g1l),len(g2l)), float)
 dt2=np.zeros( (len(g1l),len(g2l)), float)
 
 for g in g1l + g2l:
-    g.u = xfab.tools.ubi_to_u_b(g.ubi)[0]
+    # g.u = xfab.tools.ubi_to_u_b(g.ubi)[0]
     assert (abs(np.dot(g.u, g.u.T) - np.eye(3)).ravel()).sum() < 1e-6
     
 dtsum = np.zeros(3)

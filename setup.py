@@ -164,6 +164,7 @@ more = [
 
     'numba==0.46.0 ; python_version < "3" ',       # for some test cases
     'numba ; python_version > "3" ',               # for some test cases
+    "bslz4_to_sparse",
     "pillow",      # in sandbox
     "lmfit",       # in sandbox
     "PyMca5",      # in sandbox
@@ -203,7 +204,9 @@ setup(name='ImageD11',
       packages = ["ImageD11",
                   "ImageD11.tkGui",
                   "ImageD11.silxGui",
-                  "ImageD11.nbGui"],
+                  "ImageD11.nbGui",
+                  "ImageD11.sinograms",
+                 ],
       package_dir = {"ImageD11":"ImageD11"},
       url = "http://github.com/jonwright/ImageD11",
       package_data = {"ImageD11" : ["doc/*.html", "data/*", "sandbox/*.py" ]},

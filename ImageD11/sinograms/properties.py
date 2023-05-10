@@ -161,17 +161,18 @@ def pairscans( s1, s2, omegatol = 0.051 ):
     return pairs
 
 
-def props(scan, i, firstframe=None):
+def props(scan, i, firstframe=None, algorithm='lmlabel' ):
     """
     scan = sparseframe.SparseScan object
     i = sinogram row id : used for tagging pairs
+    algorithm = 'lmlabel' | 'cplabel' 
 
     Labels the peaks with lmlabel
     Assumes a regular scan for labelling frames
     returns ( row, properties[(s1,sI,sRow,sCol,frame),:], pairs, scan )
     """
     scan.sinorow = i
-    scan.lmlabel(countall=False)
+    getattr( scan, algorithm )( countall=False )  
     npks = scan.total_labels
     r = np.empty( (5,npks), np.int64 )
     s = 0
@@ -584,7 +585,7 @@ def pks_table_from_scan( sparsefilename, ds, row ):
     
     
     
-def process(qin, qshm, qout, hname, scans):
+def process(qin, qshm, qout, hname, scans, options):
     remove_shm_from_resource_tracker()
     start, end = qin.get()
     n2 = 0
@@ -599,7 +600,7 @@ def process(qin, qshm, qout, hname, scans):
         scan = ImageD11.sparseframe.SparseScan( hname, scans[i] )
         global omega
         scan.motors['omega'] = omega[i] 
-        mypks[i], pii[i] = props(scan, i)
+        mypks[i], pii[i] = props(scan, i, algorithm = options['algorithm'] )
 #        nlabels[i] = scan.nlabels # peaks per frame information
         pkid[i] = np.concatenate(([0,], np.cumsum(scan.nlabels)))
         n1 = sum( pii[i][k][0] for k in pii[i] )
@@ -666,13 +667,13 @@ def process(qin, qshm, qout, hname, scans):
     qout.put(start)
     
         
-def goforit(ds, sparsename):
+def goforit(ds, sparsename, options):
     qin = mp.Queue(maxsize=NPROC)
     qshm = mp.Queue(maxsize=NPROC)
     qresult = mp.Queue(maxsize=len(ds.scans))
     out = []
     with mp.Pool(NPROC, initializer=process, 
-               initargs=(qin, qshm, qresult, sparsename, ds.scans)) as pool:
+               initargs=(qin, qshm, qresult, sparsename, ds.scans, options)) as pool:
         slices = get_start_end( len(ds.scans), NPROC )
         for i,(s,e) in enumerate(slices):
             qin.put((s,e))
@@ -696,7 +697,10 @@ def goforit(ds, sparsename):
                 break
     return out, ks, P, mem
 
-def main( dsname, sparsename, pkname ):
+
+default_options = { 'algorithm' : 'lmlabel' }
+                   
+def main( dsname, sparsename, pkname, options = default_options ):
     if os.path.exists(pkname):
         logging.warning("Your output file already exists. May fail. %s"%(pkname))
     global NPROC, omega
@@ -710,7 +714,7 @@ def main( dsname, sparsename, pkname ):
         if NPROC > nscans-1:
             NPROC = max(1,nscans-1)
         print('Nscans',nscans,'NPROC', NPROC)
-        peaks, ks, P, rmem = goforit(ds, sparsename)
+        peaks, ks, P, rmem = goforit(ds, sparsename, options)
         t('%d label and pair'%(len(rmem.pk_props[0])))
 #        rmem.save( pkname )        
 #        t('cache')
@@ -727,11 +731,16 @@ def main( dsname, sparsename, pkname ):
     return
 
 
+
 if __name__=="__main__":
     dsname = sys.argv[1]
     sparsename = sys.argv[2]
     pkname = sys.argv[3]
-    main( dsname, sparsename, pkname )
+    algorithm = 'lmlabel'
+    if len(sys.argv)>=5:
+        algorithm = sys.argv[4]
+    options = {'algorithm': algorithm }
+    main( dsname, sparsename, pkname, options )
 
     print("Your stuff left in shm:")
     os.system("ls -l /dev/shm | grep %s"%(os.environ['USER']))
