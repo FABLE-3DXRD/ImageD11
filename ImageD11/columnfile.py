@@ -328,7 +328,7 @@ class columnfile(object):
         self.chkarray()
         if len(mask) != self.nrows:
             raise Exception("Mask is the wrong size")
-        msk = np.array( mask, dtype=np.bool )
+        msk = np.array( mask, dtype=bool )
         # back to list here
         self.__data = [col[msk] for col in self.__data]
         self.nrows = len(self.__data[0])
