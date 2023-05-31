@@ -506,7 +506,7 @@ class transformer:
         This handles omegasign in a more elegant way
         """
         # unit vector along z
-        v = numpy.array([0, 0, 1], numpy.float)
+        v = numpy.array([0, 0, 1], float)
         p = self.parameterobj.get("omegasign")
         return v * p
 
