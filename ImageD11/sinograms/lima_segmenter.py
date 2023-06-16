@@ -40,6 +40,7 @@ class SegmenterOptions:
         self.pixels_in_spot = pixels_in_spot
         self.maskfile = maskfile
         self.bgfile = bgfile
+        self.bg = None
         self.files_per_core = files_per_core
         self.cores_per_job = cores_per_job
                       
@@ -195,7 +196,7 @@ def clean(nnz, row, col, val):
     if OPTIONS.pixels_in_spot <= 1:
         return s
     # label them according to the connected objects
-    s.set_pixels('f32', val.astype(np.float32))
+    s.set_pixels('f32', s.pixels['intensity'].astype(np.float32))
     npk = sparseframe.sparse_connected_pixels( s, threshold=0,
                              data_name="f32", label_name="cp")
     # only keep spots with more than 3 pixels ...
@@ -216,7 +217,7 @@ def reader(frms, mask, cut):
     iterator to read chunks or frames and segment them
     returns sparseframes
     """
-    if '32008' in frms._filters and not frms.is_virtual:
+    if '32008' in frms._filters and not frms.is_virtual and OPTIONS.bg is None:
         print('# reading compressed chunks')
         fun = chunk2sparse( mask, dtype = frms.dtype )
         for i in range(frms.shape[0]):
@@ -227,7 +228,8 @@ def reader(frms, mask, cut):
     else:
         fun = frmtosparse( mask, frms.dtype )
         for i in range(frms.shape[0]):
-            npx, row, col, val = fun( frms[i], cut )
+            frm = frms[i].astype(np.float32) - OPTIONS.bg
+            npx, row, col, val = fun( frm, cut )
             spf = clean( npx, row, col, val )
             yield spf
 
