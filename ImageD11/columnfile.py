@@ -429,9 +429,16 @@ class columnfile(object):
         peaks_xyz = np.array((xl,yl,zl))
         assert "omega" in self.titles,"No omega column"
         om = self.omega *  float( pars.get("omegasign") )
-        tth, eta = transform.compute_tth_eta_from_xyz(
-            peaks_xyz, om,
-            **pars.parameters)
+        if "dox" in self.titles and "doy" in self.titles and "doz" in self.titles:
+            # respect diffraction origin positions, dox, doy, doz...
+            s1 = peaks_xyz - np.array((self.dox, self.doy, self.doz))
+            eta = np.degrees(np.arctan2(-s1[1, :], s1[2, :]))
+            s1_perp_x = np.sqrt(s1[1, :] * s1[1, :] + s1[2, :] * s1[2, :])
+            tth = np.degrees(np.arctan2(s1_perp_x, s1[0, :]))
+        else:
+            tth, eta = transform.compute_tth_eta_from_xyz(
+                peaks_xyz, om,
+                **pars.parameters)
         gx, gy, gz = transform.compute_g_vectors(
             tth, eta, om,
             wvln  = pars.get("wavelength"),
