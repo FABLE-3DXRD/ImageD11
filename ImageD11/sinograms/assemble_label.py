@@ -80,7 +80,7 @@ def harvest_masterfile( dset, outname,
                     print(e)
                     print(list(gin))
                     print(list(gin["measurement"]))
-                    print(detector)
+                    print(dset.detector)
                     raise        
                 g.attrs["itype"] = frms.dtype.name
                 g.attrs["nframes"] = frms.shape[0]
