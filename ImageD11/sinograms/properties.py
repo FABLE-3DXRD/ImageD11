@@ -146,18 +146,23 @@ def pairscans( s1, s2, omegatol = 0.051 ):
     olap =  ImageD11.sparseframe.overlaps_linear( max(s1.nnz.max(), s2.nnz.max())+1 )
     assert len(s1.nnz) == len(s2.nnz )
     pairs = {}
+    omega_1 = s1.motors['omega'] % 360
+    omega_2 = s2.motors['omega'] % 360
     for i in range(len(s1.nnz)):
         # check omega angles match
-        o1 = s1.motors['omega'][s1.omegaorder[i]]
-        o2 = s2.motors['omega'][s2.omegaorder[i]]
-        assert abs( o1 - o2 ) < omegatol, 'diff %f, tol %f'%(o1-o2, omegatol)
-        if (s1.nnz[s1.omegaorder[i]] == 0) or (s2.nnz[s2.omegaorder[i]] == 0):
+        o1 = omega_1[i]
+        j = np.argmin( abs( omega_2 - o1 ) )
+        o2 = omega_2[j]
+        if abs( o1 - o2 ) > omegatol:
+            # this frame has no neighbor
             continue
-        f0 = s1.getframe( s1.omegaorder[i] )
-        f1 = s2.getframe( s2.omegaorder[i] )
-        ans = olap( f0.row, f0.col, f0.pixels['labels'], s1.nlabels[ s1.omegaorder[i] ],
-                    f1.row, f1.col, f1.pixels['labels'], s2.nlabels[ s2.omegaorder[i] ] )
-        pairs[ s1.sinorow, s1.omegaorder[i], s2.sinorow, s2.omegaorder[i] ] =  ans
+        if (s1.nnz[i] == 0) or (s2.nnz[j] == 0):
+            continue
+        f0 = s1.getframe( i )
+        f1 = s2.getframe( j )
+        ans = olap( f0.row, f0.col, f0.pixels['labels'], s1.nlabels[ i ],
+                    f1.row, f1.col, f1.pixels['labels'], s2.nlabels[ j ] )
+        pairs[ s1.sinorow, i, s2.sinorow, j ] =  ans
     return pairs
 
 
@@ -602,6 +607,7 @@ def process(qin, qshm, qout, hname, scans, options):
     mypks = {}
     pkid = {}
     prev = None # suppress flake8 idiocy
+    # This is the 1D scan within the same row
     for i in range(start, end+1):
         scan = ImageD11.sparseframe.SparseScan( hname, scans[i] )
         global omega
