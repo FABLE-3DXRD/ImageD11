@@ -360,6 +360,8 @@ def setup_slurm_array( dsname, dsgroup='/',
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=%d
 #
+source /home/esrf/haixing0a/miniconda3/etc/profile.d/conda.sh
+conda activate tdxrd
 date
 echo Running on $HOSTNAME : %s
 OMP_NUM_THREADS=1 %s > %s/lima_segmenter_$SLURM_ARRAY_TASK_ID.log 2>&1

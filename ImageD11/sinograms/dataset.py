@@ -190,7 +190,7 @@ class DataSet:
             self.shape[0], self.shape[1], imageshape[0], imageshape[1] ) )
                      
             
-    def import_motors_from_master(self):  #  could also get these from sparse files if saved
+    def import_motors_from_master(self, time_tol=0, ind_input=None):  #  could also get these from sparse files if saved
         """ read the motors from the lima file
         you need to import the imagefiles first
         these will be the motor positions to accompany the images
@@ -209,10 +209,27 @@ class DataSet:
                     self.omega[i][0] = om[0]
                     bad.append(i)
                 self.dty[i]   =  hin[scan][ 'instrument/positioners' ][ self.dtymotor ][()]
-        for b in bad:
-            if b+2 not in bad:
-                print("replace bad scan omega",b,b+2) 
-                self.omega[b] = self.omega[b+2]
+        
+        if len(bad) != 0 and self.dty[0][0] == self.dty[0][1]: # for box beam 3DXRD with problems of finterlaced scan
+            with h5py.File( self.masterfile, 'r' ) as hin:
+                for i, scan in enumerate( self.scans ):
+                    om = hin[scan][ 'measurement' ][ self.omegamotor ][()]
+                    acq_time = hin[scan]['instrument/fscan_parameters/acq_time'][()]
+                    timer_delta = hin[scan]['measurement/timer_delta'][()]
+                    ind = np.where(timer_delta>=acq_time-time_tol)    # time_tol = 0.0045 ?
+                    
+                    if len(ind[0]) != self.shape[1]:
+                        assert ind_input is not None, "I do not know what to do"
+                        self.omega[i] =  om[ind_input]
+                        print('{} projections are problematic'.format(self.shape[1]-len(ind_input)))
+                    else:
+                        print('{} projections are problematic'.format(self.shape[1]-len(ind[0])))
+                        self.omega[i] =  om[ind]
+        else:
+            for b in bad:
+                if b+2 not in bad:
+                    print("replace bad scan omega",b,b+2) 
+                    self.omega[b] = self.omega[b+2]
         logging.info( 'imported omega/dty' )
         self.guessbins()
 

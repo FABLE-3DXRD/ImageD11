@@ -509,6 +509,7 @@ def uncompute_g_vectors(g, wavelength, wedge=0.0, chi=0.0):
     #
     ds = np.sqrt(np.sum(g * g, 0))
     s = ds * wavelength / 2.0  # sin theta
+    s = abs(s)<=1
     tth = np.degrees(np.arcsin(s) * 2.) * valid
     eta1 = np.degrees(eta_one) * valid
     eta2 = np.degrees(eta_two) * valid

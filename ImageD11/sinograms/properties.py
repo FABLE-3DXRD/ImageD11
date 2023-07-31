@@ -302,7 +302,7 @@ class pks_table:
         """
         Cases: 
            Create from npks counting -> here
-           Read from a file          -> classmethod pks_table.load( h5name )
+           Read from a file          -> classmethod pks_table.aa( h5name )
            Read from shared memory   -> classmethod pks_table.fromSHM( h5name )
         """
         self.npk = npk
