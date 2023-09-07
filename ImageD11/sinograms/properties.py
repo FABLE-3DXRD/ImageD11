@@ -166,7 +166,7 @@ def pairscans( s1, s2, omegatol = 0.051 ):
     return pairs
 
 
-def props(scan, i, firstframe=None, algorithm='lmlabel', wtmax=None ):
+def props(scan, i, algorithm='lmlabel', wtmax=None ):
     """
     scan = sparseframe.SparseScan object
     i = sinogram row id : used for tagging pairs
@@ -177,14 +177,11 @@ def props(scan, i, firstframe=None, algorithm='lmlabel', wtmax=None ):
     returns ( row, properties[(s1,sI,sRow,sCol,frame),:], pairs, scan )
     """
     scan.sinorow = i
-    getattr( scan, algorithm )( countall=False )  
+    getattr( scan, algorithm )( countall=False )  # labels all the pixels in the scan.
     npks = scan.total_labels
     r = np.empty( (5,npks), np.int64 )
     s = 0
-    if firstframe is None:        # not tested or used ...
-        j0 = i * scan.shape[0]
-    else:
-        j0 = firstframe
+    j0 = i * scan.shape[0]
     for j in range(scan.shape[0]):
         if scan.nnz[j] == 0:
             continue
@@ -383,7 +380,7 @@ class pks_table:
         print('Guessing chunks for', ar.shape, ar.dtype, chunk)
         return tuple(chunk)
             
-    def save(self, h5name, group='pks2d'):
+    def save(self, h5name, group='pks2d', rc = False):
         opts = {} # No compression is faster 
         with h5py.File( h5name, 'a' ) as hout:
             grp = hout.require_group( group )
@@ -405,13 +402,21 @@ class pks_table:
                                      dtype = self.npk.dtype, **opts )
             ds[:] = self.npk
             ds.attrs['description']="[ nscans, (N_peaks_in_scan, N_pairs_ii, N_pairs_ij) ]"
-            if hasattr(self,'glabel'):
+            if hasattr(self,'glabel') and self.glabel is not None:
                 ds = grp.require_dataset( name = 'glabel', 
                                          shape = self.glabel.shape, 
                                          chunks = self.guesschunk( self.glabel ),
                                          dtype = self.glabel.dtype, **opts )
                 ds[:] = self.glabel
                 grp.attrs['nlabel'] = self.nlabel
+            if rc and hasattr(self, 'rc') and self.rc is not None:
+                ds = grp.require_dataset( name = 'rc', 
+                                         shape = self.rc.shape, 
+                                         chunks = self.guesschunk( self.rc ),
+                                         dtype = self.rc.dtype, **opts )
+                ds[:] = self.rc
+                ds.attrs['description'] = "row/col array for sparse connected pixels COO matrix"
+                
 
                 
     @classmethod
@@ -551,6 +556,7 @@ def pks_table_from_scan( sparsefilename, ds, row ):
     This is probably not threadsafe 
     """ 
     sps = ImageD11.sparseframe.SparseScan( sparsefilename, ds.scans[row] )
+    sps.motors['omega'] = ds.omega[i] 
     peaks, pairs = ImageD11.sinograms.properties.props( sps, row )
     # which frame/peak is which in the peaks array
     # For the 3D merging 
@@ -611,7 +617,7 @@ def process(qin, qshm, qout, hname, scans, options):
     for i in range(start, end+1):
         scan = ImageD11.sparseframe.SparseScan( hname, scans[i] )
         global omega
-        scan.motors['omega'] = omega[i] 
+        scan.motors['omega'] = omega[i]
         mypks[i], pii[i] = props(scan, i, algorithm = options['algorithm'],
                                  wtmax = options['wtmax']
                                 )
@@ -733,8 +739,8 @@ def main( dsname, sparsename, pkname, options = default_options ):
         print('Options',options)
         peaks, ks, P, rmem = goforit(ds, sparsename, options)
         t('%d label and pair'%(len(rmem.pk_props[0])))
-#        rmem.save( pkname )        
-#        t('cache')
+        rmem.save( pkname + '_mat.h5' , rc=True)        
+        t('cache')
         cc = rmem.find_uniq()
         t('%s connected components'%(str(cc[0])))
         rmem.save( pkname )

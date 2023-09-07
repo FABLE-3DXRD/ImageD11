@@ -210,7 +210,7 @@ class SparseScan( object ):
 
 
     def __init__( self, hname, scan, start = 0, n=None,
-                  names = ['row','col','intensity'],
+                  names = ('row','col','intensity'),
                   omeganames = omeganames,
                   dtynames = dtynames ):
         """
@@ -225,41 +225,42 @@ class SparseScan( object ):
         """
         self.hname = hname
         self.scan = scan
-        self.names = names
-        self.omeganames = omeganames
-        self.dtynames = dtynames
-
+        self.names = list(names)
+        self.omeganames = list(omeganames)
+        self.dtynames = list(dtynames)
+        if scan.find('::') >= 0:  # Format is "1.1::[start:end]"
+            scan, indexes = scan.split("::")
+            start, end = [int(s) for s in indexes[1:-1].split(':')]
+            n = end - start    
         with h5py.File(hname,"r") as hin:
             grp = hin[scan]
             self.shape = tuple( [ int(v) for v in ( grp.attrs['nframes'],
                                                     grp.attrs['shape0'],
                                                     grp.attrs['shape1'] ) ] )
-
-            self.nnz = grp['nnz'][:]
-            self.ipt = np.concatenate( ( (0,) , np.cumsum(self.nnz, dtype=int) ) )
-
-            # read the motors
-            self.motors = {}
             if n is None:
-                end = len(self.nnz)
+                end = self.shape[0] # nframes
             else:
-                end = n
+                end = start + n
+            self.shape = end-start, self.shape[1], self.shape[2]
+            # read the motors - if any
+            self.motors = {}
             for name, motors in [ ('omega',self.omeganames),
                                   ('dty',self.dtynames) ]:
                 for motor in motors:
                     if motor in grp:
                         self.motors[ name ] = grp[motor][start:end]
                         break
-            # read the pixels
-            s = self.ipt[ start ]
-            if n is None:
-                e = self.ipt[-1]
-            else:
-                e = self.ipt[ n+1 ]
-
+            # read the pixels - all pointers
+            nnz = grp['nnz'][:]
+            ipt = np.concatenate( ( (0,) , np.cumsum(nnz, dtype=int) ) )
+            s = ipt[start]
+            e = ipt[end]
             for name in self.names:
                 if name in grp:
                     setattr( self, name, grp[name][s:e] )
+            # pointers into this scan
+            self.nnz = nnz[start:end]
+            self.ipt = np.concatenate( ( (0,) , np.cumsum(self.nnz, dtype=int) ) )
 
     def getframe(self, i, SAFE=SAFE):
         # (self, row, col, shape, itype=np.uint16, pixels=None):
@@ -286,7 +287,8 @@ class SparseScan( object ):
         """
         self.nlabels = np.zeros( len(self.nnz), np.int32 )
         self.labels = np.zeros( len(self.row), "i")
-        self.names.append('labels')
+        if 'labels' not in self.names:
+            self.names.append('labels')
         nl = 0
         # TODO: run this in parallel with threads?
         for i, npx in enumerate( self.nnz ):
@@ -320,7 +322,8 @@ class SparseScan( object ):
         """
         self.nlabels = np.zeros( len(self.nnz), np.int32 )
         self.labels = np.zeros( len(self.row), "i")
-        self.names.append('labels')
+        if 'labels' not in self.names:
+            self.names.append('labels')
         if smooth:
             self.signal = np.empty( self.intensity.shape, np.float32 )
         else:
