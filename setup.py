@@ -156,12 +156,6 @@ useful = [   # stuff you probably want, and should be able to get easily
     'h5py',
     'pyyaml',
     "pytest",       # for the CI
-]
-
-
-more = [
-    # Used in sandbox / test / not completely essential, but should work for CI
-
     'numba==0.46.0 ; python_version < "3" ',       # for some test cases
     'numba ; python_version > "3" ',               # for some test cases
     "bslz4_to_sparse",
@@ -169,6 +163,11 @@ more = [
     "scikit-image",
     "hdf5plugin",
     "tqdm",
+]
+
+
+more = [
+    # Used in sandbox / test / not completely essential, but should work for CI
     "pillow",      # in sandbox
     "lmfit",       # in sandbox
     "PyMca5",      # in sandbox
