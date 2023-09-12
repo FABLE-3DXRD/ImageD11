@@ -222,8 +222,7 @@ class DataSet:
                     # corrupted MUSST?
                     self.dty[i] = np.full( self.frames_per_scan[i], dty[0] )
         for b in bad:
-            dom = [ (abs( self.omega[i][0] - self.omega[b] ), i) 
-                     for i in range(len(scans)) 
+            dom = [ (abs( self.omega[i][0] - self.omega[b] ), i) for i in range(len(scans))
                      if i not in bad ]
             if len(dom)>0:
                 j = np.argmin( dom[0][1] )

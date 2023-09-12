@@ -126,7 +126,7 @@ def pairrow( s , row):
         [ idty, iomega, idty, iomega ] : nedge, array( (nedge, 3) )
                                                      (src, dest, npixels)
     """
-    s.omegaorder = np.argsort( s.motors["omega"] )
+    s.omegaorder = np.argsort( s.motors["omega"] ) # not mod 360 here
     s.sinorow = row
     olap =  ImageD11.sparseframe.overlaps_linear( s.nnz.max()+1 )
     pairs = {}
@@ -449,7 +449,7 @@ class pks_table:
         obj.npk = npk # this is ugly. Sending as arg causes allocate.
         return obj                
                 
-    def find_uniq(self, outputfile=None):
+    def find_uniq(self, outputfile=None, use_scipy=False):
         """ find the unique labels from the rc array """
         t = tictoc()
         n = self.ipk[-1]
@@ -462,12 +462,15 @@ class pks_table:
                 hout['i'] = self.rc[0]
                 hout['j'] = self.rc[1]
             return None, None
-        coo = scipy.sparse.coo_matrix( (self.rc[2], 
+        if use_scipy:
+            coo = scipy.sparse.coo_matrix( (self.rc[2], 
                                         (self.rc[0], self.rc[1])), 
                                       shape=(n,n))
-        t('coo')
-        cc = scipy.sparse.csgraph.connected_components( coo, directed=False, return_labels=True )
-        t('find connected components')
+            t('coo')
+            cc = scipy.sparse.csgraph.connected_components( coo, directed=False, return_labels=True )
+            t('find connected components')
+        else:
+            cc = find_ND_labels( self.rc[0], self.rc[1], n )
         self.cc = cc
         self.nlabel, self.glabel = cc
         return cc
@@ -541,6 +544,90 @@ def numbapkmerge( labels, pks, omega, dty, out):
     return k
     
 
+    
+    
+@numba.njit(parallel=True)
+def numbalabelNd( i, j, pkid, flip = 0 ):
+    """
+    i, j are the pairs of overlapping peaks
+    pkid are the current labels of the peaks
+    
+    This scans all pairs and for each pair it makes
+        pkid[i] = pkid[j] = min(pkid[i], pkid[j])
+    
+    Run this enough times and eventually all peaks point
+    back to the first one they overlap.
+    
+    Using parallel seems dodgy to me. Might be a race condition,
+    but it seems like the code is legal so long as only these
+    addresses are touched?
+    """
+    # scanning in forwards direction
+    nbad = 0
+    N = len(i) - 1  
+    for k in numba.prange(len(i)):
+        p = k + flip * ( N - 2 * k )
+        # numba was fussy, no idea why, gets confused
+        # when indexing using an if statement.
+        # so made it like this:
+        #  flip == 0 -> k
+        #  flip == 1 -> k + flip * ( N - 2 * k )
+        #            -> N - k
+        # Changing array iteration direction seemed to 
+        # speed up convergence. DFS or BFS is likely
+        # better. But stacks can overflow.
+        pi = pkid[i[p]]
+        pj = pkid[j[p]]
+        if pi != pj:
+            m = min(pi, pj)
+            pkid[i[p]] = m
+            pkid[j[p]] = m
+            nbad += 1
+    return nbad    
+    
+    
+@numba.njit(parallel=True)
+def get_clean_labels( l ):
+    """
+    Given the labelling in l, put clean labels in the place.
+    
+    l = integer array with value = label of lowest 2d peak in this ND group.
+    """
+    n = 0
+    assert l[0] == 0 , 'first label should be zero'
+    for i in range(len(l)): # count the labels. NOT PARALLEL!
+        if l[i] == i:
+            l[i] = n
+            n += 1
+        else:
+            l[i] = -l[i] # for inplace, tag the ones to be redone
+    for i in numba.prange(len(l)):
+        j = l[i]
+        if j < 0: # zeros and pointers to zero should not change.
+            l[i] = l[-j]
+    return n
+    
+    
+def find_ND_labels( i, j, npks, verbose=1 ):
+    start = time.time()
+    labels = np.arange( npks, dtype=int )
+    labels_final = np.zeros_like( labels ) # memory error early please
+    flip = 0
+    b = numbalabelNd( i, j, labels, flip=flip )
+    while 1:
+        if verbose>1:
+            dt = time.time() - start
+            print("%.1f %.6f"%(dt, b/1e6 ))
+        if verbose == 1:
+            print('.', end='')
+        if b == 0:
+            break
+        flip = (1,0)[flip] # exchange 1 and 0
+        b = numbalabelNd( i, j, labels, flip=flip )
+    n = get_clean_labels( labels )
+    return n, labels
+
+            
 
 def pks_table_from_scan( sparsefilename, ds, row ):
     """
@@ -720,6 +807,7 @@ def goforit(ds, sparsename, options):
 
 default_options = { 'algorithm' : 'lmlabel',
                     'wtmax' : None, # value to replace saturated pixels
+                    'save_overlaps': False,
                   }
                    
 def main( dsname, sparsename, pkname, options = default_options ):
@@ -739,8 +827,9 @@ def main( dsname, sparsename, pkname, options = default_options ):
         print('Options',options)
         peaks, ks, P, rmem = goforit(ds, sparsename, options)
         t('%d label and pair'%(len(rmem.pk_props[0])))
-        rmem.save( pkname + '_mat.h5' , rc=True)        
-        t('cache')
+        if 'save_overlaps' in options and options['save_overlaps']:
+            rmem.save( pkname + '_mat.h5' , rc=True)  
+            t('cache')
         cc = rmem.find_uniq()
         t('%s connected components'%(str(cc[0])))
         rmem.save( pkname )
@@ -750,6 +839,7 @@ def main( dsname, sparsename, pkname, options = default_options ):
         raise
     finally:
         if rmem is not None:
+            print("Trying to clean up shared memory")
             del rmem
     return
 
@@ -760,9 +850,10 @@ if __name__=="__main__":
     sparsename = sys.argv[2]
     pkname = sys.argv[3]
     algorithm = 'lmlabel'
+    options = default_options
     if len(sys.argv)>=5:
-        algorithm = sys.argv[4]
-    options = {'algorithm': algorithm }
+        options['algorithm'] = sys.argv[4]
+
     main( dsname, sparsename, pkname, options )
 
     print("Your stuff left in shm:")
