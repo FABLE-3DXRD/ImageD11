@@ -165,6 +165,10 @@ more = [
     'numba==0.46.0 ; python_version < "3" ',       # for some test cases
     'numba ; python_version > "3" ',               # for some test cases
     "bslz4_to_sparse",
+    "fast_histogram",
+    "scikit-image",
+    "hdf5plugin",
+    "tqdm",
     "pillow",      # in sandbox
     "lmfit",       # in sandbox
     "PyMca5",      # in sandbox
