@@ -327,9 +327,7 @@ def main( options ):
     
     
     
-def setup_slurm_array( dsname, dsgroup='/', 
-                       cores_per_job=8, 
-                       files_per_core=8 ):
+def setup_slurm_array( dsname, dsgroup='/'):
     """ Send the tasks to slurm """
     dso = dataset.load( dsname, dsgroup )
     nfiles = len(dso.sparsefiles)  
@@ -344,7 +342,9 @@ def setup_slurm_array( dsname, dsgroup='/',
     sdir = os.path.join( dso.analysispath, 'slurm' )
     if not os.path.exists( sdir ):
         os.makedirs( sdir )
-    options = SegmenterOptions( dsname, 'lima_segmenter' )
+    options = SegmenterOptions( )
+    options.load(  dsname, dsgroup + '/lima_segmenter' )
+    
     files_per_job = options.files_per_core * options.cores_per_job
     jobs_needed = math.ceil( nfiles / files_per_job )
     sbat = os.path.join( sdir, "lima_segmenter_slurm.sh" )
@@ -369,15 +369,17 @@ date
     return sbat
 
 
-def setup( dsname ):
+def setup( dsname, **kwds ):
     dso = dataset.load( dsname )
-    options = SegmenterOptions()
-    
+    options = SegmenterOptions( **kwds )
     if 'eiger' in dso.limapath:
-        options.cut = 1
-        options.maskfile = "/data/id11/nanoscope/Eiger/mask_20210428.edf"
+        if 'cut' not in kwds:
+            options.cut = 1
+        if 'maskfile' not in kwds:
+            options.maskfile = "/data/id11/nanoscope/Eiger/mask_20210428.edf"
     elif 'frelon3' in dso.limapath:
-        options.cut = 25,          # keep values abuve cut in first look at image
+        if 'cut' not in kwds:
+            options.cut = 25,          # keep values abuve cut in first look at image
     else:
         print("I don't know what to do")
     options.save( dsname, 'lima_segmenter' )

@@ -126,7 +126,7 @@ def pairrow( s , row):
         [ idty, iomega, idty, iomega ] : nedge, array( (nedge, 3) )
                                                      (src, dest, npixels)
     """
-    s.omegaorder = np.argsort( s.motors["omega"] )
+    s.omegaorder = np.argsort( s.motors["omega"] ) # not mod 360 here
     s.sinorow = row
     olap =  ImageD11.sparseframe.overlaps_linear( s.nnz.max()+1 )
     pairs = {}
@@ -146,22 +146,27 @@ def pairscans( s1, s2, omegatol = 0.051 ):
     olap =  ImageD11.sparseframe.overlaps_linear( max(s1.nnz.max(), s2.nnz.max())+1 )
     assert len(s1.nnz) == len(s2.nnz )
     pairs = {}
+    omega_1 = s1.motors['omega'] % 360
+    omega_2 = s2.motors['omega'] % 360
     for i in range(len(s1.nnz)):
         # check omega angles match
-        o1 = s1.motors['omega'][s1.omegaorder[i]]
-        o2 = s2.motors['omega'][s2.omegaorder[i]]
-        assert abs( o1 - o2 ) < omegatol, 'diff %f, tol %f'%(o1-o2, omegatol)
-        if (s1.nnz[s1.omegaorder[i]] == 0) or (s2.nnz[s2.omegaorder[i]] == 0):
+        o1 = omega_1[i]
+        j = np.argmin( abs( omega_2 - o1 ) )
+        o2 = omega_2[j]
+        if abs( o1 - o2 ) > omegatol:
+            # this frame has no neighbor
             continue
-        f0 = s1.getframe( s1.omegaorder[i] )
-        f1 = s2.getframe( s2.omegaorder[i] )
-        ans = olap( f0.row, f0.col, f0.pixels['labels'], s1.nlabels[ s1.omegaorder[i] ],
-                    f1.row, f1.col, f1.pixels['labels'], s2.nlabels[ s2.omegaorder[i] ] )
-        pairs[ s1.sinorow, s1.omegaorder[i], s2.sinorow, s2.omegaorder[i] ] =  ans
+        if (s1.nnz[i] == 0) or (s2.nnz[j] == 0):
+            continue
+        f0 = s1.getframe( i )
+        f1 = s2.getframe( j )
+        ans = olap( f0.row, f0.col, f0.pixels['labels'], s1.nlabels[ i ],
+                    f1.row, f1.col, f1.pixels['labels'], s2.nlabels[ j ] )
+        pairs[ s1.sinorow, i, s2.sinorow, j ] =  ans
     return pairs
 
 
-def props(scan, i, firstframe=None, algorithm='lmlabel' ):
+def props(scan, i, algorithm='lmlabel', wtmax=None ):
     """
     scan = sparseframe.SparseScan object
     i = sinogram row id : used for tagging pairs
@@ -172,14 +177,11 @@ def props(scan, i, firstframe=None, algorithm='lmlabel' ):
     returns ( row, properties[(s1,sI,sRow,sCol,frame),:], pairs, scan )
     """
     scan.sinorow = i
-    getattr( scan, algorithm )( countall=False )  
+    getattr( scan, algorithm )( countall=False )  # labels all the pixels in the scan.
     npks = scan.total_labels
     r = np.empty( (5,npks), np.int64 )
     s = 0
-    if firstframe is None:        # not tested or used ...
-        j0 = i * scan.shape[0]
-    else:
-        j0 = firstframe
+    j0 = i * scan.shape[0]
     for j in range(scan.shape[0]):
         if scan.nnz[j] == 0:
             continue
@@ -188,6 +190,12 @@ def props(scan, i, firstframe=None, algorithm='lmlabel' ):
         # [1:] means skip the background labels == 0 output
         r[0,s:e] = np.bincount( f0.pixels['labels'] )[1:]
         wt = f0.pixels['intensity'].astype(np.int64)
+        if wtmax is not None:
+            m = wt > wtmax
+            n = m.sum()
+            if n > 0:
+                wt[m] = wtmax
+                # print(scan,'replaced',n)
         signal = np.bincount( f0.pixels['labels'], weights=wt)[1:]
         if signal.min() < 1:
             print("Bad data",scan.hname, scan.scan,i,j,
@@ -372,7 +380,7 @@ class pks_table:
         print('Guessing chunks for', ar.shape, ar.dtype, chunk)
         return tuple(chunk)
             
-    def save(self, h5name, group='pks2d'):
+    def save(self, h5name, group='pks2d', rc = False):
         opts = {} # No compression is faster 
         with h5py.File( h5name, 'a' ) as hout:
             grp = hout.require_group( group )
@@ -394,13 +402,21 @@ class pks_table:
                                      dtype = self.npk.dtype, **opts )
             ds[:] = self.npk
             ds.attrs['description']="[ nscans, (N_peaks_in_scan, N_pairs_ii, N_pairs_ij) ]"
-            if hasattr(self,'glabel'):
+            if hasattr(self,'glabel') and self.glabel is not None:
                 ds = grp.require_dataset( name = 'glabel', 
                                          shape = self.glabel.shape, 
                                          chunks = self.guesschunk( self.glabel ),
                                          dtype = self.glabel.dtype, **opts )
                 ds[:] = self.glabel
                 grp.attrs['nlabel'] = self.nlabel
+            if rc and hasattr(self, 'rc') and self.rc is not None:
+                ds = grp.require_dataset( name = 'rc', 
+                                         shape = self.rc.shape, 
+                                         chunks = self.guesschunk( self.rc ),
+                                         dtype = self.rc.dtype, **opts )
+                ds[:] = self.rc
+                ds.attrs['description'] = "row/col array for sparse connected pixels COO matrix"
+                
 
                 
     @classmethod
@@ -433,7 +449,7 @@ class pks_table:
         obj.npk = npk # this is ugly. Sending as arg causes allocate.
         return obj                
                 
-    def find_uniq(self, outputfile=None):
+    def find_uniq(self, outputfile=None, use_scipy=False):
         """ find the unique labels from the rc array """
         t = tictoc()
         n = self.ipk[-1]
@@ -446,12 +462,15 @@ class pks_table:
                 hout['i'] = self.rc[0]
                 hout['j'] = self.rc[1]
             return None, None
-        coo = scipy.sparse.coo_matrix( (self.rc[2], 
+        if use_scipy:
+            coo = scipy.sparse.coo_matrix( (self.rc[2], 
                                         (self.rc[0], self.rc[1])), 
                                       shape=(n,n))
-        t('coo')
-        cc = scipy.sparse.csgraph.connected_components( coo, directed=False, return_labels=True )
-        t('find connected components')
+            t('coo')
+            cc = scipy.sparse.csgraph.connected_components( coo, directed=False, return_labels=True )
+            t('find connected components')
+        else:
+            cc = find_ND_labels( self.rc[0], self.rc[1], n )
         self.cc = cc
         self.nlabel, self.glabel = cc
         return cc
@@ -525,6 +544,90 @@ def numbapkmerge( labels, pks, omega, dty, out):
     return k
     
 
+    
+    
+@numba.njit(parallel=True)
+def numbalabelNd( i, j, pkid, flip = 0 ):
+    """
+    i, j are the pairs of overlapping peaks
+    pkid are the current labels of the peaks
+    
+    This scans all pairs and for each pair it makes
+        pkid[i] = pkid[j] = min(pkid[i], pkid[j])
+    
+    Run this enough times and eventually all peaks point
+    back to the first one they overlap.
+    
+    Using parallel seems dodgy to me. Might be a race condition,
+    but it seems like the code is legal so long as only these
+    addresses are touched?
+    """
+    # scanning in forwards direction
+    nbad = 0
+    N = len(i) - 1  
+    for k in numba.prange(len(i)):
+        p = k + flip * ( N - 2 * k )
+        # numba was fussy, no idea why, gets confused
+        # when indexing using an if statement.
+        # so made it like this:
+        #  flip == 0 -> k
+        #  flip == 1 -> k + flip * ( N - 2 * k )
+        #            -> N - k
+        # Changing array iteration direction seemed to 
+        # speed up convergence. DFS or BFS is likely
+        # better. But stacks can overflow.
+        pi = pkid[i[p]]
+        pj = pkid[j[p]]
+        if pi != pj:
+            m = min(pi, pj)
+            pkid[i[p]] = m
+            pkid[j[p]] = m
+            nbad += 1
+    return nbad    
+    
+    
+@numba.njit(parallel=True)
+def get_clean_labels( l ):
+    """
+    Given the labelling in l, put clean labels in the place.
+    
+    l = integer array with value = label of lowest 2d peak in this ND group.
+    """
+    n = 0
+    assert l[0] == 0 , 'first label should be zero'
+    for i in range(len(l)): # count the labels. NOT PARALLEL!
+        if l[i] == i:
+            l[i] = n
+            n += 1
+        else:
+            l[i] = -l[i] # for inplace, tag the ones to be redone
+    for i in numba.prange(len(l)):
+        j = l[i]
+        if j < 0: # zeros and pointers to zero should not change.
+            l[i] = l[-j]
+    return n
+    
+    
+def find_ND_labels( i, j, npks, verbose=1 ):
+    start = time.time()
+    labels = np.arange( npks, dtype=int )
+    labels_final = np.zeros_like( labels ) # memory error early please
+    flip = 0
+    b = numbalabelNd( i, j, labels, flip=flip )
+    while 1:
+        if verbose>1:
+            dt = time.time() - start
+            print("%.1f %.6f"%(dt, b/1e6 ))
+        if verbose == 1:
+            print('.', end='')
+        if b == 0:
+            break
+        flip = (1,0)[flip] # exchange 1 and 0
+        b = numbalabelNd( i, j, labels, flip=flip )
+    n = get_clean_labels( labels )
+    return n, labels
+
+            
 
 def pks_table_from_scan( sparsefilename, ds, row ):
     """
@@ -540,6 +643,7 @@ def pks_table_from_scan( sparsefilename, ds, row ):
     This is probably not threadsafe 
     """ 
     sps = ImageD11.sparseframe.SparseScan( sparsefilename, ds.scans[row] )
+    sps.motors['omega'] = ds.omega[i] 
     peaks, pairs = ImageD11.sinograms.properties.props( sps, row )
     # which frame/peak is which in the peaks array
     # For the 3D merging 
@@ -596,11 +700,14 @@ def process(qin, qshm, qout, hname, scans, options):
     mypks = {}
     pkid = {}
     prev = None # suppress flake8 idiocy
+    # This is the 1D scan within the same row
     for i in range(start, end+1):
         scan = ImageD11.sparseframe.SparseScan( hname, scans[i] )
         global omega
-        scan.motors['omega'] = omega[i] 
-        mypks[i], pii[i] = props(scan, i, algorithm = options['algorithm'] )
+        scan.motors['omega'] = omega[i]
+        mypks[i], pii[i] = props(scan, i, algorithm = options['algorithm'],
+                                 wtmax = options['wtmax']
+                                )
 #        nlabels[i] = scan.nlabels # peaks per frame information
         pkid[i] = np.concatenate(([0,], np.cumsum(scan.nlabels)))
         n1 = sum( pii[i][k][0] for k in pii[i] )
@@ -698,7 +805,10 @@ def goforit(ds, sparsename, options):
     return out, ks, P, mem
 
 
-default_options = { 'algorithm' : 'lmlabel' }
+default_options = { 'algorithm' : 'lmlabel',
+                    'wtmax' : None, # value to replace saturated pixels
+                    'save_overlaps': False,
+                  }
                    
 def main( dsname, sparsename, pkname, options = default_options ):
     if os.path.exists(pkname):
@@ -714,10 +824,12 @@ def main( dsname, sparsename, pkname, options = default_options ):
         if NPROC > nscans-1:
             NPROC = max(1,nscans-1)
         print('Nscans',nscans,'NPROC', NPROC)
+        print('Options',options)
         peaks, ks, P, rmem = goforit(ds, sparsename, options)
         t('%d label and pair'%(len(rmem.pk_props[0])))
-#        rmem.save( pkname )        
-#        t('cache')
+        if 'save_overlaps' in options and options['save_overlaps']:
+            rmem.save( pkname + '_mat.h5' , rc=True)  
+            t('cache')
         cc = rmem.find_uniq()
         t('%s connected components'%(str(cc[0])))
         rmem.save( pkname )
@@ -727,6 +839,7 @@ def main( dsname, sparsename, pkname, options = default_options ):
         raise
     finally:
         if rmem is not None:
+            print("Trying to clean up shared memory")
             del rmem
     return
 
@@ -737,9 +850,10 @@ if __name__=="__main__":
     sparsename = sys.argv[2]
     pkname = sys.argv[3]
     algorithm = 'lmlabel'
+    options = default_options
     if len(sys.argv)>=5:
-        algorithm = sys.argv[4]
-    options = {'algorithm': algorithm }
+        options['algorithm'] = sys.argv[4]
+
     main( dsname, sparsename, pkname, options )
 
     print("Your stuff left in shm:")

@@ -169,6 +169,17 @@ def iradon(radon_image, theta,
     return reconstructed
 
 
+#TODO : fixme
+#   It would be 'nice' for the radon transform to be closer to iradon
+#  in using the same xpr/ypr/shifts formula. That will give pixel co-ords
+#  for the 1D projections. The problem is to then 'cut up' the pixels on 
+#  a 1D projection (so trapezium integrations). Doing bilinear interpolation
+#  gave nasty artifacts at 45 degrees angle. This needs a bit of thought.
+#
+#  4 corners. 
+#    Sort into order(?) or just abs(sin), abs(cos)?
+#    First triangle. Middle Part. Last triangle.
+#
 
 def radon(image, theta,
           output_size=None, # sinogram width

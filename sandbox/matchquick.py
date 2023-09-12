@@ -53,7 +53,7 @@ dt2=np.zeros( (len(g1l),len(g2l)), float)
 
 for g in g1l + g2l:
     #g.u = xfab.tools.ubi_to_u_b(g.ubi)[0]
-    assert (abs(np.dot(g.u, g.u.T) - np.eye(3)).ravel()).sum() < 1e-6
+    assert (abs(np.dot(g.U, g.U.T) - np.eye(3)).ravel()).sum() < 1e-6
     
 dtsum = np.zeros(3)
 ndt = 0
@@ -85,7 +85,7 @@ for i,g1 in enumerate(g1l):
         #    continue
         
         sg = None
-        aumis = np.dot(asymusT, g2.u)
+        aumis = np.dot(asymusT, g2.U)
         arg = (aumis[:,0,0]+aumis[:,1,1]+aumis[:,2,2] - 1. )/2.
         asymangle = np.arccos(np.clip(arg, -1, 1))
         sg = np.argmin(asymangle)
