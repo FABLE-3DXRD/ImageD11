@@ -643,7 +643,7 @@ def pks_table_from_scan( sparsefilename, ds, row ):
     This is probably not threadsafe 
     """ 
     sps = ImageD11.sparseframe.SparseScan( sparsefilename, ds.scans[row] )
-    sps.motors['omega'] = ds.omega[i] 
+    sps.motors['omega'] = ds.omega[row]
     peaks, pairs = ImageD11.sinograms.properties.props( sps, row )
     # which frame/peak is which in the peaks array
     # For the 3D merging 
