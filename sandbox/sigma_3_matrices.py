@@ -26,11 +26,11 @@ def twin_check( ind, matrices, symmetry='cubic', poserr=1000, angerr=0.5 ):
     gl.add( [ ImageD11.grain.grain( ubi, np.array((0,0,0)) ) for ubi in ind.ubis ] )
     for ubi in ind.ubis:
         g = ImageD11.grain.grain( ubi )
-        sg1 = ImageD11.cImageD11.score( ubi, ind.gvflat, tol )
+        sg1 = ImageD11.cImageD11.score( ubi, ind.gvflat, ind.hkl_tol )
         print("%4d   "%(sg1), end='')
         for mat in matrices:
             gnew = applytwinmat( g, mat )
-            s1 = ImageD11.cImageD11.score( g.ubinew, ind.gvflat, ind.hkl_tol )
+            s1 = ImageD11.cImageD11.score( gnew.ubi, ind.gvflat, ind.hkl_tol )
             if s1 > ind.minpks:  # should be accepted assuming uniq
                 b4 = len(gl.uniqgrains)
             gl.add( [gnew,] )
@@ -38,5 +38,5 @@ def twin_check( ind, matrices, symmetry='cubic', poserr=1000, angerr=0.5 ):
                 e = 'r'
             else:
                 e = '!'
-        print("%4d %4d"%(s1,s2), end=e)
-    print() 
+            print("%4d "%(s1), end=e)
+        print() 
