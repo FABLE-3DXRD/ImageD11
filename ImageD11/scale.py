@@ -55,8 +55,8 @@ class scale:
         im1 = a * im2 + b
         returns a, b
         """
-        lsqmat = numpy.zeros((2, 2), numpy.float)
-        dyda   = numpy.ravel(im1).astype(numpy.float)
+        lsqmat = numpy.zeros((2, 2), float)
+        dyda   = numpy.ravel(im1).astype(float)
         self.threshold = threshold
         if threshold is None:
             self.indices = None
@@ -102,14 +102,14 @@ class scale:
         ...use scale image for that
         """
         if self.indices is None:
-            rhs0 = numpy.sum(self.dyda * numpy.ravel(im2).astype(numpy.float))
-            rhs1 = numpy.sum(numpy.ravel(im2).astype(numpy.float))
+            rhs0 = numpy.sum(self.dyda * numpy.ravel(im2).astype(float))
+            rhs1 = numpy.sum(numpy.ravel(im2).astype(float))
             ans = numpy.dot(self.inverse, [rhs0, rhs1])
             return ans[0], ans[1]
         else:
             usedata = numpy.take(numpy.ravel(im2) , self.indices)
-            rhs0 = numpy.sum(self.dyda * usedata.astype(numpy.float))
-            rhs1 = numpy.sum(usedata.astype(numpy.float))
+            rhs0 = numpy.sum(self.dyda * usedata.astype(float))
+            rhs1 = numpy.sum(usedata.astype(float))
             ans = numpy.dot(self.inverse, [rhs0, rhs1])
             return ans[0], ans[1]
             
@@ -121,7 +121,7 @@ def scaleseries( target, stem, first, last,
     Scale a series of [bruker] images to the target
     TODO - make it work with fabio file series
     """
-    # d0 = numpy.ravel(target.data.astype(numpy.float))
+    # d0 = numpy.ravel(target.data.astype(float))
     scaler = scale(target.data, thresh)
     print("# Scaling with respect to:", sys.argv[1])
     if thresh is not None:

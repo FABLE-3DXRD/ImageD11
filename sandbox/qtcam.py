@@ -57,8 +57,8 @@ def find_offset( c ):
 def register_image( im1, im2 ):
     """ We take the current and place it onto reference """
 
-    ref = normalise(numpy.asarray(im1).sum(axis=2, dtype=numpy.float))
-    cur = normalise(numpy.asarray(im2).sum(axis=2, dtype=numpy.float))
+    ref = normalise(numpy.asarray(im1).sum(axis=2, dtype=float))
+    cur = normalise(numpy.asarray(im2).sum(axis=2, dtype=float))
 
     fftshape = ( ref.shape[0] + cur.shape[0] ,
                  ref.shape[1] + cur.shape[1]  )

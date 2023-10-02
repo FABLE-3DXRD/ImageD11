@@ -13,7 +13,7 @@ class test_connectedpixels(unittest.TestCase):
 
     def test_1(self):
         for t in [np.uint8, np.int8, np.uint16, np.int16,
-                  np.int32, np.uint32, np.float32, np.float]:
+                  np.int32, np.uint32, np.float32, float]:
             data = np.array( [[ 0, 0, 0, 0, 0, 0, 0],
                              [ 0, 0, 0, 1, 0, 0, 0],
                              [ 0, 0, 0, 0, 0, 0, 0],
@@ -28,7 +28,7 @@ class test_connectedpixels(unittest.TestCase):
 
     def test_1_shape(self):
         for t in [np.uint8, np.int8, np.uint16, np.int16,
-                  np.int32, np.uint32, np.float32, np.float]:
+                  np.int32, np.uint32, np.float32, float]:
             data = np.array( [[ 1, 0, 1, 0, 1, 0, 1],
                              [ 1, 0, 1, 0, 1, 0, 1],
                              [ 1, 0, 1, 0, 0, 1, 0],
@@ -43,7 +43,7 @@ class test_connectedpixels(unittest.TestCase):
 
     def test_2_shapes(self):
         for t in [np.uint8, np.int8, np.uint16, np.int16,
-                  np.int32, np.uint32, np.float32, np.float]:
+                  np.int32, np.uint32, np.float32, float]:
             data = np.array( [[ 1, 0, 1, 0, 2, 0, 2],
                              [ 1, 0, 1, 0, 2, 0, 2],
                              [ 1, 0, 1, 0, 0, 2, 0],
@@ -109,7 +109,7 @@ class test_blobproperties(unittest.TestCase):
 
     def test_find_max(self):
         for t in [np.uint8, np.int8, np.uint16, np.int16,
-                  np.int32, np.uint32, np.float32, np.float]:
+                  np.int32, np.uint32, np.float32, float]:
             data = np.array( [[ 1, 0, 1],
                              [ 1, 0, 1],
                              [ 1, 8, 1],

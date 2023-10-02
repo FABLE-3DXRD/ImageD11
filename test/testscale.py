@@ -8,7 +8,7 @@ class testscale(unittest.TestCase):
     """old testcase """
     def testscaleimage(self):
         """check the object works """
-        im1 = numpy.ones((10, 10), numpy.float)
+        im1 = numpy.ones((10, 10), float)
         im1[2:8, 2:8] *= 2
         im1[4:6, 4:6] *= 2
         im2 = im1 * 2. + 3.
