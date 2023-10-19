@@ -97,7 +97,7 @@ class plot3d(Tk.Toplevel):
         Tk.Label(self,text="Red=[1,0,0] Green=[0,1,0] Blue=[0,0,1]").pack(
             side=Tk.BOTTOM,expand=Tk.NO,fill=Tk.X)
         self.ubis=ubis
-        self.color=numpy.ones((xyz.shape[0],3),numpy.float)
+        self.color=numpy.ones((xyz.shape[0],3),float)
         print(self.color.shape)
         self.tex=False
         if ubis is not None:
@@ -253,10 +253,10 @@ class plot3d(Tk.Toplevel):
 
         if self.ubis is not None and len(self.ubis)==1:
             hkl = numpy.dot(numpy.linalg.inv(self.ubis[0]), 
-                            numpy.identity(3,numpy.float)).T
+                            numpy.identity(3,float)).T
             # print hkl
         else:
-            hkl = numpy.identity(3,numpy.float)
+            hkl = numpy.identity(3,float)
             # print hkl
                             
         GL.glBegin(GL.GL_LINE_LOOP)

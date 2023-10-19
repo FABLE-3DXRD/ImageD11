@@ -113,7 +113,7 @@ class sparse_frame( object ):
             if len(ks)==1:
                 data = self.pixels[ks[0]] # default for only one
             else:
-                data = np.ones( self.nnz, np.bool ) # give a mask
+                data = np.ones( self.nnz, bool ) # give a mask
         if out is None:
             out = np.zeros( self.shape, data.dtype )
         else:

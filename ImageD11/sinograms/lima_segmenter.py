@@ -110,7 +110,11 @@ import fabio
 import numba
 # pip install ImageD11 --no-deps # if you do not have it yet:
 from ImageD11 import sparseframe, cImageD11
-from bslz4_to_sparse import chunk2sparse
+
+try:
+    from bslz4_to_sparse import chunk2sparse
+except:
+    chunk2sparse = None
 
 @numba.njit
 def select(img, mask, row, col, val, cut):
@@ -217,7 +221,8 @@ def reader(frms, mask, cut):
     iterator to read chunks or frames and segment them
     returns sparseframes
     """
-    if '32008' in frms._filters and not frms.is_virtual and OPTIONS.bg is None:
+    if (chunk2sparse is not None) and ('32008' in frms._filters) and (
+        not frms.is_virtual) and (OPTIONS.bg is None):
         print('# reading compressed chunks')
         fun = chunk2sparse( mask, dtype = frms.dtype )
         for i in range(frms.shape[0]):
@@ -228,7 +233,9 @@ def reader(frms, mask, cut):
     else:
         fun = frmtosparse( mask, frms.dtype )
         for i in range(frms.shape[0]):
-            frm = frms[i].astype(np.float32) - OPTIONS.bg
+            frm = frms[i]
+            if OPTIONS.bg is not None:
+                frm = frm.astype(np.float32) - OPTIONS.bg
             npx, row, col, val = fun( frm, cut )
             spf = clean( npx, row, col, val )
             yield spf
