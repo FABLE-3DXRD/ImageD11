@@ -25,7 +25,7 @@ h,k,l = [x.ravel() for x in np.mgrid[-4:5,-4:5,-4:5]]
 
 uc = unitcell.unitcell( [7.89, 8.910, 9.1011, 92, 97, 99], "P")
 
-orient = Rotation.from_euler("XYZ",(10,20,31)).as_dcm()
+orient = Rotation.from_euler("XYZ",(10,20,31)).as_matrix()
 ub = np.dot( orient, uc.B )
 ubi = np.linalg.inv( ub )
 
@@ -56,7 +56,7 @@ vec  = np.cross( g0, gobs )
 print(vec, ang)
 direc = vec / np.sqrt( np.dot(vec,vec))
 
-u0 = Rotation.from_rotvec( ang * direc).as_dcm()
+u0 = Rotation.from_rotvec( ang * direc).as_matrix()
 ub0 = np.dot( u0, uc.B)
 gtest = np.dot( ub0, (h0,k0,l0))
 print(gtest, gobs)
@@ -71,8 +71,8 @@ unitH = hkl0 / np.sqrt( np.dot(hkl0,hkl0)  )
 unitG = gtest / np.sqrt( np.dot(gtest,gtest)  )
 angles_to_test = np.linspace( -np.pi, np.pi, 360 )
 
-testmats = [ np.dot( ubi0, Rotation.from_rotvec( unitG*x ).as_dcm() ) for x in angles_to_test ]
-rmats    = [ Rotation.from_rotvec( unitG*x ).as_dcm() for x in angles_to_test ]
+testmats = [ np.dot( ubi0, Rotation.from_rotvec( unitG*x ).as_matrix() ) for x in angles_to_test ]
+rmats    = [ Rotation.from_rotvec( unitG*x ).as_matrix() for x in angles_to_test ]
 print(np.dot(testmats[0],gtest))
 
 gobs = gcalc.T.copy()

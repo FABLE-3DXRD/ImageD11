@@ -65,7 +65,7 @@ def to_coo( data, mask, name ):
     Convert an image (2D, probably float) and mask (0 versus !0)
     to a sparse array (could be more efficient...)
     """
-    m = mask.astype(np.bool)
+    m = mask.astype(bool)
     j = np.outer(np.ones(  data.shape[0], dtype=np.uint16),
                  np.arange(data.shape[1], dtype=np.uint16)  )
     ind0, ind1 = j.T[m], j[m]

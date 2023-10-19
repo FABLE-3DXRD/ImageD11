@@ -10,7 +10,7 @@ def buffered( names, bufsize ):
     buffer = []
     # init
     while len( buffer ) < bufsize:
-        name = names.next()
+        name = next(names)
         buffer.append( name )
 #        print("buffer", name )
     for i in range(bufsize//2+1):

@@ -50,7 +50,7 @@ def update_wtd( recon, proj, angle, msk, dbg=True ):
     cImageD11.put_incr( calc_proj, idx_lo, r*wt_lo )
     cImageD11.put_incr( calc_proj, idx_hi, r*wt_hi )
     error = np.zeros( calc_proj.shape, np.float32 )
-    start = (len(calc_proj)- len(proj))/2
+    start = int((len(calc_proj)- len(proj))/2)
     error[ start:start+len(proj) ] = proj
     error = error - calc_proj
     npcalc_proj = np.zeros( (mx-mn), np.float32 )
@@ -124,7 +124,7 @@ def test_u_n():
     for j in range(3):
         for proj, angle in zip(projections, theta):
             print(j, angle, end=' ')
-            start = time.clock()
+            start = time.time()
             update = update_wtd( recon, proj, angle, msk, dbg=False)
             recon = recon + update*0.9
             # clip to zero - constructing positive intensity
@@ -136,7 +136,7 @@ def test_u_n():
                 pl.imshow(recon)
                 pl.colorbar()
             #    pl.show()
-            end = time.clock()
+            end = time.time()
             sumtime += end-start
             ncalc +=1
             # print err.sum()

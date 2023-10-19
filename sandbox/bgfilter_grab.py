@@ -57,7 +57,7 @@ def open_sub_dark( names, darkfilename, DARK_N=1 ):
 @bench("mask")
 def do_mask( imgs, maskfilename ):
     """ applies a mask to the data """
-    msk = fabio.open(maskfilename).data.astype(np.bool)
+    msk = fabio.open(maskfilename).data.astype(bool)
     for img in imgs:
         img.data[msk] = 0
         yield img
