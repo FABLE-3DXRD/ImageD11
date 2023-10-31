@@ -1,5 +1,3 @@
-
-
 from __future__ import print_function
 
 # ImageD11_v1.0 Software for beamline ID11
@@ -20,20 +18,24 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  0211-1307  USA
 
 try:
-    import Queue
+    pass
 except:
     # python 3?
-    import queue as Queue 
-    
+    pass
+
 import threading
+
 # global stop_now
 stop_now = False
 
+
 class ImageD11_thread(threading.Thread):
-    """ Add a stopping mechanism for unhandled exceptions """
+    """Add a stopping mechanism for unhandled exceptions"""
+
     def __init__(self, myname="ImageD11_thread"):
-        self.myname=myname
+        self.myname = myname
         threading.Thread.__init__(self)
+
     def run(self):
         global stop_now
         try:
@@ -41,8 +43,9 @@ class ImageD11_thread(threading.Thread):
         except:
             stop_now = True
             raise
+
     def ImageD11_stop_now(self):
         global stop_now
         if stop_now:
-            print( "Got a stop in",self.myname)
+            print("Got a stop in", self.myname)
         return stop_now

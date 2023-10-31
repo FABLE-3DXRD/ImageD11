@@ -9,7 +9,7 @@ all peaks in a dataset (so that hkl assignments
 are not a problem).
 """
 from argparse import ArgumentParser
-from ImageD11 import refinegrains, indexing, ImageD11options
+from ImageD11 import refinegrains, ImageD11options
 import logging, sys
 
 def fitgrain(options):

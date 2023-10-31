@@ -1,4 +1,3 @@
-
 from __future__ import print_function
 
 #!/usr/bin/env python
@@ -48,8 +47,9 @@ import math
 import copy
 import sys
 
+
 class Simplex:
-    def __init__(self, testfunc, guess, increments, kR = -1, kE = 2, kC = 0.5):
+    def __init__(self, testfunc, guess, increments, kR=-1, kE=2, kC=0.5):
         """Initializes the simplex.
         INPUTS
         ------
@@ -92,7 +92,7 @@ class Simplex:
             self.errors.append(0)
         self.calculate_errors_at_vertices()
 
-    def minimize(self, epsilon = 0.0001, maxiters = 250, monitor = 1):
+    def minimize(self, epsilon=0.0001, maxiters=250, monitor=1):
         """Walks to the simplex down to a local minima.
         INPUTS
         ------
@@ -143,15 +143,18 @@ class Simplex:
 
             S1 = 0.0
             for vertex in range(0, self.numvars + 1):
-                S1 = S1 + (self.errors[vertex] - F2)**2
+                S1 = S1 + (self.errors[vertex] - F2) ** 2
             T = math.sqrt(S1 / self.numvars)
 
             # Optionally, print progress information
 
             if monitor:
-                print('\r' + 72 * ' ', end=' ')
-                print('\rIteration = %d   Best = %f   Worst = %f' % \
-                      (iter,self.errors[self.lowest],self.errors[self.highest]), end=' ')
+                print("\r" + 72 * " ", end=" ")
+                print(
+                    "\rIteration = %d   Best = %f   Worst = %f"
+                    % (iter, self.errors[self.lowest], self.errors[self.highest]),
+                    end=" ",
+                )
                 sys.stdout.flush()
 
             if T <= epsilon:
@@ -214,14 +217,20 @@ class Simplex:
 
     def contract_simplex(self):
         for x in range(0, self.numvars):
-            self.guess[x] = self.kC * self.simplex[self.highest][x] + (1 - self.kC) * self.simplex[self.numvars + 1][x]
+            self.guess[x] = (
+                self.kC * self.simplex[self.highest][x]
+                + (1 - self.kC) * self.simplex[self.numvars + 1][x]
+            )
         return
 
     # expand: if P is vertex and Q is centroid, alpha-expansion is Q + alpha*(P-Q),
     #         or (1 - alpha)*Q + alpha*P; default alpha is 2.0; agrees with NR
     def expand_simplex(self):
         for x in range(0, self.numvars):
-            self.guess[x] = self.kE * self.guess[x]                 + (1 - self.kE) * self.simplex[self.numvars + 1][x]
+            self.guess[x] = (
+                self.kE * self.guess[x]
+                + (1 - self.kE) * self.simplex[self.numvars + 1][x]
+            )
         return
 
     # reflect: if P is vertex and Q is centroid, reflection is Q + (Q-P) = 2Q - P,
@@ -229,7 +238,10 @@ class Simplex:
     def reflect_simplex(self):
         # loop over variables
         for x in range(0, self.numvars):
-            self.guess[x] = self.kR * self.simplex[self.highest][x] + (1 - self.kR) * self.simplex[self.numvars + 1][x]
+            self.guess[x] = (
+                self.kR * self.simplex[self.highest][x]
+                + (1 - self.kR) * self.simplex[self.numvars + 1][x]
+            )
             # store reflected point in elem. N + 2
             self.simplex[self.numvars + 2][x] = self.guess[x]
         return
@@ -241,7 +253,9 @@ class Simplex:
             if vertex == self.lowest:
                 continue
             for x in range(0, self.numvars):
-                self.simplex[vertex][x] = 0.5 * (self.simplex[vertex][x] + self.simplex[self.lowest][x])
+                self.simplex[vertex][x] = 0.5 * (
+                    self.simplex[vertex][x] + self.simplex[self.lowest][x]
+                )
         self.calculate_errors_at_vertices()
         return
 
@@ -274,15 +288,23 @@ class Simplex:
             self.errors[vertex] = self.currenterror
         return
 
+
 def myfunc(args):
-    return abs(args[0] * args[0] * args[0] * 5 - args[1] * args[1] * 7 + math.sqrt(abs(args[0])) - 118)
+    return abs(
+        args[0] * args[0] * args[0] * 5
+        - args[1] * args[1] * 7
+        + math.sqrt(abs(args[0]))
+        - 118
+    )
+
 
 def main():
     s = Simplex(myfunc, [1, 1, 1], [2, 4, 6])
     values, err, iter = s.minimize()
-    print('args = ', values)
-    print('error = ', err)
-    print('iterations = ', iter)
+    print("args = ", values)
+    print("error = ", err)
+    print("iterations = ", iter)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

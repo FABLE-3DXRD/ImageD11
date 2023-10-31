@@ -19,39 +19,47 @@ except ImportError:
 
 # Check for the use of openmp interactions with os.fork and multiprocessing
 
+
 def check_multiprocessing():
-    """ You cannot safely use os.fork together with threads.
+    """You cannot safely use os.fork together with threads.
     But the cImageD11 codes uses threads via openmp.
     So please use forkserver or spawn for multiprocessing.
-    
+
     https://discuss.python.org/t/concerns-regarding-deprecation-of-fork-with-alive-threads/33555
     https://github.com/FABLE-3DXRD/ImageD11/issues/177
-    
+
     > Developers should respond by adjusting their use of multiprocessing or concurrent.futures
     > to explicitly specify either the "forkserver" or "spawn" start methods via a context.
     """
     import multiprocessing
+
     # Problem cases are:
     #     child processes -> we will set num threads to 1
     parent = None
-    if hasattr(multiprocessing,"parent_process"):
+    if hasattr(multiprocessing, "parent_process"):
         parent = multiprocessing.parent_process()
         # only for python 3.8 and up
-        cimaged11_omp_set_num_threads( 1 ) 
+        cimaged11_omp_set_num_threads(1)
         # people wanting Nprocs * Mthreads need to reset after import
         # OMP_NUM_THREADS is not going to work for them
         # how are we going to remember this in the future??
     #
     # now check for the fork issue
-    if ((multiprocessing.get_start_method(allow_none=False) == 'fork') and    # we have the problem
-        (multiprocessing.get_start_method(allow_none=True) is None) and       # by accident
-         ('forkserver' in multiprocessing.get_all_start_methods())):          # so fix it
-            multiprocessing.set_start_method('forkserver')
-    if ((multiprocessing.get_start_method(allow_none=False) == 'fork') and    #  we have the problem
-        (parent is not None)):
+    if (
+        (multiprocessing.get_start_method(allow_none=False) == "fork")
+        and (  # we have the problem
+            multiprocessing.get_start_method(allow_none=True) is None
+        )
+        and ("forkserver" in multiprocessing.get_all_start_methods())  # by accident
+    ):  # so fix it
+        multiprocessing.set_start_method("forkserver")
+    if (
+        multiprocessing.get_start_method(allow_none=False) == "fork"
+    ) and (  #  we have the problem
+        parent is not None
+    ):
         # Tell them about it.
         warnings.warn(__doc__)
-
 
 
 if cimaged11_omp_get_max_threads() == 0:
@@ -62,7 +70,7 @@ else:
     OPENMP = True
     check_multiprocessing()
 
-    
+
 # For 32 or 64 bits
 nbyte = struct.calcsize("P")  # 4 or 8
 

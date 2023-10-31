@@ -1,41 +1,41 @@
-
-
 # Make a project file in a hdf.
 
-# example : 
+# example :
 #
-import os
 import h5py, fabio
+
 fmt = "/data/id11/nanoscope/Commissioning/sonja_fib_Al_z500__nobackup/difftomo_Al_y%03d_/interlaced_1_%d/Frelon/interlaced_1_%d_Frelon%04d.edf"
 args = "ystep", "ipass", "ipass", "fnum"
-ysteps = range(-60,61)
+ysteps = range(-60, 61)
 # interlaced
 frames = []
 for ystep in ysteps:
     for fnum in range(360):
         # forward
-        frames.append( fmt % ( ystep, 1, 1, fnum ) )
+        frames.append(fmt % (ystep, 1, 1, fnum))
         # and back
-        frames.append( fmt % ( ystep, 2, 2, 359-fnum ) )
-      
-print("total frames:",len(frames))
+        frames.append(fmt % (ystep, 2, 2, 359 - fnum))
+
+print("total frames:", len(frames))
 for f in frames[:10]:
     print(f)
 for f in frames[-10:]:
     print(f)
-    
-im = fabio.open( frames[0] )
+
+im = fabio.open(frames[0])
 # hacky
 bsize = im._frames[0].size
 boffset = im._frames[0].start
 bshape = im.data.shape
 
-with h5py.File("/tmp/demo.hdf" , "w" ) as h:
-    g = h.require_group('sinogram')
-    g.create_dataset( "data",
-                      shape = (len(frames), bshape[0], bshape[1]),
-                      dtype = im.data.dtype,
-                      external = [(fname, boffset, bsize) for fname in frames] )
+with h5py.File("/tmp/demo.hdf", "w") as h:
+    g = h.require_group("sinogram")
+    g.create_dataset(
+        "data",
+        shape=(len(frames), bshape[0], bshape[1]),
+        dtype=im.data.dtype,
+        external=[(fname, boffset, bsize) for fname in frames],
+    )
 
 # outputs:
 """

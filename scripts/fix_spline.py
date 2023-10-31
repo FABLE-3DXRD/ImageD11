@@ -52,8 +52,8 @@ def mymain():
         sys.exit()
     outname = sys.argv[2]
     if os.path.exists(outname):
-        if not input("Sure you want to overwrite %s ?"%(outname)
-                         )[0] in ['y','Y']:
+        if input("Sure you want to overwrite %s ?"%(outname)
+                         )[0] not in ['y','Y']:
             sys.exit()
     splinename = sys.argv[3]
     if splinename == 'perfect':

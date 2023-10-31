@@ -1,4 +1,3 @@
-
 """ImageD11 project files
 
 We want to be able to:

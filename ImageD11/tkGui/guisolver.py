@@ -1,4 +1,3 @@
-
 # Get Strain/Stress from ImageD11 UBI/map files
 # Copyright (C) 2015 Younes ELHACHI
 #
@@ -29,49 +28,52 @@ from .listdialog import listdialog
 
 
 class guisolver:
-
-    def __init__(self,parent):
+    def __init__(self, parent):
         """
         Parent (arg) is a hook to features of the parent gui
         sets up eps_sig_solver menuitems
         """
-        self.parent=parent
+        self.parent = parent
 
-        self.menuitems = ( "Strain/Stress", 0,
-                           [ ( "Load ubis", 0, self.loadubis),
-                             ( "Load parameters", 1, self.loadfileparameters),
-                             ( "Edit parameters", 0, self.editparameters),
-                             ( "Compute and save strain and stress", 0, self.compute_save_epsig),
-                             ( "Save parameters", 0, self.saveparameters)
-                           ] )
-
+        self.menuitems = (
+            "Strain/Stress",
+            0,
+            [
+                ("Load ubis", 0, self.loadubis),
+                ("Load parameters", 1, self.loadfileparameters),
+                ("Edit parameters", 0, self.editparameters),
+                ("Compute and save strain and stress", 0, self.compute_save_epsig),
+                ("Save parameters", 0, self.saveparameters),
+            ],
+        )
 
     def loadubis(self):
-        """ see eps_sig_solver.loadmap """
-        filename=self.parent.opener.show(
+        """see eps_sig_solver.loadmap"""
+        filename = self.parent.opener.show(
             title="File containing ubi matrices",
-            filetypes=[ ("Grain map files", "*.map"),
-                        ("UBI files", "*.ubi") ] )
-        self.parent.guicommander.execute("solver","loadmap",filename)
+            filetypes=[("Grain map files", "*.map"), ("UBI files", "*.ubi")],
+        )
+        self.parent.guicommander.execute("solver", "loadmap", filename)
 
     def compute_save_epsig(self):
-        """ see eps_sig_solver.compute_eps_sig """
-        filename=self.parent.saver.show(title="File to save strain and stress")
-        self.parent.guicommander.execute("solver","compute_write_eps_sig",filename)
+        """see eps_sig_solver.compute_eps_sig"""
+        filename = self.parent.saver.show(title="File to save strain and stress")
+        self.parent.guicommander.execute("solver", "compute_write_eps_sig", filename)
 
     def loadfileparameters(self):
-        """ see eps_sig_solver.loadpars and parameters.loadpars """
-        filename=self.parent.opener.show(
+        """see eps_sig_solver.loadpars and parameters.loadpars"""
+        filename = self.parent.opener.show(
             title="File containing unit cell and elastic constants",
-            filetypes = [ ("Parameter files", "*.prm"),
-                          ("Parameter files", "*.par") ] )
-        self.parent.guicommander.execute("solver","loadpars",filename)
+            filetypes=[("Parameter files", "*.prm"), ("Parameter files", "*.par")],
+        )
+        self.parent.guicommander.execute("solver", "loadpars", filename)
 
     def saveparameters(self):
-        """ see eps_sig_solver.savepars and parameters.savepars """
-        filename=self.parent.saver.show(title="File to save unit cell and elastic constants")
-        self.parent.guicommander.execute("solver","savepars",filename)
-
+        """see eps_sig_solver.savepars and parameters.savepars"""
+        filename = self.parent.saver.show(
+            title="File to save unit cell and elastic constants"
+        )
+        self.parent.guicommander.execute("solver", "savepars", filename)
 
     def editparameters(self):
         """
@@ -83,10 +85,13 @@ class guisolver:
                eg : loadpars(None)
         """
         # First make the eps_sig_solver update its parameters object
-        self.parent.guicommander.execute("solver","updateparameters") # no filename arg
+        self.parent.guicommander.execute(
+            "solver", "updateparameters"
+        )  # no filename arg
         # Now borrow a copy to read them and edit
-        pars = self.parent.guicommander.getdata("solver","pars")
-        d=listdialog(self.parent,items=pars,title="unit cell and elastic constants")
-        self.parent.guicommander.execute("solver","parameterobj.set_parameters",d.result) 
-        self.parent.guicommander.execute("solver","loadpars") # and use them 
-        
+        pars = self.parent.guicommander.getdata("solver", "pars")
+        d = listdialog(self.parent, items=pars, title="unit cell and elastic constants")
+        self.parent.guicommander.execute(
+            "solver", "parameterobj.set_parameters", d.result
+        )
+        self.parent.guicommander.execute("solver", "loadpars")  # and use them

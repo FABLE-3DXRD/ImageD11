@@ -1,6 +1,6 @@
 from __future__ import print_function
 
- 
+
 # ImageD11 Software for beamline ID11
 # Copyright (C) 2021  Jon Wright
 #
@@ -32,6 +32,7 @@ import logging, numpy, math
 import fabio
 from scipy.interpolate import bisplev
 
+
 def readfit2dfloats(filep, nfl):
     """
     Interprets a 5E14.7 formatted fortran line
@@ -46,17 +47,19 @@ def readfit2dfloats(filep, nfl):
         # logging.debug("readfit2dfloats:"+thisline)
         while i < 5 * 14:
             # logging.debug(str(i)+ thisline[i:i+14])
-            ret.append(float(thisline[i:i+14]) )
+            ret.append(float(thisline[i : i + 14]))
             j = j + 1
             i = i + 14
-            if j == nfl: 
+            if j == nfl:
                 break
     return ret
 
-class correctorclass: #IGNORE:R0902
+
+class correctorclass:  # IGNORE:R0902
     """
     Applies a spatial distortion to a peak position using a fit2d splinefile
     """
+
     def __init__(self, argsplinefile, orientation="edf"):
         """
         Argument is the name of a fit2d spline file
@@ -73,8 +76,6 @@ class correctorclass: #IGNORE:R0902
         self.tck2 = None
         if self.splinefile is not None:
             self.readfit2dspline(self.splinefile)
-        
-
 
     def correct(self, xin, yin):
         """
@@ -85,13 +86,15 @@ class correctorclass: #IGNORE:R0902
         if self.orientation == "edf":
             xcor = xin + bisplev(yin, xin, self.tck2)
             ycor = yin + bisplev(yin, xin, self.tck1)
-        else: 
-            # fit2d does a flip 
-            raise Exception("Spline orientations must be edf, convert "
-                            "your image to edf and remake the spline")
+        else:
+            # fit2d does a flip
+            raise Exception(
+                "Spline orientations must be edf, convert "
+                "your image to edf and remake the spline"
+            )
             # Unreachable code - we no longer accept this complexity
             # it means the spline file for ImageD11 bruker images
-            # is not the same as for fit2d. 
+            # is not the same as for fit2d.
             # xpos = self.xmax - xin
             # xcor = xin - bisplev(yin, xpos, self.tck2)
             # ycor = yin + bisplev(yin, xpos, self.tck1)
@@ -102,7 +105,7 @@ class correctorclass: #IGNORE:R0902
         Generate an x and y image which maps the array indices into
         floating point array indices (to be corrected for pixel size later)
 
-        returns 
+        returns
         FIXME - check they are the right way around
                 add some sort of known splinefile testcase
         """
@@ -111,17 +114,17 @@ class correctorclass: #IGNORE:R0902
             x_im = numpy.outer(numpy.arange(dims[0]), numpy.ones(dims[1]))
             y_im = numpy.outer(numpy.ones(dims[0]), numpy.arange(dims[1]))
             # xcor is tck2
-            x_im = numpy.add( x_im,
-                              bisplev( numpy.arange(dims[1]),
-                                         numpy.arange(dims[0]),
-                                               self.tck2 ).T,
-                              x_im)
+            x_im = numpy.add(
+                x_im,
+                bisplev(numpy.arange(dims[1]), numpy.arange(dims[0]), self.tck2).T,
+                x_im,
+            )
             # ycor is tck1
-            y_im = numpy.add( y_im,
-                              bisplev( numpy.arange(dims[1]),
-                                               numpy.arange(dims[0]),
-                                               self.tck1 ).T,
-                              y_im)
+            y_im = numpy.add(
+                y_im,
+                bisplev(numpy.arange(dims[1]), numpy.arange(dims[0]), self.tck1).T,
+                y_im,
+            )
             self.pixel_lut = x_im, y_im
         return self.pixel_lut
 
@@ -133,9 +136,11 @@ class correctorclass: #IGNORE:R0902
         """
         if self.pos_lut is None:
             if self.pixel_lut is None:
-                self.make_pixel_lut(dims)                
-            self.pos_lut = ( self.pixel_lut[0] * self.xsize, 
-                             self.pixel_lut[1] * self.ysize )
+                self.make_pixel_lut(dims)
+            self.pos_lut = (
+                self.pixel_lut[0] * self.xsize,
+                self.pixel_lut[1] * self.ysize,
+            )
         return self.pos_lut
 
     def distort(self, xin, yin):
@@ -151,8 +156,7 @@ class correctorclass: #IGNORE:R0902
         ytmp = yin - bisplev(yold, xold, self.tck1)
         xtmp = xin - bisplev(yold, xold, self.tck2)
         # Second guess should be better
-        error = math.sqrt((xtmp - xold) * (xtmp - xold) + 
-                          (ytmp - yold) * (ytmp - yold)   )
+        error = math.sqrt((xtmp - xold) * (xtmp - xold) + (ytmp - yold) * (ytmp - yold))
         ntries = 0
         while error > self.tolerance:
             ntries = ntries + 1
@@ -160,8 +164,9 @@ class correctorclass: #IGNORE:R0902
             yold = ytmp
             ytmp = yin - bisplev(yold, xold, self.tck1)
             xtmp = xin - bisplev(yold, xold, self.tck2)
-            error = math.sqrt((xtmp - xold) * (xtmp - xold) + 
-                              (ytmp - yold) * (ytmp - yold)   )
+            error = math.sqrt(
+                (xtmp - xold) * (xtmp - xold) + (ytmp - yold) * (ytmp - yold)
+            )
             # print error,xold,x,yold,y
             if ntries == 10:
                 raise Exception("Error getting the inverse spline to converge")
@@ -174,18 +179,13 @@ class correctorclass: #IGNORE:R0902
         """
         xtes, ytes = self.correct(xin, yin)
         xold, yold = self.distort(xtes, ytes)
-        error = math.sqrt( (xin - xold) * (xin - xold) + 
-                           (yin - yold) * (yin - yold))
+        error = math.sqrt((xin - xold) * (xin - xold) + (yin - yold) * (yin - yold))
         if error > self.tolerance:
             logging.error("Blobcorrector Test Failed!")
             raise Exception("Problem in correctorclass")
 
-
-
-
-
-
             # read the fit2d array into a tck tuple
+
     def readfit2dspline(self, name):
         """
         Reads a fit2d spline file into a scipy/fitpack tuple, tck
@@ -193,47 +193,40 @@ class correctorclass: #IGNORE:R0902
         """
         fin = open(name, "r")
         # SPATIAL DISTORTION SPLINE INTERPOLATION COEFFICIENTS
-        myline = fin.readline() 
-        if myline[:7] != "SPATIAL":
-            raise SyntaxError(name + \
-                ": file does not seem to be a fit2d spline file")
-        fin.readline() # BLANK LINE
-        fin.readline() # VALID REGION
-        myline = fin.readline() # the actual valid region, 
-                               # assuming xmin,ymin,xmax,ymax
-        logging.debug("xmin,ymin,xmax,ymax, read: "+myline)
-        self.xmin, self.ymin, self.xmax, self.ymax = \
-         [float(z) for z in myline.split()]
-        myline = fin.readline() # BLANK
-        myline = fin.readline() # GRID SPACING, X-PIXEL SIZE, Y-PIXEL SIZE
         myline = fin.readline()
-        logging.debug("gridspace, xsize, ysize: "+myline)
-        self.gridspacing, self.xsize, self.ysize = \
-         [float(z) for z in  myline.split()]
-        fin.readline() # BLANK
-        fin.readline() # X-DISTORTION
-        myline = fin.readline() # two integers nx1,ny1
-        logging.debug("nx1, ny1 read: "+myline)
+        if myline[:7] != "SPATIAL":
+            raise SyntaxError(name + ": file does not seem to be a fit2d spline file")
+        fin.readline()  # BLANK LINE
+        fin.readline()  # VALID REGION
+        myline = fin.readline()  # the actual valid region,
+        # assuming xmin,ymin,xmax,ymax
+        logging.debug("xmin,ymin,xmax,ymax, read: " + myline)
+        self.xmin, self.ymin, self.xmax, self.ymax = [float(z) for z in myline.split()]
+        myline = fin.readline()  # BLANK
+        myline = fin.readline()  # GRID SPACING, X-PIXEL SIZE, Y-PIXEL SIZE
+        myline = fin.readline()
+        logging.debug("gridspace, xsize, ysize: " + myline)
+        self.gridspacing, self.xsize, self.ysize = [float(z) for z in myline.split()]
+        fin.readline()  # BLANK
+        fin.readline()  # X-DISTORTION
+        myline = fin.readline()  # two integers nx1,ny1
+        logging.debug("nx1, ny1 read: " + myline)
         nx1, ny1 = [int(z) for z in myline.split()]
         # Now follow fit2d formatted line 5E14.7
         tx1 = numpy.array(readfit2dfloats(fin, nx1), numpy.float32)
         ty1 = numpy.array(readfit2dfloats(fin, ny1), numpy.float32)
-        cf1 = numpy.array(readfit2dfloats(fin, (nx1 - 4) * (ny1 - 4)),  
-                          numpy.float32)
-        fin.readline() #BLANK
-        fin.readline() # Y-DISTORTION
-        myline = fin.readline() # two integers nx2, ny2
-        nx2 , ny2 = [int(z) for z in myline.split()]
+        cf1 = numpy.array(readfit2dfloats(fin, (nx1 - 4) * (ny1 - 4)), numpy.float32)
+        fin.readline()  # BLANK
+        fin.readline()  # Y-DISTORTION
+        myline = fin.readline()  # two integers nx2, ny2
+        nx2, ny2 = [int(z) for z in myline.split()]
         tx2 = numpy.array(readfit2dfloats(fin, nx2), numpy.float32)
         ty2 = numpy.array(readfit2dfloats(fin, ny2), numpy.float32)
-        cf2 = numpy.array(readfit2dfloats(fin, (nx2 - 4) * (ny2 - 4)), 
-                     numpy.float32)
+        cf2 = numpy.array(readfit2dfloats(fin, (nx2 - 4) * (ny2 - 4)), numpy.float32)
         fin.close()
         # The 3 ,3 is the number of knots
         self.tck1 = (tx1, ty1, cf1, 3, 3)
         self.tck2 = (tx2, ty2, cf2, 3, 3)
-
-
 
 
 class perfect(correctorclass):
@@ -241,11 +234,14 @@ class perfect(correctorclass):
     To use on previously corrected when there is no splinefile
     Allows pixel size etc to be set
     """
+
     splinefile = "NO_CORRECTION_APPLIED"
     xsize = "UNKNOWN"
     ysize = "UNKNOWN"
+
     def __init__(self):
         correctorclass.__init__(self, None)
+
     def correct(self, xin, yin):
         """
         Do nothing - just return the same values
@@ -257,7 +253,7 @@ class perfect(correctorclass):
         Generate an x and y image which maps the array indices into
         floating point array indices (to be corrected for pixel size later)
 
-        returns 
+        returns
         FIXME - check they are the right way around
                 add some sort of known splinefile testcase
         """
@@ -269,66 +265,67 @@ class perfect(correctorclass):
         return self.pixel_lut
 
 
-
 class eiger_spatial(object):
-    
-    def __init__(self, 
-                 dxfile="/data/id11/nanoscope/Eiger/spatial_20210415_JW/e2dx.edf",
-                 dyfile="/data/id11/nanoscope/Eiger/spatial_20210415_JW/e2dy.edf",):
+    def __init__(
+        self,
+        dxfile="/data/id11/nanoscope/Eiger/spatial_20210415_JW/e2dx.edf",
+        dyfile="/data/id11/nanoscope/Eiger/spatial_20210415_JW/e2dy.edf",
+    ):
         self.dx = fabio.open(dxfile).data  # x == fast direction at ID11
         self.dy = fabio.open(dyfile).data  # y == slow direction
         assert self.dx.shape == self.dy.shape
-        
+
     def __call__(self, pks):
-        si = numpy.round(pks['s_raw']).astype(int)
-        fi = numpy.round(pks['f_raw']).astype(int)
-        pks['fc'] = self.dx[ si, fi ] + pks['f_raw']
-        pks['sc'] = self.dy[ si, fi ] + pks['s_raw']
+        si = numpy.round(pks["s_raw"]).astype(int)
+        fi = numpy.round(pks["f_raw"]).astype(int)
+        pks["fc"] = self.dx[si, fi] + pks["f_raw"]
+        pks["sc"] = self.dy[si, fi] + pks["s_raw"]
         return pks
-    
+
     def pixel_lut(self):
-        """ returns (slow, fast) pixel postions of an image """
+        """returns (slow, fast) pixel postions of an image"""
         s = self.dx.shape
-        i, j = numpy.mgrid[ 0:s[0], 0:s[1] ]
+        i, j = numpy.mgrid[0 : s[0], 0 : s[1]]
         return self.dy + j, self.dx + i
-    
+
+
 #
-#"""
-#http://homepages.inf.ed.ac.uk/rbf/CVonline/LOCAL_COPIES/OWENS/LECT5/node5.html
+# """
+# http://homepages.inf.ed.ac.uk/rbf/CVonline/LOCAL_COPIES/OWENS/LECT5/node5.html
 #
-#Various interpolation schemes can be used. 
+# Various interpolation schemes can be used.
 # A common one is bilinear interpolation, given by
 #
-#v(x,y) = c1x + c2y + c3xy + c4,
+# v(x,y) = c1x + c2y + c3xy + c4,
 #
-#where v(x,y) is the grey value at position (x,y).
-#Thus we have four coefficients to solve for. We use the known grey values 
+# where v(x,y) is the grey value at position (x,y).
+# Thus we have four coefficients to solve for. We use the known grey values
 # of the 4 pixels
-#surrounding the `come from' location to solve for the coefficients.
+# surrounding the `come from' location to solve for the coefficients.
 #
-#We need to solve the equation
+# We need to solve the equation
 #
-#v1   ( x1 y1 x1y1 1 ) c1
-#v2 = ( x2 y2 x2y2 1 ) c2
-#v3   ( x3 y3 x3y3 1 ) c3
-#v4   ( x4 y4 x4y4 1 ) c4
+# v1   ( x1 y1 x1y1 1 ) c1
+# v2 = ( x2 y2 x2y2 1 ) c2
+# v3   ( x3 y3 x3y3 1 ) c3
+# v4   ( x4 y4 x4y4 1 ) c4
 #
 #
-#or, in short,
-#[V] = [M][C],
+# or, in short,
+# [V] = [M][C],
 #
-#which implies
-#[C] = [M]-1[V].
+# which implies
+# [C] = [M]-1[V].
 #
-# This has to be done for every pixel location in the output image and 
+# This has to be done for every pixel location in the output image and
 # is thus a lot of computation!
-# Alternatively one could simply use the integer pixel position closest 
+# Alternatively one could simply use the integer pixel position closest
 # to the `come from location'.
 # This is adequate for most cases.
 #
-#"""
+# """
 
-#def unwarpimage(image, xpositions, ypositions):
+# def unwarpimage(image, xpositions, ypositions):
 #    """
 #    xpositions/ypositions are floats giving pixel co-ords of the input image.
 #
@@ -338,4 +335,3 @@ class eiger_spatial(object):
 #    Hence, for now,
 #    """
 #    pass
-

@@ -1,9 +1,6 @@
-
 from __future__ import print_function
 
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-
 
 
 # ImageD11_v0.4 Software for beamline ID11
@@ -47,8 +44,9 @@ are above a threshold (eg the central circle on the bruker)
 
 import numpy, fabio
 
+
 class scale:
-    def __init__( self, im1, threshold = None):
+    def __init__(self, im1, threshold=None):
         """
         Determines scale and offset values for images
         with respect to each other
@@ -56,20 +54,21 @@ class scale:
         returns a, b
         """
         lsqmat = numpy.zeros((2, 2), float)
-        dyda   = numpy.ravel(im1).astype(float)
+        dyda = numpy.ravel(im1).astype(float)
         self.threshold = threshold
         if threshold is None:
             self.indices = None
             self.notindices = None
         if threshold is not None:
-            self.indices = numpy.compress(dyda > threshold,
-                                            numpy.arange(dyda.shape[0]))
-            self.notindices = numpy.compress(dyda <= threshold,
-                                            numpy.arange(dyda.shape[0]))
-            assert self.indices.shape[0] + self.notindices.shape[0] == \
-                   dyda.shape[0], 'problem with threshold'
+            self.indices = numpy.compress(dyda > threshold, numpy.arange(dyda.shape[0]))
+            self.notindices = numpy.compress(
+                dyda <= threshold, numpy.arange(dyda.shape[0])
+            )
+            assert (
+                self.indices.shape[0] + self.notindices.shape[0] == dyda.shape[0]
+            ), "problem with threshold"
             dyda = numpy.take(dyda, self.indices)
-        lsqmat[0, 0] = numpy.sum(dyda*dyda)
+        lsqmat[0, 0] = numpy.sum(dyda * dyda)
         lsqmat[1, 0] = lsqmat[0, 1] = numpy.sum(dyda)
         lsqmat[1, 1] = dyda.shape[0]
         self.dyda = dyda
@@ -78,21 +77,20 @@ class scale:
         except:
             print(lsqmat)
             raise
-        
 
     def scaleimage(self, im2):
         """
         Return a copy of the image scaled to match the class
         """
         grad, off = self.scale(im2)
-        new = im2/grad - off/grad
-        new = numpy.where(new<0, 0, new)
-        if self.notindices is None: 
+        new = im2 / grad - off / grad
+        new = numpy.where(new < 0, 0, new)
+        if self.notindices is None:
             return new
         else:
-            numpy.put(new, self.notindices, 0. )
+            numpy.put(new, self.notindices, 0.0)
             return new
-    
+
     def scale(self, im2):
         """
         Fill out RHS and solve
@@ -107,16 +105,14 @@ class scale:
             ans = numpy.dot(self.inverse, [rhs0, rhs1])
             return ans[0], ans[1]
         else:
-            usedata = numpy.take(numpy.ravel(im2) , self.indices)
+            usedata = numpy.take(numpy.ravel(im2), self.indices)
             rhs0 = numpy.sum(self.dyda * usedata.astype(float))
             rhs1 = numpy.sum(usedata.astype(float))
             ans = numpy.dot(self.inverse, [rhs0, rhs1])
             return ans[0], ans[1]
-            
 
-def scaleseries( target, stem, first, last, 
-                 thresh = None,
-                 writeim = None ):
+
+def scaleseries(target, stem, first, last, thresh=None, writeim=None):
     """
     Scale a series of [bruker] images to the target
     TODO - make it work with fabio file series
@@ -128,24 +124,27 @@ def scaleseries( target, stem, first, last,
         print("# Using", scaler.indices.shape[0], "pixels above threshold")
     else:
         print("# Using all pixels")
-    print("# Number Filename multiplier(t=" + str(thresh) + \
-          ") offset multiplier(all) offset")
+    print(
+        "# Number Filename multiplier(t="
+        + str(thresh)
+        + ") offset multiplier(all) offset"
+    )
     if writeim is None:
         # we only look to see
-        for i in range(first, last+1):
+        for i in range(first, last + 1):
             name = "%s.%04d" % (stem, i)
             secondimage = fabio.open(name)
             a, b = scaler.scale(secondimage.data)
-            print(i, name , a, b, end=' ')
-    else: # we correct the image
-        for i in range(first, last+1):
+            print(i, name, a, b, end=" ")
+    else:  # we correct the image
+        for i in range(first, last + 1):
             name = "%s.%04d" % (stem, i)
             newname = "cor_%s.%04d" % (stem.split("/")[-1], i)
             secondimage = fabio.open(name)
             newdata = scaler.scaleimage(secondimage.data)
             # write out the file
             secondimage.data = newdata
-            secondimage.write( newname )
+            secondimage.write(newname)
             print(name, " -> ", newname)
             sys.stdout.flush()
 
@@ -153,10 +152,11 @@ def scaleseries( target, stem, first, last,
 if __name__ == "__main__":
 
     import sys
+
     FIRSTIMAGE = fabio.open(sys.argv[1])
     STEM = sys.argv[2]
     FIRST = int(sys.argv[3])
-    LAST  = int(sys.argv[4])
+    LAST = int(sys.argv[4])
     try:
         THRES = float(sys.argv[5])
     except:
@@ -166,4 +166,4 @@ if __name__ == "__main__":
     except:
         WRIT = None
 
-    scaleseries( FIRSTIMAGE, STEM, FIRST, LAST, THRES, WRIT )
+    scaleseries(FIRSTIMAGE, STEM, FIRST, LAST, THRES, WRIT)

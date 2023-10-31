@@ -8,7 +8,6 @@ Applies a new spatial correction based on spd style distortion files
 from ImageD11 import columnfile
 import fabio
 import sys, os
-import numpy as np
 
 def spatialfix( cf, dx, dy, flip=""):
     if "V" in flip:

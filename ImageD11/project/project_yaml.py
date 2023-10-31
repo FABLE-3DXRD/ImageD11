@@ -1,4 +1,3 @@
-
 from __future__ import print_function
 import yaml, pprint
 
@@ -164,39 +163,33 @@ ImageD11_project_schema = """
 """
 
 
-
 y = yaml.load(my_yml)
 pprint.pprint(y)
 
 
-
-
-class ImageD11Project( object ):
-
-    def __init__(self, project_dict = None, filename=None ):
-        """ Takes filename or existing project dictionary """
-        self.project_dict = { }
+class ImageD11Project(object):
+    def __init__(self, project_dict=None, filename=None):
+        """Takes filename or existing project dictionary"""
+        self.project_dict = {}
         if filename is not None:
-            self.load( filename )
+            self.load(filename)
         if project_dict is not None:
-            self.project_dict.update( project_dict )
+            self.project_dict.update(project_dict)
 
     def load(self, filename):
-        """ Updates the existing project from the file (e.g. adds and overwrites) """
+        """Updates the existing project from the file (e.g. adds and overwrites)"""
         with open(filename, "r") as stream:
-            pd = yaml.load( stream )
-        self.project_dict.update( pd )
-        
+            pd = yaml.load(stream)
+        self.project_dict.update(pd)
+
     def save(self, filename):
-        """ Writes the current project to a file """
+        """Writes the current project to a file"""
         with open(filename, "w") as stream:
-            stream.write( yaml.dump( self.project_dict, default_flow_style=False, encoding='utf-8' ) )
+            stream.write(
+                yaml.dump(self.project_dict, default_flow_style=False, encoding="utf-8")
+            )
 
     def validate(self):
-        """ Check that we have what we need in the dictionary 
-        TODO - try to use schema from nexus or cif or something ? """
+        """Check that we have what we need in the dictionary
+        TODO - try to use schema from nexus or cif or something ?"""
         pass
-
-
-
-

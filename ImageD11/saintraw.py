@@ -1,4 +1,3 @@
-
 from __future__ import print_function
 
 """
@@ -156,14 +155,13 @@ ICOMPONENT             I4      Twin component number in SHELXTL HKLF 5
 
 """
 
-    
-    
 
 class saintraw(object):
     doc = docs
-    titles  = []
+    titles = []
     formats = {}
-    helps   = {}
+    helps = {}
+
     def __init__(self, filename=None):
         """
         filename = filename to read in
@@ -171,7 +169,7 @@ class saintraw(object):
         self.parsedocs()
         if filename is not None:
             self.read(filename)
-    
+
     def parsedocs(self):
         """
         Parse the saint documentation for the Bruker format
@@ -182,7 +180,7 @@ class saintraw(object):
             if len(line.rstrip()) == 0:
                 if title is not None:
                     self.formats[title] = format
-                    self.helps[title]   = help
+                    self.helps[title] = help
                     self.titles.append(title)
                     title = None
                     format = None
@@ -207,21 +205,21 @@ class saintraw(object):
                 n = 1
             if n > 1:
                 for j in range(n):
-                    alltitles.append( t + "_%d" % (j) )
-                    allformats.append( f )
+                    alltitles.append(t + "_%d" % (j))
+                    allformats.append(f)
             else:
-                alltitles.append( t )
-                allformats.append( f )
-            assert f[0] in ["I","F"]
+                alltitles.append(t)
+                allformats.append(f)
+            assert f[0] in ["I", "F"]
             if f[0] == "I":
                 for dummy in range(n):
-                    funcs.append( int )
+                    funcs.append(int)
             if f[0] == "F":
                 for dummy in range(n):
-                    funcs.append( float )
+                    funcs.append(float)
             num = int(f[1:].split(".")[0])
             for dummy in range(n):
-                slices.append( slice( i, i + num ) )
+                slices.append(slice(i, i + num))
                 i += num
         self.alltitles = alltitles
         self.allformats = allformats
@@ -229,13 +227,13 @@ class saintraw(object):
         self.slices = slices
         assert len(funcs) == len(slices)
         assert len(slices) == len(alltitles)
-            
+
     def read(self, filename):
         """
         Read an ascii formatted saint reflection file
         """
         self.data = {}
-        self.lines = open(filename,"r").readlines()
+        self.lines = open(filename, "r").readlines()
         for t in self.alltitles:
             self.data[t] = []
         zipped = list(zip(self.alltitles, self.slices, self.funcs))
@@ -243,40 +241,38 @@ class saintraw(object):
             if line[0] == "!":
                 # Comment line
                 continue
-            for t,s,f in zipped:
+            for t, s, f in zipped:
                 # Parse this line
                 try:
-                    self.data[t].append( f( line[s] ) )
+                    self.data[t].append(f(line[s]))
                 except:
-                    print(t,s,f)
+                    print(t, s, f)
                     raise
 
     def condition_filter(self, name, func):
         """
         Remove the peaks according to condition
         """
-        assert len(self.lines) == len(self.data[name] )
-        indices = numpy.compress( func( numpy.array( self.data[name]) ) , 
-                                  list(range(len(self.lines))) )
-        self.take( indices )                                
+        assert len(self.lines) == len(self.data[name])
+        indices = numpy.compress(
+            func(numpy.array(self.data[name])), list(range(len(self.lines)))
+        )
+        self.take(indices)
 
     def take(self, order):
         """
         Put the peaks in the order given in order (indices)
         """
         for t in list(self.data.keys()):
-            self.data[t] = numpy.take( self.data[t],
-                                       order) 
-        self.lines = list( numpy.take( self.lines,
-                                       order))
-    
+            self.data[t] = numpy.take(self.data[t], order)
+        self.lines = list(numpy.take(self.lines, order))
+
     def sort(self, name):
         """
         Sort according to a column in self.data
         """
-        order = numpy.argsort( self.data[name] )
-        self.take(order) 
-
+        order = numpy.argsort(self.data[name])
+        self.take(order)
 
     def write(self, filename):
         """
@@ -285,33 +281,35 @@ class saintraw(object):
         """
         outf = open(filename, "w")
         for line in self.lines:
-            outf.write( line )
+            outf.write(line)
         # raise Exception("Not implemented writing yet!")
 
     def tocolumnfile(self):
         """
         Return a columnfile
         """
-        cof = columnfile.newcolumnfile( self.alltitles )
-        dlist = [ self.data[t] for t in self.alltitles ]
-        cof.bigarray = numpy.array( dlist, float )
-        cof.nrows = len( self.data[ self.alltitles[0] ] )
-        cof.ncols = len( self.alltitles ) 
+        cof = columnfile.newcolumnfile(self.alltitles)
+        dlist = [self.data[t] for t in self.alltitles]
+        cof.bigarray = numpy.array(dlist, float)
+        cof.nrows = len(self.data[self.alltitles[0]])
+        cof.ncols = len(self.alltitles)
         cof.set_attributes()
         return cof
+
 
 if __name__ == "__main__":
 
     import sys, time
+
     START = time.time()
     sra = saintraw()
     print("Making object", time.time() - START)
-    
+
     START = time.time()
     sra.read(sys.argv[1])
     print("Reading", time.time() - START)
-    
-    print(len(sra.data['IHKL_0']))
+
+    print(len(sra.data["IHKL_0"]))
 
     START = time.time()
     cra = sra.tocolumnfile()

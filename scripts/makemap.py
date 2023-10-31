@@ -3,11 +3,9 @@
 from __future__ import print_function
 
 
-from ImageD11.indexing import readubis, write_ubi_file
 from ImageD11.refinegrains import refinegrains
 import ImageD11.refinegrains
-from ImageD11 import ImageD11options
-import sys, os, argparse
+import sys, argparse
 
 
 def makemap(options):

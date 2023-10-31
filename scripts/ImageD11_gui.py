@@ -43,7 +43,6 @@ except:
 
 import logging
 import sys
-import os
 
 # GuiMaker is for building up the windows etc
 

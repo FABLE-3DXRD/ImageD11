@@ -23,7 +23,6 @@ def make_ellipses( grains , scalet = 1.0, scaler=1.0 ):
     # Sort by volume to plot biggest first (at back)
     tmp = list(zip( vol, grains))
     tmp.sort()
-    from ImageD11.indexing import ubitoU
     for vol, g in tmp[::-1]:
         size = pow(vol, 1.0/3.0)
         el.append( (Ellipse( xy = g.translation[0:2],
@@ -121,7 +120,7 @@ def plubi(uf, first = False , fig=None):
     
 if __name__=="__main__":
 
-    import sys, os, glob, time
+    import sys
 
     
 

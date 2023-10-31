@@ -11,7 +11,6 @@ Used to stabilise refinements
 
 import sys, logging
 
-import numpy as np
 from argparse import ArgumentParser
 
 from ImageD11 import refinegrains, indexing, grain, ImageD11options

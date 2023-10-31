@@ -15,7 +15,6 @@ def getnumerics(d):
             pass
     return ret
 
-import sys
         
 class headerfollower:
     

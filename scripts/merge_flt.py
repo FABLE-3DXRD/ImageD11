@@ -21,7 +21,7 @@ pixel (f,s,omega)
 from ImageD11 import  transformer
 from ImageD11.columnfile import newcolumnfile, columnfile
 import numpy
-import sys, time
+import sys
 
 try:
     pars = sys.argv[1]

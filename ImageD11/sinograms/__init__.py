@@ -1,6 +1,3 @@
-
-
-
 """
 Instructions:
 
@@ -35,4 +32,3 @@ make the graph of all the p
 
 
 """
-
