@@ -71,6 +71,7 @@ class correctorclass: #IGNORE:R0902
         self.gridspacing = 0.0
         self.tck1 = None
         self.tck2 = None
+	self.dim = (2048,2048)   # Detector dimensions (needed for correct_px_lut method). this should work for frelon cameras. Needs to be modified for other types of detectors
         if self.splinefile is not None:
             self.readfit2dspline(self.splinefile)
         
@@ -137,6 +138,34 @@ class correctorclass: #IGNORE:R0902
             self.pos_lut = ( self.pixel_lut[0] * self.xsize, 
                              self.pixel_lut[1] * self.ysize )
         return self.pos_lut
+
+
+    def correct_px_lut(self, pks):
+	"""Transform x,y in raw image coordinates into x,y of an
+        idealised image using a LUT. Faster than standard correct method for large peakfiles.
+        pks : ImageD11 columnfile with raw coordinates s_raw, f_raw
+	add new colulmns sc, fc with corrected coordinates"""
+        
+	assert self.dim is not None
+	assert 's_raw' in pks.titles and f_raw in pks.titles	
+
+	# make pixel_lut  + substract xy grid coordinate (i,j) to keep only dx and  dy arrays.
+	self.make_pixel_lut(self.dim)	
+	i,j = numpy.mgrid[ 0:self.dim[0], 0:self.dim[1] ]
+	dx = self.pixel_lut[0] - i
+	dy = self.pixel_lut[1] - j
+
+	# get integer pixel index (si,fi) of each peak
+	si = np.round(pks['s_raw']).astype(int)
+        fi = np.round(pks['f_raw']).astype(int)
+	
+	# apply dx dy correction on s_raw / f_raw
+	sc = (dx[ si, fi ] + pks.s_raw).astype(np.float32)
+        fc = (dy[ si, fi ] + pks.f_raw).astype(np.float32)
+        # add corrected arrays as new columns
+        pks.addcolumn(sc, 'sc')
+        pks.addcolumn(fc, 'fc')
+
 
     def distort(self, xin, yin):
         """
