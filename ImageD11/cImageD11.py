@@ -33,7 +33,8 @@ def check_multiprocessing():
     import multiprocessing
     # Problem cases are:
     #     child processes -> we will set num threads to 1
-    if multiprocessing.parent_process() is not None:
+    if hasattr(multiprocessing,"parent_process") and multiprocessing.parent_process() is not None:
+        # only for python 3.8 and up
         cimaged11_omp_set_num_threads( 1 ) 
         # people wanting Nprocs * Mthreads need to reset after import
         # OMP_NUM_THREADS is not going to work for them
