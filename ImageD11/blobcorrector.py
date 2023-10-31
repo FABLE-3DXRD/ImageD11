@@ -71,10 +71,9 @@ class correctorclass: #IGNORE:R0902
         self.gridspacing = 0.0
         self.tck1 = None
         self.tck2 = None
-	self.dim = (2048,2048)   # Detector dimensions (needed for correct_px_lut method). this should work for frelon cameras. Needs to be modified for other types of detectors
         if self.splinefile is not None:
             self.readfit2dspline(self.splinefile)
-        
+            self.dim = (self.xmax-self.xmin, self.ymax-self.ymin)  # detector dimensions read from splinefile
 
 
     def correct(self, xin, yin):
