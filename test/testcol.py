@@ -3,12 +3,13 @@ from ImageD11 import columnfile
 
 class testcol( unittest.TestCase):
     def setUp(self):
-        open("test.col","w").write("""#  x  a  b  c
+        with open("test.col","w") as f:
+            f.write("""#  x  a  b  c
 0 1 2 3
 5 6 1 2
 0 4 2 3
 32 5 6 2
-""")
+""")        
     def test1(self):
         c  = columnfile.columnfile( "test.col" ) 
         self.assertEqual( list(c.b) , [ 2, 1, 2, 6] )
