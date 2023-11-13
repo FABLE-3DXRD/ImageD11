@@ -250,6 +250,8 @@ class DataSet:
                 else:
                     s0 = 1
                     s1 = npts
+            # FIXME: we should reshape the omega/dty to match slow/fast points
+            #        also modify self.scans to be '4.1::[start:end]'
         if len(self.scans) > 1:
             s0 = len(self.scans)
             s1 = npts // s0
