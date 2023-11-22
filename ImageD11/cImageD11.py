@@ -1,11 +1,13 @@
 # import cImageD11 compiled module and patch the docstrings
 
+import os
 import struct
 import warnings
 from ImageD11 import cImageD11_docstrings
 
 try:
     from ImageD11._cImageD11 import *
+    import ImageD11._cImageD11
 except ImportError:
     print("Failed to import compiled C code for cImageD11 module")
     print("Are you running from a source directory?")
@@ -37,7 +39,8 @@ def check_multiprocessing():
     if hasattr(multiprocessing,"parent_process"):
         parent = multiprocessing.parent_process()
         # only for python 3.8 and up
-        cimaged11_omp_set_num_threads( 1 ) 
+        if parent is not None:
+            cimaged11_omp_set_num_threads( 1 ) 
         # people wanting Nprocs * Mthreads need to reset after import
         # OMP_NUM_THREADS is not going to work for them
         # how are we going to remember this in the future??
@@ -52,7 +55,9 @@ def check_multiprocessing():
         # Tell them about it.
         warnings.warn(__doc__)
 
-
+def cores_available():
+    """ Return the number of CPU cores you can use """
+    return len( os.sched_getaffinity( os.getpid() ) )
 
 if cimaged11_omp_get_max_threads() == 0:
     # The code was compiled without openmp

@@ -242,25 +242,28 @@ class DataSet:
                 if title.split()[0] == 'fscan2d':
                     s0 = s['instrument/fscan_parameters/slow_npoints'][()]
                     s1 = s['instrument/fscan_parameters/fast_npoints'][()]
+                    file_nums = np.arange( s0 * s1 ).reshape( (s0,s1) ) 
+                    # slice notation means last frame+1 to be inclusive
+                    self.scans = [ "%s::[%d:%d]"%( self.scans[0], row[0], row[-1]+1 ) 
+                                    for row in file_nums ]
                 elif title.split()[0] == 'f2scan':
                     # good luck ? Assuming rotation was the inner loop here:
                     step = s['instrument/fscan_parameters/step_size'][()]
                     s1 = int( np.round( 360 / step ) )
                     s0 = npts // s1
+                    logging.warning("Dataset might need to be reshaped")
                 else:
                     s0 = 1
                     s1 = npts
-            # FIXME: we should reshape the omega/dty to match slow/fast points
-            #        also modify self.scans to be '4.1::[start:end]'
-        if len(self.scans) > 1:
+        elif len(self.scans) > 1:
             s0 = len(self.scans)
             s1 = npts // s0
         self.shape = s0, s1
         if np.prod( self.shape ) != npts:
             print("Warning: irregular scan - might be bugs in here")
             print(npts, len(self.scans))
-        self.omega = np.array( self.omega )
-        self.dty = np.array(self.dty )
+        self.omega = np.array( self.omega ).reshape( self.shape )
+        self.dty = np.array( self.dty ).reshape( self.shape )
         logging.info( 'sinogram shape = ( %d , %d ) imageshape = ( %d , %d)'%(
             self.shape[0], self.shape[1], self.imageshape[0], self.imageshape[1] ) )
 
