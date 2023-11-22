@@ -244,7 +244,7 @@ class DataSet:
                     s1 = s['instrument/fscan_parameters/fast_npoints'][()]
                     file_nums = np.arange( s0 * s1 ).reshape( (s0,s1) ) 
                     # slice notation means last frame+1 to be inclusive
-                    self.scans = [ "%s::[%d::%d]"%( s, row[0], row[-1]+1 ) 
+                    self.scans = [ "%s::[%d:%d]"%( self.scans[0], row[0], row[-1]+1 ) 
                                     for row in file_nums ]
                 elif title.split()[0] == 'f2scan':
                     # good luck ? Assuming rotation was the inner loop here:
