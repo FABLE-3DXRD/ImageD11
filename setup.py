@@ -157,6 +157,7 @@ useful = [   # stuff you probably want, and should be able to get easily
     'pyyaml',
     "pytest",       # for the CI
     'numba==0.46.0 ; python_version < "3" ',       # for some test cases
+    'llvmlite==0.30.0 ; python_version < "3" ',    # for some test cases
     'numba ; python_version > "3" ',               # for some test cases
     "bslz4_to_sparse",
     "fast_histogram",
