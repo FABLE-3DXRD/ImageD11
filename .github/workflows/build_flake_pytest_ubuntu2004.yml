@@ -25,7 +25,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install Ubuntu python 2.7
-      if: matrix.python == '2.7'
+      if: matrix.python-version == '2.7'
       run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends python2 python2-dev python3-virtualenv
