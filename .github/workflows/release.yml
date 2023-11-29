@@ -1,0 +1,113 @@
+name: Build and deploy
+
+on:
+  workflow_dispatch:
+  release:
+    types:
+      - published
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}-${{ matrix.cibw_archs }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Ensure that a wheel builder finishes even if another fails
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-20.04
+            cibw_archs: "auto64"
+          #- os: ubuntu-20.04
+          #  cibw_archs: "auto32"
+          - os: ubuntu-20.04
+            cibw_archs: "aarch64"
+          - os: ubuntu-20.04
+            cibw_archs: "ppc64le"
+          - os: windows-2019
+            cibw_archs: "auto64"
+          #- os: windows-2019
+          #  cibw_archs: "auto32"
+          - os: macos-11
+            cibw_archs: "universal2"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.16.2
+        env:
+          CIBW_PROJECT_REQUIRES_PYTHON: ">=3.7"
+          CIBW_BUILD: cp37-* cp38-* cp39-* cp310-* cp311-* cp312-*
+          # Do not build for pypy, muslinux and python3.12 on ppc64le
+          CIBW_SKIP: pp* *-musllinux_* cp312-*linux_ppc64le
+          CIBW_ARCHS: ${{ matrix.cibw_archs }}
+
+          # Use silx wheelhouse: needed for ppc64le
+          CIBW_ENVIRONMENT_LINUX: "PIP_FIND_LINKS=https://www.silx.org/pub/wheelhouse/ PIP_TRUSTED_HOST=www.silx.org"
+
+          CIBW_TEST_REQUIRES: pytest
+          CIBW_TEST_COMMAND: pytest {project}/test
+          # Skip tests for 32bits and emulated architectures, arm64 macos and on Windows
+          # Skip cp312 tests for now: not all dependencies are available.
+          CIBW_TEST_SKIP: "*cp312-* *-*linux_i686 *-*linux_{aarch64,ppc64le,s390x} *-macosx_arm64 *-macosx_universal2:arm64 *-win32 *-win_amd64"
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ./wheelhouse/*.whl
+
+  build_sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build sdist
+        run: python -m build --sdist
+
+      - name: Check the package
+        run: |
+          python -m twine check dist/*
+
+      - name: Install and test sdist
+        run: |
+          pip install --pre dist/ImageD11*.tar.gz
+          pytest test
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: dist/*.tar.gz
+
+  pypi-publish:
+    needs: [build_wheels, build_sdist]
+    name: Upload release to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+    if: github.event_name == 'release' && github.event.action == 'published'
+    # or, alternatively, upload to PyPI on every tag starting with 'v' (remove on: release above to use this)
+    # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: artifact
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
