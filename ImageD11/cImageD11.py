@@ -39,13 +39,15 @@ def check_multiprocessing():
     if hasattr(multiprocessing,"parent_process"):
         parent = multiprocessing.parent_process()
         # only for python 3.8 and up
-        if parent is not None:
+        if (parent is not None) and ('OMP_NUM_THREADS' not in os.environ):
             cimaged11_omp_set_num_threads( 1 ) 
         # people wanting Nprocs * Mthreads need to reset after import
-        # OMP_NUM_THREADS is not going to work for them
-        # how are we going to remember this in the future??
+        # or use OMP_NUM_THREADS as usual
     #
     # now check for the fork issue
+    if not hasattr(multiprocessing, 'get_start_method'):
+        # You are on python2.7. Give up.
+        return
     if ((multiprocessing.get_start_method(allow_none=False) == 'fork') and    # we have the problem
         (multiprocessing.get_start_method(allow_none=True) is None) and       # by accident
          ('forkserver' in multiprocessing.get_all_start_methods())):          # so fix it

@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 import os
 import ImageD11.sinograms.dataset
@@ -15,7 +16,7 @@ import ImageD11.sinograms.dataset
 def testcase(dataroot = '/data/id11/nanoscope/ihmi1452/id11',
              sample = 'WAucross',
              dset = 'H0_',
-             destination = f'/tmp/case.h5',
+             destination = '/tmp/case.h5',
              analysisroot = 'should_not_exist',
              scans= None
             ):
