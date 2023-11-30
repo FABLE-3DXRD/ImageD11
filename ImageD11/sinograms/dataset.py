@@ -20,6 +20,8 @@ TO DO:
 - indexing and reconstructing grains
 
 """
+
+# POSSIBLE_DETECTOR_NAMES = ("frelon3", "eiger")
     
 def guess_chunks(name, shape):
     if name == 'omega':
@@ -30,28 +32,36 @@ def guess_chunks(name, shape):
         
         
 class DataSet:
+    """One DataSet instance per detector!"""
     
     # simple strings or ints
-    ATTRNAMES = ( "dataroot", "analysisroot", "sample", "dset", "shape", "dsname", 
-                  "datapath", "analysispath", "masterfile",
-                  "limapath"
+    ATTRNAMES = ( "dataroot", "analysisroot", "sample", "dset", "shape", "dsname",
+                  "datapath", "analysispath", "masterfile", "limapath",
+                  "detector", "omegamotor", "dtymotor",
+                  "pksfile", "sparsefile", "parfile"
                 )
     STRINGLISTS = ( "scans", "imagefiles", "sparsefiles" )
     # sinograms
     NDNAMES = ( "omega", "dty", "nnz", "frames_per_file", "nlm", "frames_per_scan" )
+    
 
+    
     def __init__(self,
                  dataroot = ".",
                  analysisroot = ".",
                  sample = "sample", 
-                 dset = "dataset"):
+                 dset = "dataset",
+                 detector = "eiger",
+                 omegamotor = "rot_center",
+                 dtymotor = "dty"):
         """ The things we need to know to process data """
-
-        self.detector = 'eiger' # frelon3
+        
+        # defaults to eiger and nanoscope station, can be overwritten with init parameters detector, omegamotor and dtymotor
+        self.detector = detector # frelon3
         self.limapath = None    # where is the data in the Lima files
-    
-        self.omegamotor = 'rot_center'      # diffrz
-        self.dtymotor   = 'dty'             # diffty
+        
+        self.omegamotor = omegamotor      # diffrz
+        self.dtymotor   = dtymotor        # diffty
 
         self.dataroot = dataroot            # folder to find {sample}/{sample}_{dset}
         self.analysisroot = analysisroot    # where to write or find sparse data
@@ -85,7 +95,7 @@ class DataSet:
             r.append( '# scans %d from %s to %s'%(
                 len(self.scans), self.scans[0], self.scans[-1] ))
         return  "\n".join(r)
-
+            
     
     def compare(self, other):
         '''Try to see if the load/save is working'''
@@ -144,6 +154,8 @@ class DataSet:
         
     def import_scans(self, scans=None, hname = None):
         """ Reads in the scans from the bliss master file """
+        # we need to work out what detector we have at this point
+        # self.guess_detector()
         if hname is None:
             hname = self.masterfile
         frames_per_scan = []
@@ -155,12 +167,22 @@ class DataSet:
                          (self.detector in hin[scan]['measurement'])) ]
             goodscans = []
             for scan in scans:
-                frames = hin[scan]['measurement'][self.detector]
-                if len(frames.shape)==3: # need 1D series of frames
-                    goodscans.append(scan)
-                    frames_per_scan.append( frames.shape[0] )
+                # Make sure that this scan has a measurement from our detector
+                if self.detector not in hin[scan]['measurement']:
+                    print('Bad scan', scan)                  
                 else:
-                    print('Bad scan', scan)
+                    try:
+                        frames = hin[scan]['measurement'][self.detector]
+                    except KeyError as e:  # Thrown by h5py
+                        print('Bad scan', scan, ', h5py error follows:')
+                        print(e)
+                        continue
+                    if len(frames.shape)==3: # need 1D series of frames
+                        goodscans.append(scan)
+                        frames_per_scan.append( frames.shape[0] )
+                    else:
+                        print('Bad scan', scan)
+
         self.scans = goodscans
         self.frames_per_scan = frames_per_scan
 
@@ -170,6 +192,7 @@ class DataSet:
     
     def import_imagefiles(self):
         """ Get the Lima file names from the bliss master file, also scan_npoints """
+        # self.import_scans() should always be called before this function, so we know the detector
         npts = None
         self.imagefiles = []
         self.frames_per_file = []
@@ -200,6 +223,7 @@ class DataSet:
         you need to import the imagefiles first
         these will be the motor positions to accompany the images
         """
+        # self.guess_motornames()
         self.omega = [None,] * len(self.scans)
         self.dty   = [None,] * len(self.scans)
         with h5py.File( self.masterfile, 'r' ) as hin:
@@ -293,6 +317,57 @@ class DataSet:
         self.ybincens = np.linspace( self.ymin, self.ymax, ny )
         self.obinedges = np.linspace( self.omin-self.ostep/2, self.omax + self.ostep/2, nomega + 1 )
         self.ybinedges = np.linspace( self.ymin-self.ystep/2, self.ymax + self.ystep/2, ny + 1 )
+        
+    def guess_detector(self):
+        '''Guess which detector we are using from the masterfile'''
+        
+        # open the masterfile
+        hname = self.masterfile
+        detectors_seen = []
+        scan = "1.1"
+
+        with h5py.File( hname, 'r' ) as hin:
+            # go through the first scan, and see what detectors we can see
+            for measurement in list(hin[scan]['measurement']):
+                if measurement.attrs.get("interpretation") == "image":
+                    detectors_seen.append(measurement)
+        
+        if len(detectors_seen) != 1:
+            raise ValueError("More than one detector seen! Can't work out which one to process.")
+        else:
+            self.detector = detectors_seen[0]
+        
+#     def guess_motornames(self):
+#         '''Guess which station we were using (Nanoscope or 3DXRD) from which motors are in instrument/positioners'''
+#         from ImageD11.sinograms.assemble_label import HEADERMOTORS_NSCOPE, HEADERMOTORS_TDXRD, HEADERMOTORS
+#         # open the masterfile
+#         hname = self.masterfile
+#         motors_seen = []
+#         scan = "1.1"
+
+#         with h5py.File( hname, 'r' ) as hin:
+#             # go through the first scan, and see what motors we can see
+#             for positioner in list(hin[scan]['instrument/positioners']):
+#                 if positioner in HEADERMOTORS:
+#                     motors_seen.append(positioner)
+
+#         using_nscope = False
+#         using_tdxrd = False
+#         for motor in motors_seen:
+#             if motor in HEADERMOTORS_NSCOPE:
+#                 using_nscope = True
+#             elif motor in HEADERMOTORS_TDXRD:
+#                 using_tdxrd = True
+
+#         if using_nscope and using_tdxrd:
+#             raise ValueError("Found both nscope and tdxrd motors in positioners, not sure which one we were using!")
+
+#         if using_nscope:
+#             self.omegamotor = 'rot_center'
+#             self.dtymotor = 'dty'
+#         elif using_tdxrd:
+#             self.omegamotor = 'diffrz'
+#             self.dtymotor = 'diffty'
         
         
     def sinohist(self, weights=None, omega=None, dty=None, method='fast'):
@@ -446,7 +521,9 @@ class DataSet:
 
 
 def load( h5name, h5group = '/' ):
-    return DataSet().load( h5name, h5group )
+    ds_obj = DataSet().load( h5name, h5group )
+    
+    return ds_obj
 
 def import_from_sparse( hname, 
                        omegamotor='instrument/positioners/rot',
