@@ -17,11 +17,11 @@ init:
 install:
   - "SET PATH=%CONDA%;%CONDA%\\Scripts;%CONDA%\\Library\\bin;%CONDA%\\DLLS;%PATH%"
   - mkdir tmp
-  - "set TMPDIR=%cd%\tmp"
+  - "set TMPDIR=%cd%\\tmp"
   - python -c "import sys; print(sys.executable, sys.version)"
   - python -m pip install --upgrade pip setuptools
   - python -m pip install pytest numpy
-  - python -m pip install --ignore-installed certifi --upgrade-strategy only-if-needed --only-binary=h5py --only-binary=scipy --only-binaryhdf5plugin .
+  - python -m pip install --ignore-installed certifi --upgrade-strategy only-if-needed --only-binary=h5py --only-binary=scipy --only-binary=hdf5plugin .
 
 
 test_script:
