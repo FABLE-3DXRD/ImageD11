@@ -8,8 +8,8 @@ environment:
   matrix:
     - CONDA: C:\Python27
     - CONDA: C:\Python27-x64
-    - CONDA: C:\Python38
     - CONDA: C:\Python38-x64
+# Meson errors, no binaries for 32-bits    - CONDA: C:\Python38
 
 init:
   - "ECHO %CONDA%"
