@@ -16,8 +16,8 @@ init:
 
 install:
   - "SET PATH=%CONDA%;%CONDA%\\Scripts;%CONDA%\\Library\\bin;%CONDA%\\DLLS;%PATH%"
-  - mkdir tmp
-  - "set TMPDIR=%cd%\\tmp"
+  - "mkdir C:\\tmp"
+  - "set TMPDIR=C:\\tmp"
   - python -c "import sys; print(sys.executable, sys.version)"
   - python -m pip install --upgrade pip setuptools
   - python -m pip install pytest numpy
