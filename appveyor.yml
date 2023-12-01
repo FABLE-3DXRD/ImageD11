@@ -1,5 +1,5 @@
 
-image: Visual Studio 2019
+image: Visual Studio 2015
 
 build: false
 
@@ -8,8 +8,8 @@ environment:
   matrix:
     - CONDA: C:\Miniconda
     - CONDA: C:\Miniconda-x64
-    - CONDA: C:\Miniconda38
-    - CONDA: C:\Miniconda38-x64
+    - CONDA: C:\Miniconda37
+    - CONDA: C:\Miniconda37-x64
 
 init:
   - "ECHO %CONDA%"
