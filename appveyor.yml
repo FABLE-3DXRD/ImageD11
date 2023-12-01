@@ -6,21 +6,20 @@ build: false
 
 environment:
   matrix:
-    - CONDA: C:\Miniconda
-    - CONDA: C:\Miniconda-x64
-    - CONDA: C:\Miniconda37
-    - CONDA: C:\Miniconda37-x64
+    - CONDA: C:\Python27
+    - CONDA: C:\Python27-x64
+    - CONDA: C:\Python38
+    - CONDA: C:\Python38-x64
 
 init:
   - "ECHO %CONDA%"
 
 install:
   - "SET PATH=%CONDA%;%CONDA%\\Scripts;%CONDA%\\Library\\bin;%CONDA%\\DLLS;%PATH%"
-  - conda config --set always_yes yes --set changeps1 no
-  - conda info -a
+  - python -c "import sys; print(sys.executable, sys.version)"
   - python -m pip install --upgrade pip setuptools
   - python -m pip install pytest numpy
-  - python -m pip install --ignore-installed certifi --upgrade-strategy only-if-needed --only-binary=h5py --editable .
+  - python -m pip install --ignore-installed certifi --upgrade-strategy only-if-needed --only-binary=h5py .
 
 
 test_script:
