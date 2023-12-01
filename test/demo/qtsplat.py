@@ -6,6 +6,8 @@ import os, sys
 from timeit import default_timer as timer
 import numpy as np
 from scipy.spatial.transform import Rotation
+if not hasattr( Rotation, 'as_matrix' ):
+    Rotation.as_matrix = Rotation.as_dcm
 from ImageD11 import columnfile, transform, grain, cImageD11
 import nbsplat
 
@@ -31,33 +33,33 @@ class dataset:
     def loadcolf(self, colfilename):
         self.colf = columnfile.columnfile( colfilename )
         self.nrows = self.colf.nrows
-                
+
     def loadpars(self, fname):
         self.colf.parameters.loadparameters( fname )
         self.colf.updateGeometry()
-        
+
     def loadgrains(self, fname):
         self.grains = grain.read_grain_file( fname )
         if len(self.grains)>0:
             self.resetlabels()
             self.assignlabels()
-        
+
     def get(self, name):
         if name in self.colf.titles:
             return self.colf.getcolumn(name)
         else:
             raise Exception("name "+name+" not found")
-            
+
     def xyz(self):
         return [self.colf.getcolumn(name) for name in self.names]
-            
+
     def grain_drlv2(self, grainid):
         x,y,z = self.xyz()
         hkl = np.dot( self.grains[grainid].ubi, self.xyz )
         dhkl = np.round(hkl)-hkl
         drlv2 = (dhkl*dhkl).sum(axis=0)
         self.colf.addcolumn("drlv2_%d"%(grainid))
-    
+
     def resetlabels(self):
         self.labels    = np.empty(  self.nrows, 'i')
         self.labels.fill(-1)
@@ -71,7 +73,7 @@ class dataset:
                                     self.colf.zl ) ).T.copy()
         self.colf.addcolumn( self.labels, "labels" )
         self.colf.addcolumn( self.drlv2, "drlv2" )
-    
+
     def assignlabels( self ):
         self.resetlabels()
         nr = self.nrows
@@ -102,7 +104,7 @@ class dataset:
         self.colf.labels[:]= self.labels
         self.colf.drlv2[:] = self.drlv2
 
-    
+
 class splat3dview:
     def __init__(self, w=2000, h=1500):
         self.w = self.h = None
@@ -137,12 +139,12 @@ class splat3dview:
         self.need_redraw = True
         self.u0 = np.dot(self.u, self.u0)
         self.u = np.eye(3, dtype=float)
-        
+
     def matrix(self):
         return self.scale*np.dot(self.u, self.u0)
 
 
-    
+
     def drawPixMapOnWidget(self, datas, target ):
         if self.need_redraw:
             start = timer()
@@ -167,7 +169,7 @@ class splat3dview:
             # order should be here too.
             # print("draw",timer()-start)
             # fixme - can we write on i.bits() directly ?
-            p = rgbtopm( self.rgba ) 
+            p = rgbtopm( self.rgba )
             target.setPixmap( p )
             if DOPROF:
                 x.disable()
@@ -185,8 +187,8 @@ def rgbtopm( rgb ):
     i = QtGui.QImage(rgb, rgb.shape[1], rgb.shape[0],
                      QtGui.QImage.Format_RGB32 )
     return QtGui.QPixmap.fromImage(i)
-            
-    
+
+
 def colormap(x, colors):
     # fixme: load save or matplotlib or select
     xmin = x.min()
@@ -198,12 +200,12 @@ def colormap(x, colors):
     colors[:,1] = np.interp( x, [ xmin, xcen, xmax ], [ 64, 255, 64]) # G
     colors[:,2] = np.interp( x, [ xmin, xcen, xmax ], [255,  64,  64]) # B
     colors[:,3] = 0 # alpha
-    
 
-    
-    
 
-        
+
+
+
+
 class Example( QtWidgets.QWidget ):
     def __init__(self, vu, da):
         QtWidgets.QWidget.__init__(self)
@@ -217,30 +219,30 @@ class Example( QtWidgets.QWidget ):
         self.doRot = False
         self.animate()
         self.show()
-        
+
     def mousePressEvent(self, e):
         #print('down', e.x(),e.y(),e.button() )
         self.doRot = True
         self.resetrot( e.x(), e.y())
-        
+
     def resetrot(self, x0, y0 ):
         self.x0 = x0
         self.y0 = y0
         self.vu.resetrot()
-        
+
     def mouseReleaseEvent(self, e):
         self.mouseMoveEvent(e)
         #print('up', e.x(),e.y())
         self.vu.resetrot( )
         self.doRot = False
-        
+
     def mouseMoveEvent(self,e):
         # print('move',e.x(),e.y())
         axes = "XYZ"
         if e.modifiers() == QtCore.Qt.ShiftModifier:
-            axes="ZYX" 
+            axes="ZYX"
         if e.modifiers() == QtCore.Qt.ControlModifier:
-            axes="XZY" 
+            axes="XZY"
         self.rotateview( e.x(), e.y(), axes  )
 
     def rotateview(self, ex, ey, axes="XYZ"):
@@ -249,7 +251,7 @@ class Example( QtWidgets.QWidget ):
         dx = (self.x0 - self.ex)/10.  # 0.1 deg/px
         dy = (self.y0 - self.ey)/10.
         self.vu.rotate( dy, -dx, axes )
-        
+
     rotateactions = {
         QtCore.Qt.Key_X : ( 90, 0, "XYZ"),
         QtCore.Qt.Key_Y : ( 90, 0, "YZX"),
@@ -289,7 +291,7 @@ Q = Quit
         #qmb.setText(h)
         #qmb.show()
 
-        
+
     def keyPressEvent(self,e):
         k = e.key()
         print("Got key",k)
@@ -326,23 +328,23 @@ Q = Quit
             else:
                 self.status.setText("No column %s"%(self.coloractions[k]))
         self.vu.need_redraw=True
-            
+
     def keyReleaseEvent(self,e):
         if self.doRot and e.key() == QtCore.Qt.Key_Shift:
             self.x0 = self.ex
             self.y0 = self.ey
             self.vu.resetrot()
 
-    
+
     def initUI(self):
-        
+
         self.layout = QtWidgets.QVBoxLayout()
-        
+
         self.lbl = QtWidgets.QLabel(self)
         self.lbl.resize( self.vu.w, self.vu.h )
         self.lbl.setMinimumSize( 128, 128 )
         e = QtWidgets.QSizePolicy.Expanding
-        self.lbl.setSizePolicy( e, e )        
+        self.lbl.setSizePolicy( e, e )
         self.layout.addWidget( self.lbl )
 
         self.status = QtWidgets.QLabel(self)
@@ -356,11 +358,11 @@ Q = Quit
         qb= QtWidgets.QPushButton("Quit", self)
         qb.clicked.connect( self.close )
         self.buttons.addWidget(qb)
-        
+
         self.layout.addLayout( self.buttons )
         self.setLayout( self.layout )
 
-        
+
     def animate(self):
         self.vu.drawPixMapOnWidget( self.da, self.lbl)
         QtCore.QTimer.singleShot(1000//24, self.animate )
@@ -369,7 +371,7 @@ Q = Quit
     def resizeEvent(self, evt):
         self.vu.need_redraw=True
 
-        
+
 
 
 def run( colf, pars, grains):
@@ -393,4 +395,4 @@ if __name__=="__main__":
         pass
 
     run( colf, pars, grains )
-    
+
