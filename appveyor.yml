@@ -5,8 +5,8 @@ environment:
   matrix:
     - CONDA: C:\Miniconda
     - CONDA: C:\Miniconda-x64
-    - CONDA: C:\Miniconda36
-    - CONDA: C:\Miniconda36-x64
+    - CONDA: C:\Miniconda38
+    - CONDA: C:\Miniconda38-x64
 
 init:
   - "ECHO %CONDA%"
