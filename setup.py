@@ -148,7 +148,7 @@ minimal = [  # can't compile without this
 
 useful = [   # stuff you probably want, and should be able to get easily
     'fabio==0.2.2 ; python_version < "3" and sys_platform == "win32" ',
-    'fabio ; python_version >= "3" ',
+    'fabio ; python_version >= "3" or sys_platform != "win32" ',
     "xfab>=0.0.4", #
        # comes from xfab : "PyCifRW",
     "matplotlib",  # tkGui
