@@ -101,7 +101,7 @@ class build_ext_subclass( build_ext.build_ext ):
 # note that the pyf must come first
 cnames =  "_cImageD11.pyf blobs.c cdiffraction.c cimaged11utils.c"+\
 " closest.c connectedpixels.c darkflat.c localmaxlabel.c sparse_image.c "+\
-" splat.c" 
+" splat.c"
 
 csources = [os.path.join('src',c) for c in cnames.split()]
 
@@ -147,22 +147,24 @@ minimal = [  # can't compile without this
     ]
 
 useful = [   # stuff you probably want, and should be able to get easily
-    "fabio",
+    'fabio==0.2.2 ; python_version < "3" and sys_platform == "win32" ',
+    'fabio ; python_version >= "3" or sys_platform != "win32" ',
     "xfab>=0.0.4", #
        # comes from xfab : "PyCifRW",
     "matplotlib",  # tkGui
     "pyopengltk",  # plot3d in tkGui
     "scipy",       #
+    'hdf5plugin==1.4.1 ; python_version < "3" and sys_platform == "win32" ',
+    'hdf5plugin ; python_version >= "3" ',
     'h5py',
     'pyyaml',
     "pytest",       # for the CI
     'numba==0.46.0 ; python_version < "3" ',       # for some test cases
     'llvmlite==0.30.0 ; python_version < "3" ',    # for some test cases
-    'numba ; python_version > "3" ',               # for some test cases
+    'numba ; python_version >= "3" ',               # for some test cases
     "bslz4_to_sparse",
     "fast_histogram",
     "scikit-image",
-    "hdf5plugin",
     "tqdm",
 ]
 
