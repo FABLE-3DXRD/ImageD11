@@ -2,17 +2,17 @@
 
 ImageD11 is a python code for identifying individual grains in spotty area detector X-ray diffraction images.
 
-Version 1.9.8, Jon Wright, wright@esrf.fr
+Version 2.0.1, Jon Wright, wright@esrf.fr
 
 This is the source code for ImageD11. Probably you wanted a compiled version.
 
-If your pip is up-to-date, you can try to install it like this (numpy is needed
-to compile):
+If your pip is up-to-date, you can try to install it like this:
 ```
  python -m pip install --upgrade pip setuptools
- python -m pip install numpy
  python -m pip install ImageD11
 ```
+If you want to use an existing numpy installation add a `--no-build-isolation` flag.
+
 To get all the possible dependencies too, you can try:
  `python -m pip install ImageD11[full]`
 
@@ -22,7 +22,7 @@ If you are at ESRF on an old linux computer you can try "module load fable".
 
 To use from git, try this:
 
- - Download and install python 3.7+, perhaps from www.python.org but probably from conda.
+ - Download and install python 3.8+, perhaps from www.python.org but probably from conda.
  - Preload binary packages from conda (or your system package manager): 
     numpy, scipy, matplotlib, h5py, pillow, pycifrw, xfab, pyqt, pillow, silx[full] etc
  - `pip install git+https://github.com/FABLE-3DXRD/ImageD11.git`
