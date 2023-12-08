@@ -50,7 +50,7 @@ def harvest_masterfile( dset, outname,
         hout.attrs["h5input"] = dset.masterfile
         print("Harvesting",dset.masterfile,end=": ")
         with h5py.File(dset.masterfile, "r") as hin:
-            done = set()
+            done = []
             for scan in dset.scans:
                 if scan.find("::"):
                     scan = scan.split("::")[0]
@@ -92,7 +92,7 @@ def harvest_masterfile( dset, outname,
                 g.attrs["shape0"] = frms.shape[1]
                 g.attrs["shape1"] = frms.shape[2]
                 print(scan, end=', ')
-                done.add(scan)
+                done.append(scan)
             print()
                         
         # Finished with master file. Now harvest the segmented files.
