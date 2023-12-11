@@ -47,7 +47,7 @@ class EpsSigSolver:
         """
         
         assert symmetry in ['cubic', 'trigonal_high','trigonal_low', 'tetragonal',
-                            'hexagonal','orthorombic', 'monoclinic', 'triclinic'], 'symmetry not recognized!'
+                            'hexagonal','orthorhombic', 'monoclinic', 'triclinic'], 'symmetry not recognized!'
         
         self.phase_name = name
         self.unitcell = unitcell
