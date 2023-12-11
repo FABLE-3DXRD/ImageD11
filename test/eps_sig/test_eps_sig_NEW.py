@@ -7,8 +7,10 @@ import numpy as np
 from ImageD11 import eps_sig_solver_NEW as ess
 import ImageD11.parameters
 
+def p(x):
+    return os.path.join( os.path.dirname( __file__ ), x )
 
-def test_create(parfile='mypar.par', grainfile='CuAlBe_scan10.map'):
+def test_create(parfile=p('mypar.par'), grainfile=p('CuAlBe_scan10.map')):    
     pars = ImageD11.parameters.read_par_file(parfile)
     ubis = [ g.ubi for g in ImageD11.grain.read_grain_file( grainfile ) ]
     unitcell = [pars.get('cell__' + a) for a in 'abc'] +\
