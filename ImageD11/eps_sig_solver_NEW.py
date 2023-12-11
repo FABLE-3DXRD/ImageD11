@@ -42,7 +42,7 @@ class EpsSigSolver:
         Cij_symmetry (str) : symmetry considered for the Stiffness and Compliance matrices. Should be one of the following:
                                'cubic', 'trigonal_high', 'trigonal_low', 'tetragonal', 'hexagonal','orthorombic', 'monoclinic', 'triclinic'
                               
-        dzero_unitcell (array_like)   : Unstrained unit cell parameters [a, b, c, alpha,beta, gamma]
+        unitcell (array_like)   : Unstrained unit cell parameters [a, b, c, alpha,beta, gamma]
         UBI_list (list of 3x3 arrays) : List of real-space unit cell vectors (ubi in ImageD11).
         """
         
@@ -208,8 +208,8 @@ class EpsSigSolver:
         """
         Compute elastic strain and stress in Lab coordinates for all ubis, using the stiffness matrix in self.Cij. Computation is done first in 
         the grain coordinate system, and then stress in lab coordinates is obtained by rotating the 3x3 stress tensor from the grain to the lab
-        coordinate system using the following transormation : σ' = UT.Cij.U where U is the rotation matrix yielded by the polar decomposition 
-        of the finite deormation gradient tensor F.
+        coordinate system using the following transormation : σ' = RT.σ.R where R is the rotation matrix yielded by the polar decomposition 
+        of the finite deformation gradient tensor F.
         
         Returns strain and stress as two lists of 3x3 symmetric tensors 'eps_Lab' and 'sigma_Lab'. 
         
@@ -274,7 +274,7 @@ class EpsSigSolver:
         # select all strain and stress tensors list
         dnames = [attr for attr in dir(self) if any([attr.startswith(s) for s in ['eps','sigma']]) ]
          # filter out all data that begins with 'eps' or 'sigma' but are not strain or stress tensors  
-        dnames = [d for d in dnames if any([d.endswith(s) for s in ['Lab','Ref','d']]) ] 
+        dnames = [d for d in dnames if any([d.endswith(s) for s in ['Lab','Ref','_d']]) ] 
         
         # stop if no strain / stress tensor list fond
         if len(dnames) == 0:
@@ -329,36 +329,43 @@ class EpsSigSolver:
             
     
     def invariant_props(self, dname):
+        # NOTE : not sure about the expression of von Mises strain. In any case it is related to √J2 by a multiplication factor k, but it seems to be different from 
+        # the definition of von Mises stress √(3.J2). see https://www.continuummechanics.org/vonmisesstress.html
         """
-        compute invariant properties for selected data column
+        compute invariant properties for selected data column: volumetric strain / pressure (-I1/3) and von mises strain /stress (√3.J2)
         
         dname (str) : name of the input data column. Must be a non-deviatoric 3x3 tensors 
         
         Returns
         ----------
         New instances added to EpsSigSolver, containing list of floats
+        if strain tensor in input
+        dname+'_vol' : volumetric strain 
+        dname+'_vM'  : von Mises strain (√2.J2)
+
+        if stress tensor in input:
         dname+'_P_hyd'   : hydrostatic Pressure (if stress tensor in input)
-        dname+'_vol'     : volumetric strain (if strain tensor in input)
-        dname+'_tau_oct' : octahedral shear strain /stress
+        dname+'_vM'  : von Mises stress (√3.J2)
         """
         assert dname in dir(self), 'dname not recognized'
+        assert '_d_' not in dname, 'tensor is deviatoric. Please use the non-deviatoric tensor'
         
         tensor_list = self.__getattribute__(dname)
         assert np.all([T.shape == (3,3) for T in tensor_list])
+
+        tensor_list_dev = [deviatoric(T) for T in tensors_list]
+        Invts = [invariants(T) for T in tensor_list]
+        Invts_dev = [invariants(T) for T in tensor_list_dev]
         
-        Invts = [invariants_quantities(T) for T in tensor_list]
-        Inv1 = [i[0] for i in Invts]
-        Inv2 = [i[1] for i in Invts]
-        
-        # tensor is already deviatoric : 
-        assert '_d_' not in dname, 'tensor is deviatoric. Please use the non-deviatoric tensor'
-            
+        Inv1 = [-i[0]/3 for i in Invts]
+        Inv2 = [np.sqrt(3*i[1]) for i in Invts_dev]
+          
         if 'eps' in dname:
             setattr(self, dname+'_vol', Inv1)
         else:
             setattr(self, dname+'_P_hyd', Inv1)
             
-        setattr(self, dname+'_tau_oct', Inv2)
+        setattr(self, dname+'_vM', Inv2)
         
         
         
@@ -476,7 +483,7 @@ def vector_to_full_3x3(vec, input_format='default', is_strain=True):
 
     
 def rotate_3x3_tensor(S, R, tol = 1e-6):
-        """Express 3x3 matrix in rotated coordinate system
+        """Return 3x3 matrix in rotated coordinate system
         
         Parameters
         -----------
@@ -498,7 +505,7 @@ def rotate_3x3_tensor(S, R, tol = 1e-6):
     
 def build_6x6_rot_mat(R, tol):
     """
-    Return 6x6 transormation matrix corresponding to rotation R for a 6x6 stiffness / compliance tensor
+    Return 6x6 transormation matrix corresponding to rotation R for a Voigt 6x6 stiffness tensor
     
     Parameters
     -----------
@@ -590,14 +597,14 @@ def invariants_quantities(T):
     Returns
     --------
     P (float)     : -I1/3 : hydrostatic pressure / volumetric strain
-    τ_oct (float) : √(2*J2/3) : octahedral shear stress / strain
+    vM (float) : √(3*J2) : von Mises shear stress / strain
     """
     
     T_dev = deviatoric(T)
     I1, I2, I3 = invariants(T)
     J1, J2, J3 = invariants(T_dev)
     
-    return -I1/3, np.sqrt(2*J2/3)
+    return -I1/3, np.sqrt(3*J2)
 
 
 
