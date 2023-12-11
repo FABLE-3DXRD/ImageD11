@@ -341,7 +341,7 @@ class EpsSigSolver:
         New instances added to EpsSigSolver, containing list of floats
         if strain tensor in input
         dname+'_vol' : volumetric strain 
-        dname+'_vM'  : von Mises strain (√2.J2)
+        dname+'_vM'  : von Mises strain
 
         if stress tensor in input:
         dname+'_P_hyd'   : hydrostatic Pressure (if stress tensor in input)
@@ -588,25 +588,6 @@ def invariants(T):
     I3 = np.linalg.det(T)
     
     return I1, I2, I3
-
-
-def invariants_quantities(T):
-    """
-    compute relevant invariant parameters of strain / stress tensor T
-        
-    Returns
-    --------
-    P (float)     : -I1/3 : hydrostatic pressure / volumetric strain
-    vM (float) : √(3*J2) : von Mises shear stress / strain
-    """
-    
-    T_dev = deviatoric(T)
-    I1, I2, I3 = invariants(T)
-    J1, J2, J3 = invariants(T_dev)
-    
-    return -I1/3, np.sqrt(3*J2)
-
-
 
 
 
