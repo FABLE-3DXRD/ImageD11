@@ -1,3 +1,7 @@
+
+# coding: utf-8
+from __future__ import print_function, division
+
 import numpy as np
 import ImageD11.finite_strain, ImageD11.unitcell, ImageD11.parameters
 from ImageD11.grain import read_grain_file
@@ -84,12 +88,14 @@ class EpsSigSolver:
         
         self.UBIs = UBI_list
         self.F_list = None
-        
-        
+
+    @property
+    def nUBIs(self):
+        return len(self.UBIs)
         
     def __str__(self):
-        return f"EpsSigSolver:\n phase name: {self.phase_name}\n reference unitcell: {self.unitcell}\n symmetry:" +\
-               f"{self.symmetry}\n unit:{self.stress_unit}\n Stiffness:\n {self.Cij}\n  n ubis: {len(self.UBIs)}"
+        return ("EpsSigSolver:\n phase name: {phase_name}\n reference unitcell: {unitcell}\n symmetry:" +\
+               "{symmetry}\n unit:{stress_unit}\n Stiffness:\n {Cij}\n  n ubis: {nUBIs)}").format(self)
 
     # Load / save / update functions for parameters (from former eps_sig_solver.py)
     ########################################
