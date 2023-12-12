@@ -40,9 +40,9 @@ class EpsSigSolver:
         -----------
         cij (float)        : elastic constants of the crystal
         Cij_symmetry (str) : symmetry considered for the Stiffness and Compliance matrices. Should be one of the following:
-                               'cubic', 'trigonal_high', 'trigonal_low', 'tetragonal', 'hexagonal','orthorombic', 'monoclinic', 'triclinic'
+                               'cubic', 'trigonal_high', 'trigonal_low', 'tetragonal_high', 'tetragonal_low', 'hexagonal', 'orthorhombic', 'monoclinic', 'triclinic'
                               
-        dzero_unitcell (array_like)   : Unstrained unit cell parameters [a, b, c, alpha,beta, gamma]
+        unitcell (array_like)   : Unstrained unit cell parameters [a, b, c, alpha,beta, gamma]
         UBI_list (list of 3x3 arrays) : List of real-space unit cell vectors (ubi in ImageD11).
         """
         
@@ -79,8 +79,7 @@ class EpsSigSolver:
         self.stress_unit = 'GPa'
         self.Cij_symmetry = Cij_symmetry[self.symmetry]
         self.Cij = self.form_stiffness_tensor()
-        
-        if np.trace(self.Cij) != 0:
+        if not np.alltrue(self.Cij == 0):
             self.Sij = np.linalg.inv(self.Cij)
         
         self.UBIs = UBI_list
@@ -139,7 +138,8 @@ class EpsSigSolver:
         Cij : 6x6 matrix containing the elastic components
         """
         Cij = np.zeros((6,6))
-        pattern = self.Cij_symmetry  # pattern for the stiffness matrix
+        pattern = self.Cij_symmetry  # pattern for the stiffness matrix. From Mouhat & Coudert (2014). Necessary and sufficient elastic stability conditions in various crystal systems. Physical Review
+
         
         parlist = 'c11,c22,c33,c44,c55,c66,c12,c13,c14,c15,c16,c23,c24,c25,c26,c34,c35,c36,c45,c46,c56'.split(',')
         
@@ -585,28 +585,7 @@ def invariants(T):
     I3 = np.linalg.det(T)
     
     return I1, I2, I3
-
-
-def invariants_quantities(T):
-    """
-    compute relevant invariant parameters of strain / stress tensor T
-        
-    Returns
-    --------
-    P (float)     : -I1/3 : hydrostatic pressure / volumetric strain
-    τ_oct (float) : √(2*J2/3) : octahedral shear stress / strain
-    """
     
-    T_dev = deviatoric(T)
-    I1, I2, I3 = invariants(T)
-    J1, J2, J3 = invariants(T_dev)
-    
-    return -I1/3, np.sqrt(2*J2/3)
-
-
-
-
-
 # Cij_symmetry for stiffness tensor (from Mouhat & Coudert 2014)
 ########################
 
