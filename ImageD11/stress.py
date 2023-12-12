@@ -210,10 +210,11 @@ class EpsSigSolver:
             
     def strain2stress_Lab(self, m=1, debug=0):
         """
-        Compute elastic strain and stress in Lab coordinates for all ubis, using the stiffness matrix in self.Cij. Computation is done first in 
-        the grain coordinate system, and then stress in lab coordinates is obtained by rotating the 3x3 stress tensor from the grain to the lab
-        coordinate system using the following transormation : σ' = RT.σ.R where R is the rotation matrix yielded by the polar decomposition 
-        of the finite deformation gradient tensor F.
+        Compute elastic strain and stress in Lab coordinates for all ubis, using the stiffness matrix in self.Cij. 
+        Computation is done first in the grain coordinate system, and then stress in lab coordinates is obtained by
+        rotating the 3x3 stress tensor from the grain to the lab coordinate system using the following transormation
+        σ' = RT.σ.R where R is the rotation matrix yielded by the polar decomposition of the finite deformation
+        gradient tensor F.
         
         Returns strain and stress as two lists of 3x3 symmetric tensors 'eps_Lab' and 'sigma_Lab'. 
         
@@ -332,9 +333,10 @@ class EpsSigSolver:
             
             
     
-   def invariant_props(self, dname):
-        # NOTE : not sure about the expression of von Mises strain. In any case it is related to √J2 by a multiplication factor k, but it seems to be different from 
-        # the definition of von Mises stress √(3.J2). see https://www.continuummechanics.org/vonmisesstress.html
+    def invariant_props(self, dname):
+        # NOTE : not sure about the expression of von Mises strain. In any case it is related to √J2 by a multiplication factor k,
+        # but it seems to be different from the definition of von Mises stress √(3.J2).
+        # see https://www.continuummechanics.org/vonmisesstress.html
         """
         compute invariant properties for selected data column
         compute invariant properties for selected data column: volumetric strain / pressure (-I1/3) and von mises strain /stress (√3.J2)
