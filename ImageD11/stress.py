@@ -359,7 +359,7 @@ class EpsSigSolver:
         tensor_list = self.__getattribute__(dname)
         assert np.all([T.shape == (3,3) for T in tensor_list])
 
-        tensor_list_dev = [deviatoric(T) for T in tensors_list]
+        tensor_list_dev = [deviatoric(T) for T in tensor_list]
         Invts = [invariants(T) for T in tensor_list]
         Invts_dev = [invariants(T) for T in tensor_list_dev]
 
