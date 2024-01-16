@@ -59,7 +59,7 @@ Good luck!
 
 ## CI Status
 
-![Flake, Build and PyTest](https://github.com/FABLE-3DXRD/ImageD11/actions/workflows/build_flake_pytest_ubuntu2004.yml/badge.svg)
+[![Flake, Build and PyTest](https://github.com/FABLE-3DXRD/ImageD11/actions/workflows/build_flake_pytest_ubuntu2004.yml/badge.svg)](https://github.com/FABLE-3DXRD/ImageD11/actions/workflows/build_flake_pytest_ubuntu2004.yml)
 
 <!--
 
