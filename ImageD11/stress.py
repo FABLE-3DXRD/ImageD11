@@ -88,8 +88,8 @@ class EpsSigSolver:
         
         
     def __str__(self):
-        return f"EpsSigSolver:\n phase name: {self.phase_name}\n reference unitcell: {self.unitcell}\n symmetry:" +\
-               f"{self.symmetry}\n unit:{self.stress_unit}\n Stiffness:\n {self.Cij}\n  n ubis: {len(self.UBIs)}"
+        return ("EpsSigSolver:\n phase name: {phase_name}\n reference unitcell: {unitcell}\n symmetry:" +\
+               "{symmetry}\n unit:{stress_unit}\n Stiffness:\n {Cij}\n  n ubis: {nUBIs)}").format(self)
 
     # Load / save / update functions for parameters (from former eps_sig_solver.py)
     ########################################
