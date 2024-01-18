@@ -51,7 +51,12 @@ class DeformationGradientTensor( object ):
         F = dot( ubi.T, ub0.T )
         F = ui.bi.b0.u0
         """
+        if hasattr(ubi, 'ubi'): # you passed in and ImageD11.grain
+            ubi = ubi.ubi
         assert ubi.shape == (3,3)
+        if hasattr( ub0, 'ub'): 
+            # you passed in and ImageD11.grain
+            ub0 = ub0.ub
         assert ub0.shape == (3,3)
         self.F = np.dot( ubi.T, ub0.T )
         self._svd = None
@@ -97,7 +102,7 @@ class DeformationGradientTensor( object ):
             u,s,vt = self.SVD # == F
             logs = np.diag( np.log( s ) )
             logFFT = np.dot( np.dot( vt.T, logs ), vt )
-            Em = logFFT*0.5
+            Em = logFFT # empirically, no division by 2 for matching in small strain limit
         elif (m2 % 2) == 0: # No SVD in this path
             m = int(round(m))
             Cm = np.linalg.matrix_power( np.dot( self.F.T, self.F ), m )
@@ -122,7 +127,7 @@ class DeformationGradientTensor( object ):
             u,s,vt = self.SVD # == F
             logs = np.diag( np.log( s ) )
             logFTF = np.dot( np.dot( u, logs ), u.T )
-            em = logFTF*0.5
+            em = logFTF # *0.5
         elif (m2 % 2) == 0: # No SVD in this path
             m = int(round(m))
             Bm = np.linalg.matrix_power( np.dot( self.F, self.F.T ), m )
