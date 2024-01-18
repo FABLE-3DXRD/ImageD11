@@ -1107,7 +1107,7 @@ def index(colf,
           cosine_tol = np.cos(np.radians(90-.1)),
           ds_tol = 0.004,
           max_grains = 1000,
-          loglevel=3 ):
+          log_level=3 ):
     """
     Creates an indexer from a colfile
     Uses the unit cell from the colfile.parameters
@@ -1120,7 +1120,7 @@ def index(colf,
     returns the indexer object
     """
     global loglevel
-    loglevel = loglevel
+    loglevel = log_level
     ind = indexer_from_colfile(colf,
                                ds_tol = ds_tol,
                                max_grains = max_grains,
