@@ -59,9 +59,14 @@ Good luck!
 
 ## CI Status
 
+[![Flake, Build and PyTest](https://github.com/FABLE-3DXRD/ImageD11/actions/workflows/build_flake_pytest_ubuntu2004.yml/badge.svg)](https://github.com/FABLE-3DXRD/ImageD11/actions/workflows/build_flake_pytest_ubuntu2004.yml)
+
+<!--
+
 Windows: [![Build status](https://ci.appveyor.com/api/projects/status/4pdlvsj2grtk0hel?svg=true)](https://ci.appveyor.com/project/jonwright/imaged11)
 
 Linux: [![CircleCI](https://circleci.com/gh/jonwright/ImageD11.svg?style=svg)](https://circleci.com/gh/jonwright/ImageD11)
 
 Macos + Linux [![Build Status](https://travis-ci.com/jonwright/ImageD11.svg?branch=master)](https://travis-ci.com/jonwright/ImageD11)
 
+-->
