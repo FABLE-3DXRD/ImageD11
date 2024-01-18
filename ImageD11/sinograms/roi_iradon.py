@@ -43,8 +43,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from scipy.fft import fft, ifft, fftfreq, fftshift
 from scipy.interpolate import interp1d
 import numpy as np
-import concurrent.futures
+import concurrent.futures, os
 import skimage.transform.radon_transform
+import numba
+from ImageD11 import cImageD11
 
 def _sinogram_pad(n, o=None):
     if o is None:
@@ -129,9 +131,12 @@ def iradon(radon_image, theta,
     img = np.pad(radon_image, pad_width, mode='constant', constant_values=0)
     #return img
     # Apply filter in Fourier domain
-    fourier_filter = _get_fourier_filter(projection_size_padded, filter_name)
-    projection = fft(img, axis=0, workers=workers) * fourier_filter
-    radon_filtered = np.real(ifft(projection, axis=0, workers=workers)[:img_shape, :])
+    if filter_name is not None:
+        fourier_filter = _get_fourier_filter(projection_size_padded, filter_name)
+        projection = fft(img, axis=0, workers=workers) * fourier_filter
+        radon_filtered = np.real(ifft(projection, axis=0, workers=workers)[:img_shape, :])
+    else:
+        radon_filtered = radon_image
 
     # Reconstruct image by interpolation
     reconstructed = np.zeros((output_size, output_size),
@@ -181,15 +186,15 @@ def iradon(radon_image, theta,
 #    First triangle. Middle Part. Last triangle.
 #
 
-def radon(image, theta,
-          output_size=None, # sinogram width
+def radon( image, theta,
+           output_size=None, # sinogram width
            projection_shifts=None,
            mask = None,
            workers = 1,
           ):
     """
     From skimage.transform. Modified to have projection shifts and roi
-    to match the masked iradon here
+    to match the masked iradon here. And spread theta over threads.
     
     Calculates the radon transform of an image given specified
     projection angles.
@@ -251,13 +256,13 @@ def radon(image, theta,
     if padded_image.shape[0] != padded_image.shape[1]:
         raise ValueError('padded_image must be a square')
     center = padded_image.shape[0] // 2
-    radon_image = np.zeros((padded_image.shape[0], len(theta)),
-                           dtype=image.dtype)
+    radon_image = np.zeros((len(theta), padded_image.shape[0]),
+                           dtype=image.dtype).T
 
     angles_count = len(theta)
     rtheta = np.deg2rad( theta )
     
-    for i in range(angles_count): # most of the time is in this loop
+    def roti(i):
         if projection_shifts is not None:
             dx = projection_shifts.T[i] # measured positions are shifted
         else:
@@ -268,10 +273,22 @@ def radon(image, theta,
                                                                    'projection_shifts': dx }, 
                                                          clip=False)
         radon_image[:, i] = rotated.sum(0)
+        
+    slices = list(range(angles_count))
+    if workers == 1:
+        for i in slices:
+            roti(i)
+        return radon_image
+    if workers is None or workers < 1:
+        workers = cImageD11.cores_available()
+    with concurrent.futures.ThreadPoolExecutor(max_workers = workers) as pool:
+        for _ in pool.map(roti, slices):
+            pass        
     return radon_image
 
 
 def fxyrot( colrow, angle=0, center=0, projection_shifts = None ):
+    # used in radon above
     # apply the projection shifts in reverse
     # t = ypr * np.cos(rtheta[i]) - xpr * np.sin(rtheta[i])
     # if projection_shifts is not None:
@@ -292,3 +309,122 @@ def fxyrot( colrow, angle=0, center=0, projection_shifts = None ):
     colrow[:,0] = x.ravel()
     colrow[:,1] = y.ravel()
     return colrow + center
+
+
+
+@numba.njit(boundscheck=False)
+def recon_cens( omega, dty, ybins, imsize, wt, y0 = 0.0 ):
+    """ Back project the peak centers into a map 
+    
+    omega, dty = peak co-ordinates in the sinogram
+    ybins = spatial binning
+    imsize = probably len(ybins)+1
+    wt = intensity, probably ones()
+    """
+    r = np.zeros( (imsize, imsize), dtype=np.float32 )
+    rc = imsize // 2
+    for i in range(len(omega)):
+        s, c = np.sin(omega[i]), np.cos(omega[i])
+        yv = (dty[i] - y0) / (ybins[1]-ybins[0])
+        if abs(c) > abs(s):
+            # going across image, beam is along x
+            for p in range(imsize):
+                k = p - rc  # -rc -> rc
+                v = ((-yv - k * s)/ c ) + rc 
+                j = int(np.floor( v ))
+                f = (j+1)-v
+                if ( j >= 0 ) & ( j < imsize ):
+                    r[ j, p ] += wt[i]*f
+                f = v - j
+                if ( (j+1) >= 0 ) & ( (j+1) < imsize ):
+                    r[ j+1, p ] += wt[i]*f
+        else:
+            # going along image
+            for p in range(imsize):
+                j = p - rc  # -rc -> rc
+                v = ((-yv - j * c) / s ) + rc 
+                k = int(np.floor( v ))
+                f = (k+1)-v
+                if ( k>=0 ) & ( k<imsize ):
+                    r[ p, k ] += wt[i]*f
+                f = v - k
+                if ( (k+1)>=0 ) & ( (k+1)<imsize ):
+                    r[ p, k+1 ] += wt[i]*f        
+    return r
+
+
+
+
+
+
+def mlem( sino, theta, 
+          startvalue = 1,
+          projection_shifts = None,
+          mask = None,
+          workers = 1,
+          pad=0, niter=50, 
+          divtol=1e-5, ):
+    """
+    # Also called "MART" for Multiplicative ART
+    # This keeps a positivity constraint for both the data and reconstruction
+    #
+    # This implementation was inspired from from:
+    # https://www.youtube.com/watch?v=IhETD4nSJec
+    # by Andrew Reader
+    #
+    # ToDo : implement a mask
+    # ToDo : check about the corners / circle=False aspects
+    #
+    
+    An "MLEM" algorithm from XRDUA was used in this paper:
+
+    "Impurity precipitation in atomized particles evidenced by nano x-ray diffraction computed tomography" 
+    Anne Bonnin; Jonathan P. Wright; Rémi Tucoulou; Hervé Palancher 
+    Appl. Phys. Lett. 105, 084103 (2014) https://doi.org/10.1063/1.4894009
+
+    This python code implements something similar based on a youtube video (https://www.youtube.com/watch?v=IhETD4nSJec)
+
+    There are lots of papers from mathematicians in the literature about MART (multiplicative ART). 
+    The conversion of latex algebra back and forth into computer code seems to be a bit of a 
+    problem for me (Jon Wright - Nov 2023).
+    """
+
+    def backproject( sino, theta, projection_shifts = None ):
+        """ project the sinogram into the sample """
+        return iradon( sino, theta, 
+                      filter_name=None, 
+                      mask = mask,
+                      workers = workers,
+                      projection_shifts = projection_shifts )
+
+    def forwardproject( sample, theta, projection_shifts = None ):
+        """ project the sample into the experiment (sinogram) """
+        return radon( sample, theta, 
+                      mask = mask,
+                      workers = workers,
+                      projection_shifts = projection_shifts )
+    # 
+    # Also called "MART" for Multiplicative ART
+    # This keeps a positivity constraint for both the data and reconstruction
+    #
+    # This implementation was inspired from from:
+    # https://www.youtube.com/watch?v=IhETD4nSJec
+    # by Andrew Reader
+    #
+    # ToDo : implement a mask
+    # ToDo : check about the corners / circle=False aspects
+    #
+    # Number of pixels hitting each output in the sample:
+    sensitivity_image = backproject( np.ones_like(sino), theta,
+                                     projection_shifts = projection_shifts )
+    recip_sensitivity_image = 1./sensitivity_image
+    # The image reconstruction:
+    mlem_rec = np.empty( sensitivity_image.shape, np.float32)
+    mlem_rec[:] = startvalue
+    for i in range(niter):
+        calc_sino = forwardproject( mlem_rec, theta, projection_shifts = projection_shifts )
+        ratio = sino / (calc_sino + divtol )
+        correction = recip_sensitivity_image * backproject( ratio, theta, 
+                                                           projection_shifts = projection_shifts )
+        mlem_rec *= correction
+    return mlem_rec
