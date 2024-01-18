@@ -1119,11 +1119,12 @@ def index(colf,
     
     returns the indexer object
     """
-    ImageD11.indexing.loglevel = loglevel
-    ind = ImageD11.indexing.indexer_from_colfile(colf,
-                                                 ds_tol=ds_tol,
-                                                 max_grains=max_grains,
-                                                 cosine_tol=cosine_tol  )
+    global loglevel
+    loglevel = loglevel
+    ind = indexer_from_colfile(colf,
+                               ds_tol = ds_tol,
+                               max_grains = max_grains,
+                               cosine_tol = cosine_tol  )
     ind.assigntorings()
     ind.hits = []
     rings = []
@@ -1138,5 +1139,4 @@ def index(colf,
                 ind.find()
                 if len(ind.hits):
                     ind.scorethem()
-#                    print(minpks,tol,len(ind.ubis))
     return ind
