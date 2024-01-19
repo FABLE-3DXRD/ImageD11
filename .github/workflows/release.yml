@@ -43,9 +43,11 @@ jobs:
         uses: pypa/cibuildwheel@v2.16.2
         env:
           CIBW_PROJECT_REQUIRES_PYTHON: ">=3.7"
-          CIBW_BUILD: cp37-* cp38-* cp39-* cp310-* cp311-* cp312-*
+          CIBW_BUILD: cp37-* cp38-* cp39-* cp310-* cp311-*
+          # exclude 312 as no numba. Put back on prev line : cp312-*
           # Do not build for pypy, muslinux and python3.12 on ppc64le
-          CIBW_SKIP: pp* *-musllinux_* cp312-*linux_ppc64le
+          CIBW_SKIP: pp* *-musllinux_*
+          # exclude 312 as no numba. Put back on prev line : cp312-*linux_ppc64le
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
           # Use silx wheelhouse: needed for ppc64le
