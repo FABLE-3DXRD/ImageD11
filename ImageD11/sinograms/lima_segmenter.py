@@ -52,12 +52,15 @@ class SegmenterOptions:
         self.thresholds = tuple( [ self.cut*pow(2,i) for i in range(6) ] )
         # validate input
         if len(self.maskfile):
+            # The mask must have:
+            #   0 == active pixel
+            #   1 == masked pixel
             m = fabio.open(self.maskfile).data
-            if m.mean() < 0.5:
-                self.mask = 1 - fabio.open(self.maskfile).data
-            else:
-                self.mask = m
-            print("# Opened mask", self.maskfile)
+            self.mask = 1 - fabio.open(self.maskfile).data.astype(np.uint8)
+            assert self.mask.min()<2
+            assert self.mask.max()>=0
+            avg = self.mask.mean()
+            print("# Opened mask", self.maskfile, " %.2f %% pixels are active" % ( self.mask.mean() )
         if len(self.bgfile):
             self.bg = fabio.open(self.bgfile).data
     
