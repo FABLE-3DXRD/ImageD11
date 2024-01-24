@@ -212,7 +212,7 @@ class columnfile(object):
         """
         col = self.getcolumn( column_name )
         if tol <= 0: # integer comparisons
-            col = col.astype( np.int )
+            col = col.astype( int )
             mskfun = lambda x, val, t: x == val
         else:        # floating point
             mskfun = lambda x, val, t: np.abs( x - val ) < t
@@ -502,7 +502,7 @@ try:
         g.attrs['ImageD11_type'] = 'peaks'
         for t in c.titles:
             if t in INTS:
-                ty = np.int64
+                ty = int64
             else:
                 ty = np.float64
             # print "adding",t,ty
@@ -534,7 +534,7 @@ try:
         g.attrs['ImageD11_type'] = 'peaks'
         for t in cf.titles:
             if t in INTS:
-                ty = np.int64
+                ty = int64
             else:
                 ty = np.float64
             g.create_dataset( t, data = getattr(cf, t).astype( ty ) )
