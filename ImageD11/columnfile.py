@@ -502,7 +502,7 @@ try:
         g.attrs['ImageD11_type'] = 'peaks'
         for t in c.titles:
             if t in INTS:
-                ty = int64
+                ty = np.int64
             else:
                 ty = np.float64
             # print "adding",t,ty
@@ -534,7 +534,7 @@ try:
         g.attrs['ImageD11_type'] = 'peaks'
         for t in cf.titles:
             if t in INTS:
-                ty = int64
+                ty = np.int64
             else:
                 ty = np.float64
             g.create_dataset( t, data = getattr(cf, t).astype( ty ) )
