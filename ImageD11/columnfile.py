@@ -212,7 +212,7 @@ class columnfile(object):
         """
         col = self.getcolumn( column_name )
         if tol <= 0: # integer comparisons
-            col = col.astype( np.int )
+            col = col.astype( int )
             mskfun = lambda x, val, t: x == val
         else:        # floating point
             mskfun = lambda x, val, t: np.abs( x - val ) < t
