@@ -165,7 +165,7 @@ def iradon(radon_image,
             else:
                 xi = x
 
-            result = np.interp(t, xi, radon_filtered[:, i])
+            result = np.interp(t, xi, radon_filtered[:, i], left=0, right=0)
             return result
     else:
         def run_interp(i):
