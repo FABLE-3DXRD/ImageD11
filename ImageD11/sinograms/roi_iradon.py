@@ -93,16 +93,16 @@ def _get_fourier_filter(size, filter_name):
 
 
 # skimage.transform.iradon
-def iradon(radon_image, theta, 
+def iradon(radon_image,
+           theta,
            output_size=None,
            filter_name="ramp",
            interpolation="linear",
            projection_shifts=None,
-           mask = None,
-           workers = 1,
-          ):
+           mask=None,
+           workers=1):
     """Inverse radon transform. From skimage.transform. Simplified then ruined.
-    
+
     - allow projection offset/shifts to be used
         1D = constant offset for this projection (why?)
         2D = offset versus dty for this projection
@@ -118,18 +118,18 @@ def iradon(radon_image, theta,
     to_pad = _sinogram_pad(radon_image.shape[0], output_size)
     if projection_shifts is not None:
         assert projection_shifts.shape == radon_image.shape
-        projection_shifts = np.pad( projection_shifts, to_pad, 
-                                   mode='constant', constant_values=0 )
-    radon_image = np.pad( radon_image, to_pad, 
-                         mode='constant', constant_values=0 )
+        projection_shifts = np.pad(projection_shifts, to_pad,
+                                   mode='constant', constant_values=0)
+    radon_image = np.pad(radon_image, to_pad,
+                         mode='constant', constant_values=0)
     img_shape = radon_image.shape[0]
-    
+
     # Resize image to next power of two (but no less than 64) for
     # Fourier analysis; speeds up Fourier and lessens artifacts
     projection_size_padded = max(64, int(2 ** np.ceil(np.log2(2 * img_shape))))
     pad_width = ((0, projection_size_padded - img_shape), (0, 0))
     img = np.pad(radon_image, pad_width, mode='constant', constant_values=0)
-    #return img
+    # return img
     # Apply filter in Fourier domain
     if filter_name is not None:
         fourier_filter = _get_fourier_filter(projection_size_padded, filter_name)
@@ -143,32 +143,61 @@ def iradon(radon_image, theta,
                              dtype=radon_image.dtype)
     radius = output_size // 2
     xpr, ypr = np.mgrid[:output_size, :output_size] - radius
-    
-    # TODO: make this part threaded - one thread per tile
+
     if mask is not None:
         xpr = xpr[mask]
         ypr = ypr[mask]
         recm = reconstructed[mask]
     else:
         recm = reconstructed
-    # print('img_shape.shape',img_shape)
-    x = np.arange(img_shape) - img_shape // 2
-    rtheta = np.deg2rad( theta )
 
-    for i in range(angles_count): # most of the time is in this loop
-        t = ypr * np.cos(rtheta[i]) - xpr * np.sin(rtheta[i])
-        if projection_shifts is not None:
-            xi = x + projection_shifts.T[i] # measured positions are shifted
-        else:
-            xi = x
-        interpolant = interp1d(xi, radon_filtered[:,i],
-                               kind=interpolation,
-                               copy=False,
-                               assume_sorted=True,
-                               bounds_error=False, 
-                               fill_value=0)
-        recm += interpolant(t)
+    x = np.arange(img_shape) - img_shape // 2
+    rtheta = np.deg2rad(theta)
+
+    # interpolate data in parallel
+    # if we are linear interpolating, np.interp is much faster
+
+    if interpolation == "linear":
+        def run_interp(i):
+            t = ypr * np.cos(rtheta[i]) - xpr * np.sin(rtheta[i])
+            if projection_shifts is not None:
+                xi = x + projection_shifts.T[i]
+            else:
+                xi = x
+
+            result = np.interp(t, xi, radon_filtered[:, i], left=0, right=0)
+            return result
+    else:
+        def run_interp(i):
+            t = ypr * np.cos(rtheta[i]) - xpr * np.sin(rtheta[i])
+            if projection_shifts is not None:
+                xi = x + projection_shifts.T[i]
+            else:
+                xi = x
+
+            interpolant = interp1d(xi, radon_filtered[:, i],
+                                   kind=interpolation,
+                                   copy=False,
+                                   assume_sorted=True,
+                                   bounds_error=False,
+                                   fill_value=0)
+            result = interpolant(t)
+            return result
+
+    if workers == 1:
+        for angle in range(angles_count):
+            recm += run_interp(angle)
+    else:
+        if workers is None or workers < 1:
+            workers = cImageD11.cores_available()
+
+        # apply interpolants in parallel
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+            for interp_result in pool.map(run_interp, range(angles_count)):
+                recm += interp_result
+
     recm *= np.pi / (2 * angles_count)
+
     if mask is not None:
         reconstructed[mask] = recm
     return reconstructed
