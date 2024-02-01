@@ -92,13 +92,15 @@ class DataSet:
         # root of analysis for this dataset for this sample:
         self.analysispath = os.path.join(self.analysisroot, self.sample, self.dsname)
 
-        self.dsfile_default = os.path.join(self.analysispath, 'dataset.h5')
+        self.dsfile_default = os.path.join(self.analysispath, self.dsname + '_dataset.h5')
         # at the moment, set self.dsfile to be the default
         # if save or load is ever called, this will be replaced
         self.dsfile = self.dsfile_default
-        self.pksfile = os.path.join(self.analysispath, 'peaks_table.h5')
-        self.grainsfile = os.path.join(self.analysispath, 'grains.h5')
-        self.sparsefile = os.path.join(self.analysispath, 'sparse.h5')
+        self.pksfile = os.path.join(self.analysispath, self.dsname + '_peaks_table.h5')
+        self.col4dfile = os.path.join(self.analysispath, self.dsname + '_peaks_4d.h5')
+        self.col2dfile = os.path.join(self.analysispath, self.dsname + '_peaks_2d.h5')
+        self.grainsfile = os.path.join(self.analysispath, self.dsname + '_grains.h5')
+        self.sparsefile = os.path.join(self.analysispath, self.dsname + '_sparse.h5')
 
     def __repr__(self):
         r = []
@@ -529,10 +531,10 @@ class DataSet:
                     setattr(self, name, data)
         self.guessbins()
 
-        # if we got here, we loaded the file successfully
-        self.dsfile = h5name
         # analysis paths can only be calculated once
         self.update_paths()
+        # if we got here, we loaded the file successfully
+        self.dsfile = h5name
 
         return self
 
