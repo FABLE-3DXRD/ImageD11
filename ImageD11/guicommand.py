@@ -30,7 +30,8 @@ This class will eventually offer macro recording capability.
 import logging, sys
 
 # Things to offer from gui
-from ImageD11 import peakmerge, indexing, transformer, eps_sig_solver
+from ImageD11 import peakmerge, indexing, transformer
+# eps_sig_solver
 
 # To autoconvert arrays to lists for Java XMLRPC
 RETURN_NUMERICS = False
@@ -46,7 +47,7 @@ class guicommand:
         self.objects = { "peakmerger" : peakmerge.peakmerger(),
                          "transformer": transformer.transformer(),
                          "indexer"    : indexing.indexer(),
-                         "solver"     : eps_sig_solver.solver(), 
+#                         "solver"     : eps_sig_solver.solver(), 
                          }
 
         self.commandscript = \
