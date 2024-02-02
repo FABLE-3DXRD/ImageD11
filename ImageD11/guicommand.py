@@ -1,4 +1,3 @@
-
 from __future__ import print_function
 
 # ImageD11_v0.4 Software for beamline ID11
@@ -30,27 +29,32 @@ This class will eventually offer macro recording capability.
 import logging, sys
 
 # Things to offer from gui
-from ImageD11 import peakmerge, indexing, transformer, eps_sig_solver
+from ImageD11 import peakmerge, indexing, transformer
+
+# eps_sig_solver
 
 # To autoconvert arrays to lists for Java XMLRPC
 RETURN_NUMERICS = False
 import numpy as np
+
 TYPE_NUMERIC = type(np.zeros(1))
+
 
 class guicommand:
     """
     Keeps a log of all commands issued - separates gui code from
     algorithmical code
     """
-    def __init__(self):
-        self.objects = { "peakmerger" : peakmerge.peakmerger(),
-                         "transformer": transformer.transformer(),
-                         "indexer"    : indexing.indexer(),
-                         "solver"     : eps_sig_solver.solver(), 
-                         }
 
-        self.commandscript = \
-"""# Create objects to manipulate - they hold your data
+    def __init__(self):
+        self.objects = {
+            "peakmerger": peakmerge.peakmerger(),
+            "transformer": transformer.transformer(),
+            "indexer": indexing.indexer(),
+            #                         "solver"     : eps_sig_solver.solver(),
+        }
+
+        self.commandscript = """# Create objects to manipulate - they hold your data
 #
 from ImageD11 import peakmerge, indexing, transformer, eps_sig_solver
 mypeakmerger = peakmerge.peakmerger()
@@ -77,34 +81,47 @@ mysolver  = eps_sig_solver.solver()
         if obj not in list(self.objects.keys()):
             raise Exception("ERROR! Unknown command object")
         o = self.objects[obj]
-        ran = "my%s.%s("% (obj, command)
+        ran = "my%s.%s(" % (obj, command)
         if command.find("."):
             subobjs = command.split(".")[:-1]
             for s in subobjs:
-                o = getattr(o,s)
+                o = getattr(o, s)
             command = command.split(".")[-1]
-        func = getattr(o,command)
+        func = getattr(o, command)
         try:
             addedcomma = ""
             for a in args:
-                ran="%s %s %s"%(ran,addedcomma,repr(a))
-                addedcomma=","
-            for k,v in list(kwds.items()):
-                ran="%s %s %s=%s "%(ran,addedcomma,k,v)
-                addedcomma=","
-            ran+=" )\n"
-            logging.debug("Running: "+ran)
+                ran = "%s %s %s" % (ran, addedcomma, repr(a))
+                addedcomma = ","
+            for k, v in list(kwds.items()):
+                ran = "%s %s %s=%s " % (ran, addedcomma, k, v)
+                addedcomma = ","
+            ran += " )\n"
+            logging.debug("Running: " + ran)
             sys.stdout.flush()
             ret = func(*args, **kwds)
 
         except:
-            logging.error("Exception occurred " + "self" + str(self) +
-                "obj" + str(obj)+ "command" + str(command) +
-                "func" + str(func) + "args" + str(args) + "kwds" + str(kwds))
+            logging.error(
+                "Exception occurred "
+                + "self"
+                + str(self)
+                + "obj"
+                + str(obj)
+                + "command"
+                + str(command)
+                + "func"
+                + str(func)
+                + "args"
+                + str(args)
+                + "kwds"
+                + str(kwds)
+            )
             import traceback
+
             traceback.print_exc()
             return "Exception occured in the python " + ran
-        self.commandscript+=ran
+        self.commandscript += ran
         return ret
 
     def getdata(self, obj, name):
@@ -118,7 +135,7 @@ mysolver  = eps_sig_solver.solver()
         """
         if obj not in list(self.objects.keys()):
             raise Exception("ERROR! Unknown command object")
-        attribute = getattr(self.objects[obj],name)
+        attribute = getattr(self.objects[obj], name)
         if RETURN_NUMERICS:
             # Normally python will get this
             logging.debug("python return array")
