@@ -43,11 +43,9 @@ jobs:
         uses: pypa/cibuildwheel@v2.16.5
         env:
           CIBW_PROJECT_REQUIRES_PYTHON: ">=3.7"
-          CIBW_BUILD: cp37-* cp38-* cp39-* cp310-* cp311-*
-          # exclude 312 as no numba. Put back on prev line : cp312-*
+          CIBW_BUILD: cp37-* cp38-* cp39-* cp310-* cp311-* cp312-*
           # Do not build for pypy, muslinux and python3.12 on ppc64le
-          CIBW_SKIP: pp* *-musllinux_*
-          # exclude 312 as no numba. Put back on prev line : cp312-*linux_ppc64le
+          CIBW_SKIP: pp* *-musllinux_* cp312-*linux_ppc64le
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
           # Use silx wheelhouse: needed for ppc64le
@@ -56,8 +54,7 @@ jobs:
           CIBW_TEST_REQUIRES: pytest
           CIBW_TEST_COMMAND: pytest {project}/test
           # Skip tests for 32bits and emulated architectures, arm64 macos and on Windows
-          # Skip cp312 tests for now: not all dependencies are available.
-          CIBW_TEST_SKIP: "*cp312-* *-*linux_i686 *-*linux_{aarch64,ppc64le,s390x} *-macosx_arm64 *-macosx_universal2:arm64 *-win32 *-win_amd64"
+          CIBW_TEST_SKIP: "*-*linux_i686 *-*linux_{aarch64,ppc64le,s390x} *-macosx_arm64 *-macosx_universal2:arm64 *-win32 *-win_amd64"
 
       - uses: actions/upload-artifact@v4
         with:
