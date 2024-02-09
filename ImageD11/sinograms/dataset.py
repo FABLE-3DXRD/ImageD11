@@ -98,6 +98,7 @@ class DataSet:
         self.dsfile = self.dsfile_default
         self.pksfile = os.path.join(self.analysispath, self.dsname + '_peaks_table.h5')
         self.col4dfile = os.path.join(self.analysispath, self.dsname + '_peaks_4d.h5')
+        self.col3dfile = os.path.join(self.analysispath, self.dsname + '_peaks_3d.h5')  # useful for regular 3DXRD scans
         self.col2dfile = os.path.join(self.analysispath, self.dsname + '_peaks_2d.h5')
         self.grainsfile = os.path.join(self.analysispath, self.dsname + '_grains.h5')
         self.sparsefile = os.path.join(self.analysispath, self.dsname + '_sparse.h5')
