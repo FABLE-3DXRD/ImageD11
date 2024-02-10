@@ -456,7 +456,6 @@ def mlem(sino,
                           workers=workers
                           )
 
-        # if we don't control the output size of calc_sino, we get a calc_sino size of (325, 292)
         # pad sino to the size of calc_sino
 
         sino_padded = np.pad(sino, (
