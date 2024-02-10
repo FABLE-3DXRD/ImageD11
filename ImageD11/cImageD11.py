@@ -22,8 +22,11 @@ except ImportError:
 # Check for the use of openmp interactions with os.fork and multiprocessing
 
 def check_multiprocessing():
-    """ You cannot safely use os.fork together with threads.
-    But the cImageD11 codes uses threads via openmp.
+    """
+    I tried to suppress the "fork" method for multiprocessing, but I could not.
+
+    You cannot safely use os.fork together with threads.
+    But the cImageD11 codes uses threads via openmp, and you are importing them.
     So please use forkserver or spawn for multiprocessing.
     
     https://discuss.python.org/t/concerns-regarding-deprecation-of-fork-with-alive-threads/33555
@@ -48,14 +51,23 @@ def check_multiprocessing():
     if not hasattr(multiprocessing, 'get_start_method'):
         # You are on python2.7. Give up.
         return
-    if ((multiprocessing.get_start_method(allow_none=False) == 'fork') and    # we have the problem
-        (multiprocessing.get_start_method(allow_none=True) is None) and       # by accident
-         ('forkserver' in multiprocessing.get_all_start_methods())):          # so fix it
+    # This has a side effect of fixing the start method if allow_none is not True
+    method = multiprocessing.get_start_method(allow_none=True)
+    if method is None:
+        # we can change it away from fork
+        # this is going to break code which relied on fork
+        # (... but that was already broken)
+        poss = multiprocessing.get_all_start_methods()
+        if 'forkserver' in poss:
             multiprocessing.set_start_method('forkserver')
-    if ((multiprocessing.get_start_method(allow_none=False) == 'fork') and    #  we have the problem
-        (parent is not None)):
-        # Tell them about it.
-        warnings.warn(__doc__)
+        elif 'spawn' in poss:
+            multiprocessing.set_start_method('spawn')
+        else:
+            raise Exception('Could not set to forkserver or spawn')
+    else:
+        # Tell them about the problem
+        if method == 'fork':
+            warnings.warn(check_multiprocessing.__doc__)
 
 def cores_available():
     """ Return the number of CPU cores you can use """
