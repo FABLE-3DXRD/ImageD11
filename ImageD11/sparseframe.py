@@ -252,7 +252,7 @@ class SparseScan( object ):
                         break
             # read the pixels - all pointers
             nnz = grp['nnz'][:]
-            ipt = np.concatenate( ( (0,) , np.cumsum(nnz, dtype=int) ) )
+            ipt = nnz_to_pointer( nnz )
             s = ipt[start]
             e = ipt[end]
             for name in self.names:
@@ -260,7 +260,7 @@ class SparseScan( object ):
                     setattr( self, name, grp[name][s:e] )
             # pointers into this scan
             self.nnz = nnz[start:end]
-            self.ipt = np.concatenate( ( (0,) , np.cumsum(self.nnz, dtype=int) ) )
+            self.ipt = nnz_to_pointer( self.nnz )
 
     def getframe(self, i, SAFE=SAFE):
         # (self, row, col, shape, itype=np.uint16, pixels=None):
@@ -617,7 +617,18 @@ def sparse_smooth( frame, data_name='intensity' ):
     return smoothed
 
 
-
+def nnz_to_pointer( nnz, out = None ):
+    """
+    nnz = number of pixels per frame
+    pointer = position in a single flat array
+    """
+    if out is None:
+        out = np.empty( len(nnz)+1, int )
+    else:
+        assert len(out) == len(nnz)+1
+    out[0] = 0
+    np.cumsum( nnz, out=out[1:] )
+    return out
 
 
 
