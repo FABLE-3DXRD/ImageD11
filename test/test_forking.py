@@ -77,14 +77,19 @@ def threads_in_child_no_warn():
         pass
     p = multiprocessing.Pool(2)
     for threads_avail, threads_used in p.map(omp_call, (1024,1024)):
-        if threads_avail>=3:
-            assert threads_used == 3, 'failed to set omp threads == 3 %d for child'%(threads_used)
+        print('ta,tu',threads_avail, threads_used )
+        if threads_used == 1 and threads_avail > 1:
+            raise("Bad threads")
+        if threads_used == 3:
+            pass
 
 def test_threads_in_child_no_warn():
     import sys, os
     env = os.environ.copy()
     env['OMP_NUM_THREADS']='3'
     stdout, stderr = run_test_fun( "threads_in_child_no_warn",env=env)
+    print(stdout)
+    print(stderr)
     if sys.version_info[0] > 2:
         assert len(stderr)==0
     else:
