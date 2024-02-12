@@ -385,6 +385,7 @@ def mlem(sino,
          theta,
          startvalue=1,
          projection_shifts=None,
+         output_size=None,
          mask=None,
          workers=1,
          niter=50,
@@ -414,22 +415,6 @@ def mlem(sino,
     problem for me (Jon Wright - Nov 2023).
     """
 
-    def backproject(sino, theta, mask=mask, projection_shifts=None):
-        """ project the sinogram into the sample """
-        return iradon(sino,
-                      theta,
-                      filter_name=None,
-                      mask=mask,
-                      workers=workers,
-                      projection_shifts=projection_shifts)
-
-    def forwardproject(sample, theta, projection_shifts=None):
-        """ project the sample into the experiment (sinogram) """
-        return radon(sample,
-                     theta,
-                     workers=workers,
-                     projection_shifts=projection_shifts)
-
     #
     # Also called "MART" for Multiplicative ART
     # This keeps a positivity constraint for both the data and reconstruction
@@ -439,25 +424,54 @@ def mlem(sino,
     # by Andrew Reader
     #
 
-    # ToDo : check about the corners / circle=False aspects
-    #
-    # Number of pixels hitting each output in the sample:
-    sensitivity_image = backproject(np.ones_like(sino),
-                                    theta,
-                                    mask=None,
-                                    projection_shifts=projection_shifts)
+    # output_size here is the shape of the output in real space
+
+    if output_size is None:
+        output_size = sino.shape[0]
+
+    sensitivity_image = iradon(np.ones_like(sino),
+                               theta,
+                               output_size=output_size,
+                               mask=None,
+                               filter_name=None,
+                               workers=workers,
+                               )
+
     recip_sensitivity_image = 1. / sensitivity_image
     # The image reconstruction:
     mlem_rec = np.empty(sensitivity_image.shape, np.float32)
     mlem_rec[:] = startvalue
+
+    # modify projection_shifts for radon
+    # only need to pad [0]
+
+    to_pad = (mlem_rec.shape[0] - projection_shifts.shape[0]) // 2
+    proj_shifts_padded = np.pad(projection_shifts, ((to_pad, to_pad), (0, 0)))
+
     for i in range(niter):
-        calc_sino = forwardproject(mlem_rec,
-                                   theta,
-                                   projection_shifts=projection_shifts)
-        ratio = sino / (calc_sino + divtol)
-        correction = recip_sensitivity_image * backproject(ratio,
-                                                           theta,
-                                                           projection_shifts=projection_shifts)
+        calc_sino = radon(mlem_rec,
+                          theta,
+                          mask=None,
+                          projection_shifts=proj_shifts_padded,
+                          workers=workers
+                          )
+
+        # pad sino to the size of calc_sino
+
+        sino_padded = np.pad(sino, (
+            ((calc_sino.shape[0] - sino.shape[0]) // 2, (calc_sino.shape[0] - sino.shape[0]) // 2), (0, 0)))
+
+        ratio = sino_padded / (calc_sino + divtol)
+
+        correction = recip_sensitivity_image * iradon(ratio,
+                                                      theta,
+                                                      output_size=output_size,
+                                                      mask=None,
+                                                      projection_shifts=proj_shifts_padded,
+                                                      filter_name=None,
+                                                      workers=workers,
+                                                      )
+
         mlem_rec *= correction
 
     if mask is not None:
