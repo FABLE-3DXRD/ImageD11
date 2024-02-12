@@ -88,7 +88,7 @@ def cores_available():
     """
     if 'SLURM_CPUS_PER_TASK' in os.environ:
         return int(os.environ['SLURM_CPUS_PER_TASK'])
-    if 'sched_getaffinity' in os:
+    if hasattr(os, 'sched_getaffinity'):
         return len( os.sched_getaffinity( os.getpid() ) )
     ncpu  = os.cpu_count()
     if ncpu is None:
