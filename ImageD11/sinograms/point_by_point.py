@@ -4,11 +4,10 @@
 # Try to build the point-by-point mapping code ...
 from __future__ import print_function, division
 
-from ImageD11 import cImageD11  # patches to forkserver
 import multiprocessing
+method = multiprocessing.set_start_method("forkserver")
+from ImageD11 import cImageD11  # NO!!! patches to forkserver
 
-method = multiprocessing.get_start_method()
-assert method in ("spawn", "forkserver"), "mp:" + method
 import sys, os
 from multiprocessing.managers import SharedMemoryManager
 import time, random
