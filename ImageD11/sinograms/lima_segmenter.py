@@ -3,21 +3,36 @@ from __future__ import print_function, division
 """ Do segmentation of lima/eiger files with no notion of metadata
 Blocking will come via lima saving, so about 1000 frames per file
 
-Make the code parallel over lima files ... no interprocess communication intended
+Make the code parallel over lima files ...
+    minimal interprocess communication intended
  - read an input file which has the source/destination file names for this job
 """
 
 
-import sys, time, os, math, logging
+import sys
+import time
+import os
+import math
+import logging
+import numpy as np
+import h5py
+import hdf5plugin
+import fabio
+import numba
 
-
+from ImageD11 import sparseframe
 from ImageD11.sinograms import dataset
+
+try:
+    from bslz4_to_sparse import chunk2sparse
+except ImportError:
+    chunk2sparse = None
 
 # Code to clean the 2D image and reduce it to a sparse array:
 # things we might edit
 class SegmenterOptions:
-
-    # These are the stuff that belong to us in the hdf5 file (in our group: lima_segmenter)
+    # These are the stuff that belong to us in the hdf5 file
+    # (in our group: lima_segmenter)
     jobnames = (
         "cut",
         "howmany",
@@ -65,11 +80,9 @@ class SegmenterOptions:
             # The mask must have:
             #   0 == active pixel
             #   1 == masked pixel
-            m = fabio.open(self.maskfile).data
             self.mask = 1 - fabio.open(self.maskfile).data.astype(np.uint8)
             assert self.mask.min() < 2
             assert self.mask.max() >= 0
-            avg = self.mask.mean()
             print(
                 "# Opened mask",
                 self.maskfile,
@@ -87,7 +100,8 @@ class SegmenterOptions:
                 if name in grp.attrs:
                     setattr(self, name, grp.attrs.get(name))
             for name in self.datasetnames:
-                #     datasetnames = ( 'limapath', 'analysispath', 'datapath', 'imagefiles', 'sparsefiles' )
+                #     datasetnames = ( 'limapath', 'analysispath', 'datapath',
+                #                      'imagefiles', 'sparsefiles' )
                 if name in pgrp.attrs:
                     data = pgrp.attrs.get(name)
                     setattr(self, name, data)
@@ -116,24 +130,6 @@ class SegmenterOptions:
                 print(name, value)
                 if value is not None:
                     grp.attrs[name] = value
-
-
-########################## should not need to change much below here
-
-
-import numpy as np
-import hdf5plugin
-import h5py
-import fabio
-import numba
-
-# pip install ImageD11 --no-deps # if you do not have it yet:
-from ImageD11 import sparseframe
-
-try:
-    from bslz4_to_sparse import chunk2sparse
-except ImportError:
-    chunk2sparse = None
 
 
 @numba.njit
@@ -329,7 +325,7 @@ def segment_lima(args):
                 npx += spf.nnz
             g.attrs["npx"] = npx
     end = time.time()
-    print("\n# Done", nframes, "frames", npx, "pixels", "fps", nframes / (end - start))
+    print("\n# Done", nframes, "frames", npx, "pixels  fps", nframes / (end - start))
     return destname
 
     # the output file should be flushed and closed when this returns
@@ -338,9 +334,19 @@ def segment_lima(args):
 OPTIONS = None
 
 
-def main(options):
+def initOptions(h5name, jobid):
     global OPTIONS
-    OPTIONS = options
+    OPTIONS = SegmenterOptions()
+    OPTIONS.load(h5name, "lima_segmenter")
+    OPTIONS.jobid = jobid
+
+
+def main(h5name, jobid):
+    global OPTIONS
+    initOptions(h5name, jobid)
+    options = OPTIONS
+    assert options is not None
+    assert OPTIONS is not None
     args = []
     files_per_job = options.cores_per_job * options.files_per_core  # 64 files per job
     start = options.jobid * files_per_job
@@ -354,10 +360,12 @@ def main(options):
             )
         )
     if 1:
-        import concurrent.futures
+        import multiprocessing
 
-        with concurrent.futures.ProcessPoolExecutor(
-            max_workers=options.cores_per_job
+        with multiprocessing.Pool(
+            max_workers=options.cores_per_job,
+            initializer=initOptions,
+            initargs=(h5name, jobid),
         ) as mypool:
             donefile = sys.stdout
             for fname in mypool.map(segment_lima, args, chunksize=1):
@@ -442,12 +450,8 @@ def segment():
     # everything is passing via this file.
     #
     h5name = sys.argv[2]
-
-    # This assumes forking. To be investigated otherwise.
-    options = SegmenterOptions()
-    options.load(h5name, "lima_segmenter")
-    options.jobid = int(sys.argv[3])
-    main(options)
+    jobid = int(sys.argv[3])
+    main(h5name, jobid)
 
 
 if __name__ == "__main__":
