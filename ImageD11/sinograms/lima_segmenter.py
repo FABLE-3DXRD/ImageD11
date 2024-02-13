@@ -86,7 +86,7 @@ class SegmenterOptions:
             print(
                 "# Opened mask",
                 self.maskfile,
-                " %.2f %% pixels are active" % (100*self.mask.mean()),
+                " %.2f %% pixels are active" % (100 * self.mask.mean()),
             )
         if len(self.bgfile):
             self.bg = fabio.open(self.bgfile).data
@@ -428,19 +428,37 @@ date
     return sbat
 
 
-def setup(dsname, **kwds):
+def setup(
+    dsname,
+    cut=None,  # keep values abuve cut in first look at image
+    howmany=100000,  # max pixels per frame to keep
+    pixels_in_spot=3,
+    maskfile="",
+    bgfile="",
+    cores_per_job=8,
+    files_per_core=8,
+):
+    """
+    Writes options into the dataset file
+    cut replaced
+    """
     dso = dataset.load(dsname)
-    options = SegmenterOptions(**kwds)
-    if "eiger" in dso.limapath:
-        if "cut" not in kwds:
-            options.cut = 1
-        if "maskfile" not in kwds:
-            options.maskfile = "/data/id11/nanoscope/Eiger/mask_20210428.edf"
-    elif "frelon3" in dso.limapath:
-        if "cut" not in kwds:
-            options.cut = (25,)  # keep values abuve cut in first look at image
-    else:
-        print("I don't know what to do")
+    if cut is None:
+        if "eiger" in dso.limapath:
+            cut = 1
+        else:
+            cut = 25  # 5 sigma
+    if len(maskfile) == 0 and ("eiger" in dso.limapath):
+        warnings.warn("Eiger detector needs a maskfile that is missing")
+    options = SegmenterOptions(
+        cut=cut,
+        howmany=howmany,
+        pixels_in_spot=pixels_in_spot,
+        maskfile=maskfile,
+        bgfile=bgfile,
+        cores_per_job=cores_per_job,
+        files_per_core=files_per_core,
+    )
     options.save(dsname, "lima_segmenter")
     return setup_slurm_array(dsname)
 
