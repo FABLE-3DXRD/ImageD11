@@ -86,7 +86,7 @@ class SegmenterOptions:
             print(
                 "# Opened mask",
                 self.maskfile,
-                " %.2f %% pixels are active" % (self.mask.mean()),
+                " %.2f %% pixels are active" % (100*self.mask.mean()),
             )
         if len(self.bgfile):
             self.bg = fabio.open(self.bgfile).data
