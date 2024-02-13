@@ -19,9 +19,11 @@ import h5py
 import hdf5plugin
 import fabio
 import numba
+import warnings
 
 from ImageD11 import sparseframe
 from ImageD11.sinograms import dataset
+import ImageD11.cImageD11
 
 try:
     from bslz4_to_sparse import chunk2sparse
@@ -360,10 +362,11 @@ def main(h5name, jobid):
             )
         )
     if 1:
+        ImageD11.cImageD11.check_multiprocessing(patch=True)  # avoid fork
         import multiprocessing
 
         with multiprocessing.Pool(
-            max_workers=options.cores_per_job,
+            processes=options.cores_per_job,
             initializer=initOptions,
             initargs=(h5name, jobid),
         ) as mypool:
@@ -380,7 +383,7 @@ def main(h5name, jobid):
     print("All done")
 
 
-def setup_slurm_array(dsname, dsgroup="/"):
+def setup_slurm_array(dsname, dsgroup="/", pythonpath=None):
     """Send the tasks to slurm"""
     dso = dataset.load(dsname, dsgroup)
     nfiles = len(dso.sparsefiles)
@@ -401,9 +404,13 @@ def setup_slurm_array(dsname, dsgroup="/"):
     files_per_job = options.files_per_core * options.cores_per_job
     jobs_needed = math.ceil(nfiles / files_per_job)
     sbat = os.path.join(sdir, "lima_segmenter_slurm.sh")
+    if pythonpath is None:
+        cmd = sys.executable
+    else:
+        cmd = "PYTHONPATH=%s %s" % (pythonpath, sys.executable)
     command = (
-        "python3 -m ImageD11.sinograms.lima_segmenter segment %s $SLURM_ARRAY_TASK_ID"
-        % (dsname)
+        "%s -m ImageD11.sinograms.lima_segmenter segment %s $SLURM_ARRAY_TASK_ID"
+        % (cmd, dsname)
     )
     with open(sbat, "w") as fout:
         fout.write(
@@ -437,10 +444,12 @@ def setup(
     bgfile="",
     cores_per_job=8,
     files_per_core=8,
+    pythonpath=None,
 ):
     """
     Writes options into the dataset file
-    cut replaced
+    cut=None is replaced by 1 for eiger, 25 otherwise
+    pythonpath -> point to a non-default install
     """
     dso = dataset.load(dsname)
     if cut is None:
@@ -460,7 +469,7 @@ def setup(
         files_per_core=files_per_core,
     )
     options.save(dsname, "lima_segmenter")
-    return setup_slurm_array(dsname)
+    return setup_slurm_array(dsname, pythonpath=pythonpath)
 
 
 def segment():
