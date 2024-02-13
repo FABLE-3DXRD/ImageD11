@@ -548,7 +548,7 @@ class pks_table:
             "Number_of_pixels": out[0],
             "sum_intensity": out[1],
             "dty": out[5] / out[1],
-            "spot3d_id": np.arange(n),  # points back to labels in pk2d
+            "spot3d_id": np.arange(self.nlabel),  # points back to labels in pk2d
             "npk2d": out[6],
         }
         return allpks
