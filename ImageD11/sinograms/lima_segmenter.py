@@ -19,9 +19,11 @@ import h5py
 import hdf5plugin
 import fabio
 import numba
+import warnings
 
 from ImageD11 import sparseframe
 from ImageD11.sinograms import dataset
+import ImageD11.cImageD11
 
 try:
     from bslz4_to_sparse import chunk2sparse
@@ -86,7 +88,7 @@ class SegmenterOptions:
             print(
                 "# Opened mask",
                 self.maskfile,
-                " %.2f %% pixels are active" % (self.mask.mean()),
+                " %.2f %% pixels are active" % (100 * self.mask.mean()),
             )
         if len(self.bgfile):
             self.bg = fabio.open(self.bgfile).data
@@ -360,10 +362,11 @@ def main(h5name, jobid):
             )
         )
     if 1:
+        ImageD11.cImageD11.check_multiprocessing(patch=True)  # avoid fork
         import multiprocessing
 
         with multiprocessing.Pool(
-            max_workers=options.cores_per_job,
+            processes=options.cores_per_job,
             initializer=initOptions,
             initargs=(h5name, jobid),
         ) as mypool:
@@ -380,7 +383,7 @@ def main(h5name, jobid):
     print("All done")
 
 
-def setup_slurm_array(dsname, dsgroup="/"):
+def setup_slurm_array(dsname, dsgroup="/", pythonpath=None):
     """Send the tasks to slurm"""
     dso = dataset.load(dsname, dsgroup)
     nfiles = len(dso.sparsefiles)
@@ -401,9 +404,13 @@ def setup_slurm_array(dsname, dsgroup="/"):
     files_per_job = options.files_per_core * options.cores_per_job
     jobs_needed = math.ceil(nfiles / files_per_job)
     sbat = os.path.join(sdir, "lima_segmenter_slurm.sh")
+    if pythonpath is None:
+        cmd = sys.executable
+    else:
+        cmd = "PYTHONPATH=%s %s" % (pythonpath, sys.executable)
     command = (
-        "python3 -m ImageD11.sinograms.lima_segmenter segment %s $SLURM_ARRAY_TASK_ID"
-        % (dsname)
+        "%s -m ImageD11.sinograms.lima_segmenter segment %s $SLURM_ARRAY_TASK_ID"
+        % (cmd, dsname)
     )
     with open(sbat, "w") as fout:
         fout.write(
@@ -428,21 +435,41 @@ date
     return sbat
 
 
-def setup(dsname, **kwds):
+def setup(
+    dsname,
+    cut=None,  # keep values abuve cut in first look at image
+    howmany=100000,  # max pixels per frame to keep
+    pixels_in_spot=3,
+    maskfile="",
+    bgfile="",
+    cores_per_job=8,
+    files_per_core=8,
+    pythonpath=None,
+):
+    """
+    Writes options into the dataset file
+    cut=None is replaced by 1 for eiger, 25 otherwise
+    pythonpath -> point to a non-default install
+    """
     dso = dataset.load(dsname)
-    options = SegmenterOptions(**kwds)
-    if "eiger" in dso.limapath:
-        if "cut" not in kwds:
-            options.cut = 1
-        if "maskfile" not in kwds:
-            options.maskfile = "/data/id11/nanoscope/Eiger/mask_20210428.edf"
-    elif "frelon3" in dso.limapath:
-        if "cut" not in kwds:
-            options.cut = (25,)  # keep values abuve cut in first look at image
-    else:
-        print("I don't know what to do")
+    if cut is None:
+        if "eiger" in dso.limapath:
+            cut = 1
+        else:
+            cut = 25  # 5 sigma
+    if len(maskfile) == 0 and ("eiger" in dso.limapath):
+        warnings.warn("Eiger detector needs a maskfile that is missing")
+    options = SegmenterOptions(
+        cut=cut,
+        howmany=howmany,
+        pixels_in_spot=pixels_in_spot,
+        maskfile=maskfile,
+        bgfile=bgfile,
+        cores_per_job=cores_per_job,
+        files_per_core=files_per_core,
+    )
     options.save(dsname, "lima_segmenter")
-    return setup_slurm_array(dsname)
+    return setup_slurm_array(dsname, pythonpath=pythonpath)
 
 
 def segment():
