@@ -12,7 +12,7 @@ def run_test_fun(function, env=None):
     args = [sys.executable, __file__, function]
     proc = Popen(args, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env)
     stdout, stderr = proc.communicate()
-    return stdout, stderr
+    return stdout.encode(), stderr.encode()
 
 
 def omp_call(N=1024):
@@ -50,9 +50,7 @@ def test_should_warn_on_fork_in_parent():
 
     if stdout.find("Set to fork") != -1:  # we set to fork
         if sys.version_info[0] > 2:
-            assert (
-                stderr.find(b"please use forkserver or spawn for multiprocessing") > 0
-            )
+            assert stderr.find("please use forkserver or spawn") > 0
         else:
             assert stderr.find("cImageD11: for multiprocessing use spawn") != -1
 
@@ -78,9 +76,7 @@ def test_should_warn_on_fork_in_child():
 
     if stdout.find("Set to fork") != -1:  # we set to fork
         if sys.version_info[0] > 2:
-            assert (
-                stderr.find(b"please use forkserver or spawn for multiprocessing") > 0
-            )
+            assert  stderr.find("please use forkserver or spawn ") > 0
         else:
             assert stderr.find("cImageD11: for multiprocessing use spawn") != -1
 
