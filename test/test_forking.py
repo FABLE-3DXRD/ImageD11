@@ -12,7 +12,7 @@ def run_test_fun(function, env=None):
     args = [sys.executable, __file__, function]
     proc = Popen(args, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env)
     stdout, stderr = proc.communicate()
-    return stdout.encode(), stderr.encode()
+    return stdout.decode(), stderr.decode()
 
 
 def omp_call(N=1024):
