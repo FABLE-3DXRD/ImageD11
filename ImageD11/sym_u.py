@@ -364,17 +364,18 @@ def getgroup(s):
     convert a user supplied string to a group
     ... a little vague still
     """
-    if s in ['cubic', 'hexagonal','trigonal','tetragonal',
+    groups =['cubic', 'hexagonal','trigonal','tetragonal',
              'orthorhombic','monoclinic_c','monoclinic_a',
-             'monoclinic_b','triclinic','rhombohedralP']:
-        import ImageD11.sym_u
-        return getattr(ImageD11.sym_u, s)
+             'monoclinic_b','triclinic','rhombohedralP'] 
+    if s in groups:
+        return globals()[s]
+    else:
+        raise Exception( s,"not in", groups )
 
 
 
 if __name__=="__main__":
     test()
-
 
     u = np.array([[ 0.71850787 , 0.69517833,  0.02176059],
                  [-0.62925889 , 0.66306714, -0.40543213],
