@@ -697,7 +697,7 @@ class PixelLUT( object ):
             self.df = self.fc - fast
             self.ds = self.sc - slow
         else:
-            s = self.shape
+            s = self.shape = self.pars.get("shape")
             self.sc, self.fc = np.mgrid[0:s[0], 0:s[1]]
             self.df = None 
             self.ds = None
