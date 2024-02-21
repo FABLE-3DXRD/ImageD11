@@ -130,7 +130,7 @@ def fity_robust(dty, co, so, nsigma=5, doplot=False):
         a[1].plot(theta[selected], (calc2 - dty)[selected], 'o')
         a[1].plot(theta[~selected], (calc2 - dty)[~selected], 'x')
         a[1].set(ylim = (-es, es))
-        pl.show()
+        plt.show()
     return selected, cen, dx, dy
 
 def graincen(gid, colf, doplot=True):
