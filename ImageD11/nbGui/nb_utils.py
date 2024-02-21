@@ -532,7 +532,7 @@ def build_slice_arrays(grains, cutoff_level=0.0):
 
 def slurm_submit_and_wait(bash_script_path, wait_time_sec=60):
     if not os.path.exists(bash_script_path):
-        raise FileNotFoundError("Bash script not found!")
+        raise IOError("Bash script not found!")
     submit_command = "sbatch {}".format(bash_script_path)
     sbatch_submit_result = subprocess.run(submit_command, capture_output=True, shell=True).stdout.decode("utf-8")
 
