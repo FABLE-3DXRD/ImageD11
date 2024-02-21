@@ -5,7 +5,7 @@
 from __future__ import print_function, division
 
 import multiprocessing
-method = multiprocessing.set_start_method("forkserver")
+# method = multiprocessing.set_start_method("forkserver")
 from ImageD11 import cImageD11  # NO!!! patches to forkserver
 
 import sys, os

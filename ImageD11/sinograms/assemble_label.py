@@ -209,7 +209,7 @@ def main(dsname, outname=None, cutimage=None):
     dsname = Dataset describing the masterfile + segmentation etc
     outname = sparse pixels file to write. Defaults to dset.sparsefile
     """
-    if isinstance(dsname, ImageD11.sinograms.dataset.Dataset):
+    if isinstance(dsname, ImageD11.sinograms.dataset.DataSet):
         dset = dsname
     else:
         dset = ImageD11.sinograms.dataset.load(dsname)
