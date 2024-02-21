@@ -67,7 +67,7 @@ def main(h5name, ginc, dest, y0, pad, niter, dohm, maskcen):
     ssino, sinoangles, circle_mask = read_hdf5(h5name, ginc)
     # feed ssino, sinoangles, mask to run_iradon_mlem
     nthreads = len(os.sched_getaffinity(os.getpid()))
-    print(f"Running on {nthreads} threads")
+    # print(f"Running on {nthreads} threads")
     recon = run_iradon_mlem(ssino, sinoangles, mask=circle_mask, pad=pad, y0=y0, workers=nthreads, niter=niter, apply_halfmask=dohm, mask_central_zingers=maskcen)
     # write result to disk as Numpy array
     # save as TIFF instead?
