@@ -59,12 +59,13 @@ def read_hdf5(h5name, ginc):
         ssino = gg['ssino'][:]
         sinoangles = gg['sinoangles'][:]
         circle_mask = gg['circle_mask'][:]
+        y0 = float(gg.attrs['y0'][()])
         
-    return ssino, sinoangles, circle_mask
+    return ssino, sinoangles, circle_mask, y0
 
-def main(h5name, ginc, dest, y0, pad, niter, dohm, maskcen):
+def main(h5name, ginc, dest, pad, niter, dohm, maskcen):
     # read the HDF5 file
-    ssino, sinoangles, circle_mask = read_hdf5(h5name, ginc)
+    ssino, sinoangles, circle_mask, y0 = read_hdf5(h5name, ginc)
     # feed ssino, sinoangles, mask to run_iradon_mlem
     nthreads = len(os.sched_getaffinity(os.getpid()))
     # print(f"Running on {nthreads} threads")
@@ -77,11 +78,16 @@ if __name__ == "__main__":
     h5name = sys.argv[1]
     ginc = int(sys.argv[2])
     dest = sys.argv[3]
-    y0 = float(sys.argv[4])
-    pad = int(sys.argv[5])
-    niter = int(sys.argv[6])
-    dohm = sys.argv[7]
-    maskcen = sys.argv[8]
+    # y0 = float(sys.argv[4])
+    # pad = int(sys.argv[5])
+    # niter = int(sys.argv[6])
+    # dohm = sys.argv[7]
+    # maskcen = sys.argv[8]
+    
+    pad = int(sys.argv[4])
+    niter = int(sys.argv[5])
+    dohm = sys.argv[6]
+    maskcen = sys.argv[7]
     
     if dohm == "Yes":
         apply_halfmask = True
@@ -93,4 +99,4 @@ if __name__ == "__main__":
     else:
         mask_central_zingers = False
     
-    main(h5name, ginc, dest, y0, pad, niter, apply_halfmask, mask_central_zingers)
+    main(h5name, ginc, dest, pad, niter, apply_halfmask, mask_central_zingers)
