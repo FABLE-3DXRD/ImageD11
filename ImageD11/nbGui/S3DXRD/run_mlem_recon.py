@@ -2,7 +2,7 @@ import os
 
 username = os.environ.get("USER")
 
-id11_code_path = f"/home/esrf/{username}/Code/ImageD11"
+id11_code_path = "/home/esrf/" + username + "/Code/ImageD11"
 
 import sys
 

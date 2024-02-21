@@ -188,7 +188,7 @@ PKCOL = [getattr(ImageD11.cImageD11, p) for p in PKSAVE]
 def process(ds, bgfile, ncpu):      
     hname = ds.masterfile
     scan_name = ds.scans[0]
-    frames_dset = f"{scan_name}/measurement/{ds.detector}"
+    frames_dset = scan_name + "/measurement/" + ds.detector
     omega = ds.omega[0, :]
     
     n_frames = omega.shape[0]
