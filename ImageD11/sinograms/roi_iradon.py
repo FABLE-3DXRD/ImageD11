@@ -445,8 +445,11 @@ def mlem(sino,
     # modify projection_shifts for radon
     # only need to pad [0]
 
-    to_pad = (mlem_rec.shape[0] - projection_shifts.shape[0]) // 2
-    proj_shifts_padded = np.pad(projection_shifts, ((to_pad, to_pad), (0, 0)))
+    if projection_shifts is not None:
+        to_pad = (mlem_rec.shape[0] - projection_shifts.shape[0]) // 2
+        proj_shifts_padded = np.pad(projection_shifts, ((to_pad, to_pad), (0, 0)))
+    else:
+        proj_shifts_padded = None
 
     for i in range(niter):
         calc_sino = radon(mlem_rec,
