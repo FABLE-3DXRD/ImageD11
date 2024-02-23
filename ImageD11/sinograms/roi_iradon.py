@@ -1,5 +1,4 @@
-
-"""This code came from skimage.transform and then was modified 
+"""This code came from skimage.transform and then was modified
 
 - Added mask ROI for back projection. Optimisation for small grains
   in big maps. Should allow threading (one thread per tile)
@@ -39,12 +38,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """
 
-
 from scipy.fft import fft, ifft, fftfreq, fftshift
 from scipy.interpolate import interp1d
 import numpy as np
-import concurrent.futures
+import concurrent.futures, os
 import skimage.transform.radon_transform
+import numba
+from ImageD11 import cImageD11
+
 
 def _sinogram_pad(n, o=None):
     if o is None:
@@ -58,6 +59,7 @@ def _sinogram_pad(n, o=None):
     pad_width = ((pad_before, pad - pad_before), (0, 0))
     return pad_width
 
+
 def _get_fourier_filter(size, filter_name):
     """Construct the Fourier filter.
     """
@@ -70,7 +72,7 @@ def _get_fourier_filter(size, filter_name):
     # Computing the ramp filter from the fourier transform of its
     # frequency domain representation lessens artifacts and removes a
     # small bias as explained in [1], Chap 3. Equation 61
-    fourier_filter = 2 * np.real(fft(f))         # ramp filter
+    fourier_filter = 2 * np.real(fft(f))  # ramp filter
     if filter_name == "ramp":
         pass
     elif filter_name == "shepp-logan":
@@ -91,16 +93,16 @@ def _get_fourier_filter(size, filter_name):
 
 
 # skimage.transform.iradon
-def iradon(radon_image, theta, 
+def iradon(radon_image,
+           theta,
            output_size=None,
            filter_name="ramp",
            interpolation="linear",
            projection_shifts=None,
-           mask = None,
-           workers = 1,
-          ):
+           mask=None,
+           workers=1):
     """Inverse radon transform. From skimage.transform. Simplified then ruined.
-    
+
     - allow projection offset/shifts to be used
         1D = constant offset for this projection (why?)
         2D = offset versus dty for this projection
@@ -116,60 +118,92 @@ def iradon(radon_image, theta,
     to_pad = _sinogram_pad(radon_image.shape[0], output_size)
     if projection_shifts is not None:
         assert projection_shifts.shape == radon_image.shape
-        projection_shifts = np.pad( projection_shifts, to_pad, 
-                                   mode='constant', constant_values=0 )
-    radon_image = np.pad( radon_image, to_pad, 
-                         mode='constant', constant_values=0 )
+        projection_shifts = np.pad(projection_shifts, to_pad,
+                                   mode='constant', constant_values=0)
+    radon_image = np.pad(radon_image, to_pad,
+                         mode='constant', constant_values=0)
     img_shape = radon_image.shape[0]
-    
+
     # Resize image to next power of two (but no less than 64) for
     # Fourier analysis; speeds up Fourier and lessens artifacts
     projection_size_padded = max(64, int(2 ** np.ceil(np.log2(2 * img_shape))))
     pad_width = ((0, projection_size_padded - img_shape), (0, 0))
     img = np.pad(radon_image, pad_width, mode='constant', constant_values=0)
-    #return img
+    # return img
     # Apply filter in Fourier domain
-    fourier_filter = _get_fourier_filter(projection_size_padded, filter_name)
-    projection = fft(img, axis=0, workers=workers) * fourier_filter
-    radon_filtered = np.real(ifft(projection, axis=0, workers=workers)[:img_shape, :])
+    if filter_name is not None:
+        fourier_filter = _get_fourier_filter(projection_size_padded, filter_name)
+        projection = fft(img, axis=0, workers=workers) * fourier_filter
+        radon_filtered = np.real(ifft(projection, axis=0, workers=workers)[:img_shape, :])
+    else:
+        radon_filtered = radon_image
 
     # Reconstruct image by interpolation
     reconstructed = np.zeros((output_size, output_size),
                              dtype=radon_image.dtype)
     radius = output_size // 2
     xpr, ypr = np.mgrid[:output_size, :output_size] - radius
-    
-    # TODO: make this part threaded - one thread per tile
+
     if mask is not None:
         xpr = xpr[mask]
         ypr = ypr[mask]
         recm = reconstructed[mask]
     else:
         recm = reconstructed
-    # print('img_shape.shape',img_shape)
-    x = np.arange(img_shape) - img_shape // 2
-    rtheta = np.deg2rad( theta )
 
-    for i in range(angles_count): # most of the time is in this loop
-        t = ypr * np.cos(rtheta[i]) - xpr * np.sin(rtheta[i])
-        if projection_shifts is not None:
-            xi = x + projection_shifts.T[i] # measured positions are shifted
-        else:
-            xi = x
-        interpolant = interp1d(xi, radon_filtered[:,i],
-                               kind=interpolation,
-                               copy=False,
-                               assume_sorted=True,
-                               bounds_error=False, 
-                               fill_value=0)
-        recm += interpolant(t)
+    x = np.arange(img_shape) - img_shape // 2
+    rtheta = np.deg2rad(theta)
+
+    # interpolate data in parallel
+    # if we are linear interpolating, np.interp is much faster
+
+    if interpolation == "linear":
+        def run_interp(i):
+            t = ypr * np.cos(rtheta[i]) - xpr * np.sin(rtheta[i])
+            if projection_shifts is not None:
+                xi = x + projection_shifts.T[i]
+            else:
+                xi = x
+
+            result = np.interp(t, xi, radon_filtered[:, i], left=0, right=0)
+            return result
+    else:
+        def run_interp(i):
+            t = ypr * np.cos(rtheta[i]) - xpr * np.sin(rtheta[i])
+            if projection_shifts is not None:
+                xi = x + projection_shifts.T[i]
+            else:
+                xi = x
+
+            interpolant = interp1d(xi, radon_filtered[:, i],
+                                   kind=interpolation,
+                                   copy=False,
+                                   assume_sorted=True,
+                                   bounds_error=False,
+                                   fill_value=0)
+            result = interpolant(t)
+            return result
+
+    if workers == 1:
+        for angle in range(angles_count):
+            recm += run_interp(angle)
+    else:
+        if workers is None or workers < 1:
+            workers = cImageD11.cores_available()
+
+        # apply interpolants in parallel
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+            for interp_result in pool.map(run_interp, range(angles_count)):
+                recm += interp_result
+
     recm *= np.pi / (2 * angles_count)
+
     if mask is not None:
         reconstructed[mask] = recm
     return reconstructed
 
 
-#TODO : fixme
+# TODO : fixme
 #   It would be 'nice' for the radon transform to be closer to iradon
 #  in using the same xpr/ypr/shifts formula. That will give pixel co-ords
 #  for the 1D projections. The problem is to then 'cut up' the pixels on 
@@ -182,14 +216,14 @@ def iradon(radon_image, theta,
 #
 
 def radon(image, theta,
-          output_size=None, # sinogram width
-           projection_shifts=None,
-           mask = None,
-           workers = 1,
+          output_size=None,  # sinogram width
+          projection_shifts=None,
+          mask=None,
+          workers=1,
           ):
     """
     From skimage.transform. Modified to have projection shifts and roi
-    to match the masked iradon here
+    to match the masked iradon here. And spread theta over threads.
     
     Calculates the radon transform of an image given specified
     projection angles.
@@ -230,15 +264,15 @@ def radon(image, theta,
     assert image.dtype == np.float32
     assert len(image.shape) == 2
     assert image.shape[0] == image.shape[1]
-    
+
     if output_size is None:
         output_size = image.shape[0]
-        
+
     if projection_shifts is not None:
-        assert projection_shifts.shape[1] == len( theta )
+        assert projection_shifts.shape[1] == len(theta)
         assert projection_shifts.shape[0] == output_size
-    
-    radius = output_size // 2 
+
+    radius = output_size // 2
     # padding the image. Shall we bother? Apparently yes.
     pad = [int(np.ceil(output_size - s)) for s in image.shape]
     new_center = [(s + p) // 2 for s, p in zip(image.shape, pad)]
@@ -246,32 +280,44 @@ def radon(image, theta,
     pad_before = [nc - oc for oc, nc in zip(old_center, new_center)]
     pad_width = [(pb, p - pb) for pb, p in zip(pad_before, pad)]
     padded_image = np.pad(image, pad_width, mode='constant',
-                              constant_values=0)
+                          constant_values=0)
     # padded_image is always square
     if padded_image.shape[0] != padded_image.shape[1]:
         raise ValueError('padded_image must be a square')
     center = padded_image.shape[0] // 2
-    radon_image = np.zeros((padded_image.shape[0], len(theta)),
-                           dtype=image.dtype)
+    radon_image = np.zeros((len(theta), padded_image.shape[0]),
+                           dtype=image.dtype).T
 
     angles_count = len(theta)
-    rtheta = np.deg2rad( theta )
-    
-    for i in range(angles_count): # most of the time is in this loop
+    rtheta = np.deg2rad(theta)
+
+    def roti(i):
         if projection_shifts is not None:
-            dx = projection_shifts.T[i] # measured positions are shifted
+            dx = projection_shifts.T[i]  # measured positions are shifted
         else:
             dx = None
-        rotated = skimage.transform.radon_transform.warp( padded_image, fxyrot, 
-                                                         map_args={'angle': rtheta[i], 
-                                                                   'center': center, 
-                                                                   'projection_shifts': dx }, 
+        rotated = skimage.transform.radon_transform.warp(padded_image, fxyrot,
+                                                         map_args={'angle': rtheta[i],
+                                                                   'center': center,
+                                                                   'projection_shifts': dx},
                                                          clip=False)
         radon_image[:, i] = rotated.sum(0)
+
+    slices = list(range(angles_count))
+    if workers == 1:
+        for i in slices:
+            roti(i)
+        return radon_image
+    if workers is None or workers < 1:
+        workers = cImageD11.cores_available()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+        for _ in pool.map(roti, slices):
+            pass
     return radon_image
 
 
-def fxyrot( colrow, angle=0, center=0, projection_shifts = None ):
+def fxyrot(colrow, angle=0, center=0, projection_shifts=None):
+    # used in radon above
     # apply the projection shifts in reverse
     # t = ypr * np.cos(rtheta[i]) - xpr * np.sin(rtheta[i])
     # if projection_shifts is not None:
@@ -280,15 +326,158 @@ def fxyrot( colrow, angle=0, center=0, projection_shifts = None ):
     #    xi = x
     col, row = colrow.T - center
     n = int(np.sqrt(col.shape[0]))
-    assert n*n == col.shape[0]
-    col.shape = n,n
-    row.shape = n,n
+    assert n * n == col.shape[0]
+    col.shape = n, n
+    row.shape = n, n
     cos_a, sin_a = np.cos(angle), np.sin(angle)
     if projection_shifts is not None:
         ct = col.T
         ct += projection_shifts
-    x =  cos_a*col + sin_a*row
-    y = -sin_a*col + cos_a*row
-    colrow[:,0] = x.ravel()
-    colrow[:,1] = y.ravel()
+    x = cos_a * col + sin_a * row
+    y = -sin_a * col + cos_a * row
+    colrow[:, 0] = x.ravel()
+    colrow[:, 1] = y.ravel()
     return colrow + center
+
+
+@numba.njit(boundscheck=False)
+def recon_cens(omega, dty, ybins, imsize, wt, y0=0.0):
+    """ Back project the peak centers into a map 
+    
+    omega, dty = peak co-ordinates in the sinogram
+    ybins = spatial binning
+    imsize = probably len(ybins)+1
+    wt = intensity, probably ones()
+    """
+    r = np.zeros((imsize, imsize), dtype=np.float32)
+    rc = imsize // 2
+    for i in range(len(omega)):
+        s, c = np.sin(omega[i]), np.cos(omega[i])
+        yv = (dty[i] - y0) / (ybins[1] - ybins[0])
+        if abs(c) > abs(s):
+            # going across image, beam is along x
+            for p in range(imsize):
+                k = p - rc  # -rc -> rc
+                v = ((-yv - k * s) / c) + rc
+                j = int(np.floor(v))
+                f = (j + 1) - v
+                if (j >= 0) & (j < imsize):
+                    r[j, p] += wt[i] * f
+                f = v - j
+                if ((j + 1) >= 0) & ((j + 1) < imsize):
+                    r[j + 1, p] += wt[i] * f
+        else:
+            # going along image
+            for p in range(imsize):
+                j = p - rc  # -rc -> rc
+                v = ((-yv - j * c) / s) + rc
+                k = int(np.floor(v))
+                f = (k + 1) - v
+                if (k >= 0) & (k < imsize):
+                    r[p, k] += wt[i] * f
+                f = v - k
+                if ((k + 1) >= 0) & ((k + 1) < imsize):
+                    r[p, k + 1] += wt[i] * f
+    return r
+
+
+def mlem(sino,
+         theta,
+         startvalue=1,
+         projection_shifts=None,
+         output_size=None,
+         mask=None,
+         workers=1,
+         niter=50,
+         divtol=1e-5):
+    """
+    # Also called "MART" for Multiplicative ART
+    # This keeps a positivity constraint for both the data and reconstruction
+    #
+    # This implementation was inspired from from:
+    # https://www.youtube.com/watch?v=IhETD4nSJec
+    # by Andrew Reader
+    #
+    # ToDo : implement a mask
+    # ToDo : check about the corners / circle=False aspects
+    #
+
+    An "MLEM" algorithm from XRDUA was used in this paper:
+
+    "Impurity precipitation in atomized particles evidenced by nano x-ray diffraction computed tomography"
+    Anne Bonnin; Jonathan P. Wright; Rémi Tucoulou; Hervé Palancher
+    Appl. Phys. Lett. 105, 084103 (2014) https://doi.org/10.1063/1.4894009
+
+    This python code implements something similar based on a youtube video (https://www.youtube.com/watch?v=IhETD4nSJec)
+
+    There are lots of papers from mathematicians in the literature about MART (multiplicative ART).
+    The conversion of latex algebra back and forth into computer code seems to be a bit of a
+    problem for me (Jon Wright - Nov 2023).
+    """
+
+    #
+    # Also called "MART" for Multiplicative ART
+    # This keeps a positivity constraint for both the data and reconstruction
+    #
+    # This implementation was inspired from from:
+    # https://www.youtube.com/watch?v=IhETD4nSJec
+    # by Andrew Reader
+    #
+
+    # output_size here is the shape of the output in real space
+
+    if output_size is None:
+        output_size = sino.shape[0]
+
+    sensitivity_image = iradon(np.ones_like(sino),
+                               theta,
+                               output_size=output_size,
+                               mask=None,
+                               filter_name=None,
+                               workers=workers,
+                               )
+
+    recip_sensitivity_image = 1. / sensitivity_image
+    # The image reconstruction:
+    mlem_rec = np.empty(sensitivity_image.shape, np.float32)
+    mlem_rec[:] = startvalue
+
+    # modify projection_shifts for radon
+    # only need to pad [0]
+
+    if projection_shifts is not None:
+        to_pad = (mlem_rec.shape[0] - projection_shifts.shape[0]) // 2
+        proj_shifts_padded = np.pad(projection_shifts, ((to_pad, to_pad), (0, 0)))
+    else:
+        proj_shifts_padded = None
+
+    for i in range(niter):
+        calc_sino = radon(mlem_rec,
+                          theta,
+                          mask=None,
+                          projection_shifts=proj_shifts_padded,
+                          workers=workers
+                          )
+
+        # pad sino to the size of calc_sino
+
+        sino_padded = np.pad(sino, (
+            ((calc_sino.shape[0] - sino.shape[0]) // 2, (calc_sino.shape[0] - sino.shape[0]) // 2), (0, 0)))
+
+        ratio = sino_padded / (calc_sino + divtol)
+
+        correction = recip_sensitivity_image * iradon(ratio,
+                                                      theta,
+                                                      output_size=output_size,
+                                                      mask=None,
+                                                      projection_shifts=proj_shifts_padded,
+                                                      filter_name=None,
+                                                      workers=workers,
+                                                      )
+
+        mlem_rec *= correction
+
+    if mask is not None:
+        mlem_rec[~mask] = 0.
+
+    return mlem_rec

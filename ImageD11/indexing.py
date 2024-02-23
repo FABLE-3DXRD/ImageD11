@@ -1098,3 +1098,45 @@ class indexer:
         # Makes it contiguous in memory, hkl fast index
         if not quiet:
             print("Read your gv file containing",self.gv.shape)
+
+
+
+def index(colf,
+          rmulmax=10,
+          npk_tol = [ (400,0.01) , (200, 0.02) ],
+          cosine_tol = np.cos(np.radians(90-.1)),
+          ds_tol = 0.004,
+          max_grains = 1000,
+          log_level=3 ):
+    """
+    Creates an indexer from a colfile
+    Uses the unit cell from the colfile.parameters
+    
+    Loops over pairs of rings with multiplicity less than rmulmax
+    npk_tol : list of (npks, hkl_tol) to test
+    cosine_tol : for finding pairs of peaks to make an orientation
+    ds_tol : for assigning peaks to hkl rings in d*
+    
+    returns the indexer object
+    """
+    global loglevel
+    loglevel = log_level
+    ind = indexer_from_colfile(colf,
+                               ds_tol = ds_tol,
+                               max_grains = max_grains,
+                               cosine_tol = cosine_tol  )
+    ind.assigntorings()
+    ind.hits = []
+    rings = []
+    for i,d in enumerate(ind.unitcell.ringds):
+        if len(ind.unitcell.ringhkls[d])<rmulmax:
+            rings.append(i)
+    for minpks, tol in npk_tol:
+        ind.minpks = minpks
+        ind.hkl_tol = tol
+        for ind.ring_1 in rings[::-1]:
+            for ind.ring_2 in rings[::-1]:
+                ind.find()
+                if len(ind.hits):
+                    ind.scorethem()
+    return ind

@@ -1,0 +1,12 @@
+# Nota: C-Order, 1 refers to the Y axis, 2 to the X axis 
+# Calibration done at Sat Feb 10 14:51:08 2024
+poni_version: 2
+Detector: FReLoN
+Detector_config: {"splineFile": "/gpfs/jazzy/data/visitor/ma5837/id11/20240208/PROCESSED_DATA/CeO2/CeO2_20240210_1348_175mm/frelon36.spline"}
+Distance: 0.1906845262656003
+Poni1: 0.04554793403539409
+Poni2: 0.049322695596799054
+Rot1: -0.002797223871659976
+Rot2: 0.005288319414788627
+Rot3: -1.3372706764104528e-07
+Wavelength: 1.8972100937770793e-11

@@ -1,40 +1,63 @@
-
 from __future__ import print_function, division
 
 """ Do segmentation of lima/eiger files with no notion of metadata
 Blocking will come via lima saving, so about 1000 frames per file
 
-Make the code parallel over lima files ... no interprocess communication intended
+Make the code parallel over lima files ...
+    minimal interprocess communication intended
  - read an input file which has the source/destination file names for this job
 """
 
 
-import sys, time, os, math, logging
+import sys
+import time
+import os
+import math
+import logging
+import numpy as np
+import h5py
+import hdf5plugin
+import fabio
+import numba
+import warnings
 
-
+from ImageD11 import sparseframe
 from ImageD11.sinograms import dataset
+import ImageD11.cImageD11
+
+try:
+    from bslz4_to_sparse import chunk2sparse
+except ImportError:
+    chunk2sparse = None
 
 # Code to clean the 2D image and reduce it to a sparse array:
 # things we might edit
 class SegmenterOptions:
-    
-    # These are the stuff that belong to us in the hdf5 file (in our group: lima_segmenter)
-    jobnames = ( 'cut','howmany','pixels_in_spot',  
-                 'maskfile', 'bgfile',
-                 'cores_per_job', 'files_per_core')
-                 
+    # These are the stuff that belong to us in the hdf5 file
+    # (in our group: lima_segmenter)
+    jobnames = (
+        "cut",
+        "howmany",
+        "pixels_in_spot",
+        "maskfile",
+        "bgfile",
+        "cores_per_job",
+        "files_per_core",
+    )
+
     # There are things that DO NOT belong to us
-    datasetnames = ( 'limapath', 'analysispath', 'datapath', 'imagefiles', 'sparsefiles' )
-    
-    def __init__(self, 
-                 cut = 1,          # keep values abuve cut in first look at image
-                 howmany = 100000,      # max pixels per frame to keep
-                 pixels_in_spot = 3,
-                 maskfile = "",
-                 bgfile = "",
-                 cores_per_job = 8,
-                 files_per_core = 8,
-                 ):
+    datasetnames = ("limapath", "analysispath", "datapath", "imagefiles", "sparsefiles")
+
+    def __init__(
+        self,
+        cut=1,  # keep values abuve cut in first look at image
+        howmany=100000,  # max pixels per frame to keep
+        pixels_in_spot=3,
+        maskfile="",
+        bgfile="",
+        cores_per_job=8,
+        files_per_core=8,
+    ):
         self.cut = cut
         self.howmany = howmany
         self.pixels_in_spot = pixels_in_spot
@@ -43,78 +66,73 @@ class SegmenterOptions:
         self.bg = None
         self.files_per_core = files_per_core
         self.cores_per_job = cores_per_job
-                      
+
     def __repr__(self):
-        return "\n".join( ["%s:%s"%(name,getattr(self, name, None )) for name in 
-                           self.jobnames + self.datasetnames ] )
-                
+        return "\n".join(
+            [
+                "%s:%s" % (name, getattr(self, name, None))
+                for name in self.jobnames + self.datasetnames
+            ]
+        )
+
     def setup(self):
-        self.thresholds = tuple( [ self.cut*pow(2,i) for i in range(6) ] )
+        self.thresholds = tuple([self.cut * pow(2, i) for i in range(6)])
         # validate input
         if len(self.maskfile):
-            m = fabio.open(self.maskfile).data
-            if m.mean() < 0.5:
-                self.mask = 1 - fabio.open(self.maskfile).data
-            else:
-                self.mask = m
-            print("# Opened mask", self.maskfile)
+            # The mask must have:
+            #   0 == active pixel
+            #   1 == masked pixel
+            self.mask = 1 - fabio.open(self.maskfile).data.astype(np.uint8)
+            assert self.mask.min() < 2
+            assert self.mask.max() >= 0
+            print(
+                "# Opened mask",
+                self.maskfile,
+                " %.2f %% pixels are active" % (100 * self.mask.mean()),
+            )
         if len(self.bgfile):
             self.bg = fabio.open(self.bgfile).data
-    
+
     def load(self, h5name, h5group):
-        
-        with h5py.File( h5name, "r" ) as hin:
+
+        with h5py.File(h5name, "r") as hin:
             grp = hin[h5group]
             pgrp = grp.parent
             for name in self.jobnames:
                 if name in grp.attrs:
-                    setattr(self, name, grp.attrs.get( name ) )
+                    setattr(self, name, grp.attrs.get(name))
             for name in self.datasetnames:
-                #     datasetnames = ( 'limapath', 'analysispath', 'datapath', 'imagefiles', 'sparsefiles' )
+                #     datasetnames = ( 'limapath', 'analysispath', 'datapath',
+                #                      'imagefiles', 'sparsefiles' )
                 if name in pgrp.attrs:
-                    data = pgrp.attrs.get( name )
-                    setattr(self, name, data )
+                    data = pgrp.attrs.get(name)
+                    setattr(self, name, data)
                 elif name in pgrp:
                     data = pgrp[name][()]
-                    if name.endswith('s'): # plural
-                        if isinstance( data, np.ndarray ):
+                    if name.endswith("s"):  # plural
+                        if isinstance(data, np.ndarray):
                             data = list(data)
-                        if isinstance( data[0], np.ndarray) or isinstance(data[0], bytes):
+                        if isinstance(data[0], np.ndarray) or isinstance(
+                            data[0], bytes
+                        ):
                             data = [x.decode() for x in data]
                     else:
                         data = str(data)
-                    setattr(self, name, data )
+                    setattr(self, name, data)
                 else:
-                    logging.warning("Missing " + name )
+                    logging.warning("Missing " + name)
         self.setup()
-        
+
     def save(self, h5name, h5group):
-        logging.info("saving to "+h5name+"::"+h5group)
-        with h5py.File( h5name, "a" ) as hout:
-            grp = hout.require_group( h5group )
+        logging.info("saving to " + h5name + "::" + h5group)
+        with h5py.File(h5name, "a") as hout:
+            grp = hout.require_group(h5group)
             for name in self.jobnames:
-                value = getattr( self, name, None )
+                value = getattr(self, name, None)
                 print(name, value)
                 if value is not None:
-                    grp.attrs[ name ] = value
-                    
-        
-########################## should not need to change much below here
+                    grp.attrs[name] = value
 
-
-import functools
-import numpy as np
-import hdf5plugin
-import h5py
-import fabio
-import numba
-# pip install ImageD11 --no-deps # if you do not have it yet:
-from ImageD11 import sparseframe, cImageD11
-
-try:
-    from bslz4_to_sparse import chunk2sparse
-except:
-    chunk2sparse = None
 
 @numba.njit
 def select(img, mask, row, col, val, cut):
@@ -123,7 +141,7 @@ def select(img, mask, row, col, val, cut):
     k = 0
     for s in range(img.shape[0]):
         for f in range(img.shape[1]):
-            if img[s, f]*mask[s,f] > cut:
+            if img[s, f] * mask[s, f] > cut:
                 row[k] = s
                 col[k] = f
                 val[k] = img[s, f]
@@ -168,7 +186,9 @@ def top_pixels(nnz, row, col, val, howmany, thresholds):
                 break
     return n
 
+
 OPTIONS = None  # global. Nasty.
+
 
 class frmtosparse:
     def __init__(self, mask, dtype):
@@ -177,10 +197,10 @@ class frmtosparse:
         self.col = np.empty(mask.size, np.uint16)
         self.val = np.empty(mask.size, dtype)
         self.mask = mask
+
     def __call__(self, frm, cut):
         nnz = select(frm, self.mask, self.row, self.col, self.val, cut)
         return nnz, self.row[:nnz], self.col[:nnz], self.val[:nnz]
-
 
 
 def clean(nnz, row, col, val):
@@ -188,11 +208,12 @@ def clean(nnz, row, col, val):
     if nnz == 0:
         return None
     if nnz > OPTIONS.howmany:
-        nnz = top_pixels(nnz, row, col, val, OPTIONS.howmany,  OPTIONS.thresholds)
+        nnz = top_pixels(nnz, row, col, val, OPTIONS.howmany, OPTIONS.thresholds)
         # Now get rid of the single pixel 'peaks'
         #   (for the mallocs, data is copied here)
-        s = sparseframe.sparse_frame(row[:nnz].copy(), col[:nnz].copy(), 
-                                     OPTIONS.mask.shape)
+        s = sparseframe.sparse_frame(
+            row[:nnz].copy(), col[:nnz].copy(), OPTIONS.mask.shape
+        )
         s.set_pixels("intensity", val[:nnz].copy())
     else:
         s = sparseframe.sparse_frame(row, col, OPTIONS.mask.shape)
@@ -200,15 +221,16 @@ def clean(nnz, row, col, val):
     if OPTIONS.pixels_in_spot <= 1:
         return s
     # label them according to the connected objects
-    s.set_pixels('f32', s.pixels['intensity'].astype(np.float32))
-    npk = sparseframe.sparse_connected_pixels( s, threshold=0,
-                             data_name="f32", label_name="cp")
+    s.set_pixels("f32", s.pixels["intensity"].astype(np.float32))
+    npk = sparseframe.sparse_connected_pixels(
+        s, threshold=0, data_name="f32", label_name="cp"
+    )
     # only keep spots with more than 3 pixels ...
-#    mom = sparseframe.sparse_moments( s,
-#                                     intensity_name="f32",
-#                                     labels_name="cp" )
-#    npx = mom[:, cImageD11.s2D_1]
-    npx = np.bincount(s.pixels['cp'], minlength = npk  )
+    #    mom = sparseframe.sparse_moments( s,
+    #                                     intensity_name="f32",
+    #                                     labels_name="cp" )
+    #    npx = mom[:, cImageD11.s2D_1]
+    npx = np.bincount(s.pixels["cp"], minlength=npk)
     pxcounts = npx[s.pixels["cp"]]
     pxmsk = pxcounts >= OPTIONS.pixels_in_spot
     if pxmsk.sum() == 0:
@@ -216,34 +238,40 @@ def clean(nnz, row, col, val):
     sf = s.mask(pxmsk)
     return sf
 
+
 def reader(frms, mask, cut):
     """
     iterator to read chunks or frames and segment them
     returns sparseframes
     """
-    if (chunk2sparse is not None) and ('32008' in frms._filters) and (
-        not frms.is_virtual) and (OPTIONS.bg is None):
-        print('# reading compressed chunks')
-        fun = chunk2sparse( mask, dtype = frms.dtype )
+    if (
+        (chunk2sparse is not None)
+        and ("32008" in frms._filters)
+        and (not frms.is_virtual)
+        and (OPTIONS.bg is None)
+    ):
+        print("# reading compressed chunks")
+        fun = chunk2sparse(mask, dtype=frms.dtype)
         for i in range(frms.shape[0]):
-            filters, chunk = frms.id.read_direct_chunk((i,0,0))
+            filters, chunk = frms.id.read_direct_chunk((i, 0, 0))
             npx, row, col, val = fun.coo(chunk, cut)
-            spf = clean( npx, row, col, val )
+            spf = clean(npx, row, col, val)
             yield spf
     else:
-        fun = frmtosparse( mask, frms.dtype )
+        fun = frmtosparse(mask, frms.dtype)
         for i in range(frms.shape[0]):
             frm = frms[i]
             if OPTIONS.bg is not None:
                 frm = frm.astype(np.float32) - OPTIONS.bg
-            npx, row, col, val = fun( frm, cut )
-            spf = clean( npx, row, col, val )
+            npx, row, col, val = fun(frm, cut)
+            spf = clean(npx, row, col, val)
             yield spf
 
-def segment_lima( args ):
+
+def segment_lima(args):
     """Does segmentation on a single hdf5
     srcname,
-    destname,              
+    destname,
     dataset
     """
     srcname, destname, dataset = args
@@ -258,7 +286,7 @@ def segment_lima( args ):
     with h5py.File(destname, "a") as hout:
         with h5py.File(srcname, "r") as hin:
             if dataset not in hin:
-                print("Missing",dataset,"in",srcname)
+                print("Missing", dataset, "in", srcname)
                 return
             # TODO/fixme - copy some headers over
             print("# ", srcname, destname, dataset)
@@ -299,29 +327,51 @@ def segment_lima( args ):
                 npx += spf.nnz
             g.attrs["npx"] = npx
     end = time.time()
-    print("\n# Done", nframes,'frames',npx,'pixels','fps',nframes/(end-start) )
+    print("\n# Done", nframes, "frames", npx, "pixels  fps", nframes / (end - start))
     return destname
 
     # the output file should be flushed and closed when this returns
 
+
 OPTIONS = None
 
-def main( options ):
+
+def initOptions(h5name, jobid):
     global OPTIONS
-    OPTIONS = options
+    OPTIONS = SegmenterOptions()
+    OPTIONS.load(h5name, "lima_segmenter")
+    OPTIONS.jobid = jobid
+
+
+def main(h5name, jobid):
+    global OPTIONS
+    initOptions(h5name, jobid)
+    options = OPTIONS
+    assert options is not None
+    assert OPTIONS is not None
     args = []
-    files_per_job = options.cores_per_job * options.files_per_core   # 64 files per job
-    start = options.jobid*files_per_job
-    end   = min( (options.jobid+1)*files_per_job, len(options.imagefiles) )
+    files_per_job = options.cores_per_job * options.files_per_core  # 64 files per job
+    start = options.jobid * files_per_job
+    end = min((options.jobid + 1) * files_per_job, len(options.imagefiles))
     for i in range(start, end):
-        args.append( ( os.path.join( options.datapath, options.imagefiles[i] ), # src
-                       os.path.join( options.analysispath, options.sparsefiles[i] ), # dest
-                       options.limapath ) )
+        args.append(
+            (
+                os.path.join(options.datapath, options.imagefiles[i]),  # src
+                os.path.join(options.analysispath, options.sparsefiles[i]),  # dest
+                options.limapath,
+            )
+        )
     if 1:
-        import concurrent.futures
-        with concurrent.futures.ProcessPoolExecutor(max_workers=options.cores_per_job) as mypool:
+        ImageD11.cImageD11.check_multiprocessing(patch=True)  # avoid fork
+        import multiprocessing
+
+        with multiprocessing.Pool(
+            processes=options.cores_per_job,
+            initializer=initOptions,
+            initargs=(h5name, jobid),
+        ) as mypool:
             donefile = sys.stdout
-            for fname in mypool.map( segment_lima, args, chunksize=1 ):
+            for fname in mypool.map(segment_lima, args, chunksize=1):
                 donefile.write(fname + "\n")
                 donefile.flush()
     else:
@@ -329,35 +379,42 @@ def main( options ):
             fname = segment_lima(arg)
             print(fname)
             sys.stdout.flush()
-        
+
     print("All done")
-    
-    
-    
-def setup_slurm_array( dsname, dsgroup='/'):
-    """ Send the tasks to slurm """
-    dso = dataset.load( dsname, dsgroup )
-    nfiles = len(dso.sparsefiles)  
-    dstlima = [ os.path.join( dso.analysispath, name ) for name in dso.sparsefiles ]
+
+
+def setup_slurm_array(dsname, dsgroup="/", pythonpath=None):
+    """Send the tasks to slurm"""
+    dso = dataset.load(dsname, dsgroup)
+    nfiles = len(dso.sparsefiles)
+    dstlima = [os.path.join(dso.analysispath, name) for name in dso.sparsefiles]
     done = 0
     for d in dstlima:
         if os.path.exists(d):
             done += 1
-    print("total files to process", nfiles, 'done', done)
+    print("total files to process", nfiles, "done", done)
     if done == nfiles:
         return None
-    sdir = os.path.join( dso.analysispath, 'slurm' )
-    if not os.path.exists( sdir ):
-        os.makedirs( sdir )
-    options = SegmenterOptions( )
-    options.load(  dsname, dsgroup + '/lima_segmenter' )
-    
+    sdir = os.path.join(dso.analysispath, "slurm")
+    if not os.path.exists(sdir):
+        os.makedirs(sdir)
+    options = SegmenterOptions()
+    options.load(dsname, dsgroup + "/lima_segmenter")
+
     files_per_job = options.files_per_core * options.cores_per_job
-    jobs_needed = math.ceil( nfiles / files_per_job )
-    sbat = os.path.join( sdir, "lima_segmenter_slurm.sh" )
-    command = "python3 -m ImageD11.sinograms.lima_segmenter segment %s $SLURM_ARRAY_TASK_ID"%(dsname)
-    with open(sbat ,"w") as fout:
-        fout.write( """#!/bin/bash
+    jobs_needed = math.ceil(nfiles / files_per_job)
+    sbat = os.path.join(sdir, "lima_segmenter_slurm.sh")
+    if pythonpath is None:
+        cmd = sys.executable
+    else:
+        cmd = "PYTHONPATH=%s %s" % (pythonpath, sys.executable)
+    command = (
+        "%s -m ImageD11.sinograms.lima_segmenter segment %s $SLURM_ARRAY_TASK_ID"
+        % (cmd, dsname)
+    )
+    with open(sbat, "w") as fout:
+        fout.write(
+            """#!/bin/bash
 #SBATCH --job-name=array-lima_segmenter
 #SBATCH --output=%s/lima_segmenter_%%A_%%a.out
 #SBATCH --error=%s/lima_segmenter_%%A_%%a.err
@@ -371,46 +428,63 @@ date
 echo Running on $HOSTNAME : %s
 OMP_NUM_THREADS=1 %s > %s/lima_segmenter_$SLURM_ARRAY_TASK_ID.log 2>&1
 date
-"""%(sdir,sdir,jobs_needed, options.cores_per_job, command, command, sdir))
-    logging.info("wrote "+sbat)
+"""
+            % (sdir, sdir, jobs_needed, options.cores_per_job, command, command, sdir)
+        )
+    logging.info("wrote " + sbat)
     return sbat
 
 
-def setup( dsname, **kwds ):
-    dso = dataset.load( dsname )
-    options = SegmenterOptions( **kwds )
-    if 'eiger' in dso.limapath:
-        if 'cut' not in kwds:
-            options.cut = 1
-        if 'maskfile' not in kwds:
-            options.maskfile = "/data/id11/nanoscope/Eiger/mask_20210428.edf"
-    elif 'frelon3' in dso.limapath:
-        if 'cut' not in kwds:
-            options.cut = 25,          # keep values abuve cut in first look at image
-    else:
-        print("I don't know what to do")
-    options.save( dsname, 'lima_segmenter' )
-    return setup_slurm_array( dsname )
+def setup(
+    dsname,
+    cut=None,  # keep values abuve cut in first look at image
+    howmany=100000,  # max pixels per frame to keep
+    pixels_in_spot=3,
+    maskfile="",
+    bgfile="",
+    cores_per_job=8,
+    files_per_core=8,
+    pythonpath=None,
+):
+    """
+    Writes options into the dataset file
+    cut=None is replaced by 1 for eiger, 25 otherwise
+    pythonpath -> point to a non-default install
+    """
+    dso = dataset.load(dsname)
+    if cut is None:
+        if "eiger" in dso.limapath:
+            cut = 1
+        else:
+            cut = 25  # 5 sigma
+    if len(maskfile) == 0 and ("eiger" in dso.limapath):
+        warnings.warn("Eiger detector needs a maskfile that is missing")
+    options = SegmenterOptions(
+        cut=cut,
+        howmany=howmany,
+        pixels_in_spot=pixels_in_spot,
+        maskfile=maskfile,
+        bgfile=bgfile,
+        cores_per_job=cores_per_job,
+        files_per_core=files_per_core,
+    )
+    options.save(dsname, "lima_segmenter")
+    return setup_slurm_array(dsname, pythonpath=pythonpath)
 
-    
+
 def segment():
     # Uses a hdffile from dataset.py to steer the processing
-    # everything is passing via this file. 
-    # 
+    # everything is passing via this file.
+    #
     h5name = sys.argv[2]
-    
-    # This assumes forking. To be investigated otherwise.
-    options = SegmenterOptions()
-    options.load( h5name, 'lima_segmenter' )   
-    options.jobid = int( sys.argv[3] )
-    main( options )
+    jobid = int(sys.argv[3])
+    main(h5name, jobid)
 
-    
+
 if __name__ == "__main__":
-        
-    if sys.argv[1] == 'setup':
-        setup( sys.argv[2] )
-        
-    if sys.argv[1] == 'segment':
+
+    if sys.argv[1] == "setup":
+        setup(sys.argv[2])
+
+    if sys.argv[1] == "segment":
         segment()
-    

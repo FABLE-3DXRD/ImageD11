@@ -1,3 +1,7 @@
+
+# coding: utf-8
+from __future__ import print_function, division
+
 import numpy as np
 import ImageD11.finite_strain, ImageD11.unitcell, ImageD11.parameters
 from ImageD11.grain import read_grain_file
@@ -40,14 +44,13 @@ class EpsSigSolver:
         -----------
         cij (float)        : elastic constants of the crystal
         Cij_symmetry (str) : symmetry considered for the Stiffness and Compliance matrices. Should be one of the following:
-                               'cubic', 'trigonal_high', 'trigonal_low', 'tetragonal', 'hexagonal','orthorombic', 'monoclinic', 'triclinic'
+                               'cubic', 'trigonal_high', 'trigonal_low', 'tetragonal_high', 'tetragonal_low', 'hexagonal', 'orthorhombic', 'monoclinic', 'triclinic'
                               
-        dzero_unitcell (array_like)   : Unstrained unit cell parameters [a, b, c, alpha,beta, gamma]
+        unitcell (array_like)   : Unstrained unit cell parameters [a, b, c, alpha,beta, gamma]
         UBI_list (list of 3x3 arrays) : List of real-space unit cell vectors (ubi in ImageD11).
         """
         
-        assert symmetry in ['cubic', 'trigonal_high','trigonal_low', 'tetragonal',
-                            'hexagonal','orthorombic', 'monoclinic', 'triclinic'], 'symmetry not recognized!'
+        assert symmetry in Cij_symmetry.keys(), 'symmetry not recognized!'
         
         self.phase_name = name
         self.unitcell = unitcell
@@ -80,16 +83,19 @@ class EpsSigSolver:
         self.stress_unit = 'GPa'
         self.Cij_symmetry = Cij_symmetry[self.symmetry]
         self.Cij = self.form_stiffness_tensor()
-        self.Sij = np.linalg.inv(self.Cij)
+        if not np.alltrue(self.Cij == 0):
+            self.Sij = np.linalg.inv(self.Cij)
         
         self.UBIs = UBI_list
         self.F_list = None
-        
-        
+
+    @property
+    def nUBIs(self):
+        return len(self.UBIs)
         
     def __str__(self):
-        return f"EpsSigSolver:\n phase name: {self.phase_name}\n reference unitcell: {self.unitcell}\n symmetry:" +\
-               f"{self.symmetry}\n unit:{self.stress_unit}\n Stiffness:\n {self.Cij}\n  n ubis: {len(self.UBIs)}"
+        return ("EpsSigSolver:\n phase name: {phase_name}\n reference unitcell: {unitcell}\n symmetry:" +\
+               "{symmetry}\n unit:{stress_unit}\n Stiffness:\n {Cij}\n  n ubis: {nUBIs)}").format(self)
 
     # Load / save / update functions for parameters (from former eps_sig_solver.py)
     ########################################
@@ -138,7 +144,8 @@ class EpsSigSolver:
         Cij : 6x6 matrix containing the elastic components
         """
         Cij = np.zeros((6,6))
-        pattern = self.Cij_symmetry  # pattern for the stiffness matrix
+        pattern = self.Cij_symmetry  # pattern for the stiffness matrix. From Mouhat & Coudert (2014). Necessary and sufficient elastic stability conditions in various crystal systems. Physical Review
+
         
         parlist = 'c11,c22,c33,c44,c55,c66,c12,c13,c14,c15,c16,c23,c24,c25,c26,c34,c35,c36,c45,c46,c56'.split(',')
         
@@ -146,6 +153,9 @@ class EpsSigSolver:
             v = self.parameterobj.parameters[parname]
             if v is None:
                 continue
+            if self.symmetry in ['hexagonal','trigonal_high','trigonal_low'] and parname == 'c66':
+                v = 0.5 * (self.parameterobj.parameters['c11'] - self.parameterobj.parameters['c12'])
+                
             c_ij = np.where( np.abs(pattern) == i+1, np.sign(pattern) * v, 0 )
             Cij += c_ij
         return Cij 
@@ -206,10 +216,11 @@ class EpsSigSolver:
             
     def strain2stress_Lab(self, m=1, debug=0):
         """
-        Compute elastic strain and stress in Lab coordinates for all ubis, using the stiffness matrix in self.Cij. Computation is done first in 
-        the grain coordinate system, and then stress in lab coordinates is obtained by rotating the 3x3 stress tensor from the grain to the lab
-        coordinate system using the following transormation : σ' = UT.Cij.U where U is the rotation matrix yielded by the polar decomposition 
-        of the finite deormation gradient tensor F.
+        Compute elastic strain and stress in Lab coordinates for all ubis, using the stiffness matrix in self.Cij. 
+        Computation is done first in the grain coordinate system, and then stress in lab coordinates is obtained by
+        rotating the 3x3 stress tensor from the grain to the lab coordinate system using the following transormation
+        σ' = RT.σ.R where R is the rotation matrix yielded by the polar decomposition of the finite deformation
+        gradient tensor F.
         
         Returns strain and stress as two lists of 3x3 symmetric tensors 'eps_Lab' and 'sigma_Lab'. 
         
@@ -274,7 +285,7 @@ class EpsSigSolver:
         # select all strain and stress tensors list
         dnames = [attr for attr in dir(self) if any([attr.startswith(s) for s in ['eps','sigma']]) ]
          # filter out all data that begins with 'eps' or 'sigma' but are not strain or stress tensors  
-        dnames = [d for d in dnames if any([d.endswith(s) for s in ['Lab','Ref','d']]) ] 
+        dnames = [d for d in dnames if any([d.endswith(s) for s in ['Lab','Ref','_d']]) ] 
         
         # stop if no strain / stress tensor list fond
         if len(dnames) == 0:
@@ -329,36 +340,43 @@ class EpsSigSolver:
             
     
     def invariant_props(self, dname):
+        # NOTE : not sure about the expression of von Mises strain. In any case it is related to √J2 by a multiplication factor k,
+        # but it seems to be different from the definition of von Mises stress √(3.J2).
+        # see https://www.continuummechanics.org/vonmisesstress.html
         """
         compute invariant properties for selected data column
+        compute invariant properties for selected data column: volumetric strain / pressure (-I1/3) and von mises strain /stress (√3.J2)
         
         dname (str) : name of the input data column. Must be a non-deviatoric 3x3 tensors 
         
         Returns
         ----------
         New instances added to EpsSigSolver, containing list of floats
+        if strain tensor in input
+        dname+'_vol' : volumetric strain 
+        dname+'_vM'  : von Mises strain (√2.J2)
+        if stress tensor in input:
         dname+'_P_hyd'   : hydrostatic Pressure (if stress tensor in input)
-        dname+'_vol'     : volumetric strain (if strain tensor in input)
-        dname+'_tau_oct' : octahedral shear strain /stress
+        dname+'_vM'  : von Mises stress (√3.J2)
         """
         assert dname in dir(self), 'dname not recognized'
-        
+        assert '_d_' not in dname, 'tensor is deviatoric. Please use the non-deviatoric tensor'
+
         tensor_list = self.__getattribute__(dname)
         assert np.all([T.shape == (3,3) for T in tensor_list])
-        
-        Invts = [invariants_quantities(T) for T in tensor_list]
-        Inv1 = [i[0] for i in Invts]
-        Inv2 = [i[1] for i in Invts]
-        
-        # tensor is already deviatoric : 
-        assert '_d_' not in dname, 'tensor is deviatoric. Please use the non-deviatoric tensor'
-            
+
+        tensor_list_dev = [deviatoric(T) for T in tensor_list]
+        Invts = [invariants(T) for T in tensor_list]
+        Invts_dev = [invariants(T) for T in tensor_list_dev]
+
+        Inv1 = [-i[0]/3 for i in Invts]
+        Inv2 = [np.sqrt(3*i[1]) for i in Invts_dev]
+
         if 'eps' in dname:
             setattr(self, dname+'_vol', Inv1)
         else:
             setattr(self, dname+'_P_hyd', Inv1)
-            
-        setattr(self, dname+'_tau_oct', Inv2)
+        setattr(self, dname+'_vM', Inv2)
         
         
         
@@ -476,7 +494,7 @@ def vector_to_full_3x3(vec, input_format='default', is_strain=True):
 
     
 def rotate_3x3_tensor(S, R, tol = 1e-6):
-        """Express 3x3 matrix in rotated coordinate system
+        """Return 3x3 matrix in rotated coordinate system
         
         Parameters
         -----------
@@ -498,7 +516,7 @@ def rotate_3x3_tensor(S, R, tol = 1e-6):
     
 def build_6x6_rot_mat(R, tol):
     """
-    Return 6x6 transormation matrix corresponding to rotation R for a 6x6 stiffness / compliance tensor
+    Return 6x6 transormation matrix corresponding to rotation R for a Voigt 6x6 stiffness tensor
     
     Parameters
     -----------
@@ -583,27 +601,8 @@ def invariants(T):
     return I1, I2, I3
 
 
-def invariants_quantities(T):
-    """
-    compute relevant invariant parameters of strain / stress tensor T
-        
-    Returns
-    --------
-    P (float)     : -I1/3 : hydrostatic pressure / volumetric strain
-    τ_oct (float) : √(2*J2/3) : octahedral shear stress / strain
-    """
     
-    T_dev = deviatoric(T)
-    I1, I2, I3 = invariants(T)
-    J1, J2, J3 = invariants(T_dev)
-    
-    return -I1/3, np.sqrt(2*J2/3)
-
-
-
-
-
-# Cij_symmetry for stiffness tensor (copied from matscipy.elasticity : https://github.com/libAtoms/matscipy/blob/master/matscipy/elasticity.py)
+# Cij_symmetry for stiffness tensor (from Mouhat & Coudert 2014)
 ########################
 
 Cij_symmetry = {
@@ -614,12 +613,12 @@ Cij_symmetry = {
                                 [0, 0, 0, 0, 4, 0],
                                 [0, 0, 0, 0, 0, 4]]),
 
-   'trigonal_high':   np.array([[1, 7, 8, 9, 10, 0],
-                                [7, 1, 8, 0,-9, 0],
-                                [8, 8, 3, 0, 0, 0],
+   'trigonal_high':   np.array([[1, 7, 8, 9,  0, 0],
+                                [7, 1, 8, -9, 0, 0],
+                                [8, 8, 3, 0,  0, 0],
                                 [9, -9, 0, 4, 0, 0],
-                                [10, 0, 0, 0, 4, 0],
-                                [0, 0, 0, 0, 0, 6]]),
+                                [0,  0, 0, 0, 4, 9],
+                                [0, 0, 0, 0,  9, 6]]),
 
    'trigonal_low':    np.array([[1,  7,  8,  9,  10,  0 ],
                                 [7,  1,  8, -9, -10,  0 ],
@@ -665,5 +664,6 @@ Cij_symmetry = {
    }
 
 
-Cij_symmetry['hexagonal'] = Cij_symmetry['trigonal_high']
+Cij_symmetry['hexagonal'] = Cij_symmetry['tetragonal_high']
+Cij_symmetry['tetragonal'] = Cij_symmetry['tetragonal_high']
 Cij_symmetry[None] = Cij_symmetry['triclinic']

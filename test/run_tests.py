@@ -18,7 +18,7 @@ modules = [
     "test_sparse_image",
     "test_cImageD11",
     "gv_general.test_gv_general",
-    "testcolumnfile",
+    "test_columnfile",
     "test_put_incr",
     "testscale",
     "test_ubito",
@@ -32,6 +32,7 @@ modules = [
     "test_compress_duplicates",
     "eps_sig.test_eps",
     "test_finite_strain",
+    "test_stress"
 ]
 
 if "all" in sys.argv:
