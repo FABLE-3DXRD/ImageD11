@@ -237,7 +237,7 @@ class twodplot(Tk.Frame):
 
     def logy(self):
 # FIXME - clip negative values before making logscaled?
-        if self.a.yaxis.is_log():
+        if self.a.get_yscale() == "log":
             self.a.set_yscale('linear')
         else:
             self.a.set_yscale('log')
@@ -245,7 +245,7 @@ class twodplot(Tk.Frame):
 
     def logx(self):
 # FIXME - clip negative values before making logscaled?
-        if self.a.xaxis.is_log():
+        if self.a.get_xscale() == "log":
             self.a.set_xscale('linear')
         else:
             self.a.set_xscale('log')
