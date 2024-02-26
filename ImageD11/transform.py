@@ -395,7 +395,7 @@ def compute_tth_histo(tth, no_bins=100, weight = False, weights = None,
     # Tried to use numpy's digitize but failed. Edges are treated differently between np.histogram and np.digitize (both are inclusive in np.histogram)
     # Tried many combinations and gave up
     binsize = (maxtth - mintth) / (no_bins-1)
-    bins = np.floor((tth - mintth) / binsize).astype(np.int)
+    bins = np.floor((tth - mintth) / binsize).astype(np.int32)
     hpk = np.take(histogram, bins)
     return tthbin, histogram, hpk
 
