@@ -51,7 +51,7 @@ def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list)
         dsets_list = []
         for folder in all_dset_folders_for_sample:
             if dset_prefix in folder:
-                dset_name = folder.split(f"{sample}_")[1]
+                dset_name = folder.split(sample + "_")[1]
                 if dset_name not in skips_dict[sample]:
                     dsets_list.append(dset_name)
 
