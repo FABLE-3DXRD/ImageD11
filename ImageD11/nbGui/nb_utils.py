@@ -19,6 +19,23 @@ from ImageD11.blobcorrector import eiger_spatial
 from scipy.optimize import curve_fit
 
 
+def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list):
+    samples_dict = {}
+
+    for sample in sample_list:
+        all_dset_folders_for_sample = os.listdir(os.path.join(rawdata_path, sample))
+        dsets_list = []
+        for folder in all_dset_folders_for_sample:
+            if dset_prefix in folder:
+                dset_name = folder.split(f"{sample}_")[1]
+                if dset_name not in skips_dict[sample]:
+                    dsets_list.append(dset_name)
+
+        samples_dict[sample] = dsets_list
+        
+    return samples_dict
+
+
 def sine_function(x, offset, a, b):
     return b * np.sin(np.radians(x)) + a * np.cos(np.radians(x)) + offset
 
