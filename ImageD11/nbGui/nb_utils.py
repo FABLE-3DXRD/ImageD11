@@ -16,6 +16,29 @@ import ImageD11.unitcell
 
 from ImageD11.blobcorrector import eiger_spatial
 
+from scipy.optimize import curve_fit
+
+
+def sine_function(x, offset, a, b):
+    return b * np.sin(np.radians(x)) + a * np.cos(np.radians(x)) + offset
+
+def fit_sine_wave(x_data, y_data, initial_guess):
+    # Fit the sine function to the data
+    popt, _ = curve_fit(sine_function, x_data, y_data, p0=initial_guess, method='trf', loss='soft_l1', max_nfev=10000)
+
+    offset, a, b = popt
+
+    return offset, a, b
+
+def fit_grain_position_from_sino(grain, cf_strong):
+    initial_guess = (0, 0.5, 0.5)
+    
+    offset, a, b = fit_sine_wave(cf_strong.omega[grain.mask_4d], cf_strong.dty[grain.mask_4d], initial_guess)
+    
+    grain.cen = offset
+    
+    grain.dx = a
+    grain.dy = b
 
 def grain_to_rgb(g, ax=(0, 0, 1)):
     return hkl_to_color_cubic(crystal_direction_cubic(g.ubi, ax))
@@ -78,27 +101,29 @@ def fity(y, cos_omega, sin_omega, wt=1):
     #         :  x = co
     #         :  y = so
     # gradients
-    # What method is being used here???????????
+    # General linear least squares
+    # Solution by the normal equation
+    # wt is weights (1/sig? or 1/sig^2?) 
+    # 
     """
-    g = [wt * np.ones(y.shape, float), wt * cos_omega, wt * sin_omega]
+    g = [wt * np.ones(y.shape, float), wt * cos_omega, wt * sin_omega]  # gradient
     nv = len(g)
     m = np.zeros((nv, nv), float)
     r = np.zeros(nv, float)
     for i in range(nv):
-        r[i] = np.dot(g[i], wt * y)
+        r[i] = np.dot(g[i], wt * y)  # A^T . b
         for j in range(i, nv):
-            m[i, j] = np.dot(g[i], g[j])
+            m[i, j] = np.dot(g[i], g[j])  # (A^T . A) . a = A^T . b
             m[j, i] = m[i, j]
     sol = np.dot(np.linalg.inv(m), r)
     return sol
 
 
 def fity_robust(dty, co, so, nsigma=5, doplot=False):
-    # NEEDS COMMENTING
     cen, dx, dy = fity(dty, co, so)
     calc2 = calc1 = calcy(co, so, (cen, dx, dy))
     # mask for columnfile, we're selecting specific 4D peaks
-    # that come from the right place in y, I think?
+    # that come from the right place in y
     selected = np.ones(co.shape, bool)
     for i in range(3):
         err = dty - calc2
@@ -123,7 +148,7 @@ def fity_robust(dty, co, so, nsigma=5, doplot=False):
     return selected, cen, dx, dy
 
 
-def graincen(gid, colf, doplot=True):
+def graincen(gid, colf, doplot=True, nsigma=5):
     # Get peaks beloging to this grain ID
     m = colf.grain_id == gid
     # Get omega values of peaks in radians
@@ -133,7 +158,7 @@ def graincen(gid, colf, doplot=True):
     so = np.sin(romega)
     # Get dty values of peaks
     dty = colf.dty[m]
-    selected, cen, dx, dy = fity_robust(dty, co, so, doplot=doplot)
+    selected, cen, dx, dy = fity_robust(dty, co, so, nsigma=nsigma, doplot=doplot)
     return selected, cen, dx, dy
 
 
