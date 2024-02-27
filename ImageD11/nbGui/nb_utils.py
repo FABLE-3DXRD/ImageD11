@@ -6,6 +6,7 @@ import numba
 import numpy as np
 from matplotlib import pyplot as plt
 from tqdm import tqdm
+from tqdm.contrib.concurrent import process_map
 
 import ImageD11.cImageD11
 import ImageD11.columnfile
@@ -14,10 +15,33 @@ import ImageD11.indexing
 import ImageD11.refinegrains
 import ImageD11.unitcell
 
-from ImageD11.blobcorrector import eiger_spatial
+from ImageD11.blobcorrector import eiger_spatial, correctorclass
 
 from scipy.optimize import curve_fit
 
+
+def correct_pixel(pixel, spline_file):
+    sr, fr = pixel
+    sc, fc = ImageD11.blobcorrector.correctorclass(spline_file).correct(sr, fr)
+    return (sc, fc)
+
+
+def apply_spatial(cf, spline_file, workers):
+    # sc = np.zeros(cf.nrows)
+    # fc = np.zeros(cf.nrows)
+    
+    print("Spatial correction...")
+    
+    raw_pixels = np.vstack((cf['s_raw'], cf['f_raw'])).T
+    
+    corrected_pixels = process_map(correct_pixel, raw_pixels, [spline_file] * len(raw_pixels), max_workers=workers, chunksize=len(raw_pixels)//workers)
+    
+    sc, fc = [list(t) for t in zip(*corrected_pixels)]
+        
+    cf.addcolumn(sc, "sc")
+    cf.addcolumn(fc, "fc")
+    
+    return cf
 
 def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list):
     samples_dict = {}

@@ -170,9 +170,9 @@ def get_dset(h5name, dsetname):
 
 
 def pps(arg):
-    hname, dsetname, num, omega, bgfile, worker_args = arg
+    hname, dsetname, num, omega, worker_args = arg
     if pps.worker is None:
-        pps.worker = worker(bgfile, *worker_args)
+        pps.worker = worker(**worker_args)
     frm = get_dset(hname, dsetname)[num]
     pks = pps.worker.peaksearch(frm, omega=omega)
     return num, pks
@@ -192,7 +192,7 @@ def process(ds, bgfile, ncpu, worker_args):
     
     n_frames = omega.shape[0]
 
-    args = [(hname, frames_dset, i, omega[i], bgfile, worker_args) for i in range(n_frames)]
+    args = [(hname, frames_dset, i, omega[i], worker_args) for i in range(n_frames)]
     
     all_peaks = process_map(pps, args, chunksize=1)
     
