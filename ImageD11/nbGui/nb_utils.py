@@ -560,9 +560,18 @@ def refine_grain_positions(cf_3d, ds, grains, parfile, symmetry="cubic", cf_frac
 
 def build_slice_arrays(grains, cutoff_level=0.0):
     grain_labels_array = np.zeros_like(grains[0].recon) - 1
-    red = np.zeros_like(grains[0].recon)
-    grn = np.zeros_like(grains[0].recon)
-    blu = np.zeros_like(grains[0].recon)
+    
+    redx = np.zeros_like(grains[0].recon)
+    grnx = np.zeros_like(grains[0].recon)
+    blux = np.zeros_like(grains[0].recon)
+    
+    redy = np.zeros_like(grains[0].recon)
+    grny = np.zeros_like(grains[0].recon)
+    bluy = np.zeros_like(grains[0].recon)
+    
+    redz = np.zeros_like(grains[0].recon)
+    grnz = np.zeros_like(grains[0].recon)
+    bluz = np.zeros_like(grains[0].recon)
 
     raw_intensity_array = np.zeros_like(grains[0].recon)
 
@@ -579,21 +588,31 @@ def build_slice_arrays(grains, cutoff_level=0.0):
 
         g_raw_intensity_mask = g_raw_intensity > raw_intensity_array
 
-        g_raw_intenstiy_map = g_raw_intensity[g_raw_intensity_mask]
+        g_raw_intensity_map = g_raw_intensity[g_raw_intensity_mask]
 
-        raw_intensity_array[g_raw_intensity_mask] = g_raw_intenstiy_map
+        raw_intensity_array[g_raw_intensity_mask] = g_raw_intensity_map
+        
+        redx[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_x[0]
+        grnx[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_x[1]
+        blux[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_x[2]
+        
+        redy[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_y[0]
+        grny[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_y[1]
+        bluy[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_y[2]
 
-        red[g_raw_intensity_mask] = g_raw_intenstiy_map * g.rgb_z[0]
-        grn[g_raw_intensity_mask] = g_raw_intenstiy_map * g.rgb_z[1]
-        blu[g_raw_intensity_mask] = g_raw_intenstiy_map * g.rgb_z[2]
+        redz[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_z[0]
+        grnz[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_z[1]
+        bluz[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_z[2]
 
         grain_labels_array[g_raw_intensity_mask] = i
 
     raw_intensity_array[raw_intensity_array == cutoff_level] = 0
+    
+    rgb_x_array = np.transpose((redx, grnx, blux), axes=(1, 2, 0))
+    rgb_y_array = np.transpose((redy, grny, bluy), axes=(1, 2, 0))
+    rgb_z_array = np.transpose((redz, grnz, bluz), axes=(1, 2, 0))
 
-    rgb_array = np.transpose((red, grn, blu), axes=(1, 2, 0))
-
-    return rgb_array, grain_labels_array, raw_intensity_array
+    return rgb_x_array, rgb_y_array, rgb_z_array, grain_labels_array, raw_intensity_array
 
 
 def slurm_submit_and_wait(bash_script_path, wait_time_sec=60):
