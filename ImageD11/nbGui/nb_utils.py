@@ -6,6 +6,7 @@ import numba
 import numpy as np
 from matplotlib import pyplot as plt
 from tqdm import tqdm
+from tqdm.contrib.concurrent import process_map
 
 import ImageD11.cImageD11
 import ImageD11.columnfile
@@ -14,8 +15,71 @@ import ImageD11.indexing
 import ImageD11.refinegrains
 import ImageD11.unitcell
 
-from ImageD11.blobcorrector import eiger_spatial
+from ImageD11.blobcorrector import eiger_spatial, correctorclass
 
+from scipy.optimize import curve_fit
+
+
+def correct_pixel(pixel, spline_file):
+    sr, fr = pixel
+    sc, fc = ImageD11.blobcorrector.correctorclass(spline_file).correct(sr, fr)
+    return (sc, fc)
+
+
+def apply_spatial(cf, spline_file, workers):
+    # sc = np.zeros(cf.nrows)
+    # fc = np.zeros(cf.nrows)
+    
+    print("Spatial correction...")
+    
+    raw_pixels = np.vstack((cf['s_raw'], cf['f_raw'])).T
+    
+    corrected_pixels = process_map(correct_pixel, raw_pixels, [spline_file] * len(raw_pixels), max_workers=workers, chunksize=len(raw_pixels)//workers)
+    
+    sc, fc = [list(t) for t in zip(*corrected_pixels)]
+        
+    cf.addcolumn(sc, "sc")
+    cf.addcolumn(fc, "fc")
+    
+    return cf
+
+def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list):
+    samples_dict = {}
+
+    for sample in sample_list:
+        all_dset_folders_for_sample = os.listdir(os.path.join(rawdata_path, sample))
+        dsets_list = []
+        for folder in all_dset_folders_for_sample:
+            if dset_prefix in folder:
+                dset_name = folder.split(sample + "_")[1]
+                if dset_name not in skips_dict[sample]:
+                    dsets_list.append(dset_name)
+
+        samples_dict[sample] = dsets_list
+        
+    return samples_dict
+
+
+def sine_function(x, offset, a, b):
+    return b * np.sin(np.radians(x)) + a * np.cos(np.radians(x)) + offset
+
+def fit_sine_wave(x_data, y_data, initial_guess):
+    # Fit the sine function to the data
+    popt, _ = curve_fit(sine_function, x_data, y_data, p0=initial_guess, method='trf', loss='soft_l1', max_nfev=10000)
+
+    offset, a, b = popt
+
+    return offset, a, b
+
+def fit_grain_position_from_sino(grain, cf_strong):
+    initial_guess = (0, 0.5, 0.5)
+    
+    offset, a, b = fit_sine_wave(cf_strong.omega[grain.mask_4d], cf_strong.dty[grain.mask_4d], initial_guess)
+    
+    grain.cen = offset
+    
+    grain.dx = a
+    grain.dy = b
 
 def grain_to_rgb(g, ax=(0, 0, 1)):
     return hkl_to_color_cubic(crystal_direction_cubic(g.ubi, ax))
@@ -78,27 +142,29 @@ def fity(y, cos_omega, sin_omega, wt=1):
     #         :  x = co
     #         :  y = so
     # gradients
-    # What method is being used here???????????
+    # General linear least squares
+    # Solution by the normal equation
+    # wt is weights (1/sig? or 1/sig^2?) 
+    # 
     """
-    g = [wt * np.ones(y.shape, float), wt * cos_omega, wt * sin_omega]
+    g = [wt * np.ones(y.shape, float), wt * cos_omega, wt * sin_omega]  # gradient
     nv = len(g)
     m = np.zeros((nv, nv), float)
     r = np.zeros(nv, float)
     for i in range(nv):
-        r[i] = np.dot(g[i], wt * y)
+        r[i] = np.dot(g[i], wt * y)  # A^T . b
         for j in range(i, nv):
-            m[i, j] = np.dot(g[i], g[j])
+            m[i, j] = np.dot(g[i], g[j])  # (A^T . A) . a = A^T . b
             m[j, i] = m[i, j]
     sol = np.dot(np.linalg.inv(m), r)
     return sol
 
 
 def fity_robust(dty, co, so, nsigma=5, doplot=False):
-    # NEEDS COMMENTING
     cen, dx, dy = fity(dty, co, so)
     calc2 = calc1 = calcy(co, so, (cen, dx, dy))
     # mask for columnfile, we're selecting specific 4D peaks
-    # that come from the right place in y, I think?
+    # that come from the right place in y
     selected = np.ones(co.shape, bool)
     for i in range(3):
         err = dty - calc2
@@ -123,7 +189,7 @@ def fity_robust(dty, co, so, nsigma=5, doplot=False):
     return selected, cen, dx, dy
 
 
-def graincen(gid, colf, doplot=True):
+def graincen(gid, colf, doplot=True, nsigma=5):
     # Get peaks beloging to this grain ID
     m = colf.grain_id == gid
     # Get omega values of peaks in radians
@@ -133,7 +199,7 @@ def graincen(gid, colf, doplot=True):
     so = np.sin(romega)
     # Get dty values of peaks
     dty = colf.dty[m]
-    selected, cen, dx, dy = fity_robust(dty, co, so, doplot=doplot)
+    selected, cen, dx, dy = fity_robust(dty, co, so, nsigma=nsigma, doplot=doplot)
     return selected, cen, dx, dy
 
 
@@ -494,9 +560,18 @@ def refine_grain_positions(cf_3d, ds, grains, parfile, symmetry="cubic", cf_frac
 
 def build_slice_arrays(grains, cutoff_level=0.0):
     grain_labels_array = np.zeros_like(grains[0].recon) - 1
-    red = np.zeros_like(grains[0].recon)
-    grn = np.zeros_like(grains[0].recon)
-    blu = np.zeros_like(grains[0].recon)
+    
+    redx = np.zeros_like(grains[0].recon)
+    grnx = np.zeros_like(grains[0].recon)
+    blux = np.zeros_like(grains[0].recon)
+    
+    redy = np.zeros_like(grains[0].recon)
+    grny = np.zeros_like(grains[0].recon)
+    bluy = np.zeros_like(grains[0].recon)
+    
+    redz = np.zeros_like(grains[0].recon)
+    grnz = np.zeros_like(grains[0].recon)
+    bluz = np.zeros_like(grains[0].recon)
 
     raw_intensity_array = np.zeros_like(grains[0].recon)
 
@@ -513,21 +588,31 @@ def build_slice_arrays(grains, cutoff_level=0.0):
 
         g_raw_intensity_mask = g_raw_intensity > raw_intensity_array
 
-        g_raw_intenstiy_map = g_raw_intensity[g_raw_intensity_mask]
+        g_raw_intensity_map = g_raw_intensity[g_raw_intensity_mask]
 
-        raw_intensity_array[g_raw_intensity_mask] = g_raw_intenstiy_map
+        raw_intensity_array[g_raw_intensity_mask] = g_raw_intensity_map
+        
+        redx[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_x[0]
+        grnx[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_x[1]
+        blux[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_x[2]
+        
+        redy[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_y[0]
+        grny[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_y[1]
+        bluy[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_y[2]
 
-        red[g_raw_intensity_mask] = g_raw_intenstiy_map * g.rgb_z[0]
-        grn[g_raw_intensity_mask] = g_raw_intenstiy_map * g.rgb_z[1]
-        blu[g_raw_intensity_mask] = g_raw_intenstiy_map * g.rgb_z[2]
+        redz[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_z[0]
+        grnz[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_z[1]
+        bluz[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_z[2]
 
         grain_labels_array[g_raw_intensity_mask] = i
 
     raw_intensity_array[raw_intensity_array == cutoff_level] = 0
+    
+    rgb_x_array = np.transpose((redx, grnx, blux), axes=(1, 2, 0))
+    rgb_y_array = np.transpose((redy, grny, bluy), axes=(1, 2, 0))
+    rgb_z_array = np.transpose((redz, grnz, bluz), axes=(1, 2, 0))
 
-    rgb_array = np.transpose((red, grn, blu), axes=(1, 2, 0))
-
-    return rgb_array, grain_labels_array, raw_intensity_array
+    return rgb_x_array, rgb_y_array, rgb_z_array, grain_labels_array, raw_intensity_array
 
 
 def slurm_submit_and_wait(bash_script_path, wait_time_sec=60):

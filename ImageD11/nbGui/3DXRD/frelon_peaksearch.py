@@ -92,19 +92,18 @@ def do3dmerge(cf_2d_dict, n, omega):
 class worker:
     """ subtracts background, custom for ma4750 """
 
-    def __init__(self, bgfile):
+    def __init__(self, bgfile, threshold=50, smoothsigma=1., bgc=0.9, minpx=3, m_offset_thresh=80, m_ratio_thresh=135):
         self.bg = fabio.open(bgfile).data
-        self.threshold = 50  # was 50 # ADU to zero out image
-        self.smoothsigma = 1.  # sigma for Gaussian before labelleing
-        self.bgc = 0.9  # fractional part of bg per peak to remove
-        self.minpx = 3
+        self.threshold = threshold  # was 50 # ADU to zero out image
+        self.smoothsigma = smoothsigma  # sigma for Gaussian before labelleing
+        self.bgc = bgc  # fractional part of bg per peak to remove
+        self.minpx = minpx
 
-        self.m_offset = self.bg < 80
+        self.m_offset = self.bg < m_offset_thresh
         
         self.mbg = np.mean(self.bg[self.m_offset])
-        # self.m_ratio = self.bg > 135  # best for undeformed data
         
-        self.m_ratio = self.bg > 200
+        self.m_ratio = self.bg > m_ratio_thresh
         
         self.bg -= self.mbg  # remove dark
         self.invbg = 1 / self.bg[self.m_ratio]
@@ -171,9 +170,9 @@ def get_dset(h5name, dsetname):
 
 
 def pps(arg):
-    hname, dsetname, num, omega, bgfile = arg
+    hname, dsetname, num, omega, worker_args = arg
     if pps.worker is None:
-        pps.worker = worker(bgfile)
+        pps.worker = worker(**worker_args)
     frm = get_dset(hname, dsetname)[num]
     pks = pps.worker.peaksearch(frm, omega=omega)
     return num, pks
@@ -185,7 +184,7 @@ pps.worker = None
 PKSAVE = ["s_1", "s_I", "s_I2", "s_fI", "s_ffI", "s_sI", "s_ssI", "s_sfI", "s_oI", "s_ooI", "s_soI", "s_foI", "mx_I", "mx_I_f", "mx_I_s", "mx_I_o", "bb_mx_f", "bb_mx_s", "bb_mx_o", "bb_mn_f", "bb_mn_s", "bb_mn_o", "avg_i", "f_raw", "s_raw", "o_raw", "m_ss", "m_ff", "m_oo", "m_sf", "m_so", "m_fo"]
 PKCOL = [getattr(ImageD11.cImageD11, p) for p in PKSAVE]
 
-def process(ds, bgfile, ncpu):      
+def process(ds, bgfile, ncpu, worker_args):      
     hname = ds.masterfile
     scan_name = ds.scans[0]
     frames_dset = scan_name + "/measurement/" + ds.detector
@@ -193,7 +192,7 @@ def process(ds, bgfile, ncpu):
     
     n_frames = omega.shape[0]
 
-    args = [(hname, frames_dset, i, omega[i], bgfile) for i in range(n_frames)]
+    args = [(hname, frames_dset, i, omega[i], worker_args) for i in range(n_frames)]
     
     all_peaks = process_map(pps, args, chunksize=1)
     
