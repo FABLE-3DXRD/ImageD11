@@ -78,8 +78,8 @@ def fit_grain_position_from_sino(grain, cf_strong):
     
     grain.cen = offset
     
-    grain.dx = -a
-    grain.dy = -b
+    grain.dx = -b
+    grain.dy = -a
 
 def grain_to_rgb(g, ax=(0, 0, 1)):
     return hkl_to_color_cubic(crystal_direction_cubic(g.ubi, ax))
