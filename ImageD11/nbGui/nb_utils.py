@@ -466,7 +466,7 @@ def do_index(cf,
              min_ring_count=0,
              hkl_tols=(0.01, 0.02, 0.03, 0.04, 0.05, 0.1),
              fracs=(0.9, 0.8, 0.7, 0.6, 0.5),
-             cosine_tol=np.cos(np.radians(90.25)),
+             cosine_tol=np.cos(np.radians(90 - 0.25)),
              max_grains=1000):
     print("Indexing {} peaks".format(cf.nrows))
     Fe = ImageD11.unitcell.unitcell_from_parameters(cf.parameters)
