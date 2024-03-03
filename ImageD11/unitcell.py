@@ -159,18 +159,22 @@ class unitcell:
         """
         Unit cell class
         supply a list (tuple etc) of a,b,c,alpha,beta,gamma
-        optionally a symmetry, one of "P","A","B","C","I","F","R"
+        optionally a lattice symmetry, one of "P","A","B","C","I","F","R"
+        or : a space group number (integer)
         """
         self.lattice_parameters = np.array(lattice_parameters)
         if self.lattice_parameters.shape[0]!=6:
             raise Exception("You must supply 6 lattice parameters\n"+\
                             "      a,b,c,alpha,beta,gamma")
         self.symmetry = symmetry
-        if self.symmetry not in ["P","A","B","C","I","F","R"]:
-            raise Exception("Your symmetry "+self.symmetry+\
-                            " was not recognised")
-        # assigning a function here!
-        self.absent = outif[self.symmetry]
+        if isinstance( symmetry, int ):
+            self.symmetry = symmetry
+        else:
+            if self.symmetry not in ["P","A","B","C","I","F","R"]:
+                raise Exception("Your symmetry "+self.symmetry+\
+                                " was not recognised")
+            # assigning a function here!
+            self.absent = outif[self.symmetry]
         a = self.lattice_parameters[0]
         b = self.lattice_parameters[1]
         c = self.lattice_parameters[2]
@@ -238,21 +242,26 @@ class unitcell:
               self.symmetry)
 
 
-    def gethkls_xfab(self,dsmax,spg):
+    def gethkls_xfab(self,dsmax,spg=None):
         """
         Generate hkl list
         Argument dsmax is the d* limit (eg 1/d)
         Argument spg is the space group name, e.g. 'R3-c'
         """
         stl_max = dsmax/2.
+        if isinstance(self.symmetry, int):
+            sgnum = self.symmetry
+        else:
+            sgnum = None
         raw_peaks = tools.genhkl_all(self.lattice_parameters,
                                  0 , stl_max,
                                  sgname=spg,
+                                 sgno = sgnum,
                                  output_stl=True)
         peaks = []
         for i in range(len(raw_peaks)):
             peaks.append([raw_peaks[i,3]*2,
-                          (raw_peaks[i,0],raw_peaks[i,1],raw_peaks[i,2])])
+                          (int(raw_peaks[i,0]),int(raw_peaks[i,1]),int(raw_peaks[i,2]))])
         self.peaks = peaks
         self.limit = dsmax
         return peaks
@@ -267,6 +276,8 @@ class unitcell:
         """
         if dsmax == self.limit and self.peaks is not None:
             return self.peaks
+        if isinstance(self.symmetry, int):
+            return self.gethkls_xfab( dsmax, spg=None )
         h=k=0
         l=1 # skip 0,0,0
         hs=ks=ls=1
