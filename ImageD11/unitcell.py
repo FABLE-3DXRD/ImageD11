@@ -277,7 +277,7 @@ class unitcell:
         if dsmax == self.limit and self.peaks is not None:
             return self.peaks
         if isinstance(self.symmetry, int):
-            self.gethkls_xfab( dsmax, spg=None )
+            return self.gethkls_xfab( dsmax, spg=None )
         h=k=0
         l=1 # skip 0,0,0
         hs=ks=ls=1
