@@ -78,8 +78,8 @@ def fit_grain_position_from_sino(grain, cf_strong):
     
     grain.cen = offset
     
-    grain.dx = a
-    grain.dy = b
+    grain.dx = -a
+    grain.dy = -b
 
 def grain_to_rgb(g, ax=(0, 0, 1)):
     return hkl_to_color_cubic(crystal_direction_cubic(g.ubi, ax))
@@ -130,77 +130,77 @@ def triangle():
     return np.array([hkl_to_pf_cubic(np.array(p)) for p in xy])
 
 
-def calcy(cos_omega, sin_omega, sol):
-    return sol[0] + cos_omega * sol[1] + sin_omega * sol[2]
+# def calcy(cos_omega, sin_omega, sol):
+#     return sol[0] + cos_omega * sol[1] + sin_omega * sol[2]
 
 
-def fity(y, cos_omega, sin_omega, wt=1):
-    """
-    Fit a sinogram to get a grain centroid
-    # calc = d0 + x*co + y*so
-    # dc/dpar : d0 = 1
-    #         :  x = co
-    #         :  y = so
-    # gradients
-    # General linear least squares
-    # Solution by the normal equation
-    # wt is weights (1/sig? or 1/sig^2?) 
-    # 
-    """
-    g = [wt * np.ones(y.shape, float), wt * cos_omega, wt * sin_omega]  # gradient
-    nv = len(g)
-    m = np.zeros((nv, nv), float)
-    r = np.zeros(nv, float)
-    for i in range(nv):
-        r[i] = np.dot(g[i], wt * y)  # A^T . b
-        for j in range(i, nv):
-            m[i, j] = np.dot(g[i], g[j])  # (A^T . A) . a = A^T . b
-            m[j, i] = m[i, j]
-    sol = np.dot(np.linalg.inv(m), r)
-    return sol
+# def fity(y, cos_omega, sin_omega, wt=1):
+#     """
+#     Fit a sinogram to get a grain centroid
+#     # calc = d0 + x*co + y*so
+#     # dc/dpar : d0 = 1
+#     #         :  x = co
+#     #         :  y = so
+#     # gradients
+#     # General linear least squares
+#     # Solution by the normal equation
+#     # wt is weights (1/sig? or 1/sig^2?) 
+#     # 
+#     """
+#     g = [wt * np.ones(y.shape, float), wt * cos_omega, wt * sin_omega]  # gradient
+#     nv = len(g)
+#     m = np.zeros((nv, nv), float)
+#     r = np.zeros(nv, float)
+#     for i in range(nv):
+#         r[i] = np.dot(g[i], wt * y)  # A^T . b
+#         for j in range(i, nv):
+#             m[i, j] = np.dot(g[i], g[j])  # (A^T . A) . a = A^T . b
+#             m[j, i] = m[i, j]
+#     sol = np.dot(np.linalg.inv(m), r)
+#     return sol
 
 
-def fity_robust(dty, co, so, nsigma=5, doplot=False):
-    cen, dx, dy = fity(dty, co, so)
-    calc2 = calc1 = calcy(co, so, (cen, dx, dy))
-    # mask for columnfile, we're selecting specific 4D peaks
-    # that come from the right place in y
-    selected = np.ones(co.shape, bool)
-    for i in range(3):
-        err = dty - calc2
-        estd = max(err[selected].std(), 1.0)  # 1 micron
-        # print(i,estd)
-        es = estd * nsigma
-        selected = abs(err) < es
-        cen, dx, dy = fity(dty, co, so, selected.astype(float))
-        calc2 = calcy(co, so, (cen, dx, dy))
-    # bad peaks are > 5 sigma
-    if doplot:
-        f, a = plt.subplots(1, 2)
-        theta = np.arctan2(so, co)
-        a[0].plot(theta, calc1, ',')
-        a[0].plot(theta, calc2, ',')
-        a[0].plot(theta[selected], dty[selected], "o")
-        a[0].plot(theta[~selected], dty[~selected], 'x')
-        a[1].plot(theta[selected], (calc2 - dty)[selected], 'o')
-        a[1].plot(theta[~selected], (calc2 - dty)[~selected], 'x')
-        a[1].set(ylim=(-es, es))
-        plt.show()
-    return selected, cen, dx, dy
+# def fity_robust(dty, co, so, nsigma=5, doplot=False):
+#     cen, dx, dy = fity(dty, co, so)
+#     calc2 = calc1 = calcy(co, so, (cen, dx, dy))
+#     # mask for columnfile, we're selecting specific 4D peaks
+#     # that come from the right place in y
+#     selected = np.ones(co.shape, bool)
+#     for i in range(3):
+#         err = dty - calc2
+#         estd = max(err[selected].std(), 1.0)  # 1 micron
+#         # print(i,estd)
+#         es = estd * nsigma
+#         selected = abs(err) < es
+#         cen, dx, dy = fity(dty, co, so, selected.astype(float))
+#         calc2 = calcy(co, so, (cen, dx, dy))
+#     # bad peaks are > 5 sigma
+#     if doplot:
+#         f, a = plt.subplots(1, 2)
+#         theta = np.arctan2(so, co)
+#         a[0].plot(theta, calc1, ',')
+#         a[0].plot(theta, calc2, ',')
+#         a[0].plot(theta[selected], dty[selected], "o")
+#         a[0].plot(theta[~selected], dty[~selected], 'x')
+#         a[1].plot(theta[selected], (calc2 - dty)[selected], 'o')
+#         a[1].plot(theta[~selected], (calc2 - dty)[~selected], 'x')
+#         a[1].set(ylim=(-es, es))
+#         plt.show()
+#     return selected, cen, dx, dy
 
 
-def graincen(gid, colf, doplot=True, nsigma=5):
-    # Get peaks beloging to this grain ID
-    m = colf.grain_id == gid
-    # Get omega values of peaks in radians
-    romega = np.radians(colf.omega[m])
-    # Calculate cos and sin of omega
-    co = np.cos(romega)
-    so = np.sin(romega)
-    # Get dty values of peaks
-    dty = colf.dty[m]
-    selected, cen, dx, dy = fity_robust(dty, co, so, nsigma=nsigma, doplot=doplot)
-    return selected, cen, dx, dy
+# def graincen(gid, colf, doplot=True, nsigma=5):
+#     # Get peaks beloging to this grain ID
+#     m = colf.grain_id == gid
+#     # Get omega values of peaks in radians
+#     romega = np.radians(colf.omega[m])
+#     # Calculate cos and sin of omega
+#     co = np.cos(romega)
+#     so = np.sin(romega)
+#     # Get dty values of peaks
+#     dty = colf.dty[m]
+#     selected, cen, dx, dy = fity_robust(dty, co, so, nsigma=nsigma, doplot=doplot)
+#     return selected, cen, dx, dy
 
 
 @numba.njit(parallel=True)
@@ -493,7 +493,7 @@ def do_index(cf,
 
     print("{} peaks expected".format(n_peaks_expected))
     print("Trying these rings (counts, multiplicity, ring number): {}".format(rings))
-    indexer.cosine_tol = cosine_tol
+    indexer.cosine_tol = np.abs(cosine_tol)
 
     for frac in fracs:
         for tol in hkl_tols:
