@@ -52,10 +52,13 @@ def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list)
         for folder in all_dset_folders_for_sample:
             if dset_prefix in folder:
                 dset_name = folder.split(sample + "_")[1]
-                if dset_name not in skips_dict[sample]:
+                if sample in skips_dict.keys():
+                    if dset_name not in skips_dict[sample]:
+                        dsets_list.append(dset_name)
+                else:
                     dsets_list.append(dset_name)
 
-        samples_dict[sample] = dsets_list
+        samples_dict[sample] = sorted(dsets_list)
         
     return samples_dict
 
