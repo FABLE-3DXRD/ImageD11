@@ -43,6 +43,17 @@ def apply_spatial(cf, spline_file, workers):
     
     return cf
 
+def apply_spatial_lut(cf, spline_file):
+    # sc = np.zeros(cf.nrows)
+    # fc = np.zeros(cf.nrows)
+    
+    print("Spatial correction...")
+    
+    corrector = ImageD11.blobcorrector.correctorclass(spline_file)
+    corrector.correct_px_lut(cf)
+    
+    return cf
+
 def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list):
     samples_dict = {}
 
@@ -52,10 +63,13 @@ def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list)
         for folder in all_dset_folders_for_sample:
             if dset_prefix in folder:
                 dset_name = folder.split(sample + "_")[1]
-                if dset_name not in skips_dict[sample]:
+                if sample in skips_dict.keys():
+                    if dset_name not in skips_dict[sample]:
+                        dsets_list.append(dset_name)
+                else:
                     dsets_list.append(dset_name)
 
-        samples_dict[sample] = dsets_list
+        samples_dict[sample] = sorted(dsets_list)
         
     return samples_dict
 
@@ -478,6 +492,8 @@ def do_index(cf,
     indexer.ds_tol = dstol
     indexer.assigntorings()
     indexer.max_grains = max_grains
+    
+    ImageD11.cImageD11.cimaged11_omp_set_num_threads(2)
 
     n_peaks_expected = 0
     rings = []
@@ -643,6 +659,49 @@ def slurm_submit_and_wait(bash_script_path, wait_time_sec=60):
         else:
             print("Slurm job not finished! Waiting {} seconds...".format(wait_time_sec))
             time.sleep(wait_time_sec)
+
+
+def slurm_submit_many_and_wait(bash_script_paths, wait_time_sec=60):
+
+    for bash_script_path in bash_script_paths:
+        if not os.path.exists(bash_script_path):
+            raise IOError("Bash script not found!")
+            
+            
+    slurm_job_numbers = []
+    for bash_script_path in bash_script_paths:
+        submit_command = "sbatch {}".format(bash_script_path)
+        sbatch_submit_result = subprocess.run(submit_command, capture_output=True, shell=True).stdout.decode("utf-8")
+
+        print(sbatch_submit_result.replace("\n", ""))
+
+        slurm_job_number = None
+
+        if sbatch_submit_result.startswith("Submitted"):
+            slurm_job_number = sbatch_submit_result.replace("\n", "").split("job ")[1]
+
+        # print(slurm_job_number)
+
+        assert slurm_job_number is not None
+        
+        slurm_job_numbers.append(slurm_job_number)
+
+    slurm_job_finished = False
+
+    while not slurm_job_finished:
+        squeue_results = subprocess.run("squeue -u $USER", capture_output=True, shell=True).stdout.decode("utf-8")
+        
+        jobs_still_running = False
+        for slurm_job_number in slurm_job_numbers:
+            if slurm_job_number in squeue_results:
+                jobs_still_running = True
+        
+        if jobs_still_running:
+            print("Slurm jobs not finished! Waiting {} seconds...".format(wait_time_sec))
+            time.sleep(wait_time_sec)
+        else:
+            print("Slurm jobs all finished!") 
+            slurm_job_finished = True
 
 
 def correct_half_scan(ds):
