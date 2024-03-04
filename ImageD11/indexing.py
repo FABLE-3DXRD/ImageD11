@@ -556,7 +556,7 @@ class indexer:
         """
         self.assigntorings()
         if rings_to_use is not None:
-            rings = [r for r in rings if (self.ra==r).sum()>0 ]
+            rings = [r for r in rings_to_use if (self.ra == r).sum() > 0]
         else:
             # Which rings have peaks assigned to them?
             rings = [r for r in set(self.ra) if r >= 0]
@@ -564,7 +564,7 @@ class indexer:
         mults = {r: len(self.unitcell.ringhkls[self.unitcell.ringds[r]]) for r in rings}
         if rmulmax is not None:
             rings = [r for r in rings if mults[r] <= rmulmax]
-            
+
         # How many peaks per ring? We will use the sparse rings first...
         # why? We assume these are the strongest peaks on a weak high angle ring
         # occupation = {r:self.na[r] for r in rings}
@@ -1245,7 +1245,7 @@ def index(
     max_grains=1000,
     rmulmax=10,
     rings_to_use=None,
-    maxpairs=None,    
+    maxpairs=None,
     log_level=3,
 ):
     """
@@ -1263,7 +1263,7 @@ def index(
     maxpairs : how many pairs of rings to use for ubi generation
 
     loglevel : like the logging module, but not
-    
+
     returns the indexer object
     """
     global loglevel
