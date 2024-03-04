@@ -481,6 +481,8 @@ def do_index(cf,
     indexer.ds_tol = dstol
     indexer.assigntorings()
     indexer.max_grains = max_grains
+    
+    ImageD11.cImageD11.cimaged11_omp_set_num_threads(2)
 
     n_peaks_expected = 0
     rings = []
