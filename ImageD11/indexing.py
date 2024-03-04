@@ -546,20 +546,25 @@ class indexer:
                     )
                     out.write("\n")
 
-    def score_all_pairs(self, n=None, rmulmax=None):
+    def score_all_pairs(self, n=None, rmulmax=None, rings_to_use=None):
         """
         Generate all the potential pairs of rings and go score them too
 
         n = maximum number of pairs to try
         maxmult = max multiplicity of rings to use for generating pairs
+        rings_to_use = the rings to use for generating ubis
         """
         self.assigntorings()
-        # Which rings have peaks assigned to them?
-        rings = [r for r in set(self.ra) if r >= 0]
+        if rings_to_use is not None:
+            rings = [r for r in rings if (self.ra==r).sum()>0 ]
+        else:
+            # Which rings have peaks assigned to them?
+            rings = [r for r in set(self.ra) if r >= 0]
         # What are the multiplicities of these rings? We will use low multiplicity first
         mults = {r: len(self.unitcell.ringhkls[self.unitcell.ringds[r]]) for r in rings}
         if rmulmax is not None:
             rings = [r for r in rings if mults[r] <= rmulmax]
+            
         # How many peaks per ring? We will use the sparse rings first...
         # why? We assume these are the strongest peaks on a weak high angle ring
         # occupation = {r:self.na[r] for r in rings}
@@ -1234,11 +1239,13 @@ def find_omega_ranges(omega):
 
 def index(
     colf,
-    rmulmax=10,
     npk_tol=[(400, 0.01), (200, 0.02)],
     cosine_tol=np.cos(np.radians(90 - 0.1)),
     ds_tol=0.004,
     max_grains=1000,
+    rmulmax=10,
+    rings_to_use=None,
+    maxpairs=None,    
     log_level=3,
 ):
     """
@@ -1246,10 +1253,17 @@ def index(
     Uses the unit cell from the colfile.parameters
 
     Loops over pairs of rings with multiplicity less than rmulmax
-    npk_tol : list of (npks, hkl_tol) to test
+
+    npk_tol : list of (minpks, hkl_tol) to test
     cosine_tol : for finding pairs of peaks to make an orientation
     ds_tol : for assigning peaks to hkl rings in d*
 
+    rmulmax : max multiplicity of rings to use in ubi generation (indexer.find)
+    rings_to_use : which rings to consider to ubi generation (default = all)
+    maxpairs : how many pairs of rings to use for ubi generation
+
+    loglevel : like the logging module, but not
+    
     returns the indexer object
     """
     global loglevel
@@ -1261,5 +1275,5 @@ def index(
     for minpks, tol in npk_tol:
         ind.minpks = minpks
         ind.hkl_tol = tol
-        ind.score_all_pairs(rmulmax=rmulmax)
+        ind.score_all_pairs(n=maxpairs, rmulmax=rmulmax, rings_to_use=rings_to_use)
     return ind
