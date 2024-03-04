@@ -43,6 +43,17 @@ def apply_spatial(cf, spline_file, workers):
     
     return cf
 
+def apply_spatial_lut(cf, spline_file):
+    # sc = np.zeros(cf.nrows)
+    # fc = np.zeros(cf.nrows)
+    
+    print("Spatial correction...")
+    
+    corrector = ImageD11.blobcorrector.correctorclass(spline_file)
+    corrector.correct_px_lut(cf)
+    
+    return cf
+
 def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list):
     samples_dict = {}
 
