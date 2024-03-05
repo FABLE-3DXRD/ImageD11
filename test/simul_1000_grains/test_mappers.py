@@ -36,7 +36,7 @@ if 1:
     print( cmd)
 if 1:
     # 3: Run ImageD11/indexer using assigned grains
-    cmd = sys.executable + " ../../ImageD11/indexer.py %(par)s %(flt)s.new fit %(ubi)s allgrid_indexer.map"%args
+    cmd = sys.executable + " ../../sandbox/indexer_1d.py %(par)s %(flt)s.new fit %(ubi)s allgrid_indexer.map"%args
     os.system(cmd)
     print (cmd)
 # 4: Run sandbox/teo.py  using assigned grains
