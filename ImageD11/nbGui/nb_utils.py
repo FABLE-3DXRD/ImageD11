@@ -2,6 +2,7 @@ import os
 import subprocess
 import time
 
+import h5py
 import numba
 import numpy as np
 from matplotlib import pyplot as plt
