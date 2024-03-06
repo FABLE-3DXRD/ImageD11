@@ -2,6 +2,7 @@ import os
 import subprocess
 import time
 
+import h5py
 import numba
 import numpy as np
 from matplotlib import pyplot as plt
@@ -19,6 +20,24 @@ from ImageD11.blobcorrector import eiger_spatial, correctorclass
 
 from scipy.optimize import curve_fit
 
+
+
+def correct_sinogram_rows_with_ring_current(grain, ds):
+    grain.ssino = grain.ssino / ds.ring_currents_per_scan_scaled[:, None]
+
+
+def get_ring_current_per_scan(ds):
+    """Gets the ring current for each scan (i.e rotation/y-step)
+       Stores it inside ds.ring_currents_per_scan and a scaled version inside ds.ring_currents_per_scan_scaled"""
+    if not hasattr(ds, "ring_currents_per_scan"):
+        ring_currents = []
+        with h5py.File(ds.masterfile, "r") as h5in:
+            for scan in ds.scans:
+                ring_current = float(h5in[scan]["instrument/machine/current"][()])
+                ring_currents.append(ring_current)
+
+        ds.ring_currents_per_scan = np.array(ring_currents)
+        ds.ring_currents_per_scan_scaled = np.array(ring_currents/np.max(ring_currents))
 
 def correct_pixel(pixel, spline_file):
     sr, fr = pixel
