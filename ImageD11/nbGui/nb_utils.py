@@ -22,6 +22,10 @@ from scipy.optimize import curve_fit
 
 
 
+def correct_sinogram_rows_with_ring_current(grain, ds):
+    grain.ssino = grain.ssino / ds.ring_currents_per_scan_scaled[:, None]
+
+
 def get_ring_current_per_scan(ds):
     """Gets the ring current for each scan (i.e rotation/y-step)
        Stores it inside ds.ring_currents_per_scan and a scaled version inside ds.ring_currents_per_scan_scaled"""
