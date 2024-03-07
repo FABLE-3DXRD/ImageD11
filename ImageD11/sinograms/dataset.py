@@ -38,7 +38,7 @@ class DataSet:
     ATTRNAMES = ("dataroot", "analysisroot", "sample", "dset", "shape", "dsname",
                  "datapath", "analysispath", "masterfile", "limapath",
                  "detector", "omegamotor", "dtymotor",
-                 "pksfile", "sparsefile", "parfile"
+                 "pksfile", "sparsefile", "parfile", "e2dxfile", "e2dyfile"
                  )
     STRINGLISTS = ("scans", "imagefiles", "sparsefiles")
     # sinograms
