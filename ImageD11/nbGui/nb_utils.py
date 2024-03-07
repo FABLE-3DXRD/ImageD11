@@ -20,12 +20,7 @@ import ImageD11.unitcell
 import ImageD11.sinograms.roi_iradon
 import ImageD11.sinograms.properties
 
-from ImageD11.blobcorrector import eiger_spatial, correctorclass
-
-
-
-
-
+from ImageD11.blobcorrector import eiger_spatial
 
 
 ### General utilities (for all notebooks)
@@ -63,12 +58,10 @@ def slurm_submit_and_wait(bash_script_path, wait_time_sec=60):
 
 
 def slurm_submit_many_and_wait(bash_script_paths, wait_time_sec=60):
-
     for bash_script_path in bash_script_paths:
         if not os.path.exists(bash_script_path):
             raise IOError("Bash script not found!")
-            
-            
+
     slurm_job_numbers = []
     for bash_script_path in bash_script_paths:
         submit_command = "sbatch {}".format(bash_script_path)
@@ -84,60 +77,58 @@ def slurm_submit_many_and_wait(bash_script_paths, wait_time_sec=60):
         # print(slurm_job_number)
 
         assert slurm_job_number is not None
-        
+
         slurm_job_numbers.append(slurm_job_number)
 
     slurm_job_finished = False
 
     while not slurm_job_finished:
         squeue_results = subprocess.run("squeue -u $USER", capture_output=True, shell=True).stdout.decode("utf-8")
-        
+
         jobs_still_running = False
         for slurm_job_number in slurm_job_numbers:
             if slurm_job_number in squeue_results:
                 jobs_still_running = True
-        
+
         if jobs_still_running:
             print("Slurm jobs not finished! Waiting {} seconds...".format(wait_time_sec))
             time.sleep(wait_time_sec)
         else:
-            print("Slurm jobs all finished!") 
+            print("Slurm jobs all finished!")
             slurm_job_finished = True
 
-            
-            
-            
-            
-def prepare_mlem_bash(ds, grains, pad, is_half_scan, id11_code_path, n_simultaneous_jobs=50, cores_per_task=8, niter=50):
-    
+
+def prepare_mlem_bash(ds, grains, pad, is_half_scan, id11_code_path, n_simultaneous_jobs=50, cores_per_task=8,
+                      niter=50):
     slurm_mlem_path = os.path.join(ds.analysispath, "slurm_mlem")
 
     if os.path.exists(slurm_mlem_path):
-        print("Removing " + {slurm_mlem_path})
+        print("Removing " + slurm_mlem_path)
         rmtree(slurm_mlem_path)
 
     os.mkdir(slurm_mlem_path)
-    
+
     recons_path = os.path.join(ds.analysispath, "mlem_recons")
 
     if os.path.exists(recons_path):
-        print("Removing " + {recons_path})
+        print("Removing " + recons_path)
         rmtree(recons_path)
 
     os.mkdir(recons_path)
-    
+
     if is_half_scan:
         dohm = "Yes"
         mask_cen = "Yes"
     else:
         dohm = "No"
         mask_cen = "No"
-    
+
     bash_script_path = os.path.join(slurm_mlem_path, ds.dsname + '_mlem_recon_slurm.sh')
-    python_script_path = os.path.join(id11_code_path, "ImageD11/nbGui/S3DXRD/run_mlem_recon.py") 
-    outfile_path =  os.path.join(slurm_mlem_path, ds.dsname + '_mlem_recon_slurm_%A_%a.out')
-    errfile_path =  os.path.join(slurm_mlem_path, ds.dsname + '_mlem_recon_slurm_%A_%a.err')
-    log_path = os.path.join(slurm_mlem_path, ds.dsname + '_mlem_recon_slurm_$SLURM_ARRAY_JOB_ID_$SLURM_ARRAY_TASK_ID.log')
+    python_script_path = os.path.join(id11_code_path, "ImageD11/nbGui/S3DXRD/run_mlem_recon.py")
+    outfile_path = os.path.join(slurm_mlem_path, ds.dsname + '_mlem_recon_slurm_%A_%a.out')
+    errfile_path = os.path.join(slurm_mlem_path, ds.dsname + '_mlem_recon_slurm_%A_%a.err')
+    log_path = os.path.join(slurm_mlem_path,
+                            ds.dsname + '_mlem_recon_slurm_$SLURM_ARRAY_JOB_ID_$SLURM_ARRAY_TASK_ID.log')
 
     reconfile = os.path.join(recons_path, ds.dsname + "_mlem_recon_$SLURM_ARRAY_TASK_ID.txt")
 
@@ -145,7 +136,7 @@ def prepare_mlem_bash(ds, grains, pad, is_half_scan, id11_code_path, n_simultane
 #SBATCH --job-name=mlem-recon
 #SBATCH --output={outfile_path}
 #SBATCH --error={errfile_path}
-#SBATCH --array=0-{len(grains)-1}%{n_simultaneous_jobs}
+#SBATCH --array=0-{len(grains) - 1}%{n_simultaneous_jobs}
 #SBATCH --time=02:00:00
 # define memory needs and number of tasks for each array job
 #SBATCH --ntasks=1
@@ -156,13 +147,11 @@ echo python3 {python_script_path} {ds.grainsfile} $SLURM_ARRAY_TASK_ID {reconfil
 python3 {python_script_path} {ds.grainsfile} $SLURM_ARRAY_TASK_ID {reconfile} {pad} {niter} {dohm} {mask_cen} > {log_path} 2>&1
 date
     """
-    
+
     with open(bash_script_path, "w") as bashscriptfile:
         bashscriptfile.writelines(bash_script_string)
-        
+
     return bash_script_path, recons_path
-
-
 
 
 ## IO related stuff
@@ -170,16 +159,17 @@ date
 # Helper funtions
 
 def save_array(grp, name, ary):
-    cmp = {'compression':'gzip',
-       'compression_opts': 2,
-       'shuffle' : True }
-    
-    hds = grp.require_dataset(name, 
+    cmp = {'compression': 'gzip',
+           'compression_opts': 2,
+           'shuffle': True}
+
+    hds = grp.require_dataset(name,
                               shape=ary.shape,
                               dtype=ary.dtype,
                               **cmp)
     hds[:] = ary
     return hds
+
 
 def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list):
     samples_dict = {}
@@ -197,9 +187,8 @@ def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list)
                     dsets_list.append(dset_name)
 
         samples_dict[sample] = sorted(dsets_list)
-        
-    return samples_dict
 
+    return samples_dict
 
 
 ## Grain IO (needs its own class really)
@@ -209,14 +198,15 @@ def save_s3dxrd_grains_after_indexing(grains, ds):
         grn = hout.create_group('grains')
         for g in tqdm(grains):
             gg = grn.create_group(str(g.gid))
-            save_array(gg, 'peaks_4d_indexing', g.peaks_4d).attrs['description'] = "Strong 4D peaks that were assigned to this grain during indexing"
-            gg.attrs.update({'ubi':g.ubi})
+            save_array(gg, 'peaks_4d_indexing', g.peaks_4d).attrs[
+                'description'] = "Strong 4D peaks that were assigned to this grain during indexing"
+            gg.attrs.update({'ubi': g.ubi})
 
 
 def read_s3dxrd_grains_for_recon(ds):
-    with h5py.File(ds.grainsfile, 'r') as hin:      
+    with h5py.File(ds.grainsfile, 'r') as hin:
         grains_group = 'grains'
-        
+
         grains = []
         for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
             gg = hin[grains_group][gid_string]
@@ -224,7 +214,7 @@ def read_s3dxrd_grains_for_recon(ds):
             g = ImageD11.grain.grain(ubi)
             g.gid = int(gid_string)
             grains.append(g)
-    
+
     return grains
 
 
@@ -235,31 +225,35 @@ def save_s3dxrd_grains_for_mlem(grains, ds, gord, inds, whole_sample_mask, y0):
         except ValueError:
             grp = hout['peak_assignments']
 
-        ds_gord = save_array( grp, 'gord', gord )
+        ds_gord = save_array(grp, 'gord', gord)
         ds_gord.attrs['description'] = 'Grain ordering: g[i].pks = gord[ inds[i] : inds[i+1] ]'
-        ds_inds = save_array( grp, 'inds', inds )
+        ds_inds = save_array(grp, 'inds', inds)
         ds_inds.attrs['description'] = 'Grain indices: g[i].pks = gord[ inds[i] : inds[i+1] ]'
-        
+
         grains_group = 'grains'
         for g in tqdm(grains):
             gg = hout[grains_group][str(g.gid)]
             # save stuff for sinograms
-            
+
             save_array(gg, 'ssino', g.ssino).attrs['description'] = 'Sinogram of peak intensities sorted by omega'
             save_array(gg, 'sinoangles', g.sinoangles).attrs['description'] = 'Projection angles for sinogram'
             save_array(gg, 'og_recon', g.og_recon).attrs['description'] = 'Original ID11 iRadon reconstruction'
-            save_array(gg, 'circle_mask', whole_sample_mask).attrs['description'] = 'Reconstruction mask to use for MLEM'
-            
+            save_array(gg, 'circle_mask', whole_sample_mask).attrs[
+                'description'] = 'Reconstruction mask to use for MLEM'
+
             # might as well save peaks stuff while we're here
             save_array(gg, 'translation', g.translation).attrs['description'] = 'Grain translation in lab frame'
-            save_array(gg, 'peaks_2d_sinograms', g.peaks_2d).attrs['description'] = "2D peaks from strong 4D peaks that were assigned to this grain for sinograms"
-            save_array(gg, 'peaks_4d_sinograms', g.peaks_4d).attrs['description'] = "Strong 4D peaks that were assigned to this grain for sinograms"
+            save_array(gg, 'peaks_2d_sinograms', g.peaks_2d).attrs[
+                'description'] = "2D peaks from strong 4D peaks that were assigned to this grain for sinograms"
+            save_array(gg, 'peaks_4d_sinograms', g.peaks_4d).attrs[
+                'description'] = "Strong 4D peaks that were assigned to this grain for sinograms"
 
             gg.attrs['cen'] = g.cen
             gg.attrs['y0'] = y0
 
-            
-def save_s3dxrd_grains_after_recon(grains, ds, raw_intensity_array, grain_labels_array, rgb_x_array, rgb_y_array, rgb_z_array):
+
+def save_s3dxrd_grains_after_recon(grains, ds, raw_intensity_array, grain_labels_array, rgb_x_array, rgb_y_array,
+                                   rgb_z_array):
     with h5py.File(ds.grainsfile, 'r+') as hout:
         try:
             grp = hout.create_group('slice_recon')
@@ -267,7 +261,7 @@ def save_s3dxrd_grains_after_recon(grains, ds, raw_intensity_array, grain_labels
             grp = hout['slice_recon']
         save_array(grp, 'intensity', raw_intensity_array).attrs['description'] = 'Raw intensity array for all grains'
         save_array(grp, 'labels', grain_labels_array).attrs['description'] = 'Grain labels array for all grains'
-        
+
         ipfxdset = save_array(grp, 'ipf_x_col_map', rgb_x_array)
         ipfxdset.attrs['description'] = 'IPF X color at each pixel'
         ipfxdset.attrs['CLASS'] = 'IMAGE'
@@ -277,15 +271,15 @@ def save_s3dxrd_grains_after_recon(grains, ds, raw_intensity_array, grain_labels
         ipfzdset = save_array(grp, 'ipf_z_col_map', rgb_z_array)
         ipfzdset.attrs['description'] = 'IPF Z color at each pixel'
         ipfzdset.attrs['CLASS'] = 'IMAGE'
-        
+
         grains_group = 'grains'
 
         for g in tqdm(grains):
             gg = hout[grains_group][str(g.gid)]
-            
+
             save_array(gg, 'recon', g.recon).attrs['description'] = 'Final reconstruction'
-            
-    
+
+
 # Other
 
 def correct_half_scan(ds):
@@ -371,9 +365,9 @@ def hkl_to_pf_cubic(hkl):
 
 def get_rgbs_for_grains(grains):
     for grain in grains:
-        grain.rgb_z = grain_to_rgb(grain, ax=(0,0,1),)# symmetry = Symmetry.cubic)
-        grain.rgb_y = grain_to_rgb(grain, ax=(0,1,0),)# symmetry = Symmetry.cubic)
-        grain.rgb_x = grain_to_rgb(grain, ax=(1,0,0),)# symmetry = Symmetry.cubic)
+        grain.rgb_z = grain_to_rgb(grain, ax=(0, 0, 1), )  # symmetry = Symmetry.cubic)
+        grain.rgb_y = grain_to_rgb(grain, ax=(0, 1, 0), )  # symmetry = Symmetry.cubic)
+        grain.rgb_x = grain_to_rgb(grain, ax=(1, 0, 0), )  # symmetry = Symmetry.cubic)
 
 
 ### Segmentation
@@ -387,29 +381,31 @@ def correct_pixel(pixel, spline_file):
 def apply_spatial(cf, spline_file, workers):
     # sc = np.zeros(cf.nrows)
     # fc = np.zeros(cf.nrows)
-    
+
     print("Spatial correction...")
-    
+
     raw_pixels = np.vstack((cf['s_raw'], cf['f_raw'])).T
-    
-    corrected_pixels = process_map(correct_pixel, raw_pixels, [spline_file] * len(raw_pixels), max_workers=workers, chunksize=len(raw_pixels)//workers)
-    
+
+    corrected_pixels = process_map(correct_pixel, raw_pixels, [spline_file] * len(raw_pixels), max_workers=workers,
+                                   chunksize=len(raw_pixels) // workers)
+
     sc, fc = [list(t) for t in zip(*corrected_pixels)]
-        
+
     cf.addcolumn(sc, "sc")
     cf.addcolumn(fc, "fc")
-    
+
     return cf
+
 
 def apply_spatial_lut(cf, spline_file):
     # sc = np.zeros(cf.nrows)
     # fc = np.zeros(cf.nrows)
-    
+
     print("Spatial correction...")
-    
+
     corrector = ImageD11.blobcorrector.correctorclass(spline_file)
     corrector.correct_px_lut(cf)
-    
+
     return cf
 
 
@@ -430,15 +426,15 @@ def fit_sine_wave(x_data, y_data, initial_guess):
 
 def fit_grain_position_from_sino(grain, cf_strong):
     initial_guess = (0, 0.5, 0.5)
-    
+
     offset, a, b = fit_sine_wave(cf_strong.omega[grain.mask_4d], cf_strong.dty[grain.mask_4d], initial_guess)
-    
+
     grain.cen = offset
-    
+
     grain.dx = -b
     grain.dy = -a
 
-    
+
 def correct_sinogram_rows_with_ring_current(grain, ds):
     grain.ssino = grain.ssino / ds.ring_currents_per_scan_scaled[:, None]
 
@@ -454,70 +450,69 @@ def get_ring_current_per_scan(ds):
                 ring_currents.append(ring_current)
 
         ds.ring_currents_per_scan = np.array(ring_currents)
-        ds.ring_currents_per_scan_scaled = np.array(ring_currents/np.max(ring_currents))
+        ds.ring_currents_per_scan_scaled = np.array(ring_currents / np.max(ring_currents))
 
 
-        
-        
 def map_grain_from_peaks(g, flt, ds):
     """
     Computes sinogram
     flt is already the peaks for this grain
     Returns angles, sino
-    """   
+    """
     NY = len(ds.ybincens)  # number of y translations
-    iy = np.round((flt.dty - ds.ybincens[0]) / (ds.ybincens[1]-ds.ybincens[0])).astype(int)  # flt column for y translation index
+    iy = np.round((flt.dty - ds.ybincens[0]) / (ds.ybincens[1] - ds.ybincens[0])).astype(
+        int)  # flt column for y translation index
 
     # The problem is to assign each spot to a place in the sinogram
     hklmin = g.hkl_2d_strong.min(axis=1)  # Get minimum integer hkl (e.g -10, -9, -10)
-    dh = g.hkl_2d_strong - hklmin[:,np.newaxis]  # subtract minimum hkl from all integer hkls
-    de = (g.etasigns_2d_strong.astype(int) + 1)//2  # something signs related
+    dh = g.hkl_2d_strong - hklmin[:, np.newaxis]  # subtract minimum hkl from all integer hkls
+    de = (g.etasigns_2d_strong.astype(int) + 1) // 2  # something signs related
     #   4D array of h,k,l,+/-
     # pkmsk is whether a peak has been observed with this HKL or not
-    pkmsk = np.zeros(list(dh.max(axis=1) + 1 )+[2,], int)  # make zeros-array the size of (max dh +1) and add another axis of length 2
-    pkmsk[ dh[0], dh[1], dh[2], de ] = 1  # we found these HKLs for this grain
+    pkmsk = np.zeros(list(dh.max(axis=1) + 1) + [2, ],
+                     int)  # make zeros-array the size of (max dh +1) and add another axis of length 2
+    pkmsk[dh[0], dh[1], dh[2], de] = 1  # we found these HKLs for this grain
     #   sinogram row to hit
     pkrow = np.cumsum(pkmsk.ravel()).reshape(pkmsk.shape) - 1  #
     # counting where we hit an HKL position with a found peak
     # e.g (-10, -9, -10) didn't get hit, but the next one did, so increment
 
-    npks = pkmsk.sum( )
-    destRow = pkrow[ dh[0], dh[1], dh[2], de ] 
-    sino = np.zeros( ( npks, NY ), 'f' )
-    hits = np.zeros( ( npks, NY ), 'f' )
-    angs = np.zeros( ( npks, NY ), 'f' )
-    adr = destRow * NY + iy 
+    npks = pkmsk.sum()
+    destRow = pkrow[dh[0], dh[1], dh[2], de]
+    sino = np.zeros((npks, NY), 'f')
+    hits = np.zeros((npks, NY), 'f')
+    angs = np.zeros((npks, NY), 'f')
+    adr = destRow * NY + iy
     # Just accumulate 
     sig = flt.sum_intensity
-    ImageD11.cImageD11.put_incr64( sino, adr, sig )
-    ImageD11.cImageD11.put_incr64( hits, adr, np.ones(len(de),dtype='f'))
-    ImageD11.cImageD11.put_incr64( angs, adr, flt.omega)
-    
-    sinoangles = angs.sum( axis = 1) / hits.sum( axis = 1 )
+    ImageD11.cImageD11.put_incr64(sino, adr, sig)
+    ImageD11.cImageD11.put_incr64(hits, adr, np.ones(len(de), dtype='f'))
+    ImageD11.cImageD11.put_incr64(angs, adr, flt.omega)
+
+    sinoangles = angs.sum(axis=1) / hits.sum(axis=1)
     # Normalise:
-    sino = (sino.T/sino.max( axis=1 )).T
+    sino = (sino.T / sino.max(axis=1)).T
     # Sort (cosmetic):
     order = np.lexsort((np.arange(npks), sinoangles))
     sinoangles = sinoangles[order]
     ssino = sino[order].T
-    
+
     return sinoangles, ssino, hits[order].T
 
 
-
 def do_sinos(g, p2d, ds, hkltol=0.25):
-    flt = tocolf({p:p2d[p][g.peaks_2d] for p in p2d}, ds)  # convert it to a columnfile and spatially correct
-    
+    flt = tocolf({p: p2d[p][g.peaks_2d] for p in p2d}, ds)  # convert it to a columnfile and spatially correct
+
     hkl_real = np.dot(g.ubi, (flt.gx, flt.gy, flt.gz))  # calculate hkl of all assigned peaks
-    hkl_int = np.round(hkl_real).astype(int) # round to nearest integer
-    dh = ((hkl_real - hkl_int)**2).sum(axis = 0)  # calculate square of difference
+    hkl_int = np.round(hkl_real).astype(int)  # round to nearest integer
+    dh = ((hkl_real - hkl_int) ** 2).sum(axis=0)  # calculate square of difference
 
     # g.dherrall = dh.mean()  # mean hkl error across all assigned peaks
     # g.npksall = flt.nrows  # total number of assigned peaks
-    flt.filter(dh < hkltol*hkltol)  # filter all assigned peaks to be less than hkltol squared
+    flt.filter(dh < hkltol * hkltol)  # filter all assigned peaks to be less than hkltol squared
     hkl_real = np.dot(g.ubi, (flt.gx, flt.gy, flt.gz))  # recalculate error after filtration
     hkl_int = np.round(hkl_real).astype(int)
-    dh = ((hkl_real - hkl_int)**2).sum(axis = 0)
+    dh = ((hkl_real - hkl_int) ** 2).sum(axis=0)
     # g.dherr = dh.mean()  # dherr is mean hkl error across assigned peaks after hkltol filtering
     # g.npks = flt.nrows  # total number of assigned peaks after hkltol filtering
     g.etasigns_2d_strong = np.sign(flt.eta)
@@ -526,36 +521,36 @@ def do_sinos(g, p2d, ds, hkltol=0.25):
     return g
 
 
-def run_iradon_id11(sino, angles, pad=20, y0=0, workers=1, sample_mask=None, apply_halfmask=False, mask_central_zingers=False):
+def run_iradon_id11(sino, angles, pad=20, y0=0, workers=1, sample_mask=None, apply_halfmask=False,
+                    mask_central_zingers=False):
     outsize = sino.shape[0] + pad
-    
-    if apply_halfmask:
-        halfmask = np.zeros_like(ssino)
 
-        halfmask[:len(halfmask)//2-1, :] = 1
-        halfmask[len(halfmask)//2-1, :] = 0.5
-        
+    if apply_halfmask:
+        halfmask = np.zeros_like(sino)
+
+        halfmask[:len(halfmask) // 2 - 1, :] = 1
+        halfmask[len(halfmask) // 2 - 1, :] = 0.5
+
         sino_to_recon = sino * halfmask
     else:
         sino_to_recon = sino
-        
+
     # # pad the sample mask
     # sample_mask_padded = np.pad(sample_mask, pad//2)
 
-    
     # Perform iradon transform of grain sinogram, store result (reconstructed grain shape) in g.recon
-    recon = ImageD11.sinograms.roi_iradon.iradon(sino_to_recon, 
-                                                       theta=angles, 
-                                                       mask=sample_mask,
-                                                       output_size=outsize,
-                                                       projection_shifts=np.full(sino.shape, -y0),
-                                                       filter_name='hamming',
-                                                       interpolation='linear',
-                                                       workers=workers)
-    
+    recon = ImageD11.sinograms.roi_iradon.iradon(sino_to_recon,
+                                                 theta=angles,
+                                                 mask=sample_mask,
+                                                 output_size=outsize,
+                                                 projection_shifts=np.full(sino.shape, -y0),
+                                                 filter_name='hamming',
+                                                 interpolation='linear',
+                                                 workers=workers)
+
     if mask_central_zingers:
         grs = recon.shape[0]
-        xpr, ypr = -grs//2 + np.mgrid[:grs, :grs]
+        xpr, ypr = -grs // 2 + np.mgrid[:grs, :grs]
         inner_mask_radius = 25
         outer_mask_radius = inner_mask_radius + 2
 
@@ -564,9 +559,9 @@ def run_iradon_id11(sino, angles, pad=20, y0=0, workers=1, sample_mask=None, app
 
         mask_ring = inner_circle_mask & outer_circle_mask
         # we now have a mask to apply
-        fill_value = np.median(grain.recon[mask_ring])
+        fill_value = np.median(recon[mask_ring])
         recon[inner_circle_mask] = fill_value
-    
+
     return recon
 
 
@@ -575,8 +570,9 @@ def iradon_grain(grain, pad=20, y0=0, workers=1, sample_mask=None, apply_halfmas
     angles = grain.sinoangles
     recon = run_iradon_id11(sino, angles, pad, y0, workers, sample_mask, apply_halfmask, mask_central_zingers)
     grain.recon = recon
-    
+
     return grain
+
 
 ### Peak manipulation
 
@@ -653,7 +649,7 @@ def find_grain_id(spot3d_id, grain_id, spot2d_label, grain_label, order, nthread
             if spot3d_id[pcf] == pkid:
                 grain_label[i] = grain_id[pcf]
 
-            
+
 def get_2d_peaks_from_4d_peaks(ds, cf):
     # Big scary block
     # Must understand what this does!
@@ -687,10 +683,8 @@ def get_2d_peaks_from_4d_peaks(ds, cf):
     # this is an array which tells you which 2D spots each grain owns
     # the 2D spots are sorted by spot ID
     # inds tells you for each grain were you can find its associated 2D spots
-    
-    return gord, inds, p2d
-    
 
+    return gord, inds, p2d
 
 
 def tocolf(pkd, ds):
@@ -886,32 +880,33 @@ def triangle():
 
 
 def plot_ipfs(grains):
-    f,a = plt.subplots( 1,3, figsize=(15,5) )
+    f, a = plt.subplots(1, 3, figsize=(15, 5))
     ty, tx = triangle().T
-    for i,title in enumerate( 'xyz' ):
+    for i, title in enumerate('xyz'):
         ax = np.zeros(3)
         ax[i] = 1.
-        hkl = [crystal_direction_cubic( g.ubi, ax ) for g in grains]
-        xy = np.array([hkl_to_pf_cubic(h) for h in hkl ])
-        rgb = np.array([hkl_to_color_cubic(h) for h in hkl ])
+        hkl = [crystal_direction_cubic(g.ubi, ax) for g in grains]
+        xy = np.array([hkl_to_pf_cubic(h) for h in hkl])
+        rgb = np.array([hkl_to_color_cubic(h) for h in hkl])
         for j in range(len(grains)):
             grains[j].rgb = rgb[j]
-        a[i].scatter( xy[:,1], xy[:,0], c = rgb )   # Note the "x" axis of the plot is the 'k' direction and 'y' is h (smaller)
+        a[i].scatter(xy[:, 1], xy[:, 0],
+                     c=rgb)  # Note the "x" axis of the plot is the 'k' direction and 'y' is h (smaller)
         a[i].set(title=title, aspect='equal', facecolor='silver', xticks=[], yticks=[])
-        a[i].plot( tx, ty, 'k-', lw = 1 )
+        a[i].plot(tx, ty, 'k-', lw=1)
 
 
 def build_slice_arrays(grains, cutoff_level=0.0):
     grain_labels_array = np.zeros_like(grains[0].recon) - 1
-    
+
     redx = np.zeros_like(grains[0].recon)
     grnx = np.zeros_like(grains[0].recon)
     blux = np.zeros_like(grains[0].recon)
-    
+
     redy = np.zeros_like(grains[0].recon)
     grny = np.zeros_like(grains[0].recon)
     bluy = np.zeros_like(grains[0].recon)
-    
+
     redz = np.zeros_like(grains[0].recon)
     grnz = np.zeros_like(grains[0].recon)
     bluz = np.zeros_like(grains[0].recon)
@@ -934,11 +929,11 @@ def build_slice_arrays(grains, cutoff_level=0.0):
         g_raw_intensity_map = g_raw_intensity[g_raw_intensity_mask]
 
         raw_intensity_array[g_raw_intensity_mask] = g_raw_intensity_map
-        
+
         redx[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_x[0]
         grnx[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_x[1]
         blux[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_x[2]
-        
+
         redy[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_y[0]
         grny[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_y[1]
         bluy[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_y[2]
@@ -950,7 +945,7 @@ def build_slice_arrays(grains, cutoff_level=0.0):
         grain_labels_array[g_raw_intensity_mask] = i
 
     raw_intensity_array[raw_intensity_array == cutoff_level] = 0
-    
+
     rgb_x_array = np.transpose((redx, grnx, blux), axes=(1, 2, 0))
     rgb_y_array = np.transpose((redy, grny, bluy), axes=(1, 2, 0))
     rgb_z_array = np.transpose((redz, grnz, bluz), axes=(1, 2, 0))
@@ -980,9 +975,9 @@ def do_index(cf,
     indexer.ds_tol = dstol
     indexer.assigntorings()
     indexer.max_grains = max_grains
-    
+
     ImageD11.cImageD11.cimaged11_omp_set_num_threads(2)
-    
+
     for ringid in forgen:
         if ringid not in foridx:
             raise ValueError("All rings in forgen must be in foridx!")
@@ -1015,7 +1010,7 @@ def do_index(cf,
 
                     indexer.find()
                     indexer.scorethem()
-                    
+
             print(frac, tol, len(indexer.ubis))
 
     grains = [ImageD11.grain.grain(ubi, translation=np.array([0., 0., 0.])) for ubi in indexer.ubis]
@@ -1066,10 +1061,6 @@ def refine_grain_positions(cf_3d, ds, grains, parfile, symmetry="cubic", cf_frac
 
     return grains2
 
-
-
-
-    
 ### (hopefully) no longer used
 
 # def calcy(cos_omega, sin_omega, sol):
