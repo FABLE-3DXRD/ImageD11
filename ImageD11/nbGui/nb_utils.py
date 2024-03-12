@@ -134,7 +134,7 @@ def prepare_mlem_bash(ds, grains, pad, is_half_scan, id11_code_path, n_simultane
     reconfile = os.path.join(recons_path, ds.dsname + "_mlem_recon_$SLURM_ARRAY_TASK_ID.txt")
 
     # python 3 version (de-indent whole below comment):
-    
+
     #     bash_script_string = f"""#!/bin/bash
     # #SBATCH --job-name=mlem-recon
     # #SBATCH --output={outfile_path}
@@ -150,9 +150,7 @@ def prepare_mlem_bash(ds, grains, pad, is_half_scan, id11_code_path, n_simultane
     # python3 {python_script_path} {ds.grainsfile} $SLURM_ARRAY_TASK_ID {reconfile} {pad} {niter} {dohm} {mask_cen} > {log_path} 2>&1
     # date
     #     """
-    
-    
-    
+
     # python 2 version
     bash_script_string = """#!/bin/bash
 #SBATCH --job-name=mlem-recon
@@ -235,14 +233,16 @@ def save_3dxrd_grains(grains, ds):
         grn = hout.create_group('grains')
         for g in tqdm(grains):
             gg = grn.create_group(str(g.gid))
-            save_array(gg, 'peaks_3d_indexing', g.peaks_3d).attrs['description'] = "Strong 3D peaks that were assigned to this grain during indexing"
-            gg.attrs.update({'ubi':g.ubi,
-                            'translation':g.translation})
+            save_array(gg, 'peaks_3d_indexing', g.peaks_3d).attrs[
+                'description'] = "Strong 3D peaks that were assigned to this grain during indexing"
+            gg.attrs.update({'ubi': g.ubi,
+                             'translation': g.translation})
+
 
 def read_3dxrd_grains(ds):
-    with h5py.File(ds.grainsfile, 'r') as hin:      
+    with h5py.File(ds.grainsfile, 'r') as hin:
         grains_group = 'grains'
-        
+
         grains = []
         for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
             gg = hin[grains_group][gid_string]
@@ -252,8 +252,9 @@ def read_3dxrd_grains(ds):
             g.gid = int(gid_string)
             g.peaks_3d = gg['peaks_3d_indexing'][:]
             grains.append(g)
-    
+
     return grains
+
 
 # S3DXRD
 
@@ -270,17 +271,19 @@ def save_s3dxrd_grains_after_indexing(grains, ds):
 def save_s3dxrd_grains_minor_phase_after_indexing(grains, ds, phase_name=None):
     if not hasattr(ds, "grainsfile_minor_phase"):
         if phase_name is None:
-            raise ValueError("DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
+            raise ValueError(
+                "DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
         else:
             ds.grainsfile_minor_phase = os.path.join(ds.analysispath, ds.dsname + '_grains_' + phase_name + '.h5')
     with h5py.File(ds.grainsfile_minor_phase, 'w') as hout:
         grn = hout.create_group('grains')
         for g in tqdm(grains):
             gg = grn.create_group(str(g.gid))
-            save_array(gg, 'peaks_4d_indexing', g.peaks_4d).attrs['description'] = "Strong 4D peaks that were assigned to this grain during indexing"
-            gg.attrs.update({'ubi':g.ubi})
-            
-            
+            save_array(gg, 'peaks_4d_indexing', g.peaks_4d).attrs[
+                'description'] = "Strong 4D peaks that were assigned to this grain during indexing"
+            gg.attrs.update({'ubi': g.ubi})
+
+
 def read_s3dxrd_grains_for_recon(ds):
     with h5py.File(ds.grainsfile, 'r') as hin:
         grains_group = 'grains'
@@ -299,7 +302,8 @@ def read_s3dxrd_grains_for_recon(ds):
 def read_s3dxrd_grains_minor_phase_for_recon(ds, phase_name=None):
     if not hasattr(ds, "grainsfile_minor_phase"):
         if phase_name is None:
-            raise ValueError("DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
+            raise ValueError(
+                "DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
         else:
             ds.grainsfile_minor_phase = os.path.join(ds.analysispath, ds.dsname + '_grains_' + phase_name + '.h5')
     with h5py.File(ds.grainsfile_minor_phase, 'r') as hin:
@@ -377,36 +381,39 @@ def save_s3dxrd_grains_after_recon(grains, ds, raw_intensity_array, grain_labels
 
             save_array(gg, 'recon', g.recon).attrs['description'] = 'Final reconstruction'
 
-def save_s3dxrd_grains_minor_phase_after_recon(grains, ds, raw_intensity_array, grain_labels_array, rgb_x_array, rgb_y_array,
-                                   rgb_z_array, phase_name=None):
+
+def save_s3dxrd_grains_minor_phase_after_recon(grains, ds, raw_intensity_array, grain_labels_array, rgb_x_array,
+                                               rgb_y_array,
+                                               rgb_z_array, phase_name=None):
     if not hasattr(ds, "grainsfile_minor_phase"):
         if phase_name is None:
-            raise ValueError("DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
+            raise ValueError(
+                "DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
         else:
             ds.grainsfile_minor_phase = os.path.join(ds.analysispath, ds.dsname + '_grains_' + phase_name + '.h5')
-    
+
     # delete existing file, because our grain numbers have changed
     if os.path.exists(ds.grainsfile_minor_phase):
         os.remove(ds.grainsfile_minor_phase)
-    
-    with h5py.File(ds.grainsfile_minor_phase, 'w-') as hout:  # fail if exists
-#         try:
-#             grp = hout.create_group('peak_assignments')
-#         except ValueError:
-#             grp = hout['peak_assignments']
 
-#         ds_gord = save_array( grp, 'gord', gord )
-#         ds_gord.attrs['description'] = 'Grain ordering: g[i].pks = gord[ inds[i] : inds[i+1] ]'
-#         ds_inds = save_array( grp, 'inds', inds )
-#         ds_inds.attrs['description'] = 'Grain indices: g[i].pks = gord[ inds[i] : inds[i+1] ]'
-        
+    with h5py.File(ds.grainsfile_minor_phase, 'w-') as hout:  # fail if exists
+        #         try:
+        #             grp = hout.create_group('peak_assignments')
+        #         except ValueError:
+        #             grp = hout['peak_assignments']
+
+        #         ds_gord = save_array( grp, 'gord', gord )
+        #         ds_gord.attrs['description'] = 'Grain ordering: g[i].pks = gord[ inds[i] : inds[i+1] ]'
+        #         ds_inds = save_array( grp, 'inds', inds )
+        #         ds_inds.attrs['description'] = 'Grain indices: g[i].pks = gord[ inds[i] : inds[i+1] ]'
+
         try:
             grp = hout.create_group('slice_recon')
         except ValueError:
             grp = hout['slice_recon']
         save_array(grp, 'intensity', raw_intensity_array).attrs['description'] = 'Raw intensity array for all grains'
         save_array(grp, 'labels', grain_labels_array).attrs['description'] = 'Grain labels array for all grains'
-        
+
         ipfxdset = save_array(grp, 'ipf_x_col_map', rgb_x_array)
         ipfxdset.attrs['description'] = 'IPF X color at each pixel'
         ipfxdset.attrs['CLASS'] = 'IMAGE'
@@ -416,50 +423,53 @@ def save_s3dxrd_grains_minor_phase_after_recon(grains, ds, raw_intensity_array, 
         ipfzdset = save_array(grp, 'ipf_z_col_map', rgb_z_array)
         ipfzdset.attrs['description'] = 'IPF Z color at each pixel'
         ipfzdset.attrs['CLASS'] = 'IMAGE'
-        
+
         grains_group = hout.create_group('grains')
         for g in tqdm(grains):
             gg = grains_group.create_group(str(g.gid))
             # save stuff for sinograms
-            
-            gg.attrs.update({'ubi':g.ubi})
-            
-            save_array(gg, 'peaks_4d_indexing', g.peaks_4d).attrs['description'] = "Strong 4D peaks that were assigned to this grain during indexing"
-            
+
+            gg.attrs.update({'ubi': g.ubi})
+
+            save_array(gg, 'peaks_4d_indexing', g.peaks_4d).attrs[
+                'description'] = "Strong 4D peaks that were assigned to this grain during indexing"
+
             save_array(gg, 'ssino', g.ssino).attrs['description'] = 'Sinogram of peak intensities sorted by omega'
             save_array(gg, 'sinoangles', g.sinoangles).attrs['description'] = 'Projection angles for sinogram'
             save_array(gg, 'og_recon', g.recon).attrs['description'] = 'Original ID11 iRadon reconstruction'
             save_array(gg, 'recon', g.recon).attrs['description'] = 'Final reconstruction'
-            
+
             # might as well save peaks stuff while we're here
             save_array(gg, 'translation', g.translation).attrs['description'] = 'Grain translation in lab frame'
-            save_array(gg, 'peaks_2d_sinograms', g.peaks_2d).attrs['description'] = "2D peaks from strong 4D peaks that were assigned to this grain for sinograms"
-            save_array(gg, 'peaks_4d_sinograms', g.peaks_4d).attrs['description'] = "Strong 4D peaks that were assigned to this grain for sinograms"
+            save_array(gg, 'peaks_2d_sinograms', g.peaks_2d).attrs[
+                'description'] = "2D peaks from strong 4D peaks that were assigned to this grain for sinograms"
+            save_array(gg, 'peaks_4d_sinograms', g.peaks_4d).attrs[
+                'description'] = "Strong 4D peaks that were assigned to this grain for sinograms"
 
             gg.attrs['cen'] = g.cen
-    
-            
+
+
 def read_s3dxrd_grains_after_recon(ds):
-    with h5py.File(ds.grainsfile, 'r') as hin: 
+    with h5py.File(ds.grainsfile, 'r') as hin:
         grp = hin['slice_recon']
-        
+
         raw_intensity_array = grp['intensity'][:]
         grain_labels_array = grp['labels'][:]
         rgb_x_array = grp['ipf_x_col_map'][:]
         rgb_y_array = grp['ipf_y_col_map'][:]
         rgb_z_array = grp['ipf_z_col_map'][:]
-        
+
         grains_group = 'grains'
-        
+
         grains = []
         for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
             gg = hin[grains_group][gid_string]
             ubi = gg.attrs['ubi'][:]
 
             g = ImageD11.grain.grain(ubi)
-            
+
             # general grain properties
-            
+
             g.gid = int(gid_string)
             g.translation = gg['translation'][:]
             g.cen = gg.attrs['cen']
@@ -469,45 +479,44 @@ def read_s3dxrd_grains_after_recon(ds):
             # sinogram stuff
             g.ssino = gg['ssino'][:]
             g.sinoangles = gg['sinoangles'][:]
-            
+
             # reconstructions
             g.og_recon = gg['og_recon'][:]
             g.recon = gg['recon'][:]
-            
+
             grains.append(g)
-    
+
     return grains, raw_intensity_array, grain_labels_array, rgb_x_array, rgb_y_array, rgb_z_array
 
 
 def read_s3dxrd_grains_minor_phase_after_recon(ds, phase_name=None):
-    
     if not hasattr(ds, "grainsfile_minor_phase"):
         if phase_name is None:
-            raise ValueError("DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
+            raise ValueError(
+                "DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
         else:
             ds.grainsfile_minor_phase = os.path.join(ds.analysispath, ds.dsname + '_grains_' + phase_name + '.h5')
-    
-    
-    with h5py.File(ds.grainsfile_minor_phase, 'r') as hin: 
+
+    with h5py.File(ds.grainsfile_minor_phase, 'r') as hin:
         grp = hin['slice_recon']
-        
+
         raw_intensity_array = grp['intensity'][:]
         grain_labels_array = grp['labels'][:]
         rgb_x_array = grp['ipf_x_col_map'][:]
         rgb_y_array = grp['ipf_y_col_map'][:]
         rgb_z_array = grp['ipf_z_col_map'][:]
-        
+
         grains_group = 'grains'
-        
+
         grains = []
         for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
             gg = hin[grains_group][gid_string]
             ubi = gg.attrs['ubi'][:]
 
             g = ImageD11.grain.grain(ubi)
-            
+
             # general grain properties
-            
+
             g.gid = int(gid_string)
             g.translation = gg['translation'][:]
             g.cen = gg.attrs['cen']
@@ -515,15 +524,14 @@ def read_s3dxrd_grains_minor_phase_after_recon(ds, phase_name=None):
             # sinogram stuff
             g.ssino = gg['ssino'][:]
             g.sinoangles = gg['sinoangles'][:]
-            
+
             # reconstructions
             g.og_recon = gg['og_recon'][:]
             g.recon = gg['recon'][:]
-            
-            grains.append(g)
-    
-    return grains, raw_intensity_array, grain_labels_array, rgb_x_array, rgb_y_array, rgb_z_array
 
+            grains.append(g)
+
+    return grains, raw_intensity_array, grain_labels_array, rgb_x_array, rgb_y_array, rgb_z_array
 
 
 def save_ubi_map(ds, ubi_map, eps_map, misorientation_map, ipf_x_col_map, ipf_y_col_map, ipf_z_col_map):
@@ -531,7 +539,8 @@ def save_ubi_map(ds, ubi_map, eps_map, misorientation_map, ipf_x_col_map, ipf_y_
         grp = hout.create_group('arrays')
         save_array(grp, 'ubi_map', ubi_map).attrs['description'] = 'Refined UBI values at each pixel'
         save_array(grp, 'eps_map', eps_map).attrs['description'] = 'Strain matrices (sample ref) at each pixel'
-        save_array(grp, 'misorientation_map', misorientation_map).attrs['description'] = 'Misorientation to grain avg at each pixel'
+        save_array(grp, 'misorientation_map', misorientation_map).attrs[
+            'description'] = 'Misorientation to grain avg at each pixel'
         ipfxdset = save_array(grp, 'ipf_x_col_map', ipf_x_col_map)
         ipfxdset.attrs['description'] = 'IPF X color at each pixel'
         ipfxdset.attrs['CLASS'] = 'IMAGE'
@@ -541,6 +550,7 @@ def save_ubi_map(ds, ubi_map, eps_map, misorientation_map, ipf_x_col_map, ipf_y_
         ipfzdset = save_array(grp, 'ipf_z_col_map', ipf_z_col_map)
         ipfzdset.attrs['description'] = 'IPF Z color at each pixel'
         ipfzdset.attrs['CLASS'] = 'IMAGE'
+
 
 # Other
 
@@ -637,7 +647,7 @@ def get_rgbs_for_grains(grains):
 def correct_pixel(pixel, spline_file):
     sr, fr = pixel
     sc, fc = ImageD11.blobcorrector.correctorclass(spline_file).correct(sr, fr)
-    return (sc, fc)
+    return sc, fc
 
 
 def apply_spatial(cf, spline_file, workers):
@@ -696,28 +706,28 @@ def fit_grain_position_from_sino(grain, cf_strong):
     grain.dx = -b
     grain.dy = -a
 
-    
+
 def fit_grain_position_from_recon(grain, ds, y0):
     grain.bad_recon = False
     blobs = blob_log(grain.recon, min_sigma=1, max_sigma=10, num_sigma=10, threshold=.01)
     blobs_sorted = sorted(blobs, key=lambda x: x[2], reverse=True)
     try:
         largest_blob = blobs_sorted[0]
-        
+
         # we now have the blob position in recon space
         # we need to go back to microns
-        
+
         # first axis (vertical) is x
         # second axis (horizontal) is y
-        
+
         x_recon_space = largest_blob[0]
         y_recon_space = largest_blob[1]
-        
+
         # centre of the recon image is centre of space
-        
-        x_microns = (x_recon_space - grain.recon.shape[0]//2) * ds.ystep + y0
-        y_microns = -(y_recon_space - grain.recon.shape[1]//2) * ds.ystep + y0
-        
+
+        x_microns = (x_recon_space - grain.recon.shape[0] // 2) * ds.ystep + y0
+        y_microns = -(y_recon_space - grain.recon.shape[1] // 2) * ds.ystep + y0
+
         grain.x_blob = x_microns
         grain.y_blob = y_microns
     except IndexError:
@@ -1250,7 +1260,6 @@ def build_slice_arrays(grains, cutoff_level=0.0):
 
 def do_index(cf,
              dstol=0.05,
-             max_mult=13,
              hkl_tols=(0.01, 0.02, 0.03, 0.04, 0.05, 0.1),
              fracs=(0.9, 0.8, 0.7, 0.6, 0.5),
              cosine_tol=np.cos(np.radians(90 - 0.25)),
