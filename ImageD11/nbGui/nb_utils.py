@@ -7,7 +7,7 @@ import h5py
 import numba
 import numpy as np
 from matplotlib import pyplot as plt
-from tqdm.autonotebook import tqdm
+from tqdm.auto import tqdm
 from tqdm.contrib.concurrent import process_map
 from scipy.optimize import curve_fit
 from skimage.feature import blob_log
@@ -193,6 +193,34 @@ def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list)
 
 
 ## Grain IO (needs its own class really)
+
+# Box beam
+
+def save_3dxrd_grains(grains, ds):
+    with h5py.File(ds.grainsfile, 'w') as hout:
+        grn = hout.create_group('grains')
+        for g in tqdm(grains):
+            gg = grn.create_group(str(g.gid))
+            save_array(gg, 'peaks_3d_indexing', g.peaks_3d).attrs['description'] = "Strong 3D peaks that were assigned to this grain during indexing"
+            gg.attrs.update({'ubi':g.ubi,
+                            'translation':g.translation})
+
+def read_3dxrd_grains(ds):
+    with h5py.File(ds.grainsfile, 'r') as hin:      
+        grains_group = 'grains'
+        
+        grains = []
+        for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
+            gg = hin[grains_group][gid_string]
+            ubi = gg.attrs['ubi'][:]
+            translation = gg.attrs['translation'][:]
+            g = ImageD11.grain.grain(ubi, translation=translation)
+            g.gid = int(gid_string)
+            g.peaks_3d = gg['peaks_3d_indexing'][:]
+            grains.append(g)
+    
+    return grains
+
 # S3DXRD
 
 def save_s3dxrd_grains_after_indexing(grains, ds):
@@ -383,6 +411,9 @@ def read_s3dxrd_grains_after_recon(ds):
         
         raw_intensity_array = grp['intensity'][:]
         grain_labels_array = grp['labels'][:]
+        rgb_x_array = grp['ipf_x_col_map'][:]
+        rgb_y_array = grp['ipf_y_col_map'][:]
+        rgb_z_array = grp['ipf_z_col_map'][:]
         
         grains_group = 'grains'
         
@@ -411,8 +442,71 @@ def read_s3dxrd_grains_after_recon(ds):
             
             grains.append(g)
     
-    return grains
+    return grains, raw_intensity_array, grain_labels_array, rgb_x_array, rgb_y_array, rgb_z_array
 
+
+def read_s3dxrd_grains_minor_phase_after_recon(ds, phase_name=None):
+    
+    if not hasattr(ds, "grainsfile_minor_phase"):
+        if phase_name is None:
+            raise ValueError("DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
+        else:
+            ds.grainsfile_minor_phase = os.path.join(ds.analysispath, ds.dsname + '_grains_' + phase_name + '.h5')
+    
+    
+    with h5py.File(ds.grainsfile_minor_phase, 'r') as hin: 
+        grp = hin['slice_recon']
+        
+        raw_intensity_array = grp['intensity'][:]
+        grain_labels_array = grp['labels'][:]
+        rgb_x_array = grp['ipf_x_col_map'][:]
+        rgb_y_array = grp['ipf_y_col_map'][:]
+        rgb_z_array = grp['ipf_z_col_map'][:]
+        
+        grains_group = 'grains'
+        
+        grains = []
+        for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
+            gg = hin[grains_group][gid_string]
+            ubi = gg.attrs['ubi'][:]
+
+            g = ImageD11.grain.grain(ubi)
+            
+            # general grain properties
+            
+            g.gid = int(gid_string)
+            g.translation = gg['translation'][:]
+            g.cen = gg.attrs['cen']
+
+            # sinogram stuff
+            g.ssino = gg['ssino'][:]
+            g.sinoangles = gg['sinoangles'][:]
+            
+            # reconstructions
+            g.og_recon = gg['og_recon'][:]
+            g.recon = gg['recon'][:]
+            
+            grains.append(g)
+    
+    return grains, raw_intensity_array, grain_labels_array, rgb_x_array, rgb_y_array, rgb_z_array
+
+
+
+def save_ubi_map(ds, ubi_map, eps_map, misorientation_map, ipf_x_col_map, ipf_y_col_map, ipf_z_col_map):
+    with h5py.File(ds.pbpubifile, 'w') as hout:
+        grp = hout.create_group('arrays')
+        save_array(grp, 'ubi_map', ubi_map).attrs['description'] = 'Refined UBI values at each pixel'
+        save_array(grp, 'eps_map', eps_map).attrs['description'] = 'Strain matrices (sample ref) at each pixel'
+        save_array(grp, 'misorientation_map', misorientation_map).attrs['description'] = 'Misorientation to grain avg at each pixel'
+        ipfxdset = save_array(grp, 'ipf_x_col_map', ipf_x_col_map)
+        ipfxdset.attrs['description'] = 'IPF X color at each pixel'
+        ipfxdset.attrs['CLASS'] = 'IMAGE'
+        ipfydset = save_array(grp, 'ipf_y_col_map', ipf_y_col_map)
+        ipfydset.attrs['description'] = 'IPF Y color at each pixel'
+        ipfydset.attrs['CLASS'] = 'IMAGE'
+        ipfzdset = save_array(grp, 'ipf_z_col_map', ipf_z_col_map)
+        ipfzdset.attrs['description'] = 'IPF Z color at each pixel'
+        ipfzdset.attrs['CLASS'] = 'IMAGE'
 
 # Other
 
