@@ -133,21 +133,55 @@ def prepare_mlem_bash(ds, grains, pad, is_half_scan, id11_code_path, n_simultane
 
     reconfile = os.path.join(recons_path, ds.dsname + "_mlem_recon_$SLURM_ARRAY_TASK_ID.txt")
 
-    bash_script_string = f"""#!/bin/bash
+    # python 3 version (de-indent whole below comment):
+    
+    #     bash_script_string = f"""#!/bin/bash
+    # #SBATCH --job-name=mlem-recon
+    # #SBATCH --output={outfile_path}
+    # #SBATCH --error={errfile_path}
+    # #SBATCH --array=0-{len(grains) - 1}%{n_simultaneous_jobs}
+    # #SBATCH --time=02:00:00
+    # # define memory needs and number of tasks for each array job
+    # #SBATCH --ntasks=1
+    # #SBATCH --cpus-per-task={cores_per_task}
+    # #
+    # date
+    # echo python3 {python_script_path} {ds.grainsfile} $SLURM_ARRAY_TASK_ID {reconfile} {pad} {niter} {dohm} {mask_cen} > {log_path} 2>&1
+    # python3 {python_script_path} {ds.grainsfile} $SLURM_ARRAY_TASK_ID {reconfile} {pad} {niter} {dohm} {mask_cen} > {log_path} 2>&1
+    # date
+    #     """
+    
+    
+    
+    # python 2 version
+    bash_script_string = """#!/bin/bash
 #SBATCH --job-name=mlem-recon
 #SBATCH --output={outfile_path}
 #SBATCH --error={errfile_path}
-#SBATCH --array=0-{len(grains) - 1}%{n_simultaneous_jobs}
+#SBATCH --array=0-{njobs}%{n_simultaneous_jobs}
 #SBATCH --time=02:00:00
 # define memory needs and number of tasks for each array job
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={cores_per_task}
 #
 date
-echo python3 {python_script_path} {ds.grainsfile} $SLURM_ARRAY_TASK_ID {reconfile} {pad} {niter} {dohm} {mask_cen} > {log_path} 2>&1
-python3 {python_script_path} {ds.grainsfile} $SLURM_ARRAY_TASK_ID {reconfile} {pad} {niter} {dohm} {mask_cen} > {log_path} 2>&1
+echo python3 {python_script_path} {id11_code_path} {grainsfile} $SLURM_ARRAY_TASK_ID {reconfile} {pad} {niter} {dohm} {mask_cen} > {log_path} 2>&1
+python3 {python_script_path} {id11_code_path} {grainsfile} $SLURM_ARRAY_TASK_ID {reconfile} {pad} {niter} {dohm} {mask_cen} > {log_path} 2>&1
 date
-    """
+    """.format(outfile_path=outfile_path,
+               errfile_path=errfile_path,
+               njobs=len(grains) - 1,
+               n_simultaneous_jobs=n_simultaneous_jobs,
+               cores_per_task=cores_per_task,
+               python_script_path=python_script_path,
+               id11_code_path=id11_code_path,
+               grainsfile=ds.grainsfile,
+               reconfile=reconfile,
+               pad=pad,
+               niter=niter,
+               dohm=dohm,
+               mask_cen=mask_cen,
+               log_path=log_path)
 
     with open(bash_script_path, "w") as bashscriptfile:
         bashscriptfile.writelines(bash_script_string)
