@@ -19,6 +19,8 @@ import ImageD11.sinograms.dataset
 import ImageD11.indexing
 
 
+# GOTO - find somewhere!
+# Everything written in Numba could move to C?
 @numba.njit(boundscheck=True)
 def hkluniq(ubi, gx, gy, gz, eta, m, tol, hmax):
     """count uniq peaks - move to cImageD11 in the future"""
@@ -51,6 +53,7 @@ def hkluniq(ubi, gx, gy, gz, eta, m, tol, hmax):
     return tcount, ucount
 
 
+# GOTO Move to geometry
 def dtymask(i, j, cosomega, sinomega, dtyi, step, y0):
     """
     Selects the peaks using integer bins in dty.
@@ -113,6 +116,7 @@ def idxpoint(
     mr = isel
     m = dtymask(i, j, cosomega, sinomega, dtyi, ystep, y0)
     # the arrays to use for indexing (this point in space)
+    # TODO: Correct these for origin point
     igx = gx[m & mr]
     igy = gy[m & mr]
     igz = gz[m & mr]
