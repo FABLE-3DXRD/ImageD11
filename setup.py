@@ -113,7 +113,7 @@ extension = Extension( "_cImageD11",  csources,
 # Try to further reduce this long list
 scripts = ["ImageD11/rsv_mapper.py",
            "ImageD11/tkGui/plot3d.py",
-                 "scripts/peaksearch.py",
+           "scripts/peaksearch.py",
                  "scripts/fitgrain.py",
                  "scripts/ubi2cellpars.py",
                  "scripts/filtergrain.py",
