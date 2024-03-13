@@ -10,7 +10,7 @@ import multiprocessing
 from ImageD11.columnfile import columnfile
 from tqdm.contrib.concurrent import process_map
 
-from tqdm.notebook import tqdm
+from tqdm.auto import tqdm
 
 # we will now define our 2D segmenter and 3D merging functions
 # this will eventually make its way into ImageD11 properly
@@ -92,8 +92,9 @@ def do3dmerge(cf_2d_dict, n, omega):
 class worker:
     """ subtracts background, custom for ma4750 """
 
-    def __init__(self, bgfile, threshold=50, smoothsigma=1., bgc=0.9, minpx=3, m_offset_thresh=80, m_ratio_thresh=135):
+    def __init__(self, bgfile, maskfile, threshold=50, smoothsigma=1., bgc=0.9, minpx=3, m_offset_thresh=80, m_ratio_thresh=135):
         self.bg = fabio.open(bgfile).data
+        self.mask = fabio.open(maskfile).data
         self.threshold = threshold  # was 50 # ADU to zero out image
         self.smoothsigma = smoothsigma  # sigma for Gaussian before labelleing
         self.bgc = bgc  # fractional part of bg per peak to remove
@@ -127,9 +128,16 @@ class worker:
         self.offset = offset
         self.scale = r
         return img
+    
+    def masksub(self, img):
+        # active pixels are 0, masked pixels are 1
+        img_masked = img.copy()
+        img_masked[self.mask == 1] = 0
+        return img_masked
 
     def peaksearch(self, img, omega=0):
         self.cor = self.bgsub(img)
+        self.cor = self.masksub(self.cor)
         # smooth the image for labelling (removes noise maxima)
         self.smoothed = scipy.ndimage.gaussian_filter(self.cor, self.smoothsigma)
         assert self.smoothed.dtype == np.float32
@@ -184,7 +192,7 @@ pps.worker = None
 PKSAVE = ["s_1", "s_I", "s_I2", "s_fI", "s_ffI", "s_sI", "s_ssI", "s_sfI", "s_oI", "s_ooI", "s_soI", "s_foI", "mx_I", "mx_I_f", "mx_I_s", "mx_I_o", "bb_mx_f", "bb_mx_s", "bb_mx_o", "bb_mn_f", "bb_mn_s", "bb_mn_o", "avg_i", "f_raw", "s_raw", "o_raw", "m_ss", "m_ff", "m_oo", "m_sf", "m_so", "m_fo"]
 PKCOL = [getattr(ImageD11.cImageD11, p) for p in PKSAVE]
 
-def process(ds, bgfile, ncpu, worker_args):      
+def process(ds, ncpu, worker_args):      
     hname = ds.masterfile
     scan_name = ds.scans[0]
     frames_dset = scan_name + "/measurement/" + ds.detector
