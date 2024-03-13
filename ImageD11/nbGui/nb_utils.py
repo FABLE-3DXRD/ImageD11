@@ -1,7 +1,6 @@
 import os
 import subprocess
 import time
-from shutil import rmtree
 
 import h5py
 import numba
@@ -26,7 +25,7 @@ from ImageD11.blobcorrector import eiger_spatial
 
 ### General utilities (for all notebooks)
 
-## Cluster related stuff
+## Cluster related stuff (GOTO ImageD11.futures)
 
 def slurm_submit_and_wait(bash_script_path, wait_time_sec=60):
     if not os.path.exists(bash_script_path):
@@ -104,18 +103,18 @@ def prepare_mlem_bash(ds, grains, pad, is_half_scan, id11_code_path, n_simultane
     slurm_mlem_path = os.path.join(ds.analysispath, "slurm_mlem")
 
     if os.path.exists(slurm_mlem_path):
-        print("Removing " + slurm_mlem_path)
-        rmtree(slurm_mlem_path)
-
-    os.mkdir(slurm_mlem_path)
+        if len(os.listdir(slurm_mlem_path)) > 0:
+            raise OSError("Slurm MLEM logs folder exists and is not empty!")
+    else:
+        os.mkdir(slurm_mlem_path)
 
     recons_path = os.path.join(ds.analysispath, "mlem_recons")
 
     if os.path.exists(recons_path):
-        print("Removing " + recons_path)
-        rmtree(recons_path)
-
-    os.mkdir(recons_path)
+        if len(os.listdir(recons_path)) > 0:
+            raise OSError("MLEM recons folder exists and is not empty!")
+    else:
+        os.mkdir(recons_path)
 
     if is_half_scan:
         dohm = "Yes"
@@ -191,6 +190,8 @@ date
 
 # Helper funtions
 
+# GOTO Silx.IO? is silx a dep already? might as well be if not
+# or save grain map output
 def save_array(grp, name, ary):
     cmp = {'compression': 'gzip',
            'compression_opts': 2,
@@ -227,7 +228,10 @@ def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list)
 ## Grain IO (needs its own class really)
 
 # Box beam
-
+# GOTO
+# Make higher level HDF5/Nexus Generic IO class
+# Check if Silx already has this
+# Make dataset and GrainsIO both inherit from this
 def save_3dxrd_grains(grains, ds):
     with h5py.File(ds.grainsfile, 'w') as hout:
         grn = hout.create_group('grains')
@@ -554,7 +558,11 @@ def save_ubi_map(ds, ubi_map, eps_map, misorientation_map, ipf_x_col_map, ipf_y_
 
 # Other
 
+# GOTO Move to DataSet
 def correct_half_scan(ds):
+    """Pads the dataset to become bigger and symmetric"""
+    # NOTE: We need to keep track of which bins are "real" and measured and which aren't
+    # Sinomask
     c0 = 0
     # check / fix the centre of rotation
     # get value of bin closest to c0
@@ -592,6 +600,8 @@ def correct_half_scan(ds):
 
 
 ### IPF Colour stuff
+# GOTO New file, Orix interface, taking a grain instance (or a U) as an argument
+# Check sym_u inside ImageD11
 
 def grain_to_rgb(g, ax=(0, 0, 1)):
     return hkl_to_color_cubic(crystal_direction_cubic(g.ubi, ax))
@@ -644,6 +654,8 @@ def get_rgbs_for_grains(grains):
 
 ### Segmentation
 
+# GOTO Inside blobcorrector
+
 def correct_pixel(pixel, spline_file):
     sr, fr = pixel
     sc, fc = ImageD11.blobcorrector.correctorclass(spline_file).correct(sr, fr)
@@ -682,6 +694,8 @@ def apply_spatial_lut(cf, spline_file):
 
 
 ### Sinogram stuff
+
+# GOTO sinograms/geometry
 
 def sine_function(x, offset, a, b):
     return b * np.sin(np.radians(x)) + a * np.cos(np.radians(x)) + offset
@@ -725,6 +739,7 @@ def fit_grain_position_from_recon(grain, ds, y0):
 
         # centre of the recon image is centre of space
 
+        # the below should be independent, tested, inside sinograms/geometry
         x_microns = (x_recon_space - grain.recon.shape[0] // 2) * ds.ystep + y0
         y_microns = -(y_recon_space - grain.recon.shape[1] // 2) * ds.ystep + y0
 
@@ -737,6 +752,8 @@ def fit_grain_position_from_recon(grain, ds, y0):
         grain.bad_recon = True
 
 
+# should be fixed by monitor in assemble_label
+# should just be a sinogram numpy array and a monitor spectrum
 def correct_sinogram_rows_with_ring_current(grain, ds):
     grain.ssino = grain.ssino / ds.ring_currents_per_scan_scaled[:, None]
 
@@ -755,128 +772,8 @@ def get_ring_current_per_scan(ds):
         ds.ring_currents_per_scan_scaled = np.array(ring_currents / np.max(ring_currents))
 
 
-def map_grain_from_peaks(g, flt, ds):
-    """
-    Computes sinogram
-    flt is already the peaks for this grain
-    Returns angles, sino
-    """
-    NY = len(ds.ybincens)  # number of y translations
-    iy = np.round((flt.dty - ds.ybincens[0]) / (ds.ybincens[1] - ds.ybincens[0])).astype(
-        int)  # flt column for y translation index
-
-    # The problem is to assign each spot to a place in the sinogram
-    hklmin = g.hkl_2d_strong.min(axis=1)  # Get minimum integer hkl (e.g -10, -9, -10)
-    dh = g.hkl_2d_strong - hklmin[:, np.newaxis]  # subtract minimum hkl from all integer hkls
-    de = (g.etasigns_2d_strong.astype(int) + 1) // 2  # something signs related
-    #   4D array of h,k,l,+/-
-    # pkmsk is whether a peak has been observed with this HKL or not
-    pkmsk = np.zeros(list(dh.max(axis=1) + 1) + [2, ],
-                     int)  # make zeros-array the size of (max dh +1) and add another axis of length 2
-    pkmsk[dh[0], dh[1], dh[2], de] = 1  # we found these HKLs for this grain
-    #   sinogram row to hit
-    pkrow = np.cumsum(pkmsk.ravel()).reshape(pkmsk.shape) - 1  #
-    # counting where we hit an HKL position with a found peak
-    # e.g (-10, -9, -10) didn't get hit, but the next one did, so increment
-
-    npks = pkmsk.sum()
-    destRow = pkrow[dh[0], dh[1], dh[2], de]
-    sino = np.zeros((npks, NY), 'f')
-    hits = np.zeros((npks, NY), 'f')
-    angs = np.zeros((npks, NY), 'f')
-    adr = destRow * NY + iy
-    # Just accumulate 
-    sig = flt.sum_intensity
-    ImageD11.cImageD11.put_incr64(sino, adr, sig)
-    ImageD11.cImageD11.put_incr64(hits, adr, np.ones(len(de), dtype='f'))
-    ImageD11.cImageD11.put_incr64(angs, adr, flt.omega)
-
-    sinoangles = angs.sum(axis=1) / hits.sum(axis=1)
-    # Normalise:
-    sino = (sino.T / sino.max(axis=1)).T
-    # Sort (cosmetic):
-    order = np.lexsort((np.arange(npks), sinoangles))
-    sinoangles = sinoangles[order]
-    ssino = sino[order].T
-
-    return sinoangles, ssino, hits[order].T
-
-
-def do_sinos(g, p2d, ds, hkltol=0.25):
-    flt = tocolf({p: p2d[p][g.peaks_2d] for p in p2d}, ds)  # convert it to a columnfile and spatially correct
-
-    hkl_real = np.dot(g.ubi, (flt.gx, flt.gy, flt.gz))  # calculate hkl of all assigned peaks
-    hkl_int = np.round(hkl_real).astype(int)  # round to nearest integer
-    dh = ((hkl_real - hkl_int) ** 2).sum(axis=0)  # calculate square of difference
-
-    # g.dherrall = dh.mean()  # mean hkl error across all assigned peaks
-    # g.npksall = flt.nrows  # total number of assigned peaks
-    flt.filter(dh < hkltol * hkltol)  # filter all assigned peaks to be less than hkltol squared
-    hkl_real = np.dot(g.ubi, (flt.gx, flt.gy, flt.gz))  # recalculate error after filtration
-    hkl_int = np.round(hkl_real).astype(int)
-    dh = ((hkl_real - hkl_int) ** 2).sum(axis=0)
-    # g.dherr = dh.mean()  # dherr is mean hkl error across assigned peaks after hkltol filtering
-    # g.npks = flt.nrows  # total number of assigned peaks after hkltol filtering
-    g.etasigns_2d_strong = np.sign(flt.eta)
-    g.hkl_2d_strong = hkl_int  # integer hkl of assigned peaks after hkltol filtering
-    g.sinoangles, g.ssino, g.hits = map_grain_from_peaks(g, flt, ds)
-    return g
-
-
-def run_iradon_id11(sino, angles, pad=20, y0=0, workers=1, sample_mask=None, apply_halfmask=False,
-                    mask_central_zingers=False):
-    outsize = sino.shape[0] + pad
-
-    if apply_halfmask:
-        halfmask = np.zeros_like(sino)
-
-        halfmask[:len(halfmask) // 2 - 1, :] = 1
-        halfmask[len(halfmask) // 2 - 1, :] = 0.5
-
-        sino_to_recon = sino * halfmask
-    else:
-        sino_to_recon = sino
-
-    # # pad the sample mask
-    # sample_mask_padded = np.pad(sample_mask, pad//2)
-
-    # Perform iradon transform of grain sinogram, store result (reconstructed grain shape) in g.recon
-    recon = ImageD11.sinograms.roi_iradon.iradon(sino_to_recon,
-                                                 theta=angles,
-                                                 mask=sample_mask,
-                                                 output_size=outsize,
-                                                 projection_shifts=np.full(sino.shape, -y0),
-                                                 filter_name='hamming',
-                                                 interpolation='linear',
-                                                 workers=workers)
-
-    if mask_central_zingers:
-        grs = recon.shape[0]
-        xpr, ypr = -grs // 2 + np.mgrid[:grs, :grs]
-        inner_mask_radius = 25
-        outer_mask_radius = inner_mask_radius + 2
-
-        inner_circle_mask = (xpr ** 2 + ypr ** 2) < inner_mask_radius ** 2
-        outer_circle_mask = (xpr ** 2 + ypr ** 2) < outer_mask_radius ** 2
-
-        mask_ring = inner_circle_mask & outer_circle_mask
-        # we now have a mask to apply
-        fill_value = np.median(recon[mask_ring])
-        recon[inner_circle_mask] = fill_value
-
-    return recon
-
-
-def iradon_grain(grain, pad=20, y0=0, workers=1, sample_mask=None, apply_halfmask=False, mask_central_zingers=False):
-    sino = grain.ssino
-    angles = grain.sinoangles
-    recon = run_iradon_id11(sino, angles, pad, y0, workers, sample_mask, apply_halfmask, mask_central_zingers)
-    grain.recon = recon
-
-    return grain
-
-
 ### Peak manipulation
+# GOTO
 
 @numba.njit(parallel=True)
 def pmax(ary):
@@ -952,6 +849,27 @@ def find_grain_id(spot3d_id, grain_id, spot2d_label, grain_label, order, nthread
                 grain_label[i] = grain_id[pcf]
 
 
+# GOTO class method for Peaks2Grain class
+def assign_peaks_to_grains(grains, cf, tol):
+    """Assigns peaks to the best fitting grain"""
+    # assign peaks to grains
+
+    # column to store the grain labels
+    labels = np.zeros(cf.nrows, 'i')
+    # get all g-vectors from columnfile (updateGeometry)
+    # should we instead calculate considering grain translations? (probably!)
+    gv = np.transpose((cf.gx, cf.gy, cf.gz)).astype(float)
+    # column to store drlv2 (error in hkl)
+    drlv2 = np.ones(cf.nrows, 'd')
+    # iterate over all grains
+    print("Scoring and assigning {} grains".format(len(grains)))
+    for g in tqdm(grains):
+        n = ImageD11.cImageD11.score_and_assign(g.ubi, gv, tol, drlv2, labels, g.gid)
+
+    # add the labels column to the columnfile
+    cf.addcolumn(labels, 'grain_id')
+
+
 def get_2d_peaks_from_4d_peaks(ds, cf):
     # Big scary block
     # Must understand what this does!
@@ -989,6 +907,9 @@ def get_2d_peaks_from_4d_peaks(ds, cf):
     return gord, inds, p2d
 
 
+# GOTO dataset method
+# add optional peaks mask
+# read only the bits of pkd that we need?
 def tocolf(pkd, ds):
     """ Converts a dictionary of peaks into an ImageD11 columnfile
     adds on the geometric computations (tth, eta, gvector, etc) """
@@ -999,6 +920,138 @@ def tocolf(pkd, ds):
     return cf
 
 
+# hkl assignment needs grains2peaks class
+# GOTO: part of a little collection of functions that put stuff on the Grain object
+def do_sinos(g, p2d, ds, hkltol=0.25):
+    # g.peaks_2d are 2d peaks that were merged into the 4d peaks that were assigned to this grain (obviously!)
+    flt = tocolf({p: p2d[p][g.peaks_2d] for p in p2d}, ds)  # convert it to a columnfile and spatially correct
+
+    hkl_real = np.dot(g.ubi, (flt.gx, flt.gy, flt.gz))  # calculate hkl of all assigned peaks
+    hkl_int = np.round(hkl_real).astype(int)  # round to nearest integer
+    dh = ((hkl_real - hkl_int) ** 2).sum(axis=0)  # calculate square of difference
+
+    # g.dherrall = dh.mean()  # mean hkl error across all assigned peaks
+    # g.npksall = flt.nrows  # total number of assigned peaks
+    flt.filter(dh < hkltol * hkltol)  # filter all assigned peaks to be less than hkltol squared
+    hkl_real = np.dot(g.ubi, (flt.gx, flt.gy, flt.gz))  # recalculate error after filtration
+    hkl_int = np.round(hkl_real).astype(int)
+    # dh = ((hkl_real - hkl_int) ** 2).sum(axis=0)
+    # g.dherr = dh.mean()  # dherr is mean hkl error across assigned peaks after hkltol filtering
+    # g.npks = flt.nrows  # total number of assigned peaks after hkltol filtering
+    g.etasigns_2d_strong = np.sign(flt.eta)
+    g.hkl_2d_strong = hkl_int  # integer hkl of assigned peaks after hkltol filtering
+    g.sinoangles, g.ssino, g.hits = map_grain_from_peaks(g, flt, ds)
+    return g
+
+
+# GOTO GrainSinogram class - has grain object and dataset object as attributes
+# has IO methods
+def map_grain_from_peaks(g, flt, ds):
+    """
+    Computes sinogram
+    flt is already the peaks for this grain
+    Returns angles, sino
+    """
+    NY = len(ds.ybincens)  # number of y translations
+    iy = np.round((flt.dty - ds.ybincens[0]) / (ds.ybincens[1] - ds.ybincens[0])).astype(
+        int)  # flt column for y translation index
+
+    # The problem is to assign each spot to a place in the sinogram
+    hklmin = g.hkl_2d_strong.min(axis=1)  # Get minimum integer hkl (e.g -10, -9, -10)
+    dh = g.hkl_2d_strong - hklmin[:, np.newaxis]  # subtract minimum hkl from all integer hkls
+    de = (g.etasigns_2d_strong.astype(int) + 1) // 2  # something signs related
+    #   4D array of h,k,l,+/-
+    # pkmsk is whether a peak has been observed with this HKL or not
+    pkmsk = np.zeros(list(dh.max(axis=1) + 1) + [2, ],
+                     int)  # make zeros-array the size of (max dh +1) and add another axis of length 2
+    pkmsk[dh[0], dh[1], dh[2], de] = 1  # we found these HKLs for this grain
+    #   sinogram row to hit
+    pkrow = np.cumsum(pkmsk.ravel()).reshape(pkmsk.shape) - 1  #
+    # counting where we hit an HKL position with a found peak
+    # e.g (-10, -9, -10) didn't get hit, but the next one did, so increment
+
+    npks = pkmsk.sum()
+    destRow = pkrow[dh[0], dh[1], dh[2], de]
+    sino = np.zeros((npks, NY), 'f')
+    hits = np.zeros((npks, NY), 'f')
+    angs = np.zeros((npks, NY), 'f')
+    adr = destRow * NY + iy
+    # Just accumulate 
+    sig = flt.sum_intensity
+    ImageD11.cImageD11.put_incr64(sino, adr, sig)
+    ImageD11.cImageD11.put_incr64(hits, adr, np.ones(len(de), dtype='f'))
+    ImageD11.cImageD11.put_incr64(angs, adr, flt.omega)
+
+    sinoangles = angs.sum(axis=1) / hits.sum(axis=1)
+    # Normalise:
+    sino = (sino.T / sino.max(axis=1)).T
+    # Sort (cosmetic):
+    order = np.lexsort((np.arange(npks), sinoangles))
+    sinoangles = sinoangles[order]
+    ssino = sino[order].T
+
+    return sinoangles, ssino, hits[order].T
+
+
+# GOTO apply_halfmask function to existing sinogram
+# roi_iradon
+def run_iradon_id11(sino, angles, pad=20, y0=0, workers=1, sample_mask=None, apply_halfmask=False,
+                    mask_central_zingers=False):
+    outsize = sino.shape[0] + pad
+
+    if apply_halfmask:
+        halfmask = np.zeros_like(sino)
+
+        halfmask[:len(halfmask) // 2 - 1, :] = 1
+        halfmask[len(halfmask) // 2 - 1, :] = 0.5
+
+        sino_to_recon = sino * halfmask
+    else:
+        sino_to_recon = sino
+
+    # # pad the sample mask
+    # sample_mask_padded = np.pad(sample_mask, pad//2)
+
+    # Perform iradon transform of grain sinogram, store result (reconstructed grain shape) in g.recon
+    recon = ImageD11.sinograms.roi_iradon.iradon(sino_to_recon,
+                                                 theta=angles,
+                                                 mask=sample_mask,
+                                                 output_size=outsize,
+                                                 projection_shifts=np.full(sino.shape, -y0),
+                                                 filter_name='hamming',
+                                                 interpolation='linear',
+                                                 workers=workers)
+
+    if mask_central_zingers:
+        grs = recon.shape[0]
+        xpr, ypr = -grs // 2 + np.mgrid[:grs, :grs]
+        inner_mask_radius = 25
+        outer_mask_radius = inner_mask_radius + 2
+
+        inner_circle_mask = (xpr ** 2 + ypr ** 2) < inner_mask_radius ** 2
+        outer_circle_mask = (xpr ** 2 + ypr ** 2) < outer_mask_radius ** 2
+
+        mask_ring = inner_circle_mask & outer_circle_mask
+        # we now have a mask to apply
+        fill_value = np.median(recon[mask_ring])
+        recon[inner_circle_mask] = fill_value
+
+    return recon
+
+
+def iradon_grain(grain, pad=20, y0=0, workers=1, sample_mask=None, apply_halfmask=False, mask_central_zingers=False):
+    sino = grain.ssino
+    angles = grain.sinoangles
+    recon = run_iradon_id11(sino, angles, pad, y0, workers, sample_mask, apply_halfmask, mask_central_zingers)
+    grain.recon = recon
+
+    return grain
+
+
+# GOTO peakselect module
+# holds many useful peak filtering functions
+#
+# merge sandbox/ringselect
 def unitcell_peaks_mask(cf, dstol, dsmax):
     cell = ImageD11.unitcell.unitcell_from_parameters(cf.parameters)
     cell.makerings(dsmax)
@@ -1010,6 +1063,7 @@ def unitcell_peaks_mask(cf, dstol, dsmax):
     return m
 
 
+# GOTO columnfile method
 def strongest_peaks(colf, uself=True, frac=0.995, B=0.2, doplot=None):
     # correct intensities for structure factor (decreases with 2theta)
     cor_intensity = colf.sum_intensity * (np.exp(colf.ds * colf.ds * B))
@@ -1020,6 +1074,10 @@ def strongest_peaks(colf, uself=True, frac=0.995, B=0.2, doplot=None):
     sortedpks = cor_intensity[order]
     cums = np.cumsum(sortedpks)
     cums /= cums[-1]
+    # anything above this should be calculated one and added to the CF
+    # check if the column exists before calculating
+    # slider for frac?
+    # all above only needs calculating once
     enough = np.searchsorted(cums, frac)
     # Aim is to select the strongest peaks for indexing.
     cutoff = sortedpks[enough]
@@ -1044,24 +1102,6 @@ def selectpeaks(cf, dstol=0.005, dsmax=10, frac=0.99, doplot=None):
     ms = strongest_peaks(cfc, frac=frac, doplot=doplot)
     cfc.filter(ms)
     return cfc
-
-
-def assign_peaks_to_grains(grains, cf, tol):
-    # assign peaks to grains
-
-    # column to store the grain labels
-    labels = np.zeros(cf.nrows, 'i')
-    # get all g-vectors from columnfile
-    gv = np.transpose((cf.gx, cf.gy, cf.gz)).astype(float)
-    # column to store drlv2 (error in hkl)
-    drlv2 = np.ones(cf.nrows, 'd')
-    # iterate over all grains
-    print("Scoring and assigning {} grains".format(len(grains)))
-    for g in tqdm(grains):
-        n = ImageD11.cImageD11.score_and_assign(g.ubi, gv, tol, drlv2, labels, g.gid)
-
-    # add the labels column to the columnfile
-    cf.addcolumn(labels, 'grain_id')
 
 
 ### Plotting
@@ -1174,6 +1214,7 @@ def plot_grain_sinograms(grains, cf, n_grains_to_plot=None):
     plt.show()
 
 
+# GOTO follow orix colouring stuff
 def triangle():
     """ compute a series of point on the edge of the triangle """
     xy = [np.array(v) for v in ((0, 1, 1), (0, 0, 1), (1, 1, 1))]
@@ -1181,6 +1222,7 @@ def triangle():
     return np.array([hkl_to_pf_cubic(np.array(p)) for p in xy])
 
 
+# GOTO follow orix colouring stuff
 def plot_ipfs(grains):
     f, a = plt.subplots(1, 3, figsize=(15, 5))
     ty, tx = triangle().T
@@ -1198,6 +1240,7 @@ def plot_ipfs(grains):
         a[i].plot(tx, ty, 'k-', lw=1)
 
 
+# GOTO GrainMap class
 def build_slice_arrays(grains, cutoff_level=0.0):
     grain_labels_array = np.zeros_like(grains[0].recon) - 1
 
@@ -1258,6 +1301,7 @@ def build_slice_arrays(grains, cutoff_level=0.0):
 ### Indexing
 
 
+# GOTO
 def do_index(cf,
              dstol=0.05,
              hkl_tols=(0.01, 0.02, 0.03, 0.04, 0.05, 0.1),
@@ -1267,6 +1311,7 @@ def do_index(cf,
              forgen=(),
              foridx=()):
     print("Indexing {} peaks".format(cf.nrows))
+    # replace Fe with something else
     Fe = ImageD11.unitcell.unitcell_from_parameters(cf.parameters)
     Fe.makerings(cf.ds.max())
     indexer = ImageD11.indexing.indexer_from_colfile(cf)
@@ -1320,6 +1365,7 @@ def do_index(cf,
     return grains, indexer
 
 
+# GOTO refinegrains somewhere?
 def refine_grain_positions(cf_3d, ds, grains, parfile, symmetry="cubic", cf_frac=0.85, cf_dstol=0.01,
                            hkl_tols=(0.05, 0.025, 0.01)):
     sample = ds.sample
@@ -1363,6 +1409,8 @@ def refine_grain_positions(cf_3d, ds, grains, parfile, symmetry="cubic", cf_frac
     return grains2
 
 ### (hopefully) no longer used
+
+# GOTO follow wherever we put scipy curve fit
 
 # def calcy(cos_omega, sin_omega, sol):
 #     return sol[0] + cos_omega * sol[1] + sin_omega * sol[2]
