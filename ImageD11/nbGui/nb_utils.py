@@ -1,7 +1,6 @@
 import os
 import subprocess
 import time
-from shutil import rmtree
 
 import h5py
 import numba
