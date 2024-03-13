@@ -1,18 +1,3 @@
-import os
-
-username = os.environ.get("USER")
-
-id11_code_path = "/home/esrf/" + username + "/Code/ImageD11"
-
-import sys
-
-sys.path.insert(0, id11_code_path)
-
-import numpy as np
-import h5py
-
-import ImageD11.sinograms.roi_iradon
-
 def run_iradon_mlem(ssino, sinoangles, mask=None, pad=20, y0=0, workers=1, niter=20, apply_halfmask=False, mask_central_zingers=False):
     outsize = ssino.shape[0] + pad
     if apply_halfmask:
@@ -63,6 +48,7 @@ def read_hdf5(h5name, ginc):
         
     return ssino, sinoangles, circle_mask, y0
 
+
 def main(h5name, ginc, dest, pad, niter, dohm, maskcen):
     # read the HDF5 file
     ssino, sinoangles, circle_mask, y0 = read_hdf5(h5name, ginc)
@@ -73,21 +59,30 @@ def main(h5name, ginc, dest, pad, niter, dohm, maskcen):
     # write result to disk as Numpy array
     # save as TIFF instead?
     np.savetxt(dest, recon)
-    
+
+
 if __name__ == "__main__":
-    h5name = sys.argv[1]
-    ginc = int(sys.argv[2])
-    dest = sys.argv[3]
-    # y0 = float(sys.argv[4])
-    # pad = int(sys.argv[5])
-    # niter = int(sys.argv[6])
-    # dohm = sys.argv[7]
-    # maskcen = sys.argv[8]
+    # horrible workaround to include id11 code path
+    import sys
     
-    pad = int(sys.argv[4])
-    niter = int(sys.argv[5])
-    dohm = sys.argv[6]
-    maskcen = sys.argv[7]
+    id11_code_path = sys.argv[1]
+    
+    sys.path.insert(0, id11_code_path)
+    
+    import os
+
+    import numpy as np
+    import h5py
+
+    import ImageD11.sinograms.roi_iradon
+    
+    h5name = sys.argv[2]
+    ginc = int(sys.argv[3])
+    dest = sys.argv[4]
+    pad = int(sys.argv[5])
+    niter = int(sys.argv[6])
+    dohm = sys.argv[7]
+    maskcen = sys.argv[8]
     
     if dohm == "Yes":
         apply_halfmask = True
