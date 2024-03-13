@@ -42,10 +42,10 @@ UC = unitcell.unitcell_from_parameters( mytransformer.parameterobj )
 
 col = mytransformer.colfile
 if not "drlv2" in col.titles:
-    col.addcolumn( np.ones(col.nrows, np.float),
+    col.addcolumn( np.ones(col.nrows, float),
                    "drlv2" )
 if not "labels" in col.titles:
-    col.addcolumn( np.ones(col.nrows, np.float)-2,
+    col.addcolumn( np.ones(col.nrows, float)-2,
                    "labels" )
 if not "sc" in col.titles:
     assert "xc" in col.titles
@@ -91,7 +91,7 @@ def domap(  OmFloat,  OmSlop,
         o.scandata["internal"] = colfile
         o.tolerance = tol
         o.readubis( grainsfile )
-        if symmetry is not "triclinic":
+        if symmetry != "triclinic":
             o.makeuniq( symmetry )
         o.generate_grains()
         o.refinepositions()
@@ -121,7 +121,7 @@ def doindex( gve, x, y, z, w):
         gv = gve.T
         )
     myindexer.ds = np.sqrt( (gve * gve).sum(axis=0) )
-    myindexer.ga = np.zeros(len(myindexer.ds),np.int)-1 # Grain assignments
+    myindexer.ga = np.zeros(len(myindexer.ds),int)-1 # Grain assignments
     #   myindexer.readgvfile( gve )
 
     for ring1 in RING1:

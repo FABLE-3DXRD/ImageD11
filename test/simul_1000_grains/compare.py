@@ -1,12 +1,12 @@
 
-
+from __future__ import print_function
 from ImageD11.grain import read_grain_file, write_grain_file
 from ImageD11.columnfile import columnfile
 import numpy as np
 
 ideal = read_grain_file("ideal.map")
 
-fnames = "allgrid_fittrans.map allgrid_indexer.map allgrid_makemap.map allgrid_teo.map".split()
+fnames = "f2.map allgrid_fittrans.map allgrid_indexer.map allgrid_makemap.map allgrid_teo.map".split()
 #fnames = "teo.map",
 
 def check(gl1, gl2):
@@ -26,13 +26,13 @@ def check(gl1, gl2):
             mxTi, mxT = i, t
         if abs(dvol) > mxV:
             mxVi, mxV = i, abs(dvol)
-    print dTs/i, dVs/i, mxT, mxTi, mxV, mxVi
+    print( dTs/i, dVs/i, mxT, mxTi, mxV, mxVi )
     
 
 
-print "fname avg_pos_err avg_vol_err max_pos_err grain_max_pos_err max_vol_err grain_max_vol_err"
+print( "fname avg_pos_err avg_vol_err max_pos_err grain_max_pos_err max_vol_err grain_max_vol_err")
 for f in fnames:
-    print f,
+    print (f,end=" ")
     check(read_grain_file(f), ideal)
 
 

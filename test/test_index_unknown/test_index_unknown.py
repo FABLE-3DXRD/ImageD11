@@ -13,7 +13,7 @@ import numpy as np
        [-0.52591148,  0.82984375, -6.15279178],
        [ 4.54824731,  0.40771549,  1.56440062]])]
 >>> def norm(v): return v/np.sqrt(np.dot(v,v))
-... 
+...
 >>> import numpy as np
 >>> d1 = norm(np.array([-0.4,0.5,0.1]))
 >>> d1
@@ -27,7 +27,7 @@ array([-0.6172134 ,  0.77151675,  0.15430335])
 """
 
 
-UBIS = [ 
+UBIS = [
     ("1.ubi", "-k 1 -o 1.ubi.new -v 0.01 -m 20 -f 0.75 -t 0.1"),
     ("1.ubi", "-k 1 -o 1.ubi.fftnew -v 1 -m 20 -f 0.75 -t 0.1 --fft"),
     ("2.ubi", "-k 2 -o 2.ubi.new -v 0.01 -m 20 -f 0.45 -t 0.1"),
@@ -38,8 +38,11 @@ UBIS = [
     ]
 
 
-
-SCRIPT = os.path.join(sys.executable+" ..","..","scripts","index_unknown.py")
+d = os.path.dirname(__file__)
+if len(d.strip()) == 0:
+    d = '.'
+SCRIPT = os.path.join(sys.executable+' "'+d,
+                      "..","..","scripts",'index_unknown.py"')
 
 def generate_hkls( n ):
     """ Makes solid hkl cube """
@@ -52,7 +55,7 @@ def generate_hkls( n ):
             for k in r:
                 # print [ (l,l+lim) for l in [i,j,k]]
                 hkls[:,i+lim,j+lim,k+lim] = i,j,k
-    
+
     hkls = hkls.reshape( (3,npk*npk*npk))
     return hkls
 
@@ -77,26 +80,28 @@ def write_gve( gvecs, name):
     f.close()
 
 
+
 class testGve(unittest.TestCase):
     def setUp(self):
+        d = os.path.dirname(__file__)
+        self.fnames = []
         for u, cmd in UBIS:
-            write_gve(
-                generate_gve(u),
-                u+".gve"
-                )
-        
-    def test1(self):
-        for u, cmd in UBIS:
-            assert os.path.exists(u+".gve")
-            e = SCRIPT +" -g %s "%(u+".gve")+cmd
-            print ("\n",e)
-            os.system(e)
+            fname=os.path.join(d, u+".gve")
+            ufile=os.path.join(d, u )
+            write_gve( generate_gve(ufile), fname )
+            self.fnames.append(fname)
 
+    def test1(self):
+        for fname, (u,cmd) in zip(self.fnames, UBIS):
+            assert os.path.exists(fname)
+            e = SCRIPT +' -g "%s" '%(fname)+cmd
+            print ("\n",e)
+            assert os.system(e) == 0
 
     def tearDown(self):
         """ explicitely leave the files here for debugging """
         pass
-            
+
 
 
 if __name__ == "__main__":

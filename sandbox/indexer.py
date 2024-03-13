@@ -19,8 +19,7 @@ from __future__ import print_function
 
 
 import numpy as np
-from ImageD11 import cImageD11, grain, transform
-import unitcell
+from ImageD11 import cImageD11, grain, transform, unitcell
 
 import math, time, sys, logging
 
@@ -67,7 +66,7 @@ class indexer:
           elif "xc" in self.cf.titles: 
              pks = self.cf.xc, self.cf.yc
           else:
-             raise "peaks file misses xc or sc"
+             raise Exception("peaks file misses xc or sc")
           xl,yl,zl = transform.compute_xyz_lab( pks,
                                                 **self.transformpars.parameters)
           self.cf.addcolumn(xl,"xl")
@@ -164,7 +163,7 @@ class indexer:
         ind1 = allinds[ abs(self.cf.tth - tth1) < tthtol ]
         ind2 = allinds[ abs(self.cf.tth - tth2) < tthtol ]
         angle, cosangle = self.unitcell.anglehkls( hkl1, hkl2 )
-        g = np.array( (self.cf.gx, self.cf.gy, self.cf.gz), np.float )
+        g = np.array( (self.cf.gx, self.cf.gy, self.cf.gz), float )
         n = g/self.cf.modg
         gvf = g.T.copy()
         n1 = n[:,ind1]

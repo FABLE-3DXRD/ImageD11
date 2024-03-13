@@ -24,12 +24,14 @@ from __future__ import print_function, division
 
 import numpy
 
-from ImageD11 import transform, indexing, parameters
+from ImageD11 import transform, indexing, parameters, ImageD11options
 from ImageD11 import grain, columnfile, cImageD11, simplex
 
 import xfab.tools
 
-print(__file__)
+# print(__file__)
+
+    
 
 
 def triclinic( cp ):
@@ -37,13 +39,15 @@ def triclinic( cp ):
 
 def monoclinic_a( cp ):
     a,b,c,al,be,ga = cp
-    return [a,b,c,90.,be,90.]
+    return [a,b,c,al,90.,90.]
+
 def monoclinic_b( cp ):
     a,b,c,al,be,ga = cp
-    return [a,b,c,90.,90.,ga]
+    return [a,b,c,90.,be,90.]
+
 def monoclinic_c( cp ):
     a,b,c,al,be,ga = cp
-    return [a,b,c,90.,be,90.]
+    return [a,b,c,90.,90.,ga]
 
 def orthorhombic( cp ):
     """ a=b, c, 90,90,90 """
@@ -58,25 +62,74 @@ def tetragonal( cp ):
 def trigonalP( cp ):
     """ a=b=c, alpha=beta=gamma """
     a,b,c,al,be,ga = cp
-    a = (a+b+c)/3.
-    al = (al+be+ga)/3.
-    return [a,a,a,al,al,al]
+    anew = (a+b+c)/3.
+    alnew = (al+be+ga)/3.
+    return [anew,anew,anew,alnew,alnew,alnew]
 
 def trigonalH( cp ):
     """ a=b,c, alpha=beta=90,gamma=120 """
     a,b,c,al,be,ga = cp
-    a = (a+b)/2.
-    return [ a, a, c, 90., 90., 120.] 
+    anew = (a+b)/2.
+    return [ anew, anew, c, 90., 90., 120.] 
 
 hexagonal = trigonalH
 
 def cubic( cp ):
     """ a=b=c, alpha=beta=gamma=90 """
-    a = (cp[0]+cp[1]+cp[2])
-    return [ a, a, a, 90., 90., 90.] 
+    anew = (cp[0]+cp[1]+cp[2])/3.
+    return [ anew, anew, anew, 90., 90., 90.] 
     
 
-    
+def get_options(parser):
+    parser.add_argument("-p",  "--parfile", action="store",
+                      dest="parfile", 
+                      type=ImageD11options.ParameterFileType(mode='r'),
+                      help="Name of input parameter file")
+    parser.add_argument("-u",  "--ubifile", action="store",
+                      dest="ubifile", 
+                      type=ImageD11options.UbiFileType(mode='r'),
+                      help="Name of ubi file")
+    parser.add_argument("-U",  "--newubifile", action="store",
+                      dest="newubifile", 
+                      type=ImageD11options.UbiFileType(mode='w'),
+                      help="Name of new ubi file to output")
+    parser.add_argument("-f",  "--fltfile", action="store",
+                      dest="fltfile", 
+                      type=ImageD11options.ColumnFileType(mode='r'),
+                      help="Name of flt file")
+    parser.add_argument("-F",  "--newfltfile", action="store",
+                      dest="newfltfile", 
+                      type=ImageD11options.ColumnFileType(mode='w'),
+                      help="Name of flt file containing unindexed peaks")
+    lattices = ["cubic", "hexagonal", "trigonalH","trigonalP",
+                "tetragonal", "orthorhombic", "monoclinic_a",
+                "monoclinic_b","monoclinic_c","triclinic"]
+    parser.add_argument("-s", "--sym", action="store",
+                      dest="symmetry", # type="choice",
+                      default = "triclinic",
+                      choices = lattices,
+                      help="Lattice symmetry for choosing orientation")
+    parser.add_argument("-l", "--lattice", action="store",
+                      dest="latticesymmetry", #type="choice",
+                      default = "triclinic",
+                      choices = lattices,
+                      help="Lattice symmetry for choosing orientation from "+
+                      "|".join(lattices))
+    parser.add_argument("-t", "--tol", action="store",
+                      dest="tol", type=float,
+                      default = 0.25,
+                      help="Tolerance to use in peak assignment, default=%f"%(0.25))
+    parser.add_argument( "--omega_no_float", action="store_false",
+                      dest = "omega_float",
+                      default = True,
+                      help= "Use exact observed omega values")
+
+    parser.add_argument( "--omega_slop", action="store", type=float,
+                      dest = "omega_slop",
+                      default = 0.5,
+                      help= "Omega slop (step) size")
+
+    return parser
 
 
 class refinegrains:
@@ -182,7 +235,7 @@ class refinegrains:
             print(filename, type(filename))
             raise
         for i, g in enumerate(ul):
-            name = filename + "_" + str(i)
+            # name = filename + "_" + str(i)
             # Hmmm .... multiple grain files?
             name = i
             self.grainnames.append(i)
@@ -255,10 +308,10 @@ class refinegrains:
         self.scannames.append(filename)
         self.scantitles[filename] = col.titles
         if not "drlv2" in col.titles:
-            col.addcolumn( numpy.ones(col.nrows, numpy.float),
+            col.addcolumn( numpy.ones(col.nrows, float),
                            "drlv2" )
         if not "labels" in col.titles:
-            col.addcolumn( numpy.ones(col.nrows, numpy.float)-2,
+            col.addcolumn( numpy.ones(col.nrows, float)-2,
                            "labels" )
         if not "sc" in col.titles:
             assert "xc" in col.titles
@@ -336,7 +389,7 @@ class refinegrains:
             junk = cImageD11.score_and_refine(mat , gvT,
                                             self.tolerance)
             hklf = numpy.dot( mat, gv )
-            hkli = numpy.floor( hklf + 0.5 )
+            hkli = numpy.round( hklf )
 
             gcalc = numpy.dot( numpy.linalg.inv(mat) , hkli )
             tth,[eta1,eta2],[omega1,omega2] = transform.uncompute_g_vectors(
@@ -360,11 +413,12 @@ class refinegrains:
             omega_calc = best_fitting * omega2 + ( 1 - best_fitting ) * omega1
             # Take a weighted average within the omega error of the observed
             omerr = (om*sign - omega_calc)
+            # Clip to 360 degree range
+            omerr = omerr - ( 360 * numpy.round( omerr / 360.0 ) )
             # print omerr[0:5]
             omega_calc = om*sign - numpy.clip( omerr, -self.slop , self.slop )
             # print omega_calc[0], om[0]
             thisgrain.omega_calc = omega_calc
-
             # Now recompute with improved omegas... (tth, eta do not change much)
             #self.tth, self.eta = transform.compute_tth_eta(
             #    numpy.array([x, y]),
@@ -637,7 +691,7 @@ class refinegrains:
         start = time.time()
         for s in self.scannames:
             self.scandata[s].labels = self.scandata[s].labels*0 - 2 # == -1
-            drlv2 = numpy.zeros(len(self.scandata[s].drlv2), numpy.float)+1
+            drlv2 = numpy.zeros(len(self.scandata[s].drlv2), float)+1
             nr = self.scandata[s].nrows
             sc = self.scandata[s].sc
             fc = self.scandata[s].fc
@@ -653,20 +707,17 @@ class refinegrains:
             if not quiet:
             	print("Start first grain loop",time.time()-start)
             start = time.time()
-            gv = numpy.zeros((nr,3),numpy.float )
+            gv = numpy.zeros((nr,3), float )
             wedge = self.parameterobj.parameters['wedge']
             omegasign = self.parameterobj.parameters['omegasign']
             chi   = self.parameterobj.parameters['chi']
             wvln  = self.parameterobj.parameters['wavelength']
             first_loop = time.time()
-            drlv2 = self.scandata[s].drlv2*0 + 1  # == 1
+            drlv2 = (self.scandata[s].drlv2*0 + 1).astype(float)  # == 1
             int_tmp = numpy.zeros(nr , numpy.int32 )-1
             for ig, g in enumerate(self.grainnames):
                 gr = self.grains[ ( g, s) ]
                 self.set_translation( g, s)
-                gr.peaks_xyz = peaks_xyz
-                gr.om = self.scandata[s].omega
-                gr.omega_calc=self.scandata[s].omega*0 
                 cImageD11.compute_gv( peaks_xyz,
                     self.scandata[s].omega,
                     omegasign,
@@ -675,15 +726,6 @@ class refinegrains:
                     chi,
                     gr.translation,
                     gv)
-                if False: # For testing / debugging  
-                    omf  =  self.OMEGA_FLOAT 
-                    self.OMEGA_FLOAT = False
-                    self.compute_gv( gr )
-                    import pylab
-                    pylab.plot( self.gv[:,0], self.gv[:,0]-gv2[:,0], ".")
-                    pylab.plot( self.gv[:,1], self.gv[:,1]-gv2[:,1], ".")
-                    pylab.plot( self.gv[:,2], self.gv[:,2]-gv2[:,2], ".")
-                    pylab.title("C")
                 cImageD11.score_and_assign( gr.ubi,
                                             gv,
                                             self.tolerance,
@@ -745,6 +787,7 @@ class refinegrains:
                 gr.sc = numpy.take( sc, ind)
                 gr.fc = numpy.take( fc, ind)
                 gr.om = numpy.take(self.scandata[s].omega , ind)
+                gr.omega_calc = gr.om.copy()
                 gr.npks = len(gr.ind)
                 self.set_translation( g, s)
                 try:
@@ -826,37 +869,33 @@ def compute_lp_factor( colfile, **kwds ):
         colfile.addcolumn(lpg, "Lorentz_per_grain")
 
 
-import math
-
-def cosd(x): return numpy.cos( x * math.pi/180 )
-def sind(x): return numpy.sin( x * math.pi/180 )
-
 def lf( tth, eta ):
+    """
+    INPUT: 2*theta and eta in degrees. Can be floats or numpy arrays.
 
-    sin_2t  = sind( tth )
-    sin_eta = sind( numpy.abs( eta ) )
-    sin2_t  = sind( tth/2 )*sind( tth/2 )
-    # pure guesswork
-    return  sin_2t * ( sin_eta + sin2_t )
+    OUTPUT: Lorentz scaling factor for intensity. Same data type as input.
 
-    # unreachable code here:
-    #  ... problem that cos^2_p - sin^2 can be < 0
-    #       must mean that p is NOT eta
+    EXPLANATION:
+    Compute the Lorentz Factor defined for 3DXRD as
 
-    cos_2t = cosd( tth )
+    	L( theta,eta ) = sin( 2*theta )*|sin( eta )|
 
-    cos_t  = cosd( tth/2 )
-    sin_t  = sind( tth/2 )
-    # our eta is their psi + 90 degrees
-    cos_p  = cosd( eta + 90 )
+    This is verified by:
 
-    bot = sin_2t * numpy.sqrt( cos_p * cos_p - sin_t * sin_t )
+        * Kabsch, W. (1988). Evaluation of single-crystal X-ray diraction data
+          from a position-sensitive detector
+        * Poulsen, H. F. (2004). 3DXRD { a new probe for materials science.
+          Roskilde: Riso National Laboratory
 
-    top = (1 + cos_2t * cos_2t)*cos_2t
-    # Wondering if there is a div0 to fear
-    # Certainly lf can be infinite, so mask this problem as 1e6
-    bot = numpy.where( numpy.abs ( bot ) > 1e-6 , bot, 1e-6 )
-    return top / bot
+    and can be derived with support of
+        * Als-Nielsen, J. and McMorrow, D. (2017). Elements of Modern X-ray Physics
+
+    MODIFIED: 7 Feb 2019 by Axel Henningsson.
+    """
+
+    sin_tth = numpy.sin( numpy.radians(tth) )
+    sin_eta = numpy.sin( numpy.radians(eta) )
+    return sin_tth*abs( sin_eta )
 
 
 def compute_total_intensity( colfile, indices, tth_range, ntrim = 2, quiet = False ):

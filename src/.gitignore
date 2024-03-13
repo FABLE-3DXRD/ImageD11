@@ -1,0 +1,9 @@
+cImageD11.pyf
+Linux_??bit_?.?_*
+Windows_??bit_?.?_*
+cImageD11_????module.c
+*.a
+*.o
+*.lib
+cImageD11_avx2.pyf
+cImageD11_sse2.pyf

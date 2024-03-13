@@ -1,0 +1,21 @@
+#!/bin/bash
+#SBATCH --job-name=400jobs/arrayJob-s2_0MPa
+#SBATCH --output=400jobs/arrayJob_%A_%a.out
+#SBATCH --error=400jobs/arrayJob_%A_%a.err
+#SBATCH --array=1-50
+#SBATCH --time=06:00:00
+# define memory needs and number of tasks for each array job
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#
+# segmenting frames with input lines like: h5filenames
+#
+# hpc5-0102:/data/visitor/ma4494/id11/analysis % find /data/visitor/ma4494/id11/s2_400MPa_r1 -name 's2_400MPa_r1_z???.h5' -print | sort -n  > s2_400MPa_r1.params
+#
+# python3 /data/visitor/ma4494/id11/analysis/segment1.py $@
+
+echo Running on $HOSTNAME : python3 /data/visitor/ma4494/id11/analysis/segment1.py $(sed -n ${SLURM_ARRAY_TASK_ID}p s2_400MPa_r1.params)
+OMP_NUM_THREADS=4 python3 /data/visitor/ma4494/id11/analysis/segment1.py $(sed -n ${SLURM_ARRAY_TASK_ID}p s2_400MPa_r1.params)
+
+
+

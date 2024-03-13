@@ -1,3 +1,6 @@
+
+import logging
+logging.basicConfig(level=logging.INFO)
 # Create objects to manipulate - they hold your data
 #
 from ImageD11 import peakmerge, indexing, transformer
@@ -17,7 +20,7 @@ mytransformer.loadfileparameters(  'eu2.pars' )
 mytransformer.compute_tth_eta( )
 mytransformer.addcellpeaks( )
 mytransformer.fit( 0.0 , 14.0 )
-mytransformer.saveparameters(  'eu3.pars' )
+mytransformer.saveparameters(  'eu3fitted.pars' )
 mytransformer.computegv( )
 mytransformer.savegv(  'eu3.gve' )
 myindexer.readgvfile(  'eu3.gve' )

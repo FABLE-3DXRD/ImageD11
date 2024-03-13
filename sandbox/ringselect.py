@@ -24,10 +24,10 @@ w = p.get("wavelength")
 
 tth, eta = compute_tth_eta( (c.sc, c.fc), **p.parameters)
 
-dsmax = 2*np.sin(1.03*tth.max()*np.pi/360)/w
+dsmax = 2*np.sin(1.03*tthmax*np.pi/360)/w
 u.makerings(dsmax)
 
-mask = np.zeros( c.nrows, dtype=np.bool )
+mask = np.zeros( c.nrows, dtype=bool )
 for d in u.ringds:
     tthc = np.arcsin(w*d/2)*360/np.pi
     M = len(u.ringhkls[d])

@@ -1,0 +1,970 @@
+
+python module _cImageD11
+
+usercode '''
+#include "blobs.h"
+'''
+interface
+
+usercode '''
+/* This runs inside the init part of the module as it is after interface */
+#define str(x) (#x)
+PyDict_SetItemString(d,str(s_1)    ,PyInt_FromLong(s_1));
+PyDict_SetItemString(d,str(s_I)    ,PyInt_FromLong(s_I));
+PyDict_SetItemString(d,str(s_I2)   ,PyInt_FromLong(s_I2));
+PyDict_SetItemString(d,str(s_fI)   ,PyInt_FromLong(s_fI));
+PyDict_SetItemString(d,str(s_ffI)  ,PyInt_FromLong(s_ffI));
+PyDict_SetItemString(d,str(s_sI)   ,PyInt_FromLong(s_sI));
+PyDict_SetItemString(d,str(s_ssI)  ,PyInt_FromLong(s_ssI));
+PyDict_SetItemString(d,str(s_sfI)  ,PyInt_FromLong(s_sfI));
+PyDict_SetItemString(d,str(s_oI)   ,PyInt_FromLong(s_oI));
+PyDict_SetItemString(d,str(s_ooI)  ,PyInt_FromLong(s_ooI));
+PyDict_SetItemString(d,str(s_soI)  ,PyInt_FromLong(s_soI));
+PyDict_SetItemString(d,str(s_foI)  ,PyInt_FromLong(s_foI));
+PyDict_SetItemString(d,str(mx_I)   ,PyInt_FromLong(mx_I));
+PyDict_SetItemString(d,str(mx_I_f) ,PyInt_FromLong(mx_I_f));
+PyDict_SetItemString(d,str(mx_I_s) ,PyInt_FromLong(mx_I_s));
+PyDict_SetItemString(d,str(mx_I_o) ,PyInt_FromLong(mx_I_o));
+PyDict_SetItemString(d,str(bb_mx_f),PyInt_FromLong(bb_mx_f));
+PyDict_SetItemString(d,str(bb_mx_s),PyInt_FromLong(bb_mx_s));
+PyDict_SetItemString(d,str(bb_mx_o),PyInt_FromLong(bb_mx_o));
+PyDict_SetItemString(d,str(bb_mn_f),PyInt_FromLong(bb_mn_f));
+PyDict_SetItemString(d,str(bb_mn_s),PyInt_FromLong(bb_mn_s));
+PyDict_SetItemString(d,str(bb_mn_o),PyInt_FromLong(bb_mn_o));
+
+PyDict_SetItemString(d,str(avg_i),PyInt_FromLong(avg_i));
+PyDict_SetItemString(d,str(f_raw),PyInt_FromLong(f_raw));
+PyDict_SetItemString(d,str(s_raw),PyInt_FromLong(s_raw));
+PyDict_SetItemString(d,str(f_cen),PyInt_FromLong(f_cen));
+PyDict_SetItemString(d,str(s_cen),PyInt_FromLong(s_cen));
+PyDict_SetItemString(d,str(o_raw),PyInt_FromLong(o_raw));
+PyDict_SetItemString(d,str(m_ff),PyInt_FromLong(m_ff));
+PyDict_SetItemString(d,str(m_ss),PyInt_FromLong(m_ss));
+PyDict_SetItemString(d,str(m_oo),PyInt_FromLong(m_oo));
+PyDict_SetItemString(d,str(m_sf),PyInt_FromLong(m_sf));
+PyDict_SetItemString(d,str(m_so),PyInt_FromLong(m_so));
+PyDict_SetItemString(d,str(m_fo),PyInt_FromLong(m_fo));
+PyDict_SetItemString(d,str(dety),PyInt_FromLong(dety));
+PyDict_SetItemString(d,str(detz),PyInt_FromLong(detz));
+
+PyDict_SetItemString(d,str(NPROPERTY),PyInt_FromLong(NPROPERTY));
+
+PyDict_SetItemString(d,str(s2D_1),PyInt_FromLong(s2D_1));
+PyDict_SetItemString(d,str(s2D_I),PyInt_FromLong(s2D_I));
+PyDict_SetItemString(d,str(s2D_fI),PyInt_FromLong(s2D_fI));
+PyDict_SetItemString(d,str(s2D_sI),PyInt_FromLong(s2D_sI));
+PyDict_SetItemString(d,str(s2D_ffI),PyInt_FromLong(s2D_ffI));
+PyDict_SetItemString(d,str(s2D_sfI),PyInt_FromLong(s2D_sfI));
+PyDict_SetItemString(d,str(s2D_ssI),PyInt_FromLong(s2D_ssI));
+PyDict_SetItemString(d,str(s2D_bb_mx_f),PyInt_FromLong(s2D_bb_mx_f));
+PyDict_SetItemString(d,str(s2D_bb_mx_s),PyInt_FromLong(s2D_bb_mx_s));
+PyDict_SetItemString(d,str(s2D_bb_mn_f),PyInt_FromLong(s2D_bb_mn_f));
+PyDict_SetItemString(d,str(s2D_bb_mn_s),PyInt_FromLong(s2D_bb_mn_s));
+PyDict_SetItemString(d,str(NPROPERTY2D),PyInt_FromLong(NPROPERTY2D));
+/* ends user code */
+'''
+end interface
+
+interface
+    subroutine compute_gv(xlylzl,omega,omegasign,wvln,wedge,chi,t,gv,ng)
+!DOC compute_gv computes scattering vectors given thr positions of the spot
+!DOC in the laboratory in xlylzl[npks], the omega rotation[npks], and
+!DOC the rest of the parameters (wedge,wvln,chi,t[3] and omegasign)
+        intent(c) compute_gv
+        intent(c)
+        integer, intent(c,hide), depend( xlylzl ) :: ng
+        double precision, intent(in):: xlylzl(ng,3)
+        double precision, intent(in):: omega(ng)
+        double precision, intent(in):: omegasign, wvln, wedge, chi
+        double precision, intent(in):: t(3)
+        double precision, intent(inout):: gv(ng,3)
+        ! NOT threadsafe since gv may be shared
+    end subroutine compute_gv
+
+    subroutine compute_xlylzl(s,f,p,r,dist,xlylzl,n)
+!DOC computes_xlylzl finds spot positions in the laboratory frame
+!DOC using packed parameters that are more general
+!DOC s    = slow pixel position
+!DOC f    = fast pixel position
+!DOC p    = [s_cen, f_cen, s_size, f_size]
+!DOC r[9] = dot( transform.detector_rotation_matrix, flipmatrix )
+!DOC ... with flipmatrix = [1,0,0], [0,o22,o21], [0,o12,o11]
+!DOC dist = [distancex, distancey, distancez] is 3D (beyond old model)
+!DOC ... see test/test_cImageD11.py
+        intent(c) compute_xlylzl
+        intent(c)
+        double precision, intent(in):: s(n), f(n)
+        double precision, intent(inout):: xlylzl(n,3)
+        double precision, intent(in):: p(4), r(9), dist(3)
+        integer, intent(c,hide), depend( s ) :: n
+        ! NOT threadsafe since xl may be shared
+    end subroutine compute_xlylzl
+
+    subroutine quickorient( ubi, bt )
+!DOC quickorient takes two g-vectors in UBI[0] and UBI[1]
+!DOC and overwrites with UBI orientation using cache in bt (from h1,h2)
+!DOC ... computes cross product 0x1 = ubi[0]xubi[1]
+!DOC ... normalises u0=ubi0 and u2=0x1 and computes u1=u0xu2
+!DOC ... returns in UBI BT.(u1,u2,u3)
+!DOC algorithm was due to Busing and Levy
+    intent(c) quickorient
+        intent(c)
+        double precision, dimension(3,3), intent (inout) :: ubi
+        double precision, dimension(3,3), intent (in) :: bt
+    end subroutine orient
+
+    subroutine cimaged11_omp_set_num_threads(n)
+!DOC cimaged11_omp_set_num_threads Sets the openmp number of
+!DOC threads to use.
+!DOC Change if you use multiprocessing or do not like
+!DOC os.environ['OMP_NUM_THREADS']
+!DOC see also: multiprocessing.cpu_count(),
+!DOC see also os.cpu_count()
+!DOC see docs/sphx/parallel.rst
+        intent(c) cimaged11_omp_set_num_threads
+        intent(c)
+        integer, intent(in) :: n
+    end subroutine cImaged11_set_omp_num_threads
+
+    function cimaged11_omp_get_max_threads()
+!DOC cimaged11_omp_get_max_threads reads the openmp max number of threads
+!DOC see docs/sphx/parallel.rst
+        intent(c) cimaged11_omp_get_max_threads
+        integer :: cimaged11_omp_get_max_threads
+    end function cImaged11_omp_get_max_threads
+
+    subroutine uint16_to_float_darksub( img, drk, data, npx )
+!DOC uint16_to_float_darksub subtracts image drk(float32) from
+!DOC raw data in data (uint16) and returns in img.
+        intent(c) uint16_to_float_darksub
+        intent(c)
+        real, intent(inout), dimension(npx) :: img
+        real, intent(in), dimension(npx) :: drk
+        integer(kind=-2), intent(in), dimension(npx) :: data
+        integer, intent(hide), depend( img ) :: npx
+    end subroutine uint16_to_float_darksub
+
+    subroutine uint16_to_float_darkflm( img, drk, flm, data, npx )
+!DOC uint16_to_float_darkflm subtracts image drk(float32) from
+!DOC raw data in data (uint16), multiples by flm(float32) and returns in img.
+        intent(c) uint16_to_float_darkflm
+        intent(c)
+        real, intent(inout), dimension(npx) :: img
+        real, intent(in), dimension(npx) :: drk, flm
+        integer(kind=-2), intent(in), dimension(npx) :: data
+        integer, intent(hide), depend( img ) :: npx
+    end subroutine uint16_to_float_darkflm
+
+    subroutine frelon_lines(img, ns, nf, cut)
+!DOC frelon_lines Subtracts the average value of (pixels < cut) per row
+        intent(c) frelon_lines
+        intent(c)
+        real, intent(inout), dimension(ns,nf) :: img
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        real, intent(in) :: cut
+    end subroutine frelon_lines
+
+    subroutine frelon_lines_sub(img, drk, ns, nf, cut)
+!DOC frelon_lines_sub Subtracts drk from img and then same as frelon_lines
+        intent(c) frelon_lines_sub
+        intent(c)
+        real, intent(inout), dimension(ns,nf) :: img, drk
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        real, intent(in) :: cut
+        threadsafe
+    end subroutine frelon_lines
+
+    subroutine array_mean_var_cut( img, npx, mean, var, n, cut, verbose )
+!DOC array_mean_var_cut computes the mean and variance of an image
+!DOC with pixels above the value mean+cut*stddev removed. This is iterated
+!DOC n times as the mean and variance change as pixels are removed.
+        intent(c) array_mean_var_cut
+        real, intent(in,c), dimension(npx) :: img
+        integer, intent(hide,c), depend(img) :: npx = shape(img,0)
+        real, intent(out) :: mean, var
+        integer, intent(in,c), optional :: n = 3
+        integer, intent(in,c), optional :: verbose = 0
+        real, intent(in,c), optional :: cut = 3.
+    end subroutine array_mean_var_cut
+
+    subroutine array_mean_var_msk( img, msk, npx, mean, var, n, cut, verbose )
+!DOC array_mean_var_msk computes the mean and variance of an image
+!DOC with pixels above the value mean+cut*stddev removed. This is iterated
+!DOC n times as the mean and variance change as pixels are removed.
+        intent(c) array_mean_var_msk
+        real, intent(in,c), dimension(npx) :: img
+        integer(kind=-1) , intent(in,c), dimension(npx) :: msk
+        integer, intent(hide,c), depend(img) :: npx = shape(img,0)
+        real, intent(out) :: mean, var
+        integer, intent(in,c), optional :: n = 3
+        integer, intent(in,c), optional :: verbose = 0
+        real, intent(in,c), optional :: cut = 3.
+    end subroutine array_mean_var_msk
+
+
+    subroutine array_stats( img, npx, minval, maxval, mean, var )
+!DOC array_stats computes statistics for an image.
+!DOC  img Input data array  (1D or 2D.ravel(), so sparse or dense)
+!DOC npx length of data array (contiguous)
+!DOC *minval minimum of the pixels
+!DOC *maxval maximum of the pixels
+!DOC*s1  Sum of all pixel
+!DOC*s2  Sum of pixel^2
+        intent(c) array_stats
+        real, intent(c, in), dimension(npx) :: img
+        integer, intent(c, hide), depend(img) :: npx = shape(img,0)
+        ! these are intent(fortran) pointers
+        real, intent(out) :: minval, maxval, mean, var
+        threadsafe
+    end subroutine array_stats
+
+    subroutine array_histogram( img, npx, low, high, hist, nhist )
+!DOC array_histogram computes the histogram for an image
+!DOC Go through the data to compute a histogram of the values
+!DOC  Previous call of array_stats would help to set up this call
+!DOC   compare to np.bincount - this does not gain much
+!DOC   better implementations can be done
+!DOC
+!DOC img[]  Input data array  (1D or 2D.ravel(), so sparse or dense)
+!DOC npx    length of data array (contiguous)
+!DOC low    Lower edge of first bin
+!DOC high   Upper edge of last bin
+!DOC hist[] Histogram to be output
+!DOC nhist  Number of bins in the histogram
+        intent(c) array_histogram
+        intent(c)
+        real, intent(in), dimension(npx) :: img
+        integer, intent(hide), depend(img) :: npx = shape(img,0)
+        real, intent(in) :: low, high
+        integer*4, intent(inout), dimension(nhist) :: hist
+        integer, intent(hide), depend(hist) :: nhist = shape(hist, 0 )
+        threadsafe
+    end subroutine array_histogram
+
+    subroutine reorder_u16_a32(data, adr, out, N)
+!DOC reorder_u16_a32 called in sandbox/fazit.py simple
+!DOC loop with openmp saying out[adr[i]] in data[i]
+!DOC e.g. semi-random writing
+        intent(c) reorder_u16_a32
+        intent(c)
+        integer(kind=-2), dimension(N), intent(in) :: data
+        integer*4, dimension(N), intent(in) :: adr
+        integer(kind=-2), dimension(N), intent(inout) :: out
+        integer, intent(hide), depend(data) :: N
+    end subroutine reorder_u16_a32
+
+    subroutine reorder_f32_a32(data, adr, out, N)
+!DOC reorder_f32_a32 called in sandbox/fazit.py simple
+!DOC loop with openmp saying out[adr[i]] in data[i]
+!DOC e.g. semi-random writing
+        intent(c) reorder_f32_a32
+        intent(c)
+        real, dimension(N), intent(in) :: data
+        integer*4, dimension(N), intent(in) :: adr
+        real, dimension(N), intent(inout) :: out
+        integer, intent(hide), depend(data) :: N
+    end subroutine reorder_u16_a32
+
+    subroutine reorderlut_u16_a32(data, adr, out, N)
+!DOC reorderlut_u16_a32lut called in sandbox/fazit.py simple
+!DOC loop with openmp saying out[i] in data[adr[i]]
+!DOC e.g. semi-random reading
+        intent(c) reorderlut_u16_a32
+        intent(c)
+        integer(kind=-2), dimension(N), intent(in) :: data
+        integer*4, dimension(N), intent(in) :: adr
+        integer(kind=-2), dimension(N), intent(inout) :: out
+        integer, intent(hide), depend(data) :: N
+    end subroutine reorderlut_u16_a32
+
+    subroutine reorderlut_f32_a32(data, adr, out, N)
+!DOC reorderlut_f32_a32 lut called in sandbox/fazit.py simple
+!DOC loop with openmp saying out[i] in data[adr[i]]
+!DOC e.g. semi-random reading
+        intent(c) reorderlut_f32_a32
+        intent(c)
+        real, dimension(N), intent(in) :: data
+        integer*4, dimension(N), intent(in) :: adr
+        real, dimension(N), intent(inout) :: out
+        integer, intent(hide), depend(data) :: N
+    end subroutine reorderlut_f32_a32
+
+    subroutine reorder_u16_a32_a16(data, adr0, adr1, out, ns, nf)
+!DOC reorderlut_u16_a32_a16 called in sandbox/fazit.py
+!DOC data - source data read in order
+!DOC adr0 - output position for the first pixel in each row
+!DOC adr1 - difference offset to output next pixel in each row
+        intent(c) reorder_u16_a32_a16
+        intent(c)
+        integer(kind=-2), dimension(ns,nf), intent(in) :: data
+        integer*4, dimension(ns), intent(in) :: adr0
+        integer*2, dimension(ns,nf), intent(in) :: adr1
+        integer(kind=-2), dimension(ns,nf), intent(inout) :: out
+        integer, intent(hide), depend(adr1) :: ns = shape(adr1,0)
+        integer, intent(hide), depend(adr1) :: nf = shape(adr1,1)
+    end subroutine reorder_u16_a32_a16
+
+    subroutine bgcalc(img, bg, msk, ns, nf, gain, sp, st)
+!DOC bgcalc computes a background on a 1d signal where gain
+!DOC and sp and st are defined by:
+!DOC     diff = difference to neighbors or bg estimate
+!DOC     sigmap = weight for abs background value
+!DOC     sigmat = constant weight
+!DOC     gain for b += diff * gain
+!DOC img - source data
+!DOC bg  - computed background
+!DOC msk - mask
+        intent(c) bgcalc
+        intent(c)
+        real, dimension(ns,nf), intent(in) :: img
+        real, dimension(ns,nf), intent(inout) :: bg
+        integer*1, dimension(ns,nf), intent(inout) :: msk
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        real :: gain, sp, st
+    end subroutine bgcalc
+
+    function verify_rounding( n )
+!DOC checks the round to nearest int code is correct
+        intent(c) verify_rounding
+        intent(c)
+        integer :: verify_rounding, n
+    end function verify_rounding
+
+    subroutine closest_vec( x, dim, nv, ic )
+!DOC closest_vec finds the closest neighbors for each row of X
+!DOC ignoring the self. Treated as a X=[v1,v2,v3,...], computes
+!DOC sum{(vi-vj)**2} for all i!=j and places minimum in ic.
+        intent(c) closest_vec
+        intent(c)
+        double precision, intent(in) :: x(nv, dim)
+        integer, intent(hide), depend(x) :: dim=shape(x,1)
+        integer, intent(hide), depend(x) :: nv=shape(x,0)
+        integer, intent(inout) :: ic( nv )
+    end subroutine closest_vec
+
+    subroutine closest( x, v, ibest, best, nx, nv  )
+!DOC closest finds the value and index in x closest to a value in v.
+!DOC e.g. x = cosine of angles between pairs of peaks
+!DOC      v = idealised values based on hkl geometry
+!DOC   ibest set to the x[i] matching to a v[j] with diff "best"
+        intent(c) closest
+        double precision, intent(in) :: x(nx)
+        double precision, intent(in) :: v(nv)
+        ! Note : these are intent(fortran) to pass as pointers
+        integer, intent( out ) :: ibest
+        double precision, intent( out ) :: best
+        ! Note : these are intent(c) to pass by reference
+        integer, intent(c, hide), depend(x) :: nx=shape(x,0)
+        integer, intent(c, hide), depend(v) :: nv=shape(v,0)
+        threadsafe
+    end subroutine closest
+
+
+    function score( ubi, gv, tol, ng )
+!DOC score takes a ubi matrix and list of g-vectors and computes
+!DOC hkl = dot(ubi, gv), then rounds these g-vectors to integer
+!DOC and computes drlv2 = (h-int(h))**2 + (k-int(k))**2 + (l-int(l))**2
+!DOC If drlv2 is less than tol*tol then the peak is considered to
+!DOC be indexed. Returns the number of peaks found.
+        intent(c) score
+        intent(c)
+        integer :: score
+        integer, intent(hide), depend(gv) :: ng
+        double precision, intent(in) :: ubi(3,3)
+        double precision, intent(in) :: gv(ng, 3)
+        double precision, intent(in) :: tol
+        ! only reads gvectors
+    end function score
+
+
+    subroutine score_and_refine( ubi, gv, tol, n, sumdrlv2, ng)
+!DOC score_and_refine is very similar to score but it also refines the UB
+!DOC matrix using the assigned peaks and overwrite the argument.
+!DOC It returns the number of peaks and fit prior to refinement.
+        intent(c) score_and_refine
+        ! Note: fortran, pass by ref here  = C has double *sumdrlv2 etc.
+        integer, intent( out ) :: n
+        double precision, intent(out) :: sumdrlv2
+        double precision, intent(c, inout) :: ubi(3,3)
+        double precision, intent(c, in) :: gv(ng,3)
+        integer, intent(c, hide), depend( gv ) :: ng
+        double precision, intent(c, in) :: tol
+        threadsafe
+    end subroutine score_and_refine
+
+    function score_and_assign( ubi, gv, tol, drlv2, labels,label, ng )
+!DOC score_and_assign is similar to score but it assigns peaks to this
+!DOC ubi only if they fit the data better than the current UBI.
+!DOC It updates drlv2 and labels to use best fitting grain for each peak.
+!DOC  ... perhaps this is not what you want for overlapping peaks in twins!
+        intent(c) score_and_assign
+        intent(c)
+        integer score_and_assign
+        double precision, intent(in) :: ubi(3,3)
+        double precision, intent(in) :: gv(ng,3)
+        integer, intent(hide), depend( gv ) :: ng
+        double precision, intent(in) :: tol
+        double precision, intent(inout) :: drlv2(ng)
+        integer*4, intent(inout) :: labels(ng)
+        integer, intent(in) :: label
+        ! NOT threadsafe - labels will be shared
+    end function score_and_assign
+
+    subroutine refine_assigned( ubi, gv, labels, label, npk, drlv2, ng )
+!DOC refine_assigned fits a ubi matrix to a set of g-vectors and assignments
+!DOC in labels. e.g. where(labels==label) it uses the peaks.
+!DOC   ... perhaps this is not what you want for overlapping peaks in twins!
+        intent(c) refine_assigned
+        double precision, intent(c,in) :: ubi(3,3)
+        double precision, intent(c,in) :: gv(ng,3)
+        integer, intent(c,in) :: labels(ng)
+        integer, intent(c,in) :: label
+        ! Note : pass by ref
+        integer, intent(out) :: npk
+        double precision, intent(out) :: drlv2
+        integer, intent(c,hide), depend( gv ) :: ng
+        threadsafe
+    end subroutine refine_assigned
+
+    subroutine put_incr64( data, ind, vals,  boundscheck, n, m)
+!DOC put_incr64 does the simple loop : data[ind] += vals
+!DOC not sure why this isn't in numpy
+!DOC uses 64 bit addressing
+        intent(c) put_incr64
+        intent(c)
+        real, intent(inout) :: data(m)
+        real, intent(in) :: vals(n)
+        integer(kind=8), dimension(n), intent(in) :: ind
+        integer, intent(hide), depend( data ) :: m
+        integer, intent(hide), depend( ind) :: n
+        integer, optional :: boundscheck = 0
+        ! NOT threadsafe? meant for updating data with increments
+    end subroutine put_incr
+
+
+    subroutine put_incr32( data, ind, vals,  boundscheck, n, m)
+!DOC put_incr32 does the simple loop : data[ind] += vals
+!DOC not sure why this isn't in numpy
+!DOC uses 32 bit addressing
+        intent(c) put_incr32
+        intent(c)
+        real, intent(inout) :: data(m)
+        real, intent(in) :: vals(n)
+        integer(kind=4), dimension(n), intent(in) :: ind
+        integer, intent(hide), depend( data ) :: m
+        integer, intent(hide), depend( ind) :: n
+        integer, optional :: boundscheck = 0
+        ! NOT threadsafe? meant for updating data with increments
+    end subroutine put_incr
+
+
+
+    subroutine cluster1d( ar, n, order, tol, nclusters, ids, avgs)
+!DOC cluster1d is used in sandbox/friedel.py to find clusters of peaks
+!DOC work in progress
+        intent(c) cluster1d
+        double precision, intent(c, in) :: ar(n)
+        integer, intent(c, hide), depend( ar ) :: n
+        integer, intent(c, in) :: order(n)
+        double precision, intent(c, in) :: tol
+        integer, intent(out) :: nclusters
+        integer, intent(c,inout) :: ids(n)
+        double precision, intent(c, inout) :: avgs(n)
+        ! NOT threadsafe since ids may be shared
+    end subroutine cluster1d
+
+    subroutine score_gvec_z( ubi, ub, gv, g0, g1, g2, e, recompute, n )
+!DOC score_gvec_z reads ubi, ub, gv and recompute
+!DOC if (recompute) it fills directions to project errors per peak:
+!DOC      g0 = gv / |gv|   = unit vector along g
+!DOC      g1 = gxy / |gxy| = unit vector perpendicular to z and g (omega)
+!DOC      g2 ... ought to be cross( g0, g1 ) ? (eta)
+!DOC For all peaks it computes h = ubi.g, rounds to nearest ih = int(h)
+!DOC and then computes gcalc = ub.ih = dot( ub, ( round( dot( ubi, g) ) ) )
+!DOC The error gv - gcalc is then projected into the co-ordinate system
+!DOC g0,g1,g2 for errors along g, z and the rhs
+!DOC Beware : work in progress. Is z always the right axis?
+        intent(c) score_gvec_z
+        intent(c)
+        double precision, intent(in)    :: ubi(3,3)
+        double precision, intent(in)    :: ub(3,3)
+        integer, intent(c, hide), depend( gv ) :: n
+        double precision, intent(in)    :: gv(n,3)
+        double precision, intent(inout) :: g0(n,3)
+        double precision, intent(inout) :: g1(n,3)
+        double precision, intent(inout) :: g2(n,3)
+        double precision, intent(inout) ::  e(n,3)
+        integer, intent(in) :: recompute
+        ! NOT threadsafe since gi may be shared
+    end subroutine score_gvec_z
+
+
+    function misori_cubic( u1, u2)
+!DOC misori_cubic computes the trace of the smallest misorientation
+!DOC  for cubic symmetry
+!DOC  u1 and u2 are both orientation matrices "U"
+!DOC      compute u1. u2.T  to get the rotation from one to the other
+!DOC      find the permutation that will maximise the trace
+!DOC        one of six...
+!DOC           xyz   yxz   zxy
+!DOC           xzy   yzx   zyx
+!DOC Beware : work in progress. Which point group is this?
+        intent(c) misori_cubic
+        intent(c)
+        double precision, intent(in) :: u1(3,3), u2(3,3)
+        ! Returns
+        double precision :: misori_cubic
+        threadsafe
+    end function misori_cubic
+
+
+    function misori_orthorhombic( u1, u2)
+!DOC misori_orthorhombic computes the trace of the smallest misorientation
+!DOC  u1 and u2 are both orientation matrices "U"
+!DOC      compute u1. u2.T  to get the rotation from one to the other
+!DOC      find the flips that will maximise the trace:
+!DOC        abs( trace(dot(u1,u2.T) ))
+!DOC  Looks like point group mmm. Not sure why this is in C?
+!DOC  Beware: work in progress
+        intent(c) misori_orthorhombic
+        intent(c)
+        double precision, intent(in) :: u1(3,3), u2(3,3)
+        ! Returns
+        double precision :: misori_orthorhombic
+        threadsafe
+    end function misori_orthorhombic
+
+    function misori_tetragonal( u1, u2)
+!DOC misori_tetragonal computes the trace of the smallest misorientation
+!DOC  u1 and u2 are both orientation matrices "U"
+!DOC      compute u1. u2.T  to get the rotation from one to the other
+!DOC      finds the flips a/b and c->-c that will maximise the trace:
+!DOC        abs( trace(dot(u1,u2.T) ))
+!DOC  Looks like point group 4/mmm. What about 4/m ?
+!DOC  Beware: work in progress
+        intent(c) misori_tetragonal
+        intent(c)
+        double precision, intent(in) :: u1(3,3), u2(3,3)
+        ! Returns
+        double precision :: misori_tetragonal
+        threadsafe
+    end function misori_tetragonal
+
+
+    function misori_monoclinic( u1, u2)
+!DOC misori_monoclinic assumes a unique b axis and only checks
+!DOC the flip of b -> -b
+!DOC Not sure about the point group here. Is is 2/m  ??
+!DOC  Beware: work in progress
+        intent(c) misori_monoclinic
+        intent(c)
+        double precision, intent(in) :: u1(3,3), u2(3,3)
+        ! Returns
+        double precision :: misori_monoclinic
+        threadsafe
+    end function misori_monoclinic
+
+    subroutine misori_cubic_pairs( u, dist, n)
+!DOC misori_cubic_pairs Computes the dissimilarity matrix to use for clustering
+!DOC of orientations. Fills in an upper triangular matrix that you can try
+!DOC to pass to scipy.cluster routines
+        intent(c) misori_cubic_pairs
+        intent(c)
+        double precision, intent(in) :: u(n,3,3)
+        integer, intent( hidden ), depend(u) :: n
+        double precision, intent(inout) :: dist( (n*(n-1)/2) )
+        ! NOT threadsafe
+    end subroutine misori_cubic_pairs
+
+    function count_shared( pi, ni, pj, nj )
+!DOC count_shared takes two sorted arrays in pi and pj and counts
+!DOC how many collisions there are. Useful to compare two lists of
+!DOC peak to grain assignments, or pixel to peak assignments, etc
+        intent(c) count_shared
+        intent(c)
+        integer, intent(in) :: pi(ni)
+        integer, intent( hidden ), depend(pi) :: ni
+        integer, intent(in) :: pj(nj)
+        integer, intent( hidden ), depend(pj) :: nj
+        ! return value is int too
+        integer :: count_shared
+        threadsafe
+    end function count_shared
+
+    function connectedpixels( data, labels, threshold, &
+                              verbose, con8, ns, nf)
+        intent(c) connectedpixels
+!DOC connectedpixels Determines which pixels in data are above the
+!DOC user supplied threshold and assigns them into connected objects
+!DOC which are output in labels. Connectivity is 3x3 box (8) by default
+!DOC and reduces to a +(4) is con8==0
+        intent(c)
+        real, intent(in) :: data(ns,nf)
+        integer, intent(inout) :: labels(ns,nf)
+        integer, intent(hide), depend(data) :: ns=shape(data,0)
+        integer, intent(hide), depend(data) :: nf=shape(data,1)
+        integer, optional :: con8 = 1
+        integer, optional ::  verbose = 0
+        real threshold
+        ! Returns
+        integer :: connectedpixels
+    end function connectedpixels
+
+    subroutine blobproperties( data, labels, np, omega, &
+                               verbose, ns, nf, results)
+        intent(c) blobproperties
+!DOC blobproperties fills the array results with properties of each labelled
+!DOC object described by data (pixel values) and labels. The omega value
+!DOC is the angle for this frame.
+!DOC results are FIXME
+        intent(c)
+        real, intent(in) :: data(ns, nf)
+        integer, intent(in) :: labels(ns, nf)
+        integer, intent(hide), depend(data) :: ns=shape(data,0)
+        integer, intent(hide), depend(data) :: nf=shape(data,1)
+        integer, intent(in) :: np
+        double precision, intent(out) :: results( np, NPROPERTY )
+        real, intent(in), optional :: omega = 0
+        integer, optional :: verbose = 0
+        threadsafe
+    end subroutine blobproperties
+
+    function bloboverlaps( labels1, npk1, results1,    &
+                           labels2, npk2, results2,    &
+                           verbose, ns, nf)
+!DOC bloboverlaps determines the overlaps between labels1 and labels2
+!DOC for an image series. Peaks in labels2 may be merged if they were
+!DOC joined by a peak on labels1. Results in results1 are accumulated
+!DOC into results2 if peaks are overlapped.
+        intent(c) bloboverlaps
+        intent(c)
+        integer :: bloboverlaps
+        integer, intent( inout ) :: labels1( ns, nf )
+        integer, intent( inout ) :: labels2( ns, nf )
+        integer, intent(hide), depend(labels1) :: ns=shape(labels1,0)
+        integer, intent(hide), depend(labels1) :: nf=shape(labels1,1)
+        integer, intent(in) :: npk1, npk2
+        double precision, intent( inout ) :: results1( :, NPROPERTY )
+        double precision, intent( inout ) :: results2( :, NPROPERTY )
+        integer, intent(in) :: verbose = 0
+        threadsafe
+    end subroutine bloboverlaps
+
+    subroutine blob_moments( results, np )
+!DOC blob_moments fills in the reduced moments in results array.
+!DOC ... FIXME - this would be clearer in python, fast anyway.
+        intent(c) blob_moments
+        intent(c)
+        double precision, intent( inout ) :: results( np, NPROPERTY )
+        integer, intent(hide), depend(results) :: np=shape(results,0)
+        threadsafe
+    end subroutine blob_moments
+
+    function clean_mask( msk, ret, ns, nf )
+!DOC clean_mask removes pixels which are not 4 connected from msk
+!DOC while copying into ret.
+        intent(c) clean_mask
+        intent(c)
+        integer*1, intent(in)  :: msk( ns, nf )
+        integer, intent(hide), depend(msk) :: ns=shape(msk,0)
+        integer, intent(hide), depend(msk) :: nf=shape(msk,1)
+        integer*1, intent(inout), dimension(ns, nf) :: ret
+        ! returns an int
+        integer :: clean_mask
+    end function clean_mask
+
+
+    function make_clean_mask( img, cut, msk, ret, ns, nf )
+!DOC make_clean_mask is a lot like clean msk but it generates
+!DOC the msk using img and cut.
+!DOC Beware: work in progress
+        intent(c) make_clean_mask
+        intent(c)
+        real, intent(in), dimension(ns,nf) :: img
+        real, intent(in) :: cut
+        integer*1, intent(in)  :: msk( ns, nf )
+        integer, intent(hide), depend(msk) :: ns=shape(msk,0)
+        integer, intent(hide), depend(msk) :: nf=shape(msk,1)
+        integer*1, intent(inout), dimension(ns, nf) :: ret
+        ! returns an int
+        integer :: make_clean_mask
+    end function make_clean_mask
+
+    function localmaxlabel( data, labels, wrk, ns, nf )
+        intent(c) localmaxlabel
+!DOC localmaxlabel assigns a label for each pixel so they are grouped
+!DOC to the local maximum. Equal values choose to assign towards the earlier
+!DOC value in memory.
+!DOC cpu arg (1)0=C, (1)1=SSE2, (1)2=AVX2; if > 9 prints timing
+        intent(c)
+        real, intent(in) :: data(ns,nf)
+        integer*4, intent(inout), note(hello) :: labels(ns,nf)
+        integer*1, intent(inout) :: wrk(ns,nf)
+        integer, intent(hide), depend(data) :: ns=shape(data,0)
+        integer, intent(hide), depend(data) :: nf=shape(data,1)
+        ! Returns
+        integer :: localmaxlabel
+    end function localmaxlabel
+
+    function mask_to_coo( msk, ns, nf, i, j, nnz, w )
+!DOC mask_to_coo takes a mask and converts it to a list
+!DOC of i,j coordinates in a sparse array coo format
+!DOC returns :
+!DOC    0 => success
+!DOC    1 => ns out of range ; 2 => nf out of range
+!DOC    3 => nnz < 1 empty mask
+!DOC    4 => nnz did not match this mask
+        intent(c) mask_to_coo
+        intent(c)
+        integer*1, intent(in)  :: msk( ns, nf )
+        integer, intent(hide), depend(msk) :: ns=shape(msk,0)
+        integer, intent(hide), depend(msk) :: nf=shape(msk,1)
+        integer(kind=-2), intent(inout), dimension(nnz) :: i, j
+        integer, intent(inout) :: w(ns)
+        integer, intent(hide), depend(i) :: nnz=shape(i,0)
+        integer, intent(inout) :: w(ns)
+        ! returns an int
+        integer :: mask_to_coo
+    end function mask_to_coo
+
+    function sparse_is_sorted( i, j, nnz )
+!DOC sparse_is_sorted checks whether the indices in i and j of a sparse
+!DOC coo format come in the order that they would appear inside an image
+!DOC *  @param i, j index arrays
+!DOC *  @param nnz dimension of i, j
+!DOC    returns 0 for all OK
+!DOC         k for first non-sorted element
+!DOC         -k for first duplicate
+        intent(c) sparse_is_sorted
+        intent(c)
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(i) :: nnz = shape( i, 0)
+        threadsafe
+        ! returns
+        integer sparse_is_sorted
+    end function spare_is_sorted
+
+    function sparse_connectedpixels( v, i, j, nnz, threshold, labels )
+!DOC sparse_connectedpixels runs the connectedpixels algorithm on
+!DOC a sparse image using a supplied threshold putting labels
+!DOC into labels array and returning the number of blobs found
+        intent(c) sparse_connectedpixels
+        intent(c)
+        real, intent(in), dimension(nnz) :: v
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(i) :: nnz = shape( i, 0)
+        real threshold
+        integer, intent(inout), dimension(nnz) :: labels
+        ! Returns
+        integer :: sparse_connectedpixels
+        threadsafe
+    end function sparse_connectedpixels
+
+    function sparse_connectedpixels_splat( v, i, j, nnz, th, lbl, Z,ni, nj )
+!DOC sparse_connectedpixels_splat is for debugging/timing. It splats
+!DOC the sparse array into a dense array and runs the old connectedpixels
+!DOC code on that.
+        intent(c) sparse_connectedpixels_splat
+        intent(c)
+        real, intent(in), dimension(nnz) :: v
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(i) :: nnz = shape( i, 0)
+        real th
+        integer, intent(inout), dimension(nnz) :: lbl
+        integer, intent(inout), dimension((ni+2)*(nj+2)) :: Z
+        integer :: ni, nj
+        ! Returns
+        integer :: sparse_connectedpixels_splat
+        threadsafe
+    end function sparse_connectedpixels_splat
+
+    subroutine sparse_blob2Dproperties( v, i, j, nnz, labels, results, npk)
+        intent(c) sparse_blob2Dproperties
+!DOC sparse_blob2Dproperties fills the array results with properties of
+!DOC each labelled object described by v and labels (pixel values and blob)
+!DOC and positions i,j in the image.
+!DOC results are:
+!DOC   results[ipk,s2D_1]   = sum(1), number of pixels
+!DOC   results[ipk,s2D_I]   = sum (I), total intensity
+!DOC   results[ipk,s2D_fI]  = sum (f*I), intensity weighted fast index
+!DOC   results[ipk,s2D_sI]  = sum (s*I), intensity weighted slow index
+!DOC   results[ipk,s2D_ffI] = sum (f*f*I), intensity weighted fast^2 index
+!DOC   results[ipk,s2D_sfI] = sum (s*f*I), intensity weighted slow*fast index
+!DOC   results[ipk,s2D_ssI] = sum (s*s*I), intensity weighted slow^2 index
+        intent(c)
+        real, intent(in), dimension(nnz) :: v
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(v) :: nnz = shape( v, 0)
+        integer, intent(in), dimension(nnz) :: labels
+        integer, intent(in) :: npk
+        double precision, intent(out) :: results( npk, NPROPERTY2D )
+        threadsafe
+    end subroutine sparse_blob2Dproperties
+
+    subroutine sparse_smooth( v, i, j, nnz, s)
+        intent(c) sparse_smooth
+!DOC sparse_smooth smooths data in coo format. Workaround for avoiding
+!DOC equal pixels on peak tails for localmaxlabel
+!DOC single threaded
+        intent(c)
+        real, intent(in), dimension(nnz) :: v
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(v) :: nnz = shape( v, 0)
+        real, intent(inout) :: s( nnz )
+        threadsafe
+    end subroutine sparse_smooth
+
+    function sparse_localmaxlabel( v, i, j, nnz, MV, iMV, labels)
+        intent(c) sparse_localmaxlabel
+!DOC sparse_localmaxlabel assigns labels to sparse array in sorted coo format
+!DOC supplied in (v,(i,j)). MV and iMV are temporaries.
+!DOC single threaded
+        intent(c)
+        real, intent(in), dimension(nnz) :: v
+        integer(kind=-2), intent(in), dimension(nnz) :: i
+        integer(kind=-2), intent(in), dimension(nnz) :: j
+        integer, intent(hide), depend(v) :: nnz = shape( v, 0)
+        real, intent(inout) :: MV( nnz )
+        integer, intent(inout) :: iMV( nnz )
+        integer, intent(inout) :: labels( nnz )
+        ! returns
+        integer ::  sparse_localmaxlabel
+        threadsafe
+    end function sparse_localmaxlabel
+
+    function sparse_overlaps( i1, j1, k1, nnz1, &
+                               i2, j2, k2, nnz2 )
+!DOC sparse_overlaps identifies the pixels in i1,j1 which overlap i2,j2.
+!DOC The list of overlaps is returned in k1/k2 such that i1[k1]==i2[k2]
+!DOC and j1[k1]==j2[k2]. Probably assumes that sparse_is_sorted was true.
+        intent(c) sparse_overlaps
+        intent(c)
+        integer(kind=-2), dimension(nnz1), intent(c) :: i1, j1
+        integer, intent(inout), dimension(nnz1) :: k1
+        integer, intent(hide), depend(i1), intent(c) :: nnz1=shape(i1,0)
+        integer(kind=-2), dimension(nnz2), intent(c) :: i2, j2
+        integer, intent(inout), dimension(nnz2) :: k2
+        integer, intent(hide), depend(i2), intent(c) :: nnz2=shape(i2,0)
+        ! returns
+        integer :: sparse_overlaps
+        threadsafe
+    end function sparse_overlaps
+
+    function compress_duplicates( i, j, oi, oj, tmp, n, nt )
+!DOC compress_duplicates removes duplicate i,j labels. On entry then
+!DOC i and j are set as the labels from two images. They are sorted
+!DOC and on exit i,j hold the unique pairs and oi holds the count
+!DOC for the number of overlaps. oj and tmp are temporaries.
+        intent(c) compress_duplicates
+        intent(c)
+        integer, dimension(n), intent(c) :: i, j
+        integer, dimension(n), intent(c, inout) :: oi, oj
+        integer, dimension(nt), intent(c, inout) :: tmp
+        integer, intent(hide), depend(i) :: n = shape(i,0)
+        integer, intent(hide), depend(tmp) :: nt = shape(tmp,0)
+        ! returns
+        integer :: compress_duplicates
+        threadsafe
+    end function compress_duplicates
+
+    function coverlaps( row1, col1, labels1, nnz1, row2, col2, labels2, nnz2, mat, npk1, npk2, results)
+!DOC overlaps determines which of (row1,col1,labels1) and (row2,col2,labels2) 
+!DOC are overlapped. 
+!DOC    
+        intent(c) coverlaps
+        intent(c)
+        integer(kind=-2), dimension(nnz1), intent(c) :: row1, col1
+        integer, intent(hide), depend(row1) :: nnz1 = shape(row1,0)
+        integer(kind=-2), dimension(nnz2), intent(c) :: row2, col2 
+        integer, intent(hide), depend(row2) :: nnz2 = shape(row2,0)
+        integer, dimension(nnz1), intent(c) :: labels1
+        integer, dimension(nnz2), intent(c) :: labels2
+        integer, dimension(npk1, npk2), intent(c) :: mat
+        integer, intent(hide), depend(mat) :: npk1 = shape(mat, 0)
+        integer, intent(hide), depend(mat) :: npk2 = shape(mat, 1)
+        integer, intent(inout), dimension(*) :: results
+        ! returns
+        integer :: coverlaps
+        threadsafe
+    end function coverlaps
+
+    function tosparse_u16( img, msk, row, col, val, cut, ns, nf)
+!DOC tosparse_u16 stores pixels from img into row/col/val.
+!DOC msk determines whether pixels are masked (e.g. eiger mask)
+!DOC returns the number of pixels found
+        intent(c) tosparse_u16
+        intent(c)
+        integer(kind=-2), dimension(ns, nf), intent(c) :: img, row, col, val
+        integer(kind=-1), dimension(ns, nf), intent(c) :: msk
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        integer :: cut
+        ! returns
+        integer :: tosparse_u16
+        threadsafe
+    end function tosparse_u16
+
+    function tosparse_u32( img, msk, row, col, val, cut, ns, nf)
+!DOC tosparse_u16 stores pixels from img into row/col/val.
+!DOC msk determines whether pixels are masked (e.g. eiger mask)
+!DOC returns the number of pixels found
+        intent(c) tosparse_u32
+        intent(c)
+        integer(kind=-4), dimension(ns, nf), intent(c) :: img
+        integer(kind=-1), dimension(ns, nf), intent(c) :: msk
+        integer(kind=-2), dimension(*), intent(c) :: row, col
+        integer(kind=-4), dimension(*), intent(c) :: val
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        real :: cut
+        ! returns
+        integer :: tosparse_u32
+        threadsafe
+    end function tosparse_u32
+
+    function tosparse_f32( img, msk, row, col, val, cut, ns, nf)
+!DOC tosparse_u16 stores pixels from img into row/col/val.
+!DOC msk determines whether pixels are masked (e.g. eiger mask)
+!DOC returns the number of pixels found
+        intent(c) tosparse_f32
+        intent(c)
+        real, dimension(ns, nf), intent(c) :: img, val
+        integer(kind=-2), dimension(ns, nf), intent(c) :: row, col
+        integer(kind=-1), dimension(ns, nf), intent(c) :: msk
+        integer, intent(hide), depend(img) :: ns = shape(img,0)
+        integer, intent(hide), depend(img) :: nf = shape(img,1)
+        real :: cut
+        ! returns
+        integer :: tosparse_f32
+        threadsafe
+    end function tosparse_f32
+
+    subroutine splat( rgba, w, h, gve, ng, u, npx )
+!DOC splat draws gvectors into an rgba image. The horror of maintaining plot3d
+!DOC over the years motivated this code. See test/demo/tksplat
+!DOC * set the color and markersize per peak
+!DOC * perhaps also a draw order (back to front, top to bottom) ?
+        intent(c) splat
+        intent(c)
+        integer(kind=-1), dimension(w,h,4) :: rgba
+        integer,intent(hide), depend(rgba) :: h = shape(rgba, 0)
+        integer,intent(hide), depend(rgba) :: w = shape(rgba, 1)
+        double precision, intent(inout), dimension(ng,3) ::  gve
+        integer, intent(hide), depend(gve):: ng
+        double precision, intent(in), dimension(9) :: u
+        integer :: npx
+        ! NOT threadsafe, rgba will be recycled and on screen
+    end subroutine splat
+
+
+
+end interface
+end python module _cImageD11

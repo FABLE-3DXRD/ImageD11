@@ -23,7 +23,8 @@ from __future__ import print_function
 
 
 
-from ImageD11.refinegrains import *
+from ImageD11.refinegrains import refinegrains
+import numpy as np
 
 import sys
 
@@ -34,8 +35,10 @@ try:
     tol = float(sys.argv[4])
     if len(sys.argv)>5:
         nbins = int(sys.argv[5])
+    else:
+        nbins = 30
 except:
-    print("Usage: %s flt par ubi tol [nbins=30]"%(sys.argv[0]))
+    print("Usage: %s flt par ubi tol [nbins=30] [omega_slop]"%(sys.argv[0]))
     sys.exit()
 
 if len(sys.argv)>6:
@@ -50,34 +53,39 @@ o.loadfiltered(flt)
 o.tolerance=tol
 o.generate_grains()
 o.assignlabels()
-from matplotlib.pylab import *
+
+import matplotlib.pylab as pl
+# indexed peaks only
 d = o.scandata[flt]
-bins = array(arange(0.0,tol*11./10,tol/nbins))
-ng = int(maximum.reduce(d.labels))+1
-drl = [ compress(d.labels==i, d.drlv2) for i in range(ng)]
-dp5 = [sqrt(di) for di in drl]
-hl = [ hist(dpi, bins)[0] for dpi in dp5]
-print("hl0:",hl[0].shape, bins.shape)
-if bins.shape[0] != hl[0].shape[0]:
-    bins = (bins[1:] + bins[:-1])/2
-cla()
+d.filter(d.labels >= 0)
 
-for i in range(ng): 
-    plot(bins,hl[i],label=str(i))
-
-
+drlv_bins = np.linspace( 0, tol, nbins )
+ng = int(d.labels.max())+1
+drlv = np.sqrt( d.drlv2 )
+dp5 = [ drlv[d.labels==i] for i in range(ng)]
+hl = [ np.histogram(dpi, drlv_bins)[0] for dpi in dp5 ]
+print("hl0:",hl[0].shape, drlv_bins.shape)
+if drlv_bins.shape[0] != hl[0].shape[0]:
+    plotbins = (drlv_bins[1:] + drlv_bins[:-1])/2
     
+pl.subplot(211)
+for i in range(ng): 
+    pl.plot(plotbins,hl[i],label=str(i))
 
-print(" "*10, end=' ')
-for j in range(ng):
-    print("%5d"%(j), end=' ')
-print()
-for i in range(len(bins)):
-    print("%10.6f"%(bins[i]), end=' ')
+if 1:
+    print(" "*10, end=' ')
     for j in range(ng):
-        print("%5d"%(hl[j][i]), end=' ')
+        print("%5d"%(j), end=' ')
     print()
-
-
-show()
+    for i in range(len(drlv_bins)-1):
+        print("%10.6f"%(drlv_bins[i]), end=' ')
+        for j in range(ng):
+            print("%5d"%(hl[j][i]), end=' ')
+        print()
+pl.subplot(212)
+pl.hist2d( drlv, d.labels, (drlv_bins, np.arange(-0.5,ng,1.)),vmin=0.5)
+pl.colorbar()
+pl.ylabel("Grain")
+pl.xlabel("drlv")
+pl.show()
 

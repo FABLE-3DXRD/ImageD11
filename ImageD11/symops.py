@@ -98,7 +98,7 @@ def test_absence(h, k, l, sg):
 # So use an unambiguous string like "P 1 21/c 1"
 	symmop=sgstring.split()
 	if len(symmop) != 4:		
-		print("Only read %d symmops"%symops)	
+		print("Only read %d symmops"%symmop)	
 		raise Exception("You must supply at least 4 space separated symmetry operations"\
 			 " and optional compound operations separated by '/'")
 	

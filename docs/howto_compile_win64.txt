@@ -1,0 +1,79 @@
+For python2.7 on windows 64 bit:
+
+December 2018
+=============
+
+Grab miniconda, git and the Microsoft Visual C++ Compiler for Python 2.7:
+    https://www.microsoft.com/en-us/download/details.aspx?id=44266
+
+Now:
+    conda create -name py27_64 python=2.7
+    conda activate py27_64
+    conda install numpy scipy matplotlib pyopengl pillow 
+    pip install h5py fabio xfab pycifrw --no-deps
+    git clone http://github.com/jonwright/ImageD11.git
+    python setup.py build
+    pip install . --no-deps 
+    cd test
+    python run_tests.py all
+    ... rejoice
+    ... improve
+    pip install . --no-deps -U
+    python run_tests.py all
+    conda deactivate
+
+Getting SxsErrors on a new computer? You might need the 2008 SP1 redistributable packages:
+    http://www.microsoft.com/en-us/download/details.aspx?id=5582    x86
+    http://www.microsoft.com/en-us/download/details.aspx?id=2092    x64
+    http://msdn.microsoft.com/en-us/library/hh506443.aspx           .net
+
+If you want to use 32 bits then:
+    set CONDA_FORCE_32BIT=1
+    conda create -name py27_32 python=2.7
+    conda activate py27_32
+    ... and repeat as above
+
+If you want to use python3.x then:
+    conda create -name py37_64 python=3.7
+    conda activate py37_64
+    ... and repeat as above
+
+
+
+Older instructions:
+===================
+
+Install compiler:
+MS Windows SDK for Windows 7 and .NET Framework 3.5 SP1
+http://www.microsoft.com/en-us/download/details.aspx?id=18950
+
+Open a winpython command prompt
+
+Set up compiler:
+
+C:\Windows\System32\cmd.exe /E:ON /V:ON /T:0E /K "C:\Program Files\Microsoft SDKs\Windows\v7.0\Bin\SetEnv.cmd"
+
+Set up environment:
+
+set DISTUTILS_USE_SDK=1
+setenv /x64 /release
+
+... and "python setup.py build" should work
+
+
+# Using compiler from microsoft for python 2.7 I seem to need this for cffi
+
+set VS90COMNTOOLS="C:\Users\wright\AppData\Local\Programs\Common\Microsoft\Visual C++ for Python\9.0"
+
+=========== Using mingwpy ===============
+
+pip install -i https://pypi.anaconda.org/carlkl/simple mingwpy
+python setup.py build --compiler=mingw32
+python setup.py bdist_wheel
+cd dist
+pip install ImageD11-1.6.0-cp27-cp27m-win_amd64.whl
+
+Tested on Anaconda2 / win7 / amd64
+
+
+

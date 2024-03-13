@@ -23,12 +23,13 @@ Functions for transforming peaks
 """
 import logging
 import numpy as np
-from ImageD11 import gv_general
+from ImageD11 import gv_general, cImageD11
 from numpy import radians, degrees
+import fabio # for LUT
 
 try:
     # crazy debug
-    test = np.arccos(np.zeros(10, np.float))
+    _ = np.arccos(np.zeros(10, float))
 except:
     print(dir())
     raise
@@ -49,18 +50,18 @@ def cross_product_2x2(a, b):
 def detector_rotation_matrix(tilt_x, tilt_y, tilt_z):
     """
     Return the tilt matrix to apply to peaks
-    tilts in radians
+    tilts are in radians
     typically applied to peaks rotating around beam center
     """
     r1 = np.array([[np.cos(tilt_z), -np.sin(tilt_z), 0],  # note this is r.h.
                    [np.sin(tilt_z), np.cos(tilt_z), 0],
-                   [0,    0, 1]], np.float)
+                   [0,    0, 1]], float)
     r2 = np.array([[np.cos(tilt_y), 0, np.sin(tilt_y)],
                    [0, 1,   0],
-                   [-np.sin(tilt_y), 0, np.cos(tilt_y)]], np.float)
+                   [-np.sin(tilt_y), 0, np.cos(tilt_y)]], float)
     r3 = np.array([[1,          0,       0],
                    [0,  np.cos(tilt_x), -np.sin(tilt_x)],
-                   [0,  np.sin(tilt_x), np.cos(tilt_x)]], np.float)
+                   [0,  np.sin(tilt_x), np.cos(tilt_x)]], float)
     r2r1 = np.dot(np.dot(r3, r2), r1)
     return r2r1
 
@@ -88,6 +89,8 @@ def compute_xyz_lab(peaks,
          ((-1, 0),( 0, 1)) for (-x, y)
          (( 0,-1),(-1, 0)) for (-y,-x)
       etc...
+      
+    kwds are not used (but lets you pass in a dict with other things in it)
     """
     assert len(peaks) == 2, "peaks must be a 2D array"
     # Matrix for the tilt rotations
@@ -100,13 +103,13 @@ def compute_xyz_lab(peaks,
     #
     detector_orientation = [[o11, o12], [o21, o22]]
     # logging.debug("detector_orientation = "+str(detector_orientation))
-    flipped = np.dot(np.array(detector_orientation, np.float),
+    flipped = np.dot(np.array(detector_orientation, float),
                      peaks_on_detector)
     #
     vec = np.array([np.zeros(flipped.shape[1]),  # place detector at zero,
                     # sample at -dist
                     flipped[1, :],             # x in search, frelon +z
-                    flipped[0, :]], np.float)     # y in search, frelon -y
+                    flipped[0, :]], float)     # y in search, frelon -y
     # Position of diffraction spots in 3d space after detector tilts about
     # the beam centre on the detector
     rotvec = np.dot(r2r1, vec)
@@ -128,7 +131,10 @@ def compute_tth_eta(peaks,
                     chi=0.0,  # == chi - 90
                     **kwds):  # spare args are ignored
     """
-    0/10 for style
+    Finds x,y,z co-ordinates of peaks in the laboratory frame
+    Computes tth/eta from these (in degrees)
+    
+    kwds are not used (left for convenience if you have a parameter dict)
     """
     peaks_xyz = compute_xyz_lab(
         peaks,
@@ -157,12 +163,15 @@ def compute_tth_eta_from_xyz(peaks_xyz, omega,
                              **kwds):  # last line is for laziness -
     """
     Peaks is a 3 d array of x,y,z peak co-ordinates
-    crystal_translation is the position of the grain giving rise
-    to a diffraction spot
-                 in x,y,z ImageD11 co-ordinates
-                 x,y with respect to axis of rotation and or beam centre ??
-                 z with respect to beam height, z centre
-    omega data needed if crystal translations used
+    crystal_translation is the position of the grain giving rise to a diffraction spot
+    in x,y,z ImageD11 co-ordinates
+         x,y is with respect to the axis of rotation (usually also beam centre).
+         z with respect to beam height, z centre
+    omega data are needed if crystal translations are used
+    
+    computed via the arctan recipe.
+    
+    returns tth/eta in degrees
     """
     assert len(peaks_xyz) == 3
     # Scattering vectors
@@ -180,6 +189,46 @@ def compute_tth_eta_from_xyz(peaks_xyz, omega,
     s1_perp_x = np.sqrt(s1[1, :] * s1[1, :] + s1[2, :] * s1[2, :])
     tth = np.degrees(np.arctan2(s1_perp_x, s1[0, :]))
     return tth, eta
+
+
+def compute_sinsqth_from_xyz(xyz):
+    """ Computes sin(theta)**2
+    x,y,z = co-ordinates of the pixel in cartesian space
+    
+    if you need grain translations then use func(peaks_xyz - compute_grain_origins(...) )
+
+    seems to be competitive with arctan2 (docs/sintheta_squared_geometry.ipynb)
+    
+    returns sin(theta)**2 
+    """
+    # R = hypotenuse of component normal to incident beam (defines x). e.g. y*y+z*z
+    R = xyz[1]*xyz[1] + xyz[2]*xyz[2]
+    # Q = hypotenuse along the scattered beam, e.g. x*x+y*y+z*z
+    Q = xyz[0]*xyz[0] + R
+    # if Q == 0 then this is undefined
+    sinsqth = 0.5*R/( Q + xyz[0]*np.sqrt(Q) ) 
+    return sinsqth
+
+
+def sinth2_sqrt_deriv(xyz):
+    """ sin(theta)**2 from xyz, and derivatives w.r.t x,y,z
+    """
+    x,y,z = xyz
+    R = z*z + y*y
+    Q = R + x*x
+    SQ = np.sqrt(Q)
+    R2 = R/2
+    # at x==y==0 this is undefined. ac
+    rQ_xSQ = 1/(Q + x*SQ)
+    sinth2 = R2*rQ_xSQ
+    # some simplification and collecting terms from expressions above to get:
+    sr = sinth2*rQ_xSQ
+    p = (x / SQ + 2)*sr  # p should be in the range 3sr -> 2sr for x/x to 0/sqrt(R)
+    t = (rQ_xSQ - p)     #
+    sinth2_dx =  -(SQ*sr+x*p)
+    sinth2_dy =   y*t
+    sinth2_dz =   z*t
+    return sinth2, sinth2_dx, sinth2_dy, sinth2_dz
 
 
 def compute_xyz_from_tth_eta(tth, eta, omega,
@@ -200,7 +249,7 @@ def compute_xyz_from_tth_eta(tth, eta, omega,
     omega data needed if crystal translations used
     """
     # xyz = unit vectors along the scattered vectors
-    xyz = np.zeros((3, tth.shape[0]), np.float)
+    xyz = np.zeros((3, tth.shape[0]), float)
     rtth = np.radians(tth)
     reta = np.radians(eta)
     xyz[0, :] =  np.cos(rtth)
@@ -211,7 +260,7 @@ def compute_xyz_from_tth_eta(tth, eta, omega,
     # Find vectors in the fast, slow directions in the detector plane
     pks = np.array([(1, 0),
                     (0, 1),
-                    (0, 0) ], np.float).T
+                    (0, 0) ], float).T
     dxyzl = compute_xyz_lab(pks, **kwds)
     # == [xpos, ypos, zpos] shape (3,n)
     #
@@ -284,12 +333,12 @@ def compute_grain_origins(omega, wedge=0.0, chi=0.0,
     w = np.radians(wedge)
     WI = np.array([[np.cos(w),         0, -np.sin(w)],
                    [0,           1,         0],
-                   [np.sin(w),         0,  np.cos(w)]], np.float)
+                   [np.sin(w),         0,  np.cos(w)]], float)
     c = np.radians(chi)
     CI = np.array([[1,            0,         0],
                    [0,     np.cos(c), -np.sin(c)],
-                   [0,     np.sin(c),  np.cos(c)]], np.float)
-    t = np.zeros((3, omega.shape[0]), np.float)  # crystal translations
+                   [0,     np.sin(c),  np.cos(c)]], float)
+    t = np.zeros((3, omega.shape[0]), float)  # crystal translations
     # Rotations in reverse order compared to making g-vector
     # also reverse directions. this is trans at all zero to
     # current setting. gv is scattering vector to all zero
@@ -301,7 +350,7 @@ def compute_grain_origins(omega, wedge=0.0, chi=0.0,
     if chi != 0.0:
         c = np.cos(np.radians(chi))
         s = np.sin(np.radians(chi))
-        u = np.zeros(t.shape, np.float)
+        u = np.zeros(t.shape, float)
         u[0, :] = t[0, :]
         u[1, :] = c * t[1, :] + -s * t[2, :]
         u[2, :] = s * t[1, :] + c * t[2, :]
@@ -309,7 +358,7 @@ def compute_grain_origins(omega, wedge=0.0, chi=0.0,
     if wedge != 0.0:
         c = np.cos(np.radians(wedge))
         s = np.sin(np.radians(wedge))
-        u = np.zeros(t.shape, np.float)
+        u = np.zeros(t.shape, float)
         u[0, :] = c * t[0, :] + -s * t[2, :]
         u[1, :] = t[1, :]
         u[2, :] = s * t[0, :] + c * t[2, :]
@@ -317,39 +366,37 @@ def compute_grain_origins(omega, wedge=0.0, chi=0.0,
     return t
 
 
-def compute_tth_histo(tth, no_bins=100,
+def compute_tth_histo(tth, no_bins=100, weight = False, weights = None,
                       **kwds):
     """
     Compute a histogram of tth values
+    Uses numpy's histogram rather that doing it by hand as above
+    New feature: weight by something (peak intensity for instance), send true for weight and weights values
 
     Returns a normalised histogram (should make this a probability
     *and*
-     For each datapoint, the number of other points in the same bin
+     For each datapoint, the corresponding histogram weight
+ 
+    Updated and modernized 2021-02-11 S. Merkel
     """
-    tthsort = np.sort(tth)
-    maxtth = tthsort[-1]
-    mintth = tthsort[0]
-    logging.debug("maxtth=%f , mintth=%f" % (maxtth, mintth))
-    binsize = (maxtth - mintth) / (no_bins + 1)
-    tthbin = np.arange(mintth, maxtth + binsize, binsize)
-    # print len(tthbin),tthbin[:10]
-    nn = np.searchsorted(tthsort, tthbin)  # position of bin in sorted
-    nn = np.concatenate([nn, [len(tthsort)]])   # add on last position
-    histogram = (nn[1:] - nn[:-1]).astype(np.float32)
-    # this would otherwise be integer
-    logging.debug("max(histogram) = %d" % (max(histogram)))
-    # Change from max
-    # histogram = histogram/max(histogram)
-    histogram = histogram / len(tth)
-    # Vectorised version
-    # bin for each two theta
-    bins = np.floor((tth - mintth) / binsize).astype(np.int)
-    # print "got bins",len(bins),len(tth),len(histogram)
-    # print "bins",bins[:10]
-    # print "tth",tth[:10]
-    # print "histogram",histogram[:10]
-    hpk = np.take(histogram, bins)  # histogram value for each peak
-    # print "hpk",hpk[:10]
+    maxtth = tth.max()
+    mintth = tth.min()
+    logging.debug("Histogram: maxtth=%f , mintth=%f, bins=%d" % (maxtth, mintth, no_bins))
+    if (weight):
+        logging.debug("Weighted histogram")
+        histogram,binedges = np.histogram(tth, bins=no_bins, weights=weights, density=True)
+    else:
+        logging.debug("Un-weighted histogram")
+        histogram,binedges = np.histogram(tth, bins=no_bins, density=True)
+    tthbin = 0.5 *(binedges[:-1] + binedges[1:])
+    histogram = histogram/histogram.sum()
+    # histogram value for each peak
+    # len(hpk) = number of peaks
+    # Tried to use numpy's digitize but failed. Edges are treated differently between np.histogram and np.digitize (both are inclusive in np.histogram)
+    # Tried many combinations and gave up
+    binsize = (maxtth - mintth) / (no_bins-1)
+    bins = np.floor((tth - mintth) / binsize).astype(np.int32)
+    hpk = np.take(histogram, bins)
     return tthbin, histogram, hpk
 
 
@@ -362,7 +409,7 @@ def compute_k_vectors(tth, eta, wvln):
     c = np.cos(tth / 2)  # cos theta
     s = np.sin(tth / 2)  # sin theta
     ds = 2 * s / wvln
-    k = np.zeros((3, tth.shape[0]), np.float)
+    k = np.zeros((3, tth.shape[0]), float)
     # x - along incident beam
     k[0, :] = -ds * s  # this is negative x
     # y - towards door
@@ -385,7 +432,6 @@ def compute_g_vectors(tth,
     ... unless a wedge angle is specified
     """
     k = compute_k_vectors(tth, eta, wvln)
-#    print k[:,0]
     return compute_g_from_k(k, omega, wedge, chi)
 
 
@@ -395,8 +441,8 @@ def compute_g_from_k(k, omega, wedge=0, chi=0):
     """
     om = np.radians(omega)
     # G-vectors - rotate k onto the crystal axes
-    g = np.zeros((3, k.shape[1]), np.float)
-    t = np.zeros((3, k.shape[1]), np.float)
+    g = np.zeros((3, k.shape[1]), float)
+    t = np.zeros((3, k.shape[1]), float)
     #
     # g =  R . W . k where:
     # R = ( cos(omega) , sin(omega), 0 )
@@ -508,21 +554,21 @@ def compute_lorentz_factors(tth, eta, omega, wavelength, wedge=0., chi=0.):
     #     (-sin(omega) , cos(omega), 0 )
     #     (         0  ,         0 , 1 )
     #
-    W = [[cos(wedge),  0,  sin(wedge)],
+    W = [[np.cos(wedge),  0,  np.sin(wedge)],
          [0,  1,          0],
-         [-sin(wedge),  0,  cos(wedge)]]
+         [-np.sin(wedge),  0,  np.cos(wedge)]]
     #
     C = [[1,         0,      0],
-         [0,  cos(chi), sin(chi)],
-         [0, -sin(chi), cos(chi)]]
-    u = np.matrixmultiply(C, np.matrixmultiply(W, u))
+         [0,  np.cos(chi), np.sin(chi)],
+         [0, -np.sin(chi), np.cos(chi)]]
+    u = np.dot(C, np.dot(W, u))
     u_x_So = cross_product_2x2(u, So)
     # if DEBUG: print "axis orientation",u
     #
     # S = scattered vectors. Length 1/lambda.
-    S = np.array([cos(np.radians(tth) / 2.) * sin(np.radians(eta)) / wavelength,
-                  cos(np.radians(tth) / 2.) * cos(np.radians(eta)) / wavelength,
-                  sin(np.radians(tth) / 2.) / wavelength])
+    S = np.array([np.cos(np.radians(tth) / 2.) * np.sin(np.radians(eta)) / wavelength,
+                  np.cos(np.radians(tth) / 2.) * np.cos(np.radians(eta)) / wavelength,
+                  np.sin(np.radians(tth) / 2.) / wavelength])
     try:
         S_dot_u_x_So = np.dot(S, u_x_So)
     except:
@@ -556,7 +602,138 @@ def compute_polarisation_factors(args):
     """
     n = [0, 0, 1]
 
+class Ctransform(object):
+    pnames = ( "y_center", "z_center", "y_size", "z_size",
+               "distance", "wavelength","omegasign",
+               "tilt_x","tilt_y","tilt_z",
+               "o11", "o12", "o21", "o22",
+               "wedge", "chi" )
+    def __init__(self, pars ):
+        
+        """ To Do ...:
+                origin = xyz(0,0), ds = xyz(1,0), df = xyz(0,1)
+                xyz(s,f) = origin + ds*s + df*f
+        """
+        self.pars={}
+        for p in self.pnames:
+            self.pars[p] = pars[p] # copy
+        self.reset()
+        
+    def reset(self):
+        p = self.pars
+        self.distance_vec = np.array( (p['distance'],0.,0.))
+        self.dmat = detector_rotation_matrix( p['tilt_x'], p['tilt_y'], p['tilt_z'])
+        self.fmat = np.array( [[ 1,   0,   0],
+                               [ 0, p['o22'], p['o21']],
+                               [ 0, p['o12'], p['o11']]] )
+        self.rmat = np.dot(self.dmat, self.fmat).ravel()
+        self.cen = np.array( ( p["z_center"], p["y_center"], p["z_size"], p["y_size"] ))
+                                
+    def sf2xyz(self, sc, fc, tx=0, ty=0, tz=0, out=None):
+        assert len(sc) == len(fc)
+        if out is None:
+            out = np.empty( (len(sc),3), float)
+        t = np.array( (tx,ty,tz) )
+        cImageD11.compute_xlylzl( sc, fc, self.cen, self.rmat, self.distance_vec, out)
+        return out
+    
+    def xyz2gv(self, xyz, omega, tx=0, ty=0, tz=0, out=None ):
+        assert len(omega) == len(xyz)
+        if out is None:
+            out = np.empty( (len(xyz),3), float)
+        cImageD11.compute_gv( xyz,
+                             omega, 
+                             self.pars['omegasign'], 
+                             self.pars['wavelength'], 
+                             self.pars['wedge'], 
+                             self.pars['chi'], 
+                             np.array((tx,ty,tz)), 
+                             out)
+        return out
+    
+    def sf2gv( self, sc, fc, omega, tx=0, ty=0, tz=0, out=None ):
+        xyz = self.sf2xyz( sc, fc, tx, ty, tz )
+        return self.xyz2gv( xyz, omega, tx, ty, tz, out )
+                          
+        
+class PixelLUT( object ):
 
+    """ A look up table for a 2D image to store pixel-by-pixel values
+    """
+    
+    # parameters that can be used to create this LUT
+    pnames = ( "y_center", "z_center", "y_size", "z_size",
+               "distance", "wavelength", "omegasign",
+               "tilt_x","tilt_y","tilt_z",
+               "o11", "o12", "o21", "o22",
+               "wedge", "chi", "dxfile", "dyfile", "spline", "shape" )
+                 
+    def __init__( self, pars ):
+        """
+        pars is a dictionary containing the calibration parameters
+        """
+        self.pars = {}
+        for p in self.pnames:
+            if p in pars:
+                self.pars[p] = pars[p] # make a copy
+        if 'dxfile' in pars:
+            # slow/fast coordinates on image at pixel centers
+            self.df = fabio.open( pars['dxfile'] ).data
+            self.ds = fabio.open( pars['dyfile'] ).data
+            self.shape = s = self.ds.shape # get shape from file
+            self.pars['shape'] = s
+            slow, fast = np.mgrid[ 0:s[0], 0:s[1] ]
+            self.sc = slow + self.ds
+            self.fc = fast + self.df
+        elif 'spline' in pars: # need to test this...
+            from ImageD11 import blobcorrector
+            b = blobcorrector.correctorclass( self.pars['spline'] )
+            s = int(b.ymax - b.ymin), int(b.xmax - b.xmin)
+            if 'shape' in self.pars:      # override. Probabl
+                s = self.pars['shape'] 
+            self.shape = s
+            self.fc, self.sc = b.make_pixel_lut( s ) 
+            slow, fast = np.mgrid[ 0:s[0], 0:s[1] ]
+            self.df = self.fc - fast
+            self.ds = self.sc - slow
+        else:
+            s = self.shape = self.pars.get("shape")
+            self.sc, self.fc = np.mgrid[0:s[0], 0:s[1]]
+            self.df = None 
+            self.ds = None
+    
+        self.xyz = compute_xyz_lab( (self.sc.ravel(), self.fc.ravel()), **self.pars )
+        self.sinthsq = compute_sinsqth_from_xyz( self.xyz )
+        self.tth, self.eta = compute_tth_eta_from_xyz(self.xyz, None, **self.pars)
+        # scattering angles:
+        self.tth, self.eta = compute_tth_eta( (self.sc.ravel(), self.fc.ravel()), **self.pars )
+        # scattering vectors:
+        self.k = compute_k_vectors( self.tth, self.eta, self.pars.get('wavelength') )
+        self.sinthsq.shape = s
+        self.tth.shape = s
+        self.eta.shape = s
+        self.k.shape = (3, s[0], s[1])
+        self.xyz.shape = (3, s[0], s[1])
+    
+    def spatial(self, sraw, fraw):
+        """ applies a spatial distortion to sraw, fraw (for peak centroids) """
+        if self.df is None:
+            return sraw, fraw
+        else:
+            si = np.round(sraw.astype(int)).clip( 0, self.shape[1] - 1 )
+            fi = np.round(fraw.astype(int)).clip( 0, self.shape[1] - 1 )
+            sc = sraw + self.ds[ si, fi ]
+            fc = fraw + self.df[ si, fi ]
+            return sc, fc
+        
+    def __repr__(self):
+        """ print yourself in a way we can use for eval """
+        sp = "\n".join( [ "%s : %s,"%(repr(p), repr(self.pars[p])) for p in self.pnames
+                         if p in self.pars ] )
+        return "PixelLUT( { %s } )"%(sp)    
+    
+    
+    
 if __name__ == "__main__":
     # from indexing import mod_360
     def mod_360(theta, target):
@@ -572,9 +749,9 @@ if __name__ == "__main__":
             diff = theta - target
         return theta
 
-    tth = np.array([1,  2,  3,  4,  5,  6,  7,  8,  9, 10], np.float)
-    eta = np.array([10, 40, 70, 100, 130, 160, 190, 220, 270, 340], np.float)
-    om = np.array([0, 20, 40, 100, 60, 240, 300, 20, 42, 99], np.float)
+    tth = np.array([1,  2,  3,  4,  5,  6,  7,  8,  9, 10], float)
+    eta = np.array([10, 40, 70, 100, 130, 160, 190, 220, 270, 340], float)
+    om = np.array([0, 20, 40, 100, 60, 240, 300, 20, 42, 99], float)
 
     for wavelength in [0.1, 0.2, 0.3]:
         for wedge in [-10., -5., 0., 5., 10.]:

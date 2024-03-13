@@ -1,0 +1,7 @@
+[build-system]
+requires = ["setuptools",
+            "six",
+            "wheel",
+            "numpy; python_version=='2.7'",
+            "oldest-supported-numpy; python_version>='3.0'" ]
+build-backend = "setuptools.build_meta"

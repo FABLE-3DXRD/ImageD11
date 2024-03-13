@@ -164,6 +164,10 @@ PARAMETERS = [
          helpstring="Number of bins to use in histogram based filters",
          vary=False,
          can_vary=False),
+     par('weight_hist_intensities', False,
+         helpstring="If True or 1, weight histograms by peak intensities. If False or 0, histogram by number of peaks.",
+         vary=False,
+         can_vary=False),
      ]
 
 
@@ -282,10 +286,23 @@ class transformer:
 
     def compute_histo(self, colname):
         """ Compute the histogram over twotheta for peaks previous read in
-        Filtering is moved to a separate function """
+        Filtering is moved to a separate function
+        
+        colname is most-often "tth"
+        
+        other parameters are set in the parameter object
+        no_bins = number of bins
+        weight_hist_intensities: True or False
+            False: histogram by number of measured peaks
+            True: weight by peak intensities 
+        """
         if colname not in self.colfile.titles:
             raise Exception("Cannot find column " + colname)
-        bins, hist, hpk = transform.compute_tth_histo(self.getcolumn(colname),
+        weight = self.parameterobj.get("weight_hist_intensities")
+        if (weight):
+            bins, hist, hpk = transform.compute_tth_histo(self.getcolumn(colname), weight = True, weights = self.getcolumn("sum_intensity"), **self.parameterobj.get_parameters())
+        else:
+            bins, hist, hpk = transform.compute_tth_histo(self.getcolumn(colname),
                                              **self.parameterobj.get_parameters())
         self.addcolumn(hpk, colname + "_hist_prob")
         return bins, hist
@@ -326,12 +343,18 @@ class transformer:
     def gof(self, args):
         """ Compute how good is the fit of obs/calc peak positions in tth """
         self.applyargs(args)
+        # 
+        if self.update_fitds:
+            cell = unitcell.unitcell_from_parameters( self.parameterobj )
         # Here, pars is a dictionary of name/value pairs to pass to compute_tth_eta
         tth, eta = self.compute_tth_eta()
         w = self.parameterobj.get("wavelength")
         gof = 0.
         npeaks = 0
         for i in range(len(self.tthc)):# (twotheta_rad_cell.shape[0]):
+            if self.update_fitds:
+                b4 = self.fitds[i]
+                self.fitds[i] = cell.ds( self.fithkls[i] )
             self.tthc[i] = transform.degrees(math.asin(self.fitds[i] * w / 2) * 2)
             diff = numpy.take(tth, self.indices[i]) - self.tthc[i]
 #         print "peak",i,"diff",maximum.reduce(diff),minimum.reduce(diff)
@@ -352,6 +375,7 @@ class transformer:
         self.indices = []  # which peaks used
         self.tthc = []     # computed two theta values
         self.fitds = []    # hmm?
+        self.fithkls = []
         self.fit_tolerance = 1.
         pars = self.parameterobj.get_parameters()
         w = float(pars['wavelength'])
@@ -375,8 +399,13 @@ class transformer:
             if sum(logicals) > 0:
                 self.tthc.append(tthcalc)
                 self.fitds.append(dsc)
+                self.fithkls.append( self.unitcell.ringhkls[dsc][0] )
                 ind = numpy.compress(logicals, list(range(len(tth))))
                 self.indices.append(ind)
+        self.update_fitds = False
+        for p in self.parameterobj.varylist:
+            if p.startswith('cell'):
+                self.update_fitds = True
         guess = self.parameterobj.get_variable_values()
         inc = self.parameterobj.get_variable_stepsizes()
         if len(guess) == 0:
@@ -393,6 +422,9 @@ class transformer:
         self.wavelength = self.parameterobj.get("wavelength")
         self.gof(newguess)
         print(newguess)
+        if self.update_fitds:
+            self.addcellpeaks()
+
 
 
     def addcellpeaks(self, limit=None):
@@ -474,7 +506,7 @@ class transformer:
         This handles omegasign in a more elegant way
         """
         # unit vector along z
-        v = numpy.array([0, 0, 1], numpy.float)
+        v = numpy.array([0, 0, 1], float)
         p = self.parameterobj.get("omegasign")
         return v * p
 
@@ -541,7 +573,7 @@ class transformer:
     def write_graindex_gv(self, filename):
         from ImageD11 import write_graindex_gv
         if ("gx" not in self.colfile.titles):
-            self.compute_gv()
+            self.computegv()
         gv = [ self.getcolumn("gx"),
                self.getcolumn("gy"),
                self.getcolumn("gz") ]
@@ -632,3 +664,17 @@ class transformer:
         #    print geoRef
         #geoRef.save(os.path.splitext(filename)[0] + ".poni")
 
+    def save_tth_his(self, filename, bins, hist):
+        """
+        Saves a 2 theta histogram into a file
+        bins and histogram should have been calculated previously
+        """
+        #        self.parameterobj.update_other(self)
+
+        f = open(filename, "w")
+        f.write("# Peaks: %s\n" % self.colfile.filename)
+        f.write("# N. bins: %d\n" % len(bins))
+        f.write("# 2tth intensity\n")
+        for i in range(0,len(hist)):
+            f.write("%10.7f  %.7g \n" % (bins[i], hist[i]))
+        f.close()

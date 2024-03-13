@@ -20,74 +20,113 @@
 
 #ifndef _blobs_h
 #define _blobs_h
+#include "cImageD11.h"
 
-#ifdef _MSC_VER
-typedef __int32 int32_t;
-#else
-#include <stdint.h>
-#endif
+/* DLL_LOCAL
+void match(int32_t * new, int32_t * old, int32_t * S);
+*/
+#define match(X, Y, Z)                                                         \
+    do {                                                                       \
+        if ((X) == 0) {                                                        \
+            (X) = (Y);                                                         \
+        } else {                                                               \
+            if ((X) != (Y)) {                                                  \
+                dset_makeunion((Z), (X), (Y));                                 \
+            }                                                                  \
+        }                                                                      \
+    } while (0)
 
-#define INTEGER int32_t
+DLL_LOCAL
+int32_t *dset_initialise(int32_t size); /* array to hold real values of each */
 
-INTEGER *dset_initialise(INTEGER size);	/* array to hold real values of each */
-INTEGER *dset_new(INTEGER ** S, INTEGER * v);
-void dset_makeunion(INTEGER * S, INTEGER r1, INTEGER r2);
-void dset_link(INTEGER * S, INTEGER r1, INTEGER r2);
-INTEGER dset_find(INTEGER x, INTEGER * S);
-INTEGER *dset_compress(INTEGER ** pS, INTEGER * np);
+DLL_LOCAL
+int32_t *dset_new(int32_t **S, int32_t *v);
 
-  /* Spot_ID - to be generated when writing out */
+DLL_LOCAL
+void dset_makeunion(int32_t *S, int32_t r1, int32_t r2);
+
+DLL_LOCAL
+void dset_link(int32_t *S, int32_t r1, int32_t r2);
+
+DLL_LOCAL
+int32_t dset_find(int32_t x, int32_t *S);
+
+DLL_LOCAL
+int32_t *dset_compress(int32_t **pS, int32_t *np);
+
+DLL_PUBLIC
+/* Spot_ID - to be generated when writing out */
 enum {
-    s_1 = 0,			/* 1 Npix */
-    s_I,			/* 2 Sum intensity */
-    s_I2,			/* 3 Sum intensity^2 */
-    s_fI,			/* 4 Sum f * intensity */
-    s_ffI,			/* 5 Sum f * f* intensity */
-    s_sI,			/* 6 Sum s * intensity */
-    s_ssI,			/* 7 Sum s * s * intensity */
-    s_sfI,			/* 8 Sum f * s * intensity */
-    s_oI,			/* 9 sum omega * intensity */
-    s_ooI,			/* 10 sum omega2 * intensity */
-    s_soI,			/* 11 sum omega * s * intensity */
-    s_foI,			/* 12 sum omega * f * intensity */
+    s_1 = 0, /* 1 Npix */
+    s_I,     /* 2 Sum intensity */
+    s_I2,    /* 3 Sum intensity^2 */
+    s_fI,    /* 4 Sum f * intensity */
+    s_ffI,   /* 5 Sum f * f* intensity */
+    s_sI,    /* 6 Sum s * intensity */
+    s_ssI,   /* 7 Sum s * s * intensity */
+    s_sfI,   /* 8 Sum f * s * intensity */
+    s_oI,    /* 9 sum omega * intensity */
+    s_ooI,   /* 10 sum omega2 * intensity */
+    s_soI,   /* 11 sum omega * s * intensity */
+    s_foI,   /* 12 sum omega * f * intensity */
 
-    mx_I,			/* 13  Max intensity */
-    mx_I_f,			/* 14 fast at Max intensity */
-    mx_I_s,			/* 15 slow at Max intensity */
-    mx_I_o,			/* 16 omega at max I */
+    mx_I,   /* 13 Max intensity */
+    mx_I_f, /* 14 fast at Max intensity */
+    mx_I_s, /* 15 slow at Max intensity */
+    mx_I_o, /* 16 omega at max I */
 
-    bb_mx_f,			/* 17 max of f */
-    bb_mx_s,			/* 18 max of s */
-    bb_mx_o,			/* 19 max of omega */
-    bb_mn_f,			/* 20 min of f */
-    bb_mn_s,			/* 21 min of s */
-    bb_mn_o,			/* 22 min of o */
+    bb_mx_f, /* 17 max of f */
+    bb_mx_s, /* 18 max of s */
+    bb_mx_o, /* 19 max of omega */
+    bb_mn_f, /* 20 min of f */
+    bb_mn_s, /* 21 min of s */
+    bb_mn_o, /* 22 min of o */
 
-    avg_i,			/* Average intensity */
-    f_raw,			/* fast centre of mass */
-    s_raw,			/* slow centre of mass */
-    o_raw,			/* omega centre of mass */
-    m_ss,			/* moments */
+    avg_i, /* Average intensity */
+    f_raw, /* fast centre of mass */
+    s_raw, /* slow centre of mass */
+    o_raw, /* omega centre of mass */
+    m_ss,  /* moments */
     m_ff,
     m_oo,
     m_sf,
     m_so,
     m_fo,
 
-    f_cen,			/* Filled in elsewhere  - spatial correction */
-    s_cen,			/* ditto */
+    f_cen, /* Filled in elsewhere  - spatial correction */
+    s_cen, /* ditto */
 
-    dety,			/*Filled in elsewhere  - flip to HFPO book */
-    detz,			/*Filled in elsewhere  - flip to HFPO book */
+    dety, /*Filled in elsewhere  - flip to HFPO book */
+    detz, /*Filled in elsewhere  - flip to HFPO book */
 
-    NPROPERTY			/* Number of properties if starting at 0 */
+    NPROPERTY /* Number of properties if starting at 0 */
+};
+
+DLL_PUBLIC
+enum {
+    s2D_1 = 0,
+    s2D_I = 1,
+    s2D_fI = 2,
+    s2D_sI = 3,
+    s2D_ffI = 4,
+    s2D_sfI = 5,
+    s2D_ssI = 6,
+    s2D_bb_mx_f = 7,
+    s2D_bb_mx_s = 8,
+    s2D_bb_mn_f = 9,
+    s2D_bb_mn_s = 10,
+    NPROPERTY2D
 };
 
 /*void new_blob(double blob[], int i, int j, double val);*/
 
+DLL_LOCAL
 void add_pixel(double blob[], int i, int j, double val, double omega);
 
+DLL_LOCAL
 void merge(double blob1[], double blob2[]);
 
+DLL_LOCAL
 void compute_moments(double blobs[], int nblobs);
-#endif				/* _blobs_h */
+
+#endif /* _blobs_h */

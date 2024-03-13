@@ -1,0 +1,15 @@
+
+
+First set environment variables then run python interpreter under gdb:
+
+
+$ OMP_NUM_THREADS=8 PYTHONPATH=~/.local/lib/python2.7/site-packages gdb python
+...
+> set args test_sparseimage.py
+> run
+... boom
+> bt
+
+
+The traceback usually is enough to figure things out. Otherwise you can
+set breakpoints etc as usual.

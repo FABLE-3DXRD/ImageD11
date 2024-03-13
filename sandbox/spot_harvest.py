@@ -225,8 +225,8 @@ for o in oms:
             del boxes[i]
 
         if False:
-            # from matplotlib.pylab import imshow, show
-            imshow(box)
+            from matplotlib.pylab import imshow, show
+            imshow(boxes[i])
             show()
             sys.exit()
 

@@ -157,11 +157,22 @@ class labelimage:
         # data = 2D Numeric array (of your data)
         # threshold = float - pixels above this number are put into objects
         """
+        d = data.astype(np.float32)
+        self.labelpeaks( d, threshold )
+        self.measurepeaks( d, omega )
+
+
+    def labelpeaks(self, data, threshold):
         self.threshold = threshold
         self.npk = cImageD11.connectedpixels(data.astype(np.float32),
                                              self.blim,
                                              threshold,
                                              self.verbose)
+
+    def measurepeaks(self, data, omega, blim=None):
+        if blim is not None:
+            self.npk = blim.max()
+            self.blim = blim
         if self.npk > 0:
             self.res = cImageD11.blobproperties(data.astype(np.float32),
                                                 self.blim,
@@ -170,6 +181,8 @@ class labelimage:
         else:
             # What to do?
             self.res = None
+        
+        
 
     def mergelast(self):
         """
@@ -186,16 +199,16 @@ class labelimage:
             # Thanks to Stine West for finding a bug here
             #
             self.npk = cImageD11.bloboverlaps(self.lastbl,
-                                                    self.lastnp,
-                                                    self.lastres,
-                                                    self.blim,
-                                                    self.npk,
-                                                    self.res,
-                                                    self.verbose)
+                                              self.lastnp,
+                                              self.lastres,
+                                              self.blim,
+                                              self.npk,
+                                              self.res,
+                                              self.verbose)
         if self.lastnp > 0:
             # Fill out the moments of the "closed" peaks
             # print "calling blobmoments with",self.lastres
-            ret = cImageD11.blob_moments(self.lastres[:self.lastnp])
+            cImageD11.blob_moments(self.lastres[:self.lastnp])
             # Write them to file
             self.outputpeaks(self.lastres[:self.lastnp])
         # lastres is now moved forward into res
@@ -216,7 +229,7 @@ class labelimage:
 
         file_obj.write("# Threshold level %f\n"%( self.threshold))
         file_obj.write("# Number_of_pixels Average_counts    s   f     sc   fc      sig_s  sig_f  cov_sf  IMax_int\n")
-        ret = cImageD11.blob_moments(self.res)
+        cImageD11.blob_moments(self.res)
 
         fs = "%d  "+ "%f  "*9 + "\n"
         for i in self.res[:self.npk]:
@@ -265,7 +278,7 @@ class labelimage:
         """
         self.onlast = 1
         if self.lastres is not None:
-            ret = cImageD11.blob_moments(self.lastres)
+            cImageD11.blob_moments(self.lastres)
             self.outputpeaks(self.lastres)
         #if hasattr(self.sptfile, "close"):
         #    self.sptfile.close()

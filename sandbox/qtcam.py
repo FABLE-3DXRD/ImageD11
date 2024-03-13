@@ -57,8 +57,8 @@ def find_offset( c ):
 def register_image( im1, im2 ):
     """ We take the current and place it onto reference """
 
-    ref = normalise(numpy.asarray(im1).sum(axis=2, dtype=numpy.float))
-    cur = normalise(numpy.asarray(im2).sum(axis=2, dtype=numpy.float))
+    ref = normalise(numpy.asarray(im1).sum(axis=2, dtype=float))
+    cur = normalise(numpy.asarray(im2).sum(axis=2, dtype=float))
 
     fftshape = ( ref.shape[0] + cur.shape[0] ,
                  ref.shape[1] + cur.shape[1]  )
@@ -114,9 +114,9 @@ class ImageQt(Qt.QImage):
         assert npyar.shape[2] == 3
         assert npyar.dtype == numpy.uint8
         h , w = npyar.shape[0:2]
-	try: 
+        try: 
             self.__data = npyar.data
-	    Qt.QImage.__init__(self, self.__data, w, h, Qt.QImage.Format_RGB888 )
+            Qt.QImage.__init__(self, self.__data, w, h, Qt.QImage.Format_RGB888 )
         except:
             im = numpy.zeros( (h, w, 4),
                           numpy.uint8)

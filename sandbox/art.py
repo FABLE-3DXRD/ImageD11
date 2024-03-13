@@ -1,5 +1,5 @@
 
-from __future__ import print_function
+from __future__ import print_function, division
 
 
 """
@@ -31,7 +31,7 @@ def update_wtd( recon, proj, angle, msk, dbg=True ):
     pos = np.zeros( x.shape, np.float32).ravel()
     np.add( x.ravel()*cth, y.ravel()*sth, pos) 
     # Lower & upper pixel:
-    idx_lo = np.floor(pos).astype(np.int)
+    idx_lo = np.floor(pos).astype(int)
     idx_hi = idx_lo+1
     # idx will go from -xxx to xxx
     mn = idx_lo.min()
@@ -50,14 +50,14 @@ def update_wtd( recon, proj, angle, msk, dbg=True ):
     cImageD11.put_incr( calc_proj, idx_lo, r*wt_lo )
     cImageD11.put_incr( calc_proj, idx_hi, r*wt_hi )
     error = np.zeros( calc_proj.shape, np.float32 )
-    start = (len(calc_proj)- len(proj))/2
+    start = int((len(calc_proj)- len(proj))/2)
     error[ start:start+len(proj) ] = proj
     error = error - calc_proj
     npcalc_proj = np.zeros( (mx-mn), np.float32 )
     cImageD11.put_incr( npcalc_proj, idx_hi, wt_hi )
     cImageD11.put_incr( npcalc_proj, idx_lo, wt_lo )
     npcalc_proj = np.where(npcalc_proj >0 ,npcalc_proj, 1)
-    update =  np.zeros( r.shape, np.float32)
+    # update =  np.zeros( r.shape, np.float32)
     update =  wt_hi*np.take( error/npcalc_proj, idx_hi ) 
     update += wt_lo*np.take( error/npcalc_proj, idx_lo )    
 
@@ -78,7 +78,7 @@ def update_wtd( recon, proj, angle, msk, dbg=True ):
     #pl.colorbar()
     #pl.show()
 
-    update = update 
+    # update = update 
     update.shape = recon.shape
     print(update.sum(),error.sum(), end=' ')
     if dbg:
@@ -91,7 +91,8 @@ def update_wtd( recon, proj, angle, msk, dbg=True ):
 
 
 def make_data():
-    import rad, Image
+    import rad
+    from PIL import Image
     im = Image.open("phantom3.gif")
     a = np.asarray(im).astype(np.float32)
     print(a.min(),a.max())
@@ -123,7 +124,7 @@ def test_u_n():
     for j in range(3):
         for proj, angle in zip(projections, theta):
             print(j, angle, end=' ')
-            start = time.clock()
+            start = time.time()
             update = update_wtd( recon, proj, angle, msk, dbg=False)
             recon = recon + update*0.9
             # clip to zero - constructing positive intensity
@@ -135,7 +136,7 @@ def test_u_n():
                 pl.imshow(recon)
                 pl.colorbar()
             #    pl.show()
-            end = time.clock()
+            end = time.time()
             sumtime += end-start
             ncalc +=1
             # print err.sum()

@@ -28,13 +28,14 @@ An equals sign "=" on a "#" line implies a parameter = value pair
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  0211-1307  USA
 
+import warnings
 
 from ImageD11 import parameters, transform
 import numpy as np
 
 FLOATS = [
     "fc",
-    "sc", 
+    "sc",
     "omega",
     "f_raw",
     "s_raw",
@@ -77,13 +78,14 @@ INTS = [
     "Grain",
     "grainno",
     "grain_id",
-    "IKEY", 
+    "IKEY",
+    "npk2d",
     ]
 
 # 9 elements
 ij = ["%d%d"%(i,j) for i in range(1,4) for j in range(1,4)]
 # Uij, UBIij
-LONGFLOATS  = [s+v for v in ij for s in ["U","UBI"]] 
+LONGFLOATS  = [s+v for v in ij for s in ["U","UBI"]]
 
 
 
@@ -98,9 +100,9 @@ EXPONENTIALS = [ h+str(v)+t for v in ijs for h,t in [ ('eps',''),
                                                       ('sig','_s') ] ]
 
 #                              'e' ij1  'e' ij2   '_s'  for triangle ij
-EXPONENTIALS +=  ["%s%d%s%d%s"%(h,ijs[i],h,ijs[j],t) 
-                  for i in range(6) 
-                  for j in range(i,6) 
+EXPONENTIALS +=  ["%s%d%s%d%s"%(h,ijs[i],h,ijs[j],t)
+                  for i in range(6)
+                  for j in range(i,6)
                   for h,t in [ ('e',''),('e','_s'),('s',''),('s','_s')] ]
 
 # testing for line compression
@@ -110,32 +112,38 @@ EXPONENTIALS +=  ["%s%d%s%d%s"%(h,ijs[i],h,ijs[j],t)
 #assert set(olde) == set(EXPONENTIALS)
 #print "These seem to match"
 
-   
+
 FORMATS = {}
 
 
 # Make a dictionary for formatstrings when writing files
-for f in FLOATS: 
-    FORMATS[f] = "%.4f" 
-for f in LONGFLOATS: 
-    FORMATS[f] = "%.12f" 
+for f in FLOATS:
+    FORMATS[f] = "%.4f"
+for f in LONGFLOATS:
+    FORMATS[f] = "%.12f"
 for f in INTS:
     FORMATS[f] = "%.0f"
 for f in EXPONENTIALS:
     FORMATS[f] = "%.4e"
 
-def clean(str_lst): 
+def clean(str_lst):
     """ trim whitespace from titles """
-    return [s.lstrip().rstrip() for s in str_lst] 
+    return [s.lstrip().rstrip() for s in str_lst]
 
-class columnfile:
+
+def fillcols(lines, cols):
+    for i,line in enumerate(lines):
+        for j,item in enumerate(line.split()):
+            cols[j][i] = float(item)
+
+class columnfile(object):
     """
     Class to represent an ascii file containing multiple named columns
     """
-    
+
     def __init__(self, filename = None, new = False):
         self.filename = filename
-        self.bigarray = None
+        self.__data = []
         self.titles = []
         if filename is not None:
             self.parameters = parameters.parameters(filename=filename)
@@ -146,6 +154,55 @@ class columnfile:
         if not new:
             self.readfile(filename)
 
+    def get_bigarray(self):
+        # if someone uses this we have to go back to the old
+        # representation
+        if not hasattr(self,"__bigarray") or len(self.__data) != len(self.__bigarray):
+            self.__bigarray = np.asarray( self.__data )
+        self.__data = self.__bigarray
+        return self.__bigarray
+
+    def set_bigarray(self, ar):
+#        print("setting bigarray",len(ar),len(ar[0]))
+#        warnings.filter("once")
+#        warnings.warn("Setting bigarray on colfile", stacklevel=2)
+        assert len(ar) == len(self.titles), \
+            "Wrong length %d to set bigarray"%(len(ar))+\
+            " ".join(self.titles)
+        nrows = len(ar[0])
+        for col in ar:
+            assert len(col) == nrows, "ar is not rectangular"
+        self.nrows = nrows
+        # use a list of arrays
+        self.__bigarray = ar
+        self.__data = self.__bigarray
+        self.set_attributes()
+
+    bigarray = property(fget=get_bigarray, fset=set_bigarray)
+
+    def set_attributes(self):
+        """
+        Set object vars to point into the big array
+        """
+        if self.nrows == 0:
+            # use empty arrays for now...
+            # not sure why this was avoided in the past?
+            pass
+            #return
+        for i, name in enumerate(self.titles):
+            setattr(self, name, self.__data[i])
+            a  = getattr(self, name)
+            assert len(a) == self.nrows, "%s %d %d"%(name,len(a),self.nrows)
+
+    def __getitem__(self, key):
+        if key in self.titles:
+            return self.getcolumn( key )
+        else:
+            raise KeyError
+
+    def keys(self):
+        return self.titles
+
     def removerows( self, column_name, values, tol = 0 ):
         """
         removes rows where self.column_name == values
@@ -155,15 +212,14 @@ class columnfile:
         """
         col = self.getcolumn( column_name )
         if tol <= 0: # integer comparisons
-            col = col.astype( np.int )
+            col = col.astype( int )
             mskfun = lambda x, val, t: x == val
         else:        # floating point
-            mskfun = lambda x, val, t: np.abs( x - val ) < t 
+            mskfun = lambda x, val, t: np.abs( x - val ) < t
         mask  = mskfun( col, values[0], tol )
         for val in values[1:]:
             np.logical_or( mskfun( col, val, tol ), mask, mask)
         self.filter( ~mask )
-
 
     def sortby( self, name ):
         """
@@ -172,21 +228,22 @@ class columnfile:
         col = self.getcolumn( name )
         order = np.argsort( col )
         self.reorder( order )
-        
+
     def reorder( self, indices ):
         """
         Put array into the order given by indices
         ... normally indices would come from np.argsort of something
         """
-        self.bigarray = self.bigarray[:, indices]
+        for col in self.__data:
+            col[:] = col[indices]
         self.set_attributes()
-        
+
     def writefile(self, filename):
         """
         write an ascii columned file
         """
         self.chkarray()
-        fout = open(filename,"w+") # appending
+        fout = open(filename,"w") # appending
         # Write as "# name = value\n"
         parnames = list(self.parameters.get_parameters().keys())
         parnames.sort()
@@ -205,7 +262,7 @@ class columnfile:
         fout.write("\n")
         format_str += "\n"
         for i in range(self.nrows):
-            fout.write(format_str % tuple( self.bigarray[:, i]) )
+            fout.write(format_str % tuple( [col[i] for col in self.__data] ) )
         fout.close()
 
     def readfile(self, filename):
@@ -213,7 +270,6 @@ class columnfile:
         Reads in an ascii columned file
         """
         self.titles = []
-        self.bigarray = None
         self.parameters = parameters.parameters(filename=filename)
         self.ncols = 0
         self.nrows = 0
@@ -232,18 +288,18 @@ class columnfile:
         while header and i < len(raw):
              if len(raw[i].lstrip())==0:
                  # skip blank lines
-                 i += 1    
+                 i += 1
                  continue
              if raw[i][0] == "#":
                  # title line
                  if raw[i].find("=") > -1:
                      # key = value line
-                     name, value = clean(raw[i][1:].split("="))
+                     name, value = clean(raw[i][1:].split("=",1))
                      self.parameters.addpar(
                          parameters.par( name, value ) )
                  else:
                      self.titles = raw[i][1:].split()
-                 i += 1    
+                 i += 1
              else:
                  header = False
         try:
@@ -251,31 +307,19 @@ class columnfile:
             lastrow = [ float( v ) for v in raw[-1].split() ]
             if len(row0) == len(lastrow ):
                 nrows = len(raw)-i
-                last = None
+                last = len(raw)
             else:
                 nrows = len(raw)-i-1 # skip the last row
-                last = -1
-            self.bigarray = np.zeros( ( len(row0), nrows ), np.float )
-            for i,line in enumerate(raw[i:last]):
-                self.bigarray[:,i] = [ float( v ) for v in line.split() ]
+                last = len(raw)-1
+            cols = [ np.empty( nrows , float ) for _ in range(len(row0))]
+            fillcols( raw[i:last], cols )
+            self.__data=cols
         except:
-            raise Exception("Problem interpreting your colfile")
-        (self.ncols, self.nrows) = self.bigarray.shape
+            raise # Exception("Problem interpreting your colfile")
+        self.ncols, self.nrows = len(row0), nrows
         self.parameters.dumbtypecheck()
         self.set_attributes()
 
-    def set_attributes(self):
-        """
-        Set object vars to point into the big array
-        """
-        if self.nrows == 0:
-            # use empty arrays for now...
-            # not sure why this was avoided in the past?
-            pass
-            #return
-        for i, title in enumerate(self.titles):
-            setattr(self, title, self.bigarray[i])
-            assert getattr(self, title).shape == (self.nrows,)
 
     def filter(self, mask):
         """
@@ -284,31 +328,45 @@ class columnfile:
         self.chkarray()
         if len(mask) != self.nrows:
             raise Exception("Mask is the wrong size")
-        self.nrows = int(np.sum(
-            np.compress(mask, np.ones(len(mask)))))
-        self.bigarray = np.compress(mask, self.bigarray, axis = 1)
-        assert self.bigarray.shape == (self.ncols, self.nrows)
+        msk = np.array( mask, dtype=bool )
+        # back to list here
+        self.__data = [col[msk] for col in self.__data]
+        self.nrows = len(self.__data[0])
         self.set_attributes()
- 
+
     def copy(self):
         """
         Returns a (deep) copy of the columnfile
         """
         cnw = columnfile(self.filename, new = True)
         self.chkarray()
-        cnw.bigarray = self.bigarray.copy()
+        cnw.titles = [t for t in self.titles ]
+        cnw.parameters = parameters.parameters( **self.parameters.parameters )
+        cnw.bigarray = [col.copy() for col in self.__data]
+        cnw.ncols = self.ncols
+        cnw.set_attributes()
+        return cnw
+
+    def copyrows(self, rows):
+        """
+        Returns a copy of select rows of the columnfile
+        """
+        self.chkarray()
+        cnw = columnfile(self.filename, new = True)
         cnw.titles = [t for t in self.titles ]
         cnw.parameters = self.parameters
-        (cnw.ncols, cnw.nrows) = cnw.bigarray.shape
-        cnw.set_attributes()
+        cnw.bigarray = [col[rows] for col in self.__data]
+        #cnw.ncols, cnw.nrows = cnw.bigarray.shape
+        #cnw.set_attributes()
         return cnw
 
     def chkarray(self):
         """
         Ensure self.bigarray holds our attributes
         """
-        for i, title in enumerate(self.titles):
-            self.bigarray[i] = getattr(self, title)
+        for i, name in enumerate(self.titles):
+            a = getattr(self, name)
+            self.__data[i] = a
 
     def addcolumn(self, col, name):
         """
@@ -318,22 +376,19 @@ class columnfile:
         if len(col) != self.nrows:
             raise Exception("Wrong length column")
         if name in self.titles:
+            idx = self.titles.index(name)
             # Make this overwrite instead of throwing an exception
-            self.bigarray[self.titles.index(name)] = col
+            self.__data[idx] = col
             # raise Exception("Already got a column called "+name)
-            setattr(self, name,             
-                    self.bigarray[self.titles.index(name)] )
         else:
-            assert self.bigarray.shape == (self.ncols, self.nrows)
-            self.titles.append(name)
+            # assert self.bigarray.shape == (self.ncols, self.nrows)
             data = np.asanyarray( col )
-            assert  data.shape[0] == self.nrows 
-            self.ncols += 1            
-            self.bigarray = np.append( self.bigarray,
-                                       data[np.newaxis,:],
-                                       axis=0)
-            assert self.bigarray.shape == (self.ncols, self.nrows)
-            self.set_attributes()
+            assert  data.shape[0] == self.nrows
+            self.titles.append(name)
+            idx = len(self.titles)-1
+            self.ncols += 1
+            self.__data.append( data )
+        setattr(self, name, self.__data[idx] )
 
     # Not obvious, but might be a useful alias
     setcolumn = addcolumn
@@ -343,8 +398,8 @@ class columnfile:
         Gets data, if column exists
         """
         if name in self.titles:
-            return self.bigarray[self.titles.index(name)]
-        raise Exception("Name "+name+" not in file")
+            return self.__data[self.titles.index(name)]
+        raise KeyError("Name "+name+" not in file")
 
     def setparameters( self, pars ):
         """
@@ -352,7 +407,7 @@ class columnfile:
         """
         self.parameters = pars
         self.parameters.dumbtypecheck()
-        
+
     def updateGeometry(self, pars=None ):
         """
         changing or not the parameters it (re)-computes:
@@ -363,15 +418,16 @@ class columnfile:
         if pars is not None:
             self.setparameters( pars )
         pars = self.parameters
-        if "sc" in self.titles:
+        if "sc" in self.titles and "fc" in self.titles:
             pks = self.sc, self.fc
-        elif "xc" in self.titles: 
+        elif "xc" in self.titles and "yc" in self.titles:
             pks = self.xc, self.yc
         else:
-            raise Exception("columnfile file misses xc or sc")
+            raise Exception("columnfile file misses xc/yc or sc/fc")
         xl,yl,zl = transform.compute_xyz_lab( pks,
                                           **pars.parameters)
         peaks_xyz = np.array((xl,yl,zl))
+        assert "omega" in self.titles,"No omega column"
         om = self.omega *  float( pars.get("omegasign") )
         tth, eta = transform.compute_tth_eta_from_xyz(
             peaks_xyz, om,
@@ -393,7 +449,7 @@ class columnfile:
         self.addcolumn(modg, "ds") # dstar
 
 
-            
+
 class newcolumnfile(columnfile):
     """ Just like a columnfile, but for creating new
     files """
@@ -401,6 +457,18 @@ class newcolumnfile(columnfile):
         columnfile.__init__(self, filename=None, new=True)
         self.titles = titles
         self.ncols = len(titles)
+        
+        
+def colfile_from_dict( c ):
+    """ convert from a dictonary of numpy arrays """
+    titles = list(c.keys())
+    nrows = len(c[titles[0]])
+    for t in titles:
+        assert len(c[t]) == nrows, t
+    colf = newcolumnfile( titles=titles )
+    colf.nrows = nrows
+    colf.set_bigarray( [ c[t] for t in titles ] )
+    return colf
 
 
 try:
@@ -423,7 +491,10 @@ try:
             opened = True
         if name is None:
             # Take the file name
-            name = os.path.split(c.filename)[-1]
+            try:
+                name = os.path.split(c.filename)[-1]
+            except:
+                name = 'peaks'
         if name in list(h.keys()):
             g = h[name]
         else:
@@ -431,12 +502,14 @@ try:
         g.attrs['ImageD11_type'] = 'peaks'
         for t in c.titles:
             if t in INTS:
-                ty = np.int32
+                ty = np.int64
             else:
-                ty = np.float32
+                ty = np.float64
             # print "adding",t,ty
             dat = getattr(c, t).astype( ty )
             if t in list(g.keys()):
+                if g[t].shape != dat.shape:
+                    g[t].resize( dat.shape )
                 g[t][:] = dat
             else:
                 g.create_dataset( t, data = dat,
@@ -459,12 +532,12 @@ try:
             print(name, h)
             raise
         g.attrs['ImageD11_type'] = 'peaks'
-        for t in c.titles:
+        for t in cf.titles:
             if t in INTS:
-                ty = np.int32
+                ty = np.int64
             else:
-                ty = np.float32
-            g.create_dataset( t, data = getattr(c, t).astype( ty ) )
+                ty = np.float64
+            g.create_dataset( t, data = getattr(cf, t).astype( ty ) )
         h.close()
 
     def colfile_from_hdf( hdffile , name=None, obj=None ):
@@ -485,7 +558,10 @@ try:
                 print(groups)
                 raise Exception("Did not find your "+str(name)+" in "+hdffile)
         else:
-            assert len(groups) == 1, "Your hdf file has many groups. Which one??"
+            groups = [g for g in groups 
+                                if 'ImageD11_type' in h[g].attrs and 
+                                   h[g].attrs['ImageD11_type'] in ('peaks', b'peaks') ]
+            assert len(groups) == 1, "Your hdf file has many groups. Which one??"+str(groups)
             g = h[groups[0]]
             name = groups[0]
         if hasattr(g, 'listnames'):
@@ -513,26 +589,19 @@ try:
             col = columnfile( filename=name, new=True )
         else:
             col = obj
-        col.titles = newtitles
-        dat = g[newtitles[0]][:]
-        col.bigarray = np.zeros( (len(newtitles), len(dat) ), np.float32)
-        col.bigarray[0] = dat
-        col.ncols = len(newtitles)
-        col.nrows = len(dat)
-        i = 1
-        for t in newtitles[1:]:
-            col.bigarray[i] = g[t][:]
-            i += 1
-        col.set_attributes()        
+        col.nrows = len( g[newtitles[0]] )
+        for name in newtitles:
+            col.addcolumn( g[name][:].copy(), name )
+        h.close()
         return col
-    
+
 except ImportError:
     def hdferr():
         raise Exception("You do not have h5py installed!")
 
     def colfile_to_hdf( a,b,name=None):
         hdferr()
-    
+
     def colfile_from_hdf( hdffile , name=None ):
         hdferr()
 
@@ -546,14 +615,21 @@ def bench():
     """
     import sys, time
     start = time.time()
+    import cProfile, pstats
+    pr = cProfile.Profile()
+    pr.enable()
     colf = columnfile(sys.argv[1])
+    pr.disable()
+    ps = pstats.Stats(pr, stream=sys.stdout )
+    ps.sort_stats('tottime')
+    ps.reverse_order()
     print(colf.bigarray.shape)
     print("ImageD11", time.time() - start)
     start = time.time()
     nolf = np.loadtxt(sys.argv[1])
     print(nolf.shape)
     print("np", time.time() - start)
-    
+    ps.print_stats()
     # os.system("time -p ./a.out")
 
 
@@ -596,7 +672,5 @@ def colfile2db( colfilename, dbname ):
     dbo.commit()
     dbo.close()
 
-                                       
 if __name__ == "__main__":
     bench()
- 

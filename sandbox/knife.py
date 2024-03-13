@@ -105,7 +105,7 @@ def convoluted_cylinder_absorbtion( x,
     """
     # the cylinder absorbtion function puts x at 0
     psv = pseudo_voigt_peak( x, position, fwhm, eta )
-    cyl_abs = np.zeros( x.shape, np.float ) 
+    cyl_abs = np.zeros( x.shape, float ) 
     middle = x.mean()
     for i in range(len(x)):
         x0 = x[i]
@@ -129,7 +129,7 @@ def convoluted_cylinder_thickness( x,
     """
     # the cylinder absorbtion function puts x at 0
     psv = pseudo_voigt_peak( x, position, fwhm, eta )
-    cyl = np.zeros( x.shape, np.float ) 
+    cyl = np.zeros( x.shape, float ) 
     middle = x.mean()
     for i in range(len(x)):
         x0 = x[i]

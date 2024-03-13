@@ -1,7 +1,7 @@
 
 from __future__ import print_function
 
-import numpy as np
+import numpy as np, pylab as pl
 
 
 def read_log(fname):
@@ -91,13 +91,13 @@ if __name__=="__main__":
         print("#  spot3d_id  omega  xpos  intensity")
         for i in range(len(usedpks)):
             print("%-7d  %8.1f %9.5f %15g"%(usedpks[i], omused[i], xposused[i], intens[i]))
-        if 0:
-            pl.clf()
-            pl.title("Grain number %d"%(ng))
-            pl.plot(om, xpos,"o")
-            pl.plot(omused, xposused,"o")
-            pl.plot(omused, calc,"+")
-            pl.ion()
-            pl.show()
-            pl.savefig("grainfit_%d.png"%(ng))
+        # if 0:
+        #     pl.clf()
+        #     pl.title("Grain number %d"%(ng))
+        #     pl.plot(om, xpos,"o")
+        #     pl.plot(omused, xposused,"o")
+        #     pl.plot(omused, calc,"+")
+        #     pl.ion()
+        #     pl.show()
+        #     pl.savefig("grainfit_%d.png"%(ng))
         ng += 1

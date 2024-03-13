@@ -1,5 +1,5 @@
 
-from __future__ import print_function
+from __future__ import print_function, division
 
 """
 Reciprocal Space Volume
@@ -47,7 +47,7 @@ class rsv(object):
         assert len(dimensions) == 3
         self.SIG = None # signal
         self.MON = None # monitor
-        self.NR =  dimensions # dimensions      
+        self.NR = [int(x) for x in dimensions] # dimensions
         self.NORMED = None
         self.bounds = bounds  # boundary in reciprocal space
         self.np = np          # px per hkl
@@ -62,7 +62,7 @@ class rsv(object):
         """
         if self.NR is None:
             raise Exception("Cannot allocate rsv")
-        total = self.NR[0]*self.NR[1]*self.NR[2]
+        total = int(self.NR[0]*self.NR[1]*self.NR[2])
         print("rsv: memory used = %.2f MB"%(total*8.0/1024/1024))
         print("dim: %d %d %d"%(self.NR[0],self.NR[1],self.NR[2]))
         self.SIG = numpy.zeros( total, numpy.float32 )
@@ -109,7 +109,7 @@ class rsv(object):
                         str(self.plnames)))
         p = self.plnames[plane]
         # floor(x+0.5) is nearest integer
-        ind = numpy.floor( num * self.np + 0.5) - self.bounds[p][0]
+        ind = int(numpy.floor( num * self.np + 0.5) - self.bounds[p][0])
         # convert this back to num
         testnum = 1.0*(self.bounds[p][0] + ind )/self.np
         if abs(testnum - num)>1e-6:
@@ -152,8 +152,9 @@ def writevol(vol, filename):
     """
     if not isinstance( vol, rsv ):
         raise Exception("First arg to writevol should be an rsv object")
-    if None in [vol.NR, vol.SIG, vol.MON]:
-        raise Exception("Cannot save rsv, has not data in it")
+    for a in [vol.NR, vol.SIG, vol.MON]:
+        if a is None:
+            raise Exception("Cannot save rsv, has not data in it")
     volout = h5py.File( filename,"w")
     if vol.SIG.dtype != numpy.float32:
         logging.warning("rsv SIG was not float32, converting")
@@ -191,8 +192,9 @@ def writenormedvol(vol, filename):
     if not isinstance( vol, rsv ):
         raise Exception("First arg to writevol should be an rsv object")
     
-    if None in [vol.NR, vol.NORMED]:    
-        raise Exception("Cannot save rsv, has not data in it")
+    for a in [vol.NR, vol.NORMED]:
+        if a is None:
+            raise Exception("Cannot save rsv, has not data in it")
     volout = h5py.File( filename,"w")
     if vol.NORMED.dtype != numpy.float32:
         logging.warning("rsv NORMED was not float32, converting")

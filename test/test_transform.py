@@ -29,7 +29,7 @@ from ImageD11 import transform
 class testtransform(unittest.TestCase):
     def setUp(self):
         self.peaks = np.array([ [ 10, 20 , 50, 100, 512, 2000 ],
-                                [ 100, 10, 50, 99, 518, 2010  ] ], np.float)
+                                [ 100, 10, 50, 99, 518, 2010  ] ], float)
 
     def test_compute_tth_eta1(self):
         # Check translation of 0,0,0 has no effect
@@ -40,7 +40,7 @@ class testtransform(unittest.TestCase):
                                               y_center=yc, y_size=ys, tilt_y=ty,
                                               z_center=zc, z_size=zs, tilt_z=tz,
                                               distance=dist)
-        om = np.ones(self.peaks.shape[1], np.float)
+        om = np.ones(self.peaks.shape[1], float)
         trans =  transform.compute_tth_eta(self.peaks,
                                            y_center=yc, y_size=ys, tilt_y=ty,
                                            z_center=zc, z_size=zs, tilt_z=tz,

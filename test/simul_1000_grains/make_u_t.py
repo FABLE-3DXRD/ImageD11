@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 
 inp = """
 #File names and Format
@@ -85,7 +86,7 @@ dy = np.cos(np.arange(1000))/5
 dz = np.sin(np.arange(1000))/7
 
 t = np.array( (x.ravel()+dx, y.ravel()+dy, z.ravel()+dz ) )/10
-print t.shape
+#print t.shape
 np.savetxt("t",t.T)
 
 # orientations....
@@ -98,6 +99,6 @@ f.write(inp)
 for i,v in enumerate(t.T):
     f.write("pos_grains_%d %f %f %f\n"%(i,v[0],v[1],v[2]))
 for i,v in enumerate(u):
-    f.write("U_grains_%d %f %f %f %f %f %f %f %f %f\n"%(i,
-                              v[0,0],v[0,1],v[0,2],v[1,0],v[1,1],v[1,2],v[2,0],v[2,1],v[2,2] ))
-    
+    f.write("U_grains_%d "%(i))
+    f.write(" ".join( repr(x) for x in v.ravel() ) )
+    f.write('\n')

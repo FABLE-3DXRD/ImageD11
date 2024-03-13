@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 import fabio, numpy as np, h5py
 
 # read in .txt file and .dat files
@@ -8,7 +10,7 @@ def readtxt(fname):
     Reads txt file written by spec and fills in table of:
       filenumber, diffty, diffrz, pico3, current
     """
-    cnext = None
+    cnext = cindex = None
     h = {}
     vals = []
     ctrs = "diffty pico3 notsrcu".split()

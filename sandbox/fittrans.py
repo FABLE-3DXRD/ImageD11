@@ -60,7 +60,7 @@ def XL_to_gv_old( omega, wedge, chi, XL, wavelength, tx, ty, tz):
 
 def XL_to_gv( omega, wedge, chi, XL, wavelength, tx, ty, tz):
     """ Compute gv by rotation of experiment around crystal """
-    beam = np.zeros( (3,len(omega)), np.float)
+    beam = np.zeros( (3,len(omega)), float)
     beam[0,:] = 1.0
     XB = k_to_g( beam, omega, wedge, chi)
     #print "XB",XB
@@ -191,14 +191,14 @@ class fittrans(object):
             #print "after",len(pks),pks
             gr.pks = pks[use]
         else:
-            use = np.arange( len(gr.pks), dtype=np.int )
+            use = np.arange( len(gr.pks), dtype=int )
         #print "score = ", scor[pks].sum()/len(pks), len(pks), tol
         # peaks to use are those with scor OK
         #
         #  UB.h = gvcalc
         #  dg/dUB = h
         #  dg/dT  = found above
-        gcalc = np.dot( gr.ub,  hkli )
+        gcalc = np.dot( gr.UB,  hkli )
         diff = np.take(gv - gcalc, use, axis=1)
         # print diff.shape, pks.shape
         # gv[0],[1],[2] = 3
@@ -242,7 +242,7 @@ class fittrans(object):
         ty = ty - shifts[1]
         tz = tz - shifts[2]
         gr.translation = [tx,ty,tz]
-        ub = gr.ub.ravel()
+        ub = gr.UB.ravel()
         np.add(ub, shifts[3:], ub)
         gr.set_ubi( np.linalg.inv( np.reshape(ub,(3,3))))
         gr.npks = len(use)
@@ -319,7 +319,7 @@ if __name__=="__main__":
     # Take old peak assignments:
     if 1:
         print("Using existing peak assignments")
-        inds = np.arange(o.colfile.nrows,dtype=np.int)
+        inds = np.arange(o.colfile.nrows,dtype=int)
         for i,gref in enumerate(gl):
             gref.pks = np.compress( o.colfile.labels == i, inds )
         tols = [None,]*3

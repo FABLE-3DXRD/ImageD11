@@ -37,6 +37,8 @@ import fabio.edfimage
 from fabio.openimage import openimage
 import numpy
 import random # to do images in random order
+import logging
+from ImageD11 import ImageD11options
 
 class minimum_image(object):
     """
@@ -126,28 +128,29 @@ class kbg(object):
 
 def get_options(parser):
     """ add the command line options to parser """
-    parser.add_option("-n", "--namestem", action = "store", 
-                      type = "string", dest = "stem",
+    parser.add_argument("-n", "--namestem", action = "store", 
+                      type = str, dest = "stem",
      help="Name of the files up the digits part, eg mydata in mydata0000.edf" )
-    parser.add_option("-f", "--first", action = "store", type = "int", 
+    parser.add_argument("-f", "--first", action = "store", type = int, 
                       dest = "first",default = 0,
                       help = "Number of first file to process, default=0")
-    parser.add_option("-l", "--last", action = "store", type = "int", 
+    parser.add_argument("-l", "--last", action = "store", type = int, 
                       dest = "last",default = 0, 
                       help = "Number of last file to process")
-    parser.add_option("-o", "--outfile", action = "store", type = "string", 
+    parser.add_argument("-o", "--outfile", action = "store", 
+                        type = ImageD11options.ImageFileType(mode='w'), 
                           dest = "outfile", default = "bkg.edf", 
                       help = "Output filename, default=bkg.edf")
-    parser.add_option("-F", "--Format", action = "store", 
-                      type = "string", dest = "format", default = ".edf",
+    parser.add_argument("-F", "--Format", action = "store", 
+                      type = str, dest = "format", default = ".edf",
                       help = "File format [edf|bruker]")
-    parser.add_option("-s", "--step", action = "store", type = "int", 
+    parser.add_argument("-s", "--step", action = "store", type = int,
                       dest = "step",default = 1,
                       help = "step - every nth image")
-    parser.add_option("--ndigits", action = "store", type = "int",
+    parser.add_argument("--ndigits", action = "store", type = int,
                       dest = "ndigits", default = 4,
                       help = "Number of digits in file numbering [4]")
-    parser.add_option("-k", "--kalman-error", action="store", type = "float",
+    parser.add_argument("-k", "--kalman-error", action="store", type = float,
             dest = "kalman_error", default = 0,
             help = "Error value to use Kalman style filter (read noise)" )
 
@@ -157,7 +160,8 @@ def check_options( options ):
     """ Validate the command line options """
     for att in [ "stem", "first", "last"]:
         if getattr( options, att) is None:
-            raise Exception("You must supply an option for "+att)
+            logging.error("You must supply an option for %s",att)
+            raise Exception("Missing "+att)
 
 
 def bgmaker( options ):
@@ -226,7 +230,7 @@ def bgmaker( options ):
     except:
         print("problem writing")
         print("trying to write",options.outfile,"in edf format")
-        im = fabio.edfimage.edfimage( data = minim.minimum_image )
+        im = fabio.edfimage.edfimage( data = bko.minimum_image )
         try:
             im.write(options.outfile, force_type = im.data.dtype)
         except TypeError:
@@ -240,10 +244,10 @@ if __name__ == "__main__":
     START = time.time()
 
     try:
-        from optparse import OptionParser
-        MYPARSER = OptionParser()
+        from argparse import ArgumentParser
+        MYPARSER = ArgumentParser()
         MYPARSER = get_options( MYPARSER )
-        OPTS , DUMMY = MYPARSER.parse_args()
+        OPTS = MYPARSER.parse_args()
         check_options( OPTS )
         bgmaker( OPTS )
 

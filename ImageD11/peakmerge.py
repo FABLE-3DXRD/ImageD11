@@ -279,8 +279,8 @@ class peakmerger:
             if line[0] == "#":
                 currentimage.addtoheader(line)
                 continue
-        self.imagenumbers = np.zeros(len(self.images), np.int)
-        self.omegas       = np.zeros(len(self.images), np.float)
+        self.imagenumbers = np.zeros(len(self.images), int)
+        self.omegas       = np.zeros(len(self.images), float)
         i = 0
         while i < len(self.images):
             self.imagenumbers[i] = int(self.images[i].imagenumber)

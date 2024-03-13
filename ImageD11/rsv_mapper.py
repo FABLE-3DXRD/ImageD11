@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 
 from __future__ import print_function
 
@@ -9,7 +9,7 @@ Transfers images into reciprocal space by pixel mapping
 
 import numpy, logging
 from ImageD11 import parameters, transform, indexing, \
-    cImageD11, blobcorrector, rsv
+    cImageD11, blobcorrector, rsv, ImageD11options
 
 
 class rsv_mapper(object):
@@ -198,10 +198,10 @@ class rsv_mapper(object):
         assert ind.dtype == numpy.intp
         # hkls[1] is faster. Steps by NR[2] only
         numpy.add( ind, NR[2]*numpy.floor(
-                hkls[1] + 0.5 - self.bounds[1][0]).astype(numpy.int32),
+                hkls[1] + 0.5 - self.bounds[1][0]).astype(numpy.intp),
                    ind )
         numpy.add( ind, numpy.floor(
-                hkls[2] + 0.5 - self.bounds[2][0]).astype(numpy.int32),
+                hkls[2] + 0.5 - self.bounds[2][0]).astype(numpy.intp),
                    ind )
         #
         #
@@ -259,47 +259,51 @@ def get_options(parser):
     """
     parser = ImageD11_file_series.get_options( parser )
 
-    parser.add_option("-p", "--pars", action="store",type="string",
+    parser.add_argument("-p", "--pars", action="store",
                       dest = "pars", default = None,
+                      type=ImageD11options.ParameterFileType(mode='r'),
                       help = "ImageD11 parameter file for experiment")
     
-    parser.add_option("-o", "--output", action="store", type="string",
+    parser.add_argument("-o", "--output", action="store",
                       dest = "output", default = None,
+                      type=ImageD11options.HdfFileType(mode='r'),
                       help = "Name of hdf5 output file")
 
-    parser.add_option("-s", "--splinefile", action="store", type="string",
+    parser.add_argument("-s", "--splinefile", action="store", 
                       dest = "spline", default = None,
+                      type=ImageD11options.SplineFileType(mode='r'),
                       help = "Name of fit2d spline file for spatial dist")
 
-    parser.add_option("-u", "--ubifile", action="store", type="string",
+    parser.add_argument("-u", "--ubifile", action="store", 
                       dest = "ubifile", default = None,
+                      type = ImageD11options.UbiFileType(mode='r'),
                       help = "Name of ubi file (first matrix is used)")
 
-    parser.add_option("-x", "--npixels", action="store", type="int",
+    parser.add_argument("-x", "--npixels", action="store", type=int,
                       dest = "npixels", default = 16,
       help = "Number of pixels in reciprocal space map per integer hkl [16]")
 
-    parser.add_option("-i", "--images", action="store", type="int",
+    parser.add_argument("-i", "--images", action="store", type=int,
                       dest = "images", default = None,
                       help = "Number of images to process [all]")
 
-    parser.add_option("-b", "--border", action="store", type="int",
+    parser.add_argument("-b", "--border", action="store", type=int,
                        dest = "border", default = 10,
                        help = "Border around images to allocate space, px [10]")
-    parser.add_option("-t", "--saturation", action="store", type="float",
+    parser.add_argument("-t", "--saturation", action="store", type=float,
                       dest = "maxpix", default = None,
                       help = "Saturation value for excluding pixels")
 
 
-    #parser.add_option("-t", "--testcolfile", action="store", type="string",
+    #parser.add_argument("-t", "--testcolfile", action="store", type="string",
     #                  dest = "testcolfile", default=None,
     #                  help = "A columnfile to test geometry")
 
-    parser.add_option("-c", "--subslice", action="store", type="int",
+    parser.add_argument("-c", "--subslice", action="store", type=int,
                       dest = "subslice", default=1,
                       help = "Number of omega subslices to repeat images")
 
-    parser.add_option("--maskfilename", action="store", type="string",
+    parser.add_argument("--maskfilename", action="store", type=str,
                       dest = "maskfilename", default=None,
                       help = "Mask image (fit2d style)" )
     
@@ -319,10 +323,10 @@ def main():
     root.setLevel(logging.WARNING)
 
     try:
-        from optparse import OptionParser
-        parser = OptionParser()
+        from argparse import ArgumentParser
+        parser = ArgumentParser()
         parser = get_options( parser )
-        options, args = parser.parse_args()
+        options, args = parser.parse_known_args()
     except SystemExit:
         raise
     except:

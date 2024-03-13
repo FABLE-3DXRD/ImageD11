@@ -20,10 +20,10 @@ def array_diff(a1,a2):
 class test_g_to_k(unittest.TestCase):
 
     def setUp(self):
-        self.tth = np.array( [60, 10, 15, 20,25, 1.9555],np.float)
+        self.tth = np.array( [60, 10, 15, 20,25, 1.9555],float)
         self.wvln = 0.5
-        self.eta = np.array( [90, 10,120,-20,340, -73 ],np.float)
-        self.omega = np.array([60,90,180, 60,97,  131],np.float)
+        self.eta = np.array( [90, 10,120,-20,340, -73 ],float)
+        self.omega = np.array([60,90,180, 60,97,  131],float)
         self.np = len(self.tth)
 
     def test_0_0(self):
@@ -37,7 +37,7 @@ class test_g_to_k(unittest.TestCase):
         sol1, sol2, valid = gv_general.g_to_k( g,  #
                                                self.wvln,
                                                axis = np.array([0,0,-1],
-                                                               np.float),
+                                                               float),
                                                pre = np.eye(3),
                                                post = np.eye(3) )
 
@@ -69,7 +69,7 @@ class test_g_to_k(unittest.TestCase):
         sol1, sol2, valid = gv_general.g_to_k( g,  #
                                                self.wvln,
                                                axis = np.array([0,0,-1],
-                                                               np.float),
+                                                               float),
                                                pre = None,
                                                post = post )
 
@@ -102,7 +102,7 @@ class test_g_to_k(unittest.TestCase):
         sol1, sol2, valid = gv_general.g_to_k( g,  #
                                                self.wvln,
                                                axis = np.array([0,0,-1],
-                                                               np.float),
+                                                               float),
                                                pre = None,
                                                post = post )
 
@@ -136,7 +136,7 @@ class test_g_to_k(unittest.TestCase):
         sol1, sol2, valid = gv_general.g_to_k( g,  #
                                                self.wvln,
                                                axis = np.array([0,0,-1],
-                                                               np.float),
+                                                               float),
                                                pre = None,
                                                post = post )
 
@@ -167,7 +167,7 @@ if False:
         self.tth = np.random.random(self.np)*2+1
         self.wvln = 0.154
         self.eta = np.random.random(self.np)*360.
-        self.omega = RandomArray.random(self.np)*360.
+        self.omega = np.random.random(self.np)*360.
 
 
 
@@ -178,13 +178,13 @@ class test_k_to_g(unittest.TestCase):
         self.tth = np.random.random(self.np)*20
         self.wvln = 0.154
         self.eta = (np.random.random(self.np)-0.5)*180.
-        self.omega = np.array([90,180,12,97,230,199],np.float)
+        self.omega = np.array([90,180,12,97,230,199],float)
         # print "Called setup"
 
     def test_0_0_0(self):
         """ wedge, chi = 0 """
         SANITY = False
-        om = np.zeros(self.np,np.float)
+        om = np.zeros(self.np,float)
         g_old = transform.compute_g_vectors(self.tth,
                                             self.eta,
                                             om,
@@ -205,7 +205,7 @@ class test_k_to_g(unittest.TestCase):
         """ wedge, chi = 0 """
         SANITY = False
         if SANITY: print ("*"*80)
-        om = np.zeros(self.np,np.float)
+        om = np.zeros(self.np,float)
         g_old = transform.compute_g_vectors(self.tth,
                                             self.eta,
                                             self.omega,
@@ -229,7 +229,7 @@ class test_k_to_g(unittest.TestCase):
         w,c=25,30
         SANITY = False
         if SANITY: print ("*"*80)
-        om = np.zeros(self.np,np.float)
+        om = np.zeros(self.np,float)
         g_old = transform.compute_g_vectors(self.tth,
                                             self.eta,
                                             self.omega,
@@ -256,7 +256,7 @@ class test_rotation_axis(unittest.TestCase):
         """ zero rotation around z give identity"""
         o = gv_general.rotation_axis( [ 0, 0, 1] , 0 )
         self.assertAlmostEqual( array_diff( o.to_matrix() ,
-                                            np.identity(3, np.float) ) ,
+                                            np.identity(3, float) ) ,
                                             0.0, 6)
 
     def test_Rz30(self):
@@ -294,18 +294,18 @@ class test_rotation_axis(unittest.TestCase):
         vecs = np.transpose(np.array([[ 0, 0, 1 ],
                                      [ 0, 1, 0 ],
                                      [ 1, 0, 0 ],
-                                     [ 1, 0, 0 ]], np.float))
+                                     [ 1, 0, 0 ]], float))
         res =  np.transpose(np.array([[ 0, 0, 1 ],
                                      [-1, 0, 0 ],
                                      [ 0, 1, 0 ],
-                                     [ 0, 1, 0 ]], np.float))
+                                     [ 0, 1, 0 ]], float))
         m1, m2 = o.rotate_vectors(vecs), res
         self.assertEqual(m1.shape, m2.shape)
-        err = "\n\n"+str(m1.astype(np.int))+" != \n\n"+str(m2)
+        err = "\n\n"+str(m1.astype(int))+" != \n\n"+str(m2)
         self.assertAlmostEqual(array_diff(m1, m2),0,6,err)
-        angs = np.array([90.]*4,np.float)
+        angs = np.array([90.]*4,float)
         m3, m4 = o.rotate_vectors(vecs,angs), res
-        err = "\n\n"+str(m3.astype(np.int))+" != \n\n"+str(m4)
+        err = "\n\n"+str(m3.astype(int))+" != \n\n"+str(m4)
         self.assertAlmostEqual(array_diff(m3, m4),0,6,err)
 
 
@@ -351,14 +351,14 @@ class test_rotation_axis(unittest.TestCase):
                                      [ 1, 1, 0 ], #4
                                      [-1, 1, 0 ], #5
                                      [ 1, 0, 0 ], #6
-                                     [ 0, 1, 1 ]],np.float))
+                                     [ 0, 1, 1 ]],float))
         res =  np.transpose(np.array([[ 0, 0, 1 ],  #1
                                      [ 0, -1, 0 ], #2
                                      [ 0, -1, 1 ], #3
                                      [-1, -1, 0 ], #4
                                      [ 1, -1, 0 ], #5
                                      [-1, 0 , 0 ], #6
-                                     [0, -1 , 1]],np.float))
+                                     [0, -1 , 1]],float))
         r1 = o.rotate_vectors(vecs)
         #print np.array_str(r1,precision=1,suppress_small=1)
         #print res

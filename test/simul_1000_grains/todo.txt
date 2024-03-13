@@ -5,6 +5,8 @@
 - ImageD11/indeder.py : indexer.refine
 
 TO DO:
+   Improve indexing to be faster (single script with simple run through)
+
     compare results (currently makemap is the only one that works on simul1000)
     ... probably due to better peak assignments ? Try taking these ...
 

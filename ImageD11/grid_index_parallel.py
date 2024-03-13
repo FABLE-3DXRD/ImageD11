@@ -1,11 +1,11 @@
 
 
 from __future__ import print_function
-from ImageD11 import peakmerge, indexing, transformer
+from ImageD11 import peakmerge, indexing, transformer, cImageD11
 from ImageD11 import grain, unitcell, refinegrains, sym_u
 import xfab.tools
 import sys, os, numpy as np, time, random
-import multiprocessing
+import multiprocessing, traceback
 from multiprocessing import Pool
 from multiprocessing import Queue as PQueue
 
@@ -31,6 +31,9 @@ def domap(  pars,
     """
     mapping function - does what makemap.py does, but in a function
     """
+    if 'FITPOS' not in gridpars:
+        gridpars['FITPOS']=True
+        
     OmSlop = gridpars['OMEGAFLOAT']
     OmFloat= OmSlop > 0
     #
@@ -55,13 +58,23 @@ def domap(  pars,
             o.grainnames.append(i)
             o.ubisread[name] = g.ubi
             o.translationsread[name] = g.translation
-        if gridpars['SYMMETRY'] is not "triclinic":
+        if gridpars['SYMMETRY'] != "triclinic":
             o.makeuniq( gridpars['SYMMETRY'] )
         o.generate_grains()
-        o.refinepositions()
+        if gridpars['FITPOS']:
+            o.refinepositions()
+        else:
+            o.assignlabels()
+            for key in o.grains.keys():
+                g = o.grains[key]
+                g.set_ubi( o.refine( g.ubi, quiet=False ) )
         # This fills in the uniq for each grain
         o.savegrains( nulfile, sort_npks = False)
-        gl = [ g for g in o.grains.values() if g.npks > gridpars['NPKS'] ]
+        if 'NUNIQ' in gridpars:
+            keep = lambda g: g.nuniq > gridpars['NUNIQ'] and g.npks > gridpars['NPKS']
+        else:
+            keep = lambda g: g.npks > gridpars['NPKS']
+        gl = [ g for g in o.grains.values() if keep(g) ]
         if len(gl) == 0:
             break
         grains = gl
@@ -80,6 +93,10 @@ def doindex( gve, x, y, z, w, gridpars):
     TOLSEQ = gridpars['TOLSEQ']
     COSTOL = gridpars[ 'COSTOL']
     DSTOL  = gridpars[ 'DSTOL']
+    if "2RFIT" in gridpars:
+        DOFIT = gridpars[ '2RFIT' ]
+    else:
+        DOFIT = False
     ss = sys.stdout # turns off printing
     if gridpars['NUL']:
         NUL = open(nulfile,"w")
@@ -89,8 +106,9 @@ def doindex( gve, x, y, z, w, gridpars):
         unitcell = UC,
         gv = gve.T
         )
-    myindexer.ds = np.sqrt( (gve * gve).sum(axis=0) )
-    myindexer.ga = np.zeros(len(myindexer.ds),np.int)-1 # Grain assignments
+    # added in indexer.__init__
+    #myindexer.ds = np.sqrt( (gve * gve).sum(axis=0) )
+    #myindexer.ga = np.zeros(len(myindexer.ds),int)-1 # Grain assignments
     for ring1 in gridpars['RING1']:
         for ring2 in gridpars['RING2']:
             myindexer.parameterobj.set_parameters(  {
@@ -106,7 +124,7 @@ def doindex( gve, x, y, z, w, gridpars):
             myindexer.assigntorings( )
             try:
                 myindexer.find( )
-                myindexer.scorethem( )
+                myindexer.scorethem( fitb4 = DOFIT )
             except:
                 pass
     # filter out crap
@@ -180,7 +198,7 @@ class uniq_grain_list(object):
                 dt2  =np.dot(dt,dt)
                 if dt2 > self.dt2:
                     continue
-                aumis = np.dot(gold.asymusT, gnew.u)
+                aumis = np.dot(gold.asymusT, gnew.U)
                 arg = (aumis[:,0,0]+aumis[:,1,1]+aumis[:,2,2] - 1. )/2.
                 angle = np.arccos(np.clip(arg, -1, 1)).min()
                 if angle < self.tar:
@@ -210,10 +228,10 @@ def initgrid( fltfile, parfile, tmp, gridpars ):
     gridpars[ 'UC' ] = unitcell.unitcell_from_parameters( mytransformer.parameterobj )
     col = mytransformer.colfile
     if not "drlv2" in col.titles:
-        col.addcolumn( np.ones(col.nrows, np.float),
+        col.addcolumn( np.ones(col.nrows, float),
                        "drlv2" )
     if not "labels" in col.titles:
-        col.addcolumn( np.ones(col.nrows, np.float)-2,
+        col.addcolumn( np.ones(col.nrows, float)-2,
                        "labels" )
     if not "sc" in col.titles:
         assert "xc" in col.titles
@@ -259,10 +277,17 @@ def grid_index_parallel( fltfile, parfile, tmp, gridpars, translations ):
     """
     gridpars = initgrid( fltfile, parfile, tmp, gridpars )
     print( "Done init" )
-
-    NPR =  multiprocessing.cpu_count() - 1
+    if 'NPROC' not in gridpars or gridpars['NPROC'] is None:
+        NPR =  multiprocessing.cpu_count() - 1
+        cImageD11.cimaged11_omp_set_num_threads(2) # assume hyperthreading is useful?
+    else:
+        NPR = int(gridpars['NPROC'])
+    if 'NTHREAD' in gridpars:
+        cImageD11.cimaged11_omp_set_num_threads(int(gridpars['NTHREAD']))
+    elif NPR > 1:
+        cImageD11.cimaged11_omp_set_num_threads(1)
     tsplit = [ translations[i::NPR] for i in range(NPR) ]
-    args = [("%s.flt"%(tmp), sys.argv[2], t, gridpars) for i,t in enumerate(tsplit) ]
+    args = [("%s.flt"%(tmp), parfile, t, gridpars) for i,t in enumerate(tsplit) ]
     q = PQueue()
     p = Pool(processes=NPR, initializer=wrap_test_many_points_init, initargs=[q])
     print( "Using a pool of",NPR,"processes" )
@@ -289,7 +314,7 @@ def grid_index_parallel( fltfile, parfile, tmp, gridpars, translations ):
             sys.stderr.write(" Caught queue empty exception\n")
             if pa._number_left == 0:
                 break
-        except KeyBoardInterrupt:
+        except KeyboardInterrupt:
             break
     # write here to be on the safe side .... 
     grain.write_grain_file( "all"+tmp+".map", ul.uniqgrains )
@@ -303,33 +328,38 @@ if __name__=="__main__":
 import sys, random
 from ImageD11.grid_index_parallel import grid_index_parallel
 
-fltfile = sys.argv[1]
-parfile = sys.argv[2]
-tmp     = sys.argv[3]
-
-gridpars = {
-    'DSTOL' : 0.004,
-    'OMEGAFLOAT' : 0.13,
-    'COSTOL' : 0.002,
-    'NPKS' : int(  sys.argv[4] ),
-    'TOLSEQ' : [ 0.02, 0.015, 0.01],
-    'SYMMETRY' : "cubic",
-    'RING1'  : [5,10],
-    'RING2' : [5,10],
-    'NUL' : True,
-    'tolangle' : 0.25,
-    'toldist' : 100.,
-}
+if __name__=="__main__":
+    # You need this idiom to use multiprocessing on windows (script is imported again)
+    gridpars = {
+        'DSTOL' : 0.004,
+        'OMEGAFLOAT' : 0.13,
+        'COSTOL' : 0.002,
+        'NPKS' : int(  sys.argv[4] ),
+        'TOLSEQ' : [ 0.02, 0.015, 0.01],
+        'SYMMETRY' : "cubic",
+        'RING1'  : [5,10],
+        'RING2' : [5,10],
+        'NUL' : True,
+        'FITPOS' : True,
+        'tolangle' : 0.25,
+        'toldist' : 100.,
+        'NPROC' : None, # guess from cpu_count
+        'NTHREAD' : 2 ,
+    }
             
-# grid to search
-translations = [(t_x, t_y, t_z) 
+    # grid to search
+    translations = [(t_x, t_y, t_z) 
         for t_x in range(-500, 501, 50)
         for t_y in range(-500, 501, 50) 
         for t_z in range(-500, 501, 50) ]
-# Cylinder: 
-# translations = [( x,y,z) for (x,y,z) in translations if (x*x+y*y)< 500*500 ]
-#
-random.seed(42) # reproducible
-random.shuffle(translations)
-grid_index_parallel( fltfile, parfile, tmp, gridpars, translations )
+    # Cylinder: 
+    # translations = [( x,y,z) for (x,y,z) in translations if (x*x+y*y)< 500*500 ]
+    #
+    random.seed(42) # reproducible
+    random.shuffle(translations)
+
+    fltfile = sys.argv[1]
+    parfile = sys.argv[2]
+    tmp     = sys.argv[3]
+    grid_index_parallel( fltfile, parfile, tmp, gridpars, translations )
 """)

@@ -1,0 +1,66 @@
+include *.md
+include *.bat
+include *.py
+include *.sh
+include *.txt
+include *.yml
+include LICENSE
+recursive-include ImageD11 *.c
+recursive-include ImageD11 *.md
+recursive-include ImageD11 *.py
+recursive-include data *.spline
+recursive-include docs *.bat
+recursive-include docs *.docx
+recursive-include docs *.ico
+recursive-include docs *.odt
+recursive-include docs *.pdf
+recursive-include docs *.png
+recursive-include docs *.py
+recursive-include docs *.rst
+recursive-include docs *.rtf
+recursive-include docs *.svg
+recursive-include docs *.txt
+recursive-include docs *.zip
+recursive-include docs Makefile
+recursive-include sandbox *.c
+recursive-include sandbox *.cl
+recursive-include sandbox *.gif
+recursive-include sandbox *.par
+recursive-include sandbox *.py
+recursive-include sandbox *.sh
+recursive-include sandbox *.txt
+recursive-include scripts *.py
+recursive-include src *.c
+recursive-include src *.h
+recursive-include src *.py
+recursive-include src *.pyf
+recursive-include src *.txt
+recursive-include test *.cif
+recursive-include test *.cpp
+recursive-include test *.doc
+recursive-include test *.flt
+recursive-include test *.gve
+recursive-include test *.gz
+recursive-include test *.idx
+recursive-include test *.ini
+recursive-include test *.inp
+recursive-include test *.ipynb
+recursive-include test *.map
+#recursive-include test *.out
+#recursive-include test *.out_merge_t100
+#recursive-include test *.out_merge_t200
+recursive-include test *.par
+recursive-include test *.pars
+recursive-include test *.pdf
+#recursive-include test *.pks
+recursive-include test *.prm
+recursive-include test *.py
+recursive-include test *.sh
+recursive-include test *.spline
+recursive-include test *.txt
+recursive-include test *.ubi
+recursive-include webgui *.html
+recursive-include webgui *.js
+recursive-include webgui *.md
+prune ImageD11src/depreciated 
+prune src/old

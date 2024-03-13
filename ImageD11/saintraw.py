@@ -177,7 +177,7 @@ class saintraw(object):
         Parse the saint documentation for the Bruker format
         """
         self.titles = []
-        title = None
+        title = help = format = None
         for line in self.doc.split("\n"):
             if len(line.rstrip()) == 0:
                 if title is not None:
@@ -294,7 +294,7 @@ class saintraw(object):
         """
         cof = columnfile.newcolumnfile( self.alltitles )
         dlist = [ self.data[t] for t in self.alltitles ]
-        cof.bigarray = numpy.array( dlist, numpy.float )
+        cof.bigarray = numpy.array( dlist, float )
         cof.nrows = len( self.data[ self.alltitles[0] ] )
         cof.ncols = len( self.alltitles ) 
         cof.set_attributes()

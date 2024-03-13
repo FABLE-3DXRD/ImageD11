@@ -26,7 +26,7 @@ except:
     import queue as Queue 
     
 import threading
-global stop_now
+# global stop_now
 stop_now = False
 
 class ImageD11_thread(threading.Thread):

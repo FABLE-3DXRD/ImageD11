@@ -1,3 +1,5 @@
+
+from __future__ import print_function
 # testing for the peaksearch command line script
 
 # These are not really unit tests
@@ -7,13 +9,14 @@ import numpy as np
 def w(name,image,omega=0):
 
     f=open(name,"wb")
-    f.write("{%1021s}\n"%("""Omega = %.2f ;\n Dim_1 = 256 ;\n Dim_2 = 256 ;
+    h = "{%1021s}\n"%("""Omega = %.2f ;\n Dim_1 = 256 ;\n Dim_2 = 256 ;
     DataType = UnsignedShort ;
     ByteOrder = LowByteFirst ;
     Image = 1 ;
 
 
-    \n\n"""%(omega)))
+    \n\n"""%(omega))
+    f.write(h.encode('utf-8'))
     f.write(np.ravel(image).astype(np.uint16).tostring())
     f.close()
 
@@ -35,7 +38,7 @@ def makedata():
 def losedata():
     for i in range(4):
         name = "data%04d.edf"%(i)
-        print "removing",name
+        print("removing",name)
         os.remove(name)
     os.remove("dark_bad.edf")
     os.remove("dark_good.edf")
@@ -47,7 +50,7 @@ import os, sys
 ps = os.path.join("..","scripts")
 ps = os.path.join(ps,"peaksearch.py")
 
-print ps
+print (ps)
 
 cmds = [sys.executable + " " + ps + " -n data -f 0 "]
 
@@ -74,11 +77,11 @@ clist = [ cmd + "-p Y " for cmd in cmds] + [cmd + "-s spatial2k.spline" for cmd 
 
 import os
 
-def testcmdlines(clist):
+def atestcmdlines(clist):
     makedata()
-    print len(clist)
+    print(len(clist))
     for c in clist:
-        print c
+        print (c)
         ret = os.system(c)
         if ret != 0:
             raise Exception("Bombed")
@@ -89,9 +92,9 @@ if __name__=="__main__":
     # FIXME
     import sys
     if len(sys.argv)>1 and sys.argv[1] == "ALL":
-        testcmdlines(clist)
+        atestcmdlines(clist)
 
-    testcmdlines([ sys.executable + ' ' + ps + ' -n data -f 0 -l 3 -t 15000 -t 1000 -p Y -t 0'])
+    atestcmdlines([ sys.executable + ' ' + ps + ' -n data -f 0 -l 3 -t 15000 -t 1000 -p Y -t 0'])
     assert len(open("peaks_t0.flt").readlines())==2
     assert len(open("peaks_t1000.flt").readlines())==2
     assert len(open("peaks_t15000.flt").readlines())==3

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Plot3D - Some WebGL programming</title>
+
+    <style>
+    #drop_zone {
+        width: 300px;
+        height: 35px;
+        margin: 10px;
+        padding: 10px;
+        border: 1px solid black;
+    }
+    </style>
+
+    <script type="text/javascript" src="data.js"></script>
+
+
+    <script type="text/javascript">
+
+    var ubiMatrix = [ 
+            -4.547536, -0.407872, -1.563811, 
+            -0.790217, -6.532015, 4.003969, 
+            -2.709450, 4.464539, 6.735540 ] ;
+
+    var viewMat = [ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 ];
+
+    var mouseDown = false;
+    var lastMouseX = null;
+    var lastMouseY = null;
+    var lastMouseW = null;
+
+    function handleMouseDown(event) {
+        mouseDown = true;
+        lastMouseX = event.clientX;
+        lastMouseY = event.clientY;
+    }
+
+    var scale=1;
+    var pointsize = 3;
+    var psslider;
+
+    function changeScale( e ){
+            var ls = document.getElementById( "scale" ).value;
+            scale = Math.exp( ls );
+            console.log("change scale to ", scale);
+            draw();
+    };
+        
+    function changePointsize( e ){
+            pointsize = e.target.value;
+            console.log("change pointsize to ", pointsize);
+            draw();
+    };
+
+
+
+    function handleMouseWheel(evt) {
+      if (!evt) evt = event;
+      if (evt.detail<0 || evt.wheelDelta>0) { 
+           document.getElementById( "scale" ).stepDown();
+      } else {
+           document.getElementById( "scale" ).stepUp()
+      }
+      changeScale();
+      evt.preventDefault();
+    }
+
+    function handleMouseUp(event) {
+        mouseDown = false;
+    }
+
+    function invert(a) {
+        out = new Array(9);
+  var a00 = a[0]; var a01 = a[1]; var a02 = a[2];
+  var a10 = a[3]; var a11 = a[4]; var a12 = a[5];
+  var a20 = a[6]; var a21 = a[7]; var a22 = a[8];
+
+  var b01 = a22 * a11 - a12 * a21;
+  var b11 = -a22 * a10 + a12 * a20;
+  var b21 = a21 * a10 - a11 * a20;
+
+  // Calculate the determinant
+  var det = a00 * b01 + a01 * b11 + a02 * b21;
+
+  if (!det) {
+    return null;
+  }
+  det = 1.0 / det;
+
+  out[0] = b01 * det;
+  out[1] = (-a22 * a01 + a02 * a21) * det;
+  out[2] = (a12 * a01 - a02 * a11) * det;
+  out[3] = b11 * det;
+  out[4] = (a22 * a00 - a02 * a20) * det;
+  out[5] = (-a12 * a00 + a02 * a10) * det;
+  out[6] = b21 * det;
+  out[7] = (-a21 * a00 + a01 * a20) * det;
+  out[8] = (a11 * a00 - a01 * a10) * det;
+  return out;
+}
+    var ubMatrix = invert( ubiMatrix );
+
+    function premultiply3x3(o, b, a) {
+        // inplace for mouse
+      var a00 = a[0]; var a01 = a[1]; var a02 = a[2];
+      var a10 = a[3]; var a11 = a[4]; var a12 = a[5];
+      var a20 = a[6]; var a21 = a[7]; var a22 = a[8];
+
+      var b00 = b[0]; var b01 = b[1]; var b02 = b[2];
+      var b10 = b[3]; var b11 = b[4]; var b12 = b[5];
+      var b20 = b[6]; var b21 = b[7]; var b22 = b[8];
+
+      o[0] = b00 * a00 + b01 * a10 + b02 * a20;
+      o[1] = b00 * a01 + b01 * a11 + b02 * a21;
+      o[2] = b00 * a02 + b01 * a12 + b02 * a22;
+
+      o[3] = b10 * a00 + b11 * a10 + b12 * a20;
+      o[4] = b10 * a01 + b11 * a11 + b12 * a21;
+      o[5] = b10 * a02 + b11 * a12 + b12 * a22;
+
+      o[6] = b20 * a00 + b21 * a10 + b22 * a20;
+      o[7] = b20 * a01 + b21 * a11 + b22 * a21;
+      o[8] = b20 * a02 + b21 * a12 + b22 * a22;
+    }
+
+    function rotateView( dX, dY ){
+        // convert dX/dY from pixels to an angle... assume 100 px...
+        var dL = Math.sqrt(dX*dX + dY*dY);
+        if (dL > 0){
+            var sa = Math.sin(dL/100.);
+            var ca = Math.cos(dL/100.);
+            var ux =-dY/dL;
+            var uy = dX/dL;
+            var ca1 = 1.-ca;
+            R = [ ca + ux*ux*ca1, ux*uy*ca1, uy*sa,
+                  ux*uy*ca1, ca+uy*uy*ca1, -ux*sa,
+                  -uy*sa, ux*sa, ca ];
+            premultiply3x3( viewMat, R, viewMat);
+            draw();
+        }
+    }
+
+    function handleMouseMove(event) {
+        if (!mouseDown) {
+            return;
+        }
+        var newX = event.clientX;
+        var newY = event.clientY;
+
+        var deltaX = newX - lastMouseX
+        var deltaY = newY - lastMouseY;
+        rotateView( deltaX, deltaY );
+        lastMouseX = newX
+        lastMouseY = newY;
+    }
+
+       
+    function draw( ) {
+        var canvas = document.getElementById("plot3d");
+        cw = canvas.width;
+        ch = canvas.height;
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0,0,cw,ch);
+        ctx.fillStyle = 'rgba(4,25,0,255)';
+
+        ctx.fillRect(1,1,cw/2,1);
+        ctx.fillRect(1,1,1,ch/2);
+
+        var ss = scale * cw/2. ;
+        // viewMat is stored by rows
+        var scor = 0.0;
+        var h,k,l,x,y;
+        for( var i=0; i<vertices.length/3; i++){
+            h = ubiMatrix[0]*vertices[i] + ubiMatrix[1]*vertices[i+1] + ubiMatrix[2]*vertices[i+2];
+            k = ubiMatrix[3]*vertices[i] + ubiMatrix[4]*vertices[i+1] + ubiMatrix[5]*vertices[i+2];
+            l = ubiMatrix[6]*vertices[i] + ubiMatrix[7]*vertices[i+1] + ubiMatrix[8]*vertices[i+2];
+            scor = Math.pow( h - Math.round(h), 2) + Math.pow( k - Math.round(k), 2) + Math.pow( l - Math.round(l), 2) ; 
+            if(scor < 0.1) {
+                ctx.fillStyle = 'rgba( 12, 200, 24, 128 )';
+            } else {
+                ctx.fillStyle = 'rgba( 200, 10, 20, 128 )';
+            }
+            x = ( vertices[i+0]*viewMat[0]*ss + 
+                  vertices[i+1]*viewMat[1]*ss +
+                  vertices[i+2]*viewMat[2]*ss + cw/2)        << 0;
+            y = ( vertices[i+0]*viewMat[3]*ss + 
+                  vertices[i+1]*viewMat[4]*ss +
+                  vertices[i+2]*viewMat[5]*ss + cw/2)        << 0;
+            ctx.fillRect( x, y, pointsize, pointsize);
+        }
+        // a - axis
+        var axiscolors = [ "#FF0000","#00FF00","#0000FF" ]
+        for( var i=0; i<3; i++){
+            ctx.strokeStyle = axiscolors[i];
+            ctx.beginPath();
+            ctx.moveTo( cw/2, cw/2 );
+            x = ( ubMatrix[i*3+0]*viewMat[0]*ss + 
+                  ubMatrix[i*3+1]*viewMat[1]*ss +
+                  ubMatrix[i*3+2]*viewMat[2]*ss + cw/2)        << 0;
+            y = ( ubMatrix[i*3+0]*viewMat[3]*ss + 
+                  ubMatrix[i*3+1]*viewMat[4]*ss +
+                  ubMatrix[i*3+2]*viewMat[5]*ss + cw/2)        << 0;
+            ctx.lineTo( x, y );
+            ctx.stroke();
+        }
+    }
+
+
+    function plotStart() {
+        var canvas = document.getElementById("plot3d");
+        canvas.onmousedown = handleMouseDown;
+        canvas.onmousewheel = handleMouseWheel;
+        document.onmouseup = handleMouseUp;
+        document.onmousemove = handleMouseMove;
+
+        function onRangeChange(r,f) {
+          var n,c,m;
+          r.addEventListener("input",function(e){n=1;c=e.target.value;if(c!=m)f(e);m=c;});
+          r.addEventListener("change",function(e){if(!n)f(e);});
+        }
+
+        onRangeChange( document.getElementById( "scale" ), changeScale );
+        onRangeChange( document.getElementById( "pointsize" ), changePointsize );
+        
+        // Check for the various File API support.
+        if (window.File && window.FileReader && window.FileList && window.Blob) {
+          // Great success! All the File APIs are supported.
+        } else {
+          alert("The File APIs are not fully supported in this browser.");
+        }
+        // Setup the dnd listeners.
+        var dropZone = document.getElementById('drop_zone');
+        dropZone.addEventListener('dragover', handleDragOver, false);
+        dropZone.addEventListener('drop', handleFileSelect, false);
+
+        draw();
+    }
+      var reader = new FileReader();
+
+  function receivedText(){
+      // The text is now in: reader.result
+      var i, res, line, on, verts;
+      // This is one string
+      res = reader.result.split("\n");
+      on = false;
+      for(i=0;i < res.length ; i++){
+        line = res[i];         // 12345
+        if (line.substring(0,1) == '#'){
+            if( (line.search("gx") != -1) |
+                    (line.search("xr") != -1) ){
+            on=true;
+            verts = new Array();
+            continue;
+            }
+        }
+        if(on){
+            vals = line.split(" ");
+            verts.push(vals[0]);
+            verts.push(vals[1]);
+            verts.push(vals[2]);
+        }
+      }
+      if(on){
+       vertices = verts;
+      }
+  }
+
+
+
+  function handleFileSelect(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+
+    var files = evt.dataTransfer.files; // FileList object.
+
+    // files is a FileList of File objects. List some properties.
+    var output = [];
+    for (var i = 0, f; f = files[i]; i++) {
+
+      output.push('<li><strong>', escape(f.name), '</strong> (', f.type || 'n/a', ') - ',
+                  f.size, ' bytes, last modified: ',
+                  f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a',
+                  '</li>');
+
+      reader.onload = receivedText;
+      reader.readAsText( f );
+
+    }
+    document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+  }
+
+  function handleDragOver(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+  }
+
+
+
+
+
+
+</script>
+
+
+</head>
+
+
+<body onload="plotStart();">
+
+    <h1>
+    WebGL based demo of plot3d from ImageD11
+    </h1>
+    <div id="drop_zone"> Drop your g-vectors here </div>    
+    </p>    
+    <canvas id="plot3d"  width="600" height="600" style="border:1px"></canvas>
+    <div id="scale_factor" border=1px > Scale Factor: 
+        <input type="range" min="-3" max="3" value="0" step="0.05" id="scale" > 
+    </div>
+    <div id="pointsize" border=1px> Pointsize: 
+        <input type="range" min="1" max="10" value="3"  id="pointsize" > 
+        </div>
+    <p>
+    Click and drag to rotate. Zoom with mouse wheel or sliders below
+    </p> 
+    <p>
+    <output id="list"></output>
+    </p>
+
+    <p>
+    Things to fix. Linux fails drag and drop - add in file upload selector.
+    Android fails mouse move, add in touchmove http://developer.sonymobile.com/2011/11/29/xperia-phones-first-to-support-webgl/
+    Android fails sliders, find hack at http://touchpunch.furf.com/ 
+    Clean and comment the entire code. etc.
+
+</body>
+
+</html>
+

@@ -20,71 +20,74 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  0211-1307  USA
 
+import os, sys, logging
+from argparse import ArgumentParser
+from ImageD11 import ImageD11options
+from ImageD11 import fft_index_refac, rc_array,\
+    lattice_reduction, indexing
+import numpy as np
+from ImageD11.fft_index_refac import grid
 
-if __name__=="__main__":
 
-    import os, sys, logging
-    from optparse import OptionParser
-    from ImageD11 import fft_index_refac, rc_array,\
-        lattice_reduction, indexing
-    import numpy as np
-    dot  = np.dot
-    from ImageD11.fft_index_refac import grid
-
-    parser = OptionParser()
-
-    parser.add_option('-g', '--gve',
+def get_options(parser):
+    parser.add_argument('-g', '--gve',
                       action = 'store',
+                      type=ImageD11options.GvectorFileType(mode='r'),
                       dest = 'gvefilename',
                       default = None,
                       help = "Filename for g-vectors")
-
-    parser.add_option('-k', '--ngrains',
+    parser.add_argument('-k', '--ngrains',
                       action = 'store',
                       dest = 'ngrains',
-                      type = 'int',
+                      type = int,
                       default = 1,
                       help = "number of grains to try to find")
-
-
-    parser.add_option('-o', '--output',
+    parser.add_argument('-o', '--output',
                       action = 'store',
+                      type=ImageD11options.UbiFileType(mode='w'),
                       default = 'grains.ubi',
                       dest = 'outfile',
                       help = "Name of ubi file to save grains in")
 
     parser = lattice_reduction.get_options(parser)
 
-    parser.add_option('--fft',
+    parser.add_argument('--fft',
                       action = 'store_true',
                       dest = 'use_fft',
                       default = False,
                       help = "Use fft to generate lattice vectors [False]")
 
-    parser.add_option('--score_fft',
+    parser.add_argument('--score_fft',
                       action = 'store_true',
                       dest = 'score_fft',
                       default = False,
                       help = "Score fft peaks using fft peaks first [True]")
 
-    parser.add_option('--no_sort',
+    parser.add_argument('--no_sort',
                       action = 'store_false',
                       dest = 'sort_gve',
                       default = True,
                       help = "Sorting the gvector by length before indexing [True]")
 
-    parser.add_option('--noisy',
+    parser.add_argument('--noisy',
                       action = 'store_true',
                       dest = 'noisy',
                       default = False,
                       help = "Print more output")
+    fft_index_refac.get_options( parser )
+    return parser
 
 
 
 
-    parser = fft_index_refac.get_options(parser)
 
-    options , args = parser.parse_args()
+
+if __name__=="__main__":
+
+    logging.basicConfig( level=logging.INFO )
+    parser = get_options( ArgumentParser() )
+
+    options = parser.parse_args()
     
     
     o = indexing.indexer()
@@ -114,7 +117,7 @@ if __name__=="__main__":
             # print "Peak remaining",len(cur_gvecs)
             if options.use_fft:
                 # do fft
-                g = grid( np = options.np,
+                g = grid( npx = options.npx,
                           mr = options.mr,
                           nsig = options.nsig)
                 g.gv_to_grid_new(cur_gvecs)
@@ -123,7 +126,7 @@ if __name__=="__main__":
                 g.peaksearch(open("eu.patterson_pks","w"))
                 g.read_peaks("eu.patterson_pks")
                 vecs = rc_array.rc_array(g.UBIALL.T , direction='col')
-                assert vecs.shape == (3, g.colfile.nrows)
+                assert vecs.shape == (3, len(g.UBIALL))
                 order = np.argsort( g.colfile.sum_intensity )[::-1]
                 vecs = rc_array.rc_array( np.take( vecs, order, axis = 1),
                                           direction = 'col')

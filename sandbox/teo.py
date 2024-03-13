@@ -55,7 +55,7 @@ def Dcalc( UB, hkls, wedge, chi, wavelength, etao, omega):
     """
     # computed g-vectors
     g = np.dot( UB  , hkls )
-    assert g.dtype == np.float
+    assert g.dtype == float
     if 0:
         print(g.shape)
         print(hkls.shape)
@@ -66,11 +66,11 @@ def Dcalc( UB, hkls, wedge, chi, wavelength, etao, omega):
     
     # wedge/chi matrix for axis orientation
     wc = gv_general.wedgechi( wedge=wedge, chi=chi )
-    assert wc.dtype == np.float
+    assert wc.dtype == float
     # computed omega angles for reflections
     omega1, omega2, valid = gv_general.g_to_k(
         g, wavelength,axis=[0,0,-1], pre=None, post=wc )
-    assert omega1.dtype == np.float
+    assert omega1.dtype == float
     # hum - isn't this wc-1 ? 
     cwT = gv_general.chiwedge( wedge=wedge, chi=chi ).T
     # k vectors, scattering in laboratory at angle omega1/2
@@ -78,7 +78,7 @@ def Dcalc( UB, hkls, wedge, chi, wavelength, etao, omega):
                             pre = cwT, post=None)
     k2 = gv_general.k_to_g( g, omega2, axis=[0,0,1],
                             pre = cwT, post=None)
-    assert k1.dtype == np.float
+    assert k1.dtype == float
     # Computed azimuth angles
     #
     # k[1,:] = -ds*c*sin(eta)
@@ -192,8 +192,8 @@ class SVDLSQ(object):
         for diff in self.differences: # block addins
             M += len(diff)
         # Least squares problem matrix A.x=b
-        A = np.zeros( (N, M), np.float )
-        b = np.zeros( M, np.float )
+        A = np.zeros( (N, M), float )
+        b = np.zeros( M, float )
         iM = 0
         #print N, M, [len(x) for x in self.differences]
         # FIXME: This loop is doing a numpy.concatenate
@@ -224,7 +224,7 @@ class SVDLSQ(object):
             errmat = np.linalg.inv( lsqmat )
             print(solution)
             print(errmat)
-            print(svderrmat)
+#            print(errmat)
             assert np.allclose( self.errmat, errmat )
         self.esds = np.sqrt( np.diag( self.errmat ) )
         self.condition = s.max() / s.min() # sqrt ?
@@ -268,9 +268,9 @@ def fitone( UB, t, sc, fc, omega, hkls, pars):
     
     s = 1e-7
     # FIXME: Gradient arrays (move to Dcalc)
-    dtthUB = np.zeros((3,3,npks), np.float)
-    detaUB = np.zeros((3,3,npks), np.float)
-    domUB = np.zeros((3,3,npks), np.float)
+    dtthUB = np.zeros((3,3,npks), float)
+    detaUB = np.zeros((3,3,npks), float)
+    domUB = np.zeros((3,3,npks), float)
     
     for i in range(3):
         for j in range(3):
@@ -340,7 +340,7 @@ def refit_makemap( colf, pars, grains ):
         if i == 1004:
             TESTING=3
         # Get new t, UB, S
-        t, UB, S = fitone( g.ub, g.translation, sc, fc, om, hkls, pars)
+        t, UB, S = fitone( g.UB, g.translation, sc, fc, om, hkls, pars)
         for ncycle in range(5):
             t, UB, S = fitone( UB, t, sc, fc, om, hkls, pars)
             if S.sh_esd.max() < 1e-10:

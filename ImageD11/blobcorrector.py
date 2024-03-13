@@ -1,10 +1,8 @@
-## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
 from __future__ import print_function
 
  
-# ImageD11_v0.4 Software for beamline ID11
-# Copyright (C) 2005  Jon Wright
+# ImageD11 Software for beamline ID11
+# Copyright (C) 2021  Jon Wright
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,8 +25,11 @@ via a fit2d spline file
  
 To think about doing - valid regions? What if someone uses a 1K spline
 file for a 2K image etc?
+
+2021 : added LUT method for eiger
 """
 import logging, numpy, math
+import fabio
 from scipy.interpolate import bisplev
 
 def readfit2dfloats(filep, nfl):
@@ -50,7 +51,6 @@ def readfit2dfloats(filep, nfl):
             i = i + 14
             if j == nfl: 
                 break
-        i = i + 1
     return ret
 
 class correctorclass: #IGNORE:R0902
@@ -73,7 +73,7 @@ class correctorclass: #IGNORE:R0902
         self.tck2 = None
         if self.splinefile is not None:
             self.readfit2dspline(self.splinefile)
-        
+            self.dim = ( int(self.xmax-self.xmin), int(self.ymax-self.ymin))  # detector dimensions read from splinefile
 
 
     def correct(self, xin, yin):
@@ -92,9 +92,9 @@ class correctorclass: #IGNORE:R0902
             # Unreachable code - we no longer accept this complexity
             # it means the spline file for ImageD11 bruker images
             # is not the same as for fit2d. 
-            xpos = self.xmax - xin
-            xcor = xin - bisplev(yin, xpos, self.tck2)
-            ycor = yin + bisplev(yin, xpos, self.tck1)
+            # xpos = self.xmax - xin
+            # xcor = xin - bisplev(yin, xpos, self.tck2)
+            # ycor = yin + bisplev(yin, xpos, self.tck1)
         return xcor, ycor
 
     def make_pixel_lut(self, dims):
@@ -137,6 +137,33 @@ class correctorclass: #IGNORE:R0902
             self.pos_lut = ( self.pixel_lut[0] * self.xsize, 
                              self.pixel_lut[1] * self.ysize )
         return self.pos_lut
+
+
+    def correct_px_lut(self, pks):
+        """Transform x,y in raw image coordinates into x,y of an
+        idealised image using a LUT. Faster than standard correct method for large peakfiles.
+        pks : ImageD11 columnfile with raw coordinates s_raw, f_raw add new colulmns sc, fc with corrected coordinates"""
+        
+        assert self.dim is not None
+        assert 's_raw' in pks.titles and 'f_raw' in pks.titles	
+
+        # make pixel_lut  + substract xy grid coordinate (i,j) to keep only dx and  dy arrays.
+        self.make_pixel_lut(self.dim)	
+        i,j = numpy.mgrid[ 0:self.dim[0], 0:self.dim[1] ]
+        dx = self.pixel_lut[0] - i
+        dy = self.pixel_lut[1] - j
+
+        # get integer pixel index (si,fi) of each peak
+        si = numpy.round(pks['s_raw']).astype(int)
+        fi = numpy.round(pks['f_raw']).astype(int)
+    
+        # apply dx dy correction on s_raw / f_raw
+        sc = (dx[ si, fi ] + pks.s_raw).astype(numpy.float32)
+        fc = (dy[ si, fi ] + pks.f_raw).astype(numpy.float32)
+        # add corrected arrays as new columns
+        pks.addcolumn(sc, 'sc')
+        pks.addcolumn(fc, 'fc')
+    
 
     def distort(self, xin, yin):
         """
@@ -197,8 +224,8 @@ class correctorclass: #IGNORE:R0902
         if myline[:7] != "SPATIAL":
             raise SyntaxError(name + \
                 ": file does not seem to be a fit2d spline file")
-        myline = fin.readline() # BLANK LINE
-        myline = fin.readline() # VALID REGION
+        fin.readline() # BLANK LINE
+        fin.readline() # VALID REGION
         myline = fin.readline() # the actual valid region, 
                                # assuming xmin,ymin,xmax,ymax
         logging.debug("xmin,ymin,xmax,ymax, read: "+myline)
@@ -210,8 +237,8 @@ class correctorclass: #IGNORE:R0902
         logging.debug("gridspace, xsize, ysize: "+myline)
         self.gridspacing, self.xsize, self.ysize = \
          [float(z) for z in  myline.split()]
-        myline = fin.readline() # BLANK
-        myline = fin.readline() # X-DISTORTION
+        fin.readline() # BLANK
+        fin.readline() # X-DISTORTION
         myline = fin.readline() # two integers nx1,ny1
         logging.debug("nx1, ny1 read: "+myline)
         nx1, ny1 = [int(z) for z in myline.split()]
@@ -220,8 +247,8 @@ class correctorclass: #IGNORE:R0902
         ty1 = numpy.array(readfit2dfloats(fin, ny1), numpy.float32)
         cf1 = numpy.array(readfit2dfloats(fin, (nx1 - 4) * (ny1 - 4)),  
                           numpy.float32)
-        myline = fin.readline() #BLANK
-        myline = fin.readline() # Y-DISTORTION
+        fin.readline() #BLANK
+        fin.readline() # Y-DISTORTION
         myline = fin.readline() # two integers nx2, ny2
         nx2 , ny2 = [int(z) for z in myline.split()]
         tx2 = numpy.array(readfit2dfloats(fin, nx2), numpy.float32)
@@ -270,6 +297,28 @@ class perfect(correctorclass):
 
 
 
+class eiger_spatial(object):
+    
+    def __init__(self, 
+                 dxfile="/data/id11/nanoscope/Eiger/spatial_20210415_JW/e2dx.edf",
+                 dyfile="/data/id11/nanoscope/Eiger/spatial_20210415_JW/e2dy.edf",):
+        self.dx = fabio.open(dxfile).data  # x == fast direction at ID11
+        self.dy = fabio.open(dyfile).data  # y == slow direction
+        assert self.dx.shape == self.dy.shape
+        
+    def __call__(self, pks):
+        si = numpy.round(pks['s_raw']).astype(int)
+        fi = numpy.round(pks['f_raw']).astype(int)
+        pks['fc'] = self.dx[ si, fi ] + pks['f_raw']
+        pks['sc'] = self.dy[ si, fi ] + pks['s_raw']
+        return pks
+    
+    def pixel_lut(self):
+        """ returns (slow, fast) pixel postions of an image """
+        s = self.dx.shape
+        i, j = numpy.mgrid[ 0:s[0], 0:s[1] ]
+        return self.dy + j, self.dx + i
+    
 #
 #"""
 #http://homepages.inf.ed.ac.uk/rbf/CVonline/LOCAL_COPIES/OWENS/LECT5/node5.html
@@ -316,4 +365,3 @@ class perfect(correctorclass):
 #    Hence, for now,
 #    """
 #    pass
-

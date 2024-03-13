@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 # ImageD11_v1.0 Software for beamline ID11
 # Copyright (C) 2005-2018  Jon Wright
 #
@@ -18,113 +20,206 @@
 
 """
 Setup script
+
+You should run src/make_pyf.py to update the pyf wrapper and docs
 """
-
-
-
-
-import setuptools
 import sys
-from numpy.distutils.core import setup, Extension
-from numpy import get_include
+from io import open # this misery may never end.
+# For pip / bdist_wheel etc
+import os, platform, os.path
+from setuptools import setup, Extension
+from setuptools.command import build_ext
+#
+import numpy, numpy.f2py   # force wrapper re-generation
+
+if not hasattr( numpy.f2py, 'get_include'):
+    numpy.f2py.get_include = lambda : os.path.join(
+        os.path.dirname(os.path.abspath(numpy.f2py.__file__)),
+        'src')
+
+############################################################################
+def get_version():
+    with open("ImageD11/__init__.py","r") as f:
+        for line in f.readlines():
+            if line.find("__version__")>-1:
+                return eval(line.split("=")[1].strip())
+
+print("Building version |%s|"%get_version(), "on system:", platform.system())
+############################################################################
+
+#############################################################################
+# Set the openmp flag if needed. Also CFLAGS and LDSHARED from sys.argv ?
+#
+# JW https://stackoverflow.com/questions/724664/python-distutils-how-to-get-a-compiler-that-is-going-to-be-used
 
 
-if sys.platform == "win32" and "--compiler=mingw32" not in sys.argv:
-    ecomparg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY"]
-    elinkarg = ["/openmp","-DF2PY_REPORT_ON_ARRAY_COPY"]
-    elibs = None
-else:
-    ecomparg = ["-fopenmp -O2","-DF2PY_REPORT_ON_ARRAY_COPY"]
-    elinkarg = ["-fopenmp -O2","-DF2PY_REPORT_ON_ARRAY_COPY"]
-    elibs = ["gomp","pthread"]
+copt =  {
+    'msvc': ['/openmp', '/O2'] ,
+    'unix': ['-fopenmp', '-O2', ], # '-DF2PY_REPORT_ON_ARRAY_COPY=100', '-DNPY_DISABLE_OPTIMIZATION=1' ] ,
+    'mingw32': ['-fopenmp', '-O2'] ,
+ }
+
+lopt =  { k : [a for a in l] for k,l in copt.items() }
+lopt['msvc'] = []
+if platform.system() == "Darwin":
+    copt['unix'].remove("-fopenmp")
+    lopt['unix'].remove("-fopenmp")
 
 
-nid = [get_include(),]
+# might try:
+# set CFLAGS=/arch:AVX2 for msvc
+# CFLAGS=-march=native -mtune=native
+# LDFLAGS=-march=native -mtune=native
 
-# Compiled extension:
-cImageD11extension = Extension( "cImageD11",
-                                sources = [ "src/cImageD11.pyf",
-                                            "src/connectedpixels.c",
-                                            "src/closest.c",
-                                            "src/cdiffraction.c",
-                                            "src/blobs.c"],
-                               include_dirs = nid + ["src",],
-                               extra_compile_args=ecomparg,
-                               extra_link_args=elinkarg,
-                               libraries = elibs
-                               )
-            
 
-# Removed list of dependencies from setup file
-# Do a miniconda (or something) instead...
-#if sys.platform == 'win32':
-#    needed = [
-#        'six',
-#        'numpy>=1.0.0',
-#        'scipy', 
-#        'xfab>=0.0.2',
-#           'pycifrw'
-#        'fabio>=0.0.5',
-#        'matplotlib>=0.90.0',
-#        ... 
-#        ]
+class build_ext_subclass( build_ext.build_ext ):
+    def build_extension(self, ext):
+        print('Building _cImageD11 module')
+        c = self.compiler.compiler_type
+        CF = [] ; LF=[]
+        if "CFLAGS" in os.environ:
+            CF = os.environ.get("CFLAGS").split(" ")
+        if "LDFLAGS" in os.environ:
+            LF = os.environ.get("LDFLAGS").split(" ")
+        for e in self.extensions:
+            if c in copt:
+               e.extra_compile_args = copt[ c ] + CF
+               e.extra_link_args = lopt[ c ] + LF
+        print("Customised compiler",c,e.extra_compile_args,
+                    e.extra_link_args)
+        if ext.sources[0].endswith('.pyf'):
+            name = ext.sources[0]
+            # generate wrappers
+            print('Creating f2py wrapper for', name)
+            numpy.f2py.run_main( [
+                #'--quiet',
+                name,])
+            ext.sources[0] = os.path.split(name)[-1].replace('.pyf', 'module.c')
+            ext.sources.append( os.path.join(numpy.f2py.get_include(), 'fortranobject.c' ) )
+        build_ext.build_ext.build_extension(self, ext)
 
-needed =[]#
-# ["xfab",
-#          "fabio",
-#          "pyopengl",
-#          "matplotlib",
-#          "numpy",
-#          "scipy",
-#          "six",
-#          "h5py",
-#          ]
+# note that the pyf must come first
+cnames =  "_cImageD11.pyf blobs.c cdiffraction.c cimaged11utils.c"+\
+" closest.c connectedpixels.c darkflat.c localmaxlabel.c sparse_image.c "+\
+" splat.c"
 
-# See the distutils docs...
-setup(name='ImageD11',
-      version='1.9.0-beta',
-      author='Jon Wright',
-      author_email='wright@esrf.fr',
-      description='ImageD11',
-      license = "GPL",
-      ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
-      ext_modules = [cImageD11extension,],
-      install_requires = needed,
-      packages = ["ImageD11"],
-      package_dir = {"ImageD11":"ImageD11"},
-      url = "http://github.com/jonwright/ImageD11",
-#      download_url = ["http://sourceforge.net/project/showfiles.php?group_id=82044&package_id=147869"],
-      package_data = {"ImageD11" : ["doc/*.html", "data/*" ]},
-      scripts = ["ImageD11/rsv_mapper.py",
-                 "scripts/peaksearch.py",
+csources = [os.path.join('src',c) for c in cnames.split()]
+
+extension = Extension( "_cImageD11",  csources,
+                include_dirs = [ 'src',numpy.get_include(), numpy.f2py.get_include() ])
+
+################################################################################
+
+# Try to further reduce this long list
+scripts = ["ImageD11/rsv_mapper.py",
+           "ImageD11/tkGui/plot3d.py",
+           "scripts/peaksearch.py",
                  "scripts/fitgrain.py",
-                 "scripts/tomapper.py",
                  "scripts/ubi2cellpars.py",
                  "scripts/filtergrain.py",
-                 "scripts/filterout.py",
-                 "ImageD11/plot3d.py",
-                 "scripts/pars_2_sweeper.py",
                  "scripts/ImageD11_2_shelx.py",
-                 "scripts/fit2dcake.py",
                  "scripts/fix_spline.py",
                  "scripts/edfheader.py",
-                 "ImageD11/plot3d.py",
-                 "scripts/huber2bruker.py",
-                 "scripts/id11_summarize.py",
                  "scripts/ImageD11_gui.py",
                  "scripts/bgmaker.py",
                  "scripts/merge_flt.py",
                  "scripts/makemap.py",
                  "scripts/plotlayer.py",
-                 "scripts/plotedf.py",
                  "scripts/plotgrainhist.py",
-                 "scripts/rubber.py",
                  "scripts/plotImageD11map.py",
                  "scripts/cutgrains.py",
                  "scripts/index_unknown.py",
                  "scripts/spatialfix.py",
        	         "scripts/refine_em.py",
                  "scripts/avg_par.py",
-                 "scripts/powderimagetopeaks.py"])
+                 "scripts/powderimagetopeaks.py"]
+
+################################################################################
+# Things we depend on. This generally borks things if pip
+# tries to do source installs of all of these.
+
+# sfood -I ImageD11/depreciated -I build/ -v -u >sfood.out 2>sfood.err
+
+minimal = [  # can't compile without this
+    "six",
+    "numpy",
+    "setuptools",
+    ]
+
+useful = [   # stuff you probably want, and should be able to get easily
+    'fabio==0.2.2 ; python_version < "3" and sys_platform == "win32" ',
+    'fabio ; python_version >= "3" or sys_platform != "win32" ',
+    "xfab>=0.0.4", #
+       # comes from xfab : "PyCifRW",
+    "matplotlib",  # tkGui
+    "pyopengltk",  # plot3d in tkGui
+    "scipy",       #
+    'hdf5plugin==1.4.1 ; python_version < "3" and sys_platform == "win32" ',
+    'hdf5plugin ; python_version >= "3" ',
+    'h5py',
+    'pyyaml',
+    "pytest",       # for the CI
+    'numba==0.46.0 ; python_version < "3" ',       # for some test cases
+    'llvmlite==0.30.0 ; python_version < "3" ',    # for some test cases
+    'numba ; python_version >= "3" ',               # for some test cases
+    "bslz4_to_sparse",
+    "fast_histogram",
+    "scikit-image",
+    "tqdm",
+]
+
+
+more = [
+    # Used in sandbox / test / not completely essential, but should work for CI
+    "pillow",      # in sandbox
+    "lmfit",       # in sandbox
+    "PyMca5",      # in sandbox
+    "sympy",       # for maths
+    'ipywidgets',  # for notebook nbGui
+    'pyopencl',    # (was?) in sandbox
+    'pyFAI ; python_version >= "3" ',   # pypi problematic
+    'pyFAI <= 0.18.0 ; python_version  < "3" ',
+    'silx[full] ; python_version >= "3" ',  # for silxGui
+]
+
+rare = [           #
+    "FitAllB",     # not for python3
+    "minuit",      # for fitallb
+    "PyTango",     # sandbox
+    ]
+
+ # read the contents of your README file
+this_directory = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    readme = f.read()
+
+
+# See the distutils docs...
+setup(name='ImageD11',
+      version=get_version(),
+      author='Jon Wright',
+      author_email='wright@esrf.fr',
+      cmdclass={ 'build_ext' : build_ext_subclass },
+      description='ImageD11',
+      license = "GPL",
+#      python_requires='<3.12',  # Numba still not working for 3.12
+      ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
+      ext_modules = [extension,],
+      setup_requires = minimal,   # to compile
+      install_requires = minimal + useful,
+      extras_require = { 'full' : more, 'rare' : rare },
+      packages = ["ImageD11",
+                  "ImageD11.tkGui",
+                  "ImageD11.silxGui",
+                  "ImageD11.nbGui",
+                  "ImageD11.sinograms",
+                 ],
+      package_dir = {"ImageD11":"ImageD11"},
+      url = "http://github.com/jonwright/ImageD11",
+      package_data = {"ImageD11" : ["doc/*.html", "data/*", "sandbox/*.py" ]},
+      scripts = scripts,
+      long_description = readme,
+      long_description_content_type='text/markdown',
+)
 
 

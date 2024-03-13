@@ -102,7 +102,7 @@ except ImportError:
     print("Using numpy fft for convolution")
     print("You might get better performance from fftw, why not try installing:")
     print("http://prdownload.berlios.de/pyfftw/PyFFTW3-0.2.tar.gz")
-    REAL = np.float
+    REAL = np.float32
 
     class convolver(object):
 
@@ -316,7 +316,8 @@ def test_prescale():
     assert (nim[5,5] - 1.0) < 1./65535
 
 def testg1():
-    
+    from pylab import figure, imshow, colorbar, show
+    x = np.arange(20)
     gauss = np.exp( -(x*x+x.T*x.T)/10 )
     dims = (1526,1024)
     ret = centre_psf( gauss, dims )
@@ -344,6 +345,7 @@ def testg5():
 
     from fabio.openimage import openimage
     im = openimage("c_Al_s1_000__quantix_0037.edf")
+    g = gauss2d
     gaus = g( (50,60), 4.1 )+ g( (50,60), 10.1 )*0.1
     from matplotlib.pylab import imshow, show
     imshow(gaus)

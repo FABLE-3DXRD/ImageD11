@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 import glob, sys
 import numpy as np
 from ImageD11 import grain, sym_u
@@ -48,13 +50,13 @@ gv2  = np.dot( gl[0].ubi, hkls )
 hklr  = np.dot( gl[0].ub, gv1 )
 hkli  = hklr.copy()
 rmodg2 = 1/(gv1*gv1).sum(axis=0)
-angerr2 = np.zeros( npks, np.float )
+angerr2 = np.zeros( npks, float )
 
 
 
 tol = 2.35*angtol*np.pi/180.0
 tol2 = tol*tol
-print "#",
+print( "#", end = ' ')
 for i,g1 in enumerate(gl):
     np.dot( g1.ub, hkls, out=gv1 )
     for j in range(i+1, len(gl)):
@@ -80,14 +82,14 @@ for i,g1 in enumerate(gl):
             dist = np.sqrt( ((g1.translation-g2.translation)**2).sum() )
             if dist > 500:
                 continue
-            print "\n# grains %d %d  frac %.3f scor %.3f"%(i,j,tscor,scor.sum()),
+            print("\n# grains %d %d  frac %.3f scor %.3f"%(i,j,tscor,scor.sum()),end=' ')
             rotangs = xfab.symmetry.Umis( g1.u, g2.u, 7 )
             angs = [a[1] for a in rotangs]
             dist = np.sqrt( ((g1.translation-g2.translation)**2).sum() )
-            print " misori %.3f  dist %.1f"%(np.min(angs), dist)
-            print "# g1.t % 7.3f % 7.3f % 7.3f"%tuple(g1.translation)
-            print "# g2.t % 7.3f % 7.3f % 7.3f"%tuple(g2.translation)
-            print "# i (h k l) -> (h k l)  Angle  Scor "
+            print(" misori %.3f  dist %.1f"%(np.min(angs), dist))
+            print("# g1.t % 7.3f % 7.3f % 7.3f"%tuple(g1.translation))
+            print("# g2.t % 7.3f % 7.3f % 7.3f"%tuple(g2.translation))
+            print("# i (h k l) -> (h k l)  Angle  Scor ")
             ip = 0
             order = np.argsort(scor)
             for k in order[::-1]:
@@ -95,7 +97,7 @@ for i,g1 in enumerate(gl):
                     h1,k1,l1 = hkls.T[k]
                     h2,k2,l2 = hklr.T[k]
                     ip += 1
-                    print "%d ( % d % d % d ) -> ( % .3f % .3f % .3f ) %.3f %.5f"%( ip,
-                        h1,k1,l1,  h2,k2,l2,  np.degrees(np.sqrt(angerr2[k])),scor[k])
-            print "#",
+                    print( "%d ( % d % d % d ) -> ( % .3f % .3f % .3f ) %.3f %.5f"%( ip,
+                        h1,k1,l1,  h2,k2,l2,  np.degrees(np.sqrt(angerr2[k])),scor[k]))
+            print("#",end=' ')
                                                              

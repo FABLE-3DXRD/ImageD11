@@ -45,8 +45,7 @@ are above a threshold (eg the central circle on the bruker)
 """
 
 
-import numpy
-from fabio.openimage import openimage
+import numpy, fabio
 
 class scale:
     def __init__( self, im1, threshold = None):
@@ -56,8 +55,8 @@ class scale:
         im1 = a * im2 + b
         returns a, b
         """
-        lsqmat = numpy.zeros((2, 2), numpy.float)
-        dyda   = numpy.ravel(im1).astype(numpy.float)
+        lsqmat = numpy.zeros((2, 2), float)
+        dyda   = numpy.ravel(im1).astype(float)
         self.threshold = threshold
         if threshold is None:
             self.indices = None
@@ -103,14 +102,14 @@ class scale:
         ...use scale image for that
         """
         if self.indices is None:
-            rhs0 = numpy.sum(self.dyda * numpy.ravel(im2).astype(numpy.float))
-            rhs1 = numpy.sum(numpy.ravel(im2).astype(numpy.float))
+            rhs0 = numpy.sum(self.dyda * numpy.ravel(im2).astype(float))
+            rhs1 = numpy.sum(numpy.ravel(im2).astype(float))
             ans = numpy.dot(self.inverse, [rhs0, rhs1])
             return ans[0], ans[1]
         else:
             usedata = numpy.take(numpy.ravel(im2) , self.indices)
-            rhs0 = numpy.sum(self.dyda * usedata.astype(numpy.float))
-            rhs1 = numpy.sum(usedata.astype(numpy.float))
+            rhs0 = numpy.sum(self.dyda * usedata.astype(float))
+            rhs1 = numpy.sum(usedata.astype(float))
             ans = numpy.dot(self.inverse, [rhs0, rhs1])
             return ans[0], ans[1]
             
@@ -122,7 +121,7 @@ def scaleseries( target, stem, first, last,
     Scale a series of [bruker] images to the target
     TODO - make it work with fabio file series
     """
-    # d0 = numpy.ravel(target.data.astype(numpy.float))
+    # d0 = numpy.ravel(target.data.astype(float))
     scaler = scale(target.data, thresh)
     print("# Scaling with respect to:", sys.argv[1])
     if thresh is not None:
@@ -135,14 +134,14 @@ def scaleseries( target, stem, first, last,
         # we only look to see
         for i in range(first, last+1):
             name = "%s.%04d" % (stem, i)
-            secondimage = openimage.openimage(name)
+            secondimage = fabio.open(name)
             a, b = scaler.scale(secondimage.data)
             print(i, name , a, b, end=' ')
     else: # we correct the image
         for i in range(first, last+1):
             name = "%s.%04d" % (stem, i)
             newname = "cor_%s.%04d" % (stem.split("/")[-1], i)
-            secondimage = openimage.openimage(name)
+            secondimage = fabio.open(name)
             newdata = scaler.scaleimage(secondimage.data)
             # write out the file
             secondimage.data = newdata
@@ -154,7 +153,7 @@ def scaleseries( target, stem, first, last,
 if __name__ == "__main__":
 
     import sys
-    FIRSTIMAGE = openimage.openimage(sys.argv[1])
+    FIRSTIMAGE = fabio.open(sys.argv[1])
     STEM = sys.argv[2]
     FIRST = int(sys.argv[3])
     LAST  = int(sys.argv[4])

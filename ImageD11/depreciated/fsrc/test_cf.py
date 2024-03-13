@@ -17,7 +17,7 @@ tim = time.time
 
 for tol in [0.01, 0.1, 0.2, 0.5]:
     int_tmpf = np.zeros( NPK, np.int32 )
-    drlv2f = np.zeros( NPK, np.float)
+    drlv2f = np.zeros( NPK, float)
 
     start = tim()
     for i, gr in enumerate(ubis):
@@ -26,7 +26,7 @@ for tol in [0.01, 0.1, 0.2, 0.5]:
     fortrantime = end -start
 
     int_tmpc = np.zeros( NPK, np.int32 )
-    drlv2c = np.zeros( NPK, np.float)
+    drlv2c = np.zeros( NPK, float)
 
     start = tim()
 

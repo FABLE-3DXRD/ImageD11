@@ -13,7 +13,9 @@ print("#  [cubic|hexagonal|trigonal|rhombohedralP|tetragonal|orthorhombic|monocl
 
 g1l = grain.read_grain_file(sys.argv[1])
 g2l = grain.read_grain_file(sys.argv[2])
-
+for g in g1l + g2l:
+    if g.translation is None:
+        g.translation = np.zeros(3)
 try:
     h = getattr( sym_u, sys.argv[3] )()
 except:
@@ -43,11 +45,11 @@ if len(sys.argv)>=9:
 
 
 
-da=np.zeros( (len(g1l),len(g2l)), np.float)
-dt2=np.zeros( (len(g1l),len(g2l)), np.float)
+da=np.zeros( (len(g1l),len(g2l)), float)
+dt2=np.zeros( (len(g1l),len(g2l)), float)
 
 for g in g1l + g2l:
-    g.u = xfab.tools.ubi_to_u_b(g.ubi)[0]
+    # g.u = xfab.tools.ubi_to_u_b(g.ubi)[0]
     assert (abs(np.dot(g.u, g.u.T) - np.eye(3)).ravel()).sum() < 1e-6
     
 dtsum = np.zeros(3)
@@ -62,7 +64,6 @@ for i,g1 in enumerate(g1l):
     trace = np.trace
     pi = np.pi
     for j,g2 in enumerate(g2l):
-        angle = 180.
         sg = None
         aumis = np.dot(asymusT, g2.u)
         # print aumis.shape
@@ -89,8 +90,9 @@ for i,g1 in enumerate(g1l):
     if not printed:
         ja = np.argmin(da[i])
         jd = np.argmin(dt2[i])
-        print("# not matched %d min angle %d  %.4f  %.3f"%(i,ja,da[i,ja],dt2[i,ja]))
-        print("# not matched %d min dist  %d  %.4f  %.3f"%(i,ja,da[i,jd],dt2[i,jd]))
+        print( "# not matched %d min angle %d  %.4f  %.3f"%(i,ja,da[i,ja],dt2[i,ja]))
+        print( "# not matched %d min dist  %d  %.4f  %.3f"%(i,jd,da[i,jd],dt2[i,jd]))
+
 
 
 np.save( "da",da)

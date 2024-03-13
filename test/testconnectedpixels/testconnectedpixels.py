@@ -13,14 +13,14 @@ class test_connectedpixels(unittest.TestCase):
 
     def test_1(self):
         for t in [np.uint8, np.int8, np.uint16, np.int16,
-                  np.int32, np.uint32, np.float32, np.float]:
+                  np.int32, np.uint32, np.float32, float]:
             data = np.array( [[ 0, 0, 0, 0, 0, 0, 0],
                              [ 0, 0, 0, 1, 0, 0, 0],
                              [ 0, 0, 0, 0, 0, 0, 0],
                              [ 0, 0, 0, 0, 0, 0, 0]],t)
             bl = np.zeros(data.shape,np.int32)
             cImageD11.connectedpixels(
-                data,
+                data.astype(np.float32),
                 bl,
                 0.1)  # threshold
             err = np.sum(np.ravel(data-bl))
@@ -28,14 +28,14 @@ class test_connectedpixels(unittest.TestCase):
 
     def test_1_shape(self):
         for t in [np.uint8, np.int8, np.uint16, np.int16,
-                  np.int32, np.uint32, np.float32, np.float]:
+                  np.int32, np.uint32, np.float32, float]:
             data = np.array( [[ 1, 0, 1, 0, 1, 0, 1],
                              [ 1, 0, 1, 0, 1, 0, 1],
                              [ 1, 0, 1, 0, 0, 1, 0],
                              [ 1, 1, 1, 1, 1, 0, 1]],t)
             bl = np.zeros(data.shape,np.int32)
             cImageD11.connectedpixels(
-                data,
+                data.astype(np.float32),
                 bl,
                 0.1)  # threshold
             err = np.sum(np.ravel(data-bl))
@@ -43,14 +43,14 @@ class test_connectedpixels(unittest.TestCase):
 
     def test_2_shapes(self):
         for t in [np.uint8, np.int8, np.uint16, np.int16,
-                  np.int32, np.uint32, np.float32, np.float]:
+                  np.int32, np.uint32, np.float32, float]:
             data = np.array( [[ 1, 0, 1, 0, 2, 0, 2],
                              [ 1, 0, 1, 0, 2, 0, 2],
                              [ 1, 0, 1, 0, 0, 2, 0],
                              [ 1, 1, 1, 0, 2, 0, 2]],t)
             bl = np.zeros(data.shape,np.int32)
             cImageD11.connectedpixels(
-                data,
+                data.astype(np.float32),
                 bl,
                 0.1)  # threshold
             err = np.sum(np.ravel(data-bl))
@@ -109,21 +109,21 @@ class test_blobproperties(unittest.TestCase):
 
     def test_find_max(self):
         for t in [np.uint8, np.int8, np.uint16, np.int16,
-                  np.int32, np.uint32, np.float32, np.float]:
+                  np.int32, np.uint32, np.float32, float]:
             data = np.array( [[ 1, 0, 1],
                              [ 1, 0, 1],
                              [ 1, 8, 1],
                              [ 1, 1, 1]],t)
             bl = np.zeros(data.shape,np.int32)
             npx = cImageD11.connectedpixels(
-                data,bl,0.1)
+                data.astype(np.float32),bl,0.1)
             self.assertEqual(npx,1)
             err = np.sum(np.ravel(data-bl))
             self.assertEqual(err, 7) # 8-1
-            res = cImageD11.blobproperties(data,
-                                                 bl,
-                                                 npx,
-                                                 omega=22.)
+            res = cImageD11.blobproperties(data.astype(np.float32),
+                                           bl,
+                                           npx,
+                                           omega=22.)
             from ImageD11.cImageD11 import s_1, s_I, s_I2, \
                 s_fI, s_ffI, s_sI, s_ssI, s_sfI, \
                 bb_mn_f, bb_mn_s, bb_mx_f, bb_mx_s,\
@@ -145,13 +145,13 @@ class testbloboverlaps(unittest.TestCase):
         data1 =  np.array([[ 1, 0, 1, 0, 0, 0, 0],
                           [ 1, 0, 1, 0, 0, 0, 0],
                           [ 1, 0, 1, 1, 0, 0, 0],
-                          [ 1, 1, 1, 0, 0, 0, 0]])
+                           [ 1, 1, 1, 0, 0, 0, 0]],np.float32)
         bl1 = np.zeros(data1.shape, np.int32)
         np1 = cImageD11.connectedpixels(data1,bl1,0.1)
         data2 =  np.array([[ 0, 0, 0, 0, 2, 0, 2],
                           [ 0, 0, 0, 0, 2, 0, 2],
                           [ 0, 0, 0, 2, 0, 2, 0],
-                          [ 0, 0, 0, 0, 2, 0, 2]])
+                           [ 0, 0, 0, 0, 2, 0, 2]],np.float32)
         bl2 = np.zeros(data2.shape, np.int32)
         np2 = cImageD11.connectedpixels(data2,bl2,0.1)
         r1 = cImageD11.blobproperties(data1, bl1, np1, omega=-10.0)
@@ -182,13 +182,13 @@ class testbloboverlaps(unittest.TestCase):
         data1 =  np.array([[ 1, 0, 0, 0, 0, 1, 1],
                           [ 1, 0, 2, 0, 0, 1, 1],
                           [ 1, 0, 2, 2, 0, 0, 0],
-                          [ 0, 0, 2, 0, 0, 0, 0]])
+                           [ 0, 0, 2, 0, 0, 0, 0]],np.float32)
         bl1 = np.zeros(data1.shape, np.int32)
         np1 = cImageD11.connectedpixels(data1,bl1,0.1)
         data2 =  np.array([[ 0, 0, 0, 0, 2, 0, 0],
                           [ 0, 0, 0, 0, 2, 2, 0],
                           [ 0, 0, 0, 2, 0, 0, 0],
-                          [ 0, 0, 0, 0, 0, 0, 0]])
+                           [ 0, 0, 0, 0, 0, 0, 0]],np.float32)
         bl2 = np.zeros(data2.shape,np.int32)
         np2 = cImageD11.connectedpixels(data2,bl2,0.1)
         r1 = cImageD11.blobproperties(data1, bl1, np1)
@@ -217,13 +217,13 @@ class testbloboverlaps(unittest.TestCase):
         data1 =  np.array([[ 0, 0, 0, 0, 0, 0, 0],
                           [ 0, 0, 0, 0, 0, 0, 0],
                           [ 0, 1, 1, 1, 1, 1, 0],
-                          [ 0, 0, 0, 0, 0, 0, 0]])
+                           [ 0, 0, 0, 0, 0, 0, 0]],np.float32)
         bl1 = np.zeros(data1.shape,np.int32)
         np1 = cImageD11.connectedpixels(data1,bl1,0.1)
         data2 =  np.array([[ 0, 0, 0, 0, 0, 0, 0],
                           [ 0, 2, 0, 0, 0, 2, 0],
                           [ 0, 2, 0, 0, 0, 2, 0],
-                          [ 0, 2, 0, 0, 0, 2, 0]])
+                           [ 0, 2, 0, 0, 0, 2, 0]],np.float32)
         bl2 = np.zeros(data2.shape,np.int32)
         np2 = cImageD11.connectedpixels(data2,bl2,0.1)
         r1 = cImageD11.blobproperties(data1, bl1, np1)

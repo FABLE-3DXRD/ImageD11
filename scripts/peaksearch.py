@@ -36,7 +36,8 @@ and the blobcorrector(+splines) for correcting them for spatial distortion
 
 Defines one function (peaksearch) which might be reused
 """
-
+import h5py
+import hdf5plugin # first!
 import time
 
 # For benchmarking
@@ -46,11 +47,11 @@ if __name__=="__main__":
     # If we are running from a command line:
     myparser = None
     try:
-        from optparse import OptionParser
+        from argparse import ArgumentParser
         from ImageD11 import peaksearcher
-        parser = OptionParser()
+        parser = ArgumentParser()
         myparser = peaksearcher.get_options(parser)
-        options , args = myparser.parse_args()
+        options , args = myparser.parse_known_args()
         peaksearcher.peaksearch_driver(options, args)
     except:
         if myparser is not None:

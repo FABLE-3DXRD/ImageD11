@@ -58,7 +58,7 @@ pks = [
 
         ]
 #print len(pks)
-hkl = np.array(pks,np.float).T
+hkl = np.array(pks,float).T
 
 uniq_ubis = []
 names = list(ubi_all.keys())
@@ -95,7 +95,7 @@ for l,uo in dsu[::-1]:
     ubi = uo[1]
     # print "\n# found",len(uo[0]),"times"
     # Find average ubi matrix for each time...
-    usum = np.zeros((3,3),np.float)
+    usum = np.zeros((3,3),float)
     j = 0
     for name, i in uo[0]:
         usum = usum + ubi_all[name][i]

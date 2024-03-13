@@ -47,8 +47,10 @@ import os
 
 # GuiMaker is for building up the windows etc
 
-from ImageD11.guimaker import GuiMaker
-from ImageD11 import twodplot, guicommand, guipeaksearch, guiindexer, guisolver, __version__
+from ImageD11.tkGui.guimaker import GuiMaker
+from ImageD11.tkGui import twodplot,  guipeaksearch, guitransformer, guiindexer
+# guisolver
+from ImageD11 import __version__, guicommand
 from ImageD11.license import license
 
 # This does not do anything unless you call it as a program:
@@ -150,8 +152,6 @@ if __name__ == "__main__":
 
             self.peaksearcher = guipeaksearch.guipeaksearcher(self)
 
-            # For the transformation menu
-            from ImageD11 import guitransformer
 
             self.transformer = guitransformer.guitransformer(self)
 
@@ -159,7 +159,7 @@ if __name__ == "__main__":
             # unitcell and g-vectors
             self.indexer = guiindexer.guiindexer(self)
 
-            self.solver = guisolver.guisolver(self)
+#            self.solver = guisolver.guisolver(self)
 
             # Configure the menubar (lists of Tuples of (name,
             # underline_char, command_or_submenu) )
@@ -169,7 +169,7 @@ if __name__ == "__main__":
                             self.peaksearcher.menuitems,
                             self.transformer.menuitems,
                             self.indexer.menuitems,
-                            self.solver.menuitems,
+#                            self.solver.menuitems,
                             ("Plotting", 0,
                              [("Autoscale", 0, self.autoscaleplot),
                               ("Clear plot", 0, self.clearplot),
