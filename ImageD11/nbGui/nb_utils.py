@@ -104,7 +104,7 @@ def prepare_mlem_bash(ds, grains, pad, is_half_scan, id11_code_path, n_simultane
 
     if os.path.exists(slurm_mlem_path):
         if len(os.listdir(slurm_mlem_path)) > 0:
-            raise FileExistsError("Slurm MLEM logs folder exists and is not empty!")
+            raise OSError("Slurm MLEM logs folder exists and is not empty!")
     else:
         os.mkdir(slurm_mlem_path)
 
@@ -112,7 +112,7 @@ def prepare_mlem_bash(ds, grains, pad, is_half_scan, id11_code_path, n_simultane
 
     if os.path.exists(recons_path):
         if len(os.listdir(recons_path)) > 0:
-            raise FileExistsError("MLEM recons folder exists and is not empty!")
+            raise OSError("MLEM recons folder exists and is not empty!")
     else:
         os.mkdir(recons_path)
 
