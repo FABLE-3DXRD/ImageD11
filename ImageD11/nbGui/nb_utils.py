@@ -811,89 +811,7 @@ def get_2d_peaks_from_4d_peaks(ds, cf):
     return gord, inds, p2d
 
 
-# hkl assignment needs grains2peaks class
-# GOTO: part of a little collection of functions that put stuff on the Grain object
-def do_sinos(g, p2d, ds, hkltol=0.25):
-    # g.peaks_2d are 2d peaks that were merged into the 4d peaks that were assigned to this grain (obviously!)
-    flt = ds.get_colfile_from_peaks_table({p: p2d[p][g.peaks_2d] for p in p2d}, ds)  # convert it to a columnfile and spatially correct
 
-    hkl_real = np.dot(g.ubi, (flt.gx, flt.gy, flt.gz))  # calculate hkl of all assigned peaks
-    hkl_int = np.round(hkl_real).astype(int)  # round to nearest integer
-    dh = ((hkl_real - hkl_int) ** 2).sum(axis=0)  # calculate square of difference
-
-    # g.dherrall = dh.mean()  # mean hkl error across all assigned peaks
-    # g.npksall = flt.nrows  # total number of assigned peaks
-    flt.filter(dh < hkltol * hkltol)  # filter all assigned peaks to be less than hkltol squared
-    hkl_real = np.dot(g.ubi, (flt.gx, flt.gy, flt.gz))  # recalculate error after filtration
-    hkl_int = np.round(hkl_real).astype(int)
-    # dh = ((hkl_real - hkl_int) ** 2).sum(axis=0)
-    # g.dherr = dh.mean()  # dherr is mean hkl error across assigned peaks after hkltol filtering
-    # g.npks = flt.nrows  # total number of assigned peaks after hkltol filtering
-    g.etasigns_2d_strong = np.sign(flt.eta)
-    g.hkl_2d_strong = hkl_int  # integer hkl of assigned peaks after hkltol filtering
-    g.sinoangles, g.ssino, g.hits = map_grain_from_peaks(g, flt, ds)
-    return g
-
-
-# GOTO GrainSinogram class - has grain object and dataset object as attributes
-# has IO methods
-def map_grain_from_peaks(g, flt, ds):
-    """
-    Computes sinogram
-    flt is already the peaks for this grain
-    Returns angles, sino
-    """
-    NY = len(ds.ybincens)  # number of y translations
-    iy = np.round((flt.dty - ds.ybincens[0]) / (ds.ybincens[1] - ds.ybincens[0])).astype(
-        int)  # flt column for y translation index
-
-    # The problem is to assign each spot to a place in the sinogram
-    hklmin = g.hkl_2d_strong.min(axis=1)  # Get minimum integer hkl (e.g -10, -9, -10)
-    dh = g.hkl_2d_strong - hklmin[:, np.newaxis]  # subtract minimum hkl from all integer hkls
-    de = (g.etasigns_2d_strong.astype(int) + 1) // 2  # something signs related
-    #   4D array of h,k,l,+/-
-    # pkmsk is whether a peak has been observed with this HKL or not
-    pkmsk = np.zeros(list(dh.max(axis=1) + 1) + [2, ],
-                     int)  # make zeros-array the size of (max dh +1) and add another axis of length 2
-    pkmsk[dh[0], dh[1], dh[2], de] = 1  # we found these HKLs for this grain
-    #   sinogram row to hit
-    pkrow = np.cumsum(pkmsk.ravel()).reshape(pkmsk.shape) - 1  #
-    # counting where we hit an HKL position with a found peak
-    # e.g (-10, -9, -10) didn't get hit, but the next one did, so increment
-
-    npks = pkmsk.sum()
-    destRow = pkrow[dh[0], dh[1], dh[2], de]
-    sino = np.zeros((npks, NY), 'f')
-    hits = np.zeros((npks, NY), 'f')
-    angs = np.zeros((npks, NY), 'f')
-    adr = destRow * NY + iy
-    # Just accumulate 
-    sig = flt.sum_intensity
-    ImageD11.cImageD11.put_incr64(sino, adr, sig)
-    ImageD11.cImageD11.put_incr64(hits, adr, np.ones(len(de), dtype='f'))
-    ImageD11.cImageD11.put_incr64(angs, adr, flt.omega)
-
-    sinoangles = angs.sum(axis=1) / hits.sum(axis=1)
-    # Normalise:
-    sino = (sino.T / sino.max(axis=1)).T
-    # Sort (cosmetic):
-    order = np.lexsort((np.arange(npks), sinoangles))
-    sinoangles = sinoangles[order]
-    ssino = sino[order].T
-
-    return sinoangles, ssino, hits[order].T
-
-
-# GOTO apply_halfmask function to existing sinogram
-# roi_iradon
-
-def iradon_grain(grain, pad=20, y0=0, workers=1, sample_mask=None, apply_halfmask=False, mask_central_zingers=False):
-    sino = grain.ssino
-    angles = grain.sinoangles
-    recon = ImageD11.sinograms.roi_iradon.run_iradon(sino, angles, pad, y0, workers, sample_mask, apply_halfmask, mask_central_zingers)
-    grain.recon = recon
-
-    return grain
 
 
 # GOTO peakselect module
@@ -911,7 +829,7 @@ def unitcell_peaks_mask(cf, dstol, dsmax):
     return m
 
 
-# GOTO columnfile method
+# GOTO peakselect module
 def strongest_peaks(colf, uself=True, frac=0.995, B=0.2, doplot=None):
     # correct intensities for structure factor (decreases with 2theta)
     cor_intensity = colf.sum_intensity * (np.exp(colf.ds * colf.ds * B))

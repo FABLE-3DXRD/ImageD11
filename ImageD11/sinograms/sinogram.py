@@ -1,0 +1,135 @@
+import numpy as np
+
+import ImageD11.grain
+import ImageD11.sinograms.dataset
+import ImageD11.cImageD11
+import ImageD11.sinograms.roi_iradon
+
+
+class GrainSinogram:
+    """Class to build, hold and reconstruct sinograms of grains for Scanning 3DXRD data"""
+
+    def __init__(self, grain_obj, dataset):
+        if not isinstance(grain_obj, ImageD11.grain.grain):
+            raise TypeError("grain_obj must be an ImageD11.grain.grain instance")
+        if not isinstance(dataset, ImageD11.sinograms.dataset.DataSet):
+            raise TypeError("dataset must be an ImageD11.sinograms.dataset.DataSet instance")
+
+        self.grain = grain_obj
+        self.ds = dataset
+
+        # Peak information to build the sinogram
+        self.etasigns_2d_strong = None
+        self.hkl_2d_strong = None
+
+        # Sinogram information
+        self.sinoangles = None
+        self.sino = None
+        self.ssino = None  # sorted by angle
+
+        # Reconstruction information
+        # self.recons is a dict that stores reconstructions by method
+        # i.e. self.recons["iradon"] is the iradon reconstruction
+        self.recons = {}
+        self.recon_mask = None
+        self.recon_pad = None
+        self.recon_y0 = None
+
+    def prepare_peaks_for_sinogram(self, peak_indices_2d, hkltol=0.25):
+        """Filters the 2D peaks assigned to the grain based on the HKL tolerance"""
+
+        # Filter the peaks table to the peaks for this grain only
+        p2d = {p: self.ds.peaks_table[p][peak_indices_2d] for p in self.ds.peaks_table}
+
+        # Make a spatially corrected columnfile from the filtered peaks table
+        flt = self.ds.get_colfile_from_peaks_table(peaks_table=p2d)
+
+        hkl_real = np.dot(self.grain.ubi, (flt.gx, flt.gy, flt.gz))  # calculate hkl of all assigned peaks
+        hkl_int = np.round(hkl_real).astype(int)  # round to nearest integer
+        dh = ((hkl_real - hkl_int) ** 2).sum(axis=0)  # calculate square of difference
+
+        flt.filter(dh < hkltol * hkltol)  # filter all assigned peaks to be less than hkltol squared
+        hkl_real = np.dot(self.grain.ubi, (flt.gx, flt.gy, flt.gz))  # recalculate error after filtration
+        hkl_int = np.round(hkl_real).astype(int)
+
+        self.etasigns_2d_strong = np.sign(flt.eta)
+        self.hkl_2d_strong = hkl_int  # integer hkl of assigned peaks after hkltol filtering
+
+    def build_sinogram(self, flt):
+        """
+        Computes sinogram from peaks data
+        Flt is the filtered assigned 2D peaks for this grain
+
+        """
+        NY = len(self.ds.ybincens)  # number of y translations
+        iy = np.round((flt.dty - self.ds.ybincens[0]) / (self.ds.ybincens[1] - self.ds.ybincens[0])).astype(
+            int)  # flt column for y translation index
+
+        # The problem is to assign each spot to a place in the sinogram
+        hklmin = self.hkl_2d_strong.min(axis=1)  # Get minimum integer hkl (e.g -10, -9, -10)
+        dh = self.hkl_2d_strong - hklmin[:, np.newaxis]  # subtract minimum hkl from all integer hkls
+        de = (self.etasigns_2d_strong.astype(int) + 1) // 2  # something signs related
+        #   4D array of h,k,l,+/-
+        # pkmsk is whether a peak has been observed with this HKL or not
+        pkmsk = np.zeros(list(dh.max(axis=1) + 1) + [2, ],
+                         int)  # make zeros-array the size of (max dh +1) and add another axis of length 2
+        pkmsk[dh[0], dh[1], dh[2], de] = 1  # we found these HKLs for this grain
+        #   sinogram row to hit
+        pkrow = np.cumsum(pkmsk.ravel()).reshape(pkmsk.shape) - 1  #
+        # counting where we hit an HKL position with a found peak
+        # e.g (-10, -9, -10) didn't get hit, but the next one did, so increment
+
+        npks = pkmsk.sum()
+        destRow = pkrow[dh[0], dh[1], dh[2], de]
+        sino = np.zeros((npks, NY), 'f')
+        hits = np.zeros((npks, NY), 'f')
+        angs = np.zeros((npks, NY), 'f')
+        adr = destRow * NY + iy
+        # Just accumulate
+        sig = flt.sum_intensity
+        ImageD11.cImageD11.put_incr64(sino, adr, sig)
+        ImageD11.cImageD11.put_incr64(hits, adr, np.ones(len(de), dtype='f'))
+        ImageD11.cImageD11.put_incr64(angs, adr, flt.omega)
+
+        sinoangles = angs.sum(axis=1) / hits.sum(axis=1)
+        # Normalise:
+        self.sino = (sino.T / sino.max(axis=1)).T
+        # Sort (cosmetic):
+        order = np.lexsort((np.arange(npks), sinoangles))
+        self.sinoangles = sinoangles[order]
+        self.ssino = sino[order].T
+
+    def correct_halfmask(self):
+        """Applies halfmask correction to sinogram"""
+        self.ssino = ImageD11.sinograms.roi_iradon.apply_halfmask_to_sino(self.ssino)
+
+    def update_recon_parameters(self, pad, y0, mask):
+        """Update all reconstruction parameters in one go"""
+        self.recon_pad = pad
+        self.recon_y0 = y0
+        self.recon_mask = mask
+
+    def recon(self, method="iradon", workers=1):
+        if method not in ["iradon", "mlem"]:
+            raise ValueError("Unsupported method!")
+
+        sino = self.ssino
+        angles = self.sinoangles
+
+        if method == "iradon":
+            recon_function = ImageD11.sinograms.roi_iradon.run_iradon
+        elif method == "mlem":
+            recon_function = ImageD11.sinograms.roi_iradon.run_mlem
+
+        recon = recon_function(sino=sino,
+                               angles=angles,
+                               pad=self.recon_pad,
+                               y0=self.recon_y0,
+                               workers=workers,
+                               mask=self.recon_mask)
+
+        self.recons[method] = recon
+
+    def mask_central_zingers(self, method="iradon", radius=25):
+        self.recons[method] = ImageD11.sinograms.roi_iradon.correct_recon_central_zingers(self.recons[method],
+                                                                                          radius=radius)
