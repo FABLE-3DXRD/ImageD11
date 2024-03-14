@@ -768,8 +768,8 @@ def assign_peaks_to_grains(grains, cf, tol):
     drlv2 = np.ones(cf.nrows, 'd')
     # iterate over all grains
     print("Scoring and assigning {} grains".format(len(grains)))
-    for g in tqdm(grains):
-        n = ImageD11.cImageD11.score_and_assign(g.ubi, gv, tol, drlv2, labels, g.gid)
+    for inc, g in enumerate(tqdm(grains)):
+        n = ImageD11.cImageD11.score_and_assign(g.ubi, gv, tol, drlv2, labels, inc)
 
     # add the labels column to the columnfile
     cf.addcolumn(labels, 'grain_id')
@@ -1126,7 +1126,7 @@ def do_index(cf,
 
             print(frac, tol, len(indexer.ubis))
 
-    grains = [ImageD11.grain.grain(ubi, translation=np.array([0., 0., 0.])) for ubi in indexer.ubis]
+    grains = [ImageD11.grain.grain(ubi) for ubi in indexer.ubis]
     print("Found {} grains".format(len(grains)))
 
     return grains, indexer
