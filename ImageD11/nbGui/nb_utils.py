@@ -7,7 +7,6 @@ import numba
 import numpy as np
 from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
-from tqdm.contrib.concurrent import process_map
 from scipy.optimize import curve_fit
 from skimage.feature import blob_log
 
@@ -19,8 +18,6 @@ import ImageD11.refinegrains
 import ImageD11.unitcell
 import ImageD11.sinograms.roi_iradon
 import ImageD11.sinograms.properties
-
-from ImageD11.blobcorrector import eiger_spatial
 
 
 ### General utilities (for all notebooks)
@@ -669,12 +666,10 @@ def fit_grain_position_from_recon(grain, ds, y0):
         grain.bad_recon = True
 
 
-# should be fixed by monitor in assemble_label
+# GOTO should be fixed by monitor in assemble_label
 # should just be a sinogram numpy array and a monitor spectrum
-def correct_sinogram_rows_with_ring_current(grain, ds):
-    grain.ssino = grain.ssino / ds.ring_currents_per_scan_scaled[:, None]
-
-
+# def correct_sinogram_rows_with_ring_current(grain, ds):
+#     grain.ssino = grain.ssino / ds.ring_currents_per_scan_scaled[:, None]
 
 
 ### Peak manipulation

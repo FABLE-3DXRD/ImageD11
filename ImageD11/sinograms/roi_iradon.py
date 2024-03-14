@@ -512,6 +512,7 @@ def correct_recon_central_zingers(recon, radius=25):
 
     return recon_corrected
 
+
 def run_iradon(sino, angles, pad=20, y0=0,
                workers=1, mask=None,
                apply_halfmask=False, mask_central_zingers=False, central_mask_radius=25):
