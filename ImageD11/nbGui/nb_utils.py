@@ -609,47 +609,6 @@ def get_rgbs_for_grains(grains):
         grain.rgb_x = grain_to_rgb(grain, ax=(1, 0, 0), )  # symmetry = Symmetry.cubic)
 
 
-### Segmentation
-
-# GOTO Inside blobcorrector
-
-def correct_pixel(pixel, spline_file):
-    sr, fr = pixel
-    sc, fc = ImageD11.blobcorrector.correctorclass(spline_file).correct(sr, fr)
-    return sc, fc
-
-
-def apply_spatial(cf, spline_file, workers):
-    # sc = np.zeros(cf.nrows)
-    # fc = np.zeros(cf.nrows)
-
-    print("Spatial correction...")
-
-    raw_pixels = np.vstack((cf['s_raw'], cf['f_raw'])).T
-
-    corrected_pixels = process_map(correct_pixel, raw_pixels, [spline_file] * len(raw_pixels), max_workers=workers,
-                                   chunksize=len(raw_pixels) // workers)
-
-    sc, fc = [list(t) for t in zip(*corrected_pixels)]
-
-    cf.addcolumn(sc, "sc")
-    cf.addcolumn(fc, "fc")
-
-    return cf
-
-
-def apply_spatial_lut(cf, spline_file):
-    # sc = np.zeros(cf.nrows)
-    # fc = np.zeros(cf.nrows)
-
-    print("Spatial correction...")
-
-    corrector = ImageD11.blobcorrector.correctorclass(spline_file)
-    corrector.correct_px_lut(cf)
-
-    return cf
-
-
 ### Sinogram stuff
 
 # GOTO sinograms/geometry
