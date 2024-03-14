@@ -207,9 +207,10 @@ class grain:
         """Creates a H5Py group for this grain.
            parent_group is the parent H5py Group
            group_name is the name of the H5py Group for this name
-           Very useful for saving lists of grains to an H5 file"""
+           Very useful for saving lists of grains to an H5 file.
+           Uses require_group to modify existing data if present"""
 
-        grain_group = parent_group.create_group(group_name)
+        grain_group = parent_group.require_group(group_name)
 
         # essential attributes:
         save_array(grain_group, 'ubi', self.ubi)
@@ -337,6 +338,8 @@ ARRATTRS = ["translation"]
 
 
 def write_grain_file_h5(filename, list_of_grains):
+    """Write list of grains to H5py file.
+       Will fail if the grain already exists"""
     # TODO: Use Silx Nexus IO instead?
 
     with h5py.File(filename, 'w-') as hout:
