@@ -513,7 +513,7 @@ def correct_recon_central_zingers(recon, radius=25):
     return recon_corrected
 
 def run_iradon(sino, angles, pad=20, y0=0,
-               workers=1, sample_mask=None,
+               workers=1, mask=None,
                apply_halfmask=False, mask_central_zingers=False, central_mask_radius=25):
     """Applies an iradon to a sinogram, with an optional pad
        Calculates scaled-up output size from pad value
@@ -531,13 +531,10 @@ def run_iradon(sino, angles, pad=20, y0=0,
     else:
         sino_to_recon = sino
 
-    # # pad the sample mask
-    # sample_mask_padded = np.pad(sample_mask, pad//2)
-
     # Perform iradon transform of grain sinogram, store result (reconstructed grain shape) in g.recon
     recon = iradon(sino_to_recon,
                    theta=angles,
-                   mask=sample_mask,
+                   mask=mask,
                    output_size=outsize,
                    projection_shifts=np.full(sino.shape, -y0),
                    filter_name='hamming',
@@ -550,7 +547,7 @@ def run_iradon(sino, angles, pad=20, y0=0,
     return recon
 
 
-def run_mlem(sino, sinoangles, mask=None, pad=20, y0=0, workers=1, niter=20, apply_halfmask=False,
+def run_mlem(sino, angles, mask=None, pad=20, y0=0, workers=1, niter=20, apply_halfmask=False,
              mask_central_zingers=False, central_mask_radius=25):
     """Applies an MLEM reconstruction to a sinogram, with an optional pad
        Calculates scaled-up output size from pad value
@@ -568,7 +565,7 @@ def run_mlem(sino, sinoangles, mask=None, pad=20, y0=0, workers=1, niter=20, app
 
     # Perform iradon transform of grain sinogram, store result (reconstructed grain shape) in g.recon
     recon = mlem(sino_to_recon,
-                 theta=sinoangles,
+                 theta=angles,
                  mask=mask,
                  workers=workers,
                  output_size=outsize,
