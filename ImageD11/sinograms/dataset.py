@@ -463,17 +463,20 @@ class DataSet:
             self._peaks_table = ImageD11.sinograms.properties.pks_table.load(self.pksfile)
         return self._peaks_table
 
-    def get_colfile_from_peaks_table(self):
-        """Converts a dictionary of peaks into an ImageD11 columnfile
-        adds on the geometric computations (tth, eta, gvector, etc)"""
+    def get_colfile_from_peaks_table(self, peaks_table=None):
+        """Converts a dictionary of peaks (peaks_table) into an ImageD11 columnfile
+        adds on the geometric computations (tth, eta, gvector, etc)
+        Uses self.peaks_table if no peaks_table provided"""
         # TODO add optional peaks mask
-        # TODO read only the bits of pkd that we need?
 
         # Define spatial correction
         spat = eiger_spatial(dxfile=self.e2dxfile, dyfile=self.e2dyfile)
 
+        if peaks_table is None:
+            peaks_table = self.peaks_table
+
         # Generate columnfile from peaks table
-        cf = colfile_from_dict(spat(self.peaks_table))
+        cf = colfile_from_dict(spat(peaks_table))
 
         # Update parameters for the columnfile
         cf.parameters.loadparameters(self.parfile)
