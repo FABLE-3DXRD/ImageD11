@@ -93,6 +93,8 @@ class DataSet:
         self.omega = None
         self.dty = None
 
+        self._peaks_table = None
+
     def update_paths(self):
         # paths for processed data
         # root of analysis for this dataset for this sample:
@@ -455,6 +457,12 @@ class DataSet:
             raise ValueError("I already have a peaks table loaded!")
         self.peaks_table = ImageD11.sinograms.properties.pks_table.load(self.pksfile)
 
+    @property
+    def peaks_table(self):
+        if self._peaks_table is None:
+            self._peaks_table = ImageD11.sinograms.properties.pks_table.load(self.pksfile)
+        return self._peaks_table
+
     def get_colfile_from_peaks_table(self):
         """Converts a dictionary of peaks into an ImageD11 columnfile
         adds on the geometric computations (tth, eta, gvector, etc)"""
@@ -464,11 +472,10 @@ class DataSet:
         # Define spatial correction
         spat = eiger_spatial(dxfile=self.e2dxfile, dyfile=self.e2dyfile)
 
-        # Load the peaks table if not already loaded:
-        if not hasattr(self, "peaks_table"):
-            self.import_peaks_table()
-
+        # Generate columnfile from peaks table
         cf = colfile_from_dict(spat(self.peaks_table))
+
+        # Update parameters for the columnfile
         cf.parameters.loadparameters(self.parfile)
         cf.updateGeometry()
         return cf
