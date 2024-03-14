@@ -39,10 +39,10 @@ class GrainSinogram:
         """Filters the 2D peaks assigned to the grain based on the HKL tolerance"""
 
         # Filter the peaks table to the peaks for this grain only
-        p2d = {p: self.ds.peaks_table[p][peak_indices_2d] for p in self.ds.peaks_table}
+        p2d = {p: self.ds.pk2d[p][peak_indices_2d] for p in self.ds.pk2d}
 
         # Make a spatially corrected columnfile from the filtered peaks table
-        flt = self.ds.get_colfile_from_peaks_table(peaks_table=p2d)
+        flt = self.ds.get_colfile_from_peaks_dict(peaks_dict=p2d)
 
         hkl_real = np.dot(self.grain.ubi, (flt.gx, flt.gy, flt.gz))  # calculate hkl of all assigned peaks
         hkl_int = np.round(hkl_real).astype(int)  # round to nearest integer
@@ -54,15 +54,16 @@ class GrainSinogram:
 
         self.etasigns_2d_strong = np.sign(flt.eta)
         self.hkl_2d_strong = hkl_int  # integer hkl of assigned peaks after hkltol filtering
+        self.flt = flt
 
-    def build_sinogram(self, flt):
+    def build_sinogram(self):
         """
         Computes sinogram from peaks data
         Flt is the filtered assigned 2D peaks for this grain
 
         """
         NY = len(self.ds.ybincens)  # number of y translations
-        iy = np.round((flt.dty - self.ds.ybincens[0]) / (self.ds.ybincens[1] - self.ds.ybincens[0])).astype(
+        iy = np.round((self.flt.dty - self.ds.ybincens[0]) / (self.ds.ybincens[1] - self.ds.ybincens[0])).astype(
             int)  # flt column for y translation index
 
         # The problem is to assign each spot to a place in the sinogram
@@ -86,10 +87,10 @@ class GrainSinogram:
         angs = np.zeros((npks, NY), 'f')
         adr = destRow * NY + iy
         # Just accumulate
-        sig = flt.sum_intensity
+        sig = self.flt.sum_intensity
         ImageD11.cImageD11.put_incr64(sino, adr, sig)
         ImageD11.cImageD11.put_incr64(hits, adr, np.ones(len(de), dtype='f'))
-        ImageD11.cImageD11.put_incr64(angs, adr, flt.omega)
+        ImageD11.cImageD11.put_incr64(angs, adr, self.flt.omega)
 
         sinoangles = angs.sum(axis=1) / hits.sum(axis=1)
         # Normalise:
@@ -97,11 +98,15 @@ class GrainSinogram:
         # Sort (cosmetic):
         order = np.lexsort((np.arange(npks), sinoangles))
         self.sinoangles = sinoangles[order]
-        self.ssino = sino[order].T
+        self.ssino = self.sino[order].T
 
     def correct_halfmask(self):
         """Applies halfmask correction to sinogram"""
         self.ssino = ImageD11.sinograms.roi_iradon.apply_halfmask_to_sino(self.ssino)
+
+    def correct_ring_current(self):
+        """Corrects each row of the sinogram to the ring current of the corresponding scan"""
+        self.ssino = self.ssino / self.ds.ring_currents_per_scan_scaled[:, None]
 
     def update_recon_parameters(self, pad, y0, mask):
         """Update all reconstruction parameters in one go"""
@@ -110,6 +115,7 @@ class GrainSinogram:
         self.recon_mask = mask
 
     def recon(self, method="iradon", workers=1):
+        """Performs reconstruction given reconstruction method"""
         if method not in ["iradon", "mlem"]:
             raise ValueError("Unsupported method!")
 
@@ -195,7 +201,7 @@ class GrainSinogram:
             for recon_attr in group["recons"].keys():
                 recon_var = group["recons"].get(recon_attr)[:]
                 grainsino_obj.recons[recon_attr] = recon_var
-        
+
         return grainsino_obj
 
 
