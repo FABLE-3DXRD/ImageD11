@@ -328,6 +328,38 @@ class DataSet:
         self.obinedges = np.linspace(self.omin - self.ostep / 2, self.omax + self.ostep / 2, nomega + 1)
         self.ybinedges = np.linspace(self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1)
 
+    def correct_bins_for_half_scan(self):
+        """Pads the dataset to become bigger and symmetric"""
+        # TODO: We need to keep track of which bins are "real" and measured and which aren't
+        c0 = 0
+        # check / fix the centre of rotation
+        # get value of bin closest to c0
+        central_bin = np.argmin(abs(self.ybincens - c0))
+        # get centre dty value of this vin
+        central_value = self.ybincens[central_bin]
+
+        lo_side = self.ybincens[:central_bin + 1]
+        hi_side = self.ybincens[central_bin:]
+
+        # get the hi/lo side which is widest
+        # i.e if you go from -130 to +20, it selects -130
+        yrange = max(hi_side[-1] - hi_side[0], lo_side[-1] - lo_side[0])
+
+        # round to nearest multiple of ds.ystep
+        yrange = np.ceil(yrange / self.ystep) * self.ystep
+
+        # make new ymin and ymax that are symmetric around central_value
+        self.ymin = central_value - yrange
+        self.ymax = central_value + yrange
+
+        new_yrange = self.ymax - self.ymin
+
+        # determine new number of y bins
+        ny = int(new_yrange // self.ystep) + 1
+
+        self.ybincens = np.linspace(self.ymin, self.ymax, ny)
+        self.ybinedges = np.linspace(self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1)
+
     def guess_detector(self):
         '''Guess which detector we are using from the masterfile'''
 

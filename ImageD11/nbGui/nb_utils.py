@@ -556,49 +556,6 @@ def save_ubi_map(ds, ubi_map, eps_map, misorientation_map, ipf_x_col_map, ipf_y_
         ipfzdset.attrs['CLASS'] = 'IMAGE'
 
 
-# Other
-
-# GOTO Move to DataSet
-def correct_half_scan(ds):
-    """Pads the dataset to become bigger and symmetric"""
-    # NOTE: We need to keep track of which bins are "real" and measured and which aren't
-    # Sinomask
-    c0 = 0
-    # check / fix the centre of rotation
-    # get value of bin closest to c0
-    central_bin = np.argmin(abs(ds.ybincens - c0))
-    # get centre dty value of this vin
-    central_value = ds.ybincens[central_bin]
-
-    lo_side = ds.ybincens[:central_bin + 1]
-    hi_side = ds.ybincens[central_bin:]
-
-    # get the hi/lo side which is widest
-    # i.e if you go from -130 to +20, it selects -130
-    yrange = max(hi_side[-1] - hi_side[0], lo_side[-1] - lo_side[0])
-
-    # round to nearest multiple of ds.ystep
-    yrange = np.ceil(yrange / ds.ystep) * ds.ystep
-
-    # make new ymin and ymax that are symmetric around central_value
-    ds.ymin = central_value - yrange
-    ds.ymax = central_value + yrange
-
-    new_yrange = ds.ymax - ds.ymin
-
-    # determine new number of y bins
-    ny = int(new_yrange // ds.ystep) + 1
-
-    ds.ybincens = np.linspace(ds.ymin, ds.ymax, ny)
-    ds.ybinedges = np.linspace(ds.ymin - ds.ystep / 2, ds.ymax + ds.ystep / 2, ny + 1)
-
-    print(len(ds.ybincens))
-    print(ds.ybincens)
-    print(ds.ystep)
-    print(yrange)
-    print(ny)
-
-
 ### IPF Colour stuff
 # GOTO New file, Orix interface, taking a grain instance (or a U) as an argument
 # Check sym_u inside ImageD11
