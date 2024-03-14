@@ -886,54 +886,11 @@ def map_grain_from_peaks(g, flt, ds):
 
 # GOTO apply_halfmask function to existing sinogram
 # roi_iradon
-def run_iradon_id11(sino, angles, pad=20, y0=0, workers=1, sample_mask=None, apply_halfmask=False,
-                    mask_central_zingers=False):
-    outsize = sino.shape[0] + pad
-
-    if apply_halfmask:
-        halfmask = np.zeros_like(sino)
-
-        halfmask[:len(halfmask) // 2 - 1, :] = 1
-        halfmask[len(halfmask) // 2 - 1, :] = 0.5
-
-        sino_to_recon = sino * halfmask
-    else:
-        sino_to_recon = sino
-
-    # # pad the sample mask
-    # sample_mask_padded = np.pad(sample_mask, pad//2)
-
-    # Perform iradon transform of grain sinogram, store result (reconstructed grain shape) in g.recon
-    recon = ImageD11.sinograms.roi_iradon.iradon(sino_to_recon,
-                                                 theta=angles,
-                                                 mask=sample_mask,
-                                                 output_size=outsize,
-                                                 projection_shifts=np.full(sino.shape, -y0),
-                                                 filter_name='hamming',
-                                                 interpolation='linear',
-                                                 workers=workers)
-
-    if mask_central_zingers:
-        grs = recon.shape[0]
-        xpr, ypr = -grs // 2 + np.mgrid[:grs, :grs]
-        inner_mask_radius = 25
-        outer_mask_radius = inner_mask_radius + 2
-
-        inner_circle_mask = (xpr ** 2 + ypr ** 2) < inner_mask_radius ** 2
-        outer_circle_mask = (xpr ** 2 + ypr ** 2) < outer_mask_radius ** 2
-
-        mask_ring = inner_circle_mask & outer_circle_mask
-        # we now have a mask to apply
-        fill_value = np.median(recon[mask_ring])
-        recon[inner_circle_mask] = fill_value
-
-    return recon
-
 
 def iradon_grain(grain, pad=20, y0=0, workers=1, sample_mask=None, apply_halfmask=False, mask_central_zingers=False):
     sino = grain.ssino
     angles = grain.sinoangles
-    recon = run_iradon_id11(sino, angles, pad, y0, workers, sample_mask, apply_halfmask, mask_central_zingers)
+    recon = ImageD11.sinograms.roi_iradon.run_iradon(sino, angles, pad, y0, workers, sample_mask, apply_halfmask, mask_central_zingers)
     grain.recon = recon
 
     return grain
