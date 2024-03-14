@@ -360,6 +360,19 @@ class DataSet:
         self.ybincens = np.linspace(self.ymin, self.ymax, ny)
         self.ybinedges = np.linspace(self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1)
 
+    def get_ring_current_per_scan(self):
+        """Gets the ring current for each scan (i.e rotation/y-step)
+           Stores it inside self.ring_currents_per_scan and a scaled version inside self.ring_currents_per_scan_scaled"""
+        if not hasattr(self, "ring_currents_per_scan"):
+            ring_currents = []
+            with h5py.File(self.masterfile, "r") as h5in:
+                for scan in self.scans:
+                    ring_current = float(h5in[scan]["instrument/machine/current"][()])
+                    ring_currents.append(ring_current)
+
+            self.ring_currents_per_scan = np.array(ring_currents)
+            self.ring_currents_per_scan_scaled = np.array(ring_currents / np.max(ring_currents))
+
     def guess_detector(self):
         '''Guess which detector we are using from the masterfile'''
 
