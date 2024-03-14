@@ -133,3 +133,83 @@ class GrainSinogram:
     def mask_central_zingers(self, method="iradon", radius=25):
         self.recons[method] = ImageD11.sinograms.roi_iradon.correct_recon_central_zingers(self.recons[method],
                                                                                           radius=radius)
+
+    def to_h5py_group(self, parent_group, group_name):
+        """Creates a H5Py group for this GrainSinogram.
+           parent_group is the parent H5py Group
+           group_name is the name of the H5py Group for this name
+           Very useful for saving lists of GrainSinograms to an H5 file"""
+
+        # create a group for this specific GrainSinogram
+        grain_group = parent_group.require_group(group_name)
+
+        # save peak information
+        peak_info_group = grain_group.require_group("peak_info")
+        for peak_info_attr in ["etasigns_2d_strong", "hkl_2d_strong"]:
+            peak_info_var = getattr(self, peak_info_attr)
+            if peak_info_var is not None:
+                save_array(peak_info_group, peak_info_attr, peak_info_var)
+
+        # save sinograms
+        sinogram_group = grain_group.require_group("sinograms")
+
+        for sino_attr in ["sino", "ssino", "sinoangles"]:
+            sino_var = getattr(self, sino_attr)
+            if sino_var is not None:
+                save_array(sinogram_group, sino_attr, sino_var)
+
+        # save reconstruction parameters
+
+        recon_par_group = grain_group.require_group("recon_parameters")
+
+        for recon_par_attr in ["recon_mask", "recon_pad", "recon_y0"]:
+            recon_par_var = getattr(self, recon_par_attr)
+            if recon_par_var is not None:
+                recon_par_group[recon_par_attr] = recon_par_var
+
+        # save reconstructions
+
+        recon_group = grain_group.require_group("recons")
+
+        for recon_attr in self.recons.keys():
+            save_array(recon_group, recon_attr, self.recons[recon_attr])
+
+        return grain_group
+
+    @classmethod
+    def from_h5py_group(cls, group, ds, grain):
+        """Creates a GrainSinogram object from an h5py group, dataset and grain object"""
+        grainsino_obj = GrainSinogram(grain_obj=grain, dataset=ds)
+
+        if "peak_info" in group.keys():
+            for peak_info_attr in ["etasigns_2d_strong", "hkl_2d_strong"]:
+                peak_info_var = group["peak_info"].get(peak_info_attr)[:]
+                setattr(grainsino_obj, peak_info_attr, peak_info_var)
+
+        if "recon_parameters" in group.keys():
+            for recon_par_attr in ["recon_mask", "recon_pad", "recon_y0"]:
+                recon_par_var = group["recon_parameters"].get(recon_par_attr)[()]
+                setattr(grainsino_obj, recon_par_attr, recon_par_var)
+
+        if "recons" in group.keys():
+            for recon_attr in group["recons"].keys():
+                recon_var = group["recons"].get(recon_attr)[:]
+                grainsino_obj.recons[recon_attr] = recon_var
+        
+        return grainsino_obj
+
+
+# TODO: Use Silx Nexus IO instead?
+# This is a temporary sensible middle ground!
+def save_array(grp, name, ary):
+    # TODO: Move this helper function somewhere else
+    cmp = {'compression': 'gzip',
+           'compression_opts': 2,
+           'shuffle': True}
+
+    hds = grp.require_dataset(name,
+                              shape=ary.shape,
+                              dtype=ary.dtype,
+                              **cmp)
+    hds[:] = ary
+    return hds
