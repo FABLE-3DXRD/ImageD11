@@ -4,6 +4,7 @@ import os, h5py, numpy as np
 import fast_histogram
 import logging
 
+import ImageD11.grain
 import ImageD11.sinograms.properties
 from ImageD11.blobcorrector import eiger_spatial
 from ImageD11.columnfile import colfile_from_dict
@@ -61,6 +62,7 @@ class DataSet:
         """ The things we need to know to process data """
 
         # defaults to eiger and nanoscope station, can be overwritten with init parameters detector, omegamotor and dtymotor
+
         self.detector = detector  # frelon3
         self.limapath = None  # where is the data in the Lima files
 
@@ -94,6 +96,8 @@ class DataSet:
         self.dty = None
 
         self._peaks_table = None
+        self._pk2d = None
+        self._pk4d = None
 
     def update_paths(self):
         # paths for processed data
@@ -452,36 +456,64 @@ class DataSet:
                                                weights=wt, bins=bins, range=rng)
         return histo
 
-    def import_peaks_table(self):
-        if hasattr(self, "peaks_table"):
-            raise ValueError("I already have a peaks table loaded!")
-        self.peaks_table = ImageD11.sinograms.properties.pks_table.load(self.pksfile)
-
     @property
     def peaks_table(self):
         if self._peaks_table is None:
             self._peaks_table = ImageD11.sinograms.properties.pks_table.load(self.pksfile)
         return self._peaks_table
 
-    def get_colfile_from_peaks_table(self, peaks_table=None):
-        """Converts a dictionary of peaks (peaks_table) into an ImageD11 columnfile
+    @property
+    def pk2d(self):
+        if self._pk2d is None:
+            self._pk2d = self.peaks_table.pk2d(self.omega, self.dty)
+        return self._pk2d
+
+    @property
+    def pk4d(self):
+        if self._pk4d is None:
+            self._pk4d = self.peaks_table.pk2dmerge(self.omega, self.dty)
+        return self._pk4d
+
+    def get_colfile_from_peaks_dict(self, peaks_dict=None):
+        """Converts a dictionary of peaks (peaks_dict) into an ImageD11 columnfile
         adds on the geometric computations (tth, eta, gvector, etc)
-        Uses self.peaks_table if no peaks_table provided"""
+        Uses self.pk2d if no peaks_dict provided"""
         # TODO add optional peaks mask
 
         # Define spatial correction
         spat = eiger_spatial(dxfile=self.e2dxfile, dyfile=self.e2dyfile)
 
-        if peaks_table is None:
-            peaks_table = self.peaks_table
+        if peaks_dict is None:
+            peaks_dict = self.pk2d
 
         # Generate columnfile from peaks table
-        cf = colfile_from_dict(spat(peaks_table))
+        cf = colfile_from_dict(spat(peaks_dict))
 
         # Update parameters for the columnfile
         cf.parameters.loadparameters(self.parfile)
         cf.updateGeometry()
         return cf
+
+    def get_cf_2d(self):
+        return self.get_colfile_from_peaks_dict()
+
+    def get_cf_4d(self):
+        return self.get_colfile_from_peaks_dict(peaks_dict=self.pk4d)
+
+    def get_cf_2d_from_disk(self):
+        cf_2d = ImageD11.columnfile.columnfile(self.col2dfile)
+        return cf_2d
+
+    def get_cf_4d_from_disk(self):
+        cf_4d = ImageD11.columnfile.columnfile(self.col4dfile)
+        return cf_4d
+
+    def get_grains_from_disk(self):
+        grains = ImageD11.grain.read_grain_file_h5(self.grainsfile)
+        return grains
+
+    def save_grains_to_disk(self, grains):
+        ImageD11.grain.write_grain_file_h5(self.grainsfile, grains)
 
     def import_nnz(self):
         """ Read the nnz arrays from the scans """
