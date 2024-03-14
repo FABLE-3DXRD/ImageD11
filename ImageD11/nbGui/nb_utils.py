@@ -677,7 +677,7 @@ def correct_sinogram_rows_with_ring_current(grain, ds):
 
 
 ### Peak manipulation
-# GOTO
+# GOTO some sort of Numba zone or C code?
 
 @numba.njit(parallel=True)
 def pmax(ary):
@@ -811,24 +811,11 @@ def get_2d_peaks_from_4d_peaks(ds, cf):
     return gord, inds, p2d
 
 
-# GOTO dataset method
-# add optional peaks mask
-# read only the bits of pkd that we need?
-def tocolf(pkd, ds):
-    """ Converts a dictionary of peaks into an ImageD11 columnfile
-    adds on the geometric computations (tth, eta, gvector, etc) """
-    spat = eiger_spatial(dxfile=ds.e2dxfile, dyfile=ds.e2dyfile)
-    cf = ImageD11.columnfile.colfile_from_dict(spat(pkd))
-    cf.parameters.loadparameters(ds.parfile)
-    cf.updateGeometry()
-    return cf
-
-
 # hkl assignment needs grains2peaks class
 # GOTO: part of a little collection of functions that put stuff on the Grain object
 def do_sinos(g, p2d, ds, hkltol=0.25):
     # g.peaks_2d are 2d peaks that were merged into the 4d peaks that were assigned to this grain (obviously!)
-    flt = tocolf({p: p2d[p][g.peaks_2d] for p in p2d}, ds)  # convert it to a columnfile and spatially correct
+    flt = ds.get_colfile_from_peaks_table({p: p2d[p][g.peaks_2d] for p in p2d}, ds)  # convert it to a columnfile and spatially correct
 
     hkl_real = np.dot(g.ubi, (flt.gx, flt.gy, flt.gz))  # calculate hkl of all assigned peaks
     hkl_int = np.round(hkl_real).astype(int)  # round to nearest integer

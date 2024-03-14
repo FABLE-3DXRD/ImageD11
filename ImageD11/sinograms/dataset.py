@@ -4,6 +4,10 @@ import os, h5py, numpy as np
 import fast_histogram
 import logging
 
+import ImageD11.sinograms.properties
+from ImageD11.blobcorrector import eiger_spatial
+from ImageD11.columnfile import colfile_from_dict
+
 """
 TO DO: 
 
@@ -445,6 +449,29 @@ class DataSet:
             histo = fast_histogram.histogram2d(omega.ravel(), dty.ravel(),
                                                weights=wt, bins=bins, range=rng)
         return histo
+
+    def import_peaks_table(self):
+        if hasattr(self, "peaks_table"):
+            raise ValueError("I already have a peaks table loaded!")
+        self.peaks_table = ImageD11.sinograms.properties.pks_table.load(self.pksfile)
+
+    def get_colfile_from_peaks_table(self):
+        """Converts a dictionary of peaks into an ImageD11 columnfile
+        adds on the geometric computations (tth, eta, gvector, etc)"""
+        # TODO add optional peaks mask
+        # TODO read only the bits of pkd that we need?
+
+        # Define spatial correction
+        spat = eiger_spatial(dxfile=self.e2dxfile, dyfile=self.e2dyfile)
+
+        # Load the peaks table if not already loaded:
+        if not hasattr(self, "peaks_table"):
+            self.import_peaks_table()
+
+        cf = colfile_from_dict(spat(self.peaks_table))
+        cf.parameters.loadparameters(self.parfile)
+        cf.updateGeometry()
+        return cf
 
     def import_nnz(self):
         """ Read the nnz arrays from the scans """
