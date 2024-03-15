@@ -629,15 +629,25 @@ class Ctransform(object):
         self.rmat = np.dot(self.dmat, self.fmat).ravel()
         self.cen = np.array( ( p["z_center"], p["y_center"], p["z_size"], p["y_size"] ))
                                 
-    def sf2xyz(self, sc, fc, tx=0, ty=0, tz=0, out=None):
+    def sf2xyz(self, sc, fc, out=None):
+        """
+        computes the xlab, ylab, zlab co-ordinates of spots on the detector
+        input: sc, fc = corrected spot positions, shape(n)
+        output: xlylzl array shape (n,3)
+        """
         assert len(sc) == len(fc)
         if out is None:
             out = np.empty( (len(sc),3), float)
-        t = np.array( (tx,ty,tz) )
+        # Not used! t = np.array( (tx,ty,tz) )
         cImageD11.compute_xlylzl( sc, fc, self.cen, self.rmat, self.distance_vec, out)
         return out
     
     def xyz2gv(self, xyz, omega, tx=0, ty=0, tz=0, out=None ):
+        """
+        computes g vectors from xlylzl co-ordinates on the detector
+        input:  xlylzl array shape (n,3)
+        output: gve shape (n,3)
+        """
         assert len(omega) == len(xyz)
         if out is None:
             out = np.empty( (len(xyz),3), float)
@@ -652,9 +662,35 @@ class Ctransform(object):
         return out
     
     def sf2gv( self, sc, fc, omega, tx=0, ty=0, tz=0, out=None ):
-        xyz = self.sf2xyz( sc, fc, tx, ty, tz )
+        """
+        computes g vectors in the sample frame
+        input sc, fc, omega = spot coordinates, shape(n)
+        tx, ty, tz = scalar grain centre of mass
+        returns: gve shape(n,3)
+        """
+        xyz = self.sf2xyz( sc, fc )
         return self.xyz2gv( xyz, omega, tx, ty, tz, out )
-                          
+
+    def xyz2geometry( self, xyz, omega, tx=0, ty=0, tz=0, out=None):
+        """
+        Takes x,y,z laborator spot positions.
+        Computes everything else needed for updateGeometry in columnfile
+        """
+        assert len(omega) == len(xyz)
+        assert xyz.shape[1] == 3
+        if out is None:
+            out = np.empty( (len(xyz), 6), float )
+        # (xlylzl,omega,omegasign,wvln,wedge,chi,t,out,ng)
+        # compute_geometry(xlylzl,omega,omegasign,wvln,wedge,chi,t,out,ng)
+        cImageD11.compute_geometry( xyz,
+                                   omega,
+                                   self.pars['omegasign'],
+                                   self.pars['wavelength'],
+                                   self.pars['wedge'],
+                                   self.pars['chi'],
+                                   np.array((tx, ty, tz)),
+                                   out )
+        return out
         
 class PixelLUT( object ):
 
