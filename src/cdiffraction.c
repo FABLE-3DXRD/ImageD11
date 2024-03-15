@@ -30,7 +30,7 @@
 F2PY_WRAPPER_END */
 void compute_geometry(double xlylzl[][3], double omega[], double omegasign,
                       double wvln, double wedge, double chi, double t[3],
-                      double out[][6], int ng) {
+                      double out[][6], int n) {
     double sc, cc, sw, cw, wmat[9], cmat[9], mat[9], u[3], d[3], v[3];
     double modyz, o[3], co, so, ds, k[3];
     int i;
