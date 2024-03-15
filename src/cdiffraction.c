@@ -11,6 +11,92 @@
 #define NOISY 0
 
 /* F2PY_WRAPPER_START
+    subroutine compute_geometry(xlylzl,omega,omegasign,wvln,wedge,chi,t,out,ng)
+!DOC compute_geometry is for the "updateGeometry" method of columnfiles
+!DOC from xlylzl it will compute tth, eta, ds, gve into out
+!DOC in the laboratory in xlylzl[npks], the omega rotation[npks], and
+!DOC the rest of the parameters (wedge,wvln,chi,t[3] and omegasign)
+!DOC out should contain : (tth, eta, ds, gx, gy, gz)
+        intent(c) compute_geometry
+        intent(c)
+        integer, intent(c,hide), depend( xlylzl ) :: ng
+        double precision, intent(in):: xlylzl(ng,3)
+        double precision, intent(in):: omega(ng)
+        double precision, intent(in):: omegasign, wvln, wedge, chi
+        double precision, intent(in):: t(3)
+        double precision, intent(inout):: out(ng,6)
+        threadsafe
+    end subroutine compute_geometry
+F2PY_WRAPPER_END */
+void compute_geometry(double xlylzl[][3], double omega[], double omegasign,
+                      double wvln, double wedge, double chi, double t[3],
+                      double out[][6], int n) {
+    double sc, cc, sw, cw, wmat[9], cmat[9], mat[9], u[3], d[3], v[3];
+    double modyz, o[3], co, so, ds, k[3];
+    int i;
+    // ! Fill in rotation matrix of wedge, chi
+    sw = sin(wedge * RAD);
+    cw = cos(wedge * RAD);
+    wmat[0] = cw;
+    wmat[1] = 0.0;
+    wmat[2] = -sw;
+    wmat[3] = 0.;
+    wmat[4] = 1.0;
+    wmat[5] = 0.;
+    wmat[6] = sw;
+    wmat[7] = 0.0;
+    wmat[8] = cw;
+    sc = sin(chi * RAD);
+    cc = cos(chi * RAD);
+    cmat[0] = 1.;
+    cmat[1] = 0.0;
+    cmat[2] = 0.;
+    cmat[3] = 0.;
+    cmat[4] = cc;
+    cmat[5] = -sc;
+    cmat[6] = 0.;
+    cmat[7] = sc;
+    cmat[8] = cc;
+    // Combined mat = chi.wedge
+    matmat(cmat, wmat, mat);
+#pragma omp parallel for private(so, co, u, o, d, modyz, ds, v, k)
+    for (i = 0; i < n; i++) {
+        // ! Compute translation + rotation for grain origin
+        so = sin(RAD * omega[i] * omegasign);
+        co = cos(RAD * omega[i] * omegasign);
+        // Omega matrix vector on translation
+        u[0] = co * t[0] - so * t[1];
+        u[1] = so * t[0] + co * t[1];
+        u[2] = t[2];
+        // o=grain origin
+        matvec(mat, u, o);
+        // d is difference vector
+        vec3sub(xlylzl[i], o, d);
+        modyz = 1. / sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+        //     ! k-vector
+        ds = 1. / wvln;
+        k[0] = ds * (d[0] * modyz - 1.);
+        k[1] = ds * d[1] * modyz;
+        k[2] = ds * d[2] * modyz;
+        // two theta
+        out[i][0] = DEG * atan2( sqrt( k[1]*k[1] + k[2]*k[2] ), k[0] );
+        // eta
+        out[i][1] = DEG * atan2( -k[1], k[2] );
+        // dstar
+        out[i][2] = sqrt( k[0]*k[0] +  k[1]*k[1] +  k[2]*k[2] );
+        // g-vector            
+        matTvec(mat, k, v);
+        // Forwards rotation with omega finally
+        out[i][3] = co * v[0] + so * v[1];
+        out[i][4] = -so * v[0] + co * v[1];
+        out[i][5] = v[2];
+    } //  enddo
+} // end subroutine compute_geometry
+
+
+
+
+/* F2PY_WRAPPER_START
     subroutine compute_gv(xlylzl,omega,omegasign,wvln,wedge,chi,t,gv,ng)
 !DOC compute_gv computes scattering vectors given thr positions of the spot
 !DOC in the laboratory in xlylzl[npks], the omega rotation[npks], and
