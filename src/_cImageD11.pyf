@@ -66,6 +66,23 @@ PyDict_SetItemString(d,str(NPROPERTY2D),PyInt_FromLong(NPROPERTY2D));
 end interface
 
 interface
+    subroutine compute_geometry(xlylzl,omega,omegasign,wvln,wedge,chi,t,out,ng)
+!DOC compute_geometry is for the "updateGeometry" method of columnfiles
+!DOC from xlylzl it will compute tth, eta, ds, gve into out
+!DOC in the laboratory in xlylzl[npks], the omega rotation[npks], and
+!DOC the rest of the parameters (wedge,wvln,chi,t[3] and omegasign)
+!DOC out should contain : (tth, eta, ds, gx, gy, gz)
+        intent(c) compute_geometry
+        intent(c)
+        integer, intent(c,hide), depend( xlylzl ) :: ng
+        double precision, intent(in):: xlylzl(ng,3)
+        double precision, intent(in):: omega(ng)
+        double precision, intent(in):: omegasign, wvln, wedge, chi
+        double precision, intent(in):: t(3)
+        double precision, intent(inout):: out(ng,6)
+        threadsafe
+    end subroutine compute_geometry
+
     subroutine compute_gv(xlylzl,omega,omegasign,wvln,wedge,chi,t,gv,ng)
 !DOC compute_gv computes scattering vectors given thr positions of the spot
 !DOC in the laboratory in xlylzl[npks], the omega rotation[npks], and

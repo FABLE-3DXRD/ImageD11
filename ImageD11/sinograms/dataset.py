@@ -4,6 +4,11 @@ import os, h5py, numpy as np
 import fast_histogram
 import logging
 
+import ImageD11.grain
+import ImageD11.sinograms.properties
+from ImageD11.blobcorrector import eiger_spatial
+from ImageD11.columnfile import colfile_from_dict
+
 """
 TO DO: 
 
@@ -57,6 +62,7 @@ class DataSet:
         """ The things we need to know to process data """
 
         # defaults to eiger and nanoscope station, can be overwritten with init parameters detector, omegamotor and dtymotor
+
         self.detector = detector  # frelon3
         self.limapath = None  # where is the data in the Lima files
 
@@ -88,6 +94,10 @@ class DataSet:
         self.shape = (0, 0)
         self.omega = None
         self.dty = None
+
+        self._peaks_table = None
+        self._pk2d = None
+        self._pk4d = None
 
     def update_paths(self):
         # paths for processed data
@@ -328,6 +338,51 @@ class DataSet:
         self.obinedges = np.linspace(self.omin - self.ostep / 2, self.omax + self.ostep / 2, nomega + 1)
         self.ybinedges = np.linspace(self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1)
 
+    def correct_bins_for_half_scan(self):
+        """Pads the dataset to become bigger and symmetric"""
+        # TODO: We need to keep track of which bins are "real" and measured and which aren't
+        c0 = 0
+        # check / fix the centre of rotation
+        # get value of bin closest to c0
+        central_bin = np.argmin(abs(self.ybincens - c0))
+        # get centre dty value of this vin
+        central_value = self.ybincens[central_bin]
+
+        lo_side = self.ybincens[:central_bin + 1]
+        hi_side = self.ybincens[central_bin:]
+
+        # get the hi/lo side which is widest
+        # i.e if you go from -130 to +20, it selects -130
+        yrange = max(hi_side[-1] - hi_side[0], lo_side[-1] - lo_side[0])
+
+        # round to nearest multiple of ds.ystep
+        yrange = np.ceil(yrange / self.ystep) * self.ystep
+
+        # make new ymin and ymax that are symmetric around central_value
+        self.ymin = central_value - yrange
+        self.ymax = central_value + yrange
+
+        new_yrange = self.ymax - self.ymin
+
+        # determine new number of y bins
+        ny = int(new_yrange // self.ystep) + 1
+
+        self.ybincens = np.linspace(self.ymin, self.ymax, ny)
+        self.ybinedges = np.linspace(self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1)
+
+    def get_ring_current_per_scan(self):
+        """Gets the ring current for each scan (i.e rotation/y-step)
+           Stores it inside self.ring_currents_per_scan and a scaled version inside self.ring_currents_per_scan_scaled"""
+        if not hasattr(self, "ring_currents_per_scan"):
+            ring_currents = []
+            with h5py.File(self.masterfile, "r") as h5in:
+                for scan in self.scans:
+                    ring_current = float(h5in[scan]["instrument/machine/current"][()])
+                    ring_currents.append(ring_current)
+
+            self.ring_currents_per_scan = np.array(ring_currents)
+            self.ring_currents_per_scan_scaled = np.array(ring_currents / np.max(ring_currents))
+
     def guess_detector(self):
         '''Guess which detector we are using from the masterfile'''
 
@@ -400,6 +455,65 @@ class DataSet:
             histo = fast_histogram.histogram2d(omega.ravel(), dty.ravel(),
                                                weights=wt, bins=bins, range=rng)
         return histo
+
+    @property
+    def peaks_table(self):
+        if self._peaks_table is None:
+            self._peaks_table = ImageD11.sinograms.properties.pks_table.load(self.pksfile)
+        return self._peaks_table
+
+    @property
+    def pk2d(self):
+        if self._pk2d is None:
+            self._pk2d = self.peaks_table.pk2d(self.omega, self.dty)
+        return self._pk2d
+
+    @property
+    def pk4d(self):
+        if self._pk4d is None:
+            self._pk4d = self.peaks_table.pk2dmerge(self.omega, self.dty)
+        return self._pk4d
+
+    def get_colfile_from_peaks_dict(self, peaks_dict=None):
+        """Converts a dictionary of peaks (peaks_dict) into an ImageD11 columnfile
+        adds on the geometric computations (tth, eta, gvector, etc)
+        Uses self.pk2d if no peaks_dict provided"""
+        # TODO add optional peaks mask
+
+        # Define spatial correction
+        spat = eiger_spatial(dxfile=self.e2dxfile, dyfile=self.e2dyfile)
+
+        if peaks_dict is None:
+            peaks_dict = self.pk2d
+
+        # Generate columnfile from peaks table
+        cf = colfile_from_dict(spat(peaks_dict))
+
+        # Update parameters for the columnfile
+        cf.parameters.loadparameters(self.parfile)
+        cf.updateGeometry()
+        return cf
+
+    def get_cf_2d(self):
+        return self.get_colfile_from_peaks_dict()
+
+    def get_cf_4d(self):
+        return self.get_colfile_from_peaks_dict(peaks_dict=self.pk4d)
+
+    def get_cf_2d_from_disk(self):
+        cf_2d = ImageD11.columnfile.columnfile(self.col2dfile)
+        return cf_2d
+
+    def get_cf_4d_from_disk(self):
+        cf_4d = ImageD11.columnfile.columnfile(self.col4dfile)
+        return cf_4d
+
+    def get_grains_from_disk(self):
+        grains = ImageD11.grain.read_grain_file_h5(self.grainsfile)
+        return grains
+
+    def save_grains_to_disk(self, grains):
+        ImageD11.grain.write_grain_file_h5(self.grainsfile, grains)
 
     def import_nnz(self):
         """ Read the nnz arrays from the scans """

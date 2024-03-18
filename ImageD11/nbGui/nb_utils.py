@@ -7,7 +7,6 @@ import numba
 import numpy as np
 from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
-from tqdm.contrib.concurrent import process_map
 from scipy.optimize import curve_fit
 from skimage.feature import blob_log
 
@@ -19,8 +18,6 @@ import ImageD11.refinegrains
 import ImageD11.unitcell
 import ImageD11.sinograms.roi_iradon
 import ImageD11.sinograms.properties
-
-from ImageD11.blobcorrector import eiger_spatial
 
 
 ### General utilities (for all notebooks)
@@ -232,310 +229,311 @@ def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list)
 # Make higher level HDF5/Nexus Generic IO class
 # Check if Silx already has this
 # Make dataset and GrainsIO both inherit from this
-def save_3dxrd_grains(grains, ds):
-    with h5py.File(ds.grainsfile, 'w') as hout:
-        grn = hout.create_group('grains')
-        for g in tqdm(grains):
-            gg = grn.create_group(str(g.gid))
-            save_array(gg, 'peaks_3d_indexing', g.peaks_3d).attrs[
-                'description'] = "Strong 3D peaks that were assigned to this grain during indexing"
-            gg.attrs.update({'ubi': g.ubi,
-                             'translation': g.translation})
 
-
-def read_3dxrd_grains(ds):
-    with h5py.File(ds.grainsfile, 'r') as hin:
-        grains_group = 'grains'
-
-        grains = []
-        for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
-            gg = hin[grains_group][gid_string]
-            ubi = gg.attrs['ubi'][:]
-            translation = gg.attrs['translation'][:]
-            g = ImageD11.grain.grain(ubi, translation=translation)
-            g.gid = int(gid_string)
-            g.peaks_3d = gg['peaks_3d_indexing'][:]
-            grains.append(g)
-
-    return grains
-
-
-# S3DXRD
-
-def save_s3dxrd_grains_after_indexing(grains, ds):
-    with h5py.File(ds.grainsfile, 'w') as hout:
-        grn = hout.create_group('grains')
-        for g in tqdm(grains):
-            gg = grn.create_group(str(g.gid))
-            save_array(gg, 'peaks_4d_indexing', g.peaks_4d).attrs[
-                'description'] = "Strong 4D peaks that were assigned to this grain during indexing"
-            gg.attrs.update({'ubi': g.ubi})
-
-
-def save_s3dxrd_grains_minor_phase_after_indexing(grains, ds, phase_name=None):
-    if not hasattr(ds, "grainsfile_minor_phase"):
-        if phase_name is None:
-            raise ValueError(
-                "DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
-        else:
-            ds.grainsfile_minor_phase = os.path.join(ds.analysispath, ds.dsname + '_grains_' + phase_name + '.h5')
-    with h5py.File(ds.grainsfile_minor_phase, 'w') as hout:
-        grn = hout.create_group('grains')
-        for g in tqdm(grains):
-            gg = grn.create_group(str(g.gid))
-            save_array(gg, 'peaks_4d_indexing', g.peaks_4d).attrs[
-                'description'] = "Strong 4D peaks that were assigned to this grain during indexing"
-            gg.attrs.update({'ubi': g.ubi})
-
-
-def read_s3dxrd_grains_for_recon(ds):
-    with h5py.File(ds.grainsfile, 'r') as hin:
-        grains_group = 'grains'
-
-        grains = []
-        for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
-            gg = hin[grains_group][gid_string]
-            ubi = gg.attrs['ubi'][:]
-            g = ImageD11.grain.grain(ubi)
-            g.gid = int(gid_string)
-            grains.append(g)
-
-    return grains
-
-
-def read_s3dxrd_grains_minor_phase_for_recon(ds, phase_name=None):
-    if not hasattr(ds, "grainsfile_minor_phase"):
-        if phase_name is None:
-            raise ValueError(
-                "DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
-        else:
-            ds.grainsfile_minor_phase = os.path.join(ds.analysispath, ds.dsname + '_grains_' + phase_name + '.h5')
-    with h5py.File(ds.grainsfile_minor_phase, 'r') as hin:
-        grains_group = 'grains'
-
-        grains = []
-        for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
-            gg = hin[grains_group][gid_string]
-            ubi = gg.attrs['ubi'][:]
-            g = ImageD11.grain.grain(ubi)
-            g.gid = int(gid_string)
-            grains.append(g)
-
-    return grains
-
-
-def save_s3dxrd_grains_for_mlem(grains, ds, gord, inds, whole_sample_mask, y0):
-    with h5py.File(ds.grainsfile, 'r+') as hout:
-        try:
-            grp = hout.create_group('peak_assignments')
-        except ValueError:
-            grp = hout['peak_assignments']
-
-        ds_gord = save_array(grp, 'gord', gord)
-        ds_gord.attrs['description'] = 'Grain ordering: g[i].pks = gord[ inds[i] : inds[i+1] ]'
-        ds_inds = save_array(grp, 'inds', inds)
-        ds_inds.attrs['description'] = 'Grain indices: g[i].pks = gord[ inds[i] : inds[i+1] ]'
-
-        grains_group = 'grains'
-        for g in tqdm(grains):
-            gg = hout[grains_group][str(g.gid)]
-            # save stuff for sinograms
-
-            save_array(gg, 'ssino', g.ssino).attrs['description'] = 'Sinogram of peak intensities sorted by omega'
-            save_array(gg, 'sinoangles', g.sinoangles).attrs['description'] = 'Projection angles for sinogram'
-            save_array(gg, 'og_recon', g.og_recon).attrs['description'] = 'Original ID11 iRadon reconstruction'
-            save_array(gg, 'circle_mask', whole_sample_mask).attrs[
-                'description'] = 'Reconstruction mask to use for MLEM'
-
-            # might as well save peaks stuff while we're here
-            save_array(gg, 'translation', g.translation).attrs['description'] = 'Grain translation in lab frame'
-            save_array(gg, 'peaks_2d_sinograms', g.peaks_2d).attrs[
-                'description'] = "2D peaks from strong 4D peaks that were assigned to this grain for sinograms"
-            save_array(gg, 'peaks_4d_sinograms', g.peaks_4d).attrs[
-                'description'] = "Strong 4D peaks that were assigned to this grain for sinograms"
-
-            gg.attrs['cen'] = g.cen
-            gg.attrs['y0'] = y0
-
-
-def save_s3dxrd_grains_after_recon(grains, ds, raw_intensity_array, grain_labels_array, rgb_x_array, rgb_y_array,
-                                   rgb_z_array):
-    with h5py.File(ds.grainsfile, 'r+') as hout:
-        try:
-            grp = hout.create_group('slice_recon')
-        except ValueError:
-            grp = hout['slice_recon']
-        save_array(grp, 'intensity', raw_intensity_array).attrs['description'] = 'Raw intensity array for all grains'
-        save_array(grp, 'labels', grain_labels_array).attrs['description'] = 'Grain labels array for all grains'
-
-        ipfxdset = save_array(grp, 'ipf_x_col_map', rgb_x_array)
-        ipfxdset.attrs['description'] = 'IPF X color at each pixel'
-        ipfxdset.attrs['CLASS'] = 'IMAGE'
-        ipfydset = save_array(grp, 'ipf_y_col_map', rgb_y_array)
-        ipfydset.attrs['description'] = 'IPF Y color at each pixel'
-        ipfydset.attrs['CLASS'] = 'IMAGE'
-        ipfzdset = save_array(grp, 'ipf_z_col_map', rgb_z_array)
-        ipfzdset.attrs['description'] = 'IPF Z color at each pixel'
-        ipfzdset.attrs['CLASS'] = 'IMAGE'
-
-        grains_group = 'grains'
-
-        for g in tqdm(grains):
-            gg = hout[grains_group][str(g.gid)]
-
-            save_array(gg, 'recon', g.recon).attrs['description'] = 'Final reconstruction'
-
-
-def save_s3dxrd_grains_minor_phase_after_recon(grains, ds, raw_intensity_array, grain_labels_array, rgb_x_array,
-                                               rgb_y_array,
-                                               rgb_z_array, phase_name=None):
-    if not hasattr(ds, "grainsfile_minor_phase"):
-        if phase_name is None:
-            raise ValueError(
-                "DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
-        else:
-            ds.grainsfile_minor_phase = os.path.join(ds.analysispath, ds.dsname + '_grains_' + phase_name + '.h5')
-
-    # delete existing file, because our grain numbers have changed
-    if os.path.exists(ds.grainsfile_minor_phase):
-        os.remove(ds.grainsfile_minor_phase)
-
-    with h5py.File(ds.grainsfile_minor_phase, 'w-') as hout:  # fail if exists
-        #         try:
-        #             grp = hout.create_group('peak_assignments')
-        #         except ValueError:
-        #             grp = hout['peak_assignments']
-
-        #         ds_gord = save_array( grp, 'gord', gord )
-        #         ds_gord.attrs['description'] = 'Grain ordering: g[i].pks = gord[ inds[i] : inds[i+1] ]'
-        #         ds_inds = save_array( grp, 'inds', inds )
-        #         ds_inds.attrs['description'] = 'Grain indices: g[i].pks = gord[ inds[i] : inds[i+1] ]'
-
-        try:
-            grp = hout.create_group('slice_recon')
-        except ValueError:
-            grp = hout['slice_recon']
-        save_array(grp, 'intensity', raw_intensity_array).attrs['description'] = 'Raw intensity array for all grains'
-        save_array(grp, 'labels', grain_labels_array).attrs['description'] = 'Grain labels array for all grains'
-
-        ipfxdset = save_array(grp, 'ipf_x_col_map', rgb_x_array)
-        ipfxdset.attrs['description'] = 'IPF X color at each pixel'
-        ipfxdset.attrs['CLASS'] = 'IMAGE'
-        ipfydset = save_array(grp, 'ipf_y_col_map', rgb_y_array)
-        ipfydset.attrs['description'] = 'IPF Y color at each pixel'
-        ipfydset.attrs['CLASS'] = 'IMAGE'
-        ipfzdset = save_array(grp, 'ipf_z_col_map', rgb_z_array)
-        ipfzdset.attrs['description'] = 'IPF Z color at each pixel'
-        ipfzdset.attrs['CLASS'] = 'IMAGE'
-
-        grains_group = hout.create_group('grains')
-        for g in tqdm(grains):
-            gg = grains_group.create_group(str(g.gid))
-            # save stuff for sinograms
-
-            gg.attrs.update({'ubi': g.ubi})
-
-            save_array(gg, 'peaks_4d_indexing', g.peaks_4d).attrs[
-                'description'] = "Strong 4D peaks that were assigned to this grain during indexing"
-
-            save_array(gg, 'ssino', g.ssino).attrs['description'] = 'Sinogram of peak intensities sorted by omega'
-            save_array(gg, 'sinoangles', g.sinoangles).attrs['description'] = 'Projection angles for sinogram'
-            save_array(gg, 'og_recon', g.recon).attrs['description'] = 'Original ID11 iRadon reconstruction'
-            save_array(gg, 'recon', g.recon).attrs['description'] = 'Final reconstruction'
-
-            # might as well save peaks stuff while we're here
-            save_array(gg, 'translation', g.translation).attrs['description'] = 'Grain translation in lab frame'
-            save_array(gg, 'peaks_2d_sinograms', g.peaks_2d).attrs[
-                'description'] = "2D peaks from strong 4D peaks that were assigned to this grain for sinograms"
-            save_array(gg, 'peaks_4d_sinograms', g.peaks_4d).attrs[
-                'description'] = "Strong 4D peaks that were assigned to this grain for sinograms"
-
-            gg.attrs['cen'] = g.cen
-
-
-def read_s3dxrd_grains_after_recon(ds):
-    with h5py.File(ds.grainsfile, 'r') as hin:
-        grp = hin['slice_recon']
-
-        raw_intensity_array = grp['intensity'][:]
-        grain_labels_array = grp['labels'][:]
-        rgb_x_array = grp['ipf_x_col_map'][:]
-        rgb_y_array = grp['ipf_y_col_map'][:]
-        rgb_z_array = grp['ipf_z_col_map'][:]
-
-        grains_group = 'grains'
-
-        grains = []
-        for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
-            gg = hin[grains_group][gid_string]
-            ubi = gg.attrs['ubi'][:]
-
-            g = ImageD11.grain.grain(ubi)
-
-            # general grain properties
-
-            g.gid = int(gid_string)
-            g.translation = gg['translation'][:]
-            g.cen = gg.attrs['cen']
-            g.y0 = gg.attrs['y0'][()]
-            g.sample_mask = gg['circle_mask'][:]
-
-            # sinogram stuff
-            g.ssino = gg['ssino'][:]
-            g.sinoangles = gg['sinoangles'][:]
-
-            # reconstructions
-            g.og_recon = gg['og_recon'][:]
-            g.recon = gg['recon'][:]
-
-            grains.append(g)
-
-    return grains, raw_intensity_array, grain_labels_array, rgb_x_array, rgb_y_array, rgb_z_array
-
-
-def read_s3dxrd_grains_minor_phase_after_recon(ds, phase_name=None):
-    if not hasattr(ds, "grainsfile_minor_phase"):
-        if phase_name is None:
-            raise ValueError(
-                "DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
-        else:
-            ds.grainsfile_minor_phase = os.path.join(ds.analysispath, ds.dsname + '_grains_' + phase_name + '.h5')
-
-    with h5py.File(ds.grainsfile_minor_phase, 'r') as hin:
-        grp = hin['slice_recon']
-
-        raw_intensity_array = grp['intensity'][:]
-        grain_labels_array = grp['labels'][:]
-        rgb_x_array = grp['ipf_x_col_map'][:]
-        rgb_y_array = grp['ipf_y_col_map'][:]
-        rgb_z_array = grp['ipf_z_col_map'][:]
-
-        grains_group = 'grains'
-
-        grains = []
-        for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
-            gg = hin[grains_group][gid_string]
-            ubi = gg.attrs['ubi'][:]
-
-            g = ImageD11.grain.grain(ubi)
-
-            # general grain properties
-
-            g.gid = int(gid_string)
-            g.translation = gg['translation'][:]
-            g.cen = gg.attrs['cen']
-
-            # sinogram stuff
-            g.ssino = gg['ssino'][:]
-            g.sinoangles = gg['sinoangles'][:]
-
-            # reconstructions
-            g.og_recon = gg['og_recon'][:]
-            g.recon = gg['recon'][:]
-
-            grains.append(g)
-
-    return grains, raw_intensity_array, grain_labels_array, rgb_x_array, rgb_y_array, rgb_z_array
+# def save_3dxrd_grains(grains, ds):
+#     with h5py.File(ds.grainsfile, 'w') as hout:
+#         grn = hout.create_group('grains')
+#         for g in tqdm(grains):
+#             gg = grn.create_group(str(g.gid))
+#             save_array(gg, 'peaks_3d_indexing', g.peaks_3d).attrs[
+#                 'description'] = "Strong 3D peaks that were assigned to this grain during indexing"
+#             gg.attrs.update({'ubi': g.ubi,
+#                              'translation': g.translation})
+#
+#
+# def read_3dxrd_grains(ds):
+#     with h5py.File(ds.grainsfile, 'r') as hin:
+#         grains_group = 'grains'
+#
+#         grains = []
+#         for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
+#             gg = hin[grains_group][gid_string]
+#             ubi = gg.attrs['ubi'][:]
+#             translation = gg.attrs['translation'][:]
+#             g = ImageD11.grain.grain(ubi, translation=translation)
+#             g.gid = int(gid_string)
+#             g.peaks_3d = gg['peaks_3d_indexing'][:]
+#             grains.append(g)
+#
+#     return grains
+#
+#
+# # S3DXRD
+#
+# def save_s3dxrd_grains_after_indexing(grains, ds):
+#     with h5py.File(ds.grainsfile, 'w') as hout:
+#         grn = hout.create_group('grains')
+#         for g in tqdm(grains):
+#             gg = grn.create_group(str(g.gid))
+#             save_array(gg, 'peaks_4d_indexing', g.peaks_4d).attrs[
+#                 'description'] = "Strong 4D peaks that were assigned to this grain during indexing"
+#             gg.attrs.update({'ubi': g.ubi})
+#
+#
+# def save_s3dxrd_grains_minor_phase_after_indexing(grains, ds, phase_name=None):
+#     if not hasattr(ds, "grainsfile_minor_phase"):
+#         if phase_name is None:
+#             raise ValueError(
+#                 "DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
+#         else:
+#             ds.grainsfile_minor_phase = os.path.join(ds.analysispath, ds.dsname + '_grains_' + phase_name + '.h5')
+#     with h5py.File(ds.grainsfile_minor_phase, 'w') as hout:
+#         grn = hout.create_group('grains')
+#         for g in tqdm(grains):
+#             gg = grn.create_group(str(g.gid))
+#             save_array(gg, 'peaks_4d_indexing', g.peaks_4d).attrs[
+#                 'description'] = "Strong 4D peaks that were assigned to this grain during indexing"
+#             gg.attrs.update({'ubi': g.ubi})
+#
+#
+# def read_s3dxrd_grains_for_recon(ds):
+#     with h5py.File(ds.grainsfile, 'r') as hin:
+#         grains_group = 'grains'
+#
+#         grains = []
+#         for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
+#             gg = hin[grains_group][gid_string]
+#             ubi = gg.attrs['ubi'][:]
+#             g = ImageD11.grain.grain(ubi)
+#             g.gid = int(gid_string)
+#             grains.append(g)
+#
+#     return grains
+#
+#
+# def read_s3dxrd_grains_minor_phase_for_recon(ds, phase_name=None):
+#     if not hasattr(ds, "grainsfile_minor_phase"):
+#         if phase_name is None:
+#             raise ValueError(
+#                 "DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
+#         else:
+#             ds.grainsfile_minor_phase = os.path.join(ds.analysispath, ds.dsname + '_grains_' + phase_name + '.h5')
+#     with h5py.File(ds.grainsfile_minor_phase, 'r') as hin:
+#         grains_group = 'grains'
+#
+#         grains = []
+#         for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
+#             gg = hin[grains_group][gid_string]
+#             ubi = gg.attrs['ubi'][:]
+#             g = ImageD11.grain.grain(ubi)
+#             g.gid = int(gid_string)
+#             grains.append(g)
+#
+#     return grains
+#
+#
+# def save_s3dxrd_grains_for_mlem(grains, ds, gord, inds, whole_sample_mask, y0):
+#     with h5py.File(ds.grainsfile, 'r+') as hout:
+#         try:
+#             grp = hout.create_group('peak_assignments')
+#         except ValueError:
+#             grp = hout['peak_assignments']
+#
+#         ds_gord = save_array(grp, 'gord', gord)
+#         ds_gord.attrs['description'] = 'Grain ordering: g[i].pks = gord[ inds[i] : inds[i+1] ]'
+#         ds_inds = save_array(grp, 'inds', inds)
+#         ds_inds.attrs['description'] = 'Grain indices: g[i].pks = gord[ inds[i] : inds[i+1] ]'
+#
+#         grains_group = 'grains'
+#         for g in tqdm(grains):
+#             gg = hout[grains_group][str(g.gid)]
+#             # save stuff for sinograms
+#
+#             save_array(gg, 'ssino', g.ssino).attrs['description'] = 'Sinogram of peak intensities sorted by omega'
+#             save_array(gg, 'sinoangles', g.sinoangles).attrs['description'] = 'Projection angles for sinogram'
+#             save_array(gg, 'og_recon', g.og_recon).attrs['description'] = 'Original ID11 iRadon reconstruction'
+#             save_array(gg, 'circle_mask', whole_sample_mask).attrs[
+#                 'description'] = 'Reconstruction mask to use for MLEM'
+#
+#             # might as well save peaks stuff while we're here
+#             save_array(gg, 'translation', g.translation).attrs['description'] = 'Grain translation in lab frame'
+#             save_array(gg, 'peaks_2d_sinograms', g.peaks_2d).attrs[
+#                 'description'] = "2D peaks from strong 4D peaks that were assigned to this grain for sinograms"
+#             save_array(gg, 'peaks_4d_sinograms', g.peaks_4d).attrs[
+#                 'description'] = "Strong 4D peaks that were assigned to this grain for sinograms"
+#
+#             gg.attrs['cen'] = g.cen
+#             gg.attrs['y0'] = y0
+#
+#
+# def save_s3dxrd_grains_after_recon(grains, ds, raw_intensity_array, grain_labels_array, rgb_x_array, rgb_y_array,
+#                                    rgb_z_array):
+#     with h5py.File(ds.grainsfile, 'r+') as hout:
+#         try:
+#             grp = hout.create_group('slice_recon')
+#         except ValueError:
+#             grp = hout['slice_recon']
+#         save_array(grp, 'intensity', raw_intensity_array).attrs['description'] = 'Raw intensity array for all grains'
+#         save_array(grp, 'labels', grain_labels_array).attrs['description'] = 'Grain labels array for all grains'
+#
+#         ipfxdset = save_array(grp, 'ipf_x_col_map', rgb_x_array)
+#         ipfxdset.attrs['description'] = 'IPF X color at each pixel'
+#         ipfxdset.attrs['CLASS'] = 'IMAGE'
+#         ipfydset = save_array(grp, 'ipf_y_col_map', rgb_y_array)
+#         ipfydset.attrs['description'] = 'IPF Y color at each pixel'
+#         ipfydset.attrs['CLASS'] = 'IMAGE'
+#         ipfzdset = save_array(grp, 'ipf_z_col_map', rgb_z_array)
+#         ipfzdset.attrs['description'] = 'IPF Z color at each pixel'
+#         ipfzdset.attrs['CLASS'] = 'IMAGE'
+#
+#         grains_group = 'grains'
+#
+#         for g in tqdm(grains):
+#             gg = hout[grains_group][str(g.gid)]
+#
+#             save_array(gg, 'recon', g.recon).attrs['description'] = 'Final reconstruction'
+#
+#
+# def save_s3dxrd_grains_minor_phase_after_recon(grains, ds, raw_intensity_array, grain_labels_array, rgb_x_array,
+#                                                rgb_y_array,
+#                                                rgb_z_array, phase_name=None):
+#     if not hasattr(ds, "grainsfile_minor_phase"):
+#         if phase_name is None:
+#             raise ValueError(
+#                 "DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
+#         else:
+#             ds.grainsfile_minor_phase = os.path.join(ds.analysispath, ds.dsname + '_grains_' + phase_name + '.h5')
+#
+#     # delete existing file, because our grain numbers have changed
+#     if os.path.exists(ds.grainsfile_minor_phase):
+#         os.remove(ds.grainsfile_minor_phase)
+#
+#     with h5py.File(ds.grainsfile_minor_phase, 'w-') as hout:  # fail if exists
+#         #         try:
+#         #             grp = hout.create_group('peak_assignments')
+#         #         except ValueError:
+#         #             grp = hout['peak_assignments']
+#
+#         #         ds_gord = save_array( grp, 'gord', gord )
+#         #         ds_gord.attrs['description'] = 'Grain ordering: g[i].pks = gord[ inds[i] : inds[i+1] ]'
+#         #         ds_inds = save_array( grp, 'inds', inds )
+#         #         ds_inds.attrs['description'] = 'Grain indices: g[i].pks = gord[ inds[i] : inds[i+1] ]'
+#
+#         try:
+#             grp = hout.create_group('slice_recon')
+#         except ValueError:
+#             grp = hout['slice_recon']
+#         save_array(grp, 'intensity', raw_intensity_array).attrs['description'] = 'Raw intensity array for all grains'
+#         save_array(grp, 'labels', grain_labels_array).attrs['description'] = 'Grain labels array for all grains'
+#
+#         ipfxdset = save_array(grp, 'ipf_x_col_map', rgb_x_array)
+#         ipfxdset.attrs['description'] = 'IPF X color at each pixel'
+#         ipfxdset.attrs['CLASS'] = 'IMAGE'
+#         ipfydset = save_array(grp, 'ipf_y_col_map', rgb_y_array)
+#         ipfydset.attrs['description'] = 'IPF Y color at each pixel'
+#         ipfydset.attrs['CLASS'] = 'IMAGE'
+#         ipfzdset = save_array(grp, 'ipf_z_col_map', rgb_z_array)
+#         ipfzdset.attrs['description'] = 'IPF Z color at each pixel'
+#         ipfzdset.attrs['CLASS'] = 'IMAGE'
+#
+#         grains_group = hout.create_group('grains')
+#         for g in tqdm(grains):
+#             gg = grains_group.create_group(str(g.gid))
+#             # save stuff for sinograms
+#
+#             gg.attrs.update({'ubi': g.ubi})
+#
+#             save_array(gg, 'peaks_4d_indexing', g.peaks_4d).attrs[
+#                 'description'] = "Strong 4D peaks that were assigned to this grain during indexing"
+#
+#             save_array(gg, 'ssino', g.ssino).attrs['description'] = 'Sinogram of peak intensities sorted by omega'
+#             save_array(gg, 'sinoangles', g.sinoangles).attrs['description'] = 'Projection angles for sinogram'
+#             save_array(gg, 'og_recon', g.recon).attrs['description'] = 'Original ID11 iRadon reconstruction'
+#             save_array(gg, 'recon', g.recon).attrs['description'] = 'Final reconstruction'
+#
+#             # might as well save peaks stuff while we're here
+#             save_array(gg, 'translation', g.translation).attrs['description'] = 'Grain translation in lab frame'
+#             save_array(gg, 'peaks_2d_sinograms', g.peaks_2d).attrs[
+#                 'description'] = "2D peaks from strong 4D peaks that were assigned to this grain for sinograms"
+#             save_array(gg, 'peaks_4d_sinograms', g.peaks_4d).attrs[
+#                 'description'] = "Strong 4D peaks that were assigned to this grain for sinograms"
+#
+#             gg.attrs['cen'] = g.cen
+#
+#
+# def read_s3dxrd_grains_after_recon(ds):
+#     with h5py.File(ds.grainsfile, 'r') as hin:
+#         grp = hin['slice_recon']
+#
+#         raw_intensity_array = grp['intensity'][:]
+#         grain_labels_array = grp['labels'][:]
+#         rgb_x_array = grp['ipf_x_col_map'][:]
+#         rgb_y_array = grp['ipf_y_col_map'][:]
+#         rgb_z_array = grp['ipf_z_col_map'][:]
+#
+#         grains_group = 'grains'
+#
+#         grains = []
+#         for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
+#             gg = hin[grains_group][gid_string]
+#             ubi = gg.attrs['ubi'][:]
+#
+#             g = ImageD11.grain.grain(ubi)
+#
+#             # general grain properties
+#
+#             g.gid = int(gid_string)
+#             g.translation = gg['translation'][:]
+#             g.cen = gg.attrs['cen']
+#             g.y0 = gg.attrs['y0'][()]
+#             g.sample_mask = gg['circle_mask'][:]
+#
+#             # sinogram stuff
+#             g.ssino = gg['ssino'][:]
+#             g.sinoangles = gg['sinoangles'][:]
+#
+#             # reconstructions
+#             g.og_recon = gg['og_recon'][:]
+#             g.recon = gg['recon'][:]
+#
+#             grains.append(g)
+#
+#     return grains, raw_intensity_array, grain_labels_array, rgb_x_array, rgb_y_array, rgb_z_array
+#
+#
+# def read_s3dxrd_grains_minor_phase_after_recon(ds, phase_name=None):
+#     if not hasattr(ds, "grainsfile_minor_phase"):
+#         if phase_name is None:
+#             raise ValueError(
+#                 "DataSet has no grainsfile_minor_phase attribute and you didn't provide a phase_name to generate one!")
+#         else:
+#             ds.grainsfile_minor_phase = os.path.join(ds.analysispath, ds.dsname + '_grains_' + phase_name + '.h5')
+#
+#     with h5py.File(ds.grainsfile_minor_phase, 'r') as hin:
+#         grp = hin['slice_recon']
+#
+#         raw_intensity_array = grp['intensity'][:]
+#         grain_labels_array = grp['labels'][:]
+#         rgb_x_array = grp['ipf_x_col_map'][:]
+#         rgb_y_array = grp['ipf_y_col_map'][:]
+#         rgb_z_array = grp['ipf_z_col_map'][:]
+#
+#         grains_group = 'grains'
+#
+#         grains = []
+#         for gid_string in tqdm(sorted(hin[grains_group].keys(), key=lambda x: int(x))):
+#             gg = hin[grains_group][gid_string]
+#             ubi = gg.attrs['ubi'][:]
+#
+#             g = ImageD11.grain.grain(ubi)
+#
+#             # general grain properties
+#
+#             g.gid = int(gid_string)
+#             g.translation = gg['translation'][:]
+#             g.cen = gg.attrs['cen']
+#
+#             # sinogram stuff
+#             g.ssino = gg['ssino'][:]
+#             g.sinoangles = gg['sinoangles'][:]
+#
+#             # reconstructions
+#             g.og_recon = gg['og_recon'][:]
+#             g.recon = gg['recon'][:]
+#
+#             grains.append(g)
+#
+#     return grains, raw_intensity_array, grain_labels_array, rgb_x_array, rgb_y_array, rgb_z_array
 
 
 def save_ubi_map(ds, ubi_map, eps_map, misorientation_map, ipf_x_col_map, ipf_y_col_map, ipf_z_col_map):
@@ -554,49 +552,6 @@ def save_ubi_map(ds, ubi_map, eps_map, misorientation_map, ipf_x_col_map, ipf_y_
         ipfzdset = save_array(grp, 'ipf_z_col_map', ipf_z_col_map)
         ipfzdset.attrs['description'] = 'IPF Z color at each pixel'
         ipfzdset.attrs['CLASS'] = 'IMAGE'
-
-
-# Other
-
-# GOTO Move to DataSet
-def correct_half_scan(ds):
-    """Pads the dataset to become bigger and symmetric"""
-    # NOTE: We need to keep track of which bins are "real" and measured and which aren't
-    # Sinomask
-    c0 = 0
-    # check / fix the centre of rotation
-    # get value of bin closest to c0
-    central_bin = np.argmin(abs(ds.ybincens - c0))
-    # get centre dty value of this vin
-    central_value = ds.ybincens[central_bin]
-
-    lo_side = ds.ybincens[:central_bin + 1]
-    hi_side = ds.ybincens[central_bin:]
-
-    # get the hi/lo side which is widest
-    # i.e if you go from -130 to +20, it selects -130
-    yrange = max(hi_side[-1] - hi_side[0], lo_side[-1] - lo_side[0])
-
-    # round to nearest multiple of ds.ystep
-    yrange = np.ceil(yrange / ds.ystep) * ds.ystep
-
-    # make new ymin and ymax that are symmetric around central_value
-    ds.ymin = central_value - yrange
-    ds.ymax = central_value + yrange
-
-    new_yrange = ds.ymax - ds.ymin
-
-    # determine new number of y bins
-    ny = int(new_yrange // ds.ystep) + 1
-
-    ds.ybincens = np.linspace(ds.ymin, ds.ymax, ny)
-    ds.ybinedges = np.linspace(ds.ymin - ds.ystep / 2, ds.ymax + ds.ystep / 2, ny + 1)
-
-    print(len(ds.ybincens))
-    print(ds.ybincens)
-    print(ds.ystep)
-    print(yrange)
-    print(ny)
 
 
 ### IPF Colour stuff
@@ -650,47 +605,6 @@ def get_rgbs_for_grains(grains):
         grain.rgb_z = grain_to_rgb(grain, ax=(0, 0, 1), )  # symmetry = Symmetry.cubic)
         grain.rgb_y = grain_to_rgb(grain, ax=(0, 1, 0), )  # symmetry = Symmetry.cubic)
         grain.rgb_x = grain_to_rgb(grain, ax=(1, 0, 0), )  # symmetry = Symmetry.cubic)
-
-
-### Segmentation
-
-# GOTO Inside blobcorrector
-
-def correct_pixel(pixel, spline_file):
-    sr, fr = pixel
-    sc, fc = ImageD11.blobcorrector.correctorclass(spline_file).correct(sr, fr)
-    return sc, fc
-
-
-def apply_spatial(cf, spline_file, workers):
-    # sc = np.zeros(cf.nrows)
-    # fc = np.zeros(cf.nrows)
-
-    print("Spatial correction...")
-
-    raw_pixels = np.vstack((cf['s_raw'], cf['f_raw'])).T
-
-    corrected_pixels = process_map(correct_pixel, raw_pixels, [spline_file] * len(raw_pixels), max_workers=workers,
-                                   chunksize=len(raw_pixels) // workers)
-
-    sc, fc = [list(t) for t in zip(*corrected_pixels)]
-
-    cf.addcolumn(sc, "sc")
-    cf.addcolumn(fc, "fc")
-
-    return cf
-
-
-def apply_spatial_lut(cf, spline_file):
-    # sc = np.zeros(cf.nrows)
-    # fc = np.zeros(cf.nrows)
-
-    print("Spatial correction...")
-
-    corrector = ImageD11.blobcorrector.correctorclass(spline_file)
-    corrector.correct_px_lut(cf)
-
-    return cf
 
 
 ### Sinogram stuff
@@ -752,28 +666,14 @@ def fit_grain_position_from_recon(grain, ds, y0):
         grain.bad_recon = True
 
 
-# should be fixed by monitor in assemble_label
+# GOTO should be fixed by monitor in assemble_label
 # should just be a sinogram numpy array and a monitor spectrum
-def correct_sinogram_rows_with_ring_current(grain, ds):
-    grain.ssino = grain.ssino / ds.ring_currents_per_scan_scaled[:, None]
-
-
-def get_ring_current_per_scan(ds):
-    """Gets the ring current for each scan (i.e rotation/y-step)
-       Stores it inside ds.ring_currents_per_scan and a scaled version inside ds.ring_currents_per_scan_scaled"""
-    if not hasattr(ds, "ring_currents_per_scan"):
-        ring_currents = []
-        with h5py.File(ds.masterfile, "r") as h5in:
-            for scan in ds.scans:
-                ring_current = float(h5in[scan]["instrument/machine/current"][()])
-                ring_currents.append(ring_current)
-
-        ds.ring_currents_per_scan = np.array(ring_currents)
-        ds.ring_currents_per_scan_scaled = np.array(ring_currents / np.max(ring_currents))
+# def correct_sinogram_rows_with_ring_current(grain, ds):
+#     grain.ssino = grain.ssino / ds.ring_currents_per_scan_scaled[:, None]
 
 
 ### Peak manipulation
-# GOTO
+# GOTO some sort of Numba zone or C code?
 
 @numba.njit(parallel=True)
 def pmax(ary):
@@ -863,8 +763,8 @@ def assign_peaks_to_grains(grains, cf, tol):
     drlv2 = np.ones(cf.nrows, 'd')
     # iterate over all grains
     print("Scoring and assigning {} grains".format(len(grains)))
-    for g in tqdm(grains):
-        n = ImageD11.cImageD11.score_and_assign(g.ubi, gv, tol, drlv2, labels, g.gid)
+    for inc, g in enumerate(tqdm(grains)):
+        n = ImageD11.cImageD11.score_and_assign(g.ubi, gv, tol, drlv2, labels, inc)
 
     # add the labels column to the columnfile
     cf.addcolumn(labels, 'grain_id')
@@ -907,145 +807,7 @@ def get_2d_peaks_from_4d_peaks(ds, cf):
     return gord, inds, p2d
 
 
-# GOTO dataset method
-# add optional peaks mask
-# read only the bits of pkd that we need?
-def tocolf(pkd, ds):
-    """ Converts a dictionary of peaks into an ImageD11 columnfile
-    adds on the geometric computations (tth, eta, gvector, etc) """
-    spat = eiger_spatial(dxfile=ds.e2dxfile, dyfile=ds.e2dyfile)
-    cf = ImageD11.columnfile.colfile_from_dict(spat(pkd))
-    cf.parameters.loadparameters(ds.parfile)
-    cf.updateGeometry()
-    return cf
 
-
-# hkl assignment needs grains2peaks class
-# GOTO: part of a little collection of functions that put stuff on the Grain object
-def do_sinos(g, p2d, ds, hkltol=0.25):
-    # g.peaks_2d are 2d peaks that were merged into the 4d peaks that were assigned to this grain (obviously!)
-    flt = tocolf({p: p2d[p][g.peaks_2d] for p in p2d}, ds)  # convert it to a columnfile and spatially correct
-
-    hkl_real = np.dot(g.ubi, (flt.gx, flt.gy, flt.gz))  # calculate hkl of all assigned peaks
-    hkl_int = np.round(hkl_real).astype(int)  # round to nearest integer
-    dh = ((hkl_real - hkl_int) ** 2).sum(axis=0)  # calculate square of difference
-
-    # g.dherrall = dh.mean()  # mean hkl error across all assigned peaks
-    # g.npksall = flt.nrows  # total number of assigned peaks
-    flt.filter(dh < hkltol * hkltol)  # filter all assigned peaks to be less than hkltol squared
-    hkl_real = np.dot(g.ubi, (flt.gx, flt.gy, flt.gz))  # recalculate error after filtration
-    hkl_int = np.round(hkl_real).astype(int)
-    # dh = ((hkl_real - hkl_int) ** 2).sum(axis=0)
-    # g.dherr = dh.mean()  # dherr is mean hkl error across assigned peaks after hkltol filtering
-    # g.npks = flt.nrows  # total number of assigned peaks after hkltol filtering
-    g.etasigns_2d_strong = np.sign(flt.eta)
-    g.hkl_2d_strong = hkl_int  # integer hkl of assigned peaks after hkltol filtering
-    g.sinoangles, g.ssino, g.hits = map_grain_from_peaks(g, flt, ds)
-    return g
-
-
-# GOTO GrainSinogram class - has grain object and dataset object as attributes
-# has IO methods
-def map_grain_from_peaks(g, flt, ds):
-    """
-    Computes sinogram
-    flt is already the peaks for this grain
-    Returns angles, sino
-    """
-    NY = len(ds.ybincens)  # number of y translations
-    iy = np.round((flt.dty - ds.ybincens[0]) / (ds.ybincens[1] - ds.ybincens[0])).astype(
-        int)  # flt column for y translation index
-
-    # The problem is to assign each spot to a place in the sinogram
-    hklmin = g.hkl_2d_strong.min(axis=1)  # Get minimum integer hkl (e.g -10, -9, -10)
-    dh = g.hkl_2d_strong - hklmin[:, np.newaxis]  # subtract minimum hkl from all integer hkls
-    de = (g.etasigns_2d_strong.astype(int) + 1) // 2  # something signs related
-    #   4D array of h,k,l,+/-
-    # pkmsk is whether a peak has been observed with this HKL or not
-    pkmsk = np.zeros(list(dh.max(axis=1) + 1) + [2, ],
-                     int)  # make zeros-array the size of (max dh +1) and add another axis of length 2
-    pkmsk[dh[0], dh[1], dh[2], de] = 1  # we found these HKLs for this grain
-    #   sinogram row to hit
-    pkrow = np.cumsum(pkmsk.ravel()).reshape(pkmsk.shape) - 1  #
-    # counting where we hit an HKL position with a found peak
-    # e.g (-10, -9, -10) didn't get hit, but the next one did, so increment
-
-    npks = pkmsk.sum()
-    destRow = pkrow[dh[0], dh[1], dh[2], de]
-    sino = np.zeros((npks, NY), 'f')
-    hits = np.zeros((npks, NY), 'f')
-    angs = np.zeros((npks, NY), 'f')
-    adr = destRow * NY + iy
-    # Just accumulate 
-    sig = flt.sum_intensity
-    ImageD11.cImageD11.put_incr64(sino, adr, sig)
-    ImageD11.cImageD11.put_incr64(hits, adr, np.ones(len(de), dtype='f'))
-    ImageD11.cImageD11.put_incr64(angs, adr, flt.omega)
-
-    sinoangles = angs.sum(axis=1) / hits.sum(axis=1)
-    # Normalise:
-    sino = (sino.T / sino.max(axis=1)).T
-    # Sort (cosmetic):
-    order = np.lexsort((np.arange(npks), sinoangles))
-    sinoangles = sinoangles[order]
-    ssino = sino[order].T
-
-    return sinoangles, ssino, hits[order].T
-
-
-# GOTO apply_halfmask function to existing sinogram
-# roi_iradon
-def run_iradon_id11(sino, angles, pad=20, y0=0, workers=1, sample_mask=None, apply_halfmask=False,
-                    mask_central_zingers=False):
-    outsize = sino.shape[0] + pad
-
-    if apply_halfmask:
-        halfmask = np.zeros_like(sino)
-
-        halfmask[:len(halfmask) // 2 - 1, :] = 1
-        halfmask[len(halfmask) // 2 - 1, :] = 0.5
-
-        sino_to_recon = sino * halfmask
-    else:
-        sino_to_recon = sino
-
-    # # pad the sample mask
-    # sample_mask_padded = np.pad(sample_mask, pad//2)
-
-    # Perform iradon transform of grain sinogram, store result (reconstructed grain shape) in g.recon
-    recon = ImageD11.sinograms.roi_iradon.iradon(sino_to_recon,
-                                                 theta=angles,
-                                                 mask=sample_mask,
-                                                 output_size=outsize,
-                                                 projection_shifts=np.full(sino.shape, -y0),
-                                                 filter_name='hamming',
-                                                 interpolation='linear',
-                                                 workers=workers)
-
-    if mask_central_zingers:
-        grs = recon.shape[0]
-        xpr, ypr = -grs // 2 + np.mgrid[:grs, :grs]
-        inner_mask_radius = 25
-        outer_mask_radius = inner_mask_radius + 2
-
-        inner_circle_mask = (xpr ** 2 + ypr ** 2) < inner_mask_radius ** 2
-        outer_circle_mask = (xpr ** 2 + ypr ** 2) < outer_mask_radius ** 2
-
-        mask_ring = inner_circle_mask & outer_circle_mask
-        # we now have a mask to apply
-        fill_value = np.median(recon[mask_ring])
-        recon[inner_circle_mask] = fill_value
-
-    return recon
-
-
-def iradon_grain(grain, pad=20, y0=0, workers=1, sample_mask=None, apply_halfmask=False, mask_central_zingers=False):
-    sino = grain.ssino
-    angles = grain.sinoangles
-    recon = run_iradon_id11(sino, angles, pad, y0, workers, sample_mask, apply_halfmask, mask_central_zingers)
-    grain.recon = recon
-
-    return grain
 
 
 # GOTO peakselect module
@@ -1063,7 +825,7 @@ def unitcell_peaks_mask(cf, dstol, dsmax):
     return m
 
 
-# GOTO columnfile method
+# GOTO peakselect module
 def strongest_peaks(colf, uself=True, frac=0.995, B=0.2, doplot=None):
     # correct intensities for structure factor (decreases with 2theta)
     cor_intensity = colf.sum_intensity * (np.exp(colf.ds * colf.ds * B))
@@ -1359,7 +1121,7 @@ def do_index(cf,
 
             print(frac, tol, len(indexer.ubis))
 
-    grains = [ImageD11.grain.grain(ubi, translation=np.array([0., 0., 0.])) for ubi in indexer.ubis]
+    grains = [ImageD11.grain.grain(ubi) for ubi in indexer.ubis]
     print("Found {} grains".format(len(grains)))
 
     return grains, indexer
