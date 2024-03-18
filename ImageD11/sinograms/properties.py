@@ -8,7 +8,6 @@ import time
 import tqdm
 from timeit import default_timer
 import numpy as np
-import hdf5plugin
 import h5py
 import scipy.sparse
 import scipy.sparse.csgraph
