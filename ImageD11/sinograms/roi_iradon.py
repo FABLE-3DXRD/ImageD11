@@ -446,8 +446,15 @@ def mlem(sino,
     # only need to pad [0]
 
     if projection_shifts is not None:
-        to_pad = (mlem_rec.shape[0] - projection_shifts.shape[0]) // 2
-        proj_shifts_padded = np.pad(projection_shifts, ((to_pad, to_pad), (0, 0)))
+        pad = [int(np.ceil(output_size - s)) for s in projection_shifts.shape]
+        new_center = [(s + p) // 2 for s, p in zip(projection_shifts.shape, pad)]
+        old_center = [s // 2 for s in projection_shifts.shape]
+        pad_before = [nc - oc for oc, nc in zip(old_center, new_center)]
+        pad_width = [(pb, p - pb) for pb, p in zip(pad_before, pad)]
+        pad_width[1] = (0, 0)
+
+        proj_shifts_padded = np.pad(projection_shifts, pad_width, mode='constant', constant_values=0)
+
     else:
         proj_shifts_padded = None
 
@@ -459,10 +466,14 @@ def mlem(sino,
                           workers=workers
                           )
 
-        # pad sino to the size of calc_sino
+        pad = [int(np.ceil(output_size - s)) for s in sino.shape]
+        new_center = [(s + p) // 2 for s, p in zip(sino.shape, pad)]
+        old_center = [s // 2 for s in sino.shape]
+        pad_before = [nc - oc for oc, nc in zip(old_center, new_center)]
+        pad_width = [(pb, p - pb) for pb, p in zip(pad_before, pad)]
+        pad_width[1] = (0, 0)
 
-        sino_padded = np.pad(sino, (
-            ((calc_sino.shape[0] - sino.shape[0]) // 2, (calc_sino.shape[0] - sino.shape[0]) // 2), (0, 0)))
+        sino_padded = np.pad(sino, pad_width, mode='constant', constant_values=0)
 
         ratio = sino_padded / (calc_sino + divtol)
 
