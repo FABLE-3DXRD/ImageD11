@@ -335,7 +335,19 @@ class eiger_spatial(object):
         s = self.dx.shape
         i, j = numpy.mgrid[ 0:s[0], 0:s[1] ]
         return self.dy + j, self.dx + i
-    
+
+
+def correct_cf_with_spline(cf, spline_file):
+    """Creates a correctorclass from the spline file
+       Corrects the columnfile with the spline file
+       Returns the corrected columnfile"""
+
+    corrector = correctorclass(spline_file)
+    corrector.correct_px_lut(cf)
+
+    return cf
+
+
 #
 #"""
 #http://homepages.inf.ed.ac.uk/rbf/CVonline/LOCAL_COPIES/OWENS/LECT5/node5.html
