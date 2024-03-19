@@ -40,7 +40,7 @@ try:
     from multiprocessing import shared_memory, resource_tracker
 except ImportError:
     import warnings
-    warnings.warn('python2','multiprocessing lacks shared memory, please backport it')
+    warnings.warn('python2: multiprocessing lacks shared memory, please backport it')
     shared_memory = None
     resource_tracker = None
 
