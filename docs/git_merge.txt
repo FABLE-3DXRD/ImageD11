@@ -1,0 +1,7 @@
+# When github wants to trash your commits because master changed
+#
+git remote -v
+# outputs: upstream        https://github.com/FABLE-3DXRD/ImageD11
+git fetch upstream
+git merge upstream/master
+git push origin

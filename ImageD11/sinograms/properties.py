@@ -9,7 +9,6 @@ import tqdm
 from timeit import default_timer
 import numpy as np
 import h5py
-import hdf5plugin
 import scipy.sparse
 import scipy.sparse.csgraph
 import ImageD11.sinograms.dataset
@@ -37,7 +36,13 @@ ImageD11.cImageD11.check_multiprocessing(patch=True)
 #
 
 import multiprocessing as mp
-from multiprocessing import shared_memory, resource_tracker
+try:
+    from multiprocessing import shared_memory, resource_tracker
+except ImportError:
+    import warnings
+    warnings.warn('python2: multiprocessing lacks shared memory, please backport it')
+    shared_memory = None
+    resource_tracker = None
 
 #####################################################################################
 def remove_shm_from_resource_tracker():
