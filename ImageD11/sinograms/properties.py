@@ -36,7 +36,13 @@ ImageD11.cImageD11.check_multiprocessing(patch=True)
 #
 
 import multiprocessing as mp
-from multiprocessing import shared_memory, resource_tracker
+try:
+    from multiprocessing import shared_memory, resource_tracker
+except ImportError:
+    import warnings
+    warnings.warn('python2','multiprocessing lacks shared memory, please backport it')
+    shared_memory = None
+    resource_tracker = None
 
 #####################################################################################
 def remove_shm_from_resource_tracker():
