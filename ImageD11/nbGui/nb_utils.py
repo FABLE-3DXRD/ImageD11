@@ -18,6 +18,7 @@ import ImageD11.refinegrains
 import ImageD11.unitcell
 import ImageD11.sinograms.roi_iradon
 import ImageD11.sinograms.properties
+from ImageD11.peakselect import select_ring_peaks_by_intensity
 
 
 ### General utilities (for all notebooks)
@@ -808,64 +809,6 @@ def get_2d_peaks_from_4d_peaks(ds, cf):
 
 
 
-
-
-# GOTO peakselect module
-# holds many useful peak filtering functions
-#
-# merge sandbox/ringselect
-def unitcell_peaks_mask(cf, dstol, dsmax):
-    cell = ImageD11.unitcell.unitcell_from_parameters(cf.parameters)
-    cell.makerings(dsmax)
-    m = np.zeros(cf.nrows, bool)
-    for v in cell.ringds:
-        if v < dsmax:
-            m |= (abs(cf.ds - v) < dstol)
-
-    return m
-
-
-# GOTO peakselect module
-def strongest_peaks(colf, uself=True, frac=0.995, B=0.2, doplot=None):
-    # correct intensities for structure factor (decreases with 2theta)
-    cor_intensity = colf.sum_intensity * (np.exp(colf.ds * colf.ds * B))
-    if uself:
-        lf = ImageD11.refinegrains.lf(colf.tth, colf.eta)
-        cor_intensity *= lf
-    order = np.argsort(cor_intensity)[::-1]  # sort the peaks by intensity
-    sortedpks = cor_intensity[order]
-    cums = np.cumsum(sortedpks)
-    cums /= cums[-1]
-    # anything above this should be calculated one and added to the CF
-    # check if the column exists before calculating
-    # slider for frac?
-    # all above only needs calculating once
-    enough = np.searchsorted(cums, frac)
-    # Aim is to select the strongest peaks for indexing.
-    cutoff = sortedpks[enough]
-    mask = cor_intensity > cutoff
-    if doplot is not None:
-        fig, axs = plt.subplots(1, 2, figsize=(10, 5))
-        axs[0].plot(cums / cums[-1], ',')
-        axs[0].set(xlabel='npks', ylabel='fractional intensity')
-        axs[0].plot([mask.sum(), ], [frac, ], "o")
-        axs[1].plot(cums / cums[-1], ',')
-        axs[1].set(xlabel='npks logscale', ylabel='fractional intensity', xscale='log', ylim=(doplot, 1.),
-                   xlim=(np.searchsorted(cums, doplot), len(cums)))
-        axs[1].plot([mask.sum(), ], [frac, ], "o")
-        plt.show()
-    return mask
-
-
-def selectpeaks(cf, dstol=0.005, dsmax=10, frac=0.99, doplot=None):
-    m = unitcell_peaks_mask(cf, dstol=dstol, dsmax=dsmax)
-    cfc = cf.copy()
-    cfc.filter(m)
-    ms = strongest_peaks(cfc, frac=frac, doplot=doplot)
-    cfc.filter(ms)
-    return cfc
-
-
 ### Plotting
 
 def plot_index_results(ind, colfile, title):
@@ -1132,7 +1075,7 @@ def refine_grain_positions(cf_3d, ds, grains, parfile, symmetry="cubic", cf_frac
                            hkl_tols=(0.05, 0.025, 0.01)):
     sample = ds.sample
     dataset = ds.dset
-    cf_strong_allrings = selectpeaks(cf_3d, frac=cf_frac, dsmax=cf_3d.ds.max(), doplot=None, dstol=cf_dstol)
+    cf_strong_allrings = select_ring_peaks_by_intensity(cf_3d, frac=cf_frac, dsmax=cf_3d.ds.max(), doplot=None, dstol=cf_dstol)
     print("Got {} strong peaks for makemap".format(cf_strong_allrings.nrows))
     cf_strong_allrings_path = '{}_{}_3d_peaks_strong_all_rings.flt'.format(sample, dataset)
     cf_strong_allrings.writefile(cf_strong_allrings_path)
