@@ -2,10 +2,11 @@ import numba
 import numpy as np
 
 import ImageD11.grain
+import ImageD11.cImageD11
+import ImageD11.columnfile
 import ImageD11.sinograms.dataset
 import ImageD11.sinograms.properties
 import ImageD11.sinograms.roi_iradon
-import ImageD11.cImageD11
 
 
 class GrainSinogram:
@@ -35,6 +36,74 @@ class GrainSinogram:
         self.recon_mask = None
         self.recon_pad = None
         self.recon_y0 = None
+
+    def prepare_peaks_from_2d(self, cf_2d, grain_label, hkltol=0.25):
+        """Prepare peaks used for sinograms from 2D peaks data
+           Performs greedy assignment of all 2d peaks to each grain"""
+
+        # get all g-vectors from columnfile
+        gv = np.transpose((cf_2d.gx, cf_2d.gy, cf_2d.gz)).astype(float)
+
+        # column to store the grain labels
+        labels = np.zeros(cf_2d.nrows, 'i')
+
+        # column to store drlv2 (error in hkl)
+        drlv2 = np.ones(cf_2d.nrows, 'd')
+
+        _ = ImageD11.cImageD11.score_and_assign(self.grain.ubi, gv, hkltol, drlv2, labels, grain_label)
+
+        mask_2d = labels == grain_label
+
+        # get needed columns in the flt file from the mask (without creating a full new FLT for this grain)
+        dty = cf_2d.dty[mask_2d]
+        omega = cf_2d.omega[mask_2d]
+        gx = cf_2d.gx[mask_2d]
+        gy = cf_2d.gy[mask_2d]
+        gz = cf_2d.gz[mask_2d]
+        eta = cf_2d.eta[mask_2d]
+        sum_intensity = cf_2d.sum_intensity[mask_2d]
+
+        cf_dict = {"dty": dty,
+                   "omega": omega,
+                   "gx": gx,
+                   "gy": gy,
+                   "gz": gz,
+                   "eta": eta,
+                   "sum_intensity": sum_intensity}
+
+        grain_flt = ImageD11.columnfile.colfile_from_dict(cf_dict)
+
+        self.cf_for_sino = grain_flt
+
+    def prepare_peaks_from_2d_fast(self, cf_2d, grain_label, hkltol=0.25):
+        """Prepare peaks used for sinograms from 2D peaks data
+           Performs greedy assignment of all 2d peaks to each grain"""
+
+        # add an index column to the columnfile
+        cf_2d.addcolumn(np.arange(cf_2d.nrows), "pkindex")
+
+        # get all g-vectors from columnfile
+        gv = np.transpose((cf_2d.gx, cf_2d.gy, cf_2d.gz)).astype(float)
+
+        # column to store the grain labels
+        labels = np.zeros(cf_2d.nrows, 'i')
+
+        # column to store drlv2 (error in hkl)
+        drlv2 = np.ones(cf_2d.nrows, 'd')
+
+        _ = ImageD11.cImageD11.score_and_assign(self.grain.ubi, gv, hkltol, drlv2, labels, grain_label)
+
+        mask_2d = labels == grain_label
+
+        grain_peaks_2d = cf_2d.pkindex[mask_2d]
+
+        # Filter the peaks table to the peaks for this grain only
+        p2d = {p: self.ds.pk2d[p][grain_peaks_2d] for p in self.ds.pk2d}
+
+        # Make a spatially corrected columnfile from the filtered peaks table
+        flt = self.ds.get_colfile_from_peaks_dict(peaks_dict=p2d)
+
+        self.cf_for_sino = flt
 
     def prepare_peaks_from_4d(self, cf_4d, grain_label, hkltol=0.25):
         """Prepares peaks used for sinograms from 4D peaks data.
@@ -68,10 +137,12 @@ class GrainSinogram:
         Computes sinogram for this grain using all peaks in self.cf_for_sino
         """
         NY = len(self.ds.ybincens)  # number of y translations
-        iy = np.round((self.cf_for_sino.dty - self.ds.ybincens[0]) / (self.ds.ybincens[1] - self.ds.ybincens[0])).astype(
+        iy = np.round(
+            (self.cf_for_sino.dty - self.ds.ybincens[0]) / (self.ds.ybincens[1] - self.ds.ybincens[0])).astype(
             int)  # flt column for y translation index
 
-        hkl = np.round(np.dot(self.grain.ubi, (self.cf_for_sino.gx, self.cf_for_sino.gy, self.cf_for_sino.gz))).astype(int)
+        hkl = np.round(np.dot(self.grain.ubi, (self.cf_for_sino.gx, self.cf_for_sino.gy, self.cf_for_sino.gz))).astype(
+            int)
         etasigns = np.sign(self.cf_for_sino.eta)
 
         # The problem is to assign each spot to a place in the sinogram
@@ -227,7 +298,6 @@ def save_array(grp, name, ary):
                               **cmp)
     hds[:] = ary
     return hds
-
 
 
 # TODO go to some sort of Numba zone or C code?
