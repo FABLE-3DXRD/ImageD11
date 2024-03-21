@@ -154,7 +154,7 @@ useful = [   # stuff you probably want, and should be able to get easily
     "matplotlib",  # tkGui
     "pyopengltk",  # plot3d in tkGui
     "scipy",       #
-    'hdf5plugin==1.4.1 ; python_version < "3" and sys_platform == "win32" ',
+    'hdf5plugin==1.4.1 ; python_version < "3"',   #  and sys_platform == "win32" ',
     'hdf5plugin ; python_version >= "3" ',
     'h5py',
     'pyyaml',
