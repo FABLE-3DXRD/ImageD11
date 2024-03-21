@@ -166,6 +166,7 @@ useful = [   # stuff you probably want, and should be able to get easily
     "fast_histogram",
     "scikit-image",
     "tqdm",
+    'threadpoolctl ; python_version >= "3" ',
 ]
 
 
