@@ -4,6 +4,7 @@ import os
 import struct
 import warnings
 from ImageD11 import cImageD11_docstrings
+import numba
 
 try:
     from ImageD11._cImageD11 import *
@@ -159,3 +160,25 @@ def fill_in_docstrings():
 fill_in_docstrings()
 
 assert verify_rounding(20) == 0, "Problem with cImageD11 fast rounding code"
+
+
+
+# dsb = np.floor( cf.ds * istep ).astype(int).clip(0,hbins-1)
+@numba.njit(parallel=True)
+def array_bin( ary, inverse_step, nbins ):
+    """ Find integer bins for array reals from 0 to nbins and 1/step
+    returns int( floor( ary * inverse_step ) ).clip(0,nbins-1)
+    """
+    out = np.zeros( ary.shape[0], dtype=np.dtype(np.intp) )
+    for i in numba.prange( len(ary) ):
+        j = int(np.floor(ary[i] * inverse_step)) # find bin
+        j = min(max(0,j), nbins-1) # clip to range
+        out[i] = j
+    return out
+
+
+@numba.njit(parallel=True)
+def array_lt( ary, cut, out):
+    """ parallel ary < cut """
+    for i in numba.prange(ary.size):
+        out[i] = ary[i] < cut
