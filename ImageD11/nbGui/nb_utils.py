@@ -674,80 +674,7 @@ def fit_grain_position_from_recon(grain, ds, y0):
 
 
 ### Peak manipulation
-# GOTO some sort of Numba zone or C code?
 
-@numba.njit(parallel=True)
-def pmax(ary):
-    """ Find the min/max of an array in parallel """
-    mx = ary.flat[0]
-    mn = ary.flat[0]
-    for i in numba.prange(1, ary.size):
-        mx = max(ary.flat[i], mx)
-        mn = min(ary.flat[i], mn)
-    return mn, mx
-
-
-@numba.njit(parallel=True)
-def palloc(shape, dtype):
-    """ Allocate and fill an array with zeros in parallel """
-    ary = np.empty(shape, dtype=dtype)
-    for i in numba.prange(ary.size):
-        ary.flat[i] = 0
-    return ary
-
-
-# counting sort by grain_id
-@numba.njit
-def counting_sort(ary, maxval=None, minval=None):
-    """ Radix sort for integer array. Single threaded. O(n)
-    Numpy should be doing this...
-    """
-    if maxval is None:
-        assert minval is None
-        minval, maxval = pmax(ary)  # find with a first pass
-    maxval = int(maxval)
-    minval = int(minval)
-    histogram = palloc((maxval - minval + 1,), np.int64)
-    indices = palloc((maxval - minval + 2,), np.int64)
-    result = palloc(ary.shape, np.int64)
-    for gid in ary:
-        histogram[gid - minval] += 1
-    indices[0] = 0
-    for i in range(len(histogram)):
-        indices[i + 1] = indices[i] + histogram[i]
-    i = 0
-    for gid in ary:
-        j = gid - minval
-        result[indices[j]] = i
-        indices[j] += 1
-        i += 1
-    return result, histogram
-
-
-@numba.njit(parallel=True)
-def find_grain_id(spot3d_id, grain_id, spot2d_label, grain_label, order, nthreads=20):
-    """
-    Assignment grain labels into the peaks 2d array
-    spot3d_id = the 3d spot labels that are merged and indexed
-    grain_id = the grains assigned to the 3D merged peaks
-    spot2d_label = the 3d label for each 2d peak
-    grain_label => output, which grain is this peak
-    order = the order to traverse spot2d_label sorted
-    """
-    assert spot3d_id.shape == grain_id.shape
-    assert spot2d_label.shape == grain_label.shape
-    assert spot2d_label.shape == order.shape
-    T = nthreads
-    print("Using", T, "threads")
-    for tid in numba.prange(T):
-        pcf = 0  # thread local I hope?
-        for i in order[tid::T]:
-            grain_label[i] = -1
-            pkid = spot2d_label[i]
-            while spot3d_id[pcf] < pkid:
-                pcf += 1
-            if spot3d_id[pcf] == pkid:
-                grain_label[i] = grain_id[pcf]
 
 
 # GOTO class method for Peaks2Grain class
@@ -771,41 +698,7 @@ def assign_peaks_to_grains(grains, cf, tol):
     cf.addcolumn(labels, 'grain_id')
 
 
-def get_2d_peaks_from_4d_peaks(ds, cf):
-    # Big scary block
-    # Must understand what this does!
 
-    # Ensure cf is sorted by spot3d_id
-    # NOTE: spot3d_id should be spot4d_id, because we have merged into 4D?
-    assert (np.argsort(cf.spot3d_id) == np.arange(cf.nrows)).all()
-
-    # load the 2d peak labelling output
-    pks = ImageD11.sinograms.properties.pks_table.load(ds.pksfile)
-
-    # Grab the 2d peak centroids
-    p2d = pks.pk2d(ds.omega, ds.dty)
-
-    # NOTE: These are not spatially corrected?!
-
-    numba_order, numba_histo = counting_sort(p2d['spot3d_id'])
-
-    grain_2d_id = palloc(p2d['spot3d_id'].shape, np.dtype(int))
-
-    cleanid = cf.grain_id.copy()
-
-    find_grain_id(cf.spot3d_id, cleanid, p2d['spot3d_id'], grain_2d_id, numba_order)
-
-    gord, counts = counting_sort(grain_2d_id)
-
-    inds = np.concatenate(((0,), np.cumsum(counts)))
-
-    # I think what we end up with is:
-    # inds
-    # this is an array which tells you which 2D spots each grain owns
-    # the 2D spots are sorted by spot ID
-    # inds tells you for each grain were you can find its associated 2D spots
-
-    return gord, inds, p2d
 
 
 

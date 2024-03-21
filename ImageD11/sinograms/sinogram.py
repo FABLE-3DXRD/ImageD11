@@ -1,9 +1,11 @@
+import numba
 import numpy as np
 
 import ImageD11.grain
 import ImageD11.sinograms.dataset
-import ImageD11.cImageD11
+import ImageD11.sinograms.properties
 import ImageD11.sinograms.roi_iradon
+import ImageD11.cImageD11
 
 
 class GrainSinogram:
@@ -19,8 +21,7 @@ class GrainSinogram:
         self.ds = dataset
 
         # Peak information to build the sinogram
-        self.etasigns_2d_strong = None
-        self.hkl_2d_strong = None
+        self.cf_for_sino = None
 
         # Sinogram information
         self.sinoangles = None
@@ -35,41 +36,48 @@ class GrainSinogram:
         self.recon_pad = None
         self.recon_y0 = None
 
-    def prepare_peaks_for_sinogram(self, peak_indices_2d, hkltol=0.25):
-        """Filters the 2D peaks assigned to the grain based on the HKL tolerance"""
+    def prepare_peaks_from_4d(self, cf_4d, grain_label, hkltol=0.25):
+        """Prepares peaks used for sinograms from 4D peaks data.
+           cf_4d should contain grain assignments
+           grain_label should be the label for this grain"""
+        # fail if not already assigned
+        if 'grain_id' not in cf_4d.titles:
+            raise ValueError("cf_4d does not contain grain assignments!")
+
+        # get associated 2D peaks from 4D peaks
+        gord, inds = get_2d_peaks_from_4d_peaks(self.ds.pk2d, cf_4d)
+        grain_peaks_2d = gord[inds[grain_label + 1]:inds[grain_label + 2]]
 
         # Filter the peaks table to the peaks for this grain only
-        p2d = {p: self.ds.pk2d[p][peak_indices_2d] for p in self.ds.pk2d}
+        p2d = {p: self.ds.pk2d[p][grain_peaks_2d] for p in self.ds.pk2d}
 
         # Make a spatially corrected columnfile from the filtered peaks table
         flt = self.ds.get_colfile_from_peaks_dict(peaks_dict=p2d)
 
+        # Filter the columnfile by hkl tol
         hkl_real = np.dot(self.grain.ubi, (flt.gx, flt.gy, flt.gz))  # calculate hkl of all assigned peaks
         hkl_int = np.round(hkl_real).astype(int)  # round to nearest integer
         dh = ((hkl_real - hkl_int) ** 2).sum(axis=0)  # calculate square of difference
 
         flt.filter(dh < hkltol * hkltol)  # filter all assigned peaks to be less than hkltol squared
-        hkl_real = np.dot(self.grain.ubi, (flt.gx, flt.gy, flt.gz))  # recalculate error after filtration
-        hkl_int = np.round(hkl_real).astype(int)
 
-        self.etasigns_2d_strong = np.sign(flt.eta)
-        self.hkl_2d_strong = hkl_int  # integer hkl of assigned peaks after hkltol filtering
-        self.flt = flt
+        self.cf_for_sino = flt
 
     def build_sinogram(self):
         """
-        Computes sinogram from peaks data
-        Flt is the filtered assigned 2D peaks for this grain
-
+        Computes sinogram for this grain using all peaks in self.cf_for_sino
         """
         NY = len(self.ds.ybincens)  # number of y translations
-        iy = np.round((self.flt.dty - self.ds.ybincens[0]) / (self.ds.ybincens[1] - self.ds.ybincens[0])).astype(
+        iy = np.round((self.cf_for_sino.dty - self.ds.ybincens[0]) / (self.ds.ybincens[1] - self.ds.ybincens[0])).astype(
             int)  # flt column for y translation index
 
+        hkl = np.round(np.dot(self.grain.ubi, (self.cf_for_sino.gx, self.cf_for_sino.gy, self.cf_for_sino.gz))).astype(int)
+        etasigns = np.sign(self.cf_for_sino.eta)
+
         # The problem is to assign each spot to a place in the sinogram
-        hklmin = self.hkl_2d_strong.min(axis=1)  # Get minimum integer hkl (e.g -10, -9, -10)
-        dh = self.hkl_2d_strong - hklmin[:, np.newaxis]  # subtract minimum hkl from all integer hkls
-        de = (self.etasigns_2d_strong.astype(int) + 1) // 2  # something signs related
+        hklmin = hkl.min(axis=1)  # Get minimum integer hkl (e.g -10, -9, -10)
+        dh = hkl - hklmin[:, np.newaxis]  # subtract minimum hkl from all integer hkls
+        de = (etasigns.astype(int) + 1) // 2  # something signs related
         #   4D array of h,k,l,+/-
         # pkmsk is whether a peak has been observed with this HKL or not
         pkmsk = np.zeros(list(dh.max(axis=1) + 1) + [2, ],
@@ -87,10 +95,10 @@ class GrainSinogram:
         angs = np.zeros((npks, NY), 'f')
         adr = destRow * NY + iy
         # Just accumulate
-        sig = self.flt.sum_intensity
+        sig = self.cf_for_sino.sum_intensity
         ImageD11.cImageD11.put_incr64(sino, adr, sig)
         ImageD11.cImageD11.put_incr64(hits, adr, np.ones(len(de), dtype='f'))
-        ImageD11.cImageD11.put_incr64(angs, adr, self.flt.omega)
+        ImageD11.cImageD11.put_incr64(angs, adr, self.cf_for_sino.omega)
 
         sinoangles = angs.sum(axis=1) / hits.sum(axis=1)
         # Normalise:
@@ -150,11 +158,11 @@ class GrainSinogram:
         grain_group = parent_group.require_group(group_name)
 
         # save peak information
-        peak_info_group = grain_group.require_group("peak_info")
-        for peak_info_attr in ["etasigns_2d_strong", "hkl_2d_strong"]:
-            peak_info_var = getattr(self, peak_info_attr)
-            if peak_info_var is not None:
-                save_array(peak_info_group, peak_info_attr, peak_info_var)
+        # peak_info_group = grain_group.require_group("peak_info")
+        # for peak_info_attr in ["etasigns_2d_strong", "hkl_2d_strong"]:
+        #     peak_info_var = getattr(self, peak_info_attr)
+        #     if peak_info_var is not None:
+        #         save_array(peak_info_group, peak_info_attr, peak_info_var)
 
         # save sinograms
         sinogram_group = grain_group.require_group("sinograms")
@@ -219,3 +227,105 @@ def save_array(grp, name, ary):
                               **cmp)
     hds[:] = ary
     return hds
+
+
+
+# TODO go to some sort of Numba zone or C code?
+@numba.njit(parallel=True)
+def pmax(ary):
+    """ Find the min/max of an array in parallel """
+    mx = ary.flat[0]
+    mn = ary.flat[0]
+    for i in numba.prange(1, ary.size):
+        mx = max(ary.flat[i], mx)
+        mn = min(ary.flat[i], mn)
+    return mn, mx
+
+
+@numba.njit(parallel=True)
+def palloc(shape, dtype):
+    """ Allocate and fill an array with zeros in parallel """
+    ary = np.empty(shape, dtype=dtype)
+    for i in numba.prange(ary.size):
+        ary.flat[i] = 0
+    return ary
+
+
+# counting sort by grain_id
+@numba.njit
+def counting_sort(ary, maxval=None, minval=None):
+    """ Radix sort for integer array. Single threaded. O(n)
+    Numpy should be doing this...
+    """
+    if maxval is None:
+        assert minval is None
+        minval, maxval = pmax(ary)  # find with a first pass
+    maxval = int(maxval)
+    minval = int(minval)
+    histogram = palloc((maxval - minval + 1,), np.int64)
+    indices = palloc((maxval - minval + 2,), np.int64)
+    result = palloc(ary.shape, np.int64)
+    for gid in ary:
+        histogram[gid - minval] += 1
+    indices[0] = 0
+    for i in range(len(histogram)):
+        indices[i + 1] = indices[i] + histogram[i]
+    i = 0
+    for gid in ary:
+        j = gid - minval
+        result[indices[j]] = i
+        indices[j] += 1
+        i += 1
+    return result, histogram
+
+
+@numba.njit(parallel=True)
+def find_grain_id(spot3d_id, grain_id, spot2d_label, grain_label, order, nthreads=20):
+    """
+    Assignment grain labels into the peaks 2d array
+    spot3d_id = the 3d spot labels that are merged and indexed
+    grain_id = the grains assigned to the 3D merged peaks
+    spot2d_label = the 3d label for each 2d peak
+    grain_label => output, which grain is this peak
+    order = the order to traverse spot2d_label sorted
+    """
+    assert spot3d_id.shape == grain_id.shape
+    assert spot2d_label.shape == grain_label.shape
+    assert spot2d_label.shape == order.shape
+    T = nthreads
+    print("Using", T, "threads")
+    for tid in numba.prange(T):
+        pcf = 0  # thread local I hope?
+        for i in order[tid::T]:
+            grain_label[i] = -1
+            pkid = spot2d_label[i]
+            while spot3d_id[pcf] < pkid:
+                pcf += 1
+            if spot3d_id[pcf] == pkid:
+                grain_label[i] = grain_id[pcf]
+
+
+def get_2d_peaks_from_4d_peaks(p2d, cf):
+    """
+    inds is an array which tells you which 2D spots each grain owns
+    the 2D spots are sorted by spot ID
+    inds tells you for each grain were you can find its associated 2D spots"""
+    # Big scary block
+
+    # Ensure cf is sorted by spot3d_id
+    # NOTE: spot3d_id should be spot4d_id, because we have merged into 4D?
+    assert (np.argsort(cf.spot3d_id) == np.arange(cf.nrows)).all()
+
+    numba_order, numba_histo = counting_sort(p2d['spot3d_id'])
+
+    grain_2d_id = palloc(p2d['spot3d_id'].shape, np.dtype(int))
+
+    cleanid = cf.grain_id.copy()
+
+    find_grain_id(cf.spot3d_id, cleanid, p2d['spot3d_id'], grain_2d_id, numba_order)
+
+    gord, counts = counting_sort(grain_2d_id)
+
+    inds = np.concatenate(((0,), np.cumsum(counts)))
+
+    return gord, inds
