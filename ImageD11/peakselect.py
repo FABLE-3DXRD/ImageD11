@@ -7,6 +7,7 @@ Various utility functions for selecting peaks within columnfiles
 """
 
 import numpy as np
+from ImageD11.cImageD11 import array_bin
 
 def assign_ring_histo(cf, dsmax, hbins, cell):
     """
