@@ -336,22 +336,35 @@ def read_h5(filename, ds):
     return gs_objects
 
 
+def write_slice_recon(filename, slice_arrays):
+    rgb_x_array, rgb_y_array, rgb_z_array, grain_labels_array, raw_intensity_array = slice_arrays
+    with h5py.File(filename, "a") as hout:
+        slice_group = hout.require_group('slice_recon')
+        save_array(slice_group, 'intensity', raw_intensity_array)
+        save_array(slice_group, 'labels', grain_labels_array)
+
+        save_array(slice_group, 'ipf_x_col_map', rgb_x_array).attrs['CLASS'] = 'IMAGE'
+        save_array(slice_group, 'ipf_y_col_map', rgb_y_array).attrs['CLASS'] = 'IMAGE'
+        save_array(slice_group, 'ipf_z_col_map', rgb_z_array).attrs['CLASS'] = 'IMAGE'
+
+
 def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon"):
-    grain_labels_array = np.zeros_like(grainsinos[0].recon) - 1
+    first_recon = grainsinos[0].recons[method]
+    grain_labels_array = np.zeros_like(first_recon) - 1
 
-    redx = np.zeros_like(grainsinos[0].recon)
-    grnx = np.zeros_like(grainsinos[0].recon)
-    blux = np.zeros_like(grainsinos[0].recon)
+    redx = np.zeros_like(first_recon)
+    grnx = np.zeros_like(first_recon)
+    blux = np.zeros_like(first_recon)
 
-    redy = np.zeros_like(grainsinos[0].recon)
-    grny = np.zeros_like(grainsinos[0].recon)
-    bluy = np.zeros_like(grainsinos[0].recon)
+    redy = np.zeros_like(first_recon)
+    grny = np.zeros_like(first_recon)
+    bluy = np.zeros_like(first_recon)
 
-    redz = np.zeros_like(grainsinos[0].recon)
-    grnz = np.zeros_like(grainsinos[0].recon)
-    bluz = np.zeros_like(grainsinos[0].recon)
+    redz = np.zeros_like(first_recon)
+    grnz = np.zeros_like(first_recon)
+    bluz = np.zeros_like(first_recon)
 
-    raw_intensity_array = np.zeros_like(grainsinos[0].recon)
+    raw_intensity_array = np.zeros_like(first_recon)
 
     raw_intensity_array.fill(cutoff_level)
 
@@ -359,10 +372,9 @@ def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon"):
         m = r > r.max() * 0.2
         return (r / r[m].mean()).clip(0, 1)
 
-    for g in grainsinos:
-        i = g.gid
+    for i, gs in enumerate(grainsinos):
 
-        g_raw_intensity = norm(g.recons[method])
+        g_raw_intensity = norm(gs.recons[method])
 
         g_raw_intensity_mask = g_raw_intensity > raw_intensity_array
 
@@ -370,17 +382,17 @@ def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon"):
 
         raw_intensity_array[g_raw_intensity_mask] = g_raw_intensity_map
 
-        redx[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_x[0]
-        grnx[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_x[1]
-        blux[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_x[2]
+        redx[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_x[0]
+        grnx[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_x[1]
+        blux[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_x[2]
 
-        redy[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_y[0]
-        grny[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_y[1]
-        bluy[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_y[2]
+        redy[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_y[0]
+        grny[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_y[1]
+        bluy[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_y[2]
 
-        redz[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_z[0]
-        grnz[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_z[1]
-        bluz[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_z[2]
+        redz[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_z[0]
+        grnz[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_z[1]
+        bluz[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_z[2]
 
         grain_labels_array[g_raw_intensity_mask] = i
 
