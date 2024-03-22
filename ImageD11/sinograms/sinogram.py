@@ -1,5 +1,7 @@
+import h5py
 import numba
 import numpy as np
+from skimage.filters import threshold_otsu
 
 import ImageD11.grain
 import ImageD11.cImageD11
@@ -75,35 +77,6 @@ class GrainSinogram:
 
         self.cf_for_sino = grain_flt
 
-    def prepare_peaks_from_2d_fast(self, cf_2d, grain_label, hkltol=0.25):
-        """Prepare peaks used for sinograms from 2D peaks data
-           Performs greedy assignment of all 2d peaks to each grain"""
-
-        # add an index column to the columnfile
-        cf_2d.addcolumn(np.arange(cf_2d.nrows), "pkindex")
-
-        # get all g-vectors from columnfile
-        gv = np.transpose((cf_2d.gx, cf_2d.gy, cf_2d.gz)).astype(float)
-
-        # column to store the grain labels
-        labels = np.zeros(cf_2d.nrows, 'i')
-
-        # column to store drlv2 (error in hkl)
-        drlv2 = np.ones(cf_2d.nrows, 'd')
-
-        _ = ImageD11.cImageD11.score_and_assign(self.grain.ubi, gv, hkltol, drlv2, labels, grain_label)
-
-        mask_2d = labels == grain_label
-
-        grain_peaks_2d = cf_2d.pkindex[mask_2d]
-
-        # Filter the peaks table to the peaks for this grain only
-        p2d = {p: self.ds.pk2d[p][grain_peaks_2d] for p in self.ds.pk2d}
-
-        # Make a spatially corrected columnfile from the filtered peaks table
-        flt = self.ds.get_colfile_from_peaks_dict(peaks_dict=p2d)
-
-        self.cf_for_sino = flt
 
     def prepare_peaks_from_4d(self, cf_4d, grain_label, hkltol=0.25):
         """Prepares peaks used for sinograms from 4D peaks data.
@@ -215,6 +188,19 @@ class GrainSinogram:
 
         self.recons[method] = recon
 
+    def get_shape_mask(self, method="iradon", cutoff=None):
+        """Gets a boolean mask representing the grain shape from the grain reconstruction.
+           Performs a binary threshold of the reconstruction.
+           Uses manual threshold value if cutoff value provided.
+           Performs global Otsu threshold if no value provided."""
+        image = self.recons[method]
+        if cutoff is None:
+            threshold = threshold_otsu(image)
+        else:
+            threshold = cutoff
+        binary_image = image > threshold
+        return binary_image
+
     def mask_central_zingers(self, method="iradon", radius=25):
         self.recons[method] = ImageD11.sinograms.roi_iradon.correct_recon_central_zingers(self.recons[method],
                                                                                           radius=radius)
@@ -282,6 +268,43 @@ class GrainSinogram:
                 grainsino_obj.recons[recon_attr] = recon_var
 
         return grainsino_obj
+
+
+def write_h5(filename, list_of_sinos, write_grains_too=True):
+    """Write list of GrainSinogram objects to H5Py file
+       If write_grains_too is True, will also write self.grain to the same file"""
+    with h5py.File(filename, "w") as hout:
+        grains_group = hout.require_group('grains')
+
+        for gsinc, gs in enumerate(list_of_sinos):
+            group_name = str(gsinc)
+            gs.to_h5py_group(parent_group=grains_group, group_name=group_name)
+            if write_grains_too:
+                gs.grain.to_h5py_group(parent_group=grains_group, group_name=group_name)
+
+
+def read_h5(filename, ds):
+    """Read list of GrainSinogram objects from H5Py file
+       Will also create self.grain objects from the H5Py file
+       Because GrainSinogram objects can't exist without corresponding grain objects"""
+    with h5py.File(filename, "r") as hin:
+        grains_group = hin['grains']
+        gs_objects = []
+
+        # take all the keys in the grains group, sort them by integer value, iterate
+        for gid_string in sorted(grains_group.keys(), key=lambda x: int(x)):
+            grain_group = grains_group[gid_string]
+
+            # import the grain object
+            g = ImageD11.grain.grain.from_h5py_group(grain_group)
+
+            # create the GrainSinogram object
+            gs = GrainSinogram.from_h5py_group(grain_group, ds, g)
+
+            gs_objects.append(gs)
+
+    return gs_objects
+
 
 
 # TODO: Use Silx Nexus IO instead?
