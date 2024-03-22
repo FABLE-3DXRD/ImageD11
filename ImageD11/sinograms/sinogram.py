@@ -189,7 +189,11 @@ class GrainSinogram:
             recon_function = ImageD11.sinograms.roi_iradon.run_iradon
         elif method == "mlem":
             # MLEM has niter as an extra argument
-            recon_function = partial(ImageD11.sinograms.roi_iradon.run_mlem, niter=self.recon_niter)
+            # Overwrite the default argument if self.recon_niter is set
+            if self.recon_niter is not None:
+                recon_function = partial(ImageD11.sinograms.roi_iradon.run_mlem, niter=self.recon_niter)
+            else:
+                recon_function = ImageD11.sinograms.roi_iradon.run_mlem
 
         recon = recon_function(sino=sino,
                                angles=angles,
