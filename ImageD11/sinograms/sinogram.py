@@ -190,6 +190,10 @@ class GrainSinogram:
         elif method == "mlem":
             # MLEM has niter as an extra argument
             # Overwrite the default argument if self.recon_niter is set
+            # TODO: We should think about default reconstruction arguments in more detail
+            # At the moment, we could pass None for pad or y0 etc to recon_function if they are not manually set, which seems dangerous
+            # Do we check for None at the start of this function?
+            # Or do we initialise them to sensible default values inside __init__?
             if self.recon_niter is not None:
                 recon_function = partial(ImageD11.sinograms.roi_iradon.run_mlem, niter=self.recon_niter)
             else:
