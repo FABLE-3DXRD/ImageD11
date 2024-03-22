@@ -1,3 +1,5 @@
+from functools import partial
+
 import h5py
 import numba
 import numpy as np
@@ -38,6 +40,7 @@ class GrainSinogram:
         self.recon_mask = None
         self.recon_pad = None
         self.recon_y0 = None
+        self.recon_niter = None
 
     def prepare_peaks_from_2d(self, cf_2d, grain_label, hkltol=0.25):
         """Prepare peaks used for sinograms from 2D peaks data
@@ -160,16 +163,24 @@ class GrainSinogram:
         """Corrects each row of the sinogram to the ring current of the corresponding scan"""
         self.ssino = self.ssino / self.ds.ring_currents_per_scan_scaled[:, None]
 
-    def update_recon_parameters(self, pad, y0, mask):
-        """Update all reconstruction parameters in one go"""
-        self.recon_pad = pad
-        self.recon_y0 = y0
-        self.recon_mask = mask
+    def update_recon_parameters(self, pad=None, y0=None, mask=None, niter=None):
+        """Update some or all of the reconstruction parameters in one go"""
+
+        if pad is not None:
+            self.recon_pad = pad
+        if y0 is not None:
+            self.recon_y0 = y0
+        if mask is not None:
+            self.recon_mask = mask
+        if niter is not None:
+            self.recon_niter = niter
 
     def recon(self, method="iradon", workers=1):
         """Performs reconstruction given reconstruction method"""
         if method not in ["iradon", "mlem"]:
             raise ValueError("Unsupported method!")
+        if self.ssino is None or self.sinoangles is None:
+            raise ValueError("Sorted sino or sinoangles are missing/have not been computed, unable to reconstruct.")
 
         sino = self.ssino
         angles = self.sinoangles
@@ -177,7 +188,8 @@ class GrainSinogram:
         if method == "iradon":
             recon_function = ImageD11.sinograms.roi_iradon.run_iradon
         elif method == "mlem":
-            recon_function = ImageD11.sinograms.roi_iradon.run_mlem
+            # MLEM has niter as an extra argument
+            recon_function = partial(ImageD11.sinograms.roi_iradon.run_mlem, niter=self.recon_niter)
 
         recon = recon_function(sino=sino,
                                angles=angles,
@@ -229,14 +241,17 @@ class GrainSinogram:
             if sino_var is not None:
                 save_array(sinogram_group, sino_attr, sino_var)
 
-        # save reconstruction parameters
+        # save reconstruction parameters as attributes
 
         recon_par_group = grain_group.require_group("recon_parameters")
 
-        for recon_par_attr in ["recon_mask", "recon_pad", "recon_y0"]:
+        for recon_par_attr in ["recon_pad", "recon_y0", "recon_niter"]:
             recon_par_var = getattr(self, recon_par_attr)
             if recon_par_var is not None:
-                recon_par_group[recon_par_attr] = recon_par_var
+                recon_par_group.attrs[recon_par_attr] = recon_par_var
+
+        if self.recon_mask is not None:
+            save_array(recon_par_group, "recon_mask", self.recon_mask)
 
         # save reconstructions
 
@@ -252,15 +267,22 @@ class GrainSinogram:
         """Creates a GrainSinogram object from an h5py group, dataset and grain object"""
         grainsino_obj = GrainSinogram(grain_obj=grain, dataset=ds)
 
-        if "peak_info" in group.keys():
-            for peak_info_attr in ["etasigns_2d_strong", "hkl_2d_strong"]:
-                peak_info_var = group["peak_info"].get(peak_info_attr)[:]
-                setattr(grainsino_obj, peak_info_attr, peak_info_var)
+        # if "peak_info" in group.keys():
+        #     for peak_info_attr in ["etasigns_2d_strong", "hkl_2d_strong"]:
+        #         peak_info_var = group["peak_info"].get(peak_info_attr)[:]
+        #         setattr(grainsino_obj, peak_info_attr, peak_info_var)
+
+        if "sinograms" in group.keys():
+            for sino_attr in ["sino", "ssino", "sinoangles"]:
+                sino_var = group["sinograms"].get(sino_attr)[:]
+                setattr(grainsino_obj, sino_attr, sino_var)
 
         if "recon_parameters" in group.keys():
-            for recon_par_attr in ["recon_mask", "recon_pad", "recon_y0"]:
-                recon_par_var = group["recon_parameters"].get(recon_par_attr)[()]
+            for recon_par_attr in ["recon_pad", "recon_y0", "recon_niter"]:
+                recon_par_var = group["recon_parameters"].attrs.get(recon_par_attr)[()]
                 setattr(grainsino_obj, recon_par_attr, recon_par_var)
+
+            grainsino_obj.recon_mask = group["recon_parameters"].get("recon_mask")[:]
 
         if "recons" in group.keys():
             for recon_attr in group["recons"].keys():
@@ -273,7 +295,7 @@ class GrainSinogram:
 def write_h5(filename, list_of_sinos, write_grains_too=True):
     """Write list of GrainSinogram objects to H5Py file
        If write_grains_too is True, will also write self.grain to the same file"""
-    with h5py.File(filename, "w") as hout:
+    with h5py.File(filename, "a") as hout:
         grains_group = hout.require_group('grains')
 
         for gsinc, gs in enumerate(list_of_sinos):
@@ -304,6 +326,64 @@ def read_h5(filename, ds):
             gs_objects.append(gs)
 
     return gs_objects
+
+
+def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon"):
+    grain_labels_array = np.zeros_like(grainsinos[0].recon) - 1
+
+    redx = np.zeros_like(grainsinos[0].recon)
+    grnx = np.zeros_like(grainsinos[0].recon)
+    blux = np.zeros_like(grainsinos[0].recon)
+
+    redy = np.zeros_like(grainsinos[0].recon)
+    grny = np.zeros_like(grainsinos[0].recon)
+    bluy = np.zeros_like(grainsinos[0].recon)
+
+    redz = np.zeros_like(grainsinos[0].recon)
+    grnz = np.zeros_like(grainsinos[0].recon)
+    bluz = np.zeros_like(grainsinos[0].recon)
+
+    raw_intensity_array = np.zeros_like(grainsinos[0].recon)
+
+    raw_intensity_array.fill(cutoff_level)
+
+    def norm(r):
+        m = r > r.max() * 0.2
+        return (r / r[m].mean()).clip(0, 1)
+
+    for g in grainsinos:
+        i = g.gid
+
+        g_raw_intensity = norm(g.recons[method])
+
+        g_raw_intensity_mask = g_raw_intensity > raw_intensity_array
+
+        g_raw_intensity_map = g_raw_intensity[g_raw_intensity_mask]
+
+        raw_intensity_array[g_raw_intensity_mask] = g_raw_intensity_map
+
+        redx[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_x[0]
+        grnx[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_x[1]
+        blux[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_x[2]
+
+        redy[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_y[0]
+        grny[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_y[1]
+        bluy[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_y[2]
+
+        redz[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_z[0]
+        grnz[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_z[1]
+        bluz[g_raw_intensity_mask] = g_raw_intensity_map * g.rgb_z[2]
+
+        grain_labels_array[g_raw_intensity_mask] = i
+
+    raw_intensity_array[raw_intensity_array == cutoff_level] = 0
+
+    rgb_x_array = np.transpose((redx, grnx, blux), axes=(1, 2, 0))
+    rgb_y_array = np.transpose((redy, grny, bluy), axes=(1, 2, 0))
+    rgb_z_array = np.transpose((redz, grnz, bluz), axes=(1, 2, 0))
+
+    return rgb_x_array, rgb_y_array, rgb_z_array, grain_labels_array, raw_intensity_array
+
 
 
 
@@ -386,7 +466,7 @@ def find_grain_id(spot3d_id, grain_id, spot2d_label, grain_label, order, nthread
     assert spot2d_label.shape == grain_label.shape
     assert spot2d_label.shape == order.shape
     T = nthreads
-    print("Using", T, "threads")
+    # print("Using", T, "threads")
     for tid in numba.prange(T):
         pcf = 0  # thread local I hope?
         for i in order[tid::T]:

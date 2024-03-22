@@ -96,8 +96,7 @@ def slurm_submit_many_and_wait(bash_script_paths, wait_time_sec=60):
             slurm_job_finished = True
 
 
-def prepare_mlem_bash(ds, grains, pad, is_half_scan, id11_code_path, n_simultaneous_jobs=50, cores_per_task=8,
-                      niter=50):
+def prepare_mlem_bash(ds, grains, id11_code_path, n_simultaneous_jobs=50, cores_per_task=8):
     slurm_mlem_path = os.path.join(ds.analysispath, "slurm_mlem")
 
     if os.path.exists(slurm_mlem_path):
@@ -113,13 +112,6 @@ def prepare_mlem_bash(ds, grains, pad, is_half_scan, id11_code_path, n_simultane
             raise OSError("MLEM recons folder exists and is not empty!")
     else:
         os.mkdir(recons_path)
-
-    if is_half_scan:
-        dohm = "Yes"
-        mask_cen = "Yes"
-    else:
-        dohm = "No"
-        mask_cen = "No"
 
     bash_script_path = os.path.join(slurm_mlem_path, ds.dsname + '_mlem_recon_slurm.sh')
     python_script_path = os.path.join(id11_code_path, "ImageD11/nbGui/S3DXRD/run_mlem_recon.py")
@@ -160,8 +152,8 @@ def prepare_mlem_bash(ds, grains, pad, is_half_scan, id11_code_path, n_simultane
 #SBATCH --cpus-per-task={cores_per_task}
 #
 date
-echo python3 {python_script_path} {id11_code_path} {grainsfile} $SLURM_ARRAY_TASK_ID {reconfile} {pad} {niter} {dohm} {mask_cen} > {log_path} 2>&1
-python3 {python_script_path} {id11_code_path} {grainsfile} $SLURM_ARRAY_TASK_ID {reconfile} {pad} {niter} {dohm} {mask_cen} > {log_path} 2>&1
+echo python3 {python_script_path} {id11_code_path} {grainsfile} $SLURM_ARRAY_TASK_ID {dsfile} {reconfile} {cores_per_task} > {log_path} 2>&1
+python3 {python_script_path} {id11_code_path} {grainsfile} $SLURM_ARRAY_TASK_ID {dsfile} {reconfile} {cores_per_task} > {log_path} 2>&1
 date
     """.format(outfile_path=outfile_path,
                errfile_path=errfile_path,
@@ -172,10 +164,7 @@ date
                id11_code_path=id11_code_path,
                grainsfile=ds.grainsfile,
                reconfile=reconfile,
-               pad=pad,
-               niter=niter,
-               dohm=dohm,
-               mask_cen=mask_cen,
+               dsfile=ds.dsfile,
                log_path=log_path)
 
     with open(bash_script_path, "w") as bashscriptfile:
