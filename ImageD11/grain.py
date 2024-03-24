@@ -355,6 +355,7 @@ def write_grain_file_h5(filename, list_of_grains):
 
 
 def read_grain_file_h5(filename):
+    """Read list of grains from H5py file"""
     with h5py.File(filename, 'r') as hin:
         grains_group = hin['grains']
         grains = []
