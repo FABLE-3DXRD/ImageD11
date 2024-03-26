@@ -11,6 +11,7 @@ import ImageD11.columnfile
 import ImageD11.sinograms.dataset
 import ImageD11.sinograms.properties
 import ImageD11.sinograms.roi_iradon
+import ImageD11.sinograms.geometry
 
 
 class GrainSinogram:
@@ -79,7 +80,6 @@ class GrainSinogram:
         grain_flt = ImageD11.columnfile.colfile_from_dict(cf_dict)
 
         self.cf_for_sino = grain_flt
-
 
     def prepare_peaks_from_4d(self, cf_4d, grain_label, hkltol=0.25):
         """Prepares peaks used for sinograms from 4D peaks data.
@@ -154,6 +154,20 @@ class GrainSinogram:
         order = np.lexsort((np.arange(npks), sinoangles))
         self.sinoangles = sinoangles[order]
         self.ssino = self.sino[order].T
+
+    def update_lab_position_from_peaks(self, cf_4d, grain_label):
+        """Updates translation of self.grain using peaks in assigned 4D colfile"""
+        mask_4d = cf_4d.grain_id == grain_label
+        omega = cf_4d.omega[mask_4d]
+        dty = cf_4d.omega[mask_4d]
+        x, y = ImageD11.sinograms.geometry.fit_lab_position_from_peaks(omega, dty)
+        self.grain.translation = np.array([x, y, 0])
+
+    def update_lab_position_from_recon(self, method="iradon"):
+        """Updates translation of self.grain by finding centre-of-mass of reconstruction
+           Only really valid for very small grains"""
+        x, y = ImageD11.sinograms.geometry.fit_lab_position_from_recon(self.recons[method], self.ds.ystep, self.recons_y0)
+        self.grain.translation = np.array([x, y, 0])
 
     def correct_halfmask(self):
         """Applies halfmask correction to sinogram"""
