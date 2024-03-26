@@ -234,7 +234,12 @@ class grain:
             except ImportError:
                 raise ImportError("Missing orix, can't compute orix phase!")
 
-            pg = get_point_group(space_group_number=self.spacegroup)
+            try:
+                spacegroup = self.spacegroup
+            except NameError:
+                raise NameError("You must set self.spacegroup to the integer spacegroup first!")
+
+            pg = get_point_group(space_group_number=spacegroup)
             phase = Phase(point_group=pg)
             self._orix_phase = phase
         return self._orix_phase

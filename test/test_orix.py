@@ -7,6 +7,64 @@ import unittest
 
 
 class TestIPFCol(unittest.TestCase):
+    def test_no_spacegroup_fails(self):
+        # set up B matrix
+        cubic_ucell_array = np.array([3., 3., 3., 90., 90., 90.])
+        cubic_ucell = unitcell(cubic_ucell_array, symmetry="F")
+
+        B = cubic_ucell.B
+
+        # set up U matrix
+
+        # we want:
+        # a to point in +Z
+        # b to point in +X
+        # c to point in +Y
+
+        U = R.from_euler('zyx', [-90, 0, -90], degrees=True).as_matrix()
+
+        UBI = np.linalg.inv(np.dot(U, B))
+
+        g = grain(UBI)
+
+        with self.assertRaises(NameError):
+            sg = g.spacegroup
+
+    def test_phase_recomputed(self):
+        # set up B matrix
+        cubic_ucell_array = np.array([3., 3., 3., 90., 90., 90.])
+        cubic_ucell = unitcell(cubic_ucell_array, symmetry="F")
+
+        B = cubic_ucell.B
+
+        # set up U matrix
+
+        # we want:
+        # a to point in +Z
+        # b to point in +X
+        # c to point in +Y
+
+        U = R.from_euler('zyx', [-90, 0, -90], degrees=True).as_matrix()
+
+        UBI = np.linalg.inv(np.dot(U, B))
+
+        g = grain(UBI)
+
+        # set a spacegroup
+        g.spacegroup = 1
+
+        # set an orix phase
+        phase_1 = g.orix_phase
+
+        # change the spacegroup
+        g.spacegroup = 225
+
+        # orix phase should be different
+        phase_2 = g.orix_phase
+
+        self.assertNotEqual(phase_1, phase_2)
+
+
     def test_cubic(self):
         # set up B matrix
         cubic_ucell_array = np.array([3., 3., 3., 90., 90., 90.])
