@@ -156,18 +156,24 @@ class GrainSinogram:
         self.ssino = self.sino[order].T
 
     def update_lab_position_from_peaks(self, cf_4d, grain_label):
-        """Updates translation of self.grain using peaks in assigned 4D colfile"""
+        """Updates translation of self.grain using peaks in assigned 4D colfile.
+           Also updates recon_y0 as cen/2"""
         mask_4d = cf_4d.grain_id == grain_label
         omega = cf_4d.omega[mask_4d]
         dty = cf_4d.omega[mask_4d]
-        x, y = ImageD11.sinograms.geometry.fit_lab_position_from_peaks(omega, dty)
+        cen, x, y = ImageD11.sinograms.geometry.fit_lab_position_from_peaks(omega, dty)
         self.grain.translation = np.array([x, y, 0])
+        self.update_recon_parameters(y0=cen/2)
 
     def update_lab_position_from_recon(self, method="iradon"):
         """Updates translation of self.grain by finding centre-of-mass of reconstruction
            Only really valid for very small grains"""
-        x, y = ImageD11.sinograms.geometry.fit_lab_position_from_recon(self.recons[method], self.ds.ystep, self.recons_y0)
-        self.grain.translation = np.array([x, y, 0])
+        fitting_result = ImageD11.sinograms.geometry.fit_lab_position_from_recon(self.recons[method], self.ds.ystep, self.recon_y0)
+        if fitting_result is None:
+            print("Could not update position as no blob found!")
+        else:
+            x, y = fitting_result
+            self.grain.translation = np.array([x, y, 0])
 
     def correct_halfmask(self):
         """Applies halfmask correction to sinogram"""

@@ -28,9 +28,19 @@ def recon_space_to_real_space(i, j, recon_shape, ystep, y0):
     return x_microns, y_microns
 
 
-def sine_function(x, offset, a, b):
+def real_space_to_recon_space(x, y, recon_shape, ystep, y0):
+    """Convert real space (x, y) position to reconstruction space.
+    Should be the exact opposite of recon_space_to_real_space()
+       Accounts for the shape of the reconstruction because the origin in reconstruction space is in the corner of the image."""
+    i = recon_shape[0]//2 + (x - y0)/ystep
+    j = -(recon_shape[1] // 2 + (y - y0)/ystep)
+
+    return i, j
+
+
+def sine_function(omega, offset, a, b):
     """Phased sine function with vertical offset using linear combination of sin and cos"""
-    return b * np.sin(np.radians(x)) + a * np.cos(np.radians(x)) + offset
+    return b * np.sin(np.radians(omega)) + a * np.cos(np.radians(omega)) + offset
 
 
 def fit_sine_wave(omega, dty, initial_guess):
@@ -50,7 +60,16 @@ def sine_coeffs_to_lab_position(offset, a, b):
     y = -a
     cen = offset
 
-    return x, y, cen
+    return cen, x, y
+
+
+def lab_position_to_sine_coeffs(cen, x, y):
+    """The opposite of sine_coeffs_to_lab_position"""
+    b = -x
+    a = -y
+    offset = cen
+
+    return offset, a, b
 
 
 def fit_lab_position_from_peaks(omega, dty):
@@ -59,9 +78,9 @@ def fit_lab_position_from_peaks(omega, dty):
 
     offset, a, b = fit_sine_wave(omega, dty, initial_guess)
 
-    x, y, cen = sine_coeffs_to_lab_position(offset, a, b)
+    cen, x, y = sine_coeffs_to_lab_position(offset, a, b)
 
-    return x, y, cen
+    return cen, x, y
 
 
 def fit_lab_position_from_recon(recon, ystep, y0):
