@@ -284,62 +284,6 @@ def get_rgbs_for_grains(grains):
 
 ### Sinogram stuff
 
-# GOTO sinograms/geometry
-
-def sine_function(x, offset, a, b):
-    return b * np.sin(np.radians(x)) + a * np.cos(np.radians(x)) + offset
-
-
-def fit_sine_wave(x_data, y_data, initial_guess):
-    # Fit the sine function to the data
-    popt, _ = curve_fit(sine_function, x_data, y_data, p0=initial_guess, method='trf', loss='soft_l1', max_nfev=10000)
-
-    offset, a, b = popt
-
-    return offset, a, b
-
-
-def fit_grain_position_from_sino(grain, cf_strong):
-    initial_guess = (0, 0.5, 0.5)
-
-    offset, a, b = fit_sine_wave(cf_strong.omega[grain.mask_4d], cf_strong.dty[grain.mask_4d], initial_guess)
-
-    grain.cen = offset
-
-    grain.dx = -b
-    grain.dy = -a
-
-
-def fit_grain_position_from_recon(grain, ds, y0):
-    grain.bad_recon = False
-    blobs = blob_log(grain.recon, min_sigma=1, max_sigma=10, num_sigma=10, threshold=.01)
-    blobs_sorted = sorted(blobs, key=lambda x: x[2], reverse=True)
-    try:
-        largest_blob = blobs_sorted[0]
-
-        # we now have the blob position in recon space
-        # we need to go back to microns
-
-        # first axis (vertical) is x
-        # second axis (horizontal) is y
-
-        x_recon_space = largest_blob[0]
-        y_recon_space = largest_blob[1]
-
-        # centre of the recon image is centre of space
-
-        # the below should be independent, tested, inside sinograms/geometry
-        x_microns = (x_recon_space - grain.recon.shape[0] // 2) * ds.ystep + y0
-        y_microns = -(y_recon_space - grain.recon.shape[1] // 2) * ds.ystep + y0
-
-        grain.x_blob = x_microns
-        grain.y_blob = y_microns
-    except IndexError:
-        # didn't find any blobs
-        # for small grains like these, if we didn't find a blob, normally indicates recon is bad
-        # we will exclude it from maps and export
-        grain.bad_recon = True
-
 
 # GOTO should be fixed by monitor in assemble_label
 # should just be a sinogram numpy array and a monitor spectrum
