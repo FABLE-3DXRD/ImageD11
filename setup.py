@@ -167,7 +167,7 @@ useful = [   # stuff you probably want, and should be able to get easily
     "scikit-image",
     "tqdm",
     'threadpoolctl ; python_version >= "3" ',
-    'orix'  # for orix interface
+    'orix',  # for orix interface
     'diffpy.structure'  # for orix interface
 ]
 
