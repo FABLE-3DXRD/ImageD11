@@ -1,11 +1,6 @@
 import numpy as np
 import unittest
 
-from diffpy.structure import Lattice, Structure
-from orix.crystal_map import Phase
-from orix.quaternion import get_point_group
-
-from ImageD11.grain import grain
 from ImageD11.unitcell import unitcell
 
 import sys
@@ -15,6 +10,7 @@ if int(sys.version_info.major) == 2:
     raise unittest.SkipTest("Skipping Orix tests on Python 2")
 else:
     from orix.vector import Miller
+    from orix.crystal_map import Phase
     from scipy.spatial.transform import Rotation as R
 
 
