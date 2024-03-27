@@ -1,10 +1,16 @@
 import numpy as np
-from orix.vector import Miller
-from scipy.spatial.transform import Rotation as R
-
+import unittest
 from ImageD11.grain import grain
 from ImageD11.unitcell import unitcell
-import unittest
+
+import sys
+
+if int(sys.version_info.major) == 2:
+    # we're on Python 2, so skip these tests
+    raise unittest.SkipTest("Skipping Orix tests on Python 2")
+else:
+    from orix.vector import Miller
+    from scipy.spatial.transform import Rotation as R
 
 
 class TestOrixSG(unittest.TestCase):
