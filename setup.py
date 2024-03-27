@@ -167,6 +167,8 @@ useful = [   # stuff you probably want, and should be able to get easily
     "scikit-image",
     "tqdm",
     'threadpoolctl ; python_version >= "3" ',
+    'orix'  # for orix interface
+    'diffpy.structure'  # for orix interface
 ]
 
 
@@ -181,8 +183,6 @@ more = [
     'pyFAI ; python_version >= "3" ',   # pypi problematic
     'pyFAI <= 0.18.0 ; python_version  < "3" ',
     'silx[full] ; python_version >= "3" ',  # for silxGui
-    'orix'  # for orix interface
-    'diffpy.structure'  # for orix interface
 ]
 
 rare = [           #
