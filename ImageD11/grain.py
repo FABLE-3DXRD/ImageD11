@@ -231,6 +231,7 @@ class grain:
             try:
                 from orix.quaternion.symmetry import get_point_group
                 from orix.crystal_map import Phase
+                from diffpy.structure import Lattice, Structure
             except ImportError:
                 raise ImportError("Missing orix, can't compute orix phase!")
 
@@ -239,8 +240,10 @@ class grain:
             except NameError:
                 raise NameError("You must set self.spacegroup to the integer spacegroup first!")
 
+            lattice = Lattice(*tuple(self.unitcell))
+            structure = Structure(lattice=lattice)
             pg = get_point_group(space_group_number=spacegroup)
-            phase = Phase(point_group=pg)
+            phase = Phase(point_group=pg, structure=structure)
             self._orix_phase = phase
         return self._orix_phase
 
@@ -260,13 +263,14 @@ class grain:
             except NameError:
                 raise NameError("You must set self.spacegroup to the integer spacegroup first!")
 
-            m1 = Miller(hkl=[[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1]], phase=phase)
+            m1 = Miller(hkl=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], phase=phase)
             ori = Orientation.from_align_vectors(m1, np.squeeze((self.UB @ m1.hkl.T).T))
             self._orix_orien = ori
         return self._orix_orien
 
     def get_ipf_colour(self, axis=np.array([0., 0., 1.])):
-        """Gets the ipf colour for a grain"""
+        """Gets the IPF colour for a grain in the laboratory frame
+           Given an axis vector in the laboratory frame"""
 
         try:
             from orix.vector.vector3d import Vector3d
