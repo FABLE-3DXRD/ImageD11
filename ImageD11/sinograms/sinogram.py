@@ -42,6 +42,7 @@ class GrainSinogram:
         self.recon_pad = None
         self.recon_y0 = None
         self.recon_niter = None
+        self.recon_cen = None
 
     def prepare_peaks_from_2d(self, cf_2d, grain_label, hkltol=0.25):
         """Prepare peaks used for sinograms from 2D peaks data
@@ -157,13 +158,13 @@ class GrainSinogram:
 
     def update_lab_position_from_peaks(self, cf_4d, grain_label):
         """Updates translation of self.grain using peaks in assigned 4D colfile.
-           Also updates recon_y0 as cen/2"""
+           Also updates self.recon_cen with centre"""
         mask_4d = cf_4d.grain_id == grain_label
         omega = cf_4d.omega[mask_4d]
-        dty = cf_4d.omega[mask_4d]
+        dty = cf_4d.dty[mask_4d]
         cen, x, y = ImageD11.sinograms.geometry.fit_lab_position_from_peaks(omega, dty)
         self.grain.translation = np.array([x, y, 0])
-        self.update_recon_parameters(y0=cen/2)
+        self.recon_cen = cen
 
     def update_lab_position_from_recon(self, method="iradon"):
         """Updates translation of self.grain by finding centre-of-mass of reconstruction
@@ -183,7 +184,7 @@ class GrainSinogram:
         """Corrects each row of the sinogram to the ring current of the corresponding scan"""
         self.ssino = self.ssino / self.ds.ring_currents_per_scan_scaled[:, None]
 
-    def update_recon_parameters(self, pad=None, y0=None, mask=None, niter=None):
+    def update_recon_parameters(self, pad=None, y0=None, mask=None, niter=None, cen=None):
         """Update some or all of the reconstruction parameters in one go"""
 
         if pad is not None:
@@ -194,6 +195,8 @@ class GrainSinogram:
             self.recon_mask = mask
         if niter is not None:
             self.recon_niter = niter
+        if cen is not None:
+            self.recon_cen = cen
 
     def recon(self, method="iradon", workers=1):
         """Performs reconstruction given reconstruction method"""
@@ -273,7 +276,7 @@ class GrainSinogram:
 
         recon_par_group = grain_group.require_group("recon_parameters")
 
-        for recon_par_attr in ["recon_pad", "recon_y0", "recon_niter"]:
+        for recon_par_attr in ["recon_pad", "recon_y0", "recon_niter", "recon_cen"]:
             recon_par_var = getattr(self, recon_par_attr)
             if recon_par_var is not None:
                 recon_par_group.attrs[recon_par_attr] = recon_par_var
@@ -306,7 +309,7 @@ class GrainSinogram:
                 setattr(grainsino_obj, sino_attr, sino_var)
 
         if "recon_parameters" in group.keys():
-            for recon_par_attr in ["recon_pad", "recon_y0", "recon_niter"]:
+            for recon_par_attr in ["recon_pad", "recon_y0", "recon_niter", "recon_cen"]:
                 recon_par_var = group["recon_parameters"].attrs.get(recon_par_attr)[()]
                 setattr(grainsino_obj, recon_par_attr, recon_par_var)
 
