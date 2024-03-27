@@ -264,7 +264,7 @@ class grain:
                 raise NameError("You must set self.spacegroup to the integer spacegroup first!")
 
             m1 = Miller(hkl=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], phase=phase)
-            ori = Orientation.from_align_vectors(m1, np.squeeze((self.UB @ m1.hkl.T).T))
+            ori = Orientation.from_align_vectors(m1, np.squeeze((np.dot(self.UB, m1.hkl.T)).T))
             self._orix_orien = ori
         return self._orix_orien
 
