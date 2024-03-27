@@ -228,6 +228,7 @@ def save_ubi_map(ds, ubi_map, eps_map, misorientation_map, ipf_x_col_map, ipf_y_
         ipfzdset.attrs['description'] = 'IPF Z color at each pixel'
         ipfzdset.attrs['CLASS'] = 'IMAGE'
 
+
 ### Sinogram stuff
 
 
@@ -258,6 +259,7 @@ def assign_peaks_to_grains(grains, cf, tol):
 
     # add the labels column to the columnfile
     cf.addcolumn(labels, 'grain_id')
+
 
 ### Plotting
 
@@ -413,10 +415,35 @@ def plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1])):
     meta_orien.scatter("ipf", c=rgb, direction=ipf_direction)
 
 
+def plot_direct_pole_figure(grains, uvw=np.array([1., 0., 0.])):
+    # get the UB matrices for each grain
+    UBs = np.array([g.UB for g in grains])
+
+    # get the reference unit cell of one of the grains (should be the same for all)
+    ref_ucell = grains[0].ref_unitcell
+
+    # make a combined orientation from them (makes plot much faster)
+    meta_orien = ref_ucell.get_orix_orien(UBs)
+
+    try:
+        from orix.vector import Miller
+    except ImportError:
+        raise ImportError("Missing orix, can't compute pole figure!")
+
+    # make Miller object from uvw
+    m1 = Miller(uvw=uvw, phase=ref_ucell.orix_phase).symmetrise(unique=True)
+
+    # get outer product of all orientations with the crystal direction we're interested in
+    uvw_all = (~meta_orien).outer(m1)
+
+    uvw_all.scatter(hemisphere="both", axes_labels=["X", "Y"])
+
+
 def plot_all_ipfs(grains):
     plot_inverse_pole_figure(grains, axis=np.array([1., 0, 0]))
     plot_inverse_pole_figure(grains, axis=np.array([0., 1, 0]))
     plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1]))
+
 
 ### Indexing
 
@@ -490,7 +517,8 @@ def refine_grain_positions(cf_3d, ds, grains, parfile, symmetry="cubic", cf_frac
                            hkl_tols=(0.05, 0.025, 0.01)):
     sample = ds.sample
     dataset = ds.dset
-    cf_strong_allrings = select_ring_peaks_by_intensity(cf_3d, frac=cf_frac, dsmax=cf_3d.ds.max(), doplot=None, dstol=cf_dstol)
+    cf_strong_allrings = select_ring_peaks_by_intensity(cf_3d, frac=cf_frac, dsmax=cf_3d.ds.max(), doplot=None,
+                                                        dstol=cf_dstol)
     print("Got {} strong peaks for makemap".format(cf_strong_allrings.nrows))
     cf_strong_allrings_path = '{}_{}_3d_peaks_strong_all_rings.flt'.format(sample, dataset)
     cf_strong_allrings.writefile(cf_strong_allrings_path)
