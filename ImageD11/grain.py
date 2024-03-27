@@ -77,8 +77,7 @@ class grain:
         self._mt = None
         self._rmt = None
         self._unitcell = None
-        self._orix_phase = None
-        self._spacegroup = None
+        self._ref_unitcell = None
         self._orix_orien = None
 
     @property
@@ -206,93 +205,40 @@ class grain:
         E = self.eps_sample_matrix(dzero_cell, m)
         return symm_to_e6(E)
 
+    # TODO: we need I/O for this
     @property
-    def spacegroup(self):
-        if self._spacegroup is None:
-            raise NameError("Must set space group!")
-        return self._spacegroup
+    def ref_unitcell(self):
+        """The reference (strain-free) unitcell object for this grain"""
+        if self._ref_unitcell is None:
+            raise NameError("Reference unitcell not set for this grain!")
+        else:
+            return self._ref_unitcell
 
-    @spacegroup.setter
-    def spacegroup(self, value):
-        """Sets the spacegroup for this grain."""
-        if not isinstance(value, int):
-            raise TypeError("Space group should be an integer!")
-        self._spacegroup = value
-        # Reset the orix phase because the spacegroup changed
-        self._orix_phase = None
+    @ref_unitcell.setter
+    def ref_unitcell(self, value):
+        if not isinstance(value, ImageD11.unitcell.unitcell):
+            raise TypeError("ref_unitcell must be an ImageD11.unitcell.unitcell instance!")
+        self._ref_unitcell = value
+        self._orix_orien = None  # must be recomputed because we changed the reference unitcell
 
     @property
     def orix_phase(self):
-        """The orix Phase object for this grain
-           Relies on self.spacegroup being set"""
-        if self._orix_phase is None:
-            # compute the orix phase
-
-            try:
-                from orix.quaternion.symmetry import get_point_group
-                from orix.crystal_map import Phase
-                from diffpy.structure import Lattice, Structure
-            except ImportError:
-                raise ImportError("Missing orix, can't compute orix phase!")
-
-            try:
-                spacegroup = self.spacegroup
-            except NameError:
-                raise NameError("You must set self.spacegroup to the integer spacegroup first!")
-
-            lattice = Lattice(*tuple(self.unitcell))
-            structure = Structure(lattice=lattice)
-            pg = get_point_group(space_group_number=spacegroup)
-            phase = Phase(point_group=pg, structure=structure)
-            self._orix_phase = phase
-        return self._orix_phase
+        """The orix phase for the grain, taken straight from the reference unitcell"""
+        return self.ref_unitcell.orix_phase
 
     @property
     def orix_orien(self):
         if self._orix_orien is None:
-            # compute the orix orientation
-
-            try:
-                from orix.vector import Miller
-                from orix.quaternion import Orientation
-            except ImportError:
-                raise ImportError("Missing orix, can't compute orix orien!")
-
-            try:
-                phase = self.orix_phase
-            except NameError:
-                raise NameError("You must set self.spacegroup to the integer spacegroup first!")
-
-            m1 = Miller(hkl=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], phase=phase)
-            ori = Orientation.from_align_vectors(m1, np.squeeze((np.dot(self.UB, m1.hkl.T)).T))
-            self._orix_orien = ori
+            # get the orix orientation from the reference unit cell
+            self._orix_orien = self.ref_unitcell.get_orix_orien(self.UB)
         return self._orix_orien
 
+    # TODO: classmethod for from_orix_orien to make a grain from an orientation
+
     def get_ipf_colour(self, axis=np.array([0., 0., 1.])):
-        """Gets the IPF colour for a grain in the laboratory frame
-           Given an axis vector in the laboratory frame"""
+        """Calls ImageD11.unitcell.unitcell.get_ipf_colour with the grain's UB"""
 
-        try:
-            from orix.vector.vector3d import Vector3d
-            from orix.plot import IPFColorKeyTSL
-        except ImportError:
-            raise ImportError("Missing diffpy and/or orix, can't compute orix phase!")
-
-        ipf_direction = Vector3d(axis)
-
-        try:
-            phase = self.orix_phase
-        except NameError:
-            raise NameError("You must calculate phase with set_orix_phase() first!")
-
-        try:
-            orien = self.orix_orien
-        except NameError:
-            raise NameError("You must calculate orien with set_orix_orien() first!")
-
-        ipfkey = IPFColorKeyTSL(phase.point_group, direction=ipf_direction)
-        rgb = ipfkey.orientation2color(orien)
-        return rgb
+        return self.ref_unitcell.get_ipf_colour(self.UB, axis)
 
     def to_h5py_group(self, parent_group, group_name):
         """Creates a H5Py group for this grain.
@@ -308,9 +254,12 @@ class grain:
 
         # optional attributes:
         for attr in STRINGATTRS + NUMATTRS:
-            if hasattr(self, attr):
-                if getattr(self, attr) is not None:
-                    grain_group[attr] = getattr(self, attr)
+            try:
+                value = getattr(self, attr)
+                if value is not None:
+                    grain_group[attr] = value
+            except (NameError, AttributeError):
+                continue
 
         # write array attributes
         for attr in ARRATTRS:
