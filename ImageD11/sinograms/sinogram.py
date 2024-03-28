@@ -168,11 +168,10 @@ class GrainSinogram:
 
     def update_lab_position_from_recon(self, method="iradon"):
         """Updates translation of self.grain by finding centre-of-mass of reconstruction
-           Only really valid for very small grains"""
+           Only really valid for very small grains.
+           Does not update translation if no fitting result found."""
         fitting_result = ImageD11.sinograms.geometry.fit_lab_position_from_recon(self.recons[method], self.ds.ystep, self.recon_y0)
-        if fitting_result is None:
-            print("Could not update position as no blob found!")
-        else:
+        if fitting_result is not None:
             x, y = fitting_result
             self.grain.translation = np.array([x, y, 0])
 
@@ -371,7 +370,13 @@ def write_slice_recon(filename, slice_arrays):
         save_array(slice_group, 'ipf_z_col_map', rgb_z_array).attrs['CLASS'] = 'IMAGE'
 
 
-def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon"):
+def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon", grain_labels=None):
+    """Build grain maps from individual grain reonstructions
+       Optionally provide a different list of grain labels to label the grains"""
+
+    if grain_labels is not None:
+        assert len(grainsinos) == len(grain_labels)
+
     first_recon = grainsinos[0].recons[method]
     grain_labels_array = np.zeros_like(first_recon) - 1
 
@@ -397,6 +402,11 @@ def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon"):
 
     for i, gs in enumerate(grainsinos):
 
+        if grain_labels is not None:
+            label = grain_labels[i]
+        else:
+            label = i
+
         g_raw_intensity = norm(gs.recons[method])
 
         g_raw_intensity_mask = g_raw_intensity > raw_intensity_array
@@ -417,7 +427,7 @@ def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon"):
         grnz[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_z[1]
         bluz[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_z[2]
 
-        grain_labels_array[g_raw_intensity_mask] = i
+        grain_labels_array[g_raw_intensity_mask] = label
 
     raw_intensity_array[raw_intensity_array == cutoff_level] = 0
 
