@@ -84,6 +84,12 @@ i and j are set as the labels from two images. They are sorted
 and on exit i,j hold the unique pairs and oi holds the count
 for the number of overlaps. oj and tmp are temporaries.
 """
+compute_geometry = """is for the "updateGeometry" method of columnfiles
+from xlylzl it will compute tth, eta, ds, gve into out
+in the laboratory in xlylzl[npks], the omega rotation[npks], and
+the rest of the parameters (wedge,wvln,chi,t[3] and omegasign)
+out should contain : (tth, eta, ds, gx, gy, gz)
+"""
 compute_gv = """computes scattering vectors given thr positions of the spot
 in the laboratory in xlylzl[npks], the omega rotation[npks], and
 the rest of the parameters (wedge,wvln,chi,t[3] and omegasign)
@@ -305,6 +311,7 @@ __all__ = [
     "closest_vec",
     "cluster1d",
     "compress_duplicates",
+    "compute_geometry",
     "compute_gv",
     "computes_xlylzl",
     "connectedpixels",
