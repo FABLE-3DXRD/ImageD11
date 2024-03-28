@@ -4,11 +4,14 @@
 # Try to build the point-by-point mapping code ...
 from __future__ import print_function, division
 
-import multiprocessing
-# method = multiprocessing.set_start_method("forkserver")
-from ImageD11 import cImageD11  # NO!!! patches to forkserver
-
+from ImageD11 import cImageD11
+cImageD11.check_multiprocessing(patch=True) # forkserver
+try:
+    import threadpoolctl
+except ImportError:
+    threadpoolctl = None
 import sys, os
+import multiprocessing
 from multiprocessing.managers import SharedMemoryManager
 import time, random
 import numpy as np
@@ -17,8 +20,11 @@ import pprint
 from ImageD11 import sym_u, unitcell, parameters
 import ImageD11.sinograms.dataset
 import ImageD11.indexing
+from ImageD11.sinograms.geometry import dtymask
 
 
+# GOTO - find somewhere!
+# Everything written in Numba could move to C?
 @numba.njit(boundscheck=True)
 def hkluniq(ubi, gx, gy, gz, eta, m, tol, hmax):
     """count uniq peaks - move to cImageD11 in the future"""
@@ -49,15 +55,6 @@ def hkluniq(ubi, gx, gy, gz, eta, m, tol, hmax):
         if hcount.flat[i] > 0:
             ucount += 1
     return tcount, ucount
-
-
-def dtymask(i, j, cosomega, sinomega, dtyi, step, y0):
-    """
-    Selects the peaks using integer bins in dty.
-    Needs a UI / plot to see what is happening (map the i,j to the sinogram and recon)
-    """
-    dty_icalc = np.round((step * (i * cosomega + j * sinomega) + y0) / step).astype(int)
-    return dtyi == dty_icalc
 
 
 def idxpoint(
@@ -113,6 +110,7 @@ def idxpoint(
     mr = isel
     m = dtymask(i, j, cosomega, sinomega, dtyi, ystep, y0)
     # the arrays to use for indexing (this point in space)
+    # TODO: Correct these for origin point
     igx = gx[m & mr]
     igy = gy[m & mr]
     igz = gz[m & mr]
@@ -190,6 +188,8 @@ parglobal = None
 
 def initializer(parfile, symmetry, loglevel=3):
     global ucglobal, symglobal, parglobal
+    if threadpoolctl is not None:
+        threadpoolctl.threadpool_limits(limits=1)
     parglobal = parameters.read_par_file(parfile)
     ucglobal = unitcell.unitcell_from_parameters(parglobal)
     symglobal = sym_u.getgroup(symmetry)()
@@ -251,7 +251,8 @@ class PBP:
         """
         # Load the peaks
         colf.parameters.loadparameters(self.parfile)
-        colf.updateGeometry()  # for ds
+        if 'ds' not in colf.titles:
+            colf.updateGeometry()  # for ds
         #
         uc = unitcell.unitcell_from_parameters(colf.parameters)
         uc.makerings(colf.ds.max())
@@ -265,9 +266,11 @@ class PBP:
         hmax = 0
         for i in range(len(uc.ringds)):
             ds = uc.ringds[i]
-            rm = abs(colf.ds - ds) < self.ds_tol
             hkls = uc.ringhkls[ds]
-            if i in self.foridx and rm.sum() > 0:
+            if i in self.foridx:
+                rm = abs(colf.ds - ds) < self.ds_tol
+                if rm.sum() == 0:
+                    continue
                 icut = np.max(colf.sum_intensity[rm]) * self.ifrac
                 rm = rm & (colf.sum_intensity > icut)
                 isel |= rm
@@ -283,7 +286,7 @@ class PBP:
                 )
                 sel |= rm
             else:
-                print(i, "%.4f" % (ds), hkls[-1], len(hkls), rm.sum(), "skip")
+                print(i, "%.4f" % (ds), hkls[-1], len(hkls), "skipped")
             for hkl in hkls:
                 hmax = max(np.abs(hkl).max(), hmax)
         if self.forgen is None:
@@ -314,13 +317,13 @@ class PBP:
         )
         self.hmax = hmax
 
-    def iplot(self):
+    def iplot(self, skip=1):
         import pylab as pl
 
         f, ax = pl.subplots(2, 1)
-        ax[0].plot(self.colf.tth, self.colf.sum_intensity, ",")
-        ax[0].plot(self.icolf.tth, self.icolf.sum_intensity, ",")
-        ax[0].set(yscale="log", ylabel="sum intensity", xlabel="tth")
+        ax[0].plot(self.colf.ds[::skip], self.colf.sum_intensity[::skip], ",")
+        ax[0].plot(self.icolf.ds[::skip], self.icolf.sum_intensity[::skip], ",")
+        ax[0].set(yscale="log", ylabel="sum intensity", xlabel="d-star")
         histo = self.dset.sinohist(
             omega=self.icolf.omega, dty=self.icolf.dty, weights=self.icolf.sum_intensity
         )

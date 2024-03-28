@@ -200,6 +200,9 @@ class columnfile(object):
         else:
             raise KeyError
 
+    def __setitem__(self, key, value):
+        self.addcolumn(value, key)
+
     def keys(self):
         return self.titles
 
@@ -408,45 +411,92 @@ class columnfile(object):
         self.parameters = pars
         self.parameters.dumbtypecheck()
 
-    def updateGeometry(self, pars=None ):
+    def updateGV(self, pars=None, translation=None, fast=True ):
+        """ This only computes gvectors """
+        if pars is not None:
+            self.setparameters( pars )
+        pars = self.parameters
+        assert "omega" in self.titles
+        if "sc" in self.titles and "fc" in self.titles:
+            sc, fc = self.sc, self.fc
+        elif "xc" in self.titles and "yc" in self.titles:
+            sc, fc = self.xc, self.yc
+        else:
+            raise Exception("columnfile file misses xc/yc or sc/fc")
+        if translation is not None:
+            tx, ty, tz = translation
+        else:
+            tx = pars.get('t_x')
+            ty = pars.get('t_y')
+            tz = pars.get('t_z')
+        if fast:
+            computer = transform.Ctransform( pars.parameters )
+            gve = computer.sf2gv( sc, fc, self.omega, tx, ty, tz )
+            for i, name in enumerate(('gx','gy','gz')):
+                self.addcolumn( gve[:,i], name )
+        else:
+            self.updateGeometry( pars = pars, translation=translation, fast=fast )
+
+    def updateGeometry(self, pars=None, translation=None, fast=True ):
         """
         changing or not the parameters it (re)-computes:
            xl,yl,zl = ImageD11.transform.compute_xyz_lab
            tth, eta = ImageD11.transform.compute_tth_eta
            gx,gy,gz = ImageD11.transform.compute_g_vectors
+           ds = length of scattering vectors
+
+        The option "fast=True" means using the newer C code from
+        ImageD11.transform.Ctransform rather than the older python
+        ImageD11.transform code. We keep it for testing.
         """
         if pars is not None:
             self.setparameters( pars )
         pars = self.parameters
+        assert "omega" in self.titles
         if "sc" in self.titles and "fc" in self.titles:
-            pks = self.sc, self.fc
+            sc, fc = self.sc, self.fc
         elif "xc" in self.titles and "yc" in self.titles:
-            pks = self.xc, self.yc
+            sc, fc = self.xc, self.yc
         else:
             raise Exception("columnfile file misses xc/yc or sc/fc")
-        xl,yl,zl = transform.compute_xyz_lab( pks,
-                                          **pars.parameters)
-        peaks_xyz = np.array((xl,yl,zl))
-        assert "omega" in self.titles,"No omega column"
-        om = self.omega *  float( pars.get("omegasign") )
-        tth, eta = transform.compute_tth_eta_from_xyz(
-            peaks_xyz, om,
-            **pars.parameters)
-        gx, gy, gz = transform.compute_g_vectors(
-            tth, eta, om,
-            wvln  = pars.get("wavelength"),
-            wedge = pars.get("wedge"),
-            chi   = pars.get("chi") )
-        modg =  np.sqrt( gx * gx + gy * gy + gz * gz )
-        self.addcolumn(xl,"xl")
-        self.addcolumn(yl,"yl")
-        self.addcolumn(zl,"zl")
-        self.addcolumn(tth, "tth", )
-        self.addcolumn(eta, "eta", )
-        self.addcolumn(gx, "gx")
-        self.addcolumn(gy, "gy")
-        self.addcolumn(gz, "gz")
-        self.addcolumn(modg, "ds") # dstar
+        if translation is not None:
+            tx, ty, tz = translation
+        else:
+            tx = pars.get('t_x')
+            ty = pars.get('t_y')
+            tz = pars.get('t_z')
+        if fast:
+            computer = transform.Ctransform( pars.parameters )
+            xyz = computer.sf2xyz( sc, fc )
+            for i, name in enumerate(('xl','yl','zl')):
+                self.addcolumn( xyz[:,i], name )
+            out = computer.xyz2geometry( xyz, self.omega, tx, ty, tz )
+            for i,name in enumerate(("tth", "eta", "ds", "gx", "gy", "gz")):
+                self.addcolumn( out[:,i], name )
+        else:
+            xl,yl,zl = transform.compute_xyz_lab( (sc, fc),
+                                                  **pars.parameters)
+            self.addcolumn(xl,"xl")
+            self.addcolumn(yl,"yl")
+            self.addcolumn(zl,"zl")
+            peaks_xyz = np.array((xl,yl,zl))
+            assert "omega" in self.titles,"No omega column"
+            om = self.omega *  float( pars.get("omegasign") )
+            tth, eta = transform.compute_tth_eta_from_xyz(
+                peaks_xyz, om,
+                **pars.parameters)
+            self.addcolumn(tth, "tth", )
+            self.addcolumn(eta, "eta", )
+            gx, gy, gz = transform.compute_g_vectors(
+                tth, eta, om,
+                wvln  = pars.get("wavelength"),
+                wedge = pars.get("wedge"),
+                chi   = pars.get("chi") )
+            self.addcolumn(gx, "gx")
+            self.addcolumn(gy, "gy")
+            self.addcolumn(gz, "gz")
+            modg =  np.sqrt( gx * gx + gy * gy + gz * gz )
+            self.addcolumn(modg, "ds") # dstar
 
 
 

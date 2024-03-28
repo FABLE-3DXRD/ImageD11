@@ -2,10 +2,12 @@ import os
 import subprocess
 import time
 
-import numba
+import h5py
 import numpy as np
 from matplotlib import pyplot as plt
-from tqdm import tqdm
+from tqdm.auto import tqdm
+from scipy.optimize import curve_fit
+from skimage.feature import blob_log
 
 import ImageD11.cImageD11
 import ImageD11.columnfile
@@ -13,260 +15,253 @@ import ImageD11.grain
 import ImageD11.indexing
 import ImageD11.refinegrains
 import ImageD11.unitcell
-
-from ImageD11.blobcorrector import eiger_spatial
-
-
-def grain_to_rgb(g, ax=(0, 0, 1)):
-    return hkl_to_color_cubic(crystal_direction_cubic(g.ubi, ax))
+import ImageD11.sinograms.roi_iradon
+import ImageD11.sinograms.properties
+from ImageD11.peakselect import select_ring_peaks_by_intensity
 
 
-def crystal_direction_cubic(ubi, axis):
-    hkl = np.dot(ubi, axis)
-    # cubic symmetry implies:
-    #      24 permutations of h,k,l
-    #      one has abs(h) <= abs(k) <= abs(l)
-    hkl = abs(hkl)
-    hkl.sort()
-    return hkl
+### General utilities (for all notebooks)
+
+## Cluster related stuff (GOTO ImageD11.futures)
+
+def slurm_submit_and_wait(bash_script_path, wait_time_sec=60):
+    if not os.path.exists(bash_script_path):
+        raise IOError("Bash script not found!")
+    submit_command = "sbatch {}".format(bash_script_path)
+    sbatch_submit_result = subprocess.run(submit_command, capture_output=True, shell=True).stdout.decode("utf-8")
+
+    print(sbatch_submit_result.replace("\n", ""))
+
+    slurm_job_number = None
+
+    if sbatch_submit_result.startswith("Submitted"):
+        slurm_job_number = sbatch_submit_result.replace("\n", "").split("job ")[1]
+
+    print(slurm_job_number)
+
+    assert slurm_job_number is not None
+
+    slurm_job_finished = False
+
+    while not slurm_job_finished:
+        squeue_results = subprocess.run("squeue -u $USER", capture_output=True, shell=True).stdout.decode("utf-8")
+
+        if slurm_job_number not in squeue_results:
+            print("Slurm job finished!")
+            slurm_job_finished = True
+        else:
+            print("Slurm job not finished! Waiting {} seconds...".format(wait_time_sec))
+            time.sleep(wait_time_sec)
 
 
-def hkl_to_color_cubic(hkl):
-    """
-    https://mathematica.stackexchange.com/questions/47492/how-to-create-an-inverse-pole-figure-color-map
-        [x,y,z]=u⋅[0,0,1]+v⋅[0,1,1]+w⋅[1,1,1].
-            These are:
-                u=z−y, v=y−x, w=x
-                This triple is used to assign each direction inside the standard triangle
-                
-    makeColor[{x_, y_, z_}] := 
-         RGBColor @@ ({z - y, y - x, x}/Max@{z - y, y - x, x})                
-    """
-    x, y, z = hkl
-    assert x <= y <= z
-    assert z >= 0
-    u, v, w = z - y, y - x, x
-    m = max(u, v, w)
-    r, g, b = u / m, v / m, w / m
-    return (r, g, b)
+def slurm_submit_many_and_wait(bash_script_paths, wait_time_sec=60):
+    for bash_script_path in bash_script_paths:
+        if not os.path.exists(bash_script_path):
+            raise IOError("Bash script not found!")
+
+    slurm_job_numbers = []
+    for bash_script_path in bash_script_paths:
+        submit_command = "sbatch {}".format(bash_script_path)
+        sbatch_submit_result = subprocess.run(submit_command, capture_output=True, shell=True).stdout.decode("utf-8")
+
+        print(sbatch_submit_result.replace("\n", ""))
+
+        slurm_job_number = None
+
+        if sbatch_submit_result.startswith("Submitted"):
+            slurm_job_number = sbatch_submit_result.replace("\n", "").split("job ")[1]
+
+        # print(slurm_job_number)
+
+        assert slurm_job_number is not None
+
+        slurm_job_numbers.append(slurm_job_number)
+
+    slurm_job_finished = False
+
+    while not slurm_job_finished:
+        squeue_results = subprocess.run("squeue -u $USER", capture_output=True, shell=True).stdout.decode("utf-8")
+
+        jobs_still_running = False
+        for slurm_job_number in slurm_job_numbers:
+            if slurm_job_number in squeue_results:
+                jobs_still_running = True
+
+        if jobs_still_running:
+            print("Slurm jobs not finished! Waiting {} seconds...".format(wait_time_sec))
+            time.sleep(wait_time_sec)
+        else:
+            print("Slurm jobs all finished!")
+            slurm_job_finished = True
 
 
-def hkl_to_pf_cubic(hkl):
-    x, y, z = hkl
-    assert x <= y <= z
-    assert z >= 0
-    m = np.sqrt((hkl ** 2).sum())
-    return x / (z + m), y / (z + m)
+def prepare_mlem_bash(ds, grains, id11_code_path, n_simultaneous_jobs=50, cores_per_task=8):
+    slurm_mlem_path = os.path.join(ds.analysispath, "slurm_mlem")
+
+    if os.path.exists(slurm_mlem_path):
+        if len(os.listdir(slurm_mlem_path)) > 0:
+            raise OSError("Slurm MLEM logs folder exists and is not empty!")
+    else:
+        os.mkdir(slurm_mlem_path)
+
+    recons_path = os.path.join(ds.analysispath, "mlem_recons")
+
+    if os.path.exists(recons_path):
+        if len(os.listdir(recons_path)) > 0:
+            raise OSError("MLEM recons folder exists and is not empty!")
+    else:
+        os.mkdir(recons_path)
+
+    bash_script_path = os.path.join(slurm_mlem_path, ds.dsname + '_mlem_recon_slurm.sh')
+    python_script_path = os.path.join(id11_code_path, "ImageD11/nbGui/S3DXRD/run_mlem_recon.py")
+    outfile_path = os.path.join(slurm_mlem_path, ds.dsname + '_mlem_recon_slurm_%A_%a.out')
+    errfile_path = os.path.join(slurm_mlem_path, ds.dsname + '_mlem_recon_slurm_%A_%a.err')
+    log_path = os.path.join(slurm_mlem_path,
+                            ds.dsname + '_mlem_recon_slurm_$SLURM_ARRAY_JOB_ID_$SLURM_ARRAY_TASK_ID.log')
+
+    reconfile = os.path.join(recons_path, ds.dsname + "_mlem_recon_$SLURM_ARRAY_TASK_ID.txt")
+
+    # python 3 version (de-indent whole below comment):
+
+    #     bash_script_string = f"""#!/bin/bash
+    # #SBATCH --job-name=mlem-recon
+    # #SBATCH --output={outfile_path}
+    # #SBATCH --error={errfile_path}
+    # #SBATCH --array=0-{len(grains) - 1}%{n_simultaneous_jobs}
+    # #SBATCH --time=02:00:00
+    # # define memory needs and number of tasks for each array job
+    # #SBATCH --ntasks=1
+    # #SBATCH --cpus-per-task={cores_per_task}
+    # #
+    # date
+    # echo python3 {python_script_path} {ds.grainsfile} $SLURM_ARRAY_TASK_ID {reconfile} {pad} {niter} {dohm} {mask_cen} > {log_path} 2>&1
+    # python3 {python_script_path} {ds.grainsfile} $SLURM_ARRAY_TASK_ID {reconfile} {pad} {niter} {dohm} {mask_cen} > {log_path} 2>&1
+    # date
+    #     """
+
+    # python 2 version
+    bash_script_string = """#!/bin/bash
+#SBATCH --job-name=mlem-recon
+#SBATCH --output={outfile_path}
+#SBATCH --error={errfile_path}
+#SBATCH --array=0-{njobs}%{n_simultaneous_jobs}
+#SBATCH --time=02:00:00
+# define memory needs and number of tasks for each array job
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task={cores_per_task}
+#
+date
+echo python3 {python_script_path} {id11_code_path} {grainsfile} $SLURM_ARRAY_TASK_ID {dsfile} {reconfile} {cores_per_task} > {log_path} 2>&1
+python3 {python_script_path} {id11_code_path} {grainsfile} $SLURM_ARRAY_TASK_ID {dsfile} {reconfile} {cores_per_task} > {log_path} 2>&1
+date
+    """.format(outfile_path=outfile_path,
+               errfile_path=errfile_path,
+               njobs=len(grains) - 1,
+               n_simultaneous_jobs=n_simultaneous_jobs,
+               cores_per_task=cores_per_task,
+               python_script_path=python_script_path,
+               id11_code_path=id11_code_path,
+               grainsfile=ds.grainsfile,
+               reconfile=reconfile,
+               dsfile=ds.dsfile,
+               log_path=log_path)
+
+    with open(bash_script_path, "w") as bashscriptfile:
+        bashscriptfile.writelines(bash_script_string)
+
+    return bash_script_path, recons_path
 
 
-def triangle():
-    """ compute a series of point on the edge of the triangle """
-    xy = [np.array(v) for v in ((0, 1, 1), (0, 0, 1), (1, 1, 1))]
-    xy += [xy[2] * (1 - t) + xy[0] * t for t in np.linspace(0.1, 1, 5)]
-    return np.array([hkl_to_pf_cubic(np.array(p)) for p in xy])
+## IO related stuff
+
+# Helper funtions
+
+# GOTO Silx.IO? is silx a dep already? might as well be if not
+# or save grain map output
+def save_array(grp, name, ary):
+    cmp = {'compression': 'gzip',
+           'compression_opts': 2,
+           'shuffle': True}
+
+    hds = grp.require_dataset(name,
+                              shape=ary.shape,
+                              dtype=ary.dtype,
+                              **cmp)
+    hds[:] = ary
+    return hds
 
 
-def calcy(cos_omega, sin_omega, sol):
-    return sol[0] + cos_omega * sol[1] + sin_omega * sol[2]
+def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list):
+    samples_dict = {}
+
+    for sample in sample_list:
+        all_dset_folders_for_sample = os.listdir(os.path.join(rawdata_path, sample))
+        dsets_list = []
+        for folder in all_dset_folders_for_sample:
+            if dset_prefix in folder:
+                dset_name = folder.split(sample + "_")[1]
+                if sample in skips_dict.keys():
+                    if dset_name not in skips_dict[sample]:
+                        dsets_list.append(dset_name)
+                else:
+                    dsets_list.append(dset_name)
+
+        samples_dict[sample] = sorted(dsets_list)
+
+    return samples_dict
 
 
-def fity(y, cos_omega, sin_omega, wt=1):
-    """
-    Fit a sinogram to get a grain centroid
-    # calc = d0 + x*co + y*so
-    # dc/dpar : d0 = 1
-    #         :  x = co
-    #         :  y = so
-    # gradients
-    # What method is being used here???????????
-    """
-    g = [wt * np.ones(y.shape, float), wt * cos_omega, wt * sin_omega]
-    nv = len(g)
-    m = np.zeros((nv, nv), float)
-    r = np.zeros(nv, float)
-    for i in range(nv):
-        r[i] = np.dot(g[i], wt * y)
-        for j in range(i, nv):
-            m[i, j] = np.dot(g[i], g[j])
-            m[j, i] = m[i, j]
-    sol = np.dot(np.linalg.inv(m), r)
-    return sol
+def save_ubi_map(ds, ubi_map, eps_map, misorientation_map, ipf_x_col_map, ipf_y_col_map, ipf_z_col_map):
+    with h5py.File(ds.pbpubifile, 'w') as hout:
+        grp = hout.create_group('arrays')
+        save_array(grp, 'ubi_map', ubi_map).attrs['description'] = 'Refined UBI values at each pixel'
+        save_array(grp, 'eps_map', eps_map).attrs['description'] = 'Strain matrices (sample ref) at each pixel'
+        save_array(grp, 'misorientation_map', misorientation_map).attrs[
+            'description'] = 'Misorientation to grain avg at each pixel'
+        ipfxdset = save_array(grp, 'ipf_x_col_map', ipf_x_col_map)
+        ipfxdset.attrs['description'] = 'IPF X color at each pixel'
+        ipfxdset.attrs['CLASS'] = 'IMAGE'
+        ipfydset = save_array(grp, 'ipf_y_col_map', ipf_y_col_map)
+        ipfydset.attrs['description'] = 'IPF Y color at each pixel'
+        ipfydset.attrs['CLASS'] = 'IMAGE'
+        ipfzdset = save_array(grp, 'ipf_z_col_map', ipf_z_col_map)
+        ipfzdset.attrs['description'] = 'IPF Z color at each pixel'
+        ipfzdset.attrs['CLASS'] = 'IMAGE'
 
 
-def fity_robust(dty, co, so, nsigma=5, doplot=False):
-    # NEEDS COMMENTING
-    cen, dx, dy = fity(dty, co, so)
-    calc2 = calc1 = calcy(co, so, (cen, dx, dy))
-    # mask for columnfile, we're selecting specific 4D peaks
-    # that come from the right place in y, I think?
-    selected = np.ones(co.shape, bool)
-    for i in range(3):
-        err = dty - calc2
-        estd = max(err[selected].std(), 1.0)  # 1 micron
-        # print(i,estd)
-        es = estd * nsigma
-        selected = abs(err) < es
-        cen, dx, dy = fity(dty, co, so, selected.astype(float))
-        calc2 = calcy(co, so, (cen, dx, dy))
-    # bad peaks are > 5 sigma
-    if doplot:
-        f, a = plt.subplots(1, 2)
-        theta = np.arctan2(so, co)
-        a[0].plot(theta, calc1, ',')
-        a[0].plot(theta, calc2, ',')
-        a[0].plot(theta[selected], dty[selected], "o")
-        a[0].plot(theta[~selected], dty[~selected], 'x')
-        a[1].plot(theta[selected], (calc2 - dty)[selected], 'o')
-        a[1].plot(theta[~selected], (calc2 - dty)[~selected], 'x')
-        a[1].set(ylim=(-es, es))
-        plt.show()
-    return selected, cen, dx, dy
+### Sinogram stuff
 
 
-def graincen(gid, colf, doplot=True):
-    # Get peaks beloging to this grain ID
-    m = colf.grain_id == gid
-    # Get omega values of peaks in radians
-    romega = np.radians(colf.omega[m])
-    # Calculate cos and sin of omega
-    co = np.cos(romega)
-    so = np.sin(romega)
-    # Get dty values of peaks
-    dty = colf.dty[m]
-    selected, cen, dx, dy = fity_robust(dty, co, so, doplot=doplot)
-    return selected, cen, dx, dy
+# GOTO should be fixed by monitor in assemble_label
+# should just be a sinogram numpy array and a monitor spectrum
+# def correct_sinogram_rows_with_ring_current(grain, ds):
+#     grain.ssino = grain.ssino / ds.ring_currents_per_scan_scaled[:, None]
 
 
-@numba.njit(parallel=True)
-def pmax(ary):
-    """ Find the min/max of an array in parallel """
-    mx = ary.flat[0]
-    mn = ary.flat[0]
-    for i in numba.prange(1, ary.size):
-        mx = max(ary.flat[i], mx)
-        mn = min(ary.flat[i], mn)
-    return mn, mx
+### Peak manipulation
+
+# GOTO class method for Peaks2Grain class
+def assign_peaks_to_grains(grains, cf, tol):
+    """Assigns peaks to the best fitting grain"""
+    # assign peaks to grains
+
+    # column to store the grain labels
+    labels = np.zeros(cf.nrows, 'i')
+    # get all g-vectors from columnfile (updateGeometry)
+    # should we instead calculate considering grain translations? (probably!)
+    gv = np.transpose((cf.gx, cf.gy, cf.gz)).astype(float)
+    # column to store drlv2 (error in hkl)
+    drlv2 = np.ones(cf.nrows, 'd')
+    # iterate over all grains
+    print("Scoring and assigning {} grains".format(len(grains)))
+    for inc, g in enumerate(tqdm(grains)):
+        n = ImageD11.cImageD11.score_and_assign(g.ubi, gv, tol, drlv2, labels, inc)
+
+    # add the labels column to the columnfile
+    cf.addcolumn(labels, 'grain_id')
 
 
-@numba.njit(parallel=True)
-def palloc(shape, dtype):
-    """ Allocate and fill an array with zeros in parallel """
-    ary = np.empty(shape, dtype=dtype)
-    for i in numba.prange(ary.size):
-        ary.flat[i] = 0
-    return ary
-
-
-# counting sort by grain_id
-@numba.njit
-def counting_sort(ary, maxval=None, minval=None):
-    """ Radix sort for integer array. Single threaded. O(n)
-    Numpy should be doing this...
-    """
-    if maxval is None:
-        assert minval is None
-        minval, maxval = pmax(ary)  # find with a first pass
-    maxval = int(maxval)
-    minval = int(minval)
-    histogram = palloc((maxval - minval + 1,), np.int64)
-    indices = palloc((maxval - minval + 2,), np.int64)
-    result = palloc(ary.shape, np.int64)
-    for gid in ary:
-        histogram[gid - minval] += 1
-    indices[0] = 0
-    for i in range(len(histogram)):
-        indices[i + 1] = indices[i] + histogram[i]
-    i = 0
-    for gid in ary:
-        j = gid - minval
-        result[indices[j]] = i
-        indices[j] += 1
-        i += 1
-    return result, histogram
-
-
-@numba.njit(parallel=True)
-def find_grain_id(spot3d_id, grain_id, spot2d_label, grain_label, order, nthreads=20):
-    """
-    Assignment grain labels into the peaks 2d array
-    spot3d_id = the 3d spot labels that are merged and indexed
-    grain_id = the grains assigned to the 3D merged peaks
-    spot2d_label = the 3d label for each 2d peak
-    grain_label => output, which grain is this peak
-    order = the order to traverse spot2d_label sorted
-    """
-    assert spot3d_id.shape == grain_id.shape
-    assert spot2d_label.shape == grain_label.shape
-    assert spot2d_label.shape == order.shape
-    T = nthreads
-    print("Using", T, "threads")
-    for tid in numba.prange(T):
-        pcf = 0  # thread local I hope?
-        for i in order[tid::T]:
-            grain_label[i] = -1
-            pkid = spot2d_label[i]
-            while spot3d_id[pcf] < pkid:
-                pcf += 1
-            if spot3d_id[pcf] == pkid:
-                grain_label[i] = grain_id[pcf]
-
-
-def tocolf(pkd, parfile, dxfile, dyfile):
-    """ Converts a dictionary of peaks into an ImageD11 columnfile
-    adds on the geometric computations (tth, eta, gvector, etc) """
-    spat = eiger_spatial(dxfile=dxfile, dyfile=dyfile)
-    cf = ImageD11.columnfile.colfile_from_dict(spat(pkd))
-    cf.parameters.loadparameters(parfile)
-    cf.updateGeometry()
-    return cf
-
-
-def unitcell_peaks_mask(cf, dstol, dsmax):
-    cell = ImageD11.unitcell.unitcell_from_parameters(cf.parameters)
-    cell.makerings(dsmax)
-    m = np.zeros(cf.nrows, bool)
-    for v in cell.ringds:
-        if v < dsmax:
-            m |= (abs(cf.ds - v) < dstol)
-
-    return m
-
-
-def strongest_peaks(colf, uself=True, frac=0.995, B=0.2, doplot=None):
-    # correct intensities for structure factor (decreases with 2theta)
-    cor_intensity = colf.sum_intensity * (np.exp(colf.ds * colf.ds * B))
-    if uself:
-        lf = ImageD11.refinegrains.lf(colf.tth, colf.eta)
-        cor_intensity *= lf
-    order = np.argsort(cor_intensity)[::-1]  # sort the peaks by intensity
-    sortedpks = cor_intensity[order]
-    cums = np.cumsum(sortedpks)
-    cums /= cums[-1]
-    enough = np.searchsorted(cums, frac)
-    # Aim is to select the strongest peaks for indexing.
-    cutoff = sortedpks[enough]
-    mask = cor_intensity > cutoff
-    if doplot is not None:
-        fig, axs = plt.subplots(1, 2, figsize=(10, 5))
-        axs[0].plot(cums / cums[-1], ',')
-        axs[0].set(xlabel='npks', ylabel='fractional intensity')
-        axs[0].plot([mask.sum(), ], [frac, ], "o")
-        axs[1].plot(cums / cums[-1], ',')
-        axs[1].set(xlabel='npks logscale', ylabel='fractional intensity', xscale='log', ylim=(doplot, 1.),
-                   xlim=(np.searchsorted(cums, doplot), len(cums)))
-        axs[1].plot([mask.sum(), ], [frac, ], "o")
-        plt.show()
-    return mask
-
-
-def selectpeaks(cf, dstol=0.005, dsmax=10, frac=0.99, doplot=None):
-    m = unitcell_peaks_mask(cf, dstol=dstol, dsmax=dsmax)
-    cfc = cf.copy()
-    cfc.filter(m)
-    ms = strongest_peaks(cfc, frac=frac, doplot=doplot)
-    cfc.filter(ms)
-    return cfc
-
+### Plotting
 
 def plot_index_results(ind, colfile, title):
     # Generate a histogram of |drlv| for a ubi matrix
@@ -376,33 +371,94 @@ def plot_grain_sinograms(grains, cf, n_grains_to_plot=None):
     plt.show()
 
 
-def assign_peaks_to_grains(grains, cf, tol):
-    # assign peaks to grains
+def get_rgbs_for_grains(grains):
+    # get the UB matrices for each grain
+    UBs = np.array([g.UB for g in grains])
 
-    # column to store the grain labels
-    labels = np.zeros(cf.nrows, 'i')
-    # get all g-vectors from columnfile
-    gv = np.transpose((cf.gx, cf.gy, cf.gz)).astype(float)
-    # column to store drlv2 (error in hkl)
-    drlv2 = np.ones(cf.nrows, 'd')
-    # iterate over all grains
-    print("Scoring and assigning {} grains".format(len(grains)))
-    for g in tqdm(grains):
-        n = ImageD11.cImageD11.score_and_assign(g.ubi, gv, tol, drlv2, labels, g.gid)
+    # get the reference unit cell of one of the grains (should be the same for all)
+    ref_ucell = grains[0].ref_unitcell
 
-    # add the labels column to the columnfile
-    cf.addcolumn(labels, 'grain_id')
+    # get a meta orientation for all the grains
+    meta_ori = ref_ucell.get_orix_orien(UBs)
+
+    rgb_x_all = ref_ucell.get_ipf_colour_from_orix_orien(meta_ori, axis=np.array([1., 0, 0]))
+    rgb_y_all = ref_ucell.get_ipf_colour_from_orix_orien(meta_ori, axis=np.array([0., 1, 0]))
+    rgb_z_all = ref_ucell.get_ipf_colour_from_orix_orien(meta_ori, axis=np.array([0., 0, 1]))
+
+    for grain, rgb_x, rgb_y, rgb_z in zip(grains, rgb_x_all, rgb_y_all, rgb_z_all):
+        grain.rgb_x = rgb_x
+        grain.rgb_y = rgb_y
+        grain.rgb_z = rgb_z
 
 
+def plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1])):
+    # get the UB matrices for each grain
+    UBs = np.array([g.UB for g in grains])
+
+    # get the reference unit cell of one of the grains (should be the same for all)
+    ref_ucell = grains[0].ref_unitcell
+
+    # get a meta orientation for all the grains
+    meta_orien = ref_ucell.get_orix_orien(UBs)
+
+    try:
+        from orix.vector.vector3d import Vector3d
+    except ImportError:
+        raise ImportError("Missing diffpy and/or orix, can't compute orix phase!")
+
+    ipf_direction = Vector3d(axis)
+
+    # get the RGB colours
+    rgb = ref_ucell.get_ipf_colour_from_orix_orien(meta_orien, axis=ipf_direction)
+
+    # scatter the meta orientation using the colours
+    meta_orien.scatter("ipf", c=rgb, direction=ipf_direction)
+
+
+def plot_direct_pole_figure(grains, uvw=np.array([1., 0., 0.])):
+    # get the UB matrices for each grain
+    UBs = np.array([g.UB for g in grains])
+
+    # get the reference unit cell of one of the grains (should be the same for all)
+    ref_ucell = grains[0].ref_unitcell
+
+    # make a combined orientation from them (makes plot much faster)
+    meta_orien = ref_ucell.get_orix_orien(UBs)
+
+    try:
+        from orix.vector import Miller
+    except ImportError:
+        raise ImportError("Missing orix, can't compute pole figure!")
+
+    # make Miller object from uvw
+    m1 = Miller(uvw=uvw, phase=ref_ucell.orix_phase).symmetrise(unique=True)
+
+    # get outer product of all orientations with the crystal direction we're interested in
+    uvw_all = (~meta_orien).outer(m1)
+
+    uvw_all.scatter(hemisphere="both", axes_labels=["X", "Y"])
+
+
+def plot_all_ipfs(grains):
+    plot_inverse_pole_figure(grains, axis=np.array([1., 0, 0]))
+    plot_inverse_pole_figure(grains, axis=np.array([0., 1, 0]))
+    plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1]))
+
+
+### Indexing
+
+
+# GOTO
 def do_index(cf,
              dstol=0.05,
-             max_mult=13,
-             min_ring_count=0,
              hkl_tols=(0.01, 0.02, 0.03, 0.04, 0.05, 0.1),
              fracs=(0.9, 0.8, 0.7, 0.6, 0.5),
-             cosine_tol=np.cos(np.radians(90.25)),
-             max_grains=1000):
+             cosine_tol=np.cos(np.radians(90 - 0.25)),
+             max_grains=1000,
+             forgen=(),
+             foridx=()):
     print("Indexing {} peaks".format(cf.nrows))
+    # replace Fe with something else
     Fe = ImageD11.unitcell.unitcell_from_parameters(cf.parameters)
     Fe.makerings(cf.ds.max())
     indexer = ImageD11.indexing.indexer_from_colfile(cf)
@@ -413,21 +469,28 @@ def do_index(cf,
     indexer.assigntorings()
     indexer.max_grains = max_grains
 
+    ImageD11.cImageD11.cimaged11_omp_set_num_threads(2)
+
+    for ringid in forgen:
+        if ringid not in foridx:
+            raise ValueError("All rings in forgen must be in foridx!")
+
     n_peaks_expected = 0
     rings = []
     for i, dstar in enumerate(indexer.unitcell.ringds):
         multiplicity = len(indexer.unitcell.ringhkls[indexer.unitcell.ringds[i]])
         counts_on_this_ring = (indexer.ra == i).sum()
-        if counts_on_this_ring > min_ring_count:
-            n_peaks_expected += multiplicity
-            if multiplicity < max_mult:
+        # is this ring going to be used for indexing?
+        if i in foridx:
+            n_peaks_expected += multiplicity  # we expect peaks from this ring
+            if i in forgen:  # we are generating orientations from this ring
                 rings.append((counts_on_this_ring, multiplicity, i))
 
     rings.sort()
 
     print("{} peaks expected".format(n_peaks_expected))
     print("Trying these rings (counts, multiplicity, ring number): {}".format(rings))
-    indexer.cosine_tol = cosine_tol
+    indexer.cosine_tol = np.abs(cosine_tol)
 
     for frac in fracs:
         for tol in hkl_tols:
@@ -440,20 +503,22 @@ def do_index(cf,
 
                     indexer.find()
                     indexer.scorethem()
-                    
+
             print(frac, tol, len(indexer.ubis))
 
-    grains = [ImageD11.grain.grain(ubi, translation=np.array([0., 0., 0.])) for ubi in indexer.ubis]
+    grains = [ImageD11.grain.grain(ubi) for ubi in indexer.ubis]
     print("Found {} grains".format(len(grains)))
 
     return grains, indexer
 
 
+# GOTO refinegrains somewhere?
 def refine_grain_positions(cf_3d, ds, grains, parfile, symmetry="cubic", cf_frac=0.85, cf_dstol=0.01,
                            hkl_tols=(0.05, 0.025, 0.01)):
     sample = ds.sample
     dataset = ds.dset
-    cf_strong_allrings = selectpeaks(cf_3d, frac=cf_frac, dsmax=cf_3d.ds.max(), doplot=None, dstol=cf_dstol)
+    cf_strong_allrings = select_ring_peaks_by_intensity(cf_3d, frac=cf_frac, dsmax=cf_3d.ds.max(), doplot=None,
+                                                        dstol=cf_dstol)
     print("Got {} strong peaks for makemap".format(cf_strong_allrings.nrows))
     cf_strong_allrings_path = '{}_{}_3d_peaks_strong_all_rings.flt'.format(sample, dataset)
     cf_strong_allrings.writefile(cf_strong_allrings_path)
@@ -491,107 +556,78 @@ def refine_grain_positions(cf_3d, ds, grains, parfile, symmetry="cubic", cf_frac
 
     return grains2
 
+### (hopefully) no longer used
 
-def build_slice_arrays(grains, cutoff_level=0.0):
-    grain_labels_array = np.zeros_like(grains[0].recon) - 1
-    red = np.zeros_like(grains[0].recon)
-    grn = np.zeros_like(grains[0].recon)
-    blu = np.zeros_like(grains[0].recon)
+# GOTO follow wherever we put scipy curve fit
 
-    raw_intensity_array = np.zeros_like(grains[0].recon)
-
-    raw_intensity_array.fill(cutoff_level)
-
-    def norm(r):
-        m = r > r.max() * 0.2
-        return (r / r[m].mean()).clip(0, 1)
-
-    for g in tqdm(grains):
-        i = g.gid
-
-        g_raw_intensity = norm(g.recon)
-
-        g_raw_intensity_mask = g_raw_intensity > raw_intensity_array
-
-        g_raw_intenstiy_map = g_raw_intensity[g_raw_intensity_mask]
-
-        raw_intensity_array[g_raw_intensity_mask] = g_raw_intenstiy_map
-
-        red[g_raw_intensity_mask] = g_raw_intenstiy_map * g.rgb_z[0]
-        grn[g_raw_intensity_mask] = g_raw_intenstiy_map * g.rgb_z[1]
-        blu[g_raw_intensity_mask] = g_raw_intenstiy_map * g.rgb_z[2]
-
-        grain_labels_array[g_raw_intensity_mask] = i
-
-    raw_intensity_array[raw_intensity_array == cutoff_level] = 0
-
-    rgb_array = np.transpose((red, grn, blu), axes=(1, 2, 0))
-
-    return rgb_array, grain_labels_array, raw_intensity_array
+# def calcy(cos_omega, sin_omega, sol):
+#     return sol[0] + cos_omega * sol[1] + sin_omega * sol[2]
 
 
-def slurm_submit_and_wait(bash_script_path, wait_time_sec=60):
-    if not os.path.exists(bash_script_path):
-        raise IOError("Bash script not found!")
-    submit_command = "sbatch {}".format(bash_script_path)
-    sbatch_submit_result = subprocess.run(submit_command, capture_output=True, shell=True).stdout.decode("utf-8")
-
-    print(sbatch_submit_result.replace("\n", ""))
-
-    slurm_job_number = None
-
-    if sbatch_submit_result.startswith("Submitted"):
-        slurm_job_number = sbatch_submit_result.replace("\n", "").split("job ")[1]
-
-    print(slurm_job_number)
-
-    assert slurm_job_number is not None
-
-    slurm_job_finished = False
-
-    while not slurm_job_finished:
-        squeue_results = subprocess.run("squeue -u $USER", capture_output=True, shell=True).stdout.decode("utf-8")
-
-        if slurm_job_number not in squeue_results:
-            print("Slurm job finished!")
-            slurm_job_finished = True
-        else:
-            print("Slurm job not finished! Waiting {} seconds...".format(wait_time_sec))
-            time.sleep(wait_time_sec)
+# def fity(y, cos_omega, sin_omega, wt=1):
+#     """
+#     Fit a sinogram to get a grain centroid
+#     # calc = d0 + x*co + y*so
+#     # dc/dpar : d0 = 1
+#     #         :  x = co
+#     #         :  y = so
+#     # gradients
+#     # General linear least squares
+#     # Solution by the normal equation
+#     # wt is weights (1/sig? or 1/sig^2?) 
+#     # 
+#     """
+#     g = [wt * np.ones(y.shape, float), wt * cos_omega, wt * sin_omega]  # gradient
+#     nv = len(g)
+#     m = np.zeros((nv, nv), float)
+#     r = np.zeros(nv, float)
+#     for i in range(nv):
+#         r[i] = np.dot(g[i], wt * y)  # A^T . b
+#         for j in range(i, nv):
+#             m[i, j] = np.dot(g[i], g[j])  # (A^T . A) . a = A^T . b
+#             m[j, i] = m[i, j]
+#     sol = np.dot(np.linalg.inv(m), r)
+#     return sol
 
 
-def correct_half_scan(ds):
-    c0 = 0
-    # check / fix the centre of rotation
-    # get value of bin closest to c0
-    central_bin = np.argmin(abs(ds.ybincens - c0))
-    # get centre dty value of this vin
-    central_value = ds.ybincens[central_bin]
+# def fity_robust(dty, co, so, nsigma=5, doplot=False):
+#     cen, dx, dy = fity(dty, co, so)
+#     calc2 = calc1 = calcy(co, so, (cen, dx, dy))
+#     # mask for columnfile, we're selecting specific 4D peaks
+#     # that come from the right place in y
+#     selected = np.ones(co.shape, bool)
+#     for i in range(3):
+#         err = dty - calc2
+#         estd = max(err[selected].std(), 1.0)  # 1 micron
+#         # print(i,estd)
+#         es = estd * nsigma
+#         selected = abs(err) < es
+#         cen, dx, dy = fity(dty, co, so, selected.astype(float))
+#         calc2 = calcy(co, so, (cen, dx, dy))
+#     # bad peaks are > 5 sigma
+#     if doplot:
+#         f, a = plt.subplots(1, 2)
+#         theta = np.arctan2(so, co)
+#         a[0].plot(theta, calc1, ',')
+#         a[0].plot(theta, calc2, ',')
+#         a[0].plot(theta[selected], dty[selected], "o")
+#         a[0].plot(theta[~selected], dty[~selected], 'x')
+#         a[1].plot(theta[selected], (calc2 - dty)[selected], 'o')
+#         a[1].plot(theta[~selected], (calc2 - dty)[~selected], 'x')
+#         a[1].set(ylim=(-es, es))
+#         plt.show()
+#     return selected, cen, dx, dy
 
-    lo_side = ds.ybincens[:central_bin + 1]
-    hi_side = ds.ybincens[central_bin:]
 
-    # get the hi/lo side which is widest
-    # i.e if you go from -130 to +20, it selects -130
-    yrange = max(hi_side[-1] - hi_side[0], lo_side[-1] - lo_side[0])
-
-    # round to nearest multiple of ds.ystep
-    yrange = np.ceil(yrange / ds.ystep) * ds.ystep
-
-    # make new ymin and ymax that are symmetric around central_value
-    ds.ymin = central_value - yrange
-    ds.ymax = central_value + yrange
-
-    new_yrange = ds.ymax - ds.ymin
-
-    # determine new number of y bins
-    ny = int(new_yrange // ds.ystep) + 1
-
-    ds.ybincens = np.linspace(ds.ymin, ds.ymax, ny)
-    ds.ybinedges = np.linspace(ds.ymin - ds.ystep / 2, ds.ymax + ds.ystep / 2, ny + 1)
-
-    print(len(ds.ybincens))
-    print(ds.ybincens)
-    print(ds.ystep)
-    print(yrange)
-    print(ny)
+# def graincen(gid, colf, doplot=True, nsigma=5):
+#     # Get peaks beloging to this grain ID
+#     m = colf.grain_id == gid
+#     # Get omega values of peaks in radians
+#     romega = np.radians(colf.omega[m])
+#     # Calculate cos and sin of omega
+#     co = np.cos(romega)
+#     so = np.sin(romega)
+#     # Get dty values of peaks
+#     dty = colf.dty[m]
+#     selected, cen, dx, dy = fity_robust(dty, co, so, nsigma=nsigma, doplot=doplot)
+#     return selected, cen, dx, dy

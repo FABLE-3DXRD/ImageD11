@@ -9,7 +9,6 @@ import tqdm
 from timeit import default_timer
 import numpy as np
 import h5py
-import hdf5plugin
 import scipy.sparse
 import scipy.sparse.csgraph
 import ImageD11.sinograms.dataset
@@ -37,7 +36,13 @@ ImageD11.cImageD11.check_multiprocessing(patch=True)
 #
 
 import multiprocessing as mp
-from multiprocessing import shared_memory, resource_tracker
+try:
+    from multiprocessing import shared_memory, resource_tracker
+except ImportError:
+    import warnings
+    warnings.warn('python2: multiprocessing lacks shared memory, please backport it')
+    shared_memory = None
+    resource_tracker = None
 
 #####################################################################################
 def remove_shm_from_resource_tracker():
@@ -555,17 +560,33 @@ class pks_table:
 
     def pk2d(self, omega, dty):
         s1, sI, srI, scI, frm = self.pk_props
+        s_raw, f_raw, omegapk, dtypk = n_pk2d( s1, sI, srI, scI, frm, omega, dty )
         allpks = {
-            "s_raw": srI / sI,
-            "f_raw": scI / sI,
-            "omega": omega.flat[frm],
-            "dty": dty.flat[frm],
+            "s_raw": s_raw,
+            "f_raw": f_raw,
+            "omega": omegapk,
+            "dty": dtypk,
             "Number_of_pixels": s1,
             "sum_intensity": sI,
             "spot3d_id": self.glabel,
         }
         return allpks
 
+@numba.njit(parallel=True)
+def n_pk2d( s1, sI, srI, scI, frm, omega, dty ):
+    n = len(s1)
+    s_raw = np.empty( n, np.dtype('d'))
+    f_raw = np.empty( n, np.dtype('d'))
+    omegapk = np.empty( n, np.dtype('d'))
+    dtypk   = np.empty( n, np.dtype('d'))
+    for i in numba.prange( n ):
+        s_raw[i] = srI[i]/sI[i]
+        f_raw[i] = scI[i]/sI[i]
+        omegapk[i] = omega.flat[frm[i]]
+        dtypk[i] = dty.flat[frm[i]]
+    return s_raw, f_raw, omegapk, dtypk
+
+        
 
 if 0:
 

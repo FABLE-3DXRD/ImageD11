@@ -1,102 +1,50 @@
-import os
+def read_hdf5(h5name, ginc, ds):
+    with h5py.File(h5name, "r") as hin:
+        grains_group = hin['grains']
+        grain_group = grains_group[str(ginc)]
 
-username = os.environ.get("USER")
+        # import the grain object
+        g = ImageD11.grain.grain.from_h5py_group(grain_group)
 
-id11_code_path = "/home/esrf/" + username + "/Code/ImageD11"
+        # create the GrainSinogram object
+        gs = GrainSinogram.from_h5py_group(grain_group, ds, g)
 
-import sys
+    return gs
 
-sys.path.insert(0, id11_code_path)
 
-import numpy as np
-import h5py
+def main(h5name, ginc, dsfile, dest, nthreads):
+    # load the dataset
+    ds = ImageD11.sinograms.dataset.load(dsfile)
+    # read the GrainSinogram object from HDF5:
 
-import ImageD11.sinograms.roi_iradon
+    grainsino = read_hdf5(h5name, ginc, ds)
 
-def run_iradon_mlem(ssino, sinoangles, mask=None, pad=20, y0=0, workers=1, niter=20, apply_halfmask=False, mask_central_zingers=False):
-    outsize = ssino.shape[0] + pad
-    if apply_halfmask:
-        halfmask = np.zeros_like(ssino)
+    grainsino.recon(method="mlem", workers=nthreads)
 
-        halfmask[:len(halfmask)//2-1, :] = 1
-        halfmask[len(halfmask)//2-1, :] = 0.5
-        
-        ssino_to_recon = ssino * halfmask
-    else:
-        ssino_to_recon = ssino
-    
-    # Perform iradon transform of grain sinogram, store result (reconstructed grain shape) in g.recon
-    recon =  ImageD11.sinograms.roi_iradon.mlem(ssino_to_recon, 
-                       theta=sinoangles, 
-                       mask=mask,
-                       workers=workers,
-                       output_size=outsize,
-                       projection_shifts=np.full(ssino_to_recon.shape, -y0),
-                       niter=niter)
-    
-    if mask_central_zingers:
-        grs = recon.shape[0]
-        xpr, ypr = -grs//2 + np.mgrid[:grs, :grs]
-        inner_mask_radius = 25
-        outer_mask_radius = inner_mask_radius + 2
-
-        inner_circle_mask = (xpr ** 2 + ypr ** 2) < inner_mask_radius ** 2
-        outer_circle_mask = (xpr ** 2 + ypr ** 2) < outer_mask_radius ** 2
-
-        mask_ring = inner_circle_mask & outer_circle_mask
-        # we now have a mask to apply
-        fill_value = np.median(recon[mask_ring])
-        recon[inner_circle_mask] = fill_value
-    
-    return recon
-
-def read_hdf5(h5name, ginc):
-    with h5py.File(h5name, 'r') as hin:
-        grains_group = 'grains'
-        gg = hin[grains_group][sorted(hin[grains_group].keys(), key=lambda x: int(x))[ginc]]
-        # gg = hin[grains_group][str(gid)]
-        
-        ssino = gg['ssino'][:]
-        sinoangles = gg['sinoangles'][:]
-        circle_mask = gg['circle_mask'][:]
-        y0 = float(gg.attrs['y0'][()])
-        
-    return ssino, sinoangles, circle_mask, y0
-
-def main(h5name, ginc, dest, pad, niter, dohm, maskcen):
-    # read the HDF5 file
-    ssino, sinoangles, circle_mask, y0 = read_hdf5(h5name, ginc)
-    # feed ssino, sinoangles, mask to run_iradon_mlem
-    nthreads = len(os.sched_getaffinity(os.getpid()))
-    # print(f"Running on {nthreads} threads")
-    recon = run_iradon_mlem(ssino, sinoangles, mask=circle_mask, pad=pad, y0=y0, workers=nthreads, niter=niter, apply_halfmask=dohm, mask_central_zingers=maskcen)
     # write result to disk as Numpy array
     # save as TIFF instead?
-    np.savetxt(dest, recon)
-    
+    np.savetxt(dest, grainsino.recons["mlem"])
+
+
 if __name__ == "__main__":
-    h5name = sys.argv[1]
-    ginc = int(sys.argv[2])
-    dest = sys.argv[3]
-    # y0 = float(sys.argv[4])
-    # pad = int(sys.argv[5])
-    # niter = int(sys.argv[6])
-    # dohm = sys.argv[7]
-    # maskcen = sys.argv[8]
+    # horrible workaround to include id11 code path
+    import sys
     
-    pad = int(sys.argv[4])
-    niter = int(sys.argv[5])
-    dohm = sys.argv[6]
-    maskcen = sys.argv[7]
+    id11_code_path = sys.argv[1]
     
-    if dohm == "Yes":
-        apply_halfmask = True
-    else:
-        apply_halfmask = False
-        
-    if maskcen == "Yes":
-        mask_central_zingers = True
-    else:
-        mask_central_zingers = False
+    sys.path.insert(0, id11_code_path)
+
+    import numpy as np
+    import h5py
+
+    import ImageD11.sinograms.dataset
+    from ImageD11.sinograms.sinogram import GrainSinogram
+    import ImageD11.grain
     
-    main(h5name, ginc, dest, pad, niter, apply_halfmask, mask_central_zingers)
+    h5name = sys.argv[2]
+    ginc = int(sys.argv[3])
+    dsfile = sys.argv[4]
+    dest = sys.argv[5]
+    nthreads = int(sys.argv[6])
+    
+    main(h5name, ginc, dsfile, dest, nthreads)

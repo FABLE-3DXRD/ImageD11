@@ -340,6 +340,7 @@ def fxyrot(colrow, angle=0, center=0, projection_shifts=None):
     return colrow + center
 
 
+# TODO: Validate!
 @numba.njit(boundscheck=False)
 def recon_cens(omega, dty, ybins, imsize, wt, y0=0.0):
     """ Back project the peak centers into a map 
@@ -446,8 +447,15 @@ def mlem(sino,
     # only need to pad [0]
 
     if projection_shifts is not None:
-        to_pad = (mlem_rec.shape[0] - projection_shifts.shape[0]) // 2
-        proj_shifts_padded = np.pad(projection_shifts, ((to_pad, to_pad), (0, 0)))
+        pad = [int(np.ceil(output_size - s)) for s in projection_shifts.shape]
+        new_center = [(s + p) // 2 for s, p in zip(projection_shifts.shape, pad)]
+        old_center = [s // 2 for s in projection_shifts.shape]
+        pad_before = [nc - oc for oc, nc in zip(old_center, new_center)]
+        pad_width = [(pb, p - pb) for pb, p in zip(pad_before, pad)]
+        pad_width[1] = (0, 0)
+
+        proj_shifts_padded = np.pad(projection_shifts, pad_width, mode='constant', constant_values=0)
+
     else:
         proj_shifts_padded = None
 
@@ -459,10 +467,14 @@ def mlem(sino,
                           workers=workers
                           )
 
-        # pad sino to the size of calc_sino
+        pad = [int(np.ceil(output_size - s)) for s in sino.shape]
+        new_center = [(s + p) // 2 for s, p in zip(sino.shape, pad)]
+        old_center = [s // 2 for s in sino.shape]
+        pad_before = [nc - oc for oc, nc in zip(old_center, new_center)]
+        pad_width = [(pb, p - pb) for pb, p in zip(pad_before, pad)]
+        pad_width[1] = (0, 0)
 
-        sino_padded = np.pad(sino, (
-            ((calc_sino.shape[0] - sino.shape[0]) // 2, (calc_sino.shape[0] - sino.shape[0]) // 2), (0, 0)))
+        sino_padded = np.pad(sino, pad_width, mode='constant', constant_values=0)
 
         ratio = sino_padded / (calc_sino + divtol)
 
@@ -481,3 +493,99 @@ def mlem(sino,
         mlem_rec[~mask] = 0.
 
     return mlem_rec
+
+
+def apply_halfmask_to_sino(sino):
+    """Applies halfmask correction to sinogram"""
+    halfmask = np.zeros_like(sino)
+
+    halfmask[:len(halfmask) // 2 - 1, :] = 1
+    halfmask[len(halfmask) // 2 - 1, :] = 0.5
+
+    sino_halfmasked = sino.copy() * halfmask
+
+    return sino_halfmasked
+
+
+def correct_recon_central_zingers(recon, radius=25):
+    recon_corrected = recon.copy()
+    grs = recon.shape[0]
+    xpr, ypr = -grs // 2 + np.mgrid[:grs, :grs]
+    inner_mask_radius = radius
+    outer_mask_radius = inner_mask_radius + 2
+
+    inner_circle_mask = (xpr ** 2 + ypr ** 2) < inner_mask_radius ** 2
+    outer_circle_mask = (xpr ** 2 + ypr ** 2) < outer_mask_radius ** 2
+
+    mask_ring = inner_circle_mask & outer_circle_mask
+    # we now have a mask to apply
+    fill_value = np.median(recon_corrected[mask_ring])
+    recon_corrected[inner_circle_mask] = fill_value
+
+    return recon_corrected
+
+
+def run_iradon(sino, angles, pad=20, y0=0,
+               workers=1, mask=None,
+               apply_halfmask=False, mask_central_zingers=False, central_mask_radius=25):
+    """Applies an iradon to a sinogram, with an optional pad
+       Calculates scaled-up output size from pad value
+       Applies projection shifts of -y0
+       Optionally mask the returned reconstruction with sample_mask
+       Optionally apply halfmask to correct artifacts with half-scans (from -ny to 0 rather than -ny/2 to +ny/2
+       Optionally apply a circular median filter mask to the center of the reconstruction given a radius in central_mask_radius"""
+
+    # TODO Move apply_halfmask method to sinogram class
+
+    outsize = sino.shape[0] + pad
+
+    if apply_halfmask:
+        sino_to_recon = apply_halfmask_to_sino(sino)
+    else:
+        sino_to_recon = sino
+
+    # Perform iradon transform of grain sinogram, store result (reconstructed grain shape) in g.recon
+    recon = iradon(sino_to_recon,
+                   theta=angles,
+                   mask=mask,
+                   output_size=outsize,
+                   projection_shifts=np.full(sino.shape, -y0),
+                   filter_name='hamming',
+                   interpolation='linear',
+                   workers=workers)
+
+    if mask_central_zingers:
+        recon = correct_recon_central_zingers(recon, radius=central_mask_radius)
+
+    return recon
+
+
+def run_mlem(sino, angles, mask=None, pad=20, y0=0, workers=1, niter=20, apply_halfmask=False,
+             mask_central_zingers=False, central_mask_radius=25):
+    """Applies an MLEM reconstruction to a sinogram, with an optional pad
+       Calculates scaled-up output size from pad value
+       Applies projection shifts of -y0
+       Optionally mask the returned reconstruction with sample_mask
+       Optionally apply halfmask to correct artifacts with half-scans (from -ny to 0 rather than -ny/2 to +ny/2
+       Optionally apply a circular median filter mask to the center of the reconstruction given a radius in central_mask_radius"""
+
+    outsize = sino.shape[0] + pad
+
+    if apply_halfmask:
+        sino_to_recon = apply_halfmask_to_sino(sino)
+    else:
+        sino_to_recon = sino
+
+    # Perform iradon transform of grain sinogram, store result (reconstructed grain shape) in g.recon
+    recon = mlem(sino_to_recon,
+                 theta=angles,
+                 mask=mask,
+                 workers=workers,
+                 output_size=outsize,
+                 projection_shifts=np.full(sino_to_recon.shape, -y0),
+                 niter=niter)
+
+    if mask_central_zingers:
+        recon = correct_recon_central_zingers(recon, radius=central_mask_radius)
+
+    return recon

@@ -457,8 +457,14 @@ def setup(
             cut = 1
         else:
             cut = 25  # 5 sigma
+    # Use mask from dataset if no mask provided and dataset has one
+    if len(maskfile) == 0 and hasattr(dso, "maskfile"):
+        maskfile = dso.maskfile
     if len(maskfile) == 0 and ("eiger" in dso.limapath):
         warnings.warn("Eiger detector needs a maskfile that is missing")
+    # Use background file from dataset if no bgfile provided and dataset has one
+    if len(bgfile) == 0 and hasattr(dso, "bgfile"):
+        bgfile = dso.bgfile
     options = SegmenterOptions(
         cut=cut,
         howmany=howmany,

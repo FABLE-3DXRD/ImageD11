@@ -29,6 +29,7 @@ file for a 2K image etc?
 2021 : added LUT method for eiger
 """
 import logging, numpy, math
+import numba
 import fabio
 from scipy.interpolate import bisplev
 
@@ -148,7 +149,7 @@ class correctorclass: #IGNORE:R0902
         assert 's_raw' in pks.titles and 'f_raw' in pks.titles	
 
         # make pixel_lut  + substract xy grid coordinate (i,j) to keep only dx and  dy arrays.
-        self.make_pixel_lut(self.dim)	
+        self.make_pixel_lut(self.dim)
         i,j = numpy.mgrid[ 0:self.dim[0], 0:self.dim[1] ]
         dx = self.pixel_lut[0] - i
         dy = self.pixel_lut[1] - j
@@ -295,7 +296,13 @@ class perfect(correctorclass):
             self.pixel_lut = x_im, y_im
         return self.pixel_lut
 
-
+@numba.njit(parallel=True)
+def apply_lut_parallel(sr, fr, sc, fc, dx, dy):
+    for i in numba.prange(len(sr)):
+        si = int(numpy.round( sr[i] ))
+        fi = int(numpy.round( fr[i] ))
+        sc[i] = sr[i] + dy[ si, fi ]
+        fc[i] = fr[i] + dx[ si, fi ]
 
 class eiger_spatial(object):
     
@@ -305,12 +312,22 @@ class eiger_spatial(object):
         self.dx = fabio.open(dxfile).data  # x == fast direction at ID11
         self.dy = fabio.open(dyfile).data  # y == slow direction
         assert self.dx.shape == self.dy.shape
-        
-    def __call__(self, pks):
-        si = numpy.round(pks['s_raw']).astype(int)
-        fi = numpy.round(pks['f_raw']).astype(int)
-        pks['fc'] = self.dx[ si, fi ] + pks['f_raw']
-        pks['sc'] = self.dy[ si, fi ] + pks['s_raw']
+
+    def __call__(self, pks, parallel=None):
+        n = len(pks['s_raw'])
+        if parallel is None:
+            parallel = n > 1e6
+        if parallel:
+            sc = numpy.empty( n, float )
+            fc = numpy.empty( n, float )
+            apply_lut_parallel( pks['s_raw'], pks['f_raw'], sc, fc, self.dx, self.dy )
+            pks['sc'] = sc
+            pks['fc'] = fc
+        else:
+            si = numpy.round(pks['s_raw']).astype(int)
+            fi = numpy.round(pks['f_raw']).astype(int)
+            pks['fc'] = self.dx[ si, fi ] + pks['f_raw']
+            pks['sc'] = self.dy[ si, fi ] + pks['s_raw']
         return pks
     
     def pixel_lut(self):
@@ -318,7 +335,19 @@ class eiger_spatial(object):
         s = self.dx.shape
         i, j = numpy.mgrid[ 0:s[0], 0:s[1] ]
         return self.dy + j, self.dx + i
-    
+
+
+def correct_cf_with_spline(cf, spline_file):
+    """Creates a correctorclass from the spline file
+       Corrects the columnfile with the spline file
+       Returns the corrected columnfile"""
+
+    corrector = correctorclass(spline_file)
+    corrector.correct_px_lut(cf)
+
+    return cf
+
+
 #
 #"""
 #http://homepages.inf.ed.ac.uk/rbf/CVonline/LOCAL_COPIES/OWENS/LECT5/node5.html
