@@ -33,7 +33,7 @@ def real_space_to_recon_space(x, y, recon_shape, ystep, y0):
     Should be the exact opposite of recon_space_to_real_space()
        Accounts for the shape of the reconstruction because the origin in reconstruction space is in the corner of the image."""
     i = recon_shape[0] // 2 + (x - y0) / ystep
-    j = -(recon_shape[1] // 2 + (y - y0) / ystep)
+    j = recon_shape[1] // 2 + (-y - y0) / ystep
 
     return i, j
 
