@@ -229,116 +229,7 @@ def save_ubi_map(ds, ubi_map, eps_map, misorientation_map, ipf_x_col_map, ipf_y_
         ipfzdset.attrs['CLASS'] = 'IMAGE'
 
 
-### IPF Colour stuff
-# GOTO New file, Orix interface, taking a grain instance (or a U) as an argument
-# Check sym_u inside ImageD11
-
-def grain_to_rgb(g, ax=(0, 0, 1)):
-    return hkl_to_color_cubic(crystal_direction_cubic(g.ubi, ax))
-
-
-def crystal_direction_cubic(ubi, axis):
-    hkl = np.dot(ubi, axis)
-    # cubic symmetry implies:
-    #      24 permutations of h,k,l
-    #      one has abs(h) <= abs(k) <= abs(l)
-    hkl = abs(hkl)
-    hkl.sort()
-    return hkl
-
-
-def hkl_to_color_cubic(hkl):
-    """
-    https://mathematica.stackexchange.com/questions/47492/how-to-create-an-inverse-pole-figure-color-map
-        [x,y,z]=u⋅[0,0,1]+v⋅[0,1,1]+w⋅[1,1,1].
-            These are:
-                u=z−y, v=y−x, w=x
-                This triple is used to assign each direction inside the standard triangle
-                
-    makeColor[{x_, y_, z_}] := 
-         RGBColor @@ ({z - y, y - x, x}/Max@{z - y, y - x, x})                
-    """
-    x, y, z = hkl
-    assert x <= y <= z
-    assert z >= 0
-    u, v, w = z - y, y - x, x
-    m = max(u, v, w)
-    r, g, b = u / m, v / m, w / m
-    return (r, g, b)
-
-
-def hkl_to_pf_cubic(hkl):
-    x, y, z = hkl
-    assert x <= y <= z
-    assert z >= 0
-    m = np.sqrt((hkl ** 2).sum())
-    return x / (z + m), y / (z + m)
-
-
-def get_rgbs_for_grains(grains):
-    for grain in grains:
-        grain.rgb_z = grain_to_rgb(grain, ax=(0, 0, 1), )  # symmetry = Symmetry.cubic)
-        grain.rgb_y = grain_to_rgb(grain, ax=(0, 1, 0), )  # symmetry = Symmetry.cubic)
-        grain.rgb_x = grain_to_rgb(grain, ax=(1, 0, 0), )  # symmetry = Symmetry.cubic)
-
-
 ### Sinogram stuff
-
-# GOTO sinograms/geometry
-
-def sine_function(x, offset, a, b):
-    return b * np.sin(np.radians(x)) + a * np.cos(np.radians(x)) + offset
-
-
-def fit_sine_wave(x_data, y_data, initial_guess):
-    # Fit the sine function to the data
-    popt, _ = curve_fit(sine_function, x_data, y_data, p0=initial_guess, method='trf', loss='soft_l1', max_nfev=10000)
-
-    offset, a, b = popt
-
-    return offset, a, b
-
-
-def fit_grain_position_from_sino(grain, cf_strong):
-    initial_guess = (0, 0.5, 0.5)
-
-    offset, a, b = fit_sine_wave(cf_strong.omega[grain.mask_4d], cf_strong.dty[grain.mask_4d], initial_guess)
-
-    grain.cen = offset
-
-    grain.dx = -b
-    grain.dy = -a
-
-
-def fit_grain_position_from_recon(grain, ds, y0):
-    grain.bad_recon = False
-    blobs = blob_log(grain.recon, min_sigma=1, max_sigma=10, num_sigma=10, threshold=.01)
-    blobs_sorted = sorted(blobs, key=lambda x: x[2], reverse=True)
-    try:
-        largest_blob = blobs_sorted[0]
-
-        # we now have the blob position in recon space
-        # we need to go back to microns
-
-        # first axis (vertical) is x
-        # second axis (horizontal) is y
-
-        x_recon_space = largest_blob[0]
-        y_recon_space = largest_blob[1]
-
-        # centre of the recon image is centre of space
-
-        # the below should be independent, tested, inside sinograms/geometry
-        x_microns = (x_recon_space - grain.recon.shape[0] // 2) * ds.ystep + y0
-        y_microns = -(y_recon_space - grain.recon.shape[1] // 2) * ds.ystep + y0
-
-        grain.x_blob = x_microns
-        grain.y_blob = y_microns
-    except IndexError:
-        # didn't find any blobs
-        # for small grains like these, if we didn't find a blob, normally indicates recon is bad
-        # we will exclude it from maps and export
-        grain.bad_recon = True
 
 
 # GOTO should be fixed by monitor in assemble_label
@@ -368,6 +259,7 @@ def assign_peaks_to_grains(grains, cf, tol):
 
     # add the labels column to the columnfile
     cf.addcolumn(labels, 'grain_id')
+
 
 ### Plotting
 
@@ -479,31 +371,78 @@ def plot_grain_sinograms(grains, cf, n_grains_to_plot=None):
     plt.show()
 
 
-# GOTO follow orix colouring stuff
-def triangle():
-    """ compute a series of point on the edge of the triangle """
-    xy = [np.array(v) for v in ((0, 1, 1), (0, 0, 1), (1, 1, 1))]
-    xy += [xy[2] * (1 - t) + xy[0] * t for t in np.linspace(0.1, 1, 5)]
-    return np.array([hkl_to_pf_cubic(np.array(p)) for p in xy])
+def get_rgbs_for_grains(grains):
+    # get the UB matrices for each grain
+    UBs = np.array([g.UB for g in grains])
+
+    # get the reference unit cell of one of the grains (should be the same for all)
+    ref_ucell = grains[0].ref_unitcell
+
+    # get a meta orientation for all the grains
+    meta_ori = ref_ucell.get_orix_orien(UBs)
+
+    rgb_x_all = ref_ucell.get_ipf_colour_from_orix_orien(meta_ori, axis=np.array([1., 0, 0]))
+    rgb_y_all = ref_ucell.get_ipf_colour_from_orix_orien(meta_ori, axis=np.array([0., 1, 0]))
+    rgb_z_all = ref_ucell.get_ipf_colour_from_orix_orien(meta_ori, axis=np.array([0., 0, 1]))
+
+    for grain, rgb_x, rgb_y, rgb_z in zip(grains, rgb_x_all, rgb_y_all, rgb_z_all):
+        grain.rgb_x = rgb_x
+        grain.rgb_y = rgb_y
+        grain.rgb_z = rgb_z
 
 
-# GOTO follow orix colouring stuff
-def plot_ipfs(grains):
-    f, a = plt.subplots(1, 3, figsize=(15, 5))
-    ty, tx = triangle().T
-    for i, title in enumerate('xyz'):
-        ax = np.zeros(3)
-        ax[i] = 1.
-        hkl = [crystal_direction_cubic(g.ubi, ax) for g in grains]
-        xy = np.array([hkl_to_pf_cubic(h) for h in hkl])
-        rgb = np.array([hkl_to_color_cubic(h) for h in hkl])
-        for j in range(len(grains)):
-            grains[j].rgb = rgb[j]
-        a[i].scatter(xy[:, 1], xy[:, 0],
-                     c=rgb)  # Note the "x" axis of the plot is the 'k' direction and 'y' is h (smaller)
-        a[i].set(title=title, aspect='equal', facecolor='silver', xticks=[], yticks=[])
-        a[i].plot(tx, ty, 'k-', lw=1)
+def plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1])):
+    # get the UB matrices for each grain
+    UBs = np.array([g.UB for g in grains])
 
+    # get the reference unit cell of one of the grains (should be the same for all)
+    ref_ucell = grains[0].ref_unitcell
+
+    # get a meta orientation for all the grains
+    meta_orien = ref_ucell.get_orix_orien(UBs)
+
+    try:
+        from orix.vector.vector3d import Vector3d
+    except ImportError:
+        raise ImportError("Missing diffpy and/or orix, can't compute orix phase!")
+
+    ipf_direction = Vector3d(axis)
+
+    # get the RGB colours
+    rgb = ref_ucell.get_ipf_colour_from_orix_orien(meta_orien, axis=ipf_direction)
+
+    # scatter the meta orientation using the colours
+    meta_orien.scatter("ipf", c=rgb, direction=ipf_direction)
+
+
+def plot_direct_pole_figure(grains, uvw=np.array([1., 0., 0.])):
+    # get the UB matrices for each grain
+    UBs = np.array([g.UB for g in grains])
+
+    # get the reference unit cell of one of the grains (should be the same for all)
+    ref_ucell = grains[0].ref_unitcell
+
+    # make a combined orientation from them (makes plot much faster)
+    meta_orien = ref_ucell.get_orix_orien(UBs)
+
+    try:
+        from orix.vector import Miller
+    except ImportError:
+        raise ImportError("Missing orix, can't compute pole figure!")
+
+    # make Miller object from uvw
+    m1 = Miller(uvw=uvw, phase=ref_ucell.orix_phase).symmetrise(unique=True)
+
+    # get outer product of all orientations with the crystal direction we're interested in
+    uvw_all = (~meta_orien).outer(m1)
+
+    uvw_all.scatter(hemisphere="both", axes_labels=["X", "Y"])
+
+
+def plot_all_ipfs(grains):
+    plot_inverse_pole_figure(grains, axis=np.array([1., 0, 0]))
+    plot_inverse_pole_figure(grains, axis=np.array([0., 1, 0]))
+    plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1]))
 
 
 ### Indexing
@@ -578,7 +517,8 @@ def refine_grain_positions(cf_3d, ds, grains, parfile, symmetry="cubic", cf_frac
                            hkl_tols=(0.05, 0.025, 0.01)):
     sample = ds.sample
     dataset = ds.dset
-    cf_strong_allrings = select_ring_peaks_by_intensity(cf_3d, frac=cf_frac, dsmax=cf_3d.ds.max(), doplot=None, dstol=cf_dstol)
+    cf_strong_allrings = select_ring_peaks_by_intensity(cf_3d, frac=cf_frac, dsmax=cf_3d.ds.max(), doplot=None,
+                                                        dstol=cf_dstol)
     print("Got {} strong peaks for makemap".format(cf_strong_allrings.nrows))
     cf_strong_allrings_path = '{}_{}_3d_peaks_strong_all_rings.flt'.format(sample, dataset)
     cf_strong_allrings.writefile(cf_strong_allrings_path)

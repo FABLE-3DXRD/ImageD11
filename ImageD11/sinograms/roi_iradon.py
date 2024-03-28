@@ -340,6 +340,7 @@ def fxyrot(colrow, angle=0, center=0, projection_shifts=None):
     return colrow + center
 
 
+# TODO: Validate!
 @numba.njit(boundscheck=False)
 def recon_cens(omega, dty, ybins, imsize, wt, y0=0.0):
     """ Back project the peak centers into a map 

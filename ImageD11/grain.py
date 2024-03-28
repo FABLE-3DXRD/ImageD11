@@ -77,6 +77,8 @@ class grain:
         self._mt = None
         self._rmt = None
         self._unitcell = None
+        self._ref_unitcell = None
+        self._orix_orien = None
 
     @property
     def UB(self):
@@ -203,6 +205,41 @@ class grain:
         E = self.eps_sample_matrix(dzero_cell, m)
         return symm_to_e6(E)
 
+    # TODO: we need I/O for this
+    @property
+    def ref_unitcell(self):
+        """The reference (strain-free) unitcell object for this grain"""
+        if self._ref_unitcell is None:
+            raise NameError("Reference unitcell not set for this grain!")
+        else:
+            return self._ref_unitcell
+
+    @ref_unitcell.setter
+    def ref_unitcell(self, value):
+        if not isinstance(value, ImageD11.unitcell.unitcell):
+            raise TypeError("ref_unitcell must be an ImageD11.unitcell.unitcell instance!")
+        self._ref_unitcell = value
+        self._orix_orien = None  # must be recomputed because we changed the reference unitcell
+
+    @property
+    def orix_phase(self):
+        """The orix phase for the grain, taken straight from the reference unitcell"""
+        return self.ref_unitcell.orix_phase
+
+    @property
+    def orix_orien(self):
+        if self._orix_orien is None:
+            # get the orix orientation from the reference unit cell
+            self._orix_orien = self.ref_unitcell.get_orix_orien(self.UB)
+        return self._orix_orien
+
+    # TODO: classmethod for from_orix_orien to make a grain from an orientation
+
+    def get_ipf_colour(self, axis=np.array([0., 0., 1.])):
+        """Calls ImageD11.unitcell.unitcell.get_ipf_colour with the grain's UB"""
+
+        return self.ref_unitcell.get_ipf_colour(self.UB, axis)
+
     def to_h5py_group(self, parent_group, group_name):
         """Creates a H5Py group for this grain.
            parent_group is the parent H5py Group
@@ -217,9 +254,12 @@ class grain:
 
         # optional attributes:
         for attr in STRINGATTRS + NUMATTRS:
-            if hasattr(self, attr):
-                if getattr(self, attr) is not None:
-                    grain_group[attr] = getattr(self, attr)
+            try:
+                value = getattr(self, attr)
+                if value is not None:
+                    grain_group[attr] = value
+            except (NameError, AttributeError):
+                continue
 
         # write array attributes
         for attr in ARRATTRS:
