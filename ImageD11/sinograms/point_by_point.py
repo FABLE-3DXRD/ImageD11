@@ -20,6 +20,7 @@ import pprint
 from ImageD11 import sym_u, unitcell, parameters
 import ImageD11.sinograms.dataset
 import ImageD11.indexing
+from ImageD11.sinograms.geometry import dtymask
 
 
 # GOTO - find somewhere!
@@ -54,18 +55,6 @@ def hkluniq(ubi, gx, gy, gz, eta, m, tol, hmax):
         if hcount.flat[i] > 0:
             ucount += 1
     return tcount, ucount
-
-
-# GOTO Move to geometry
-def dtymask(i, j, cosomega, sinomega, dtyi, step, y0):
-    """
-    Selects the peaks using integer bins in dty.
-    Needs a UI / plot to see what is happening (map the i,j to the sinogram and recon)
-    """
-    dty_icalc = np.round((step * (i * cosomega + j * sinomega) + y0) / step).astype(int)
-    return dtyi == dty_icalc
-
-
 
 
 def idxpoint(
