@@ -4,7 +4,7 @@ import os
 import struct
 import warnings
 from ImageD11 import cImageD11_docstrings
-import numba
+import numba, numpy as np
 
 try:
     from ImageD11._cImageD11 import *
