@@ -18,14 +18,14 @@ def dtymask(i, j, cosomega, sinomega, dtyi, step, y0):
 
 
 def recon_space_to_real_space(i, j, recon_shape, ystep, y0):
-    """Convert pixel position in reconstruction space (i, j) to real space in microns
+    """Convert pixel position in reconstruction space (i, j) to real space
        i, j are indices to the reconstruction image
        recon_shape is a tuple of the shape of the reconstruction array
-       ystep is the dty step (microns per pixel)"""
-    x_microns = (i - recon_shape[0] // 2) * ystep + y0
-    y_microns = -(j - recon_shape[1] // 2) * ystep + y0
+       ystep is the dty step (microns or mm per pixel, dty motor unit)"""
+    x = (i - recon_shape[0] // 2) * ystep + y0
+    y = -(j - recon_shape[1] // 2) * ystep + y0
 
-    return x_microns, y_microns
+    return x, y
 
 
 def real_space_to_recon_space(x, y, recon_shape, ystep, y0):
@@ -86,7 +86,7 @@ def fit_lab_position_from_peaks(omega, dty):
 def fit_lab_position_from_recon(recon, ystep, y0):
     """Fits grain position by doing a LoG search with skimage on the reconstruction image
        Useful if grain is very small (close to pointlike)
-       Returns position in lab frame in microns
+       Returns position in lab frame (unit matches ystep)
        Returns None if we couldn't find any blobs"""
     blobs = blob_log(recon, min_sigma=1, max_sigma=10, num_sigma=10, threshold=.01)
     blobs_sorted = sorted(blobs, key=lambda x: x[2], reverse=True)
@@ -106,9 +106,9 @@ def fit_lab_position_from_recon(recon, ystep, y0):
 
         # the below should be independent, tested, inside sinograms/geometry
 
-        x_microns, y_microns = recon_space_to_real_space(x_recon_space, y_recon_space, recon.shape, ystep, y0)
+        x, y = recon_space_to_real_space(x_recon_space, y_recon_space, recon.shape, ystep, y0)
 
-        return x_microns, y_microns
+        return x, y
     except IndexError:
         # didn't find any blobs
         # if we didn't find a blob, normally indicates recon is bad
