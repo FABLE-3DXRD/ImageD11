@@ -297,20 +297,16 @@ class GrainSinogram:
         """Creates a GrainSinogram object from an h5py group, dataset and grain object"""
         grainsino_obj = GrainSinogram(grain_obj=grain, dataset=ds)
 
-        # if "peak_info" in group.keys():
-        #     for peak_info_attr in ["etasigns_2d_strong", "hkl_2d_strong"]:
-        #         peak_info_var = group["peak_info"].get(peak_info_attr)[:]
-        #         setattr(grainsino_obj, peak_info_attr, peak_info_var)
-
         if "sinograms" in group.keys():
-            for sino_attr in ["sino", "ssino", "sinoangles"]:
+            for sino_attr in group["sinograms"].keys():
                 sino_var = group["sinograms"].get(sino_attr)[:]
                 setattr(grainsino_obj, sino_attr, sino_var)
 
         if "recon_parameters" in group.keys():
             for recon_par_attr in ["recon_pad", "recon_y0", "recon_niter", "recon_cen"]:
-                recon_par_var = group["recon_parameters"].attrs.get(recon_par_attr)[()]
-                setattr(grainsino_obj, recon_par_attr, recon_par_var)
+                if group["recon_parameters"].attrs.get(recon_par_attr) is not None:
+                    recon_par_var = group["recon_parameters"].attrs.get(recon_par_attr)[()]
+                    setattr(grainsino_obj, recon_par_attr, recon_par_var)
 
             grainsino_obj.recon_mask = group["recon_parameters"].get("recon_mask")[:]
 
@@ -368,6 +364,18 @@ def write_slice_recon(filename, slice_arrays):
         save_array(slice_group, 'ipf_x_col_map', rgb_x_array).attrs['CLASS'] = 'IMAGE'
         save_array(slice_group, 'ipf_y_col_map', rgb_y_array).attrs['CLASS'] = 'IMAGE'
         save_array(slice_group, 'ipf_z_col_map', rgb_z_array).attrs['CLASS'] = 'IMAGE'
+
+
+def read_slice_recon(filename):
+    with h5py.File(filename, "r") as hin:
+        slice_group = hin["slice_recon"]
+        intensity = slice_group["intensity"][:]
+        labels = slice_group["labels"][:]
+        ipf_x = slice_group["ipf_x_col_map"][:]
+        ipf_y = slice_group["ipf_y_col_map"][:]
+        ipf_z = slice_group["ipf_z_col_map"][:]
+
+    return ipf_x, ipf_y, ipf_z, labels, intensity
 
 
 def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon", grain_labels=None):
