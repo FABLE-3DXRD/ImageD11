@@ -40,9 +40,9 @@ class GrainSinogram:
         self.recons = {}
         self.recon_mask = None
         self.recon_pad = None
-        self.recon_y0 = None
+        self.recon_shift = None
         self.recon_niter = None
-        self.recon_cen = None
+        self.recon_y0 = None
 
     def prepare_peaks_from_2d(self, cf_2d, grain_label, hkltol=0.25):
         """Prepare peaks used for sinograms from 2D peaks data
@@ -158,19 +158,19 @@ class GrainSinogram:
 
     def update_lab_position_from_peaks(self, cf_4d, grain_label):
         """Updates translation of self.grain using peaks in assigned 4D colfile.
-           Also updates self.recon_cen with centre"""
+           Also updates self.recon_y0 with centre"""
         mask_4d = cf_4d.grain_id == grain_label
         omega = cf_4d.omega[mask_4d]
         dty = cf_4d.dty[mask_4d]
-        cen, x, y = ImageD11.sinograms.geometry.fit_lab_position_from_peaks(omega, dty)
+        x, y, y0 = ImageD11.sinograms.geometry.dty_omega_to_x_y_y0(dty, omega)
         self.grain.translation = np.array([x, y, 0])
-        self.recon_cen = cen
+        self.recon_y0 = y0
 
     def update_lab_position_from_recon(self, method="iradon"):
         """Updates translation of self.grain by finding centre-of-mass of reconstruction
            Only really valid for very small grains.
            Does not update translation if no fitting result found."""
-        fitting_result = ImageD11.sinograms.geometry.fit_lab_position_from_recon(self.recons[method], self.ds.ystep, self.recon_y0)
+        fitting_result = ImageD11.sinograms.geometry.fit_sample_position_from_recon(self.recons[method], self.ds.ystep)
         if fitting_result is not None:
             x, y = fitting_result
             self.grain.translation = np.array([x, y, 0])
@@ -183,19 +183,19 @@ class GrainSinogram:
         """Corrects each row of the sinogram to the ring current of the corresponding scan"""
         self.ssino = self.ssino / self.ds.ring_currents_per_scan_scaled[:, None]
 
-    def update_recon_parameters(self, pad=None, y0=None, mask=None, niter=None, cen=None):
+    def update_recon_parameters(self, pad=None, shift=None, mask=None, niter=None, y0=None):
         """Update some or all of the reconstruction parameters in one go"""
 
         if pad is not None:
             self.recon_pad = pad
-        if y0 is not None:
-            self.recon_y0 = y0
+        if shift is not None:
+            self.recon_shift = shift
         if mask is not None:
             self.recon_mask = mask
         if niter is not None:
             self.recon_niter = niter
-        if cen is not None:
-            self.recon_cen = cen
+        if y0 is not None:
+            self.recon_y0 = y0
 
     def recon(self, method="iradon", workers=1):
         """Performs reconstruction given reconstruction method"""
@@ -213,7 +213,7 @@ class GrainSinogram:
             # MLEM has niter as an extra argument
             # Overwrite the default argument if self.recon_niter is set
             # TODO: We should think about default reconstruction arguments in more detail
-            # At the moment, we could pass None for pad or y0 etc to recon_function if they are not manually set, which seems dangerous
+            # At the moment, we could pass None for pad or shift etc to recon_function if they are not manually set, which seems dangerous
             # Do we check for None at the start of this function?
             # Or do we initialise them to sensible default values inside __init__?
             if self.recon_niter is not None:
@@ -224,7 +224,7 @@ class GrainSinogram:
         recon = recon_function(sino=sino,
                                angles=angles,
                                pad=self.recon_pad,
-                               y0=self.recon_y0,
+                               shift=self.recon_shift,
                                workers=workers,
                                mask=self.recon_mask)
 
@@ -244,7 +244,7 @@ class GrainSinogram:
         return binary_image
 
     def mask_central_zingers(self, method="iradon", radius=25):
-        self.recons[method] = ImageD11.sinograms.roi_iradon.correct_recon_central_zingers(self.recons[method],
+        self.recons[method] = ImageD11.sinograms.roi_iradon.correct_recon_y0tral_zingers(self.recons[method],
                                                                                           radius=radius)
 
     def to_h5py_group(self, parent_group, group_name):
@@ -275,7 +275,7 @@ class GrainSinogram:
 
         recon_par_group = grain_group.require_group("recon_parameters")
 
-        for recon_par_attr in ["recon_pad", "recon_y0", "recon_niter", "recon_cen"]:
+        for recon_par_attr in ["recon_pad", "recon_shift", "recon_niter", "recon_y0"]:
             recon_par_var = getattr(self, recon_par_attr)
             if recon_par_var is not None:
                 recon_par_group.attrs[recon_par_attr] = recon_par_var
@@ -303,7 +303,7 @@ class GrainSinogram:
                 setattr(grainsino_obj, sino_attr, sino_var)
 
         if "recon_parameters" in group.keys():
-            for recon_par_attr in ["recon_pad", "recon_y0", "recon_niter", "recon_cen"]:
+            for recon_par_attr in ["recon_pad", "recon_shift", "recon_niter", "recon_y0"]:
                 if group["recon_parameters"].attrs.get(recon_par_attr) is not None:
                     recon_par_var = group["recon_parameters"].attrs.get(recon_par_attr)[()]
                     setattr(grainsino_obj, recon_par_attr, recon_par_var)
