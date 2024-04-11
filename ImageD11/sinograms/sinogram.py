@@ -438,7 +438,7 @@ def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon", grain_labe
         grain_labels_array[g_raw_intensity_mask] = label
 
     raw_intensity_array[raw_intensity_array == cutoff_level] = 0
-    
+
     # redx has shape (i, j)
     # (redx, grnx, blux) has shape (3, i, j)
     # transpose changes this to (i, j, 3) needed for mpl imshow
