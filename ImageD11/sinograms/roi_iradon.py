@@ -525,12 +525,12 @@ def correct_recon_central_zingers(recon, radius=25):
     return recon_corrected
 
 
-def run_iradon(sino, angles, pad=20, y0=0,
+def run_iradon(sino, angles, pad=20, shift=0,
                workers=1, mask=None,
                apply_halfmask=False, mask_central_zingers=False, central_mask_radius=25):
     """Applies an iradon to a sinogram, with an optional pad
        Calculates scaled-up output size from pad value
-       Applies projection shifts of -y0
+       Applies projection shifts of shift
        Optionally mask the returned reconstruction with sample_mask
        Optionally apply halfmask to correct artifacts with half-scans (from -ny to 0 rather than -ny/2 to +ny/2
        Optionally apply a circular median filter mask to the center of the reconstruction given a radius in central_mask_radius"""
@@ -549,7 +549,7 @@ def run_iradon(sino, angles, pad=20, y0=0,
                    theta=angles,
                    mask=mask,
                    output_size=outsize,
-                   projection_shifts=np.full(sino.shape, -y0),
+                   projection_shifts=np.full(sino.shape, shift),
                    filter_name='hamming',
                    interpolation='linear',
                    workers=workers)
@@ -560,11 +560,11 @@ def run_iradon(sino, angles, pad=20, y0=0,
     return recon
 
 
-def run_mlem(sino, angles, mask=None, pad=20, y0=0, workers=1, niter=20, apply_halfmask=False,
+def run_mlem(sino, angles, mask=None, pad=20, shift=0, workers=1, niter=20, apply_halfmask=False,
              mask_central_zingers=False, central_mask_radius=25):
     """Applies an MLEM reconstruction to a sinogram, with an optional pad
        Calculates scaled-up output size from pad value
-       Applies projection shifts of -y0
+       Applies projection shifts of shift
        Optionally mask the returned reconstruction with sample_mask
        Optionally apply halfmask to correct artifacts with half-scans (from -ny to 0 rather than -ny/2 to +ny/2
        Optionally apply a circular median filter mask to the center of the reconstruction given a radius in central_mask_radius"""
@@ -582,7 +582,7 @@ def run_mlem(sino, angles, mask=None, pad=20, y0=0, workers=1, niter=20, apply_h
                  mask=mask,
                  workers=workers,
                  output_size=outsize,
-                 projection_shifts=np.full(sino_to_recon.shape, -y0),
+                 projection_shifts=np.full(sino_to_recon.shape, shift),
                  niter=niter)
 
     if mask_central_zingers:
