@@ -20,7 +20,7 @@ import pprint
 from ImageD11 import sym_u, unitcell, parameters
 import ImageD11.sinograms.dataset
 import ImageD11.indexing
-from ImageD11.sinograms.geometry import dtymask
+from ImageD11.sinograms.geometry import dtyimask_from_step, dty_to_dtyi
 
 
 # GOTO - find somewhere!
@@ -61,8 +61,7 @@ def idxpoint(
     i,
     j,
     isel,
-    cosomega,
-    sinomega,
+    omega,
     dtyi,
     gx,
     gy,
@@ -87,8 +86,7 @@ def idxpoint(
 
     Effectively a columnfile:
         isel = column of rings to use
-        cosomega = column of cosine omega
-        sinomega = column of sin omega
+        omega = column of omega
         dtyi = column of dty on integer bins
         gx/gy/gz/eta = peak co-ordinates
 
@@ -106,9 +104,9 @@ def idxpoint(
         (npks, nuniq, ubi)
     """
     cImageD11.cimaged11_omp_set_num_threads(1)
-    # args    isel, cosomega, sinomega, dtyi, gx, gy, gz
+    # args    isel, omega, dtyi, gx, gy, gz
     mr = isel
-    m = dtymask(i, j, cosomega, sinomega, dtyi, ystep, y0)
+    m = dtyimask_from_step(i, j, omega, dtyi, y0, ystep)
     # the arrays to use for indexing (this point in space)
     # TODO: Correct these for origin point
     igx = gx[m & mr]
@@ -161,15 +159,14 @@ def proxy(args):
     """Wrapper function for multiprocessing"""
     i, j, memcolf, idxopts = args
     sm = {}
-    for col in "gx", "gy", "gz", "dtyi", "isel", "cosomega", "sinomega", "eta":
+    for col in "gx", "gy", "gz", "dtyi", "isel", "omega", "eta":
         shape, dtype, mem = memcolf[col]
         sm[col] = np.ndarray(shape, dtype, buffer=mem.buf)
     g = idxpoint(
         i,
         j,
         sm["isel"],
-        sm["cosomega"],
-        sm["sinomega"],
+        sm["omega"],
         sm["dtyi"],
         sm["gx"],
         sm["gy"],
@@ -235,9 +232,7 @@ class PBP:
             self.ifrac = 1.0 / len(self.ybincens)
         else:
             self.ifrac = ifrac
-        self.ystep = abs(self.ybincens[-1] - self.ybincens[0]) / (
-            len(self.ybincens) - 1
-        )
+        self.ystep = dset.ystep
         self.y0 = y0
         self.uniqcut = uniqcut
         self.cosine_tol = cosine_tol
@@ -295,9 +290,12 @@ class PBP:
         isel = isel & ((np.abs(np.sin(np.radians(colf.eta)))) > self.etacut)
 
         colf.addcolumn(isel, "isel")  # peaks selected for indexing
-        colf.addcolumn(np.sin(np.radians(colf.omega)), "sinomega")
-        colf.addcolumn(np.cos(np.radians(colf.omega)), "cosomega")
-        colf.addcolumn(np.round((colf.dty - self.y0) / self.ystep).astype(int), "dtyi")
+
+        # colf.addcolumn(np.round((colf.dty - self.y0) / self.ystep).astype(int), "dtyi")
+
+        dtyi = dty_to_dtyi(colf.dty, self.ystep)
+        colf.addcolumn(dtyi, "dtyi")
+
         # peaks that are on any rings
         self.colf = colf
         self.icolf = colf.copy()
@@ -373,7 +371,7 @@ class PBP:
 
         with SharedMemoryManager() as smm:  # this runs in the parent process
             memcolf = {}
-            for col in "gx", "gy", "gz", "dtyi", "isel", "cosomega", "sinomega", "eta":
+            for col in "gx", "gy", "gz", "dtyi", "isel", "omega", "eta":
                 ar = getattr(self.icolf, col)
                 mem = smm.SharedMemory(size=ar.itemsize * ar.size)
                 mar = np.ndarray(ar.shape, dtype=ar.dtype, buffer=mem.buf)

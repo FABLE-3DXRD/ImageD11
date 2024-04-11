@@ -40,9 +40,9 @@ class GrainSinogram:
         self.recons = {}
         self.recon_mask = None
         self.recon_pad = None
-        self.recon_y0 = None
+        self.recon_shift = None
         self.recon_niter = None
-        self.recon_cen = None
+        self.recon_y0 = None
 
     def prepare_peaks_from_2d(self, cf_2d, grain_label, hkltol=0.25):
         """Prepare peaks used for sinograms from 2D peaks data
@@ -158,21 +158,20 @@ class GrainSinogram:
 
     def update_lab_position_from_peaks(self, cf_4d, grain_label):
         """Updates translation of self.grain using peaks in assigned 4D colfile.
-           Also updates self.recon_cen with centre"""
+           Also updates self.recon_y0 with centre"""
         mask_4d = cf_4d.grain_id == grain_label
         omega = cf_4d.omega[mask_4d]
         dty = cf_4d.dty[mask_4d]
-        cen, x, y = ImageD11.sinograms.geometry.fit_lab_position_from_peaks(omega, dty)
+        x, y, y0 = ImageD11.sinograms.geometry.dty_omega_to_x_y_y0(dty, omega)
         self.grain.translation = np.array([x, y, 0])
-        self.recon_cen = cen
+        self.recon_y0 = y0
 
     def update_lab_position_from_recon(self, method="iradon"):
         """Updates translation of self.grain by finding centre-of-mass of reconstruction
-           Only really valid for very small grains"""
-        fitting_result = ImageD11.sinograms.geometry.fit_lab_position_from_recon(self.recons[method], self.ds.ystep, self.recon_y0)
-        if fitting_result is None:
-            print("Could not update position as no blob found!")
-        else:
+           Only really valid for very small grains.
+           Does not update translation if no fitting result found."""
+        fitting_result = ImageD11.sinograms.geometry.fit_sample_position_from_recon(self.recons[method], self.ds.ystep)
+        if fitting_result is not None:
             x, y = fitting_result
             self.grain.translation = np.array([x, y, 0])
 
@@ -184,19 +183,19 @@ class GrainSinogram:
         """Corrects each row of the sinogram to the ring current of the corresponding scan"""
         self.ssino = self.ssino / self.ds.ring_currents_per_scan_scaled[:, None]
 
-    def update_recon_parameters(self, pad=None, y0=None, mask=None, niter=None, cen=None):
+    def update_recon_parameters(self, pad=None, shift=None, mask=None, niter=None, y0=None):
         """Update some or all of the reconstruction parameters in one go"""
 
         if pad is not None:
             self.recon_pad = pad
-        if y0 is not None:
-            self.recon_y0 = y0
+        if shift is not None:
+            self.recon_shift = shift
         if mask is not None:
             self.recon_mask = mask
         if niter is not None:
             self.recon_niter = niter
-        if cen is not None:
-            self.recon_cen = cen
+        if y0 is not None:
+            self.recon_y0 = y0
 
     def recon(self, method="iradon", workers=1):
         """Performs reconstruction given reconstruction method"""
@@ -214,7 +213,7 @@ class GrainSinogram:
             # MLEM has niter as an extra argument
             # Overwrite the default argument if self.recon_niter is set
             # TODO: We should think about default reconstruction arguments in more detail
-            # At the moment, we could pass None for pad or y0 etc to recon_function if they are not manually set, which seems dangerous
+            # At the moment, we could pass None for pad or shift etc to recon_function if they are not manually set, which seems dangerous
             # Do we check for None at the start of this function?
             # Or do we initialise them to sensible default values inside __init__?
             if self.recon_niter is not None:
@@ -225,7 +224,7 @@ class GrainSinogram:
         recon = recon_function(sino=sino,
                                angles=angles,
                                pad=self.recon_pad,
-                               y0=self.recon_y0,
+                               shift=self.recon_shift,
                                workers=workers,
                                mask=self.recon_mask)
 
@@ -276,7 +275,7 @@ class GrainSinogram:
 
         recon_par_group = grain_group.require_group("recon_parameters")
 
-        for recon_par_attr in ["recon_pad", "recon_y0", "recon_niter", "recon_cen"]:
+        for recon_par_attr in ["recon_pad", "recon_shift", "recon_niter", "recon_y0"]:
             recon_par_var = getattr(self, recon_par_attr)
             if recon_par_var is not None:
                 recon_par_group.attrs[recon_par_attr] = recon_par_var
@@ -298,20 +297,16 @@ class GrainSinogram:
         """Creates a GrainSinogram object from an h5py group, dataset and grain object"""
         grainsino_obj = GrainSinogram(grain_obj=grain, dataset=ds)
 
-        # if "peak_info" in group.keys():
-        #     for peak_info_attr in ["etasigns_2d_strong", "hkl_2d_strong"]:
-        #         peak_info_var = group["peak_info"].get(peak_info_attr)[:]
-        #         setattr(grainsino_obj, peak_info_attr, peak_info_var)
-
         if "sinograms" in group.keys():
-            for sino_attr in ["sino", "ssino", "sinoangles"]:
+            for sino_attr in group["sinograms"].keys():
                 sino_var = group["sinograms"].get(sino_attr)[:]
                 setattr(grainsino_obj, sino_attr, sino_var)
 
         if "recon_parameters" in group.keys():
-            for recon_par_attr in ["recon_pad", "recon_y0", "recon_niter", "recon_cen"]:
-                recon_par_var = group["recon_parameters"].attrs.get(recon_par_attr)[()]
-                setattr(grainsino_obj, recon_par_attr, recon_par_var)
+            for recon_par_attr in ["recon_pad", "recon_shift", "recon_niter", "recon_y0"]:
+                if group["recon_parameters"].attrs.get(recon_par_attr) is not None:
+                    recon_par_var = group["recon_parameters"].attrs.get(recon_par_attr)[()]
+                    setattr(grainsino_obj, recon_par_attr, recon_par_var)
 
             grainsino_obj.recon_mask = group["recon_parameters"].get("recon_mask")[:]
 
@@ -371,7 +366,25 @@ def write_slice_recon(filename, slice_arrays):
         save_array(slice_group, 'ipf_z_col_map', rgb_z_array).attrs['CLASS'] = 'IMAGE'
 
 
-def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon"):
+def read_slice_recon(filename):
+    with h5py.File(filename, "r") as hin:
+        slice_group = hin["slice_recon"]
+        intensity = slice_group["intensity"][:]
+        labels = slice_group["labels"][:]
+        ipf_x = slice_group["ipf_x_col_map"][:]
+        ipf_y = slice_group["ipf_y_col_map"][:]
+        ipf_z = slice_group["ipf_z_col_map"][:]
+
+    return ipf_x, ipf_y, ipf_z, labels, intensity
+
+
+def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon", grain_labels=None):
+    """Build grain maps from individual grain reonstructions
+       Optionally provide a different list of grain labels to label the grains"""
+
+    if grain_labels is not None:
+        assert len(grainsinos) == len(grain_labels)
+
     first_recon = grainsinos[0].recons[method]
     grain_labels_array = np.zeros_like(first_recon) - 1
 
@@ -397,6 +410,11 @@ def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon"):
 
     for i, gs in enumerate(grainsinos):
 
+        if grain_labels is not None:
+            label = grain_labels[i]
+        else:
+            label = i
+
         g_raw_intensity = norm(gs.recons[method])
 
         g_raw_intensity_mask = g_raw_intensity > raw_intensity_array
@@ -417,9 +435,14 @@ def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon"):
         grnz[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_z[1]
         bluz[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_z[2]
 
-        grain_labels_array[g_raw_intensity_mask] = i
+        grain_labels_array[g_raw_intensity_mask] = label
 
     raw_intensity_array[raw_intensity_array == cutoff_level] = 0
+
+    # redx has shape (i, j)
+    # (redx, grnx, blux) has shape (3, i, j)
+    # transpose changes this to (i, j, 3) needed for mpl imshow
+    # crucially: (i, j) unaffected
 
     rgb_x_array = np.transpose((redx, grnx, blux), axes=(1, 2, 0))
     rgb_y_array = np.transpose((redy, grny, bluy), axes=(1, 2, 0))
