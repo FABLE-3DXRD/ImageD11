@@ -438,6 +438,11 @@ def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon", grain_labe
         grain_labels_array[g_raw_intensity_mask] = label
 
     raw_intensity_array[raw_intensity_array == cutoff_level] = 0
+    
+    # redx has shape (i, j)
+    # (redx, grnx, blux) has shape (3, i, j)
+    # transpose changes this to (i, j, 3) needed for mpl imshow
+    # crucially: (i, j) unaffected
 
     rgb_x_array = np.transpose((redx, grnx, blux), axes=(1, 2, 0))
     rgb_y_array = np.transpose((redy, grny, bluy), axes=(1, 2, 0))
