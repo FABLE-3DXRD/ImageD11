@@ -244,7 +244,7 @@ class GrainSinogram:
         return binary_image
 
     def mask_central_zingers(self, method="iradon", radius=25):
-        self.recons[method] = ImageD11.sinograms.roi_iradon.correct_recon_y0tral_zingers(self.recons[method],
+        self.recons[method] = ImageD11.sinograms.roi_iradon.correct_recon_central_zingers(self.recons[method],
                                                                                           radius=radius)
 
     def to_h5py_group(self, parent_group, group_name):
