@@ -117,7 +117,7 @@ def x_y_y0_omega_to_dty(omega, x, y, y0):
     return y0 - x * np.sin(np.radians(omega)) - y * np.cos(np.radians(omega))
 
 
-def fit_sine_wave(omega, dty, initial_guess):
+def fit_sine_wave(omega, dty, initial_guess, weights=None):
     """Fits a sine wave to omega and dty data
     Returns directly x, y, y0 in sample frame"""
     popt, _ = curve_fit(x_y_y0_omega_to_dty,
@@ -127,6 +127,7 @@ def fit_sine_wave(omega, dty, initial_guess):
                         method="trf",
                         loss="soft_l1",
                         max_nfev=10000,
+                        sigma=weights,
                         )
 
     x, y, y0 = popt
@@ -134,11 +135,11 @@ def fit_sine_wave(omega, dty, initial_guess):
     return x, y, y0
 
 
-def dty_omega_to_x_y_y0(dty, omega):
+def dty_omega_to_x_y_y0(dty, omega, weights=None):
     """Fits sine wave to dty vs omega plot, extracts x, y, y0"""
     initial_guess = (0.5, 0.5, 0)
 
-    x, y, y0 = fit_sine_wave(omega, dty, initial_guess)
+    x, y, y0 = fit_sine_wave(omega, dty, initial_guess, weights=weights)
 
     return x, y, y0
 

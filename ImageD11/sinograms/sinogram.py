@@ -82,7 +82,7 @@ class GrainSinogram:
 
         self.cf_for_sino = grain_flt
 
-    def prepare_peaks_from_4d(self, cf_4d, grain_label, hkltol=0.25):
+    def prepare_peaks_from_4d(self, cf_4d, gord, inds, grain_label, hkltol=0.25):
         """Prepares peaks used for sinograms from 4D peaks data.
            cf_4d should contain grain assignments
            grain_label should be the label for this grain"""
@@ -90,8 +90,6 @@ class GrainSinogram:
         if 'grain_id' not in cf_4d.titles:
             raise ValueError("cf_4d does not contain grain assignments!")
 
-        # get associated 2D peaks from 4D peaks
-        gord, inds = get_2d_peaks_from_4d_peaks(self.ds.pk2d, cf_4d)
         grain_peaks_2d = gord[inds[grain_label + 1]:inds[grain_label + 2]]
 
         # Filter the peaks table to the peaks for this grain only
@@ -171,7 +169,11 @@ class GrainSinogram:
            Only really valid for very small grains.
            Does not update translation if no fitting result found."""
         fitting_result = ImageD11.sinograms.geometry.fit_sample_position_from_recon(self.recons[method], self.ds.ystep)
-        if fitting_result is not None:
+        if fitting_result is None:
+            # indicate that the grain has a dodgy reconstruction
+            # useful for filtering out bad grains
+            self.bad_recon = True
+        else:
             x, y = fitting_result
             self.grain.translation = np.array([x, y, 0])
 
@@ -179,9 +181,17 @@ class GrainSinogram:
         """Applies halfmask correction to sinogram"""
         self.ssino = ImageD11.sinograms.roi_iradon.apply_halfmask_to_sino(self.ssino)
 
-    def correct_ring_current(self):
+    def correct_ring_current(self, is_half_scan=False):
         """Corrects each row of the sinogram to the ring current of the corresponding scan"""
-        self.ssino = self.ssino / self.ds.ring_currents_per_scan_scaled[:, None]
+        if is_half_scan:
+            correction = self.ds.ring_currents_per_scan_scaled
+            addition_length = len(self.ds.ybincens) - len(self.ds.ring_currents_per_scan_scaled)
+            correction_halfmask_addition = np.zeros(addition_length)
+            correction_halfmask_addition.fill(correction.max())
+            correction = np.concatenate((correction, correction_halfmask_addition))
+        else:
+            correction = self.ds.ring_currents_per_scan_scaled
+        self.ssino = self.ssino / correction[:, None]
 
     def update_recon_parameters(self, pad=None, shift=None, mask=None, niter=None, y0=None):
         """Update some or all of the reconstruction parameters in one go"""
