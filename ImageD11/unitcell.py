@@ -173,6 +173,10 @@ class unitcell:
             raise Exception("You must supply 6 lattice parameters\n" + \
                             "      a,b,c,alpha,beta,gamma")
 
+        if isinstance(symmetry, str):
+            if symmetry.isdigit():
+                symmetry = int(symmetry)
+
         if isinstance(symmetry, int):
             # this is an integer spacegroup
             self.symmetry = symmetry
