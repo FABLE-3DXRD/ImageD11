@@ -459,13 +459,13 @@ class columnfile(object):
             sc, fc = self.xc, self.yc
         else:
             raise Exception("columnfile file misses xc/yc or sc/fc")
-        if translation is not None:
-            tx, ty, tz = translation
-        else:
-            tx = pars.get('t_x')
-            ty = pars.get('t_y')
-            tz = pars.get('t_z')
         if fast:
+            if translation is not None:
+                tx, ty, tz = translation
+            else:
+                tx = pars.get('t_x')
+                ty = pars.get('t_y')
+                tz = pars.get('t_z')
             computer = transform.Ctransform( pars.parameters )
             xyz = computer.sf2xyz( sc, fc )
             for i, name in enumerate(('xl','yl','zl')):
@@ -474,8 +474,13 @@ class columnfile(object):
             for i,name in enumerate(("tth", "eta", "ds", "gx", "gy", "gz")):
                 self.addcolumn( out[:,i], name )
         else:
+            pars = { name : pars.parameters[name] for name in pars.parameters }
+            if translation is not None:
+                pars['t_x'] = translation[0]
+                pars['t_y'] = translation[1]
+                pars['t_z'] = translation[2]
             xl,yl,zl = transform.compute_xyz_lab( (sc, fc),
-                                                  **pars.parameters)
+                                                  **pars)
             self.addcolumn(xl,"xl")
             self.addcolumn(yl,"yl")
             self.addcolumn(zl,"zl")
@@ -484,7 +489,7 @@ class columnfile(object):
             om = self.omega *  float( pars.get("omegasign") )
             tth, eta = transform.compute_tth_eta_from_xyz(
                 peaks_xyz, om,
-                **pars.parameters)
+                **pars)
             self.addcolumn(tth, "tth", )
             self.addcolumn(eta, "eta", )
             gx, gy, gz = transform.compute_g_vectors(

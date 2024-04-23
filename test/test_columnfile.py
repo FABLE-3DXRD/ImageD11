@@ -4,6 +4,7 @@ import unittest
 """ Write some test cases for the columnfile stuff """
 
 from ImageD11 import columnfile
+import numpy as np
 
 class testgeom( unittest.TestCase ):
     def setUp( self ):
@@ -62,6 +63,19 @@ class testgeom( unittest.TestCase ):
         d = c.copy()
         self.assertTrue( d.nrows == 5 )
 
+    def testgeom(self):
+        cold = columnfile.columnfile("testgeom.flt")
+        cnew = columnfile.columnfile("testgeom.flt")
+        cols = ('xl','yl','zl',"tth", "eta", "ds", "gx", "gy", "gz")
+        for t in ((0,0,0), (100,200,300), None):
+            cold.updateGeometry( pars=None, translation=t, fast=True )
+            cnew.updateGeometry( pars=None, translation=t, fast=False )
+            for col in cols:
+                e =  np.allclose( cold[col], cnew[col] ) 
+                if not e:
+                    print(col, cold[col], cnew[col], t)
+                self.assertTrue(e)
+                                
 
 
 class test1( unittest.TestCase ):
