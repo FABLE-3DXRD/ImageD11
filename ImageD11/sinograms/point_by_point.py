@@ -121,11 +121,19 @@ def idxpoint(
     ind.hkl_tol = hkl_tol
     ind.cosine_tol = cosine_tol  # degrees
     ind.ds_tol = ds_tol
-    ind.assigntorings()
+    try:
+        ind.assigntorings()
+    except ValueError:
+        return [
+            (0, 0, np.eye(3)),
+        ]
     for ind.ring_1 in forgen:
         for ind.ring_2 in forgen:
             ind.find()
-            ind.scorethem()
+            try:
+                ind.scorethem()
+            except TypeError:
+                continue
     if ImageD11.indexing.loglevel <= 3:
         sys.stdout.flush()
     global symglobal

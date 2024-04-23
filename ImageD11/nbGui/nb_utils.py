@@ -259,6 +259,7 @@ def assign_peaks_to_grains(grains, cf, tol):
 
     # add the labels column to the columnfile
     cf.addcolumn(labels, 'grain_id')
+    cf.addcolumn(drlv2, 'drlv2')
 
 
 ### Plotting
