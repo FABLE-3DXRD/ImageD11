@@ -73,15 +73,15 @@ void compute_geometry(double xlylzl[][3], double omega[], double omegasign,
         // d is difference vector
         vec3sub(xlylzl[i], o, d);
         modyz = 1. / sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+        // two theta
+        out[i][0] = DEG * atan2( sqrt( d[1]*d[1] + d[2]*d[2] ), d[0] );
         //     ! k-vector
         ds = 1. / wvln;
         k[0] = ds * (d[0] * modyz - 1.);
         k[1] = ds * d[1] * modyz;
         k[2] = ds * d[2] * modyz;
-        // two theta
-        out[i][0] = DEG * atan2( sqrt( k[1]*k[1] + k[2]*k[2] ), k[0] );
         // eta
-        out[i][1] = DEG * atan2( -k[1], k[2] );
+        out[i][1] = DEG * atan2( -d[1], d[2] );
         // dstar
         out[i][2] = sqrt( k[0]*k[0] +  k[1]*k[1] +  k[2]*k[2] );
         // g-vector            
