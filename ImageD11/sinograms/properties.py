@@ -955,13 +955,17 @@ def main(dsfilename, sparsefile=None, pksfile=None, options={}):
             options["nproc"] = max(1, nscans - 1)
         print("Nscans", nscans)
         print("Options", options)
-        peaks, ks, P, rmem = goforit(ds, sparsefile, options)  # ds.omega is passed here
-        t("%d label and pair" % (len(rmem.pk_props[0])))
-        if "save_overlaps" in options and options["save_overlaps"]:
-            rmem.save(pksfile + "_mat.h5", rc=True)
-            t("cache")
-        cc = rmem.find_uniq()
-        t("%s connected components" % (str(cc[0])))
+        if nscans > 1:
+            peaks, ks, P, rmem = goforit(ds, sparsefile, options)  # ds.omega is passed here
+            t("%d label and pair" % (len(rmem.pk_props[0])))
+            if "save_overlaps" in options and options["save_overlaps"]:
+                rmem.save(pksfile + "_mat.h5", rc=True)
+                t("cache")
+            cc = rmem.find_uniq()
+            t("%s connected components" % (str(cc[0])))
+        else:
+            # single scan. Skips a lot of hassle.
+            rmem = pks_table_from_scan(sparsefile, ds, 0)
         rmem.save(pksfile)
         t("write hdf5")
     except Exception as e:
