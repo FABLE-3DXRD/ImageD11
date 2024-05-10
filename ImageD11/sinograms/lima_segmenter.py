@@ -24,6 +24,8 @@ import warnings
 from ImageD11 import sparseframe
 from ImageD11.sinograms import dataset
 import ImageD11.cImageD11
+import concurrent.futures
+
 
 try:
     from bslz4_to_sparse import chunk2sparse
@@ -434,6 +436,20 @@ date
     logging.info("wrote " + sbat)
     return sbat
 
+def sbatchlocal(fname):
+    """ 
+    Execute a grid batch job on the local machine
+    Loops over the array submission for you
+    """
+    lines = open(fname,'r').readlines()
+    for line in lines:
+        if line.find('--array=')>=0:
+            start, end = line.split('=')[-1].split('-')
+    commands = [ f'SLURM_ARRAY_TASK_ID={i} bash {fname} > {fname}_{i}.log' for 
+                i in range(int(start), int(end)) ]
+    with concurrent.futures.ThreadPoolExecutor(max_workers = cores) as pool:
+        for _ in pool.map( os.system, commands ):
+            pass
 
 def setup(
     dsname,
