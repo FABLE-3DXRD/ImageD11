@@ -258,6 +258,8 @@ class SparseScan( object ):
             for name in self.names:
                 if name in grp:
                     setattr( self, name, grp[name][s:e] )
+            if 'intensity' in self.names:
+                self.intensity = self.intensity.astype(np.float32)
             # pointers into this scan
             self.nnz = nnz[start:end]
             self.ipt = nnz_to_pointer( self.nnz )
@@ -327,7 +329,7 @@ class SparseScan( object ):
         if smooth:
             self.signal = np.empty( self.intensity.shape, np.float32 )
         else:
-            self.signal = self.intensity
+            self.signal = self.intensity.astype(np.float32)
         # temporary workspaces
         npxmax = self.nnz.max()
         vmx = np.zeros( npxmax, np.float32 )
