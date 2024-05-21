@@ -180,16 +180,22 @@ class GrainSinogram:
         """Applies halfmask correction to sinogram"""
         self.ssino = ImageD11.sinograms.roi_iradon.apply_halfmask_to_sino(self.ssino)
 
-    def correct_ring_current(self, is_half_scan=False):
+    def correct_ring_current(self, is_half_scan=False, min_ring_current_frac=0.5):
         """Corrects each row of the sinogram to the ring current of the corresponding scan"""
+
+        # ignore ring current values below min_ring_current
+        mean_ring_current = np.mean(self.ds.ring_currents_per_scan_scaled)
+        min_ring_current = min_ring_current_frac * np.max(self.ds.ring_currents_per_scan_scaled)
+        ring_current_to_use = np.where(self.ds.ring_currents_per_scan_scaled < min_ring_current, mean_ring_current, self.ds.ring_currents_per_scan_scaled)
+
         if is_half_scan:
-            correction = self.ds.ring_currents_per_scan_scaled
-            addition_length = len(self.ds.ybincens) - len(self.ds.ring_currents_per_scan_scaled)
+            correction = ring_current_to_use
+            addition_length = len(self.ds.ybincens) - len(ring_current_to_use)
             correction_halfmask_addition = np.zeros(addition_length)
             correction_halfmask_addition.fill(correction.max())
             correction = np.concatenate((correction, correction_halfmask_addition))
         else:
-            correction = self.ds.ring_currents_per_scan_scaled
+            correction = ring_current_to_use
         self.ssino = self.ssino / correction[:, None]
 
     def update_recon_parameters(self, pad=None, shift=None, mask=None, niter=None, y0=None):
