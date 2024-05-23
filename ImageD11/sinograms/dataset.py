@@ -504,6 +504,10 @@ class DataSet:
         cf_2d = ImageD11.columnfile.columnfile(self.col2dfile)
         return cf_2d
 
+    def get_cf_3d_from_disk(self):
+        cf_3d = ImageD11.columnfile.columnfile(self.col3dfile)
+        return cf_3d
+
     def get_cf_4d_from_disk(self):
         cf_4d = ImageD11.columnfile.columnfile(self.col4dfile)
         return cf_4d

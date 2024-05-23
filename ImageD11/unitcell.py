@@ -31,9 +31,8 @@ from math import fabs
 import numpy as np
 from numpy.linalg import inv
 from ImageD11 import cImageD11
-from xfab import tools, sg
+from xfab import tools
 from scipy.spatial.transform import Rotation as ScipyRotation
-
 
 
 def radians(x):
@@ -174,6 +173,10 @@ class unitcell:
             raise Exception("You must supply 6 lattice parameters\n" + \
                             "      a,b,c,alpha,beta,gamma")
 
+        if isinstance(symmetry, str):
+            if symmetry.isdigit():
+                symmetry = int(symmetry)
+
         if isinstance(symmetry, int):
             # this is an integer spacegroup
             self.symmetry = symmetry
@@ -281,6 +284,7 @@ class unitcell:
         phase = self.orix_phase
 
         m1 = Miller(hkl=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], phase=phase)
+        # this is the orix B matrix
 
         # try to flatten UBs
         UBs = np.squeeze(UBs)

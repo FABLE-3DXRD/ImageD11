@@ -3,7 +3,6 @@ from functools import partial
 import h5py
 import numba
 import numpy as np
-from skimage.filters import threshold_otsu
 
 import ImageD11.grain
 import ImageD11.cImageD11
@@ -40,9 +39,9 @@ class GrainSinogram:
         self.recons = {}
         self.recon_mask = None
         self.recon_pad = None
-        self.recon_y0 = None
+        self.recon_shift = None
         self.recon_niter = None
-        self.recon_cen = None
+        self.recon_y0 = None
 
     def prepare_peaks_from_2d(self, cf_2d, grain_label, hkltol=0.25):
         """Prepare peaks used for sinograms from 2D peaks data
@@ -82,7 +81,7 @@ class GrainSinogram:
 
         self.cf_for_sino = grain_flt
 
-    def prepare_peaks_from_4d(self, cf_4d, grain_label, hkltol=0.25):
+    def prepare_peaks_from_4d(self, cf_4d, gord, inds, grain_label, hkltol=0.25):
         """Prepares peaks used for sinograms from 4D peaks data.
            cf_4d should contain grain assignments
            grain_label should be the label for this grain"""
@@ -90,8 +89,6 @@ class GrainSinogram:
         if 'grain_id' not in cf_4d.titles:
             raise ValueError("cf_4d does not contain grain assignments!")
 
-        # get associated 2D peaks from 4D peaks
-        gord, inds = get_2d_peaks_from_4d_peaks(self.ds.pk2d, cf_4d)
         grain_peaks_2d = gord[inds[grain_label + 1]:inds[grain_label + 2]]
 
         # Filter the peaks table to the peaks for this grain only
@@ -158,20 +155,23 @@ class GrainSinogram:
 
     def update_lab_position_from_peaks(self, cf_4d, grain_label):
         """Updates translation of self.grain using peaks in assigned 4D colfile.
-           Also updates self.recon_cen with centre"""
+           Also updates self.recon_y0 with centre"""
         mask_4d = cf_4d.grain_id == grain_label
         omega = cf_4d.omega[mask_4d]
         dty = cf_4d.dty[mask_4d]
-        cen, x, y = ImageD11.sinograms.geometry.fit_lab_position_from_peaks(omega, dty)
+        x, y, y0 = ImageD11.sinograms.geometry.dty_omega_to_x_y_y0(dty, omega)
         self.grain.translation = np.array([x, y, 0])
-        self.recon_cen = cen
+        self.recon_y0 = y0
 
     def update_lab_position_from_recon(self, method="iradon"):
         """Updates translation of self.grain by finding centre-of-mass of reconstruction
-           Only really valid for very small grains"""
-        fitting_result = ImageD11.sinograms.geometry.fit_lab_position_from_recon(self.recons[method], self.ds.ystep, self.recon_y0)
+           Only really valid for very small grains.
+           Does not update translation if no fitting result found."""
+        fitting_result = ImageD11.sinograms.geometry.fit_sample_position_from_recon(self.recons[method], self.ds.ystep)
         if fitting_result is None:
-            print("Could not update position as no blob found!")
+            # indicate that the grain has a dodgy reconstruction
+            # useful for filtering out bad grains
+            self.bad_recon = True
         else:
             x, y = fitting_result
             self.grain.translation = np.array([x, y, 0])
@@ -180,27 +180,41 @@ class GrainSinogram:
         """Applies halfmask correction to sinogram"""
         self.ssino = ImageD11.sinograms.roi_iradon.apply_halfmask_to_sino(self.ssino)
 
-    def correct_ring_current(self):
+    def correct_ring_current(self, is_half_scan=False, min_ring_current_frac=0.5):
         """Corrects each row of the sinogram to the ring current of the corresponding scan"""
-        self.ssino = self.ssino / self.ds.ring_currents_per_scan_scaled[:, None]
 
-    def update_recon_parameters(self, pad=None, y0=None, mask=None, niter=None, cen=None):
+        # ignore ring current values below min_ring_current
+        mean_ring_current = np.mean(self.ds.ring_currents_per_scan_scaled)
+        min_ring_current = min_ring_current_frac * np.max(self.ds.ring_currents_per_scan_scaled)
+        ring_current_to_use = np.where(self.ds.ring_currents_per_scan_scaled < min_ring_current, mean_ring_current, self.ds.ring_currents_per_scan_scaled)
+
+        if is_half_scan:
+            correction = ring_current_to_use
+            addition_length = len(self.ds.ybincens) - len(ring_current_to_use)
+            correction_halfmask_addition = np.zeros(addition_length)
+            correction_halfmask_addition.fill(correction.max())
+            correction = np.concatenate((correction, correction_halfmask_addition))
+        else:
+            correction = ring_current_to_use
+        self.ssino = self.ssino / correction[:, None]
+
+    def update_recon_parameters(self, pad=None, shift=None, mask=None, niter=None, y0=None):
         """Update some or all of the reconstruction parameters in one go"""
 
         if pad is not None:
             self.recon_pad = pad
-        if y0 is not None:
-            self.recon_y0 = y0
+        if shift is not None:
+            self.recon_shift = shift
         if mask is not None:
             self.recon_mask = mask
         if niter is not None:
             self.recon_niter = niter
-        if cen is not None:
-            self.recon_cen = cen
+        if y0 is not None:
+            self.recon_y0 = y0
 
-    def recon(self, method="iradon", workers=1):
+    def recon(self, method="iradon", workers=1, **extra_args):
         """Performs reconstruction given reconstruction method"""
-        if method not in ["iradon", "mlem"]:
+        if method not in ["iradon", "mlem", "astra"]:
             raise ValueError("Unsupported method!")
         if self.ssino is None or self.sinoangles is None:
             raise ValueError("Sorted sino or sinoangles are missing/have not been computed, unable to reconstruct.")
@@ -214,20 +228,23 @@ class GrainSinogram:
             # MLEM has niter as an extra argument
             # Overwrite the default argument if self.recon_niter is set
             # TODO: We should think about default reconstruction arguments in more detail
-            # At the moment, we could pass None for pad or y0 etc to recon_function if they are not manually set, which seems dangerous
+            # At the moment, we could pass None for pad or shift etc to recon_function if they are not manually set, which seems dangerous
             # Do we check for None at the start of this function?
             # Or do we initialise them to sensible default values inside __init__?
             if self.recon_niter is not None:
                 recon_function = partial(ImageD11.sinograms.roi_iradon.run_mlem, niter=self.recon_niter)
             else:
                 recon_function = ImageD11.sinograms.roi_iradon.run_mlem
+        elif method == "astra":
+            recon_function = run_astra
 
         recon = recon_function(sino=sino,
                                angles=angles,
                                pad=self.recon_pad,
-                               y0=self.recon_y0,
+                               shift=self.recon_shift,
                                workers=workers,
-                               mask=self.recon_mask)
+                               mask=self.recon_mask,
+                               **extra_args)
 
         self.recons[method] = recon
 
@@ -276,7 +293,7 @@ class GrainSinogram:
 
         recon_par_group = grain_group.require_group("recon_parameters")
 
-        for recon_par_attr in ["recon_pad", "recon_y0", "recon_niter", "recon_cen"]:
+        for recon_par_attr in ["recon_pad", "recon_shift", "recon_niter", "recon_y0"]:
             recon_par_var = getattr(self, recon_par_attr)
             if recon_par_var is not None:
                 recon_par_group.attrs[recon_par_attr] = recon_par_var
@@ -298,20 +315,16 @@ class GrainSinogram:
         """Creates a GrainSinogram object from an h5py group, dataset and grain object"""
         grainsino_obj = GrainSinogram(grain_obj=grain, dataset=ds)
 
-        # if "peak_info" in group.keys():
-        #     for peak_info_attr in ["etasigns_2d_strong", "hkl_2d_strong"]:
-        #         peak_info_var = group["peak_info"].get(peak_info_attr)[:]
-        #         setattr(grainsino_obj, peak_info_attr, peak_info_var)
-
         if "sinograms" in group.keys():
-            for sino_attr in ["sino", "ssino", "sinoangles"]:
+            for sino_attr in group["sinograms"].keys():
                 sino_var = group["sinograms"].get(sino_attr)[:]
                 setattr(grainsino_obj, sino_attr, sino_var)
 
         if "recon_parameters" in group.keys():
-            for recon_par_attr in ["recon_pad", "recon_y0", "recon_niter", "recon_cen"]:
-                recon_par_var = group["recon_parameters"].attrs.get(recon_par_attr)[()]
-                setattr(grainsino_obj, recon_par_attr, recon_par_var)
+            for recon_par_attr in ["recon_pad", "recon_shift", "recon_niter", "recon_y0"]:
+                if group["recon_parameters"].attrs.get(recon_par_attr) is not None:
+                    recon_par_var = group["recon_parameters"].attrs.get(recon_par_attr)[()]
+                    setattr(grainsino_obj, recon_par_attr, recon_par_var)
 
             grainsino_obj.recon_mask = group["recon_parameters"].get("recon_mask")[:]
 
@@ -322,6 +335,58 @@ class GrainSinogram:
 
         return grainsino_obj
 
+
+def run_astra(sino, angles, shift=0, pad=0, mask=None, niter=100, astra_method='SIRT_CUDA', workers=None):
+    import astra
+    angles = np.radians(angles)
+    allowed_methods = ['BP', 'SIRT', 'BP_CUDA', 'FBP_CUDA', 'SIRT_CUDA', 'SART_CUDA', 'CGLS_CUDA', 'EM_CUDA']
+    if astra_method not in allowed_methods:
+        raise ValueError("Unsupported method!")
+    if astra_method == 'EM_CUDA' and mask is not None:
+        print("Can't use mask with EM_CUDA method!")
+        mask = None
+    
+    vol_geom = astra.create_vol_geom((sino.shape[0]+pad, sino.shape[0]+pad))
+    proj_geom = astra.create_proj_geom('parallel', 1.0, sino.shape[0], angles)
+    if shift != 0:
+        proj_geom = astra.functions.geom_postalignment(proj_geom, shift)
+    proj_id = astra.create_projector('linear', proj_geom, vol_geom)
+    proj_data_id = astra.data2d.create('-sino', proj_geom, data=sino.T)
+    if astra_method == 'EM_CUDA':
+        # initialise with ones
+        rec_id = astra.data2d.create('-vol', vol_geom, 1.0)
+    else:
+        rec_id = astra.data2d.create('-vol', vol_geom, 0.0)
+
+    cfg = astra.creators.astra_dict(astra_method)
+    
+    if 'CUDA' not in astra_method:
+        cfg['ProjectorId'] = proj_id
+    cfg['ProjectionDataId'] = proj_data_id
+    cfg['ReconstructionDataId'] = rec_id
+    cfg['option'] = {}
+    cfg['option']['MinConstraint'] = 0
+    cfg['option']['MaxConstraint'] = 1
+    
+    if mask is not None:
+        mask_id = astra.data2d.create('-vol', vol_geom, mask)
+        cfg['option']['ReconstructionMaskId'] = mask_id
+    
+    alg_id = astra.algorithm.create(cfg)
+    astra.algorithm.run(alg_id, iterations=niter)
+    recon = astra.data2d.get(rec_id)
+     
+    # Clean up.
+    astra.algorithm.delete(alg_id)
+    astra.data2d.delete(rec_id)
+    astra.projector.delete(proj_id)
+    astra.projector.delete(proj_data_id)
+    
+    if mask is not None:
+        astra.data2d.delete(mask_id)
+    
+    return recon    
+    
 
 def write_h5(filename, list_of_sinos, write_grains_too=True):
     """Write list of GrainSinogram objects to H5Py file
@@ -371,7 +436,25 @@ def write_slice_recon(filename, slice_arrays):
         save_array(slice_group, 'ipf_z_col_map', rgb_z_array).attrs['CLASS'] = 'IMAGE'
 
 
-def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon"):
+def read_slice_recon(filename):
+    with h5py.File(filename, "r") as hin:
+        slice_group = hin["slice_recon"]
+        intensity = slice_group["intensity"][:]
+        labels = slice_group["labels"][:]
+        ipf_x = slice_group["ipf_x_col_map"][:]
+        ipf_y = slice_group["ipf_y_col_map"][:]
+        ipf_z = slice_group["ipf_z_col_map"][:]
+
+    return ipf_x, ipf_y, ipf_z, labels, intensity
+
+
+def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon", grain_labels=None):
+    """Build grain maps from individual grain reonstructions
+       Optionally provide a different list of grain labels to label the grains"""
+
+    if grain_labels is not None:
+        assert len(grainsinos) == len(grain_labels)
+
     first_recon = grainsinos[0].recons[method]
     grain_labels_array = np.zeros_like(first_recon) - 1
 
@@ -397,6 +480,11 @@ def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon"):
 
     for i, gs in enumerate(grainsinos):
 
+        if grain_labels is not None:
+            label = grain_labels[i]
+        else:
+            label = i
+
         g_raw_intensity = norm(gs.recons[method])
 
         g_raw_intensity_mask = g_raw_intensity > raw_intensity_array
@@ -417,9 +505,14 @@ def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon"):
         grnz[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_z[1]
         bluz[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_z[2]
 
-        grain_labels_array[g_raw_intensity_mask] = i
+        grain_labels_array[g_raw_intensity_mask] = label
 
     raw_intensity_array[raw_intensity_array == cutoff_level] = 0
+
+    # redx has shape (i, j)
+    # (redx, grnx, blux) has shape (3, i, j)
+    # transpose changes this to (i, j, 3) needed for mpl imshow
+    # crucially: (i, j) unaffected
 
     rgb_x_array = np.transpose((redx, grnx, blux), axes=(1, 2, 0))
     rgb_y_array = np.transpose((redy, grny, bluy), axes=(1, 2, 0))
@@ -428,6 +521,122 @@ def build_slice_arrays(grainsinos, cutoff_level=0.0, method="iradon"):
     return rgb_x_array, rgb_y_array, rgb_z_array, grain_labels_array, raw_intensity_array
 
 
+
+from skimage.filters import threshold_otsu
+from skimage.filters import threshold_otsu, threshold_local, threshold_yen, threshold_li
+from skimage.morphology import disk, white_tophat, remove_small_holes
+from skimage.segmentation import watershed
+from skimage.measure import label
+
+def norm(r):
+    m = r > r.max() * 0.2
+    return (r / r[m].mean()).clip(0, 1)
+
+def filter_normalise_recon(recon):
+    """Function to filter and normalise reconstructions"""
+    # determine threshold of grain vs background
+    thresh = threshold_yen(recon)
+    
+    # determine binary mask of grain
+    binary = recon > thresh
+
+    # this still leaves some hot pixels behind
+    footprint = disk(8)
+    res = white_tophat(binary, footprint)
+    binary_clean = binary ^ res
+    
+    # binary_clean might contain holes
+    binary_clean_noholes = remove_small_holes(binary_clean)
+    
+    # fig, ax = plt.subplots()
+    # ax.imshow(binary_clean_noholes, origin="lower")
+    # plt.show()
+    
+    # determine masked recon image
+    recon_masked = np.where(binary_clean_noholes, recon, 0)
+    
+    # to normalise, we first need to segment into contiguous blobs
+    # normalise each of them separetely
+    # label image regions
+    label_image = label(binary_clean_noholes)
+    
+    recon_masked_normed = np.zeros_like(recon)
+    
+    
+    for region_id in np.unique(label_image.ravel())[1:]:
+        recon_this_region_only = np.where(label_image == region_id, recon_masked, 0)
+        recon_this_region_only_normed = norm(recon_this_region_only)
+        recon_masked_normed = np.where(label_image == region_id, recon_this_region_only_normed, recon_masked_normed)
+    
+    return recon_masked_normed
+
+
+
+def build_slice_arrays_clean(grainsinos, method="iradon", grain_labels=None):
+    """Build grain maps from individual grain reonstructions
+       Cleans and normalises reconstructions before building slice arrays
+       Saves cleaned and normalised reconstruction to gs.recons[method_norm]
+       Optionally provide a different list of grain labels to label the grains"""
+
+    if grain_labels is not None:
+        assert len(grainsinos) == len(grain_labels)
+
+    first_recon = grainsinos[0].recons[method]
+    grain_labels_array = np.zeros_like(first_recon) - 1
+
+    redx = np.zeros_like(first_recon)
+    grnx = np.zeros_like(first_recon)
+    blux = np.zeros_like(first_recon)
+
+    redy = np.zeros_like(first_recon)
+    grny = np.zeros_like(first_recon)
+    bluy = np.zeros_like(first_recon)
+
+    redz = np.zeros_like(first_recon)
+    grnz = np.zeros_like(first_recon)
+    bluz = np.zeros_like(first_recon)
+
+    raw_intensity_array = np.zeros_like(first_recon)
+
+    for i, gs in enumerate(grainsinos):
+
+        if grain_labels is not None:
+            label = grain_labels[i]
+        else:
+            label = i
+        
+        # the grain should win where its intensity is greater than what's there before
+        g_raw_intensity_map = filter_normalise_recon(gs.recons[method])
+        gs.recons[method + "_norm"] = g_raw_intensity_map
+        
+        g_raw_intensity_mask = g_raw_intensity_map > raw_intensity_array
+        
+        raw_intensity_array = np.where(g_raw_intensity_mask, g_raw_intensity_map, raw_intensity_array)
+        
+        redx = np.where(g_raw_intensity_mask, g_raw_intensity_map * gs.grain.rgb_x[0], redx)
+        redy = np.where(g_raw_intensity_mask, g_raw_intensity_map * gs.grain.rgb_y[0], redy)
+        redz = np.where(g_raw_intensity_mask, g_raw_intensity_map * gs.grain.rgb_z[0], redz)
+        
+        grnx = np.where(g_raw_intensity_mask, g_raw_intensity_map * gs.grain.rgb_x[1], grnx)
+        grny = np.where(g_raw_intensity_mask, g_raw_intensity_map * gs.grain.rgb_y[1], grny)
+        grnz = np.where(g_raw_intensity_mask, g_raw_intensity_map * gs.grain.rgb_z[1], grnz)
+        
+        blux = np.where(g_raw_intensity_mask, g_raw_intensity_map * gs.grain.rgb_x[2], blux)
+        bluy = np.where(g_raw_intensity_mask, g_raw_intensity_map * gs.grain.rgb_y[2], bluy)
+        bluz = np.where(g_raw_intensity_mask, g_raw_intensity_map * gs.grain.rgb_z[2], bluz)
+        
+        grain_labels_array[g_raw_intensity_mask] = label
+
+    # redx has shape (i, j)
+    # (redx, grnx, blux) has shape (3, i, j)
+    # transpose changes this to (i, j, 3) needed for mpl imshow
+    # crucially: (i, j) unaffected
+
+    rgb_x_array = np.transpose((redx, grnx, blux), axes=(1, 2, 0))
+    rgb_y_array = np.transpose((redy, grny, bluy), axes=(1, 2, 0))
+    rgb_z_array = np.transpose((redz, grnz, bluz), axes=(1, 2, 0))
+
+    return rgb_x_array, rgb_y_array, rgb_z_array, grain_labels_array, raw_intensity_array
 
 
 # TODO: Use Silx Nexus IO instead?
