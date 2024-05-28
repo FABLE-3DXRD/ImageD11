@@ -87,7 +87,7 @@ jobs:
 
       - name: Install and test sdist
         run: |
-          pip install --pre dist/imaged11*.tar.gz
+          pip install dist/imaged11*.tar.gz
           pytest test
 
       - uses: actions/upload-artifact@v4
