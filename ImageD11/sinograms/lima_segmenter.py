@@ -435,13 +435,14 @@ date
     logging.info("wrote " + sbat)
     return sbat
 
-def sbatchlocal(fname):
+def sbatchlocal(fname, cores=None):
     """ 
     Execute a grid batch job on the local machine
     Loops over the array submission for you
     """
     import concurrent.futures
-
+    if cores is None:
+        cores = ImageD11.cImageD11.cores_available()
     lines = open(fname,'r').readlines()
     for line in lines:
         if line.find('--array=')>=0:
