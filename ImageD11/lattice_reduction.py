@@ -120,6 +120,9 @@ def reduce(v1, v2, v3, min_vec2=MIN_VEC2):
     # choose the "bigger" compared to -v
     for i in range(3):
         vn[i] = sortvec_xyz( [vn[i], -vn[i]] )[0]
+    if np.linalg.det(vn) < 0:
+        vn[2] = -vn[2]
+    assert np.linalg.det(vn) > 0
     return vn
 
 
