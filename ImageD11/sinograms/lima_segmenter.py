@@ -24,7 +24,6 @@ import warnings
 from ImageD11 import sparseframe
 from ImageD11.sinograms import dataset
 import ImageD11.cImageD11
-import concurrent.futures
 
 
 try:
@@ -441,6 +440,8 @@ def sbatchlocal(fname):
     Execute a grid batch job on the local machine
     Loops over the array submission for you
     """
+    import concurrent.futures
+
     lines = open(fname,'r').readlines()
     for line in lines:
         if line.find('--array=')>=0:
