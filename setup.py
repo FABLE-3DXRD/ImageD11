@@ -142,7 +142,9 @@ scripts = ["ImageD11/rsv_mapper.py",
 
 minimal = [  # can't compile without this
     "six",
-    "numpy",
+    'numpy ; python_version < "3"',
+    # Until the dependencies are ready
+    'numpy<2 ; python_version >= "3"',
     "setuptools",
     ]
 
