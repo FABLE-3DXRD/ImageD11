@@ -20,7 +20,7 @@ install:
   - "set TMPDIR=C:\\tmp"
   - python -c "import sys; print(sys.executable, sys.version)"
   - python -m pip install --upgrade pip setuptools
-  - python -m pip install pytest numpy
+  - python -m pip install pytest 'numpy<2'
   - python -m pip install --ignore-installed certifi --upgrade-strategy only-if-needed --only-binary=h5py --only-binary=scipy --only-binary=hdf5plugin .
 
 

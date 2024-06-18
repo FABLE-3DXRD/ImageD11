@@ -447,8 +447,8 @@ def sbatchlocal(fname, cores=None):
     for line in lines:
         if line.find('--array=')>=0:
             start, end = line.split('=')[-1].split('-')
-    commands = [ f'SLURM_ARRAY_TASK_ID={i} bash {fname} > {fname}_{i}.log' for 
-                i in range(int(start), int(end)) ]
+    commands = [ 'SLURM_ARRAY_TASK_ID=%d bash %s > %s_%d.log'%(i, fname, fname, i )
+                for i in range(int(start), int(end)) ]
     with concurrent.futures.ThreadPoolExecutor(max_workers = cores) as pool:
         for _ in pool.map( os.system, commands ):
             pass
