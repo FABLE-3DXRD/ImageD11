@@ -42,6 +42,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.16.5
         env:
+          CIBW_BUILD_VERBOSITY: 1
           CIBW_PROJECT_REQUIRES_PYTHON: ">=3.7"
           CIBW_BUILD: cp37-* cp38-* cp39-* cp310-* cp311-* cp312-*
           # Do not build for pypy, muslinux and python3.12 on ppc64le
@@ -86,7 +87,7 @@ jobs:
 
       - name: Install and test sdist
         run: |
-          pip install --pre dist/ImageD11*.tar.gz
+          pip install dist/imaged11*.tar.gz
           pytest test
 
       - uses: actions/upload-artifact@v4
