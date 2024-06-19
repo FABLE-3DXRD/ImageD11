@@ -485,6 +485,7 @@ class indexer:
         )
         logging.info("Shape of scoring matrix", self.gvr.shape)
         self.gvflat = np.ascontiguousarray(self.gvr, float)  # Makes it contiguous
+        self.gv = np.ascontiguousarray(self.gv, float)
         # in memory, hkl fast index
 
     def friedelpairs(self, filename):

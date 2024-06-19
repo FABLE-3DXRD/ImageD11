@@ -3,5 +3,16 @@ requires = ["setuptools",
             "six",
             "wheel",
             "numpy; python_version=='2.7'",
+# There is no way to compile for versions < 1.25 and up to 2.
+# See https://numpy.org/doc/2.0/dev/depending_on_numpy.html
+#
+# This gives you all versions < 2.0
             "oldest-supported-numpy; python_version>='3.0'" ]
+#
+# This gives all versions > 1.25
+#            "numpy>=2.0.0rc1; python_version>='3.0'" ]
+#
+# As usual, the dependencies are not ready.
+# pin numpy < 2 for now.
+#
 build-backend = "setuptools.build_meta"

@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import unittest, os, sys
 from ImageD11 import indexing
+import ImageD11.grain
 import numpy as np
 """
 >>> from ImageD11.indexing import readubis, write_ubi_file
@@ -97,6 +98,8 @@ class testGve(unittest.TestCase):
             e = SCRIPT +' -g "%s" '%(fname)+cmd
             print ("\n",e)
             assert os.system(e) == 0
+            grains = ImageD11.grain.read_grain_file(cmd.split()[3])
+
 
     def tearDown(self):
         """ explicitely leave the files here for debugging """

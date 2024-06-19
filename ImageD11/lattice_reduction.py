@@ -6,7 +6,7 @@ from .rc_array import rc_array
 from numpy import dot, round_, array, allclose, asarray, fabs,\
     argmin, argmax, sqrt, argsort, take, sum, where, ndarray, eye,\
     zeros, cross, pi, arccos, floor
-from numpy.linalg import inv, LinAlgError
+from numpy.linalg import inv, LinAlgError, det
 
 import logging
 
@@ -195,11 +195,15 @@ class lattice(object):
             if direction == 'col':  
                 # print "Supplied col direction vectors"
                 self.r2c  = array(vl)
+                if det( self.r2c ) < 0:
+                    self.r2c = array( [vl[0], vl[2], vl[1] ] )
                 self.c2r = inv(self.r2c)
             elif direction == 'row':
                 # Supplied with g-vectors
                 # print "Supplied row direction vectors"
                 self.c2r = array(vl).T
+                if det( self.c2r ) < 0:
+                    self.c2r = array( [vl[0], vl[2], vl[1] ] ).T
                 self.r2c  = inv(self.c2r) 
             else:
                 raise Exception("Direction must be row or col "+str(direction))
