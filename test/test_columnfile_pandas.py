@@ -2,8 +2,8 @@ import unittest
 
 """ Write some test cases for the columnfile stuff """
 
-from ImageD11 import columnfile_pandas as columnfile
-
+from ImageD11.columnfile_pandas import PandasColumnfile as columnfile
+from ImageD11.columnfile import colfile_to_hdf
 
 class testgeom(unittest.TestCase):
     def setUp(self):
@@ -37,11 +37,11 @@ class testgeom(unittest.TestCase):
 """)
 
     def test1(self):
-        c = columnfile.columnfile("testgeom.flt")
+        c = columnfile("testgeom.flt")
         c.updateGeometry()
 
     def testfilter(self):
-        c = columnfile.columnfile("testgeom.flt")
+        c = columnfile("testgeom.flt")
         d = c.copy()
         d.filter(abs(d.sc - 22) > .1)
         self.assertTrue(d.nrows == 4)
@@ -53,7 +53,7 @@ class testgeom(unittest.TestCase):
 
     def testfilter2(self):
         # What's with the bigarray call?
-        c = columnfile.columnfile("testgeom.flt")
+        c = columnfile("testgeom.flt")
         d = c.copy()
         # a = d.bigarray
         d.filter(abs(d.sc - 22) > .1)
@@ -78,15 +78,15 @@ class test1(unittest.TestCase):
         f.close()
 
     def test_to_hdf(self):
-        c = columnfile.columnfile("test.col")
-        columnfile.colfile_to_hdf(c, "testcolfile.hdf")
-        h = columnfile.columnfile("testcolfile.hdf")
+        c = columnfile("test.col")
+        colfile_to_hdf(c, "testcolfile.hdf")
+        h = columnfile("testcolfile.hdf")
         for t in c.titles:
             assert ((c.getcolumn(t) == h.getcolumn(t)).all())
             assert t in h.titles
 
     def testaddcol1(self):
-        c = columnfile.columnfile("test.col")
+        c = columnfile("test.col")
         c.addcolumn([5, 4, 1, 2, 0], 'alice')
         self.assertEqual(c.titles[-1], 'alice')
         self.assertEqual(list(c.alice), [5, 4, 1, 2, 0])
@@ -94,7 +94,7 @@ class test1(unittest.TestCase):
         self.assertEqual(c.nrows, 5)
 
     def testaddcol2(self):
-        c = columnfile.columnfile("test.col")
+        c = columnfile("test.col")
         c.addcolumn([5, 4, 1, 2, 9], 'a')
         self.assertEqual(c.titles.index("a"), 1)
         self.assertEqual(list(c.a), [5, 4, 1, 2, 9])
@@ -102,21 +102,21 @@ class test1(unittest.TestCase):
         self.assertEqual(c.nrows, 5)
 
     def test1(self):
-        c = columnfile.columnfile("test.col")
+        c = columnfile("test.col")
         self.assertEqual(list(c.b), [2, 1, 2, 6, 9])
         c.removerows("b", [1])
         self.assertEqual(c.nrows, 4)
         self.assertEqual(list(c.b), [2, 2, 6, 9])
 
     def test2(self):
-        c = columnfile.columnfile("test.col")
+        c = columnfile("test.col")
         assert list(c.b) == [2, 1, 2, 6, 9]
         c.removerows("b", [2])
         assert c.nrows == 3
         assert list(c.b) == [1, 6, 9]
 
     def test3(self):
-        c = columnfile.columnfile("test.col")
+        c = columnfile("test.col")
         assert list(c.a) == [1, 6, 4, 5, 7]
         assert list(c.b) == [2, 1, 2, 6, 9]
         c.removerows("a", [1.001], tol=0.1)
@@ -125,26 +125,26 @@ class test1(unittest.TestCase):
         assert list(c.b) == [1, 6, 9]
 
     def test4(self):
-        c = columnfile.columnfile("test.col")
+        c = columnfile("test.col")
         assert list(c.a) == [1, 6, 4, 5, 7]
         c.removerows("a", [1, 4])
         assert c.nrows == 3
         assert list(c.b) == [1, 6, 9]
 
     def testsort(self):
-        c = columnfile.columnfile("test.col")
+        c = columnfile("test.col")
         c.sortby('a')
         assert (list(c.a.astype(int)) == [1, 4, 5, 6, 7])
 
     def testreorder(self):
-        c = columnfile.columnfile("test.col")
+        c = columnfile("test.col")
         c.reorder([4, 3, 2, 1, 0])
         assert (list(c.a) == [7, 5, 4, 6, 1])
 
     def testmissingfile(self):
         e = False
         try:
-            columnfile.columnfile("a_filename_that_does_not_exist.flt")
+            columnfile("a_filename_that_does_not_exist.flt")
         except:
             # got an exception
             e = True
