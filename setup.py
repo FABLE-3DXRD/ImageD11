@@ -178,7 +178,6 @@ more = [
     # Used in sandbox / test / not completely essential, but should work for CI
     "pillow",      # in sandbox
     "lmfit",       # in sandbox
-    "PyMca5",      # in sandbox
     "sympy",       # for maths
     'ipywidgets',  # for notebook nbGui
     'pyopencl',    # (was?) in sandbox
@@ -192,6 +191,7 @@ rare = [           #
     "FitAllB",     # not for python3
     "minuit",      # for fitallb
     "PyTango",     # sandbox
+    "PyMca5",      # in sandbox
     ]
 
  # read the contents of your README file
