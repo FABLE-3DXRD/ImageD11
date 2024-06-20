@@ -696,28 +696,32 @@ try:
     import pandas as pd
     class PandasColumnfile(columnfile):
         def __init__(self, filename=None, new=False):
+            self._df = pd.DataFrame()
             self.filename = filename
             if filename is not None:
                 self.parameters = parameters.parameters(filename=filename)
             else:
                 self.parameters = parameters.parameters()
-            self._df = pd.DataFrame()
             if not new:
                 self.readfile(filename)
 
         def __getattribute__(self, item):
             # called whenever getattr(item, 'attr') or item.attr is called
             # for speed, look in self._df FIRST before giving up
-            try:
-                # we can't use self.getcolumn() here without retriggering self.__getattribute__()
-                # so we have to directly get the column from the dataframe
+            if item == '_df':
+                return object.__getattribute__(self, item)
+            if item in self._df.columns:
                 return super(PandasColumnfile, self).__getattribute__('_df')[item].to_numpy()
-            except KeyError:
-                # not in the dataframe, so just call getattribute normally (e.g for cf.nrows)
-                return super(PandasColumnfile, self).__getattribute__(item)
-            except AttributeError as e:
-                # didn't find it
-                raise e
+            return super(PandasColumnfile, self).__getattribute__(item)
+
+        def __setattr__(self, key, value):
+            if key == "_df":
+                object.__setattr__(self, key, value)
+                return
+            if key in self.titles:
+                self._df[key] = value
+                return
+            super(PandasColumnfile, self).__setattr__(key, value)
 
         @property
         def nrows(self):
