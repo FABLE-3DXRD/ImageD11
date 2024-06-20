@@ -669,12 +669,22 @@ def load(h5name, h5group='/'):
 def import_from_sparse(hname,
                        omegamotor='instrument/positioners/rot',
                        dtymotor='instrument/positioners/dty',
+                       scans = None,
                        ):
+    """
+    hname = hdf5 file containing sparse pixels (and motors)
+    omegamotor = location of the rotation motor data
+    dtymotor = location of the y motor data
+    scans = defaults to reading all "%d.1" scans in the file
+            give a list to read in some other order or a subset
+    """
     ds = DataSet()
     with h5py.File(hname, 'r') as hin:
-        scans = list(hin['/'])
-        order = np.argsort([float(v) for v in scans if v.endswith('.1')])
-        scans = [scans[i] for i in order]
+        if scans is None:
+            # Read all in numerical order
+            scans = list(hin['/'])
+            order = np.argsort([float(v) for v in scans if v.endswith('.1')])
+            scans = [scans[i] for i in order]
         dty = [hin[scan][dtymotor][()] for scan in scans]
         omega = [hin[scan][omegamotor][()] for scan in scans]
         nnz = [hin[scan]['nnz'][()] for scan in scans]
