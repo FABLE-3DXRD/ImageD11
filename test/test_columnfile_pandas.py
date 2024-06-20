@@ -2,8 +2,7 @@ import unittest
 
 """ Write some test cases for the columnfile stuff """
 
-from ImageD11.columnfile_pandas import PandasColumnfile as columnfile
-from ImageD11.columnfile import colfile_to_hdf
+from ImageD11.columnfile import colfile_to_hdf, PandasColumnfile as columnfile
 
 class testgeom(unittest.TestCase):
     def setUp(self):
