@@ -160,7 +160,6 @@ useful = [   # stuff you probably want, and should be able to get easily
     'hdf5plugin ; python_version >= "3" ',
     'h5py',
     'pyyaml',
-    'pandas',
     "pytest",       # for the CI
     'numba==0.46.0 ; python_version < "3" ',       # for some test cases
     'llvmlite==0.30.0 ; python_version < "3" ',    # for some test cases

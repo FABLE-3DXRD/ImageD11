@@ -24,15 +24,17 @@ An equals sign "=" on a "#" line implies a parameter = value pair
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  0211-1307  USA
 
-import warnings
 import io
 from functools import partial
 
-from ImageD11 import parameters, transform
+from ImageD11 import parameters
 from ImageD11 import columnfile
 import numpy as np
 
-import pandas as pd
+try:
+    import pandas as pd
+except ImportError:
+    raise ImportError('You need Pandas installed to use PandasColumnfile!')
 
 
 class PandasColumnfile(columnfile.columnfile):
