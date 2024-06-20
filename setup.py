@@ -181,7 +181,7 @@ more = [
     "sympy",       # for maths
     'ipywidgets ; python_version >= "3"',  # for notebook nbGui
     'pyopencl',    # (was?) in sandbox
-    'numexpr <= 2.7.0; python_version < "3" '
+    'numexpr <= 2.7.0; python_version < "3" ',
     'pyFAI ; python_version >= "3" ',   # pypi problematic
     'pyFAI <= 0.18.0 ; python_version  < "3" ',
     'silx[full] ; python_version >= "3" ',  # for silxGui,
