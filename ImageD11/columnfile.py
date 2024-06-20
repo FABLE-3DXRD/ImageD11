@@ -772,7 +772,7 @@ try:
             format_funcs = {}
             for title in self.titles:
                 try:
-                    format_str = columnfile.FORMATS[title]
+                    format_str = FORMATS[title]
                 except KeyError:
                     format_str = "%f"
                 format_funcs[title] = partial(format_func, fmt=format_str)
