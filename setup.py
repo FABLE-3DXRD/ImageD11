@@ -184,7 +184,8 @@ more = [
     'pyopencl',    # (was?) in sandbox
     'pyFAI ; python_version >= "3" ',   # pypi problematic
     'pyFAI <= 0.18.0 ; python_version  < "3" ',
-    'silx[full] ; python_version >= "3" ',  # for silxGui
+    'silx[full] ; python_version >= "3" ',  # for silxGui,
+    'pandas'
 ]
 
 rare = [           #
