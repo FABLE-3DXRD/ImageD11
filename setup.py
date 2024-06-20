@@ -179,7 +179,7 @@ more = [
     "pillow",      # in sandbox
     "lmfit",       # in sandbox
     "sympy",       # for maths
-    'ipywidgets',  # for notebook nbGui
+    'ipywidgets ; python_version >= "3"',  # for notebook nbGui
     'pyopencl',    # (was?) in sandbox
     'pyFAI ; python_version >= "3" ',   # pypi problematic
     'pyFAI <= 0.18.0 ; python_version  < "3" ',
