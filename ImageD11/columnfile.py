@@ -134,7 +134,7 @@ def clean(str_lst):
 
 
 def fillcols(lines, cols):
-    for i,line in enumerate(lines):
+    for i,line in enumerate(lines): # could be parallel
         for j,item in enumerate(line.split()):
             cols[j][i] = float(item)
 
@@ -144,9 +144,9 @@ class columnfile(object):
     """
 
     def __init__(self, filename = None, new = False):
+        self.titles = []
         self.filename = filename
         self.__data = []
-        self.titles = []
         if filename is not None:
             self.parameters = parameters.parameters(filename=filename)
         else:
@@ -203,7 +203,22 @@ class columnfile(object):
             raise KeyError
 
     def __setitem__(self, key, value):
-        self.addcolumn(value, key)
+        if key in self.titles:
+            self.getcolumn(key)[:] = value
+        else:
+            self.addcolumn(value, key)
+
+    def __setattr__(self, key, value):
+        if key == 'titles':
+            super(columnfile, self).__setattr__(key, value)
+            return
+        if key in self.titles:
+            if np.isscalar(value): # broadcast
+                self.__data[self.titles.index(key)][:] = value
+            else:
+                assert len(value) == self.nrows
+                self.__data[self.titles.index(key)] = value
+        super(columnfile, self).__setattr__(key, value)
 
     def keys(self):
         return self.titles
@@ -335,7 +350,13 @@ class columnfile(object):
             raise Exception("Mask is the wrong size")
         msk = np.array( mask, dtype=bool )
         # back to list here
-        self.__data = [col[msk] for col in self.__data]
+        # previously makes a 2X memory footprint here:
+        # self.__data = [col[msk] for col in self.__data]
+        #
+        if not isinstance( self.__data, list ):
+            self.__data = list( self.__data )
+        for i, col in enumerate( self.__data ):   # could be parallel
+            self.__data[i] = col[msk]
         self.nrows = len(self.__data[0])
         self.set_attributes()
 
@@ -346,8 +367,8 @@ class columnfile(object):
         cnw = columnfile(self.filename, new = True)
         self.chkarray()
         cnw.titles = [t for t in self.titles ]
-        cnw.parameters = parameters.parameters( **self.parameters.parameters )
-        cnw.bigarray = [col.copy() for col in self.__data]
+        cnw.parameters = parameters.parameters( **self.parameters.parameters.copy() )
+        cnw.set_bigarray( [col.copy() for col in self.__data] )
         cnw.ncols = self.ncols
         cnw.set_attributes()
         return cnw
@@ -359,7 +380,7 @@ class columnfile(object):
         self.chkarray()
         cnw = columnfile(self.filename, new = True)
         cnw.titles = [t for t in self.titles ]
-        cnw.parameters = self.parameters
+        cnw.parameters = parameters.parameters( **self.parameters.parameters.copy() )
         cnw.bigarray = [col[rows] for col in self.__data]
         #cnw.ncols, cnw.nrows = cnw.bigarray.shape
         #cnw.set_attributes()
@@ -395,8 +416,9 @@ class columnfile(object):
             self.__data.append( data )
         setattr(self, name, self.__data[idx] )
 
-    # Not obvious, but might be a useful alias
-    setcolumn = addcolumn
+    def setcolumn(self, col, name):
+        assert name in self.titles
+        self.addcolumn( col, name )
 
     def getcolumn(self, name):
         """
@@ -674,28 +696,32 @@ try:
     import pandas as pd
     class PandasColumnfile(columnfile):
         def __init__(self, filename=None, new=False):
+            self._df = pd.DataFrame()
             self.filename = filename
             if filename is not None:
                 self.parameters = parameters.parameters(filename=filename)
             else:
                 self.parameters = parameters.parameters()
-            self._df = pd.DataFrame()
             if not new:
                 self.readfile(filename)
 
         def __getattribute__(self, item):
             # called whenever getattr(item, 'attr') or item.attr is called
             # for speed, look in self._df FIRST before giving up
-            try:
-                # we can't use self.getcolumn() here without retriggering self.__getattribute__()
-                # so we have to directly get the column from the dataframe
+            if item == '_df':
+                return object.__getattribute__(self, item)
+            if item in self._df.columns:
                 return super(PandasColumnfile, self).__getattribute__('_df')[item].to_numpy()
-            except KeyError:
-                # not in the dataframe, so just call getattribute normally (e.g for cf.nrows)
-                return super(PandasColumnfile, self).__getattribute__(item)
-            except AttributeError as e:
-                # didn't find it
-                raise e
+            return super(PandasColumnfile, self).__getattribute__(item)
+
+        def __setattr__(self, key, value):
+            if key == "_df":
+                object.__setattr__(self, key, value)
+                return
+            if key in self.titles:
+                self._df[key] = value
+                return
+            super(PandasColumnfile, self).__setattr__(key, value)
 
         @property
         def nrows(self):
@@ -850,7 +876,7 @@ try:
             Returns a (deep) copy of the columnfile
             """
             cnw = PandasColumnfile(self.filename, new=True)
-            cnw.parameters = parameters.parameters(**self.parameters.parameters)
+            cnw.parameters = parameters.parameters( **self.parameters.parameters.copy() )
             cnw._df = self._df.copy(deep=True)
             return cnw
 
@@ -860,7 +886,7 @@ try:
             """
 
             cnw = PandasColumnfile(self.filename, new=True)
-            cnw.parameters = self.parameters
+            cnw.parameters = parameters.parameters( **self.parameters.parameters.copy() )
             cnw._df = self._df.iloc[rows]
 
             return cnw
@@ -900,8 +926,8 @@ except ImportError:
             pderr()
 
     class NewPandasColumnfile(PandasColumnfile):
-       def __init__(self, titles):
-           pderr()
+        def __init__(self, titles):
+            pderr()
 
 
 def bench():
