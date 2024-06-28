@@ -56,7 +56,7 @@ class SegmenterOptions:
         pixels_in_spot=3,
         maskfile="",
         bgfile="",
-        cores_per_job=8,
+        cores_per_job=1,  # avoid buggy multiprocessing. Can't fix.
         files_per_core=8,
     ):
         self.cut = cut
@@ -362,7 +362,7 @@ def main(h5name, jobid):
                 options.limapath,
             )
         )
-    if 1:
+    if options.cores_per_job > 1:
         ImageD11.cImageD11.check_multiprocessing(patch=True)  # avoid fork
         import multiprocessing
 
