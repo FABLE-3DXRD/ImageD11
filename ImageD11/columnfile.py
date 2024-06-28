@@ -675,6 +675,45 @@ try:
         return col
 
 
+    def mmap_h5colf( fname, path='peaks', mode = 'r' ):
+        """
+        From:
+        https://gist.github.com/anonymous/19814198398da86b8f98
+
+        The columnfile must have non-compressed data
+
+        Memory maps the underlying array for read only data.
+        You will need to use something like copyrows on the result.
+        """
+        if mode != 'r':
+            # The purpose of this code is to read columnfiles across
+            # many processes. The implications of writing are messy.
+            # You can't have lots of processes writing into the hdf5
+            # files as you can't resize. So just force read only.
+            raise Exception("Sorry, read only for now")
+        with h5py.File(fname,'r') as hin:
+            grp = hin[path]
+            names = list(grp)
+            offsets = {}
+            dtypes = {}
+            shapes = {}
+            for name in names:
+                ds = grp[name]
+                # We get the dataset address in the HDF5 file.
+                offsets[name] = ds.id.get_offset()
+                # We ensure we have a non-compressed contiguous array.
+                assert ds.chunks is None
+                assert ds.compression is None
+                assert offsets[name] > 0
+                dtypes[name] = ds.dtype
+                shapes[name] = ds.shape
+        ardict = { name : np.memmap(fname,
+                                    mode='r',
+                                    shape=shapes[name],
+                                    offset=offsets[name],
+                                    dtype=dtypes[name])
+                   for name in names }
+        return colfile_from_dict( ardict )
 
 
 
