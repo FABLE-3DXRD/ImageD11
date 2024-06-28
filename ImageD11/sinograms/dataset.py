@@ -28,10 +28,11 @@ TO DO:
 
 # POSSIBLE_DETECTOR_NAMES = ("frelon3", "eiger")
 
+
 def guess_chunks(name, shape):
-    if name == 'omega':
+    if name == "omega":
         return (shape[0], 1)
-    if name == 'dty':
+    if name == "dty":
         return (1, shape[1])
     return shape
 
@@ -40,26 +41,52 @@ class DataSet:
     """One DataSet instance per detector!"""
 
     # simple strings or ints
-    ATTRNAMES = ("dataroot", "analysisroot", "sample", "dset", "shape", "dsname",
-                 "datapath", "analysispath", "masterfile", "limapath",
-                 "detector", "omegamotor", "dtymotor",
-                 "pksfile", "sparsefile",
-                 "parfile",
-                 "e2dxfile", "e2dyfile", "splinefile", "maskfile", "bgfile"
-                 )
+    ATTRNAMES = (
+        "dataroot",
+        "analysisroot",
+        "sample",
+        "dset",
+        "shape",
+        "dsname",
+        "datapath",
+        "analysispath",
+        "masterfile",
+        "limapath",
+        "detector",
+        "omegamotor",
+        "dtymotor",
+        "pksfile",
+        "sparsefile",
+        "parfile",
+        "e2dxfile",
+        "e2dyfile",
+        "splinefile",
+        "maskfile",
+        "bgfile",
+        "pksfile",
+        "col4dfile",
+        "col3dfile",
+        "col2dfile",
+        "grainsfile",
+        "sparsefile",
+        "icolfile",
+        "pbpfile",
+    )
     STRINGLISTS = ("scans", "imagefiles", "sparsefiles")
     # sinograms
     NDNAMES = ("omega", "dty", "nnz", "frames_per_file", "nlm", "frames_per_scan")
 
-    def __init__(self,
-                 dataroot=".",
-                 analysisroot=".",
-                 sample="sample",
-                 dset="dataset",
-                 detector="eiger",
-                 omegamotor="rot_center",
-                 dtymotor="dty"):
-        """ The things we need to know to process data """
+    def __init__(
+        self,
+        dataroot=".",
+        analysisroot=".",
+        sample="sample",
+        dset="dataset",
+        detector="eiger",
+        omegamotor="rot_center",
+        dtymotor="dty",
+    ):
+        """The things we need to know to process data"""
 
         # defaults to eiger and nanoscope station, can be overwritten with init parameters detector, omegamotor and dtymotor
 
@@ -79,14 +106,16 @@ class DataSet:
         # paths for raw data
 
         self.datapath = os.path.join(self.dataroot, self.sample, self.dsname)
-        self.masterfile = os.path.join(self.datapath, self.dsname + '.h5')
+        self.masterfile = os.path.join(self.datapath, self.dsname + ".h5")
 
         # paths for processed data
         self.update_paths()
 
         # These are in order ! The order of the lists is important - all things should match.
         self.scans = None  # read from master or load from analysis
-        self.frames_per_scan = None  # how many frames (and motor positions) in each scan row.
+        self.frames_per_scan = (
+            None  # how many frames (and motor positions) in each scan row.
+        )
         self.imagefiles = None  # List of strings. w.r.t self.datapath
         self.frames_per_file = None  # how many frames in this file (Lima files)
         self.sparsefiles = None  # maps sparse files to self.imagefiles
@@ -104,34 +133,50 @@ class DataSet:
         # root of analysis for this dataset for this sample:
         self.analysispath = os.path.join(self.analysisroot, self.sample, self.dsname)
 
-        self.dsfile_default = os.path.join(self.analysispath, self.dsname + '_dataset.h5')
+        self.dsfile_default = os.path.join(
+            self.analysispath, self.dsname + "_dataset.h5"
+        )
         # at the moment, set self.dsfile to be the default
         # if save or load is ever called, this will be replaced
         self.dsfile = self.dsfile_default
-        self.pksfile = os.path.join(self.analysispath, self.dsname + '_peaks_table.h5')
-        self.col4dfile = os.path.join(self.analysispath, self.dsname + '_peaks_4d.h5')
-        self.col3dfile = os.path.join(self.analysispath, self.dsname + '_peaks_3d.h5')  # useful for regular 3DXRD scans
-        self.col2dfile = os.path.join(self.analysispath, self.dsname + '_peaks_2d.h5')
-        self.grainsfile = os.path.join(self.analysispath, self.dsname + '_grains.h5')
-        self.sparsefile = os.path.join(self.analysispath, self.dsname + '_sparse.h5')
+        # They should be saved / loaded with the dataset.
+        for name, extn in [
+            ("pksfile", "_peaks_table.h5"),
+            ("col4dfile", "_peaks_4d.h5"),
+            ("col3dfile", "_peaks_3d.h5"),
+            ("col3dfile", "_peaks_2d.h5"),
+            ("grainsfile", "_grains.h5"),
+            ("sparsefile", "_sparse.h5"),
+            # subset peaks selected for indexing (pbp)
+            ("icolfile", "_icolf.h5"),
+            # point by point raw output
+            ("pbpfile", "_pbp.txt"),
+        ]:
+            # If the user has got a different name (via loading or edit), we keep that
+            if getattr(self, name, None) is None:
+                # Otherwise, these are the defaults.
+                setattr(self, name, os.path.join(self.analysispath, self.dsname + extn))
 
     def __repr__(self):
         r = []
         for name in "dataroot analysisroot sample dset".split():
             r.append('%s = "%s"' % (name, getattr(self, name)))
-        r.append('shape = ( %d, %d)' % tuple(self.shape))
+        r.append("shape = ( %d, %d)" % tuple(self.shape))
         if self.scans is not None:
-            r.append('# scans %d from %s to %s' % (
-                len(self.scans), self.scans[0], self.scans[-1]))
+            r.append(
+                "# scans %d from %s to %s"
+                % (len(self.scans), self.scans[0], self.scans[-1])
+            )
         return "\n".join(r)
 
     def compare(self, other):
-        '''Try to see if the load/save is working'''
+        """Try to see if the load/save is working"""
         from types import FunctionType
-        sattrs = set([name for name in vars(self) if name[0] != '_'])
-        oattrs = set([name for name in vars(self) if name[0] != '_'])
+
+        sattrs = set([name for name in vars(self) if name[0] != "_"])
+        oattrs = set([name for name in vars(self) if name[0] != "_"])
         if sattrs != oattrs:
-            logging.info('Attribute mismatch ' + str(sattrs) + ' != ' + str(oattrs))
+            logging.info("Attribute mismatch " + str(sattrs) + " != " + str(oattrs))
             return False
         for a in sattrs:
             s = getattr(self, a)
@@ -140,20 +185,20 @@ class DataSet:
             o = getattr(other, a)
             t = type(s)
             if type(o) != type(s):
-                logging.info('Type mismatch %s %s' % (str(t), str(a)))
+                logging.info("Type mismatch %s %s" % (str(t), str(a)))
                 return False
             if t == np.ndarray:
                 if s.shape != o.shape:
-                    logging.info('Shape mismatch %s %s' % (str(s.shape), str(o.shape)))
+                    logging.info("Shape mismatch %s %s" % (str(s.shape), str(o.shape)))
                     return False
                 if (s != o).all():
-                    logging.info('Data mismatch ' + str(a))
+                    logging.info("Data mismatch " + str(a))
                     return False
             else:
                 if s != o:
-                    logging.info('Data mismatch ')
+                    logging.info("Data mismatch ")
                     return False
-        logging.info('Dataset objects seem to match!')
+        logging.info("Dataset objects seem to match!")
         return True
 
     def report(self):
@@ -176,90 +221,130 @@ class DataSet:
         except:
             logging.info("nnz not available. Segmentation done?")
 
+    def import_from_sparse(self, hname, scans=None):
+        """
+        hname = hdf5 file containing sparse pixels (and motors)
+        dataset = a dataset instance to import into
+        scans = defaults to reading all "%d.1" scans in the file
+                give a list to read in some other order or a subset
+        """
+        self.sparsefile = hname
+        if scans is None:
+            with h5py.File(hname, "r") as hin:
+                # Read all in numerical order
+                scans = list(hin["/"])
+                order = np.argsort([float(v) for v in scans if v.endswith(".1")])
+                self.scans = [scans[i] for i in order]
+        self.masterfile = hname  # hacky, motors come from the sparsefile
+        self.import_nnz_from_sparse()  # must exist
+        self.import_motors_from_master()
+        self.shape = self.nnz.shape
+        self.omega = np.array(self.omega).reshape(self.shape)
+        self.dty = np.array(self.dty).reshape(self.shape)
+        self.guessbins()
+
     def import_scans(self, scans=None, hname=None):
-        """ Reads in the scans from the bliss master file """
+        """Reads in the scans from the bliss master file"""
         # we need to work out what detector we have at this point
         # self.guess_detector()
         if hname is None:
             hname = self.masterfile
         frames_per_scan = []
-        with h5py.File(hname, 'r') as hin:
+        with h5py.File(hname, "r") as hin:
             if scans is None:
-                scans = [scan for scan in list(hin['/']) if
-                         (scan.endswith('.1') and
-                          ('measurement' in hin[scan]) and
-                          (self.detector in hin[scan]['measurement']))]
+                scans = [
+                    scan
+                    for scan in list(hin["/"])
+                    if (
+                        scan.endswith(".1")
+                        and ("measurement" in hin[scan])
+                        and (self.detector in hin[scan]["measurement"])
+                    )
+                ]
             goodscans = []
             for scan in scans:
                 # Make sure that this scan has a measurement from our detector
-                if self.detector not in hin[scan]['measurement']:
-                    print('Bad scan', scan)
+                if self.detector not in hin[scan]["measurement"]:
+                    print("Bad scan", scan)
                 else:
                     try:
-                        frames = hin[scan]['measurement'][self.detector]
+                        frames = hin[scan]["measurement"][self.detector]
                     except KeyError as e:  # Thrown by h5py
-                        print('Bad scan', scan, ', h5py error follows:')
+                        print("Bad scan", scan, ", h5py error follows:")
                         print(e)
                         continue
                     if len(frames.shape) == 3:  # need 1D series of frames
                         goodscans.append(scan)
                         frames_per_scan.append(frames.shape[0])
                     else:
-                        print('Bad scan', scan)
+                        print("Bad scan", scan)
 
         self.scans = goodscans
         self.frames_per_scan = frames_per_scan
 
-        logging.info('imported %d scans from %s' % (len(self.scans), hname))
+        logging.info("imported %d scans from %s" % (len(self.scans), hname))
         return self.scans
 
     def import_imagefiles(self):
-        """ Get the Lima file names from the bliss master file, also scan_npoints """
+        """Get the Lima file names from the bliss master file, also scan_npoints"""
         # self.import_scans() should always be called before this function, so we know the detector
         npts = None
         self.imagefiles = []
         self.frames_per_file = []
-        with h5py.File(self.masterfile, 'r') as hin:
+        with h5py.File(self.masterfile, "r") as hin:
             bad = []
             for i, scan in enumerate(self.scans):
-                if ('measurement' not in hin[scan]) or (self.detector not in hin[scan]['measurement']):
-                    print('Bad scan', scan)
+                if ("measurement" not in hin[scan]) or (
+                    self.detector not in hin[scan]["measurement"]
+                ):
+                    print("Bad scan", scan)
                     bad.append(scan)
                     continue
-                frames = hin[scan]['measurement'][self.detector]
+                frames = hin[scan]["measurement"][self.detector]
                 self.imageshape = frames.shape[1:]
                 for vsrc in frames.virtual_sources():
                     self.imagefiles.append(vsrc.file_name)
-                    self.frames_per_file.append(vsrc.src_space.shape[0])  # not sure about this
+                    self.frames_per_file.append(
+                        vsrc.src_space.shape[0]
+                    )  # not sure about this
                     # check limapath
                     if self.limapath is None:
                         self.limapath = vsrc.dset_name
                     assert self.limapath == vsrc.dset_name
         self.frames_per_file = np.array(self.frames_per_file, int)
-        self.sparsefiles = [name.replace('/', '_').replace('.h5', '_sparse.h5') for name in
-                            self.imagefiles]
-        logging.info('imported %d lima filenames' % (np.sum(self.frames_per_file)))
+        self.sparsefiles = [
+            name.replace("/", "_").replace(".h5", "_sparse.h5")
+            for name in self.imagefiles
+        ]
+        logging.info("imported %d lima filenames" % (np.sum(self.frames_per_file)))
 
-    def import_motors_from_master(self):  # could also get these from sparse files if saved
-        """ read the motors from the lima file
+    def import_motors_from_master(self):
+        """read the motors from the lima file
         you need to import the imagefiles first
         these will be the motor positions to accompany the images
+        # could also get these from sparse files if saved
         """
         # self.guess_motornames()
-        self.omega = [None, ] * len(self.scans)
-        self.dty = [None, ] * len(self.scans)
-        with h5py.File(self.masterfile, 'r') as hin:
+        self.omega = [
+            None,
+        ] * len(self.scans)
+        self.dty = [
+            None,
+        ] * len(self.scans)
+        with h5py.File(self.masterfile, "r") as hin:
             bad = []
             for i, scan in enumerate(self.scans):
                 # Should always be there, if not, filter scans before you get to here
-                om = hin[scan]['measurement'][self.omegamotor][()]
+                om = hin[scan]["measurement"][self.omegamotor][()]
                 if len(om) == self.frames_per_scan[i]:
                     self.omega[i] = om
                 else:  # hope the first point was good ? Probably corrupted MUSST data.
-                    self.omega[i] = [om[0], ]
+                    self.omega[i] = [
+                        om[0],
+                    ]
                     bad.append(i)
                 # this can be an array or a scalar
-                dty = hin[scan]['instrument/positioners'][self.dtymotor]
+                dty = hin[scan]["instrument/positioners"][self.dtymotor]
                 if len(dty.shape) == 0:
                     self.dty[i] = np.full(self.frames_per_scan[i], dty[()])
                 elif dty.shape[0] == self.frames_per_scan[i]:
@@ -268,32 +353,39 @@ class DataSet:
                     # corrupted MUSST?
                     self.dty[i] = np.full(self.frames_per_scan[i], dty[0])
         for b in bad:
-            dom = [(abs(self.omega[i][0] - self.omega[b]), i) for i in range(len(self.scans))
-                   if i not in bad]
+            dom = [
+                (abs(self.omega[i][0] - self.omega[b]), i)
+                for i in range(len(self.scans))
+                if i not in bad
+            ]
             if len(dom) > 0:
                 j = np.argmin(dom[0][1])
                 self.omega[b] = self.omega[j]  # best match
-                print("replace bad scan omega", b, self.scans[b], "with", j, self.scans[j])
-        logging.info('imported omega/dty')
+                print(
+                    "replace bad scan omega", b, self.scans[b], "with", j, self.scans[j]
+                )
+        logging.info("imported omega/dty")
 
     def guess_shape(self):
-        """Guess the shape if it was not given """
+        """Guess the shape if it was not given"""
         npts = np.sum(self.frames_per_scan)
         if len(self.scans) == 1:  # probably fscan2d or f2scan
-            with h5py.File(self.masterfile, 'r') as hin:
+            with h5py.File(self.masterfile, "r") as hin:
                 s = hin[self.scans[0]]
-                title = s['title'].asstr()[()]
-                print('Scan title', title)
-                if title.split()[0] == 'fscan2d':
-                    s0 = s['instrument/fscan_parameters/slow_npoints'][()]
-                    s1 = s['instrument/fscan_parameters/fast_npoints'][()]
+                title = s["title"].asstr()[()]
+                print("Scan title", title)
+                if title.split()[0] == "fscan2d":
+                    s0 = s["instrument/fscan_parameters/slow_npoints"][()]
+                    s1 = s["instrument/fscan_parameters/fast_npoints"][()]
                     file_nums = np.arange(s0 * s1).reshape((s0, s1))
                     # slice notation means last frame+1 to be inclusive
-                    self.scans = ["%s::[%d:%d]" % (self.scans[0], row[0], row[-1] + 1)
-                                  for row in file_nums]
-                elif title.split()[0] == 'f2scan':
+                    self.scans = [
+                        "%s::[%d:%d]" % (self.scans[0], row[0], row[-1] + 1)
+                        for row in file_nums
+                    ]
+                elif title.split()[0] == "f2scan":
                     # good luck ? Assuming rotation was the inner loop here:
-                    step = s['instrument/fscan_parameters/step_size'][()]
+                    step = s["instrument/fscan_parameters/step_size"][()]
                     s1 = int(np.round(360 / step))
                     s0 = npts // s1
                     logging.warning("Dataset might need to be reshaped")
@@ -309,8 +401,10 @@ class DataSet:
             print(npts, len(self.scans))
         self.omega = np.array(self.omega).reshape(self.shape)
         self.dty = np.array(self.dty).reshape(self.shape)
-        logging.info('sinogram shape = ( %d , %d ) imageshape = ( %d , %d)' % (
-            self.shape[0], self.shape[1], self.imageshape[0], self.imageshape[1]))
+        logging.info(
+            "sinogram shape = ( %d , %d ) imageshape = ( %d , %d)"
+            % (self.shape[0], self.shape[1], self.imageshape[0], self.imageshape[1])
+        )
 
     def guessbins(self):
         ny, nomega = self.shape
@@ -318,8 +412,8 @@ class DataSet:
         self.omax = self.omega.max()
         if (self.omax - self.omin) > 360:
             # multi-turn scan...
-            self.omin = 0.
-            self.omax = 360.
+            self.omin = 0.0
+            self.omax = 360.0
             self.omega_for_bins = self.omega % 360
         else:
             self.omega_for_bins = self.omega
@@ -335,20 +429,24 @@ class DataSet:
             self.ystep = 1
         self.obincens = np.linspace(self.omin, self.omax, nomega)
         self.ybincens = np.linspace(self.ymin, self.ymax, ny)
-        self.obinedges = np.linspace(self.omin - self.ostep / 2, self.omax + self.ostep / 2, nomega + 1)
-        self.ybinedges = np.linspace(self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1)
+        self.obinedges = np.linspace(
+            self.omin - self.ostep / 2, self.omax + self.ostep / 2, nomega + 1
+        )
+        self.ybinedges = np.linspace(
+            self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1
+        )
 
-    def correct_bins_for_half_scan(self):
+    def correct_bins_for_half_scan(self, y0=0):
         """Pads the dataset to become bigger and symmetric"""
         # TODO: We need to keep track of which bins are "real" and measured and which aren't
-        c0 = 0
+        c0 = y0
         # check / fix the centre of rotation
         # get value of bin closest to c0
         central_bin = np.argmin(abs(self.ybincens - c0))
         # get centre dty value of this vin
         central_value = self.ybincens[central_bin]
 
-        lo_side = self.ybincens[:central_bin + 1]
+        lo_side = self.ybincens[: central_bin + 1]
         hi_side = self.ybincens[central_bin:]
 
         # get the hi/lo side which is widest
@@ -368,11 +466,13 @@ class DataSet:
         ny = int(new_yrange // self.ystep) + 1
 
         self.ybincens = np.linspace(self.ymin, self.ymax, ny)
-        self.ybinedges = np.linspace(self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1)
+        self.ybinedges = np.linspace(
+            self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1
+        )
 
     def get_ring_current_per_scan(self):
         """Gets the ring current for each scan (i.e rotation/y-step)
-           Stores it inside self.ring_currents_per_scan and a scaled version inside self.ring_currents_per_scan_scaled"""
+        Stores it inside self.ring_currents_per_scan and a scaled version inside self.ring_currents_per_scan_scaled"""
         if not hasattr(self, "ring_currents_per_scan"):
             ring_currents = []
             with h5py.File(self.masterfile, "r") as h5in:
@@ -381,24 +481,28 @@ class DataSet:
                     ring_currents.append(ring_current)
 
             self.ring_currents_per_scan = np.array(ring_currents)
-            self.ring_currents_per_scan_scaled = np.array(ring_currents / np.max(ring_currents))
+            self.ring_currents_per_scan_scaled = np.array(
+                ring_currents / np.max(ring_currents)
+            )
 
     def guess_detector(self):
-        '''Guess which detector we are using from the masterfile'''
+        """Guess which detector we are using from the masterfile"""
 
         # open the masterfile
         hname = self.masterfile
         detectors_seen = []
         scan = "1.1"
 
-        with h5py.File(hname, 'r') as hin:
+        with h5py.File(hname, "r") as hin:
             # go through the first scan, and see what detectors we can see
-            for measurement in list(hin[scan]['measurement']):
+            for measurement in list(hin[scan]["measurement"]):
                 if measurement.attrs.get("interpretation") == "image":
                     detectors_seen.append(measurement)
 
         if len(detectors_seen) != 1:
-            raise ValueError("More than one detector seen! Can't work out which one to process.")
+            raise ValueError(
+                "More than one detector seen! Can't work out which one to process."
+            )
         else:
             self.detector = detectors_seen[0]
 
@@ -434,11 +538,13 @@ class DataSet:
     #             self.omegamotor = 'diffrz'
     #             self.dtymotor = 'diffty'
 
-    def sinohist(self, weights=None, omega=None, dty=None, method='fast'):
-        """ Bin some data onto the sinogram histogram """
+    def sinohist(self, weights=None, omega=None, dty=None, method="fast"):
+        """Bin some data onto the sinogram histogram"""
         bins = len(self.obincens), len(self.ybincens)
-        rng = ((self.obinedges[0], self.obinedges[-1]),
-               (self.ybinedges[0], self.ybinedges[-1]))
+        rng = (
+            (self.obinedges[0], self.obinedges[-1]),
+            (self.ybinedges[0], self.ybinedges[-1]),
+        )
         if isinstance(weights, np.ndarray):
             wt = weights.ravel()
         else:
@@ -447,19 +553,23 @@ class DataSet:
             omega = self.omega_for_bins
         if dty is None:
             dty = self.dty
-        if method == 'numpy':
-            ret = np.histogram2d(omega.ravel(), dty.ravel(),
-                                 weights=wt, bins=bins, range=rng)
+        if method == "numpy":
+            ret = np.histogram2d(
+                omega.ravel(), dty.ravel(), weights=wt, bins=bins, range=rng
+            )
             histo = ret[0]
-        elif method == 'fast':
-            histo = fast_histogram.histogram2d(omega.ravel(), dty.ravel(),
-                                               weights=wt, bins=bins, range=rng)
+        elif method == "fast":
+            histo = fast_histogram.histogram2d(
+                omega.ravel(), dty.ravel(), weights=wt, bins=bins, range=rng
+            )
         return histo
 
     @property
     def peaks_table(self):
         if self._peaks_table is None:
-            self._peaks_table = ImageD11.sinograms.properties.pks_table.load(self.pksfile)
+            self._peaks_table = ImageD11.sinograms.properties.pks_table.load(
+                self.pksfile
+            )
         return self._peaks_table
 
     @property
@@ -520,13 +630,24 @@ class DataSet:
         ImageD11.grain.write_grain_file_h5(self.grainsfile, grains)
 
     def import_nnz(self):
-        """ Read the nnz arrays from the scans """
+        """Read the nnz arrays from the sparsefiles"""
         nnz = []
         for spname in self.sparsefiles:
             with h5py.File(os.path.join(self.analysispath, spname), "r") as hin:
-                nnz.append(hin[self.limapath]['nnz'][:])
+                nnz.append(hin[self.limapath]["nnz"][:])
         self.nnz = np.concatenate(nnz).reshape(self.shape).astype(np.int32)
-        logging.info('imported nnz, average %f' % (self.nnz.mean()))  # expensive if you are not logging it.
+        logging.info(
+            "imported nnz, average %f" % (self.nnz.mean())
+        )  # expensive if you are not logging it.
+
+    def import_nnz_from_sparse(self):
+        """Read the nnz arrays from the sparsefiles"""
+        with h5py.File(self.sparsefile, "r") as hin:
+            self.nnz = np.array([hin[scan]["nnz"][:] for scan in self.scans])
+        logging.info(
+            "imported nnz, average %f" % (self.nnz.mean())
+        )  # expensive if you are not logging it.
+        self.frames_per_scan = [len(nnz) for nnz in self.nnz]
 
     #    def compute_pixel_labels(self):
     # this should instead from from the pk2d file generated by sinograms/properties.py
@@ -550,7 +671,7 @@ class DataSet:
     #        logging.info('imported nlm, max %d'%(self.nlm.max()))
 
     def check_files(self, path, filenames, verbose=0):
-        """ See whether files are created or not """
+        """See whether files are created or not"""
         # images collected
         done = 0
         missing = 0
@@ -566,14 +687,14 @@ class DataSet:
         return done, missing
 
     def check_images(self):
-        """ Is the experiment finished ? """
+        """Is the experiment finished ?"""
         return self.check_files(self.datapath, self.imagefiles)
 
     def check_sparse(self):
-        """ Has the segmentation been done ? """
+        """Has the segmentation been done ?"""
         return self.check_files(self.analysispath, self.sparsefiles, verbose=2)
 
-    def save(self, h5name=None, h5group='/'):
+    def save(self, h5name=None, h5group="/"):
         if h5name is None:
             # none supplied, so use default path
             h5name = self.dsfile_default
@@ -583,7 +704,7 @@ class DataSet:
             if not os.path.exists(dsfile_folder):
                 os.makedirs(dsfile_folder)
 
-        ZIP = {'compression': 'gzip'}
+        ZIP = {"compression": "gzip"}
 
         with h5py.File(h5name, "a") as hout:
             grp = hout[h5group]
@@ -597,11 +718,13 @@ class DataSet:
                 data = getattr(self, name, None)
                 if data is not None and len(data):
                     sdata = np.array(data, "S")
-                    ds = grp.require_dataset(name,
-                                             shape=sdata.shape,
-                                             chunks=sdata.shape,
-                                             dtype=h5py.string_dtype(),
-                                             **ZIP)
+                    ds = grp.require_dataset(
+                        name,
+                        shape=sdata.shape,
+                        chunks=sdata.shape,
+                        dtype=h5py.string_dtype(),
+                        **ZIP
+                    )
                     ds[:] = sdata
             #
             for name in self.NDNAMES:
@@ -610,11 +733,13 @@ class DataSet:
                     data = np.asarray(data)
                     try:
                         chunks = guess_chunks(name, data.shape)
-                        ds = grp.require_dataset(name,
-                                                 shape=data.shape,
-                                                 chunks=chunks,
-                                                 dtype=data.dtype,
-                                                 **ZIP)
+                        ds = grp.require_dataset(
+                            name,
+                            shape=data.shape,
+                            chunks=chunks,
+                            dtype=data.dtype,
+                            **ZIP
+                        )
                         ds[:] = data
                     except:
                         print(name)
@@ -626,7 +751,7 @@ class DataSet:
         # if we got here, we saved the file successfully
         self.dsfile = h5name
 
-    def load(self, h5name=None, h5group='/'):
+    def load(self, h5name=None, h5group="/"):
         if h5name is None:
             # none supplied, so use default path
             h5name = self.dsfile_default
@@ -645,7 +770,9 @@ class DataSet:
             for name in self.STRINGLISTS:
                 if name in grp:
                     stringlist = list(grp[name][()])
-                    if hasattr(stringlist[0], 'decode') or isinstance(stringlist[0], np.ndarray):
+                    if hasattr(stringlist[0], "decode") or isinstance(
+                        stringlist[0], np.ndarray
+                    ):
                         data = [s.decode() for s in stringlist]
                     else:
                         data = stringlist
@@ -660,63 +787,10 @@ class DataSet:
         return self
 
 
-def load(h5name, h5group='/'):
+def load(h5name, h5group="/"):
     ds_obj = DataSet().load(h5name, h5group)
 
     return ds_obj
-
-
-def import_from_sparse(hname,
-                       omegamotor='instrument/positioners/rot',
-                       dtymotor='instrument/positioners/dty',
-                       scans = None,
-                       ):
-    """
-    hname = hdf5 file containing sparse pixels (and motors)
-    omegamotor = location of the rotation motor data
-    dtymotor = location of the y motor data
-    scans = defaults to reading all "%d.1" scans in the file
-            give a list to read in some other order or a subset
-    """
-    ds = DataSet()
-    with h5py.File(hname, 'r') as hin:
-        if scans is None:
-            # Read all in numerical order
-            scans = list(hin['/'])
-            order = np.argsort([float(v) for v in scans if v.endswith('.1')])
-            scans = [scans[i] for i in order]
-        dty = [hin[scan][dtymotor][()] for scan in scans]
-        omega = [hin[scan][omegamotor][()] for scan in scans]
-        nnz = [hin[scan]['nnz'][()] for scan in scans]
-    #        nlm = [hin[scan]['Nlmlabel'][()] for scan in scans]
-    ds.scans = scans
-    ds.nnz = nnz
-    ds.nnz = np.array(nnz)
-    ds.shape = ds.nnz.shape
-    ds.omega = np.zeros(ds.nnz.shape, float)
-    for i, o in enumerate(omega):
-        if isinstance(o, float) or (len(o) == len(ds.nnz[i])):
-            ds.omega[i] = o
-        if len(o) > len(ds.nnz[i]):
-            ds.omega[i] = ds.omega[i - 2]  # guess zig zag
-            # warning here
-
-    ds.dty = np.zeros(ds.nnz.shape, float)
-    for i, o in enumerate(dty):
-        if isinstance(o, float) or (len(o) == len(ds.nnz[i])):
-            ds.dty[i] = o
-        else:
-            raise Exception('Cannot read %d dty %s %s' % (i, str(o), str(o.shape)))
-    #    assert ds.nlm.shape == ds.shape
-    try:
-        ds.guess_scans()
-    except:
-        print("warning, guess scans failed")
-    try:
-        ds.guessbins()
-    except:
-        print("warning, guessbins failed")
-    return ds
 
 
 # Example
@@ -729,7 +803,9 @@ def import_from_sparse(hname,
 
 
 def check(dataroot, analysisroot, sample, dset, destination, scans=None):
-    h5o = DataSet(dataroot=dataroot, analysisroot=analysisroot, sample=sample, dset=dset)
+    h5o = DataSet(
+        dataroot=dataroot, analysisroot=analysisroot, sample=sample, dset=dset
+    )
     h5o.import_all(scans=scans)
     h5o.save(destination)
 
