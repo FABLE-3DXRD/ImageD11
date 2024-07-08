@@ -236,13 +236,13 @@ def g_to_k( g,  # g-vectors [3,:]
     # beam[0,:] = -1./wavelength
     # beam[1,:] = 0.
     # beam[2,:] = 0.
-    beam = np.array( [ -1.0/wavelength,] , float )
+    beam = np.array( [ -1.0/wavelength, 0, 0] , float )
     if post is not None:
         # rb = post.rotate_vectors(beam)
         rb = np.dot( post.T, beam )
     else:
         rb = beam
-    assert rb.shape == g.shape
+    assert rb.shape == beam.shape
     # Find the components of g with respect to our rotation axis
     # a1 = perpendicular to both axis and g
     a1 = np.transpose(np.cross(axis, rg.T))
