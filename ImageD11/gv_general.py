@@ -232,28 +232,29 @@ def g_to_k( g,  # g-vectors [3,:]
     else:
         rg = g
     assert rg.shape == g.shape
-    beam = np.zeros(rg.shape, float)
-    beam[0,:] = -1./wavelength
-    beam[1,:] = 0.
-    beam[2,:] = 0.
+    # beam = np.zeros(rg.shape, float)
+    # beam[0,:] = -1./wavelength
+    # beam[1,:] = 0.
+    # beam[2,:] = 0.
+    beam = np.array( [ -1.0/wavelength, 0, 0] , float )
     if post is not None:
         # rb = post.rotate_vectors(beam)
         rb = np.dot( post.T, beam )
     else:
         rb = beam
-    assert rb.shape == g.shape
+    assert rb.shape == beam.shape
     # Find the components of g with respect to our rotation axis
     # a1 = perpendicular to both axis and g
-    a1 = np.transpose(np.cross(axis, g.T))
+    a1 = np.transpose(np.cross(axis, rg.T))
     # a2 perpendicular to axis, along g
     a2 = np.transpose(np.cross(a1.T, axis))
     # projection of g along axis
-    a0 = g - a2
+    a0 = rg - a2
     assert a0.shape == a1.shape == a2.shape == g.shape
     # Dot product with incident beam
-    rbda0 = np.sum(rb * a0, 0) 
-    rbda1 = np.sum(rb * a1, 0) 
-    rbda2 = np.sum(rb * a2, 0)
+    rbda0 = np.sum(rb[:,np.newaxis] * a0, 0)
+    rbda1 = np.sum(rb[:,np.newaxis] * a1, 0)
+    rbda2 = np.sum(rb[:,np.newaxis] * a2, 0)
     assert rbda0.shape == rbda1.shape == rbda2.shape == (npeaks,)
     modg = np.sqrt(np.sum(g * g, 0))
     kdotbeam = -modg*modg/2.

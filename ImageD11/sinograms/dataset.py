@@ -85,6 +85,7 @@ class DataSet:
         detector="eiger",
         omegamotor="rot_center",
         dtymotor="dty",
+        filename=None,
     ):
         """The things we need to know to process data"""
 
@@ -108,9 +109,6 @@ class DataSet:
         self.datapath = os.path.join(self.dataroot, self.sample, self.dsname)
         self.masterfile = os.path.join(self.datapath, self.dsname + ".h5")
 
-        # paths for processed data
-        self.update_paths()
-
         # These are in order ! The order of the lists is important - all things should match.
         self.scans = None  # read from master or load from analysis
         self.frames_per_scan = (
@@ -127,6 +125,11 @@ class DataSet:
         self._peaks_table = None
         self._pk2d = None
         self._pk4d = None
+
+        if filename is not None:
+            self.load(filename)
+        # paths for processed data
+        self.update_paths()
 
     def update_paths(self):
         # paths for processed data
