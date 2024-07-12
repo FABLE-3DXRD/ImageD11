@@ -737,8 +737,8 @@ class indexer:
 
     def scorethem(self, fitb4=False):
         """decide which trials listed in hits to keep"""
-        if self.hits is None or len(self.hits)==0: # no idea how this can be None?
-            logging.info("No hits to score") 
+        if self.hits is None or len(self.hits) == 0:  # no idea how this can be None?
+            logging.info("No hits to score")
             return
         start = time.time()
         ng = 0
@@ -1286,14 +1286,23 @@ def index(
     return ind
 
 
-def do_index(cf,
-             dstol=0.005,
-             hkl_tols=(0.01, 0.025, 0.05,),
-             fracs=(0.9, 0.7,),
-             cosine_tol=np.cos(np.radians(90 - 0.25)),
-             max_grains=1000,
-             forgen=(),
-             foridx=()):
+def do_index(
+    cf,
+    dstol=0.005,
+    hkl_tols=(
+        0.01,
+        0.025,
+        0.05,
+    ),
+    fracs=(
+        0.9,
+        0.7,
+    ),
+    cosine_tol=np.cos(np.radians(90 - 0.25)),
+    max_grains=1000,
+    forgen=(),
+    foridx=(),
+):
     """
     Does indexing from a columnfile (cf)
 
@@ -1310,58 +1319,61 @@ def do_index(cf,
     for ringid in forgen:
         if ringid not in foridx:
             raise ValueError("All rings in forgen must be in foridx!")
-            
+
     if cosine_tol < 0:
         import warnings
+
         warnings.warn("cosine_tol given as a negative number, are you sure about that?")
 
     logging.info("Indexing {} peaks".format(cf.nrows))
-    
+
     global loglevel
-    loglevel = 3  
-    
+    loglevel = 3
+
     # Figure out the peaks to use from foridx:
     indexer = indexer_from_colfile(cf)
-    indexer.ds_tol = dstol    
-    indexer.assigntorings()
-    # Only use the peaks in foridx:
-    pkmask = np.zeros( cf.nrows, bool )
-    for i in foridx: # select the peaks in foridx
-        pkmask |= (indexer.ra == i)
-    cf_for_indexing = cf.copyrows( pkmask )
-    cf_for_indexing.parameters = cf.parameters
-    
-    indexer = indexer_from_colfile( cf_for_indexing )
     indexer.ds_tol = dstol
     indexer.assigntorings()
-       
+    # Only use the peaks in foridx:
+    pkmask = np.zeros(cf.nrows, bool)
+    for i in foridx:  # select the peaks in foridx
+        pkmask |= indexer.ra == i
+    cf_for_indexing = cf.copyrows(pkmask)
+    cf_for_indexing.parameters = cf.parameters
+
+    indexer = indexer_from_colfile(cf_for_indexing)
+    indexer.ds_tol = dstol
+    indexer.assigntorings()
+
     omega_range = indexer.omega_fullrange
     if omega_range < 0:
-        omega_range = 180 # guess it as 180
-    
+        omega_range = 180  # guess it as 180
+
     n_peaks_expected = 0
     rings = []
     for i, dstar in enumerate(indexer.unitcell.ringds):
         # counts_on_this_ring = (indexer.ra == i).sum() is indexer.na above
-        if indexer.na[i] > 0: # useful peak
+        if indexer.na[i] > 0:  # useful peak
             if i in foridx:
-                multiplicity = len(indexer.unitcell.ringhkls[indexer.unitcell.ringds[i]])
-                n_peaks_expected += int( multiplicity * omega_range / 180.0 )
+                multiplicity = len(
+                    indexer.unitcell.ringhkls[indexer.unitcell.ringds[i]]
+                )
+                n_peaks_expected += int(multiplicity * omega_range / 180.0)
                 if i in forgen:  # we are generating orientations from this ring
                     rings.append((indexer.na[i], multiplicity, i))
-                    
+
     rings.sort()
 
     print("{} peaks expected".format(n_peaks_expected))
     print("Trying these rings (counts, multiplicity, ring number): {}".format(rings))
-    
+
     indexer.cosine_tol = cosine_tol
     indexer.max_grains = max_grains
-    
+
     try:
         threadb4 = cImageD11.cimaged11_omp_get_max_threads()
-        cImageD11.cimaged11_omp_set_num_threads(1) # ?
-    
+        cImageD11.cimaged11_omp_set_num_threads(1)  # ?
+
         for frac in fracs:
             indexer.minpks = n_peaks_expected * frac
             for indexer.hkl_tol in hkl_tols:
@@ -1370,7 +1382,7 @@ def do_index(cf,
                         indexer.ring_1 = rings[i][2]
                         indexer.ring_2 = rings[j][2]
                         indexer.find()
-                        if len(indexer.hits)>0:
+                        if len(indexer.hits) > 0:
                             indexer.scorethem()
                 print(frac, indexer.hkl_tol, len(indexer.ubis))
     finally:
