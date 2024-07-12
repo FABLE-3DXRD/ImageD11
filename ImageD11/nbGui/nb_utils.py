@@ -446,71 +446,8 @@ def plot_all_ipfs(grains):
     plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1]))
 
 
-### Indexing
-
-
-# GOTO
-def do_index(cf,
-             dstol=0.05,
-             hkl_tols=(0.01, 0.02, 0.03, 0.04, 0.05, 0.1),
-             fracs=(0.9, 0.8, 0.7, 0.6, 0.5),
-             cosine_tol=np.cos(np.radians(90 - 0.25)),
-             max_grains=1000,
-             forgen=(),
-             foridx=()):
-    print("Indexing {} peaks".format(cf.nrows))
-    # replace Fe with something else
-    Fe = ImageD11.unitcell.unitcell_from_parameters(cf.parameters)
-    Fe.makerings(cf.ds.max())
-    indexer = ImageD11.indexing.indexer_from_colfile(cf)
-
-    ImageD11.indexing.loglevel = 3
-
-    indexer.ds_tol = dstol
-    indexer.assigntorings()
-    indexer.max_grains = max_grains
-
-    ImageD11.cImageD11.cimaged11_omp_set_num_threads(2)
-
-    for ringid in forgen:
-        if ringid not in foridx:
-            raise ValueError("All rings in forgen must be in foridx!")
-
-    n_peaks_expected = 0
-    rings = []
-    for i, dstar in enumerate(indexer.unitcell.ringds):
-        multiplicity = len(indexer.unitcell.ringhkls[indexer.unitcell.ringds[i]])
-        counts_on_this_ring = (indexer.ra == i).sum()
-        # is this ring going to be used for indexing?
-        if i in foridx:
-            n_peaks_expected += multiplicity  # we expect peaks from this ring
-            if i in forgen:  # we are generating orientations from this ring
-                rings.append((counts_on_this_ring, multiplicity, i))
-
-    rings.sort()
-
-    print("{} peaks expected".format(n_peaks_expected))
-    print("Trying these rings (counts, multiplicity, ring number): {}".format(rings))
-    indexer.cosine_tol = np.abs(cosine_tol)
-
-    for frac in fracs:
-        for tol in hkl_tols:
-            indexer.minpks = n_peaks_expected * frac
-            indexer.hkl_tol = tol
-            for i in range(len(rings)):
-                for j in range(i, len(rings)):
-                    indexer.ring_1 = rings[i][2]
-                    indexer.ring_2 = rings[j][2]
-
-                    indexer.find()
-                    indexer.scorethem()
-
-            print(frac, tol, len(indexer.ubis))
-
-    grains = [ImageD11.grain.grain(ubi) for ubi in indexer.ubis]
-    print("Found {} grains".format(len(grains)))
-
-    return grains, indexer
+# backwards compatible
+do_index = ImageD11.indexing.do_index
 
 
 # GOTO refinegrains somewhere?
