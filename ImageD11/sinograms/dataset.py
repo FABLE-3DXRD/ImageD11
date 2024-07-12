@@ -790,9 +790,8 @@ class DataSet:
         return self
 
 
-def load(h5name, h5group="/"):
-    ds_obj = DataSet().load(h5name, h5group)
-
+def load(h5name):
+    ds_obj = DataSet(filename = h5name)
     return ds_obj
 
 
