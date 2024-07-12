@@ -336,6 +336,7 @@ class indexer:
         self.eta_range = eta_range
         self.ubis = []
         self.scores = []
+        self.hits = []
         self.omega = None
         self.index_needs_debug = 0  # track problems quietly...
         self.omega_fullrange = 0  # flags having no idea
@@ -734,6 +735,9 @@ class indexer:
 
     def scorethem(self, fitb4=False):
         """decide which trials listed in hits to keep"""
+        if self.hits is None or len(self.hits)==0: # no idea how this can be None?
+            logging.info("No hits to score") 
+            return
         start = time.time()
         ng = 0
         tol = float(self.hkl_tol)
