@@ -147,7 +147,7 @@ class DataSet:
             ("pksfile", "_peaks_table.h5"),
             ("col4dfile", "_peaks_4d.h5"),
             ("col3dfile", "_peaks_3d.h5"),
-            ("col3dfile", "_peaks_2d.h5"),
+            ("col2dfile", "_peaks_2d.h5"),
             ("grainsfile", "_grains.h5"),
             ("sparsefile", "_sparse.h5"),
             # subset peaks selected for indexing (pbp)
