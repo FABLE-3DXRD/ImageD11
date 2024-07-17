@@ -267,7 +267,7 @@ class PBP:
             colf.updateGeometry()  # for ds
         #
         uc = unitcell.unitcell_from_parameters(colf.parameters)
-        uc.makerings(colf.ds.max())
+        uc.makerings(colf.ds.max(), self.ds_tol)
         # peaks that are on rings
         sel = np.zeros(colf.nrows, bool)
         # rings to use for indexing
@@ -297,10 +297,10 @@ class PBP:
                     icut,
                 )
                 sel |= rm
+                for hkl in hkls:
+                    hmax = max(np.abs(hkl).max(), hmax)
             else:
                 print(i, "%.4f" % (ds), hkls[-1], len(hkls), "skipped")
-            for hkl in hkls:
-                hmax = max(np.abs(hkl).max(), hmax)
         if self.forgen is None:
             self.forgen = self.foridx
 
@@ -334,6 +334,8 @@ class PBP:
             self.forgen,
         )
         self.hmax = hmax
+        if os.path.exists(icolf_filename):
+            os.remove(icolf_filename)
         ImageD11.columnfile.colfile_to_hdf(self.icolf, icolf_filename, compression=None)
         self.icolf_filename = icolf_filename
 
