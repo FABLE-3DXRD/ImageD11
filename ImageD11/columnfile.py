@@ -692,6 +692,11 @@ try:
             # files as you can't resize. So just force read only.
             raise Exception("Sorry, read only for now")
         with h5py.File(fname,'r') as hin:
+            if path not in hin:
+                for path in list(hin['/']):
+                     if ('ImageD11_type' in hin[path].attrs and 
+                         hin[path].attrs['ImageD11_type'] in ('peaks', b'peaks')):
+                            break
             grp = hin[path]
             names = list(grp)
             offsets = {}
