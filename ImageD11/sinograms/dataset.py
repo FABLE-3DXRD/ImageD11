@@ -268,7 +268,7 @@ class DataSet:
                             scan.endswith(".1")
                             and ("measurement" in hin[scan])
                             and (self.detector in hin[scan]["measurement"])
-                            and (self.omegamotor in hin[scan["measurement"]])
+                            and (self.omegamotor in hin[scan]["measurement"])
                     )
                 ]
             goodscans = []
