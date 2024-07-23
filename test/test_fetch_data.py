@@ -2,12 +2,18 @@
 import os
 import shutil
 import unittest
+
+import six
 from six.moves import urllib
 
 import numpy as np
 
 from ImageD11 import fetch_data
 from ImageD11.sinograms import dataset as id11dset
+
+
+if six.PY2:  # python 2/3 compatibility
+    FileNotFoundError = IOError
 
 
 class TestDownloadURL(unittest.TestCase):
