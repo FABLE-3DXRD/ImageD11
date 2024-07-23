@@ -33,7 +33,7 @@ jobs:
             . venv/bin/activate
             python3 -m pip install pip setuptools --upgrade
             python3 -m pip install pytest numpy
-            python3 -m pip install --editable .
+            python3 -m pip install --editable .[full]
 
       - save_cache:
           key:  ImageD11-{{arch}}-{{ checksum "setup.py" }}
