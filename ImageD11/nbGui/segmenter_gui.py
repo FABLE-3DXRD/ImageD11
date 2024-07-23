@@ -35,13 +35,14 @@ class SegmenterGui:
         # Locate a busy image to look at
         with h5py.File(ds.masterfile,'r') as hin:
             scan = ds.scans[len(ds.scans)//2]
+            ctr = ds.detector+counter
             if scan.find("::"): # 1.1::[10000:12000]  etc
                 lo, hi = [int(v) for v in scan[:-1].split("[")[1].split(":")]
                 scan = scan.split("::")[0]
-                roi1 = hin[scan]['measurement'][f'{ds.detector}{counter}'][lo:hi]
+                roi1 = hin[scan]['measurement'][ctr][lo:hi]
                 idx = np.argmax(roi1) + lo
             else: # "1.1"
-                roi1 = hin[scan]['measurement'][f'{ds.detector}{counter}'][:]
+                roi1 = hin[scan]['measurement'][ctr][:]
                 idx = np.argmax(roi1) + lo
         print("Using frame", idx, "from scan", scan)
         return scan, idx
