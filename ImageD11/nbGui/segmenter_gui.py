@@ -5,6 +5,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from ipywidgets import interact, interactive, widgets, fixed, Layout
+from IPython.display import display
 import h5py
 import ImageD11.sinograms.lima_segmenter
 import ImageD11.sparseframe
