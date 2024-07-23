@@ -20,7 +20,8 @@ from __future__ import print_function, division
 
 
 import numpy as np
-from . import cImageD11, unitcell, grain
+from . import cImageD11, unitcell
+from ImageD11.grain import grain
 from xfab.tools import ubi_to_u, u_to_rod, ubi_to_rod
 
 import math, time, sys
@@ -1388,7 +1389,7 @@ def do_index(
     finally:
         cImageD11.cimaged11_omp_set_num_threads(threadb4)
 
-    grains = [grain.grain(ubi) for ubi in indexer.ubis]
+    grains = [grain(ubi) for ubi in indexer.ubis]
     print("Found {} grains".format(len(grains)))
 
     return grains, indexer
