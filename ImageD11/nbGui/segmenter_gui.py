@@ -59,7 +59,7 @@ class SegmenterGui:
             frms = hin[self.scan]['measurement'][ds.detector]
             for i, spf in enumerate( ImageD11.sinograms.lima_segmenter.reader( frms, opts.mask, opts.cut, start = self.idx ) ): 
                 if spf is None:
-                    print("Warning: no pixels found",scan,i,self.idx)
+                    print("Warning: no pixels found",self.scan,i,self.idx)
                 ref = frms[i+self.idx]
                 break    
         if spf is None:
