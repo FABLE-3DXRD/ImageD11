@@ -240,11 +240,12 @@ def clean(nnz, row, col, val):
     return sf
 
 
-def reader(frms, mask, cut):
+def reader(frms, mask, cut, start=0):
     """
     iterator to read chunks or frames and segment them
     returns sparseframes
     """
+    assert start < len(frms)
     if (
         (chunk2sparse is not None)
         and ("32008" in frms._filters)
@@ -253,14 +254,14 @@ def reader(frms, mask, cut):
     ):
         print("# reading compressed chunks")
         fun = chunk2sparse(mask, dtype=frms.dtype)
-        for i in range(frms.shape[0]):
+        for i in range(start, frms.shape[0]):
             filters, chunk = frms.id.read_direct_chunk((i, 0, 0))
             npx, row, col, val = fun.coo(chunk, cut)
             spf = clean(npx, row, col, val)
             yield spf
     else:
         fun = frmtosparse(mask, frms.dtype)
-        for i in range(frms.shape[0]):
+        for i in range(start, frms.shape[0]):
             frm = frms[i]
             if OPTIONS.bg is not None:
                 frm = frm.astype(np.float32) - OPTIONS.bg
