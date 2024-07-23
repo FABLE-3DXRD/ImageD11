@@ -239,7 +239,10 @@ def dtyimask_from_sincos(si, sj, sinomega, cosomega, dtyi, y0, ystep):
     #  -->          si = x / ystep
     #  -->           sj = -y / ystep
     #  --> dtyi = np.round(dty_step).astype(int)
-    dtyi_calc = np.round(dtycalc_sincos(sinomega, cosomega, si, -sj, y0))  # ystep units
+
+    x, y = step_to_sample(si, sj, ystep)  # flips sj sign (y = -sj * ystep)
+    dty = dtycalc_sincos(sinomega, cosomega, x, y, y0)  # computes dty
+    dtyi_calc = dty_to_dtyi(dty, ystep)  # flips sj sign again (sj = -y / ystep)
     return dtyi == dtyi_calc
 
 

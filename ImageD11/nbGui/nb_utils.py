@@ -283,18 +283,18 @@ def plot_index_results(ind, colfile, title):
 
     # set a mask of all non-assigned g-vectors
 
-    m = ind.ga == -1
-    # m = colfile.grain_id == -1
+    # m = ind.ga == -1
+    m = colfile.grain_id == -1
 
     # plot the assigned g-vectors omega vs dty (sinograms)
 
     axs_flat[1].scatter(colfile.omega[~m],
                         colfile.dty[~m],
-                        c=ind.ga[~m],
+                        c=colfile.grain_id[~m],
                         s=2,
                         cmap='tab20')
 
-    axs_flat[1].set(title='Sinograms of {} grains'.format(ind.ga.max() + 1),
+    axs_flat[1].set(title='Sinograms of {} grains'.format(colfile.grain_id.max() + 1),
                     xlabel='Omega/deg',
                     ylabel='dty/um')
 
@@ -358,13 +358,20 @@ def plot_grain_sinograms(grains, cf, n_grains_to_plot=None):
     nrows = (len(grains[::grains_step]) + grid_size - 1) // grid_size
 
     fig, axs = plt.subplots(grid_size, nrows, figsize=(10, 10), layout="constrained", sharex=True, sharey=True)
-    for i, ax in enumerate(axs.ravel()):
-        if i < len(grains[::grains_step]):
-            # get corresponding grain for this axis
-            g = grains[::grains_step][i]
-            m = cf.grain_id == g.gid
-            ax.scatter(cf.omega[m], cf.dty[m], c=cf.sum_intensity[m], s=2)
-            ax.set_title(g.gid)
+    if grid_size == 1 & nrows == 1:
+        # only 1 grain
+        g = grains[0]
+        m = cf.grain_id == g.gid
+        axs.scatter(cf.omega[m], cf.dty[m], c=cf.sum_intensity[m], s=2)
+        axs.set_title(g.gid)
+    else:
+        for i, ax in enumerate(axs.ravel()):
+            if i < len(grains[::grains_step]):
+                # get corresponding grain for this axis
+                g = grains[::grains_step][i]
+                m = cf.grain_id == g.gid
+                ax.scatter(cf.omega[m], cf.dty[m], c=cf.sum_intensity[m], s=2)
+                ax.set_title(g.gid)
 
     fig.supxlabel("Omega")
     fig.supylabel("Y translation (um)")

@@ -33,6 +33,7 @@ modules = [
     "eps_sig.test_eps",
     "test_finite_strain",
     "test_stress"
+    "test_fetch_data"
 ]
 
 if "all" in sys.argv:

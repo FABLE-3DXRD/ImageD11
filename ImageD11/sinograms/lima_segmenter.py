@@ -399,6 +399,11 @@ def setup_slurm_array(dsname, dsgroup="/", pythonpath=None):
     sdir = os.path.join(dso.analysispath, "slurm")
     if not os.path.exists(sdir):
         os.makedirs(sdir)
+
+    sparsefilesdir = os.path.split(dstlima[0])[0]
+    if not os.path.exists(sparsefilesdir):
+        os.makedirs(sparsefilesdir)
+
     options = SegmenterOptions()
     options.load(dsname, dsgroup + "/lima_segmenter")
 
