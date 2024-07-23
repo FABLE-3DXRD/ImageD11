@@ -83,7 +83,8 @@ class SegmenterGui:
         self.im2 = self.axs[1].imshow(segmented_image, cmap="viridis", norm='log', vmin=0.5, vmax=1000, interpolation="nearest")
         self.axs[0].set_title("Raw image")
         self.axs[1].set_title("Segmented image")
-        self.fig.suptitle(f"{nblobs} peaks found\n cut={self.options['cut']}, pixels_in_spot={self.options['pixels_in_spot']}, howmany={self.options['howmany']}")
+        self.fig.suptitle("%d peaks found\n cut=%d, pixels_in_spot=$d, howmany=%d"%(
+                          (nblobs,self.options['cut'],self.options['pixels_in_spot'],self.options['howmany']))
         plt.show()
 
 
@@ -95,7 +96,8 @@ class SegmenterGui:
         raw_image, segmented_image, nblobs = self.segment_frame()
         self.im1.set_data(raw_image)
         self.im2.set_data(segmented_image)
-        self.fig.suptitle(f"{nblobs} peaks found\n cut={cut}, pixels_in_spot={pixels_in_spot}, howmany={howmany_exp}")
+        self.fig.suptitle("%d peaks found\n cut=%d, pixels_in_spot=$d, howmany=%d"%(
+                          (nblobs,cut,pixels_in_spot,howmany))
         plt.draw()
 
 
