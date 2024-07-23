@@ -7,7 +7,7 @@ from six.moves import urllib  # python 2/3 compatible
 
 import ImageD11.sinograms.dataset as id11dset
 
-if six.PY2:  # python 2/3 compatability
+if six.PY2:  # python 2/3 compatibility
     FileNotFoundError = IOError
 
 """
@@ -49,8 +49,15 @@ def download_url(url, dest_file_path):
 
 def _get_dataset(test_dataset_name, dest_folder, allow_download):
     """Get a dataset from disk or Zenodo given the dataset name and a destination folder"""
+    if test_dataset_name not in dataset_metadata.keys():
+        raise ValueError('Invalid dataset name supplied!')
+    if test_dataset_name not in dataset_filenames.keys():
+        raise ValueError('Invalid dataset name supplied!')
+    if test_dataset_name not in dataset_base_urls.keys():
+        raise ValueError('Invalid dataset name supplied!')
+
     absolute_path = os.path.abspath(dest_folder)
-    absolute_path += '/'
+
     if not os.path.exists(absolute_path):
         raise FileNotFoundError('dest_folder path does not exist!')
     dest_folder = absolute_path
