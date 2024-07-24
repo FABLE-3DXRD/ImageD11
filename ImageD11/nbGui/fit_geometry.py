@@ -1,5 +1,7 @@
+
 import ipywidgets, pylab as pl, numpy as np, time
 from ImageD11 import transformer
+from IPython.display import display
 
 
 class FitGeom(transformer.transformer):
