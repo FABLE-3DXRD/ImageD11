@@ -42,37 +42,41 @@ class SegmenterGui:
     From @jadball notebook, @jonwright refactored to put in a python file
     """
     
-    def __init__(self, dset, counter="_roi1", cut=1, pixels_in_spot=3, howmany=100000,):
+    def __init__(self, dset, counter="_roi1", scan=None, frame=None, cut=1, pixels_in_spot=3, howmany=100000,):
         self.dset = dset
+        self.fig = None
         self.options = { "maskfile" : dset.maskfile ,
                         "cut" : cut,
                         "pixels_in_spot" : pixels_in_spot,
                         "howmany": howmany }
-        self.scan, self.idx = self.chooseframe(counter)
+        self.scan = scan
+        self.idx = frame
+        self.chooseframe(counter)
         cut_slider = widgets.IntSlider(value=cut, min=0, max=200, step=1, description='Cut:')
         pixels_in_spot_slider = widgets.IntSlider(value=pixels_in_spot, min=0, max=20, step=1, description='Pixels in Spot:')
         howmany_slider = widgets.IntSlider(value=np.log10(howmany), min=1, max=15, step=1, description='log(howmany):')
-        self.display()
         self.widget = widgets.interactive(self.update_image, cut=cut_slider, pixels_in_spot=pixels_in_spot_slider, howmany=howmany_slider)
         display( self.widget )
         
     def chooseframe(self, counter):
         ds = self.dset
+        if self.scan is None:
+            self.scan = ds.scans[len(ds.scans)//2]
+        if self.idx is not None:
+            return
         # Locate a busy image to look at
         with h5py.File(ds.masterfile,'r') as hin:
-            scan = ds.scans[len(ds.scans)//2]
             ctr = ds.detector+counter
-            if scan.find("::") > -1: # 1.1::[10000:12000]  etc
-                lo, hi = [int(v) for v in scan[:-1].split("[")[1].split(":")]
-                scan = scan.split("::")[0]
-                roi1 = hin[scan]['measurement'][ctr][lo:hi]
-                idx = np.argmax(roi1) + lo
+            if self.scan.find("::") > -1: # 1.1::[10000:12000]  etc
+                lo, hi = [int(v) for v in self.scan[:-1].split("[")[1].split(":")]
+                self.scan = self.scan.split("::")[0]
+                roi1 = hin[self.scan]['measurement'][ctr][lo:hi]
+                self.idx = np.argmax(roi1) + lo
             else: # "1.1"
-                roi1 = hin[scan]['measurement'][ctr][:]
-                idx = np.argmax(roi1)
-        print("Using frame", idx, "from scan", scan)
-        return scan, idx
-    
+                roi1 = hin[self.scan]['measurement'][ctr][:]
+                self.idx = np.argmax(roi1)
+        print("Using frame", self.idx, "from scan", self.scan)
+        
     def segment_frame(self):
         """
         ds = ImageD11.sinograms.dataset object
@@ -103,15 +107,14 @@ class SegmenterGui:
 
     def display(self):
         # Display the image initially
-        self.fig, self.axs = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(12, 8))
-        raw_image, segmented_image, nblobs = self.segment_frame()
-        self.im1 = self.axs[0].imshow(raw_image, cmap="viridis", norm='log', vmin=1, vmax=1000, interpolation="nearest")
-        self.im2 = self.axs[1].imshow(segmented_image, cmap="viridis", norm='log', vmin=0.5, vmax=1000, interpolation="nearest")
+        self.fig, self.axs = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(12, 8), constrained_layout=True)
+        self.im1 = self.axs[0].imshow(self.raw_image, cmap="viridis", norm='log', vmin=0.5, vmax=1000, interpolation="nearest")
+        self.im2 = self.axs[1].imshow(self.segmented_image, cmap="viridis", norm='log', vmin=0.5, vmax=1000, interpolation="nearest")
         self.axs[0].set_title("Raw image")
         self.axs[1].set_title("Segmented image")
-        self.fig.suptitle("%d peaks found\n cut=%d, pixels_in_spot=%d, howmany=%d"%
-                          (nblobs,self.options['cut'],self.options['pixels_in_spot'],self.options['howmany']))
-        plt.show()
+        self.fig.suptitle("%d peaks found with cut=%d, pixels_in_spot=%d, howmany=%d"%
+                          (self.nblobs,self.options['cut'],self.options['pixels_in_spot'],self.options['howmany']))
+        # self.fig.show()
 
 
     def update_image(self, cut, pixels_in_spot, howmany):
@@ -119,12 +122,14 @@ class SegmenterGui:
         self.options["cut"] = cut
         self.options["pixels_in_spot"] = pixels_in_spot
         self.options["howmany"] = howmany_exp
-        raw_image, segmented_image, nblobs = self.segment_frame()
-        self.im1.set_data(raw_image)
-        self.im2.set_data(segmented_image)
-        self.fig.suptitle("%d peaks found\n cut=%d, pixels_in_spot=%d, howmany=%d"%
-                          (nblobs,cut,pixels_in_spot,howmany))
-        plt.draw()
+        self.raw_image, self.segmented_image, self.nblobs = self.segment_frame()
+        if self.fig is None:
+            self.display()
+        self.im1.set_data(self.raw_image)
+        self.im2.set_data(self.segmented_image)
+        self.fig.suptitle("%d peaks found with cut=%d, pixels_in_spot=%d, howmany=%d"%
+                          (self.nblobs,cut,pixels_in_spot,howmany))
+        self.fig.canvas.draw()
 
 
     def getopts(self):

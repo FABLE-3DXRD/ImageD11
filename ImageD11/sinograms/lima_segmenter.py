@@ -86,11 +86,6 @@ class SegmenterOptions:
             self.mask = 1 - fabio.open(self.maskfile).data.astype(np.uint8)
             assert self.mask.min() < 2
             assert self.mask.max() >= 0
-            print(
-                "# Opened mask",
-                self.maskfile,
-                " %.2f %% pixels are active" % (100 * self.mask.mean()),
-            )
         if len(self.bgfile):
             self.bg = fabio.open(self.bgfile).data
 
@@ -407,7 +402,11 @@ def setup_slurm_array(dsname, dsgroup="/", pythonpath=None):
 
     options = SegmenterOptions()
     options.load(dsname, dsgroup + "/lima_segmenter")
-
+    options.setup()
+    print("# Opened mask",
+          options.maskfile,
+          " %.2f %% pixels are active" % (100 * options.mask.mean()),
+        )
     files_per_job = options.files_per_core * options.cores_per_job
     jobs_needed = math.ceil(nfiles / files_per_job)
     sbat = os.path.join(sdir, "lima_segmenter_slurm.sh")
