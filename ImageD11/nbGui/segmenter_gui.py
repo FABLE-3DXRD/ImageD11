@@ -62,17 +62,17 @@ class SegmenterGui:
         with h5py.File(ds.masterfile,'r') as hin:
             scan = ds.scans[len(ds.scans)//2]
             ctr = ds.detector+counter
-            if scan.find("::"): # 1.1::[10000:12000]  etc
+            if scan.find("::") > -1: # 1.1::[10000:12000]  etc
                 lo, hi = [int(v) for v in scan[:-1].split("[")[1].split(":")]
                 scan = scan.split("::")[0]
                 roi1 = hin[scan]['measurement'][ctr][lo:hi]
                 idx = np.argmax(roi1) + lo
             else: # "1.1"
                 roi1 = hin[scan]['measurement'][ctr][:]
-                idx = np.argmax(roi1) + lo
+                idx = np.argmax(roi1)
         print("Using frame", idx, "from scan", scan)
         return scan, idx
-        
+    
     def segment_frame(self):
         """
         ds = ImageD11.sinograms.dataset object
