@@ -1,114 +1,119 @@
-import ipywidgets, pylab as pl
+
+import ipywidgets, pylab as pl, numpy as np, time
 from ImageD11 import transformer
-from tkinter import *
-from tkinter import filedialog
+from IPython.display import display
 
 
 class FitGeom(transformer.transformer):
     
     "Gives an IPython notebook UI for the experimental calibrations"
-    try:
-        if get_ipython().__class__.__name__ == 'ZMQInteractiveShell':
-            interactive = True
-        else:
-            interactive = False
-    except NameError:
-        interactive = False
+
     
     def __init__(self):
         transformer.transformer.__init__(self)
-        self.vars = "y_center z_center distance tilt_y tilt_z".split()
-        self.steps = (1,         1,       100,     0.01, 0.01, 0)
-        self.nv = len(self.vars)
+        names = "cell__a cell__b cell__c cell_alpha cell_beta cell_gamma cell_lattice_[P,A,B,C,I,F,R]".split() +\
+        "distance wavelength y_size z_size y_center z_center tilt_x tilt_y tilt_z t_x t_y t_z omegasign".split() +\
+        "o11 o12 o21 o22 fit_tolerance".split()
+        self.names = names
+        self.gui = None
 
-    def __parCallBack( self, arg ):
-        self.parameterobj.parameters.update( { arg['owner'].description : arg['new'] } )
-        self.__drawPlot()
+    def parCallBack( self, arg, name ):
+        self.parameterobj.parameters.update( { name : arg['new'] } )
+        self.drawPlot()
 
-    def __fixVaryCallBack( self, arg ):
+    def fixVaryCallBack( self, arg, name ):
         name = arg['owner'].description.split(" ")[1]
-        vars = self.getvars()
-        if arg.new and not (name in self.vars):
-            vars.append( name )
-        if name in self.vars and not arg.new:
-            vars.remove(name)
-        self.parameterobj.set_varylist(vars)
+        vary = arg.new
+        if arg.new:
+            if name not in self.parameterobj.varylist:
+                self.parameterobj.varylist.append(name)
+        else:
+            self.parameterobj.varylist.remove(name)
 
-    def __fitCallBack(self, arg):
+    def fitCallBack(self, arg):
         """ fit call back - runs fit """
         lo, hi = self.ax1.get_xlim()
         self.fit( lo, hi )
-        self.__updateGui()
+        self.updateGui()
 
-    def __drawPlot(self):
-        tth, eta = self.compute_tth_eta()
-        self.pt1.set_data( tth, eta )
+    def drawPlot(self):
+        self.compute_tth_eta()
+        self.addcellpeaks()
+        self.pt1.set_data( self.colfile.tth, self.colfile.eta )
+        self.pt2.set_data(  self.theorytth, np.full_like(self.theorytth,0) )
+        self.ax1.set(title='fitted')
+        self.fig1.canvas.draw()
+        self.fig1.canvas.flush_events()
 
-    def __loadCallBack(self, arg):
-        rootTk = Tk()
-        rootTk.withdraw()
-        rootTk.call('wm', 'attributes', '.', '-topmost', True)
-        filename = filedialog.askopenfilename()
-        get_ipython().run_line_magic('gui', 'tk')
-        if not filename == '':
-            self.loadfileparameters(filename)
-            self.__updateGui()
-
-    def __saveCallBack(self, arg):
-        rootTk = Tk()
-        rootTk.withdraw()
-        rootTk.call('wm', 'attributes', '.', '-topmost', True)
-        filename = filedialog.asksaveasfilename()
-        get_ipython().run_line_magic('gui', 'tk')
-        if not filename == '':
-            self.parameterobj.saveparameters(filename)
-
-    def __updateGui(self):
-        for i, pname in enumerate(self.vars):
-            self.layout[i,0].value = self.parameterobj.get(pname)
-        self.__drawPlot()
+    def updateGui(self):
+        for i, name in enumerate( self.parameterobj.varylist ):
+            self.valuewidgets[name].value = self.parameterobj.parameters[name]
+        self.drawPlot()
     
-    def __drawWidgets(self):
-        nv = self.nv
-        vars = self.vars
-        steps = self.steps
-        self.layout = ipywidgets.GridspecLayout(nv+1,3)
-        for i,( pname, pstep ) in enumerate( zip( vars, steps ) ) :
-            self.layout[i,0] = ipywidgets.FloatText( description=pname, 
-                value = self.parameterobj.parameters.get(pname),
-                step=pstep)
-            self.layout[i,0].observe( self.__parCallBack , names='value' )
-            self.layout[i,1] = ipywidgets.ToggleButton( description="Vary "+pname, 
-                value = pname in self.getvars() )
-            self.layout[i,1].observe( self.__fixVaryCallBack, names='value' )
-
-        self.layout[nv,0] = ipywidgets.FloatText( description='fit_tolerance', 
-                value = self.parameterobj.parameters.get("fit_tolerance"), step=0,)
-        self.layout[nv,0].observe( self.__parCallBack , names='value' )
-
-        self.layout[nv,1] = ipywidgets.Button(description="Run Fit (blocks)")
-        self.layout[nv,1].on_click( self.__fitCallBack )
-
-        self.layout[0,2] = ipywidgets.Button(description="Load parameters")
-        self.layout[0,2].on_click( self.__loadCallBack )
-
-        self.layout[1,2] = ipywidgets.Button(description="Save to a file")
-        self.layout[1,2].on_click( self.__saveCallBack )
+    def drawWidgets(self):
+        values = {}
+        fix = {}
+        for i,name in enumerate( self.names ):
+            value = self.parameterobj.parameters[name]
+            values[name] = ipywidgets.FloatText( 
+                description="", 
+                value = value,
+                layout=ipywidgets.Layout(positioning='left'))
+            values[name].observe( lambda a, name=name: self.parCallBack(a, name),
+                                 names='value' )
+            if self.parameterobj.par_objs[name].can_vary:
+                fix[name] = ipywidgets.Checkbox( description="Vary "+name, 
+                    value = name in self.parameterobj.varylist,
+                                                indent=False,
+                    layout=ipywidgets.Layout(positioning='left'))
+                fix[name].observe( lambda a, name=name: self.fixVaryCallBack(a, name),
+                                  names='value' )
+            else:
+                fix[name] = ipywidgets.Label( 
+                    value=name,
+                    layout=ipywidgets.Layout(positioning='left') ) 
+        self.valuewidgets = values
+        self.fixwidgets = fix
+        
 
     def fitGui(self):
-        if self.__class__.interactive:
-            self.fig1 = pl.figure(1, figsize=(9,6))
-            self.ax1 = self.fig1.add_subplot()
-            tth, eta = self.compute_tth_eta()
-            self.addcellpeaks()
-            self.pt1, = self.ax1.plot( tth, eta, ",")
-            self.ax1.set(xlabel="tth", ylabel="eta")
-            self.ax1.plot( self.theorytth, [0,]*len(self.theorytth), "r|", ms=360, alpha=0.2 )
-            # Add controls
-            self.__drawWidgets()
-            display(self.layout)
+        if self.gui is not None:
+            return self.gui
         else:
-            print('Sorry, this Gui works only in IPython notebooks!')
+            with pl.ioff():
+                self.fig1 = pl.figure(figsize=(9,6), constrained_layout=True)
+            self.ax1 = self.fig1.add_subplot()
+            self.compute_tth_eta()
+            self.addcellpeaks()
+            self.pt1, = self.ax1.plot( self.colfile.tth, self.colfile.eta, ".", 
+                                          ms=2, zorder=1)
+            self.ax1.set(xlabel="tth", ylabel="eta")
+            self.pt2, = self.ax1.plot( self.theorytth, np.full_like(self.theorytth,0), 
+                           "g|", ms=360, lw= 0.1, zorder=2 )
+                
+            self.fitbutton = ipywidgets.Button(description="Fit x plot range",
+                                               width='auto')
+                                              
+            self.fitbutton.on_click( self.fitCallBack )
+            self.drawWidgets()
+            self.gui = ipywidgets.GridBox( 
+                [ ipywidgets.VBox( list(self.fixwidgets.values()) ), 
+                  ipywidgets.VBox( list(self.valuewidgets.values()) ), 
+                  ipywidgets.VBox( [ self.fitbutton, self.fig1.canvas ], ) ],
+                layout=ipywidgets.Layout(  width='100%',
+                    grid_template_rows='auto auto auto',
+                    grid_template_columns='15% 15% 70%',) )
+            display(self.gui)
+            ping(self.fig1) # gets lost on run all cells otherwise
+            
+            
 
 
-
+def ping(fig):
+    # https://github.com/matplotlib/ipympl/issues/290
+    canvas = fig.canvas
+    #display(canvas)
+    canvas._handle_message(canvas, {'type': 'send_image_mode'}, [])
+    canvas._handle_message(canvas, {'type':'refresh'}, [])
+    canvas._handle_message(canvas,{'type': 'initialized'},[])
+    canvas._handle_message(canvas,{'type': 'draw'},[])
