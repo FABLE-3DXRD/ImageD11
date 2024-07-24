@@ -190,9 +190,9 @@ class transformer:
         # Interesting - is this an alias for the dict?
         self.pars = self.parameterobj.get_parameters()
         self.colfile = None
-        self.xname = None
-        self.yname = None
-        self.omeganame = None
+        self.xname = 'sc'
+        self.yname = 'fc'
+        self.omeganame = 'omega'
         self.theoryds = None
         if parfile is not None:
             self.loadfileparameters(parfile)
@@ -234,9 +234,9 @@ class transformer:
         self.xname = xname
         self.yname = yname
         self.omeganame = omeganame
-        logging.warning("titles are %s  %s  %s" % (self.xname,
-                                                 self.yname,
-                                                 self.omeganame))
+        #logging.warning("titles are %s  %s  %s" % (self.xname,
+        #                                         self.yname,
+        #                                         self.omeganame))
 
     def getcols(self):
         return self.colfile.titles

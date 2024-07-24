@@ -126,6 +126,7 @@ class DataSet:
         self._peaks_table = None
         self._pk2d = None
         self._pk4d = None
+        self.parfile = None
 
         if filename is not None:
             self.load(filename)
@@ -611,8 +612,9 @@ class DataSet:
         cf = colfile_from_dict(spat(peaks_dict))
 
         # Update parameters for the columnfile
-        cf.parameters.loadparameters(self.parfile)
-        cf.updateGeometry()
+        if self.parfile is not None:
+            cf.parameters.loadparameters(self.parfile)
+            cf.updateGeometry()
         return cf
 
     def get_cf_2d(self):
