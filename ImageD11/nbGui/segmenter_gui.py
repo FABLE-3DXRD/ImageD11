@@ -30,8 +30,8 @@ class SegmenterGui:
         self.widget = widgets.interactive(self.update_image, cut=cut_slider, pixels_in_spot=pixels_in_spot_slider, howmany=howmany_slider)
         display( self.widget )
         
-    def chooseframe(dset, counter):
-        ds = dset
+    def chooseframe(self, counter):
+        ds = self.dset
         # Locate a busy image to look at
         with h5py.File(ds.masterfile,'r') as hin:
             scan = ds.scans[len(ds.scans)//2]
