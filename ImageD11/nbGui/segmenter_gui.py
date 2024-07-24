@@ -10,13 +10,39 @@ import h5py
 import ImageD11.sinograms.lima_segmenter
 import ImageD11.sparseframe
 
+def guess_ESRF_paths():  # This should be in silx somewhere?
+    """ Locates:
+    dataroot     holds raw data       in folders dataroot     + {sample}/{sample}_{dataset}
+    analysisroot holds output results in folders analysisroot + {sample}/{sample}_{dataset}
+    """
+    path_items = os.getcwd().split('/')
+    if 'visitor' in path_items:  
+        idx = path_items.index('visitor')
+        experiment, session = path_items[ idx + 1 ], path_items[ idx + 3 ]
+        path = os.path.join( "/data", "visitor", experiment, "id11", session )
+        return [os.path.join( path, folder ) for folder in
+                ("RAW_DATA", "PROCESSED_DATA") ]
+    return "", ""
+
+def printsamples( dataroot ):
+    samples = sorted( [ name for name in os.listdir( dataroot ) 
+             if os.path.isdir( os.path.join( dataroot, name ) ) ] )
+    print("Samples:\n\t"+"\n\t".join(sorted( samples ) ))
+    
+def printdatasets( dataroot, sample):
+    sroot = os.path.join(dataroot, sample)
+    print("Datsets:\n\t"+"\n\t".join(sorted( 
+        [ name[len(sample)+1:] for name in os.listdir( sroot ) 
+         if os.path.isdir( os.path.join( sroot, name ) ) 
+         and name.startswith( sample ) ] ) ) )
+
 class SegmenterGui:
     
     """ UI for a jupyter notebook to set the segmentation parameters
     From @jadball notebook, @jonwright refactored to put in a python file
     """
     
-    def __init__(self, dset, cut=1, pixels_in_spot=3, howmany=100000, counter="_roi1"):
+    def __init__(self, dset, counter="_roi1", cut=1, pixels_in_spot=3, howmany=100000,):
         self.dset = dset
         self.options = { "maskfile" : dset.maskfile ,
                         "cut" : cut,
@@ -77,7 +103,7 @@ class SegmenterGui:
 
     def display(self):
         # Display the image initially
-        self.fig, self.axs = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(16, 9))
+        self.fig, self.axs = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(12, 8))
         raw_image, segmented_image, nblobs = self.segment_frame()
         self.im1 = self.axs[0].imshow(raw_image, cmap="viridis", norm='log', vmin=1, vmax=1000, interpolation="nearest")
         self.im2 = self.axs[1].imshow(segmented_image, cmap="viridis", norm='log', vmin=0.5, vmax=1000, interpolation="nearest")
