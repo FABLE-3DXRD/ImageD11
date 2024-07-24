@@ -436,6 +436,19 @@ def write_slice_recon(filename, slice_arrays):
         save_array(slice_group, 'ipf_z_col_map', rgb_z_array).attrs['CLASS'] = 'IMAGE'
 
 
+def write_pbp_strain(filename, pbp_strain_slice_arrays):
+    ubi_map, eps_map, misorientation_map, ipf_x_col_map, ipf_y_col_map, ipf_z_col_map = pbp_strain_slice_arrays
+    with h5py.File(filename, "a") as hout:
+        slice_group = hout.require_group('pbp_strain_recon')
+        save_array(slice_group, 'ubi', ubi_map)
+        save_array(slice_group, 'eps', eps_map)
+        save_array(slice_group, 'misorientation', misorientation_map)
+
+        save_array(slice_group, 'ipf_x_col_map', ipf_x_col_map).attrs['CLASS'] = 'IMAGE'
+        save_array(slice_group, 'ipf_y_col_map', ipf_y_col_map).attrs['CLASS'] = 'IMAGE'
+        save_array(slice_group, 'ipf_z_col_map', ipf_z_col_map).attrs['CLASS'] = 'IMAGE'
+
+
 def read_slice_recon(filename):
     with h5py.File(filename, "r") as hin:
         slice_group = hin["slice_recon"]

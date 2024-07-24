@@ -172,22 +172,11 @@ date
     return bash_script_path, recons_path
 
 
-def prepare_astra_bash(ds, id11_code_path):
+def prepare_astra_bash(ds, grainsfile, id11_code_path):
     slurm_astra_path = os.path.join(ds.analysispath, "slurm_astra")
 
-    if os.path.exists(slurm_astra_path):
-        if len(os.listdir(slurm_astra_path)) > 0:
-            raise OSError("Slurm ASTRA logs folder exists and is not empty!")
-    else:
+    if not os.path.exists(slurm_astra_path):
         os.mkdir(slurm_astra_path)
-
-    recons_path = os.path.join(ds.analysispath, "astra_recons")
-
-    if os.path.exists(recons_path):
-        if len(os.listdir(recons_path)) > 0:
-            raise OSError("ASTRA recons folder exists and is not empty!")
-    else:
-        os.mkdir(recons_path)
 
     bash_script_path = os.path.join(slurm_astra_path, ds.dsname + '_astra_recon_slurm.sh')
     python_script_path = os.path.join(id11_code_path, "ImageD11/nbGui/S3DXRD/run_astra_recon.py")
@@ -195,8 +184,6 @@ def prepare_astra_bash(ds, id11_code_path):
     errfile_path = os.path.join(slurm_astra_path, ds.dsname + '_astra_recon_slurm_%A_%a.err')
     log_path = os.path.join(slurm_astra_path,
                             ds.dsname + '_astra_recon_slurm_$SLURM_ARRAY_JOB_ID_$SLURM_ARRAY_TASK_ID.log')
-
-    reconfile = os.path.join(recons_path, ds.dsname + "_astra_recon_$SLURM_ARRAY_TASK_ID.txt")
 
     # python 2 version
     bash_script_string = """#!/bin/bash
@@ -218,14 +205,14 @@ date
                errfile_path=errfile_path,
                python_script_path=python_script_path,
                id11_code_path=id11_code_path,
-               grainsfile=ds.grainsfile,
+               grainsfile=grainsfile,
                dsfile=ds.dsfile,
                log_path=log_path)
 
     with open(bash_script_path, "w") as bashscriptfile:
         bashscriptfile.writelines(bash_script_string)
 
-    return bash_script_path, recons_path
+    return bash_script_path
 
 
 ## IO related stuff
