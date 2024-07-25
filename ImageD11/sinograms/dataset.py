@@ -126,7 +126,6 @@ class DataSet:
         self._peaks_table = None
         self._pk2d = None
         self._pk4d = None
-        self.parfile = None
 
         if filename is not None:
             self.load(filename)
@@ -299,7 +298,6 @@ class DataSet:
     def import_imagefiles(self):
         """Get the Lima file names from the bliss master file, also scan_npoints"""
         # self.import_scans() should always be called before this function, so we know the detector
-        npts = None
         self.imagefiles = []
         self.frames_per_file = []
         with h5py.File(self.masterfile, "r") as hin:
@@ -612,7 +610,7 @@ class DataSet:
         cf = colfile_from_dict(spat(peaks_dict))
 
         # Update parameters for the columnfile
-        if self.parfile is not None:
+        if hasattr(self,'parfile') and self.parfile is not None:
             cf.parameters.loadparameters(self.parfile)
             cf.updateGeometry()
         return cf
