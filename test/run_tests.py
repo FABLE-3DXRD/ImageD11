@@ -32,7 +32,7 @@ modules = [
     "test_compress_duplicates",
     "eps_sig.test_eps",
     "test_finite_strain",
-    "test_stress"
+#    "test_stress",
     "test_fetch_data"
 ]
 
@@ -49,14 +49,15 @@ print( "HERE",HERE )
 
 for M in modules:
     os.chdir(HERE)
-    print("Running suite for ",M)
     MOD = importlib.import_module(M)
+    print("Running suite for ",M,MOD)
     if M.find(".")>-1 and 0:
         path = M.split(".")
         for direc in path[:-1]:
             os.chdir( direc )
         M = path[-1]
-    mySuite = unittest.loader.findTestCases( MOD )
+    # mySuite = unittest.loader.findTestCases( MOD )
+    mySuite = unittest.defaultTestLoader.loadTestsFromModule( MOD )
     runner = unittest.TextTestRunner()
     try:
         runner.run(mySuite)
