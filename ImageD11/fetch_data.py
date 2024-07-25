@@ -125,9 +125,16 @@ def _get_dataset(test_dataset_name, dest_folder, allow_download):
             # is it a file that could be used as an attribute?
             if filetype in id11dset.DataSet.ATTRNAMES:
                 if hasattr(ds, filetype):
-                    # the dataset has a path for this filetype already
-                    filepath = getattr(ds, filetype)
-                    download_url(file_url, filepath)
+                    if getattr(ds, filetype) is None:
+                        # this is an attribute, but we don't have a path for it
+                        # put it in processed data root
+                        filepath = os.path.join(processed_data_root_dir, filename)
+                        download_url(file_url, filepath)
+                        setattr(ds, filetype, filepath)
+                    else:
+                        # the dataset has a path for this filetype already
+                        filepath = getattr(ds, filetype)
+                        download_url(file_url, filepath)
                 else:
                     # probably a spatial or a parfile
                     # chuck it in processed_data_root_dir
