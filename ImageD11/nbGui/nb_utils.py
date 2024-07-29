@@ -342,13 +342,13 @@ def plot_index_results(ind, colfile, title):
                     ylabel='dty/um')
 
     # Define weak peaks as all non-assigned peaks with intensity 1e-4 of max
-    cut = colfile.sum_intensity[m].max() * 1e-4
-    weak = colfile.sum_intensity[m] < cut
+    if m.sum() > 0:
+        cut = colfile.sum_intensity[m].max() * 1e-4
+        weak = colfile.sum_intensity[m] < cut
 
-    # Plot unassigned peaks in omega vs dty
-
-    axs_flat[2].scatter(colfile.omega[m][weak], colfile.dty[m][weak], s=2, label='weak')
-    axs_flat[2].scatter(colfile.omega[m][~weak], colfile.dty[m][~weak], s=2, label='not weak')
+        # Plot unassigned peaks in omega vs dty
+        axs_flat[2].scatter(colfile.omega[m][weak], colfile.dty[m][weak], s=2, label='weak')
+        axs_flat[2].scatter(colfile.omega[m][~weak], colfile.dty[m][~weak], s=2, label='not weak')
 
     axs_flat[2].set(title='Sinograms of unassigned peaks',
                     xlabel='Omega/deg',
@@ -364,9 +364,9 @@ def plot_index_results(ind, colfile, title):
                     yscale='log')
 
     # Plot d-star vs intensity for all unassigned peaks
-
-    axs_flat[4].scatter(colfile.ds[m][weak], colfile.sum_intensity[m][weak], s=2, label='weak')
-    axs_flat[4].scatter(colfile.ds[m][~weak], colfile.sum_intensity[m][~weak], s=2, label='not weak')
+    if m.sum() > 0:
+        axs_flat[4].scatter(colfile.ds[m][weak], colfile.sum_intensity[m][weak], s=2, label='weak')
+        axs_flat[4].scatter(colfile.ds[m][~weak], colfile.sum_intensity[m][~weak], s=2, label='not weak')
 
     axs_flat[4].set(title='Intensity of all unassigned peaks',
                     xlabel='d-star',
