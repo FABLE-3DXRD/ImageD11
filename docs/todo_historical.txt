@@ -1,4 +1,10 @@
 
+# 25/07/2024
+
+Move this to docs.
+Now tracked in github issues.
+
+
 # 26-2-2019
 
 Overhaul or new package?

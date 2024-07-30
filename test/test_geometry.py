@@ -248,3 +248,33 @@ class TestFitSamplePositionFromRecon(unittest.TestCase):
         x, y = geometry.fit_sample_position_from_recon(recon, ystep)
 
         self.assertSequenceEqual((desired_x, desired_y), (x, y))
+
+
+class TestDtyMask( unittest.TestCase ):
+    def setUp(self):
+        om = np.arange(180)
+        self.ystep = 0.1
+        y =  np.arange(-5,5.1,self.ystep)
+        self.shape = (len(y), len(om))
+        self.omega = np.empty(self.shape, float)
+        self.dty = np.empty(self.shape, float)
+        self.omega[:] = om[np.newaxis, :]
+        self.dty[:] = y[:, np.newaxis]
+        self.dtyi = self.dty / self.ystep
+        self.sinomega = np.sin( np.radians( self.omega ) )
+        self.cosomega = np.cos( np.radians( self.omega ) )
+
+    def test_cos_sin(self):
+        x = 12.0
+        y = 13.0
+        for y0 in (-10.05, 0):
+            for si in (-12, 0, 13):
+                for sj in (-11, 0, 2):
+                    m1 = geometry.dtyimask_from_step(si, sj, self.omega, self.dtyi, y0, self.ystep)
+                    m2 = geometry.dtyimask_from_sincos(si, sj, self.sinomega, self.cosomega, self.dtyi, y0, self.ystep)
+                    self.assertTrue((m1 == m2).all())
+
+
+
+if __name__=="__main__":
+    unittest.main()

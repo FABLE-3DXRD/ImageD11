@@ -1,9 +1,4 @@
 ## Automatically adapted for numpy.oldnumeric Sep 06, 2007 by alter_code1.py
-
-
-from __future__ import print_function
-
-import h5py
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -21,9 +16,14 @@ import h5py
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-import numpy as np, math
-import ImageD11.indexing, ImageD11.unitcell, ImageD11.finite_strain
+from __future__ import print_function
+
+import h5py
+import numpy as np
 import xfab.tools
+
+import ImageD11.finite_strain
+import ImageD11.unitcell
 
 
 # helpers : put these into xfab.tools at some point?

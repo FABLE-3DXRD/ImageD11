@@ -2,6 +2,8 @@
 
 from __future__ import print_function
 
+import io
+from functools import partial
 
 """
 columnfile represents an ascii file with titles begining "#"
@@ -132,7 +134,7 @@ def clean(str_lst):
 
 
 def fillcols(lines, cols):
-    for i,line in enumerate(lines):
+    for i,line in enumerate(lines): # could be parallel
         for j,item in enumerate(line.split()):
             cols[j][i] = float(item)
 
@@ -142,9 +144,9 @@ class columnfile(object):
     """
 
     def __init__(self, filename = None, new = False):
+        self.titles = []
         self.filename = filename
         self.__data = []
-        self.titles = []
         if filename is not None:
             self.parameters = parameters.parameters(filename=filename)
         else:
@@ -201,7 +203,22 @@ class columnfile(object):
             raise KeyError
 
     def __setitem__(self, key, value):
-        self.addcolumn(value, key)
+        if key in self.titles:
+            self.getcolumn(key)[:] = value
+        else:
+            self.addcolumn(value, key)
+
+    def __setattr__(self, key, value):
+        if key == 'titles':
+            super(columnfile, self).__setattr__(key, value)
+            return
+        if key in self.titles:
+            if np.isscalar(value): # broadcast
+                self.__data[self.titles.index(key)][:] = value
+            else:
+                assert len(value) == self.nrows
+                self.__data[self.titles.index(key)] = value
+        super(columnfile, self).__setattr__(key, value)
 
     def keys(self):
         return self.titles
@@ -333,7 +350,13 @@ class columnfile(object):
             raise Exception("Mask is the wrong size")
         msk = np.array( mask, dtype=bool )
         # back to list here
-        self.__data = [col[msk] for col in self.__data]
+        # previously makes a 2X memory footprint here:
+        # self.__data = [col[msk] for col in self.__data]
+        #
+        if not isinstance( self.__data, list ):
+            self.__data = list( self.__data )
+        for i, col in enumerate( self.__data ):   # could be parallel
+            self.__data[i] = col[msk]
         self.nrows = len(self.__data[0])
         self.set_attributes()
 
@@ -344,8 +367,8 @@ class columnfile(object):
         cnw = columnfile(self.filename, new = True)
         self.chkarray()
         cnw.titles = [t for t in self.titles ]
-        cnw.parameters = parameters.parameters( **self.parameters.parameters )
-        cnw.bigarray = [col.copy() for col in self.__data]
+        cnw.parameters = parameters.parameters( **self.parameters.parameters.copy() )
+        cnw.set_bigarray( [col.copy() for col in self.__data] )
         cnw.ncols = self.ncols
         cnw.set_attributes()
         return cnw
@@ -357,7 +380,7 @@ class columnfile(object):
         self.chkarray()
         cnw = columnfile(self.filename, new = True)
         cnw.titles = [t for t in self.titles ]
-        cnw.parameters = self.parameters
+        cnw.parameters = parameters.parameters( **self.parameters.parameters.copy() )
         cnw.bigarray = [col[rows] for col in self.__data]
         #cnw.ncols, cnw.nrows = cnw.bigarray.shape
         #cnw.set_attributes()
@@ -393,8 +416,9 @@ class columnfile(object):
             self.__data.append( data )
         setattr(self, name, self.__data[idx] )
 
-    # Not obvious, but might be a useful alias
-    setcolumn = addcolumn
+    def setcolumn(self, col, name):
+        assert name in self.titles
+        self.addcolumn( col, name )
 
     def getcolumn(self, name):
         """
@@ -650,6 +674,54 @@ try:
         h.close()
         return col
 
+
+    def mmap_h5colf( fname, path='peaks', mode = 'r' ):
+        """
+        From:
+        https://gist.github.com/anonymous/19814198398da86b8f98
+
+        The columnfile must have non-compressed data
+
+        Memory maps the underlying array for read only data.
+        You will need to use something like copyrows on the result.
+        """
+        if mode != 'r':
+            # The purpose of this code is to read columnfiles across
+            # many processes. The implications of writing are messy.
+            # You can't have lots of processes writing into the hdf5
+            # files as you can't resize. So just force read only.
+            raise Exception("Sorry, read only for now")
+        with h5py.File(fname,'r') as hin:
+            if path not in hin:
+                for path in list(hin['/']):
+                     if ('ImageD11_type' in hin[path].attrs and 
+                         hin[path].attrs['ImageD11_type'] in ('peaks', b'peaks')):
+                            break
+            grp = hin[path]
+            names = list(grp)
+            offsets = {}
+            dtypes = {}
+            shapes = {}
+            for name in names:
+                ds = grp[name]
+                # We get the dataset address in the HDF5 file.
+                offsets[name] = ds.id.get_offset()
+                # We ensure we have a non-compressed contiguous array.
+                assert ds.chunks is None
+                assert ds.compression is None
+                assert offsets[name] > 0
+                dtypes[name] = ds.dtype
+                shapes[name] = ds.shape
+        ardict = { name : np.memmap(fname,
+                                    mode='r',
+                                    shape=shapes[name],
+                                    offset=offsets[name],
+                                    dtype=dtypes[name])
+                   for name in names }
+        return colfile_from_dict( ardict )
+
+
+
 except ImportError:
     def hdferr():
         raise Exception("You do not have h5py installed!")
@@ -662,6 +734,245 @@ except ImportError:
 
     def colfileobj_to_hdf( cf, hdffile, name=None):
         hdferr()
+
+
+try:
+    import pandas as pd
+    class PandasColumnfile(columnfile):
+        def __init__(self, filename=None, new=False):
+            self._df = pd.DataFrame()
+            self.filename = filename
+            if filename is not None:
+                self.parameters = parameters.parameters(filename=filename)
+            else:
+                self.parameters = parameters.parameters()
+            if not new:
+                self.readfile(filename)
+
+        def __getattribute__(self, item):
+            # called whenever getattr(item, 'attr') or item.attr is called
+            # for speed, look in self._df FIRST before giving up
+            if item == '_df':
+                return object.__getattribute__(self, item)
+            if item in self._df.columns:
+                return super(PandasColumnfile, self).__getattribute__('_df')[item].to_numpy()
+            return super(PandasColumnfile, self).__getattribute__(item)
+
+        def __setattr__(self, key, value):
+            if key == "_df":
+                object.__setattr__(self, key, value)
+                return
+            if key in self.titles:
+                self._df[key] = value
+                return
+            super(PandasColumnfile, self).__setattr__(key, value)
+
+        @property
+        def nrows(self):
+            return self._df.index.size
+
+        @nrows.setter
+        def nrows(self, value):
+            # we don't set the number of rows explicitly for Pandas dataframes
+            pass
+
+        @property
+        def ncols(self):
+            return len(self._df.columns)
+
+        @property
+        def titles(self):
+            return self._df.columns.tolist()
+
+        def removerows(self, column_name, values, tol=0):
+            """
+            removes rows where self.column_name == values
+            values is a list of values to remove
+            column name should be in self.titles
+            tol is for floating point (fuzzy) comparisons versus integer
+            """
+
+            if tol <= 0:
+                # exact match comparisons
+                matching_row_indices = self._df[self._df[column_name].isin(values)].index
+                self._df.drop(matching_row_indices, inplace=True)
+            else:
+                # floating point
+                matching_row_indices = self._df.loc[np.abs(self._df[column_name] - values) < tol].index
+                self._df.drop(matching_row_indices, inplace=True)
+
+        def sortby(self, name):
+            """
+            Sort arrays according to column named "name"
+            """
+            self._df.sort_values(name, inplace=True)
+
+        def reorder(self, indices):
+            """
+            Put array into the order given by indices
+            ... normally indices would come from np.argsort of something
+            """
+            self._df = self._df.loc[indices]
+
+        def writefile(self, filename):
+            """
+            write an ascii columned file
+            """
+
+            # TODO: Can be greatly sped up with pd.write_csv
+
+            # self.chkarray()
+
+            # create a text buffer
+            s_buf = io.StringIO()
+
+            # Write as "# name = value\n"
+            parnames = list(self.parameters.get_parameters().keys())
+            parnames.sort()
+            for p in parnames:
+                s_buf.write("# %s = %s\n" % (p, str(self.parameters.get(p))))
+
+            s_buf.write('# ')
+
+            def format_func(value, fmt):
+                return fmt % value
+
+            # get a dictionary of format strings
+
+            format_funcs = {}
+            for title in self.titles:
+                try:
+                    format_str = FORMATS[title]
+                except KeyError:
+                    format_str = "%f"
+                format_funcs[title] = partial(format_func, fmt=format_str)
+
+            self._df.to_string(s_buf, index=False, formatters=format_funcs)
+
+            s_buf.seek(0)
+
+            with open(filename, 'w') as file:
+                file.write(s_buf.getvalue())
+
+        def readfile(self, filename):
+            """
+            Reads in an ascii columned file
+            """
+            self.parameters = parameters.parameters(filename=filename)
+
+            i = 0
+            # Check if this is a hdf file: magic number
+            with open(filename, "rb") as f:
+                magic = f.read(4)
+            #              1 2 3 4 bytes
+            if magic == b'\x89HDF':
+                print("Reading your columnfile in hdf format")
+                colfile_from_hdf(filename, obj=self)
+                return
+
+            # pandas read from CSV method
+            # key-value stuff
+
+            with open(filename, "r") as f:
+                raw = f.readlines()
+            header = True
+            while header and i < len(raw):
+                if len(raw[i].lstrip()) == 0:
+                    # skip blank lines
+                    i += 1
+                    continue
+                if raw[i][0] == "#":
+                    # title line
+                    if raw[i].find("=") > -1:
+                        # key = value line
+                        name, value = clean(raw[i][1:].split("=", 1))
+                        self.parameters.addpar(
+                            parameters.par(name, value))
+                    else:
+                        pass
+                    i += 1
+                else:
+                    first_data_row = i
+                    header = False
+
+            # print(f"Skipping {first_data_row-1} header rows")
+
+            column_titles = raw[first_data_row - 1].replace("# ", "").lstrip(" ").split()
+            # print(f"Column titles are {column_titles}")
+
+            self._df = pd.read_csv(filename, skiprows=range(first_data_row), sep='\s+', header=None, names=column_titles)
+
+            self.parameters.dumbtypecheck()
+            # self.set_attributes()
+
+        def filter(self, mask):
+            """
+            mask is an nrows long array of true/false
+            """
+            if len(mask) != self.nrows:
+                raise Exception("Mask is the wrong size")
+            msk = np.array(mask, dtype=bool)
+            # back to list here
+            self._df.drop(self._df[~msk].index, inplace=True)
+
+        def copy(self):
+            """
+            Returns a (deep) copy of the columnfile
+            """
+            cnw = PandasColumnfile(self.filename, new=True)
+            cnw.parameters = parameters.parameters( **self.parameters.parameters.copy() )
+            cnw._df = self._df.copy(deep=True)
+            return cnw
+
+        def copyrows(self, rows):
+            """
+            Returns a copy of select rows of the columnfile
+            """
+
+            cnw = PandasColumnfile(self.filename, new=True)
+            cnw.parameters = parameters.parameters( **self.parameters.parameters.copy() )
+            cnw._df = self._df.iloc[rows]
+
+            return cnw
+
+        def addcolumn(self, col, name):
+            """
+            Add a new column col to the object with name "name"
+            Overwrites in the case that the column already exists
+            """
+            self._df[name] = col
+
+        # Not obvious, but might be a useful alias
+        setcolumn = addcolumn
+
+        def getcolumn(self, name):
+            """
+            Gets data, if column exists
+            """
+            return self._df[name].to_numpy()
+
+
+    class NewPandasColumnfile(PandasColumnfile):
+        """ Just like a columnfile, but for creating new
+        files """
+
+        def __init__(self, titles):
+            super().__init__(self, filename=None, new=True)
+            self._df.columns = titles
+
+except ImportError:
+    def pderr():
+        raise Exception("You do not have pandas installed!")
+
+
+    class PandasColumnfile(columnfile):
+        def __init__(self, filename=None, new=False):
+            pderr()
+
+    class NewPandasColumnfile(PandasColumnfile):
+        def __init__(self, titles):
+            pderr()
+
 
 def bench():
     """

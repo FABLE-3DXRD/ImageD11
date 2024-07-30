@@ -172,6 +172,49 @@ date
     return bash_script_path, recons_path
 
 
+def prepare_astra_bash(ds, grainsfile, id11_code_path):
+    slurm_astra_path = os.path.join(ds.analysispath, "slurm_astra")
+
+    if not os.path.exists(slurm_astra_path):
+        os.mkdir(slurm_astra_path)
+
+    bash_script_path = os.path.join(slurm_astra_path, ds.dsname + '_astra_recon_slurm.sh')
+    python_script_path = os.path.join(id11_code_path, "ImageD11/nbGui/S3DXRD/run_astra_recon.py")
+    outfile_path = os.path.join(slurm_astra_path, ds.dsname + '_astra_recon_slurm_%A_%a.out')
+    errfile_path = os.path.join(slurm_astra_path, ds.dsname + '_astra_recon_slurm_%A_%a.err')
+    log_path = os.path.join(slurm_astra_path,
+                            ds.dsname + '_astra_recon_slurm_$SLURM_ARRAY_JOB_ID_$SLURM_ARRAY_TASK_ID.log')
+
+    # python 2 version
+    bash_script_string = """#!/bin/bash
+#SBATCH --job-name=astra-recon
+#SBATCH --output={outfile_path}
+#SBATCH --error={errfile_path}
+#SBATCH --time=01:00:00
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+# define memory needs and number of tasks for each array job
+#SBATCH --ntasks=1
+#
+date
+module load cuda
+echo python3 {python_script_path} {id11_code_path} {grainsfile} {dsfile} > {log_path} 2>&1
+python3 {python_script_path} {id11_code_path} {grainsfile} {dsfile} > {log_path} 2>&1
+date
+    """.format(outfile_path=outfile_path,
+               errfile_path=errfile_path,
+               python_script_path=python_script_path,
+               id11_code_path=id11_code_path,
+               grainsfile=grainsfile,
+               dsfile=ds.dsfile,
+               log_path=log_path)
+
+    with open(bash_script_path, "w") as bashscriptfile:
+        bashscriptfile.writelines(bash_script_string)
+
+    return bash_script_path
+
+
 ## IO related stuff
 
 # Helper funtions
@@ -283,29 +326,29 @@ def plot_index_results(ind, colfile, title):
 
     # set a mask of all non-assigned g-vectors
 
-    m = ind.ga == -1
-    # m = colfile.grain_id == -1
+    # m = ind.ga == -1
+    m = colfile.grain_id == -1
 
     # plot the assigned g-vectors omega vs dty (sinograms)
 
     axs_flat[1].scatter(colfile.omega[~m],
                         colfile.dty[~m],
-                        c=ind.ga[~m],
+                        c=colfile.grain_id[~m],
                         s=2,
                         cmap='tab20')
 
-    axs_flat[1].set(title='Sinograms of {} grains'.format(ind.ga.max() + 1),
+    axs_flat[1].set(title='Sinograms of {} grains'.format(colfile.grain_id.max() + 1),
                     xlabel='Omega/deg',
                     ylabel='dty/um')
 
     # Define weak peaks as all non-assigned peaks with intensity 1e-4 of max
-    cut = colfile.sum_intensity[m].max() * 1e-4
-    weak = colfile.sum_intensity[m] < cut
+    if m.sum() > 0:
+        cut = colfile.sum_intensity[m].max() * 1e-4
+        weak = colfile.sum_intensity[m] < cut
 
-    # Plot unassigned peaks in omega vs dty
-
-    axs_flat[2].scatter(colfile.omega[m][weak], colfile.dty[m][weak], s=2, label='weak')
-    axs_flat[2].scatter(colfile.omega[m][~weak], colfile.dty[m][~weak], s=2, label='not weak')
+        # Plot unassigned peaks in omega vs dty
+        axs_flat[2].scatter(colfile.omega[m][weak], colfile.dty[m][weak], s=2, label='weak')
+        axs_flat[2].scatter(colfile.omega[m][~weak], colfile.dty[m][~weak], s=2, label='not weak')
 
     axs_flat[2].set(title='Sinograms of unassigned peaks',
                     xlabel='Omega/deg',
@@ -321,9 +364,9 @@ def plot_index_results(ind, colfile, title):
                     yscale='log')
 
     # Plot d-star vs intensity for all unassigned peaks
-
-    axs_flat[4].scatter(colfile.ds[m][weak], colfile.sum_intensity[m][weak], s=2, label='weak')
-    axs_flat[4].scatter(colfile.ds[m][~weak], colfile.sum_intensity[m][~weak], s=2, label='not weak')
+    if m.sum() > 0:
+        axs_flat[4].scatter(colfile.ds[m][weak], colfile.sum_intensity[m][weak], s=2, label='weak')
+        axs_flat[4].scatter(colfile.ds[m][~weak], colfile.sum_intensity[m][~weak], s=2, label='not weak')
 
     axs_flat[4].set(title='Intensity of all unassigned peaks',
                     xlabel='d-star',
@@ -358,13 +401,20 @@ def plot_grain_sinograms(grains, cf, n_grains_to_plot=None):
     nrows = (len(grains[::grains_step]) + grid_size - 1) // grid_size
 
     fig, axs = plt.subplots(grid_size, nrows, figsize=(10, 10), layout="constrained", sharex=True, sharey=True)
-    for i, ax in enumerate(axs.ravel()):
-        if i < len(grains[::grains_step]):
-            # get corresponding grain for this axis
-            g = grains[::grains_step][i]
-            m = cf.grain_id == g.gid
-            ax.scatter(cf.omega[m], cf.dty[m], c=cf.sum_intensity[m], s=2)
-            ax.set_title(g.gid)
+    if grid_size == 1 & nrows == 1:
+        # only 1 grain
+        g = grains[0]
+        m = cf.grain_id == g.gid
+        axs.scatter(cf.omega[m], cf.dty[m], c=cf.sum_intensity[m], s=2)
+        axs.set_title(g.gid)
+    else:
+        for i, ax in enumerate(axs.ravel()):
+            if i < len(grains[::grains_step]):
+                # get corresponding grain for this axis
+                g = grains[::grains_step][i]
+                m = cf.grain_id == g.gid
+                ax.scatter(cf.omega[m], cf.dty[m], c=cf.sum_intensity[m], s=2)
+                ax.set_title(g.gid)
 
     fig.supxlabel("Omega")
     fig.supylabel("Y translation (um)")
@@ -446,71 +496,8 @@ def plot_all_ipfs(grains):
     plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1]))
 
 
-### Indexing
-
-
-# GOTO
-def do_index(cf,
-             dstol=0.05,
-             hkl_tols=(0.01, 0.02, 0.03, 0.04, 0.05, 0.1),
-             fracs=(0.9, 0.8, 0.7, 0.6, 0.5),
-             cosine_tol=np.cos(np.radians(90 - 0.25)),
-             max_grains=1000,
-             forgen=(),
-             foridx=()):
-    print("Indexing {} peaks".format(cf.nrows))
-    # replace Fe with something else
-    Fe = ImageD11.unitcell.unitcell_from_parameters(cf.parameters)
-    Fe.makerings(cf.ds.max())
-    indexer = ImageD11.indexing.indexer_from_colfile(cf)
-
-    ImageD11.indexing.loglevel = 3
-
-    indexer.ds_tol = dstol
-    indexer.assigntorings()
-    indexer.max_grains = max_grains
-
-    ImageD11.cImageD11.cimaged11_omp_set_num_threads(2)
-
-    for ringid in forgen:
-        if ringid not in foridx:
-            raise ValueError("All rings in forgen must be in foridx!")
-
-    n_peaks_expected = 0
-    rings = []
-    for i, dstar in enumerate(indexer.unitcell.ringds):
-        multiplicity = len(indexer.unitcell.ringhkls[indexer.unitcell.ringds[i]])
-        counts_on_this_ring = (indexer.ra == i).sum()
-        # is this ring going to be used for indexing?
-        if i in foridx:
-            n_peaks_expected += multiplicity  # we expect peaks from this ring
-            if i in forgen:  # we are generating orientations from this ring
-                rings.append((counts_on_this_ring, multiplicity, i))
-
-    rings.sort()
-
-    print("{} peaks expected".format(n_peaks_expected))
-    print("Trying these rings (counts, multiplicity, ring number): {}".format(rings))
-    indexer.cosine_tol = np.abs(cosine_tol)
-
-    for frac in fracs:
-        for tol in hkl_tols:
-            indexer.minpks = n_peaks_expected * frac
-            indexer.hkl_tol = tol
-            for i in range(len(rings)):
-                for j in range(i, len(rings)):
-                    indexer.ring_1 = rings[i][2]
-                    indexer.ring_2 = rings[j][2]
-
-                    indexer.find()
-                    indexer.scorethem()
-
-            print(frac, tol, len(indexer.ubis))
-
-    grains = [ImageD11.grain.grain(ubi) for ubi in indexer.ubis]
-    print("Found {} grains".format(len(grains)))
-
-    return grains, indexer
+# backwards compatible
+do_index = ImageD11.indexing.do_index
 
 
 # GOTO refinegrains somewhere?

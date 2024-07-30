@@ -1,11 +1,11 @@
 
-import os
+import os, sys
 
 apui = []
 syui = []
 noui = []
 
-root = "."
+root = sys.argv[1]
 for dirName, subdirList, fileList in os.walk(root):
     if True in [dirName.find(s)>=0 for s in ("__","build",".git",".vscode") ]:
         continue

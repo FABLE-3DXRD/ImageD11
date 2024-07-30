@@ -4,6 +4,7 @@ import unittest
 """ Write some test cases for the columnfile stuff """
 
 from ImageD11 import columnfile
+import ImageD11.columnfile
 import numpy as np
 
 class testgeom( unittest.TestCase ):
@@ -165,6 +166,33 @@ class test1( unittest.TestCase ):
             e = True
         assert( e )
 
+
+class test_issue289( unittest.TestCase ):  
+    """
+    https://github.com/FABLE-3DXRD/ImageD11/issues/289
+    @AxelHenningsson
+    """
+    def setUp(self):
+        self.colf = ImageD11.columnfile.colfile_from_dict( {'data': np.random.rand(4,)} )
+        
+    def testMutationInPlace(self):
+        # mutation by in-place-operation - OK!
+        self.colf.data *= 10
+        self.assertTrue( np.allclose(self.colf['data'], self.colf.data) )
+        
+    def testMutationByRef(self):
+        # mutation by reference to a scalar
+        self.colf.data = 10
+        self.assertTrue( np.allclose(self.colf['data'], self.colf.data) )
+        self.assertEqual( self.colf['data'][0], 10) 
+        
+    def testAddAttr(self):
+        self.colf.newthing = 12
+        self.assertEqual( self.colf.newthing, 12 )
+        
+        
+        
+        
         
 if __name__ == '__main__':
     unittest.main()
