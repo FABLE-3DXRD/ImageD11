@@ -180,10 +180,10 @@ def prepare_astra_bash(ds, grainsfile, id11_code_path):
 
     bash_script_path = os.path.join(slurm_astra_path, ds.dsname + '_astra_recon_slurm.sh')
     python_script_path = os.path.join(id11_code_path, "ImageD11/nbGui/S3DXRD/run_astra_recon.py")
-    outfile_path = os.path.join(slurm_astra_path, ds.dsname + '_astra_recon_slurm_%A_%a.out')
-    errfile_path = os.path.join(slurm_astra_path, ds.dsname + '_astra_recon_slurm_%A_%a.err')
+    outfile_path = os.path.join(slurm_astra_path, ds.dsname + '_astra_recon_slurm_%A.out')
+    errfile_path = os.path.join(slurm_astra_path, ds.dsname + '_astra_recon_slurm_%A.err')
     log_path = os.path.join(slurm_astra_path,
-                            ds.dsname + '_astra_recon_slurm_$SLURM_ARRAY_JOB_ID_$SLURM_ARRAY_TASK_ID.log')
+                            ds.dsname + '_astra_recon_slurm_$SLURM_ARRAY_JOB_ID.log')
 
     # python 2 version
     bash_script_string = """#!/bin/bash
@@ -213,6 +213,64 @@ date
         bashscriptfile.writelines(bash_script_string)
 
     return bash_script_path
+
+
+def prepare_pbp_bash(pbp_object, id11_code_path, minpkint):
+    ds = pbp_object.dset
+
+    slurm_pbp_path = os.path.join(ds.analysispath, "slurm_pbp")
+
+    if not os.path.exists(slurm_pbp_path):
+        os.mkdir(slurm_pbp_path)
+
+    bash_script_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm.sh')
+    python_script_path = os.path.join(id11_code_path, "ImageD11/nbGui/S3DXRD/run_pbp_recon.py")
+    outfile_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_%A.out')
+    errfile_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_%A.err')
+    log_path = os.path.join(slurm_pbp_path,
+                            ds.dsname + '_pbp_recon_slurm_$SLURM_JOB_ID.log')
+
+    # python 2 version
+    bash_script_string = """#!/bin/bash
+#SBATCH --job-name=pbp_scanning
+#SBATCH --output={outfile_path}
+#SBATCH --error={errfile_path}
+#SBATCH --time=48:00:00
+#SBATCH --partition=nice-long
+##SBATCH --nodelist=hpc7-61
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=120
+
+#
+date
+source /cvmfs/hpc.esrf.fr/software/packages/linux/x86_64/jupyter-slurm/latest/envs/jupyter-slurm/bin/activate
+echo python3 {python_script_path} {id11_code_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {minpkint} > {log_path} 2>&1
+OMP_NUM_THREADS=1 python3 {python_script_path} {id11_code_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {minpkint} > {log_path} 2>&1
+date
+        """.format(outfile_path=outfile_path,
+                   errfile_path=errfile_path,
+                   python_script_path=python_script_path,
+                   id11_code_path=id11_code_path,
+                   dsfile=ds.dsfile,
+                   hkltol=pbp_object.hkl_tol,
+                   fpks=pbp_object.fpks,
+                   dstol=pbp_object.ds_tol,
+                   etacut=pbp_object.etacut,
+                   ifrac=pbp_object.ifrac,
+                   costol=pbp_object.cosine_tol,
+                   y0=pbp_object.y0,
+                   symmetry=pbp_object.symmetry,
+                   foridx=str(pbp_object.foridx).replace(" ", ""),
+                   forgen=str(pbp_object.forgen).replace(" ", ""),
+                   uniqcut=pbp_object.uniqcut,
+                   minpkint=minpkint,
+                   log_path=log_path)
+
+    with open(bash_script_path, "w") as bashscriptfile:
+        bashscriptfile.writelines(bash_script_string)
+
+    return bash_script_path
+
 
 
 ## IO related stuff
