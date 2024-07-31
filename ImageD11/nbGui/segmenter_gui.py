@@ -202,7 +202,7 @@ class FrelonSegmenterGui:
         self.im2 = self.axs[1].imshow(self.smoothed_image, cmap="viridis", norm='log', vmin=0.5, vmax=1000, interpolation="nearest")
         self.axs[1].set_title("Background corrected")
         self.im3 = self.axs[2].imshow(self.smoothed_image, cmap="viridis", norm='log', vmin=0.5, vmax=1000, interpolation="nearest")
-        self.axs[2].set_title(f"{self.npeaks} peaks")
+        self.axs[2].set_title(str(self.npeaks) + " peaks")
         self.sc1, = self.axs[2].plot(self.fc, self.sc, marker='+', c="r", ls="")
         self.axs[2].set_aspect(1)
     
@@ -224,7 +224,6 @@ class FrelonSegmenterGui:
         self.im2.set_data(self.smoothed_image)
         self.im3.set_data(self.smoothed_image)
         self.sc1.set_data(self.fc, self.sc)
-        self.fig.suptitle(f"{self.npeaks} peaks")
         self.fig.canvas.draw()
     
         
