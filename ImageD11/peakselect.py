@@ -71,7 +71,6 @@ def rings_mask(cf, dstol, dsmax, cell=None):
     for v in cell.ringds:
         if v < dsmax:
             m |= (abs(cf.ds - v) < dstol)
-
     return m
 
 
@@ -112,12 +111,24 @@ def sorted_peak_intensity_mask(colf, uself=True, frac=0.995, B=0.2, doplot=None)
     return mask
 
 
-def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, doplot=None):
+def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=1, doplot=None):
+    """
+    cf = input columnfile + unit cell in parameters
+    dstol = difference in d* (=1/d) for assigning peaks to rings
+    dsmax = high angle cutoff to remove peaks
+    frac = the fractional normalised intensity to keep (removes weak peaks)
+    B = thermal factor to downweight low angle vs high angle peaks for normalised intensity
+    doplot = whether to draw a plot (float number, range for zoomed plot)
+    
+    returns: a columnfile with peaks removed
+    """
     if dsmax is None:
         dsmax = cf.ds.max()
-    m = rings_mask(cf, dstol=dstol, dsmax=dsmax)
-    cfc = cf.copy()
-    cfc.filter(m)
-    ms = sorted_peak_intensity_mask(cfc, frac=frac, doplot=doplot)
+        cfd = cf
+    else:
+        cfd = cf.copyrows( cf.ds <= dsmax )
+    m = rings_mask( cfd, dstol=dstol, dsmax=dsmax)
+    cfc = cfd.copyrows(m)
+    ms = sorted_peak_intensity_mask(cfc, frac=frac, B=B, doplot=doplot)
     cfc.filter(ms)
     return cfc

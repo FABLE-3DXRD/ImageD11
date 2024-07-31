@@ -74,7 +74,7 @@ class DataSet:
     )
     STRINGLISTS = ("scans", "imagefiles", "sparsefiles")
     # sinograms
-    NDNAMES = ("omega", "dty", "nnz", "frames_per_file", "nlm", "frames_per_scan")
+    NDNAMES = ("omega", "dty", "nnz", "frames_per_file", "nlm", "frames_per_scan", "monitor")
 
     def __init__(
             self,
@@ -494,6 +494,25 @@ class DataSet:
             self.ring_currents_per_scan_scaled = np.array(
                 ring_currents / np.max(ring_currents)
             )
+
+    def get_monitor(self, name='fpico6'):
+        # masterfile or sparsefile
+        hname = self.masterfile
+        if hasattr(self, 'sparsefile') and os.path.exists(self.sparsefile):
+            hname = self.sparsefile
+        monitor = []
+        with h5py.File( hname, 'r') as hin:
+            for scan in self.scans:
+                if scan.find('::')>-1:
+                    snum, slc = scan.split('::')
+                    lo, hi = [int(v) for v in slc[1:-1].split(':')]
+                    mon = hin[snum]['measurement'][name][lo:hi]
+                else:
+                    mon = hin[snum]['measurement'][name][:]
+                monitor.append(mon)
+        self.monitor = np.concatenate(monitor).reshape( self.shape )
+        return self.monitor
+
 
     def guess_detector(self):
         """Guess which detector we are using from the masterfile"""
