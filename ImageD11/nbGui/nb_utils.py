@@ -237,9 +237,8 @@ def prepare_pbp_bash(pbp_object, id11_code_path, minpkint):
 #SBATCH --error={errfile_path}
 #SBATCH --time=48:00:00
 #SBATCH --partition=nice-long
-##SBATCH --nodelist=hpc7-61
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=120
+#SBATCH --cpus-per-task=90
 
 #
 date
