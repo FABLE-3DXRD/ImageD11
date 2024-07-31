@@ -187,7 +187,7 @@ class FrelonSegmenterGui:
                 self.idx = np.argmax(roi1)
         print("Using frame", self.idx, "from scan", self.scan)
         with h5py.File(self.dset.masterfile, 'r') as h5In:
-            self.raw_image = h5In[f'{self.scan}/measurement/{ds.detector}'][self.idx].astype('uint16')
+            self.raw_image = h5In[self.scan + '/measurement/' + ds.detector][self.idx].astype('uint16')
     
     def segment_frame(self):
         image_worker = self.worker_func(**self.options)
