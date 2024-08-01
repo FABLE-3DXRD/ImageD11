@@ -1,29 +1,24 @@
 if __name__ == "__main__":
-    # horrible workaround to include id11 code path
-    import sys
-    
-    id11_code_path = sys.argv[1]
-    
-    sys.path.insert(0, id11_code_path)
 
+    import sys
     import ImageD11.sinograms.point_by_point
     import ImageD11.sinograms.dataset
     from ImageD11 import cImageD11
     import ast
 
-    dsfile = sys.argv[2]
-    hkltol = float(sys.argv[3])
-    fpks = float(sys.argv[4])
-    dstol = float(sys.argv[5])
-    etacut = float(sys.argv[6])
-    ifrac = float(sys.argv[7])
-    costol = float(sys.argv[8])
-    y0 = float(sys.argv[9])
-    symmetry = sys.argv[10]
-    foridx = [int(x) for x in ast.literal_eval(sys.argv[11])]
-    forgen = [int(x) for x in ast.literal_eval(sys.argv[12])]
-    uniqcut = float(sys.argv[13])
-    minpkint = int(sys.argv[14])
+    dsfile = sys.argv[1]
+    hkltol = float(sys.argv[2])
+    fpks = float(sys.argv[3])
+    dstol = float(sys.argv[4])
+    etacut = float(sys.argv[5])
+    ifrac = float(sys.argv[6])
+    costol = float(sys.argv[7])
+    y0 = float(sys.argv[8])
+    symmetry = sys.argv[9]
+    foridx = [int(x) for x in ast.literal_eval(sys.argv[10])]
+    forgen = [int(x) for x in ast.literal_eval(sys.argv[11])]
+    uniqcut = float(sys.argv[12])
+    minpkint = int(sys.argv[13])
 
     print('Loading dset')
     ds = ImageD11.sinograms.dataset.load(dsfile)

@@ -151,8 +151,8 @@ def prepare_mlem_bash(ds, grains, id11_code_path, n_simultaneous_jobs=50, cores_
 #SBATCH --cpus-per-task={cores_per_task}
 #
 date
-echo python3 {python_script_path} {id11_code_path} {grainsfile} $SLURM_ARRAY_TASK_ID {dsfile} {reconfile} {cores_per_task} > {log_path} 2>&1
-python3 {python_script_path} {id11_code_path} {grainsfile} $SLURM_ARRAY_TASK_ID {dsfile} {reconfile} {cores_per_task} > {log_path} 2>&1
+echo PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} $SLURM_ARRAY_TASK_ID {dsfile} {reconfile} {cores_per_task} > {log_path} 2>&1
+PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} $SLURM_ARRAY_TASK_ID {dsfile} {reconfile} {cores_per_task} > {log_path} 2>&1
 date
     """.format(outfile_path=outfile_path,
                errfile_path=errfile_path,
@@ -198,8 +198,8 @@ def prepare_astra_bash(ds, grainsfile, id11_code_path):
 #
 date
 module load cuda
-echo python3 {python_script_path} {id11_code_path} {grainsfile} {dsfile} > {log_path} 2>&1
-python3 {python_script_path} {id11_code_path} {grainsfile} {dsfile} > {log_path} 2>&1
+echo PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} > {log_path} 2>&1
+PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} > {log_path} 2>&1
 date
     """.format(outfile_path=outfile_path,
                errfile_path=errfile_path,
@@ -243,8 +243,8 @@ def prepare_pbp_bash(pbp_object, id11_code_path, minpkint):
 #
 date
 source /cvmfs/hpc.esrf.fr/software/packages/linux/x86_64/jupyter-slurm/latest/envs/jupyter-slurm/bin/activate
-echo python3 {python_script_path} {id11_code_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {minpkint} > {log_path} 2>&1
-OMP_NUM_THREADS=1 python3 {python_script_path} {id11_code_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {minpkint} > {log_path} 2>&1
+echo OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {minpkint} > {log_path} 2>&1
+OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {minpkint} > {log_path} 2>&1
 date
         """.format(outfile_path=outfile_path,
                    errfile_path=errfile_path,
