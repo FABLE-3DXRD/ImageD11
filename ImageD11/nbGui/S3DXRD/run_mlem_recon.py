@@ -28,11 +28,7 @@ def main(h5name, ginc, dsfile, dest, nthreads):
 
 if __name__ == "__main__":
     # horrible workaround to include id11 code path
-    import sys
-    
-    id11_code_path = sys.argv[1]
-    
-    sys.path.insert(0, id11_code_path)
+    import sys    
 
     import numpy as np
     import h5py
@@ -41,10 +37,10 @@ if __name__ == "__main__":
     from ImageD11.sinograms.sinogram import GrainSinogram
     import ImageD11.grain
     
-    h5name = sys.argv[2]
-    ginc = int(sys.argv[3])
-    dsfile = sys.argv[4]
-    dest = sys.argv[5]
-    nthreads = int(sys.argv[6])
+    h5name = sys.argv[1]
+    ginc = int(sys.argv[2])
+    dsfile = sys.argv[3]
+    dest = sys.argv[4]
+    nthreads = int(sys.argv[5])
     
     main(h5name, ginc, dsfile, dest, nthreads)
