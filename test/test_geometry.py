@@ -4,6 +4,63 @@ import unittest
 from ImageD11.sinograms import geometry
 
 
+class TestSampleToLab(unittest.TestCase):
+    def test_sample_to_lab(self):
+        sx = 0.5  # um
+        sy = np.sqrt(3) / 2  # um
+        y0 = 35  # um
+        dty = 34  # um
+        omega = 30  # degrees
+        desired_lx = 0.0  # um
+        desired_ly = 0.0  # um
+
+        # assuming no y0/dty problems, rotating by 30 degrees should bring the grain
+        # onto the x-axis
+        # with coords (1, 0)
+        # however because y0 != dty
+        # rotation axis is further negative y than expected
+        # shift the sample to the right (negative y)
+        # puts the grain on the origin
+
+        lx, ly = geometry.sample_to_lab(sx, sy, y0, dty, omega)
+
+        self.assertAlmostEqual(desired_lx, lx)
+        self.assertAlmostEqual(desired_ly, ly)
+
+    def test_lab_to_sample(self):
+        # let's define a grain that's in the beam at 90 degrees
+        lx = -1.0  # um
+        ly = 0.0  # um
+        y0 = 35  # um
+        dty = 34  # um
+        omega = 90.0  # degrees
+        # dty is less than y0, so the rotation axis is further to the right (negative lab y) than expected
+        desired_sx = 1.0
+        desired_sy = 1.0
+
+        # (-1, 0) in the lab
+        # goes to (-1, 1) in the translated frame
+        # then we rotate reference frame to match
+
+        sx, sy = geometry.lab_to_sample(lx, ly, y0, dty, omega)
+
+        self.assertAlmostEqual(desired_sx, sx)
+        self.assertAlmostEqual(desired_sy, sy)
+
+    def test_cycle(self):
+        sx = 4.32
+        sy = -6.49
+        y0 = 42
+        dty = -24
+        omega = -456
+
+        lx, ly = geometry.sample_to_lab(sx, sy, y0, dty, omega)
+        sx_final, sy_final = geometry.lab_to_sample(lx, ly, y0, dty, omega)
+
+        self.assertAlmostEqual(sx, sx_final)
+        self.assertAlmostEqual(sy, sy_final)
+
+
 class TestSampleToStep(unittest.TestCase):
     def test_sample_to_step(self):
         ystep = 2.0  # um/px
@@ -234,7 +291,7 @@ class TestFitSamplePositionFromRecon(unittest.TestCase):
     def test_simple_recon(self):
         ni, nj = (100, 200)  # size of recon
         recon = np.zeros((ni, nj), dtype=float)  # blank reconstruction image
-        recon_centre = (ni//2, nj//2)  # find centre of recon
+        recon_centre = (ni // 2, nj // 2)  # find centre of recon
         centre_offset = 10  # 10 px away from centre
         ri, rj = (recon_centre[0] + centre_offset, recon_centre[1] - centre_offset)  # recon position of hot pixel
         recon[ri, rj] = 1.0
@@ -250,19 +307,19 @@ class TestFitSamplePositionFromRecon(unittest.TestCase):
         self.assertSequenceEqual((desired_x, desired_y), (x, y))
 
 
-class TestDtyMask( unittest.TestCase ):
+class TestDtyMask(unittest.TestCase):
     def setUp(self):
         om = np.arange(180)
         self.ystep = 0.1
-        y =  np.arange(-5,5.1,self.ystep)
+        y = np.arange(-5, 5.1, self.ystep)
         self.shape = (len(y), len(om))
         self.omega = np.empty(self.shape, float)
         self.dty = np.empty(self.shape, float)
         self.omega[:] = om[np.newaxis, :]
         self.dty[:] = y[:, np.newaxis]
         self.dtyi = self.dty / self.ystep
-        self.sinomega = np.sin( np.radians( self.omega ) )
-        self.cosomega = np.cos( np.radians( self.omega ) )
+        self.sinomega = np.sin(np.radians(self.omega))
+        self.cosomega = np.cos(np.radians(self.omega))
 
     def test_cos_sin(self):
         x = 12.0
@@ -275,6 +332,5 @@ class TestDtyMask( unittest.TestCase ):
                     self.assertTrue((m1 == m2).all())
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     unittest.main()
