@@ -342,8 +342,10 @@ def run_astra(sino, angles, shift=0, pad=0, mask=None, niter=100, astra_method='
     allowed_methods = ['BP', 'SIRT', 'BP_CUDA', 'FBP_CUDA', 'SIRT_CUDA', 'SART_CUDA', 'CGLS_CUDA', 'EM_CUDA']
     if astra_method not in allowed_methods:
         raise ValueError("Unsupported method!")
+    manual_mask = None
     if astra_method == 'EM_CUDA' and mask is not None:
-        print("Can't use mask with EM_CUDA method!")
+        # print("Can't use mask with EM_CUDA method!")
+        manual_mask = mask.copy()
         mask = None
     
     vol_geom = astra.create_vol_geom((sino.shape[0]+pad, sino.shape[0]+pad))
@@ -365,8 +367,9 @@ def run_astra(sino, angles, shift=0, pad=0, mask=None, niter=100, astra_method='
     cfg['ProjectionDataId'] = proj_data_id
     cfg['ReconstructionDataId'] = rec_id
     cfg['option'] = {}
-    cfg['option']['MinConstraint'] = 0
-    cfg['option']['MaxConstraint'] = 1
+    if astra_method != 'EM_CUDA':
+        cfg['option']['MinConstraint'] = 0
+        cfg['option']['MaxConstraint'] = 1
     
     if mask is not None:
         mask_id = astra.data2d.create('-vol', vol_geom, mask)
@@ -384,6 +387,10 @@ def run_astra(sino, angles, shift=0, pad=0, mask=None, niter=100, astra_method='
     
     if mask is not None:
         astra.data2d.delete(mask_id)
+
+    if astra_method == 'EM_CUDA' and manual_mask is not None:
+        # manually mask
+        recon = np.where(manual_mask, recon, 0.0)
     
     return recon    
     
