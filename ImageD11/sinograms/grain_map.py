@@ -4,6 +4,7 @@ import numba
 
 from ImageD11.sinograms import dataset
 from ImageD11.sinograms.sinogram import save_array
+from ImageD11 import unitcell
 
 
 @numba.njit
@@ -212,22 +213,37 @@ class GrainMap:
 
             self.add_map('ipf_' + letter, rgb_map)
 
-    def to_h5(self, h5file, h5group="maps"):
+    def to_h5(self, h5file, h5group="GrainMap"):
         """Write all maps to an HDF5 file (h5file) with a parent group h5group. Creates h5group if doesn't already exist"""
         with h5py.File(h5file, "a") as hout:
-            maps_group = hout.require_group(h5group)
+            parent_group = hout.require_group(h5group)
+            
+            maps_group = parent_group.require_group('maps')
+            
             for map_name in self.keys():
                 saved_array = save_array(maps_group, map_name, self.maps[map_name])
                 if "ipf" in map_name:
                     # set 'IMAGE" attribute
                     saved_array.attrs['CLASS'] = 'IMAGE'
+            
+            # store the dataset path
             maps_group.attrs['dsetfile'] = self.ds.dsfile
+            
+            # store the phases
+            if len(self.phases) > 0:
+                phase_group = parent_group.require_group('phases')
+                for phase_id in self.phases.keys():
+                    phase_group[str(phase_id)] = self.phases[phase_id].tostring()
+
+            
 
     @classmethod
-    def from_h5(cls, h5file, h5group="maps", ds=None):
+    def from_h5(cls, h5file, h5group="GrainMap", ds=None):
         """Load map object from an HDF5 file"""
         with h5py.File(h5file, 'r') as hin:
-            maps_group = hin[h5group]
+            parent_group = hin[h5group]
+            
+            maps_group = parent_group['maps']
 
             if ds is None:  # load the DataSet from disk if none provided
                 dsfile = maps_group.attrs['dsetfile']
@@ -238,6 +254,12 @@ class GrainMap:
                 loaded_array = maps_group[map_name][:]  # load the array from disk
                 # add array to the class, suppressing cache clearing (so we don't have to recompute UB if it's saved to disk)
                 gmap.add_map(map_name, loaded_array, suppress_clear=True)
+            
+            if 'phases' in parent_group.keys():
+                phase_group = parent_group['phases']
+                
+                for phase_id in phase_group.keys():
+                    gmap.phases[int(phase_id)] = unitcell.cellfromstring(phase_group[phase_id][()].decode('utf-8'))
 
         return gmap
 
