@@ -111,9 +111,9 @@ class GrainMap:
             if name in self.keys():
                 del self.maps[name]
 
-    def add_map(self, name, array, supress_clear=False):
+    def add_map(self, name, array, suppress_clear=False):
         """Required to clear caches if UBI is set"""
-        if name == "UBI" and not supress_clear:
+        if name == "UBI" and not suppress_clear:
             self.clear_cache()
         self.maps[name] = array
 
@@ -236,8 +236,8 @@ class GrainMap:
             gmap = GrainMap(ds=ds)
             for map_name in maps_group.keys():
                 loaded_array = maps_group[map_name][:]  # load the array from disk
-                # add array to the class, supressing cache clearing (so we don't have to recompute UB if it's saved to disk)
-                gmap.add_map(map_name, loaded_array, supress_clear=True)
+                # add array to the class, suppressing cache clearing (so we don't have to recompute UB if it's saved to disk)
+                gmap.add_map(map_name, loaded_array, suppress_clear=True)
 
         return gmap
 
