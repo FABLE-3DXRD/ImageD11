@@ -10,8 +10,8 @@ from ImageD11 import unitcell
 from ImageD11.sinograms.point_by_point import nb_inv_3d
 
 
-class Microstructure:
-    """This is a class to store a contiguous voxel-based representation of multiple grains and phases.
+class TensorMap:
+    """This is a class to store a contiguous voxel-based representation of a sample.
     At its core is the self.maps attribute, which is a dictionary of Numpy arrays.
     Each Numpy array should represent a 3D voxel grid of the sample.
     The dimensions of the array are aligned with the laboratory reference frame in the order (Z, Y, X, ...)
@@ -46,7 +46,7 @@ class Microstructure:
         self._meta_orix_oriens = dict()
         
         # dict to store grain merges
-        # e.g when we merge together multiple Microstructure layers
+        # e.g when we merge together multiple TensorMap layers
         # if we want to detect and merge duplicate grains in multiple layers
         # then we will have new merged grain ids in self.labels
         # we need to store the mapping from new merged grain ids to original grain ids
@@ -64,8 +64,8 @@ class Microstructure:
         if item == 'maps':
             return object.__getattribute__(self, item)
         if item in self.maps.keys():
-            return super(Microstructure, self).__getattribute__('maps')[item]
-        return super(Microstructure, self).__getattribute__(item)
+            return super(TensorMap, self).__getattribute__('maps')[item]
+        return super(TensorMap, self).__getattribute__(item)
 
     def __getitem__(self, map_name):
         """allows you to use dictionary syntax like self["UBI"]"""
@@ -197,7 +197,7 @@ class Microstructure:
 
             self.add_map('ipf_' + letter, rgb_map)
 
-    def to_h5(self, h5file, h5group='Microstructure'):
+    def to_h5(self, h5file, h5group='TensorMap'):
         """Write all maps to an HDF5 file (h5file) with a parent group h5group. Creates h5group if doesn't already exist"""
         with h5py.File(h5file, "a") as hout:
             parent_group = hout.require_group(h5group)
@@ -225,7 +225,7 @@ class Microstructure:
             parent_group.create_dataset("step", data=np.array(self.steps))
 
     
-    def to_paraview(self, h5name, h5group='Microstructure'):
+    def to_paraview(self, h5name, h5group='TensorMap'):
         """Exports to H5, then writes an XDMF file that lets you read the data with ParaView"""
         # Write H5 first
         if not os.path.exists(h5name):
@@ -293,9 +293,9 @@ class Microstructure:
             fileID.write('</Xdmf>\n')
         
     @staticmethod
-    def recon_order_to_micro_order(recon_arr):
+    def recon_order_to_map_order(recon_arr):
         """Transform a 2D array from reconstruction space (first axis X, second axis is -Y)
-           to micro space (Z, Y ,X)
+           to TensorMap space (Z, Y ,X)
            The input array must have the first two dimensions (X, -Y) as is the case
            for reconstructed grain shapes from sinogram or PBP methods"""
         # we are currently in (X, -Y, ...)
@@ -319,24 +319,24 @@ class Microstructure:
         return micro_arr
     
     @staticmethod
-    def micro_index_to_recon(mj, mk, yshape):
-        """From a microstructure 3D array index (mi, mj, mk) and the Y shape of the microstructure array,
+    def map_index_to_recon(mj, mk, yshape):
+        """From a 3D array index (mi, mj, mk) and the Y shape of the map,
         determine the corresponding position in reconstruction space"""
         return (mk, yshape-mj-1)
     
     @classmethod
     def from_ubis(cls, ubi_array):
-        """Make simplest possible Microstructure object from a UBI array in reconstuction space (X, -Y)"""
+        """Make simplest possible TensorMap object from a UBI array in reconstuction space (X, -Y)"""
         
-        ubi_array = cls.recon_order_to_micro_order(ubi_array)
+        ubi_array = cls.recon_order_to_map_order(ubi_array)
         
         # just make a simple maps container with the UBI array
         maps = {'UBI': ubi_array}
-        return Microstructure(maps=maps)
+        return TensorMap(maps=maps)
 
     @classmethod
-    def from_h5(cls, h5file, h5group='Microstructure'):
-        """Load Microstructure object from an HDF5 file"""
+    def from_h5(cls, h5file, h5group='TensorMap'):
+        """Load TensorMap object from an HDF5 file"""
         
         maps = dict()
         phases = dict()
@@ -359,13 +359,13 @@ class Microstructure:
             
             steps = parent_group['step'][:]
         
-        micro = Microstructure(maps=maps, phases=phases, steps=steps)
+        tensor_map = cls(maps=maps, phases=phases, steps=steps)
         
-        return micro
+        return tensor_map
 
     @classmethod
     def from_pbpmap(cls, pbpmap, steps=None):
-        """Create from a pbpmap object"""
+        """Create TensorMap from a pbpmap object"""
         
         maps = dict()
         
@@ -376,23 +376,23 @@ class Microstructure:
             ubi_map = pbpmap.ubi
         
         # reshape ubi map and add it to the dict
-        maps['UBI'] = cls.recon_order_to_micro_order(ubi_map)
+        maps['UBI'] = cls.recon_order_to_map_order(ubi_map)
         
         # add npks to the dict
         if hasattr(pbpmap, 'npks'):
-            maps['npks'] = cls.recon_order_to_micro_order(pbpmap.npks)
+            maps['npks'] = cls.recon_order_to_map_order(pbpmap.npks)
         
         # add nuniq to the dict
         if hasattr(pbpmap, 'nuniq'):
-            maps['nuniq'] = cls.recon_order_to_micro_order(pbpmap.nuniq)
+            maps['nuniq'] = cls.recon_order_to_map_order(pbpmap.nuniq)
                 
-        micro = Microstructure(maps=maps, steps=steps)
+        tensor_map = cls(maps=maps, steps=steps)
 
-        return micro
+        return tensor_map
 
     @classmethod
     def from_grainsinos(cls, grainsinos, method="iradon", use_gids=True, cutoff_level=0.1, steps=None):
-        """Build a Microstructure object from a list of GrainSinos.
+        """Build a TensorMap object from a list of GrainSinos.
         method is the recon that we look for inside each grainsino
         use_gids will look for grainsino.grain.gid inside each grainsino to use as the label
         if it can't find it, it will use the increment"""
@@ -496,25 +496,25 @@ class Microstructure:
 
         raw_intensity_map[raw_intensity_map <= cutoff_level] = 0.0
         
-        maps["intensity"] = cls.recon_order_to_micro_order(raw_intensity_map)
-        maps["labels"] = cls.recon_order_to_micro_order(grain_labels_map)
-        maps["phase_ids"] = cls.recon_order_to_micro_order(phase_id_map)
-        maps["UBI"] = cls.recon_order_to_micro_order(ubi_map)
+        maps["intensity"] = cls.recon_order_to_map_order(raw_intensity_map)
+        maps["labels"] = cls.recon_order_to_map_order(grain_labels_map)
+        maps["phase_ids"] = cls.recon_order_to_map_order(phase_id_map)
+        maps["UBI"] = cls.recon_order_to_map_order(ubi_map)
 
         if have_ipfs:
             rgb_x_map = np.transpose((redx, grnx, blux), axes=(1, 2, 0))
             rgb_y_map = np.transpose((redy, grny, bluy), axes=(1, 2, 0))
             rgb_z_map = np.transpose((redz, grnz, bluz), axes=(1, 2, 0))
             
-            maps["ipf_x"] = cls.recon_order_to_micro_order(rgb_x_map)
-            maps["ipf_y"] = cls.recon_order_to_micro_order(rgb_y_map)
-            maps["ipf_z"] = cls.recon_order_to_micro_order(rgb_z_map)
+            maps["ipf_x"] = cls.recon_order_to_map_order(rgb_x_map)
+            maps["ipf_y"] = cls.recon_order_to_map_order(rgb_y_map)
+            maps["ipf_z"] = cls.recon_order_to_map_order(rgb_z_map)
         
         # get the step size from the dataset of one of the grainsino objects
         if steps is None:
             ystep = grainsinos[0].ds.ystep
             steps = (1.0, ystep, ystep)
         
-        micro = Microstructure(maps=maps, phases=phases, steps=steps)
+        tensor_map = cls(maps=maps, phases=phases, steps=steps)
         
-        return micro
+        return tensor_map
