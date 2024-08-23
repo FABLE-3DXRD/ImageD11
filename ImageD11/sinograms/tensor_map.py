@@ -247,7 +247,7 @@ class TensorMap:
         VectorDimensionsStr = 'Dimensions="%d %d %d %d"' % vector_dims
         TensorDimensionsStr = 'Dimensions="%d %d %d %d %d"' % tensor_dims
         
-        steps = self.steps
+        steps = tuple(self.steps)
 
         # Write XDMF file
         with open(xdmf_filename, 'wt') as fileID:
@@ -439,7 +439,7 @@ class TensorMap:
         grain_labels_map = np.full(map_shape, -1)
 
         # make an empty intensity map
-        raw_intensity_map = np.zeros(map_shape)
+        raw_intensity_map = np.full(map_shape, cutoff_level)
 
         # make an empty phase ID map
         phase_id_map = np.full(map_shape, -1)
@@ -518,3 +518,62 @@ class TensorMap:
         tensor_map = cls(maps=maps, phases=phases, steps=steps)
         
         return tensor_map
+    
+    @classmethod
+    def from_combine_phases(cls, tensormaps):
+        """Combine multiple mono-phase TensorMaps with different phases into one TensorMap.
+           For now, this handles grain label collisions by offsetting the grain labels of
+           subsequent tensormaps before adding"""
+        combined_maps = {}
+        tm0 = tensormaps[0]
+
+        # make sure each input TensorMap only has one phase
+        for tm in tensormaps:
+            if len(tm.phases) > 1:
+                raise ValueError("Each input TensorMap should only have one phase!")
+
+        # combine phases
+        combined_phases = {inc:tm.phases[0] for inc, tm in enumerate(tensormaps)}
+
+        # work out what map names we have in all of our tensormaps
+        common_map_names = [map_name for map_name in tm0.keys() if all([map_name in tm.keys() for tm in tensormaps])]
+
+        for map_name in common_map_names:
+            # get the base array (the first tensormap)
+            base_arr = tm0[map_name].copy()
+
+            # iterate over the other tensormaps
+            for tm_inc, tm in enumerate(tensormaps[1:]):
+                tm_inc += 1  # because we start at 1:
+                # update the base array where the other tensormaps have nonzero phases
+                if map_name == 'phase_ids':
+                    # we are updating the phase id map for the combined TensorMap
+                    # so the new array we put in is just the tm_inc
+
+                    new_arr = tm_inc
+                elif map_name == 'labels':
+                    # for now, we need to make sure there's no collisions between grain IDs
+                    # for now we are shifting grain labels of subsequent maps
+                    # get the highest current grain ID
+                    max_prev_gid = np.max(base_arr)
+
+                    # make a version of labels for this tensormap that's shifted by max_prev_gid + 1
+                    shifted_labels = tm['labels'].copy()
+                    shifted_labels = np.where(shifted_labels > -1, shifted_labels + (max_prev_gid + 1), shifted_labels)
+
+                    # make sure that aside from -1, no grain labels intersect between base_arr and the shifted labels we will introduce
+                    assert len(np.intersect1d(np.unique(base_arr)[1:], np.unique(shifted_labels)[1:])) == 0
+
+                    new_arr = shifted_labels
+                else:
+                    new_arr = tm[map_name]
+
+                # selectively overwrite base_arr with new_arr
+                # the array slicing stuff below is to allow rightward broadcasting
+                base_arr = np.where((tm['phase_ids'] > -1)[(...,) + (np.newaxis,) * (base_arr.ndim - 3)], new_arr, base_arr)
+
+            combined_maps[map_name] = base_arr
+
+        combined_tm = cls(maps=combined_maps, phases=combined_phases, steps=tm0.steps)
+
+        return combined_tm
