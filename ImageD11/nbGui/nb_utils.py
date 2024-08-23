@@ -499,16 +499,7 @@ def get_rgbs_for_grains(grains):
         grain.rgb_z = rgb_z
 
 
-def plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1])):
-    # get the UB matrices for each grain
-    UBs = np.array([g.UB for g in grains])
-
-    # get the reference unit cell of one of the grains (should be the same for all)
-    ref_ucell = grains[0].ref_unitcell
-
-    # get a meta orientation for all the grains
-    meta_orien = ref_ucell.get_orix_orien(UBs)
-
+def plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([0., 0, 1])):
     try:
         from orix.vector.vector3d import Vector3d
     except ImportError:
@@ -521,6 +512,28 @@ def plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1])):
 
     # scatter the meta orientation using the colours
     meta_orien.scatter("ipf", c=rgb, direction=ipf_direction)
+
+
+def plot_all_ipfs_from_meta_orien(meta_orien, ref_ucell):
+    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([1., 0., 0.]))
+    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([0., 1., 0.]))
+    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([0., 0., 1.]))
+
+
+def plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1])):
+    # get the UB matrices for each grain
+    UBs = np.array([g.UB for g in grains])
+
+    # get the reference unit cell of one of the grains (should be the same for all)
+    ref_ucell = grains[0].ref_unitcell
+
+    # get a meta orientation for all the grains
+    meta_orien = ref_ucell.get_orix_orien(UBs)
+
+    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis)
+
+
+
 
 
 def plot_direct_pole_figure(grains, uvw=np.array([1., 0., 0.])):
@@ -551,6 +564,9 @@ def plot_all_ipfs(grains):
     plot_inverse_pole_figure(grains, axis=np.array([1., 0, 0]))
     plot_inverse_pole_figure(grains, axis=np.array([0., 1, 0]))
     plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1]))
+
+
+
 
 
 # backwards compatible
