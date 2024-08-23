@@ -224,7 +224,6 @@ class TensorMap:
             # store the step sizes
             parent_group.create_dataset("step", data=np.array(self.steps))
 
-    
     def to_paraview(self, h5name, h5group='TensorMap'):
         """Exports to H5, then writes an XDMF file that lets you read the data with ParaView"""
         # Write H5 first
@@ -364,7 +363,7 @@ class TensorMap:
         return tensor_map
 
     @classmethod
-    def from_pbpmap(cls, pbpmap, steps=None):
+    def from_pbpmap(cls, pbpmap, steps=None, phases=None):
         """Create TensorMap from a pbpmap object"""
         
         maps = dict()
@@ -374,19 +373,22 @@ class TensorMap:
             ubi_map = pbpmap.ubibest
         else:
             ubi_map = pbpmap.ubi
+
+        # create a mask from ubi_map
+        ubi_mask = np.where(np.isnan(ubi_map[:, :, 0, 0]), 0, 1).astype(bool)
         
         # reshape ubi map and add it to the dict
         maps['UBI'] = cls.recon_order_to_map_order(ubi_map)
         
         # add npks to the dict
         if hasattr(pbpmap, 'npks'):
-            maps['npks'] = cls.recon_order_to_map_order(pbpmap.npks)
+            maps['npks'] = cls.recon_order_to_map_order(np.where(ubi_mask, pbpmap.npks, 0))
         
         # add nuniq to the dict
         if hasattr(pbpmap, 'nuniq'):
-            maps['nuniq'] = cls.recon_order_to_map_order(pbpmap.nuniq)
+            maps['nuniq'] = cls.recon_order_to_map_order(np.where(ubi_mask, pbpmap.nuniq, 0))
                 
-        tensor_map = cls(maps=maps, steps=steps)
+        tensor_map = cls(maps=maps, steps=steps, phases=phases)
 
         return tensor_map
 
@@ -569,8 +571,13 @@ class TensorMap:
                     new_arr = tm[map_name]
 
                 # selectively overwrite base_arr with new_arr
-                # the array slicing stuff below is to allow rightward broadcasting
-                base_arr = np.where((tm['phase_ids'] > -1)[(...,) + (np.newaxis,) * (base_arr.ndim - 3)], new_arr, base_arr)
+                # the array slicing stuff below is to allow arbitrary rightward broadcasting
+                # phase_id is (NZ, NY, NX) but base_arr might be UBI for example (NZ, NY, NX, 3, 3)
+                # Numpy can auto-broadcast leftwards (e.g (NZ, NY, NX) to (3, 3, NZ, NY, NX))
+                # but not rightwards!
+                # so we need to slice like this (NZ, NY, NX)[..., np.newaxis, np.newaxis]
+                # In Python 2, slicing grammar is different, so we can't invoke ... directly inside a tuple
+                base_arr = np.where((tm['phase_ids'] > -1)[(Ellipsis,) + (np.newaxis,) * (base_arr.ndim - 3)], new_arr, base_arr)
 
             combined_maps[map_name] = base_arr
 
