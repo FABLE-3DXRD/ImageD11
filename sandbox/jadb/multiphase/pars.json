@@ -1,0 +1,16 @@
+{
+  "geometry": {
+    "file":"geometry.par",
+    "hash": "MD5HASHGEO"
+  },
+  "phases": {
+    "ferrite": {
+      "file": "ferrite.par",
+      "hash": "MD5HASH1"
+    },
+    "austenite": {
+      "file": "austenite.par",
+      "hash": "MD5HASH2"
+    }
+  }
+}
