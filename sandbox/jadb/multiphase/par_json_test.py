@@ -3,20 +3,17 @@ exec(open('/data/id11/nanoscope/install_ImageD11_from_git.py').read())
 # Add ImageD11 local
 PYTHONPATH = setup_ImageD11_from_git( os.path.join( os.environ['HOME'],'Code'), 'ImageD11' )
 
-# Add xfab local
-sys.path.insert(0, '/home/esrf/james1997a/Code/xfab')
-
-from xfab.parameters import parameters, JsonPars
+from ImageD11.parameters import parameters, AnalysisSchema
 from ImageD11.unitcell import Phases
 from ImageD11.columnfile import columnfile
 
 
 def main():
-    # read a json file into JsonPars
-    json_pars = JsonPars('pars.json')
+    # read a json file into AnalysisSchema
+    json_pars = AnalysisSchema('pars.json')
 
     # print the json dict
-    print(json_pars.json_dict)
+    print(json_pars.pars_dict)
 
     # print the geometry pars object
     print(json_pars.geometry_pars_obj.get_parameters())
