@@ -33,7 +33,7 @@ from numpy.linalg import inv
 from ImageD11 import cImageD11
 from xfab import tools
 from scipy.spatial.transform import Rotation as ScipyRotation
-from ImageD11.parameters import JsonPars
+from ImageD11.parameters import AnalysisSchema
 
 
 def radians(x):
@@ -159,10 +159,10 @@ def cellfromstring(s):
     return unitcell(latt, symm)
 
 
-class Phases(JsonPars):
+class Phases(AnalysisSchema):
     """
-    Phases class - extends JsonPars from xfab.parameters
-    Reads parameters from a json file
+    Phases class - extends AnalysisSchema from xfab.parameters
+    Reads analysis parameters from file
     Contains self.unitcells which is a dict of unitcell objects
     """
     def __init__(self, filename):
