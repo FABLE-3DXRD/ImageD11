@@ -1,7 +1,7 @@
-exec(open('/data/id11/nanoscope/install_ImageD11_from_git.py').read())
+# exec(open('/data/id11/nanoscope/install_ImageD11_from_git.py').read())
 
 # Add ImageD11 local
-PYTHONPATH = setup_ImageD11_from_git( os.path.join( os.environ['HOME'],'Code'), 'ImageD11' )
+# PYTHONPATH = setup_ImageD11_from_git( os.path.join( os.environ['HOME'],'Code'), 'ImageD11' )
 
 from ImageD11.parameters import parameters, AnalysisSchema
 from ImageD11.unitcell import Phases
