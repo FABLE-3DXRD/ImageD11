@@ -33,6 +33,7 @@ from numpy.linalg import inv
 from ImageD11 import cImageD11
 from xfab import tools
 from scipy.spatial.transform import Rotation as ScipyRotation
+from ImageD11.parameters import AnalysisSchema
 
 
 def radians(x):
@@ -156,6 +157,24 @@ def cellfromstring(s):
     except IndexError:
         symm = 'P'
     return unitcell(latt, symm)
+
+
+class Phases(AnalysisSchema):
+    """
+    Phases class - extends AnalysisSchema from xfab.parameters
+    Reads analysis parameters from file
+    Contains self.unitcells which is a dict of unitcell objects
+    """
+    def __init__(self, filename):
+        super(Phases, self).__init__(filename)
+        self.unitcells = {}
+        if filename is not None:
+            self.get_unitcells()
+
+    def get_unitcells(self):
+        # dict of parameter objects for each phase
+        for phase_name, phase_pars_obj in self.phase_pars_obj_dict.items():
+            self.unitcells[phase_name] = unitcell_from_parameters(phase_pars_obj)
 
 
 class unitcell:
