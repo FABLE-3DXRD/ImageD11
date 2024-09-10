@@ -96,6 +96,9 @@ class GrainSinogram:
 
         # Make a spatially corrected columnfile from the filtered peaks table
         flt = self.ds.get_colfile_from_peaks_dict(peaks_dict=p2d)
+        # Make sure the columnfile has the correct geometry and phase
+        flt.parameters = cf_4d.parameters
+        flt.updateGeometry()
 
         # Filter the columnfile by hkl tol
         hkl_real = np.dot(self.grain.ubi, (flt.gx, flt.gy, flt.gz))  # calculate hkl of all assigned peaks
@@ -392,28 +395,28 @@ def run_astra(sino, angles, shift=0, pad=0, mask=None, niter=100, astra_method='
         # manually mask
         recon = np.where(manual_mask, recon, 0.0)
     
-    return recon    
+    return recon
     
 
-def write_h5(filename, list_of_sinos, write_grains_too=True):
+def write_h5(filename, list_of_sinos, overwrite_grains=False, group_name='grains'):
     """Write list of GrainSinogram objects to H5Py file
-       If write_grains_too is True, will also write self.grain to the same file"""
+       If overwrite_grains is True, will replace grains in group_name"""
     with h5py.File(filename, "a") as hout:
-        grains_group = hout.require_group('grains')
+        grains_group = hout.require_group(group_name)
 
         for gsinc, gs in enumerate(list_of_sinos):
             group_name = str(gsinc)
             gs.to_h5py_group(parent_group=grains_group, group_name=group_name)
-            if write_grains_too:
+            if overwrite_grains:
                 gs.grain.to_h5py_group(parent_group=grains_group, group_name=group_name)
 
 
-def read_h5(filename, ds):
+def read_h5(filename, ds, group_name='grains'):
     """Read list of GrainSinogram objects from H5Py file
        Will also create self.grain objects from the H5Py file
        Because GrainSinogram objects can't exist without corresponding grain objects"""
     with h5py.File(filename, "r") as hin:
-        grains_group = hin['grains']
+        grains_group = hin[group_name]
         gs_objects = []
 
         # take all the keys in the grains group, sort them by integer value, iterate
