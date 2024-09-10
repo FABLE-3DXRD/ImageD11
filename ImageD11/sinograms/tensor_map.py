@@ -220,8 +220,10 @@ class TensorMap:
                 phase_group = parent_group.require_group('phases')
                 for phase_id in self.phases.keys():
                     phase_group[str(phase_id)] = self.phases[phase_id].tostring()
-            
-            # store the step sizes
+                    # store the phase name as an attribute
+                    phase_group[str(phase_id)].attrs['phase_name'] = self.phases[phase_id].name
+
+                    # store the step sizes
             parent_group.create_dataset("step", data=np.array(self.steps))
 
     def to_paraview(self, h5name, h5group='TensorMap'):
@@ -355,6 +357,7 @@ class TensorMap:
                 
                 for phase_id in phase_group.keys():
                     phases[int(phase_id)] = unitcell.cellfromstring(phase_group[phase_id][()].decode('utf-8'))
+                    phases[int(phase_id)].name = phase_group[phase_id].attrs['phase_name']
             
             steps = parent_group['step'][:]
         
