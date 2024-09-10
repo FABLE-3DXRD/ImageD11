@@ -18,7 +18,11 @@ if __name__ == "__main__":
     foridx = [int(x) for x in ast.literal_eval(sys.argv[10])]
     forgen = [int(x) for x in ast.literal_eval(sys.argv[11])]
     uniqcut = float(sys.argv[12])
-    minpkint = int(sys.argv[13])
+    phase_name = sys.argv[13]
+    minpkint = int(sys.argv[14])
+
+    if phase_name == str(None):
+        phase_name = None
 
     print('Loading dset')
     ds = ImageD11.sinograms.dataset.load(dsfile)
@@ -42,7 +46,8 @@ if __name__ == "__main__":
                                                        symmetry=symmetry,
                                                        foridx=foridx,
                                                        forgen=forgen,
-                                                       uniqcut=uniqcut)
+                                                       uniqcut=uniqcut,
+                                                       phase_name=phase_name)
 
     pbp_object.setpeaks(cf_2d)
 
