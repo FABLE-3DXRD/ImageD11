@@ -318,8 +318,8 @@ class parameters:
                 self.parameters[name] = value
 
 
-def read_par_file(filename):
+def read_par_file(filename, phase_name=None):
     p = parameters()
-    p.loadparameters(filename)
+    p.loadparameters(filename, phase_name=phase_name)
     return p
 
