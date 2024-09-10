@@ -172,7 +172,7 @@ date
     return bash_script_path, recons_path
 
 
-def prepare_astra_bash(ds, grainsfile, id11_code_path):
+def prepare_astra_bash(ds, grainsfile, id11_code_path, group_name='grains'):
     slurm_astra_path = os.path.join(ds.analysispath, "slurm_astra")
 
     if not os.path.exists(slurm_astra_path):
@@ -198,8 +198,8 @@ def prepare_astra_bash(ds, grainsfile, id11_code_path):
 #
 date
 module load cuda
-echo PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} > {log_path} 2>&1
-PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} > {log_path} 2>&1
+echo PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} {group_name} > {log_path} 2>&1
+PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} {group_name} > {log_path} 2>&1
 date
     """.format(outfile_path=outfile_path,
                errfile_path=errfile_path,
@@ -207,6 +207,7 @@ date
                id11_code_path=id11_code_path,
                grainsfile=grainsfile,
                dsfile=ds.dsfile,
+               group_name=group_name,
                log_path=log_path)
 
     with open(bash_script_path, "w") as bashscriptfile:
@@ -461,7 +462,7 @@ def plot_grain_sinograms(grains, cf, n_grains_to_plot=None):
     if grid_size == 1 & nrows == 1:
         # only 1 grain
         g = grains[0]
-        m = cf.grain_id == g.gid
+        m = cf.grain_id == 0
         axs.scatter(cf.omega[m], cf.dty[m], c=cf.sum_intensity[m], s=2)
         axs.set_title(g.gid)
     else:
