@@ -5,6 +5,7 @@ import fast_histogram
 import logging
 
 import ImageD11.grain
+import ImageD11.unitcell
 import ImageD11.sinograms.properties
 from ImageD11.blobcorrector import eiger_spatial
 from ImageD11.columnfile import colfile_from_dict
@@ -593,6 +594,12 @@ class DataSet:
             )
         return histo
 
+    def get_phases_from_disk(self):
+        if not hasattr(self,'parfile') or self.parfile is None:
+            raise AttributeError('Need self.parfile to load phases!')
+        return ImageD11.unitcell.Phases(self.parfile)
+
+
     @property
     def peaks_table(self):
         if self._peaks_table is None:
@@ -628,16 +635,23 @@ class DataSet:
         # Generate columnfile from peaks table
         cf = colfile_from_dict(spat(peaks_dict))
 
-        # Update parameters for the columnfile
-        if hasattr(self,'parfile') and self.parfile is not None:
-            cf.parameters.loadparameters(self.parfile)
-            cf.updateGeometry()
         return cf
 
+    def update_colfile_pars(self, cf, phase_name=None):
+        """Load parameters and update geometry for colfile"""
+        cf.parameters.loadparameters(self.parfile, phase_name=phase_name)
+        cf.updateGeometry()
+
     def get_cf_2d(self):
+        if os.path.exists(self.col2dfile):
+            print('Loading existing colfile from', self.col2dfile)
+            return self.get_cf_2d_from_disk()
         return self.get_colfile_from_peaks_dict()
 
     def get_cf_4d(self):
+        if os.path.exists(self.col4dfile):
+            print('Loading existing colfile from', self.col4dfile)
+            return self.get_cf_4d_from_disk()
         return self.get_colfile_from_peaks_dict(peaks_dict=self.pk4d)
 
     def get_cf_2d_from_disk(self):
@@ -652,12 +666,22 @@ class DataSet:
         cf_4d = ImageD11.columnfile.columnfile(self.col4dfile)
         return cf_4d
 
-    def get_grains_from_disk(self):
-        grains = ImageD11.grain.read_grain_file_h5(self.grainsfile)
+    def get_grains_from_disk(self, phase_name=None):
+        group_name = 'grains'
+        if phase_name is not None:
+            group_name = phase_name
+        grains = ImageD11.grain.read_grain_file_h5(self.grainsfile, group_name=group_name)
+        if phase_name is not None and hasattr(self, 'phases'):
+            print('Adding reference unitcells from self.phases')
+            for g in grains:
+                g.ref_unitcell = self.phases.unitcells[phase_name]
         return grains
 
-    def save_grains_to_disk(self, grains):
-        ImageD11.grain.write_grain_file_h5(self.grainsfile, grains)
+    def save_grains_to_disk(self, grains, phase_name=None):
+        group_name = 'grains'
+        if phase_name is not None:
+            group_name = phase_name
+        ImageD11.grain.write_grain_file_h5(self.grainsfile, grains, group_name=group_name)
 
     def import_nnz(self):
         """Read the nnz arrays from the sparsefiles"""
