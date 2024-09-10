@@ -239,13 +239,13 @@ def prepare_pbp_bash(pbp_object, id11_code_path, minpkint):
 #SBATCH --time=48:00:00
 #SBATCH --partition=nice-long
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=90
+#SBATCH --cpus-per-task=64
 
 #
 date
 source /cvmfs/hpc.esrf.fr/software/packages/linux/x86_64/jupyter-slurm/latest/envs/jupyter-slurm/bin/activate
-echo OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {minpkint} > {log_path} 2>&1
-OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {minpkint} > {log_path} 2>&1
+echo OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {phase_name} {minpkint} > {log_path} 2>&1
+OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {phase_name} {minpkint} > {log_path} 2>&1
 date
         """.format(outfile_path=outfile_path,
                    errfile_path=errfile_path,
@@ -263,6 +263,7 @@ date
                    foridx=str(pbp_object.foridx).replace(" ", ""),
                    forgen=str(pbp_object.forgen).replace(" ", ""),
                    uniqcut=pbp_object.uniqcut,
+                   phase_name=str(pbp_object.phase_name),
                    minpkint=minpkint,
                    log_path=log_path)
 
