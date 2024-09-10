@@ -274,11 +274,11 @@ parglobal = None
 colglobal = None
 
 
-def initializer(parfile, symmetry, colfile, loglevel=3):
+def initializer(parfile, phase_name, symmetry, colfile, loglevel=3):
     global ucglobal, symglobal, parglobal, colglobal
     if threadpoolctl is not None:
         threadpoolctl.threadpool_limits(limits=1)
-    parglobal = parameters.read_par_file(parfile)
+    parglobal = parameters.read_par_file(parfile, phase_name=phase_name)
     ucglobal = unitcell.unitcell_from_parameters(parglobal)
     symglobal = sym_u.getgroup(symmetry)()
     colglobal = ImageD11.columnfile.mmap_h5colf(colfile)
@@ -304,6 +304,7 @@ class PBP:
         foridx=None,
         forgen=None,
         uniqcut=0.75,
+        phase_name=None
     ):
         """
         parfile = ImageD11 parameter file (for the unit cell + geometry)
@@ -329,6 +330,7 @@ class PBP:
         self.uniqcut = uniqcut
         self.cosine_tol = cosine_tol
         self.loglevel = loglevel
+        self.phase_name = phase_name
 
     def setpeaks(self, colf, icolf_filename=None):
         """
@@ -339,7 +341,7 @@ class PBP:
         if icolf_filename is None:
             icolf_filename = self.dset.icolfile
         # Load the peaks
-        colf.parameters.loadparameters(self.parfile)
+        colf.parameters.loadparameters(self.parfile, phase_name=self.phase_name)
         if "ds" not in colf.titles:
             colf.updateGeometry()  # for ds
         #
@@ -386,7 +388,8 @@ class PBP:
         colf.addcolumn(isel, "isel")  # peaks selected for indexing
 
         # colf.addcolumn(np.round((colf.dty - self.y0) / self.ystep).astype(int), "dtyi")
-        dtyi = dty_to_dtyi(colf.dty - self.y0, self.ystep)
+        # dtyi = dty_to_dtyi(colf.dty - self.y0, self.ystep)
+        dtyi = dty_to_dtyi(colf.dty, self.ystep)
         colf.addcolumn(dtyi, "dtyi")
 
         # cache these to speed up selections later
@@ -470,8 +473,12 @@ class PBP:
         }
         pprint.pprint(idxopt)
 
-        nlo = np.floor((self.ybincens.min() - self.y0) / self.ystep).astype(int)
-        nhi = np.ceil((self.ybincens.max() - self.y0) / self.ystep).astype(int)
+        # nlo = np.floor((self.ybincens.min() - self.y0) / self.ystep).astype(int)
+        # nhi = np.ceil((self.ybincens.max() - self.y0) / self.ystep).astype(int)
+
+        nlo = np.floor((self.ybincens.min()) / self.ystep).astype(int)
+        nhi = np.ceil((self.ybincens.max()) / self.ystep).astype(int)
+
         rng = range(nlo, nhi + 1, gridstep)
 
         if debugpoints is None:
@@ -493,6 +500,7 @@ class PBP:
                 initializer=initializer,
                 initargs=(
                     self.parfile,
+                    self.phase_name,
                     self.symmetry,
                     self.icolf_filename,
                     self.loglevel,
