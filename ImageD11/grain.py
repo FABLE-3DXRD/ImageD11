@@ -258,7 +258,7 @@ class grain:
                 value = getattr(self, attr)
                 if value is not None:
                     grain_group[attr] = value
-            except (NameError, AttributeError):
+            except (NameError, AttributeError, TypeError, OSError):
                 continue
 
         # write array attributes
@@ -377,27 +377,27 @@ NUMATTRS = ["npks", "nuniq"]
 ARRATTRS = ["translation"]
 
 
-def write_grain_file_h5(filename, list_of_grains):
-    """Write list of grains to H5py file.
-       Will fail if the grain already exists"""
+def write_grain_file_h5(filename, list_of_grains, group_name='grains'):
+    """Write list of grains to H5py file."""
     # TODO: Use Silx Nexus IO instead?
 
-    with h5py.File(filename, 'w-') as hout:
-        grains_group = hout.create_group('grains')
+    with h5py.File(filename, 'a') as hout:
+        grains_group = hout.create_group(group_name)
 
         # the H5 grain file should be order-preserving
         # i.e it should always be possible to read the grains in the same order as they are written
         # so we will use the list positions as the names for the H5 groups
+        # but we will try to read the names if we have them
 
         for ginc, g in enumerate(list_of_grains):
             group_name = str(ginc)
             g.to_h5py_group(parent_group=grains_group, group_name=group_name)
 
 
-def read_grain_file_h5(filename):
+def read_grain_file_h5(filename, group_name='grains'):
     """Read list of grains from H5py file"""
     with h5py.File(filename, 'r') as hin:
-        grains_group = hin['grains']
+        grains_group = hin[group_name]
         grains = []
 
         # take all the keys in the grains group, sort them by integer value, iterate
