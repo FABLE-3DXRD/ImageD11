@@ -52,6 +52,24 @@ class AnalysisSchema:
             self.load_json(filename)
             self.get_pars_objects()
 
+    def update_geometryfile(self):
+        # update geometry file on disk from memory
+        if self.geometry_pars_obj is None:
+            raise ValueError('No pars object in self.geometry_pars_obj!')
+        self.geometry_pars_obj.saveparameters(self.geometry_pars_obj.get('filename'))
+
+    def update_phasefile(self, phase_name):
+        # update phase file on disk from memory
+        if len(self.phase_pars_obj_dict) == 0:
+            raise ValueError('No pars objects in self.phase_pars_obj_dict!')
+        self.phase_pars_obj_dict[phase_name].saveparameters(self.phase_pars_obj_dict[phase_name].get('filename'))
+
+    def update_parfiles(self):
+        # updates geometry and phase par files on disk
+        self.update_geometryfile()
+        for phase_name in self.phase_pars_obj_dict.keys():
+            self.update_phasefile(phase_name)
+
     def rel_to_absolute(self, rel_file):
         """Get absolute path from (could be relative) filename"""
         parent_folder = os.path.dirname(os.path.abspath(self.pars_dict['parfile']))
@@ -64,6 +82,7 @@ class AnalysisSchema:
         geometry_file = self.rel_to_absolute(geometry_dict["file"])
         self.geometry_pars_obj = parameters()
         self.geometry_pars_obj.loadparameters(geometry_file)
+        self.geometry_pars_obj.set('filename', geometry_file)
 
         # get phase parameters from one of the phases
         phases_dict = self.pars_dict["phases"]
@@ -74,6 +93,7 @@ class AnalysisSchema:
             phase_pars_obj.loadparameters(phase_file)
             # add a parameter to keep track of the name of the phase
             phase_pars_obj.set('phase_name', phase_name)
+            phase_pars_obj.set('filename', phase_file)
             # put this pars object in self.phase_pars_obj_dict
             self.phase_pars_obj_dict[phase_name] = phase_pars_obj
 
