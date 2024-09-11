@@ -260,9 +260,6 @@ class TensorMap:
     E.g a phase ID map might be (1, 15, 20) but a UBI map might be (1, 15, 20, 3, 3)
     """
 
-    # TODO:
-    # MT, RMT, unitcell, B, U methods
-
     def __init__(self, maps=None, phases=None, steps=None):
         """maps: dict of Numpy arrays, each with shape (NZ, NY, NX, ...), with string keys for the map names
            phases: dict of ImageD11.unitcell.unitcell objects with integer keys for the phase IDs
@@ -321,7 +318,7 @@ class TensorMap:
 
     def clear_cache(self):
         # Clear calculated maps
-        for name in ("U", "UB"):
+        for name in ("U", "B", "UB", "mt", "unitcell", "euler"):
             if name in self.keys():
                 del self.maps[name]
 
@@ -630,7 +627,7 @@ class TensorMap:
             fileID.write(' </Domain>\n')
             fileID.write('</Xdmf>\n')
 
-    def to_ctf(self, ctf_path, z_index=0):
+    def to_ctf_mtex(self, ctf_path, z_index=0):
         """Export a Z slice to a CTF file for MTEX processing.
         The resulting ctf file can be loaded in MTEX with the command:
         ebsd = EBSD.load(ctf_path)
