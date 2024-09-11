@@ -1,13 +1,113 @@
 import os
 
+import numba
 import h5py
 import numpy as np
-import numba
 
-from ImageD11.sinograms import dataset
 from ImageD11.sinograms.sinogram import save_array
 from ImageD11 import unitcell
 from ImageD11.sinograms.point_by_point import nb_inv_3d
+
+
+@numba.njit
+def UB_map_to_U_B_map(UB_map):
+    """QR decomp from xfab.tools"""
+    U_map = np.zeros_like(UB_map)
+    U_map.fill(np.nan)
+    B_map = np.zeros_like(UB_map)
+    B_map.fill(np.nan)
+    for i in range(UB_map.shape[0]):
+        for j in range(UB_map.shape[1]):
+            for k in range(UB_map.shape[2]):
+                UB = UB_map[i, j, k]
+                if np.isnan(UB[0, 0]):
+                    U_map[i, j, k] = np.nan
+                    B_map[i, j, k] = np.nan
+                else:
+                    U, B = np.linalg.qr(UB)
+
+                    if B[0, 0] < 0:
+                        B[0, 0] = -B[0, 0]
+                        B[0, 1] = -B[0, 1]
+                        B[0, 2] = -B[0, 2]
+                        U[0, 0] = -U[0, 0]
+                        U[1, 0] = -U[1, 0]
+                        U[2, 0] = -U[2, 0]
+                    if B[1, 1] < 0:
+                        B[1, 1] = -B[1, 1]
+                        B[1, 2] = -B[1, 2]
+                        U[0, 1] = -U[0, 1]
+                        U[1, 1] = -U[1, 1]
+                        U[2, 1] = -U[2, 1]
+                    if B[2, 2] < 0:
+                        B[2, 2] = -B[2, 2]
+                        U[0, 2] = -U[0, 2]
+                        U[1, 2] = -U[1, 2]
+                        U[2, 2] = -U[2, 2]
+
+                    U_map[i, j, k] = U
+                    B_map[i, j, k] = B
+
+    return U_map, B_map
+
+
+@numba.njit
+def _arctan2(y, x):
+    """From xfab.tools"""
+    tol = 1e-8
+    if np.abs(x) < tol: x = 0
+    if np.abs(y) < tol: y = 0
+
+    if x > 0:
+        return np.arctan(y / x)
+    elif x < 0 <= y:
+        return np.arctan(y / x) + np.pi
+    elif x < 0 and y < 0:
+        return np.arctan(y / x) - np.pi
+    elif x == 0 and y > 0:
+        return np.pi / 2
+    elif x == 0 and y < 0:
+        return -np.pi / 2
+    elif x == 0 and y == 0:
+        raise ValueError('Local function _arctan2() does not accept arguments (0,0)')
+
+
+@numba.njit
+def U_map_to_euler_map(U_map):
+    """From xfab.tools"""
+    tol = 1e-8
+    euler_map = np.zeros((U_map.shape[0], U_map.shape[1], U_map.shape[2], 3))
+    euler_map.fill(np.nan)
+    for i in range(U_map.shape[0]):
+        for j in range(U_map.shape[1]):
+            for k in range(U_map.shape[2]):
+                U = U_map[i, j, k]
+                if np.isnan(U[0, 0]):
+                    euler_map[i, j, k] = np.nan
+                else:
+                    PHI = np.arccos(U[2, 2])
+                    if np.abs(PHI) < tol:
+                        phi1 = _arctan2(-U[0, 1], U[0, 0])
+                        phi2 = 0
+                    elif np.abs(PHI - np.pi) < tol:
+                        phi1 = _arctan2(U[0, 1], U[0, 0])
+                        phi2 = 0
+                    else:
+                        phi1 = _arctan2(U[0, 2], -U[1, 2])
+                        phi2 = _arctan2(U[2, 0], U[2, 1])
+
+                    if phi1 < 0:
+                        phi1 = phi1 + 2 * np.pi
+                    if phi2 < 0:
+                        phi2 = phi2 + 2 * np.pi
+
+                    euler_map[i, j, k, 0] = phi1
+                    euler_map[i, j, k, 1] = PHI
+                    euler_map[i, j, k, 2] = phi2
+
+                    # euler_map[i, j, k] = np.array([phi1, PHI, phi2])
+
+    return euler_map
 
 
 class TensorMap:
@@ -19,7 +119,7 @@ class TensorMap:
     The total number of dimensions can vary
     E.g a phase ID map might be (1, 15, 20) but a UBI map might be (1, 15, 20, 3, 3)
     """
-    
+
     # TODO:
     # MT, RMT, unitcell, B, U methods
 
@@ -27,33 +127,33 @@ class TensorMap:
         """maps: dict of Numpy arrays, each with shape (NZ, NY, NX, ...), with string keys for the map names
            phases: dict of ImageD11.unitcell.unitcell objects with integer keys for the phase IDs
            steps: [zstep, ystep, xtep] step sizes in um of voxels"""
-        
+
         # Initialise an empty dictionary of voxel maps
         if maps is None:
             maps = dict()
         self.maps = maps
-        
+
         # dict to store the ImageD11.unitcell.unitcell objects for each phase ID
         if phases is None:
             phases = dict()
         self.phases = phases
-        
+
         if steps is None:
             steps = [1.0, 1.0, 1.0]
         self.steps = steps
 
         # dict to store the meta orix orientations for each phase ID
         self._meta_orix_oriens = dict()
-        
+
         # dict to store grain merges
         # e.g when we merge together multiple TensorMap layers
         # if we want to detect and merge duplicate grains in multiple layers
         # then we will have new merged grain ids in self.labels
         # we need to store the mapping from new merged grain ids to original grain ids
         self.merged_mapping = dict()
-        
+
         self._shape = None
-        
+
         # Ensure that all the maps have the same shape (will also fill in self._shape)
         self.check_shape()
 
@@ -84,17 +184,17 @@ class TensorMap:
         for name in ("U", "UB"):
             if name in self.keys():
                 del self.maps[name]
-    
+
     def check_shape(self):
         """Checks that all the maps in self.maps have equal shape for their first 3 dimensions"""
-        
+
         if len(self.maps) > 0:
             map_dims = [array.shape[:3] for array in self.maps.values()]
             map_dims_set = set(map_dims)
             if len(map_dims_set) > 1:
                 raise ValueError("Not all the maps in self.maps have the right shape!")
             self._shape = list(map_dims_set)[0]
-    
+
     @property
     def shape(self):
         """The shape of the map (NZ, NY, NX)"""
@@ -107,7 +207,7 @@ class TensorMap:
         if name == "UBI":
             self.clear_cache()
         self.maps[name] = array
-    
+
     def plot(self, map_name, z_layer=0):
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
@@ -131,6 +231,41 @@ class TensorMap:
             nb_inv_3d(UBI_map, UB_map)
             self.add_map('UB', UB_map)
             return UB_map
+
+    @property
+    def B(self):
+        """The B matrix - using QR decomposition from UB"""
+        if "B" in self.keys():
+            return self.maps['B']
+        else:
+            # calculate it
+            U_map, B_map = UB_map_to_U_B_map(self.UB)
+            self.add_map('U', U_map)
+            self.add_map('B', B_map)
+            return B_map
+
+    @property
+    def U(self):
+        """The U matrix - using QR decomposition from UB"""
+        if "U" in self.keys():
+            return self.maps['U']
+        else:
+            # calculate it
+            U_map, B_map = UB_map_to_U_B_map(self.UB)
+            self.add_map('U', U_map)
+            self.add_map('B', B_map)
+            return U_map
+
+    @property
+    def euler(self):
+        """The euler angles - using Numba-accelerated xfab conversion"""
+        if "euler" in self.keys():
+            return self.maps['euler']
+        else:
+            # calculate it
+            euler_map = U_map_to_euler_map(self.U)
+            self.add_map('euler', euler_map)
+            return euler_map
 
     def get_meta_orix_orien(self, phase_id=0):
         """Get a meta orix orientation for all voxels of a given phase ID"""
@@ -201,20 +336,20 @@ class TensorMap:
         """Write all maps to an HDF5 file (h5file) with a parent group h5group. Creates h5group if doesn't already exist"""
         with h5py.File(h5file, "a") as hout:
             parent_group = hout.require_group(h5group)
-            
+
             maps_group = parent_group.require_group('maps')
-            
+
             for map_name in self.keys():
                 array = self.maps[map_name]
-                
+
                 # save array to H5 file in reverse order (Z Y X rather than X Y Z) because XDMF importer requires it)
-                
+
                 # array = np.moveaxis(array, (0,1,2), (2,1,0))
                 saved_array = save_array(maps_group, map_name, array)
                 if "ipf" in map_name:
                     # set 'IMAGE" attribute
                     saved_array.attrs['CLASS'] = 'IMAGE'
-            
+
             # store the phases
             if len(self.phases) > 0:
                 phase_group = parent_group.require_group('phases')
@@ -231,23 +366,23 @@ class TensorMap:
         # Write H5 first
         if not os.path.exists(h5name):
             self.to_h5(h5name, h5group=h5group)
-        
+
         h5_relpath = os.path.split(h5name)[1]
-        
-        xdmf_filename = h5name.replace('.h5','.xdmf')
-        
+
+        xdmf_filename = h5name.replace('.h5', '.xdmf')
+
         dims = self.shape
         scalar_dims = dims
         vector_dims = dims + (3,)
-        tensor_dims = dims + (3,3,)
+        tensor_dims = dims + (3, 3,)
 
         MeshDimensions = (dims[0] + 1, dims[1] + 1, dims[2] + 1)
-        
+
         MeshDimensionsStr = 'Dimensions="%d %d %d"' % MeshDimensions
         ScalarDimensionsStr = 'Dimensions="%d %d %d"' % scalar_dims
         VectorDimensionsStr = 'Dimensions="%d %d %d %d"' % vector_dims
         TensorDimensionsStr = 'Dimensions="%d %d %d %d %d"' % tensor_dims
-        
+
         steps = tuple(self.steps)
 
         # Write XDMF file
@@ -262,23 +397,27 @@ class TensorMap:
             fileID.write('     <DataItem Format="XML" Dimensions="3">0 0 0</DataItem>\n')
             fileID.write('     <DataItem Format="XML" Dimensions="3">%.6f %.6f %.6f</DataItem>\n' % steps)
             fileID.write('    </Geometry>\n')
-            
+
             # iterate over all the maps
             for map_name in self.keys():
                 array = self.maps[map_name]
-                
+
                 # work out what sort of array we have
                 map_shape = array.shape
                 n_dims = len(map_shape)
                 if n_dims == 3:
                     # scalar field
                     fileID.write('    <Attribute Name="%s" AttributeType="Scalar" Center="Cell">\n' % map_name)
-                    fileID.write('      <DataItem Format="HDF" %s NumberType="Float" Precision="6" >%s:/%s</DataItem>\n' % (ScalarDimensionsStr, h5_relpath, h5group + '/maps/' + map_name))
+                    fileID.write(
+                        '      <DataItem Format="HDF" %s NumberType="Float" Precision="6" >%s:/%s</DataItem>\n' % (
+                            ScalarDimensionsStr, h5_relpath, h5group + '/maps/' + map_name))
                     fileID.write('    </Attribute>\n')
                 elif n_dims == 4:
                     # vector field (like IPF)
                     fileID.write('    <Attribute Name="%s" AttributeType="Vector" Center="Cell">\n' % map_name)
-                    fileID.write('      <DataItem Format="HDF" %s NumberType="Float" Precision="6" >%s:/%s</DataItem>\n' % (VectorDimensionsStr, h5_relpath, h5group + '/maps/' + map_name))
+                    fileID.write(
+                        '      <DataItem Format="HDF" %s NumberType="Float" Precision="6" >%s:/%s</DataItem>\n' % (
+                            VectorDimensionsStr, h5_relpath, h5group + '/maps/' + map_name))
                     fileID.write('    </Attribute>\n')
                 elif n_dims == 5:
                     # tensor field (like UBI)
@@ -292,7 +431,77 @@ class TensorMap:
             fileID.write('  </Grid>\n')
             fileID.write(' </Domain>\n')
             fileID.write('</Xdmf>\n')
-        
+
+    def to_ctf(self, ctf_path, z_index=0):
+        """Export a Z slice to a CTF file for MTEX processing.
+        The resulting ctf file can be loaded in MTEX with the command:
+        ebsd = EBSD.load(ctf_path)
+        Note that no Euler or spatial conversions are needed"""
+        euler_slice = np.degrees(self.euler[z_index, :, :])  # covert to degrees
+        phase_slice = self.phase_ids[z_index, :, :] + 1  # unindexed should be 0
+
+        euler_slice[np.isnan(euler_slice)] = 0.0  # nans to 0
+
+        # get XY placements
+        NY, NX = self.shape[1:]
+        ystep, xstep = self.steps[1:]
+        X, Y = np.meshgrid(np.arange(NY) * ystep, np.arange(NX) * xstep)  # XY flip in MTEX - map only (orientations are fine)
+
+        # flatten arrays
+        npx = NY * NX
+        euler_flat = euler_slice.reshape((npx, -1))
+        phases_flat = phase_slice.reshape((npx, -1))
+        Y_flat = Y.reshape((npx, -1))
+        X_flat = X.reshape((npx, -1))
+        XY_flat = np.hstack((X_flat, Y_flat))
+
+        bands = np.zeros_like(Y_flat)
+        error = np.zeros_like(Y_flat)
+        mad = np.zeros_like(Y_flat)
+        bc = np.zeros_like(Y_flat)
+        bs = np.zeros_like(Y_flat)
+
+        combined_array = np.hstack((phases_flat, XY_flat, bands, error, euler_flat, mad, bc, bs))
+
+        header_lines = [
+            "Channel Text File",
+            "Prj unnamed",
+            "Author\t[Unknown]",
+            "JobMode\tGrid",
+            "XCells\t%d" % NX,
+            "YCells\t%d" % NY,
+            "XStep\t%f" % xstep,
+            "YStep\t%f" % ystep,
+            "AcqE1\t0",
+            "AcqE2\t0",
+            "AcqE3\t0",
+            "Euler angles refer to Sample Coordinate system (CS0)!	Mag	2E3	Coverage	100	Device	0	KV	1.5E1	TiltAngle	70	TiltAxis	0",
+            "Phases\t%d" % len(self.phases)
+        ]
+
+        for phase in self.phases.values():
+            phase_string = "%f;%f;%f\t%f;%f;%f\t%s\t11\t%s" % (phase.lattice_parameters[0], phase.lattice_parameters[1], phase.lattice_parameters[2], phase.lattice_parameters[3], phase.lattice_parameters[4], phase.lattice_parameters[5], phase.name, phase.symmetry)
+            header_lines.extend([phase_string])
+
+        header_lines.extend(["Phase\tX\tY\tBands\tError\tEuler1\tEuler2\tEuler3\tMAD\tBC\tBS"])
+
+        header_text = "\n".join(header_lines)
+
+        np.savetxt(ctf_path, combined_array, delimiter='\t', header=header_text, comments='',
+                   fmt=['%d', '%06.6s', '%06.6s', '%d', '%d', '%06.6s', '%06.6s', '%06.6s', '%06.6s', '%d', '%d'])
+
+        print('CTF exported!')
+        print('In MTEX, run the command:')
+        print("import_wizard('EBSD')")
+        print("Click the '+', choose file %s and click 'Open'" % ctf_path)
+        print("Click 'Next >>'")
+        print("Click 'Next >>' though the phases, changing if necessary (should be right though)")
+        print("Choose 'apply rotation to Euler angles and spatial coordinates' with an angle of [0,0,0]")
+        print("Choose the default MTEX plotting convention (X east, Y north)")
+        print("Click 'Next >>' then 'script (m-file)' for the 'Import to', then 'Finish'")
+        print("Click 'Run' at the top, save the import script somewhere, then it should run")
+        print("Your EBSD should now be imported into MTEX. You can try to plot it with 'plot(ebsd)'")
+
     @staticmethod
     def recon_order_to_map_order(recon_arr):
         """Transform a 2D array from reconstruction space (first axis X, second axis is -Y)
@@ -301,7 +510,7 @@ class TensorMap:
            for reconstructed grain shapes from sinogram or PBP methods"""
         # we are currently in (X, -Y, ...)
         nx, ny = recon_arr.shape[:2]
-        
+
         # flip the second axis
         micro_arr = np.flip(recon_arr, 1)
 
@@ -314,23 +523,23 @@ class TensorMap:
         micro_arr = np.swapaxes(micro_arr, 1, 2)
 
         # now we are (Z, Y, X)
-        
+
         assert micro_arr.shape[:3] == (1, ny, nx)
-        
+
         return micro_arr
-    
+
     @staticmethod
     def map_index_to_recon(mj, mk, yshape):
         """From a 3D array index (mi, mj, mk) and the Y shape of the map,
         determine the corresponding position in reconstruction space"""
-        return (mk, yshape-mj-1)
-    
+        return (mk, yshape - mj - 1)
+
     @classmethod
     def from_ubis(cls, ubi_array):
         """Make simplest possible TensorMap object from a UBI array in reconstuction space (X, -Y)"""
-        
+
         ubi_array = cls.recon_order_to_map_order(ubi_array)
-        
+
         # just make a simple maps container with the UBI array
         maps = {'UBI': ubi_array}
         return TensorMap(maps=maps)
@@ -338,39 +547,39 @@ class TensorMap:
     @classmethod
     def from_h5(cls, h5file, h5group='TensorMap'):
         """Load TensorMap object from an HDF5 file"""
-        
+
         maps = dict()
         phases = dict()
-        
+
         with h5py.File(h5file, 'r') as hin:
             parent_group = hin[h5group]
-            
+
             maps_group = parent_group['maps']
 
             for map_name in maps_group.keys():
                 array = maps_group[map_name][:]  # load the array from disk
 
                 maps[map_name] = array
-            
+
             if 'phases' in parent_group.keys():
                 phase_group = parent_group['phases']
-                
+
                 for phase_id in phase_group.keys():
                     phases[int(phase_id)] = unitcell.cellfromstring(phase_group[phase_id][()].decode('utf-8'))
                     phases[int(phase_id)].name = phase_group[phase_id].attrs['phase_name']
-            
+
             steps = parent_group['step'][:]
-        
+
         tensor_map = cls(maps=maps, phases=phases, steps=steps)
-        
+
         return tensor_map
 
     @classmethod
     def from_pbpmap(cls, pbpmap, steps=None, phases=None):
         """Create TensorMap from a pbpmap object"""
-        
+
         maps = dict()
-        
+
         # see if we have a ubibest to take
         if hasattr(pbpmap, 'ubibest'):
             ubi_map = pbpmap.ubibest
@@ -379,18 +588,18 @@ class TensorMap:
 
         # create a mask from ubi_map
         ubi_mask = np.where(np.isnan(ubi_map[:, :, 0, 0]), 0, 1).astype(bool)
-        
+
         # reshape ubi map and add it to the dict
         maps['UBI'] = cls.recon_order_to_map_order(ubi_map)
-        
+
         # add npks to the dict
         if hasattr(pbpmap, 'npks'):
             maps['npks'] = cls.recon_order_to_map_order(np.where(ubi_mask, pbpmap.npks, 0))
-        
+
         # add nuniq to the dict
         if hasattr(pbpmap, 'nuniq'):
             maps['nuniq'] = cls.recon_order_to_map_order(np.where(ubi_mask, pbpmap.nuniq, 0))
-                
+
         tensor_map = cls(maps=maps, steps=steps, phases=phases)
 
         return tensor_map
@@ -401,10 +610,10 @@ class TensorMap:
         method is the recon that we look for inside each grainsino
         use_gids will look for grainsino.grain.gid inside each grainsino to use as the label
         if it can't find it, it will use the increment"""
-        
+
         # make empty maps container
         maps = dict()
-        
+
         # make empty phases container
         phases = dict()
 
@@ -425,7 +634,7 @@ class TensorMap:
         try:
             phase_set = {gs.grain.ref_unitcell for gs in grainsinos}
             phases_list = list(phase_set)
-            
+
             # add the phases we found to the phases dictionary
             for phase_inc, phase in enumerate(phases_list):
                 phases[phase_inc] = phase
@@ -434,10 +643,10 @@ class TensorMap:
 
         # work out the phase ID for each grain
         phase_ids = [phases_list.index(gs.grain.ref_unitcell) for gs in grainsinos]
-        
+
         # construct the maps in reconstruction space
         # we will convert them all at the end before adding
-        
+
         map_shape = grainsinos[0].recons[method].shape
 
         # make an empty grain label map
@@ -500,7 +709,7 @@ class TensorMap:
                 bluz[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_z[2]
 
         raw_intensity_map[raw_intensity_map <= cutoff_level] = 0.0
-        
+
         maps["intensity"] = cls.recon_order_to_map_order(raw_intensity_map)
         maps["labels"] = cls.recon_order_to_map_order(grain_labels_map)
         maps["phase_ids"] = cls.recon_order_to_map_order(phase_id_map)
@@ -510,20 +719,20 @@ class TensorMap:
             rgb_x_map = np.transpose((redx, grnx, blux), axes=(1, 2, 0))
             rgb_y_map = np.transpose((redy, grny, bluy), axes=(1, 2, 0))
             rgb_z_map = np.transpose((redz, grnz, bluz), axes=(1, 2, 0))
-            
+
             maps["ipf_x"] = cls.recon_order_to_map_order(rgb_x_map)
             maps["ipf_y"] = cls.recon_order_to_map_order(rgb_y_map)
             maps["ipf_z"] = cls.recon_order_to_map_order(rgb_z_map)
-        
+
         # get the step size from the dataset of one of the grainsino objects
         if steps is None:
             ystep = grainsinos[0].ds.ystep
             steps = (1.0, ystep, ystep)
-        
+
         tensor_map = cls(maps=maps, phases=phases, steps=steps)
-        
+
         return tensor_map
-    
+
     @classmethod
     def from_combine_phases(cls, tensormaps):
         """Combine multiple mono-phase TensorMaps with different phases into one TensorMap.
@@ -538,7 +747,7 @@ class TensorMap:
                 raise ValueError("Each input TensorMap should only have one phase!")
 
         # combine phases
-        combined_phases = {inc:tm.phases[0] for inc, tm in enumerate(tensormaps)}
+        combined_phases = {inc: tm.phases[0] for inc, tm in enumerate(tensormaps)}
 
         # work out what map names we have in all of our tensormaps
         common_map_names = [map_name for map_name in tm0.keys() if all([map_name in tm.keys() for tm in tensormaps])]
@@ -580,7 +789,8 @@ class TensorMap:
                 # but not rightwards!
                 # so we need to slice like this (NZ, NY, NX)[..., np.newaxis, np.newaxis]
                 # In Python 2, slicing grammar is different, so we can't invoke ... directly inside a tuple
-                base_arr = np.where((tm['phase_ids'] > -1)[(Ellipsis,) + (np.newaxis,) * (base_arr.ndim - 3)], new_arr, base_arr)
+                base_arr = np.where((tm['phase_ids'] > -1)[(Ellipsis,) + (np.newaxis,) * (base_arr.ndim - 3)], new_arr,
+                                    base_arr)
 
             combined_maps[map_name] = base_arr
 
