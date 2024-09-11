@@ -6,49 +6,157 @@ import numpy as np
 
 from ImageD11.sinograms.sinogram import save_array
 from ImageD11 import unitcell
-from ImageD11.sinograms.point_by_point import nb_inv_3d
 
 
-@numba.njit
-def UB_map_to_U_B_map(UB_map):
-    """QR decomp from xfab.tools"""
-    U_map = np.zeros_like(UB_map)
-    U_map.fill(np.nan)
-    B_map = np.zeros_like(UB_map)
-    B_map.fill(np.nan)
-    for i in range(UB_map.shape[0]):
-        for j in range(UB_map.shape[1]):
-            for k in range(UB_map.shape[2]):
-                UB = UB_map[i, j, k]
-                if np.isnan(UB[0, 0]):
-                    U_map[i, j, k] = np.nan
-                    B_map[i, j, k] = np.nan
-                else:
-                    U, B = np.linalg.qr(UB)
+# from ImageD11.sinograms.point_by_point import nb_inv_3d
 
-                    if B[0, 0] < 0:
-                        B[0, 0] = -B[0, 0]
-                        B[0, 1] = -B[0, 1]
-                        B[0, 2] = -B[0, 2]
-                        U[0, 0] = -U[0, 0]
-                        U[1, 0] = -U[1, 0]
-                        U[2, 0] = -U[2, 0]
-                    if B[1, 1] < 0:
-                        B[1, 1] = -B[1, 1]
-                        B[1, 2] = -B[1, 2]
-                        U[0, 1] = -U[0, 1]
-                        U[1, 1] = -U[1, 1]
-                        U[2, 1] = -U[2, 1]
-                    if B[2, 2] < 0:
-                        B[2, 2] = -B[2, 2]
-                        U[0, 2] = -U[0, 2]
-                        U[1, 2] = -U[1, 2]
-                        U[2, 2] = -U[2, 2]
 
-                    U_map[i, j, k] = U
-                    B_map[i, j, k] = B
+# Numba vectorized functions to work on maps of any dimensionality, provided the last dimensions are the ones of the array
+# e.g these can be called and broadcasted for a UBI map of (1,200,500,3,3)
 
-    return U_map, B_map
+# take in a nxn float64 array, return a nxn float64 array
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:, :])], '(n,n)->(n,n)', nopython=True)
+def fast_invert(mat, res):
+    """Fast broadcastable matrix invert.
+    To use (no need to pre-populate res):
+    imat = fast_invert(mat)"""
+    if np.isnan(mat[0, 0]):
+        res[...] = np.nan
+    else:
+        res[...] = np.linalg.inv(mat)
+
+
+# take in a nxn float64 array, return a nxn float64 array
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:, :])], '(n,n)->(n,n)', nopython=True)
+def ubi_to_mt(ubi, res):
+    """Get metric tensor from UBI, the same way as in ImageD11.grain
+    To use (no need to pre-populate res):
+    mt = ubi_to_mt(ubi)"""
+    if np.isnan(ubi[0, 0]):
+        res[...] = np.nan
+    else:
+        res[...] = np.dot(ubi, ubi.T)
+
+
+# take in a nxn float64 array and a dummy variable p-length float64 vector (required by numba), return a p-length float64 vector
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:])], '(n,n),(p)->(p)', nopython=True)
+def mt_to_unitcell(mt, dum, res):
+    """Get unitcell from mt, the same way as in ImageD11.grain
+    To use (no need to pre-populate res):
+    dummy_var = np.arange(6)  # ensure dummy variable has the right length
+    unitcell = mt_to_unitcell(mt, dummy_var)"""
+    if np.isnan(mt[0, 0]):
+        res[...] = np.nan
+    else:
+        G = mt
+        a, b, c = np.sqrt(np.diag(G))
+        al = np.degrees(np.arccos(G[1, 2] / b / c))
+        be = np.degrees(np.arccos(G[0, 2] / a / c))
+        ga = np.degrees(np.arccos(G[0, 1] / a / b))
+        res[..., 0] = a
+        res[..., 1] = b
+        res[..., 2] = c
+        res[..., 3] = al
+        res[..., 4] = be
+        res[..., 5] = ga
+
+
+# take in a p-length float64 vector and a dummy variable nxn float64 array (required by numba), return a nxn float64 array
+@numba.guvectorize([(numba.float64[:], numba.float64[:, :], numba.float64[:, :])], '(p),(n,n)->(n,n)', nopython=True)
+def unitcell_to_b(unitcell, dum, res):
+    """Get B matrix from unitcell, the same way as in ImageD11.grain (via ImageD11.unitcell)
+    To use (no need to pre-populate res):
+    dummy_var = np.eye(3)  # ensure dummy variable has the right shape (3x3)
+    B = unitcell_to_b(unitcell, dummy_var)"""
+    if np.isnan(unitcell[0]):
+        res[...] = np.nan
+    else:
+        a, b, c = unitcell[:3]
+        ralpha, rbeta, rgamma = np.radians(unitcell[3:])  # radians
+        ca = np.cos(ralpha)
+        cb = np.cos(rbeta)
+        cg = np.cos(rgamma)
+        g = np.full((3, 3), np.nan, float)
+        g[0, 0] = a * a
+        g[0, 1] = a * b * cg
+        g[0, 2] = a * c * cb
+        g[1, 0] = a * b * cg
+        g[1, 1] = b * b
+        g[1, 2] = b * c * ca
+        g[2, 0] = a * c * cb
+        g[2, 1] = b * c * ca
+        g[2, 2] = c * c
+        gi = np.linalg.inv(g)
+        astar, bstar, cstar = np.sqrt(np.diag(gi))
+        betas = np.degrees(np.arccos(gi[0, 2] / astar / cstar))
+        gammas = np.degrees(np.arccos(gi[0, 1] / astar / bstar))
+
+        res[..., 0, 0] = astar
+        res[..., 0, 1] = bstar * np.cos(np.radians(gammas))
+        res[..., 0, 2] = cstar * np.cos(np.radians(betas))
+        res[..., 1, 0] = 0.0
+        res[..., 1, 1] = bstar * np.sin(np.radians(gammas))
+        res[..., 1, 2] = -cstar * np.sin(np.radians(betas)) * ca
+        res[..., 2, 0] = 0.0
+        res[..., 2, 1] = 0.0
+        res[..., 2, 2] = 1.0 / c
+
+
+# take in a nxn float64 array, return a nxn float64 array
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:, :], numba.float64[:, :])], '(n,n),(n,n)->(n,n)',
+                   nopython=True)
+def ubi_and_b_to_u(ubi, b, res):
+    """Get U matrix from UBI and B matrices, the same way as in ImageD11.grain
+    To use (no need to pre-populate res):
+    U = ubi_and_b_to_u(ubi, b)"""
+    if np.isnan(ubi[0, 0]):
+        res[...] = np.nan
+    elif np.isnan(b[0, 0]):
+        res[...] = np.nan
+    else:
+        res[...] = np.dot(b, ubi).T
+
+
+# @numba.njit
+# def UB_map_to_U_B_map(UB_map):
+#     """QR decomp from xfab.tools"""
+#     U_map = np.zeros_like(UB_map)
+#     U_map.fill(np.nan)
+#     B_map = np.zeros_like(UB_map)
+#     B_map.fill(np.nan)
+#     for i in range(UB_map.shape[0]):
+#         for j in range(UB_map.shape[1]):
+#             for k in range(UB_map.shape[2]):
+#                 UB = UB_map[i, j, k]
+#                 if np.isnan(UB[0, 0]):
+#                     U_map[i, j, k] = np.nan
+#                     B_map[i, j, k] = np.nan
+#                 else:
+#                     U, B = np.linalg.qr(UB)
+#
+#                     if B[0, 0] < 0:
+#                         B[0, 0] = -B[0, 0]
+#                         B[0, 1] = -B[0, 1]
+#                         B[0, 2] = -B[0, 2]
+#                         U[0, 0] = -U[0, 0]
+#                         U[1, 0] = -U[1, 0]
+#                         U[2, 0] = -U[2, 0]
+#                     if B[1, 1] < 0:
+#                         B[1, 1] = -B[1, 1]
+#                         B[1, 2] = -B[1, 2]
+#                         U[0, 1] = -U[0, 1]
+#                         U[1, 1] = -U[1, 1]
+#                         U[2, 1] = -U[2, 1]
+#                     if B[2, 2] < 0:
+#                         B[2, 2] = -B[2, 2]
+#                         U[0, 2] = -U[0, 2]
+#                         U[1, 2] = -U[1, 2]
+#                         U[2, 2] = -U[2, 2]
+#
+#                     U_map[i, j, k] = U
+#                     B_map[i, j, k] = B
+#
+#     return U_map, B_map
 
 
 @numba.njit
@@ -72,42 +180,74 @@ def _arctan2(y, x):
         raise ValueError('Local function _arctan2() does not accept arguments (0,0)')
 
 
-@numba.njit
-def U_map_to_euler_map(U_map):
-    """From xfab.tools"""
-    tol = 1e-8
-    euler_map = np.zeros((U_map.shape[0], U_map.shape[1], U_map.shape[2], 3))
-    euler_map.fill(np.nan)
-    for i in range(U_map.shape[0]):
-        for j in range(U_map.shape[1]):
-            for k in range(U_map.shape[2]):
-                U = U_map[i, j, k]
-                if np.isnan(U[0, 0]):
-                    euler_map[i, j, k] = np.nan
-                else:
-                    PHI = np.arccos(U[2, 2])
-                    if np.abs(PHI) < tol:
-                        phi1 = _arctan2(-U[0, 1], U[0, 0])
-                        phi2 = 0
-                    elif np.abs(PHI - np.pi) < tol:
-                        phi1 = _arctan2(U[0, 1], U[0, 0])
-                        phi2 = 0
-                    else:
-                        phi1 = _arctan2(U[0, 2], -U[1, 2])
-                        phi2 = _arctan2(U[2, 0], U[2, 1])
+# take in a nxn float64 array and a dummy variable p-length float64 vector (required by numba), return a p-length float64 vector
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:])], '(n,n),(p)->(p)', nopython=True)
+def u_to_euler(u, dum, res):
+    """Get Euler angles (radians) from U matrix, the same way as in xfab.tools
+    To use (no need to pre-populate res):
+    dummy = np.arange(3)
+    euler = u_to_euler(u, dummy)"""
+    if np.isnan(u[0, 0]):
+        res[...] = np.nan
+    else:
+        tol = 1e-8
+        PHI = np.arccos(u[2, 2])
+        if np.abs(PHI) < tol:
+            phi1 = _arctan2(-u[0, 1], u[0, 0])
+            phi2 = 0
+        elif np.abs(PHI - np.pi) < tol:
+            phi1 = _arctan2(u[0, 1], u[0, 0])
+            phi2 = 0
+        else:
+            phi1 = _arctan2(u[0, 2], -u[1, 2])
+            phi2 = _arctan2(u[2, 0], u[2, 1])
 
-                    if phi1 < 0:
-                        phi1 = phi1 + 2 * np.pi
-                    if phi2 < 0:
-                        phi2 = phi2 + 2 * np.pi
+        if phi1 < 0:
+            phi1 = phi1 + 2 * np.pi
+        if phi2 < 0:
+            phi2 = phi2 + 2 * np.pi
 
-                    euler_map[i, j, k, 0] = phi1
-                    euler_map[i, j, k, 1] = PHI
-                    euler_map[i, j, k, 2] = phi2
+        res[..., 0] = phi1
+        res[..., 1] = PHI
+        res[..., 2] = phi2
 
-                    # euler_map[i, j, k] = np.array([phi1, PHI, phi2])
 
-    return euler_map
+# @numba.njit
+# def U_map_to_euler_map(U_map):
+#     """From xfab.tools"""
+#     tol = 1e-8
+#     euler_map = np.zeros((U_map.shape[0], U_map.shape[1], U_map.shape[2], 3))
+#     euler_map.fill(np.nan)
+#     for i in range(U_map.shape[0]):
+#         for j in range(U_map.shape[1]):
+#             for k in range(U_map.shape[2]):
+#                 U = U_map[i, j, k]
+#                 if np.isnan(U[0, 0]):
+#                     euler_map[i, j, k] = np.nan
+#                 else:
+#                     PHI = np.arccos(U[2, 2])
+#                     if np.abs(PHI) < tol:
+#                         phi1 = _arctan2(-U[0, 1], U[0, 0])
+#                         phi2 = 0
+#                     elif np.abs(PHI - np.pi) < tol:
+#                         phi1 = _arctan2(U[0, 1], U[0, 0])
+#                         phi2 = 0
+#                     else:
+#                         phi1 = _arctan2(U[0, 2], -U[1, 2])
+#                         phi2 = _arctan2(U[2, 0], U[2, 1])
+#
+#                     if phi1 < 0:
+#                         phi1 = phi1 + 2 * np.pi
+#                     if phi2 < 0:
+#                         phi2 = phi2 + 2 * np.pi
+#
+#                     euler_map[i, j, k, 0] = phi1
+#                     euler_map[i, j, k, 1] = PHI
+#                     euler_map[i, j, k, 2] = phi2
+#
+#                     # euler_map[i, j, k] = np.array([phi1, PHI, phi2])
+#
+#     return euler_map
 
 
 class TensorMap:
@@ -226,44 +366,102 @@ class TensorMap:
             if 'UBI' not in self.keys():
                 raise KeyError('No UBI to calculate from!')
             # calculate it
-            UB_map = np.zeros_like(self.maps['UBI'])
             UBI_map = self.maps['UBI']
-            nb_inv_3d(UBI_map, UB_map)
+            # old way (non-broadcast, fixed dimensionality):
+            # UB_map = np.zeros_like(self.maps['UBI'])
+            # nb_inv_3d(UBI_map, UB_map)
+            # new way (broadcastable)
+            UB_map = fast_invert(UBI_map)
             self.add_map('UB', UB_map)
             return UB_map
 
     @property
+    def mt(self):
+        """The metric tensor"""
+        if "mt" in self.keys():
+            return self.maps['mt']
+        else:
+            # calculate it
+            UBI_map = self.maps["UBI"]
+            mt_map = ubi_to_mt(UBI_map)
+            self.add_map('mt', mt_map)
+            return mt_map
+
+    @property
+    def unitcell(self):
+        """The unitcell - from metric tensor"""
+        if "unitcell" in self.keys():
+            return self.maps['unitcell']
+        else:
+            # calculate it
+            mt_map = self.mt
+            dummy = np.arange(6)  # dummy variable, not used
+            unitcell_map = mt_to_unitcell(mt_map, dummy)
+            self.add_map('unitcell', unitcell_map)
+            return unitcell_map
+
+    @property
     def B(self):
-        """The B matrix - using QR decomposition from UB"""
+        """The B matrix via the unitcell"""
         if "B" in self.keys():
             return self.maps['B']
         else:
             # calculate it
-            U_map, B_map = UB_map_to_U_B_map(self.UB)
-            self.add_map('U', U_map)
+            unitcell_map = self.unitcell
+            dummy = np.eye(3)  # dummy 3x3 variable, not used
+            B_map = unitcell_to_b(unitcell_map, dummy)
             self.add_map('B', B_map)
             return B_map
 
+    # @property
+    # def B(self):
+    #     # """The B matrix - using QR decomposition from UB"""
+    #     """The B matrix - via unitcell"""
+    #     if "B" in self.keys():
+    #         return self.maps['B']
+    #     else:
+    #         # calculate it
+    #         U_map, B_map = UB_map_to_U_B_map(self.UB)
+    #         self.add_map('U', U_map)
+    #         self.add_map('B', B_map)
+    #         return B_map
+
+    # @property
+    # def U(self):
+    #     """The U matrix - using QR decomposition from UB"""
+    #     if "U" in self.keys():
+    #         return self.maps['U']
+    #     else:
+    #         # calculate it
+    #         U_map, B_map = UB_map_to_U_B_map(self.UB)
+    #         self.add_map('U', U_map)
+    #         self.add_map('B', B_map)
+    #         return U_map
+
     @property
     def U(self):
-        """The U matrix - using QR decomposition from UB"""
+        """The U matrix - via UBI and B"""
         if "U" in self.keys():
             return self.maps['U']
         else:
             # calculate it
-            U_map, B_map = UB_map_to_U_B_map(self.UB)
+            UBI_map = self.UBI
+            B_map = self.B
+            U_map = ubi_and_b_to_u(UBI_map, B_map)
             self.add_map('U', U_map)
-            self.add_map('B', B_map)
             return U_map
 
     @property
     def euler(self):
-        """The euler angles - using Numba-accelerated xfab conversion"""
+        """The euler angles - using Numba-accelerated vectorised conversion"""
         if "euler" in self.keys():
             return self.maps['euler']
         else:
             # calculate it
-            euler_map = U_map_to_euler_map(self.U)
+            # euler_map = U_map_to_euler_map(self.U)
+            U_map = self.U
+            dummy = np.arange(3)
+            euler_map = u_to_euler(U_map, dummy)
             self.add_map('euler', euler_map)
             return euler_map
 
@@ -445,7 +643,8 @@ class TensorMap:
         # get XY placements
         NY, NX = self.shape[1:]
         ystep, xstep = self.steps[1:]
-        X, Y = np.meshgrid(np.arange(NY) * ystep, np.arange(NX) * xstep)  # XY flip in MTEX - map only (orientations are fine)
+        X, Y = np.meshgrid(np.arange(NY) * ystep,
+                           np.arange(NX) * xstep)  # XY flip in MTEX - map only (orientations are fine)
 
         # flatten arrays
         npx = NY * NX
@@ -480,7 +679,10 @@ class TensorMap:
         ]
 
         for phase in self.phases.values():
-            phase_string = "%f;%f;%f\t%f;%f;%f\t%s\t11\t%s" % (phase.lattice_parameters[0], phase.lattice_parameters[1], phase.lattice_parameters[2], phase.lattice_parameters[3], phase.lattice_parameters[4], phase.lattice_parameters[5], phase.name, phase.symmetry)
+            phase_string = "%f;%f;%f\t%f;%f;%f\t%s\t11\t%s" % (
+            phase.lattice_parameters[0], phase.lattice_parameters[1], phase.lattice_parameters[2],
+            phase.lattice_parameters[3], phase.lattice_parameters[4], phase.lattice_parameters[5], phase.name,
+            phase.symmetry)
             header_lines.extend([phase_string])
 
         header_lines.extend(["Phase\tX\tY\tBands\tError\tEuler1\tEuler2\tEuler3\tMAD\tBC\tBS"])
