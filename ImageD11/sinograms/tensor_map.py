@@ -658,8 +658,8 @@ class TensorMap:
         # make an empty phase ID map
         phase_id_map = np.full(map_shape, -1)
 
-        # make an empty UBI map
-        ubi_map = np.full((map_shape[:2] + (3, 3)), 0.0)
+        # make an empty UBI map full of nan (invalid value)
+        ubi_map = np.full((map_shape[:2] + (3, 3)), np.nan, float)
 
         # check if we have IPF colours
 
