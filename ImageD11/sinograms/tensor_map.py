@@ -355,6 +355,16 @@ class TensorMap:
         plt.show()
 
     @property
+    def UBI(self):
+        """The UBI matrix"""
+        return self.maps['UBI']
+
+    @UBI.setter
+    def UBI(self, value):
+        self.clear_cache()
+        self.maps['UBI'] = value
+    
+    @property
     def UB(self):
         """The UB matrix"""
         if "UB" in self.keys():
