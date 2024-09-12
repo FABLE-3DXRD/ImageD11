@@ -363,7 +363,7 @@ class TensorMap:
     def UBI(self, value):
         self.clear_cache()
         self.maps['UBI'] = value
-    
+
     @property
     def UB(self):
         """The UB matrix"""
@@ -941,6 +941,24 @@ class TensorMap:
         tensor_map = cls(maps=maps, phases=phases, steps=steps)
 
         return tensor_map
+
+    @classmethod
+    def from_stack(cls, tensormaps, zstep=1.0):
+        """Stack multiple TensorMaps together along Z. The order of tensormaps will determine the Z-order, lowest-index first.
+        All Tensor Maps in tensormaps must have the same phase mapping (i.e phase 0 is always the same unitcell)"""
+        combined_maps = {}
+        tm0 = tensormaps[0]
+
+        # work out what map names we have in all of our tensormaps
+        common_map_names = [map_name for map_name in tm0.keys() if all([map_name in tm.keys() for tm in tensormaps])]
+
+        for map_name in common_map_names:
+            # just concatenate the maps together (defaults to first axis which is Z)
+            combined_maps[map_name] = np.concatenate([tm.maps[map_name] for tm in tensormaps])
+
+        # make the tensormap object
+        combined_tensormap = cls(maps=combined_maps, phases=tm0.phases, steps=(zstep, tm0.steps[1], tm0.steps[2]))
+        return combined_tensormap
 
     @classmethod
     def from_combine_phases(cls, tensormaps):
