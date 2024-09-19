@@ -96,6 +96,9 @@ class GrainSinogram:
 
         # Make a spatially corrected columnfile from the filtered peaks table
         flt = self.ds.get_colfile_from_peaks_dict(peaks_dict=p2d)
+        # Make sure the columnfile has the correct geometry and phase
+        flt.parameters = cf_4d.parameters
+        flt.updateGeometry()
 
         # Filter the columnfile by hkl tol
         hkl_real = np.dot(self.grain.ubi, (flt.gx, flt.gy, flt.gz))  # calculate hkl of all assigned peaks
@@ -342,8 +345,10 @@ def run_astra(sino, angles, shift=0, pad=0, mask=None, niter=100, astra_method='
     allowed_methods = ['BP', 'SIRT', 'BP_CUDA', 'FBP_CUDA', 'SIRT_CUDA', 'SART_CUDA', 'CGLS_CUDA', 'EM_CUDA']
     if astra_method not in allowed_methods:
         raise ValueError("Unsupported method!")
+    manual_mask = None
     if astra_method == 'EM_CUDA' and mask is not None:
-        print("Can't use mask with EM_CUDA method!")
+        # print("Can't use mask with EM_CUDA method!")
+        manual_mask = mask.copy()
         mask = None
     
     vol_geom = astra.create_vol_geom((sino.shape[0]+pad, sino.shape[0]+pad))
@@ -365,8 +370,9 @@ def run_astra(sino, angles, shift=0, pad=0, mask=None, niter=100, astra_method='
     cfg['ProjectionDataId'] = proj_data_id
     cfg['ReconstructionDataId'] = rec_id
     cfg['option'] = {}
-    cfg['option']['MinConstraint'] = 0
-    cfg['option']['MaxConstraint'] = 1
+    if astra_method != 'EM_CUDA':
+        cfg['option']['MinConstraint'] = 0
+        cfg['option']['MaxConstraint'] = 1
     
     if mask is not None:
         mask_id = astra.data2d.create('-vol', vol_geom, mask)
@@ -384,29 +390,33 @@ def run_astra(sino, angles, shift=0, pad=0, mask=None, niter=100, astra_method='
     
     if mask is not None:
         astra.data2d.delete(mask_id)
+
+    if astra_method == 'EM_CUDA' and manual_mask is not None:
+        # manually mask
+        recon = np.where(manual_mask, recon, 0.0)
     
-    return recon    
+    return recon
     
 
-def write_h5(filename, list_of_sinos, write_grains_too=True):
+def write_h5(filename, list_of_sinos, overwrite_grains=False, group_name='grains'):
     """Write list of GrainSinogram objects to H5Py file
-       If write_grains_too is True, will also write self.grain to the same file"""
+       If overwrite_grains is True, will replace grains in group_name"""
     with h5py.File(filename, "a") as hout:
-        grains_group = hout.require_group('grains')
+        grains_group = hout.require_group(group_name)
 
         for gsinc, gs in enumerate(list_of_sinos):
             group_name = str(gsinc)
             gs.to_h5py_group(parent_group=grains_group, group_name=group_name)
-            if write_grains_too:
+            if overwrite_grains:
                 gs.grain.to_h5py_group(parent_group=grains_group, group_name=group_name)
 
 
-def read_h5(filename, ds):
+def read_h5(filename, ds, group_name='grains'):
     """Read list of GrainSinogram objects from H5Py file
        Will also create self.grain objects from the H5Py file
        Because GrainSinogram objects can't exist without corresponding grain objects"""
     with h5py.File(filename, "r") as hin:
-        grains_group = hin['grains']
+        grains_group = hin[group_name]
         gs_objects = []
 
         # take all the keys in the grains group, sort them by integer value, iterate

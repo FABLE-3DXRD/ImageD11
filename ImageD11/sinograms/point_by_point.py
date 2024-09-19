@@ -58,6 +58,83 @@ def hkluniq(ubi, gx, gy, gz, eta, m, tol, hmax):
     return tcount, ucount
 
 
+
+@numba.njit
+def nb_choose_best(i, j, u, n, NY, ubiar,
+                   minpeaks=6):
+    # map of the unique scores
+    uniq = np.ones((NY, NY), dtype='q')
+    uniq.fill(minpeaks)  # peak cutorr
+    npk = np.zeros((NY, NY), dtype='q')
+    ubi = np.zeros((NY, NY, 3, 3), dtype='d')
+    ubi.fill(np.nan)
+    for k in range(i.size):
+        ip = i[k]
+        jp = j[k]
+        #        if ip == 96 and jp == 510:
+        #            print(ip,jp,k, ubiar[:,:,k])
+        if u[k] > uniq[ip, jp]:
+            uniq[ip, jp] = u[k]
+            npk[ip, jp] = n[k]
+            for ii in range(3):
+                for jj in range(3):
+                    ubi[ip, jp, ii, jj] = ubiar[ii, jj, k]
+    return uniq, npk, ubi
+
+@numba.njit
+def nb_inv(mats, imats):
+    for i in range(mats.shape[0]):
+        for j in range(mats.shape[1]):
+            if np.isnan( mats[i,j,0,0] ):
+                imats[i,j] = np.nan
+            else:
+                try:
+                    imats[i,j] = np.linalg.inv( mats[i,j] )
+                except:
+                    print(i,j,mats[i,j])
+                    break
+                    imats[i,j] = 42.
+
+
+@numba.njit
+def nb_inv_3d(mats, imats):
+    for i in range(mats.shape[0]):
+        for j in range(mats.shape[1]):
+            for k in range(mats.shape[2]):
+                if np.isnan(mats[i, j, k, 0, 0]):
+                    imats[i, j, k] = np.nan
+                else:
+                    try:
+                        imats[i, j, k] = np.linalg.inv(mats[i, j, k])
+                    except:
+                        imats[i, j, k] = np.nan
+
+
+class PBPMap:
+    """Class to load and manipulate point-by-point indexing results"""
+
+    def __init__(self, fname):
+        pbp_array = np.loadtxt(fname).T
+        n = len(pbp_array[0])
+        self.i = pbp_array[0].astype(int)
+        self.i -= self.i.min()
+        self.j = pbp_array[1].astype(int)
+        self.j -= self.j.min()
+        self.n = pbp_array[2].astype(int)  # total peaks indexing with hkl==int with 0.03
+        self.u = pbp_array[3].astype(int)  # unique (h,k,l) labels on indexed peaks
+        self.NI = int(self.i.max() - self.i.min()) + 1
+        self.NJ = int(self.j.max() - self.j.min()) + 1
+        self.NY = max(self.NI, self.NJ)
+        self.ubi = pbp_array[4:].astype(float)
+        self.ubi.shape = 3, 3, -1
+
+    def choose_best(self, minpeaks=6):
+        self.nuniq, self.npks, self.ubibest = nb_choose_best(
+            self.i, self.j,
+            self.u, self.n,
+            self.NY, self.ubi, minpeaks)
+
+
 def idxpoint(
     i,
     j,
@@ -197,11 +274,11 @@ parglobal = None
 colglobal = None
 
 
-def initializer(parfile, symmetry, colfile, loglevel=3):
+def initializer(parfile, phase_name, symmetry, colfile, loglevel=3):
     global ucglobal, symglobal, parglobal, colglobal
     if threadpoolctl is not None:
         threadpoolctl.threadpool_limits(limits=1)
-    parglobal = parameters.read_par_file(parfile)
+    parglobal = parameters.read_par_file(parfile, phase_name=phase_name)
     ucglobal = unitcell.unitcell_from_parameters(parglobal)
     symglobal = sym_u.getgroup(symmetry)()
     colglobal = ImageD11.columnfile.mmap_h5colf(colfile)
@@ -227,6 +304,7 @@ class PBP:
         foridx=None,
         forgen=None,
         uniqcut=0.75,
+        phase_name=None
     ):
         """
         parfile = ImageD11 parameter file (for the unit cell + geometry)
@@ -252,6 +330,7 @@ class PBP:
         self.uniqcut = uniqcut
         self.cosine_tol = cosine_tol
         self.loglevel = loglevel
+        self.phase_name = phase_name
 
     def setpeaks(self, colf, icolf_filename=None):
         """
@@ -262,7 +341,7 @@ class PBP:
         if icolf_filename is None:
             icolf_filename = self.dset.icolfile
         # Load the peaks
-        colf.parameters.loadparameters(self.parfile)
+        colf.parameters.loadparameters(self.parfile, phase_name=self.phase_name)
         if "ds" not in colf.titles:
             colf.updateGeometry()  # for ds
         #
@@ -309,7 +388,8 @@ class PBP:
         colf.addcolumn(isel, "isel")  # peaks selected for indexing
 
         # colf.addcolumn(np.round((colf.dty - self.y0) / self.ystep).astype(int), "dtyi")
-        dtyi = dty_to_dtyi(colf.dty - self.y0, self.ystep)
+        # dtyi = dty_to_dtyi(colf.dty - self.y0, self.ystep)
+        dtyi = dty_to_dtyi(colf.dty, self.ystep)
         colf.addcolumn(dtyi, "dtyi")
 
         # cache these to speed up selections later
@@ -393,8 +473,12 @@ class PBP:
         }
         pprint.pprint(idxopt)
 
-        nlo = np.floor((self.ybincens.min() - self.y0) / self.ystep).astype(int)
-        nhi = np.ceil((self.ybincens.max() - self.y0) / self.ystep).astype(int)
+        # nlo = np.floor((self.ybincens.min() - self.y0) / self.ystep).astype(int)
+        # nhi = np.ceil((self.ybincens.max() - self.y0) / self.ystep).astype(int)
+
+        nlo = np.floor((self.ybincens.min()) / self.ystep).astype(int)
+        nhi = np.ceil((self.ybincens.max()) / self.ystep).astype(int)
+
         rng = range(nlo, nhi + 1, gridstep)
 
         if debugpoints is None:
@@ -416,6 +500,7 @@ class PBP:
                 initializer=initializer,
                 initargs=(
                     self.parfile,
+                    self.phase_name,
                     self.symmetry,
                     self.icolf_filename,
                     self.loglevel,

@@ -111,7 +111,7 @@ def sorted_peak_intensity_mask(colf, uself=True, frac=0.995, B=0.2, doplot=None)
     return mask
 
 
-def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=1, doplot=None):
+def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2, doplot=None):
     """
     cf = input columnfile + unit cell in parameters
     dstol = difference in d* (=1/d) for assigning peaks to rings

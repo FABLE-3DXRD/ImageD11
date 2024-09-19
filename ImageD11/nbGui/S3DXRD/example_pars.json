@@ -1,0 +1,13 @@
+{
+  "geometry": {
+    "file":"geometry.par"
+  },
+  "phases": {
+    "Au": {
+      "file": "Au.par"
+    },
+    "Fe": {
+      "file": "Fe.par"
+    }
+  }
+}

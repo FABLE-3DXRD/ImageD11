@@ -28,6 +28,7 @@ from __future__ import print_function, division
 #
 import logging, math
 from math import fabs
+
 import numpy as np
 from numpy.linalg import inv
 from ImageD11 import cImageD11
@@ -175,12 +176,13 @@ class Phases(AnalysisSchema):
         # dict of parameter objects for each phase
         for phase_name, phase_pars_obj in self.phase_pars_obj_dict.items():
             self.unitcells[phase_name] = unitcell_from_parameters(phase_pars_obj)
-
+            # set the name of the unitcell from the phase name
+            self.unitcells[phase_name].name = phase_name
 
 class unitcell:
     # Unit cell stuff
     # Generate a list of peaks from a unit cell
-    def __init__(self, lattice_parameters, symmetry="P", verbose=0):
+    def __init__(self, lattice_parameters, symmetry="P", verbose=0, name=None):
         """
         Unit cell class
         supply a list (tuple etc) of a,b,c,alpha,beta,gamma
@@ -262,6 +264,8 @@ class unitcell:
         self.anglehkl_cache = {"ringtol": self.ringtol,
                                "B": self.B,
                                "BI": np.linalg.inv(self.B)}
+        if name is not None:
+            self.name = name
 
         # orix stuff
         self._orix_phase = None
@@ -704,6 +708,7 @@ def unitcell_from_parameters(pars):
     parnames = "_a _b _c alpha beta gamma".split()
     cell = unitcell([pars.get("cell_%s" % (s)) for s in parnames],
                     pars.get("cell_lattice_[P,A,B,C,I,F,R]"))
+
     return cell
 
 

@@ -172,7 +172,7 @@ date
     return bash_script_path, recons_path
 
 
-def prepare_astra_bash(ds, grainsfile, id11_code_path):
+def prepare_astra_bash(ds, grainsfile, id11_code_path, group_name='grains'):
     slurm_astra_path = os.path.join(ds.analysispath, "slurm_astra")
 
     if not os.path.exists(slurm_astra_path):
@@ -198,8 +198,8 @@ def prepare_astra_bash(ds, grainsfile, id11_code_path):
 #
 date
 module load cuda
-echo PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} > {log_path} 2>&1
-PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} > {log_path} 2>&1
+echo PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} {group_name} > {log_path} 2>&1
+PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} {group_name} > {log_path} 2>&1
 date
     """.format(outfile_path=outfile_path,
                errfile_path=errfile_path,
@@ -207,6 +207,7 @@ date
                id11_code_path=id11_code_path,
                grainsfile=grainsfile,
                dsfile=ds.dsfile,
+               group_name=group_name,
                log_path=log_path)
 
     with open(bash_script_path, "w") as bashscriptfile:
@@ -238,13 +239,13 @@ def prepare_pbp_bash(pbp_object, id11_code_path, minpkint):
 #SBATCH --time=48:00:00
 #SBATCH --partition=nice-long
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=90
+#SBATCH --cpus-per-task=64
 
 #
 date
 source /cvmfs/hpc.esrf.fr/software/packages/linux/x86_64/jupyter-slurm/latest/envs/jupyter-slurm/bin/activate
-echo OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {minpkint} > {log_path} 2>&1
-OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {minpkint} > {log_path} 2>&1
+echo OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {phase_name} {minpkint} > {log_path} 2>&1
+OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {phase_name} {minpkint} > {log_path} 2>&1
 date
         """.format(outfile_path=outfile_path,
                    errfile_path=errfile_path,
@@ -262,6 +263,7 @@ date
                    foridx=str(pbp_object.foridx).replace(" ", ""),
                    forgen=str(pbp_object.forgen).replace(" ", ""),
                    uniqcut=pbp_object.uniqcut,
+                   phase_name=str(pbp_object.phase_name),
                    minpkint=minpkint,
                    log_path=log_path)
 
@@ -461,7 +463,7 @@ def plot_grain_sinograms(grains, cf, n_grains_to_plot=None):
     if grid_size == 1 & nrows == 1:
         # only 1 grain
         g = grains[0]
-        m = cf.grain_id == g.gid
+        m = cf.grain_id == 0
         axs.scatter(cf.omega[m], cf.dty[m], c=cf.sum_intensity[m], s=2)
         axs.set_title(g.gid)
     else:
@@ -499,16 +501,7 @@ def get_rgbs_for_grains(grains):
         grain.rgb_z = rgb_z
 
 
-def plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1])):
-    # get the UB matrices for each grain
-    UBs = np.array([g.UB for g in grains])
-
-    # get the reference unit cell of one of the grains (should be the same for all)
-    ref_ucell = grains[0].ref_unitcell
-
-    # get a meta orientation for all the grains
-    meta_orien = ref_ucell.get_orix_orien(UBs)
-
+def plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([0., 0, 1])):
     try:
         from orix.vector.vector3d import Vector3d
     except ImportError:
@@ -521,6 +514,28 @@ def plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1])):
 
     # scatter the meta orientation using the colours
     meta_orien.scatter("ipf", c=rgb, direction=ipf_direction)
+
+
+def plot_all_ipfs_from_meta_orien(meta_orien, ref_ucell):
+    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([1., 0., 0.]))
+    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([0., 1., 0.]))
+    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([0., 0., 1.]))
+
+
+def plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1])):
+    # get the UB matrices for each grain
+    UBs = np.array([g.UB for g in grains])
+
+    # get the reference unit cell of one of the grains (should be the same for all)
+    ref_ucell = grains[0].ref_unitcell
+
+    # get a meta orientation for all the grains
+    meta_orien = ref_ucell.get_orix_orien(UBs)
+
+    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis)
+
+
+
 
 
 def plot_direct_pole_figure(grains, uvw=np.array([1., 0., 0.])):
@@ -551,6 +566,9 @@ def plot_all_ipfs(grains):
     plot_inverse_pole_figure(grains, axis=np.array([1., 0, 0]))
     plot_inverse_pole_figure(grains, axis=np.array([0., 1, 0]))
     plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1]))
+
+
+
 
 
 # backwards compatible

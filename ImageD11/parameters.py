@@ -3,6 +3,8 @@
 
 from __future__ import print_function
 
+import os
+
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
 #
@@ -50,21 +52,48 @@ class AnalysisSchema:
             self.load_json(filename)
             self.get_pars_objects()
 
+    def update_geometryfile(self):
+        # update geometry file on disk from memory
+        if self.geometry_pars_obj is None:
+            raise ValueError('No pars object in self.geometry_pars_obj!')
+        self.geometry_pars_obj.saveparameters(self.geometry_pars_obj.get('filename'))
+
+    def update_phasefile(self, phase_name):
+        # update phase file on disk from memory
+        if len(self.phase_pars_obj_dict) == 0:
+            raise ValueError('No pars objects in self.phase_pars_obj_dict!')
+        self.phase_pars_obj_dict[phase_name].saveparameters(self.phase_pars_obj_dict[phase_name].get('filename'))
+
+    def update_parfiles(self):
+        # updates geometry and phase par files on disk
+        self.update_geometryfile()
+        for phase_name in self.phase_pars_obj_dict.keys():
+            self.update_phasefile(phase_name)
+
+    def rel_to_absolute(self, rel_file):
+        """Get absolute path from (could be relative) filename"""
+        parent_folder = os.path.dirname(os.path.abspath(self.pars_dict['parfile']))
+        return os.path.join(parent_folder, rel_file)
+
     def get_pars_objects(self):
         """Parses self.pars_dict, reads the .par files, makes parameter objects for them"""
         # get geometric parameters
         geometry_dict = self.pars_dict["geometry"]
-        geometry_file = geometry_dict["file"]
+        geometry_file = self.rel_to_absolute(geometry_dict["file"])
         self.geometry_pars_obj = parameters()
         self.geometry_pars_obj.loadparameters(geometry_file)
+        self.geometry_pars_obj.set('filename', geometry_file)
 
         # get phase parameters from one of the phases
         phases_dict = self.pars_dict["phases"]
         for phase_name, phase_entry in phases_dict.items():
-            phase_file = phase_entry["file"]
+            phase_file = self.rel_to_absolute(phase_entry["file"])
             # read the phase pars from disk
             phase_pars_obj = parameters()
             phase_pars_obj.loadparameters(phase_file)
+            # add a parameter to keep track of the name of the phase
+            phase_pars_obj.set('phase_name', phase_name)
+            phase_pars_obj.set('filename', phase_file)
             # put this pars object in self.phase_pars_obj_dict
             self.phase_pars_obj_dict[phase_name] = phase_pars_obj
 
@@ -72,13 +101,16 @@ class AnalysisSchema:
         """Returns any parameters object from self.phase_pars_obj_dict"""
         return next(iter(self.phase_pars_obj_dict.values()))
 
-    @property
-    def xfab_pars_dict(self):
+    def get_xfab_pars_dict(self, phase_name=None):
         """Build a xfab pars compatible dictionary"""
         # get geometry pars as a dict
         geometry_pars_dict = self.geometry_pars_obj.get_parameters()
-        # get any phase pars as a dict
-        phase_pars_dict = self.get_any_phase_pars_obj().get_parameters()
+        if phase_name is not None:
+            # get parameters for a specific phase
+            phase_pars_dict = self.phase_pars_obj_dict[phase_name].get_parameters()
+        else:
+            # get any phase pars as a dict
+            phase_pars_dict = self.get_any_phase_pars_obj().get_parameters()
         # combine dicts together
         pars_dict = phase_pars_dict.copy()
         pars_dict.update(geometry_pars_dict)
@@ -91,6 +123,9 @@ class AnalysisSchema:
         import json
         with open(filename, 'r') as json_string:
             self.pars_dict = json.load(json_string)
+
+        # store the path to the json file in 'parfile' key
+        self.pars_dict['parfile'] = filename
 
 
 class par:
@@ -247,14 +282,14 @@ class parameters:
             f.write("%s %s\n" % (key, str(self.parameters[key])))
         f.close()
 
-    def loadparameters(self, filename):
+    def loadparameters(self, filename, phase_name=None):
         """
         Load parameters from a file
         """
         # is it a json file?
         if filename.endswith('json'):
             # create a JsonPars object and get the pars dict from it
-            pars_dict = AnalysisSchema(filename=filename).xfab_pars_dict
+            pars_dict = AnalysisSchema(filename=filename).get_xfab_pars_dict(phase_name)
             self.parameters.update(pars_dict)
         else:
             lines = open(filename, "r").readlines()
@@ -303,8 +338,8 @@ class parameters:
                 self.parameters[name] = value
 
 
-def read_par_file(filename):
+def read_par_file(filename, phase_name=None):
     p = parameters()
-    p.loadparameters(filename)
+    p.loadparameters(filename, phase_name=phase_name)
     return p
 
