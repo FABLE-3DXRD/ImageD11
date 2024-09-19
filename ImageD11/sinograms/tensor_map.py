@@ -117,6 +117,50 @@ def ubi_and_b_to_u(ubi, b, res):
         res[...] = np.dot(b, ubi).T
 
 
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:, :])], '(n,n),(p)->(n,n)', nopython=True)
+def ubi_and_unitcell_to_eps_sample(ubi, dzero_cell, res):
+    if np.isnan(ubi[0, 0]):
+        res[...] = np.nan
+    elif np.isnan(dzero_cell[0]):
+        res[...] = np.nan
+    else:
+        a, b, c = dzero_cell[:3]
+        ralpha, rbeta, rgamma = np.radians(dzero_cell[3:])  # radians
+        ca = np.cos(ralpha)
+        cb = np.cos(rbeta)
+        cg = np.cos(rgamma)
+        g = np.full((3, 3), np.nan, float)
+        g[0, 0] = a * a
+        g[0, 1] = a * b * cg
+        g[0, 2] = a * c * cb
+        g[1, 0] = a * b * cg
+        g[1, 1] = b * b
+        g[1, 2] = b * c * ca
+        g[2, 0] = a * c * cb
+        g[2, 1] = b * c * ca
+        g[2, 2] = c * c
+        gi = np.linalg.inv(g)
+        astar, bstar, cstar = np.sqrt(np.diag(gi))
+        betas = np.degrees(np.arccos(gi[0, 2] / astar / cstar))
+        gammas = np.degrees(np.arccos(gi[0, 1] / astar / bstar))
+
+        B = np.full((3, 3), np.nan, float)
+        B[0, 0] = astar
+        B[0, 1] = bstar * np.cos(np.radians(gammas))
+        B[0, 2] = cstar * np.cos(np.radians(betas))
+        B[1, 0] = 0.0
+        B[1, 1] = bstar * np.sin(np.radians(gammas))
+        B[1, 2] = -cstar * np.sin(np.radians(betas)) * ca
+        B[2, 0] = 0.0
+        B[2, 1] = 0.0
+        B[2, 2] = 1.0 / c
+
+        F = np.dot(ubi.T, B.T)
+        w, sing, vh = np.linalg.svd(F)
+        V = np.dot(w, np.dot(np.diag(sing), w.T))
+        em = V - np.eye(3)
+        res[...] = em
+
 # @numba.njit
 # def UB_map_to_U_B_map(UB_map):
 #     """QR decomp from xfab.tools"""
@@ -471,6 +515,30 @@ class TensorMap:
             euler_map = u_to_euler(U_map, dummy)
             self.add_map('euler', euler_map)
             return euler_map
+
+    @property
+    def dzero_unitcell(self):
+        """The dzero unitcell for each voxel from the reference phase for that voxel"""
+        if 'dzero_unitcell' in self.keys():
+            return self.maps['dzero_unitcell']
+        else:
+            # calculate it
+            dzero_unitcell_map = np.full(self.shape + (6,), np.nan, dtype=float)
+            for phase_id, ucell in self.phases.items():
+                dzero_unitcell_map[self.phase_ids == phase_id] = ucell.lattice_parameters
+            self.add_map('dzero_unitcell', dzero_unitcell_map)
+            return dzero_unitcell_map
+
+    @property
+    def eps_sample(self):
+        """The per-voxel strain, relative to the B0 of the unitcell of the reference phase for that voxel."""
+        if 'eps_sample' in self.keys():
+            return self.maps['eps_sample']
+        else:
+            # calculate it
+            eps_sample_map = ubi_and_unitcell_to_eps_sample(self.UBI, self.dzero_unitcell)
+            self.add_map('eps_sample', eps_sample_map)
+            return eps_sample_map
 
     def get_meta_orix_orien(self, phase_id=0):
         """Get a meta orix orientation for all voxels of a given phase ID"""
