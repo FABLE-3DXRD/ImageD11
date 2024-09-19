@@ -153,12 +153,12 @@ class FrelonSegmenterGui:
         self.scan = scan
         self.idx = frame
         self.chooseframe(counter)
-        thresh_slider = widgets.IntSlider(value=options["threshold"], min=1, max=100, step=1, description='Threshold:')
-        smsig_slider = widgets.FloatSlider(value=options["smoothsigma"], min=0.0, max=1.0, step=0.05, description='Smoothsigma:')
+        thresh_slider = widgets.IntSlider(value=options["threshold"], min=0, max=10000, step=1, description='Threshold:')
+        smsig_slider = widgets.FloatSlider(value=options["smoothsigma"], min=0.0, max=3.0, step=0.05, description='Smoothsigma:')
         bgc_slider = widgets.FloatSlider(value=options["bgc"], min=0.0, max=1.0, step=0.05, description='bgc:')
-        minpx_slider = widgets.IntSlider(value=options["minpx"], min=1, max=5, step=1, description='minpx:')
-        mofft_slider = widgets.IntSlider(value=options["m_offset_thresh"], min=1, max=200, step=1, description='m_offset_thresh:')
-        mratt_slider = widgets.IntSlider(value=options["m_ratio_thresh"], min=1, max=200, step=1, description='m_ratio_thresh:')
+        minpx_slider = widgets.IntSlider(value=options["minpx"], min=0, max=50, step=1, description='minpx:')
+        mofft_slider = widgets.IntSlider(value=options["m_offset_thresh"], min=0, max=200, step=1, description='m_offset_thresh:')
+        mratt_slider = widgets.IntSlider(value=options["m_ratio_thresh"], min=0, max=2000, step=1, description='m_ratio_thresh:')
         self.widget = widgets.interactive(self.update_image,
                                           threshold=thresh_slider,
                                           smoothsigma=smsig_slider,
@@ -196,7 +196,7 @@ class FrelonSegmenterGui:
         return image_worker, fc, sc, len(fc)
     
     def display(self):
-        self.fig, self.axs = plt.subplots(1, 3, sharex=True, sharey=True, figsize=(22, 10), layout="constrained")
+        self.fig, self.axs = plt.subplots(1, 3, sharex=True, sharey=True, figsize=(12, 8), layout="constrained")
         self.im1 = self.axs[0].imshow(self.raw_image, norm='log', vmin=100, vmax=1000)
         self.axs[0].set_title("Original image")
         self.im2 = self.axs[1].imshow(self.smoothed_image, cmap="viridis", norm='log', vmin=0.5, vmax=1000, interpolation="nearest")
