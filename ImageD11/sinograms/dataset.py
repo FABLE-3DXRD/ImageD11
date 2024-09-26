@@ -645,7 +645,7 @@ class DataSet:
             cf = correct_cf_with_dxdyfiles(cf, self.e2dxfile, self.e2dyfile)
         else:
             if self.splinefile is not None:
-                cf = correct_cf_with_spline(cf, self.spline_file)
+                cf = correct_cf_with_spline(cf, self.splinefile)
 
         # Generate columnfile from peaks table
         return cf
