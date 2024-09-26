@@ -172,19 +172,18 @@ class FrelonSegmenterGui:
         ds = self.dset
         if self.scan is None:
             self.scan = ds.scans[len(ds.scans)//2]
-        if self.idx is not None:
-            return
-        # Locate a busy image to look at
-        with h5py.File(ds.masterfile,'r') as hin:
-            ctr = ds.detector+counter
-            if self.scan.find("::") > -1: # 1.1::[10000:12000]  etc
-                lo, hi = [int(v) for v in self.scan[:-1].split("[")[1].split(":")]
-                self.scan = self.scan.split("::")[0]
-                roi1 = hin[self.scan]['measurement'][ctr][lo:hi]
-                self.idx = np.argmax(roi1) + lo
-            else: # "1.1"
-                roi1 = hin[self.scan]['measurement'][ctr][:]
-                self.idx = np.argmax(roi1)
+        if self.idx is None:
+            # Locate a busy image to look at
+            with h5py.File(ds.masterfile,'r') as hin:
+                ctr = ds.detector+counter
+                if self.scan.find("::") > -1: # 1.1::[10000:12000]  etc
+                    lo, hi = [int(v) for v in self.scan[:-1].split("[")[1].split(":")]
+                    self.scan = self.scan.split("::")[0]
+                    roi1 = hin[self.scan]['measurement'][ctr][lo:hi]
+                    self.idx = np.argmax(roi1) + lo
+                else: # "1.1"
+                    roi1 = hin[self.scan]['measurement'][ctr][:]
+                    self.idx = np.argmax(roi1)
         print("Using frame", self.idx, "from scan", self.scan)
         with h5py.File(self.dset.masterfile, 'r') as h5In:
             self.raw_image = h5In[self.scan + '/measurement/' + ds.detector][self.idx].astype('uint16')
