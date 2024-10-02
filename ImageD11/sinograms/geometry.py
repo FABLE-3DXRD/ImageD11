@@ -67,6 +67,17 @@ from scipy.optimize import curve_fit
 from skimage.feature import blob_log
 
 
+def sample_to_lab_sincos(sx, sy, y0, dty, sinomega, cosomega):
+    """Same as sample_to_lab but using sinomega and cosomega"""
+    sxr = sx * cosomega - sy * sinomega
+    syr = sx * sinomega + sy * cosomega
+    
+    lx = sxr
+    ly = syr - y0 + dty
+    
+    return lx, ly
+
+
 def sample_to_lab(sx, sy, y0, dty, omega):
     """Converts sample (sx, sy) position to the lab frame (lx, ly)
     The sample reference frame could be rotated by an angle omega (degrees) CCW about the rotation axis
@@ -217,6 +228,12 @@ def dty_to_dtyi(dty, ystep):
     _, dty_step = sample_to_step(0, dty, ystep)
     dtyi = np.round(dty_step).astype(int)
     return dtyi
+
+
+def dtyi_to_dty(dtyi, ystep):
+    """Converts dtyi value (step space) to dty value (lab frame)"""
+    _, sy = step_to_sample(0, dtyi, ystep)
+    return sy
 
 
 def dty_to_dtyi_for_sinogram(dty, ystep, ymin):

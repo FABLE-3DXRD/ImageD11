@@ -4,6 +4,9 @@
 # Try to build the point-by-point mapping code ...
 from __future__ import print_function, division
 import os
+
+from matplotlib import pyplot as plt
+
 os.environ["OMP_NUM_THREADS"] = "1"
 import sys
 from ImageD11 import cImageD11
@@ -21,7 +24,8 @@ from ImageD11 import sym_u, unitcell, parameters
 import ImageD11.sinograms.dataset
 import ImageD11.indexing
 import ImageD11.columnfile
-from ImageD11.sinograms.geometry import dty_to_dtyi, dtyimask_from_sincos
+from ImageD11.sinograms.geometry import dty_to_dtyi, dtyimask_from_sincos, step_to_sample, sample_to_lab_sincos, \
+    dtyi_to_dty
 
 
 # GOTO - find somewhere!
@@ -139,13 +143,12 @@ def idxpoint(
     i,
     j,
     isel,
+    omega,
     sinomega,
     cosomega,
     dtyi,
-    gx,
-    gy,
-    gz,
-    eta,
+    sc,
+    fc,
     ystep=2.00,
     y0=0.0,
     minpks=1000,
@@ -189,13 +192,35 @@ def idxpoint(
     mr = isel
     # select the peaks using the geometry module
     m = dtyimask_from_sincos(i, j, sinomega, cosomega, dtyi, y0, ystep)
-    # the arrays to use for indexing (this point in space)
-    # TODO: Correct these for origin point
+    # now we correct g-vectors for origin point
+
+    # compute the sample coordinates for this pixel
+    sx, sy = step_to_sample(i, j, ystep)
+    dty = dtyi_to_dty(dtyi, ystep)
+
+    # compute x distance offset for this pixel
+    lx, _ = sample_to_lab_sincos(sx, sy, y0, dty, sinomega, cosomega)
+    parlocal = parglobal.get_parameters().copy()
+    parlocal['distance'] = parlocal['distance'] - lx
+
+    # compute tth eta for all peaks with corrected distance at this pixel
+    tth, eta = ImageD11.transform.compute_tth_eta((sc, fc), **parlocal)
+
+    # compute gvectors for all peaks with corrected distance at this pixel
+    gx, gy, gz = ImageD11.transform.compute_g_vectors(tth, eta,
+                                               omega,
+                                               parlocal['wavelength'],
+                                               wedge=parlocal['wedge'],
+                                               chi=parlocal['chi'])
+
+    # mask g-vectors to this pixel for indexing
     inds = np.mgrid[0 : len(gx)][m & mr]
     gv = np.empty((len(inds), 3), "d")
     gv[:, 0] = gx[inds]
     gv[:, 1] = gy[inds]
     gv[:, 2] = gz[inds]
+
+    # index with masked g-vectors
     ind = ImageD11.indexing.indexer(
         unitcell=ucglobal,
         wavelength=parglobal.get("wavelength"),
@@ -255,13 +280,12 @@ def proxy(args):
         i,
         j,
         sm["isel"],
+        sm["omega"],
         sm["sinomega"],
         sm["cosomega"],
         sm["dtyi"],
-        sm["gx"],
-        sm["gy"],
-        sm["gz"],
-        sm["eta"],
+        sm["sc"],
+        sm["fc"],
         **idxopts
     )
     return i, j, g
