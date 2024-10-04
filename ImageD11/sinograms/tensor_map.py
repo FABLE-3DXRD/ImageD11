@@ -857,11 +857,11 @@ class TensorMap:
 
         maps = dict()
 
-        # see if we have a ubibest to take
-        if hasattr(pbpmap, 'ubibest'):
-            ubi_map = pbpmap.ubibest
-        else:
-            ubi_map = pbpmap.ubi
+        # see if we have a best UBI ma[ to take
+        if not hasattr(pbpmap, 'best_ubi'):
+            raise ValueError('PBPMap has no best UBI selection to take from!')
+
+        ubi_map = pbpmap.best_ubi
 
         # create a mask from ubi_map
         ubi_mask = np.where(np.isnan(ubi_map[:, :, 0, 0]), 0, 1).astype(bool)
@@ -871,11 +871,11 @@ class TensorMap:
 
         # add npks to the dict
         if hasattr(pbpmap, 'npks'):
-            maps['npks'] = cls.recon_order_to_map_order(np.where(ubi_mask, pbpmap.npks, 0))
+            maps['npks'] = cls.recon_order_to_map_order(np.where(ubi_mask, pbpmap.best_npks, 0))
 
         # add nuniq to the dict
         if hasattr(pbpmap, 'nuniq'):
-            maps['nuniq'] = cls.recon_order_to_map_order(np.where(ubi_mask, pbpmap.nuniq, 0))
+            maps['nuniq'] = cls.recon_order_to_map_order(np.where(ubi_mask, pbpmap.best_nuniq, 0))
 
         tensor_map = cls(maps=maps, steps=steps, phases=phases)
 

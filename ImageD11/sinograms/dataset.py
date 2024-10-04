@@ -171,6 +171,10 @@ class DataSet:
             ("icolfile", "_icolf.h5"),
             # point by point raw output
             ("pbpfile", "_pbp.txt"),
+            # subset peaks selected for refinement
+            ("refpeaksfile", "_refine_peaks.h5"),
+            # input map for refinement (pbp)
+            ("refmapfile", "_refine_map.h5")
         ]:
             # If the user has got a different name (via loading or edit), we keep that
             if (getattr(self, name, None) is None) or force:
