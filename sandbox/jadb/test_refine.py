@@ -109,6 +109,9 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
         g.hkl = np.round ( hkl_double ).astype( int )
         g.etasign = np.sign( peak_dict['eta'][ local_mask ][ g.m ] )
         
+        # print('Merging', len(peak_dict['sc'][ local_mask ][g.m]),'peaks with sc sum', peak_dict['sc'][ local_mask ][g.m].sum())
+
+        
         # 3D merge peaks in omega
         # only the peaks that this grain indexes
         merged = {'sc':[], 'fc':[], 'dty':[], 'omega':[], 'sum_intensity':[], 'xpos_refined':[]}
@@ -134,6 +137,8 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
         
         merged['sinomega'] = np.sin( np.radians(merged['omega']) )
         merged['cosomega'] = np.cos( np.radians(merged['omega']) )
+        
+        # print('Got', len(merged['sc']), 'merged peaks with merged_sc sum', merged['sc'].sum())
         
         # recompute the peaks this grain likes with merged data
         _, local_mask_of_grain, ydist = get_point_data(params, xi0, yi0, merged)
@@ -253,7 +258,6 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
                     eps_vec = np.linalg.lstsq( w * M, w.flatten() * g.directional_strain, rcond=None )[0].T
                     sxx, syy, szz, sxy, sxz, syz = eps_vec
                     g.eps_tensor = np.array([[sxx, sxy, sxz],[sxy, syy, syz],[sxz, syz, szz]])
-                    # print(g.eps_tensor)
                 except:
                     pass
 
@@ -261,6 +265,9 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
 
         else:
             g.eps_tensor  = None
+            
+        # print(ubifit)
+        # print(g.eps_tensor)
     
     # sort grains array by npeaks
     grains = np.array(grains)[np.argsort([g.npks for g in grains])]
@@ -521,68 +528,29 @@ def score_and_assign(ubi, gvecs, tol, label):
 
 @numba.njit
 def count_unique_peaks(hkl, etasign, dtyi):
-    """
-    # 60 lines just to recreate np.unique(np.vtsack((hkl, etasign, dtyi)), return_inverse=True)
-    """
-    # Combine the input arrays into one 2D array for easier sorting
-    combined = np.empty((5, etasign.shape[0]), dtype=dtyi.dtype)
-    combined[0:3, :] = hkl
-    combined[3, :] = etasign
-    combined[4, :] = dtyi
+    N = hkl.shape[1]  # Number of entries
+    indices = np.zeros(N, dtype=np.int64)
     
-    # Create an array of indices to track the original order
-    indices = np.arange(combined.shape[1])
+    # Step 1: Create a list of tuples (h, k, l, etasign, dtyi)
+    combined = []
+    for i in range(N):
+        key = (hkl[0, i], hkl[1, i], hkl[2, i], etasign[i], dtyi[i])
+        combined.append((key, i))
     
-    # Custom insertion sort to sort lexicographically
-    def lexicographical_sort(arr, inds):
-        for i in range(1, arr.shape[1]):
-            key = arr[:, i].copy()  # Copy the ith column
-            key_index = inds[i]  # Get the corresponding index
-            j = i - 1
-            # Lexicographical comparison: compare all elements in the column
-            while j >= 0 and (arr[0, j] > key[0] or
-                              (arr[0, j] == key[0] and arr[1, j] > key[1]) or
-                              (arr[0, j] == key[0] and arr[1, j] == key[1] and arr[2, j] > key[2]) or
-                              (arr[0, j] == key[0] and arr[1, j] == key[1] and arr[2, j] == key[2] and arr[3, j] > key[3]) or
-                              (arr[0, j] == key[0] and arr[1, j] == key[1] and arr[2, j] == key[2] and arr[3, j] == key[3] and arr[4, j] > key[4])):
-                arr[:, j + 1] = arr[:, j]
-                inds[j + 1] = inds[j]  # Shift the indices accordingly
-                j -= 1
-            arr[:, j + 1] = key
-            inds[j + 1] = key_index
+    # Step 2: Sort lexicographically based on the tuple
+    combined.sort()
+
+    # Step 3: Create the unique indices array
+    unique_map = {}
+    rank = 0
     
-    # Sort the combined array lexicographically
-    lexicographical_sort(combined, indices)
+    for sorted_key, original_index in combined:
+        if sorted_key not in unique_map:
+            unique_map[sorted_key] = rank
+            rank += 1
+        indices[original_index] = unique_map[sorted_key]
     
-    uniques = np.empty((5, etasign.shape[0]), dtype=dtyi.dtype)
-    inverses = np.empty((etasign.shape[0]), dtype=np.int64)
-    unique_ptr = 0
-    
-    # iterate through the sorted input array
-    for idx_sorted in np.arange(combined.shape[1], dtype=np.int64):
-        h, k, l, this_etasign, this_dtyi = combined[:, idx_sorted]
-        # go from the index of the sorted array back to the index of the original array
-        idx_combined = indices[idx_sorted]
-        
-        # did we see this row in the unique array yet?
-        seen_array = False
-        # iterate through the unique array
-        for idx_unique in np.arange(unique_ptr, dtype=np.int64):
-            # get row in the unique array
-            h_uniq, k_uniq, l_uniq, etasign_uniq, dtyi_uniq = uniques[:, idx_unique]
-            if (h == h_uniq) & (k == k_uniq) & (l == l_uniq) & (this_etasign == etasign_uniq) & (this_dtyi == dtyi_uniq):
-                # saw it already!
-                inverses[idx_combined] = idx_unique
-                seen_array = True
-                break
-                
-        if not seen_array:
-            # got to the end of uniques and didn't see it
-            uniques[:, unique_ptr] = [h, k, l, this_etasign, this_dtyi]
-            inverses[idx_combined] = unique_ptr
-            unique_ptr += 1
-    
-    return uniques[:,:unique_ptr], inverses
+    return indices
 
 
 @numba.njit
@@ -592,7 +560,7 @@ def merge(hkl, etasign, dtyi, sum_intensity, sc, fc, omega, dty, xpos_refined):
     weighted by sum_intensity
     """
 
-    unitags, labels = count_unique_peaks(hkl, etasign, dtyi)
+    labels = count_unique_peaks(hkl, etasign, dtyi)
     wI = sum_intensity
     sI = np.bincount( labels, weights=wI )
     merged_sum_intensity = sI
@@ -601,8 +569,11 @@ def merge(hkl, etasign, dtyi, sum_intensity, sc, fc, omega, dty, xpos_refined):
     merged_omega = np.bincount( labels, weights=omega*wI  )/sI
     merged_dty = np.bincount( labels, weights=dty*wI  )/sI
     merged_xpos_refined = np.bincount( labels, weights=xpos_refined*wI  )/sI
+    
+    # print('Got', len(merged_sc), 'merged peaks with merged_sc sum', merged_sc.sum())
 
     return merged_sum_intensity, merged_sc, merged_fc, merged_omega, merged_dty, merged_xpos_refined
+
 
 @numba.njit
 def get_voxel_mask(y0, xi0, yi0, sinomega, cosomega, dty, ystep):
@@ -669,6 +640,7 @@ def weighted_lstsq_ubi_fit(ydist, gve, hkl):
     
     return w, ubifit, residuals, rank, sing_vals
 
+
 @numba.njit
 def gve_norm(gve):
     norms = np.zeros(gve.shape[1])
@@ -699,6 +671,7 @@ def ubi_to_unitcell(ubi):
     be = np.degrees(np.arccos(G[0, 2] / a / c))
     ga = np.degrees(np.arccos(G[0, 1] / a / b))
     return np.array([a, b, c, al, be, ga])
+
 
 @numba.njit
 def ubi_and_ucell_to_u(ubi, ucell):
@@ -738,6 +711,7 @@ def ubi_and_ucell_to_u(ubi, ucell):
     u = np.dot(B, ubi).T
     return u
 
+
 @numba.njit(parallel=True)
 def mine(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,  # refinement stuff
          sc, fc, eta, sum_intensity, sinomega, cosomega, omega, dty, dtyi, xpos,  # icolf columns
@@ -762,23 +736,6 @@ def mine(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,  # re
     merge_tol is the assignment hkl tolerance for merged peaks
     """
     # make a non-awkward container for results
-    # determine max number of ubis per pixel in refine_points
-#     print('Working out size of output array')
-#     max_ubis_per_pixel = 0
-#     for refine_idx in range(len(refine_points)):
-#         ri, rj = refine_points[refine_idx]
-#         pbpmap_idx = (ri_col == ri) & (rj_col == rj)
-#         ubis_here = pbpmap_idx.sum()
-#         if ubis_here > max_ubis_per_pixel:
-#             max_ubis_per_pixel = ubis_here
-    
-#     # results containers
-#     print('Trying to create array with size', len(refine_points) * max_ubis_per_pixel * 3 * 3 * 8 / 1000 / 1000, 'MB')
-    
-    # final_ubis = np.full((len(refine_points), max_ubis_per_pixel, 3, 3), np.nan, dtype=all_pbpmap_ubis.dtype)
-    # final_eps = np.full((len(refine_points), max_ubis_per_pixel, 3, 3), np.nan, dtype=all_pbpmap_ubis.dtype)
-    # final_npks = np.full((len(refine_points), max_ubis_per_pixel, 1), np.nan, dtype=all_pbpmap_ubis.dtype)
-    
     final_ubis = np.full_like(all_pbpmap_ubis, np.nan)
     final_eps = np.full_like(all_pbpmap_ubis, np.nan)
     final_npks = np.full(all_pbpmap_ubis.shape[2], np.nan)
@@ -789,6 +746,7 @@ def mine(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,  # re
     print('Go for prange')
     for refine_idx in numba.prange(len(refine_points)):
         ri, rj = refine_points[refine_idx]
+        # print('at ri rj', ri, rj)
         
         # mask all_ubis by the pbpmap points
         pbpmap_mask = (ri_col == ri) & (rj_col == rj)
@@ -824,8 +782,10 @@ def mine(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,  # re
             # compute hkl floats
             hkl_double = np.dot(ubi, gve_voxel[:, grain_peak_mask])
             # hkl ints
-            hkl = np.round(hkl_double)
+            hkl = np.round(hkl_double).astype(np.int32)
             etasign = np.sign(eta[local_mask][grain_peak_mask])
+            
+            # print('Merging', len(sc[local_mask][grain_peak_mask]),'peaks with sc sum', sc[local_mask][grain_peak_mask].sum())
             
             # merge the assigned peaks in omega
             merged_sum_intensity, merged_sc, merged_fc, merged_omega, merged_dty, merged_xpos_refined = merge(hkl, etasign, dtyi[local_mask][grain_peak_mask], sum_intensity[local_mask][grain_peak_mask], sc[local_mask][grain_peak_mask], fc[local_mask][grain_peak_mask], omega[local_mask][grain_peak_mask], dty[local_mask][grain_peak_mask], xpos[local_mask][grain_peak_mask])
@@ -850,7 +810,7 @@ def mine(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,  # re
             # re-mask g-vectors to those assigned
             gve_grain = gve_voxel_merged[:, grain_peak_mask]
             hkl_double = np.dot(ubi, gve_grain)
-            hkl = np.round(hkl_double)
+            hkl = np.round(hkl_double).astype(np.int32)
             grain_ydist = ydist[local_mask_of_grain][grain_peak_mask]
             
             # now we're ready to refine!
@@ -929,7 +889,9 @@ def mine(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,  # re
                     eps_tensor = np.array([[sxx, sxy, sxz],[sxy, syy, syz],[sxz, syz, szz]])
                     
                     final_eps[:, :, pbpmap_idx[ubi_idx]] = eps_tensor
-                    #todo: ^ this doesn't work, get index arrays first
+                    
+                    # print(ubi_out)
+                    # print(eps_tensor)
     
     return final_ubis, final_eps, final_npks
                 
@@ -948,7 +910,7 @@ def call_mine(refine, points_step_space=None, npoints=None):
         points_recon_space = np.array(np.nonzero(refine.mask)).T
         if npoints is not None:
             points_recon_space = points_recon_space[:npoints]
-            print(points_recon_space)
+            # print(points_recon_space)
     else:
         # convert input points to reconstruction space, then pass to the function
         points_recon_space = [geometry.step_to_recon(si, sj, refine.mask.shape) for (si, sj) in points_step_space]
@@ -976,7 +938,7 @@ def call_mine(refine, points_step_space=None, npoints=None):
 
 def test_funcs(refine, points, npoints):
     # Reference
-    
+
     # print('Calling reference')
     # start_time = time.perf_counter()
     # inputs_axel, results_axel = call_axel(refine, points, npoints)
@@ -986,30 +948,31 @@ def test_funcs(refine, points, npoints):
     # # print(inputs_axel[0][0][0], inputs_axel[0][1][0])
     # # print('Out')
     # # print('UBI Npks')
-    # print(results_axel[0])
+    # # print(results_axel[0])
     # end_time = time.perf_counter()
     # time_taken = end_time - start_time
     # print('Reference', time_taken)
-    
+
     print('Calling mine')
-    for npoints in (2,20,200,2000):
-        print(npoints)
-        start_time = time.perf_counter()
-        final_ubis, final_eps, final_npks = call_mine(refine, points, npoints)
-        print(final_ubis[:,:,0])
-        print(final_eps[:,:,0])
-        print(final_npks[0])
-        # # [([ubi0, ubi1], [eps0, eps1], [npks0, npks1]), ([ubi0, ubi1], [eps0, eps1], [npks0, npks1])]
-        # print('In')
-        # print('UBI Npks')
-        # print(inputs_axel[0][0][0], inputs_axel[0][1][0])
-        # print('Out')
-        # print('UBI Npks')
-        # print(results_axel[0][0][0], results_axel[0][2][0])
-        end_time = time.perf_counter()
-        time_taken = end_time - start_time
-        print(time_taken)
-        print(np.isnan(final_ubis).all())
+
+    start_time = time.perf_counter()
+    final_ubis, final_eps, final_npks = call_mine(refine, points, npoints)
+    # print(final_ubis[:,:,0])
+    # print(final_eps[:,:,0])
+    # print(final_npks[0])
+    # # [([ubi0, ubi1], [eps0, eps1], [npks0, npks1]), ([ubi0, ubi1], [eps0, eps1], [npks0, npks1])]
+    # print('In')
+    # print('UBI Npks')
+    # print(inputs_axel[0][0][0], inputs_axel[0][1][0])
+    # print('Out')
+    # print('UBI Npks')
+    # print(results_axel[0][0][0], results_axel[0][2][0])
+    end_time = time.perf_counter()
+    time_taken = end_time - start_time
+    print(time_taken)
+    outstr = f'{npoints} points took {time_taken} seconds'
+    with open('refine_log.txt', "a") as f: f.write(outstr)
+
     print('Mine', time_taken)
     
     
@@ -1050,7 +1013,7 @@ def main():
     # points = [(344, -212), (323, 147), (-228, 303)]
     # points = [(344, -212)]
     points = None
-    npoints = 100
+    npoints = None
     
     test_funcs(refine, points, npoints)
     # test_funcs(args, [10,50,100,500,1000,5000,10000])
