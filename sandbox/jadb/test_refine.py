@@ -10,13 +10,13 @@ import numpy as np
 nthreads = len(os.sched_getaffinity(os.getpid()))
 numba.set_num_threads(nthreads)
 
-# from ImageD11 import cImageD11
-# # we do not want the processes to conflict
-# os.environ['OMP_NUM_THREADS'] = '1'
-# os.environ['OPENBLAS_NUM_THREADS'] = '1'
-# os.environ['MKL_NUM_THREADS'] = '1'
-# cImageD11.check_multiprocessing(patch=True) # forkserver
-# cImageD11.cimaged11_omp_set_num_threads(1)
+from ImageD11 import cImageD11
+# we do not want the processes to conflict
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+cImageD11.check_multiprocessing(patch=True) # forkserver
+cImageD11.cimaged11_omp_set_num_threads(1)
 
 import ImageD11.sinograms.dataset
 from ImageD11.sinograms import geometry
@@ -45,8 +45,8 @@ def get_point_data(params, xi0, yi0, peak_dict):
     y = xi0*peak_dict['sinomega'] + yi0*peak_dict['cosomega']
     ydist = np.abs( y + peak_dict['dty'] )
     m = ydist <= params['TRANSLATION_STAGE_DY_STEP']
-    # print('Voxel mask got', m.sum(), 'peaks')
-    # print(np.arange(len(peak_dict['dty']))[m])
+    # # print('Voxel mask got', m.sum(), 'peaks')
+    # # print(np.arange(len(peak_dict['dty']))[m])
     return xpos, m, ydist
 
 def get_gve(params, local_mask, xpos, peak_dict):
@@ -81,9 +81,6 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
     # get the masked peaks for this voxel
     _, local_mask, ydist = get_point_data(params, xi0, yi0, peak_dict)
     
-    print('First local mask results...')
-    print(peak_dict['sinomega'][local_mask].sum())
-    
     # compute g-vectors at this voxel
     gve = get_gve(params, local_mask, peak_dict['xpos_refined'], peak_dict)
     
@@ -105,16 +102,9 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
         
         # which peaks at this voxel does this grain like?
         g.mask = g.m = (li == i)
-        
-        print('Assignment mask results...')
-        print(peak_dict['sinomega'][local_mask][g.mask].sum())
-        
-        # print('Assigned', g.mask.sum(), 'peaks first time')
+
         # how many peaks does this grain have?
         g.npks = np.sum(g.mask)
-        
-        print('Assigned', g.npks, 'peaks first time out of', local_mask.sum())
-        
         hkl_double = np.dot( g.ubi, gve[:, g.mask] ) 
         g.hkl = np.round ( hkl_double ).astype( int )
         g.etasign = np.sign( peak_dict['eta'][ local_mask ][ g.m ] )
@@ -125,13 +115,8 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
 
         peaktags = np.vstack( (g.hkl, g.etasign, peak_dict['iy'][ local_mask ][ g.m ]) )
         unitags, labels  = np.unique(peaktags, axis=1, return_inverse=True )
-        print(labels[:10])
-        print('Got', unitags.shape[1], 'unique peaks during merging')
-        print(unitags[:, 0].sum())
         wI = peak_dict['sum_intensity'][ local_mask ][g.m]
         sI = np.bincount( labels, weights=wI )
-        print('wI sum:', wI.sum())
-        print('sI sum:', sI.sum())
         merged['sum_intensity']=sI
         sc = peak_dict['sc'][ local_mask ][g.m]
         fc = peak_dict['fc'][ local_mask ][g.m]
@@ -147,28 +132,13 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
         for k in merged.keys():
             merged[k] = np.array(merged[k])
         
-        print('merged_sc sum:',  merged['sc'].sum())
-        
         merged['sinomega'] = np.sin( np.radians(merged['omega']) )
         merged['cosomega'] = np.cos( np.radians(merged['omega']) )
         
-        print('merged_sc has shape', merged['sc'].shape)
-        
-        print('Merged', len(sc), 'peaks to', len(merged['sc']), 'peaks')
-        
-        print('Merged peak data for masking...')
-        print('merged so sum', merged['sinomega'].sum())
-        print('merged co sum', merged['cosomega'].sum())
-        print('merged dty sum', merged['dty'].sum())
-        
         # recompute the peaks this grain likes with merged data
         _, local_mask_of_grain, ydist = get_point_data(params, xi0, yi0, merged)
-        print('Got', local_mask_of_grain.sum(), 'masked merged peaks')
-        print('ydist sum before merged masking', ydist.sum())
         # recompute gvector of grain with merged data
         gve_grain = get_gve(params, local_mask_of_grain, merged['xpos_refined'], merged)
-        
-        print('gve_grain sum before merged assignment', gve_grain.sum())
         
         # reassign this grain with merged peaks data
         labels = np.zeros( gve_grain.shape[1],'i')-1
@@ -177,22 +147,13 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
         li = np.round(labels).astype(int).copy()
         g.mask = g.m = (li == i)
         g.npks = np.sum(g.m)
-        print('Assigned', g.npks, 'merged peaks out of', local_mask_of_grain.sum())
         g.gve = gve_grain[:,g.mask]
         hkl_double = np.dot( g.ubi, gve_grain[:, g.mask] ) 
         g.hkl = np.round ( hkl_double ).astype( int )
         g.ydist = ydist[local_mask_of_grain][g.mask]
         
-        # print(g.npks, 'merged peaks assigned after merging')
-        
         # if grain has more than 6 peaks assigned
         if np.sum(g.mask) > 6:
-            
-            
-            print('Going into refinement...')
-            print('ydist sum', g.ydist.sum())
-            print('gve sum', g.gve.sum())
-            print('hkl sum', g.hkl.sum())
             
             # a.T @ gve = h =>  gve.T @ a = h.T => a = np.linalg.pinv(gve.T) @ h.T, same for b and c 
             w = (1. / (g.ydist + 1) ).reshape(g.gve.shape[1], 1)
@@ -200,8 +161,8 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
             ubifit = ubifitT.T
             
             # TODO: fix bad cells....  and rank==3 and np.linalg.cond(ubifit)<1e16
-            if ubifit is not None and rank==3 and np.linalg.cond(ubifit)<1e14 and np.linalg.det(ubifit) > 0 and np.linalg.matrix_rank(ubifit)==3:                    
-                    
+            if ubifit is not None and rank==3 and np.linalg.cond(ubifit)<1e14 and np.linalg.det(ubifit) > 0 and np.linalg.matrix_rank(ubifit)==3:
+                
                 _G = np.dot(ubifit, ubifit.T)
                 _a, _b, _c = np.sqrt(np.diag(_G))
 
@@ -209,15 +170,15 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
                 for v in vals:
 
                     if not isinstance(v, float):
-                        print(ubifit, np.linalg.matrix_rank(ubifit), sing_vals, rank, np.linalg.det(ubifit), v, w)
+                        # print(ubifit, np.linalg.matrix_rank(ubifit), sing_vals, rank, np.linalg.det(ubifit), v, w)
                         raise
 
                     if np.imag(v)!=0:
-                        print(ubifit, np.linalg.matrix_rank(ubifit), sing_vals, rank, np.linalg.det(ubifit), v, w)
+                        # print(ubifit, np.linalg.matrix_rank(ubifit), sing_vals, rank, np.linalg.det(ubifit), v, w)
                         raise
 
                     if v <=-1 or v >=1:
-                        print(ubifit, np.linalg.matrix_rank(ubifit), sing_vals, rank, np.linalg.det(ubifit), v, w)
+                        # print(ubifit, np.linalg.matrix_rank(ubifit), sing_vals, rank, np.linalg.det(ubifit), v, w)
                         raise
 
                 al = np.degrees(np.arccos(_G[1, 2] / _b / _c))
@@ -233,6 +194,7 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
 
 
                 g.set_ubi( ubifit )
+                # print(ubifit)
 
             labels = np.zeros( gve_grain.shape[1],'i')-1
             drlv2 = np.ones( gve_grain.shape[1], 'd') 
@@ -248,20 +210,20 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
                 ####################################################################################################
                 # And now fit a strain tensor decoupling strain and orientation for precision.
                 
-                print('Strain mask fit sum', g.mask.sum())
+                # print('Strain mask fit sum', g.mask.sum())
                 
                 g.gve = gve_grain[:,g.mask]
                 hkl_double = np.dot( g.ubi, gve_grain[:, g.mask] ) 
                 g.hkl = np.round ( hkl_double ).astype( int )
                 g.ydist = ydist[local_mask_of_grain][g.mask]
                 
-                print('gve_grain_strainfit sum:',  g.gve.sum())
-                print('ydist strainfit sum:', g.ydist.sum())
+                # print('gve_grain_strainfit sum:',  g.gve.sum())
+                # print('ydist strainfit sum:', g.ydist.sum())
 
                 dzero_cell = [params['cell_'+key] for key in ('_a','_b','_c','alpha','beta','gamma')]
                 B0 = xfab.tools.form_b_mat(dzero_cell) / (np.pi*2)
-                print('B0')
-                print(B0)
+                # print('B0')
+                # print(B0)
 
                 g.gve0 = g.u @ B0 @ g.hkl
 
@@ -269,8 +231,8 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
                 gTg   = np.sum(g.gve*g.gve, axis=0)
                 g.directional_strain  = (gTg0/gTg) - 1
                 
-                print('Directional strain')
-                print(g.directional_strain)
+                # print('Directional strain')
+                # print(g.directional_strain)
 
                 kappa = g.gve / np.linalg.norm(g.gve, axis=0)
                 kx, ky, kz = kappa
@@ -291,7 +253,7 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
                     eps_vec = np.linalg.lstsq( w * M, w.flatten() * g.directional_strain, rcond=None )[0].T
                     sxx, syy, szz, sxy, sxz, syz = eps_vec
                     g.eps_tensor = np.array([[sxx, sxy, sxz],[sxy, syy, syz],[sxz, syz, szz]])
-                    print(g.eps_tensor)
+                    # print(g.eps_tensor)
                 except:
                     pass
 
@@ -311,8 +273,8 @@ def refine_point_axel(xi0, yi0, ubis, params, peak_dict, lattice):
 
 
 
-def call_axel(refine, points):
-    print('Axel prep')
+def call_axel(refine, points_step_space=None, npoints=None):
+    # print('Axel prep')
     # points are positions in the array
     all_pbpmap_ubis = refine.pbpmap.ubi
     all_npks = refine.pbpmap.ntotal
@@ -341,11 +303,20 @@ def call_axel(refine, points):
     refine_inputs = []
     refine_results = []
     
-    print('Iterating over points')
-    for (si, sj) in points:
+    if points_step_space is None:
+        # get the list of peak indices masks in reconstruction space
+        points_recon_space = np.array(np.nonzero(refine.mask)).T
+        if npoints is not None:
+            points_recon_space = points_recon_space[:npoints]
+    else:
+        points_recon_space = points_step
+    
+    # print('Iterating over points')
+    for (ri, rj) in points_recon_space:
+        si, sj = geometry.recon_to_step(ri, rj, refine.sx_grid.shape)
         # si, sj is in step space (could have negative values)
         # need to convert to reconstruction space to get sx_grid and sy_grid values
-        ri, rj = geometry.step_to_recon(si, sj, refine.sx_grid.shape)
+        # ri, rj = geometry.step_to_recon(si, sj, refine.sx_grid.shape)
         # get pbpmap rows at this point
         pixel_mask = refine.pbpmap.get_pixel_mask(si, sj)
         # get ubis at this point
@@ -368,11 +339,6 @@ def call_axel(refine, points):
 # from ImageD11.transform
 @numba.njit
 def detector_rotation_matrix(tilt_x, tilt_y, tilt_z):
-    """
-    Return the tilt matrix to apply to peaks
-    tilts are in radians
-    typically applied to peaks rotating around beam center
-    """
     r1 = np.array([[np.cos(tilt_z), -np.sin(tilt_z), 0.0],  # note this is r.h.
                    [np.sin(tilt_z), np.cos(tilt_z), 0.0],
                    [0.0,    0.0, 1.0]], np.float64)
@@ -392,24 +358,6 @@ def compute_xyz_lab(sc, fc,
                     tilt_x=0.,
                     distance=0.,
                     o11=1.0, o12=0.0, o21=0.0, o22=-1.0):
-    """
-    Peaks is a 2 d array of x,y
-    yc is the centre in y
-    ys is the y pixel size
-    ty is the tilt around y
-    zc is the centre in z
-    zs is the z pixel size
-    tz is the tilt around z
-    dist is the sample - detector distance
-    detector_orientation is a matrix to apply to peaks arg to get
-    ImageD11 convention
-         (( 0, 1),( 1, 0)) for ( y, x)
-         ((-1, 0),( 0, 1)) for (-x, y)
-         (( 0,-1),(-1, 0)) for (-y,-x)
-      etc...
-      
-    kwds are not used (but lets you pass in a dict with other things in it)
-    """
 
     # Matrix for the tilt rotations
     r2r1 = detector_rotation_matrix(tilt_x, tilt_y, tilt_z)
@@ -443,21 +391,8 @@ def compute_tth_eta_from_xyz(peaks_xyz,
                              t_x=0.0, t_y=0.0, t_z=0.0,
                              wedge=0.0,  # Wedge == theta on 4circ
                              chi=0.0):  # last line is for laziness -
-    """
-    Peaks is a 3 d array of x,y,z peak co-ordinates
-    crystal_translation is the position of the grain giving rise to a diffraction spot
-    in x,y,z ImageD11 co-ordinates
-         x,y is with respect to the axis of rotation (usually also beam centre).
-         z with respect to beam height, z centre
-    omega data are needed if crystal translations are used
-    
-    computed via the arctan recipe.
-    
-    returns tth/eta in degrees
-    """
+
     s1 = peaks_xyz
-    
-    
 
     # CHANGED to HFP convention 4-9-2007
     eta = np.degrees(np.arctan2(-s1[1, :], s1[2, :]))
@@ -475,12 +410,7 @@ def compute_tth_eta(sc, fc,
                     t_x=0.0, t_y=0.0, t_z=0.0,
                     wedge=0.0,
                     chi=0.0):
-    """
-    Finds x,y,z co-ordinates of peaks in the laboratory frame
-    Computes tth/eta from these (in degrees)
-    
-    kwds are not used (left for convenience if you have a parameter dict)
-    """
+
     peaks_xyz = compute_xyz_lab(
         sc, fc,
         y_center=y_center, y_size=y_size, tilt_y=tilt_y,
@@ -525,20 +455,7 @@ def compute_g_from_k(k, omega, wedge=0, chi=0):
     # G-vectors - rotate k onto the crystal axes
     g = np.zeros((3, k.shape[1]), np.float64)
     t = np.zeros((3, k.shape[1]), np.float64)
-    #
-    # g =  R . W . k where:
-    # R = ( cos(omega) , sin(omega), 0 )
-    #     (-sin(omega) , cos(omega), 0 )
-    #     (         0  ,         0 , 1 )
-    #
-    # W = ( cos(wedge) ,  0  ,  sin(wedge) )
-    #     (         0  ,  1  ,          0  )
-    #     (-sin(wedge) ,  0  ,  cos(wedge) )
-    #
-    # C = (         1  ,         0  ,      0     )
-    #     (         0  ,  cos(chi)  , sin(chi)   )
-    #     (         0  , -sin(chi)  , cos(chi)   )
-    #
+
     if wedge != 0.0:
         c = np.cos(np.radians(wedge))
         s = np.sin(np.radians(wedge))
@@ -601,9 +518,12 @@ def score_and_assign(ubi, gvecs, tol, label):
 
     return n, labels, drlv2
 
+
 @numba.njit
 def count_unique_peaks(hkl, etasign, dtyi):
-
+    """
+    # 60 lines just to recreate np.unique(np.vtsack((hkl, etasign, dtyi)), return_inverse=True)
+    """
     # Combine the input arrays into one 2D array for easier sorting
     combined = np.empty((5, etasign.shape[0]), dtype=dtyi.dtype)
     combined[0:3, :] = hkl
@@ -667,34 +587,33 @@ def count_unique_peaks(hkl, etasign, dtyi):
 
 @numba.njit
 def merge(hkl, etasign, dtyi, sum_intensity, sc, fc, omega, dty, xpos_refined):
+    """
+    merge peaks with the same (h, k, l, etasign, dtyi)
+    weighted by sum_intensity
+    """
+
     unitags, labels = count_unique_peaks(hkl, etasign, dtyi)
-    print('Got', unitags.shape[1], 'unique peaks during merging')
-    print(unitags[:, 0].sum())
-    print(labels[:10])
     wI = sum_intensity
     sI = np.bincount( labels, weights=wI )
-    print('wI sum:', wI.sum())
-    print('sI sum:', sI.sum())
-    
     merged_sum_intensity = sI
     merged_sc = np.bincount( labels, weights=sc*wI  )/sI
     merged_fc = np.bincount( labels, weights=fc*wI  )/sI
     merged_omega = np.bincount( labels, weights=omega*wI  )/sI
     merged_dty = np.bincount( labels, weights=dty*wI  )/sI
     merged_xpos_refined = np.bincount( labels, weights=xpos_refined*wI  )/sI
-    
-    print('merged_sc has shape', merged_sc.shape)
-    print('merged_sc sum:', merged_sc.sum())
 
     return merged_sum_intensity, merged_sc, merged_fc, merged_omega, merged_dty, merged_xpos_refined
 
 @numba.njit
 def get_voxel_mask(y0, xi0, yi0, sinomega, cosomega, dty, ystep):
-    # geometry.dtycalc_sincos
+    """
+    get peaks at xi0, yi0
+    basically just geometry.dtycalc_sincos
+    """
     dty_calc = y0 - xi0 * sinomega - yi0 * cosomega
     ydist = np.abs(dty_calc - dty)
     m = ydist <= ystep
-    # print('Voxel mask got', m.sum(), 'peaks')
+
     return m, ydist
 
 
@@ -762,237 +681,14 @@ def gve_norm(gve):
 
 @numba.njit
 def divide_where(arr1, arr2, out, wherearr):
-    """Do arr1/arr2.
-    In locations where wherearr == 0, return out instead"""
+    """
+    Do arr1/arr2.
+    In locations where wherearr == 0, return out instead
+    """
     div = np.divide(arr1, arr2)
     return np.where(wherearr != 0, div, out)
 
-@numba.njit
-def mine(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,  # refinement stuff
-         sc, fc, eta, sum_intensity, sinomega, cosomega, omega, dty, dtyi, xpos,  # icolf columns
-         ystep, y0,
-         B0,
-         distance, y_center, y_size, tilt_y, z_center, z_size, tilt_z, tilt_x,
-         o11, o12, o21, o22,
-         t_x, t_y, t_z, wedge, chi, wavelength,
-         tol=0.1, merge_tol=0.05
-):
-    # refine_points: list or Nx2 array of points in reconstruction space (ri, rj) to refine at
-    # all_pbpmap_ubis: 3x3xM array of many-valued UBIs from point-by-point map
-    # ri_col, rj_col: length-M array of ri and rj coordinates (reconstruction space) for each UBI in all_pbpmap_ubis
-    # sx_grid, sy_grid: same as before (sample space sx, sy positions)
-    # sinomega, cosomega, dtyi: same as before (icolf columns)
-    # ystep, y0: same as before
-    
-    # iterate through point indices
-    # they are in reconstruction space
-    for refine_idx in numba.prange(len(refine_points)):
-        ri, rj = refine_points[refine_idx]
-        print('At ri rj', ri, rj)
-        
-        # mask all_ubis by the pbpmap points
-        pbpmap_idx = (ri_col == ri) & (rj_col == rj)
-        
-        # get ubis at this point
-        ubis_here = all_pbpmap_ubis[:, :, pbpmap_idx]
 
-        # get xi0, xi0 at this point
-        xi0 = sx_grid[ri, rj]
-        yi0 = sy_grid[ri, rj]
-        
-        # get a mask to the peaks at this point
-        # this is basically geometry.dtyimask_from_sincos
-        # but we already have x, y
-        
-        local_mask, _ = get_voxel_mask(y0, xi0, yi0, sinomega, cosomega, dty, ystep)
-        
-        # does our local masking agree?
-        
-        print('First local mask results...')
-        print(sinomega[local_mask].sum())
-        
-        gve_voxel = compute_gve(sc[local_mask], fc[local_mask], omega[local_mask], xpos[local_mask],
-                          distance=distance, y_center=y_center, y_size=y_size, tilt_y=tilt_y, z_center=z_center, z_size=z_size, tilt_z=tilt_z, tilt_x=tilt_x,
-                          o11=o11, o12=o12, o21=o21, o22=o22,
-                          t_x=t_x, t_y=t_y, t_z=t_z, wedge=wedge, chi=chi, wavelength=wavelength)
-        
-        # iterate through the ubis at this voxel
-        for ubi_idx in np.arange(ubis_here.shape[2]):
-            ubi = ubis_here[:, :, ubi_idx]
-
-            # assign this UBI to the peaks at this voxel
-            j, labels, drlv2 = score_and_assign(ubi, gve_voxel, tol, ubi_idx)
-            
-            # print(labels.shape)
-            # print(drlv2.shape)
-            
-            grain_peak_mask = labels == ubi_idx
-            
-            print('Assignment mask results...')
-            print(sinomega[local_mask][grain_peak_mask].sum())
-            
-            grain_npks = np.sum(grain_peak_mask)
-            
-            if ubi_idx == 0:
-                print('In')
-                print('UBI Npks')
-                print(ubi, grain_npks)
-            
-            print('Assigned', grain_npks, 'peaks first time out of', local_mask.sum())
-            # compute hkl floats
-            hkl_double = np.dot(ubi, gve_voxel[:, grain_peak_mask])
-            # hkl ints
-            hkl = np.round(hkl_double)
-            etasign = np.sign(eta[local_mask][grain_peak_mask])
-            
-            # print('merging')
-            # merge the assigned peaks in omega
-            merged_sum_intensity, merged_sc, merged_fc, merged_omega, merged_dty, merged_xpos_refined = merge(hkl, etasign, dtyi[local_mask][grain_peak_mask], sum_intensity[local_mask][grain_peak_mask], sc[local_mask][grain_peak_mask], fc[local_mask][grain_peak_mask], omega[local_mask][grain_peak_mask], dty[local_mask][grain_peak_mask], xpos[local_mask][grain_peak_mask])
-            
-            merged_sinomega = np.sin(np.radians(merged_omega))
-            merged_cosomega = np.cos(np.radians(merged_omega))
-            
-            print('Merged', len(xpos[local_mask][grain_peak_mask]), 'peaks to', len(merged_xpos_refined), 'peaks')
-            
-            print('Merged peak data for masking...')
-            print('merged so sum', merged_sinomega.sum())
-            print('merged co sum', merged_cosomega.sum())
-            print('merged dty sum', merged_dty.sum())
-            
-            # print('did merge')
-            # re-compute voxel peak mask with merged peaks
-            local_mask_of_grain, ydist = get_voxel_mask(y0, xi0, yi0, merged_sinomega, merged_cosomega, merged_dty, ystep)
-            print('Got', local_mask_of_grain.sum(), 'masked merged peaks')
-            print('ydist sum before merged masking', ydist.sum())
-            
-            gve_voxel_merged = compute_gve(merged_sc[local_mask_of_grain], merged_fc[local_mask_of_grain], merged_omega[local_mask_of_grain], merged_xpos_refined[local_mask_of_grain],
-                  distance=distance, y_center=y_center, y_size=y_size, tilt_y=tilt_y, z_center=z_center, z_size=z_size, tilt_z=tilt_z, tilt_x=tilt_x,
-                  o11=o11, o12=o12, o21=o21, o22=o22,
-                  t_x=t_x, t_y=t_y, t_z=t_z, wedge=wedge, chi=chi, wavelength=wavelength)
-            
-            print('gve_voxel_merged sum before merged assignment', gve_voxel_merged.sum())
-            
-            # print('reassigning')
-            # reassign merged g-vectors with smaller merge_tol
-            j, labels, drlv2 = score_and_assign(ubi, gve_voxel_merged, merge_tol, ubi_idx)
-            grain_peak_mask = labels == ubi_idx
-            grain_npks = np.sum(grain_peak_mask)
-            print('Assigned', grain_npks, 'merged peaks out of', local_mask_of_grain.sum())
-            
-            # re-mask g-vectors to those assigned
-            gve_grain = gve_voxel_merged[:, grain_peak_mask]
-            hkl_double = np.dot(ubi, gve_grain)
-            hkl = np.round(hkl_double)
-            grain_ydist = ydist[local_mask_of_grain][grain_peak_mask]
-            
-            # print(grain_npks, 'merged peaks assigned after merging')
-            
-            # now we're ready to refine!
-            
-            if grain_npks > 6:
-                
-                print('Going into refinement...')
-                print('ydist sum', grain_ydist.sum())
-                print('gve sum', gve_grain.sum())
-                print('hkl sum', hkl.sum())
-                
-                w, ubifit, residuals, rank, sing_vals = weighted_lstsq_ubi_fit(grain_ydist, gve_grain, hkl)
-                
-                # check the quality of the fit
-                worth_fitting = (ubifit is not None) and (rank==3) and (np.linalg.cond(ubifit)<1e14) and (np.linalg.det(ubifit) > 0) and (np.linalg.matrix_rank(ubifit)==3)
-                
-                # check the unitcell that you create from the UBI
-                if worth_fitting:
-                    ucell = ubi_to_unitcell(ubifit)
-                    _a, _b, _c, al, be, ga = ucell
-                    
-                    assert _a>0
-                    assert _b>0
-                    assert _c>0
-                    assert al>0 and al<180
-                    assert be>0 and be<180
-                    assert ga>0 and ga<180
-                
-                # do we like the quality?
-                if worth_fitting:
-                    ubi_out = ubifit
-                else:
-                    ubi_out = ubi.copy()
-                    
-                if ubi_idx == 0:
-                    print('Out')
-                    print('UBI Npks')
-                    print(ubi_out, grain_npks)
-                
-                # now reassign the (probably refined) UBI
-                
-                j, labels, drlv2 = score_and_assign(ubi_out, gve_voxel_merged, merge_tol, ubi_idx)
-                grain_peak_mask = labels == ubi_idx
-                grain_npks = np.sum(grain_peak_mask)
-                
-                # if we like the fit quality, redetermine the g-vectors from the new peak mask
-                # then fit the strain tensor
-                
-                if worth_fitting:
-                     # go for fancy eps fit
-                        
-                    print('Strain mask fit sum', grain_peak_mask.sum())
-                    print('B0')
-                    print(B0)
-                    
-                    gve_grain_strainfit = gve_voxel_merged[:, grain_peak_mask]
-                    hkl_double = np.dot( ubi_out, gve_grain_strainfit ) 
-                    hkl = np.round ( hkl_double )
-                    ydist = ydist[local_mask_of_grain][grain_peak_mask]
-                    
-                    print('gve_grain_strainfit sum:', gve_grain_strainfit.sum())
-                    print('ydist strainfit sum:', ydist.sum())
-                    
-                    # get U from UBI without using ImageD11 grain class
-                    U = ubi_and_ucell_to_u(ubi_out, ucell)
-                    print('U')
-                    print(U)
-                    gve0 = U @ B0 @ hkl
-                    gTg0    = np.sum(gve_grain_strainfit*gve0, axis=0)
-                    gTg   = np.sum(gve_grain_strainfit*gve_grain_strainfit, axis=0)
-                    directional_strain  = (gTg0/gTg) - 1
-                    print('Directional strain')
-                    print(directional_strain)
-                    
-                    kappa = gve_grain_strainfit / gve_norm(gve_grain_strainfit)
-                    kx, ky, kz = kappa
-                    # M = np.array( [ kx*kx, ky*ky, kz*kz, 2*kx*ky, 2*kx*kz, 2*ky*kz ] ).T
-                    M = np.column_stack((kx*kx, ky*ky, kz*kz, 2*kx*ky, 2*kx*kz, 2*ky*kz))
-
-                    w = (1. / (ydist + 1) ).reshape(gve_grain_strainfit.shape[1], 1)
-                    # The noise in the directional strain now propagates according to the linear transform
-                    gnoise_std = 1e-4
-                    a  = np.sum(gve0*(gnoise_std**2)*gve0, axis=0)
-                    
-                    strain_noise_std = np.sqrt(divide_where(a, gTg**2, out=np.ones_like(gTg), wherearr=gTg))
-                    
-                    # strain_noise_std = np.sqrt( np.divide(a, gTg**2, out=np.ones_like(gTg), where=gTg!=0) )
-                    w = w * (1. / strain_noise_std.reshape(w.shape) )
-
-                    w[directional_strain > np.mean(directional_strain) + np.std(directional_strain)*3.5 ] = 0 # outliers
-                    w[directional_strain < np.mean(directional_strain) - np.std(directional_strain)*3.5 ] = 0 # outliers
-
-                    try:
-                        w = w / np.max(w)
-                        
-                        a = w * M
-                        b = w.flatten() * directional_strain
-                        m, n = a.shape[-2:]
-                        rcond = np.finfo(b.dtype).eps * max(n, m)
-                        
-                        eps_vec = np.linalg.lstsq( a, b, rcond=rcond )[0].T
-                        sxx, syy, szz, sxy, sxz, syz = eps_vec
-                        eps_tensor = np.array([[sxx, sxy, sxz],[sxy, syy, syz],[sxz, syz, szz]])
-                    except:
-                        pass
-               
-                    print(eps_tensor)
-                
 @numba.njit
 def ubi_to_unitcell(ubi):
     # fast numba version, can't use guvec version from tensor_map.py here unfortunately
@@ -1041,9 +737,204 @@ def ubi_and_ucell_to_u(ubi, ucell):
     
     u = np.dot(B, ubi).T
     return u
-                
 
-def call_mine(refine, points_step_space=None):
+@numba.njit(parallel=True)
+def mine(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,  # refinement stuff
+         sc, fc, eta, sum_intensity, sinomega, cosomega, omega, dty, dtyi, xpos,  # icolf columns
+         ystep, y0,
+         B0,
+         distance, y_center, y_size, tilt_y, z_center, z_size, tilt_z, tilt_x,
+         o11, o12, o21, o22,
+         t_x, t_y, t_z, wedge, chi, wavelength,
+         tol=0.1, merge_tol=0.05, min_grain_npks=6, gnoise_std=1e-4
+):
+    """
+    refine_points: list or Nx2 array of points in reconstruction space (ri, rj) to refine at
+    all_pbpmap_ubis: 3x3xM array of many-valued UBIs from point-by-point map
+    ri_col, rj_col: length-M array of ri and rj coordinates (reconstruction space) for each UBI in all_pbpmap_ubis
+    sx_grid, sy_grid: same as before (sample space sx, sy positions)
+    a bunch of icolf columns
+    ystep, y0: same as before
+    B0: B matrix of dzero_cell
+    then a bunch of pars from the parameter file
+    then assignment tolerances:
+    tol is the assignment hkl tolerance for non-merged peaks
+    merge_tol is the assignment hkl tolerance for merged peaks
+    """
+    # make a non-awkward container for results
+    # determine max number of ubis per pixel in refine_points
+#     print('Working out size of output array')
+#     max_ubis_per_pixel = 0
+#     for refine_idx in range(len(refine_points)):
+#         ri, rj = refine_points[refine_idx]
+#         pbpmap_idx = (ri_col == ri) & (rj_col == rj)
+#         ubis_here = pbpmap_idx.sum()
+#         if ubis_here > max_ubis_per_pixel:
+#             max_ubis_per_pixel = ubis_here
+    
+#     # results containers
+#     print('Trying to create array with size', len(refine_points) * max_ubis_per_pixel * 3 * 3 * 8 / 1000 / 1000, 'MB')
+    
+    # final_ubis = np.full((len(refine_points), max_ubis_per_pixel, 3, 3), np.nan, dtype=all_pbpmap_ubis.dtype)
+    # final_eps = np.full((len(refine_points), max_ubis_per_pixel, 3, 3), np.nan, dtype=all_pbpmap_ubis.dtype)
+    # final_npks = np.full((len(refine_points), max_ubis_per_pixel, 1), np.nan, dtype=all_pbpmap_ubis.dtype)
+    
+    final_ubis = np.full_like(all_pbpmap_ubis, np.nan)
+    final_eps = np.full_like(all_pbpmap_ubis, np.nan)
+    final_npks = np.full(all_pbpmap_ubis.shape[2], np.nan)
+    
+    # iterate through point indices
+    # they are in reconstruction space
+    
+    print('Go for prange')
+    for refine_idx in numba.prange(len(refine_points)):
+        ri, rj = refine_points[refine_idx]
+        
+        # mask all_ubis by the pbpmap points
+        pbpmap_mask = (ri_col == ri) & (rj_col == rj)
+        pbpmap_idx = np.arange(len(ri_col))[pbpmap_mask]
+        
+        # get ubis at this point
+        ubis_here = all_pbpmap_ubis[:, :, pbpmap_mask]
+
+        # get xi0, xi0 at this point
+        xi0 = sx_grid[ri, rj]
+        yi0 = sy_grid[ri, rj]
+        
+        # get a mask to the peaks at this point
+        # this is basically geometry.dtyimask_from_sincos
+        # but we already have x, y
+        
+        local_mask, _ = get_voxel_mask(y0, xi0, yi0, sinomega, cosomega, dty, ystep)
+        
+        # get g-vectors for this voxel
+        gve_voxel = compute_gve(sc[local_mask], fc[local_mask], omega[local_mask], xpos[local_mask],
+                          distance=distance, y_center=y_center, y_size=y_size, tilt_y=tilt_y, z_center=z_center, z_size=z_size, tilt_z=tilt_z, tilt_x=tilt_x,
+                          o11=o11, o12=o12, o21=o21, o22=o22,
+                          t_x=t_x, t_y=t_y, t_z=t_z, wedge=wedge, chi=chi, wavelength=wavelength)
+        
+        # iterate through the ubis at this voxel
+        for ubi_idx in np.arange(ubis_here.shape[2]):
+            ubi = ubis_here[:, :, ubi_idx]
+
+            # assign this UBI to the peaks at this voxel
+            j, labels, drlv2 = score_and_assign(ubi, gve_voxel, tol, ubi_idx)
+            grain_peak_mask = labels == ubi_idx
+            grain_npks = np.sum(grain_peak_mask)
+            # compute hkl floats
+            hkl_double = np.dot(ubi, gve_voxel[:, grain_peak_mask])
+            # hkl ints
+            hkl = np.round(hkl_double)
+            etasign = np.sign(eta[local_mask][grain_peak_mask])
+            
+            # merge the assigned peaks in omega
+            merged_sum_intensity, merged_sc, merged_fc, merged_omega, merged_dty, merged_xpos_refined = merge(hkl, etasign, dtyi[local_mask][grain_peak_mask], sum_intensity[local_mask][grain_peak_mask], sc[local_mask][grain_peak_mask], fc[local_mask][grain_peak_mask], omega[local_mask][grain_peak_mask], dty[local_mask][grain_peak_mask], xpos[local_mask][grain_peak_mask])
+            
+            merged_sinomega = np.sin(np.radians(merged_omega))
+            merged_cosomega = np.cos(np.radians(merged_omega))
+
+            # re-compute voxel peak mask with merged peaks
+            local_mask_of_grain, ydist = get_voxel_mask(y0, xi0, yi0, merged_sinomega, merged_cosomega, merged_dty, ystep)
+            
+            # re-compute merged g-vectors
+            gve_voxel_merged = compute_gve(merged_sc[local_mask_of_grain], merged_fc[local_mask_of_grain], merged_omega[local_mask_of_grain], merged_xpos_refined[local_mask_of_grain],
+                  distance=distance, y_center=y_center, y_size=y_size, tilt_y=tilt_y, z_center=z_center, z_size=z_size, tilt_z=tilt_z, tilt_x=tilt_x,
+                  o11=o11, o12=o12, o21=o21, o22=o22,
+                  t_x=t_x, t_y=t_y, t_z=t_z, wedge=wedge, chi=chi, wavelength=wavelength)
+            
+            # reassign merged g-vectors with smaller merge_tol
+            j, labels, drlv2 = score_and_assign(ubi, gve_voxel_merged, merge_tol, ubi_idx)
+            grain_peak_mask = labels == ubi_idx
+            grain_npks = np.sum(grain_peak_mask)
+            
+            # re-mask g-vectors to those assigned
+            gve_grain = gve_voxel_merged[:, grain_peak_mask]
+            hkl_double = np.dot(ubi, gve_grain)
+            hkl = np.round(hkl_double)
+            grain_ydist = ydist[local_mask_of_grain][grain_peak_mask]
+            
+            # now we're ready to refine!
+            
+            if grain_npks > min_grain_npks:
+                w, ubifit, residuals, rank, sing_vals = weighted_lstsq_ubi_fit(grain_ydist, gve_grain, hkl)
+                
+                # check the quality of the fit
+                worth_fitting = (ubifit is not None) and (rank==3) and (np.linalg.cond(ubifit)<1e14) and (np.linalg.det(ubifit) > 0) and (np.linalg.matrix_rank(ubifit)==3)
+                
+                # check the unitcell that you create from the UBI
+                if worth_fitting:
+                    ucell = ubi_to_unitcell(ubifit)
+                    
+                    # _a, _b, _c, al, be, ga = ucell
+                    # assert _a>0
+                    # assert _b>0
+                    # assert _c>0
+                    # assert al>0 and al<180
+                    # assert be>0 and be<180
+                    # assert ga>0 and ga<180
+                
+                # do we like the quality?
+                if worth_fitting:
+                    ubi_out = ubifit
+                else:
+                    ubi_out = ubi.copy()
+                
+                # now reassign the (probably refined) UBI
+                
+                j, labels, drlv2 = score_and_assign(ubi_out, gve_voxel_merged, merge_tol, ubi_idx)
+                grain_peak_mask = labels == ubi_idx
+                grain_npks = np.sum(grain_peak_mask)
+                    
+                final_ubis[:, :, pbpmap_idx[ubi_idx]] = ubi_out
+                final_npks[pbpmap_idx[ubi_idx]] = grain_npks
+                
+                # if we like the fit quality, redetermine the g-vectors from the new peak mask
+                # then fit the strain tensor
+                
+                if worth_fitting:
+                    
+                    gve_grain_strainfit = gve_voxel_merged[:, grain_peak_mask]
+                    hkl_double = np.dot( ubi_out, gve_grain_strainfit ) 
+                    hkl = np.round ( hkl_double )
+                    ydist = ydist[local_mask_of_grain][grain_peak_mask]
+                    
+                    # get U from UBI without using ImageD11 grain class
+                    U = ubi_and_ucell_to_u(ubi_out, ucell)
+                    gve0 = U @ B0 @ hkl
+                    gTg0    = np.sum(gve_grain_strainfit*gve0, axis=0)
+                    gTg   = np.sum(gve_grain_strainfit*gve_grain_strainfit, axis=0)
+                    directional_strain  = (gTg0/gTg) - 1
+                    
+                    kappa = gve_grain_strainfit / gve_norm(gve_grain_strainfit)
+                    kx, ky, kz = kappa
+                    
+                    M = np.column_stack((kx*kx, ky*ky, kz*kz, 2*kx*ky, 2*kx*kz, 2*ky*kz))
+
+                    w = (1. / (ydist + 1) ).reshape(gve_grain_strainfit.shape[1], 1)
+                    # The noise in the directional strain now propagates according to the linear transform
+                    a  = np.sum(gve0*(gnoise_std**2)*gve0, axis=0)
+                    strain_noise_std = np.sqrt(divide_where(a, gTg**2, out=np.ones_like(gTg), wherearr=gTg))
+                    w = w * (1. / strain_noise_std.reshape(w.shape) )
+
+                    w[directional_strain > np.mean(directional_strain) + np.std(directional_strain)*3.5 ] = 0 # outliers
+                    w[directional_strain < np.mean(directional_strain) - np.std(directional_strain)*3.5 ] = 0 # outliers
+
+                    w = w / np.max(w)
+                    a = w * M
+                    b = w.flatten() * directional_strain
+                    m, n = a.shape[-2:]
+                    rcond = np.finfo(b.dtype).eps * max(n, m)
+                    eps_vec = np.linalg.lstsq( a, b, rcond=rcond )[0].T
+                    sxx, syy, szz, sxy, sxz, syz = eps_vec
+                    eps_tensor = np.array([[sxx, sxy, sxz],[sxy, syy, syz],[sxz, syz, szz]])
+                    
+                    final_eps[:, :, pbpmap_idx[ubi_idx]] = eps_tensor
+                    #todo: ^ this doesn't work, get index arrays first
+    
+    return final_ubis, final_eps, final_npks
+                
+                
+def call_mine(refine, points_step_space=None, npoints=None):
     # prepare simple numpy array objects
     # pass to Numba function
     
@@ -1055,9 +946,13 @@ def call_mine(refine, points_step_space=None):
     if points_step_space is None:
         # get the list of peak indices masks in reconstruction space
         points_recon_space = np.array(np.nonzero(refine.mask)).T
+        if npoints is not None:
+            points_recon_space = points_recon_space[:npoints]
+            print(points_recon_space)
     else:
         # convert input points to reconstruction space, then pass to the function
         points_recon_space = [geometry.step_to_recon(si, sj, refine.mask.shape) for (si, sj) in points_step_space]
+    
     
     # columnfile by [3, 3, (ri, rj)]
     all_pbpmap_ubis = refine.pbpmap.ubi
@@ -1067,7 +962,7 @@ def call_mine(refine, points_step_space=None):
     dummy_var = np.eye(3)
     B0 = unitcell_to_b(refine.ref_ucell.lattice_parameters, dummy_var)
     
-    mine(points_recon_space, all_pbpmap_ubis, ri_col, rj_col, refine.sx_grid, refine.sy_grid,
+    final_ubis, final_eps, final_npks = mine(points_recon_space, all_pbpmap_ubis, ri_col, rj_col, refine.sx_grid, refine.sy_grid,
          refine.icolf.sc, refine.icolf.fc, refine.icolf.eta, refine.icolf.sum_intensity, refine.icolf.sinomega, refine.icolf.cosomega, refine.icolf.omega, refine.icolf.dty, refine.icolf.dtyi, refine.icolf.xpos_refined,
          refine.ystep, refine.y0,
          B0,
@@ -1076,37 +971,45 @@ def call_mine(refine, points_step_space=None):
          pars['t_x'], pars['t_y'], pars['t_z'], pars['wedge'], pars['chi'], pars['wavelength']
          )
     
+    return final_ubis, final_eps, final_npks
 
 
-def test_funcs(refine, points):
+def test_funcs(refine, points, npoints):
     # Reference
     
-    print('Calling reference')
-    start_time = time.perf_counter()
-    inputs_axel, results_axel = call_axel(refine, points)
-    # [([ubi0, ubi1], [eps0, eps1], [npks0, npks1]), ([ubi0, ubi1], [eps0, eps1], [npks0, npks1])]
-    print('In')
-    print('UBI Npks')
-    print(inputs_axel[0][0][0], inputs_axel[0][1][0])
-    print('Out')
-    print('UBI Npks')
-    print(results_axel[0][0][0], results_axel[0][2][0])
-    end_time = time.perf_counter()
-    time_taken = end_time - start_time
-    print('Reference', time_taken)
+    # print('Calling reference')
+    # start_time = time.perf_counter()
+    # inputs_axel, results_axel = call_axel(refine, points, npoints)
+    # # [([ubi0, ubi1], [eps0, eps1], [npks0, npks1]), ([ubi0, ubi1], [eps0, eps1], [npks0, npks1])]
+    # # print('In')
+    # # print('UBI Npks')
+    # # print(inputs_axel[0][0][0], inputs_axel[0][1][0])
+    # # print('Out')
+    # # print('UBI Npks')
+    # print(results_axel[0])
+    # end_time = time.perf_counter()
+    # time_taken = end_time - start_time
+    # print('Reference', time_taken)
     
     print('Calling mine')
-    start_time = time.perf_counter()
-    call_mine(refine, points)
-    # # [([ubi0, ubi1], [eps0, eps1], [npks0, npks1]), ([ubi0, ubi1], [eps0, eps1], [npks0, npks1])]
-    # print('In')
-    # print('UBI Npks')
-    # print(inputs_axel[0][0][0], inputs_axel[0][1][0])
-    # print('Out')
-    # print('UBI Npks')
-    # print(results_axel[0][0][0], results_axel[0][2][0])
-    end_time = time.perf_counter()
-    time_taken = end_time - start_time
+    for npoints in (2,20,200,2000):
+        print(npoints)
+        start_time = time.perf_counter()
+        final_ubis, final_eps, final_npks = call_mine(refine, points, npoints)
+        print(final_ubis[:,:,0])
+        print(final_eps[:,:,0])
+        print(final_npks[0])
+        # # [([ubi0, ubi1], [eps0, eps1], [npks0, npks1]), ([ubi0, ubi1], [eps0, eps1], [npks0, npks1])]
+        # print('In')
+        # print('UBI Npks')
+        # print(inputs_axel[0][0][0], inputs_axel[0][1][0])
+        # print('Out')
+        # print('UBI Npks')
+        # print(results_axel[0][0][0], results_axel[0][2][0])
+        end_time = time.perf_counter()
+        time_taken = end_time - start_time
+        print(time_taken)
+        print(np.isnan(final_ubis).all())
     print('Mine', time_taken)
     
     
@@ -1145,9 +1048,11 @@ def load_data():
 def main():
     refine = load_data()
     # points = [(344, -212), (323, 147), (-228, 303)]
-    points = [(344, -212)]
+    # points = [(344, -212)]
+    points = None
+    npoints = 100
     
-    test_funcs(refine, points)
+    test_funcs(refine, points, npoints)
     # test_funcs(args, [10,50,100,500,1000,5000,10000])
     return
 
