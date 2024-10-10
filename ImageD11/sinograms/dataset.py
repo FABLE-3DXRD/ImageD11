@@ -55,6 +55,7 @@ class DataSet:
         "detector",
         "omegamotor",
         "dtymotor",
+        "monitorname",
         "pksfile",
         "sparsefile",
         "parfile",
@@ -74,7 +75,7 @@ class DataSet:
     )
     STRINGLISTS = ("scans", "imagefiles", "sparsefiles")
     # sinograms
-    NDNAMES = ("omega", "dty", "nnz", "frames_per_file", "nlm", "frames_per_scan")
+    NDNAMES = ("omega", "dty", "nnz", "frames_per_file", "nlm", "frames_per_scan", "monitor")
 
     def __init__(
         self,
@@ -121,6 +122,8 @@ class DataSet:
         self.shape = (0, 0)
         self.omega = None
         self.dty = None
+        self.monitor = None
+        self.monitorname = None
 
         self._peaks_table = None
         self._pk2d = None
@@ -487,6 +490,42 @@ class DataSet:
             self.ring_currents_per_scan_scaled = np.array(
                 ring_currents / np.max(ring_currents)
             )
+
+    def get_monitor_sino(self, name = 'fpico6', fname=None, group='measurement'):
+        """
+        The per-frame monitor for normalisation
+        """
+        if fname is None:
+            if os.path.exists( self.masterfile ):
+                fname = self.masterfile
+            elif os.path.exists( self.sparsefile ):
+                fname = self.sparsefile
+            else:
+                raise Exception("Cannot find masterfile or sparsefile")
+        if name != self.monitorname:
+            with h5py.File( fname, 'r' ) as hin:
+                monitor = []
+                for scan in self.scans:
+                    if group is not None:
+                        grp = hin[scan][group]
+                    else:
+                        grp = hin[scan]
+                    monitor.append( grp[name][:] )
+            self.monitor = np.array(monitor).reshape(self.monitor)
+            self.monitorname = name
+        return self.monitor
+    
+    def get_monitor_pk2d(self, pk2d, name='fpico6', fname=None, group="measurement" ):
+        """
+        To be used to normalise the peaks 2d
+        """
+        if self.monitor is None or name != self.monitorname:
+            self.get_monitor_sino( name, fname=fname, group=group )
+        iy = np.digitize( pk2d['dty'], self.ybinedges ) - 1
+        io = np.digitize( pk2d['omega'], self.obinedges ) - 1 
+        #pk2d['iy'] = iy  # cache these too ?
+        #pk2d['io'] = io
+        return self.monitor[ iy, io ]
 
     def guess_detector(self):
         """Guess which detector we are using from the masterfile"""
