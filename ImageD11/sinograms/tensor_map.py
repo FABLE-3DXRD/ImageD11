@@ -4,6 +4,7 @@ import numba
 import h5py
 import numpy as np
 
+from ImageD11.sinograms.geometry import recon_to_step
 from ImageD11.sinograms.sinogram import save_array
 from ImageD11 import unitcell
 
@@ -160,6 +161,7 @@ def ubi_and_unitcell_to_eps_sample(ubi, dzero_cell, res):
         V = np.dot(w, np.dot(np.diag(sing), w.T))
         em = V - np.eye(3)
         res[...] = em
+
 
 # @numba.njit
 # def UB_map_to_U_B_map(UB_map):
@@ -755,9 +757,9 @@ class TensorMap:
 
         for phase in self.phases.values():
             phase_string = "%f;%f;%f\t%f;%f;%f\t%s\t11\t%s" % (
-            phase.lattice_parameters[0], phase.lattice_parameters[1], phase.lattice_parameters[2],
-            phase.lattice_parameters[3], phase.lattice_parameters[4], phase.lattice_parameters[5], phase.name,
-            phase.symmetry)
+                phase.lattice_parameters[0], phase.lattice_parameters[1], phase.lattice_parameters[2],
+                phase.lattice_parameters[3], phase.lattice_parameters[4], phase.lattice_parameters[5], phase.name,
+                phase.symmetry)
             header_lines.extend([phase_string])
 
         header_lines.extend(["Phase\tX\tY\tBands\tError\tEuler1\tEuler2\tEuler3\tMAD\tBC\tBS"])
@@ -778,6 +780,26 @@ class TensorMap:
         print("Click 'Next >>' then 'script (m-file)' for the 'Import to', then 'Finish'")
         print("Click 'Run' at the top, save the import script somewhere, then it should run")
         print("Your EBSD should now be imported into MTEX. You can try to plot it with 'plot(ebsd)'")
+
+    @staticmethod
+    def map_order_to_recon_order(map_arr, z_layer=0):
+        """Transform a 2D slice of a TensorMap to reconstruction space. The opposite of recon_order_to_map_order"""
+        # we are currently in (Z, Y, X, ...)
+        nz, ny, nx = map_arr.shape[:3]
+        # get the 2D slice
+        slice_2D = map_arr[z_layer, ...].copy().squeeze()
+
+        # now we are (Y, X, ...)
+        # swap X and Y
+        slice_2D = np.swapaxes(slice_2D, 0, 1)
+
+        # now we are (X, Y, ...)
+        # flip the second axis
+        slice_2D = np.flip(slice_2D, 1)
+
+        assert slice_2D.shape[:2] == (nx, ny)
+        # now we are (X, -Y, ...)
+        return slice_2D
 
     @staticmethod
     def recon_order_to_map_order(recon_arr):
@@ -810,6 +832,13 @@ class TensorMap:
         """From a 3D array index (mi, mj, mk) and the Y shape of the map,
         determine the corresponding position in reconstruction space"""
         return (mk, yshape - mj - 1)
+
+    @staticmethod
+    def recon_index_to_map(ri, rj, yshape):
+        """From a 2D reconstruction space index (ri, rj) and the Y shape of the map, determine
+        the corresponding position in TensorMap space"""
+
+        return (0, yshape - 1 - rj, ri)
 
     @classmethod
     def from_ubis(cls, ubi_array):
@@ -851,13 +880,66 @@ class TensorMap:
 
         return tensor_map
 
+    def to_pbpmap(self, z_layer=0, default_npks=20, default_nuniq=20):
+        """Get a PBPMap object from this TensorMap object (good for refining strains)"""
+        ubi_pbpmap_order = self.map_order_to_recon_order(self.UBI, z_layer=z_layer)
+        # this is in (ri, rj, 3, 3)
+
+        # make the columns to hold the (si, sj) indices for the pbpmap
+        si_col = np.zeros(ubi_pbpmap_order.shape[0] * ubi_pbpmap_order.shape[1])
+        sj_col = np.zeros(ubi_pbpmap_order.shape[0] * ubi_pbpmap_order.shape[1])
+        # make some columns to hold npks and nuniq
+        npks_col = np.zeros(ubi_pbpmap_order.shape[0] * ubi_pbpmap_order.shape[1])
+        nuniq_col = np.zeros(ubi_pbpmap_order.shape[0] * ubi_pbpmap_order.shape[1])
+        # we need to make some UBI columns accordingly
+        # first we transpose to (3, 3, ri, rj)
+        # then when we reshape, we are doing (:2.ravel(), 2:4.ravel()) and structure is preserved
+        ubi_cols = ubi_pbpmap_order.transpose(2, 3, 0, 1).reshape(9, len(si_col))
+        row_idx = 0
+        for ri in np.arange(ubi_pbpmap_order.shape[0]):
+            for rj in np.arange(ubi_pbpmap_order.shape[1]):
+                # get the si, sj values
+                si, sj = recon_to_step(ri, rj, ubi_pbpmap_order.shape[:2])
+                # get the mi, mj, mk values
+                mi, mj, mk = self.recon_index_to_map(ri, rj, ubi_pbpmap_order.shape[1])
+                si_col[row_idx] = si
+                sj_col[row_idx] = sj
+                # do we have anything at this reconstruction point?
+                # otherwise we have nothing
+                if self.phase_ids[mi, mj, mk] > -1:
+                    npks_col[row_idx] = default_npks
+                    nuniq_col[row_idx] = default_nuniq
+                row_idx += 1
+
+        # unpack ubi columns
+        ubi00, ubi01, ubi02, ubi10, ubi11, ubi12, ubi20, ubi21, ubi22 = ubi_cols
+
+        from ImageD11.sinograms.point_by_point import PBPMap
+        output_map = PBPMap(new=True)
+        output_map.nrows = ubi_pbpmap_order.shape[0] * ubi_pbpmap_order.shape[1]
+        output_map.addcolumn(si_col, 'i')
+        output_map.addcolumn(sj_col, 'j')
+        output_map.addcolumn(npks_col, 'ntotal')
+        output_map.addcolumn(nuniq_col, 'nuniq')
+        output_map.addcolumn(ubi00, 'ubi00')
+        output_map.addcolumn(ubi01, 'ubi01')
+        output_map.addcolumn(ubi02, 'ubi02')
+        output_map.addcolumn(ubi10, 'ubi10')
+        output_map.addcolumn(ubi11, 'ubi11')
+        output_map.addcolumn(ubi12, 'ubi12')
+        output_map.addcolumn(ubi20, 'ubi20')
+        output_map.addcolumn(ubi21, 'ubi21')
+        output_map.addcolumn(ubi22, 'ubi22')
+
+        return output_map
+
     @classmethod
     def from_pbpmap(cls, pbpmap, steps=None, phases=None):
         """Create TensorMap from a pbpmap object"""
 
         maps = dict()
 
-        # see if we have a best UBI ma[ to take
+        # see if we have a best UBI map to take
         if not hasattr(pbpmap, 'best_ubi'):
             raise ValueError('PBPMap has no best UBI selection to take from!')
 
