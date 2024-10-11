@@ -461,18 +461,28 @@ def nb_choose_best(i, j, u, n, NY, ubiar,
     npk = np.zeros((NY, NY), dtype='q')
     ubi = np.zeros((NY, NY, 3, 3), dtype='d')
     ubi.fill(np.nan)
+    # store the index of the best row for each voxel
+    best_rows = np.full(uniq.shape, -1, dtype=np.int64)
+    # iterate through rows
     for k in range(i.size):
+        # get the i and j values in the row
         ip = i[k]
         jp = j[k]
-        #        if ip == 96 and jp == 510:
-        #            print(ip,jp,k, ubiar[:,:,k])
+        # u[k] is the ubi in the row
+        # if u in this row is better than the uniq at this voxel
+        # (if no uniq at this voxel, it'll be minpeaks because we filled)
         if u[k] > uniq[ip, jp]:
+            # uniq at this point becomes the uniq at this row
             uniq[ip, jp] = u[k]
+            # npk at this point becomes the npk at this row
             npk[ip, jp] = n[k]
+            # best_rows at this point becomes the index of this row
+            best_rows[ip, jp] = k
+            # ubi at this point becomes the ubi at this row
             for ii in range(3):
                 for jj in range(3):
                     ubi[ip, jp, ii, jj] = ubiar[ii, jj, k]
-    return uniq, npk, ubi
+    return uniq, npk, ubi, best_rows
 
 
 @numba.njit
@@ -555,6 +565,14 @@ class PBPMap(columnfile):
             self.ubi22)).reshape(3, 3, self.nrows)
 
     @property
+    def eps(self):
+        """eps computed on-demand from reshaping eps columns
+        shape is (3, 3, nrows) to match previous PBPMap definition"""
+        return np.vstack((
+            self.eps00, self.eps01, self.eps02, self.eps10, self.eps11, self.eps12, self.eps20, self.eps21,
+            self.eps22)).reshape(3, 3, self.nrows)
+
+    @property
     def UBI(self):
         return self.ubi
 
@@ -566,8 +584,17 @@ class PBPMap(columnfile):
         plt.show()
 
     def choose_best(self, minpeaks=6):
-        self.best_nuniq, self.best_npks, self.best_ubi = nb_choose_best(
+        self.best_nuniq, self.best_npks, self.best_ubi, self.best_rows = nb_choose_best(
             self.i_shift, self.j_shift, self.nuniq.astype(int), self.ntotal.astype(int), self.NY, self.ubi, minpeaks)
+        # see if we can get a self.best_eps too
+        if 'eps00' in self.titles:
+            best_eps = np.full_like(self.best_ubi, np.nan)
+            all_eps = self.eps
+            for i in range(best_eps.shape[0]):
+                for j in range(best_eps.shape[1]):
+                    if self.best_rows[i, j] > 0:
+                        best_eps[i, j, :, :] = all_eps[:, :, self.best_rows[i, j]]
+            self.best_eps = best_eps
 
     def plot_best(self, minpeaks=6):
         fig, axs = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(10, 5), constrained_layout=True)
@@ -621,6 +648,12 @@ class PBPRefine:
         self.ystep = self.dset.ystep
         self.y0 = y0
 
+        # set default paths
+        self.pbpmap_filename = self.dset.refmapfile  # pbp map input
+        self.icolf_filename = self.dset.refpeaksfile  # icolf for refinement
+        self.refinedmap_filename = self.dset.refoutfile  # refined pbp map output
+        self.own_filename = self.dset.refmanfile  # myself as an H5
+
     def setmap(self, pbpmap):
         """Set an input PBPMap Python object to use"""
         # set up the grid to refine on
@@ -643,14 +676,21 @@ class PBPRefine:
     def loadmap(self, filename=None, refined=False):
         """Load an existing input/refined PBPMap from h5. If you only have a .txt file, you want self.setmap()"""
         if filename is None:
-            # get from the dset
-            filename = self.dset.refmapfile
+            # use the default from the init
+            if refined:
+                filename = self.refinedmap_filename
+            else:
+                filename = self.pbpmap_filename
         # make an empty pmap object
         pmap = PBPMap(new=True)
         # fill it using HDF load method
         if not os.path.exists(filename):
             raise FileNotFoundError("Can't find map on disk!")
-        pmap = ImageD11.columnfile.colfile_from_hdf(filename, obj=pmap, name='pbpmap')
+        if refined:
+            name = 'refinedmap'
+        else:
+            name = 'pbpmap'
+        pmap = ImageD11.columnfile.colfile_from_hdf(filename, obj=pmap, name=name)
         if refined:
             self.refinedmap = pmap
             self.refinedmap_filename = filename
@@ -658,17 +698,25 @@ class PBPRefine:
             self.setmap(pmap)
             self.pbpmap_filename = filename
 
-    def savemap(self, map_obj=None, pbpmap_filename=None):
-        """Save self.pbpmap to an H5 file"""
-        if pbpmap_filename is None:
-            # get from the dset
-            pbpmap_filename = self.dset.refmapfile
-        if map_obj is None:
-            # assume we're saving self.pbpmap
-            map_obj = self.pbpmap
-            self.pbpmap_filename = pbpmap_filename
-
-        ImageD11.columnfile.colfile_to_hdf(map_obj, pbpmap_filename, compression=None, name='pbpmap')
+    def savemap(self, filename=None, refined=False):
+        """Save self.pbpmap/self.refinedmap to an H5 file"""
+        if filename is None:
+            # use the default from the init
+            if refined:
+                filename = self.refinedmap_filename
+            else:
+                filename = self.pbpmap_filename
+        if refined:
+            name = 'refinedmap'
+            obj = self.refinedmap
+        else:
+            name = 'pbpmap'
+            obj = self.pbpmap
+        ImageD11.columnfile.colfile_to_hdf(obj, filename, compression=None, name=name)
+        if refined:
+            self.refinedmap_filename = filename
+        else:
+            self.pbpmap_filename = filename
 
     def setpeaks(self, colf, icolf_filename=None, del_existing=True, prompt_del=True):
         """Similar to PBP.setpeaks for now"""
@@ -678,8 +726,6 @@ class PBPRefine:
             time.sleep(10)
             print('Continuing')
             print('To disable this prompt, set prompt_del=False when calling setpeaks()')
-        if icolf_filename is None:
-            icolf_filename = self.dset.refpeaksfile
 
         # Set the parameters for the peaks
         self.dset.update_colfile_pars(colf, phase_name=self.phase_name)
@@ -747,35 +793,29 @@ class PBPRefine:
             self.forref,
         )
 
-        self.savepeaks(filename=icolf_filename, del_existing=del_existing)
+        self.savepeaks(icolf_filename=icolf_filename, del_existing=del_existing)
 
-    def savepeaks(self, filename=None, del_existing=False):
-        # if no name supplied
-        if filename is None:
-            # try to use one in self
-            filename_to_use = self.icolf_filename
+    def savepeaks(self, icolf_filename=None, del_existing=False):
+        if icolf_filename is None:
+            # use the default one from the init
+            icolf_filename = self.icolf_filename
         else:
-            # use supplied one and change the parameter in self
-            filename_to_use = filename
-            self.icolf_filename = filename
-        if os.path.exists(filename_to_use) and del_existing:
-            os.remove(filename_to_use)
-        ImageD11.columnfile.colfile_to_hdf(self.icolf, filename_to_use, compression=None)
+            # update the default with user-supplied value
+            self.icolf_filename = icolf_filename
+        if os.path.exists(icolf_filename) and del_existing:
+            os.remove(icolf_filename)
+        ImageD11.columnfile.colfile_to_hdf(self.icolf, icolf_filename, compression=None)
 
-    def loadpeaks(self, filename=None):
+    def loadpeaks(self, icolf_filename=None):
         """Load icolf from disk"""
-        if filename is None:
-            try:
-                # try to use one in self
-                filename_to_use = self.icolf_filename
-            except AttributeError:
-                print('Using dset path for peaks')
-                filename_to_use = self.dset.refpeaksfile
+        if icolf_filename is None:
+            # use the default from the init
+            icolf_filename = self.icolf_filename
         else:
-            # use supplied one and change the parameter in self
-            filename_to_use = filename
-        self.icolf = ImageD11.columnfile.colfile_from_hdf(filename_to_use)
-        self.icolf_filename = filename_to_use
+            # update self with user-supplied value
+            self.icolf_filename = icolf_filename
+        self.icolf = ImageD11.columnfile.colfile_from_hdf(icolf_filename)
+        # update pars
         self.dset.update_colfile_pars(self.icolf, phase_name=self.phase_name)
 
     def iplot(self, skip=1):
@@ -815,7 +855,9 @@ class PBPRefine:
                                                            bins=[self.dset.ybinedges, self.dset.obinedges])
         shift = -self.y0 / self.ystep
         nthreads = len(os.sched_getaffinity(os.getpid()))
-        whole_sample_recon = run_iradon(whole_sample_sino, self.dset.obincens, 0, shift, workers=nthreads)
+        # make sure the shape is the same as sx_grid
+        pad = self.sx_grid.shape[0] - whole_sample_sino.shape[0]
+        whole_sample_recon = run_iradon(whole_sample_sino, self.dset.obincens, pad, shift, workers=nthreads)
 
         # we should be able to easily segment this using scikit-image
         recon_man_mask = whole_sample_recon
@@ -864,8 +906,10 @@ class PBPRefine:
     def to_h5(self, filename=None, h5group='PBPRefine'):
         # save to h5 file
         if filename is None:
-            filename = self.dset.refmanfile
-        self.own_filename = filename
+            # use init default
+            filename = self.own_filename
+        else:
+            self.own_filename = filename
 
         print('Saving icolf to disk')
         self.savepeaks(del_existing=False)
@@ -873,7 +917,7 @@ class PBPRefine:
         self.savemap()
         try:
             print('Saving output map to disk')
-            self.savemap(self.refined_map, self.refinedmap_filename)
+            self.savemap(refined=True)
         except AttributeError:
             print("Couldn't find a refined map to save, continuing")
             pass
@@ -980,7 +1024,7 @@ class PBPRefine:
         print('Loading output map')
         try:
             refine_obj.loadmap(refine_obj.refinedmap_filename, refined=True)
-        except AttributeError:
+        except (AttributeError, FileNotFoundError):
             pass
 
         return refine_obj
@@ -1114,6 +1158,13 @@ class PBPRefine:
                                                            pars['wavelength'],
                                                            tol=self.hkl_tol_refine, merge_tol=self.hkl_tol_refine
                                                            )
+            # now we match how the indexer returns dodgy values
+            # mask nan 3x3 entires to identity matrix
+            final_ubis[:, :, np.isnan(final_ubis[0, 0, :])] = np.eye(3)[..., np.newaxis]
+            # replace nans with 0 in the eps
+            final_eps[:, :, np.isnan(final_eps[0, 0, :])] = 0
+            # replace nans with 0 in the npks
+            final_npks[np.isnan(final_npks)] = 0
 
             # make a PBPMap to contain the output, then save to disk
             output_map = PBPMap(new=True)
@@ -1149,9 +1200,9 @@ class PBPRefine:
             output_map.addcolumn(eps22, 'eps22')
 
             self.refinedmap = output_map
-            print('Saving refined map to disk:', output_filename)
 
-            self.savemap(self.refinedmap, output_filename)
+            print('Saving refined map to disk')
+            self.savemap(filename=output_filename, refined=True)
 
 
 def prepare_refine_bash(pbp_object, id11_code_path, output_filename):
@@ -1183,15 +1234,14 @@ def prepare_refine_bash(pbp_object, id11_code_path, output_filename):
 #
 date
 source /cvmfs/hpc.esrf.fr/software/packages/linux/x86_64/jupyter-slurm/latest/envs/jupyter-slurm/bin/activate
-echo OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {pbp_object_file} {output_filename} > {log_path} 2>&1
-OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {pbp_object_file} {output_filename} > {log_path} 2>&1
+echo OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {pbp_object_file} > {log_path} 2>&1
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {pbp_object_file} > {log_path} 2>&1
 date
         """.format(outfile_path=outfile_path,
                    errfile_path=errfile_path,
                    python_script_path=python_script_path,
                    id11_code_path=id11_code_path,
                    pbp_object_file=pbp_object_file,
-                   output_filename=output_filename,
                    log_path=log_path)
 
     with open(bash_script_path, "w") as bashscriptfile:
