@@ -56,6 +56,7 @@ class DataSet:
         "detector",
         "omegamotor",
         "dtymotor",
+        "monitorname",
         "pksfile",
         "sparsefile",
         "parfile",
@@ -131,6 +132,8 @@ class DataSet:
         self.shape = (0, 0)
         self.omega = None
         self.dty = None
+        self.monitor = None
+        self.monitorname = None
 
         self._peaks_table = None
         self._pk2d = None
@@ -526,6 +529,18 @@ class DataSet:
                 monitor.append(mon)
         self.monitor = np.concatenate(monitor).reshape(self.shape)
         return self.monitor
+    
+    def get_monitor_pk2d(self, pk2d, name='fpico6'):
+        """
+        To be used to normalise the peaks 2d
+        """
+        if self.monitor is None :
+            self.get_monitor( name )
+        iy = np.digitize( pk2d['dty'], self.ybinedges ) - 1
+        io = np.digitize( pk2d['omega'], self.obinedges ) - 1 
+        #pk2d['iy'] = iy  # cache these too ?
+        #pk2d['io'] = io
+        return self.monitor[ iy, io ]
 
     def guess_detector(self):
         """Guess which detector we are using from the masterfile"""
