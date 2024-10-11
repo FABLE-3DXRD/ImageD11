@@ -170,6 +170,7 @@ class GrainSinogram:
         order = np.lexsort((np.arange(npks), sinoangles))
         self.sinoangles = sinoangles[order]
         self.ssino = self.sino[order].T
+        self.proj_scale = self.proj_scale[order]
         if len(columns)>1:
             self.angle_wt_sinos = { name : angs[name][order].T for name in columns }
         self.hkle = pkindices[:, order]  # dims are [ (h,k,l,sign(eta)) , nprojections ]
