@@ -167,14 +167,12 @@ class DataSet:
             ("col2dfile", "_peaks_2d.h5"),
             ("grainsfile", "_grains.h5"),
             ("sparsefile", "_sparse.h5"),
-            # subset peaks selected for indexing (pbp)
-            ("icolfile", "_icolf.h5"),
-            # point by point raw output
-            ("pbpfile", "_pbp.txt"),
-            # subset peaks selected for refinement
-            ("refpeaksfile", "_refine_peaks.h5"),
-            # input map for refinement (pbp)
-            ("refmapfile", "_refine_map.h5")
+            ("icolfile", "_icolf.h5"),  # subset peaks selected for indexing (pbp)
+            ("pbpfile", "_pbp.txt"),  # point by point raw output
+            ("refmanfile", "_refine_manager.h5"),  # PBPRefine object for refinement
+            ("refpeaksfile", "_refine_peaks.h5"),  # icolf for refinement
+            ("refmapfile", "_refine_map_in.h5"),  # input pbp map for refinement
+            ("refoutfile", "_refine_map_out.h5"),  # output pbp map from refinement
         ]:
             # If the user has got a different name (via loading or edit), we keep that
             if (getattr(self, name, None) is None) or force:

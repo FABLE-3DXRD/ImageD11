@@ -252,7 +252,7 @@ def step_omega_to_dty(si, sj, omega, y0, ystep):
 
 def step_omega_to_dtyi(si, sj, omega, y0, ystep):
     """Convert step value (si, sj) to (x, y)
-    Determine ccorresponding dty values from (x, y) given omega
+    Determine corresponding dty values from (x, y) given omega
     Compute dtyi using dty_to_dtyi then return"""
     x, y = step_to_sample(si, sj, ystep)
     dty = x_y_y0_omega_to_dty(omega, x, y, y0)
@@ -262,7 +262,7 @@ def step_omega_to_dtyi(si, sj, omega, y0, ystep):
 
 def recon_omega_to_dty(ri, rj, omega, y0, recon_shape, ystep):
     """Convert recon value (ri, rj) to (x, y)
-    Determine ccorresponding dty values from (x, y) given omega"""
+    Determine corresponding dty values from (x, y) given omega"""
     x, y = recon_to_sample(ri, rj, recon_shape, ystep)
     dty = x_y_y0_omega_to_dty(omega, x, y, y0)
     return dty
@@ -270,7 +270,7 @@ def recon_omega_to_dty(ri, rj, omega, y0, recon_shape, ystep):
 
 def recon_omega_to_dtyi(ri, rj, omega, y0, recon_shape, ystep):
     """Convert recon value (ri, rj) to (x, y)
-    Determine ccorresponding dty values from (x, y) given omega
+    Determine corresponding dty values from (x, y) given omega
     Compute dtyi using dty_to_dtyi then return"""
     x, y = recon_to_sample(ri, rj, recon_shape, ystep)
     dty = x_y_y0_omega_to_dty(omega, x, y, y0)
@@ -280,7 +280,7 @@ def recon_omega_to_dtyi(ri, rj, omega, y0, recon_shape, ystep):
 
 def dtyimask_from_step(si, sj, omega, dtyi, y0, ystep):
     """Convert step value (si, sj) to (x, y)
-    Determine ccorresponding dty values from (x, y) given omega
+    Determine corresponding dty values from (x, y) given omega
     Compute dtyi_calc using dty_to_dtyi
     Compare dtyi_calc to supplied dtyi and produce a mask"""
     dtyi_calc = step_omega_to_dtyi(si, sj, omega, y0, ystep)
@@ -289,7 +289,7 @@ def dtyimask_from_step(si, sj, omega, dtyi, y0, ystep):
 
 def dtyimask_from_sincos(si, sj, sinomega, cosomega, dtyi, y0, ystep):
     """Convert step value (si, sj) to (x, y)
-    Determine ccorresponding dty values from (x, y) given omega
+    Determine corresponding dty values from (x, y) given omega
     Compute dtyi_calc using dty_to_dtyi
     Compare dtyi_calc to supplied dtyi and produce a mask"""
     # Old code
