@@ -1109,7 +1109,7 @@ class PBPRefine:
             print('Launching Numba parallel refinement on', nthreads, 'threads')
 
             final_ubis, final_eps, final_npks = refine_map(points_recon_space, all_pbpmap_ubis, ri_col, rj_col,
-                                                           self.sx_grid, self.sy_grid,
+                                                           self.sx_grid, self.sy_grid, self.mask,
                                                            self.icolf.sc, self.icolf.fc, self.icolf.eta,
                                                            self.icolf.sum_intensity, self.icolf.sinomega,
                                                            self.icolf.cosomega, self.icolf.omega, self.icolf.dty,
@@ -1337,7 +1337,7 @@ def compute_origins(singlemap, sample_mask,
 
 
 @numba.njit(parallel=True)
-def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,  # refinement stuff
+def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid, mask,  # refinement stuff
                sc, fc, eta, sum_intensity, sinomega, cosomega, omega, dty, dtyi, xpos,  # icolf columns
                ystep, y0,
                B0,
@@ -1376,184 +1376,185 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
 
     for refine_idx in numba.prange(npoints):
         ri, rj = refine_points[refine_idx]
-        # print('at ri rj', ri, rj)
+        if mask[ri, rj]:
+            # print('at ri rj', ri, rj)
 
-        # mask all_ubis by the pbpmap points
-        pbpmap_mask = (ri_col == ri) & (rj_col == rj)
-        pbpmap_idx = all_idx[pbpmap_mask]
+            # mask all_ubis by the pbpmap points
+            pbpmap_mask = (ri_col == ri) & (rj_col == rj)
+            pbpmap_idx = all_idx[pbpmap_mask]
 
-        # get ubis at this point
-        ubis_here = all_pbpmap_ubis[:, :, pbpmap_mask]
+            # get ubis at this point
+            ubis_here = all_pbpmap_ubis[:, :, pbpmap_mask]
 
-        # get xi0, xi0 at this point
-        xi0 = sx_grid[ri, rj]
-        yi0 = sy_grid[ri, rj]
+            # get xi0, xi0 at this point
+            xi0 = sx_grid[ri, rj]
+            yi0 = sy_grid[ri, rj]
 
-        # get a mask to the peaks at this point
-        # this is basically geometry.dtyimask_from_sincos
-        # but we already have x, y
+            # get a mask to the peaks at this point
+            # this is basically geometry.dtyimask_from_sincos
+            # but we already have x, y
 
-        # boolean masking is very slow for large arrays, even in Numba
-        # instead, we get the indices we want
-        # see more: https://stackoverflow.com/questions/46041811/performance-of-various-numpy-fancy-indexing-methods-also-with-numba
-        local_idx, _ = get_voxel_idx(y0, xi0, yi0, sinomega, cosomega, dty, ystep)
+            # boolean masking is very slow for large arrays, even in Numba
+            # instead, we get the indices we want
+            # see more: https://stackoverflow.com/questions/46041811/performance-of-various-numpy-fancy-indexing-methods-also-with-numba
+            local_idx, _ = get_voxel_idx(y0, xi0, yi0, sinomega, cosomega, dty, ystep)
 
-        dtyi_local = dtyi[local_idx]
-        sum_intensity_local = sum_intensity[local_idx]
-        sc_local = sc[local_idx]
-        fc_local = fc[local_idx]
-        omega_local = omega[local_idx]
-        dty_local = dty[local_idx]
-        xpos_local = xpos[local_idx]
-        eta_local = eta[local_idx]
+            dtyi_local = dtyi[local_idx]
+            sum_intensity_local = sum_intensity[local_idx]
+            sc_local = sc[local_idx]
+            fc_local = fc[local_idx]
+            omega_local = omega[local_idx]
+            dty_local = dty[local_idx]
+            xpos_local = xpos[local_idx]
+            eta_local = eta[local_idx]
 
-        # get g-vectors for this voxel
-        gve_voxel = compute_gve(sc_local, fc_local, omega_local, xpos_local,
-                                distance=distance, y_center=y_center, y_size=y_size, tilt_y=tilt_y,
-                                z_center=z_center, z_size=z_size, tilt_z=tilt_z, tilt_x=tilt_x,
-                                o11=o11, o12=o12, o21=o21, o22=o22,
-                                t_x=t_x, t_y=t_y, t_z=t_z, wedge=wedge, chi=chi, wavelength=wavelength)
+            # get g-vectors for this voxel
+            gve_voxel = compute_gve(sc_local, fc_local, omega_local, xpos_local,
+                                    distance=distance, y_center=y_center, y_size=y_size, tilt_y=tilt_y,
+                                    z_center=z_center, z_size=z_size, tilt_z=tilt_z, tilt_x=tilt_x,
+                                    o11=o11, o12=o12, o21=o21, o22=o22,
+                                    t_x=t_x, t_y=t_y, t_z=t_z, wedge=wedge, chi=chi, wavelength=wavelength)
 
-        # iterate through the ubis at this voxel
-        for ubi_idx in np.arange(ubis_here.shape[2]):
-            ubi = ubis_here[:, :, ubi_idx]
+            # iterate through the ubis at this voxel
+            for ubi_idx in np.arange(ubis_here.shape[2]):
+                ubi = ubis_here[:, :, ubi_idx]
 
-            # we're scoring and assigning one UBI to a bunch of gves
-            # all we need is to generate a mask
+                # we're scoring and assigning one UBI to a bunch of gves
+                # all we need is to generate a mask
 
-            tolsq = tol ** 2
-            hklf = ubi.dot(gve_voxel)  # hkl float
-            hkli = np.round(hklf).astype(np.int32)  # hkl int
-            err = hklf - hkli
-            sumsq = (err ** 2).sum(axis=0)
-            grain_peak_mask = sumsq < tolsq
+                tolsq = tol ** 2
+                hklf = ubi.dot(gve_voxel)  # hkl float
+                hkli = np.round(hklf).astype(np.int32)  # hkl int
+                err = hklf - hkli
+                sumsq = (err ** 2).sum(axis=0)
+                grain_peak_mask = sumsq < tolsq
 
-            grain_npks = np.sum(grain_peak_mask)
-            hkl = hkli[:, grain_peak_mask]
-            etasign = np.sign(eta_local[grain_peak_mask])
+                grain_npks = np.sum(grain_peak_mask)
+                hkl = hkli[:, grain_peak_mask]
+                etasign = np.sign(eta_local[grain_peak_mask])
 
-            # merge the assigned peaks in omega
-            merged_sum_intensity, merged_sc, merged_fc, merged_omega, merged_dty, merged_xpos_refined = merge(hkl,
-                                                                                                              etasign,
-                                                                                                              dtyi_local[
-                                                                                                                  grain_peak_mask],
-                                                                                                              sum_intensity_local[
-                                                                                                                  grain_peak_mask],
-                                                                                                              sc_local[
-                                                                                                                  grain_peak_mask],
-                                                                                                              fc_local[
-                                                                                                                  grain_peak_mask],
-                                                                                                              omega_local[
-                                                                                                                  grain_peak_mask],
-                                                                                                              dty_local[
-                                                                                                                  grain_peak_mask],
-                                                                                                              xpos_local[
-                                                                                                                  grain_peak_mask])
+                # merge the assigned peaks in omega
+                merged_sum_intensity, merged_sc, merged_fc, merged_omega, merged_dty, merged_xpos_refined = merge(hkl,
+                                                                                                                  etasign,
+                                                                                                                  dtyi_local[
+                                                                                                                      grain_peak_mask],
+                                                                                                                  sum_intensity_local[
+                                                                                                                      grain_peak_mask],
+                                                                                                                  sc_local[
+                                                                                                                      grain_peak_mask],
+                                                                                                                  fc_local[
+                                                                                                                      grain_peak_mask],
+                                                                                                                  omega_local[
+                                                                                                                      grain_peak_mask],
+                                                                                                                  dty_local[
+                                                                                                                      grain_peak_mask],
+                                                                                                                  xpos_local[
+                                                                                                                      grain_peak_mask])
 
-            merged_sinomega = np.sin(np.radians(merged_omega))
-            merged_cosomega = np.cos(np.radians(merged_omega))
+                merged_sinomega = np.sin(np.radians(merged_omega))
+                merged_cosomega = np.cos(np.radians(merged_omega))
 
-            # re-compute voxel peak mask with merged peaks
-            local_idx_of_grain, ydist = get_voxel_idx(y0, xi0, yi0, merged_sinomega, merged_cosomega, merged_dty,
-                                                      ystep)
+                # re-compute voxel peak mask with merged peaks
+                local_idx_of_grain, ydist = get_voxel_idx(y0, xi0, yi0, merged_sinomega, merged_cosomega, merged_dty,
+                                                          ystep)
 
-            merged_sc_grain = merged_sc[local_idx_of_grain]
-            merged_fc_grain = merged_fc[local_idx_of_grain]
-            merged_omega_grain = merged_omega[local_idx_of_grain]
-            merged_xpos_refined_grain = merged_xpos_refined[local_idx_of_grain]
-            ydist_grain = ydist[local_idx_of_grain]
+                merged_sc_grain = merged_sc[local_idx_of_grain]
+                merged_fc_grain = merged_fc[local_idx_of_grain]
+                merged_omega_grain = merged_omega[local_idx_of_grain]
+                merged_xpos_refined_grain = merged_xpos_refined[local_idx_of_grain]
+                ydist_grain = ydist[local_idx_of_grain]
 
-            # re-compute merged g-vectors
-            gve_voxel_merged = compute_gve(merged_sc_grain, merged_fc_grain, merged_omega_grain,
-                                           merged_xpos_refined_grain,
-                                           distance=distance, y_center=y_center, y_size=y_size, tilt_y=tilt_y,
-                                           z_center=z_center, z_size=z_size, tilt_z=tilt_z, tilt_x=tilt_x,
-                                           o11=o11, o12=o12, o21=o21, o22=o22,
-                                           t_x=t_x, t_y=t_y, t_z=t_z, wedge=wedge, chi=chi, wavelength=wavelength)
+                # re-compute merged g-vectors
+                gve_voxel_merged = compute_gve(merged_sc_grain, merged_fc_grain, merged_omega_grain,
+                                               merged_xpos_refined_grain,
+                                               distance=distance, y_center=y_center, y_size=y_size, tilt_y=tilt_y,
+                                               z_center=z_center, z_size=z_size, tilt_z=tilt_z, tilt_x=tilt_x,
+                                               o11=o11, o12=o12, o21=o21, o22=o22,
+                                               t_x=t_x, t_y=t_y, t_z=t_z, wedge=wedge, chi=chi, wavelength=wavelength)
 
-            # reassign merged g-vectors with smaller merge_tol
-            tolsq = merge_tol ** 2
-            hklf = ubi.dot(gve_voxel_merged)
-            hkli = np.round(hklf).astype(np.int32)
-            err = hklf - hkli
-            sumsq = (err ** 2).sum(axis=0)
-            grain_peak_mask = sumsq < tolsq
-            grain_npks = np.sum(grain_peak_mask)
-
-            gve_grain = gve_voxel_merged[:, grain_peak_mask]
-            hkl = hkli[:, grain_peak_mask]
-            grain_ydist = ydist_grain[grain_peak_mask]
-
-            # now we're ready to refine!
-
-            if grain_npks > min_grain_npks:
-                w, ubifit, residuals, rank, sing_vals = weighted_lstsq_ubi_fit(grain_ydist, gve_grain, hkl)
-
-                # check the quality of the fit
-                worth_fitting = (ubifit is not None) and (rank == 3) and (np.linalg.cond(ubifit) < 1e14) and (
-                        np.linalg.det(ubifit) > 0) and (np.linalg.matrix_rank(ubifit) == 3)
-
-                # do we like the quality?
-                if worth_fitting:
-                    ubi_out = ubifit
-                else:
-                    ubi_out = ubi.copy()
-
-                # now reassign the (probably refined) UBI
-
+                # reassign merged g-vectors with smaller merge_tol
                 tolsq = merge_tol ** 2
-                hklf = ubi_out.dot(gve_voxel_merged)
+                hklf = ubi.dot(gve_voxel_merged)
                 hkli = np.round(hklf).astype(np.int32)
                 err = hklf - hkli
                 sumsq = (err ** 2).sum(axis=0)
                 grain_peak_mask = sumsq < tolsq
                 grain_npks = np.sum(grain_peak_mask)
 
-                final_ubis[:, :, pbpmap_idx[ubi_idx]] = ubi_out
-                final_npks[pbpmap_idx[ubi_idx]] = grain_npks
+                gve_grain = gve_voxel_merged[:, grain_peak_mask]
+                hkl = hkli[:, grain_peak_mask]
+                grain_ydist = ydist_grain[grain_peak_mask]
 
-                # if we like the fit quality, redetermine the g-vectors from the new peak mask
-                # then fit the strain tensor
+                # now we're ready to refine!
 
-                if worth_fitting:
-                    gve_grain_strainfit = gve_voxel_merged[:, grain_peak_mask]
-                    hkl = hkli[:, grain_peak_mask]
-                    ydist = ydist_grain[grain_peak_mask]
+                if grain_npks > min_grain_npks:
+                    w, ubifit, residuals, rank, sing_vals = weighted_lstsq_ubi_fit(grain_ydist, gve_grain, hkl)
 
-                    # get U from UBI without using ImageD11 grain class
-                    ucell = ubi_to_unitcell(ubifit)
-                    U = ubi_and_ucell_to_u(ubi_out, ucell)
-                    gve0 = U @ B0 @ hkl.astype(np.float64)
-                    gTg0 = np.sum(gve_grain_strainfit * gve0, axis=0)
-                    gTg = np.sum(gve_grain_strainfit * gve_grain_strainfit, axis=0)
-                    directional_strain = (gTg0 / gTg) - 1
+                    # check the quality of the fit
+                    worth_fitting = (ubifit is not None) and (rank == 3) and (np.linalg.cond(ubifit) < 1e14) and (
+                            np.linalg.det(ubifit) > 0) and (np.linalg.matrix_rank(ubifit) == 3)
 
-                    kappa = gve_grain_strainfit / gve_norm(gve_grain_strainfit)
-                    kx, ky, kz = kappa
+                    # do we like the quality?
+                    if worth_fitting:
+                        ubi_out = ubifit
+                    else:
+                        ubi_out = ubi.copy()
 
-                    M = np.column_stack((kx * kx, ky * ky, kz * kz, 2 * kx * ky, 2 * kx * kz, 2 * ky * kz))
+                    # now reassign the (probably refined) UBI
 
-                    w = (1. / (ydist + 1)).reshape(gve_grain_strainfit.shape[1], 1)
-                    # The noise in the directional strain now propagates according to the linear transform
-                    a = np.sum(gve0 * (gnoise_std ** 2) * gve0, axis=0)
-                    strain_noise_std = np.sqrt(divide_where(a, gTg ** 2, out=np.ones_like(gTg), wherearr=gTg))
-                    w = w * (1. / strain_noise_std.reshape(w.shape))
+                    tolsq = merge_tol ** 2
+                    hklf = ubi_out.dot(gve_voxel_merged)
+                    hkli = np.round(hklf).astype(np.int32)
+                    err = hklf - hkli
+                    sumsq = (err ** 2).sum(axis=0)
+                    grain_peak_mask = sumsq < tolsq
+                    grain_npks = np.sum(grain_peak_mask)
 
-                    w[directional_strain > np.mean(directional_strain) + np.std(
-                        directional_strain) * 3.5] = 0  # outliers
-                    w[directional_strain < np.mean(directional_strain) - np.std(
-                        directional_strain) * 3.5] = 0  # outliers
+                    final_ubis[:, :, pbpmap_idx[ubi_idx]] = ubi_out
+                    final_npks[pbpmap_idx[ubi_idx]] = grain_npks
 
-                    w = w / np.max(w)
-                    a = w * M
-                    b = w.flatten() * directional_strain
-                    m, n = a.shape[-2:]
-                    rcond = np.finfo(b.dtype).eps * max(n, m)
-                    eps_vec = np.linalg.lstsq(a, b, rcond=rcond)[0].T
-                    sxx, syy, szz, sxy, sxz, syz = eps_vec
-                    eps_tensor = np.array([[sxx, sxy, sxz], [sxy, syy, syz], [sxz, syz, szz]])
+                    # if we like the fit quality, redetermine the g-vectors from the new peak mask
+                    # then fit the strain tensor
 
-                    final_eps[:, :, pbpmap_idx[ubi_idx]] = eps_tensor
+                    if worth_fitting:
+                        gve_grain_strainfit = gve_voxel_merged[:, grain_peak_mask]
+                        hkl = hkli[:, grain_peak_mask]
+                        ydist = ydist_grain[grain_peak_mask]
+
+                        # get U from UBI without using ImageD11 grain class
+                        ucell = ubi_to_unitcell(ubifit)
+                        U = ubi_and_ucell_to_u(ubi_out, ucell)
+                        gve0 = U @ B0 @ hkl.astype(np.float64)
+                        gTg0 = np.sum(gve_grain_strainfit * gve0, axis=0)
+                        gTg = np.sum(gve_grain_strainfit * gve_grain_strainfit, axis=0)
+                        directional_strain = (gTg0 / gTg) - 1
+
+                        kappa = gve_grain_strainfit / gve_norm(gve_grain_strainfit)
+                        kx, ky, kz = kappa
+
+                        M = np.column_stack((kx * kx, ky * ky, kz * kz, 2 * kx * ky, 2 * kx * kz, 2 * ky * kz))
+
+                        w = (1. / (ydist + 1)).reshape(gve_grain_strainfit.shape[1], 1)
+                        # The noise in the directional strain now propagates according to the linear transform
+                        a = np.sum(gve0 * (gnoise_std ** 2) * gve0, axis=0)
+                        strain_noise_std = np.sqrt(divide_where(a, gTg ** 2, out=np.ones_like(gTg), wherearr=gTg))
+                        w = w * (1. / strain_noise_std.reshape(w.shape))
+
+                        w[directional_strain > np.mean(directional_strain) + np.std(
+                            directional_strain) * 3.5] = 0  # outliers
+                        w[directional_strain < np.mean(directional_strain) - np.std(
+                            directional_strain) * 3.5] = 0  # outliers
+
+                        w = w / np.max(w)
+                        a = w * M
+                        b = w.flatten() * directional_strain
+                        m, n = a.shape[-2:]
+                        rcond = np.finfo(b.dtype).eps * max(n, m)
+                        eps_vec = np.linalg.lstsq(a, b, rcond=rcond)[0].T
+                        sxx, syy, szz, sxy, sxz, syz = eps_vec
+                        eps_tensor = np.array([[sxx, sxy, sxz], [sxy, syy, syz], [sxz, syz, szz]])
+
+                        final_eps[:, :, pbpmap_idx[ubi_idx]] = eps_tensor
 
     return final_ubis, final_eps, final_npks
 
