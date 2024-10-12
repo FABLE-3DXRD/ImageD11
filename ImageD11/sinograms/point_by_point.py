@@ -1124,7 +1124,7 @@ class PBPRefine:
                                                            pars['t_x'], pars['t_y'], pars['t_z'], pars['wedge'],
                                                            pars['chi'],
                                                            pars['wavelength'],
-                                                           tol=self.hkl_tol_refine, merge_tol=self.hkl_tol_refine
+                                                           tol=self.hkl_tol_refine, merge_tol=self.hkl_tol_refine_merged
                                                            )
             # now we match how the indexer returns dodgy values
             # mask nan 3x3 entires to identity matrix
