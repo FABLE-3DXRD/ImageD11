@@ -239,7 +239,7 @@ def compute_g_vectors(tth,
 
 
 @numba.njit
-def count_unique_peaks_old(hkl, etasign, dtyi):
+def count_unique_peaks(hkl, etasign, dtyi):
     N = hkl.shape[1]  # Number of entries
     indices = np.zeros(N, dtype=np.int64)
 
@@ -261,38 +261,6 @@ def count_unique_peaks_old(hkl, etasign, dtyi):
             unique_map[sorted_key] = rank
             rank += 1
         indices[original_index] = unique_map[sorted_key]
-
-    return indices
-
-
-@numba.njit
-def count_unique_peaks(hkl, etasign, dtyi):
-    N = hkl.shape[1]  # Number of entries
-    indices = np.zeros(N, dtype=np.int64)
-
-    # Create a "hash" of the unique key using integer arrays (combining hkl, etasign, dtyi)
-    max_hkl = np.max(hkl) + 1
-    max_etasign = np.max(etasign) + 1
-    max_dtyi = np.max(dtyi) + 1
-
-    # Create a combined unique key using simple integer arithmetic
-    combined = (hkl[0] * max_hkl ** 2 + hkl[1] * max_hkl + hkl[2]) * max_etasign * max_dtyi \
-               + etasign * max_dtyi + dtyi
-
-    # Get the sorted order of combined keys
-    sorted_indices = np.argsort(combined)
-
-    # Unique map (to store rank)
-    unique_map = {}
-    rank = 0
-
-    # Traverse the sorted combined keys
-    for i in range(N):
-        original_index = sorted_indices[i]
-        if combined[original_index] not in unique_map:
-            unique_map[combined[original_index]] = rank
-            rank += 1
-        indices[original_index] = unique_map[combined[original_index]]
 
     return indices
 
