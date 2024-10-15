@@ -160,6 +160,8 @@ class GrainSinogram:
         # intensity weighted sums
         angs = {}
         for name in columns:
+            if name == 'sum_intensity':
+                continue
             angs[name] = np.zeros((npks, NY), 'f')
             ImageD11.cImageD11.put_incr64(angs[name], adr, self.cf_for_sino[name] * sig )
         sinoangles = angs['omega'] .sum(axis=1) / sino.sum(axis=1)
@@ -172,7 +174,13 @@ class GrainSinogram:
         self.ssino = self.sino[order].T
         self.proj_scale = self.proj_scale[order]
         if len(columns)>1:
-            self.angle_wt_sinos = { name : angs[name][order].T for name in columns }
+            self.angle_wt_sinos = { name : angs[name][order].T
+                                    for name in columns
+                                    if name is not 'sum_intensity'
+                                   }
+            if 'sum_intensity' in columns:
+                self.angle_wt_sinos['sum_intensity'] = sino[order].T
+        self.hits = hits
         self.hkle = pkindices[:, order]  # dims are [ (h,k,l,sign(eta)) , nprojections ]
 
     def update_lab_position_from_peaks(self, cf_4d, grain_label):
