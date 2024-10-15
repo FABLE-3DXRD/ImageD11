@@ -176,7 +176,7 @@ class GrainSinogram:
         if len(columns)>1:
             self.angle_wt_sinos = { name : angs[name][order].T
                                     for name in columns
-                                    if name is not 'sum_intensity'
+                                    if name != 'sum_intensity'
                                    }
             if 'sum_intensity' in columns:
                 self.angle_wt_sinos['sum_intensity'] = sino[order].T
