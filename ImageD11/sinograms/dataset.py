@@ -523,7 +523,7 @@ class DataSet:
                     lo, hi = [int(v) for v in slc[1:-1].split(":")]
                     mon = hin[snum]["measurement"][name][lo:hi]
                 else:
-                    mon = hin[snum]["measurement"][name][:]
+                    mon = hin[scan]["measurement"][name][:]
                 monitor.append(mon)
         self.monitor = np.concatenate(monitor).reshape(self.shape)
         return self.monitor
