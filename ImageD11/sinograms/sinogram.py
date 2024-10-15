@@ -252,7 +252,10 @@ class GrainSinogram:
 
            iradon -> ImageD11.sinograms.roi_iradon.run_iradon
            { pad=20, shift=0, workers=1, mask=None,
-                      apply_halfmask=False, mask_central_zingers=False, central_mask_radius=25 }
+                      apply_halfmask=False,
+                      mask_central_zingers=False,
+                      central_mask_radius=25,
+                      filter_name='hamming'}
            mlem : ImageD11.sinograms.roi_iradon.run_mlem
               { mask=None, pad=20, shift=0, workers=1, niter=20, apply_halfmask=False,
              mask_central_zingers=False, central_mask_radius=25 }
