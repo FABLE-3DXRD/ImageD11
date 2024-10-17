@@ -9,8 +9,9 @@ from ImageD11.sinograms.point_by_point import PBPRefine
 
 if __name__ == "__main__":
     pbprefinefile = sys.argv[1]
+    output_filename = sys.argv[2]
     print('Loading refinement object from disk')
     refine = PBPRefine.from_h5(pbprefinefile)
     print('Running refinement')
-    refine.run_refine(use_cluster=False)
+    refine.run_refine(output_filename=output_filename, use_cluster=False)
     print('Refinement complete!')
