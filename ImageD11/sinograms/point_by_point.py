@@ -266,7 +266,34 @@ def count_unique_peaks(hkl, etasign, dtyi):
 
 
 @numba.njit
-def merge(hkl, etasign, dtyi, sum_intensity, sc, fc, omega, dty, xpos_refined):
+def count_unique_peaks_no_dtyi(hkl, etasign):
+    N = hkl.shape[1]  # Number of entries
+    indices = np.zeros(N, dtype=np.int64)
+
+    # Step 1: Create a list of tuples (h, k, l, etasign, dtyi)
+    combined = []
+    for i in range(N):
+        key = (hkl[0, i], hkl[1, i], hkl[2, i], etasign[i])
+        combined.append((key, i))
+
+    # Step 2: Sort lexicographically based on the tuple
+    combined.sort()
+
+    # Step 3: Create the unique indices array
+    unique_map = {}
+    rank = 0
+
+    for sorted_key, original_index in combined:
+        if sorted_key not in unique_map:
+            unique_map[sorted_key] = rank
+            rank += 1
+        indices[original_index] = unique_map[sorted_key]
+
+    return indices
+
+
+@numba.njit
+def merge(hkl, etasign, dtyi, sum_intensity, sc, fc, omega, dty, xpos_refined, eta):
     """
     merge peaks with the same (h, k, l, etasign, dtyi)
     weighted by sum_intensity
@@ -281,8 +308,9 @@ def merge(hkl, etasign, dtyi, sum_intensity, sc, fc, omega, dty, xpos_refined):
     merged_omega = np.bincount(labels, weights=omega * wI) / sI
     merged_dty = np.bincount(labels, weights=dty * wI) / sI
     merged_xpos_refined = np.bincount(labels, weights=xpos_refined * wI) / sI
+    merged_eta = np.bincount(labels, weights=eta * wI) / sI
 
-    return merged_sum_intensity, merged_sc, merged_fc, merged_omega, merged_dty, merged_xpos_refined
+    return merged_sum_intensity, merged_sc, merged_fc, merged_omega, merged_dty, merged_xpos_refined, merged_eta
 
 
 @numba.njit
@@ -1109,7 +1137,7 @@ class PBPRefine:
             numba.set_num_threads(nthreads)
             print('Launching Numba parallel refinement on', nthreads, 'threads')
 
-            final_ubis, final_eps, final_npks = refine_map(points_recon_space, all_pbpmap_ubis, ri_col, rj_col,
+            final_ubis, final_eps, final_npks, final_nuniq = refine_map(points_recon_space, all_pbpmap_ubis, ri_col, rj_col,
                                                            self.sx_grid, self.sy_grid, self.mask,
                                                            self.icolf.sc, self.icolf.fc, self.icolf.eta,
                                                            self.icolf.sum_intensity, self.icolf.sinomega,
@@ -1134,6 +1162,8 @@ class PBPRefine:
             final_eps[:, :, np.isnan(final_eps[0, 0, :])] = 0
             # replace nans with 0 in the npks
             final_npks[np.isnan(final_npks)] = 0
+            # replace nans with 0 in the nuniq
+            final_nuniq[np.isnan(final_nuniq)] = 0
 
             # make a PBPMap to contain the output, then save to disk
             output_map = PBPMap(new=True)
@@ -1144,11 +1174,10 @@ class PBPRefine:
             eps00, eps01, eps02, eps10, eps11, eps12, eps20, eps21, eps22 = final_eps_cols
 
             # add the columns
-            print("We're not calculating nuniq, so for now nuniq=ntotal")
             output_map.addcolumn(self.pbpmap.i, 'i')
             output_map.addcolumn(self.pbpmap.j, 'j')
             output_map.addcolumn(final_npks, 'ntotal')
-            output_map.addcolumn(final_npks, 'nuniq')
+            output_map.addcolumn(final_nuniq, 'nuniq')
             output_map.addcolumn(ubi00, 'ubi00')
             output_map.addcolumn(ubi01, 'ubi01')
             output_map.addcolumn(ubi02, 'ubi02')
@@ -1367,6 +1396,7 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
     final_ubis = np.full_like(all_pbpmap_ubis, np.nan)
     final_eps = np.full_like(all_pbpmap_ubis, np.nan)
     final_npks = np.full(all_pbpmap_ubis.shape[2], np.nan)
+    final_nuniq = np.full(all_pbpmap_ubis.shape[2], np.nan)
 
     # iterate through point indices
     # they are in reconstruction space
@@ -1435,7 +1465,7 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
                 etasign = np.sign(eta_local[grain_peak_mask])
 
                 # merge the assigned peaks in omega
-                merged_sum_intensity, merged_sc, merged_fc, merged_omega, merged_dty, merged_xpos_refined = merge(hkl,
+                merged_sum_intensity, merged_sc, merged_fc, merged_omega, merged_dty, merged_xpos_refined, merged_eta = merge(hkl,
                                                                                                                   etasign,
                                                                                                                   dtyi_local[
                                                                                                                       grain_peak_mask],
@@ -1450,7 +1480,8 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
                                                                                                                   dty_local[
                                                                                                                       grain_peak_mask],
                                                                                                                   xpos_local[
-                                                                                                                      grain_peak_mask])
+                                                                                                                      grain_peak_mask],
+                                                                                                                   eta_local[grain_peak_mask])
 
                 merged_sinomega = np.sin(np.radians(merged_omega))
                 merged_cosomega = np.cos(np.radians(merged_omega))
@@ -1464,6 +1495,7 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
                 merged_omega_grain = merged_omega[local_idx_of_grain]
                 merged_xpos_refined_grain = merged_xpos_refined[local_idx_of_grain]
                 ydist_grain = ydist[local_idx_of_grain]
+                merged_eta_grain = merged_eta[local_idx_of_grain]
 
                 # re-compute merged g-vectors
                 gve_voxel_merged = compute_gve(merged_sc_grain, merged_fc_grain, merged_omega_grain,
@@ -1510,9 +1542,16 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
                     sumsq = (err ** 2).sum(axis=0)
                     grain_peak_mask = sumsq < tolsq
                     grain_npks = np.sum(grain_peak_mask)
+                    
+                    # compute the number of unique peaks
+                    hkl_uniqcount = hkli[:, grain_peak_mask]
+                    etasign_uniqcount = np.sign(merged_eta_grain[grain_peak_mask])                    
+                    labels = count_unique_peaks_no_dtyi(hkl_uniqcount, etasign_uniqcount)
+                    grain_nuniq = np.unique(labels).shape[0]
 
                     final_ubis[:, :, pbpmap_idx[ubi_idx]] = ubi_out
                     final_npks[pbpmap_idx[ubi_idx]] = grain_npks
+                    final_nuniq[pbpmap_idx[ubi_idx]] = grain_nuniq
 
                     # if we like the fit quality, redetermine the g-vectors from the new peak mask
                     # then fit the strain tensor
@@ -1557,7 +1596,7 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
 
                         final_eps[:, :, pbpmap_idx[ubi_idx]] = eps_tensor
 
-    return final_ubis, final_eps, final_npks
+    return final_ubis, final_eps, final_npks, final_nuniq
 
 
 def idxpoint(
