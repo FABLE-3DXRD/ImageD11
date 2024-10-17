@@ -17,14 +17,16 @@ Inspired by orix/data/__init__.py from https://github.com/pyxem/orix
 
 # what Zenodo folder can these be found in?
 dataset_base_urls = {
-    'Si_cube_S3DXRD_nt_moves_dty': "https://sandbox.zenodo.org/records/90518/files/",
+    'Si_cube_S3DXRD_nt_moves_dty': "https://sandbox.zenodo.org/records/118838/files/",
 }
 
 # What are the names of the files in the Zenodo folder?
 dataset_filenames = {
     'Si_cube_S3DXRD_nt_moves_dty': {
         'sparsefile': 'Si_cube_S3DXRD_nt_moves_dty_sparse.h5',
-        'parfile': 'Si_refined.par',
+        'parfile': 'pars.json',
+        'geomfile': 'geometry.par',
+        'phasefile0': 'Si_refined.par',
         'e2dxfile': 'e2dx_E-08-0144_20240205.edf',
         'e2dyfile': 'e2dy_E-08-0144_20240205.edf'
     }
@@ -123,25 +125,25 @@ def _get_dataset(test_dataset_name, dest_folder, allow_download):
         for filetype, filename in dataset_filenames[test_dataset_name].items():
             file_url = dataset_base_urls[test_dataset_name] + filename
             # is it a file that could be used as an attribute?
-            if filetype in id11dset.DataSet.ATTRNAMES:
-                if hasattr(ds, filetype):
-                    if getattr(ds, filetype) is None:
-                        # this is an attribute, but we don't have a path for it
-                        # put it in processed data root
-                        filepath = os.path.join(processed_data_root_dir, filename)
-                        download_url(file_url, filepath)
-                        setattr(ds, filetype, filepath)
-                    else:
-                        # the dataset has a path for this filetype already
-                        filepath = getattr(ds, filetype)
-                        download_url(file_url, filepath)
-                else:
-                    # probably a spatial or a parfile
-                    # chuck it in processed_data_root_dir
-                    # set the attribute
+            # if filetype in id11dset.DataSet.ATTRNAMES:
+            if hasattr(ds, filetype):
+                if getattr(ds, filetype) is None:
+                    # this is an attribute, but we don't have a path for it
+                    # put it in processed data root
                     filepath = os.path.join(processed_data_root_dir, filename)
                     download_url(file_url, filepath)
                     setattr(ds, filetype, filepath)
+                else:
+                    # the dataset has a path for this filetype already
+                    filepath = getattr(ds, filetype)
+                    download_url(file_url, filepath)
+            else:
+                # probably a spatial or a parfile
+                # chuck it in processed_data_root_dir
+                # set the attribute
+                filepath = os.path.join(processed_data_root_dir, filename)
+                download_url(file_url, filepath)
+                setattr(ds, filetype, filepath)
 
         ds.import_from_sparse(ds.sparsefile)
         ds.save()
