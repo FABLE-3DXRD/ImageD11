@@ -17,7 +17,7 @@ Inspired by orix/data/__init__.py from https://github.com/pyxem/orix
 
 # what Zenodo folder can these be found in?
 dataset_base_urls = {
-    'Si_cube_S3DXRD_nt_moves_dty': "https://sandbox.zenodo.org/records/118838/files/",
+    'Si_cube_S3DXRD_nt_moves_dty': "https://sandbox.zenodo.org/records/118843/files/",
 }
 
 # What are the names of the files in the Zenodo folder?
