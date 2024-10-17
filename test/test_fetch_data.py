@@ -20,9 +20,9 @@ class TestDownloadURL(unittest.TestCase):
     def setUp(self):
         valid_dsetname = 'Si_cube_S3DXRD_nt_moves_dty'
         valid_base_url = fetch_data.dataset_base_urls[valid_dsetname]
-        valid_parfilename = fetch_data.dataset_filenames[valid_dsetname]['parfile']
+        valid_parfilename = fetch_data.dataset_filenames[valid_dsetname]['geomfile']
         self.valid_url = os.path.join(valid_base_url, valid_parfilename)
-        self.valid_dest = './test_pars.par'
+        self.valid_dest = './geometry.par'
         if os.path.exists(self.valid_dest):
             raise IOError('Intended download destination already exists! Aborting test...')
         self.invalid_folder = './djasqowdonqwfioqfioqnwd'  # unlikely to collide?
@@ -49,14 +49,7 @@ class TestDownloadURL(unittest.TestCase):
 
         # compare contents
 
-        test_file_contents = """cell__a 5.43
-cell__b 5.43
-cell__c 5.43
-cell_alpha 90.0
-cell_beta 90.0
-cell_gamma 90.0
-cell_lattice_[P,A,B,C,I,F,R] 227
-chi 0.0
+        test_file_contents = """chi 0.0
 distance 148420.9411459722
 fit_tolerance 0.1
 min_bin_prob 1e-05
