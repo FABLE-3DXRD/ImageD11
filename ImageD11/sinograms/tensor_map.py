@@ -163,6 +163,94 @@ def ubi_and_unitcell_to_eps_sample(ubi, dzero_cell, res):
         res[...] = em
 
 
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:, :])], '(n,n),(p)->(n,n)', nopython=True)
+def ubi_and_unitcell_to_eps_crystal(ubi, dzero_cell, res):
+    if np.isnan(ubi[0, 0]):
+        res[...] = np.nan
+    elif np.isnan(dzero_cell[0]):
+        res[...] = np.nan
+    else:
+        a, b, c = dzero_cell[:3]
+        ralpha, rbeta, rgamma = np.radians(dzero_cell[3:])  # radians
+        ca = np.cos(ralpha)
+        cb = np.cos(rbeta)
+        cg = np.cos(rgamma)
+        g = np.full((3, 3), np.nan, float)
+        g[0, 0] = a * a
+        g[0, 1] = a * b * cg
+        g[0, 2] = a * c * cb
+        g[1, 0] = a * b * cg
+        g[1, 1] = b * b
+        g[1, 2] = b * c * ca
+        g[2, 0] = a * c * cb
+        g[2, 1] = b * c * ca
+        g[2, 2] = c * c
+        gi = np.linalg.inv(g)
+        astar, bstar, cstar = np.sqrt(np.diag(gi))
+        betas = np.degrees(np.arccos(gi[0, 2] / astar / cstar))
+        gammas = np.degrees(np.arccos(gi[0, 1] / astar / bstar))
+
+        B = np.full((3, 3), np.nan, float)
+        B[0, 0] = astar
+        B[0, 1] = bstar * np.cos(np.radians(gammas))
+        B[0, 2] = cstar * np.cos(np.radians(betas))
+        B[1, 0] = 0.0
+        B[1, 1] = bstar * np.sin(np.radians(gammas))
+        B[1, 2] = -cstar * np.sin(np.radians(betas)) * ca
+        B[2, 0] = 0.0
+        B[2, 1] = 0.0
+        B[2, 2] = 1.0 / c
+
+        F = np.dot(ubi.T, B.T)
+        w, sing, vh = np.linalg.svd(F)
+        S = np.dot( vh.T, np.dot( np.diag(sing),  vh ) )
+        em = S - np.eye(3)
+        res[...] = em
+
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:, :], numba.float64[:, :])], '(n,n),(k,k)->(n,n)', nopython=True)
+def strain_to_stress(strain, C, res):
+    mvvec = np.zeros(6, dtype=np.float64)
+    mvvec[0] = strain[0, 0]
+    mvvec[1] = strain[1, 1]
+    mvvec[2] = strain[2, 2]
+    mvvec[3] = np.sqrt(2.) * strain[1, 2]
+    mvvec[4] = np.sqrt(2.) * strain[0, 2]
+    mvvec[5] = np.sqrt(2.) * strain[0, 1]
+    
+    stress_MV = np.dot(C, mvvec)
+    
+    symm = np.zeros((3, 3), dtype=np.float64)
+    symm[0, 0] = stress_MV[0]
+    symm[1, 1] = stress_MV[1]
+    symm[2, 2] = stress_MV[2]
+    symm[1, 2] = stress_MV[3] * (1. / np.sqrt(2.))
+    symm[0, 2] = stress_MV[4] * (1. / np.sqrt(2.))
+    symm[0, 1] = stress_MV[5] * (1. / np.sqrt(2.))
+    symm[2, 1] = stress_MV[3] * (1. / np.sqrt(2.))
+    symm[2, 0] = stress_MV[4] * (1. / np.sqrt(2.))
+    symm[1, 0] = stress_MV[5] * (1. / np.sqrt(2.))
+    
+    res[...] = symm
+
+
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:])], '(n,n)->()', nopython=True)
+def sig_to_hydro(sig, res):
+    """Get hydrostatic stress scalar from stress tensor (frame invariant)"""
+    res[...] = np.sum(np.diag(sig)) / 3
+
+    
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:])], '(n,n)->()', nopython=True)
+def sig_to_vm(sig, res):
+    """Get von-Mises stress scalar from stress tensor"""
+    sig11 = sig[0, 0]
+    sig22 = sig[1, 1]
+    sig33 = sig[2, 2]
+    sig12 = sig[0, 1]
+    sig23 = sig[1, 2]
+    sig31 = sig[2, 0]
+    vm = np.sqrt(((sig11 - sig22) ** 2 + (sig22 - sig33) ** 2 + (sig33 - sig11) ** 2 + 6 * (sig12 ** 2 + sig23 ** 2 + sig31 ** 2)) / 2.)
+    res[...] = vm
+    
 # @numba.njit
 # def UB_map_to_U_B_map(UB_map):
 #     """QR decomp from xfab.tools"""
@@ -533,7 +621,7 @@ class TensorMap:
 
     @property
     def eps_sample(self):
-        """The per-voxel strain, relative to the B0 of the unitcell of the reference phase for that voxel."""
+        """The per-voxel strain in sample frame, relative to the B0 of the unitcell of the reference phase for that voxel."""
         if 'eps_sample' in self.keys():
             return self.maps['eps_sample']
         else:
@@ -541,6 +629,45 @@ class TensorMap:
             eps_sample_map = ubi_and_unitcell_to_eps_sample(self.UBI, self.dzero_unitcell)
             self.add_map('eps_sample', eps_sample_map)
             return eps_sample_map
+        
+    @property
+    def eps_crystal(self):
+        """The per-voxel strain in crystal frame, relative to the B0 of the unitcell of the reference phase for that voxel."""
+        if 'eps_crystal' in self.keys():
+            return self.maps['eps_crystal']
+        else:
+            # calculate it
+            eps_crystal_map = ubi_and_unitcell_to_eps_crystal(self.UBI, self.dzero_unitcell)
+            self.add_map('eps_crystal', eps_crystal_map)
+            return eps_crystal_map
+    
+    # TODO - make multiphase - store C map for each voxel
+    def get_stress(self, C):
+        """Fill in sig_crystal and sig_sample using 6x6 stiffness tensor C"""
+        sig_crystal_map = strain_to_stress(self.eps_crystal, C)
+        sig_sample_map = strain_to_stress(self.eps_sample, C)
+        self.add_map('sig_crystal', sig_crystal_map)
+        self.add_map('sig_sample', sig_sample_map)
+        
+    @property
+    def sig_hydro(self):
+        """The per-voxel hydrostatic stress (frame invariant)"""
+        if 'sig_hydro' in self.keys():
+            return self.maps['sig_hydro']
+        else:
+            sig_hydro_map = sig_to_hydro(self.sig_crystal)
+            self.add_map('sig_hydro', sig_hydro_map)
+            return sig_hydro_map
+    
+    @property
+    def sig_mises(self):
+        """The per-voxel von-Mises stress"""
+        if 'sig_mises' in self.keys():
+            return self.maps['sig_mises']
+        else:
+            sig_mises_map = sig_to_vm(self.sig_sample)
+            self.add_map('sig_mises', sig_mises_map)
+            return sig_mises_map
 
     def get_meta_orix_orien(self, phase_id=0):
         """Get a meta orix orientation for all voxels of a given phase ID"""
