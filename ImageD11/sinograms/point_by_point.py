@@ -1525,7 +1525,7 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
                         # get U from UBI without using ImageD11 grain class
                         ucell = ubi_to_unitcell(ubifit)
                         U = ubi_and_ucell_to_u(ubi_out, ucell)
-                        gve0 = U @ B0 @ hkl.astype(np.float64)
+			gve0 = U.dot(B0).dot(hkl.astype(np.float64))
                         gTg0 = np.sum(gve_grain_strainfit * gve0, axis=0)
                         gTg = np.sum(gve_grain_strainfit * gve_grain_strainfit, axis=0)
                         directional_strain = (gTg0 / gTg) - 1
