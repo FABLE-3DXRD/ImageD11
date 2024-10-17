@@ -27,7 +27,7 @@ jobs:
             cibw_archs: "auto64"
           #- os: windows-2019
           #  cibw_archs: "auto32"
-          - os: macos-11
+          - os: macos-13
             cibw_archs: "universal2"
 
     steps:
