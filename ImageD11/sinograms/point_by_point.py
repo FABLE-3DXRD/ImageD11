@@ -653,7 +653,7 @@ class PBPRefine:
         pmap = PBPMap(new=True)
         # fill it using HDF load method
         if not os.path.exists(filename):
-            raise FileNotFoundError("Can't find map on disk!")
+            raise OSError("Can't find map on disk!")
         if refined:
             name = 'refinedmap'
         else:
@@ -992,7 +992,7 @@ class PBPRefine:
         print('Loading output map')
         try:
             refine_obj.loadmap(refine_obj.refinedmap_filename, refined=True)
-        except (AttributeError, FileNotFoundError):
+        except (AttributeError, OSError):
             pass
 
         return refine_obj
