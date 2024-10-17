@@ -1009,7 +1009,8 @@ class PBPRefine:
         numba.set_num_threads(nthreads)
 
         if guess_speed:
-            print('Running test function twice for the first 1000 peaks to guess speed...')
+            guess_npks = min(guess_npks, self.icolf.nrows)
+            print('Running test function twice for the first',guess_npks, 'peaks to guess speed...')
             print('This is because we get speed advantages with peaks on consecutive frames')
 
             idx = np.arange(guess_npks)
