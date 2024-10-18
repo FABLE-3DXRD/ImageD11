@@ -1,6 +1,10 @@
 import os
 
 import numba
+# ignore Numba dot product performance warnings?
+import warnings
+warnings.simplefilter('ignore', category=numba.core.errors.NumbaPerformanceWarning)
+
 import h5py
 import numpy as np
 

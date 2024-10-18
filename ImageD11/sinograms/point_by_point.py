@@ -25,6 +25,12 @@ import subprocess
 
 import h5py
 import numba
+
+# ignore Numba dot product performance warnings?
+import warnings
+warnings.simplefilter('ignore', category=numba.core.errors.NumbaPerformanceWarning)
+
+
 import pprint
 
 from skimage.filters import threshold_otsu
