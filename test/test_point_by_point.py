@@ -1,8 +1,12 @@
 import numpy as np
 import unittest
 
-from ImageD11.sinograms import point_by_point
-from ImageD11 import transform
+import sys
+if int(sys.version_info.major) == 2:
+    raise unittest.SkipTest('Skipping PBP tests on Python 2')
+else:
+    from ImageD11.sinograms import point_by_point
+    from ImageD11 import transform
 
 
 class TestDetectorRotationMatrix(unittest.TestCase):
