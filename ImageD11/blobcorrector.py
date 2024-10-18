@@ -62,6 +62,8 @@ class correctorclass: #IGNORE:R0902
         """
         Argument is the name of a fit2d spline file
         """
+        import warnings
+        warnings.warn("For new data from ID11, better to use the dx,dy files instead of Fit2d spline", DeprecationWarning)
         self.splinefile = argsplinefile
         self.tolerance = 1e-5
         self.orientation = orientation
@@ -341,12 +343,19 @@ def correct_cf_with_spline(cf, spline_file):
     """Creates a correctorclass from the spline file
        Corrects the columnfile with the spline file
        Returns the corrected columnfile"""
-
     corrector = correctorclass(spline_file)
     corrector.correct_px_lut(cf)
-
     return cf
 
+def correct_cf_with_dxdyfiles(cf, dxfile, dyfile):
+    """Corrects the columnfile with the dx/dy file
+       Returns the corrected columnfile"""
+    es = eiger_spatial( dxfile, dyfile )
+    pkin = { 's_raw': cf['s_raw'], 'f_raw': cf['f_raw'] }
+    pkout = es( pkin )
+    cf.addcolumn( pkout['sc'], 'sc' )
+    cf.addcolumn( pkout['fc'], 'fc' )
+    return cf
 
 #
 #"""

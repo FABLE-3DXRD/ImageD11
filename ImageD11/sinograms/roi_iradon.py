@@ -526,8 +526,13 @@ def correct_recon_central_zingers(recon, radius=25):
 
 
 def run_iradon(sino, angles, pad=20, shift=0,
-               workers=1, mask=None,
-               apply_halfmask=False, mask_central_zingers=False, central_mask_radius=25):
+               workers=1,
+               mask=None,
+               apply_halfmask=False,
+               mask_central_zingers=False,
+               central_mask_radius=25,
+               filter_name='hamming',
+               ):
     """Applies an iradon to a sinogram, with an optional pad
        Calculates scaled-up output size from pad value
        Applies projection shifts of shift
@@ -550,7 +555,7 @@ def run_iradon(sino, angles, pad=20, shift=0,
                    mask=mask,
                    output_size=outsize,
                    projection_shifts=np.full(sino.shape, shift),
-                   filter_name='hamming',
+                   filter_name=filter_name,
                    interpolation='linear',
                    workers=workers)
 

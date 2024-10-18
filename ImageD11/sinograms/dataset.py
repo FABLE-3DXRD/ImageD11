@@ -5,8 +5,9 @@ import fast_histogram
 import logging
 
 import ImageD11.grain
+import ImageD11.unitcell
 import ImageD11.sinograms.properties
-from ImageD11.blobcorrector import eiger_spatial
+from ImageD11.blobcorrector import correct_cf_with_dxdyfiles, correct_cf_with_spline
 from ImageD11.columnfile import colfile_from_dict
 
 """
@@ -55,6 +56,7 @@ class DataSet:
         "detector",
         "omegamotor",
         "dtymotor",
+        "monitorname",
         "pksfile",
         "sparsefile",
         "parfile",
@@ -74,19 +76,27 @@ class DataSet:
     )
     STRINGLISTS = ("scans", "imagefiles", "sparsefiles")
     # sinograms
-    NDNAMES = ("omega", "dty", "nnz", "frames_per_file", "nlm", "frames_per_scan", "monitor")
+    NDNAMES = (
+        "omega",
+        "dty",
+        "nnz",
+        "frames_per_file",
+        "nlm",
+        "frames_per_scan",
+        "monitor",
+    )
 
     def __init__(
-            self,
-            dataroot=".",
-            analysisroot=".",
-            sample="sample",
-            dset="dataset",
-            detector="eiger",
-            omegamotor="rot_center",
-            dtymotor="dty",
-            filename=None,
-            analysispath=None
+        self,
+        dataroot=".",
+        analysisroot=".",
+        sample="sample",
+        dset="dataset",
+        detector="eiger",
+        omegamotor="rot_center",
+        dtymotor="dty",
+        filename=None,
+        analysispath=None,
     ):
         """The things we need to know to process data"""
 
@@ -122,6 +132,8 @@ class DataSet:
         self.shape = (0, 0)
         self.omega = None
         self.dty = None
+        self.monitor = None
+        self.monitorname = None
 
         self._peaks_table = None
         self._pk2d = None
@@ -138,7 +150,9 @@ class DataSet:
     def update_paths(self, force=False):
         # paths for processed data
         # root of analysis for this dataset for this sample:
-        self.analysispath_default = os.path.join(self.analysisroot, self.sample, self.dsname)
+        self.analysispath_default = os.path.join(
+            self.analysisroot, self.sample, self.dsname
+        )
         if self.analysispath is None:
             self.analysispath = self.analysispath_default
 
@@ -156,10 +170,12 @@ class DataSet:
             ("col2dfile", "_peaks_2d.h5"),
             ("grainsfile", "_grains.h5"),
             ("sparsefile", "_sparse.h5"),
-            # subset peaks selected for indexing (pbp)
-            ("icolfile", "_icolf.h5"),
-            # point by point raw output
-            ("pbpfile", "_pbp.txt"),
+            ("icolfile", "_icolf.h5"),  # subset peaks selected for indexing (pbp)
+            ("pbpfile", "_pbp.txt"),  # point by point raw output
+            ("refmanfile", "_refine_manager.h5"),  # PBPRefine object for refinement
+            ("refpeaksfile", "_refine_peaks.h5"),  # icolf for refinement
+            ("refmapfile", "_refine_map_in.h5"),  # input pbp map for refinement
+            ("refoutfile", "_refine_map_out.h5"),  # output pbp map from refinement
         ]:
             # If the user has got a different name (via loading or edit), we keep that
             if (getattr(self, name, None) is None) or force:
@@ -230,7 +246,7 @@ class DataSet:
         except:
             logging.info("nnz not available. Segmentation done?")
 
-    def import_from_sparse(self, hname, scans=None):
+    def import_from_sparse(self, hname, scans=None, shape=None):
         """
         hname = hdf5 file containing sparse pixels (and motors)
         dataset = a dataset instance to import into
@@ -244,12 +260,26 @@ class DataSet:
                 scans = list(hin["/"])
                 order = np.argsort([float(v) for v in scans if v.endswith(".1")])
                 self.scans = [scans[i] for i in order]
+        else:
+            self.scans = scans
         self.masterfile = hname  # hacky, motors come from the sparsefile
         self.import_nnz_from_sparse()  # must exist
         self.import_motors_from_master()
-        self.shape = self.nnz.shape
+        # self.guess_shape() # fails with sparse
+        if shape is not None:
+            self.shape = shape
+            self.nnz = np.array(self.nnz).reshape(self.shape)
+        else:
+            self.shape = self.nnz.shape
         self.omega = np.array(self.omega).reshape(self.shape)
         self.dty = np.array(self.dty).reshape(self.shape)
+        if len(scans) == 1 and self.shape[0]>1:
+            file_nums = np.arange(self.shape[0]*self.shape[1]).reshape(self.shape)
+            self.scans = [
+                "%s::[%d:%d]" % (self.scans[0], row[0], row[-1] + 1)
+                for row in file_nums
+            ]
+
         self.guessbins()
 
     def import_scans(self, scans=None, hname=None):
@@ -265,10 +295,10 @@ class DataSet:
                     scan
                     for scan in list(hin["/"])
                     if (
-                            scan.endswith(".1")
-                            and ("measurement" in hin[scan])
-                            and (self.detector in hin[scan]["measurement"])
-                            and (self.omegamotor in hin[scan]["measurement"])
+                        scan.endswith(".1")
+                        and ("measurement" in hin[scan])
+                        and (self.detector in hin[scan]["measurement"])
+                        and (self.omegamotor in hin[scan]["measurement"])
                     )
                 ]
             goodscans = []
@@ -304,7 +334,7 @@ class DataSet:
             bad = []
             for i, scan in enumerate(self.scans):
                 if ("measurement" not in hin[scan]) or (
-                        self.detector not in hin[scan]["measurement"]
+                    self.detector not in hin[scan]["measurement"]
                 ):
                     print("Bad scan", scan)
                     bad.append(scan)
@@ -322,8 +352,9 @@ class DataSet:
                     assert self.limapath == vsrc.dset_name
         self.frames_per_file = np.array(self.frames_per_file, int)
         self.sparsefiles = [
-            os.path.join('sparsefiles',
-                         name.replace("/", "_").replace(".h5", "_sparse.h5"))
+            os.path.join(
+                "sparsefiles", name.replace("/", "_").replace(".h5", "_sparse.h5")
+            )
             for name in self.imagefiles
         ]
         logging.info("imported %d lima filenames" % (np.sum(self.frames_per_file)))
@@ -336,11 +367,11 @@ class DataSet:
         """
         # self.guess_motornames()
         self.omega = [
-                         None,
-                     ] * len(self.scans)
+            None,
+        ] * len(self.scans)
         self.dty = [
-                       None,
-                   ] * len(self.scans)
+            None,
+        ] * len(self.scans)
         with h5py.File(self.masterfile, "r") as hin:
             bad = []
             for i, scan in enumerate(self.scans):
@@ -495,24 +526,35 @@ class DataSet:
                 ring_currents / np.max(ring_currents)
             )
 
-    def get_monitor(self, name='fpico6'):
+    def get_monitor(self, name="fpico6"):
         # masterfile or sparsefile
         hname = self.masterfile
-        if hasattr(self, 'sparsefile') and os.path.exists(self.sparsefile):
+        if hasattr(self, "sparsefile") and os.path.exists(self.sparsefile):
             hname = self.sparsefile
         monitor = []
-        with h5py.File( hname, 'r') as hin:
+        with h5py.File(hname, "r") as hin:
             for scan in self.scans:
-                if scan.find('::')>-1:
-                    snum, slc = scan.split('::')
-                    lo, hi = [int(v) for v in slc[1:-1].split(':')]
-                    mon = hin[snum]['measurement'][name][lo:hi]
+                if scan.find("::") > -1:
+                    snum, slc = scan.split("::")
+                    lo, hi = [int(v) for v in slc[1:-1].split(":")]
+                    mon = hin[snum]["measurement"][name][lo:hi]
                 else:
-                    mon = hin[snum]['measurement'][name][:]
+                    mon = hin[scan]["measurement"][name][:]
                 monitor.append(mon)
-        self.monitor = np.concatenate(monitor).reshape( self.shape )
+        self.monitor = np.concatenate(monitor).reshape(self.shape)
         return self.monitor
-
+    
+    def get_monitor_pk2d(self, pk2d, name='fpico6'):
+        """
+        To be used to normalise the peaks 2d
+        """
+        if self.monitor is None :
+            self.get_monitor( name )
+        iy = np.digitize( pk2d['dty'], self.ybinedges ) - 1
+        io = np.digitize( pk2d['omega'], self.obinedges ) - 1 
+        #pk2d['iy'] = iy  # cache these too ?
+        #pk2d['io'] = io
+        return self.monitor[ iy, io ]
 
     def guess_detector(self):
         """Guess which detector we are using from the masterfile"""
@@ -593,6 +635,11 @@ class DataSet:
             )
         return histo
 
+    def get_phases_from_disk(self):
+        if not hasattr(self, "parfile") or self.parfile is None:
+            raise AttributeError("Need self.parfile to load phases!")
+        return ImageD11.unitcell.Phases(self.parfile)
+
     @property
     def peaks_table(self):
         if self._peaks_table is None:
@@ -619,25 +666,36 @@ class DataSet:
         Uses self.pk2d if no peaks_dict provided"""
         # TODO add optional peaks mask
 
-        # Define spatial correction
-        spat = eiger_spatial(dxfile=self.e2dxfile, dyfile=self.e2dyfile)
-
         if peaks_dict is None:
             peaks_dict = self.pk2d
 
-        # Generate columnfile from peaks table
-        cf = colfile_from_dict(spat(peaks_dict))
+        cf = colfile_from_dict(peaks_dict)
 
-        # Update parameters for the columnfile
-        if hasattr(self,'parfile') and self.parfile is not None:
-            cf.parameters.loadparameters(self.parfile)
-            cf.updateGeometry()
+        # Define spatial correction
+        if self.e2dxfile is not None:
+            cf = correct_cf_with_dxdyfiles(cf, self.e2dxfile, self.e2dyfile)
+        else:
+            if self.splinefile is not None:
+                cf = correct_cf_with_spline(cf, self.splinefile)
+
+        # Generate columnfile from peaks table
         return cf
 
+    def update_colfile_pars(self, cf, phase_name=None):
+        """Load parameters and update geometry for colfile"""
+        cf.parameters.loadparameters(self.parfile, phase_name=phase_name)
+        cf.updateGeometry()
+
     def get_cf_2d(self):
+        if os.path.exists(self.col2dfile):
+            print("Loading existing colfile from", self.col2dfile)
+            return self.get_cf_2d_from_disk()
         return self.get_colfile_from_peaks_dict()
 
     def get_cf_4d(self):
+        if os.path.exists(self.col4dfile):
+            print("Loading existing colfile from", self.col4dfile)
+            return self.get_cf_4d_from_disk()
         return self.get_colfile_from_peaks_dict(peaks_dict=self.pk4d)
 
     def get_cf_2d_from_disk(self):
@@ -652,12 +710,26 @@ class DataSet:
         cf_4d = ImageD11.columnfile.columnfile(self.col4dfile)
         return cf_4d
 
-    def get_grains_from_disk(self):
-        grains = ImageD11.grain.read_grain_file_h5(self.grainsfile)
+    def get_grains_from_disk(self, phase_name=None):
+        group_name = "grains"
+        if phase_name is not None:
+            group_name = phase_name
+        grains = ImageD11.grain.read_grain_file_h5(
+            self.grainsfile, group_name=group_name
+        )
+        if phase_name is not None and hasattr(self, "phases"):
+            print("Adding reference unitcells from self.phases")
+            for g in grains:
+                g.ref_unitcell = self.phases.unitcells[phase_name]
         return grains
 
-    def save_grains_to_disk(self, grains):
-        ImageD11.grain.write_grain_file_h5(self.grainsfile, grains)
+    def save_grains_to_disk(self, grains, phase_name=None):
+        group_name = "grains"
+        if phase_name is not None:
+            group_name = phase_name
+        ImageD11.grain.write_grain_file_h5(
+            self.grainsfile, grains, group_name=group_name
+        )
 
     def import_nnz(self):
         """Read the nnz arrays from the sparsefiles"""
@@ -801,7 +873,7 @@ class DataSet:
                 if name in grp:
                     stringlist = list(grp[name][()])
                     if hasattr(stringlist[0], "decode") or isinstance(
-                            stringlist[0], np.ndarray
+                        stringlist[0], np.ndarray
                     ):
                         data = [s.decode() for s in stringlist]
                     else:
@@ -817,7 +889,7 @@ class DataSet:
         return self
 
 
-def load(h5name, h5group='/'):
+def load(h5name, h5group="/"):
     ds_obj = DataSet(filename=h5name)
     return ds_obj
 

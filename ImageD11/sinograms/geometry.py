@@ -1,19 +1,32 @@
 """Sinogram-related geometric functions pulled from various places.
-In this file there are three reference frames:
+In this file there are four reference frames:
 
-1. The sample frame
+1. The lab frame that we all know and love
 
-2. Step space:
+2. The sample frame - this has the rotation axis at its origin, but could be translated by the dty motor
+It could also be rotated by an angle omega, CCW about the rotation axis (looking top down)
+
+3. Step space:
    step from the rotation axis center,  coords are (si, sj)
 
 
-3. Reconstruction space:
+4. Reconstruction space:
    units are (ystep), origin in corner (matches iradon output) when plotted with origin="lower", coords are (ri, rj)
 
 
-Diagrams are below, S indicates the centre of the sample
+Diagrams are below, S indicates the rotation axis
 
-sample frame:
+lab frame:
+
+         ^
+         |
+         | x
+         |
+<------- O (0, 0)
+    y
+
+
+sample frame (could be rotated about omega then translated along lab y):
 
          ^
          |
@@ -54,18 +67,64 @@ from scipy.optimize import curve_fit
 from skimage.feature import blob_log
 
 
-def sample_to_step(x, y, ystep):
-    """Converts sample (x, y) position to step space (si, sj)"""
-    si = x / ystep
-    sj = -y / ystep
+def sample_to_lab_sincos(sx, sy, y0, dty, sinomega, cosomega):
+    """Same as sample_to_lab but using sinomega and cosomega"""
+    sxr = sx * cosomega - sy * sinomega
+    syr = sx * sinomega + sy * cosomega
+    
+    lx = sxr
+    ly = syr - y0 + dty
+    
+    return lx, ly
+
+
+def sample_to_lab(sx, sy, y0, dty, omega):
+    """Converts sample (sx, sy) position to the lab frame (lx, ly)
+    The sample reference frame could be rotated by an angle omega (degrees) CCW about the rotation axis
+    The rotation axis is defined as the origin of the sample reference frame
+    The sample reference frame could also be translated by dty along ly after rotation"""
+
+    # first, rotate sx and sy by omega about its origin (rotation axis)
+    omega_rad = np.radians(omega)
+    sxr = sx * np.cos(omega_rad) - sy * np.sin(omega_rad)
+    syr = sx * np.sin(omega_rad) + sy * np.cos(omega_rad)
+
+    # then translate about the rotated frame
+
+    lx = sxr
+    ly = syr - y0 + dty
+
+    return lx, ly
+
+
+def lab_to_sample(lx, ly, y0, dty, omega):
+    """Converts lab (lx, ly) fixed reference frame position
+    to a possibly rotated and translated sample frame (sx, sy)"""
+    # first, translate
+
+    sxr = lx
+    syr = ly + y0 - dty
+
+    # then rotate
+    omega_rad = np.radians(omega)
+    sx = sxr * np.cos(-omega_rad) - syr * np.sin(-omega_rad)
+    sy = sxr * np.sin(-omega_rad) + syr * np.cos(-omega_rad)
+
+    return sx, sy
+
+
+def sample_to_step(sx, sy, ystep):
+    """Converts sample (sx, sy) position to step space (si, sj)"""
+    si = sx / ystep
+    sj = -sy / ystep
     return si, sj
 
 
 def step_to_sample(si, sj, ystep):
-    """Converts step space (si, sj) to sample position (x, y)"""
-    x = si * ystep
-    y = -sj * ystep
-    return x, y
+    """Converts step space (si, sj) to sample position (sx, sy)"""
+    sx = si * ystep
+    sy = -sj * ystep
+    return sx, sy
 
 
 def step_to_recon(si, sj, recon_shape):
@@ -171,6 +230,12 @@ def dty_to_dtyi(dty, ystep):
     return dtyi
 
 
+def dtyi_to_dty(dtyi, ystep):
+    """Converts dtyi value (step space) to dty value (lab frame)"""
+    _, sy = step_to_sample(0, dtyi, ystep)
+    return sy
+
+
 def dty_to_dtyi_for_sinogram(dty, ystep, ymin):
     """Converts dty value (lab frame) to something like scan number"""
     dtyi = np.round((dty - ymin) / ystep).astype(int)
@@ -187,7 +252,7 @@ def step_omega_to_dty(si, sj, omega, y0, ystep):
 
 def step_omega_to_dtyi(si, sj, omega, y0, ystep):
     """Convert step value (si, sj) to (x, y)
-    Determine ccorresponding dty values from (x, y) given omega
+    Determine corresponding dty values from (x, y) given omega
     Compute dtyi using dty_to_dtyi then return"""
     x, y = step_to_sample(si, sj, ystep)
     dty = x_y_y0_omega_to_dty(omega, x, y, y0)
@@ -197,7 +262,7 @@ def step_omega_to_dtyi(si, sj, omega, y0, ystep):
 
 def recon_omega_to_dty(ri, rj, omega, y0, recon_shape, ystep):
     """Convert recon value (ri, rj) to (x, y)
-    Determine ccorresponding dty values from (x, y) given omega"""
+    Determine corresponding dty values from (x, y) given omega"""
     x, y = recon_to_sample(ri, rj, recon_shape, ystep)
     dty = x_y_y0_omega_to_dty(omega, x, y, y0)
     return dty
@@ -205,7 +270,7 @@ def recon_omega_to_dty(ri, rj, omega, y0, recon_shape, ystep):
 
 def recon_omega_to_dtyi(ri, rj, omega, y0, recon_shape, ystep):
     """Convert recon value (ri, rj) to (x, y)
-    Determine ccorresponding dty values from (x, y) given omega
+    Determine corresponding dty values from (x, y) given omega
     Compute dtyi using dty_to_dtyi then return"""
     x, y = recon_to_sample(ri, rj, recon_shape, ystep)
     dty = x_y_y0_omega_to_dty(omega, x, y, y0)
@@ -215,7 +280,7 @@ def recon_omega_to_dtyi(ri, rj, omega, y0, recon_shape, ystep):
 
 def dtyimask_from_step(si, sj, omega, dtyi, y0, ystep):
     """Convert step value (si, sj) to (x, y)
-    Determine ccorresponding dty values from (x, y) given omega
+    Determine corresponding dty values from (x, y) given omega
     Compute dtyi_calc using dty_to_dtyi
     Compare dtyi_calc to supplied dtyi and produce a mask"""
     dtyi_calc = step_omega_to_dtyi(si, sj, omega, y0, ystep)
@@ -224,7 +289,7 @@ def dtyimask_from_step(si, sj, omega, dtyi, y0, ystep):
 
 def dtyimask_from_sincos(si, sj, sinomega, cosomega, dtyi, y0, ystep):
     """Convert step value (si, sj) to (x, y)
-    Determine ccorresponding dty values from (x, y) given omega
+    Determine corresponding dty values from (x, y) given omega
     Compute dtyi_calc using dty_to_dtyi
     Compare dtyi_calc to supplied dtyi and produce a mask"""
     # Old code

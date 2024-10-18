@@ -287,6 +287,18 @@ def indexer_from_colfile(colfile, **kwds):
     return ind
 
 
+def indexer_from_colfile_and_ucell(colfile, ucell, **kwds):
+    """Force a specific unitcell to be used"""
+    w = float(colfile.parameters.get("wavelength"))
+    gv = np.array((colfile.gx, colfile.gy, colfile.gz), float)
+    kwds.update({"unitcell": ucell, "wavelength": w, "gv": gv.T})
+    ind = indexer(**kwds)
+    if "omega" in colfile.titles:
+        ind.omega_fullrange = find_omega_ranges(colfile.omega)
+    ind.colfile = colfile
+    return ind
+
+
 class indexer:
     """
     A class for searching for orientation matrices
@@ -1303,6 +1315,7 @@ def do_index(
     max_grains=1000,
     forgen=(),
     foridx=(),
+    unitcell=None
 ):
     """
     Does indexing from a columnfile (cf)
@@ -1332,7 +1345,10 @@ def do_index(
     loglevel = 3
 
     # Figure out the peaks to use from foridx:
-    indexer = indexer_from_colfile(cf)
+    if unitcell is not None:
+        indexer = indexer_from_colfile_and_ucell(cf, ucell=unitcell)
+    else:
+        indexer = indexer_from_colfile(cf)
     indexer.ds_tol = dstol
     indexer.assigntorings()
     # Only use the peaks in foridx:
@@ -1390,6 +1406,17 @@ def do_index(
         cImageD11.cimaged11_omp_set_num_threads(threadb4)
 
     grains = [grain(ubi) for ubi in indexer.ubis]
-    print("Found {} grains".format(len(grains)))
+    # if we supplied a unitcell, we probably want that as the reference for the grain
+    if unitcell is not None:
+        for g in grains:
+            g.ref_unitcell = unitcell
+
+    # set names for the grains
+    for ginc, g in enumerate(grains):
+        # try to make a name that includes the phase name
+        try:
+            g.name = g.ref_unitcell.name + ':' + str(ginc)
+        except (NameError, KeyError, AttributeError) as e:
+            g.name = str(ginc)
 
     return grains, indexer

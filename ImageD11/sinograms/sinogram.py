@@ -96,6 +96,9 @@ class GrainSinogram:
 
         # Make a spatially corrected columnfile from the filtered peaks table
         flt = self.ds.get_colfile_from_peaks_dict(peaks_dict=p2d)
+        # Make sure the columnfile has the correct geometry and phase
+        flt.parameters = cf_4d.parameters
+        flt.updateGeometry()
 
         # Filter the columnfile by hkl tol
         hkl_real = np.dot(self.grain.ubi, (flt.gx, flt.gy, flt.gz))  # calculate hkl of all assigned peaks
@@ -106,10 +109,17 @@ class GrainSinogram:
 
         self.cf_for_sino = flt
 
-    def build_sinogram(self):
+    def build_sinogram(self, columns=('omega',)):
         """
         Computes sinogram for this grain using all peaks in self.cf_for_sino
+
+        columns = list of columns to produce sinograms of intensity*value
+                for example: "ds", "eta", "omega", etc
         """
+        for a in columns:
+            assert a in self.cf_for_sino.titles
+        assert 'omega' in columns
+
         NY = len(self.ds.ybincens)  # number of y translations
         iy = np.round(
             (self.cf_for_sino.dty - self.ds.ybincens[0]) / (self.ds.ybincens[1] - self.ds.ybincens[0])).astype(
@@ -132,26 +142,46 @@ class GrainSinogram:
         pkrow = np.cumsum(pkmsk.ravel()).reshape(pkmsk.shape) - 1  #
         # counting where we hit an HKL position with a found peak
         # e.g (-10, -9, -10) didn't get hit, but the next one did, so increment
-
+        #
+        # found peak indexes into the pkmsk array
+        pkhkle = np.arange( np.prod( pkmsk.shape ), dtype=int )[ pkmsk.flat == 1 ]
+        # hkl indices (transpose for 3,N versus N,3)
+        pkindices = np.array( np.unravel_index(pkhkle, pkmsk.shape) )
+        pkindices[:3] += hklmin[:,np.newaxis]
         npks = pkmsk.sum()
         destRow = pkrow[dh[0], dh[1], dh[2], de]
         sino = np.zeros((npks, NY), 'f')
         hits = np.zeros((npks, NY), 'f')
-        angs = np.zeros((npks, NY), 'f')
         adr = destRow * NY + iy
         # Just accumulate
         sig = self.cf_for_sino.sum_intensity
         ImageD11.cImageD11.put_incr64(sino, adr, sig)
         ImageD11.cImageD11.put_incr64(hits, adr, np.ones(len(de), dtype='f'))
-        ImageD11.cImageD11.put_incr64(angs, adr, self.cf_for_sino.omega)
-
-        sinoangles = angs.sum(axis=1) / hits.sum(axis=1)
+        # intensity weighted sums
+        angs = {}
+        for name in columns:
+            if name == 'sum_intensity':
+                continue
+            angs[name] = np.zeros((npks, NY), 'f')
+            ImageD11.cImageD11.put_incr64(angs[name], adr, self.cf_for_sino[name] * sig )
+        sinoangles = angs['omega'] .sum(axis=1) / sino.sum(axis=1)
         # Normalise:
-        self.sino = (sino.T / sino.max(axis=1)).T
+        self.proj_scale = sino.max(axis=1)
+        self.sino = sino / self.proj_scale[:, np.newaxis]
         # Sort (cosmetic):
         order = np.lexsort((np.arange(npks), sinoangles))
         self.sinoangles = sinoangles[order]
         self.ssino = self.sino[order].T
+        self.proj_scale = self.proj_scale[order]
+        if len(columns)>1:
+            self.angle_wt_sinos = { name : angs[name][order].T
+                                    for name in columns
+                                    if name != 'sum_intensity'
+                                   }
+            if 'sum_intensity' in columns:
+                self.angle_wt_sinos['sum_intensity'] = sino[order].T
+        self.hits = hits
+        self.hkle = pkindices[:, order]  # dims are [ (h,k,l,sign(eta)) , nprojections ]
 
     def update_lab_position_from_peaks(self, cf_4d, grain_label):
         """Updates translation of self.grain using peaks in assigned 4D colfile.
@@ -212,32 +242,59 @@ class GrainSinogram:
         if y0 is not None:
             self.recon_y0 = y0
 
-    def recon(self, method="iradon", workers=1, **extra_args):
-        """Performs reconstruction given reconstruction method"""
+    def recon(self,
+              method="iradon",
+              workers=1,
+              projections = None,
+              **extra_args):
+        """Performs reconstruction given reconstruction method
+
+        method = "iradon", "mlem", "astra"
+        workers = threads to use - passed to the method
+
+        projections = which projections to use for reconstruction using a subset of data (twins)
+                iradon( self.sino[ :, projections ], theta = self.sinoangles[ projections ], ... )
+                effectively a sinogram mask - perhaps this should move to iradon code.
+
+        extra_args = passed to the projection function
+
+           iradon -> ImageD11.sinograms.roi_iradon.run_iradon
+           { pad=20, shift=0, workers=1, mask=None,
+                      apply_halfmask=False,
+                      mask_central_zingers=False,
+                      central_mask_radius=25,
+                      filter_name='hamming'}
+           mlem : ImageD11.sinograms.roi_iradon.run_mlem
+              { mask=None, pad=20, shift=0, workers=1, niter=20, apply_halfmask=False,
+             mask_central_zingers=False, central_mask_radius=25 }
+           astra : run_astra in this file
+               { shift=0, pad=0, mask=None, niter=100, astra_method='SIRT_CUDA', workers=None }
+        """
         if method not in ["iradon", "mlem", "astra"]:
             raise ValueError("Unsupported method!")
         if self.ssino is None or self.sinoangles is None:
             raise ValueError("Sorted sino or sinoangles are missing/have not been computed, unable to reconstruct.")
-
-        sino = self.ssino
-        angles = self.sinoangles
-
+        if projections is None:
+            sino = self.ssino
+            angles = self.sinoangles
+        else:
+            sino = self.ssino[:, projections]
+            angles = self.sinoangles[ projections ]
+            print("Using subset",sino.shape,"from", self.ssino.shape)
         if method == "iradon":
             recon_function = ImageD11.sinograms.roi_iradon.run_iradon
         elif method == "mlem":
             # MLEM has niter as an extra argument
+            recon_function = ImageD11.sinograms.roi_iradon.run_mlem
             # Overwrite the default argument if self.recon_niter is set
+            if self.recon_niter is not None and "niter" not in extra_args:
+                extra_args[ "niter" ] = self.recon_niter
             # TODO: We should think about default reconstruction arguments in more detail
             # At the moment, we could pass None for pad or shift etc to recon_function if they are not manually set, which seems dangerous
             # Do we check for None at the start of this function?
             # Or do we initialise them to sensible default values inside __init__?
-            if self.recon_niter is not None:
-                recon_function = partial(ImageD11.sinograms.roi_iradon.run_mlem, niter=self.recon_niter)
-            else:
-                recon_function = ImageD11.sinograms.roi_iradon.run_mlem
         elif method == "astra":
             recon_function = run_astra
-
         recon = recon_function(sino=sino,
                                angles=angles,
                                pad=self.recon_pad,
@@ -247,6 +304,7 @@ class GrainSinogram:
                                **extra_args)
 
         self.recons[method] = recon
+        return recon
 
     def get_shape_mask(self, method="iradon", cutoff=None):
         """Gets a boolean mask representing the grain shape from the grain reconstruction.
@@ -342,8 +400,10 @@ def run_astra(sino, angles, shift=0, pad=0, mask=None, niter=100, astra_method='
     allowed_methods = ['BP', 'SIRT', 'BP_CUDA', 'FBP_CUDA', 'SIRT_CUDA', 'SART_CUDA', 'CGLS_CUDA', 'EM_CUDA']
     if astra_method not in allowed_methods:
         raise ValueError("Unsupported method!")
+    manual_mask = None
     if astra_method == 'EM_CUDA' and mask is not None:
-        print("Can't use mask with EM_CUDA method!")
+        # print("Can't use mask with EM_CUDA method!")
+        manual_mask = mask.copy()
         mask = None
     
     vol_geom = astra.create_vol_geom((sino.shape[0]+pad, sino.shape[0]+pad))
@@ -365,8 +425,9 @@ def run_astra(sino, angles, shift=0, pad=0, mask=None, niter=100, astra_method='
     cfg['ProjectionDataId'] = proj_data_id
     cfg['ReconstructionDataId'] = rec_id
     cfg['option'] = {}
-    cfg['option']['MinConstraint'] = 0
-    cfg['option']['MaxConstraint'] = 1
+    if astra_method != 'EM_CUDA':
+        cfg['option']['MinConstraint'] = 0
+        cfg['option']['MaxConstraint'] = 1
     
     if mask is not None:
         mask_id = astra.data2d.create('-vol', vol_geom, mask)
@@ -384,29 +445,33 @@ def run_astra(sino, angles, shift=0, pad=0, mask=None, niter=100, astra_method='
     
     if mask is not None:
         astra.data2d.delete(mask_id)
+
+    if astra_method == 'EM_CUDA' and manual_mask is not None:
+        # manually mask
+        recon = np.where(manual_mask, recon, 0.0)
     
-    return recon    
+    return recon
     
 
-def write_h5(filename, list_of_sinos, write_grains_too=True):
+def write_h5(filename, list_of_sinos, overwrite_grains=False, group_name='grains'):
     """Write list of GrainSinogram objects to H5Py file
-       If write_grains_too is True, will also write self.grain to the same file"""
+       If overwrite_grains is True, will replace grains in group_name"""
     with h5py.File(filename, "a") as hout:
-        grains_group = hout.require_group('grains')
+        grains_group = hout.require_group(group_name)
 
         for gsinc, gs in enumerate(list_of_sinos):
             group_name = str(gsinc)
             gs.to_h5py_group(parent_group=grains_group, group_name=group_name)
-            if write_grains_too:
+            if overwrite_grains:
                 gs.grain.to_h5py_group(parent_group=grains_group, group_name=group_name)
 
 
-def read_h5(filename, ds):
+def read_h5(filename, ds, group_name='grains'):
     """Read list of GrainSinogram objects from H5Py file
        Will also create self.grain objects from the H5Py file
        Because GrainSinogram objects can't exist without corresponding grain objects"""
     with h5py.File(filename, "r") as hin:
-        grains_group = hin['grains']
+        grains_group = hin[group_name]
         gs_objects = []
 
         # take all the keys in the grains group, sort them by integer value, iterate
