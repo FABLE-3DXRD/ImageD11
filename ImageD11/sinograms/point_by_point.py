@@ -28,8 +28,8 @@ import numba
 
 # ignore Numba dot product performance warnings?
 import warnings
-warnings.simplefilter('ignore', category=numba.core.errors.NumbaPerformanceWarning)
 
+warnings.simplefilter('ignore', category=numba.core.errors.NumbaPerformanceWarning)
 
 import pprint
 
@@ -79,7 +79,6 @@ def hkluniq(ubi, gx, gy, gz, eta, m, tol, hmax):
         if hcount.flat[i] > 0:
             ucount += 1
     return tcount, ucount
-
 
 # stuff we need to compute g-vectors
 # from ImageD11.transform
@@ -1047,7 +1046,7 @@ class PBPRefine:
 
         if guess_speed:
             guess_npks = min(guess_npks, self.icolf.nrows)
-            print('Running test function twice for the first',guess_npks, 'peaks to guess speed...')
+            print('Running test function twice for the first', guess_npks, 'peaks to guess speed...')
             print('This is because we get speed advantages with peaks on consecutive frames')
 
             idx = np.arange(guess_npks)
@@ -1146,24 +1145,31 @@ class PBPRefine:
             numba.set_num_threads(nthreads)
             print('Launching Numba parallel refinement on', nthreads, 'threads')
 
-            final_ubis, final_eps, final_npks, final_nuniq = refine_map(points_recon_space, all_pbpmap_ubis, ri_col, rj_col,
-                                                           self.sx_grid, self.sy_grid, self.mask,
-                                                           self.icolf.sc, self.icolf.fc, self.icolf.eta,
-                                                           self.icolf.sum_intensity, self.icolf.sinomega,
-                                                           self.icolf.cosomega, self.icolf.omega, self.icolf.dty,
-                                                           self.icolf.dtyi, self.icolf.xpos_refined,
-                                                           self.ystep, self.y0,
-                                                           B0,
-                                                           pars['distance'], pars['y_center'], pars['y_size'],
-                                                           pars['tilt_y'],
-                                                           pars['z_center'], pars['z_size'], pars['tilt_z'],
-                                                           pars['tilt_x'],
-                                                           pars['o11'], pars['o12'], pars['o21'], pars['o22'],
-                                                           pars['t_x'], pars['t_y'], pars['t_z'], pars['wedge'],
-                                                           pars['chi'],
-                                                           pars['wavelength'],
-                                                           tol=self.hkl_tol_refine, merge_tol=self.hkl_tol_refine_merged
-                                                           )
+            final_ubis, final_eps, final_npks, final_nuniq = refine_map(points_recon_space, all_pbpmap_ubis, ri_col,
+                                                                        rj_col,
+                                                                        self.sx_grid, self.sy_grid, self.mask,
+                                                                        self.icolf.sc, self.icolf.fc, self.icolf.eta,
+                                                                        self.icolf.sum_intensity, self.icolf.sinomega,
+                                                                        self.icolf.cosomega, self.icolf.omega,
+                                                                        self.icolf.dty,
+                                                                        self.icolf.dtyi, self.icolf.xpos_refined,
+                                                                        self.ystep, self.y0,
+                                                                        B0,
+                                                                        pars['distance'], pars['y_center'],
+                                                                        pars['y_size'],
+                                                                        pars['tilt_y'],
+                                                                        pars['z_center'], pars['z_size'],
+                                                                        pars['tilt_z'],
+                                                                        pars['tilt_x'],
+                                                                        pars['o11'], pars['o12'], pars['o21'],
+                                                                        pars['o22'],
+                                                                        pars['t_x'], pars['t_y'], pars['t_z'],
+                                                                        pars['wedge'],
+                                                                        pars['chi'],
+                                                                        pars['wavelength'],
+                                                                        tol=self.hkl_tol_refine,
+                                                                        merge_tol=self.hkl_tol_refine_merged
+                                                                        )
             # now we match how the indexer returns dodgy values
             # mask nan 3x3 entires to identity matrix
             final_ubis[:, :, np.isnan(final_ubis[0, 0, :])] = np.eye(3)[..., np.newaxis]
@@ -1474,23 +1480,24 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
                 etasign = np.sign(eta_local[grain_peak_mask])
 
                 # merge the assigned peaks in omega
-                merged_sum_intensity, merged_sc, merged_fc, merged_omega, merged_dty, merged_xpos_refined, merged_eta = merge(hkl,
-                                                                                                                  etasign,
-                                                                                                                  dtyi_local[
-                                                                                                                      grain_peak_mask],
-                                                                                                                  sum_intensity_local[
-                                                                                                                      grain_peak_mask],
-                                                                                                                  sc_local[
-                                                                                                                      grain_peak_mask],
-                                                                                                                  fc_local[
-                                                                                                                      grain_peak_mask],
-                                                                                                                  omega_local[
-                                                                                                                      grain_peak_mask],
-                                                                                                                  dty_local[
-                                                                                                                      grain_peak_mask],
-                                                                                                                  xpos_local[
-                                                                                                                      grain_peak_mask],
-                                                                                                                   eta_local[grain_peak_mask])
+                merged_sum_intensity, merged_sc, merged_fc, merged_omega, merged_dty, merged_xpos_refined, merged_eta = merge(
+                    hkl,
+                    etasign,
+                    dtyi_local[
+                        grain_peak_mask],
+                    sum_intensity_local[
+                        grain_peak_mask],
+                    sc_local[
+                        grain_peak_mask],
+                    fc_local[
+                        grain_peak_mask],
+                    omega_local[
+                        grain_peak_mask],
+                    dty_local[
+                        grain_peak_mask],
+                    xpos_local[
+                        grain_peak_mask],
+                    eta_local[grain_peak_mask])
 
                 merged_sinomega = np.sin(np.radians(merged_omega))
                 merged_cosomega = np.cos(np.radians(merged_omega))
@@ -1551,10 +1558,10 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
                     sumsq = (err ** 2).sum(axis=0)
                     grain_peak_mask = sumsq < tolsq
                     grain_npks = np.sum(grain_peak_mask)
-                    
+
                     # compute the number of unique peaks
                     hkl_uniqcount = hkli[:, grain_peak_mask]
-                    etasign_uniqcount = np.sign(merged_eta_grain[grain_peak_mask])                    
+                    etasign_uniqcount = np.sign(merged_eta_grain[grain_peak_mask])
                     labels = count_unique_peaks_no_dtyi(hkl_uniqcount, etasign_uniqcount)
                     grain_nuniq = np.unique(labels).shape[0]
 
@@ -1608,6 +1615,36 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
     return final_ubis, final_eps, final_npks, final_nuniq
 
 
+def get_local_gv(i, j, ystep, omega, sinomega, cosomega, xl, yl, zl):
+    """now we correct g-vectors for origin point"""
+    # compute the sample coordinates for this pixel
+    sx, sy = step_to_sample(i, j, ystep)
+
+    # geometry.sample_to_lab_sincos
+    # we only care about the x axis
+    x_offset = sx * cosomega - sy * sinomega
+    # compute local offset
+    xl_local = xl - x_offset
+    # stack xl, yl, zl
+    xyz_local = np.column_stack((xl_local, yl, zl))
+    # hold computed g-vectors
+    gv = np.empty((len(cosomega), 3))
+    # compute g-vectors from xyz
+    ImageD11.cImageD11.compute_gv(xyz_local,
+                                  omega,
+                                  parglobal.get('omegasign'),
+                                  parglobal.get('wavelength'),
+                                  parglobal.get('wedge'),
+                                  parglobal.get('chi'),
+                                  np.array((0., 0., 0.)),
+                                  gv)
+
+    gx = gv[:, 0]
+    gy = gv[:, 1]
+    gz = gv[:, 2]
+    return gv, gx, gy, gz
+
+
 def idxpoint(
         i,
         j,
@@ -1616,8 +1653,10 @@ def idxpoint(
         sinomega,
         cosomega,
         dtyi,
-        sc,
-        fc,
+        xl,
+        yl,
+        zl,
+        eta,
         ystep=2.00,
         y0=0.0,
         minpks=1000,
@@ -1657,42 +1696,30 @@ def idxpoint(
     """
     cImageD11.cimaged11_omp_set_num_threads(1)
     # args    isel, omega, dtyi, gx, gy, gz
+    # ring mask
     mr = isel
-    # select the peaks using the geometry module
+    # mask all the peaks by dtyi and omega (for scoring)
     m = dtyimask_from_sincos(i, j, sinomega, cosomega, dtyi, y0, ystep)
-    # now we correct g-vectors for origin point
+    # combine masks together (for indexing)
+    local_mask = m & mr
 
-    # compute the sample coordinates for this pixel
-    sx, sy = step_to_sample(i, j, ystep)
-    dty = dtyi_to_dty(dtyi, ystep)
+    # we need to index using peaks[m & mr]
+    # then score with peaks[m]
+    # so we need to compute g-vectors for peaks[m]
+    # then mask those for indexing via [mr]
 
-    # compute x distance offset for this pixel
-    lx, _ = sample_to_lab_sincos(sx, sy, y0, dty, sinomega, cosomega)
-    parlocal = parglobal.get_parameters().copy()
-    parlocal['distance'] = parlocal['distance'] - lx
+    # compute g-vectors for peaks[m]
+    gv, gx, gy, gz = get_local_gv(i, j, ystep, omega[m], sinomega[m], cosomega[m], xl[m], yl[m], zl[m])
+    eta_local = eta[m]
 
-    # compute tth eta for all peaks with corrected distance at this pixel
-    tth, eta = ImageD11.transform.compute_tth_eta((sc, fc), **parlocal)
-
-    # compute gvectors for all peaks with corrected distance at this pixel
-    gx, gy, gz = ImageD11.transform.compute_g_vectors(tth, eta,
-                                                      omega,
-                                                      parlocal['wavelength'],
-                                                      wedge=parlocal['wedge'],
-                                                      chi=parlocal['chi'])
-
-    # mask g-vectors to this pixel for indexing
-    inds = np.mgrid[0: len(gx)][m & mr]
-    gv = np.empty((len(inds), 3), "d")
-    gv[:, 0] = gx[inds]
-    gv[:, 1] = gy[inds]
-    gv[:, 2] = gz[inds]
+    # mask g-vectors to [m & mr]
+    gv_local_mask = gv[local_mask[m], :]
 
     # index with masked g-vectors
     ind = ImageD11.indexing.indexer(
         unitcell=ucglobal,
         wavelength=parglobal.get("wavelength"),
-        gv=gv,
+        gv=gv_local_mask,
     )
     ind.minpks = minpks
     ind.hkl_tol = hkl_tol
@@ -1718,8 +1745,10 @@ def idxpoint(
     # count the unique peaks per grain
     uniqs = np.empty((len(ind.ubis), 2), int)
     for i, ubi in enumerate(ind.ubis):
-        # pass in the dty mask for peak counting with all peaks
-        uniqs[i] = hkluniq(ubi, gx, gy, gz, eta, m, hkl_tol, hmax)
+        # we are scoring with peaks[m]
+        # here, gx, gy, gz are already computed via peaks[m]
+        # so no mask required (passing ones)
+        uniqs[i] = hkluniq(ubi, gx, gy, gz, eta_local, np.ones_like(eta_local, dtype=bool), hkl_tol, hmax)
     if len(ind.ubis) == 0:
         return [
             (0, 0, np.eye(3)),
@@ -1752,8 +1781,10 @@ def proxy(args):
         sm["sinomega"],
         sm["cosomega"],
         sm["dtyi"],
-        sm["sc"],
-        sm["fc"],
+        sm["xl"],
+        sm["yl"],
+        sm["zl"],
+        sm["eta"],
         **idxopts
     )
     return i, j, g
