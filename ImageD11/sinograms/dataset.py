@@ -246,7 +246,7 @@ class DataSet:
         except:
             logging.info("nnz not available. Segmentation done?")
 
-    def import_from_sparse(self, hname, scans=None):
+    def import_from_sparse(self, hname, scans=None, shape=None):
         """
         hname = hdf5 file containing sparse pixels (and motors)
         dataset = a dataset instance to import into
@@ -260,12 +260,26 @@ class DataSet:
                 scans = list(hin["/"])
                 order = np.argsort([float(v) for v in scans if v.endswith(".1")])
                 self.scans = [scans[i] for i in order]
+        else:
+            self.scans = scans
         self.masterfile = hname  # hacky, motors come from the sparsefile
         self.import_nnz_from_sparse()  # must exist
         self.import_motors_from_master()
-        self.shape = self.nnz.shape
+        # self.guess_shape() # fails with sparse
+        if shape is not None:
+            self.shape = shape
+            self.nnz = np.array(self.nnz).reshape(self.shape)
+        else:
+            self.shape = self.nnz.shape
         self.omega = np.array(self.omega).reshape(self.shape)
         self.dty = np.array(self.dty).reshape(self.shape)
+        if len(scans) == 1 and self.shape[0]>1:
+            file_nums = np.arange(self.shape[0]*self.shape[1]).reshape(self.shape)
+            self.scans = [
+                "%s::[%d:%d]" % (self.scans[0], row[0], row[-1] + 1)
+                for row in file_nums
+            ]
+
         self.guessbins()
 
     def import_scans(self, scans=None, hname=None):
@@ -525,7 +539,7 @@ class DataSet:
                     lo, hi = [int(v) for v in slc[1:-1].split(":")]
                     mon = hin[snum]["measurement"][name][lo:hi]
                 else:
-                    mon = hin[snum]["measurement"][name][:]
+                    mon = hin[scan]["measurement"][name][:]
                 monitor.append(mon)
         self.monitor = np.concatenate(monitor).reshape(self.shape)
         return self.monitor
