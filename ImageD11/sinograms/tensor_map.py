@@ -4,6 +4,7 @@ import numba
 import h5py
 import numpy as np
 
+from ImageD11.sinograms.geometry import recon_to_step
 from ImageD11.sinograms.sinogram import save_array
 from ImageD11 import unitcell
 
@@ -160,6 +161,100 @@ def ubi_and_unitcell_to_eps_sample(ubi, dzero_cell, res):
         V = np.dot(w, np.dot(np.diag(sing), w.T))
         em = V - np.eye(3)
         res[...] = em
+
+
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:, :])], '(n,n),(p)->(n,n)', nopython=True)
+def ubi_and_unitcell_to_eps_crystal(ubi, dzero_cell, res):
+    if np.isnan(ubi[0, 0]):
+        res[...] = np.nan
+    elif np.isnan(dzero_cell[0]):
+        res[...] = np.nan
+    else:
+        a, b, c = dzero_cell[:3]
+        ralpha, rbeta, rgamma = np.radians(dzero_cell[3:])  # radians
+        ca = np.cos(ralpha)
+        cb = np.cos(rbeta)
+        cg = np.cos(rgamma)
+        g = np.full((3, 3), np.nan, float)
+        g[0, 0] = a * a
+        g[0, 1] = a * b * cg
+        g[0, 2] = a * c * cb
+        g[1, 0] = a * b * cg
+        g[1, 1] = b * b
+        g[1, 2] = b * c * ca
+        g[2, 0] = a * c * cb
+        g[2, 1] = b * c * ca
+        g[2, 2] = c * c
+        gi = np.linalg.inv(g)
+        astar, bstar, cstar = np.sqrt(np.diag(gi))
+        betas = np.degrees(np.arccos(gi[0, 2] / astar / cstar))
+        gammas = np.degrees(np.arccos(gi[0, 1] / astar / bstar))
+
+        B = np.full((3, 3), np.nan, float)
+        B[0, 0] = astar
+        B[0, 1] = bstar * np.cos(np.radians(gammas))
+        B[0, 2] = cstar * np.cos(np.radians(betas))
+        B[1, 0] = 0.0
+        B[1, 1] = bstar * np.sin(np.radians(gammas))
+        B[1, 2] = -cstar * np.sin(np.radians(betas)) * ca
+        B[2, 0] = 0.0
+        B[2, 1] = 0.0
+        B[2, 2] = 1.0 / c
+
+        F = np.dot(ubi.T, B.T)
+        w, sing, vh = np.linalg.svd(F)
+        S = np.dot(vh.T, np.dot(np.diag(sing), vh))
+        em = S - np.eye(3)
+        res[...] = em
+
+
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:, :], numba.float64[:], numba.float64[:, :])],
+                   '(n,n),(k,k),()->(n,n)', nopython=True)
+def strain_to_stress(strain, C, phase_mask, res):
+    mvvec = np.zeros(6, dtype=np.float64)
+    mvvec[0] = strain[0, 0]
+    mvvec[1] = strain[1, 1]
+    mvvec[2] = strain[2, 2]
+    mvvec[3] = np.sqrt(2.) * strain[1, 2]
+    mvvec[4] = np.sqrt(2.) * strain[0, 2]
+    mvvec[5] = np.sqrt(2.) * strain[0, 1]
+
+    stress_MV = np.dot(C, mvvec)
+
+    symm = np.full((3, 3), np.nan, dtype=np.float64)
+    if phase_mask:
+        symm[0, 0] = stress_MV[0]
+        symm[1, 1] = stress_MV[1]
+        symm[2, 2] = stress_MV[2]
+        symm[1, 2] = stress_MV[3] * (1. / np.sqrt(2.))
+        symm[0, 2] = stress_MV[4] * (1. / np.sqrt(2.))
+        symm[0, 1] = stress_MV[5] * (1. / np.sqrt(2.))
+        symm[2, 1] = stress_MV[3] * (1. / np.sqrt(2.))
+        symm[2, 0] = stress_MV[4] * (1. / np.sqrt(2.))
+        symm[1, 0] = stress_MV[5] * (1. / np.sqrt(2.))
+
+    res[...] = symm
+
+
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:])], '(n,n)->()', nopython=True)
+def sig_to_hydro(sig, res):
+    """Get hydrostatic stress scalar from stress tensor (frame invariant)"""
+    res[...] = np.sum(np.diag(sig)) / 3
+
+
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:])], '(n,n)->()', nopython=True)
+def sig_to_vm(sig, res):
+    """Get von-Mises stress scalar from stress tensor"""
+    sig11 = sig[0, 0]
+    sig22 = sig[1, 1]
+    sig33 = sig[2, 2]
+    sig12 = sig[0, 1]
+    sig23 = sig[1, 2]
+    sig31 = sig[2, 0]
+    vm = np.sqrt(((sig11 - sig22) ** 2 + (sig22 - sig33) ** 2 + (sig33 - sig11) ** 2 + 6 * (
+                sig12 ** 2 + sig23 ** 2 + sig31 ** 2)) / 2.)
+    res[...] = vm
+
 
 # @numba.njit
 # def UB_map_to_U_B_map(UB_map):
@@ -531,7 +626,7 @@ class TensorMap:
 
     @property
     def eps_sample(self):
-        """The per-voxel strain, relative to the B0 of the unitcell of the reference phase for that voxel."""
+        """The per-voxel strain in sample frame, relative to the B0 of the unitcell of the reference phase for that voxel."""
         if 'eps_sample' in self.keys():
             return self.maps['eps_sample']
         else:
@@ -539,6 +634,49 @@ class TensorMap:
             eps_sample_map = ubi_and_unitcell_to_eps_sample(self.UBI, self.dzero_unitcell)
             self.add_map('eps_sample', eps_sample_map)
             return eps_sample_map
+
+    @property
+    def eps_crystal(self):
+        """The per-voxel strain in crystal frame, relative to the B0 of the unitcell of the reference phase for that
+        voxel."""
+        if 'eps_crystal' in self.keys():
+            return self.maps['eps_crystal']
+        else:
+            # calculate it
+            eps_crystal_map = ubi_and_unitcell_to_eps_crystal(self.UBI, self.dzero_unitcell)
+            self.add_map('eps_crystal', eps_crystal_map)
+            return eps_crystal_map
+
+    # TODO - make multiphase - store C map for each voxel
+    def get_stress(self, C, phase_id):
+        """Fill in sig_crystal and sig_sample using 6x6 stiffness tensor C"""
+        print('Warning! This is currently single-phase only - calling this more than once with different phases will '
+              'overwrite the previous result')
+        phase_mask = self.phase_ids == phase_id
+        sig_crystal_map = strain_to_stress(self.eps_crystal, C, phase_mask)
+        sig_sample_map = strain_to_stress(self.eps_sample, C, phase_mask)
+        self.add_map('sig_crystal', sig_crystal_map)
+        self.add_map('sig_sample', sig_sample_map)
+
+    @property
+    def sig_hydro(self):
+        """The per-voxel hydrostatic stress (frame invariant)"""
+        if 'sig_hydro' in self.keys():
+            return self.maps['sig_hydro']
+        else:
+            sig_hydro_map = sig_to_hydro(self.sig_crystal)
+            self.add_map('sig_hydro', sig_hydro_map)
+            return sig_hydro_map
+
+    @property
+    def sig_mises(self):
+        """The per-voxel von-Mises stress"""
+        if 'sig_mises' in self.keys():
+            return self.maps['sig_mises']
+        else:
+            sig_mises_map = sig_to_vm(self.sig_sample)
+            self.add_map('sig_mises', sig_mises_map)
+            return sig_mises_map
 
     def get_meta_orix_orien(self, phase_id=0):
         """Get a meta orix orientation for all voxels of a given phase ID"""
@@ -755,9 +893,9 @@ class TensorMap:
 
         for phase in self.phases.values():
             phase_string = "%f;%f;%f\t%f;%f;%f\t%s\t11\t%s" % (
-            phase.lattice_parameters[0], phase.lattice_parameters[1], phase.lattice_parameters[2],
-            phase.lattice_parameters[3], phase.lattice_parameters[4], phase.lattice_parameters[5], phase.name,
-            phase.symmetry)
+                phase.lattice_parameters[0], phase.lattice_parameters[1], phase.lattice_parameters[2],
+                phase.lattice_parameters[3], phase.lattice_parameters[4], phase.lattice_parameters[5], phase.name,
+                phase.symmetry)
             header_lines.extend([phase_string])
 
         header_lines.extend(["Phase\tX\tY\tBands\tError\tEuler1\tEuler2\tEuler3\tMAD\tBC\tBS"])
@@ -778,6 +916,26 @@ class TensorMap:
         print("Click 'Next >>' then 'script (m-file)' for the 'Import to', then 'Finish'")
         print("Click 'Run' at the top, save the import script somewhere, then it should run")
         print("Your EBSD should now be imported into MTEX. You can try to plot it with 'plot(ebsd)'")
+
+    @staticmethod
+    def map_order_to_recon_order(map_arr, z_layer=0):
+        """Transform a 2D slice of a TensorMap to reconstruction space. The opposite of recon_order_to_map_order"""
+        # we are currently in (Z, Y, X, ...)
+        nz, ny, nx = map_arr.shape[:3]
+        # get the 2D slice
+        slice_2D = map_arr[z_layer, ...].copy().squeeze()
+
+        # now we are (Y, X, ...)
+        # swap X and Y
+        slice_2D = np.swapaxes(slice_2D, 0, 1)
+
+        # now we are (X, Y, ...)
+        # flip the second axis
+        slice_2D = np.flip(slice_2D, 1)
+
+        assert slice_2D.shape[:2] == (nx, ny)
+        # now we are (X, -Y, ...)
+        return slice_2D
 
     @staticmethod
     def recon_order_to_map_order(recon_arr):
@@ -810,6 +968,13 @@ class TensorMap:
         """From a 3D array index (mi, mj, mk) and the Y shape of the map,
         determine the corresponding position in reconstruction space"""
         return (mk, yshape - mj - 1)
+
+    @staticmethod
+    def recon_index_to_map(ri, rj, yshape):
+        """From a 2D reconstruction space index (ri, rj) and the Y shape of the map, determine
+        the corresponding position in TensorMap space"""
+
+        return (0, yshape - 1 - rj, ri)
 
     @classmethod
     def from_ubis(cls, ubi_array):
@@ -851,17 +1016,70 @@ class TensorMap:
 
         return tensor_map
 
+    def to_pbpmap(self, z_layer=0, default_npks=20, default_nuniq=20):
+        """Get a PBPMap object from this TensorMap object (good for refining strains)"""
+        ubi_pbpmap_order = self.map_order_to_recon_order(self.UBI, z_layer=z_layer)
+        # this is in (ri, rj, 3, 3)
+
+        # make the columns to hold the (si, sj) indices for the pbpmap
+        si_col = np.zeros(ubi_pbpmap_order.shape[0] * ubi_pbpmap_order.shape[1])
+        sj_col = np.zeros(ubi_pbpmap_order.shape[0] * ubi_pbpmap_order.shape[1])
+        # make some columns to hold npks and nuniq
+        npks_col = np.zeros(ubi_pbpmap_order.shape[0] * ubi_pbpmap_order.shape[1])
+        nuniq_col = np.zeros(ubi_pbpmap_order.shape[0] * ubi_pbpmap_order.shape[1])
+        # we need to make some UBI columns accordingly
+        # first we transpose to (3, 3, ri, rj)
+        # then when we reshape, we are doing (:2.ravel(), 2:4.ravel()) and structure is preserved
+        ubi_cols = ubi_pbpmap_order.transpose(2, 3, 0, 1).reshape(9, len(si_col))
+        row_idx = 0
+        for ri in np.arange(ubi_pbpmap_order.shape[0]):
+            for rj in np.arange(ubi_pbpmap_order.shape[1]):
+                # get the si, sj values
+                si, sj = recon_to_step(ri, rj, ubi_pbpmap_order.shape[:2])
+                # get the mi, mj, mk values
+                mi, mj, mk = self.recon_index_to_map(ri, rj, ubi_pbpmap_order.shape[1])
+                si_col[row_idx] = si
+                sj_col[row_idx] = sj
+                # do we have anything at this reconstruction point?
+                # otherwise we have nothing
+                if self.phase_ids[mi, mj, mk] > -1:
+                    npks_col[row_idx] = default_npks
+                    nuniq_col[row_idx] = default_nuniq
+                row_idx += 1
+
+        # unpack ubi columns
+        ubi00, ubi01, ubi02, ubi10, ubi11, ubi12, ubi20, ubi21, ubi22 = ubi_cols
+
+        from ImageD11.sinograms.point_by_point import PBPMap
+        output_map = PBPMap(new=True)
+        output_map.nrows = ubi_pbpmap_order.shape[0] * ubi_pbpmap_order.shape[1]
+        output_map.addcolumn(si_col, 'i')
+        output_map.addcolumn(sj_col, 'j')
+        output_map.addcolumn(npks_col, 'ntotal')
+        output_map.addcolumn(nuniq_col, 'nuniq')
+        output_map.addcolumn(ubi00, 'ubi00')
+        output_map.addcolumn(ubi01, 'ubi01')
+        output_map.addcolumn(ubi02, 'ubi02')
+        output_map.addcolumn(ubi10, 'ubi10')
+        output_map.addcolumn(ubi11, 'ubi11')
+        output_map.addcolumn(ubi12, 'ubi12')
+        output_map.addcolumn(ubi20, 'ubi20')
+        output_map.addcolumn(ubi21, 'ubi21')
+        output_map.addcolumn(ubi22, 'ubi22')
+
+        return output_map
+
     @classmethod
     def from_pbpmap(cls, pbpmap, steps=None, phases=None):
         """Create TensorMap from a pbpmap object"""
 
         maps = dict()
 
-        # see if we have a ubibest to take
-        if hasattr(pbpmap, 'ubibest'):
-            ubi_map = pbpmap.ubibest
-        else:
-            ubi_map = pbpmap.ubi
+        # see if we have a best UBI map to take
+        if not hasattr(pbpmap, 'best_ubi'):
+            raise ValueError('PBPMap has no best UBI selection to take from!')
+
+        ubi_map = pbpmap.best_ubi
 
         # create a mask from ubi_map
         ubi_mask = np.where(np.isnan(ubi_map[:, :, 0, 0]), 0, 1).astype(bool)
@@ -871,11 +1089,11 @@ class TensorMap:
 
         # add npks to the dict
         if hasattr(pbpmap, 'npks'):
-            maps['npks'] = cls.recon_order_to_map_order(np.where(ubi_mask, pbpmap.npks, 0))
+            maps['npks'] = cls.recon_order_to_map_order(np.where(ubi_mask, pbpmap.best_npks, 0))
 
         # add nuniq to the dict
         if hasattr(pbpmap, 'nuniq'):
-            maps['nuniq'] = cls.recon_order_to_map_order(np.where(ubi_mask, pbpmap.nuniq, 0))
+            maps['nuniq'] = cls.recon_order_to_map_order(np.where(ubi_mask, pbpmap.best_nuniq, 0))
 
         tensor_map = cls(maps=maps, steps=steps, phases=phases)
 
