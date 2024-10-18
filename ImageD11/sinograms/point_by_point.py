@@ -26,7 +26,7 @@ import subprocess
 import h5py
 import numba
 import pprint
-from matplotlib import pyplot as plt
+
 from skimage.filters import threshold_otsu
 from skimage.morphology import convex_hull_image
 
@@ -573,6 +573,7 @@ class PBPMap(columnfile):
         return self.ubi
 
     def plot_nuniq_hist(self):
+        from matplotlib import pyplot as plt
         fig, ax = plt.subplots()
         ax.hist(self.nuniq, bins=np.arange(0.5, np.max(self.nuniq) + 0.51, 1))
         ax.set_xlabel('Unique spots per pixel')
@@ -593,6 +594,7 @@ class PBPMap(columnfile):
             self.best_eps = best_eps
 
     def plot_best(self, minpeaks=6):
+        from matplotlib import pyplot as plt
         fig, axs = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(10, 5), constrained_layout=True)
         r = np.where(self.best_nuniq > minpeaks, self.best_nuniq, 0)
         axs[0].imshow(self.best_nuniq, origin="lower")
@@ -873,6 +875,7 @@ class PBPRefine:
         whole_sample_mask = chull
 
         if doplot:
+            from matplotlib import pyplot as plt
             fig, axs = plt.subplots(1, 3, sharex=True, sharey=True, constrained_layout=True)
             axs[0].imshow(recon_man_mask, vmin=0, origin="lower")
             axs[1].imshow(binary, origin="lower")
