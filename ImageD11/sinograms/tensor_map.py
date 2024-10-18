@@ -221,7 +221,7 @@ def strain_to_stress(strain, C, phase_mask, res):
 
     stress_MV = np.dot(C, mvvec)
 
-    symm = np.zeros((3, 3), dtype=np.float64)
+    symm = np.full((3, 3), np.nan, dtype=np.float64)
     if phase_mask:
         symm[0, 0] = stress_MV[0]
         symm[1, 1] = stress_MV[1]
