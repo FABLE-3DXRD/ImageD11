@@ -672,7 +672,7 @@ class DataSet:
         cf = colfile_from_dict(peaks_dict)
 
         # Define spatial correction
-        if self.e2dxfile is not None:
+        if hasattr(self.e2dxfile) and (self.e2dxfile is not None):
             cf = correct_cf_with_dxdyfiles(cf, self.e2dxfile, self.e2dyfile)
         else:
             if self.splinefile is not None:
