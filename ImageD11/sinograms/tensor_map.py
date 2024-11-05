@@ -403,17 +403,21 @@ def strain_crystal_to_stress_crystal(strain_crystal, stiffness_tensor, B0, phase
     elif not phase_mask:
         res[...] = np.nan
     else:
-        # rotate the strain tensor from ImageD11 coordinate system to IEEE 1976 coordinate system
-        # determine rotation matrix E
-        C_c = np.linalg.inv(B0).T
-        E = np.column_stack((C_c[:, 0], np.cross(C_c[:, 2], C_c[:, 0]), C_c[:, 2]))
-        # now perform equivalent to E /= np.linalg.norm(E, axis=0)
-        E_div = np.zeros_like(E)
-        for i in range(E_div.shape[0]):
-            E_row = E[i]
-            E_div[i] = E_row / np.sqrt(np.sum(np.power(E_row, 2)))
+        # TODO: The below is still under discussion - issue #194 or PR #345
+        # For most systems, this should be identity (IEEE agrees with ImageD11)
+        strain_crystal_ieee = strain_crystal
 
-        strain_crystal_ieee = E_div.T.dot(strain_crystal).dot(E_div)
+        # # rotate the strain tensor from ImageD11 coordinate system to IEEE 1976 coordinate system
+        # # determine rotation matrix E
+        # C_c = np.linalg.inv(B0).T
+        # E = np.column_stack((C_c[:, 0], np.cross(C_c[:, 2], C_c[:, 0]), C_c[:, 2]))
+        # # now perform equivalent to E /= np.linalg.norm(E, axis=0)
+        # E_div = np.zeros_like(E)
+        # for i in range(E_div.shape[0]):
+        #     E_row = E[i]
+        #     E_div[i] = E_row / np.sqrt(np.sum(np.power(E_row, 2)))
+        #
+        # strain_crystal_ieee = E_div.T.dot(strain_crystal).dot(E_div)
 
         # convert to Voigt notation
         strain_crystal_ieee_voigt = np.zeros(6)
@@ -439,8 +443,11 @@ def strain_crystal_to_stress_crystal(strain_crystal, stiffness_tensor, B0, phase
         stress_crystal_ieee[0, 1] = stress_crystal_ieee_voigt[5]
         stress_crystal_ieee[1, 0] = stress_crystal_ieee_voigt[5]
 
+        # TODO: The below is still under discussion - issue #194 or PR #345
+
         # rotate back to ImageD11 convention
-        stress_crystal = E_div.dot(stress_crystal_ieee).dot(E_div.T)
+        # stress_crystal = E_div.dot(stress_crystal_ieee).dot(E_div.T)
+        stress_crystal = stress_crystal_ieee
 
         res[...] = stress_crystal
 
