@@ -352,29 +352,30 @@ def write_xdmf(h5name, xdmf_filename = None, ctrl = 'recon_mlem', attributes = [
     
     # Write XDMF file
     with open(xdmf_filename, 'wt') as fileID:
-        fileID.write('<?xml version="1.0"?>\n')
-        fileID.write('<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd"[]>\n')
-        fileID.write('<Xdmf xmlns:xi="http://www.w3.org/2003/XInclude" Version="2.2">\n')
-        fileID.write(' <Domain>\n')
-        fileID.write('  <!-- *************** START OF GM3D *************** -->\n')
-        fileID.write('  <Grid Name="GM3D" GridType="Uniform">\n')
-        fileID.write(f'   <Topology TopologyType="3DCoRectMesh" Dimensions="{MeshDimensions[0]} {MeshDimensions[1]} {MeshDimensions[2]}"></Topology>\n')
-        fileID.write('    <Geometry Type="ORIGIN_DXDYDZ">\n')
-        fileID.write('     <!-- Origin  Z, Y, X -->\n')
-        fileID.write('     <DataItem Format="XML" Dimensions="3">0 0 0</DataItem>\n')
-        fileID.write('     <!-- DxDyDz (Spacing/Resolution) Z, Y, X -->\n')
-        fileID.write(f'     <DataItem Format="XML" Dimensions="3">{voxelsize[0]:.6f} {voxelsize[1]:.6f} {voxelsize[2]:.6f}</DataItem>\n')
-        fileID.write('    </Geometry>\n')
-        
-        for attr in attributes:
-            fileID.write(f'    <Attribute Name="{attr}" AttributeType="Scalar" Center="Cell">\n')
-            fileID.write(f'      <DataItem Format="HDF" Dimensions="{ScalarDimensions[0]} {ScalarDimensions[1]} {ScalarDimensions[2]} {ScalarDimensions[3]}" NumberType="Float" Precision="6" >{h5name}:/{attr}</DataItem>\n')
-            fileID.write('    </Attribute>\n')
-        
-        fileID.write('  </Grid>\n')
-        fileID.write('  <!-- *************** END OF GM3D *************** -->\n')
-        fileID.write(' </Domain>\n')
-        fileID.write('</Xdmf>\n')
+    fileID.write('<?xml version="1.0"?>\n')
+    fileID.write('<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd"[]>\n')
+    fileID.write('<Xdmf xmlns:xi="http://www.w3.org/2003/XInclude" Version="2.2">\n')
+    fileID.write(' <Domain>\n')
+    fileID.write('  <!-- *************** START OF GM3D *************** -->\n')
+    fileID.write('  <Grid Name="GM3D" GridType="Uniform">\n')
+    fileID.write('   <Topology TopologyType="3DCoRectMesh" Dimensions="{0} {1} {2}"></Topology>\n'.format(MeshDimensions[0], MeshDimensions[1], MeshDimensions[2]))
+    fileID.write('    <Geometry Type="ORIGIN_DXDYDZ">\n')
+    fileID.write('     <!-- Origin  Z, Y, X -->\n')
+    fileID.write('     <DataItem Format="XML" Dimensions="3">0 0 0</DataItem>\n')
+    fileID.write('     <!-- DxDyDz (Spacing/Resolution) Z, Y, X -->\n')
+    fileID.write('     <DataItem Format="XML" Dimensions="3">{0:.6f} {1:.6f} {2:.6f}</DataItem>\n'.format(voxelsize[0], voxelsize[1], voxelsize[2]))
+    fileID.write('    </Geometry>\n')
+    
+    for attr in attributes:
+        fileID.write('    <Attribute Name="{0}" AttributeType="Scalar" Center="Cell">\n'.format(attr))
+        fileID.write('      <DataItem Format="HDF" Dimensions="{0} {1} {2} {3}" NumberType="Float" Precision="6" >{4}:/{5}</DataItem>\n'.format(ScalarDimensions[0], ScalarDimensions[1], ScalarDimensions[2], ScalarDimensions[3], h5name, attr))
+        fileID.write('    </Attribute>\n')
+    
+    fileID.write('  </Grid>\n')
+    fileID.write('  <!-- *************** END OF GM3D *************** -->\n')
+    fileID.write(' </Domain>\n')
+    fileID.write('</Xdmf>\n')
+
     print('Done writing the xdmf file')
 
     
