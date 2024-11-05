@@ -309,19 +309,19 @@ def get_ds_max(pars):
     Calculate two-theta angle from ds and wavelength according to Bragg's law
 
     Arguments:
-    ds -- inverse of d-spacing for a given hkl family
-    wavelength -- [Angstrom]
+    pars    -- ImageD11 pars object
 
     Returns:
-    two-theta in degrees
-    """
-    Lsam2det, RotDet, dety0, detz0, dety00, detz00, pixelysize, pixelzsize, detysize, detzsize, \
-        BeamStopY, BeamStopZ, S, flip_lr_flag, flip_ud_flag, Energy = convert_pars2parameters(pars)
-    ttheta_max = np.arctan(  ((detysize*pixelysize/2)**2 + (detzsize*pixelzsize/2)**2)**(1/2) / Lsam2det  )   # two-teta maximum [radian]
+    ds_max  -- maximum ds spacing detectable on the detector [Anstrom^-1]
+    """    
+    
+    p = pars_conversion.convert_ImageD11pars2p(pars)
+    ttheta_max = np.arctan(  ((p['detysize']*p['pixelysize']/2)**2 + (p['detzsize']*p['pixelzsize']/2)**2)**(1/2) / p['Lsam2det']  )   # two-teta maximum [radian]
     theta_max = ttheta_max/2.0   # theta [radian]
     wavelength = econst / Energy
-    ds_max = 1.0/(wavelength/(2*np.sin(theta_max)))  # 1/d [Angstron^-1]
+    ds_max = 1.0/(p['wavelength']/(2*np.sin(theta_max)))  # 1/d [Angstron^-1]    
     print('Maximum two-theta angle = {}, ds_max = {} Angstrom^-1'.format(np.rad2deg(ttheta_max), ds_max))
+    
     return ds_max
 
 

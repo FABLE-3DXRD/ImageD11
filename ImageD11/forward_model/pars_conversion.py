@@ -273,11 +273,11 @@ def build_ImageD11par_from_poni(lattice_par, sgno, poni_file, par_path = 'demo.p
     trn = ImageD11.transformer.transformer()
     trn.loadfileparameters(par_path)
     if verify:
-        err = calc_err(trn.pars, poni_path)
+        err = calc_err(trn.pars, poni_file)
     return trn.pars
 
 
-def build_poni_from_ImageD11par(par_file, spatial_file = None, poni_file = 'demo.poni', detector = 'Eiger', verify = True):
+def build_poni_from_ImageD11par(par_file, spatial_file = None, poni_path = 'demo.poni', detector = 'Eiger', verify = True):
     
     """
     convert ImageD11 .par to poni:
@@ -322,7 +322,7 @@ def build_poni_from_ImageD11par(par_file, spatial_file = None, poni_file = 'demo
     current_time = datetime.now()
     formatted_time = current_time.strftime("%a %b %d %H:%M:%S %Y")
     # write a first poni file
-    write_poni(poni_path, formatted_time, spatial_file, distance, poni1, poni2, tilt_x, tilt_y, tilt_z, wavelenth)
+    write_poni(poni_path, formatted_time, spatial_file, distance, poni1, poni2, tilt_x, tilt_y, tilt_z, wavelength)
     
     pyFAI_pars = pyFAI.load(poni_path)
     print(pyFAI_pars)
@@ -332,7 +332,7 @@ def build_poni_from_ImageD11par(par_file, spatial_file = None, poni_file = 'demo
     # minimize the errors of distance, poni1 and poni2
     params0 = [trn.pars['distance'], poni1, poni2]
     print('Initial guess: {}'.format(params0))
-    result = minimize(error_function, x0 = params0, args=(trn.pars, poni_path, formatted_time, spatial_file, tilt_x, tilt_y, tilt_z, wavelenth), method = 'BFGS')
+    result = minimize(error_function, x0 = params0, args=(trn.pars, poni_path, formatted_time, spatial_file, tilt_x, tilt_y, tilt_z, wavelength), method = 'BFGS')
     
 
     print('Initial guess: {}'.format(params0))
@@ -372,36 +372,56 @@ def write_ImageD11pars_from_poni(lattice_par, sgno, poni_results, par_path = 'de
     if detector in ['Eiger', 'eiger']:
         poni_results["o11"] = -poni_results["o11"]
 
-    par_string = f"""cell__a {lattice_par[0]}
-cell__b {lattice_par[1]}
-cell__c {lattice_par[2]}
-cell_alpha {lattice_par[3]}
-cell_beta {lattice_par[4]}
-cell_gamma {lattice_par[5]}
-cell_lattice_[P,A,B,C,I,F,R] {sgno}
+    par_string = """cell__a {0}
+cell__b {1}
+cell__c {2}
+cell_alpha {3}
+cell_beta {4}
+cell_gamma {5}
+cell_lattice_[P,A,B,C,I,F,R] {6}
 chi 0.0
-distance {poni_results["distance"]}
+distance {7}
 fit_tolerance 0.05
 min_bin_prob 1e-05
 no_bins 10000
-o11 {poni_results["o11"]}
-o12 {poni_results["o12"]}
-o21 {poni_results["o21"]}
-o22 {poni_results["o22"]}
+o11 {8}
+o12 {9}
+o21 {10}
+o22 {11}
 omegasign 1.0
 t_x 0
 t_y 0
 t_z 0
-tilt_x {poni_results["tilt_x"]}
-tilt_y {poni_results["tilt_y"]}
-tilt_z {poni_results["tilt_z"]}
-wavelength {poni_results["wavelength"]*10}
+tilt_x {12}
+tilt_y {13}
+tilt_z {14}
+wavelength {15}
 wedge 0.0
 weight_hist_intensities 0
-y_center {poni_results["y_center"]-0.5}
-y_size {poni_results["y_size"]}
-z_center {poni_results["z_center"]-0.5}
-z_size {poni_results["z_size"]}"""
+y_center {16}
+y_size {17}
+z_center {18}
+z_size {19}""".format(
+    lattice_par[0],
+    lattice_par[1],
+    lattice_par[2],
+    lattice_par[3],
+    lattice_par[4],
+    lattice_par[5],
+    sgno,
+    poni_results["distance"],
+    poni_results["o11"],
+    poni_results["o12"],
+    poni_results["o21"],
+    poni_results["o22"],
+    poni_results["tilt_x"],
+    poni_results["tilt_y"],
+    poni_results["tilt_z"],
+    poni_results["wavelength"] * 10,
+    poni_results["y_center"] - 0.5,
+    poni_results["y_size"],
+    poni_results["z_center"] - 0.5,
+    poni_results["z_size"])
 
     # Save it to file
     with open(par_path, "w") as f:
@@ -409,32 +429,42 @@ z_size {poni_results["z_size"]}"""
         print('write par file: {}'.format(par_path))
         
 
-def write_poni(poni_path, formatted_time, spatial_file, distance, poni1, poni2, tilt_x, tilt_y, tilt_z, wavelenth):
-    poni_string = f"""# Nota: C-Order, 1 refers to the Y axis, 2 to the X axis 
-# Calibration done at {formatted_time}
+def write_poni(poni_path, formatted_time, spatial_file, distance, poni1, poni2, tilt_x, tilt_y, tilt_z, wavelength):
+    
+    poni_string = """# Nota: C-Order, 1 refers to the Y axis, 2 to the X axis 
+# Calibration done at {0}
 poni_version: 2
 Detector: NexusDetector
-Detector_config: {{"filename": "{spatial_file}"}}
-Distance: {distance*1e-6}
-Poni1: {poni1}
-Poni2: {poni2}
-Rot1: {-tilt_z}
-Rot2: {tilt_y}
-Rot3: {tilt_x}
-Wavelength: {wavelength*1e-10}"""
+Detector_config: {{"filename": "{1}"}}
+Distance: {2}
+Poni1: {3}
+Poni2: {4}
+Rot1: {5}
+Rot2: {6}
+Rot3: {7}
+Wavelength: {8}""".format(
+    formatted_time,
+    spatial_file,
+    distance * 1e-6,
+    poni1,
+    poni2,
+    -tilt_z,
+    tilt_y,
+    tilt_x,
+    wavelength * 1e-10)
     # Save it to file
     with open(poni_path, "w") as f:
         f.writelines(poni_string)
         print('write poni file: {}'.format(poni_path))
 
 
-def error_function(params, ImageD11_pars, poni_path, formatted_time, spatial_file, tilt_x, tilt_y, tilt_z, wavelenth):
+def error_function(params, ImageD11_pars, poni_path, formatted_time, spatial_file, tilt_x, tilt_y, tilt_z, wavelength):
     """
     calculate errors of distance, poni1 and poni2 between ImageD11_pars and poni
     Arguments:
     params         -- distance, poni1, poni2
     ImageD11_pars  -- ImageD11 parameter object
-    others:        -- poni_path, formatted_time, spatial_file, distance, poni1, poni2, tilt_x, tilt_y, tilt_z, wavelenth
+    others:        -- poni_path, formatted_time, spatial_file, distance, poni1, poni2, tilt_x, tilt_y, tilt_z, wavelength
     
     Returns:
     err  -- sum of squared errors
@@ -447,7 +477,7 @@ def error_function(params, ImageD11_pars, poni_path, formatted_time, spatial_fil
     
     distance, poni1, poni2 = params
     keys = ['distance', 'y_center']
-    write_poni(poni_path, formatted_time, spatial_file, distance, poni1, poni2, tilt_x, tilt_y, tilt_z, wavelenth)
+    write_poni(poni_path, formatted_time, spatial_file, distance, poni1, poni2, tilt_x, tilt_y, tilt_z, wavelength)
     err = calc_err(ImageD11_pars, poni_path)
     return err['distance']**2 + err['y_center']**2 + err['z_center']**2
 

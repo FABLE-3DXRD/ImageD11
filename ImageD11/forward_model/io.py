@@ -134,7 +134,7 @@ def convert_h52_tif(h5name, save_path, prefix_name = 'proj', save_stack = False,
         # Save each slice of the 3D dataset as an individual TIFF image
         for i in range(normalized_data.shape[0]):
             image = Image.fromarray(normalized_data[i])
-            filename = os.path.join(save_path, prefix_name + f"{i:04d}" + ".tif")
+            filename = os.path.join(save_path, "{}{:04d}.tif".format(prefix_name, i))
             image.save(filename)
     print('Done')
     
@@ -147,7 +147,7 @@ def convert_h52_tif(h5name, save_path, prefix_name = 'proj', save_stack = False,
     else:
         # Save each slice of the 3D dataset as an individual TIFF image
         for i in range(normalized_data.shape[0]):
-            filename = os.path.join(save_path, f"{prefix_name}_{i:04d}.tif")
+            filename = os.path.join(save_path, "{}{:04d}.tif".format(prefix_name, i))
             tiff.imwrite(filename, normalized_data[i], photometric='minisblack')
 
 
