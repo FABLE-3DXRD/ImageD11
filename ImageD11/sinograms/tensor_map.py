@@ -371,12 +371,12 @@ def strain_crystal_to_stress_crystal(strain_crystal, stiffness_tensor, B0, phase
     """
     Convert Biot strain tensor (ImageD11 coordinate system) to Biot stress tensor (ImageD11 coordinate system).
     Both tensors are in the crystal reference frame.
-    First, we convert the strain tensor from the ImageD11 ccoordinate system to the IEEE 1976 standard coordinate system.
-    This needs the B0 matrix of the reference unitcell to work.
-    Then, we write the tensor in Voigt notation.
+    For now, this function assumes agreement between the ImageD11 and stiffness tensor coordinate systems.
+    This can usually be assumed for simple spacegroups but may not work for certain things like quartz.
+    This is under discussion: Check issue #194 on GitHub
+    First, we write the tensor in Voigt notation.
     Then, we perform the dot-product with the Voigt-format IEEE coordinate system stiffness tensor.
     Then, we convert back into tensor notation.
-    Finally, we convert back into the ImageD11 coordinate system before returning.
     Returns ``np.nan`` if ``phase_mask`` is not ``True`` - useful for masking the calculation to specific phases.
 
     To use (no need to pre-populate res): ``sig_crystal = strain_crystal_to_stress_crystal(eps_crystal, stiffness_tensor, phase_mask)``
@@ -388,7 +388,7 @@ def strain_crystal_to_stress_crystal(strain_crystal, stiffness_tensor, B0, phase
     :type strain_crystal: np.ndarray
     :param stiffness_tensor: 6x6 stiffness tensor in GPa, Voigt notation, IEEE 1976 coordinate system
     :type stiffness_tensor: np.ndarray
-    :param B0: 3x3 B matrix of reference unitcell for the grain
+    :param B0: 3x3 B matrix of reference unitcell for the grain (currently unused)
     :type B0: np.ndarray
     :param phase_mask: If `False`, return `np.nan` for this voxel
     :type phase_mask: np.ndarray[bool]
@@ -398,8 +398,9 @@ def strain_crystal_to_stress_crystal(strain_crystal, stiffness_tensor, B0, phase
     """
     if np.isnan(strain_crystal[0, 0]):
         res[...] = np.nan
-    elif np.isnan(B0[0, 0]):
-        res[...] = np.nan
+    # TODO: Currently not using B0, so don't check it for now
+    # elif np.isnan(B0[0, 0]):
+    #     res[...] = np.nan
     elif not phase_mask:
         res[...] = np.nan
     else:
