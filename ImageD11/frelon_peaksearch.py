@@ -372,6 +372,8 @@ def process(ds, worker_args, ncpu=None):
     """
     if ncpu is None:
         nthreads = max(1, ImageD11.cImageD11.cores_available() - 1)
+    else:
+        nthreads = int(ncpu)
     hname = ds.masterfile
     scan_name = ds.scans[0]
     frames_dset = scan_name + "/measurement/" + ds.detector
