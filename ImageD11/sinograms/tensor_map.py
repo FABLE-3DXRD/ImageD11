@@ -22,9 +22,19 @@ from ImageD11 import unitcell
 # take in a nxn float64 array, return a nxn float64 array
 @numba.guvectorize([(numba.float64[:, :], numba.float64[:, :])], '(n,n)->(n,n)', nopython=True)
 def fast_invert(mat, res):
-    """Fast broadcastable matrix invert.
-    To use (no need to pre-populate res):
-    imat = fast_invert(mat)"""
+    """
+    Fast matrix invert.
+
+    To use (no need to pre-populate res): ``imat = fast_invert(mat)``
+
+    Automatically broadcastable over any higher-order size input array,
+    provided the last dimensions are ``NxN``, e.g ``(100, 100, 5, 3, 3)``.
+
+    :param mat: The NxN square matrix you want to invert
+    :type mat: np.ndarray
+    :return: The inverted NxN square matrix
+    :rtype: np.ndarray
+    """
     if np.isnan(mat[0, 0]):
         res[...] = np.nan
     else:
@@ -34,9 +44,19 @@ def fast_invert(mat, res):
 # take in a nxn float64 array, return a nxn float64 array
 @numba.guvectorize([(numba.float64[:, :], numba.float64[:, :])], '(n,n)->(n,n)', nopython=True)
 def ubi_to_mt(ubi, res):
-    """Get metric tensor from UBI, the same way as in ImageD11.grain
-    To use (no need to pre-populate res):
-    mt = ubi_to_mt(ubi)"""
+    """
+    Compute metric tensor from UBI matrix, the same way as in ``ImageD11.grain``.
+
+    To use (no need to pre-populate res): ``mt = ubi_to_mt(ubi)``
+
+    Automatically broadcastable over any higher-order size input array,
+    provided the last dimensions are ``3x3``, e.g ``(100, 100, 5, 3, 3)``.
+
+    :param ubi: The UBI matrix of the grain, from e.g ``grain.ubi``
+    :type ubi: np.ndarray
+    :return: The metric tensor
+    :rtype: np.ndarray
+    """
     if np.isnan(ubi[0, 0]):
         res[...] = np.nan
     else:
@@ -46,10 +66,26 @@ def ubi_to_mt(ubi, res):
 # take in a nxn float64 array and a dummy variable p-length float64 vector (required by numba), return a p-length float64 vector
 @numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:])], '(n,n),(p)->(p)', nopython=True)
 def mt_to_unitcell(mt, dum, res):
-    """Get unitcell from mt, the same way as in ImageD11.grain
-    To use (no need to pre-populate res):
-    dummy_var = np.arange(6)  # ensure dummy variable has the right length
-    unitcell = mt_to_unitcell(mt, dummy_var)"""
+    """
+    Get unitcell parameters array ``[a, b, c, alpha, beta, gamma]`` from the metric tensor.
+    Works the same way as the `ImageD11.grain` class.
+
+    To use (no need to pre-populate res)::
+
+        dummy_var = np.arange(6)  # ensure dummy variable has the right length
+        unitcell = mt_to_unitcell(mt, dummy_var)
+
+    Automatically broadcastable over any higher-order size input array,
+    provided the last dimensions are ``3x3``, e.g ``(100, 100, 5, 3, 3)``.
+
+    :param mt: 3x3 metric tensor
+    :type mt: np.ndarray
+    :param dum: length-6 dummy array, required but unused for calculation
+    :type dum: np.ndarray
+    :return: ``[a, b, c, alpha, beta, gamma]`` unitcell array
+    :rtype: np.ndarray
+    """
+
     if np.isnan(mt[0, 0]):
         res[...] = np.nan
     else:
@@ -69,10 +105,25 @@ def mt_to_unitcell(mt, dum, res):
 # take in a p-length float64 vector and a dummy variable nxn float64 array (required by numba), return a nxn float64 array
 @numba.guvectorize([(numba.float64[:], numba.float64[:, :], numba.float64[:, :])], '(p),(n,n)->(n,n)', nopython=True)
 def unitcell_to_b(unitcell, dum, res):
-    """Get B matrix from unitcell, the same way as in ImageD11.grain (via ImageD11.unitcell)
-    To use (no need to pre-populate res):
-    dummy_var = np.eye(3)  # ensure dummy variable has the right shape (3x3)
-    B = unitcell_to_b(unitcell, dummy_var)"""
+    """
+    Get B matrix from unitcell, the same way as in ``ImageD11.grain`` (via ``ImageD11.unitcell``).
+
+    To use (no need to pre-populate res)::
+
+        dummy_var = np.eye(3)  # ensure dummy variable has the right shape (3x3)
+        B = unitcell_to_b(unitcell, dummy_var)
+
+    Automatically broadcastable over any higher-order size input array,
+    provided the last dimensions are ``6``, e.g ``(100, 100, 5, 6)``.
+
+    :param unitcell: ``[a, b, c, alpha, beta, gamma]`` unitcell array
+    :type unitcell: np.ndarray
+    :param dum: 3x3 dummy array, required but unused for calculation
+    :type dum: np.ndarray
+    :return: 3x3 B matrix
+    :rtype: np.ndarray
+    """
+
     if np.isnan(unitcell[0]):
         res[...] = np.nan
     else:
@@ -111,9 +162,23 @@ def unitcell_to_b(unitcell, dum, res):
 @numba.guvectorize([(numba.float64[:, :], numba.float64[:, :], numba.float64[:, :])], '(n,n),(n,n)->(n,n)',
                    nopython=True)
 def ubi_and_b_to_u(ubi, b, res):
-    """Get U matrix from UBI and B matrices, the same way as in ImageD11.grain
-    To use (no need to pre-populate res):
-    U = ubi_and_b_to_u(ubi, b)"""
+    """
+    Get U matrix from UBI and B matrices, the same way as in ``ImageD11.grain``.
+
+    To use (no need to pre-populate res): ``U = ubi_and_b_to_u(ubi, b)``
+
+    Automatically broadcastable over any higher-order size input array,
+    provided the last dimensions of UBI and B are both ``3x3``,
+    e.g ``(100, 100, 5, 3, 3)``.
+
+    :param ubi: 3x3 UBI matrix
+    :type ubi: np.ndarray
+    :param b: 3x3 B matrix
+    :type b: np.ndarray
+    :return: 3x3 U matrix
+    :rtype: np.ndarray
+    """
+
     if np.isnan(ubi[0, 0]):
         res[...] = np.nan
     elif np.isnan(b[0, 0]):
@@ -124,6 +189,24 @@ def ubi_and_b_to_u(ubi, b, res):
 
 @numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:, :])], '(n,n),(p)->(n,n)', nopython=True)
 def ubi_and_unitcell_to_eps_sample(ubi, dzero_cell, res):
+    """
+    Get Biot strain tensor (3x3) in sample reference frame from UBI array and unitcell array.
+
+    Equivalent to calling ``ImageD11.grain.eps_sample_matrix(dzero_cell)``.
+
+    To use (no need to pre-populate res): ``eps_sample = ubi_and_unitcell_to_eps_sample(ubi, unitcell)``
+
+    Automatically broadcastable over any higher-order size input array,
+    provided the last dimensions of UBI is ``3x3`` and unitcell is ``6``,
+    e.g ``(100, 100, 5, 3, 3)`` and ``(100, 100, 5, 6)``.
+
+    :param ubi: 3x3 UBI matrix
+    :type ubi: np.ndarray
+    :param dzero_cell: ``[a, b, c, alpha, beta, gamma]`` strain-free unitcell array
+    :type dzero_cell: np.ndarray
+    :return: 3x3 Biot strain tensor in the sample reference frame
+    :rtype: np.ndarray
+    """
     if np.isnan(ubi[0, 0]):
         res[...] = np.nan
     elif np.isnan(dzero_cell[0]):
@@ -169,6 +252,24 @@ def ubi_and_unitcell_to_eps_sample(ubi, dzero_cell, res):
 
 @numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:, :])], '(n,n),(p)->(n,n)', nopython=True)
 def ubi_and_unitcell_to_eps_crystal(ubi, dzero_cell, res):
+    """
+    Get Biot strain tensor (3x3) in crystal reference frame from UBI and unitcell.
+
+    Equivalent to calling ``ImageD11.grain.eps_grain_matrix(dzero_cell)``.
+
+    To use (no need to pre-populate res): ``eps_crystal = ubi_and_unitcell_to_eps_crystal(ubi, unitcell)``
+
+    Automatically broadcastable over any higher-order size input array,
+    provided the last dimensions of UBI is ``3x3`` and unitcell is ``6``,
+    e.g ``(100, 100, 5, 3, 3)`` and ``(100, 100, 5, 6)``.
+
+    :param ubi: 3x3 UBI matrix
+    :type ubi: np.ndarray
+    :param dzero_cell: ``[a, b, c, alpha, beta, gamma]`` strain-free unitcell array
+    :type dzero_cell: np.ndarray
+    :return: 3x3 Biot strain tensor in the crystal reference frame
+    :rtype: np.ndarray
+    """
     if np.isnan(ubi[0, 0]):
         res[...] = np.nan
     elif np.isnan(dzero_cell[0]):
@@ -212,32 +313,144 @@ def ubi_and_unitcell_to_eps_crystal(ubi, dzero_cell, res):
         res[...] = em
 
 
-@numba.guvectorize([(numba.float64[:, :], numba.float64[:, :], numba.float64[:], numba.float64[:, :])],
-                   '(n,n),(k,k),()->(n,n)', nopython=True)
-def strain_to_stress(strain, C, phase_mask, res):
-    mvvec = np.zeros(6, dtype=np.float64)
-    mvvec[0] = strain[0, 0]
-    mvvec[1] = strain[1, 1]
-    mvvec[2] = strain[2, 2]
-    mvvec[3] = np.sqrt(2.) * strain[1, 2]
-    mvvec[4] = np.sqrt(2.) * strain[0, 2]
-    mvvec[5] = np.sqrt(2.) * strain[0, 1]
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:, :], numba.float64[:, :])],
+                   '(n,n),(n,n)->(n,n)', nopython=True)
+def tensor_crystal_to_sample(tensor_crystal, U, res):
+    """
+    Rotate tensor from crystal to sample reference frame.
+    Performs ``tensor_sample = U . tensor_crystal . U.T``
 
-    stress_MV = np.dot(C, mvvec)
+    Automatically broadcastable over any higher-order size input array,
+    provided the last dimensions of ``tensor_crystal`` and ``U`` are ``3x3``, e.g ``(100, 100, 5, 3, 3)`` .
 
-    symm = np.full((3, 3), np.nan, dtype=np.float64)
-    if phase_mask:
-        symm[0, 0] = stress_MV[0]
-        symm[1, 1] = stress_MV[1]
-        symm[2, 2] = stress_MV[2]
-        symm[1, 2] = stress_MV[3] * (1. / np.sqrt(2.))
-        symm[0, 2] = stress_MV[4] * (1. / np.sqrt(2.))
-        symm[0, 1] = stress_MV[5] * (1. / np.sqrt(2.))
-        symm[2, 1] = stress_MV[3] * (1. / np.sqrt(2.))
-        symm[2, 0] = stress_MV[4] * (1. / np.sqrt(2.))
-        symm[1, 0] = stress_MV[5] * (1. / np.sqrt(2.))
+    :param tensor_crystal: Tensor in crystal reference frame
+    :type tensor_crystal: np.ndarray
+    :param U: Grain U matrix
+    :type U: np.ndarray
+    :return: Tensor in sample reference frame
+    :rtype: np.ndarray
+    """
 
-    res[...] = symm
+    if np.isnan(tensor_crystal[0, 0]):
+        res[...] = np.nan
+    elif np.isnan(U[0,0]):
+        res[...] = np.nan
+    else:
+        res[...] = U.dot(tensor_crystal).dot(U.T)
+
+
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:, :], numba.float64[:, :])],
+                   '(n,n),(n,n)->(n,n)', nopython=True)
+def tensor_sample_to_crystal(tensor_sample, U, res):
+    """
+    Rotate tensor from sample to crystal reference frame.
+    Performs ``tensor_crystal = U.T . tensor_sample . U``
+
+    Automatically broadcastable over any higher-order size input array,
+    provided the last dimensions of ``tensor_crystal`` and ``U`` are ``3x3``, e.g ``(100, 100, 5, 3, 3)`` .
+
+    :param tensor_sample: Tensor in sample reference frame
+    :type tensor_sample: np.ndarray
+    :param U: Grain U matrix
+    :type U: np.ndarray
+    :return: Tensor in crystal reference frame
+    :rtype: np.ndarray
+    """
+
+    if np.isnan(tensor_sample[0, 0]):
+        res[...] = np.nan
+    elif np.isnan(U[0,0]):
+        res[...] = np.nan
+    else:
+        res[...] = U.T.dot(tensor_sample).dot(U)
+
+
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:, :], numba.float64[:, :], numba.float64[:], numba.float64[:, :])],
+                   '(n,n),(k,k),(n,n),()->(n,n)', nopython=True)
+def strain_crystal_to_stress_crystal(strain_crystal, stiffness_tensor, B0, phase_mask, res):
+    """
+    Convert Biot strain tensor (ImageD11 coordinate system) to Biot stress tensor (ImageD11 coordinate system).
+    Both tensors are in the crystal reference frame.
+    For now, this function assumes agreement between the ImageD11 and stiffness tensor coordinate systems.
+    This can usually be assumed for simple spacegroups but may not work for certain things like quartz.
+    This is under discussion: Check issue #194 on GitHub
+    First, we write the tensor in Voigt notation.
+    Then, we perform the dot-product with the Voigt-format IEEE coordinate system stiffness tensor.
+    Then, we convert back into tensor notation.
+    Returns ``np.nan`` if ``phase_mask`` is not ``True`` - useful for masking the calculation to specific phases.
+
+    To use (no need to pre-populate res): ``sig_crystal = strain_crystal_to_stress_crystal(eps_crystal, stiffness_tensor, phase_mask)``
+
+    Automatically broadcastable over any higher-order size input array,
+    provided the last dimensions of ``strain_crystal`` is ``3x3``, e.g ``(100, 100, 5, 3, 3)`` .
+
+    :param strain_crystal: 3x3 Biot strain tensor, crystal reference frame, ImageD11 coordinate system
+    :type strain_crystal: np.ndarray
+    :param stiffness_tensor: 6x6 stiffness tensor in GPa, Voigt notation, IEEE 1976 coordinate system
+    :type stiffness_tensor: np.ndarray
+    :param B0: 3x3 B matrix of reference unitcell for the grain (currently unused)
+    :type B0: np.ndarray
+    :param phase_mask: If `False`, return `np.nan` for this voxel
+    :type phase_mask: np.ndarray[bool]
+
+    :return: Biot stress tensor in GPa, crystal reference frame, ImageD11 coordinate system
+    :rtype: np.ndarray
+    """
+    if np.isnan(strain_crystal[0, 0]):
+        res[...] = np.nan
+    # TODO: Currently not using B0, so don't check it for now
+    # elif np.isnan(B0[0, 0]):
+    #     res[...] = np.nan
+    elif not phase_mask:
+        res[...] = np.nan
+    else:
+        # TODO: The below is still under discussion - issue #194 or PR #345
+        # For most systems, this should be identity (IEEE agrees with ImageD11)
+        strain_crystal_ieee = strain_crystal
+
+        # # rotate the strain tensor from ImageD11 coordinate system to IEEE 1976 coordinate system
+        # # determine rotation matrix E
+        # C_c = np.linalg.inv(B0).T
+        # E = np.column_stack((C_c[:, 0], np.cross(C_c[:, 2], C_c[:, 0]), C_c[:, 2]))
+        # # now perform equivalent to E /= np.linalg.norm(E, axis=0)
+        # E_div = np.zeros_like(E)
+        # for i in range(E_div.shape[0]):
+        #     E_row = E[i]
+        #     E_div[i] = E_row / np.sqrt(np.sum(np.power(E_row, 2)))
+        #
+        # strain_crystal_ieee = E_div.T.dot(strain_crystal).dot(E_div)
+
+        # convert to Voigt notation
+        strain_crystal_ieee_voigt = np.zeros(6)
+        strain_crystal_ieee_voigt[0] = strain_crystal_ieee[0, 0]
+        strain_crystal_ieee_voigt[1] = strain_crystal_ieee[1, 1]
+        strain_crystal_ieee_voigt[2] = strain_crystal_ieee[2, 2]
+        strain_crystal_ieee_voigt[3] = 2 * strain_crystal_ieee[1, 2]
+        strain_crystal_ieee_voigt[4] = 2 * strain_crystal_ieee[0, 2]
+        strain_crystal_ieee_voigt[5] = 2 * strain_crystal_ieee[0, 1]
+
+        # convert to stress Voigt
+        stress_crystal_ieee_voigt = stiffness_tensor.dot(strain_crystal_ieee_voigt)
+
+        # convert to tensor form
+        stress_crystal_ieee = np.zeros((3, 3))
+        stress_crystal_ieee[0, 0] = stress_crystal_ieee_voigt[0]
+        stress_crystal_ieee[1, 1] = stress_crystal_ieee_voigt[1]
+        stress_crystal_ieee[2, 2] = stress_crystal_ieee_voigt[2]
+        stress_crystal_ieee[1, 2] = stress_crystal_ieee_voigt[3]
+        stress_crystal_ieee[2, 1] = stress_crystal_ieee_voigt[3]
+        stress_crystal_ieee[0, 2] = stress_crystal_ieee_voigt[4]
+        stress_crystal_ieee[2, 0] = stress_crystal_ieee_voigt[4]
+        stress_crystal_ieee[0, 1] = stress_crystal_ieee_voigt[5]
+        stress_crystal_ieee[1, 0] = stress_crystal_ieee_voigt[5]
+
+        # TODO: The below is still under discussion - issue #194 or PR #345
+
+        # rotate back to ImageD11 convention
+        # stress_crystal = E_div.dot(stress_crystal_ieee).dot(E_div.T)
+        stress_crystal = stress_crystal_ieee
+
+        res[...] = stress_crystal
 
 
 @numba.guvectorize([(numba.float64[:, :], numba.float64[:])], '(n,n)->()', nopython=True)
@@ -258,48 +471,6 @@ def sig_to_vm(sig, res):
     vm = np.sqrt(((sig11 - sig22) ** 2 + (sig22 - sig33) ** 2 + (sig33 - sig11) ** 2 + 6 * (
                 sig12 ** 2 + sig23 ** 2 + sig31 ** 2)) / 2.)
     res[...] = vm
-
-
-# @numba.njit
-# def UB_map_to_U_B_map(UB_map):
-#     """QR decomp from xfab.tools"""
-#     U_map = np.zeros_like(UB_map)
-#     U_map.fill(np.nan)
-#     B_map = np.zeros_like(UB_map)
-#     B_map.fill(np.nan)
-#     for i in range(UB_map.shape[0]):
-#         for j in range(UB_map.shape[1]):
-#             for k in range(UB_map.shape[2]):
-#                 UB = UB_map[i, j, k]
-#                 if np.isnan(UB[0, 0]):
-#                     U_map[i, j, k] = np.nan
-#                     B_map[i, j, k] = np.nan
-#                 else:
-#                     U, B = np.linalg.qr(UB)
-#
-#                     if B[0, 0] < 0:
-#                         B[0, 0] = -B[0, 0]
-#                         B[0, 1] = -B[0, 1]
-#                         B[0, 2] = -B[0, 2]
-#                         U[0, 0] = -U[0, 0]
-#                         U[1, 0] = -U[1, 0]
-#                         U[2, 0] = -U[2, 0]
-#                     if B[1, 1] < 0:
-#                         B[1, 1] = -B[1, 1]
-#                         B[1, 2] = -B[1, 2]
-#                         U[0, 1] = -U[0, 1]
-#                         U[1, 1] = -U[1, 1]
-#                         U[2, 1] = -U[2, 1]
-#                     if B[2, 2] < 0:
-#                         B[2, 2] = -B[2, 2]
-#                         U[0, 2] = -U[0, 2]
-#                         U[1, 2] = -U[1, 2]
-#                         U[2, 2] = -U[2, 2]
-#
-#                     U_map[i, j, k] = U
-#                     B_map[i, j, k] = B
-#
-#     return U_map, B_map
 
 
 @numba.njit
@@ -353,44 +524,6 @@ def u_to_euler(u, dum, res):
         res[..., 0] = phi1
         res[..., 1] = PHI
         res[..., 2] = phi2
-
-
-# @numba.njit
-# def U_map_to_euler_map(U_map):
-#     """From xfab.tools"""
-#     tol = 1e-8
-#     euler_map = np.zeros((U_map.shape[0], U_map.shape[1], U_map.shape[2], 3))
-#     euler_map.fill(np.nan)
-#     for i in range(U_map.shape[0]):
-#         for j in range(U_map.shape[1]):
-#             for k in range(U_map.shape[2]):
-#                 U = U_map[i, j, k]
-#                 if np.isnan(U[0, 0]):
-#                     euler_map[i, j, k] = np.nan
-#                 else:
-#                     PHI = np.arccos(U[2, 2])
-#                     if np.abs(PHI) < tol:
-#                         phi1 = _arctan2(-U[0, 1], U[0, 0])
-#                         phi2 = 0
-#                     elif np.abs(PHI - np.pi) < tol:
-#                         phi1 = _arctan2(U[0, 1], U[0, 0])
-#                         phi2 = 0
-#                     else:
-#                         phi1 = _arctan2(U[0, 2], -U[1, 2])
-#                         phi2 = _arctan2(U[2, 0], U[2, 1])
-#
-#                     if phi1 < 0:
-#                         phi1 = phi1 + 2 * np.pi
-#                     if phi2 < 0:
-#                         phi2 = phi2 + 2 * np.pi
-#
-#                     euler_map[i, j, k, 0] = phi1
-#                     euler_map[i, j, k, 1] = PHI
-#                     euler_map[i, j, k, 2] = phi2
-#
-#                     # euler_map[i, j, k] = np.array([phi1, PHI, phi2])
-#
-#     return euler_map
 
 
 class TensorMap:
@@ -590,7 +723,9 @@ class TensorMap:
 
     @property
     def U(self):
-        """The U matrix - via UBI and B"""
+        """
+        The U matrix - via UBI and B, the same way as in ``ImageD11.grain``
+        """
         if "U" in self.keys():
             return self.maps['U']
         else:
@@ -603,7 +738,9 @@ class TensorMap:
 
     @property
     def euler(self):
-        """The euler angles - using Numba-accelerated vectorised conversion"""
+        """
+        The euler angles from the U matrix, the same way as in ``xfab.tools``
+        """
         if "euler" in self.keys():
             return self.maps['euler']
         else:
@@ -617,7 +754,9 @@ class TensorMap:
 
     @property
     def dzero_unitcell(self):
-        """The dzero unitcell for each voxel from the reference phase for that voxel"""
+        """
+        The dzero unitcell for each voxel from the reference phase for that voxel.
+        """
         if 'dzero_unitcell' in self.keys():
             return self.maps['dzero_unitcell']
         else:
@@ -630,41 +769,90 @@ class TensorMap:
 
     @property
     def eps_sample(self):
-        """The per-voxel strain in sample frame, relative to the B0 of the unitcell of the reference phase for that voxel."""
+        """
+        The per-voxel Biot strain tensor in the sample frame, relative to the B0 of the unitcell
+        of the reference phase for that voxel.
+
+        Equivalent to calling ``ImageD11.grain.eps_grain_matrix(dzero_cell)``.
+
+        Will compute from ``eps_crystal`` by rotating the tensor if we have it.
+        If not, will compute from ``UBI``.
+        """
         if 'eps_sample' in self.keys():
             return self.maps['eps_sample']
+        elif 'eps_crystal' in self.keys():
+            # we have strain in crystal reference frame
+            # rotate it into sample frame and return
+            print('Rotating eps_crystal into sample frame')
+            eps_sample_map = tensor_sample_to_crystal(self.eps_crystal, self.U)
+            self.add_map('eps_sample', eps_sample_map)
+            return eps_sample_map
         else:
-            # calculate it
+            # calculate it from the UBI
+            print('Calculating eps_sample from UBI')
             eps_sample_map = ubi_and_unitcell_to_eps_sample(self.UBI, self.dzero_unitcell)
             self.add_map('eps_sample', eps_sample_map)
             return eps_sample_map
 
     @property
     def eps_crystal(self):
-        """The per-voxel strain in crystal frame, relative to the B0 of the unitcell of the reference phase for that
-        voxel."""
+        """
+        The per-voxel Biot strain tensor in the crystal reference frame, relative to the B0 of the unitcell
+        of the reference phase for that voxel.
+
+        Equivalent to calling ``ImageD11.grain.eps_sample_matrix(dzero_cell)``.
+
+        Will compute from ``eps_sample`` by rotating the tensor if we have it.
+        If not, will compute from ``UBI``.
+        """
         if 'eps_crystal' in self.keys():
             return self.maps['eps_crystal']
+        elif 'eps_sample' in self.keys():
+            # we have strain in sample reference frame
+            # rotate it into crystal frame and return
+            print('Rotating eps_sample into crystal frame')
+            eps_crystal_map = tensor_sample_to_crystal(self.eps_sample, self.U)
+            self.add_map('eps_crystal', eps_crystal_map)
+            return eps_crystal_map
         else:
-            # calculate it
+            # calculate it from the UBI
+            print('Calculating eps_crystal from UBI')
             eps_crystal_map = ubi_and_unitcell_to_eps_crystal(self.UBI, self.dzero_unitcell)
             self.add_map('eps_crystal', eps_crystal_map)
             return eps_crystal_map
 
     # TODO - make multiphase - store C map for each voxel
-    def get_stress(self, C, phase_id):
-        """Fill in sig_crystal and sig_sample using 6x6 stiffness tensor C"""
+    def get_stress(self, stiffness_tensor, phase_id):
+        """
+        Convert Biot strain tensor (ImageD11 coordinate system) to Biot stress tensor (ImageD11 coordinate system).
+        Does this for a given phase_id.
+        Needs Voigt-format IEEE coordinate system stiffness tensor.
+
+        :param stiffness_tensor: 6x6 stiffness tensor in GPa, Voigt notation, IEEE 1976 coordinate system
+        :type stiffness_tensor: np.ndarray
+        :param phase_id: ID of phase you want to compute for (makes phase mask)
+        :type phase_id: int
+        """
+
         print('Warning! This is currently single-phase only - calling this more than once with different phases will '
               'overwrite the previous result')
         phase_mask = self.phase_ids == phase_id
-        sig_crystal_map = strain_to_stress(self.eps_crystal, C, phase_mask)
-        sig_sample_map = strain_to_stress(self.eps_sample, C, phase_mask)
-        self.add_map('sig_crystal', sig_crystal_map)
-        self.add_map('sig_sample', sig_sample_map)
+
+        # compute sig_crystal from eps_crystal
+        dummy_var = np.eye(3)
+        B0_map = unitcell_to_b(self.dzero_unitcell, dummy_var)
+        stress_crystal_map = strain_crystal_to_stress_crystal(self.eps_crystal, stiffness_tensor, B0_map, phase_mask)
+        # compute sig_sample by rotating sig_crystal
+        stress_sample_map = tensor_crystal_to_sample(stress_crystal_map, self.U)
+
+        self.add_map('sig_crystal', stress_crystal_map)
+        self.add_map('sig_sample', stress_sample_map)
 
     @property
     def sig_hydro(self):
-        """The per-voxel hydrostatic stress (frame invariant)"""
+        """
+        The per-voxel hydrostatic stress scalar (frame invariant)
+        """
         if 'sig_hydro' in self.keys():
             return self.maps['sig_hydro']
         else:
@@ -674,7 +862,9 @@ class TensorMap:
 
     @property
     def sig_mises(self):
-        """The per-voxel von-Mises stress"""
+        """
+        The per-voxel von-Mises stress scalar (frame invariant)
+        """
         if 'sig_mises' in self.keys():
             return self.maps['sig_mises']
         else:
