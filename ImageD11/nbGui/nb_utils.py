@@ -149,6 +149,7 @@ def prepare_mlem_bash(ds, grains, id11_code_path, n_simultaneous_jobs=50, cores_
 # define memory needs and number of tasks for each array job
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={cores_per_task}
+#SBATCH --mem-per-cpu=20G
 #
 date
 echo PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} $SLURM_ARRAY_TASK_ID {dsfile} {reconfile} {cores_per_task} > {log_path} 2>&1
@@ -597,7 +598,7 @@ def plot_grain_positions(grains, colour='npks', centre_plot=False, size_scaling=
             # will still fail if we don't have reference unitcells
             get_rgbs_for_grains(grains)
             col = [getattr(grain, rgbattr) for grain in grains]  # IPF colour
-        ax.set_title(f"Grains coloured by IPF {colour.lower()}")
+        ax.set_title("Grains coloured by IPF", colour.lower())
     # sizes in MPL 3D scale the area of the plot
     # intensity info is proportional to volume
     # decrease to radius then scale to area with power(x, 2/3)
