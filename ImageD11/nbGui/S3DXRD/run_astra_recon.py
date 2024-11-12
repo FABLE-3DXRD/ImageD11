@@ -1,16 +1,23 @@
 def main(h5name, dsfile, group_name):
+    print('Loading dataset')
     # load the dataset
     ds = ImageD11.sinograms.dataset.load(dsfile)
-
+    
+    print('Loading grain sinograms from disk')
     grainsinos = read_h5(h5name, ds, group_name=group_name)
-
-    for gs in grainsinos:
+    
+    print('Reconstructing grain sinograms')
+    for inc, gs in enumerate(grainsinos):
         gs.recon(method="astra", astra_method="EM_CUDA")
+        print('Reconstructed ' + inc+1 + '/' + len(grainsinos))
 
     # mask recon after running
+    print('Masking reconstructions')
     for gs in grainsinos:
         gs.recons['astra'] = np.where(gs.recon_mask, gs.recons['astra'], 0)
-
+    
+    print('Reconstructions finished')
+    print('Writing grains to disk')
     write_h5(h5name, grainsinos, overwrite_grains=True, group_name=group_name)
 
 
