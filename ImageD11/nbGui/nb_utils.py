@@ -149,6 +149,7 @@ def prepare_mlem_bash(ds, grains, id11_code_path, n_simultaneous_jobs=50, cores_
 # define memory needs and number of tasks for each array job
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={cores_per_task}
+#SBATCH --mem-per-cpu=20G
 #
 date
 echo PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} $SLURM_ARRAY_TASK_ID {dsfile} {reconfile} {cores_per_task} > {log_path} 2>&1
@@ -314,23 +315,23 @@ def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list)
 
     return samples_dict
 
-
 def save_ubi_map(ds, ubi_map, eps_map, misorientation_map, ipf_x_col_map, ipf_y_col_map, ipf_z_col_map):
-    with h5py.File(ds.pbpubifile, 'w') as hout:
-        grp = hout.create_group('arrays')
-        save_array(grp, 'ubi_map', ubi_map).attrs['description'] = 'Refined UBI values at each pixel'
-        save_array(grp, 'eps_map', eps_map).attrs['description'] = 'Strain matrices (sample ref) at each pixel'
-        save_array(grp, 'misorientation_map', misorientation_map).attrs[
-            'description'] = 'Misorientation to grain avg at each pixel'
-        ipfxdset = save_array(grp, 'ipf_x_col_map', ipf_x_col_map)
-        ipfxdset.attrs['description'] = 'IPF X color at each pixel'
-        ipfxdset.attrs['CLASS'] = 'IMAGE'
-        ipfydset = save_array(grp, 'ipf_y_col_map', ipf_y_col_map)
-        ipfydset.attrs['description'] = 'IPF Y color at each pixel'
-        ipfydset.attrs['CLASS'] = 'IMAGE'
-        ipfzdset = save_array(grp, 'ipf_z_col_map', ipf_z_col_map)
-        ipfzdset.attrs['description'] = 'IPF Z color at each pixel'
-        ipfzdset.attrs['CLASS'] = 'IMAGE'
+    raise ValueError('This function is deprecated" Use ImageD11.sinograms.tensor_map.TensorMap instead')
+    # with h5py.File(ds.pbpubifile, 'w') as hout:
+    #     grp = hout.create_group('arrays')
+    #     save_array(grp, 'ubi_map', ubi_map).attrs['description'] = 'Refined UBI values at each pixel'
+    #     save_array(grp, 'eps_map', eps_map).attrs['description'] = 'Strain matrices (sample ref) at each pixel'
+    #     save_array(grp, 'misorientation_map', misorientation_map).attrs[
+    #         'description'] = 'Misorientation to grain avg at each pixel'
+    #     ipfxdset = save_array(grp, 'ipf_x_col_map', ipf_x_col_map)
+    #     ipfxdset.attrs['description'] = 'IPF X color at each pixel'
+    #     ipfxdset.attrs['CLASS'] = 'IMAGE'
+    #     ipfydset = save_array(grp, 'ipf_y_col_map', ipf_y_col_map)
+    #     ipfydset.attrs['description'] = 'IPF Y color at each pixel'
+    #     ipfydset.attrs['CLASS'] = 'IMAGE'
+    #     ipfzdset = save_array(grp, 'ipf_z_col_map', ipf_z_col_map)
+    #     ipfzdset.attrs['description'] = 'IPF Z color at each pixel'
+    #     ipfzdset.attrs['CLASS'] = 'IMAGE'
 
 
 ### Sinogram stuff
@@ -571,7 +572,50 @@ def plot_all_ipfs(grains):
 
 
 
+def plot_grain_positions(grains, colour='npks', centre_plot=False, size_scaling=0.5):
+    """
+    colour: choose from 'npks' or one of 'x', 'y', 'z' for IPF scaling
+    centre_plot: choose whether to centre the plot horizontally (x and y)
+    size_scaling: we only know relative grain sizes, adjust this to scale the diameter of the points on the plot
+    """
+    if colour.lower() not in ['npks', 'x', 'y', 'z']:
+        raise ValueError("colour should be one of ['npks', 'x', 'y', 'z']")
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(projection='3d', proj_type="ortho")
+    xx = [grain.translation[0] for grain in grains]
+    yy = [grain.translation[1] for grain in grains]
+    zz = [grain.translation[2] for grain in grains]
+    if colour == 'npks':
+        ax.set_title("Grains coloured by number of peaks indexed")
+        col = [float(grain.npks) for grain in grains]
+    elif colour.lower() in ['x', 'y', 'z']:
+        rgbattr = 'rgb_' + colour.lower()
+        try:
+            col = [getattr(grain, rgbattr) for grain in grains]  # IPF colour
+        except AttributeError:
+            # couldn't get the IPF attributes
+            # try to compute it first
+            # will still fail if we don't have reference unitcells
+            get_rgbs_for_grains(grains)
+            col = [getattr(grain, rgbattr) for grain in grains]  # IPF colour
+        ax.set_title("Grains coloured by IPF", colour.lower())
+    # sizes in MPL 3D scale the area of the plot
+    # intensity info is proportional to volume
+    # decrease to radius then scale to area with power(x, 2/3)
+    sizes = [size_scaling*np.power((float(grain.intensity_info.split("mean = ")[1].split(" , ")[0].replace("'", ""))), 2/3) for grain in grains]
+    if centre_plot:
+        scatterplot = ax.scatter(xx-np.mean(xx), yy-np.mean(yy), zz, c=col, s=sizes)
+    else:
+        scatterplot = ax.scatter(xx, yy, zz, c=col, s=sizes)
+    if colour == 'npks':
+        plt.colorbar(scatterplot)
 
+    ax.set_aspect("equal")
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
+    plt.show()
+    
 
 # backwards compatible
 do_index = ImageD11.indexing.do_index

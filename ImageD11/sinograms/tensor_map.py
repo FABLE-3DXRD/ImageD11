@@ -454,12 +454,6 @@ def strain_crystal_to_stress_crystal(strain_crystal, stiffness_tensor, B0, phase
 
 
 @numba.guvectorize([(numba.float64[:, :], numba.float64[:])], '(n,n)->()', nopython=True)
-def sig_to_hydro(sig, res):
-    """Get hydrostatic stress scalar from stress tensor (frame invariant)"""
-    res[...] = np.sum(np.diag(sig)) / 3
-
-
-@numba.guvectorize([(numba.float64[:, :], numba.float64[:])], '(n,n)->()', nopython=True)
 def sig_to_vm(sig, res):
     """Get von-Mises stress scalar from stress tensor"""
     sig11 = sig[0, 0]
@@ -820,6 +814,30 @@ class TensorMap:
             eps_crystal_map = ubi_and_unitcell_to_eps_crystal(self.UBI, self.dzero_unitcell)
             self.add_map('eps_crystal', eps_crystal_map)
             return eps_crystal_map
+    
+    @property
+    def eps_hydro(self):
+        """
+        The per-voxel hydrostatic strain tensor (frame invariant)
+        """
+        if 'eps_hydro' in self.keys():
+            return self.maps['eps_hydro']
+        else:
+            eps_hydro_map = (self.eps_sample.trace(axis1=-2, axis2=-1)/3)[..., np.newaxis, np.newaxis] * np.eye(3)
+            self.add_map('eps_hydro', eps_hydro_map)
+            return eps_hydro_map
+    
+    @property
+    def eps_devia(self):
+        """
+        The per-voxel deviatoric strain tensor
+        """
+        if 'eps_devia' in self.keys():
+            return self.maps['eps_devia']
+        else:
+            eps_devia_map = self.eps_sample - self.eps_hydro
+            self.add_map('eps_devia', eps_devia_map)
+            return eps_devia_map
 
     # TODO - make multiphase - store C map for each voxel
     def get_stress(self, stiffness_tensor, phase_id):
@@ -847,18 +865,50 @@ class TensorMap:
 
         self.add_map('sig_crystal', stress_crystal_map)
         self.add_map('sig_sample', stress_sample_map)
+    
+    @property
+    def sig_sample(self):
+        """
+        The per-voxel Biot stress tensor in the sample reference frame
+        """
+        if 'sig_sample' in self.keys():
+            return self.maps['sig_sample']
+        else:
+            raise AttributeError('Stress not computed! Run self.get_stress() first')
+    
+    @property
+    def sig_crystal(self):
+        """
+        The per-voxel Biot stress tensor in the crystal reference frame
+        """
+        if 'sig_crystal' in self.keys():
+            return self.maps['sig_crystal']
+        else:
+            raise AttributeError('Stress not computed! Run self.get_stress() first')
 
     @property
     def sig_hydro(self):
         """
-        The per-voxel hydrostatic stress scalar (frame invariant)
+        The per-voxel hydrostatic stress tensor (frame invariant)
         """
         if 'sig_hydro' in self.keys():
             return self.maps['sig_hydro']
         else:
-            sig_hydro_map = sig_to_hydro(self.sig_crystal)
+            sig_hydro_map = (self.sig_sample.trace(axis1=-2, axis2=-1)/3)[..., np.newaxis, np.newaxis] * np.eye(3)
             self.add_map('sig_hydro', sig_hydro_map)
             return sig_hydro_map
+    
+    @property
+    def sig_devia(self):
+        """
+        The per-voxel deviatoric stress tensor
+        """
+        if 'sig_devia' in self.keys():
+            return self.maps['sig_devia']
+        else:
+            sig_devia_map = self.sig_sample - self.sig_hydro
+            self.add_map('sig_devia', sig_devia_map)
+            return sig_devia_map
 
     @property
     def sig_mises(self):
@@ -1329,6 +1379,9 @@ class TensorMap:
                 phases[phase_inc] = phase
         except NameError:
             raise AttributeError("Some/all grains are missing reference unit cells! Can't continue")
+        
+        if not all([method in gs.recons for gs in grainsinos]):
+            raise AttributeError("Not all grainsinos have the method you specified! Check if your reconstructions worked")
 
         # work out the phase ID for each grain
         phase_ids = [phases_list.index(gs.grain.ref_unitcell) for gs in grainsinos]
