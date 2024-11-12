@@ -1281,12 +1281,12 @@ class TensorMap:
                 # get the si, sj values
                 si, sj = recon_to_step(ri, rj, ubi_pbpmap_order.shape[:2])
                 # get the mi, mj, mk values
-                mi, mj, mk = self.recon_index_to_map(ri, rj, ubi_pbpmap_order.shape[1])
+                _, mj, mk = self.recon_index_to_map(ri, rj, ubi_pbpmap_order.shape[1])
                 si_col[row_idx] = si
                 sj_col[row_idx] = sj
                 # do we have anything at this reconstruction point?
                 # otherwise we have nothing
-                if self.phase_ids[mi, mj, mk] > -1:
+                if self.phase_ids[z_layer, mj, mk] > -1:
                     npks_col[row_idx] = default_npks
                     nuniq_col[row_idx] = default_nuniq
                 row_idx += 1
