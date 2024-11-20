@@ -436,6 +436,10 @@ class DataSet:
         elif len(self.scans) > 1:
             s0 = len(self.scans)
             s1 = npts // s0
+        else:
+            # no scans
+            s0 = 0
+            s1 = 0
         self.shape = s0, s1
         if np.prod(self.shape) != npts:
             print("Warning: irregular scan - might be bugs in here")
