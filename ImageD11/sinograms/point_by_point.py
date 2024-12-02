@@ -974,6 +974,7 @@ class PBPRefine:
     def from_h5(cls, filename, h5group='PBPRefine'):
         # load the stuff in
         # then make an object
+        manager_filename = filename
 
         with h5py.File(filename, "r") as hin:
             parent_group = hin[h5group]
@@ -1007,6 +1008,7 @@ class PBPRefine:
         # load the dataset
         dset = ImageD11.sinograms.dataset.load(dsfile)
         refine_obj = cls(dset=dset, **pars_dict)
+        refine_obj.own_filename = manager_filename
         for filename_attr, filename in filenames.items():
             setattr(refine_obj, filename_attr, filename)
         for array_attr, array in arrays.items():
@@ -1030,7 +1032,6 @@ class PBPRefine:
             refine_obj.loadmap(refine_obj.refinedmap_filename, refined=True)
         except (AttributeError, OSError):
             pass
-
         return refine_obj
 
     def get_origins(self, guess_speed=True, guess_npks=10000, save_peaks_after=True):
