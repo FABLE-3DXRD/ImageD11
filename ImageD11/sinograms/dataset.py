@@ -142,13 +142,15 @@ class DataSet:
         self.dsfile = None
 
         # paths for processed data
-        if analysispath is not None:
-            # Can be loaded with the dataset or supplied
-            self.analysispath = analysispath
-
+        self.analysispath = None # default
+        # Loaded
         if filename is not None:
             self.dsfile = filename
             self.load(filename)
+        # Supplied overwrites
+        if analysispath is not None: 
+            # Can be loaded with the dataset 
+            self.analysispath = analysispath
 
         self.update_paths()
 
