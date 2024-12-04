@@ -212,12 +212,12 @@ class transformer:
     def setvars(self, varlist):
         """ set the things to refine """
         self.parameterobj.varylist = varlist
-
-    def loadfiltered(self, filename):
+    
+    def setfiltered(self, colfile):
         """
-        Read in 3D peaks from peaksearch
+        Set self.colfile as colfile
         """
-        self.colfile = columnfile.columnfile(filename)
+        self.colfile = colfile
         if ( ("sc" in self.colfile.titles) and
              ("fc" in self.colfile.titles) and
              ("omega" in self.colfile.titles)):
@@ -229,6 +229,13 @@ class transformer:
         if "spot3d_id" not in self.colfile.titles:
             self.colfile.addcolumn(list(range(self.colfile.nrows)),
                                     "spot3d_id")
+    
+    def loadfiltered(self, filename):
+        """
+        Read in 3D peaks from peaksearch
+        """
+        colfile = columnfile.columnfile(filename)
+        self.setfiltered(colfile)
 
     def setxyomcols(self, xname, yname, omeganame):
         self.xname = xname

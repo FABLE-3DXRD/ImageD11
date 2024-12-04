@@ -9,7 +9,7 @@ def main(h5name, dsfile, group_name):
     print('Reconstructing grain sinograms')
     for inc, gs in enumerate(grainsinos):
         gs.recon(method="astra", astra_method="EM_CUDA")
-        print('Reconstructed ' + inc+1 + '/' + len(grainsinos))
+        print('Reconstructed ' + str(inc+1) + '/' + str(len(grainsinos)))
 
     # mask recon after running
     print('Masking reconstructions')
