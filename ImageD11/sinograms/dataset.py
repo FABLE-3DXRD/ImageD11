@@ -139,15 +139,19 @@ class DataSet:
         self._pk2d = None
         self._pk4d = None
 
+        self.dsfile = None
         if filename is not None:
+            self.dsfile = filename
             self.load(filename)
-        # paths for processed data
 
-        self.analysispath = analysispath
+        # paths for processed data
+        if analysispath is not None:
+            # Can be loaded with the dataset or supplied
+            self.analysispath = analysispath
 
         self.update_paths()
 
-    def update_paths(self, force=False):
+    def update_paths(self, force=False, verbose = False):
         # paths for processed data
         # root of analysis for this dataset for this sample:
         self.analysispath_default = os.path.join(
@@ -161,7 +165,8 @@ class DataSet:
         )
         # at the moment, set self.dsfile to be the default
         # if save or load is ever called, this will be replaced
-        self.dsfile = self.dsfile_default
+        if self.dsfile is None:
+            self.dsfile = self.dsfile_default
         # They should be saved / loaded with the dataset.
         for name, extn in [
             ("pksfile", "_peaks_table.h5"),
@@ -181,6 +186,11 @@ class DataSet:
             if (getattr(self, name, None) is None) or force:
                 # Otherwise, these are the defaults.
                 setattr(self, name, os.path.join(self.analysispath, self.dsname + extn))
+                if verbose:
+                    print('updated', getattr( self, name, None ) )
+            else:
+                if verbose:
+                    print('not updated', getattr( self, name, None ) )
 
     def __repr__(self):
         r = []
@@ -436,6 +446,10 @@ class DataSet:
         elif len(self.scans) > 1:
             s0 = len(self.scans)
             s1 = npts // s0
+        else:
+            # no scans
+            s0 = 0
+            s1 = 0
         self.shape = s0, s1
         if np.prod(self.shape) != npts:
             print("Warning: irregular scan - might be bugs in here")
@@ -798,6 +812,9 @@ class DataSet:
 
     def save(self, h5name=None, h5group="/"):
         if h5name is None:
+            if os.path.exists( self.dsfile ):
+                h5name = self.dsfile
+
             # none supplied, so use default path
             h5name = self.dsfile_default
             # make sure parent directories exist
@@ -854,9 +871,15 @@ class DataSet:
         self.dsfile = h5name
 
     def load(self, h5name=None, h5group="/"):
+
         if h5name is None:
-            # none supplied, so use default path
-            h5name = self.dsfile_default
+            if os.path.exists( self.dsfile ):
+                h5name = self.dsfile
+            elif os.path.exists( self.dsfile_default ):
+                # none supplied, so use default path
+                h5name = self.dsfile_default
+            else:
+                raise Exception( "Filename for dataset not found")
 
         """ Recover this from a hdf5 file """
         with h5py.File(h5name, "r") as hin:
