@@ -140,14 +140,15 @@ class DataSet:
         self._pk4d = None
 
         self.dsfile = None
-        if filename is not None:
-            self.dsfile = filename
-            self.load(filename)
 
         # paths for processed data
         if analysispath is not None:
             # Can be loaded with the dataset or supplied
             self.analysispath = analysispath
+
+        if filename is not None:
+            self.dsfile = filename
+            self.load(filename)
 
         self.update_paths()
 
