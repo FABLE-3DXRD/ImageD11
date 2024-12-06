@@ -250,7 +250,7 @@ texinfo_documents = [
 epub_title = u'ImageD11'
 epub_author = u'Jon Wright'
 epub_publisher = u'Jon Wright'
-epub_copyright = u'2017, Jon Wright'
+epub_copyright = u'2024, Jon Wright'
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.
