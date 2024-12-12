@@ -203,6 +203,8 @@ def rhombohedralP():
     """ R3 primitive """
     return generate_group("z,x,y", "-z,-y,-x")
 
+trigonalP = rhombohedralP
+
 def tetragonal():
     """ P4 75"""
     return generate_group ( "-y,x,z", "-x,y,-z" )
