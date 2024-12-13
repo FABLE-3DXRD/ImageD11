@@ -628,6 +628,7 @@ class PBPRefine:
                  ifrac=None,
                  forref=None,
                  y0=0.0,
+                 min_grain_npks=6
                  ):
         self.dset = dset
         self.phase_name = phase_name
@@ -647,6 +648,7 @@ class PBPRefine:
         # refinement parameters
         self.hkl_tol_refine = hkl_tol_refine
         self.hkl_tol_refine_merged = hkl_tol_refine_merged
+        self.min_grain_npks = min_grain_npks
         # geometry stuff
         self.ystep = self.dset.ystep
         self.y0 = y0
@@ -961,7 +963,7 @@ class PBPRefine:
 
             # other pars we need for refinement
             pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'fpks', 'ds_tol',
-                    'etacut', 'ifrac', 'forref', 'y0']
+                    'etacut', 'ifrac', 'forref', 'y0', 'min_grain_npks']
 
             for par in pars:
                 try:
@@ -998,7 +1000,7 @@ class PBPRefine:
                     continue
 
             pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'fpks', 'ds_tol',
-                    'etacut', 'ifrac', 'forref', 'y0']
+                    'etacut', 'ifrac', 'forref', 'y0', 'min_grain_npks']
             pars_dict = {}
             for par in pars:
                 try:
@@ -1169,7 +1171,8 @@ class PBPRefine:
                                                                         pars['chi'],
                                                                         pars['wavelength'],
                                                                         tol=self.hkl_tol_refine,
-                                                                        merge_tol=self.hkl_tol_refine_merged
+                                                                        merge_tol=self.hkl_tol_refine_merged,
+                                                                        min_grain_npks=int(self.min_grain_npks)
                                                                         )
             # now we match how the indexer returns dodgy values
             # mask nan 3x3 entires to identity matrix
