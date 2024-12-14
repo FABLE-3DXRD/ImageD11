@@ -628,6 +628,7 @@ class PBPRefine:
                  ifrac=None,
                  forref=None,
                  y0=0.0,
+                 min_grain_npks=6
                  ):
         self.dset = dset
         self.phase_name = phase_name
@@ -647,6 +648,7 @@ class PBPRefine:
         # refinement parameters
         self.hkl_tol_refine = hkl_tol_refine
         self.hkl_tol_refine_merged = hkl_tol_refine_merged
+        self.min_grain_npks = min_grain_npks
         # geometry stuff
         self.ystep = self.dset.ystep
         self.y0 = y0
@@ -961,7 +963,7 @@ class PBPRefine:
 
             # other pars we need for refinement
             pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'fpks', 'ds_tol',
-                    'etacut', 'ifrac', 'forref', 'y0']
+                    'etacut', 'ifrac', 'forref', 'y0', 'min_grain_npks']
 
             for par in pars:
                 try:
@@ -974,6 +976,7 @@ class PBPRefine:
     def from_h5(cls, filename, h5group='PBPRefine'):
         # load the stuff in
         # then make an object
+        manager_filename = filename
 
         with h5py.File(filename, "r") as hin:
             parent_group = hin[h5group]
@@ -997,7 +1000,7 @@ class PBPRefine:
                     continue
 
             pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'fpks', 'ds_tol',
-                    'etacut', 'ifrac', 'forref', 'y0']
+                    'etacut', 'ifrac', 'forref', 'y0', 'min_grain_npks']
             pars_dict = {}
             for par in pars:
                 try:
@@ -1007,6 +1010,7 @@ class PBPRefine:
         # load the dataset
         dset = ImageD11.sinograms.dataset.load(dsfile)
         refine_obj = cls(dset=dset, **pars_dict)
+        refine_obj.own_filename = manager_filename
         for filename_attr, filename in filenames.items():
             setattr(refine_obj, filename_attr, filename)
         for array_attr, array in arrays.items():
@@ -1030,7 +1034,6 @@ class PBPRefine:
             refine_obj.loadmap(refine_obj.refinedmap_filename, refined=True)
         except (AttributeError, OSError):
             pass
-
         return refine_obj
 
     def get_origins(self, guess_speed=True, guess_npks=10000, save_peaks_after=True):
@@ -1168,7 +1171,8 @@ class PBPRefine:
                                                                         pars['chi'],
                                                                         pars['wavelength'],
                                                                         tol=self.hkl_tol_refine,
-                                                                        merge_tol=self.hkl_tol_refine_merged
+                                                                        merge_tol=self.hkl_tol_refine_merged,
+                                                                        min_grain_npks=int(self.min_grain_npks)
                                                                         )
             # now we match how the indexer returns dodgy values
             # mask nan 3x3 entires to identity matrix
