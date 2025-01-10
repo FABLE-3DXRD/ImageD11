@@ -36,6 +36,49 @@ def printdatasets( dataroot, sample):
          if os.path.isdir( os.path.join( sroot, name ) ) 
          and name.startswith( sample ) ] ) ) )
 
+
+
+def chooseframe(self, dset, scan=None, idx=None, counter="_roi1", fetch_raw_image=False):
+    """
+    Locate a busy frame from the dataset and optionally fetch the raw image.
+
+    Args:
+        dset: Dataset object.
+        scan: Scan to use (default is middle scan).
+        idx: Frame index (None to auto-detect).
+        counter: Counter to use for locating the frame.
+        fetch_raw_image: Whether to fetch the raw image for the frame.
+
+    Returns:
+        scan, idx, raw_image (if fetch_raw_image is True, otherwise None)
+    """
+    if scan is None:
+        scan = dset.scans[len(dset.scans) // 2]
+
+    raw_image = None
+    with h5py.File(dset.masterfile, "r") as hin:
+        ctr = dset.detector + counter
+
+        if idx is None:
+            if scan.find("::") > -1:  # 1.1::[10000:12000]  etc
+                lo, hi = [int(v) for v in scan[:-1].split("[")[1].split(":")]
+                scan = scan.split("::")[0]
+                roi1 = hin[scan]["measurement"][ctr][lo:hi]
+                idx = np.argmax(roi1) + lo
+            else:  # "1.1"
+                roi1 = hin[scan]["measurement"][ctr][:]
+                idx = np.argmax(roi1)
+
+        print("Using frame", idx, "from scan", scan)
+
+        # placing the raw image
+        if fetch_raw_image:
+            raw_image = hin[scan + "/measurement/" + dset.detector][idx].astype("uint16")
+
+    return scan, idx, raw_image
+
+
+
 class SegmenterGui:
     
     """ UI for a jupyter notebook to set the segmentation parameters
@@ -57,26 +100,11 @@ class SegmenterGui:
         howmany_slider = widgets.IntSlider(value=np.log10(howmany), min=1, max=15, step=1, description='log(howmany):')
         self.widget = widgets.interactive(self.update_image, cut=cut_slider, pixels_in_spot=pixels_in_spot_slider, howmany=howmany_slider)
         display( self.widget )
-        
+
     def chooseframe(self, counter):
-        ds = self.dset
-        if self.scan is None:
-            self.scan = ds.scans[len(ds.scans)//2]
-        if self.idx is not None:
-            return
-        # Locate a busy image to look at
-        with h5py.File(ds.masterfile,'r') as hin:
-            ctr = ds.detector+counter
-            if self.scan.find("::") > -1: # 1.1::[10000:12000]  etc
-                lo, hi = [int(v) for v in self.scan[:-1].split("[")[1].split(":")]
-                self.scan = self.scan.split("::")[0]
-                roi1 = hin[self.scan]['measurement'][ctr][lo:hi]
-                self.idx = np.argmax(roi1) + lo
-            else: # "1.1"
-                roi1 = hin[self.scan]['measurement'][ctr][:]
-                self.idx = np.argmax(roi1)
-        print("Using frame", self.idx, "from scan", self.scan)
-        
+        # Use the base class method without fetching the raw image
+        self.scan, self.idx, _ = chooseframe(self.dset, self.scan, self.idx, counter, fetch_raw_image=False)
+
     def segment_frame(self):
         """
         ds = ImageD11.sinograms.dataset object
@@ -137,9 +165,9 @@ class SegmenterGui:
         print("options = ",repr(opts))
         return opts
 
-    
+
 class FrelonSegmenterGui:
-        
+
     """ UI for a jupyter notebook to set the segmentation parameters
     From @jadball notebook, @jadball refactored to put in a python file
     """
@@ -167,27 +195,10 @@ class FrelonSegmenterGui:
                                           m_offset_thresh=mofft_slider,
                                           m_ratio_thresh=mratt_slider)
         display( self.widget )
-    
+
     def chooseframe(self, counter):
-        ds = self.dset
-        if self.scan is None:
-            self.scan = ds.scans[len(ds.scans)//2]
-        if self.idx is None:
-            # Locate a busy image to look at
-            with h5py.File(ds.masterfile,'r') as hin:
-                ctr = ds.detector+counter
-                if self.scan.find("::") > -1: # 1.1::[10000:12000]  etc
-                    lo, hi = [int(v) for v in self.scan[:-1].split("[")[1].split(":")]
-                    self.scan = self.scan.split("::")[0]
-                    roi1 = hin[self.scan]['measurement'][ctr][lo:hi]
-                    self.idx = np.argmax(roi1) + lo
-                else: # "1.1"
-                    roi1 = hin[self.scan]['measurement'][ctr][:]
-                    self.idx = np.argmax(roi1)
-        print("Using frame", self.idx, "from scan", self.scan)
-        with h5py.File(self.dset.masterfile, 'r') as h5In:
-            self.raw_image = h5In[self.scan + '/measurement/' + ds.detector][self.idx].astype('uint16')
-    
+        self.scan, self.idx, self.raw_image = chooseframe(self.dset, self.scan, self.idx, counter, fetch_raw_image=True)
+
     def segment_frame(self):
         image_worker = self.worker_func(**self.options)
         goodpeaks = image_worker.peaksearch(img=self.raw_image, omega=0)
@@ -230,3 +241,4 @@ class FrelonSegmenterGui:
         opts = { name: self.options[name] for name in ('bgfile','maskfile','threshold','smoothsigma','bgc','minpx','m_offset_thresh','m_ratio_thresh') }
         print("options = ",repr(opts))
         return opts
+    
