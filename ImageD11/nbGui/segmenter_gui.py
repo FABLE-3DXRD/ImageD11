@@ -73,7 +73,7 @@ def chooseframe(self, dset, scan=None, idx=None, counter="_roi1", fetch_raw_imag
 
         # placing the raw image
         if fetch_raw_image:
-            raw_image = hin[scan + "/measurement/" + dset.detector][idx].astype("uint16")
+            raw_image = hin[scan + "/measurement/" + dset.detector][idx]
 
     return scan, idx, raw_image
 
@@ -198,6 +198,7 @@ class FrelonSegmenterGui:
 
     def chooseframe(self, counter):
         self.scan, self.idx, self.raw_image = chooseframe(self.dset, self.scan, self.idx, counter, fetch_raw_image=True)
+        self.raw_image = self.raw_image.astype("uint16")
 
     def segment_frame(self):
         image_worker = self.worker_func(**self.options)
