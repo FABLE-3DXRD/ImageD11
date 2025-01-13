@@ -73,17 +73,31 @@ def rings_mask(cf, dstol, dsmax, cell=None):
             m |= (abs(cf.ds - v) < dstol)
     return m
 
+# separated plot logic, call from ''select_ring_peaks_by_intensity'' (only place the following function was called) 
+# will return the same result as before
+# additional arugment will be used by DAU ewoks team!
+def sorted_peak_intensity_mask(colf, uself=True, frac=0.995, B=0.2, doplot=None, return_plot_data=False):
+    """
+    Create a boolean mask for a columnfile based on peaks sorted by fractional intensity.
 
-def sorted_peak_intensity_mask(colf, uself=True, frac=0.995, B=0.2, doplot=None):
-    """Create a boolean mask for a columnfile
-       Based on peaks sorted by fractional intensity
-       Keeps peaks[:frac] where peaks are sorted by intensity"""
-    # correct intensities for structure factor (decreases with 2theta)
+    Args:
+        colf: Input column file object.
+        uself: Apply Lorentz factor correction (default: True).
+        frac: Fraction of peaks to keep based on intensity.
+        B: Thermal factor for intensity correction.
+        doplot: Optional plotting argument.
+        return_plot_data: Whether to return data used for plotting.
+
+    Returns:
+        mask: Boolean mask for selected peaks.
+        plot_data (optional): Data used for plotting (if return_plot_data is True).
+    """
+    # Correct intensities for structure factor (decreases with 2theta)
     cor_intensity = colf.sum_intensity * (np.exp(colf.ds * colf.ds * B))
     if uself:
         lf = ImageD11.refinegrains.lf(colf.tth, colf.eta)
         cor_intensity *= lf
-    order = np.argsort(cor_intensity)[::-1]  # sort the peaks by intensity
+    order = np.argsort(cor_intensity)[::-1]  # Sort peaks by intensity
     sortedpks = cor_intensity[order]
     cums = np.cumsum(sortedpks)
     cums /= cums[-1]
@@ -97,37 +111,68 @@ def sorted_peak_intensity_mask(colf, uself=True, frac=0.995, B=0.2, doplot=None)
     # Aim is to select the strongest peaks for indexing.
     cutoff = sortedpks[enough]
     mask = cor_intensity > cutoff
+
     if doplot is not None:
-        from matplotlib import pyplot as plt
-        fig, axs = plt.subplots(1, 2, figsize=(10, 5))
-        axs[0].plot(cums / cums[-1], ',')
-        axs[0].set(xlabel='npks', ylabel='fractional intensity')
-        axs[0].plot([mask.sum(), ], [frac, ], "o")
-        axs[1].plot(cums / cums[-1], ',')
-        axs[1].set(xlabel='npks logscale', ylabel='fractional intensity', xscale='log', ylim=(doplot, 1.),
-                   xlim=(np.searchsorted(cums, doplot), len(cums)))
-        axs[1].plot([mask.sum(), ], [frac, ], "o")
-        plt.show()
+        plot_sorted_peak_intensity(cums, mask, frac, doplot)
+
+    if return_plot_data:
+        # Return data for further use (no plotting)
+        plot_data = {
+            "cums": cums,
+            "masksum": mask.sum(),
+            "frac": frac,
+        }
+        return mask, plot_data
+
     return mask
 
-
-def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2, doplot=None):
+def plot_sorted_peak_intensity(cums, mask, frac, doplot):
     """
-    cf = input columnfile + unit cell in parameters
-    dstol = difference in d* (=1/d) for assigning peaks to rings
-    dsmax = high angle cutoff to remove peaks
-    frac = the fractional normalised intensity to keep (removes weak peaks)
-    B = thermal factor to downweight low angle vs high angle peaks for normalised intensity
-    doplot = whether to draw a plot (float number, range for zoomed plot)
-    
-    returns: a columnfile with peaks removed
+    Helper function to plot sorted peak intensity data.
+
+    Args:
+        cums: Cumulative sums of sorted intensities.
+        mask: Boolean mask for selected peaks.
+        frac: Fraction of peaks to keep.
+        doplot: Plot zooming range.
+    """
+    from matplotlib import pyplot as plt
+
+    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+    axs[0].plot(cums / cums[-1], ',')
+    axs[0].set(xlabel='npks', ylabel='fractional intensity')
+    axs[0].plot([mask.sum(), ], [frac, ], "o")
+
+    axs[1].plot(cums / cums[-1], ',')
+    axs[1].set(xlabel='npks logscale', ylabel='fractional intensity',
+               xscale='log', ylim=(doplot, 1.),
+               xlim=(np.searchsorted(cums, doplot), len(cums)))
+    axs[1].plot([mask.sum(), ], [frac, ], "o")
+
+    plt.show()
+
+# no edit on the logic, and legacy code will continue as before
+def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2, doplot=None,):
+    """
+    Select peaks based on ring intensity.
+
+    Args:
+        cf: Input columnfile + unit cell parameters.
+        dstol: Difference in d* for assigning peaks to rings.
+        dsmax: High angle cutoff for removing peaks.
+        frac: Fractional normalised intensity to keep (removes weak peaks)
+        B: Thermal factor to downweight low angle vs high angle peaks for normalised intensity
+        doplot: Whether to draw a plot.
+
+    Returns:
+        cfc: Columnfile with selected peaks.
     """
     if dsmax is None:
         dsmax = cf.ds.max()
         cfd = cf
     else:
-        cfd = cf.copyrows( cf.ds <= dsmax )
-    m = rings_mask( cfd, dstol=dstol, dsmax=dsmax)
+        cfd = cf.copyrows(cf.ds <= dsmax)
+    m = rings_mask(cfd, dstol=dstol, dsmax=dsmax)
     cfc = cfd.copyrows(m)
     ms = sorted_peak_intensity_mask(cfc, frac=frac, B=B, doplot=doplot)
     cfc.filter(ms)
