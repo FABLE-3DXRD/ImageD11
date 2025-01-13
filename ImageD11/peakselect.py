@@ -73,7 +73,7 @@ def rings_mask(cf, dstol, dsmax, cell=None):
             m |= (abs(cf.ds - v) < dstol)
     return m
 
-# separated plot logic,
+# separated plot logic and core computation logic,
 def sorted_peak_intensity_mask(colf, uself=True, frac=0.995, B=0.2, doplot=None):
     """
     Create a boolean mask for a columnfile based on peaks sorted by fractional intensity.
@@ -88,26 +88,7 @@ def sorted_peak_intensity_mask(colf, uself=True, frac=0.995, B=0.2, doplot=None)
     Returns:
         mask: Boolean mask for selected peaks.
     """
-    # Correct intensities for structure factor (decreases with 2theta)
-    cor_intensity = colf.sum_intensity * (np.exp(colf.ds * colf.ds * B))
-    if uself:
-        lf = ImageD11.refinegrains.lf(colf.tth, colf.eta)
-        cor_intensity *= lf
-    order = np.argsort(cor_intensity)[::-1]  # Sort peaks by intensity
-    sortedpks = cor_intensity[order]
-    cums = np.cumsum(sortedpks)
-    cums /= cums[-1]
-
-    # TODO
-    # anything above this should be calculated once and added to the CF
-    # check if the column exists before calculating
-    # slider for frac?
-    # all above only needs calculating once
-    enough = np.searchsorted(cums, frac)
-    # Aim is to select the strongest peaks for indexing.
-    cutoff = sortedpks[enough]
-    mask = cor_intensity > cutoff
-
+    mask, cums = sorted_peak_intensity_mask_plot_data(colf = colf, uself=uself, frac=frac, B=B,)    
     if doplot is not None:
         plot_sorted_peak_intensity(cums, mask, frac, doplot)
 
@@ -138,6 +119,43 @@ def plot_sorted_peak_intensity(cums, mask, frac, doplot):
 
     plt.show()
 
+
+def sorted_peak_intensity_mask_plot_data(colf, uself=True, frac=0.995, B=0.2,):
+    """
+    Create a boolean mask for a columnfile based on peaks sorted by fractional intensity.
+
+    Args:
+        colf: Input column file object.
+        uself: Apply Lorentz factor correction (default: True).
+        frac: Fraction of peaks to keep based on intensity.
+        B: Thermal factor for intensity correction.
+
+    Returns:
+        mask: Boolean mask for selected peaks.
+        cums: Data used for plotting.
+    """
+    # Correct intensities for structure factor (decreases with 2theta)
+    cor_intensity = colf.sum_intensity * (np.exp(colf.ds * colf.ds * B))
+    if uself:
+        lf = ImageD11.refinegrains.lf(colf.tth, colf.eta)
+        cor_intensity *= lf
+    order = np.argsort(cor_intensity)[::-1]  # Sort peaks by intensity
+    sortedpks = cor_intensity[order]
+    cums = np.cumsum(sortedpks)
+    cums /= cums[-1]
+
+    # TODO
+    # anything above this should be calculated once and added to the CF
+    # check if the column exists before calculating
+    # slider for frac?
+    # all above only needs calculating once
+    enough = np.searchsorted(cums, frac)
+    # Aim is to select the strongest peaks for indexing.
+    cutoff = sortedpks[enough]
+    mask = cor_intensity > cutoff
+
+    return mask, cums
+
 # no edit on the logic,
 def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2, doplot=None,):
     """
@@ -166,47 +184,6 @@ def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2
     return cfc
 
 
-def sorted_peak_intensity_mask_plot_data(colf, uself=True, frac=0.995, B=0.2,):
-    """
-    Create a boolean mask for a columnfile based on peaks sorted by fractional intensity.
-
-    Args:
-        colf: Input column file object.
-        uself: Apply Lorentz factor correction (default: True).
-        frac: Fraction of peaks to keep based on intensity.
-        B: Thermal factor for intensity correction.
-
-    Returns:
-        mask: Boolean mask for selected peaks.
-        plot_data: Data used for plotting.
-    """
-    # Correct intensities for structure factor (decreases with 2theta)
-    cor_intensity = colf.sum_intensity * (np.exp(colf.ds * colf.ds * B))
-    if uself:
-        lf = ImageD11.refinegrains.lf(colf.tth, colf.eta)
-        cor_intensity *= lf
-    order = np.argsort(cor_intensity)[::-1]  # Sort peaks by intensity
-    sortedpks = cor_intensity[order]
-    cums = np.cumsum(sortedpks)
-    cums /= cums[-1]
-
-    # TODO
-    # anything above this should be calculated once and added to the CF
-    # check if the column exists before calculating
-    # slider for frac?
-    # all above only needs calculating once
-    enough = np.searchsorted(cums, frac)
-    # Aim is to select the strongest peaks for indexing.
-    cutoff = sortedpks[enough]
-    mask = cor_intensity > cutoff
-
-    plot_data = {
-        "cums": cums,
-        "pt":  [mask.sum(), frac]
-    }
-    return mask, plot_data
-
-
 # For the ewoks task, we would like to have this
 def intensity_filtered_ring_peaks_and_plot_data(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2,):
     """
@@ -230,6 +207,11 @@ def intensity_filtered_ring_peaks_and_plot_data(cf, dstol=0.005, dsmax=None, fra
         cfd = cf.copyrows( cf.ds <= dsmax )
     m = rings_mask( cfd, dstol=dstol, dsmax=dsmax )
     cfc = cfd.copyrows(m)
-    ms, plot_data = sorted_peak_intensity_mask_plot_data( cfc, frac=frac, B=B, )
-    cfc.filter(ms) 
+    ms, cums = sorted_peak_intensity_mask_plot_data( cfc, frac=frac, B=B, )
+    cfc.filter(ms)
+
+    plot_data = {
+        "cums": cums,
+        "pt": [ms.sum(), frac]
+    } 
     return cfc, plot_data
