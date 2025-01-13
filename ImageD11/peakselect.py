@@ -73,7 +73,7 @@ def rings_mask(cf, dstol, dsmax, cell=None):
             m |= (abs(cf.ds - v) < dstol)
     return m
 
-# separated plot logic, call from ''select_ring_peaks_by_intensity''
+# separated plot logic,
 def sorted_peak_intensity_mask(colf, uself=True, frac=0.995, B=0.2, doplot=None):
     """
     Create a boolean mask for a columnfile based on peaks sorted by fractional intensity.
@@ -138,7 +138,7 @@ def plot_sorted_peak_intensity(cums, mask, frac, doplot):
 
     plt.show()
 
-# no edit on the logic, and legacy code will continue as before
+# no edit on the logic,
 def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2, doplot=None,):
     """
     Select peaks based on ring intensity.
@@ -158,7 +158,7 @@ def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2
         dsmax = cf.ds.max()
         cfd = cf
     else:
-        cfd = cf.copyrows(cf.ds <= dsmax)
+        cfd = cf.copyrows( cf.ds <= dsmax )
     m = rings_mask(cfd, dstol=dstol, dsmax=dsmax)
     cfc = cfd.copyrows(m)
     ms = sorted_peak_intensity_mask(cfc, frac=frac, B=B, doplot=doplot)
@@ -166,7 +166,7 @@ def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2
     return cfc
 
 
-def sorted_peak_intensity_mask_cum_data(colf, uself=True, frac=0.995, B=0.2,):
+def sorted_peak_intensity_mask_plot_data(colf, uself=True, frac=0.995, B=0.2,):
     """
     Create a boolean mask for a columnfile based on peaks sorted by fractional intensity.
 
@@ -178,7 +178,7 @@ def sorted_peak_intensity_mask_cum_data(colf, uself=True, frac=0.995, B=0.2,):
 
     Returns:
         mask: Boolean mask for selected peaks.
-        plot_data (optional): Data used for plotting.
+        plot_data: Data used for plotting.
     """
     # Correct intensities for structure factor (decreases with 2theta)
     cor_intensity = colf.sum_intensity * (np.exp(colf.ds * colf.ds * B))
@@ -200,11 +200,15 @@ def sorted_peak_intensity_mask_cum_data(colf, uself=True, frac=0.995, B=0.2,):
     cutoff = sortedpks[enough]
     mask = cor_intensity > cutoff
 
-    return mask, cums, [mask.sum(), frac] # last two arguments are the data for plotting
+    plot_data = {
+        "cums": cums,
+        "pt":  [mask.sum(), frac]
+    }
+    return mask, plot_data
 
 
 # For the ewoks task, we would like to have this
-def intensity_filtered_ring_peaks_and_plot_data(cf, uself = True, dstol=0.005, dsmax=None, frac=0.99, B=0.2,):
+def intensity_filtered_ring_peaks_and_plot_data(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2,):
     """
     Select peaks based on ring intensity.
 
@@ -214,10 +218,10 @@ def intensity_filtered_ring_peaks_and_plot_data(cf, uself = True, dstol=0.005, d
         dsmax: High angle cutoff for removing peaks.
         frac: Fractional normalised intensity to keep (removes weak peaks)
         B: Thermal factor to downweight low angle vs high angle peaks for normalised intensity
-        doplot: Whether to draw a plot.
 
     Returns:
         cfc: Columnfile with selected peaks.
+        plot_data: for plotting
     """
     if dsmax is None:
         dsmax = cf.ds.max()
@@ -226,6 +230,6 @@ def intensity_filtered_ring_peaks_and_plot_data(cf, uself = True, dstol=0.005, d
         cfd = cf.copyrows( cf.ds <= dsmax )
     m = rings_mask( cfd, dstol=dstol, dsmax=dsmax )
     cfc = cfd.copyrows(m)
-    ms, cums, single_point = sorted_peak_intensity_mask_cum_data(cfc, frac=frac, B=B,)
+    ms, plot_data = sorted_peak_intensity_mask_plot_data( cfc, frac=frac, B=B, )
     cfc.filter(ms) 
-    return cfc, cums, single_point
+    return cfc, plot_data
