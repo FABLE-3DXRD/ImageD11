@@ -49,7 +49,7 @@ from ImageD11.sinograms.sinogram import save_array
 
 # GOTO - find somewhere!
 # Everything written in Numba could move to C?
-@numba.njit(boundscheck=True)
+@numba.njit(boundscheck=True, cache = True)
 def hkluniq(ubi, gx, gy, gz, eta, m, tol, hmax):
     """count uniq peaks - move to cImageD11 in the future"""
     # index from -hmax to hmax
@@ -82,7 +82,7 @@ def hkluniq(ubi, gx, gy, gz, eta, m, tol, hmax):
 
 # stuff we need to compute g-vectors
 # from ImageD11.transform
-@numba.njit
+@numba.njit(cache = True)
 def detector_rotation_matrix(tilt_x, tilt_y, tilt_z):
     r1 = np.array([[np.cos(tilt_z), -np.sin(tilt_z), 0.0],  # note this is r.h.
                    [np.sin(tilt_z), np.cos(tilt_z), 0.0],
@@ -97,7 +97,7 @@ def detector_rotation_matrix(tilt_x, tilt_y, tilt_z):
     return r2r1
 
 
-@numba.njit
+@numba.njit(cache = True)
 def compute_xyz_lab(sc, fc,
                     y_center=0., y_size=0., tilt_y=0.,
                     z_center=0., z_size=0., tilt_z=0.,
@@ -132,7 +132,7 @@ def compute_xyz_lab(sc, fc,
     return rotvec
 
 
-@numba.njit
+@numba.njit(cache=True)
 def compute_tth_eta_from_xyz(peaks_xyz,
                              t_x=0.0, t_y=0.0, t_z=0.0,
                              wedge=0.0,  # Wedge == theta on 4circ
@@ -147,7 +147,7 @@ def compute_tth_eta_from_xyz(peaks_xyz,
     return tth, eta
 
 
-@numba.njit
+@numba.njit(cache=True)
 def compute_tth_eta(sc, fc,
                     y_center=0., y_size=0., tilt_y=0.,
                     z_center=0., z_size=0., tilt_z=0.,
@@ -175,7 +175,7 @@ def compute_tth_eta(sc, fc,
     return tth, eta
 
 
-@numba.njit
+@numba.njit(cache=True)
 def compute_k_vectors(tth, eta, wvln):
     """
     generate k vectors - scattering vectors in laboratory frame
@@ -195,7 +195,7 @@ def compute_k_vectors(tth, eta, wvln):
     return k
 
 
-@numba.njit
+@numba.njit(cache=True)
 def compute_g_from_k(k, omega, wedge=0, chi=0):
     """
     Compute g-vectors with cached k-vectors
@@ -226,7 +226,7 @@ def compute_g_from_k(k, omega, wedge=0, chi=0):
     return g
 
 
-@numba.njit
+@numba.njit(cache=True)
 def compute_g_vectors(tth,
                       eta,
                       omega,
@@ -243,7 +243,7 @@ def compute_g_vectors(tth,
     return compute_g_from_k(k, omega, wedge, chi)
 
 
-@numba.njit
+@numba.njit(cache=True)
 def count_unique_peaks(hkl, etasign, dtyi):
     N = hkl.shape[1]  # Number of entries
     indices = np.zeros(N, dtype=np.int64)
@@ -270,7 +270,7 @@ def count_unique_peaks(hkl, etasign, dtyi):
     return indices
 
 
-@numba.njit
+@numba.njit(cache=True)
 def count_unique_peaks_no_dtyi(hkl, etasign):
     N = hkl.shape[1]  # Number of entries
     indices = np.zeros(N, dtype=np.int64)
@@ -297,7 +297,7 @@ def count_unique_peaks_no_dtyi(hkl, etasign):
     return indices
 
 
-@numba.njit
+@numba.njit(cache=True)
 def merge(hkl, etasign, dtyi, sum_intensity, sc, fc, omega, dty, xpos_refined, eta):
     """
     merge peaks with the same (h, k, l, etasign, dtyi)
@@ -318,7 +318,7 @@ def merge(hkl, etasign, dtyi, sum_intensity, sc, fc, omega, dty, xpos_refined, e
     return merged_sum_intensity, merged_sc, merged_fc, merged_omega, merged_dty, merged_xpos_refined, merged_eta
 
 
-@numba.njit
+@numba.njit(cache=True)
 def get_voxel_idx(y0, xi0, yi0, sinomega, cosomega, dty, ystep):
     """
     get peaks at xi0, yi0
@@ -331,7 +331,7 @@ def get_voxel_idx(y0, xi0, yi0, sinomega, cosomega, dty, ystep):
     return idx, ydist
 
 
-@numba.njit
+@numba.njit(cache=True)
 def compute_gve(sc, fc, omega, xpos,
                 distance, y_center, y_size, tilt_y, z_center, z_size, tilt_z, tilt_x,
                 o11, o12, o21, o22,
@@ -367,7 +367,7 @@ def compute_gve(sc, fc, omega, xpos,
     return gve
 
 
-@numba.njit
+@numba.njit(cache=True)
 def weighted_lstsq_ubi_fit(ydist, gve, hkl):
     # run the weighted fit
     # a.T @ gve = h =>  gve.T @ a = h.T => a = np.linalg.pinv(gve.T) @ h.T, same for b and c
@@ -382,7 +382,7 @@ def weighted_lstsq_ubi_fit(ydist, gve, hkl):
     return w, ubifit, residuals, rank, sing_vals
 
 
-@numba.njit
+@numba.njit(cache=True)
 def gve_norm(gve):
     norms = np.zeros(gve.shape[1])
     for i in range(gve.shape[1]):
@@ -392,7 +392,7 @@ def gve_norm(gve):
     return norms
 
 
-@numba.njit
+@numba.njit(cache=True)
 def divide_where(arr1, arr2, out, wherearr):
     """
     Do arr1/arr2.
@@ -402,7 +402,7 @@ def divide_where(arr1, arr2, out, wherearr):
     return np.where(wherearr != 0, div, out)
 
 
-@numba.njit
+@numba.njit(cache=True)
 def ubi_to_unitcell(ubi):
     # fast numba version, can't use guvec version from tensor_map.py here unfortunately
     mt = np.dot(ubi, ubi.T)
@@ -414,7 +414,7 @@ def ubi_to_unitcell(ubi):
     return np.array([a, b, c, al, be, ga])
 
 
-@numba.njit
+@numba.njit(cache=True)
 def ubi_and_ucell_to_u(ubi, ucell):
     # compute B
     a, b, c = ucell[:3]
@@ -453,7 +453,7 @@ def ubi_and_ucell_to_u(ubi, ucell):
     return u
 
 
-@numba.njit
+@numba.njit(cache=True)
 def nb_choose_best(i, j, u, n, NY, ubiar,
                    minpeaks=6):
     # map of the unique scores
@@ -486,7 +486,7 @@ def nb_choose_best(i, j, u, n, NY, ubiar,
     return uniq, npk, ubi, best_rows
 
 
-@numba.njit
+@numba.njit(cache=True)
 def nb_inv(mats, imats):
     for i in range(mats.shape[0]):
         for j in range(mats.shape[1]):
@@ -501,7 +501,7 @@ def nb_inv(mats, imats):
                     imats[i, j] = 42.
 
 
-@numba.njit
+@numba.njit(cache=True)
 def nb_inv_3d(mats, imats):
     for i in range(mats.shape[0]):
         for j in range(mats.shape[1]):
@@ -1267,7 +1267,7 @@ date
     return bash_script_path
 
 
-@numba.njit
+@numba.njit(cache=True)
 def unique_with_counts(a):
     # https://github.com/numba/numba/pull/2959/commits/6657709adcf128d97eaaf8371d9106d48e2360ba
     b = np.sort(a.ravel())
@@ -1282,7 +1282,7 @@ def unique_with_counts(a):
     return np.array(unique), np.array(counts)
 
 
-@numba.njit(parallel=True)
+@numba.njit(parallel=True,cache=True)
 def compute_origins(singlemap, sample_mask,
                     gve, sinomega, cosomega, omega, dty,
                     sx_grid, sy_grid,
@@ -1385,7 +1385,7 @@ def compute_origins(singlemap, sample_mask,
     return lx_modified
 
 
-@numba.njit(parallel=True)
+@numba.njit(parallel=True, cache=True)
 def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid, mask,  # refinement stuff
                sc, fc, eta, sum_intensity, sinomega, cosomega, omega, dty, dtyi, xpos,  # icolf columns
                ystep, y0,
