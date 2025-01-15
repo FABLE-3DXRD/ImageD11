@@ -5,8 +5,8 @@ and the rotation axis.
 However, because the rotation axis is moving, this gets more difficult for scanning 3DXRD.
 I have therefore defined the reference frames in the following way:
 
-1. Static lab frame - vetors defined by the beam vector and the dty translation axis vector.
-   Its origin is defined as follows:
+1. Static lab frame - vectors defined by the beam vector and the dty translation axis vector.
+   Its origin is defined, either directly as (0,0,0) or indirectly as follows:
    x: The intersection of the beam vector and the dty translation axis vector
    y: User-provided - "ybeam". Normally around 14 for the 3DXRD station, 0 for the NSCOPE station.
    z: The centre of the beam vertically
@@ -19,7 +19,7 @@ I have therefore defined the reference frames in the following way:
    This translates with dty and rotates with omega, CW about the rotation axis (looking top down).
    This has the rotation axis at its origin.
    y0 is the true value of dty when the rotation axis intersects the beam.
-   If everything were perfectly aligned, y0 = ycen
+   If everything were perfectly aligned, y0 = ybeam
    However, this is not always the case, hence the need for both values in case they differ.
 
 3. Step space
