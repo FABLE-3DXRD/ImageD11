@@ -40,8 +40,9 @@ from ImageD11 import sym_u, unitcell, parameters
 import ImageD11.sinograms.dataset
 import ImageD11.indexing
 from ImageD11.columnfile import columnfile
-from ImageD11.sinograms.geometry import dty_to_dtyi, dtyimask_from_sincos, step_to_sample, sample_to_lab_sincos, \
-    dtyi_to_dty, step_to_recon
+#from ImageD11.sinograms.geometry import dty_to_dtyi, dtyimask_from_sincos, step_to_sample, sample_to_lab_sincos, \
+#    dtyi_to_dty, step_to_recon
+from ImageD11.sinograms import geometry
 from ImageD11.sinograms.roi_iradon import run_iradon
 from ImageD11.sinograms.tensor_map import unitcell_to_b
 from ImageD11.sinograms.sinogram import save_array
@@ -652,6 +653,7 @@ class PBPRefine:
         # geometry stuff
         self.ystep = self.dset.ystep
         self.y0 = y0
+        self.ybincens = self.dset.ybincens
 
         # set default paths
         self.pbpmap_filename = self.dset.refmapfile  # pbp map input
@@ -673,7 +675,7 @@ class PBPRefine:
         sj = np.arange(self.pbpmap.j.min(), self.pbpmap.j.max() + 1)
 
         # convert these arrays to sample space
-        sx, sy = step_to_sample(si, sj, self.ystep)
+        sx, sy = geometry.step_to_sample(si, sj, self.ystep)
 
         # make a grid of these
         self.sx_grid, self.sy_grid = np.meshgrid(sx, sy, indexing='ij')
@@ -774,7 +776,7 @@ class PBPRefine:
         isel = isel & ((np.abs(np.sin(np.radians(colf.eta)))) > self.etacut)
 
         colf.addcolumn(isel, "isel")  # peaks selected for refinement
-        dtyi = dty_to_dtyi(colf.dty, self.ystep)
+        dtyi = geometry.dty_to_dtyi(colf.dty, self.ystep, self.ybincens.min())
         colf.addcolumn(dtyi, "dtyi")
 
         # cache these to speed up selections later
@@ -1123,7 +1125,7 @@ class PBPRefine:
             # get columns for refine.pbpmap
             # which contain the ri, rj points
             # right now it's indexed in step space
-            ri_col, rj_col = step_to_recon(self.pbpmap.i, self.pbpmap.j, self.mask.shape)
+            ri_col, rj_col = geometry.step_to_recon(self.pbpmap.i, self.pbpmap.j, self.mask.shape)
 
             if points_step_space is None:
                 # get the list of peak indices masks in reconstruction space
@@ -1133,7 +1135,7 @@ class PBPRefine:
                     # print(points_recon_space)
             else:
                 # convert input points to reconstruction space, then pass to the function
-                points_recon_space = [step_to_recon(si, sj, self.mask.shape) for (si, sj) in points_step_space]
+                points_recon_space = [geometry.step_to_recon(si, sj, self.mask.shape) for (si, sj) in points_step_space]
 
             # columnfile by [3, 3, (ri, rj)]
             all_pbpmap_ubis = self.pbpmap.ubi
@@ -1619,12 +1621,20 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
     return final_ubis, final_eps, final_npks, final_nuniq
 
 
-def get_local_gv(i, j, ystep, omega, sinomega, cosomega, xl, yl, zl):
-    """now we correct g-vectors for origin point"""
+def get_local_gv(si, sj, ystep, omega, sinomega, cosomega, xl, yl, zl):
+    """
+    Given a point (si, sj) in step space, compute the x values in the lab frame for each omega angle
+    Then subtract them from xl to account for the change in the diffraction origin point.
+    Then re-compute the g-vectors.
+    """
     # compute the sample coordinates for this pixel
-    sx, sy = step_to_sample(i, j, ystep)
+    sx, sy = geometry.step_to_sample(si, sj, ystep)
 
+    # compute the position in the lab frame
     # geometry.sample_to_lab_sincos
+    # lx = sxr
+    # sxr = sx * cosomega - sy * sinomega
+    # lx = sx * cosomega - sy * sinomega
     # we only care about the x axis
     x_offset = sx * cosomega - sy * sinomega
     # compute local offset
@@ -1650,8 +1660,8 @@ def get_local_gv(i, j, ystep, omega, sinomega, cosomega, xl, yl, zl):
 
 
 def idxpoint(
-        i,
-        j,
+        si,
+        sj,
         isel,
         omega,
         sinomega,
@@ -1663,6 +1673,7 @@ def idxpoint(
         eta,
         ystep=2.00,
         y0=0.0,
+        ymin=-2.00,
         minpks=1000,
         hkl_tol=0.1,
         ds_tol=0.005,
@@ -1676,7 +1687,7 @@ def idxpoint(
     Selects peaks from the sinogram and attempts to index.
     More of this could be indexing.py I guess.
 
-    i,j = integer step from the rotation axis center
+    si, sj = position in step space (origin is rotation axis)
 
     Effectively a columnfile:
         isel = column of rings to use
@@ -1703,7 +1714,8 @@ def idxpoint(
     # ring mask
     mr = isel
     # mask all the peaks by dtyi and omega (for scoring)
-    m = dtyimask_from_sincos(i, j, sinomega, cosomega, dtyi, y0, ystep)
+
+    m = geometry.dtyimask_from_step_sincos(si, sj, sinomega, cosomega, dtyi, y0, ystep, ymin)
     # combine masks together (for indexing)
     local_mask = m & mr
 
@@ -1713,7 +1725,7 @@ def idxpoint(
     # then mask those for indexing via [mr]
 
     # compute g-vectors for peaks[m]
-    gv, gx, gy, gz = get_local_gv(i, j, ystep, omega[m], sinomega[m], cosomega[m], xl[m], yl[m], zl[m])
+    gv, gx, gy, gz = get_local_gv(si, sj, ystep, omega[m], sinomega[m], cosomega[m], xl[m], yl[m], zl[m])
     eta_local = eta[m]
 
     # mask g-vectors to [m & mr]
@@ -1748,11 +1760,11 @@ def idxpoint(
     ind.ubis = [sym_u.find_uniq_u(ubi, symglobal) for ubi in ind.ubis]
     # count the unique peaks per grain
     uniqs = np.empty((len(ind.ubis), 2), int)
-    for i, ubi in enumerate(ind.ubis):
+    for si, ubi in enumerate(ind.ubis):
         # we are scoring with peaks[m]
         # here, gx, gy, gz are already computed via peaks[m]
         # so no mask required (passing ones)
-        uniqs[i] = hkluniq(ubi, gx, gy, gz, eta_local, np.ones_like(eta_local, dtype=bool), hkl_tol, hmax)
+        uniqs[si] = hkluniq(ubi, gx, gy, gz, eta_local, np.ones_like(eta_local, dtype=bool), hkl_tol, hmax)
     if len(ind.ubis) == 0:
         return [
             (0, 0, np.eye(3)),
@@ -1765,11 +1777,11 @@ def idxpoint(
     best = uniqs[order[0]][1]  # number of unique spots
     last = int(best * uniqcut)
     grains = []
-    for i in order:
-        ntotal, nuniq = uniqs[i]
+    for si in order:
+        ntotal, nuniq = uniqs[si]
         if nuniq < last:
             break
-        grains.append((ntotal, nuniq, ind.ubis[i]))
+        grains.append((ntotal, nuniq, ind.ubis[si]))
     return grains
 
 
@@ -1854,6 +1866,7 @@ class PBP:
             self.ifrac = ifrac
         self.ystep = dset.ystep
         self.y0 = y0
+        self.ymin = self.ybincens.min()
         self.uniqcut = uniqcut
         self.cosine_tol = cosine_tol
         self.loglevel = loglevel
@@ -1914,9 +1927,7 @@ class PBP:
 
         colf.addcolumn(isel, "isel")  # peaks selected for indexing
 
-        # colf.addcolumn(np.round((colf.dty - self.y0) / self.ystep).astype(int), "dtyi")
-        # dtyi = dty_to_dtyi(colf.dty - self.y0, self.ystep)
-        dtyi = dty_to_dtyi(colf.dty, self.ystep)
+        dtyi = geometry.dty_to_dtyi(colf.dty, self.ystep, self.ymin)
         colf.addcolumn(dtyi, "dtyi")
 
         # cache these to speed up selections later
@@ -1990,6 +2001,7 @@ class PBP:
         idxopt = {
             "ystep": self.ystep,
             "y0": self.y0,
+            "ymin": self.ymin,
             "minpks": self.minpks,
             "hkl_tol": self.hkl_tol,
             "ds_tol": self.ds_tol,
@@ -2000,16 +2012,8 @@ class PBP:
         }
         pprint.pprint(idxopt)
 
-        # nlo = np.floor((self.ybincens.min() - self.y0) / self.ystep).astype(int)
-        # nhi = np.ceil((self.ybincens.max() - self.y0) / self.ystep).astype(int)
-
-        nlo = np.floor((self.ybincens.min()) / self.ystep).astype(int)
-        nhi = np.ceil((self.ybincens.max()) / self.ystep).astype(int)
-
-        rng = range(nlo, nhi + 1, gridstep)
-
         if debugpoints is None:
-            args = [(i, j, idxopt) for i in rng for j in rng]
+            args = [(i, j, idxopt) for (i, j) in geometry.step_grid_from_ybincens(self.ybincens, self.ystep, gridstep, self.y0)]
             random.shuffle(args)
         else:
             args = [(i, j, idxopt) for i, j in debugpoints]
