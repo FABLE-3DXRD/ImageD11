@@ -402,7 +402,11 @@ class DataSet:
                 # read from h5:
                 dty = hin[scan]["instrument/positioners"][self.dtymotor]
                 # get the unit for dty:
-                dty_unit = hin[scan]["instrument/positioners"][self.dtymotor].attrs['units']
+                # will fail if we import from sparse unfortunately
+                try:
+                    dty_unit = hin[scan]["instrument/positioners"][self.dtymotor].attrs['units']
+                except KeyError:
+                    logging.warning('No units for dty, assuming microns!')
                 if dty_unit == 'mm':
                     dty_is_mm = True
                 if len(dty.shape) == 0:
