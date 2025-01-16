@@ -86,25 +86,25 @@ from skimage.feature import blob_log
 
 def sample_to_lab_sincos(sx, sy, y0, ybeam, dty, sinomega, cosomega):
     """
-Converts position in sample frame (sx, sy) to position in lab frame (lx, ly).
-The units of sx, sy, y0, ybeam and dty must agree.
+    Converts position in sample frame (sx, sy) to position in lab frame (lx, ly).
+    The units of sx, sy, y0, ybeam and dty must agree.
 
-:param sx: X-coordinate in sample reference frame
-:type sx: (float, np.ndarray)
-:param sy: Y-coordinate in sample reference frame
-:type sy: (float, np.ndarray)
-:param y0: the true value of dty when the rotation axis intersects the beam
-:type y0: float
-:param ybeam: the nominal value of dty when the rotation axis intersects the beam
-:type ybeam: float
-:param dty: the dty motor underneath the rotation axis
-:type dty: (float, np.ndarray)
-:param sinomega: the sine of the omega value of the rotation axis
-:type sinomega: (float, np.ndarray)
-:param cosomega: the cosine of the omega value of the rotation axis
-:type cosomega: (float, np.ndarray)
-:return: lx, ly: the x and y coordinates in the lab reference frame
-:rtype: ((float, np.ndarray), (float, np.ndarray))
+    :param sx: X-coordinate in sample reference frame
+    :type sx: (float, np.ndarray)
+    :param sy: Y-coordinate in sample reference frame
+    :type sy: (float, np.ndarray)
+    :param y0: the true value of dty when the rotation axis intersects the beam
+    :type y0: float
+    :param ybeam: the nominal value of dty when the rotation axis intersects the beam
+    :type ybeam: float
+    :param dty: the dty motor underneath the rotation axis
+    :type dty: (float, np.ndarray)
+    :param sinomega: the sine of the omega value of the rotation axis
+    :type sinomega: (float, np.ndarray)
+    :param cosomega: the cosine of the omega value of the rotation axis
+    :type cosomega: (float, np.ndarray)
+    :return: lx, ly: the x and y coordinates in the lab reference frame
+    :rtype: ((float, np.ndarray), (float, np.ndarray))
     """
     # first, rotate sx and sy by omega about its origin (rotation axis)
     sxr = sx * cosomega - sy * sinomega
@@ -130,25 +130,25 @@ def sample_to_lab(sx, sy, y0, ybeam, dty, omega):
 
 def lab_to_sample_sincos(lx, ly, y0, ybeam, dty, sinomega, cosomega):
     """
-Converts position in lab frame (lx, ly) to position in lab frame (sx, sy).
-The units of sx, sy, y0, ybeam and dty must agree.
+    Converts position in lab frame (lx, ly) to position in lab frame (sx, sy).
+    The units of sx, sy, y0, ybeam and dty must agree.
 
-:param lx: X-coordinate in lab reference frame
-:type lx: (float, np.ndarray)
-:param ly: Y-coordinate in lab reference frame
-:type ly: (float, np.ndarray)
-:param y0: the true value of dty when the rotation axis intersects the beam
-:type y0: float
-:param ybeam: the nominal value of dty when the rotation axis intersects the beam
-:type ybeam: float
-:param dty: the dty motor underneath the rotation axis
-:type dty: (float, np.ndarray)
-:param sinomega: the sine of the omega value of the rotation axis
-:type sinomega: (float, np.ndarray)
-:param cosomega: the cosine of the omega value of the rotation axis
-:type cosomega: (float, np.ndarray)
-:return: sx, su: the x and y coordinates in the sample reference frame
-:rtype: ((float, np.ndarray), (float, np.ndarray))
+    :param lx: X-coordinate in lab reference frame
+    :type lx: (float, np.ndarray)
+    :param ly: Y-coordinate in lab reference frame
+    :type ly: (float, np.ndarray)
+    :param y0: the true value of dty when the rotation axis intersects the beam
+    :type y0: float
+    :param ybeam: the nominal value of dty when the rotation axis intersects the beam
+    :type ybeam: float
+    :param dty: the dty motor underneath the rotation axis
+    :type dty: (float, np.ndarray)
+    :param sinomega: the sine of the omega value of the rotation axis
+    :type sinomega: (float, np.ndarray)
+    :param cosomega: the cosine of the omega value of the rotation axis
+    :type cosomega: (float, np.ndarray)
+    :return: sx, su: the x and y coordinates in the sample reference frame
+    :rtype: ((float, np.ndarray), (float, np.ndarray))
     """
     # first, translate
     sxr = lx
@@ -272,11 +272,6 @@ def dty_values_grain_in_beam(sx, sy, y0, omega):
     sinomega = np.sin(omega_rad)
     cosomega = np.cos(omega_rad)
     return dty_values_grain_in_beam_sincos(sx, sy, y0, sinomega, cosomega)
-
-
-def dtycalc_sincos(sinomega, cosomega, x, y, y0):
-    """See dty_values_grain_in_beam_sincos"""
-    return dty_values_grain_in_beam_sincos(sx=x, sy=y, y0=y0, sinomega=sinomega, cosomega=cosomega)
 
 
 def fit_sine_wave(omega, dty, initial_guess, weights=None):
