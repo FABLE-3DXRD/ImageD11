@@ -378,6 +378,7 @@ class DataSet:
         these will be the motor positions to accompany the images
         # could also get these from sparse files if saved
         """
+        dty_is_mm = False
         # self.guess_motornames()
         self.omega = [
             None,
@@ -398,7 +399,12 @@ class DataSet:
                     ]
                     bad.append(i)
                 # this can be an array or a scalar
+                # read from h5:
                 dty = hin[scan]["instrument/positioners"][self.dtymotor]
+                # get the unit for dty:
+                dty_unit = hin[scan]["instrument/positioners"][self.dtymotor].attrs['units']
+                if dty_unit == 'mm':
+                    dty_is_mm = True
                 if len(dty.shape) == 0:
                     self.dty[i] = np.full(self.frames_per_scan[i], dty[()])
                 elif dty.shape[0] == self.frames_per_scan[i]:
@@ -418,6 +424,10 @@ class DataSet:
                 print(
                     "replace bad scan omega", b, self.scans[b], "with", j, self.scans[j]
                 )
+        # ensure dty is in microns - this is for compatability with geometry
+        if dty_is_mm:
+            self.dty = self.dty * 1000
+            logging.info("Converted dty from mm to um")
         logging.info("imported omega/dty")
 
     def guess_shape(self):
