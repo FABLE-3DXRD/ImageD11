@@ -189,8 +189,8 @@ class GrainSinogram:
         mask_4d = cf_4d.grain_id == grain_label
         omega = cf_4d.omega[mask_4d]
         dty = cf_4d.dty[mask_4d]
-        x, y, y0 = ImageD11.sinograms.geometry.dty_omega_to_x_y_y0(dty, omega)
-        self.grain.translation = np.array([x, y, 0])
+        sx, sy, y0 = ImageD11.sinograms.geometry.sx_sy_y0_from_dty_omega(dty, omega)
+        self.grain.translation = np.array([sx, sy, 0])
         self.recon_y0 = y0
 
     def update_lab_position_from_recon(self, method="iradon"):
