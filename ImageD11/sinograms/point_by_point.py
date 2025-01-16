@@ -623,7 +623,6 @@ class PBPRefine:
                  hkl_tol_origins=0.05,
                  hkl_tol_refine=0.1,
                  hkl_tol_refine_merged=0.05,
-                 fpks=0.7,
                  ds_tol=0.005,
                  etacut=0.1,
                  ifrac=None,
@@ -635,7 +634,6 @@ class PBPRefine:
         self.dset = dset
         self.phase_name = phase_name
         # peak selection parameters
-        self.fpks = fpks
         self.forref = forref
         self.ds_tol = ds_tol
 
@@ -790,10 +788,6 @@ class PBPRefine:
         self.icolf = colf.copy()
         self.icolf.filter(sel)
         self.npks = npks
-        if self.fpks < 1:
-            self.minpks = int(npks * self.fpks)
-        else:
-            self.minpks = self.fpks
         print(
             "Using for refinement:",
             self.icolf.nrows,
@@ -966,7 +960,7 @@ class PBPRefine:
                     continue
 
             # other pars we need for refinement
-            pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'fpks', 'ds_tol',
+            pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'ds_tol',
                     'etacut', 'ifrac', 'forref', 'y0', 'ybeam', 'min_grain_npks']
 
             for par in pars:
@@ -1003,7 +997,7 @@ class PBPRefine:
                 except (AttributeError, KeyError):
                     continue
 
-            pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'fpks', 'ds_tol',
+            pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'ds_tol',
                     'etacut', 'ifrac', 'forref', 'y0', 'ybeam', 'min_grain_npks']
             pars_dict = {}
             for par in pars:
