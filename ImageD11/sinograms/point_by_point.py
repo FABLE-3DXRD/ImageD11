@@ -1766,11 +1766,11 @@ def idxpoint(
     ind.ubis = [sym_u.find_uniq_u(ubi, symglobal) for ubi in ind.ubis]
     # count the unique peaks per grain
     uniqs = np.empty((len(ind.ubis), 2), int)
-    for si, ubi in enumerate(ind.ubis):
+    for i, ubi in enumerate(ind.ubis):
         # we are scoring with peaks[m]
         # here, gx, gy, gz are already computed via peaks[m]
         # so no mask required (passing ones)
-        uniqs[si] = hkluniq(ubi, gx, gy, gz, eta_local, np.ones_like(eta_local, dtype=bool), hkl_tol, hmax)
+        uniqs[i] = hkluniq(ubi, gx, gy, gz, eta_local, np.ones_like(eta_local, dtype=bool), hkl_tol, hmax)
     if len(ind.ubis) == 0:
         return [
             (0, 0, np.eye(3)),
@@ -1783,11 +1783,11 @@ def idxpoint(
     best = uniqs[order[0]][1]  # number of unique spots
     last = int(best * uniqcut)
     grains = []
-    for si in order:
-        ntotal, nuniq = uniqs[si]
+    for i in order:
+        ntotal, nuniq = uniqs[i]
         if nuniq < last:
             break
-        grains.append((ntotal, nuniq, ind.ubis[si]))
+        grains.append((ntotal, nuniq, ind.ubis[i]))
     return grains
 
 
