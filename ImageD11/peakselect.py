@@ -73,7 +73,6 @@ def rings_mask(cf, dstol, dsmax, cell=None):
             m |= (abs(cf.ds - v) < dstol)
     return m
 
-# separated plot logic and core computation logic,
 def sorted_peak_intensity_mask(colf, uself=True, frac=0.995, B=0.2, doplot=None):
     """
     Create a boolean mask for a columnfile based on peaks sorted by fractional intensity.
@@ -132,7 +131,7 @@ def sorted_peak_intensity_mask_and_cumsum(colf, uself=True, frac=0.995, B=0.2,):
 
     Returns:
         mask: Boolean mask for selected peaks.
-        cums: Data used for plotting.
+        cums: Cumulative sums of the (sorted) peak intensities
     """
     # Correct intensities for structure factor (decreases with 2theta)
     cor_intensity = colf.sum_intensity * (np.exp(colf.ds * colf.ds * B))
@@ -156,7 +155,7 @@ def sorted_peak_intensity_mask_and_cumsum(colf, uself=True, frac=0.995, B=0.2,):
 
     return mask, cums
 
-# no edit on the logic,
+
 def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2, doplot=None,):
     """
     Select peaks based on ring intensity.
@@ -167,8 +166,7 @@ def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2
         dsmax: High angle cutoff for removing peaks.
         frac: Fractional normalised intensity to keep (removes weak peaks)
         B: Thermal factor to downweight low angle vs high angle peaks for normalised intensity
-        doplot: Whether to draw a plot.
-
+        doplot: Whether to draw a plot. (float number, range for zoomed plot)
     Returns:
         cfc: Columnfile with selected peaks.
     """
