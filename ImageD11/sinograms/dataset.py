@@ -407,6 +407,7 @@ class DataSet:
                     dty_unit = hin[scan]["instrument/positioners"][self.dtymotor].attrs['units']
                 except KeyError:
                     logging.warning('No units for dty, assuming microns!')
+                    dty_unit = 'um'
                 if dty_unit == 'mm':
                     dty_is_mm = True
                 if len(dty.shape) == 0:
