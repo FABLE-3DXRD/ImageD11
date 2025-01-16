@@ -323,7 +323,7 @@ def merge(hkl, etasign, dtyi, sum_intensity, sc, fc, omega, dty, xpos_refined, e
 def get_voxel_idx(y0, xi0, yi0, sinomega, cosomega, dty, ystep):
     """
     get peaks at xi0, yi0
-    basically just geometry.dtycalc_sincos
+    basically just geometry.dty_values_grain_in_beam_sincos
     """
 
     ydist = np.abs(y0 - xi0 * sinomega - yi0 * cosomega - dty)
@@ -629,6 +629,7 @@ class PBPRefine:
                  ifrac=None,
                  forref=None,
                  y0=0.0,
+                 ybeam=0.0,
                  min_grain_npks=6
                  ):
         self.dset = dset
@@ -653,6 +654,7 @@ class PBPRefine:
         # geometry stuff
         self.ystep = self.dset.ystep
         self.y0 = y0
+        self.ybeam = ybeam
         self.ybincens = self.dset.ybincens
 
         # set default paths
@@ -860,7 +862,7 @@ class PBPRefine:
             omega = self.colf.omega
         whole_sample_sino, xedges, yedges = np.histogram2d(dty, omega,
                                                            bins=[self.dset.ybinedges, self.dset.obinedges])
-        shift = -self.y0 / self.ystep
+        shift = geometry.sino_shift(self.y0, self.ybeam, self.ystep)
         nthreads = len(os.sched_getaffinity(os.getpid()))
         # make sure the shape is the same as sx_grid
         pad = self.sx_grid.shape[0] - whole_sample_sino.shape[0]
@@ -965,7 +967,7 @@ class PBPRefine:
 
             # other pars we need for refinement
             pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'fpks', 'ds_tol',
-                    'etacut', 'ifrac', 'forref', 'y0', 'min_grain_npks']
+                    'etacut', 'ifrac', 'forref', 'y0', 'ybeam', 'min_grain_npks']
 
             for par in pars:
                 try:
@@ -1002,7 +1004,7 @@ class PBPRefine:
                     continue
 
             pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'fpks', 'ds_tol',
-                    'etacut', 'ifrac', 'forref', 'y0', 'min_grain_npks']
+                    'etacut', 'ifrac', 'forref', 'y0', 'ybeam', 'min_grain_npks']
             pars_dict = {}
             for par in pars:
                 try:
@@ -1327,6 +1329,10 @@ def compute_origins(singlemap, sample_mask,
 
             so = sinomega[omega_idx]
             co = cosomega[omega_idx]
+
+            # geometry.dty_values_grain_in_beam_sincos
+            # for each grid point (sx, sy) get a dty value that brings the grid point
+            # into the beam at this omega angle
 
             ygrid = y0 - sx_grid * so - sy_grid * co
 
