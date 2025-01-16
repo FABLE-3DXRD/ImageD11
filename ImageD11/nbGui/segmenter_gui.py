@@ -38,7 +38,7 @@ def printdatasets( dataroot, sample):
 
 
 
-def chooseframe(self, dset, scan=None, idx=None, counter="_roi1", fetch_raw_image=False):
+def chooseframe(dset, scan=None, idx=None, counter="_roi1", fetch_raw_image=False):
     """
     Locate a busy frame from the dataset and optionally fetch the raw image.
 
