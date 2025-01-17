@@ -392,14 +392,13 @@ class TestDtyMask(unittest.TestCase):
 
 @unittest.skipIf(int(sys.version_info.major) == 2, "can't test iradon on Python 2")
 class TestFullLoop(unittest.TestCase):
-    def setUp(self):
-        from ImageD11.sinograms.roi_iradon import run_iradon
     def test_full_loop(self):
+        from ImageD11.sinograms.roi_iradon import run_iradon
         # tricky almost-half-acquisition scan
         # we scanned around 14 mm
         # but the true y0 is actually around 14.5 mm
         # also we didn't scan symmetrically
-        y0 = 13.5 * 1000 # um
+        y0 = 13.5 * 1000  # um
 
         ystep = 10.0
         ymin = 14 * 1000 - 750
@@ -423,7 +422,7 @@ class TestFullLoop(unittest.TestCase):
         for i in range(sino.shape[0]):
             for j in range(sino.shape[1]):
                 this_dtyi = dtyi[j]
-                sino[i, j] = 1/(50*np.cbrt((np.abs(i - this_dtyi)))+0.01)
+                sino[i, j] = 1 / (50 * np.cbrt((np.abs(i - this_dtyi))) + 0.01)
 
         shift, pad = geometry.sino_shift_and_pad(y0, ny, ymin, ystep)
         recon = run_iradon(sino, omega, pad=pad, shift=shift)
@@ -431,8 +430,6 @@ class TestFullLoop(unittest.TestCase):
         sx_calc, sy_calc = geometry.recon_to_sample(ri_calc, rj_calc, recon.shape, ystep)
         self.assertTrue(np.abs(sx - sx_calc) < ystep)
         self.assertTrue(np.abs(sy - sy_calc) < ystep)
-
-
 
 
 if __name__ == "__main__":
