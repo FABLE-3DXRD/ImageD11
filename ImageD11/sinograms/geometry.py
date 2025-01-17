@@ -38,7 +38,7 @@ sample frame (could be rotated about omega then translated along lab y):
 Step space:
 
                 +ve
-                /\
+                ^
                 |
               i |
                 |
@@ -46,7 +46,7 @@ Step space:
                 |           j
                 |
                 |
-               \/
+                v
               -ve
 
 
