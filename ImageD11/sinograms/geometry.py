@@ -194,15 +194,15 @@ def recon_to_step(ri, rj, recon_shape):
     return si, sj
 
 
-def sample_to_recon(x, y, recon_shape, ystep):
-    """Converts sample space (x, y) to reconstruction space (ri, rj)"""
-    si, sj = sample_to_step(x, y, ystep)
+def sample_to_recon(sx, sy, recon_shape, ystep):
+    """Converts sample space (sx, sy) to reconstruction space (ri, rj)"""
+    si, sj = sample_to_step(sx, sy, ystep)
     ri, rj = step_to_recon(si, sj, recon_shape)
     return ri, rj
 
 
 def recon_to_sample(ri, rj, recon_shape, ystep):
-    """Converts reconstruction space (ri, rj) to sample space (x, y)"""
+    """Converts reconstruction space (ri, rj) to sample space (sx, sy)"""
     si, sj = recon_to_step(ri, rj, recon_shape)
     sx, sy = step_to_sample(si, sj, ystep)
     return sx, sy
@@ -439,7 +439,7 @@ def fit_sample_position_from_recon(recon, ystep):
     Returns None if we couldn't find any blobs
     """
     blobs = blob_log(recon, min_sigma=1, max_sigma=10, num_sigma=10, threshold=0.01)
-    blobs_sorted = sorted(blobs, key=lambda x: x[2], reverse=True)
+    blobs_sorted = sorted(blobs, key=lambda x: x[2], reverse=False)
     try:
         largest_blob = blobs_sorted[0]
 
