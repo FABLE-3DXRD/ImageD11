@@ -1,8 +1,9 @@
+import sys
+
 import numpy as np
 import unittest
 
 from ImageD11.sinograms import geometry
-from ImageD11.sinograms.roi_iradon import run_iradon
 
 
 class TestSampleToLab(unittest.TestCase):
@@ -389,7 +390,10 @@ class TestDtyMask(unittest.TestCase):
                     self.assertTrue((m1 == m2).all())
 
 
+@unittest.skipIf(int(sys.version_info.major) == 2, "can't test iradon on Python 2")
 class TestFullLoop(unittest.TestCase):
+    def setUp(self):
+        from ImageD11.sinograms.roi_iradon import run_iradon
     def test_full_loop(self):
         # tricky almost-half-acquisition scan
         # we scanned around 14 mm
