@@ -24,7 +24,7 @@ def testcase(dataroot = '/data/id11/nanoscope/ihmi1452/id11',
     mfile = os.path.join( dataroot, sample, dsname, dsname+'.h5' )
     if not os.path.exists( mfile ):
         print( "Missing files", mfile )
-        return False
+        return # False
     try:
         result = ImageD11.sinograms.dataset.check( dataroot, 
                                                    analysisroot,
@@ -38,7 +38,7 @@ def testcase(dataroot = '/data/id11/nanoscope/ihmi1452/id11',
     finally:
         print("Remove",destination)
         os.unlink( destination )
-    return result
+    return # result
 
 
 
