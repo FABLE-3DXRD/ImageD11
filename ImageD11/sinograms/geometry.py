@@ -85,7 +85,7 @@ from skimage.feature import blob_log
 def sample_to_lab_sincos(sx, sy, y0, dty, sinomega, cosomega):
     """
     Converts position in sample frame (sx, sy) to position in lab frame (lx, ly).
-    The units of sx, sy, y0, ybeam and dty must agree.
+    The units of sx, sy, y0, and dty must agree.
 
     :param sx: X-coordinate in sample reference frame
     :type sx: (float, np.ndarray)
@@ -127,7 +127,7 @@ def sample_to_lab(sx, sy, y0, dty, omega):
 def lab_to_sample_sincos(lx, ly, y0, dty, sinomega, cosomega):
     """
     Converts position in lab frame (lx, ly) to position in lab frame (sx, sy).
-    The units of sx, sy, y0, ybeam and dty must agree.
+    The units of sx, sy, y0, and dty must agree.
 
     :param lx: X-coordinate in lab reference frame
     :type lx: (float, np.ndarray)
@@ -247,7 +247,7 @@ def dty_values_grain_in_beam_sincos(sx, sy, y0, sinomega, cosomega):
     syr = sx * sinomega + sy * cosomega
     
     lx = sxr
-    ly = syr + dty + (ybeam - y0)
+    ly = syr + dty - y0
     
     Therefore:
     ly = sx * sinomega + sy * cosomega + dty - y0
