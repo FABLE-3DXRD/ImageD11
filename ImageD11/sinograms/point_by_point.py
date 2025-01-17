@@ -40,8 +40,6 @@ from ImageD11 import sym_u, unitcell, parameters
 import ImageD11.sinograms.dataset
 import ImageD11.indexing
 from ImageD11.columnfile import columnfile
-#from ImageD11.sinograms.geometry import dty_to_dtyi, dtyimask_from_sincos, step_to_sample, sample_to_lab_sincos, \
-#    dtyi_to_dty, step_to_recon
 from ImageD11.sinograms import geometry
 from ImageD11.sinograms.roi_iradon import run_iradon
 from ImageD11.sinograms.tensor_map import unitcell_to_b
@@ -628,7 +626,6 @@ class PBPRefine:
                  ifrac=None,
                  forref=None,
                  y0=0.0,
-                 ybeam=0.0,
                  min_grain_npks=6
                  ):
         self.dset = dset
@@ -652,7 +649,6 @@ class PBPRefine:
         # geometry stuff
         self.ystep = self.dset.ystep
         self.y0 = y0
-        self.ybeam = ybeam
         self.ybincens = self.dset.ybincens
 
         # set default paths
@@ -856,7 +852,7 @@ class PBPRefine:
             omega = self.colf.omega
         whole_sample_sino, xedges, yedges = np.histogram2d(dty, omega,
                                                            bins=[self.dset.ybinedges, self.dset.obinedges])
-        shift = geometry.sino_shift(self.y0, self.ybeam, self.ystep)
+        shift, _ = geometry.sino_shift_and_pad(self.y0, len(self.ybincens), self.ybincens.min(), self.ystep)
         nthreads = len(os.sched_getaffinity(os.getpid()))
         # make sure the shape is the same as sx_grid
         pad = self.sx_grid.shape[0] - whole_sample_sino.shape[0]
@@ -961,7 +957,7 @@ class PBPRefine:
 
             # other pars we need for refinement
             pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'ds_tol',
-                    'etacut', 'ifrac', 'forref', 'y0', 'ybeam', 'min_grain_npks']
+                    'etacut', 'ifrac', 'forref', 'y0', 'min_grain_npks']
 
             for par in pars:
                 try:
@@ -998,7 +994,7 @@ class PBPRefine:
                     continue
 
             pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'ds_tol',
-                    'etacut', 'ifrac', 'forref', 'y0', 'ybeam', 'min_grain_npks']
+                    'etacut', 'ifrac', 'forref', 'y0', 'min_grain_npks']
             pars_dict = {}
             for par in pars:
                 try:

@@ -14,26 +14,23 @@ class TestSampleToLab(unittest.TestCase):
         sy = np.sqrt(3) / 2  # um
         omega = 30  # degrees
 
-        # however we have an alignment problem
-        # y0 vs ybeam discrepancy
+        # however we have an alignment problem with y0
 
-        ybeam = 100  # um - where the beam is
         y0 = 101  # um - dty value where the rotation axis hits the beam
         dty = 100  # um
 
-        # such that the grain is actually in the beam (ly = ybeam)
+        # such that the grain actually ends up in the beam (ly = ybeam)
 
         desired_lx = 0.0  # um
-        desired_ly = 100  # um
+        desired_ly = 0.0  # um
 
-        lx, ly = geometry.sample_to_lab(sx, sy, y0, ybeam, dty, omega)
+        lx, ly = geometry.sample_to_lab(sx, sy, y0, dty, omega)
 
         self.assertAlmostEqual(desired_lx, lx)
         self.assertAlmostEqual(desired_ly, ly)
 
     def test_lab_to_sample(self):
-        # for now, assume no alignment problems with ybeam at 0
-        ybeam = 0  # um
+        # for now, assume no alignment problems
         y0 = 0  # um
         dty = 0  # um
         # set up a grain that's in the beam at 90 degrees
@@ -44,7 +41,7 @@ class TestSampleToLab(unittest.TestCase):
         desired_sx = 0.0
         desired_sy = 1.0
 
-        sx, sy = geometry.lab_to_sample(lx, ly, y0, ybeam, dty, omega)
+        sx, sy = geometry.lab_to_sample(lx, ly, y0, dty, omega)
 
         self.assertAlmostEqual(desired_sx, sx)
         self.assertAlmostEqual(desired_sy, sy)
@@ -54,18 +51,17 @@ class TestSampleToLab(unittest.TestCase):
         # beam actually intersects at dty = y0
         # so rotation axis is slightly to the right (negative y)
 
-        ybeam = 35  # um
         y0 = 36  # um
         dty = 35  # um
 
         # set up a grain that's in the beam at 90 degrees
         lx = -1.0  # um
-        ly = 35  # um
+        ly = 0.0  # um
 
         desired_sx = 1.0
         desired_sy = 1.0
 
-        sx, sy = geometry.lab_to_sample(lx, ly, y0, ybeam, dty, omega)
+        sx, sy = geometry.lab_to_sample(lx, ly, y0, dty, omega)
 
         self.assertAlmostEqual(desired_sx, sx)
         self.assertAlmostEqual(desired_sy, sy)
@@ -74,12 +70,11 @@ class TestSampleToLab(unittest.TestCase):
         sx = 4.32
         sy = -6.49
         y0 = 42
-        ybeam = 40
         dty = -24
         omega = -456
 
-        lx, ly = geometry.sample_to_lab(sx, sy, y0, ybeam, dty, omega)
-        sx_final, sy_final = geometry.lab_to_sample(lx, ly, y0, ybeam, dty, omega)
+        lx, ly = geometry.sample_to_lab(sx, sy, y0, dty, omega)
+        sx_final, sy_final = geometry.lab_to_sample(lx, ly, y0, dty, omega)
 
         self.assertAlmostEqual(sx, sx_final)
         self.assertAlmostEqual(sy, sy_final)
@@ -381,7 +376,6 @@ class TestDtyMask(unittest.TestCase):
         self.sinomega = np.sin(np.radians(self.omega))
         self.cosomega = np.cos(np.radians(self.omega))
 
-
     def test_cos_sin(self):
         x = 12.0
         y = 13.0
@@ -392,6 +386,14 @@ class TestDtyMask(unittest.TestCase):
                     m2 = geometry.dtyimask_from_step_sincos(si, sj, self.sinomega, self.cosomega, self.dtyi, y0,
                                                             self.ystep, self.ymin)
                     self.assertTrue((m1 == m2).all())
+
+
+class TestFullLoop(unittest.TestCase):
+    def test_full_loop(self):
+        # tricky almost-half-acquisition scan
+        # we scanned around 14 mm
+        y0 = 13.5 * 1000 # um
+
 
 
 if __name__ == "__main__":

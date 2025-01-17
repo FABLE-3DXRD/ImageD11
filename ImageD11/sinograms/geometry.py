@@ -6,9 +6,9 @@ However, because the rotation axis is moving, this gets more difficult for scann
 I have therefore defined the reference frames in the following way:
 
 1. Static lab frame - vectors defined by the beam vector and the dty translation axis vector.
-   Its origin is defined, either directly as (0,0,0) or indirectly as follows:
+   Its origin is defined directly as (0,0,0):
    x: The intersection of the beam vector and the dty translation axis vector
-   y: User-provided - "ybeam". Normally around 14 for the 3DXRD station, 0 for the NSCOPE station.
+   y: The centre of the beam horizontally
    z: The centre of the beam vertically
    dtyi is a discretisation of the dty motor values.
 
@@ -19,8 +19,6 @@ I have therefore defined the reference frames in the following way:
    This translates with dty and rotates with omega, CW about the rotation axis (looking top down).
    This has the rotation axis at its origin.
    y0 is the true value of dty when the rotation axis intersects the beam.
-   If everything were perfectly aligned, y0 = ybeam
-   However, this is not always the case, hence the need for both values in case they differ.
 
 3. Step space
    This is simply an integer discretisation of the sample frame.
@@ -38,11 +36,11 @@ lab frame:
          |
          | x
          |
-<------- O (0, 0)
+<------- O (0, 0) centre of beam
     y
 
 
-sample frame (could be rotated about omega then translated along lab y):
+sample frame (could be rotated about omega then translated along lab y by dty):
 
          ^
          |
@@ -84,7 +82,7 @@ from scipy.optimize import curve_fit
 from skimage.feature import blob_log
 
 
-def sample_to_lab_sincos(sx, sy, y0, ybeam, dty, sinomega, cosomega):
+def sample_to_lab_sincos(sx, sy, y0, dty, sinomega, cosomega):
     """
     Converts position in sample frame (sx, sy) to position in lab frame (lx, ly).
     The units of sx, sy, y0, ybeam and dty must agree.
@@ -95,8 +93,6 @@ def sample_to_lab_sincos(sx, sy, y0, ybeam, dty, sinomega, cosomega):
     :type sy: (float, np.ndarray)
     :param y0: the true value of dty when the rotation axis intersects the beam
     :type y0: float
-    :param ybeam: the nominal value of dty when the rotation axis intersects the beam
-    :type ybeam: float
     :param dty: the dty motor underneath the rotation axis
     :type dty: (float, np.ndarray)
     :param sinomega: the sine of the omega value of the rotation axis
@@ -112,23 +108,23 @@ def sample_to_lab_sincos(sx, sy, y0, ybeam, dty, sinomega, cosomega):
 
     # then translate about the rotated frame
     lx = sxr
-    ly = syr + dty + (ybeam - y0)
+    ly = syr + dty - y0
 
     return lx, ly
 
 
-def sample_to_lab(sx, sy, y0, ybeam, dty, omega):
+def sample_to_lab(sx, sy, y0, dty, omega):
     """Calls sample_to_lab_sincos after converting omega (degrees) into sinomega, cosomega"""
 
     omega_rad = np.radians(omega)
     sinomega = np.sin(omega_rad)
     cosomega = np.cos(omega_rad)
-    lx, ly = sample_to_lab_sincos(sx, sy, y0, ybeam, dty, sinomega, cosomega)
+    lx, ly = sample_to_lab_sincos(sx, sy, y0, dty, sinomega, cosomega)
 
     return lx, ly
 
 
-def lab_to_sample_sincos(lx, ly, y0, ybeam, dty, sinomega, cosomega):
+def lab_to_sample_sincos(lx, ly, y0, dty, sinomega, cosomega):
     """
     Converts position in lab frame (lx, ly) to position in lab frame (sx, sy).
     The units of sx, sy, y0, ybeam and dty must agree.
@@ -139,8 +135,6 @@ def lab_to_sample_sincos(lx, ly, y0, ybeam, dty, sinomega, cosomega):
     :type ly: (float, np.ndarray)
     :param y0: the true value of dty when the rotation axis intersects the beam
     :type y0: float
-    :param ybeam: the nominal value of dty when the rotation axis intersects the beam
-    :type ybeam: float
     :param dty: the dty motor underneath the rotation axis
     :type dty: (float, np.ndarray)
     :param sinomega: the sine of the omega value of the rotation axis
@@ -152,7 +146,7 @@ def lab_to_sample_sincos(lx, ly, y0, ybeam, dty, sinomega, cosomega):
     """
     # first, translate
     sxr = lx
-    syr = ly - dty - (ybeam - y0)
+    syr = ly - dty + y0
 
     # then unrotate
     sx = sxr * cosomega + syr * sinomega
@@ -161,13 +155,13 @@ def lab_to_sample_sincos(lx, ly, y0, ybeam, dty, sinomega, cosomega):
     return sx, sy
 
 
-def lab_to_sample(lx, ly, y0, ybeam, dty, omega):
+def lab_to_sample(lx, ly, y0, dty, omega):
     """Calls lab_to_sample_sincos after converting omega (degrees) into sinomega, cosomega"""
 
     omega_rad = np.radians(omega)
     sinomega = np.sin(omega_rad)
     cosomega = np.cos(omega_rad)
-    sx, sy = lab_to_sample_sincos(lx, ly, y0, ybeam, dty, sinomega, cosomega)
+    sx, sy = lab_to_sample_sincos(lx, ly, y0, dty, sinomega, cosomega)
 
     return sx, sy
 
@@ -214,31 +208,31 @@ def recon_to_sample(ri, rj, recon_shape, ystep):
     return sx, sy
 
 
-def lab_to_step(lx, ly, y0, ybeam, dty, omega, ystep):
+def lab_to_step(lx, ly, y0, dty, omega, ystep):
     """Converts lab space (lx, ly) to step space (si, sj)"""
-    sx, sy = lab_to_sample(lx, ly, y0, ybeam, dty, omega)
+    sx, sy = lab_to_sample(lx, ly, y0, dty, omega)
     si, sj = sample_to_step(sx, sy, ystep)
     return si, sj
 
 
-def step_to_lab(si, sj, y0, ybeam, dty, omega, ystep):
+def step_to_lab(si, sj, y0, dty, omega, ystep):
     """Converts step space (si, sj) to lab space (lx, ly)"""
     sx, sy = step_to_sample(si, sj, ystep)
-    lx, ly = sample_to_lab(sx, sy, y0, ybeam, dty, omega)
+    lx, ly = sample_to_lab(sx, sy, y0, dty, omega)
     return lx, ly
 
 
-def lab_to_recon(lx, ly, y0, ybeam, dty, omega, recon_shape, ystep):
+def lab_to_recon(lx, ly, y0, dty, omega, recon_shape, ystep):
     """Converts lab space (lx, ly) to recon space (ri, rj)"""
-    si, sj = lab_to_step(lx, ly, y0, ybeam, dty, omega, ystep)
+    si, sj = lab_to_step(lx, ly, y0, dty, omega, ystep)
     ri, rj = step_to_recon(si, sj, recon_shape)
     return ri, rj
 
 
-def recon_to_lab(ri, rj, y0, ybeam, dty, omega, recon_shape, ystep):
+def recon_to_lab(ri, rj, y0, dty, omega, recon_shape, ystep):
     """Converts recon space (ri, rj) to lab space (lx, ly)"""
     si, sj = recon_to_step(ri, rj, recon_shape)
-    lx, ly = step_to_lab(si, sj, y0, ybeam, dty, omega, ystep)
+    lx, ly = step_to_lab(si, sj, y0, dty, omega, ystep)
     return lx, ly
 
 
@@ -246,7 +240,7 @@ def dty_values_grain_in_beam_sincos(sx, sy, y0, sinomega, cosomega):
     """
     Take a grain positioned at (sx, sy) in the sample reference frame
     Determine the dty values needed to bring the grain into the beam as you rotate by omega.
-    Equivalently, solve the sample<->lab conversion where ly = ybeam (grain is in-beam).
+    Equivalently, solve the sample<->lab conversion where ly = 0 (grain is in-beam).
     From sample_to_lab_sincos:
 
     sxr = sx * cosomega - sy * sinomega
@@ -256,10 +250,10 @@ def dty_values_grain_in_beam_sincos(sx, sy, y0, sinomega, cosomega):
     ly = syr + dty + (ybeam - y0)
     
     Therefore:
-    ly = sx * sinomega + sy * cosomega + dty + (ybeam - y0)
+    ly = sx * sinomega + sy * cosomega + dty - y0
     
-    Solving for ly = ybeam:
-    ybeam = sx * sinomega + sy * cosomega + dty + ybeam - y0
+    Solving for ly = 0:
+    0 = sx * sinomega + sy * cosomega + dty - y0
     dty = y0 - sx * sinomega - sy * cosomega
     """
     dty = y0 - sx * sinomega - sy * cosomega
@@ -461,12 +455,22 @@ def fit_sample_position_from_recon(recon, ystep):
         return None
 
 
-def sino_shift(y0, ybeam, ystep):
+def sino_shift_and_pad(y0, ny, ymin, ystep):
     """
-    Determine the shift required (in pixels) to apply to a sinogram during reconstruction to account for
-    differences in y0 vs ybeam.
+    Determine the difference in sinogram pixels between
+    the central dtyi value of the sinogram and the dtyi value of the rotation axis (from y0)
+    To do this, we convert y0 into dtyi without rounding
+    Also determine the minimum pad to get the whole sample in the frame
+    Which should be double the shift
     """
-    return -(y0 - ybeam)/ystep
+    # get the middle row of the sinogram in pixel space
+    ymid_px = ny/2
+    # get the value of y0 in pixel space
+    # this is the same as dty_to_dtyi without rounding
+    y0_px = (y0 - ymin)/ystep
+    shift = ymid_px - y0_px
+    pad = np.ceil(np.abs(shift) * 2).astype(int) + 1
+    return shift, pad
 
 
 def step_grid_from_ybincens(ybincens, step_size, gridstep, y0):
