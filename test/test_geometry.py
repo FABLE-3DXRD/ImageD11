@@ -2,6 +2,7 @@ import numpy as np
 import unittest
 
 from ImageD11.sinograms import geometry
+from ImageD11.sinograms.roi_iradon import run_iradon
 
 
 class TestSampleToLab(unittest.TestCase):
@@ -392,7 +393,41 @@ class TestFullLoop(unittest.TestCase):
     def test_full_loop(self):
         # tricky almost-half-acquisition scan
         # we scanned around 14 mm
+        # but the true y0 is actually around 14.5 mm
+        # also we didn't scan symmetrically
         y0 = 13.5 * 1000 # um
+
+        ystep = 10.0
+        ymin = 14 * 1000 - 750
+        ymax = 14 * 1000 + 100
+
+        yrange = ymax - ymin
+        ny = int(yrange // ystep) + 1
+        ybincens = np.linspace(ymin, ymax, ny)
+
+        omega = np.arange(0, 361, 1)
+
+        sx = 539.86
+        sy = -510.25
+
+        dty = geometry.dty_values_grain_in_beam(sx, sy, y0, omega)
+        dtyi = geometry.dty_to_dtyi(dty, ystep, ybincens[0])
+
+        # fill sinogram image
+        sino = np.zeros((ny, len(omega)), dtype=float)
+
+        for i in range(sino.shape[0]):
+            for j in range(sino.shape[1]):
+                this_dtyi = dtyi[j]
+                sino[i, j] = 1/(50*np.cbrt((np.abs(i - this_dtyi)))+0.01)
+
+        shift, pad = geometry.sino_shift_and_pad(y0, ny, ymin, ystep)
+        recon = run_iradon(sino, omega, pad=pad, shift=shift)
+        ri_calc, rj_calc = np.array(np.where(recon == recon.max())).flatten()
+        sx_calc, sy_calc = geometry.recon_to_sample(ri_calc, rj_calc, recon.shape, ystep)
+        self.assertTrue(np.abs(sx - sx_calc) < ystep)
+        self.assertTrue(np.abs(sy - sy_calc) < ystep)
+
 
 
 
