@@ -52,7 +52,7 @@ sample frame (could be rotated about omega then translated along lab y by dty):
 Step space:
 
                 +ve
-                /\
+                ^
                 |
               i |
                 |
@@ -60,7 +60,7 @@ Step space:
                 |           j
                 |
                 |
-               \/
+                v
               -ve
 
 

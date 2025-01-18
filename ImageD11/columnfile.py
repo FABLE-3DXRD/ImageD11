@@ -900,7 +900,7 @@ try:
             column_titles = raw[first_data_row - 1].replace("# ", "").lstrip(" ").split()
             # print(f"Column titles are {column_titles}")
 
-            self._df = pd.read_csv(filename, skiprows=range(first_data_row), sep='\s+', header=None, names=column_titles)
+            self._df = pd.read_csv(filename, skiprows=range(first_data_row), sep=r'\s+', header=None, names=column_titles)
 
             self.parameters.dumbtypecheck()
             # self.set_attributes()
