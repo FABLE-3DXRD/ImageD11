@@ -398,6 +398,7 @@ class DataSet:
                     ]
                     bad.append(i)
                 # this can be an array or a scalar
+                # read from h5:
                 dty = hin[scan]["instrument/positioners"][self.dtymotor]
                 if len(dty.shape) == 0:
                     self.dty[i] = np.full(self.frames_per_scan[i], dty[()])

@@ -40,8 +40,7 @@ from ImageD11 import sym_u, unitcell, parameters
 import ImageD11.sinograms.dataset
 import ImageD11.indexing
 from ImageD11.columnfile import columnfile
-from ImageD11.sinograms.geometry import dty_to_dtyi, dtyimask_from_sincos, step_to_sample, sample_to_lab_sincos, \
-    dtyi_to_dty, step_to_recon
+from ImageD11.sinograms import geometry
 from ImageD11.sinograms.roi_iradon import run_iradon
 from ImageD11.sinograms.tensor_map import unitcell_to_b
 from ImageD11.sinograms.sinogram import save_array
@@ -98,6 +97,44 @@ def detector_rotation_matrix(tilt_x, tilt_y, tilt_z):
 
 
 @numba.njit(cache = True)
+def compute_grain_origins(omega, wedge, chi, t_x, t_y, t_z):
+    w = np.radians(wedge)
+    WI = np.array([[np.cos(w),         0, -np.sin(w)],
+                   [0,           1.0,         0],
+                   [np.sin(w),         0,  np.cos(w)]], np.float64)
+    c = np.radians(chi)
+    CI = np.array([[1,            0.0,         0],
+                   [0,     np.cos(c), -np.sin(c)],
+                   [0,     np.sin(c),  np.cos(c)]], np.float64)
+    t = np.zeros((3, omega.shape[0]), np.float64)  # crystal translations
+    # Rotations in reverse order compared to making g-vector
+    # also reverse directions. this is trans at all zero to
+    # current setting. gv is scattering vector to all zero
+    om_r = np.radians(omega)
+    # This is the real rotation (right handed, g back to k)
+    t[0, :] = np.cos(om_r) * t_x - np.sin(om_r) * t_y
+    t[1, :] = np.sin(om_r) * t_x + np.cos(om_r) * t_y
+    t[2, :] = t_z
+    if chi != 0.0:
+        c = np.cos(np.radians(chi))
+        s = np.sin(np.radians(chi))
+        u = np.zeros(t.shape, np.float64)
+        u[0, :] = t[0, :]
+        u[1, :] = c * t[1, :] + -s * t[2, :]
+        u[2, :] = s * t[1, :] + c * t[2, :]
+        t = u
+    if wedge != 0.0:
+        c = np.cos(np.radians(wedge))
+        s = np.sin(np.radians(wedge))
+        u = np.zeros(t.shape, np.float64)
+        u[0, :] = c * t[0, :] + -s * t[2, :]
+        u[1, :] = t[1, :]
+        u[2, :] = s * t[0, :] + c * t[2, :]
+        t = u
+    return t
+
+
+@numba.njit(cache = True)
 def compute_xyz_lab(sc, fc,
                     y_center=0., y_size=0., tilt_y=0.,
                     z_center=0., z_size=0., tilt_z=0.,
@@ -133,12 +170,12 @@ def compute_xyz_lab(sc, fc,
 
 
 @numba.njit(cache=True)
-def compute_tth_eta_from_xyz(peaks_xyz,
+def compute_tth_eta_from_xyz(peaks_xyz, omega,
                              t_x=0.0, t_y=0.0, t_z=0.0,
                              wedge=0.0,  # Wedge == theta on 4circ
                              chi=0.0):  # last line is for laziness -
 
-    s1 = peaks_xyz
+    s1 = peaks_xyz - compute_grain_origins(omega, wedge, chi, t_x, t_y, t_z)
 
     # CHANGED to HFP convention 4-9-2007
     eta = np.degrees(np.arctan2(-s1[1, :], s1[2, :]))
@@ -148,7 +185,7 @@ def compute_tth_eta_from_xyz(peaks_xyz,
 
 
 @numba.njit(cache=True)
-def compute_tth_eta(sc, fc,
+def compute_tth_eta(sc, fc, omega,
                     y_center=0., y_size=0., tilt_y=0.,
                     z_center=0., z_size=0., tilt_z=0.,
                     tilt_x=0.,
@@ -167,7 +204,7 @@ def compute_tth_eta(sc, fc,
         o11=o11, o12=o12, o21=o21, o22=o22)
 
     tth, eta = compute_tth_eta_from_xyz(
-        peaks_xyz,
+        peaks_xyz, omega,
         t_x=t_x, t_y=t_y, t_z=t_z,
         wedge=wedge,
         chi=chi)
@@ -322,7 +359,7 @@ def merge(hkl, etasign, dtyi, sum_intensity, sc, fc, omega, dty, xpos_refined, e
 def get_voxel_idx(y0, xi0, yi0, sinomega, cosomega, dty, ystep):
     """
     get peaks at xi0, yi0
-    basically just geometry.dtycalc_sincos
+    basically just geometry.dty_values_grain_in_beam_sincos
     """
 
     ydist = np.abs(y0 - xi0 * sinomega - yi0 * cosomega - dty)
@@ -338,7 +375,7 @@ def compute_gve(sc, fc, omega, xpos,
                 t_x, t_y, t_z, wedge, chi, wavelength):
     this_distance = distance - xpos
 
-    tth, eta = compute_tth_eta(sc, fc,
+    tth, eta = compute_tth_eta(sc, fc, omega,
                                y_center=y_center,
                                y_size=y_size,
                                tilt_y=tilt_y,
@@ -622,7 +659,6 @@ class PBPRefine:
                  hkl_tol_origins=0.05,
                  hkl_tol_refine=0.1,
                  hkl_tol_refine_merged=0.05,
-                 fpks=0.7,
                  ds_tol=0.005,
                  etacut=0.1,
                  ifrac=None,
@@ -633,7 +669,6 @@ class PBPRefine:
         self.dset = dset
         self.phase_name = phase_name
         # peak selection parameters
-        self.fpks = fpks
         self.forref = forref
         self.ds_tol = ds_tol
 
@@ -652,6 +687,7 @@ class PBPRefine:
         # geometry stuff
         self.ystep = self.dset.ystep
         self.y0 = y0
+        self.ybincens = self.dset.ybincens
 
         # set default paths
         self.pbpmap_filename = self.dset.refmapfile  # pbp map input
@@ -673,7 +709,7 @@ class PBPRefine:
         sj = np.arange(self.pbpmap.j.min(), self.pbpmap.j.max() + 1)
 
         # convert these arrays to sample space
-        sx, sy = step_to_sample(si, sj, self.ystep)
+        sx, sy = geometry.step_to_sample(si, sj, self.ystep)
 
         # make a grid of these
         self.sx_grid, self.sy_grid = np.meshgrid(sx, sy, indexing='ij')
@@ -774,7 +810,7 @@ class PBPRefine:
         isel = isel & ((np.abs(np.sin(np.radians(colf.eta)))) > self.etacut)
 
         colf.addcolumn(isel, "isel")  # peaks selected for refinement
-        dtyi = dty_to_dtyi(colf.dty, self.ystep)
+        dtyi = geometry.dty_to_dtyi(colf.dty, self.ystep, self.ybincens.min())
         colf.addcolumn(dtyi, "dtyi")
 
         # cache these to speed up selections later
@@ -786,10 +822,6 @@ class PBPRefine:
         self.icolf = colf.copy()
         self.icolf.filter(sel)
         self.npks = npks
-        if self.fpks < 1:
-            self.minpks = int(npks * self.fpks)
-        else:
-            self.minpks = self.fpks
         print(
             "Using for refinement:",
             self.icolf.nrows,
@@ -858,7 +890,7 @@ class PBPRefine:
             omega = self.colf.omega
         whole_sample_sino, xedges, yedges = np.histogram2d(dty, omega,
                                                            bins=[self.dset.ybinedges, self.dset.obinedges])
-        shift = -self.y0 / self.ystep
+        shift, _ = geometry.sino_shift_and_pad(self.y0, len(self.ybincens), self.ybincens.min(), self.ystep)
         nthreads = len(os.sched_getaffinity(os.getpid()))
         # make sure the shape is the same as sx_grid
         pad = self.sx_grid.shape[0] - whole_sample_sino.shape[0]
@@ -962,7 +994,7 @@ class PBPRefine:
                     continue
 
             # other pars we need for refinement
-            pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'fpks', 'ds_tol',
+            pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'ds_tol',
                     'etacut', 'ifrac', 'forref', 'y0', 'min_grain_npks']
 
             for par in pars:
@@ -999,7 +1031,7 @@ class PBPRefine:
                 except (AttributeError, KeyError):
                     continue
 
-            pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'fpks', 'ds_tol',
+            pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine', 'hkl_tol_refine_merged', 'ds_tol',
                     'etacut', 'ifrac', 'forref', 'y0', 'min_grain_npks']
             pars_dict = {}
             for par in pars:
@@ -1123,7 +1155,7 @@ class PBPRefine:
             # get columns for refine.pbpmap
             # which contain the ri, rj points
             # right now it's indexed in step space
-            ri_col, rj_col = step_to_recon(self.pbpmap.i, self.pbpmap.j, self.mask.shape)
+            ri_col, rj_col = geometry.step_to_recon(self.pbpmap.i, self.pbpmap.j, self.mask.shape)
 
             if points_step_space is None:
                 # get the list of peak indices masks in reconstruction space
@@ -1133,7 +1165,7 @@ class PBPRefine:
                     # print(points_recon_space)
             else:
                 # convert input points to reconstruction space, then pass to the function
-                points_recon_space = [step_to_recon(si, sj, self.mask.shape) for (si, sj) in points_step_space]
+                points_recon_space = [geometry.step_to_recon(si, sj, self.mask.shape) for (si, sj) in points_step_space]
 
             # columnfile by [3, 3, (ri, rj)]
             all_pbpmap_ubis = self.pbpmap.ubi
@@ -1325,6 +1357,10 @@ def compute_origins(singlemap, sample_mask,
 
             so = sinomega[omega_idx]
             co = cosomega[omega_idx]
+
+            # geometry.dty_values_grain_in_beam_sincos
+            # for each grid point (sx, sy) get a dty value that brings the grid point
+            # into the beam at this omega angle
 
             ygrid = y0 - sx_grid * so - sy_grid * co
 
@@ -1619,12 +1655,20 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
     return final_ubis, final_eps, final_npks, final_nuniq
 
 
-def get_local_gv(i, j, ystep, omega, sinomega, cosomega, xl, yl, zl):
-    """now we correct g-vectors for origin point"""
+def get_local_gv(si, sj, ystep, omega, sinomega, cosomega, xl, yl, zl):
+    """
+    Given a point (si, sj) in step space, compute the x values in the lab frame for each omega angle
+    Then subtract them from xl to account for the change in the diffraction origin point.
+    Then re-compute the g-vectors.
+    """
     # compute the sample coordinates for this pixel
-    sx, sy = step_to_sample(i, j, ystep)
+    sx, sy = geometry.step_to_sample(si, sj, ystep)
 
+    # compute the position in the lab frame
     # geometry.sample_to_lab_sincos
+    # lx = sxr
+    # sxr = sx * cosomega - sy * sinomega
+    # lx = sx * cosomega - sy * sinomega
     # we only care about the x axis
     x_offset = sx * cosomega - sy * sinomega
     # compute local offset
@@ -1650,8 +1694,8 @@ def get_local_gv(i, j, ystep, omega, sinomega, cosomega, xl, yl, zl):
 
 
 def idxpoint(
-        i,
-        j,
+        si,
+        sj,
         isel,
         omega,
         sinomega,
@@ -1663,6 +1707,7 @@ def idxpoint(
         eta,
         ystep=2.00,
         y0=0.0,
+        ymin=-2.00,
         minpks=1000,
         hkl_tol=0.1,
         ds_tol=0.005,
@@ -1676,7 +1721,7 @@ def idxpoint(
     Selects peaks from the sinogram and attempts to index.
     More of this could be indexing.py I guess.
 
-    i,j = integer step from the rotation axis center
+    si, sj = position in step space (origin is rotation axis)
 
     Effectively a columnfile:
         isel = column of rings to use
@@ -1703,7 +1748,8 @@ def idxpoint(
     # ring mask
     mr = isel
     # mask all the peaks by dtyi and omega (for scoring)
-    m = dtyimask_from_sincos(i, j, sinomega, cosomega, dtyi, y0, ystep)
+
+    m = geometry.dtyimask_from_step_sincos(si, sj, sinomega, cosomega, dtyi, y0, ystep, ymin)
     # combine masks together (for indexing)
     local_mask = m & mr
 
@@ -1713,7 +1759,7 @@ def idxpoint(
     # then mask those for indexing via [mr]
 
     # compute g-vectors for peaks[m]
-    gv, gx, gy, gz = get_local_gv(i, j, ystep, omega[m], sinomega[m], cosomega[m], xl[m], yl[m], zl[m])
+    gv, gx, gy, gz = get_local_gv(si, sj, ystep, omega[m], sinomega[m], cosomega[m], xl[m], yl[m], zl[m])
     eta_local = eta[m]
 
     # mask g-vectors to [m & mr]
@@ -1854,6 +1900,7 @@ class PBP:
             self.ifrac = ifrac
         self.ystep = dset.ystep
         self.y0 = y0
+        self.ymin = self.ybincens.min()
         self.uniqcut = uniqcut
         self.cosine_tol = cosine_tol
         self.loglevel = loglevel
@@ -1914,9 +1961,7 @@ class PBP:
 
         colf.addcolumn(isel, "isel")  # peaks selected for indexing
 
-        # colf.addcolumn(np.round((colf.dty - self.y0) / self.ystep).astype(int), "dtyi")
-        # dtyi = dty_to_dtyi(colf.dty - self.y0, self.ystep)
-        dtyi = dty_to_dtyi(colf.dty, self.ystep)
+        dtyi = geometry.dty_to_dtyi(colf.dty, self.ystep, self.ymin)
         colf.addcolumn(dtyi, "dtyi")
 
         # cache these to speed up selections later
@@ -1990,6 +2035,7 @@ class PBP:
         idxopt = {
             "ystep": self.ystep,
             "y0": self.y0,
+            "ymin": self.ymin,
             "minpks": self.minpks,
             "hkl_tol": self.hkl_tol,
             "ds_tol": self.ds_tol,
@@ -2000,16 +2046,8 @@ class PBP:
         }
         pprint.pprint(idxopt)
 
-        # nlo = np.floor((self.ybincens.min() - self.y0) / self.ystep).astype(int)
-        # nhi = np.ceil((self.ybincens.max() - self.y0) / self.ystep).astype(int)
-
-        nlo = np.floor((self.ybincens.min()) / self.ystep).astype(int)
-        nhi = np.ceil((self.ybincens.max()) / self.ystep).astype(int)
-
-        rng = range(nlo, nhi + 1, gridstep)
-
         if debugpoints is None:
-            args = [(i, j, idxopt) for i in rng for j in rng]
+            args = [(i, j, idxopt) for (i, j) in geometry.step_grid_from_ybincens(self.ybincens, self.ystep, gridstep, self.y0)]
             random.shuffle(args)
         else:
             args = [(i, j, idxopt) for i, j in debugpoints]

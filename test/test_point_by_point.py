@@ -72,10 +72,14 @@ class TestComputeTthEtaFromXYZ(unittest.TestCase):
             peaks_xyz = np.random.random((3, npeaks)) * 10000 - 5000
             wedge = np.random.random()
             chi = np.random.random()
+            t_x = np.random.random()
+            t_y = np.random.random()
+            t_z = np.random.random()
+            omega = np.random.random(npeaks) * 380 - 180
             
-            tth_id11, eta_id11 = transform.compute_tth_eta_from_xyz(peaks_xyz=peaks_xyz, omega=None, wedge=wedge, chi=chi)
+            tth_id11, eta_id11 = transform.compute_tth_eta_from_xyz(peaks_xyz=peaks_xyz, omega=omega, wedge=wedge, chi=chi, t_x=t_x, t_y=t_y, t_z=t_z)
             
-            tth_numba, eta_numba = point_by_point.compute_tth_eta_from_xyz(peaks_xyz=peaks_xyz, wedge=wedge, chi=chi)
+            tth_numba, eta_numba = point_by_point.compute_tth_eta_from_xyz(peaks_xyz=peaks_xyz, omega=omega, wedge=wedge, chi=chi, t_x=t_x, t_y=t_y, t_z=t_z)
 
             self.assertTrue(np.allclose(tth_id11, tth_numba))
             self.assertTrue(np.allclose(eta_id11, eta_numba))
@@ -97,6 +101,10 @@ class TestComputeTthEta(unittest.TestCase):
             distance = np.random.random() * 1500
             wedge = np.random.random()
             chi = np.random.random()
+            t_x = np.random.random()
+            t_y = np.random.random()
+            t_z = np.random.random()
+            omega = np.random.random(npeaks) * 380 - 180
             
             peaks = np.vstack((sc, fc))
             
@@ -110,7 +118,11 @@ class TestComputeTthEta(unittest.TestCase):
                                                     tilt_z=tilt_z,
                                                     distance=distance,
                                                     wedge=wedge,
-                                                    chi=chi)
+                                                    chi=chi,
+                                                    t_x=t_x,
+                                                    t_y=t_y,
+                                                    t_z=t_z,
+                                                    omega=omega)
             
             tth_numba, eta_numba = point_by_point.compute_tth_eta(sc=sc,
                                                             fc=fc,
@@ -123,7 +135,11 @@ class TestComputeTthEta(unittest.TestCase):
                                                             tilt_z=tilt_z,
                                                             distance=distance,
                                                             wedge=wedge,
-                                                            chi=chi)
+                                                            chi=chi,
+                                                            t_x=t_x,
+                                                            t_y=t_y,
+                                                            t_z=t_z,
+                                                            omega=omega)
 
             self.assertTrue(np.allclose(tth_id11, tth_numba))
             self.assertTrue(np.allclose(eta_id11, eta_numba))
