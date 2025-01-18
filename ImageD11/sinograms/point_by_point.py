@@ -97,6 +97,44 @@ def detector_rotation_matrix(tilt_x, tilt_y, tilt_z):
 
 
 @numba.njit(cache = True)
+def compute_grain_origins(omega, wedge, chi, t_x, t_y, t_z):
+    w = np.radians(wedge)
+    WI = np.array([[np.cos(w),         0, -np.sin(w)],
+                   [0,           1.0,         0],
+                   [np.sin(w),         0,  np.cos(w)]], np.float64)
+    c = np.radians(chi)
+    CI = np.array([[1,            0.0,         0],
+                   [0,     np.cos(c), -np.sin(c)],
+                   [0,     np.sin(c),  np.cos(c)]], np.float64)
+    t = np.zeros((3, omega.shape[0]), np.float64)  # crystal translations
+    # Rotations in reverse order compared to making g-vector
+    # also reverse directions. this is trans at all zero to
+    # current setting. gv is scattering vector to all zero
+    om_r = np.radians(omega)
+    # This is the real rotation (right handed, g back to k)
+    t[0, :] = np.cos(om_r) * t_x - np.sin(om_r) * t_y
+    t[1, :] = np.sin(om_r) * t_x + np.cos(om_r) * t_y
+    t[2, :] = t_z
+    if chi != 0.0:
+        c = np.cos(np.radians(chi))
+        s = np.sin(np.radians(chi))
+        u = np.zeros(t.shape, np.float64)
+        u[0, :] = t[0, :]
+        u[1, :] = c * t[1, :] + -s * t[2, :]
+        u[2, :] = s * t[1, :] + c * t[2, :]
+        t = u
+    if wedge != 0.0:
+        c = np.cos(np.radians(wedge))
+        s = np.sin(np.radians(wedge))
+        u = np.zeros(t.shape, np.float64)
+        u[0, :] = c * t[0, :] + -s * t[2, :]
+        u[1, :] = t[1, :]
+        u[2, :] = s * t[0, :] + c * t[2, :]
+        t = u
+    return t
+
+
+@numba.njit(cache = True)
 def compute_xyz_lab(sc, fc,
                     y_center=0., y_size=0., tilt_y=0.,
                     z_center=0., z_size=0., tilt_z=0.,
@@ -132,12 +170,12 @@ def compute_xyz_lab(sc, fc,
 
 
 @numba.njit(cache=True)
-def compute_tth_eta_from_xyz(peaks_xyz,
+def compute_tth_eta_from_xyz(peaks_xyz, omega,
                              t_x=0.0, t_y=0.0, t_z=0.0,
                              wedge=0.0,  # Wedge == theta on 4circ
                              chi=0.0):  # last line is for laziness -
 
-    s1 = peaks_xyz
+    s1 = peaks_xyz - compute_grain_origins(omega, wedge, chi, t_x, t_y, t_z)
 
     # CHANGED to HFP convention 4-9-2007
     eta = np.degrees(np.arctan2(-s1[1, :], s1[2, :]))
@@ -147,7 +185,7 @@ def compute_tth_eta_from_xyz(peaks_xyz,
 
 
 @numba.njit(cache=True)
-def compute_tth_eta(sc, fc,
+def compute_tth_eta(sc, fc, omega,
                     y_center=0., y_size=0., tilt_y=0.,
                     z_center=0., z_size=0., tilt_z=0.,
                     tilt_x=0.,
@@ -166,7 +204,7 @@ def compute_tth_eta(sc, fc,
         o11=o11, o12=o12, o21=o21, o22=o22)
 
     tth, eta = compute_tth_eta_from_xyz(
-        peaks_xyz,
+        peaks_xyz, omega,
         t_x=t_x, t_y=t_y, t_z=t_z,
         wedge=wedge,
         chi=chi)
@@ -337,7 +375,7 @@ def compute_gve(sc, fc, omega, xpos,
                 t_x, t_y, t_z, wedge, chi, wavelength):
     this_distance = distance - xpos
 
-    tth, eta = compute_tth_eta(sc, fc,
+    tth, eta = compute_tth_eta(sc, fc, omega,
                                y_center=y_center,
                                y_size=y_size,
                                tilt_y=tilt_y,
