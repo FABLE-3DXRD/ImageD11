@@ -387,8 +387,8 @@ def process(ds, worker_args, ncpu=None, tqdm_class=None, task_instance=None, **k
     if tqdm_class and task_instance:
         all_peaks = process_map(
             pps, args, chunksize=1, max_workers=nthreads, 
-            tqdm_class=lambda *args, **kwargs: tqdm_class(task_instance, *args, **kwargs),
-            **kwargs
+            tqdm_class=tqdm_class,
+            task_instance=task_instance,
         )
     else:
         all_peaks = process_map(pps, args, chunksize=1, max_workers=nthreads)
