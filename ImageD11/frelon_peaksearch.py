@@ -360,7 +360,7 @@ PKSAVE = [
 PKCOL = [getattr(ImageD11.cImageD11, p) for p in PKSAVE]
 
 
-def process(ds, worker_args, ncpu=None, tqdm_class=None, **kwargs):
+def process(ds, worker_args, ncpu=None, tqdm_class=None, task_instance=None, **kwargs):
     """
     Runs over the first scan in a dataset in parallel
 
@@ -382,8 +382,17 @@ def process(ds, worker_args, ncpu=None, tqdm_class=None, **kwargs):
     n_frames = omega.shape[0]
 
     args = [(hname, frames_dset, i, omega[i], worker_args) for i in range(n_frames)]
+    
 
-    all_peaks = process_map(pps, args, chunksize=1, max_workers=nthreads, tqdm_class=tqdm_class, **kwargs)
+    if tqdm_class and task_instance:
+        all_peaks = process_map(
+            pps, args, chunksize=1, max_workers=nthreads, 
+            tqdm_class=lambda *args, **kwargs: tqdm_class(task_instance, *args, **kwargs),
+            **kwargs
+        )
+    else:
+        all_peaks = process_map(pps, args, chunksize=1, max_workers=nthreads)
+    
 
     # make a dict to hold our results in
     cf_2d_dict = {}
