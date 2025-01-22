@@ -29,17 +29,6 @@ scan_nb_prefix = os.path.join(nb_base_prefix, 'S3DXRD')
 # does the notebook work without errors?
 # does the notebook give you the output you expect?
 
-
-# def notebook_exec(notebook):
-#     print('Testing notebook', notebook)
-#     with open(notebook) as f:
-#         nb = nbformat.read(f, as_version=4)
-#         ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
-#         try:
-#             assert ep.preprocess(nb) is not None, f"Got empty notebook for {notebook}"
-#         except Exception:
-#             assert False, f"Failed executing {notebook}"
-
             
 def noteboook_exec_pmill(nb_input_path, nb_output_path, params_dict):
     papermill.execute_notebook(
@@ -47,34 +36,6 @@ def noteboook_exec_pmill(nb_input_path, nb_output_path, params_dict):
        nb_output_path,
        parameters=params_dict
     )
-    
-    
-# # test tomographic route in order
-# def tomographic_route():
-#     scan_nb_names = [
-#         'import_test_data.ipynb',
-#         'tomo_1_index.ipynb',
-#         'tomo_2_map.ipynb',
-#         'tomo_3_refinement.ipynb',
-#         '4_visualise.ipynb'
-#     ]
-#     scan_nb_paths = [os.path.join(scan_nb_prefix, name) for name in scan_nb_names]
-#     for notebook in scan_nb_paths:
-#         notebook_exec(notebook)
-
-# # test pbp route in order, after tomo route finished so we have a dataset file...
-# def pbp_route():
-#     scan_nb_names = [
-#         'pbp_1_indexing.ipynb',
-#         'pbp_2_visualise.ipynb',
-#         'pbp_3_refinement.ipynb',
-#         '4_visualise.ipynb'
-#     ]
-#     scan_nb_paths = [os.path.join(scan_nb_prefix, name) for name in scan_nb_names]
-#     for notebook in scan_nb_paths:
-#         notebook_exec(notebook)
-
-
 
 def notebook_route(base_dir, notebook_paths, notebook_param_dicts):
     """
@@ -158,23 +119,63 @@ def test_tomographic_route():
     notebook_route(tomo_dir, scan_nb_paths, scan_nb_params)
     
 
-
-# def test_simplest_import():
-#     test_dir = 'import_test'
-#     scan_nb_names = [
-#         'import_test_data.ipynb',
-#     ]
-#     scan_nb_params = [
-#         {'download_dir': test_dir,
-#          'PYTHONPATH': sys.path[0]}
-#     ]
-#     scan_nb_paths = [os.path.join(scan_nb_prefix, name) for name in scan_nb_names]
-
-
-# def test_routes():
-#     tomographic_route()
-#     pbp_route()
-
+    
+# test the full point-by-point route from start to finish
+def test_pbp_route():
+    tomo_dir = 'pbp_route'                    
+    scan_nb_names = [
+        'import_test_data.ipynb',
+        'pbp_1_indexing.ipynb',
+        'pbp_2_visualise.ipynb',
+        'pbp_3_refinement.ipynb',
+        '4_visualise.ipynb'
+    ]
+    dset_file = os.path.join(tomo_dir, 'processed', 'Si_cube', 'Si_cube_S3DXRD_nt_moves_dty', 'Si_cube_S3DXRD_nt_moves_dty_dataset.h5')
+    scan_nb_params = [
+        {'download_dir': tomo_dir,  # import_test_data.ipynb
+         'PYTHONPATH': sys.path[0]},
+        {'PYTHONPATH': sys.path[0],  # pbp_1_indexing.ipynb
+         'dset_file': dset_file,
+         'phase_str': 'Si',
+         'minpkint': 0,
+         'hkl_tol':  0.025,
+         'fpks': 0.9,
+         'ds_tol': 0.004,
+         'etacut': 0.1,
+         'ifrac': 5e-3,
+         'y0': 24.24,
+         'symmetry': "cubic",
+         'foridx': [0, 1, 3, 5, 7],
+         'forgen': [1, 5, 7],
+         'uniqcut': 0.85,
+         'use_cluster': False
+        },
+        {'PYTHONPATH': sys.path[0],  # pbp_2_visualise.ipynb
+         'dset_file': dset_file,
+         'phase_str': 'Si',
+         'min_unique': 20
+        },
+        {'PYTHONPATH': sys.path[0],  # pbp_3_refinement.ipynb
+         'dset_file': dset_file,
+         'phase_str': 'Si',
+         'min_unique': 20,
+         'manual_threshold': None,
+         'y0': 24.24,
+         'hkl_tol_origins': 0.05,
+         'hkl_tol_refine': 0.1,
+         'hkl_tol_refine_merged': 0.05,
+         'ds_tol': 0.004,
+         'ifrac': 7e-3,
+         'use_cluster': False
+        },
+        {'PYTHONPATH': sys.path[0],  # 4_visualise.ipynb
+         'dset_file': dset_file,
+         'phase_str': 'Si',
+         'min_unique': 400,
+        }
+    ]
+    scan_nb_paths = [os.path.join(scan_nb_prefix, name) for name in scan_nb_names]
+    notebook_route(tomo_dir, scan_nb_paths, scan_nb_params)
     
 if __name__=='__main__':
     print(ImageD11.__path__)
