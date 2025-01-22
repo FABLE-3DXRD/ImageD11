@@ -1,3 +1,4 @@
+# flake8: noqa
 """
 Python script to automatically end-to-end test our Jupyter notebooks
 Currently implemented: nothing (indev)
