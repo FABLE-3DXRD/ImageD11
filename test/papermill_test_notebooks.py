@@ -212,7 +212,8 @@ def test_FeAu_JADB_tomo():
          'dataroot': '/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/RAW_DATA/',
          'analysisroot': tomo_dir,
          'sample': 'FeAu_0p5_tR_nscope',
-         'dataset': 'top_200um'
+         'dataset': 'top_200um',
+         'dset_prefix': "top_"
         },
         {'PYTHONPATH': sys.path[0],  # tomo_1_index.ipynb
          'dset_file': dset_file,
@@ -228,6 +229,7 @@ def test_FeAu_JADB_tomo():
          'fracs': [0.9, 0.7],
          'max_grains': 1000,
          'peak_assign_tol': 0.05,
+         'dset_prefix': "top_",
         },
         {'PYTHONPATH': sys.path[0],  # tomo_1_index_minor_phase.ipynb
          'dset_file': dset_file,
@@ -246,6 +248,7 @@ def test_FeAu_JADB_tomo():
          'fracs': [0.9],
          'max_grains': 1000,
          'peak_assign_tol': 0.05,
+         'dset_prefix': "top_",
         },
         {'PYTHONPATH': sys.path[0],  # tomo_2_map.ipynb
          'dset_file': dset_file,
@@ -260,7 +263,8 @@ def test_FeAu_JADB_tomo():
          'correct_sinos_with_ring_current': True,
          'first_tmap_cutoff_level': 0.4,
          'niter': 500,
-         'second_tmap_cutoff_level': 0.05
+         'second_tmap_cutoff_level': 0.05,
+         'dset_prefix': "top_",
         },
         {'PYTHONPATH': sys.path[0],  # tomo_2_map_minor_phase.ipynb
          'dset_file': dset_file,
@@ -278,7 +282,8 @@ def test_FeAu_JADB_tomo():
          'first_tmap_cutoff_level': 0.4,
          'niter': 500,
          'second_tmap_cutoff_level': 0.5,
-         'grain_too_many_px': 10
+         'grain_too_many_px': 10,
+         'dset_prefix': "top_",
         },
         {'PYTHONPATH': sys.path[0],  # tomo_3_refinement.ipynb
          'dset_file': dset_file,
@@ -291,6 +296,7 @@ def test_FeAu_JADB_tomo():
          'ds_tol': 0.004,
          'ifrac': 7e-3,
          'use_cluster': False,
+         'dset_prefix': "top_",
         },
         {'PYTHONPATH': sys.path[0],  # tomo_3_refinement_minor_phase.ipynb
          'dset_file': dset_file,
@@ -305,29 +311,34 @@ def test_FeAu_JADB_tomo():
          'ds_tol': 0.006,
          'ifrac': 1e-3,
          'use_cluster': False,
+         'dset_prefix': "top_",
         },
         {'PYTHONPATH': sys.path[0],  # 4_visualise.ipynb - major phase
          'dset_file': dset_file,
          'phase_str': 'Fe',
          'is_minor_phase': False,
          'min_unique': 250,
+         'dset_prefix': "top_",
         },
         {'PYTHONPATH': sys.path[0],  # 4_visualise.ipynb - minor phase
          'dset_file': dset_file,
          'phase_str': 'Au',
          'is_minor_phase': True,
          'min_unique': 0,
+         'dset_prefix': "top_",
         },
          {'PYTHONPATH': sys.path[0],  # 5_combine_phases.ipynb
          'dset_file': dset_file,
          'phase_strs': ['Fe', 'Au'],
          'combine_refined': True,
+         'dset_prefix': "top_",
         },
          {'PYTHONPATH': sys.path[0],  # 6_stack_layers.ipynb
          'dset_file': dset_file,
          'stack_combined': True,
          'stack_refined': True,
          'zstep': 50.0,
+         'dset_prefix': "top_",
         },
     ]
     if len(scan_nb_names) != len(scan_nb_params):
