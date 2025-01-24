@@ -154,6 +154,8 @@ useful = [   # stuff you probably want, and should be able to get easily
     "xfab>=0.0.4", #
        # comes from xfab : "PyCifRW",
     "matplotlib",  # tkGui
+    'pyopengl==3.1.7 ; python_version < "3"',
+    'pyopengl ; python_version >= "3"',
     "pyopengltk",  # plot3d in tkGui
     "scipy",       #
     'hdf5plugin==1.4.1 ; python_version < "3"',   #  and sys_platform == "win32" ',
@@ -221,6 +223,7 @@ setup(name='ImageD11',
                   "ImageD11.silxGui",
                   "ImageD11.nbGui",
                   "ImageD11.sinograms",
+                  "ImageD11.sandbox",
                  ],
       package_dir = {"ImageD11":"ImageD11"},
       url = "http://github.com/jonwright/ImageD11",
