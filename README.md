@@ -2,7 +2,7 @@
 
 ImageD11 is a python code for identifying individual grains in spotty area detector X-ray diffraction images.
 
-Version 2.0.2, Jon Wright, wright@esrf.fr
+Version 2.0.5, Jon Wright, wright@esrf.fr
 
 This is the source code for ImageD11. Probably you wanted a compiled version.
 
@@ -36,7 +36,7 @@ If you want to work with the sources then you can try like this:
 
 If you want multiple binaries in your home (on recent pythons) you can do and get the compiled code
 for each platform in .so files that are labelled by platform. This is potentially useful for a
-heterogenous cluster (like at ESRF): 
+heterogeneous cluster (like at ESRF): 
 ```
   # on ppc64le:
   python3 -m pip install dist/ImageD11-1.9.8-cp38-cp38-linux_ppc64le.whl --user --ignore-installed
