@@ -37,41 +37,43 @@ ImageD11.cImageD11.check_multiprocessing(patch=True)
 
 import multiprocessing as mp
 try:
-    from multiprocessing import shared_memory, resource_tracker
+    from multiprocessing import shared_memory
 except ImportError:
     import warnings
     warnings.warn('python2: multiprocessing lacks shared memory, please backport it')
     shared_memory = None
-    resource_tracker = None
-
-#####################################################################################
-def remove_shm_from_resource_tracker():
-    """Monkey-patch multiprocessing.resource_tracker so SharedMemory won't be tracked
-    More details at: https://bugs.python.org/issue38119
-    """
-    self = None
-
-    def fix_register(name, rtype):
-        if rtype == "shared_memory":
-            return
-        return resource_tracker._resource_tracker.register(name, rtype)
-
-    if resource_tracker.register is not fix_register:
-        resource_tracker.register = fix_register
-
-    def fix_unregister(name, rtype):
-        if rtype == "shared_memory":
-            return
-        return resource_tracker._resource_tracker.unregister(name, rtype)
-
-    if resource_tracker.unregister is not fix_register:
-        resource_tracker.unregister = fix_register
-    resource_tracker.unregister = fix_unregister
-    if "shared_memory" in resource_tracker._CLEANUP_FUNCS:
-        del resource_tracker._CLEANUP_FUNCS["shared_memory"]
 
 
-######################################################################################
+# The reason for this was not entirely clear. It was probably clean up of an OOM issue.
+if os.environ.get('IMAGED11_PATCH_MP', None) != 'MONKEYPATCH':
+    def remove_shm_from_resource_tracker():
+        pass
+else:
+    #####################################################################################
+    from multiprocessing import resource_tracker
+    import warnings
+    warnings.warn('Applying monkeypatch to multiprocessing shared memory')
+    def remove_shm_from_resource_tracker():
+        """Monkey-patch multiprocessing.resource_tracker so SharedMemory won't be tracked
+        More details at: https://bugs.python.org/issue38119
+        """
+        self = None
+        def fix_register(name, rtype):
+            if rtype == "shared_memory":
+                return
+            return resource_tracker._resource_tracker.register(name, rtype)
+        if resource_tracker.register is not fix_register:
+            resource_tracker.register = fix_register
+        def fix_unregister(name, rtype):
+            if rtype == "shared_memory":
+                return
+            return resource_tracker._resource_tracker.unregister(name, rtype)
+        if resource_tracker.unregister is not fix_register:
+            resource_tracker.unregister = fix_register
+        resource_tracker.unregister = fix_unregister
+        if "shared_memory" in resource_tracker._CLEANUP_FUNCS:
+            del resource_tracker._CLEANUP_FUNCS["shared_memory"]
+    ######################################################################################
 
 
 class shared_numpy_array:
