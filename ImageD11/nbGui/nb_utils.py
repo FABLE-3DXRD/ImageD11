@@ -297,21 +297,27 @@ def save_array(grp, name, ary):
 
 
 def find_datasets_to_process(rawdata_path, skips_dict, dset_prefix, sample_list):
+    # check rawdata path exists, return empty dict otherwise
+    if not os.path.exists(rawdata_path):
+        return {}
+
     samples_dict = {}
 
     for sample in sample_list:
-        all_dset_folders_for_sample = os.listdir(os.path.join(rawdata_path, sample))
-        dsets_list = []
-        for folder in all_dset_folders_for_sample:
-            if dset_prefix in folder:
-                dset_name = folder.split(sample + "_")[1]
-                if sample in skips_dict.keys():
-                    if dset_name not in skips_dict[sample]:
+        sample_path = os.path.join(rawdata_path, sample)
+        if os.path.exists(sample_path):
+            all_dset_folders_for_sample = os.listdir(sample_path)
+            dsets_list = []
+            for folder in all_dset_folders_for_sample:
+                if dset_prefix in folder:
+                    dset_name = folder.split(sample + "_")[1]
+                    if sample in skips_dict.keys():
+                        if dset_name not in skips_dict[sample]:
+                            dsets_list.append(dset_name)
+                    else:
                         dsets_list.append(dset_name)
-                else:
-                    dsets_list.append(dset_name)
 
-        samples_dict[sample] = sorted(dsets_list)
+            samples_dict[sample] = sorted(dsets_list)
 
     return samples_dict
 

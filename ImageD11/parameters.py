@@ -108,12 +108,13 @@ class AnalysisSchema:
         if phase_name is not None:
             # get parameters for a specific phase
             phase_pars_dict = self.phase_pars_obj_dict[phase_name].get_parameters()
+            # copy the geometry dict to a new dict
+            pars_dict = geometry_pars_dict.copy()
+            # add in the phase pars
+            pars_dict.update(phase_pars_dict)
         else:
-            # get any phase pars as a dict
-            phase_pars_dict = self.get_any_phase_pars_obj().get_parameters()
-        # combine dicts together
-        pars_dict = phase_pars_dict.copy()
-        pars_dict.update(geometry_pars_dict)
+            # just copy the geometry dict
+            pars_dict = geometry_pars_dict.copy()
         return pars_dict
 
     def load_json(self, filename):

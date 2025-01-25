@@ -178,6 +178,7 @@ useful = [   # stuff you probably want, and should be able to get easily
 
 more = [
     # Used in sandbox / test / not completely essential, but should work for CI
+    "papermill",   # in test for notebook testing
     "pillow",      # in sandbox
     "lmfit",       # in sandbox
     "sympy",       # for maths

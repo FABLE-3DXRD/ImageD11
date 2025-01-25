@@ -27,6 +27,9 @@ if __name__ == "__main__":
     print('Loading dset')
     ds = ImageD11.sinograms.dataset.load(dsfile)
 
+    icolf_filename = ds.icolfile.replace('.h5', "_" + phase_name + ".h5")
+    grains_filename = ds.pbpfile.replace(".txt", "_" + phase_name + ".txt")
+
     print('Loading peaks')
     ImageD11.cImageD11.cimaged11_omp_set_num_threads(ImageD11.cImageD11.cores_available())
     cf_2d = ds.get_cf_2d()
@@ -49,7 +52,7 @@ if __name__ == "__main__":
                                                        uniqcut=uniqcut,
                                                        phase_name=phase_name)
 
-    pbp_object.setpeaks(cf_2d)
+    pbp_object.setpeaks(cf_2d, icolf_filename=icolf_filename)
 
     print('Go for pbp')
-    pbp_object.point_by_point(ds.pbpfile, loglevel=3)
+    pbp_object.point_by_point(grains_filename, loglevel=3)

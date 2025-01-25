@@ -878,40 +878,48 @@ class PBPRefine:
         ax[1].set(ylabel="dty", xlabel="omega")
         return f, ax
 
-    def setmask(self, manual_threshold=None, doplot=False, use_icolf=True):
+    def setmask(self, manual_threshold=None, doplot=False, use_icolf=True, use_singlemap=False):
         """Set a mask for choosing what to refine or not.
         You can choose whether to use self.colf (all peaks) or self.icolf (selected peaks)
         At the moment it does an iradon on the sinogram of all the 2D peaks in self.colf"""
-        if use_icolf:
-            dty = self.icolf.dty
-            omega = self.icolf.omega
+        if use_singlemap:
+            # take all non-nan singlemap values
+            whole_sample_mask = ~np.isnan(self.singlemap[:, :, 0, 0])
+            recon_man_mask = whole_sample_mask.astype(float)
+            binary = recon_man_mask
+            chull = recon_man_mask
+
         else:
-            dty = self.colf.dty
-            omega = self.colf.omega
-        whole_sample_sino, xedges, yedges = np.histogram2d(dty, omega,
-                                                           bins=[self.dset.ybinedges, self.dset.obinedges])
-        shift, _ = geometry.sino_shift_and_pad(self.y0, len(self.ybincens), self.ybincens.min(), self.ystep)
-        nthreads = len(os.sched_getaffinity(os.getpid()))
-        # make sure the shape is the same as sx_grid
-        pad = self.sx_grid.shape[0] - whole_sample_sino.shape[0]
-        whole_sample_recon = run_iradon(whole_sample_sino, self.dset.obincens, pad, shift, workers=nthreads)
+            if use_icolf:
+                dty = self.icolf.dty
+                omega = self.icolf.omega
+            else:
+                dty = self.colf.dty
+                omega = self.colf.omega
+            whole_sample_sino, xedges, yedges = np.histogram2d(dty, omega,
+                                                               bins=[self.dset.ybinedges, self.dset.obinedges])
+            shift, _ = geometry.sino_shift_and_pad(self.y0, len(self.ybincens), self.ybincens.min(), self.ystep)
+            nthreads = len(os.sched_getaffinity(os.getpid()))
+            # make sure the shape is the same as sx_grid
+            pad = self.sx_grid.shape[0] - whole_sample_sino.shape[0]
+            whole_sample_recon = run_iradon(whole_sample_sino, self.dset.obincens, pad, shift, workers=nthreads)
 
-        # we should be able to easily segment this using scikit-image
-        recon_man_mask = whole_sample_recon
+            # we should be able to easily segment this using scikit-image
+            recon_man_mask = whole_sample_recon
 
-        # we can also override the threshold if we don't like it:
-        # manual_threshold = 0.025
+            # we can also override the threshold if we don't like it:
+            # manual_threshold = 0.025
 
-        if manual_threshold is None:
-            thresh = threshold_otsu(recon_man_mask)
-        else:
-            thresh = manual_threshold
+            if manual_threshold is None:
+                thresh = threshold_otsu(recon_man_mask)
+            else:
+                thresh = manual_threshold
 
-        binary = recon_man_mask > thresh
+            binary = recon_man_mask > thresh
 
-        chull = convex_hull_image(binary)
+            chull = convex_hull_image(binary)
 
-        whole_sample_mask = chull
+            whole_sample_mask = chull
 
         if doplot:
             from matplotlib import pyplot as plt
@@ -1463,6 +1471,7 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
     for refine_idx in numba.prange(npoints):
         ri, rj = refine_points[refine_idx]
         if mask[ri, rj]:
+            # mask is valid at this pixel
             # print('at ri rj', ri, rj)
 
             # mask all_ubis by the pbpmap points
@@ -1471,6 +1480,9 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
 
             # get ubis at this point
             ubis_here = all_pbpmap_ubis[:, :, pbpmap_mask]
+            # check that not all ubis are nan
+            if np.all(np.isnan(ubis_here[0, 0, :])):
+                continue
 
             # get xi0, xi0 at this point
             xi0 = sx_grid[ri, rj]
@@ -1504,6 +1516,8 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
             # iterate through the ubis at this voxel
             for ubi_idx in np.arange(ubis_here.shape[2]):
                 ubi = ubis_here[:, :, ubi_idx]
+                if np.isnan(ubi[0, 0]):
+                    continue
 
                 # we're scoring and assigning one UBI to a bunch of gves
                 # all we need is to generate a mask
@@ -1578,10 +1592,18 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
 
                 if grain_npks > min_grain_npks:
                     w, ubifit, residuals, rank, sing_vals = weighted_lstsq_ubi_fit(grain_ydist, gve_grain, hkl)
+                    
+                    problem_fitting = False
+                    try:
+                        # get U from UBI without using ImageD11 grain class
+                        ucell = ubi_to_unitcell(ubifit)
+                        U = ubi_and_ucell_to_u(ubifit, ucell)
+                    except:
+                        problem_fitting = True
 
                     # check the quality of the fit
                     worth_fitting = (ubifit is not None) and (rank == 3) and (np.linalg.cond(ubifit) < 1e14) and (
-                            np.linalg.det(ubifit) > 0) and (np.linalg.matrix_rank(ubifit) == 3)
+                            np.linalg.det(ubifit) > 0) and (np.linalg.matrix_rank(ubifit) == 3) and (not np.any(np.isnan(U))) and (not problem_fitting)
 
                     # do we like the quality?
                     if worth_fitting:
@@ -1617,9 +1639,6 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
                         hkl = hkli[:, grain_peak_mask]
                         ydist = ydist_grain[grain_peak_mask]
 
-                        # get U from UBI without using ImageD11 grain class
-                        ucell = ubi_to_unitcell(ubifit)
-                        U = ubi_and_ucell_to_u(ubi_out, ucell)
                         gve0 = U.dot(B0).dot(hkl.astype(np.float64))
                         gTg0 = np.sum(gve_grain_strainfit * gve0, axis=0)
                         gTg = np.sum(gve_grain_strainfit * gve_grain_strainfit, axis=0)
