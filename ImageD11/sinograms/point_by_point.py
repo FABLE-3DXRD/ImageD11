@@ -1592,10 +1592,18 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
 
                 if grain_npks > min_grain_npks:
                     w, ubifit, residuals, rank, sing_vals = weighted_lstsq_ubi_fit(grain_ydist, gve_grain, hkl)
+                    
+                    problem_fitting = False
+                    try:
+                        # get U from UBI without using ImageD11 grain class
+                        ucell = ubi_to_unitcell(ubifit)
+                        U = ubi_and_ucell_to_u(ubifit, ucell)
+                    except:
+                        problem_fitting = True
 
                     # check the quality of the fit
                     worth_fitting = (ubifit is not None) and (rank == 3) and (np.linalg.cond(ubifit) < 1e14) and (
-                            np.linalg.det(ubifit) > 0) and (np.linalg.matrix_rank(ubifit) == 3)
+                            np.linalg.det(ubifit) > 0) and (np.linalg.matrix_rank(ubifit) == 3) and (not np.any(np.isnan(U))) and (not problem_fitting)
 
                     # do we like the quality?
                     if worth_fitting:
@@ -1631,9 +1639,6 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
                         hkl = hkli[:, grain_peak_mask]
                         ydist = ydist_grain[grain_peak_mask]
 
-                        # get U from UBI without using ImageD11 grain class
-                        ucell = ubi_to_unitcell(ubifit)
-                        U = ubi_and_ucell_to_u(ubi_out, ucell)
                         gve0 = U.dot(B0).dot(hkl.astype(np.float64))
                         gTg0 = np.sum(gve_grain_strainfit * gve0, axis=0)
                         gTg = np.sum(gve_grain_strainfit * gve_grain_strainfit, axis=0)

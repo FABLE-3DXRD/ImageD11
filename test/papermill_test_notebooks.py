@@ -35,7 +35,7 @@ def noteboook_exec_pmill(nb_input_path, nb_output_path, params_dict):
     print('Executing notebook', nb_input_path)
     # change output path if it already exists, in case we run the same notebook twice
     if os.path.exists(nb_output_path):
-        nb_output_path.replace('.ipynb', '_2.ipynb')
+        nb_output_path = nb_output_path.replace('.ipynb', '_2.ipynb')
     papermill.execute_notebook(
        nb_input_path,
        nb_output_path,
@@ -430,7 +430,7 @@ def test_FeAu_JADB_pbp():
         {'PYTHONPATH': sys.path[0],  # pbp_2_visualise.ipynb - minor phase
          'dset_file': dset_file,
          'phase_str': 'Au',
-         'min_unique': 5,
+         'min_unique': 10,
          'dset_prefix': "top_",
         },
         {'PYTHONPATH': sys.path[0],  # pbp_3_refinement.ipynb - major phase
@@ -452,7 +452,7 @@ def test_FeAu_JADB_pbp():
         {'PYTHONPATH': sys.path[0],  # pbp_3_refinement.ipynb - minor phase
          'dset_file': dset_file,
          'phase_str': 'Au',
-         'min_unique': 5,
+         'min_unique': 10,
          'manual_threshold': None,
          'y0': -16.0,
          'hkl_tol_origins': 0.05,
