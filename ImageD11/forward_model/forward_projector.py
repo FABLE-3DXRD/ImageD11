@@ -1575,7 +1575,7 @@ def segment_frms(frms, destname, opts_seg, detector = 'eiger'):
     start = time.time()
     with h5py.File(destname, "a") as hout:
         print("# ", frms.shape, destname)
-        print("# time now", time.ctime(), "\n#", end=" ")
+        print("# time now", time.ctime(), "\n#")
         g = hout.require_group(dataset)
         row = g.create_dataset("row", (0,), dtype=np.uint16, **opts)
         col = g.create_dataset("col", (0,), dtype=np.uint16, **opts)
