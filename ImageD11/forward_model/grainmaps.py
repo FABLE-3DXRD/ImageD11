@@ -716,17 +716,23 @@ def pairing_grains(grains1, grains2, crystal_system='cubic', tol_misori=3, tol_d
         # Check tolerances
         if the_angle < tol_rad and dis < tol_dis:
             if tol_int == [0.0, 0.0]:
+                # return [i, j, grains1[i].Rod[0], grains1[i].Rod[1], grains1[i].Rod[2],
+                #         grains2[j].Rod[0], grains2[j].Rod[1], grains2[j].Rod[2],
+                #         intensity1, intensity2, np.rad2deg(the_angle), dis,
+                #         *pos1, *pos2]
                 return [i, j, grains1[i].Rod[0], grains1[i].Rod[1], grains1[i].Rod[2],
                         grains2[j].Rod[0], grains2[j].Rod[1], grains2[j].Rod[2],
-                        intensity1, intensity2, np.rad2deg(the_angle), dis,
-                        *pos1, *pos2]
+                        intensity1, intensity2, np.rad2deg(the_angle), dis] + list(pos1) + list(pos2)
             else:
                 intensity_diff = abs(intensity1 - intensity2) / intensity1
                 if tol_int[0] <= intensity_diff <= tol_int[1]:
+                    # return [i, j, grains1[i].Rod[0], grains1[i].Rod[1], grains1[i].Rod[2],
+                    #         grains2[j].Rod[0], grains2[j].Rod[1], grains2[j].Rod[2],
+                    #         intensity1, intensity2, np.rad2deg(the_angle), dis,
+                    #         *pos1, *pos2]
                     return [i, j, grains1[i].Rod[0], grains1[i].Rod[1], grains1[i].Rod[2],
-                            grains2[j].Rod[0], grains2[j].Rod[1], grains2[j].Rod[2],
-                            intensity1, intensity2, np.rad2deg(the_angle), dis,
-                            *pos1, *pos2]
+                        grains2[j].Rod[0], grains2[j].Rod[1], grains2[j].Rod[2],
+                        intensity1, intensity2, np.rad2deg(the_angle), dis] + list(pos1) + list(pos2)
         return None
     
     total_pairs = len(grains1) * len(grains2)

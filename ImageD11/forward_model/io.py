@@ -438,7 +438,7 @@ def print_all_keys(d, prefix=""):
         raise TypeError("Expected a dictionary, but got {} instead.".format(type(d)))
     print('Got the following keys:')
     for key, value in d.items():
-        full_key = f"{prefix}.{key}" if prefix else key
+        full_key = "{}.{}".format(prefix, key) if prefix else key
         print(full_key)
         if isinstance(value, dict):  # If the value is a dictionary, recurse
             print_all_keys(value, prefix=full_key)
@@ -619,7 +619,7 @@ def read_fsparse(h5_file, group_name = "/entry_0000/ESRF-ID11/eiger/data"):
     with h5py.File(h5_file, 'r') as hin:
         g = hin.get(group_name)
         if g is None:
-            raise ValueError("Group '{}' not found in file '{}'".format(group_name, h5name))
+            raise ValueError("Group {} not found in file {}".format(group_name, h5_file))
         for name in names:
             if name in g.keys():
                 fsparse_pks[name] = g[name][()]

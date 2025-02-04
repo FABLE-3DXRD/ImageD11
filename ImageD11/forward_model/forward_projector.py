@@ -1479,7 +1479,7 @@ def make_projs_and_sparse_file(fwd_peaks, destname, omega_angles, opts_seg, dete
     start = time.time()
     with h5py.File(destname, "w") as hout:
         print("# ", fwd_peaks.shape, destname)
-        print("# time now", time.ctime(), "\n#", end=" ")
+        print("# time now", time.ctime(), "\n#")
         g = hout.require_group(dataset)
         g.create_dataset("rot", data = omega_angles, dtype='float')
         g.create_dataset("rot_center", data = omega_angles, dtype='float')
