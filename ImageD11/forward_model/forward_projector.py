@@ -1592,9 +1592,9 @@ def segment_frms(frms, destname, opts_seg, detector = 'eiger'):
         for i, spf in enumerate(reader_frms(frms, detector_mask, opts_seg)):
             if i % 100 == 0:
                 if spf is None:
-                    print("%4d 0" % (i), end=",")
+                    print("%4d 0, " % (i))
                 else:
-                    print("%4d %d" % (i, spf.nnz), end=",")
+                    print("%4d %d, " % (i, spf.nnz))
                 sys.stdout.flush()
             if spf is None:
                 nnz[i] = 0
@@ -1740,7 +1740,7 @@ def assemble_sparsefiles(sparsefiles_folder, dtys, outname_sparse = "fwd_sparse.
                 g.create_dataset("col", data = fsparse_pks['col'], dtype=np.uint16)
                 g.create_dataset("nnz", data = fsparse_pks['nnz'], dtype=np.uint32)
                 g.create_dataset("intensity", data = fsparse_pks['intensity'], dtype=g.attrs["itype"])
-            print(scan, end=", ")
+            print(scan, ", ")
         print()
     return outname_sparse
 
