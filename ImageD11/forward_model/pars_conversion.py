@@ -7,6 +7,7 @@
 # 5) build_poni_from_ImageD11par
 # Haixing Fang, haixing.fang@esrf.fr
 # Oct 27th, 2024
+# Updates on Jan 19th, 2025: introduce logging
 
 import os
 import numpy as np
@@ -15,10 +16,12 @@ import pyFAI
 from datetime import datetime
 from ImageD11.forward_model.io import read_matlab_file
 from scipy.optimize import minimize
+import logging
 
 econst = 12.3984
+logging.basicConfig(level=logging.INFO, force=True)
 
-def convert_ImageD11pars2p(pars):
+def convert_ImageD11pars2p(pars, verbose = 1):
     """
     Convert ImageD11 parameters to specific geometry and detector parameters (unit in mm), which are compatible with fwd-DCT
     
@@ -30,10 +33,14 @@ def convert_ImageD11pars2p(pars):
                                          detysize, detzsize, BeamStopY, BeamStopZ, S, flip_lr_flag, flip_ud_flag, wavelength, Energy etc.
     """
     p = {}
-    p['rawfile'] = pars.parameters['filename']
+    try:
+        p['rawfile'] = pars.parameters['filename']
+    except Exception as e:
+        # sometime there is no "filename" key
+        logging.info("An unexpected error occurred: {}".format(e))
     p['Lsam2det'] = pars.parameters['distance']/1000.0
     p['tilt_xyz'] = [np.rad2deg(pars.parameters['tilt_x']), np.rad2deg(pars.parameters['tilt_y']), np.rad2deg(pars.parameters['tilt_z'])]  # [deg]
-    p['RotDet'] = get_det_R(pars.parameters['tilt_x'], pars.parameters['tilt_y'], pars.parameters['tilt_z'])
+    p['RotDet'] = get_det_R(pars.parameters['tilt_x'], pars.parameters['tilt_y'], pars.parameters['tilt_z'], verbose)
     p['pixelysize'] = pars.parameters['y_size']/1000.0
     p['pixelzsize'] = pars.parameters['z_size']/1000.0
     if pars.parameters['o11'] == -1 and pars.parameters['o22'] == -1:
@@ -47,7 +54,8 @@ def convert_ImageD11pars2p(pars):
         p['flip_lr_flag'] = False
         p['flip_ud_flag'] = True
     else:
-        print('Note this detector configuration is not supported yet; Set to not have any flips - equivalent to Eiger !')
+        if verbose >= 1:
+            logging.info('Note this detector configuration is not supported yet; Set to not have any flips - equivalent to Eiger !')
         p['detysize'] = 2162
         p['detzsize'] = 2068
         p['flip_lr_flag'] = False
@@ -74,7 +82,7 @@ def convert_ImageD11pars2p(pars):
     return p
     
 
-def convert_DCTpars2p(par_path, Binning = None):
+def convert_DCTpars2p(par_path, Binning = None, verbose = 1):
     """
     Convert DCT parameters.mat to specific geometry and detector parameters (unit in mm), which are compatible with fwd-DCT
     
@@ -135,15 +143,17 @@ def convert_DCTpars2p(par_path, Binning = None):
     det_normal      = parameters['detgeo']['detnorm'].ravel()
     if np.abs(det_normal[0]+1) < 0.5:
         det_normal = -det_normal # should be along the beam
-        print('Note: the original parameters.detgeo.detnorm is opposite to the beam direction.')
-        print('Now det_normal is along the beam direction')
+        if verbose >= 1:
+            logging.info('Note: the original parameters.detgeo.detnorm is opposite to the beam direction.')
+            logging.info('Now det_normal is along the beam direction')
     detdiru = parameters['detgeo']['detdiru'].ravel()
     if np.abs(detdiru[1] - 1) < 0.5:
         detdiru = -detdiru
         p['Qdet'][0,:] = -p['Qdet'][0,:]
         flip_lr_flag = True
-        print('Note: the original parameters.detgeo.detdiru is pointing to the left')
-        print('Now detdiru points to the right => flip_lr_flag = True')
+        if verbose >= 1:
+            logging.info('Note: the original parameters.detgeo.detdiru is pointing to the left')
+            logging.info('Now detdiru points to the right => flip_lr_flag = True')
     else:
         flip_lr_flag = False
     p['flip_lr_flag'] = flip_lr_flag
@@ -153,13 +163,14 @@ def convert_DCTpars2p(par_path, Binning = None):
         detdirv = -detdirv
         p['Qdet'][1,:] = -p['Qdet'][1,:]
         flip_lr_flag = True
-        print('Note: the original parameters.detgeo.detdirv is pointing to upwards')
-        print('Now detdirv points downwards')
+        if verbose >= 1:
+            logging.info('Note: the original parameters.detgeo.detdirv is pointing to upwards')
+            logging.info('Now detdirv points downwards')
     p['flip_ud_flag'] = False
                                  
     tilt_x, tilt_y, tilt_z = get_det_tilt(det_normal, detdiru, degree = False)
     p['tilt_xyz'] = [np.rad2deg(tilt_x), np.rad2deg(tilt_y), np.rad2deg(tilt_z)] # [deg]
-    p['RotDet'] = get_det_R(tilt_x, tilt_y, tilt_z)           
+    p['RotDet'] = get_det_R(tilt_x, tilt_y, tilt_z, verbose)           
     p['wedge'] = 0.0
                                  
     # sample information
@@ -198,11 +209,12 @@ def convert_DCTpars2p(par_path, Binning = None):
         p['BeamStopY'][1]   = np.ceil(p['BeamStopY'][1]/Binning)
         p['BeamStopZ'][0]   = np.floor(p['BeamStopZ'][0]/Binning)
         p['BeamStopZ'][1]   = np.ceil(p['BeamStopZ'][1]/Binning)
-        print('Detector images are binned to {:.1f} * {:.1f}'.format(Binning, Binning))    
+        if verbose >= 1:
+            logging.info('Detector images are binned to {:.1f} * {:.1f}'.format(Binning, Binning))    
     return p
     
     
-def get_det_R(tilt_x, tilt_y, tilt_z):
+def get_det_R(tilt_x, tilt_y, tilt_z, verbose = 1):
     """
     Calculate detector rotation matrix from tilt angles around x, y, z axes in radians
     Arguments:
@@ -210,7 +222,8 @@ def get_det_R(tilt_x, tilt_y, tilt_z):
     Returns:
     RotDet, 3*3 numpy array
     """
-    print('Detector tilt angles = [{:.4f} {:.4f} {:.4f}] deg'.format(np.rad2deg(tilt_x), np.rad2deg(tilt_y), np.rad2deg(tilt_z)))
+    if verbose >= 2:
+        logging.debug('Detector tilt angles = [{:.4f} {:.4f} {:.4f}] deg'.format(np.rad2deg(tilt_x), np.rad2deg(tilt_y), np.rad2deg(tilt_z)))
     # Define rotation matrices
     RotX = np.array([[1, 0, 0], 
                      [0, np.cos(tilt_x), -np.sin(tilt_x)], 

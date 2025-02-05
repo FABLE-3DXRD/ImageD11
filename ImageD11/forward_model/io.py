@@ -3,12 +3,15 @@
 # edf images
 # tif images
 # xml (to be added)
+# fwd_peaks
+# bridge with cf
 # write to dream3d and xdmf files
 # read motor positions
 # Haixing Fang, haixing.fang@esrf.fr
 # March 20, 2024
+# updated on January 30, 2025
 
-import os
+import os, shutil
 import glob
 
 import numpy as np
@@ -19,11 +22,18 @@ import matplotlib
 import ImageD11.columnfile
 import ImageD11.unitcell
 import ImageD11.transformer
+from ImageD11.sinograms.dataset import colfile_from_dict
+
 import xml.etree.ElementTree as ET
 import scipy.io
 from scipy import ndimage
 import tifffile as tiff
 from PIL import Image
+
+from tqdm import tqdm
+import logging
+
+logging.basicConfig(level=logging.INFO, force=True)
 
 
 def read_images_from_h5(h5name, scan = '1.1', detector = None, StartIndex = None, EndIndex = None):
@@ -107,19 +117,32 @@ def read_motor_posisitions_from_h5(h5name, scan = '1.1'):
     return MotorPos
 
 
-def convert_h52_tif(h5name, save_path, prefix_name = 'proj', save_stack = False, ctrl_name = '1.1/measurement/marana3', data_format = 'uint16'):
+def convert_h52_tif(h5name, save_path, prefix_name = 'proj', save_stack = False, ctrl_name = '1.1/measurement/marana3', data_format = 'uint16', clip_range = None):
+    '''
+    Read images from an h5/hdf5 file and convert to a specified data format (uint16 or uint8) and save to tif images
+    Suitable for convert e.g. nabu_recon hdf5 to tif images
+    '''
+    print('Loading data from {}'.format(h5name))
     with h5py.File(h5name, 'r') as hin:
         dataset = hin[ctrl_name][:]
         print("Dataset shape:", dataset.shape)
-        if data_format == 'uint16':
-            print('Converting to uint16 format ...')
-            normalized_data = (65535 * (dataset - np.min(dataset)) / (np.max(dataset) - np.min(dataset))).astype(np.uint16)
-        elif data_format == 'uint8':
-            print('Converting to uint8 format ...')
-            normalized_data = (255 * (dataset - np.min(dataset)) / (np.max(dataset) - np.min(dataset))).astype(np.uint8)
-        else:
-            print('Converting to uint16 format ...')
-            normalized_data = (65535 * (dataset - np.min(dataset)) / (np.max(dataset) - np.min(dataset))).astype(np.uint16)
+        
+    if clip_range is None:
+        dataset_mean = np.mean(dataset)
+        dataset_std  = np.std(dataset)
+        clip_range = [dataset_mean - 3*dataset_std, dataset_mean + 3*dataset_std]
+    print("clip_range = {}".format(clip_range))
+    dataset = np.clip(dataset, clip_range[0], clip_range[1])  # Clip values to the given range
+
+    if data_format == 'uint16':
+        print('Converting to uint16 format ...')
+        normalized_data = (65535 * (dataset - np.min(dataset)) / (np.max(dataset) - np.min(dataset))).astype(np.uint16)
+    elif data_format == 'uint8':
+        print('Converting to uint8 format ...')
+        normalized_data = (255 * (dataset - np.min(dataset)) / (np.max(dataset) - np.min(dataset))).astype(np.uint8)
+    else:
+        print('Converting to uint16 format ...')
+        normalized_data = (65535 * (dataset - np.min(dataset)) / (np.max(dataset) - np.min(dataset))).astype(np.uint16)
     
     if not os.path.exists(save_path):
         os.mkdir(save_path)
@@ -137,19 +160,7 @@ def convert_h52_tif(h5name, save_path, prefix_name = 'proj', save_stack = False,
             filename = os.path.join(save_path, "{}{:04d}.tif".format(prefix_name, i))
             image.save(filename)
     print('Done')
-    
-    
-    print("Writing TIFF images to {}".format(save_path))
-    if save_stack:
-        # Save the entire 3D dataset as a single multi-page TIFF image
-        filename = os.path.join(save_path, prefix_name + "_stack.tif")
-        tiff.imwrite(filename, normalized_data, photometric='minisblack')
-    else:
-        # Save each slice of the 3D dataset as an individual TIFF image
-        for i in range(normalized_data.shape[0]):
-            filename = os.path.join(save_path, "{}{:04d}.tif".format(prefix_name, i))
-            tiff.imwrite(filename, normalized_data[i], photometric='minisblack')
-
+    return normalized_data
 
 
 def convert_to_list(input_data):
@@ -236,6 +247,9 @@ def is_mat_v7p3(file_path):
 
         
 def read_h5_file(file_path):
+    '''
+    Read all data inside an h5/hdf5 file and return the output as a dictionary
+    '''
     data_dict = {}
 
     def visit_group(name, obj):
@@ -380,7 +394,7 @@ def write_xdmf(h5name, xdmf_filename = None, ctrl = 'recon_mlem', attributes = [
 
     
 def camera_names_ID11():
-    return ['marana3', 'marana1', 'marana2', 'marana', 'frelon3', 'frelon6', 'eiger', 'basler_eh32']
+    return ['marana3', 'marana1', 'marana2', 'marana', 'frelon1', 'frelon3', 'frelon6', 'eiger', 'basler_eh32', 'frelon16']
 
 
 def guess_camera_name(h5name, scan = '1.1'):
@@ -410,3 +424,260 @@ def delete_group_from_h5(h5name, group_name):
             return True
         else:
             return False
+        
+        
+def print_all_keys(d, prefix=""):
+    """
+    Recursively prints all keys in a dictionary, including sub-keys.
+
+    Parameters:
+    d (dict): The dictionary to explore.
+    prefix (str): The prefix for nested keys (used internally for recursion).
+    """
+    if not isinstance(d, dict):
+        raise TypeError("Expected a dictionary, but got {} instead.".format(type(d)))
+    print('Got the following keys:')
+    for key, value in d.items():
+        full_key = "{}.{}".format(prefix, key) if prefix else key
+        print(full_key)
+        if isinstance(value, dict):  # If the value is a dictionary, recurse
+            print_all_keys(value, prefix=full_key)
+
+
+def write_fwd_peaks(fwd_peaks, output_folder = None, fname_prefix = None, verbose = 1):
+    """
+    Write fwd_peaks to an h5 file with each column as a separate dataset, see how to compute fwd_peaks in forward_projector.py.
+
+    Args:
+        fwd_peaks (array): an N*25 array containing forward computed peaks
+        output_folder (string): output folder
+        fname_prefix (string): filename prefix, "fpks_" by default
+        verbose: logging level, 0, 1 or 2
+        
+    Returns:
+        None
+    """
+    assert fwd_peaks.shape[1] == 25, "fwd_peaks must have 25 columns"
+    if output_folder is None:
+        output_folder = os.getcwd()
+    if fname_prefix is None:
+        fname_prefix = 'fpks'
+        
+    dty = fwd_peaks[0, 8]
+    outname = os.path.join(output_folder, fname_prefix + '_dty_' + str(round(dty, 2)).replace('.', 'p') + '.h5')  # e.g. dty = 0.1, outname = 'fpks_dty_0p10.h5'
+    
+    col_names = ['grainID', 'voxel_zyx', 'weight', 'pos_xyz', 'dty', 'omega', 'tth', 'eta', 'hkl',
+                 'g_xyz', 'det_pixel_yz', 'lorentz', 'polarization', 'transmission', 'sum_intensity', 'ds']
+    
+    with h5py.File(outname, 'w') as hout:
+        hout.create_dataset(col_names[0], data = fwd_peaks[:, 0], dtype='int32')
+        hout.create_dataset(col_names[1], data = fwd_peaks[:, [1, 2, 3]], dtype='int32')
+        hout.create_dataset(col_names[2], data = fwd_peaks[:, 4], dtype='float')
+        hout.create_dataset(col_names[3], data = fwd_peaks[:, [5, 6, 7]], dtype='float')
+        hout.create_dataset(col_names[4], data = fwd_peaks[:, 8], dtype='float')
+        hout.create_dataset(col_names[5], data = fwd_peaks[:, 9], dtype='float')
+        hout.create_dataset(col_names[6], data = fwd_peaks[:, 10], dtype='float')
+        hout.create_dataset(col_names[7], data = fwd_peaks[:, 11], dtype='float')
+        hout.create_dataset(col_names[8], data = fwd_peaks[:, [12, 13, 14]], dtype='int32')
+        hout.create_dataset(col_names[9], data = fwd_peaks[:, [15, 16, 17]], dtype='float')
+        hout.create_dataset(col_names[10], data = fwd_peaks[:, [18, 19]], dtype='float')
+        hout.create_dataset(col_names[11], data = fwd_peaks[:, 20], dtype='float')
+        hout.create_dataset(col_names[12], data = fwd_peaks[:, 21], dtype='float')
+        hout.create_dataset(col_names[13], data = fwd_peaks[:, 22], dtype='float')
+        hout.create_dataset(col_names[14], data = fwd_peaks[:, 23], dtype='float')
+        hout.create_dataset(col_names[15], data = fwd_peaks[:, 24], dtype='float')
+    if verbose >= 1:
+        logging.info('fwd_peaks written to {}'.format(outname))
+
+    return None
+
+
+def read_fwd_peaks(h5_file, verbose=1):
+    """
+    Read fwd_peaks data from an h5 file and reconstruct it as an N*24 array.
+    
+    Args:
+        h5_file (string): path to the HDF5 file containing fwd_peaks data
+        verbose: logging level, 0, 1 or 2
+        
+    Returns:
+        fwd_peaks: an N*25 array containing forward computed peaks
+    """
+    
+    col_names = ['grainID', 'voxel_zyx', 'weight', 'pos_xyz', 'dty', 'omega', 'tth', 'eta', 'hkl',
+                 'g_xyz', 'det_pixel_yz', 'lorentz', 'polarization', 'transmission', 'sum_intensity', 'ds']
+    if not os.path.exists(h5_file):
+        return None
+    try:
+        with h5py.File(h5_file, 'r') as hin:
+            num_rows = hin[col_names[0]].shape[0]  # Determine the number of rows
+            fwd_peaks = np.zeros((num_rows, 25), dtype=np.float64)
+
+            # Read each dataset and fill the corresponding columns in fwd_peaks
+            fwd_peaks[:, 0] = hin[col_names[0]][:]    # grainID
+            fwd_peaks[:, 1:4] = hin[col_names[1]][:]  # voxel_zyx indices
+            fwd_peaks[:, 4] = hin[col_names[2]][:]    # weight
+            fwd_peaks[:, 5:8] = hin[col_names[3]][:]  # pos_xyz [mm]
+            fwd_peaks[:, 8] = hin[col_names[4]][:]    # dty [um]
+            fwd_peaks[:, 9] = hin[col_names[5]][:]    # omega [deg]
+            fwd_peaks[:, 10] = hin[col_names[6]][:]   # tth [deg]
+            fwd_peaks[:, 11] = hin[col_names[7]][:]   # eta [deg]
+            fwd_peaks[:, 12:15] = hin[col_names[8]][:]  # hkl
+            fwd_peaks[:, 15:18] = hin[col_names[9]][:]  # g_xyz
+            fwd_peaks[:, 18:20] = hin[col_names[10]][:] # det_pixel_yz [pixel]
+            fwd_peaks[:, 20] = hin[col_names[11]][:]  # Lorentz
+            fwd_peaks[:, 21] = hin[col_names[12]][:]  # Polarization
+            fwd_peaks[:, 22] = hin[col_names[13]][:]  # transmission
+            fwd_peaks[:, 23] = hin[col_names[14]][:]  # sum_intensity
+            fwd_peaks[:, 24] = hin[col_names[15]][:]  # ds
+        if verbose >= 1:
+            logging.info('fwd_peaks read from {}'.format(h5_file))
+        return fwd_peaks
+    except Exception as e:
+        print("An unexpected error occurred: {}".format(e))
+        return None
+
+
+def convert_fwd_peaks_to_cf(fwd_peaks):
+    """
+    convert fwd_peaks to ImageD11 column file object.
+    
+    Args:
+        fwd_peaks: an N*25 array containing forward computed peaks        
+    Returns:
+        cf: an ImageD11 cf object, see ImageD11.sinograms.dataset.colfile_from_dict
+    """
+    col_names = ['grainID', 'voxel_z', 'voxel_y', 'voxel_x', 'weight', 'pos_x', 'pos_y', 'pos_z', 'dty', 'omega', 'tth', 'eta', 'h', 'k', 'l',
+             'gx', 'gy', 'gz', 'det_pixel_y', 'det_pixel_z', 'lorentz', 'polarization', 'transmission', 'sum_intensity', 'ds']
+    if isinstance(fwd_peaks, dict):
+        raise TypeError("Expected a numpy array, but got a dict")
+    if not isinstance(fwd_peaks, np.ndarray):
+        fwd_peaks = np.vstack(fwd_peaks)
+    assert fwd_peaks.shape[1] == 25, "fwd_peaks must have 25 columns"
+    fwd_peaks_dict = {}
+    for i, col_name in enumerate(col_names):
+        fwd_peaks_dict[col_name] = fwd_peaks[:,i]
+        
+    cf = colfile_from_dict(fwd_peaks_dict)  # convert to a cf object
+    return cf
+
+
+def convert_cf_to_fwd_peaks(cf):
+    """
+    convert cf (generated by forward_projector) to fwd_peaks numpy array.
+    
+    Args:
+        cf: ImageD11 column file object (generated by forward_projector), e.g. fp.cf_2d or fp.cf_3d
+    Returns:
+        fwd_peaks: an N*25 array containing forward computed peaks
+    """
+    num_rows = cf.nrows  # Determine the number of rows
+    fwd_peaks = np.zeros((num_rows, 25), dtype=np.float64)
+
+    # Read each dataset and fill the corresponding columns in fwd_peaks
+    fwd_peaks[:, 0] = cf.grainID  # grainID
+    fwd_peaks[:, 1] = cf.voxel_z  # voxel_zyx indices
+    fwd_peaks[:, 2] = cf.voxel_y  # voxel_zyx indices
+    fwd_peaks[:, 3] = cf.voxel_x  # voxel_zyx indices
+    fwd_peaks[:, 4] = cf.weight   # weight
+    fwd_peaks[:, 5] = cf.pos_x    # pos_xyz [mm]
+    fwd_peaks[:, 6] = cf.pos_y    # pos_xyz [mm]
+    fwd_peaks[:, 7] = cf.pos_z    # pos_xyz [mm]
+    fwd_peaks[:, 8] = cf.dty      # dty [um]
+    fwd_peaks[:, 9] = cf.omega    # omega [deg]
+    fwd_peaks[:, 10] = cf.tth     # tth [deg]
+    fwd_peaks[:, 11] = cf.eta     # eta [deg]
+    fwd_peaks[:, 12] = cf.h       # hkl
+    fwd_peaks[:, 13] = cf.k       # hkl
+    fwd_peaks[:, 14] = cf.l       # hkl
+    fwd_peaks[:, 15] = cf.gx      # g_xyz
+    fwd_peaks[:, 16] = cf.gy      # g_xyz
+    fwd_peaks[:, 17] = cf.gz      # g_xyz
+    fwd_peaks[:, 18] = cf.det_pixel_y  # det_pixel_yz [pixel]
+    fwd_peaks[:, 19] = cf.det_pixel_z  # det_pixel_yz [pixel]
+    fwd_peaks[:, 20] = cf.lorentz      # Lorentz
+    fwd_peaks[:, 21] = cf.polarization # Polarization
+    fwd_peaks[:, 22] = cf.transmission # transmission
+    fwd_peaks[:, 23] = cf.sum_intensity# sum_intensity
+    fwd_peaks[:, 24] = cf.ds           # ds
+    return fwd_peaks
+
+
+def read_fsparse(h5_file, group_name = "/entry_0000/ESRF-ID11/eiger/data"):
+    """
+    Read fsparse_pks from a sparse h5 peaks file.
+    
+    Args:
+        h5_file (string): path to the HDF5 file containing the sparse peaks generated from forward_projector.make_projs_and_sparse_file
+        group_name: group name
+        
+    Returns:
+        fsparse_pks: a dictionary containing 'col', 'row', 'nnz', 'intensity', 'dty', 'rot'
+    """
+    names = ['col', 'row', 'nnz', 'intensity', 'dty', 'rot']
+    fsparse_pks = {}
+    with h5py.File(h5_file, 'r') as hin:
+        g = hin.get(group_name)
+        if g is None:
+            raise ValueError("Group {} not found in file {}".format(group_name, h5_file))
+        for name in names:
+            if name in g.keys():
+                fsparse_pks[name] = g[name][()]
+    return fsparse_pks
+
+
+def copytree_with_progress(src, dst, skip_keys=None, create_subfolder = True, overwrite = False):
+    """
+    Copies a folder with all subfolders and files, displaying progress. 
+    Skips subfolders containing specified keys.
+
+    Main usage is to backup files from the server to local computer by skipping filefolders containing keywords specified by the input "skip_keys"
+    e.g. skip_keys = ['0_rawdata', '2_difblob', '2_difspot', '6_rendering', '7_fed', '8_analysis', 'OAR_log', 'RAW_DATA']
+    
+    Args:
+        src (str): Source directory path.
+        dst (str): Destination directory path.
+        skip_keys (list): List of strings; skip folders containing these keys in their path.
+        create_subfolder (logic): using the last name of the source directory to create a new sub directory under the destination direction
+        overwrite (logic): flag for overwriting any existing files in the destination directory, False for skipping
+    """
+    if not os.path.exists(src):
+        raise ValueError("Source folder {} does not exist.".format(src))
+
+    if create_subfolder:
+        dst = os.path.join(dst, os.path.split(src)[1])
+        
+    print("Source directory: {}".format(src))
+    print("Destination directory: {}".format(dst))
+    print("Skipping {}".format(skip_keys))
+
+    if skip_keys is None:
+        skip_keys = []
+    
+    # Get all files and directories in the source folder
+    files_to_copy = []
+    for root, dirs, files in os.walk(src):
+        # Skip subfolders containing any of the keys
+        if any(key in root for key in skip_keys):
+            continue
+        for file in files:
+            src_file = os.path.join(root, file)
+            dst_file = os.path.join(dst, os.path.relpath(src_file, src))
+            # Add file only if it doesn't already exist or the source is newer
+            if overwrite:
+                files_to_copy.append((src_file, dst_file))
+            else:
+                if not os.path.exists(dst_file) or os.path.getmtime(src_file) > os.path.getmtime(dst_file):
+                    files_to_copy.append((src_file, dst_file))
+                    
+    # Create destination directory if it does not exist
+    os.makedirs(dst, exist_ok=True)
+    
+    # Use tqdm for progress visualization
+    with tqdm(total=len(files_to_copy), desc="Copying files", unit="file") as pbar:
+        for src_file, dst_file in files_to_copy:
+            os.makedirs(os.path.dirname(dst_file), exist_ok=True)
+            shutil.copy2(src_file, dst_file)
+            pbar.update(1)    
+    print("Folder '{}' has been successfully copied to '{}', skipping subfolders containing {}.".format(src, dst, skip_keys))
+    return None
