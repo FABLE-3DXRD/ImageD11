@@ -360,6 +360,95 @@ PKSAVE = [
 PKCOL = [getattr(ImageD11.cImageD11, p) for p in PKSAVE]
 
 
+def collect_all_frames_peaks(
+    dataset,
+    worker_args,
+    num_cpus=None,
+    **process_map_kwargs,
+):
+    """
+    Collects peaks for all the frames in the first scan in the dataset 
+    using parallel processing.
+    """
+    num_threads = num_cpus or max(1, ImageD11.cImageD11.cores_available() - 1)
+    master_file = dataset.masterfile
+    scan_name = dataset.scans[0]
+    frames_dataset = f"{scan_name}/measurement/{dataset.detector}"
+    omega_angles = dataset.omega[0, :]
+
+    num_frames = omega_angles.shape[0]
+    args = [
+        (master_file, frames_dataset, i, omega_angles[i], worker_args) 
+        for i in range(num_frames)
+    ]
+    all_frames_peaks_list = process_map(
+        pps, 
+        args, 
+        chunksize=1, 
+        max_workers=num_threads, 
+        **process_map_kwargs
+    )
+    return all_frames_peaks_list
+
+def merge_all_frames_peaks(all_frames_peaks_list):
+    """
+    Merges collected peak properties into structured dictionaries
+    """
+    peaks_2d_dict = {title: [] for title in PKSAVE}
+    num_peaks = []
+
+    for peak_index, properties in all_frames_peaks_list:
+        for title, column_index in zip(PKSAVE, PKCOL):
+            peaks_2d_dict[title].extend(properties[:, column_index])
+        num_peaks.append(properties.shape[0])
+    
+    # Convert lists to numpy arrays
+    for key in peaks_2d_dict:
+        peaks_2d_dict[key] = np.array(peaks_2d_dict[key])
+    
+    return peaks_2d_dict, num_peaks
+
+
+def process_dataset_for_peaks_columnfile(
+        dataset, 
+        worker_args, 
+        num_cpus=None, 
+        **process_map_kwargs
+):
+    """
+    Process a dataset by collecting all 2d peaks (for frames),
+    merge themn,
+    and performing spaital correction (detector plane correction)
+    Returns columnfile_2d, and columnfile_3d
+    """
+    # Step 1: collect all peaks
+    all_frames_peaks_list = collect_all_frames_peaks(
+        dataset,
+        worker_args,
+        num_cpus,
+        **process_map_kwargs
+    )
+
+    # Step 2: merge collected peaks data into dict
+    peaks_2d_dict, num_peaks = merge_all_frames_peaks(
+        all_frames_peaks_list
+    )
+
+    # Step 3: Perform 3d merge
+    omega_angles = dataset.omega[0, :]
+    peak_3d_dict = do3dmerge(peaks_2d_dict, num_peaks, omega_angles)
+
+    # Step 4: Spatial Correction
+    peaks_2d_dict["omega"] = peaks_2d_dict["o_raw"]
+    peaks_2d_dict.pop("o_raw")
+    columnfile_2d = dataset.get_colfile_from_peaks_dict(peaks_2d_dict)
+
+    peak_3d_dict["spot3d_id"] = np.arange(len(peak_3d_dict["s_raw"]))
+    columnfile_3d = dataset.get_colfile_from_peaks_dict(peak_3d_dict)
+
+    return columnfile_2d, columnfile_3d
+
+
 def process(ds, worker_args, ncpu=None, **process_map_kwargs):
     """
     Runs over the first scan in a dataset in parallel
