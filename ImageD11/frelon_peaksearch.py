@@ -410,6 +410,7 @@ def process_dataset_for_peaks_columnfile(
         dataset, 
         worker_args, 
         num_cpus=None, 
+        scan_number=0,
         **process_map_kwargs
 ):
     """
@@ -421,7 +422,7 @@ def process_dataset_for_peaks_columnfile(
     # Step 1: collect all peaks
     all_frames_peaks_list = collect_all_frames_peaks(
         dataset.masterfile,
-        "%s/measurement/%s"%(dataset.scans[0], dataset.detector),
+        "%s/measurement/%s"%(dataset.scans[scan_number], dataset.detector),
         dataset.omega[0,:],
         worker_args,
         num_cpus,
@@ -448,7 +449,7 @@ def process_dataset_for_peaks_columnfile(
     return columnfile_2d, columnfile_3d
 
 
-def process(ds, worker_args, ncpu=None, **process_map_kwargs):
+def process(ds, worker_args, ncpu=None, scan_number=0, **process_map_kwargs):
     """
     Runs over the first scan in a dataset in parallel
 
@@ -463,7 +464,7 @@ def process(ds, worker_args, ncpu=None, **process_map_kwargs):
     else:
         nthreads = int(ncpu)
     hname = ds.masterfile
-    scan_name = ds.scans[0]
+    scan_name = ds.scans[scan_number]
     frames_dset = scan_name + "/measurement/" + ds.detector
     omega = ds.omega[0, :]
 
