@@ -340,7 +340,8 @@ class forward_projector:
         "dety_merge_range": kwargs.get("dety_merge_range", 10), # within this range 2D peaks will be merged if the signal comes from the same reflection [pixel]
         "detz_merge_range": kwargs.get("detz_merge_range", 10), # within this range 2D peaks will be merged if the signal comes from the same reflection [pixel]
         "use_cluster": kwargs.get("use_cluster", True),
-        "slurm_folder": kwargs.get("slurm_folder", "slurm_fwd_proj")
+        "slurm_folder": kwargs.get("slurm_folder", "slurm_fwd_proj"),
+        "num_cores": kwargs.get("num_cores", 28)
         }
         
         self.args = args
@@ -561,7 +562,7 @@ class forward_projector:
             os.makedirs(slurm_folder)
         id11_code_path = get_ImageD11_code_path()
         # Split dty values into `num_groups` parts
-        num_groups = np.min([int(len(self.dtys) / 15), 40])
+        num_groups = np.min([int(len(self.dtys) / 12), 40])
         dty_groups = np.array_split(self.dtys, num_groups)
         if self.verbose >= 1:
             logging.info('Got {} dty values'.format(len(self.dtys)))
@@ -585,8 +586,8 @@ class forward_projector:
 #SBATCH --partition=nice
 #SBATCH --array=1-{num_groups}
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=32
-#SBATCH --mem=300G
+#SBATCH --cpus-per-task={num_cores}
+#SBATCH --mem-per-cpu=8000
 #SBATCH --time=01:00:00
 
 date
@@ -606,6 +607,7 @@ date""".format(
             outfile_path=outfile_path,
             errfile_path=errfile_path,
             num_groups=num_groups,
+            num_cores=self.args["num_cores"],
             dty_file_list=dty_file_list,
             log_path=log_path,
             id11_code_path=id11_code_path,
@@ -669,18 +671,33 @@ date""".format(
         else:
             print("No peaks_3d is found")
             
-    def get_cf_4d(self):
+    def get_cf_4d(self, source = '3d', factor = 50):
         """
         merge 2D/3D peaks to 4D by merging dty
+        source = '2d' or '3d'
         """
-        if not (hasattr(self, 'peaks_3d') and self.peaks_3d.size > 0):
-            self.read_cf()
-        # assemble to 4D peaks by merging dty for 3D peaks
-        self.peaks_4d, _ = merge_rows(self.peaks_3d, columns_to_cluster=[0, 8, 12, 13, 14],
-                                            epsilons=[0.1, 200*self.args['dty_step'], 0.1, 0.1, 0.1],
-                                            special_col_index=23, min_samples = 1, weighted_avg=True)
+        ystep = self.args['dty_step']
+        if source == '2d':
+            if not (hasattr(self, 'peaks_2d') and self.peaks_2d.size > 0):
+                self.read_cf()
+            # assemble to 4D peaks by merging dty, omega for 2D peaks
+            print('Merging peaks_2d to render peaks_4d ...')
+            self.peaks_4d, _ = merge_rows(self.peaks_2d, columns_to_cluster=[0, 2, 3, 8, 9, 10, 18, 19],
+                                          epsilons=[0.1, factor*ystep, factor*ystep, factor*ystep, 3, 0.2, 20, 20],
+                                          special_col_index=23, min_samples = 1, weighted_avg=True)
+        else:
+            if not (hasattr(self, 'peaks_3d') and self.peaks_3d.size > 0):
+                self.read_cf()
+            # assemble to 4D peaks by merging dty, omega for 3D peaks
+            print('Merging peaks_3d to render peaks_4d ...')
+            self.peaks_4d, _ = merge_rows(self.peaks_3d, columns_to_cluster=[0, 2, 3, 8, 9, 10, 18, 19],
+                                      epsilons=[0.1, factor*ystep, factor*ystep, factor*ystep, 3, 0.2, 20, 20],
+                                      special_col_index=23, min_samples = 1, weighted_avg=True)
         self.cf_4d = io.convert_fwd_peaks_to_cf(self.peaks_4d)
-        colfile_to_hdf(self.cf_4d, self.cf_4d_file)
+        if not os.path.exists(self.cf_4d_file):
+            colfile_to_hdf(self.cf_4d, self.cf_4d_file)
+        else:
+            print('{} has already existed; not overwriting it ...'.format(self.cf_4d_file))
 
     def read_cf(self):
         """
@@ -888,34 +905,35 @@ def process_omega(omega, mask, DS, beam, sample, pars, ucell, rot_step, ds_max, 
         for i in range(intersected_sampos.shape[0]):
             pos = intersected_sampos[i, :]  # [mm]
             ind_voxel = [int(intersected_voxels[i, 2]), int(intersected_voxels[i, 1]), int(intersected_voxels[i, 0])]
-            U = DS['U'][ind_voxel[0], ind_voxel[1], ind_voxel[2], :, :]
-            B = DS['B'][ind_voxel[0], ind_voxel[1], ind_voxel[2], :, :]
-            fwd, Nr_simu = forward_model.forward_comp(pos, U, B, ucell, pars, ds_max=ds_max, rot_start=rot_start, rot_end=rot_end, rot_step=rot_step, verbose=0)
+            if DS['labels'][ind_voxel[0], ind_voxel[1], ind_voxel[2]] > -1:
+                U = DS['U'][ind_voxel[0], ind_voxel[1], ind_voxel[2], :, :]
+                B = DS['B'][ind_voxel[0], ind_voxel[1], ind_voxel[2], :, :]
+                fwd, Nr_simu = forward_model.forward_comp(pos, U, B, ucell, pars, ds_max=ds_max, rot_start=rot_start, rot_end=rot_end, rot_step=rot_step, verbose=0)
 
-            if Nr_simu > 0 and fwd[0][8]:
-                Gt = fwd[0][3]
-                eta_rad = np.arccos(np.dot(np.array([0, Gt[1], Gt[2]]) / np.linalg.norm([0, Gt[1], Gt[2]]), np.array([0, 0, 1])))
-                if Gt[1] > 0:
-                    eta_rad = 2 * np.pi - eta_rad
-                eta = np.rad2deg(eta_rad)
-                rho_rad = eta_rad + np.pi / 2
+                if Nr_simu > 0 and fwd[0][8]:
+                    Gt = fwd[0][3]
+                    eta_rad = np.arccos(np.dot(np.array([0, Gt[1], Gt[2]]) / np.linalg.norm([0, Gt[1], Gt[2]]), np.array([0, 0, 1])))
+                    if Gt[1] > 0:
+                        eta_rad = 2 * np.pi - eta_rad
+                    eta = np.rad2deg(eta_rad)
+                    rho_rad = eta_rad + np.pi / 2
 
-                tth_rad = np.deg2rad(fwd[0][2])
-                Lorentz = 1 / np.sin(tth_rad)
-                Polarization = (1 + np.cos(tth_rad) ** 2 - beam.polarization[1] * np.cos(2 * rho_rad) * np.sin(tth_rad) ** 2) / 2
+                    tth_rad = np.deg2rad(fwd[0][2])
+                    Lorentz = 1 / np.sin(tth_rad)
+                    Polarization = (1 + np.cos(tth_rad) ** 2 - beam.polarization[1] * np.cos(2 * rho_rad) * np.sin(tth_rad) ** 2) / 2
 
-                dety_mm = fwd[0][6]
-                detz_mm = fwd[0][7]
-                trans_factor, L_total = forward_model.beam_attenuation(intersected_labpos[i, :], Lsam2det, dety_mm, detz_mm,
-                                                                     Rsample=sample.Rsample, beam_name=beam.name, rou=sample.rou, mass_abs=sample.mass_abs)
+                    dety_mm = fwd[0][6]
+                    detz_mm = fwd[0][7]
+                    trans_factor, L_total = forward_model.beam_attenuation(intersected_labpos[i, :], Lsam2det, dety_mm, detz_mm,
+                                                                         Rsample=sample.Rsample, beam_name=beam.name, rou=sample.rou, mass_abs=sample.mass_abs)
 
-                fwd_peaks.append([
-                    DS['labels'][ind_voxel[0], ind_voxel[1], ind_voxel[2]], ind_voxel[0], ind_voxel[1], ind_voxel[2], intersected_voxels[i, 4],  # 0-4 grainID, voxel_indices(ZYX), weight
-                    intersected_sampos[i, 0], intersected_sampos[i, 1], intersected_sampos[i, 2],  # 5-7 pos
-                    args["dty"], fwd[0][0], fwd[0][2], eta, fwd[0][1][0], fwd[0][1][1], fwd[0][1][2],  # 8-14 dty, rot, tth, eta, hkl
-                    fwd[0][3][0], fwd[0][3][1], fwd[0][3][2], fwd[0][4], fwd[0][5],  # 15-19 gx, gy, gz, dety_pixel(fc), detz_pixel(sc)
-                    Lorentz, Polarization, trans_factor  # 20-22 Lorentz, Polarization, transmission factors
-                ])
+                    fwd_peaks.append([
+                        DS['labels'][ind_voxel[0], ind_voxel[1], ind_voxel[2]], ind_voxel[0], ind_voxel[1], ind_voxel[2], intersected_voxels[i, 4],  # 0-4 grainID, voxel_indices(ZYX), weight
+                        intersected_sampos[i, 0], intersected_sampos[i, 1], intersected_sampos[i, 2],  # 5-7 pos
+                        args["dty"], fwd[0][0], fwd[0][2], eta, fwd[0][1][0], fwd[0][1][1], fwd[0][1][2],  # 8-14 dty, rot, tth, eta, hkl
+                        fwd[0][3][0], fwd[0][3][1], fwd[0][3][2], fwd[0][4], fwd[0][5],  # 15-19 gx, gy, gz, dety_pixel(fc), detz_pixel(sc)
+                        Lorentz, Polarization, trans_factor  # 20-22 Lorentz, Polarization, transmission factors
+                    ])
 
     return fwd_peaks
 
@@ -1592,9 +1610,9 @@ def segment_frms(frms, destname, opts_seg, detector = 'eiger'):
         for i, spf in enumerate(reader_frms(frms, detector_mask, opts_seg)):
             if i % 100 == 0:
                 if spf is None:
-                    print("%4d 0, " % (i))
+                    print("%4d 0," % (i))
                 else:
-                    print("%4d %d, " % (i, spf.nnz))
+                    print("%4d %d," % (i, spf.nnz))
                 sys.stdout.flush()
             if spf is None:
                 nnz[i] = 0
