@@ -421,7 +421,7 @@ def process_dataset_for_peaks_columnfile(
     # Step 1: collect all peaks
     all_frames_peaks_list = collect_all_frames_peaks(
         dataset.masterfile,
-        f"{dataset.scans[0]}/measurement/{dataset.detector}",
+        "%s/measurement/%s"%(dataset.scans[0], dataset.detector),
         dataset.omega[0,:],
         worker_args,
         num_cpus,
