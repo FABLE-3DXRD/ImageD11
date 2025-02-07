@@ -362,22 +362,17 @@ PKCOL = [getattr(ImageD11.cImageD11, p) for p in PKSAVE]
 
 def collect_all_frames_peaks(
     master_file,
-    scans,
+    frames_dataset,
     omega_angles,
-    detector,
     worker_args,
     num_cpus=None,
-    **process_map_kwargs,
+    **process_map_kwargs
 ):
     """
     Collects peaks for all the frames in the first scan in the dataset 
     using parallel processing.
     """
     num_threads = num_cpus or max(1, ImageD11.cImageD11.cores_available() - 1)
-    scan_name = scans[0]
-    frames_dataset = f"{scan_name}/measurement/{detector}"
-    omega_angles = omega_angles[0, :]
-
     num_frames = omega_angles.shape[0]
     args = [
         (master_file, frames_dataset, i, omega_angles[i], worker_args) 
@@ -426,9 +421,8 @@ def process_dataset_for_peaks_columnfile(
     # Step 1: collect all peaks
     all_frames_peaks_list = collect_all_frames_peaks(
         dataset.masterfile,
-        dataset.scans,
-        dataset.omega,
-        dataset.detector,
+        f"{dataset.scans[0]}/measurement/{dataset.detector}",
+        dataset.omega[0,:],
         worker_args,
         num_cpus,
         **process_map_kwargs
