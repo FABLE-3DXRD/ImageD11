@@ -564,7 +564,7 @@ def cf_plot_sino(cfs):
         ncf = 1         # assume the input is a single cf
     print('Got {} colume file object(s)'.format(ncf))
         
-    f, a = plt.subplots(1, ncf, figsize=(6*ncf, 6))
+    f, a = plt.subplots(1, ncf, figsize=(6*ncf, 6),sharex=True,sharey=True)
     
     # If there is only one subplot (ncf == 1), treat `a` as a list for consistency
     if ncf == 1:
