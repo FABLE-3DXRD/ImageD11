@@ -423,7 +423,7 @@ def process_dataset_for_peaks_columnfile(
     all_frames_peaks_list = collect_all_frames_peaks(
         dataset.masterfile,
         "%s/measurement/%s"%(dataset.scans[scan_number], dataset.detector),
-        dataset.omega[0,:],
+        dataset.omega[scan_number,:],
         worker_args,
         num_cpus,
         **process_map_kwargs
@@ -435,7 +435,7 @@ def process_dataset_for_peaks_columnfile(
     )
 
     # Step 3: Perform 3d merge
-    omega_angles = dataset.omega[0, :]
+    omega_angles = dataset.omega[scan_number]
     peak_3d_dict = do3dmerge(peaks_2d_dict, num_peaks, omega_angles)
 
     # Step 4: Spatial Correction
@@ -466,7 +466,7 @@ def process(ds, worker_args, ncpu=None, scan_number=0, **process_map_kwargs):
     hname = ds.masterfile
     scan_name = ds.scans[scan_number]
     frames_dset = scan_name + "/measurement/" + ds.detector
-    omega = ds.omega[0, :]
+    omega = ds.omega[scan_number, :]
 
     n_frames = omega.shape[0]
 
