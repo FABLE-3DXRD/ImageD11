@@ -5,6 +5,7 @@
 # 3) forward_match_peaks to find matched peaks and compute completeness
 # Haixing Fang, haixing.fang@esrf.fr
 # Oct 4th, 2024
+# updated on January 30, 2025
 
 import numpy as np
 import ImageD11.columnfile
@@ -12,11 +13,13 @@ import ImageD11.unitcell
 import ImageD11.transformer
 from ImageD11.forward_model import pars_conversion
 from matplotlib import pyplot as plt
+import logging
+from numba import njit
 
 econst = 12.3984
+logging.basicConfig(level=logging.INFO, force=True)
 
-
-def forward_match_peaks(cf_strong, grains, ds, ucell, pars, ds_max = 2.0, tol_angle=1, tol_pixel=10, thres_int = None):
+def forward_match_peaks(cf_strong, grains, ds, ucell, pars, ds_max = 2.0, tol_angle=1, tol_pixel=10, thres_int = None, verbose = 1):
     """
     Perform forward calculation to find the matched fwd peaks and exp peaks
 
@@ -31,6 +34,7 @@ def forward_match_peaks(cf_strong, grains, ds, ucell, pars, ds_max = 2.0, tol_an
     tol_angle -- tolerance of angles for matching peaks
     tol_piexl -- tolerance of pixels for matching peaks
     thres_int -- intensity threshold, None as default to not remove peaks
+    verbose   -- verbose level for displaying print out
 
     Returns:
     cf_matched_all -- list of matched peaks for each of the grain, list of ImageD11.columnfile
@@ -52,7 +56,7 @@ def forward_match_peaks(cf_strong, grains, ds, ucell, pars, ds_max = 2.0, tol_an
         U = grains[i].U
         B = grains[i].B
 
-        fwd, Nr_simu = forward_comp(pos, U, B, ucell, pars, ds_max = ds_max, rot_start = rot_min, rot_end = rot_max, rot_step = rot_step)
+        fwd, Nr_simu = forward_comp(pos, U, B, ucell, pars, ds_max = ds_max, rot_start = rot_min, rot_end = rot_max, rot_step = rot_step, verbose = verbose)
         cf_matched, fwd_matched, ij, Completeness = find_matching_peaks(cf_strong, fwd, dsmax = ds_max, tol_angle=tol_angle, tol_pixel=tol_pixel)
         if thres_int is not None:
              cf_matched = cf_remove_weak_peaks(cf_matched, thres_int = thres_int)
@@ -60,9 +64,8 @@ def forward_match_peaks(cf_strong, grains, ds, ucell, pars, ds_max = 2.0, tol_an
         cf_matched_all.append(cf_matched)
     return cf_matched_all, Comp_all
     
-        
-    
-def forward_comp(pos, U, B, ucell, pars, ds_max = 1.2, rot_start = -91, rot_end = 91, rot_step = 0.05):
+
+def forward_comp(pos, U, B, ucell, pars, ds_max = 1.2, rot_start = -91, rot_end = 91, rot_step = 0.05, verbose = 1):
     """
     Given pos, U, B, ucell, pars, forward calculate the expected intersection position on the detector.
 
@@ -76,6 +79,7 @@ def forward_comp(pos, U, B, ucell, pars, ds_max = 1.2, rot_start = -91, rot_end 
     rot_start -- starting omega angle [deg]
     rot_step -- step size of the omega rotation [deg]
     rot_end -- end omega angle [deg]
+    verbose   -- verbose level for displaying print out
 
     Returns:
     fwd -- list of expected peak positions: [rot in degrees, hkl, 2-theta in degrees, Gt, dety, detz, dety_mm, detz_mm, HitDetFlag]
@@ -91,7 +95,7 @@ def forward_comp(pos, U, B, ucell, pars, ds_max = 1.2, rot_start = -91, rot_end 
     Ki = np.array([p['Energy']/econst, 0, 0]) # note that there is no 2*pi here
     Klen = np.linalg.norm(Ki) # [A^-1]
 
-    ds_all, hkls = get_hkls(ucell, dsmax = ds_max)
+    ds_all, hkls = get_hkls(ucell, dsmax = ds_max, verbose = verbose)
     
     Gw = np.dot(p['S'], np.dot(U, np.dot(B, hkls.T)))
     # Glen = np.sqrt(Gw[0, :]**2 + Gw[1, :]**2 + Gw[2, :]**2)
@@ -108,9 +112,10 @@ def forward_comp(pos, U, B, ucell, pars, ds_max = 1.2, rot_start = -91, rot_end 
         omega_all[i,:] = find_omega(a[i], b[i], c[i], d[i], sqD[i])
     if rot_start < 0:
         omega_all[omega_all > (2*np.pi + np.deg2rad(rot_start))] -= 2*np.pi # bring the omega solution from [0, 2*pi] to [rot_start, 2*pi+rot_start]
-        
-    print('Investigating {} possible omega angle solutions ...'.format(omega_all.shape))
-    print('Omega angle range: [{}, {}]'.format(np.rad2deg(np.nanmin(omega_all)), np.rad2deg(np.nanmax(omega_all))))
+    
+    if verbose >= 2:
+        logging.debug('Investigating {} possible omega angle solutions ...'.format(omega_all.shape))
+        logging.debug('Omega angle range: [{}, {}]'.format(np.rad2deg(np.nanmin(omega_all)), np.rad2deg(np.nanmax(omega_all))))
 
     # print(np.rad2deg(omega_all))
     # computation in lab system
@@ -125,9 +130,11 @@ def forward_comp(pos, U, B, ucell, pars, ds_max = 1.2, rot_start = -91, rot_end 
                 if HitDetFlag == True:
                     Nr_simu += 1
                 fwd.append([rot, hkls[ii,:], np.rad2deg(theta[ii])*2, Gt, dety, detz, dety_mm, detz_mm, HitDetFlag])
-                
-    print('Done! {} peaks expected on the detector by investigating {}*2 hkl reflections for rotation angle range between {} and {} degrees'.format(Nr_simu, hkls.shape[0], rot_start, rot_end))
-    print('fwd list contains: [rot in degrees, hkl, 2-theta in degrees, Gt, dety, detz, dety_mm, detz_mm, HitDetFlag]')
+    
+    if verbose >= 1:
+        logging.info('Done! {} peaks expected on the detector by investigating {}*2 hkl reflections for rotation angle range between {} and {} degrees'.format(Nr_simu, hkls.shape[0], rot_start, rot_end))
+    if verbose >= 2:
+        logging.debug('fwd list contains: [rot in degrees, hkl, 2-theta in degrees, Gt, dety, detz, dety_mm, detz_mm, HitDetFlag]')
     return fwd, Nr_simu
 
 
@@ -200,6 +207,80 @@ def forward_det_pos(pos, omega, Gw, theta, p):
     return dety, detz, dety_mm, detz_mm, Gt.T, HitDetFlag
 
 
+@njit
+def beam_attenuation(pos_lab, Lsam2det, dety_mm, detz_mm, Rsample = 0.3, Lsam2sou = 97e3, beam_name = 'pencil_beam', rou = 2.7, mass_abs = 0.5685):
+    """
+    calculate the beam path length along the sample
+    incoming beam length + outcoming diffracting beam length
+    diffraction occurring at (x,y,z)
+    I/I0 = exp(-mass_abs * rou * beam_length)
+    mass_abs: mass-energy absorption coefficient, obtained from e.g. NIST table [cm^2/g]
+    rou: density of the sample [g/cm^3]
+    beam_length: total length of the X-ray beam path in the sample
+    by default, values of mass_abs and rou is for Aluminium at 40 keV
+    
+    Args:
+        pos_lab (float): positions in lab coordinate system [mm]
+        Lsam2det (float): sample-to-detector distance [mm]
+        dety_mm (float): peak position Y [mm]
+        detz_mm (float): peak position Z [mm]
+        Rsample (float): sample radius [mm]
+        Lsam2sou (float): sample-to-source distance [mm]
+        beam_name (string): name of the beam shape, 'pencil_beam', 'cone_beam', 'parallel_beam'
+        rou (float): sample density [g/cm^3]
+        mass_abs (float): mass-energy absorption coefficient [cm^2/g]
+    Returns:
+        trans_factor (float): transmission factor to quantify I/I0
+        L_total (float): total length of the X-ray beam path in the sample [mm]
+    """
+    
+    # length of incoming beam path
+    if beam_name == 'cone_beam':
+        # conical beam case
+        if (Rsample**2 * (Lsam2sou + pos_lab[0])**2 + pos_lab[1]**2 * (Rsample**2 - Lsam2sou**2)) >= 0:
+            t1 = (Lsam2sou*(Lsam2sou + pos_lab[0]) - np.sqrt(Rsample**2 * (Lsam2sou+pos_lab[0])**2 +
+                 pos_lab[1]**2 * (Rsample**2 - Lsam2sou**2))) / ((Lsam2sou + pos_lab[0])**2 + pos_lab[1]**2)
+        else:
+            t1 = 1 - Rsample/Lsam2sou # approximate solution is used when Rsample is not accurately estimated
+        xn = -Lsam2sou + t1*(Lsam2sou+pos_lab[0])
+        yn = t1*pos_lab[1]
+        zn = t1*pos_lab[2]
+        L_NM = np.sqrt((xn-pos_lab[0])**2 + (yn-pos_lab[1])**2 + (zn-pos_lab[2])**2)
+    else:
+        # parallel beam case including point focused beam
+        if pos_lab[0] + Rsample/2 > 0:
+            L_NM = pos_lab[0] + Rsample/2
+        else:
+            L_NM = 0.0
+            
+    # length of diffracted beam path
+    if (2*pos_lab[0]*pos_lab[1]*(Lsam2det-pos_lab[0])*(dety_mm-pos_lab[1]) +
+        Rsample**2 * ((Lsam2det-pos_lab[0])**2 + (dety_mm-pos_lab[1])**2) -
+        pos_lab[0]**2 * (dety_mm-pos_lab[1])**2 - pos_lab[1]**2 * (Lsam2det-pos_lab[0])**2) >= 0:
+        
+        t2 = (-pos_lab[0]*(Lsam2det-pos_lab[0]) - pos_lab[1]*(dety_mm-pos_lab[1]) +
+             np.sqrt(2*pos_lab[0]*pos_lab[1] * (Lsam2det-pos_lab[0])*(dety_mm-pos_lab[1]) +
+             Rsample**2 * ((Lsam2det-pos_lab[0])**2 + (dety_mm-pos_lab[1])**2) -
+             pos_lab[0]**2 * (dety_mm-pos_lab[1])**2 - pos_lab[1]**2 * (Lsam2det-pos_lab[0])**2)) / ((Lsam2det-pos_lab[0])**2 + (dety_mm-pos_lab[1])**2)
+    elif Rsample >= np.abs(pos_lab[1]):
+        t2 = (-pos_lab[0] + np.sqrt(Rsample**2 - pos_lab[1]**2)) / Lsam2det # approximate solution is used when Rsample is not accurately estimated
+    else:
+        t2 = -pos_lab[0] / Lsam2det
+    xq1 = pos_lab[0] + t2*(Lsam2det-pos_lab[0])
+    yq1 = pos_lab[1] + t2*(dety_mm-pos_lab[1])
+    zq1 = pos_lab[2] + t2*(detz_mm-pos_lab[2])
+    L_MQ1 = np.sqrt((xq1-pos_lab[0])**2 + (yq1-pos_lab[1])**2 + (zq1-pos_lab[2])**2)
+
+    # total X-ray beam path in the sample
+    L_total = L_NM + L_MQ1 # [mm]
+    
+    # transmission factor
+    trans_factor = np.exp(- mass_abs * L_total * 0.1 * rou )
+
+    return trans_factor, L_total
+
+
+@njit
 def get_omega_matrix(omega):
     """
     Calculate the rotation matrix (Omega) for a rotation angle around Z vertical axis in right-hand coordinate system
@@ -212,6 +293,7 @@ def get_omega_matrix(omega):
     return omega_matrix
     
 
+@njit
 def find_omega(a, b, c, d, sqD):
     """
     Finds the omega (rotation angle) that generates the diffraction.
@@ -250,7 +332,7 @@ def find_omega(a, b, c, d, sqD):
     return Omega
 
 
-def get_hkls(ucell, dsmax = 1.2):
+def get_hkls(ucell, dsmax = 1.2, verbose = 1):
     """
     get hkl list from the ucell provided by ImageD11
 
@@ -284,8 +366,9 @@ def get_hkls(ucell, dsmax = 1.2):
         hkls.append(unique_arrays[key])
     ds_all = np.vstack(ds_all)
     hkls = np.vstack(hkls)
-    print('Got {} hkl lattice planes in total out of {} hkl families'.format(hkls.shape[0], ds_all.shape[0]))
-    print('ds range for {} hkl families: [{}, {}]'.format(ds_all.shape[0], np.min(ds_all), np.max(ds_all)))
+    if verbose >= 1:
+        logging.info('Got {} hkl lattice planes in total out of {} hkl families'.format(hkls.shape[0], ds_all.shape[0]))
+        logging.info('ds range for {} hkl families: [{}, {}]'.format(ds_all.shape[0], np.min(ds_all), np.max(ds_all)))
 
     return ds_all, hkls
                             
@@ -353,6 +436,7 @@ def find_matching_peaks(cf, fwd, dsmax=1.5, tol_angle=0.1, tol_pixel=0.55):
     fwd_tth = np.array([row[2] for row in fwd])
     fwd_fc = np.array([row[4] for row in fwd])
     fwd_sc = np.array([row[5] for row in fwd])
+    fwd_HitDetFlag = np.array([row[8] for row in fwd])
     
     # Vectorized differences
     diff_omega = np.abs(cf_omega[:, np.newaxis] - fwd_omega)
@@ -381,8 +465,8 @@ def find_matching_peaks(cf, fwd, dsmax=1.5, tol_angle=0.1, tol_pixel=0.55):
     ij = list(zip(matched_cf_indices, matched_fwd_indices))
     
     # Calculate the completeness
-    Completeness = len(fwd_matched) / len(fwd)
-    print('Found {}/{} matched peaks, completeness = {}'.format(len(fwd_matched), len(fwd), Completeness))
+    Completeness = len(fwd_matched) / np.where(fwd_HitDetFlag==True)[0].shape[0]
+    print('Found {}/{} matched peaks, completeness = {}'.format(len(fwd_matched), np.where(fwd_HitDetFlag==True)[0].shape[0], Completeness))
     
     return cf_matched, fwd_matched, ij, Completeness
 
@@ -463,6 +547,8 @@ def cf_set_difference(cf1, cf2, tol = 0.001):
     
     print('Found {}/{} different peaks for cf1'.format(cf1_diff.nrows, cf1.nrows))
     print('Found {}/{} different peaks for cf2'.format(cf2_diff.nrows, cf2.nrows))
+    
+    del cf1, cf2  # Removes the local references to free memory use
 
     return cf1_diff, cf2_diff
 
@@ -478,7 +564,7 @@ def cf_plot_sino(cfs):
         ncf = 1         # assume the input is a single cf
     print('Got {} colume file object(s)'.format(ncf))
         
-    f, a = plt.subplots(1, ncf, figsize=(6*ncf, 6))
+    f, a = plt.subplots(1, ncf, figsize=(6*ncf, 6),sharex=True,sharey=True)
     
     # If there is only one subplot (ncf == 1), treat `a` as a list for consistency
     if ncf == 1:

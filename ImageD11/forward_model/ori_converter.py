@@ -2,29 +2,32 @@
 # cross verified with GrainRecon_v2 matlab functions
 # Haixing Fang, haixing.fang@esrf.fr
 # Oct 23, 2023
+# Updates on Jan 19th, 2025: implement numba.njit
+
 import numpy as np
 import math
+from numba import njit
 
-# axis sequences for Euler angles
-_NEXT_AXIS = [1, 2, 0, 1]
+# # axis sequences for Euler angles
+# _NEXT_AXIS = [1, 2, 0, 1]
 
-# map axes strings to/from tuples of inner axis, parity, repetition, frame
-_AXES2TUPLE = {
-    'sxyz': (0, 0, 0, 0), 'sxyx': (0, 0, 1, 0), 'sxzy': (0, 1, 0, 0),
-    'sxzx': (0, 1, 1, 0), 'syzx': (1, 0, 0, 0), 'syzy': (1, 0, 1, 0),
-    'syxz': (1, 1, 0, 0), 'syxy': (1, 1, 1, 0), 'szxy': (2, 0, 0, 0),
-    'szxz': (2, 0, 1, 0), 'szyx': (2, 1, 0, 0), 'szyz': (2, 1, 1, 0),
-    'rzyx': (0, 0, 0, 1), 'rxyx': (0, 0, 1, 1), 'ryzx': (0, 1, 0, 1),
-    'rxzx': (0, 1, 1, 1), 'rxzy': (1, 0, 0, 1), 'ryzy': (1, 0, 1, 1),
-    'rzxy': (1, 1, 0, 1), 'ryxy': (1, 1, 1, 1), 'ryxz': (2, 0, 0, 1),
-    'rzxz': (2, 0, 1, 1), 'rxyz': (2, 1, 0, 1), 'rzyz': (2, 1, 1, 1)}
+# # map axes strings to/from tuples of inner axis, parity, repetition, frame
+# _AXES2TUPLE = {
+#     'sxyz': (0, 0, 0, 0), 'sxyx': (0, 0, 1, 0), 'sxzy': (0, 1, 0, 0),
+#     'sxzx': (0, 1, 1, 0), 'syzx': (1, 0, 0, 0), 'syzy': (1, 0, 1, 0),
+#     'syxz': (1, 1, 0, 0), 'syxy': (1, 1, 1, 0), 'szxy': (2, 0, 0, 0),
+#     'szxz': (2, 0, 1, 0), 'szyx': (2, 1, 0, 0), 'szyz': (2, 1, 1, 0),
+#     'rzyx': (0, 0, 0, 1), 'rxyx': (0, 0, 1, 1), 'ryzx': (0, 1, 0, 1),
+#     'rxzx': (0, 1, 1, 1), 'rxzy': (1, 0, 0, 1), 'ryzy': (1, 0, 1, 1),
+#     'rzxy': (1, 1, 0, 1), 'ryxy': (1, 1, 1, 1), 'ryxz': (2, 0, 0, 1),
+#     'rzxz': (2, 0, 1, 1), 'rxyz': (2, 1, 0, 1), 'rzyz': (2, 1, 1, 1)}
 
-_TUPLE2AXES = dict((v, k) for k, v in _AXES2TUPLE.items())
+# _TUPLE2AXES = dict((v, k) for k, v in _AXES2TUPLE.items())
 
-# For testing whether a number is close to zero
-_EPS4 = np.finfo(float).eps * 4.0
+# # For testing whether a number is close to zero
+# _EPS4 = np.finfo(float).eps * 4.0
 
-_FLOAT_EPS = np.finfo(np.float64).eps
+# _FLOAT_EPS = np.finfo(np.float64).eps
 
 
 def flip_up(q):
@@ -84,6 +87,7 @@ def map_points_out(basis_points, basis_weights, superset, subset, map_indices):
     return np.array(mapped_points), np.array(mapped_weights)
 
 
+@njit
 def quat2u(q):
 
     a, b, c, d = q
@@ -103,11 +107,14 @@ def quat2u(q):
     return np.array([[u0, u1, u2], [u3, u4, u5], [u6, u7, u8]])
 
 
+@njit
 def rod2quat(r):
 
 	s = 1 / np.sqrt(1 + np.linalg.norm(r)**2)
 	return np.array([s, s * r[0], s * r[1], s * r[2]])
 
+
+@njit
 def quat2rod(q):
     
     q = np.asarray(q)
@@ -122,6 +129,7 @@ def quat2rod(q):
     return R
 
 
+@njit
 def u2quat(u):
     
     r11, r12, r13 = u[0]
@@ -159,6 +167,7 @@ def u2quat(u):
     return q / np.linalg.norm(q)
 
 
+@njit
 def quat2euler(q):
     q = np.asarray(q)
     u = quat2u(q)
@@ -188,9 +197,8 @@ def quat2euler(q):
 #     return res
 
 
-#euler angle conventions are taken from EMSoft
 def euler2quat(e):
-
+    #euler angle conventions are taken from EMSoft
     ee = np.array(e) / 2
     cphi = np.cos(ee[1])
     sphi = np.sin(ee[1])
@@ -199,8 +207,10 @@ def euler2quat(e):
     cp = np.cos(ee[0] + ee[2])
     sp = np.sin(ee[0] + ee[2])
 
-    res = np.array([cphi * cp, -sphi * cm, -sphi * sm, -cphi * sp])
+    res = np.array([cphi * cp, -sphi * cm, -sphi * sm, -cphi * sp])    
+
     return flip_up(res)
+
 
 def quat2axangle(quat, identity_thresh=None):
     ''' Convert quaternion to rotation of angle around axis
@@ -249,6 +259,8 @@ def quat2axangle(quat, identity_thresh=None):
 
     The algorithm allows for quaternions that have not been normalized.
     '''
+    _FLOAT_EPS = np.finfo(np.float64).eps
+    
     quat = np.asarray(quat)
     Nq = np.sum(quat ** 2)
     if not np.isfinite(Nq):
@@ -273,6 +285,7 @@ def quat2axangle(quat, identity_thresh=None):
     return  xyz / math.sqrt(len2), theta
 
 
+@njit
 def axangle2u(axis, angle, is_normalized=False):
     ''' Rotation matrix for rotation angle `angle` around `axis`
 
@@ -294,7 +307,7 @@ def axangle2u(axis, angle, is_normalized=False):
     -----
     From: http://en.wikipedia.org/wiki/Rotation_matrix#Axis_and_angle
     '''
-    x, y, z = axis
+    x, y, z = axis[0], axis[1], axis[2]
     if not is_normalized:
         n = math.sqrt(x*x + y*y + z*z)
         x = x/n
@@ -309,6 +322,8 @@ def axangle2u(axis, angle, is_normalized=False):
             [ xyC+zs,   y*yC+c,   yzC-xs ],
             [ zxC-ys,   yzC+xs,   z*zC+c ]])
 
+
+@njit
 def euler2u(e):
     # U matrix from Euler angles phi1, PHI, phi2 in radians.
     # INPUT: phi, PHI, and phi2 in radians
@@ -331,10 +346,11 @@ def euler2u(e):
     return U
 
 
+@njit
 def u2euler(mat, axes='rzxz'):
     # github transforms3d/euler.py
     # by default using Bunge convention
-    """Return Euler angles from rotation matrix for specified axis sequence.
+    """Return Euler angles from rotation matrix for specified axis sequence in [0, 360] degrees.
 
     Note that many Euler angle triplets can describe one matrix.
 
@@ -363,17 +379,59 @@ def u2euler(mat, axes='rzxz'):
     >>> np.allclose(R0, R1)
     True
     """
-    try:
-        firstaxis, parity, repetition, frame = _AXES2TUPLE[axes.lower()]
-    except (AttributeError, KeyError):
-        _TUPLE2AXES[axes]  # validation
-        firstaxis, parity, repetition, frame = axes
+    # axis sequences for Euler angles
+    _NEXT_AXIS = [1, 2, 0, 1]
+    
+    # For testing whether a number is close to zero
+    # _EPS4 = np.finfo(float).eps * 4.0   # = 8.881784197001252e-16
+    _EPS4 = 8.881784197001252e-16
 
+#     # map axes strings to/from tuples of inner axis, parity, repetition, frame
+#     _AXES2TUPLE = {
+#         'sxyz': (0, 0, 0, 0), 'sxyx': (0, 0, 1, 0), 'sxzy': (0, 1, 0, 0),
+#         'sxzx': (0, 1, 1, 0), 'syzx': (1, 0, 0, 0), 'syzy': (1, 0, 1, 0),
+#         'syxz': (1, 1, 0, 0), 'syxy': (1, 1, 1, 0), 'szxy': (2, 0, 0, 0),
+#         'szxz': (2, 0, 1, 0), 'szyx': (2, 1, 0, 0), 'szyz': (2, 1, 1, 0),
+#         'rzyx': (0, 0, 0, 1), 'rxyx': (0, 0, 1, 1), 'ryzx': (0, 1, 0, 1),
+#         'rxzx': (0, 1, 1, 1), 'rxzy': (1, 0, 0, 1), 'ryzy': (1, 0, 1, 1),
+#         'rzxy': (1, 1, 0, 1), 'ryxy': (1, 1, 1, 1), 'ryxz': (2, 0, 0, 1),
+#         'rzxz': (2, 0, 1, 1), 'rxyz': (2, 1, 0, 1), 'rzyz': (2, 1, 1, 1)}
+
+#     _TUPLE2AXES = dict((v, k) for k, v in _AXES2TUPLE.items())
+    _AXES2TUPLE = np.array([(0, 0, 0, 0), (0, 0, 1, 0), (0, 1, 0, 0),
+                           (0, 1, 1, 0), (1, 0, 0, 0), (1, 0, 1, 0),
+                           (1, 1, 0, 0), (1, 1, 1, 0), (2, 0, 0, 0),
+                           (2, 0, 1, 0), (2, 1, 0, 0), (2, 1, 1, 0),
+                           (0, 0, 0, 1), (0, 0, 1, 1), (0, 1, 0, 1),
+                           (0, 1, 1, 1), (1, 0, 0, 1), (1, 0, 1, 1),
+                           (1, 1, 0, 1), (1, 1, 1, 1), (2, 0, 0, 1),
+                           (2, 0, 1, 1), (2, 1, 0, 1), (2, 1, 1, 1)], dtype='int32')
+    axes_names = ['sxyz', 'sxyx', 'sxzy',
+                 'sxzx', 'syzx', 'syzy',
+                 'syxz', 'syxy', 'szxy',
+                 'szxz', 'szyx', 'szyz',
+                 'rzyx', 'rxyx', 'ryzx',
+                 'rxzx', 'rxzy', 'ryzy',
+                 'rzxy', 'ryxy', 'ryxz',
+                 'rzxz', 'rxyz', 'rzyz']
+    # Find the index of the given axis
+    axes_indice = -1
+    for i in range(len(axes_names)):
+        if axes == axes_names[i]:
+            axes_indice = i
+            break
+    if axes_indice == -1:
+        raise ValueError("Invalid input of axes")
+
+    # Parse axes
+    firstaxis, parity, repetition, frame = _AXES2TUPLE[axes_indice]
+               
     i = firstaxis
     j = _NEXT_AXIS[i+parity]
     k = _NEXT_AXIS[i-parity+1]
 
-    M = np.array(mat, dtype=np.float64, copy=False)[:3, :3]
+    # M = np.array(mat, dtype=np.float64, copy=False)[:3, :3]
+    M = np.asarray(mat, dtype=np.float64)[:3, :3]
     if repetition:
         sy = math.sqrt(M[i, j]*M[i, j] + M[i, k]*M[i, k])
         if sy > _EPS4:
@@ -399,4 +457,13 @@ def u2euler(mat, axes='rzxz'):
         ax, ay, az = -ax, -ay, -az
     if frame:
         ax, az = az, ax
-    return ax, ay, az
+    
+    # move angles to the range of [0, 2*pi]
+    if ax < 0:
+        ax = ax + 2*np.pi
+    if ay < 0:
+        ay = ay + 2*np.pi
+    if az < 0:
+        az = az + 2*np.pi
+    
+    return np.rad2deg(ax), np.rad2deg(ay), np.rad2deg(az)
