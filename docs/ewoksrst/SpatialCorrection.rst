@@ -2,7 +2,7 @@ SpatialCorrection
 =================
 
 **Description**
-This task does the spatial correction of merged_colfile.hdf5 from  **out_merged_config**  dict information.
+This task does spatial correction on *segmented_3d_columnfile*
 
 **Inputs**
 
