@@ -7,11 +7,11 @@ This task segment a scan folder by extracting information from *folder_file_conf
 **Inputs**
 
 - **folder_file_config** (dict): A dictionary output of the *InitFolderFileConfig*
-  - *Detector*
-  - *OmegaMotor*
-  - *DtyMotor*
-  - *RawScanFolderPath*
-  - *AnalysisPath*
+  - *Detector* (str): The detector frelon1, frelon3, or eiger.
+  - *OmegaMotor* (str): The omega motor diffrz, diffry, or diffrx.
+  - *DtyMotor* (str): The dty motor diffty, difftx, or difftz.
+  - *RawScanFolderPath*  (str): Path to the raw scan folder, its parent should contain Masterfile, will be checked by this task as well.
+  - *AnalysisPath*  (str): Analysis Path, the result of subsequent value will be stored in AnalysisPath/{sample}/{sample}_{dataset}
 
 - **segment_config** (dict): A dictionary containing the following keys:
   - *BgFilePath* (str): Background Correction File Path a valid path string or None.

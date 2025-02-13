@@ -7,11 +7,14 @@ and provides the safe mechanism to play around with Poly (Multi) Phase lattice p
 
 **Inputs**
 
-- **spatial_corrected_3d_columnfile** (str): A file path stored as .h5 file inside the *AnalysisPath*/{sample}/{sample}_{dataset}/spatial_corrected_3d_file.h5
+- **spatial_corrected_3d_columnfile** (str): 
+  A file path stored as .h5 file inside the *AnalysisPath*/{sample}/{sample}_{dataset}/spatial_corrected_3d_file.h5
 
-- **PhaseName** (str): A Phase Name for the provided phase file path.
+- **PhaseName** (str): 
+  A Phase Name for the provided phase file path.
 
-- **Phase_file_path** (str) (Optional) : A Phase .par file path
+- **Phase_file_path** (str) (Optional) : 
+  A Phase .par file path
 
 - **Tag** (str) (Optional): 
   An optional short string *tag*, so that user can play with same phase name but with different values, it is optional. 
