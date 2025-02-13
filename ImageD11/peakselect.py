@@ -1,8 +1,6 @@
 # coding: utf-8
 
 from __future__ import print_function, division
-from unitcell import unitcell
-from columnfile import columnfile
 """
 Various utility functions for selecting peaks within columnfiles
 """
