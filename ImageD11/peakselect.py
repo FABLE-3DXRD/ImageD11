@@ -74,12 +74,7 @@ def rings_mask(cf, dstol, dsmax, cell=None):
             m |= (abs(cf.ds - v) < dstol)
     return m
 
-def filter_peaks_by_phase(
-        cf:columnfile, 
-        dstol:float, 
-        dsmax:float, 
-        cell:unitcell=None
-):
+def filter_peaks_by_phase(cf, dstol, dsmax, cell=None):
     """
     It filter the given columnfile 
     by the provided unicell, with dstar tolerance and dstar max value
