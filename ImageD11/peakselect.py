@@ -1,7 +1,8 @@
 # coding: utf-8
 
 from __future__ import print_function, division
-
+from unitcell import unitcell
+from columnfile import columnfile
 """
 Various utility functions for selecting peaks within columnfiles
 """
@@ -72,6 +73,16 @@ def rings_mask(cf, dstol, dsmax, cell=None):
         if v < dsmax:
             m |= (abs(cf.ds - v) < dstol)
     return m
+
+def filter_peaks_by_phase(cf, dstol, dsmax, cell=None):
+    """
+    It filter the given columnfile 
+    by the provided unicell, with dstar tolerance and dstar max value
+    returns filtered columnfile
+    """
+    mask = rings_mask(cf=cf, dstol=dstol, dsmax=dsmax, cell=cell)
+    cf = cf.copyrows(mask)
+    return cf
 
 def sorted_peak_intensity_mask(colf, uself=True, frac=0.995, B=0.2, doplot=None):
     """
@@ -175,8 +186,8 @@ def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2
         cfd = cf
     else:
         cfd = cf.copyrows( cf.ds <= dsmax )
-    m = rings_mask(cfd, dstol=dstol, dsmax=dsmax)
-    cfc = cfd.copyrows(m)
+        
+    cfc = filter_peaks_by_phase(cf=cfd, dstol=dstol, dsmax=dsmax)
     ms = sorted_peak_intensity_mask(cfc, frac=frac, B=B, doplot=doplot)
     cfc.filter(ms)
     return cfc
