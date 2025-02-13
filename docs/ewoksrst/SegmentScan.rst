@@ -7,11 +7,11 @@ This task segment a scan folder by extracting information from *folder_file_conf
 **Inputs**
 
 - **folder_file_config** (dict): A dictionary output of the *InitFolderFileConfig*
-    - *Detector*
-    - *OmegaMotor*
-    - *DtyMotor*
-    - *RawScanFolderPath*
-    - *AnalysisPath*
+  - *Detector*
+  - *OmegaMotor*
+  - *DtyMotor*
+  - *RawScanFolderPath*
+  - *AnalysisPath*
 
 - **segment_config** (dict): A dictionary containing the following keys:
   - *BgFilePath* (str): Background Correction File Path a valid path string or None.
