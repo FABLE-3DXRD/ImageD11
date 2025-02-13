@@ -4,34 +4,42 @@
 .par file, and provides the safe mechanism to play around with Poly
 (Multi) Phase lattice parameter (.par) files with multiple version.
 
-**Inputs** - **spatial_corrected_3d_columnfile** (str): A file path
-stored as .h5 file inside the
-*AnalysisPath*/{sample}/{sample}\_{dataset}/spatial_corrected_3d_file.h5 -
-**PhaseName** (str): A Phase Name for the provided phase file path. -
-**Phase_file_path** (str) (Optional) : A Phase .par file path - **Tag**
-(str) (Optional): An optional short string *tag*, so that user can play
-with same phase name but with different values, it is optional.
+**Inputs**
 
-> If *Tag* was not provided, then provided .par file (or .par for the
-> given PhaseName) will be shiped to as
-> *AnalysisPath*/{sample}/{sample}\_{dataset}/par_folder/{PhaseName}.par
->
-> If *Tag* provided then provided .par file (or .par for the given
-> PhaseName) will be shiped to as
-> *AnalysisPath*/{sample}/{sample}\_{dataset}/par_folder/{Tag}/{PhaseName}.par
+-   **spatial_corrected_3d_columnfile** (str): A file path stored as .h5
+    file inside the
+    *AnalysisPath*/{sample}/{sample}\_{dataset}/spatial_corrected_3d_file.h5
 
-**Outputs** - **dstar** (Numby 1D Array): Reciprocal Distance - **eta**
-(Numpy 1D Array): The angle, this array and dstar array should have same
-length. - **ucell_dstar** (Numpy 1D Array): Provides the dstar value for
-the provided phase .par file, Its length depends on the multiplicity
-(crystallographic stuff).
+-   **PhaseName** (str): A Phase Name for the provided phase file path.
 
+-   **Phase_file_path** (str) (Optional) : A Phase .par file path
+
+-   **Tag** (str) (Optional): An optional short string *tag*, so that
+    user can play with same phase name but with different values, it is
+    optional.
+
+    If *Tag* was not provided, then provided .par file (or .par for the
+    given PhaseName) will be shiped to as
+    *AnalysisPath*/{sample}/{sample}\_{dataset}/par_folder/{PhaseName}.par
+
+    If *Tag* provided then provided .par file (or .par for the given
+    PhaseName) will be shiped to as
+    *AnalysisPath*/{sample}/{sample}\_{dataset}/par_folder/{Tag}/{PhaseName}.par
+
+**Outputs**
+
+-   **dstar** (Numby 1D Array): Reciprocal Distance
+-   **eta** (Numpy 1D Array): The angle, this array and dstar array
+    should have same length.
+-   **ucell_dstar** (Numpy 1D Array): Provides the dstar value for the
+    provided phase .par file, Its length depends on the multiplicity
+    (crystallographic stuff).
 -   **spatial_corrected_3d_columnfile** (str): A file path of .h5 file
     inside
     *AnalysisPath*/{sample}/{sample}\_{dataset}/spatial_corrected_3d_file.h5
+-   **PhaseName**: Same as input *PhaseName*
 
-\- **PhaseName**: Same as input *PhaseName* \` **Tag**: Same as input
-*Tag*
+\` **Tag**: Same as input *Tag*
 
 **Usage**
 

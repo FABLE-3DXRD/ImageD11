@@ -5,16 +5,13 @@
 
 **Inputs**
 
--   
-
-    **folder_file_config** (dict): A dictionary output of the *InitFolderFileConfig*
-
-    :   -   *Detector*
-        -   *OmegaMotor*
-        -   *DtyMotor*
-        -   *RawScanFolderPath*
-        -   *AnalysisPath*
-
+-   **folder_file_config** (dict): A dictionary output of the
+    *InitFolderFileConfig*
+    -   *Detector*
+    -   *OmegaMotor*
+    -   *DtyMotor*
+    -   *RawScanFolderPath*
+    -   *AnalysisPath*
 -   **segment_config** (dict): A dictionary containing the following
     keys:
     -   *BgFilePath* (str): Background Correction File Path a valid path
