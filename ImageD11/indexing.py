@@ -1358,7 +1358,10 @@ def do_index(
     cf_for_indexing = cf.copyrows(pkmask)
     cf_for_indexing.parameters = cf.parameters
 
-    indexer = indexer_from_colfile(cf_for_indexing)
+    if unitcell:
+        indexer = indexer_from_colfile_and_ucell(cf_for_indexing, ucell=unitcell)
+    else:
+        indexer = indexer_from_colfile(cf_for_indexing)
     indexer.ds_tol = dstol
     indexer.assigntorings()
 
