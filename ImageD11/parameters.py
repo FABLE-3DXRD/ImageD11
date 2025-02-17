@@ -112,6 +112,8 @@ class AnalysisSchema:
             pars_dict = geometry_pars_dict.copy()
             # add in the phase pars
             pars_dict.update(phase_pars_dict)
+            # re-add the geometry dict to override things like filename if present
+            pars_dict.update(geometry_pars_dict)
         else:
             # just copy the geometry dict
             pars_dict = geometry_pars_dict.copy()
