@@ -25,6 +25,8 @@ from nbconvert.preprocessors import ExecutePreprocessor
 
 nb_base_prefix = os.path.join('..', 'ImageD11', 'nbGui')
 scan_nb_prefix = os.path.join(nb_base_prefix, 'S3DXRD')
+bb_nb_prefix = os.path.join(nb_base_prefix, 'TDXRD')
+
 
 # there are two levels of testing
 # does the notebook work without errors?
@@ -49,6 +51,8 @@ def notebook_route(base_dir, notebook_paths, notebook_param_dicts, notebook_out_
     notebook_paths: Ordered list of paths to the notebooks, to be deployed one after the other
     notebook_param_dicts: Ordered list of dictionaries of parameters, one dict per notebook to be executed
     """
+    if len(notebook_paths) != len(notebook_param_dicts):
+        raise ValueError('Mismatch between number of notebooks and param dicts!')
     if os.path.exists(base_dir):
         raise ValueError('output test directory already exists:', base_dir)
     os.mkdir(base_dir)
@@ -491,13 +495,234 @@ def test_FeAu_JADB_pbp():
          'dset_prefix': "top_",
         },
     ]
-    if len(scan_nb_names) != len(scan_nb_params):
-        raise ValueError('Mismatch between number of notebooks and param dicts!')
     scan_nb_paths = [os.path.join(scan_nb_prefix, name) for name in scan_nb_names]
     notebook_route(tomo_dir, scan_nb_paths, scan_nb_params)
     
 
+
+def test_FeAu_JADB_bb():
+    proc_dir = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250127_JADB/default'
+    nb_names = [
+        '0_segment_frelon.ipynb',
+        '1_index_default.ipynb',
+        '2_merge_slices.ipynb'
+    ]
+    sample = 'FeAu_0p5_tR'
+    dataset = 'ff1'  # first of two layers
+    dset_file = os.path.join(proc_dir, sample, f'{sample}_{dataset}', f'{sample}_{dataset}_dataset.h5')
+    bgfile = None
+    maskfile = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/pars/mask.edf'
+    nb_params = [
+        {'PYTHONPATH': sys.path[0],  # 0_segment_frelon.ipynb
+         'splinefile': ['/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/pars/frelon36_spline_20240604_dx.edf','/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/pars/frelon36_spline_20240604_dy.edf'],
+         'bgfile': bgfile,
+         'maskfile': maskfile,
+         'detector': 'frelon3',
+         'omegamotor': 'diffrz',
+         'dtymotor': 'diffty',
+         'options': {
+            "bgfile":bgfile,
+            "maskfile":maskfile,
+            "threshold":70,
+            "smoothsigma":1.0,
+            "bgc":0.9,
+            "minpx":3,
+            "m_offset_thresh":100,
+            "m_ratio_thresh":150,
+        },
+         'dataroot': '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/',
+         'analysisroot': proc_dir,
+         'sample': sample,
+         'dataset': dataset,
+         'dset_prefix': "ff"
+        },
+        {'PYTHONPATH': sys.path[0],  # 1_index_default.ipynb
+         'dset_path': dset_file,
+         'phase_str': 'Fe',
+         'parfile': '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/pars/pars_tdxrd.json',
+         'cf_strong_frac': 0.9837,
+         'cf_strong_dsmax': 1.01,
+         'cf_strong_dstol': 0.01,
+         'indexer_ds_tol': 0.01,
+         'rings_for_gen': [0, 1],
+         'rings_for_scoring': [0, 1, 2, 3],
+         'hkl_tols_seq': [0.01, 0.02, 0.03, 0.04],
+         'fracs': [0.9, 9.75],
+         'max_grains': 1000,
+         'makemap_hkl_tol_seq': [0.05, 0.025, 0.01],
+         'symmetry': 'cubic',
+         'absolute_minpks': 120,
+         'dset_prefix': "ff"
+        },
+         {'PYTHONPATH': sys.path[0],  # 2_merge_slices.ipynb
+         'dset_path': dset_file,
+         'phase_str': 'Fe',
+         'z_translation_motor': 'samtz',
+         'dset_prefix': "ff"
+        },
+    ]
+    nb_paths = [os.path.join(bb_nb_prefix, name) for name in nb_names]
+    notebook_route(proc_dir, nb_paths, nb_params)
+
+
+
+def test_FeAu_JADB_bb_grid():
+    proc_dir = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250127_JADB/grid'
+    nb_names = [
+        '0_segment_frelon.ipynb',
+        '1_index_grid.ipynb',
+        '2_merge_slices.ipynb'
+    ]
+    sample = 'FeAu_0p5_tR'
+    dataset = 'ff1'  # first of two layers
+    dset_file = os.path.join(proc_dir, sample, f'{sample}_{dataset}', f'{sample}_{dataset}_dataset.h5')
+    bgfile = None
+    maskfile = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/pars/mask.edf'
+    nb_params = [
+        {'PYTHONPATH': sys.path[0],  # 0_segment_frelon.ipynb
+         'splinefile': ['/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/pars/frelon36_spline_20240604_dx.edf','/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/pars/frelon36_spline_20240604_dy.edf'],
+         'bgfile': bgfile,
+         'maskfile': maskfile,
+         'detector': 'frelon3',
+         'omegamotor': 'diffrz',
+         'dtymotor': 'diffty',
+         'options': {
+            "bgfile":bgfile,
+            "maskfile":maskfile,
+            "threshold":70,
+            "smoothsigma":1.0,
+            "bgc":0.9,
+            "minpx":3,
+            "m_offset_thresh":100,
+            "m_ratio_thresh":150,
+        },
+         'dataroot': '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/',
+         'analysisroot': proc_dir,
+         'sample': sample,
+         'dataset': dataset,
+         'dset_prefix': "ff"
+        },
+        {'PYTHONPATH': sys.path[0],  # 1_index_grid.ipynb
+         'dset_path': dset_file,
+         'phase_str': 'Fe',
+         'parfile': '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/pars/pars_tdxrd.json',
+         'cf_strong_frac': 0.9837,
+         'cf_strong_dsmax': 1.01,
+         'cf_strong_dstol': 0.01,
+         'indexer_ds_tol': 0.01,
+         'rings_to_use': [0, 1, 3],
+         'symmetry': 'cubic',
+         'makemap_tol_seq': [0.02, 0.015, 0.01],
+         'gridpars': {
+                'DSTOL' : 0.004,
+                'RING1'  : [1,0,],
+                'RING2' : [0,],
+                'NUL' : True,
+                'FITPOS' : True,
+                'tolangle' : 0.50,
+                'toldist' : 100.,
+                'NTHREAD' : 1 ,
+         },
+         'grid_xlim': 600,
+         'grid_ylim': 600,
+         'grid_zlim': 200,
+         'grid_step': 100,
+         'frac': 0.85,
+         'absolute_minpks': 56,
+         'dset_prefix': "ff"
+        },
+         {'PYTHONPATH': sys.path[0],  # 2_merge_slices.ipynb
+         'dset_path': dset_file,
+         'phase_str': 'Fe',
+         'z_translation_motor': 'samtz',
+         'dset_prefix': "ff"
+        },
+    ]
+    nb_paths = [os.path.join(bb_nb_prefix, name) for name in nb_names]
+    notebook_route(proc_dir, nb_paths, nb_params)
+
+
+def test_FeAu_JADB_bb_friedel():
+    proc_dir = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250127_JADB/friedel'
+    nb_names = [
+        '0_segment_frelon.ipynb',
+        '1_index_friedel.ipynb',
+        '2_merge_slices.ipynb'
+    ]
+    sample = 'FeAu_0p5_tR'
+    dataset = 'ff1'  # first of two layers
+    dset_file = os.path.join(proc_dir, sample, f'{sample}_{dataset}', f'{sample}_{dataset}_dataset.h5')
+    bgfile = None
+    maskfile = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/pars/mask.edf'
+    nb_params = [
+        {'PYTHONPATH': sys.path[0],  # 0_segment_frelon.ipynb
+         'splinefile': ['/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/pars/frelon36_spline_20240604_dx.edf','/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/pars/frelon36_spline_20240604_dy.edf'],
+         'bgfile': bgfile,
+         'maskfile': maskfile,
+         'detector': 'frelon3',
+         'omegamotor': 'diffrz',
+         'dtymotor': 'diffty',
+         'options': {
+            "bgfile":bgfile,
+            "maskfile":maskfile,
+            "threshold":70,
+            "smoothsigma":1.0,
+            "bgc":0.9,
+            "minpx":3,
+            "m_offset_thresh":100,
+            "m_ratio_thresh":150,
+        },
+         'dataroot': '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/',
+         'analysisroot': proc_dir,
+         'sample': sample,
+         'dataset': dataset,
+         'dset_prefix': "ff"
+        },
+        {'PYTHONPATH': sys.path[0],  # 1_index_friedel.ipynb
+         'dset_path': dset_file,
+         'phase_str': 'Fe',
+         'parfile': '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/pars/pars_tdxrd.json',
+         'cf_strong_frac': 0.991,
+         'cf_strong_dsmax': 1.01,
+         'cf_strong_dstol': 0.01,
+         'womega': 1.0,
+         'weta': 1.0,
+         'wtth': 1.5,
+         'wI': 0.5,
+         'indexer_ds_tol': 0.003,
+         'rings_for_gen': [1, 3],
+         'rings_for_scoring': [0, 1, 2, 3],
+         'hkl_tols_seq': [0.01, 0.02],
+         'fracs': [0.9, 0.6],
+         'max_grains': 1000,
+         'symmetry': 'cubic',
+         'gridpars': {
+                'DSTOL' : 0.004,
+                'NUL' : True,
+                'FITPOS' : True,
+                'tolangle' : 0.25,
+                'toldist' : 100.,
+                'NTHREAD' : 1 ,
+                'NPKS': 25
+         },
+         'absolute_minpks': 25,
+         'dset_prefix': "ff"
+        },
+         {'PYTHONPATH': sys.path[0],  # 2_merge_slices.ipynb
+         'dset_path': dset_file,
+         'phase_str': 'Fe',
+         'z_translation_motor': 'samtz',
+         'dset_prefix': "ff"
+        },
+    ]
+    nb_paths = [os.path.join(bb_nb_prefix, name) for name in nb_names]
+    notebook_route(proc_dir, nb_paths, nb_params)
+
+
 if __name__=='__main__':
     print(papermill.__path__)
-    test_FeAu_JADB_tomo()
-    test_FeAu_JADB_pbp()
+    # test_FeAu_JADB_tomo()
+    # test_FeAu_JADB_pbp()
+    # test_FeAu_JADB_bb()
+    # test_FeAu_JADB_bb_grid()
+    test_FeAu_JADB_bb_friedel()
