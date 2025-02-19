@@ -4,5 +4,5 @@
 - [Segment Scan](SegmentScan.md)
 - [Spatial Correction](SpatialCorrection.md)
 - [Geometry Vector Transformation](GeometryVectorTransformation.md)
-- [Phase Determination](PhaseDetermination.md)
+- [Lattice Determination](LatticeDetermination.md)
 
