@@ -90,7 +90,7 @@ class shared_numpy_array:
             self.nbytes = np.prod(shape) * np.dtype(dtype).itemsize
 
         if shmname is None:
-            self.shm = shared_memory.SharedMemory(create=True, size=self.nbytes)
+            self.shm = shared_memory.SharedMemory(create=True, size=int(self.nbytes))
             self.creator = True
         else:
             self.shm = shared_memory.SharedMemory(create=False, name=shmname)
