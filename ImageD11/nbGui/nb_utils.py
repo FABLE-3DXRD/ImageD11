@@ -104,7 +104,7 @@ def prepare_notebooks_for_datasets(samples_dict, notebooks, dataroot, analysisro
     notebooks_to_execute = []
     for sample, datasets in samples_dict.items():
         for dataset in datasets:
-            print(f"Preparing notebooks for {sample}:{dataset}")
+            print("Preparing notebooks for " + sample + ":" + dataset)
             # Make a dataset so we know file paths
             ds = ImageD11.sinograms.dataset.DataSet(dataroot=dataroot,
                                                     analysisroot=analysisroot,
@@ -132,14 +132,14 @@ def prepare_notebooks_for_datasets(samples_dict, notebooks, dataroot, analysisro
                 try:
                     nb_out = notebook_prepare_pmill(nb_in, nb_out, nb_params, rename_colliding=True)
                     notebooks_to_execute.append(nb_out)
-                    print(f'Made notebook {nb_name} in {sample}:{dataset}')
+                    print('Made notebook ' + nb_name + ' in ' + sample + ':' + dataset)
                 except ValueError:  # we already found a notebook with this name in the folder
                     # has it been executed already? If yes, skip it
                     if is_notebook_executed(nb_out):
-                        print(f'Already found executed notebook {nb_name} in {sample}:{dataset}, skipping')
+                        print('Already found executed notebook ' + nb_name + ' in ' + sample + ':' + dataset +' skipping')
                         continue
                     else:
-                        print(f'Found existing unexecuted notebook {nb_name} in {sample}:{dataset}, will execute')
+                        print('Found existing unexecuted notebook + ' + nb_name + ' in ' + sample + ':' + dataset + ', will execute')
                         notebooks_to_execute.append(nb_out)
     
     return notebooks_to_execute
