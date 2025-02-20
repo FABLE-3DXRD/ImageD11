@@ -346,9 +346,9 @@ def test_FeAu_JADB_tomo():
         
     # now run the final notebook to merge slices together
     # work out the path to the first dataset
-    dset_file = os.path.join(analysisroot, sample, f'{sample}_{first_dataset}', f'{sample}_{first_dataset}_dataset.h5')
+    dset_path = os.path.join(analysisroot, sample, f'{sample}_{first_dataset}', f'{sample}_{first_dataset}_dataset.h5')
     nb_param = {'PYTHONPATH': PYTHONPATH,  # 7_stack_layers.ipynb
-                 'dset_file': dset_file,
+                 'dset_path': dset_path,
                  'dset_prefix': dset_prefix,
                  'stack_combined': True,
                  'stack_refined': True,
@@ -487,9 +487,9 @@ def test_FeAu_JADB_pbp():
         
     # now run the final notebook to merge slices together
     # work out the path to the first dataset
-    dset_file = os.path.join(analysisroot, sample, f'{sample}_{first_dataset}', f'{sample}_{first_dataset}_dataset.h5')
+    dset_path = os.path.join(analysisroot, sample, f'{sample}_{first_dataset}', f'{sample}_{first_dataset}_dataset.h5')
     nb_param = {'PYTHONPATH': PYTHONPATH,  # 7_stack_layers.ipynb
-                 'dset_file': dset_file,
+                 'dset_path': dset_path,
                  'dset_prefix': dset_prefix,
                  'stack_combined': True,
                  'stack_refined': True,
@@ -570,10 +570,10 @@ def test_FeAu_JADB_bb():
     
     # now run the final notebook to merge slices together
     # work out the path to the first dataset
-    dset_file = os.path.join(analysisroot, sample, f'{sample}_{first_dataset}', f'{sample}_{first_dataset}_dataset.h5')
+    dset_path = os.path.join(analysisroot, sample, f'{sample}_{first_dataset}', f'{sample}_{first_dataset}_dataset.h5')
     nb_param = { # 3_merge_slices.ipynb
          'PYTHONPATH': PYTHONPATH,
-         'dset_path': dset_file,
+         'dset_path': dset_path,
          'phase_str': 'Fe',
          'z_translation_motor': 'samtz',
          'dset_prefix': "ff"
@@ -663,10 +663,10 @@ def test_FeAu_JADB_bb_grid():
     
     # now run the final notebook to merge slices together
     # work out the path to the first dataset
-    dset_file = os.path.join(analysisroot, sample, f'{sample}_{first_dataset}', f'{sample}_{first_dataset}_dataset.h5')
+    dset_path = os.path.join(analysisroot, sample, f'{sample}_{first_dataset}', f'{sample}_{first_dataset}_dataset.h5')
     nb_param = { # 3_merge_slices.ipynb
          'PYTHONPATH': PYTHONPATH,
-         'dset_path': dset_file,
+         'dset_path': dset_path,
          'phase_str': 'Fe',
          'z_translation_motor': 'samtz',
          'dset_prefix': "ff"
@@ -756,10 +756,10 @@ def test_FeAu_JADB_bb_friedel():
     
     # now run the final notebook to merge slices together
     # work out the path to the first dataset
-    dset_file = os.path.join(analysisroot, sample, f'{sample}_{first_dataset}', f'{sample}_{first_dataset}_dataset.h5')
+    dset_path = os.path.join(analysisroot, sample, f'{sample}_{first_dataset}', f'{sample}_{first_dataset}_dataset.h5')
     nb_param = { # 3_merge_slices.ipynb
          'PYTHONPATH': PYTHONPATH,
-         'dset_path': dset_file,
+         'dset_path': dset_path,
          'phase_str': 'Fe',
          'z_translation_motor': 'samtz',
          'dset_prefix': "ff"
