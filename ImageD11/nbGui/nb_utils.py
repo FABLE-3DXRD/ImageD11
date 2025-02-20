@@ -1,6 +1,7 @@
 import os
 import subprocess
 import time
+from collections import OrderedDict
 
 import h5py
 import numpy as np
@@ -21,6 +22,128 @@ from ImageD11.peakselect import select_ring_peaks_by_intensity
 
 
 ### General utilities (for all notebooks)
+
+
+def is_notebook_executed(nb_path):
+    import nbformat
+    with open(nb_path, 'r', encoding='utf-8') as f:
+        nb = nbformat.read(f, as_version=4)
+    
+    for cell in nb['cells']:
+        if cell.cell_type == 'code' and 'execution_count' in cell and cell.execution_count is not None:
+            return True  # At least one cell has been executed
+    return False  # No executed cells found
+
+
+def clear_notebook(nb_path):
+    """Clears outputs of a Jupyter notebook."""
+    import nbformat
+    from nbconvert.preprocessors import ClearOutputPreprocessor
+    with open(nb_path, "r", encoding="utf-8") as f:
+        nb = nbformat.read(f, as_version=4)
+
+    # Use ClearOutputPreprocessor to remove outputs
+    preprocessor = ClearOutputPreprocessor()
+    preprocessor.preprocess(nb, {})
+
+    # Save cleared notebook
+    with open(nb_path, "w", encoding="utf-8") as f:
+        nbformat.write(nb, f)
+
+
+def notebook_prepare_pmill(nb_input_path, nb_output_path, params_dict, rename_colliding=False):
+    """
+    Prepare, but not execute, a notebook using papermill
+    """
+    import papermill
+    if os.path.exists(nb_output_path):
+        if rename_colliding:
+            nb_output_path = nb_output_path.replace('.ipynb', '_2.ipynb')
+        else:
+            raise ValueError('Notebook already present', nb_output_path)
+    papermill.execute_notebook(
+       nb_input_path,
+       nb_output_path,
+       parameters=params_dict,
+       prepare_only=True  # don't execute, just prepare
+    )
+    # clear outputs of the notebook
+    clear_notebook(nb_output_path)
+    return nb_output_path
+
+
+def notebook_exec_pmill(nb_input_path, nb_output_path, params_dict, rename_colliding=False):
+    import papermill
+    # change output path if it already exists, in case we run the same notebook twice
+    if os.path.exists(nb_output_path) and rename_colliding:
+        nb_output_path = nb_output_path.replace('.ipynb', '_2.ipynb')
+    print('Executing notebook', nb_output_path)
+    papermill.execute_notebook(
+       nb_input_path,
+       nb_output_path,
+       parameters=params_dict
+    )
+
+
+def prepare_notebooks_for_datasets(samples_dict, notebooks, dataroot, analysisroot, PYTHONPATH=None, notebook_parent_dir=None):
+    """
+    Prepare, but not execute, a series of notebooks for each dataset in samples_dict.
+    Places the prepared notebooks for each dataset like PROCESSED_DATA/sample/sample_dataset/foo.ipynb
+    Returns a list of absolute paths of notebooks to execute.
+    
+    samples_dict: dict of {sample1: [ds1, ds2, ds3], sample2: [ds1, ds2, ds3]} etc.
+    notebooks: list of tuples of [(notebook_filename.ipynb, {params_for_notebook_1.ipynb})] etc. Param dicts should not contain dataroot, analysisroot, sample, dataset or dsfile information - those are intsead prepared by this function.
+    dataroot: path to raw data folder
+    analysisroot: path to root of analysis folder (usually PROCESSED_DATA)
+    PYTHONPATH: Python path
+    notebook_parent_dir: path to parent directory of input notebooks. Default: current working directory
+    """
+    if notebook_parent_dir is None:
+        notebook_parent_dir = os.path.abspath('./')
+    
+    notebooks_to_execute = []
+    for sample, datasets in samples_dict.items():
+        for dataset in datasets:
+            print("Preparing notebooks for " + sample + ":" + dataset)
+            # Make a dataset so we know file paths
+            ds = ImageD11.sinograms.dataset.DataSet(dataroot=dataroot,
+                                                    analysisroot=analysisroot,
+                                                    sample=sample,
+                                                    dset=dataset)
+            # if the analyispath doesn't exist, make it
+            if not os.path.exists(ds.analysispath):
+                os.makedirs(ds.analysispath)
+            
+            for (nb_name, nb_params) in notebooks:
+                nb_in = os.path.join(notebook_parent_dir, nb_name)  # use the notebook from the current folder
+                nb_out = os.path.join(ds.analysispath, nb_name)
+                # prepare parameters for this notebook
+                if PYTHONPATH is not None:
+                    nb_params['PYTHONPATH'] = PYTHONPATH
+                if nb_name.startswith('0'):
+                    # the first notebook, segmentation, so we don't have a dataset name yet
+                    nb_params['dataroot'] = ds.dataroot
+                    nb_params['analysisroot'] = ds.analysisroot
+                    nb_params['sample'] = sample
+                    nb_params['dataset'] = dataset
+                else:
+                    # a later notebook, so all we need is the dataset path
+                    nb_params['dset_path'] = ds.dsfile
+                try:
+                    nb_out = notebook_prepare_pmill(nb_in, nb_out, nb_params, rename_colliding=True)
+                    notebooks_to_execute.append(nb_out)
+                    print('Made notebook ' + nb_name + ' in ' + sample + ':' + dataset)
+                except ValueError:  # we already found a notebook with this name in the folder
+                    # has it been executed already? If yes, skip it
+                    if is_notebook_executed(nb_out):
+                        print('Already found executed notebook ' + nb_name + ' in ' + sample + ':' + dataset + ', skipping')
+                        continue
+                    else:
+                        print('Found existing unexecuted notebook ' + nb_name + ' in ' + sample + ':' + dataset + ', will execute')
+                        notebooks_to_execute.append(nb_out)
+    
+    return notebooks_to_execute
+
 
 ## Cluster related stuff (GOTO ImageD11.futures)
 
@@ -510,7 +633,7 @@ def get_rgbs_for_grains(grains):
         grain.rgb_z = rgb_z
 
 
-def plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([0., 0, 1])):
+def plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([0., 0, 1]), **plot_kwargs):
     try:
         from orix.vector.vector3d import Vector3d
     except ImportError:
@@ -522,16 +645,16 @@ def plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.arra
     rgb = ref_ucell.get_ipf_colour_from_orix_orien(meta_orien, axis=ipf_direction)
 
     # scatter the meta orientation using the colours
-    meta_orien.scatter("ipf", c=rgb, direction=ipf_direction)
+    meta_orien.scatter("ipf", c=rgb, direction=ipf_direction, **plot_kwargs)
 
 
-def plot_all_ipfs_from_meta_orien(meta_orien, ref_ucell):
-    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([1., 0., 0.]))
-    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([0., 1., 0.]))
-    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([0., 0., 1.]))
+def plot_all_ipfs_from_meta_orien(meta_orien, ref_ucell, **plot_kwargs):
+    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([1., 0., 0.]), **plot_kwargs)
+    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([0., 1., 0.]), **plot_kwargs)
+    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis=np.array([0., 0., 1.]), **plot_kwargs)
 
 
-def plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1])):
+def plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1]), **plot_kwargs):
     # get the UB matrices for each grain
     UBs = np.array([g.UB for g in grains])
 
@@ -541,13 +664,10 @@ def plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1])):
     # get a meta orientation for all the grains
     meta_orien = ref_ucell.get_orix_orien(UBs)
 
-    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis)
+    plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis, **plot_kwargs)
 
 
-
-
-
-def plot_direct_pole_figure(grains, uvw=np.array([1., 0., 0.])):
+def plot_direct_pole_figure(grains, uvw=np.array([1., 0., 0.]), **plot_kwargs):
     # get the UB matrices for each grain
     UBs = np.array([g.UB for g in grains])
 
@@ -568,13 +688,13 @@ def plot_direct_pole_figure(grains, uvw=np.array([1., 0., 0.])):
     # get outer product of all orientations with the crystal direction we're interested in
     uvw_all = (~meta_orien).outer(m1)
 
-    uvw_all.scatter(hemisphere="both", axes_labels=["X", "Y"])
+    uvw_all.scatter(hemisphere="both", axes_labels=["X", "Y"], **plot_kwargs)
 
 
-def plot_all_ipfs(grains):
-    plot_inverse_pole_figure(grains, axis=np.array([1., 0, 0]))
-    plot_inverse_pole_figure(grains, axis=np.array([0., 1, 0]))
-    plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1]))
+def plot_all_ipfs(grains, **plot_kwargs):
+    plot_inverse_pole_figure(grains, axis=np.array([1., 0, 0]), **plot_kwargs)
+    plot_inverse_pole_figure(grains, axis=np.array([0., 1, 0]), **plot_kwargs)
+    plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1]), **plot_kwargs)
 
 
 
@@ -622,6 +742,44 @@ def plot_grain_positions(grains, colour='npks', centre_plot=False, size_scaling=
     ax.set_zlabel("z")
     plt.show()
     
+
+    
+def plot_grain_histograms(fltfile, ubifile, parfile, OmSlop, OmFloat=True, nbins=30, tol=0.05):
+    o=ImageD11.refinegrains.refinegrains(OmFloat=OmFloat, OmSlop=OmSlop, )
+
+    o.loadparameters(parfile)
+    o.readubis(ubifile)
+    o.loadfiltered(fltfile)
+    o.tolerance=tol
+    o.generate_grains()
+    o.assignlabels(quiet=True)
+
+    # indexed peaks only
+    d = o.scandata[fltfile]
+    d.filter(d.labels >= 0)
+
+    drlv_bins = np.linspace( 0, tol, nbins )
+    ng = int(d.labels.max())+1
+    drlv = np.sqrt( d.drlv2 )
+    dp5 = [ drlv[d.labels==i] for i in range(ng)]
+    hl = [ np.histogram(dpi, drlv_bins)[0] for dpi in dp5 ]
+
+    if drlv_bins.shape[0] != hl[0].shape[0]:
+        plotbins = (drlv_bins[1:] + drlv_bins[:-1])/2
+    
+    fig, axs = plt.subplots(2, 1, layout='constrained', sharex=True, figsize=(10, 7))
+    for i in range(ng): 
+        axs[0].plot(plotbins,hl[i],label=str(i))
+    
+    hist = axs[1].hist2d( drlv, d.labels, (drlv_bins, np.arange(-0.5,ng,1.)),vmin=0.5)
+    fig.colorbar(hist[-1], ax=axs[1])
+    #fig.supylabel("Grain")
+    #fig.supxlabel("drlv")
+    axs[0].set_ylabel('N peaks')
+    axs[1].set_ylabel('Grain ID')
+    fig.supxlabel('HKL Error')
+    plt.show()
+
 
 # backwards compatible
 do_index = ImageD11.indexing.do_index
