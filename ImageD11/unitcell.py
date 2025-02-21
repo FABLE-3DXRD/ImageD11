@@ -34,7 +34,7 @@ from numpy.linalg import inv
 from ImageD11 import cImageD11
 from xfab import tools
 from scipy.spatial.transform import Rotation as ScipyRotation
-from ImageD11.parameters import AnalysisSchema
+from ImageD11.parameters import parameters, AnalysisSchema
 
 
 def radians(x):
@@ -593,8 +593,49 @@ class unitcell:
             UBlist.append(self.UB)
         # trim to uniq list? What about small distortions...
         self.UBIlist = ubi_equiv(self.UBIlist, UBlist)
+    
+    @classmethod
+    def from_pars(cls, pars):
+        """
+        Produce a unitcell from a parameter dict/object
+        """
+        return unitcell_from_parameters(pars)
+    
+    @classmethod
+    def from_par_file(cls, filename):
+        """
+        Produce a unitcell from a .par file
+        """
+        par_obj = parameters.from_file(filename)
+        return self.from_pars(par_obj)
+    
+    def to_par_dict(self):
+        """
+        Return a parameter dict
+        """
+        parnames = ["cell_" + name for name in "_a _b _c alpha beta gamma".split()]
+        pars_dict = {}
+        for inc, parname in enumerate(parnames):
+            pars_dict[parname] = self.lattice_parameters[inc]
+        
+        return pars_dict
+    
+    def to_par_obj(self):
+        """
+        Return an ImageD11.parameters.parameters object
+        """
+        pars_dict = self.to_par_dict()
+        pars_obj = parameters(pars_dict)
+        return pars_obj
+    
+    def to_par_file(self, filename):
+        """
+        Write lattice parameters to file as an ImageD11 .par
+        """
+        pars_obj = self.to_par_obj()
+        pars_obj.saveparameters(filename)
 
-
+    
 def BTmat(h1, h2, B, BI):
     """ used for computing orientations
     """
