@@ -278,12 +278,11 @@ class parameters:
         """
         Write parameters to a file
         """
-        f = open(filename, "w")
-        keys = list(self.parameters.keys())
-        keys.sort()
-        for key in keys:
-            f.write("%s %s\n" % (key, str(self.parameters[key])))
-        f.close()
+        with open(filename, "w") as f:
+            keys = list(self.parameters.keys())
+            keys.sort()
+            for key in keys:
+                f.write("%s %s\n" % (key, str(self.parameters[key])))
 
     def loadparameters(self, filename, phase_name=None):
         """
@@ -295,7 +294,8 @@ class parameters:
             pars_dict = AnalysisSchema(filename=filename).get_xfab_pars_dict(phase_name)
             self.parameters.update(pars_dict)
         else:
-            lines = open(filename, "r").readlines()
+            with open(filename, "r") as f:
+                lines = f.readlines()
             for line in lines:
                 try:
                     [name, value] = line.split(" ")
