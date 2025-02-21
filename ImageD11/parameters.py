@@ -51,7 +51,19 @@ class AnalysisSchema:
         if filename is not None:
             self.load_json(filename)
             self.get_pars_objects()
-
+    
+    def add_phase_from_unitcell(self, unitcell):
+        """
+        Add phase from unitcell object, then save to disk (default)
+        """
+        # we need to make a parameter file for this
+        # then save to disk in the same folder as the others
+        phase_pars_obj = unitcell.to_par_obj()
+        phase_pars_obj.set('phase_name', phase_name)
+        phase_pars_obj.set('filename', phase_file)
+        # put this pars object in self.phase_pars_obj_dict
+        self.phase_pars_obj_dict[phase_name] = phase_pars_obj
+        
     def update_geometryfile(self):
         # update geometry file on disk from memory
         if self.geometry_pars_obj is None:
@@ -63,17 +75,6 @@ class AnalysisSchema:
         if len(self.phase_pars_obj_dict) == 0:
             raise ValueError('No pars objects in self.phase_pars_obj_dict!')
         self.phase_pars_obj_dict[phase_name].saveparameters(self.phase_pars_obj_dict[phase_name].get('filename'))
-
-    def update_parfiles(self):
-        # updates geometry and phase par files on disk
-        self.update_geometryfile()
-        for phase_name in self.phase_pars_obj_dict.keys():
-            self.update_phasefile(phase_name)
-
-    def rel_to_absolute(self, rel_file):
-        """Get absolute path from (could be relative) filename"""
-        parent_folder = os.path.dirname(os.path.abspath(self.pars_dict['parfile']))
-        return os.path.join(parent_folder, rel_file)
 
     def get_pars_objects(self):
         """Parses self.pars_dict, reads the .par files, makes parameter objects for them"""
@@ -129,7 +130,21 @@ class AnalysisSchema:
 
         # store the path to the json file in 'parfile' key
         self.pars_dict['parfile'] = filename
-
+    
+    def save(self, filename=None):
+        """
+        Save current state to json. Looks for filename in self.pars_dict['parfile'], or can be supplied.
+        """
+        if filename is None:
+            try:
+                filename = self.pars_dict['parfile']
+            except KeyError:
+                raise ValueError("Don't know where to save to! Supply a filename")
+        
+        import json
+        json_object = json.dumps(self.pars_dict, indent=2)
+        with open(filename, 'w') as json_file:
+            json_file.write(json_object)
 
 class par:
     """
@@ -295,7 +310,8 @@ class parameters:
             pars_dict = AnalysisSchema(filename=filename).get_xfab_pars_dict(phase_name)
             self.parameters.update(pars_dict)
         else:
-            lines = open(filename, "r").readlines()
+            with open(filename, "r") as f:
+                lines = f.readlines()
             for line in lines:
                 try:
                     [name, value] = line.split(" ")
@@ -339,6 +355,10 @@ class parameters:
             else:
                 # int/float preserve type
                 self.parameters[name] = value
+    
+    @classmethod
+    def from_file(cls, filename, phase_name=None):
+        return cls.loadparameters(filename=filename, phase_name=phase_name)
 
 
 def read_par_file(filename, phase_name=None):
