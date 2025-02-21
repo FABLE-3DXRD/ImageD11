@@ -16,6 +16,7 @@ import sys
 sys.path.insert(0, '../')
 
 import os
+os.environ['PYDEVD_DISABLE_FILE_VALIDATION'] = '1'  # ignore papermill debugger warnings
 
 import nbformat
 import pytest
@@ -771,9 +772,9 @@ def test_FeAu_JADB_bb_friedel():
 
 if __name__=='__main__':
     print(papermill.__path__)
-    # test_tomographic_route()
-    # test_pbp_route()
-    test_FeAu_JADB_tomo()
+    test_tomographic_route()
+    test_pbp_route()
+    # test_FeAu_JADB_tomo()
     # test_FeAu_JADB_pbp()
     # test_FeAu_JADB_bb()
     # test_FeAu_JADB_bb_grid()
