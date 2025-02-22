@@ -171,7 +171,17 @@ class Phases(AnalysisSchema):
         self.unitcells = {}
         if filename is not None:
             self.get_unitcells()
-
+    
+    def add_phase_from_unitcell(self, phase_name, unitcell):
+        """
+        Add phase from unitcell object
+        
+        phase_name: the name of the phase
+        unitcell: the unitcell object
+        """
+        super().add_phase_from_unitcell(phase_name, unitcell)
+        self.get_unitcells()
+    
     def get_unitcells(self):
         # dict of parameter objects for each phase
         for phase_name, phase_pars_obj in self.phase_pars_obj_dict.items():
@@ -269,7 +279,13 @@ class unitcell:
 
         # orix stuff
         self._orix_phase = None
-
+    
+    def __repr__(self):
+        if self.name is None:
+            return "Unitcell" + " | " + str(self.lattice_parameters) + " | " + str(self.symmetry)
+        else:
+            return str(self.name) + " | " + str(self.lattice_parameters) + " | " + str(self.symmetry)
+    
     @property
     def orix_phase(self):
         """Get this unitcell as an Orix Phase object. Useful for pole figures / IPF colours"""
@@ -607,17 +623,22 @@ class unitcell:
         Produce a unitcell from a .par file
         """
         par_obj = parameters.from_file(filename)
-        return self.from_pars(par_obj)
+        return cls.from_pars(par_obj)
     
     def to_par_dict(self):
         """
         Return a parameter dict
         """
-        parnames = ["cell_" + name for name in "_a _b _c alpha beta gamma".split()]
+        parnames = ["cell_" + name for name in "_a _b _c alpha beta gamma lattice_[P,A,B,C,I,F,R]".split()]
         pars_dict = {}
         for inc, parname in enumerate(parnames):
-            pars_dict[parname] = self.lattice_parameters[inc]
+            if inc < 6:
+                pars_dict[parname] = self.lattice_parameters[inc]
+            else:
+                pars_dict[parname] = self.symmetry
         
+        if hasattr(self, 'name') and self.name is not None:
+            pars_dict['phase_name'] = self.name
         return pars_dict
     
     def to_par_obj(self):
@@ -625,7 +646,7 @@ class unitcell:
         Return an ImageD11.parameters.parameters object
         """
         pars_dict = self.to_par_dict()
-        pars_obj = parameters(pars_dict)
+        pars_obj = parameters.from_dict(pars_dict)
         return pars_obj
     
     def to_par_file(self, filename):
