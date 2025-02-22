@@ -253,11 +253,11 @@ def refine(UBI, gv, tol, quiet=True):
     ind = np.compress(np.less(drlv2, tol), np.arange(gv.shape[0]))
     # scorelastrefined=ind.shape[0]
     contribs = drlv2[ind]
-    try:
+    if contribs.size != 0:
         fitlastrefined = math.sqrt(np.sum(contribs) / contribs.shape[0])
         if not quiet:
             logging.debug("after %.8f %5d" % (fitlastrefined, contribs.shape[0]))
-    except:
+    else:
         logging.error("\n\n\n")
         logging.error("No contributing reflections for %s\n" % (str(UBI)))
         logging.error("After refinement, it was OK before ???")
