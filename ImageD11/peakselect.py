@@ -108,7 +108,7 @@ def remove_peaks_from_phases(cf, dstol, ucells):
     for ucell in ucells:
         pm = rings_mask(cf, dstol, cf.ds.max(), ucell)
         m |= pm
-    return cf.copyrows(m)
+    return cf.copyrows(~m)
 
 def filter_peaks_by_phase(cf, dstol, dsmax, cell=None):
     """
