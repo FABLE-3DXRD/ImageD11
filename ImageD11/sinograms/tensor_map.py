@@ -615,9 +615,9 @@ class TensorMap:
             self.clear_cache()
         self.maps[name] = array
 
-    def plot(self, map_name, z_layer=0):
+    def plot(self, map_name, z_layer=0,  **plot_kwargs):
         import matplotlib.pyplot as plt
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(layout='constrained', **plot_kwargs)
         ax.imshow(self.maps[map_name][z_layer, ...], origin="lower")
         ax.set_xlabel('Lab X axis --->')
         ax.set_ylabel('Lab Y axis --->')
