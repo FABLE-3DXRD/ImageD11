@@ -529,8 +529,8 @@ def plot_index_results(ind, colfile, title):
                         cmap='tab20')
 
     axs_flat[1].set(title='Sinograms of {} grains'.format(colfile.grain_id.max() + 1),
-                    xlabel='Omega/deg',
-                    ylabel='dty/um')
+                    xlabel=r'$\omega~(\degree)$',
+                    ylabel='dty')
 
     # Define weak peaks as all non-assigned peaks with intensity 1e-4 of max
     if m.sum() > 0:
@@ -542,15 +542,15 @@ def plot_index_results(ind, colfile, title):
         axs_flat[2].scatter(colfile.omega[m][~weak], colfile.dty[m][~weak], s=2, label='not weak')
 
     axs_flat[2].set(title='Sinograms of unassigned peaks',
-                    xlabel='Omega/deg',
-                    ylabel='dty/um')
+                    xlabel=r'$\omega~(\degree)$',
+                    ylabel='dty')
     axs_flat[2].legend()
 
     # Plot d-star vs intensity for all assigned peaks
 
     axs_flat[3].scatter(colfile.ds[~m], colfile.sum_intensity[~m], s=2)
     axs_flat[3].set(title='Intensity of all assigned peaks',
-                    xlabel='d-star',
+                    xlabel=r'$d^{*}~(\AA^{-1})$',
                     ylabel='Intensity',
                     yscale='log')
 
@@ -560,7 +560,7 @@ def plot_index_results(ind, colfile, title):
         axs_flat[4].scatter(colfile.ds[m][~weak], colfile.sum_intensity[m][~weak], s=2, label='not weak')
 
     axs_flat[4].set(title='Intensity of all unassigned peaks',
-                    xlabel='d-star',
+                    xlabel=r'$d^{*}~(\AA^{-1})$',
                     ylabel='Intensity',
                     yscale='log')
     axs_flat[4].legend()
@@ -605,10 +605,10 @@ def plot_grain_sinograms(grains, cf, n_grains_to_plot=None):
                 g = grains[::grains_step][i]
                 m = cf.grain_id == g.gid
                 ax.scatter(cf.omega[m], cf.dty[m], c=cf.sum_intensity[m], s=2)
-                ax.set_title(g.gid)
+                ax.set_title('Grain' + str(g.gid))
 
-    fig.supxlabel("Omega")
-    fig.supylabel("Y translation (um)")
+    fig.supxlabel(r'$\omega~(\degree)$')
+    fig.supylabel("dty")
 
     plt.show()
 
