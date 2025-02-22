@@ -57,6 +57,36 @@ def assign_ring_histo(cf, dsmax, hbins, cell):
     return (bcen,h,ra)
 
 
+def mask_by_ifrac(colf, dstol, dsmax, ifrac, uc, forref=None):
+    uc.makerings(colf.ds.max(), self.ds_tol)
+    # peaks that are on rings
+    sel = np.zeros(colf.nrows, bool)
+
+    npks = 0
+    if forref is None:
+        forref = range(len(uc.ringds))
+    hmax = 0
+    for i in range(len(uc.ringds)):
+        ds = uc.ringds[i]
+        hkls = uc.ringhkls[ds]
+        if i in forref:
+            rm = abs(colf.ds - ds) < dstol
+            if rm.sum() == 0:
+                continue
+            icut = np.max(colf.sum_intensity[rm]) * ifrac
+            rm = rm & (colf.sum_intensity > icut)
+            npks += len(hkls)
+            sel |= rm
+            for hkl in hkls:
+                hmax = max(np.abs(hkl).max(), hmax)
+    return sel
+
+
+def select_by_ifrac(colf, dstol, dsmax, ifrac, uc, forref=None):
+    mask = mask_by_ifrac(colf, dstol, dsmax, ifrac, uc, forref)
+    newcolf = colf.copyrows(mask)
+    return newcolf
+
 def rings_mask(cf, dstol, dsmax, cell=None):
     """Create a boolean mask for a columnfile
        Based on peak distance in dstar (within dstol) to HKL ring values
@@ -72,11 +102,18 @@ def rings_mask(cf, dstol, dsmax, cell=None):
             m |= (abs(cf.ds - v) < dstol)
     return m
 
+def remove_peaks_from_phases(cf, dstol, ucells):
+    """Remove any peaks that match any phase in ucells. Returns new colfile"""
+    m = np.zeros(cf.nrows, bool)
+    for ucell in ucells:
+        pm = rings_mask(cf, dstol, cf.ds.max(), ucell)
+        m |= pm
+    return cf.copyrows(m)
+
 def filter_peaks_by_phase(cf, dstol, dsmax, cell=None):
     """
-    It filter the given columnfile 
-    by the provided unicell, with dstar tolerance and dstar max value
-    returns filtered columnfile
+    Filters cf columnfile by the provided unicell, with dstar tolerance and dstar max value
+    Returns new filtered columnfile
     """
     mask = rings_mask(cf=cf, dstol=dstol, dsmax=dsmax, cell=cell)
     cf = cf.copyrows(mask)
@@ -114,7 +151,7 @@ def plot_sorted_peak_intensity(cums, mask, frac, doplot):
     """
     from matplotlib import pyplot as plt
 
-    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+    fig, axs = plt.subplots(1, 2, figsize=(10, 5), constrained_layout=True)
     axs[0].plot(cums / cums[-1], ',')
     axs[0].set(xlabel='npks', ylabel='fractional intensity')
     axs[0].plot([mask.sum(), ], [frac, ], "o")
@@ -124,7 +161,6 @@ def plot_sorted_peak_intensity(cums, mask, frac, doplot):
                xscale='log', ylim=(doplot, 1.),
                xlim=(np.searchsorted(cums, doplot), len(cums)))
     axs[1].plot([mask.sum(), ], [frac, ], "o")
-
     plt.show()
 
 
@@ -188,5 +224,6 @@ def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2
     cfc = filter_peaks_by_phase(cf=cfd, dstol=dstol, dsmax=dsmax)
     ms = sorted_peak_intensity_mask(cfc, frac=frac, B=B, doplot=doplot)
     cfc.filter(ms)
+    print('Filtered', cfc.nrows, 'peaks from', cf.nrows)
     return cfc
 
