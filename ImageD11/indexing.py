@@ -1146,11 +1146,7 @@ class indexer:
         if contribs.size != 0:
             self.fitlastrefined = math.sqrt(np.sum(contribs) / contribs.shape[0])
         else:
-            print("\n\n\n")
-            print("No contributing reflections for\n", UBI)
-            print("After refinement, it was OK before ???")
-            print("\n\n\n")
-            raise
+            raise ValueError("\n\n\nNo contributing reflections for ubi:\n{}\nAfter refinement, it was OK before ???\n\n\n".format(UBI))
         #      for i in ind:
         #         print "( %-6.4f %-6.4f %-6.4f ) %12.8f %12.8f"%(h[0,i],h[1,i],h[2,i],sqrt(drlv2[i]),sqrt(drlv2_old[i]))
         #      print UBIo

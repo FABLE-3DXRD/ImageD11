@@ -1805,7 +1805,7 @@ def idxpoint(
             ind.find()
             try:
                 ind.scorethem()
-            except TypeError:
+            except (TypeError, ValueError):
                 continue
     if ImageD11.indexing.loglevel <= 3:
         sys.stdout.flush()
