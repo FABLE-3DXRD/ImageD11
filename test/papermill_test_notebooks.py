@@ -79,10 +79,10 @@ def test_tomographic_route():
          'cf_strong_dstol': 0.005,
          'rings_for_gen': [0, 1, 3],
          'rings_for_scoring': [0, 1, 2, 3, 4],
-         'hkl_tols_seq': [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.075],
+         'hkl_tols_seq': [0.01, 0.02, 0.03, 0.04],
          'fracs': [0.9, 0.7],
          'max_grains': 1000,
-         'peak_assign_tol': 0.05,
+         'peak_assign_tol': 0.025,
         }
        ),
        ('tomo_2_map.ipynb',
@@ -204,7 +204,7 @@ def test_pbp_route():
 def test_FeAu_JADB_tomo():
     # where is the data?
     dataroot = '/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/RAW_DATA'
-    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/PROCESSED_DATA/20250123_JADB/tomo_route'
+    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/PROCESSED_DATA/20250221_JADB/tomo_route'
     PYTHONPATH = sys.path[0]
     # find layers to process
     sample = 'FeAu_0p5_tR_nscope'
@@ -241,11 +241,10 @@ def test_FeAu_JADB_tomo():
          }
         ),
         ('tomo_1_index_minor_phase.ipynb',
-         {'major_phase_str': 'Fe',
+         {'major_phase_strs': ['Fe'],
           'minor_phase_str': 'Au',
           'min_frames_per_peak': 0,
           'major_phase_cf_frac': 0.99418,
-          'major_phase_cf_dsmax': 1.594,
           'major_phase_cf_dstol': 0.0035,
           'minor_phase_cf_frac': 0.9975,
           'minor_phase_cf_dsmax': 1.594,
@@ -363,7 +362,7 @@ def test_FeAu_JADB_tomo():
 def test_FeAu_JADB_pbp():
     # where is the data?
     dataroot = '/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/RAW_DATA'
-    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/PROCESSED_DATA/20250123_JADB/pbp_route'
+    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/PROCESSED_DATA/20250221_JADB/pbp_route'
     PYTHONPATH = sys.path[0]
     # find layers to process
     sample = 'FeAu_0p5_tR_nscope'
@@ -504,7 +503,7 @@ def test_FeAu_JADB_pbp():
 def test_FeAu_JADB_bb():
     # where is the data?
     dataroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/'
-    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250127_JADB/default'
+    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250221_JADB/default'
     PYTHONPATH = sys.path[0]
     # find layers to process
     sample = 'FeAu_0p5_tR'
@@ -587,7 +586,7 @@ def test_FeAu_JADB_bb():
 def test_FeAu_JADB_bb_grid():
     # where is the data?
     dataroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/'
-    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250127_JADB/grid'
+    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250221_JADB/grid'
     PYTHONPATH = sys.path[0]
     # find layers to process
     sample = 'FeAu_0p5_tR'
@@ -679,7 +678,7 @@ def test_FeAu_JADB_bb_grid():
 def test_FeAu_JADB_bb_friedel():
     # where is the data?
     dataroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/'
-    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250127_JADB/friedel'
+    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250221_JADB/friedel'
     PYTHONPATH = sys.path[0]
     # find layers to process
     sample = 'FeAu_0p5_tR'
@@ -772,9 +771,9 @@ def test_FeAu_JADB_bb_friedel():
 
 if __name__=='__main__':
     print(papermill.__path__)
-    test_tomographic_route()
-    test_pbp_route()
-    # test_FeAu_JADB_tomo()
+    # test_tomographic_route()
+    # test_pbp_route()
+    test_FeAu_JADB_tomo()
     # test_FeAu_JADB_pbp()
     # test_FeAu_JADB_bb()
     # test_FeAu_JADB_bb_grid()
