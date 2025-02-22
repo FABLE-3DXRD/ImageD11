@@ -1143,9 +1143,9 @@ class indexer:
         )
         self.scorelastrefined = ind.shape[0]
         contribs = drlv2[ind]
-        try:
+        if contribs.size != 0:
             self.fitlastrefined = math.sqrt(np.sum(contribs) / contribs.shape[0])
-        except:
+        else:
             print("\n\n\n")
             print("No contributing reflections for\n", UBI)
             print("After refinement, it was OK before ???")
