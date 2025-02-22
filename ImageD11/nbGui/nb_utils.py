@@ -605,7 +605,7 @@ def plot_grain_sinograms(grains, cf, n_grains_to_plot=None):
                 g = grains[::grains_step][i]
                 m = cf.grain_id == g.gid
                 ax.scatter(cf.omega[m], cf.dty[m], c=cf.sum_intensity[m], s=2)
-                ax.set_title('Grain' + str(g.gid))
+                ax.set_title('Grain ' + str(g.gid))
 
     fig.supxlabel(r'$\omega~(\degree)$')
     fig.supylabel("dty")
