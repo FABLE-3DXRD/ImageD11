@@ -39,7 +39,7 @@ class AnalysisSchema:
     """Class to handle more complicated data analysis parameters."""
 
     def __init__(self, filename=None):
-        # the dictionary of everything we found from file
+        # the dictionary of everything we found from the json file
         self.pars_dict = dict()
 
         # a parameters object for the geometry
@@ -47,63 +47,119 @@ class AnalysisSchema:
 
         # a dict of parameters object for each phase
         self.phase_pars_obj_dict = dict()
-
+        
+        # If a filename is supplied, load the filename and initialise the pars objects
         if filename is not None:
             self.load_json(filename)
             self.get_pars_objects()
     
-    def add_phase_from_unitcell(self, unitcell):
+    def load_json(self, filename):
         """
-        Add phase from unitcell object, then save to disk (default)
+        Load json from file
         """
-        # we need to make a parameter file for this
-        # then save to disk in the same folder as the others
-        phase_pars_obj = unitcell.to_par_obj()
+        import json
+        with open(filename, 'r') as json_string:
+            self.pars_dict = json.load(json_string)
+
+        # store the path to the json file in 'parfile' key
+        self.pars_dict['parfile'] = filename
+        
+    @classmethod
+    def from_json(cls, filename):
+        return cls(filename)
+    
+    def get_pars_objects(self):
+        """Parses self.pars_dict, reads the .par files, makes parameter objects for them"""
+        # get geometric parameters as an ImageD11 parameter object
+        geometry_dict = self.pars_dict["geometry"]
+        geometry_file = self.rel_to_absolute(geometry_dict["file"])
+        self.geometry_pars_obj = parameters.from_file(geometry_file)
+        # remember the geometry.par filename
+        self.geometry_pars_obj.set('filename', geometry_file)
+
+        # get the phases entry from the json file
+        phase_filenames_dict = self.pars_dict["phases"]
+        for phase_name, phase_entry in phase_filenames_dict.items():
+            # get the absolute phase.par filename
+            phase_file = self.rel_to_absolute(phase_entry["file"])
+            # read the phase pars from disk
+            phase_pars_obj = parameters.from_file(phase_file)
+            # add parameters to keep track of the name of the phase and its file path
+            phase_pars_obj.set('filename', phase_file)
+            # add the phase
+            self.add_phase_from_pars_obj(phase_name, phase_pars_obj)
+    
+    def add_phase_from_pars_obj(self, phase_name, phase_pars_obj):
+        """
+        Add phase from ImageD11 pars object
+        """
         phase_pars_obj.set('phase_name', phase_name)
-        phase_pars_obj.set('filename', phase_file)
         # put this pars object in self.phase_pars_obj_dict
         self.phase_pars_obj_dict[phase_name] = phase_pars_obj
+    
+    def add_phase_from_dict(self, phase_name, phase_dict):
+        """Add phase from pars dict"""
+        phase_obj = parameters.from_dict(phase_dict)
+        self.add_phase_from_pars_obj(phase_name, phase_obj)
+    
+    def add_phase_from_unitcell(self, phase_name, unitcell):
+        """
+        Add phase from unitcell object
         
+        phase_name: the name of the phase
+        unitcell: the unitcell object
+        """
+        # get parameter object from unitcell
+        phase_pars_obj = unitcell.to_par_obj()
+        self.add_phase_from_pars_obj(phase_name, phase_pars_obj)
+
+    def rel_to_absolute(self, rel_file):
+        """Get absolute path from (could be relative) filename"""
+        parent_folder = os.path.dirname(os.path.abspath(self.pars_dict['parfile']))
+        return os.path.join(parent_folder, rel_file)
+    
+    def update_parfiles(self):
+        # updates geometry and phase par files on disk
+        self.update_geometryfile()
+        for phase_name in self.phase_pars_obj_dict.keys():
+            self.update_phasefile(phase_name)
+    
     def update_geometryfile(self):
-        # update geometry file on disk from memory
+        """Write the geometry.par file to disk"""
         if self.geometry_pars_obj is None:
             raise ValueError('No pars object in self.geometry_pars_obj!')
         self.geometry_pars_obj.saveparameters(self.geometry_pars_obj.get('filename'))
 
-    def update_phasefile(self, phase_name):
+    def update_phasefile(self, phase_name, guess_filename=False):
+        """Write the phase with phase_name to disk.
+           guess_filename: If no filename present for this phase, try to guess it from the geometry filename"""
         # update phase file on disk from memory
-        if len(self.phase_pars_obj_dict) == 0:
-            raise ValueError('No pars objects in self.phase_pars_obj_dict!')
-        self.phase_pars_obj_dict[phase_name].saveparameters(self.phase_pars_obj_dict[phase_name].get('filename'))
-
-    def get_pars_objects(self):
-        """Parses self.pars_dict, reads the .par files, makes parameter objects for them"""
-        # get geometric parameters
-        geometry_dict = self.pars_dict["geometry"]
-        geometry_file = self.rel_to_absolute(geometry_dict["file"])
-        self.geometry_pars_obj = parameters()
-        self.geometry_pars_obj.loadparameters(geometry_file)
-        self.geometry_pars_obj.set('filename', geometry_file)
-
-        # get phase parameters from one of the phases
-        phases_dict = self.pars_dict["phases"]
-        for phase_name, phase_entry in phases_dict.items():
-            phase_file = self.rel_to_absolute(phase_entry["file"])
-            # read the phase pars from disk
-            phase_pars_obj = parameters()
-            phase_pars_obj.loadparameters(phase_file)
-            # add a parameter to keep track of the name of the phase
-            phase_pars_obj.set('phase_name', phase_name)
-            phase_pars_obj.set('filename', phase_file)
-            # put this pars object in self.phase_pars_obj_dict
-            self.phase_pars_obj_dict[phase_name] = phase_pars_obj
-
+        try:
+            phase_pars = self.phase_pars_obj_dict[phase_name]
+        except KeyError:
+             raise KeyError("Phase " + phase_name + " not found")
+        
+        # find out where to put the phase file
+        try:
+            filename = phase_pars.get('filename')
+        except KeyError:
+            if guess_filename:
+                # guess the filename from where we put geometry.par
+                dest_folder = os.path.dirname(self.geometry_pars_obj.get('filename'))
+                filename = os.path.join(dest_folder, phase_name + ".par")
+                # save it to the phase file
+                self.phase_pars_obj_dict[phase_name].set('filename', filename)
+            else:
+                raise ValueError("Don't know where to save this phase! Try setting guess_filename=True")
+        
+        self.phase_pars_obj_dict[phase_name].saveparameters(filename)
+    
     def get_any_phase_pars_obj(self):
         """Returns any parameters object from self.phase_pars_obj_dict"""
         return next(iter(self.phase_pars_obj_dict.values()))
-
-    def get_xfab_pars_dict(self, phase_name=None):
-        """Build a xfab pars compatible dictionary"""
+    
+    def to_old_pars_dict(self, phase_name=None):
+        """Produce an old-style ImageD11 parameters dict"""
         # get geometry pars as a dict
         geometry_pars_dict = self.geometry_pars_obj.get_parameters()
         if phase_name is not None:
@@ -118,22 +174,42 @@ class AnalysisSchema:
         else:
             # just copy the geometry dict
             pars_dict = geometry_pars_dict.copy()
+        if 'filename' in pars_dict.keys():
+            del pars_dict['filename']
         return pars_dict
-
-    def load_json(self, filename):
-        """
-        Load json from file
-        """
-        import json
-        with open(filename, 'r') as json_string:
-            self.pars_dict = json.load(json_string)
-
-        # store the path to the json file in 'parfile' key
-        self.pars_dict['parfile'] = filename
+    
+    def to_old_pars_object(self, phase_name=None):
+        """Produce an old-style ImageD11 parameters object"""
+        pars_dict = self.to_old_pars_dict(phase_name=phase_name)
+        pars_object = parameters.from_dict(pars_dict)
+        return pars_object
+    
+    def to_old_pars_file(self, filename, phase_name=None):
+        """Write an old-style ImageD11 .par file"""
+        pars_object = self.to_old_pars_object(phase_name=phase_name)
+        pars_object.saveparameters(filename)
+    
+    def get_xfab_pars_dict(self, phase_name=None):
+        """Produce an old-style parameters dict"""
+        return self.to_old_pars_dict(phase_name=phase_name)
+    
+    def update_pars_dict(self):
+        """Update pars_dict from current geometry and phases"""
+        if ('phases' not in self.pars_dict.keys()) and (len(self.phase_pars_obj_dict) > 0):
+            self.pars_dict['phases'] = dict()
+        for phase_name, phase_pars_obj in self.phase_pars_obj_dict.items():
+            if phase_name not in self.pars_dict['phases'].keys():
+                self.pars_dict['phases'][phase_name] = {}
+            if 'filename' not in phase_pars_obj.get_parameters().keys():
+                dest_folder = os.path.dirname(self.geometry_pars_obj.get('filename'))
+                filename = os.path.join(dest_folder, phase_name + ".par")
+                # save it to the phase file
+                self.phase_pars_obj_dict[phase_name].set('filename', filename)
+            self.pars_dict['phases'][phase_name]['file'] = phase_pars_obj.get('filename')
     
     def save(self, filename=None):
         """
-        Save current state to json. Looks for filename in self.pars_dict['parfile'], or can be supplied.
+        Save current state - both to json and to individual .par files. Looks for filename in self.pars_dict['parfile'], or can be supplied.
         """
         if filename is None:
             try:
@@ -141,10 +217,63 @@ class AnalysisSchema:
             except KeyError:
                 raise ValueError("Don't know where to save to! Supply a filename")
         
+        self.update_pars_dict()
+        
         import json
         json_object = json.dumps(self.pars_dict, indent=2)
         with open(filename, 'w') as json_file:
             json_file.write(json_object)
+        
+        # write the geometry file
+        self.update_geometryfile()
+        
+        # write the phases
+        for phase_name in self.phase_pars_obj_dict.keys():
+            self.update_phasefile(phase_name, guess_filename=True)
+    
+    @classmethod
+    def from_geom_and_phase_dict(cls, geom_dict, phase_dict):
+        """Create a new AnalysisSchema object from a geometry dict and a phase dict"""
+        # set up empty schema object
+        schema_obj = cls()
+        # see if we have a filename for the geometry.par file
+        geom_file = geom_dict.get('filename', 'geometry.par')
+        gd = {
+            "file": geom_file
+        }
+        schema_obj.pars_dict["geometry"] = gd
+        schema_obj.geometry_pars_obj = parameters.from_dict(geom_dict)
+        schema_obj.geometry_pars_obj.set('filename', geom_file)
+        
+        # set up the phases
+        # add parameters to keep track of the name of the phase and its file path
+        phase_name = phase_dict.get('phase_name', 'phase')
+        phase_file = phase_dict.get('filename', phase_name + '.par')
+        phase_dict['filename'] = phase_file
+        schema_obj.add_phase_from_dict(phase_name, phase_dict)
+        
+        return schema_obj
+    
+    @classmethod
+    def from_old_pars_dict(cls, pars_dict):
+        """Create a new AnalysisSchema object from an old parameters dict"""
+        # split the cell parameters from the geometry parameters
+        geometry_pars_dict = {key:value for key,value in pars_dict.items() if not (('cell' in key) or ('phase_name' in key))}
+        phase_pars_dict = {key:value for key,value in pars_dict.items() if (('cell' in key) or ('phase_name' in key))}
+        return cls.from_geom_and_phase_dict(geometry_pars_dict, phase_pars_dict)
+    
+    @classmethod
+    def from_old_pars_object(cls, pars_obj):
+        """Create a new AnalysisSchema object from an old parameters object"""
+        pars_dict = pars_obj.get_parameters()
+        return cls.from_old_pars_dict(pars_dict)
+    
+    @classmethod
+    def from_old_pars_file(cls, filename):
+        """Create a new AnalysisSchema object from an old parameters file"""
+        pars_obj = parameters.from_file(filename)
+        return cls.from_old_pars_object(pars_obj)
+        
 
 class par:
     """
@@ -356,8 +485,14 @@ class parameters:
                 self.parameters[name] = value
     
     @classmethod
+    def from_dict(cls, pars_dict):
+        p = parameters()
+        p.set_parameters(pars_dict)
+        return p
+        
+    @classmethod
     def from_file(cls, filename, phase_name=None):
-        return cls.loadparameters(filename=filename, phase_name=phase_name)
+        return read_par_file(filename, phase_name=None)
 
 
 def read_par_file(filename, phase_name=None):
