@@ -841,9 +841,6 @@ def forward_peaks_voxels(beam, sample, omega_angles, ucell, pars, dty=0.0,
     results = Parallel(n_jobs=-1, backend="loky")(delayed(process_omega)(
         omega, mask, DS, beam, sample, pars, ucell, rot_step, ds_max, Lsam2det, args, verbose
     ) for omega in tqdm(omega_angles, desc="Processing omega angles"))
-
-    fwd_peaks = [item for sublist in results for item in sublist]
-    fwd_peaks = np.array(fwd_peaks)
     # # Regarding multiprocessing.Pool, tried chunk, shared memory etc, it does not help to improve the speed
     # set_tmp_dir()
     # with multiprocessing.Pool(processes=min(multiprocessing.cpu_count(), 24)) as pool:
