@@ -95,7 +95,7 @@ class FriedelPairSelector:
         
         self.selected.set_xdata([self.cpk.omega[ind], self.cpk.omega[pair]])
         self.selected.set_ydata([self.cpk.dty[ind], self.cpk.dty[pair]])
-        self.ax[0].set(title=f'Selected Peaks: {ind}, {pair}')
+        self.ax[0].set(title='Selected Peaks: ' + str(ind) + ' ' + str(pair))
         self.fig.canvas.draw_idle()
         
     def get_selection(self):
