@@ -81,11 +81,12 @@ class FriedelPairSelector:
         
         R = np.array([[-si, -ci], [-sj, -cj]])
         self.xy = np.linalg.inv(R).dot([yi, yj])
+        sx, sy = self.xy
         
-        ycalc = ImageD11.sinograms.geometry.x_y_y0_omega_to_dty(self.om, *self.xy, self.y0)
+        ycalc = ImageD11.sinograms.geometry.x_y_y0_omega_to_dty(self.om, sx, sy, self.y0)
         self.fitlinel.set_ydata(ycalc)
         self.fitliner.set_ydata(ycalc)
-        self.peak_ycalc = ImageD11.sinograms.geometry.x_y_y0_omega_to_dty(self.cring.omega, *self.xy, self.y0)
+        self.peak_ycalc = ImageD11.sinograms.geometry.x_y_y0_omega_to_dty(self.cring.omega, sx, sy, self.y0)
         
     def _onpick(self, event):
         """Handle peak selection by user."""
