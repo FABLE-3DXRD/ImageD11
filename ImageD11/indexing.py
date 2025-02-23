@@ -253,11 +253,11 @@ def refine(UBI, gv, tol, quiet=True):
     ind = np.compress(np.less(drlv2, tol), np.arange(gv.shape[0]))
     # scorelastrefined=ind.shape[0]
     contribs = drlv2[ind]
-    try:
+    if contribs.size != 0:
         fitlastrefined = math.sqrt(np.sum(contribs) / contribs.shape[0])
         if not quiet:
             logging.debug("after %.8f %5d" % (fitlastrefined, contribs.shape[0]))
-    except:
+    else:
         logging.error("\n\n\n")
         logging.error("No contributing reflections for %s\n" % (str(UBI)))
         logging.error("After refinement, it was OK before ???")
@@ -1143,14 +1143,10 @@ class indexer:
         )
         self.scorelastrefined = ind.shape[0]
         contribs = drlv2[ind]
-        try:
+        if contribs.size != 0:
             self.fitlastrefined = math.sqrt(np.sum(contribs) / contribs.shape[0])
-        except:
-            print("\n\n\n")
-            print("No contributing reflections for\n", UBI)
-            print("After refinement, it was OK before ???")
-            print("\n\n\n")
-            raise
+        else:
+            raise ValueError("\n\n\nNo contributing reflections for ubi:\n{}\nAfter refinement, it was OK before ???\n\n\n".format(UBI))
         #      for i in ind:
         #         print "( %-6.4f %-6.4f %-6.4f ) %12.8f %12.8f"%(h[0,i],h[1,i],h[2,i],sqrt(drlv2[i]),sqrt(drlv2_old[i]))
         #      print UBIo
