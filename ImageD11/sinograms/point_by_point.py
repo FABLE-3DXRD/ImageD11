@@ -616,7 +616,7 @@ class PBPMap(columnfile):
 
     def plot_nuniq_hist(self):
         from matplotlib import pyplot as plt
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(7,7), constrained_layout=True)
         ax.hist(self.nuniq, bins=np.arange(0.5, np.max(self.nuniq) + 0.51, 1))
         ax.set_xlabel('Unique spots per pixel')
         ax.set_ylabel('Count')
