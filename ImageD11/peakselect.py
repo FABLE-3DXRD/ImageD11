@@ -201,7 +201,7 @@ def sorted_peak_intensity_mask_and_cumsum(colf, uself=True, frac=0.995, B=0.2,):
     return mask, cums
 
 
-def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2, doplot=None,):
+def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2, doplot=None, ucell=None):
     """
     Select peaks based on ring intensity.
 
@@ -212,6 +212,7 @@ def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2
         frac: Fractional normalised intensity to keep (removes weak peaks)
         B: Thermal factor to downweight low angle vs high angle peaks for normalised intensity
         doplot: Whether to draw a plot. (float number, range for zoomed plot)
+        ucell: ImageD11 unitcell class, if no cell parameters in cf.parameters
     Returns:
         cfc: Columnfile with selected peaks.
     """
@@ -220,8 +221,8 @@ def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2
         cfd = cf
     else:
         cfd = cf.copyrows( cf.ds <= dsmax )
-        
-    cfc = filter_peaks_by_phase(cf=cfd, dstol=dstol, dsmax=dsmax)
+    
+    cfc = filter_peaks_by_phase(cf=cfd, dstol=dstol, dsmax=dsmax, cell=ucell)
     ms = sorted_peak_intensity_mask(cfc, frac=frac, B=B, doplot=doplot)
     cfc.filter(ms)
     print('Filtered', cfc.nrows, 'peaks from', cf.nrows)
