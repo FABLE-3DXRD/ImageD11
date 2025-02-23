@@ -712,7 +712,7 @@ def plot_grain_positions(grains, colour='npks', centre_plot=False, size_scaling=
     yy = [grain.translation[1] for grain in grains]
     zz = [grain.translation[2] for grain in grains]
     if colour == 'npks':
-        ax.set_title("Grains coloured by number of peaks indexed")
+        ax.set_title("Grain centre-of-mass positions coloured by number of peaks indexed")
         col = [float(grain.npks) for grain in grains]
     elif colour.lower() in ['x', 'y', 'z']:
         rgbattr = 'rgb_' + colour.lower()
@@ -724,7 +724,7 @@ def plot_grain_positions(grains, colour='npks', centre_plot=False, size_scaling=
             # will still fail if we don't have reference unitcells
             get_rgbs_for_grains(grains)
             col = [getattr(grain, rgbattr) for grain in grains]  # IPF colour
-        ax.set_title("Grains coloured by IPF " +  colour.lower())
+        ax.set_title("Grain centre-of-mass positions coloured by IPF " +  colour.lower())
     # sizes in MPL 3D scale the area of the plot
     # intensity info is proportional to volume
     # decrease to radius then scale to area with power(x, 2/3)

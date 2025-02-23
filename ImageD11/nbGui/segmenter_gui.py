@@ -66,7 +66,7 @@ class SegmenterGui:
 
     def display(self):
         # Display the image initially
-        self.fig, self.axs = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(12, 8), constrained_layout=True)
+        self.fig, self.axs = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(10, 5), constrained_layout=True)
         self.im1 = self.axs[0].imshow(self.raw_image, cmap="viridis", norm='log', vmin=0.5, vmax=1000,
                                       interpolation="nearest")
         self.im2 = self.axs[1].imshow(self.segmented_image, cmap="viridis", norm='log', vmin=0.5, vmax=1000,
@@ -141,7 +141,7 @@ class FrelonSegmenterGui:
         return image_worker, fc, sc, len(fc)
 
     def display(self):
-        self.fig, self.axs = plt.subplots(1, 3, sharex=True, sharey=True, figsize=(12, 8), layout="constrained")
+        self.fig, self.axs = plt.subplots(1, 3, sharex=True, sharey=True, figsize=(10, 3.5), layout="constrained")
         self.im1 = self.axs[0].imshow(self.raw_image, norm='log', vmin=100, vmax=1000)
         self.axs[0].set_title("Original image")
         self.im2 = self.axs[1].imshow(self.smoothed_image, cmap="viridis", norm='log', vmin=0.5, vmax=1000,
@@ -170,6 +170,7 @@ class FrelonSegmenterGui:
         self.im2.set_data(self.smoothed_image)
         self.im3.set_data(self.smoothed_image)
         self.sc1.set_data(self.fc, self.sc)
+        self.axs[2].set_title(str(self.npeaks) + " peaks")
         self.fig.canvas.draw()
 
     def getopts(self):
