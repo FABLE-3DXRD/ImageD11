@@ -61,7 +61,7 @@ def assign_ring_histo(cf, dsmax, hbins, cell):
     return (bcen,h,ra)
 
 
-def mask_by_ifrac(colf, dstol, dsmax, ifrac, uc, forref=None):
+def mask_rings_by_ifrac(colf, dstol, dsmax, ifrac, uc, forref=None):
     uc.makerings(colf.ds.max(), dstol)
     # peaks that are on rings
     sel = np.zeros(colf.nrows, bool)
@@ -86,8 +86,8 @@ def mask_by_ifrac(colf, dstol, dsmax, ifrac, uc, forref=None):
     return sel
 
 
-def select_by_ifrac(colf, dstol, dsmax, ifrac, uc, forref=None):
-    mask = mask_by_ifrac(colf, dstol, dsmax, ifrac, uc, forref)
+def select_rings_by_ifrac(colf, dstol, dsmax, ifrac, uc, forref=None):
+    mask = mask_rings_by_ifrac(colf, dstol, dsmax, ifrac, uc, forref)
     newcolf = colf.copyrows(mask)
     return newcolf
 
