@@ -829,7 +829,7 @@ class PBPRefine:
             self.npks,
             self.forref,
         )
-
+        self.uc = uc
         self.savepeaks(icolf_filename=icolf_filename, del_existing=del_existing)
 
     def savepeaks(self, icolf_filename=None, del_existing=False):
@@ -862,7 +862,7 @@ class PBPRefine:
         f, ax = pl.subplots(2, 1)
         ax[0].plot(self.colf.ds[::skip], self.colf.sum_intensity[::skip], ",")
         ax[0].plot(self.icolf.ds[::skip], self.icolf.sum_intensity[::skip], ",")
-        ax[0].set(yscale="log", ylabel="sum intensity", xlabel="d-star")
+        ax[0].set(yscale="log", ylabel="sum intensity", xlabel=r'$d^{*}~(\AA^{-1})$')
         histo = self.dset.sinohist(
             omega=self.icolf.omega, dty=self.icolf.dty, weights=self.icolf.sum_intensity
         )
@@ -876,6 +876,7 @@ class PBPRefine:
             ax=ax[1],
         )
         ax[1].set(ylabel="dty", xlabel="omega")
+        ax[0].vlines(self.uc.ringds, 1e4, 3e4, color='red')
         return f, ax
 
     def setmask(self, manual_threshold=None, doplot=False, use_icolf=True, use_singlemap=False):
@@ -2009,6 +2010,7 @@ class PBP:
             os.remove(icolf_filename)
         ImageD11.columnfile.colfile_to_hdf(self.icolf, icolf_filename, compression=None)
         self.icolf_filename = icolf_filename
+        self.uc = uc
 
     def iplot(self, skip=1):
         import pylab as pl
@@ -2016,7 +2018,7 @@ class PBP:
         f, ax = pl.subplots(2, 1)
         ax[0].plot(self.colf.ds[::skip], self.colf.sum_intensity[::skip], ",")
         ax[0].plot(self.icolf.ds[::skip], self.icolf.sum_intensity[::skip], ",")
-        ax[0].set(yscale="log", ylabel="sum intensity", xlabel="d-star")
+        ax[0].set(yscale="log", ylabel="sum intensity", xlabel=r'$d^{*}~(\AA^{-1})$')
         histo = self.dset.sinohist(
             omega=self.icolf.omega, dty=self.icolf.dty, weights=self.icolf.sum_intensity
         )
@@ -2030,6 +2032,7 @@ class PBP:
             ax=ax[1],
         )
         ax[1].set(ylabel="dty", xlabel="omega")
+        ax[0].vlines(self.uc.ringds, 1e4, 3e4, color='red', label=self.phase_name)
         return f, ax
 
     def point_by_point(
