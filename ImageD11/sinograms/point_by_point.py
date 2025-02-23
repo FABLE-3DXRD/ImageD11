@@ -875,7 +875,7 @@ class PBPRefine:
             ),
             ax=ax[1],
         )
-        ax[1].set(ylabel="dty", xlabel="omega")
+        ax[1].set(ylabel="dty", xlabel=r'$\omega~(\degree)$')
         ax[0].vlines(self.uc.ringds, 1e4, 3e4, color='red')
         return f, ax
 
@@ -2031,7 +2031,7 @@ class PBP:
             ),
             ax=ax[1],
         )
-        ax[1].set(ylabel="dty", xlabel="omega")
+        ax[1].set(ylabel="dty", xlabel=r'$\omega~(\degree)$')
         ax[0].vlines(self.uc.ringds, 1e4, 3e4, color='red', label=self.phase_name)
         return f, ax
 
