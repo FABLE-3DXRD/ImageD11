@@ -36,7 +36,7 @@ from xfab import xfab_logging
 logger = xfab_logging.get_module_level_logger(__name__)
 
 
-class AnalysisSchema:
+class AnalysisSchema(object):
     """Class to handle more complicated data analysis parameters."""
 
     def __init__(self, filename=None):
