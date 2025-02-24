@@ -179,7 +179,7 @@ class Phases(AnalysisSchema):
         phase_name: the name of the phase
         unitcell: the unitcell object
         """
-        super().add_phase_from_unitcell(phase_name, unitcell)
+        super(Phases, self).add_phase_from_unitcell(phase_name, unitcell)
         self.get_unitcells()
     
     def get_unitcells(self):
