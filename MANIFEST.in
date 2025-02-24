@@ -8,7 +8,10 @@ include LICENSE
 recursive-include ImageD11 *.c
 recursive-include ImageD11 *.md
 recursive-include ImageD11 *.py
-recursive-include data *.spline
+recursive-include ImageD11 *.ipynb
+include data/*.spline
+include data/*.json
+include data/*.par
 recursive-include docs *.bat
 recursive-include docs *.docx
 recursive-include docs *.ico
@@ -21,6 +24,7 @@ recursive-include docs *.rtf
 recursive-include docs *.svg
 recursive-include docs *.txt
 recursive-include docs *.zip
+recursive-include docs *.ipynb
 recursive-include docs Makefile
 recursive-include sandbox *.c
 recursive-include sandbox *.cl
@@ -64,3 +68,5 @@ recursive-include webgui *.js
 recursive-include webgui *.md
 prune ImageD11src/depreciated 
 prune src/old
+exclude **/.ipynb_checkpoints/*
+global-prune .ipynb_checkpoints

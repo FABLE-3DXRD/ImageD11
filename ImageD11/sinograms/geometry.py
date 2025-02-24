@@ -268,6 +268,13 @@ def dty_values_grain_in_beam(sx, sy, y0, omega):
     return dty_values_grain_in_beam_sincos(sx, sy, y0, sinomega, cosomega)
 
 
+def x_y_y0_omega_to_dty(omega, x, y, y0):
+    return dty_values_grain_in_beam(sx=x, sy=y, y0=y0, omega=omega)
+
+
+dtycalc = x_y_y0_omega_to_dty
+
+
 def fit_sine_wave(omega, dty, initial_guess, weights=None):
     """
     Take a series of (omega, dty) values that originate from the same point in the sample.

@@ -627,11 +627,16 @@ class DataSet:
     #             self.omegamotor = 'diffrz'
     #             self.dtymotor = 'diffty'
 
-    def sinohist(self, weights=None, omega=None, dty=None, method="fast"):
+    def sinohist(self, weights=None, omega=None, dty=None, method="fast", return_edges=False):
         """Bin some data onto the sinogram histogram"""
+        omin = self.omega_for_bins.min()
+        omax = self.omega_for_bins.max()
+        omin_edge = omin - self.ostep / 2
+        omax_edge = omax + self.ostep / 2
+
         bins = len(self.obincens), len(self.ybincens)
         rng = (
-            (self.obinedges[0], self.obinedges[-1]),
+            (omin_edge, omax_edge),
             (self.ybinedges[0], self.ybinedges[-1]),
         )
         if isinstance(weights, np.ndarray):
@@ -642,16 +647,27 @@ class DataSet:
             omega = self.omega_for_bins
         if dty is None:
             dty = self.dty
+            
+        if (self.omega.max() - self.omega.min()) > 360:
+            om_mod = omega % 360
+        else:
+            om_mod = omega
+        
         if method == "numpy":
             ret = np.histogram2d(
-                omega.ravel(), dty.ravel(), weights=wt, bins=bins, range=rng
+                om_mod.ravel(), dty.ravel(), weights=wt, bins=bins, range=rng
             )
             histo = ret[0]
         elif method == "fast":
             histo = fast_histogram.histogram2d(
-                omega.ravel(), dty.ravel(), weights=wt, bins=bins, range=rng
+                om_mod.ravel(), dty.ravel(), weights=wt, bins=bins, range=rng
             )
-        return histo
+        if return_edges:
+            om_edges = np.linspace(rng[0][0], rng[0][1], bins[0])
+            dty_edges = np.linspace(rng[1][0], rng[1][1], bins[1])
+            return histo, om_edges, dty_edges
+        else:
+            return histo
 
     def get_phases_from_disk(self):
         if not hasattr(self, "parfile") or self.parfile is None:

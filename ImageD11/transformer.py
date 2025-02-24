@@ -248,9 +248,9 @@ class transformer:
     def getcols(self):
         return self.colfile.titles
 
-    def loadfileparameters(self, filename):
+    def loadfileparameters(self, filename, phase_name=None):
         """ Read in beam center etc from file """
-        self.parameterobj.loadparameters(filename)
+        self.parameterobj.loadparameters(filename, phase_name=phase_name)
 
     def saveparameters(self, filename):
         """ Save beam center etc to file """
@@ -259,7 +259,6 @@ class transformer:
     def applyargs(self, args):
         """ for use with simplex/gof function, alter parameters """
         self.parameterobj.set_variable_values(args)
-
 
     def getcolumn(self, name):
         """Return the data"""

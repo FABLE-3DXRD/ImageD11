@@ -1,0 +1,10 @@
+{
+  "geometry": {
+    "file": "eiger_example_geometry.par"
+  },
+  "phases": {
+    "CeO2": {
+      "file": "CeO2.par"
+    }
+  }
+}
