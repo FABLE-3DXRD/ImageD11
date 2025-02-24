@@ -8,7 +8,10 @@ include LICENSE
 recursive-include ImageD11 *.c
 recursive-include ImageD11 *.md
 recursive-include ImageD11 *.py
+recursive-include ImageD11 *.ipynb
 recursive-include data *.spline
+recursive-include data *.json
+recursive-include data *.par
 recursive-include docs *.bat
 recursive-include docs *.docx
 recursive-include docs *.ico
@@ -21,6 +24,7 @@ recursive-include docs *.rtf
 recursive-include docs *.svg
 recursive-include docs *.txt
 recursive-include docs *.zip
+recursive-include docs *.ipynb
 recursive-include docs Makefile
 recursive-include sandbox *.c
 recursive-include sandbox *.cl
