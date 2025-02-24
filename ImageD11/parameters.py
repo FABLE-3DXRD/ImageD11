@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 import os
-import importlib
+import importlib.resources
 
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
