@@ -313,13 +313,76 @@ class AnalysisSchema:
     def from_default(cls, detector='eiger'):
         """Load default detector parameters from disk for either 'eiger' or 'frelon' detecor"""
         # get path to either eiger or frelon default geometric parameters
-        import pkg_resources
-        geom_par_path = pkg_resources.resource_filename("ImageD11","data/{det}_example_geometry.par".format(det=detector))
-        phase_par_path = pkg_resources.resource_filename("ImageD11","data/CeO2.par")
+        # import pkg_resources
+        # geom_par_path = pkg_resources.resource_filename("ImageD11","data/{det}_example_geometry.par".format(det=detector))
+        # phase_par_path = pkg_resources.resource_filename("ImageD11","data/CeO2.par")
         # geom_par_path = os.path.join(os.path.dirname(sys.modules['ImageD11'].__file__), '..', 'data', '{det}_example_geometry.par'.format(det=detector))
         # phase_par_path = os.path.join(os.path.dirname(sys.modules['ImageD11'].__file__), '..', 'data', 'CeO2.par')
-        geom_obj = parameters.from_file(geom_par_path)
-        phase_obj = parameters.from_file(phase_par_path)
+        # geom_obj = parameters.from_file(geom_par_path)
+        # phase_obj = parameters.from_file(phase_par_path)
+        
+        if detector == 'eiger':
+            geom_dict = {'chi': 0.0,
+                         'distance': 152736.55305695778,
+                         'fit_tolerance': 0.05,
+                         'min_bin_prob': 1e-05,
+                         'no_bins': 10000,
+                         'o11': -1,
+                         'o12': 0,
+                         'o21': 0,
+                         'o22': -1,
+                         'omegasign': 1.0,
+                         't_x': 0,
+                         't_y': 0,
+                         't_z': 0,
+                         'tilt_x': 0.0,
+                         'tilt_y': 0.0,
+                         'tilt_z': 0.0,
+                         'wavelength': 0.2845704,
+                         'wedge': 0.0,
+                         'weight_hist_intensities': 0,
+                         'y_center': 1049.9295061162281,
+                         'y_size': 75.0,
+                         'z_center': 1116.4472483389864,
+                         'z_size': 75.0}
+        elif detector == 'frelon':
+            geom_dict = {'chi': 0.0,
+                         'distance': 136062.54166078364,
+                         'fit_tolerance': 0.05,
+                         'min_bin_prob': 1e-05,
+                         'no_bins': 10000,
+                         'o11': 1,
+                         'o12': 0,
+                         'o21': 0,
+                         'o22': -1,
+                         'omegasign': 1.0,
+                         't_x': 0.0,
+                         't_y': 0.0,
+                         't_z': 0.0,
+                         'tilt_x': 0.0,
+                         'tilt_y': 0.0,
+                         'tilt_z': 0.0,
+                         'wavelength': 0.28457041,
+                         'wedge': 0.0,
+                         'weight_hist_intensities': 0,
+                         'y_center': 1081.849909211387,
+                         'y_size': 47.0,
+                         'z_center': 1017.0452628833956,
+                         'z_size': 47.0}
+        else:
+            raise ValueError('Invalid detector! Options are frelon, eiger')
+        
+        phase_dict = {'cell__a': 5.41143,
+                     'cell__b': 5.41143,
+                     'cell__c': 5.41143,
+                     'cell_alpha': 90.0,
+                     'cell_beta': 90.0,
+                     'cell_gamma': 90.0,
+                     'cell_lattice_[P,A,B,C,I,F,R]': 225}
+
+        phase_obj = parameters.from_dict(phase_dict)
+        geom_obj = parameters.from_dict(geom_dict)
+        
         phase_obj.set('phase_name', 'CeO2')
         phase_obj.set('filename', 'CeO2.par')
         asc = cls.from_geom_and_phase_dict(geom_obj.get_parameters(), phase_obj.get_parameters())
