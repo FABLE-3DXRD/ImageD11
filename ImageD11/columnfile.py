@@ -588,7 +588,10 @@ try:
             dat = getattr(c, t).astype( ty )
             if t in list(g.keys()):
                 if g[t].shape != dat.shape:
-                    g[t].resize( dat.shape )
+                    try:
+                        g[t].resize( dat.shape )
+                    except TypeError:
+                        raise TypeError("Columnfile already exists on disk with a different length, cannot write HDF5!")
                 g[t][:] = dat
             else:
                 g.create_dataset( t, data = dat,
