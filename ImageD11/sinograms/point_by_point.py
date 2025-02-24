@@ -459,7 +459,7 @@ def ubi_and_ucell_to_u(ubi, ucell):
     ca = np.cos(ralpha)
     cb = np.cos(rbeta)
     cg = np.cos(rgamma)
-    g = np.full((3, 3), np.nan, float)
+    g = np.full((3, 3), np.nan, np.float64)
     g[0, 0] = a * a
     g[0, 1] = a * b * cg
     g[0, 2] = a * c * cb
