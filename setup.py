@@ -231,6 +231,7 @@ setup(name='ImageD11',
       scripts = scripts,
       long_description = readme,
       long_description_content_type='text/markdown',
+      include_package_data=True,
 )
 
 
