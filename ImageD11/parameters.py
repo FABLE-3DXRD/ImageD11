@@ -4,6 +4,7 @@
 from __future__ import print_function
 
 import os
+import importlib
 
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
@@ -73,7 +74,8 @@ class AnalysisSchema:
         # get geometric parameters as an ImageD11 parameter object
         geometry_dict = self.pars_dict["geometry"]
         geometry_file = self.rel_to_absolute(geometry_dict["file"])
-        self.geometry_pars_obj = parameters.from_file(geometry_file)
+        geometry_pars_obj, _ = self.split_parameters_objs(parameters.from_file(geometry_file))
+        self.geometry_pars_obj = geometry_pars_obj
         # remember the geometry.par filename
         self.geometry_pars_obj.set('filename', geometry_file)
 
@@ -89,10 +91,34 @@ class AnalysisSchema:
             # add the phase
             self.add_phase_from_pars_obj(phase_name, phase_pars_obj)
     
+    @staticmethod
+    def split_parameters_dicts(pars_dict):
+        """
+        Split pars dict parameters into (geometry, phase) dicts
+        """
+        # split the cell parameters from the geometry parameters
+        geometry_pars_dict = {key:value for key,value in pars_dict.items() if not (('cell' in key) or ('phase_name' in key))}
+        phase_pars_dict = {key:value for key,value in pars_dict.items() if (('cell' in key) or ('phase_name' in key))}
+        return geometry_pars_dict, phase_pars_dict
+    
+    @staticmethod
+    def split_parameters_objs(pars_obj):
+        """
+        Split pars object into (geometry, phase) objects
+        """
+        pars_dict = dict(pars_obj.get_parameters())
+        geometry_pars_dict, phase_pars_dict = AnalysisSchema.split_parameters_dicts(pars_dict)
+        geometry_pars_obj = parameters.from_dict(geometry_pars_dict)
+        phase_pars_obj = parameters.from_dict(phase_pars_dict)
+        return geometry_pars_obj, phase_pars_obj
+        
     def add_phase_from_pars_obj(self, phase_name, phase_pars_obj):
         """
         Add phase from ImageD11 pars object
         """
+        # the base case
+        # need to strip geometry pars out
+        _, phase_pars_obj = self.split_parameters_objs(phase_pars_obj)
         phase_pars_obj.set('phase_name', phase_name)
         # put this pars object in self.phase_pars_obj_dict
         self.phase_pars_obj_dict[phase_name] = phase_pars_obj
@@ -100,6 +126,14 @@ class AnalysisSchema:
     def add_phase_from_dict(self, phase_name, phase_dict):
         """Add phase from pars dict"""
         phase_obj = parameters.from_dict(phase_dict)
+        self.add_phase_from_pars_obj(phase_name, phase_obj)
+        
+    def add_phase_from_pars_file(self, phase_name, phase_pars_file):
+        """
+        Add phase from ImageD11 pars file
+        """
+        # get pars object from ImageD11 pars file
+        phase_obj = parameters.from_file(phase_pars_file)
         self.add_phase_from_pars_obj(phase_name, phase_obj)
     
     def add_phase_from_unitcell(self, phase_name, unitcell):
@@ -257,9 +291,8 @@ class AnalysisSchema:
     @classmethod
     def from_old_pars_dict(cls, pars_dict):
         """Create a new AnalysisSchema object from an old parameters dict"""
-        # split the cell parameters from the geometry parameters
-        geometry_pars_dict = {key:value for key,value in pars_dict.items() if not (('cell' in key) or ('phase_name' in key))}
-        phase_pars_dict = {key:value for key,value in pars_dict.items() if (('cell' in key) or ('phase_name' in key))}
+        geometry_pars_dict, phase_pars_dict = cls.split_parameters_dicts(pars_dict)
+        print(phase_pars_dict)
         return cls.from_geom_and_phase_dict(geometry_pars_dict, phase_pars_dict)
     
     @classmethod
@@ -273,7 +306,18 @@ class AnalysisSchema:
         """Create a new AnalysisSchema object from an old parameters file"""
         pars_obj = parameters.from_file(filename)
         return cls.from_old_pars_object(pars_obj)
-        
+    
+    @classmethod
+    def from_default(cls, detector='eiger'):
+        # get path to either eiger or frelon default parameters
+        geom_par_path = str(importlib.resources.files('ImageD11')/'..'/'data'/'{det}_example_geometry.par'.format(det=detector))
+        phase_par_path = str(importlib.resources.files('ImageD11')/'..'/'data'/'CeO2.par')
+        geom_obj = parameters.from_file(geom_par_path)
+        phase_obj = parameters.from_file(phase_par_path)
+        phase_obj.set('phase_name', 'CeO2')
+        phase_obj.set('filename', 'CeO2.par')
+        asc = AnalysisSchema.from_geom_and_phase_dict(geom_obj.get_parameters(), phase_obj.get_parameters())
+        return asc
 
 class par:
     """

@@ -1,0 +1,10 @@
+{
+  "geometry": {
+    "file":"frelon_example_geometry.par"
+  },
+  "phases": {
+    "CeO2": {
+      "file": "CeO2.par"
+    }
+  }
+}
