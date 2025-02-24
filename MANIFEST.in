@@ -9,9 +9,9 @@ recursive-include ImageD11 *.c
 recursive-include ImageD11 *.md
 recursive-include ImageD11 *.py
 recursive-include ImageD11 *.ipynb
-recursive-include data *.spline
-recursive-include data *.json
-recursive-include data *.par
+include data/*.spline
+include data/*.json
+include data/*.par
 recursive-include docs *.bat
 recursive-include docs *.docx
 recursive-include docs *.ico
@@ -68,3 +68,5 @@ recursive-include webgui *.js
 recursive-include webgui *.md
 prune ImageD11src/depreciated 
 prune src/old
+exclude **/.ipynb_checkpoints/*
+global-prune .ipynb_checkpoints
