@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 import os
-import importlib.resources
+import sys
 
 # ImageD11_v0.4 Software for beamline ID11
 # Copyright (C) 2005  Jon Wright
@@ -205,6 +205,8 @@ class AnalysisSchema:
             pars_dict.update(phase_pars_dict)
             # re-add the geometry dict to override things like filename if present
             pars_dict.update(geometry_pars_dict)
+            if 'phase_name' in pars_dict.keys():
+                del pars_dict['phase_name']
         else:
             # just copy the geometry dict
             pars_dict = geometry_pars_dict.copy()
@@ -311,8 +313,8 @@ class AnalysisSchema:
     def from_default(cls, detector='eiger'):
         """Load default detector parameters from disk for either 'eiger' or 'frelon' detecor"""
         # get path to either eiger or frelon default geometric parameters
-        geom_par_path = str(importlib.resources.files('ImageD11')/'..'/'data'/'{det}_example_geometry.par'.format(det=detector))
-        phase_par_path = str(importlib.resources.files('ImageD11')/'..'/'data'/'CeO2.par')
+        geom_par_path = os.path.join(os.path.dirname(sys.modules['ImageD11'].__file__), '..', 'data', '{det}_example_geometry.par'.format(det=detector))
+        phase_par_path = os.path.join(os.path.dirname(sys.modules['ImageD11'].__file__), '..', 'data', 'CeO2.par')
         geom_obj = parameters.from_file(geom_par_path)
         phase_obj = parameters.from_file(phase_par_path)
         phase_obj.set('phase_name', 'CeO2')
