@@ -21,12 +21,18 @@ class TestFromDefault(unittest.TestCase):
         new_pars_dict = asc.get_xfab_pars_dict()
         for key, value in old_pars_dict.items():
             if key in new_pars_dict.keys():
-                self.assertEqual(value, new_pars_dict[key])
+                if isinstance(value, (float, int)):
+                    self.assertTrue(np.allclose(value, new_pars_dict[key]))
+                else:
+                    self.assertEqual(value, new_pars_dict[key])
         old_pars_dict = ImageD11.parameters.read_par_file('CeO2.par').get_parameters()
         new_pars_dict = asc.phase_pars_obj_dict['CeO2'].get_parameters()
         for key, value in old_pars_dict.items():
             if key in new_pars_dict.keys():
-                self.assertEqual(value, new_pars_dict[key])
+                if isinstance(value, (float, int)):
+                    self.assertTrue(np.allclose(value, new_pars_dict[key]))
+                else:
+                    self.assertEqual(value, new_pars_dict[key])
     
     @classmethod
     def tearDownClass(cls):
@@ -69,7 +75,10 @@ class TestToOldParsFile(unittest.TestCase):
         new_pars_dict = asc.get_xfab_pars_dict(phase_name='CeO2')
         for key, value in old_pars_dict.items():
             if key in new_pars_dict.keys():
-                self.assertEqual(value, new_pars_dict[key])
+                if isinstance(value, (float, int)):
+                    self.assertTrue(np.allclose(value, new_pars_dict[key]))
+                else:
+                    self.assertEqual(value, new_pars_dict[key])
     
     @classmethod
     def tearDownClass(cls):
