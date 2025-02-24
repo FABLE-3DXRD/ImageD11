@@ -309,14 +309,15 @@ class AnalysisSchema:
     
     @classmethod
     def from_default(cls, detector='eiger'):
-        # get path to either eiger or frelon default parameters
+        """Load default detector parameters from disk for either 'eiger' or 'frelon' detecor"""
+        # get path to either eiger or frelon default geometric parameters
         geom_par_path = str(importlib.resources.files('ImageD11')/'..'/'data'/'{det}_example_geometry.par'.format(det=detector))
         phase_par_path = str(importlib.resources.files('ImageD11')/'..'/'data'/'CeO2.par')
         geom_obj = parameters.from_file(geom_par_path)
         phase_obj = parameters.from_file(phase_par_path)
         phase_obj.set('phase_name', 'CeO2')
         phase_obj.set('filename', 'CeO2.par')
-        asc = AnalysisSchema.from_geom_and_phase_dict(geom_obj.get_parameters(), phase_obj.get_parameters())
+        asc = cls.from_geom_and_phase_dict(geom_obj.get_parameters(), phase_obj.get_parameters())
         return asc
 
 class par:
