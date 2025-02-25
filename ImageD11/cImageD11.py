@@ -89,17 +89,18 @@ def check_multiprocessing(patch=False):
 def cores_available():
     """
     Return the number of CPU cores you can use
-    First choice = SLURM_CPUS_PER_TASK (ESRF specific)
-    Second choice = os.sched_getaffinity
-    Third choice = os.cpu_count (may be high)
-    Guess at 1 when os.cpu_count fails.
+    First choice = os.sched_getaffinity
+    Second choice = os.cpu_count (may be high)
+    Third choice = os.environ['NUMBER_OF_PROCESSORS'] (windows+old)
+    Guess at 1 when os.cpu_count someone returns None or 0
     """
-    if "SLURM_CPUS_PER_TASK" in os.environ:
-        return int(os.environ["SLURM_CPUS_PER_TASK"])
     if hasattr(os, "sched_getaffinity"):
-        return len(os.sched_getaffinity(os.getpid()))
-    ncpu = os.cpu_count()
-    if ncpu is None:
+        ncpu len(os.sched_getaffinity(os.getpid()))
+    elif hasattr(os, "cpu_count"):
+        ncpu = os.cpu_count()
+    elif 'NUMBER_OF_PROCESSORS' in os.environ:
+        ncpu = int(os.environ['NUMBER_OF_PROCESSORS'])
+    if ncpu is None or ncpu < 1:
         return 1
     else:
         return ncpu

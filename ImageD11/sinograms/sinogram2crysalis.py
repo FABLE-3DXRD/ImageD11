@@ -7,6 +7,7 @@ import h5py
 import numpy as np
 import numba
 import sys, os
+import ImageD11.cImageD11
 import ImageD11.sinograms.dataset
 import ImageD11.sinograms.lima_segmenter
 import fabio.app.eiger2crysalis, fabio.limaimage
@@ -137,7 +138,7 @@ def makecmdline(
 
 def sum_sinogram( dsname, output_name, nomega = 10, nthreads = None ):
     if nthreads is None:
-        nthreads = min(max( len(os.sched_getaffinity( os.getpid()  )) - 2, 1 ), 20)
+        nthreads = min( max( ImageD11.cImageD11.cores_available() - 2, 1 ), 20 )
     ds = ImageD11.sinograms.dataset.load( dsname )
     with h5py.File(dsname ,'r') as hin:
         image_mask = fabio.open(hin['lima_segmenter'].attrs['maskfile']).data

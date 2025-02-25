@@ -900,7 +900,7 @@ class PBPRefine:
             whole_sample_sino, xedges, yedges = np.histogram2d(dty, omega,
                                                                bins=[self.dset.ybinedges, self.dset.obinedges])
             shift, _ = geometry.sino_shift_and_pad(self.y0, len(self.ybincens), self.ybincens.min(), self.ystep)
-            nthreads = len(os.sched_getaffinity(os.getpid()))
+            nthreads = cImageD11.cores_available()
             # make sure the shape is the same as sx_grid
             pad = self.sx_grid.shape[0] - whole_sample_sino.shape[0]
             whole_sample_recon = run_iradon(whole_sample_sino, self.dset.obincens, pad, shift, workers=nthreads)
@@ -1085,7 +1085,7 @@ class PBPRefine:
         # compute gves
         gve = np.column_stack((self.icolf.gx, self.icolf.gy, self.icolf.gz))
 
-        nthreads = len(os.sched_getaffinity(os.getpid())) - 1
+        nthreads = max( cImageD11.cores_available() - 1, 1 )
         numba.set_num_threads(nthreads)
 
         if guess_speed:
@@ -1185,7 +1185,7 @@ class PBPRefine:
             uc = unitcell.unitcell_from_parameters(self.icolf.parameters)
             B0 = unitcell_to_b(uc.lattice_parameters, dummy_var)
 
-            nthreads = len(os.sched_getaffinity(os.getpid())) - 1
+            nthreads = max( cImageD11.cores_available() - 1, 1 )
             numba.set_num_threads(nthreads)
             print('Launching Numba parallel refinement on', nthreads, 'threads')
 
@@ -2052,7 +2052,7 @@ class PBP:
         start = time.time()
         # FIXME - look at dataset ybincens and roi_iradon output_size ?
         if nprocs is None:
-            nprocs = len(os.sched_getaffinity(os.getpid()))
+            nprocs = cImageD11.cores_available()
 
         idxopt = {
             "ystep": self.ystep,

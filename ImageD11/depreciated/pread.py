@@ -7,6 +7,7 @@ import h5py
 import sys
 import numpy as np
 import ImageD11.sinograms.properties
+import ImageD11.cImageD11
 import multiprocessing
 import concurrent.futures
 
@@ -47,7 +48,7 @@ def create( hname, dset ):
 
 def pread( tbl, hname, dset='pks2d', nproc=0  ):
     if nproc == 0:
-        nproc = len( os.sched_getaffinity( os.getpid() ))
+        nproc = cImageD11.cores_available() 
         print("Using", nproc, 'processes to read')
     if tbl is None:
         tbl = create( hname, dset )

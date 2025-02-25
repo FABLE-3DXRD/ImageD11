@@ -952,7 +952,7 @@ def main(dsfilename, sparsefile=None, pksfile=None, options={}):
             if "SLURM_CPUS_PER_TASK" in os.environ:
                 options["nproc"] = max(1, int(os.environ["SLURM_CPUS_PER_TASK"]) - 1)
             else:
-                options["nproc"] = len(os.sched_getaffinity(0))
+                options["nproc"] = ImageD11.cImageD11.cores_available()
         if options["nproc"] > nscans - 1:
             options["nproc"] = max(1, nscans - 1)
         print("Nscans", nscans)
