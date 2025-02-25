@@ -72,17 +72,18 @@ def mask_rings_by_ifrac(colf, dstol, dsmax, ifrac, uc, forref=None):
     hmax = 0
     for i in range(len(uc.ringds)):
         ds = uc.ringds[i]
-        hkls = uc.ringhkls[ds]
-        if i in forref:
-            rm = abs(colf.ds - ds) < dstol
-            if rm.sum() == 0:
-                continue
-            icut = np.max(colf.sum_intensity[rm]) * ifrac
-            rm = rm & (colf.sum_intensity > icut)
-            npks += len(hkls)
-            sel |= rm
-            for hkl in hkls:
-                hmax = max(np.abs(hkl).max(), hmax)
+        if ds < dsmax:
+            hkls = uc.ringhkls[ds]
+            if i in forref:
+                rm = abs(colf.ds - ds) < dstol
+                if rm.sum() == 0:
+                    continue
+                icut = np.max(colf.sum_intensity[rm]) * ifrac
+                rm = rm & (colf.sum_intensity > icut)
+                npks += len(hkls)
+                sel |= rm
+                for hkl in hkls:
+                    hmax = max(np.abs(hkl).max(), hmax)
     return sel
 
 
