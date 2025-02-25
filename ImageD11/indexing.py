@@ -1318,7 +1318,7 @@ def do_index(
     forgen=(),
     foridx=(),
     unitcell=None,
-    **kwds,
+    **kwds
 ):
     """
     Does indexing from a columnfile (cf)
