@@ -18,8 +18,6 @@ To get all the possible dependencies too, you can try:
 
 Some (dated) documentation is here: https://imaged11.readthedocs.io/
 
-If you are at ESRF on an old linux computer you can try "module load fable". 
-
 To use from git, try this:
 
  - Download and install python 3.8+, perhaps from www.python.org but probably from conda.
