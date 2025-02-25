@@ -287,17 +287,23 @@ def indexer_from_colfile(colfile, **kwds):
     return ind
 
 
+
 def indexer_from_colfile_and_ucell(colfile, ucell, **kwds):
-    """Force a specific unitcell to be used"""
-    w = float(colfile.parameters.get("wavelength"))
+    """Force a specific unitcell to be used, 
+    ensuring a wavelength is provided."""
+
+    # Try to get the wavelength from kwds, then colfile.parameters, otherwise raise an error
+    w = kwds.get("wavelength", float(colfile.parameters.get("wavelength")))
+    if w is None:
+        raise ValueError("Wavelength must be provided either in kwds or colfile.parameters")
+
     gv = np.array((colfile.gx, colfile.gy, colfile.gz), float)
-    kwds.update({"unitcell": ucell, "wavelength": w, "gv": gv.T})
+    kwds.update({"unitcell": ucell, "wavelength": float(w), "gv": gv.T})
     ind = indexer(**kwds)
     if "omega" in colfile.titles:
         ind.omega_fullrange = find_omega_ranges(colfile.omega)
     ind.colfile = colfile
     return ind
-
 
 class indexer:
     """
@@ -1311,7 +1317,8 @@ def do_index(
     max_grains=1000,
     forgen=(),
     foridx=(),
-    unitcell=None
+    unitcell=None,
+    **kwds
 ):
     """
     Does indexing from a columnfile (cf)
@@ -1342,7 +1349,7 @@ def do_index(
 
     # Figure out the peaks to use from foridx:
     if unitcell is not None:
-        indexer = indexer_from_colfile_and_ucell(cf, ucell=unitcell)
+        indexer = indexer_from_colfile_and_ucell(cf, ucell=unitcell,**kwds)
     else:
         indexer = indexer_from_colfile(cf)
     indexer.ds_tol = dstol
@@ -1355,7 +1362,7 @@ def do_index(
     cf_for_indexing.parameters = cf.parameters
 
     if unitcell:
-        indexer = indexer_from_colfile_and_ucell(cf_for_indexing, ucell=unitcell)
+        indexer = indexer_from_colfile_and_ucell(cf_for_indexing, ucell=unitcell,**kwds)
     else:
         indexer = indexer_from_colfile(cf_for_indexing)
     indexer.ds_tol = dstol
