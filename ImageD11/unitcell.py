@@ -276,12 +276,12 @@ class unitcell:
                                "BI": np.linalg.inv(self.B)}
         if name is not None:
             self.name = name
-
+        
         # orix stuff
         self._orix_phase = None
     
     def __repr__(self):
-        if self.name is None:
+        if (not hasattr(self, 'name')) or (self.name is None):
             return "Unitcell" + " | " + str(self.lattice_parameters) + " | " + str(self.symmetry)
         else:
             return str(self.name) + " | " + str(self.lattice_parameters) + " | " + str(self.symmetry)
@@ -480,7 +480,7 @@ class unitcell:
         self.peaks = peaks
         self.limit = dsmax
         return peaks
-
+    
     def ds(self, h):
         """ computes 1/d for this hkl = hgh """
         return math.sqrt(np.dot(h, np.dot(self.gi, h)))  # 1/d or d*
@@ -547,7 +547,7 @@ class unitcell:
         else:
             val = self.anglehkl_cache[key]
         return val
-
+    
     def orient(self, ring1, g1, ring2, g2, verbose=0, crange=-1.):
         """
         Compute an orientation matrix using cell parameters and the indexing
@@ -609,6 +609,17 @@ class unitcell:
             UBlist.append(self.UB)
         # trim to uniq list? What about small distortions...
         self.UBIlist = ubi_equiv(self.UBIlist, UBlist)
+    
+    @classmethod
+    def from_cif(cls, filename, name=None):
+        """Import a unitcell object from a CIF file"""
+        import xfab.structure, xfab.sg
+        o = xfab.structure.build_atomlist()
+        o.CIFread(filename)
+        atomlist = o.atomlist
+        lattice_parameters = atomlist.cell
+        spacegroup = xfab.sg.sg(sgname=atomlist.sgname).no
+        return cls(lattice_parameters, spacegroup, name=name)
     
     @classmethod
     def from_pars(cls, pars):
