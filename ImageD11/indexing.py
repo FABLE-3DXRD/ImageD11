@@ -297,8 +297,8 @@ def indexer_from_colfile_and_ucell(colfile, ucell, **kwds):
     if w is None:
         try:
             w = colfile.parameters.get("wavelength")
-        except ValueError:
-            raise ValueError("Wavelength must be provided either in kwds or colfile.parameters")
+        except KeyError:
+            raise KeyError("Wavelength must be provided either in kwds or colfile.parameters")
 
     gv = np.array((colfile.gx, colfile.gy, colfile.gz), float)
     kwds.update({"unitcell": ucell, "wavelength": float(w), "gv": gv.T})
