@@ -2,20 +2,20 @@ SegmentFrame
 ============
 
 **Description**
-This task segment a single frame from the provided **folder_file_config**  dict information
+This task segments a single frame from the provided **folder_file_config** dict information.
 
 **Inputs**
 
 - **folder_file_config** (dict): A dictionary output of the *InitFolderFileConfig*
-  - *Detector* (str): The detector frelon1, frelon3, or eiger.
-  - *OmegaMotor* (str): The omega motor diffrz, diffry, or diffrx.
-  - *DtyMotor* (str): The dty motor diffty, difftx, or difftz.
+  - *Detector* (str): The detector string to look for in the RAW_DATA masterfile under `{scan}/measurement/{detector}` - e.g. "frelon1", "frelon3", or "eiger".
+  - *OmegaMotor* (str): The omega motor string to look for in the RAW_DATA masterfile under `{scan}/instrument/positioners` - e.g. "diffrz".
+  - *DtyMotor* (str): The dty motor string (unused for regular 3DXRD, but required) to look for in the RAW_DATA masterfile under `{scan}/instrument/positioners` - e.g. "diffty".
   - *RawScanFolderPath*  (str): Path to the raw scan folder, its parent should contain Masterfile, will be checked by this task as well.
   - *AnalysisPath*  (str): Analysis Path, the result of subsequent value will be stored in AnalysisPath/{sample}/{sample}_{dataset}
 
 - **segment_config** (dict): A dictionary containing the following keys:
-  - *BgFilePath* (str): Background Correction File Path a valid path string or None.
-  - *MaskFilePath* (str): Mask File Path a valid path string or None.
+  - *BgFilePath* (str): Background Correction File Path - a valid path string or None.
+  - *MaskFilePath* (str): Mask File Path - a valid path string or None.
   - *Threshold* (int): Zeroing Below Intensity
   - *SmoothSigma* (float): Gaussian Filter Sigma
   - *Bgc* (float): Remove Bg per peak
@@ -37,5 +37,5 @@ This task segment a single frame from the provided **folder_file_config**  dict 
 
 **Usage**
 
-This task uses *choose_frame* function from the file *segmenter_gui_utils.py* ImageD11 library.
+This task uses the *choose_frame* function from `ImageD11.nbGUI.segmenter_gui_utils`.
 It uses our saved omega values (from a file inside analysispath), and the values provided in *folder_file_config*, *segment_config* config.
