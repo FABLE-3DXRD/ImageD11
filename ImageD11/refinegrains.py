@@ -907,12 +907,12 @@ def polarization( tth, eta, eta0=0, factor=1.0 ):
 
     # Inspired by H. Sorensens code in polyxsim
     """
-    rho = np.pi/2.0 + np.radians(eta + eta0)    # Azaroff fig 1.
-    rtth= np.radians(tth)
-    ctth = np.cos(rtth)
-    P0 = 0.5 * (1 + ctth**2)                                # eqn 13
-    Pprime = 0.5 * factor * np.cos(2*rho)*np.sin(rtth)**2   # eqn 14    
-    P = P0 - Pprime                                         # eqn 15
+    rho = numpy.pi/2.0 + numpy.radians(eta + eta0)    # Azaroff fig 1.
+    rtth= numpy.radians(tth)
+    ctth = numpy.cos(rtth)
+    P0 = 0.5 * (1 + ctth**2)                                      # eqn 13
+    Pprime = 0.5 * factor * numpy.cos(2*rho)*numpy.sin(rtth)**2   # eqn 14    
+    P = P0 - Pprime                                               # eqn 15
     return P
 
 
