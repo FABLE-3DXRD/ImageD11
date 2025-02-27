@@ -898,6 +898,24 @@ def lf( tth, eta ):
     return sin_tth*abs( sin_eta )
 
 
+def polarization( tth, eta, eta0=0, factor=1.0 ):
+    """
+    Effect of beam polarisation
+    
+    Kahn, J. Appl. Cryst. (1982) 15, 330-337
+    Azaroff Acta Cryst (1955) 8 701.
+
+    # Inspired by H. Sorensens code in polyxsim
+    """
+    rho = numpy.pi/2.0 + numpy.radians(eta + eta0)    # Azaroff fig 1.
+    rtth= numpy.radians(tth)
+    ctth = numpy.cos(rtth)
+    P0 = 0.5 * (1 + ctth**2)                                      # eqn 13
+    Pprime = 0.5 * factor * numpy.cos(2*rho)*numpy.sin(rtth)**2   # eqn 14    
+    P = P0 - Pprime                                               # eqn 15
+    return P
+
+
 def compute_total_intensity( colfile, indices, tth_range, ntrim = 2, quiet = False ):
     """
     Add up the intensity in colfile for peaks given in indices
