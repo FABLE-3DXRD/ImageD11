@@ -595,7 +595,7 @@ def plot_grain_sinograms(grains, cf, n_grains_to_plot=None):
     if grid_size == 1 & nrows == 1:
         # only 1 grain
         g = grains[0]
-        m = cf.grain_id == 0
+        m = cf.grain_id == g.gid
         axs.scatter(cf.omega[m], cf.dty[m], c=cf.sum_intensity[m], s=2)
         axs.set_title(g.gid)
     else:
