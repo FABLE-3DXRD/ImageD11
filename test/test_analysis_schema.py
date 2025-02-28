@@ -1,11 +1,11 @@
 import os
-import sys
 
 import numpy as np
 import unittest
 
 import ImageD11.parameters
 import ImageD11.unitcell
+
 
 class TestFromDefault(unittest.TestCase):
     def test_from_default(self):
@@ -33,13 +33,14 @@ class TestFromDefault(unittest.TestCase):
                     self.assertTrue(np.allclose(value, new_pars_dict[key]))
                 else:
                     self.assertEqual(value, new_pars_dict[key])
-    
+
     @classmethod
     def tearDownClass(cls):
         """clean up files after being made"""
         os.remove('geometry.par')
         os.remove('pars.json')
         os.remove('CeO2.par')
+
 
 class TestAddPhase(unittest.TestCase):
     def test_add_phase(self):
@@ -54,7 +55,7 @@ class TestAddPhase(unittest.TestCase):
         # now if we import pars.json as a Phases object, can we access the new unitcell?
         phases = ImageD11.unitcell.Phases('pars.json')
         self.assertTrue(np.allclose(phases.unitcells['test_phase'].lattice_parameters, new_ucell.lattice_parameters))
-    
+
     @classmethod
     def tearDownClass(cls):
         """clean up files after being made"""
@@ -62,8 +63,8 @@ class TestAddPhase(unittest.TestCase):
         os.remove('pars.json')
         os.remove('CeO2.par')
         os.remove('test_phase.par')
-        
-        
+
+
 class TestToOldParsFile(unittest.TestCase):
     def test_to_old(self):
         """Test that we can make an old-style parameter file"""
@@ -79,10 +80,30 @@ class TestToOldParsFile(unittest.TestCase):
                     self.assertTrue(np.allclose(value, new_pars_dict[key]))
                 else:
                     self.assertEqual(value, new_pars_dict[key])
-    
+
     @classmethod
     def tearDownClass(cls):
         """clean up files after being made"""
         os.remove('oldpars.par')
 
-    
+
+class TestParsFollowJson(unittest.TestCase):
+    def test(self):
+        # make an old pars file
+        asc = ImageD11.parameters.AnalysisSchema.from_default(detector='eiger')
+        asc.to_old_pars_file('oldpars.par', 'CeO2')
+        # load it in
+        asc = ImageD11.parameters.AnalysisSchema.from_old_pars_file('oldpars.par', phase_name='CeO2')
+        os.mkdir('new_folder')
+        asc.save(os.path.join('new_folder', 'pars.json'))
+        self.assertTrue(os.path.exists(os.path.join('new_folder', 'pars.json')))
+        self.assertTrue(os.path.exists(os.path.join('new_folder', 'geometry.par')))
+        self.assertTrue(os.path.exists(os.path.join('new_folder', 'CeO2.par')))
+
+    @classmethod
+    def tearDownClass(cls):
+        """clean up files after being made"""
+        os.remove(os.path.join('new_folder', 'pars.json'))
+        os.remove(os.path.join('new_folder', 'geometry.par'))
+        os.remove(os.path.join('new_folder', 'CeO2.par'))
+        os.rmdir('new_folder')
