@@ -1092,6 +1092,33 @@ class TensorMap:
         The resulting ctf file can be loaded in MTEX with the command:
         ebsd = EBSD.load(ctf_path)
         Note that no Euler or spatial conversions are needed"""
+        
+        def get_laue_class_number(sgno):
+            import xfab.sglib
+            laue_groups = {
+                ('-1'): 1,
+                ('2/m'): 2,
+                ('mmm'): 3,
+                ('-3'): 4,
+                ('-3m', '-3m1', '-31m'): 5,
+                ('4/m'): 6,
+                ('4/mmm'): 7,
+                ('6/m'): 8,
+                ('6/mmm'): 9,
+                ('m-3'): 10,
+                ('m-3m'): 11
+            }
+            try:
+                sgobj = getattr(xfab.sglib, 'Sg' + str(sgno))('standard')
+            except AttributeError:
+                raise ValueError("Unknown spacegroup number: " + str(sgno))
+            laue_str = sgobj.Laue
+            for laue_group, laue_group_num in laue_groups.items():
+                if laue_str in laue_group:
+                    return laue_group_num
+            raise ValueError("Couldn't get Laue group number for spacegroup " + str(sgno))
+        
+        
         euler_slice = np.degrees(self.euler[z_index, :, :])  # covert to degrees
         phase_slice = self.phase_ids[z_index, :, :] + 1  # unindexed should be 0
 
@@ -1136,10 +1163,10 @@ class TensorMap:
         ]
 
         for phase in self.phases.values():
-            phase_string = "%f;%f;%f\t%f;%f;%f\t%s\t11\t%s" % (
+            phase_string = "%f;%f;%f\t%f;%f;%f\t%s\t%s\t%s" % (
                 phase.lattice_parameters[0], phase.lattice_parameters[1], phase.lattice_parameters[2],
                 phase.lattice_parameters[3], phase.lattice_parameters[4], phase.lattice_parameters[5], phase.name,
-                phase.symmetry)
+                get_laue_class_number(phase.symmetry), phase.symmetry)
             header_lines.extend([phase_string])
 
         header_lines.extend(["Phase\tX\tY\tBands\tError\tEuler1\tEuler2\tEuler3\tMAD\tBC\tBS"])
