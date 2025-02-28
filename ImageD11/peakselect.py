@@ -5,11 +5,11 @@ from __future__ import print_function, division
 Various utility functions for selecting peaks within columnfiles
 """
 
-import numpy as np
+
 from ImageD11.cImageD11 import array_bin
 import ImageD11.unitcell
 import ImageD11.refinegrains
-
+import scipy.ndimage
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -233,3 +233,48 @@ def select_ring_peaks_by_intensity(cf, dstol=0.005, dsmax=None, frac=0.99, B=0.2
     print('Filtered', cfc.nrows, 'peaks from', cf.nrows)
     return cfc
 
+
+def peak_distance_to_mask( colfile, mask, metric='euclidean' ):
+    """
+    Computes the distance from peaks in colfile to masked pixels or detector edge
+    
+    colfile needs s_raw + f_raw for peak positions
+    mask = here we assume 1 == masked, 0 == active
+    if metric is "euclidean" -> scipy.ndimage.distance_transform_edt
+              in "taxicab"/"chessboard" -> scipy.ndimage.distance_transform_cdt
+
+    returns: column of the distance of each peak in colfile to a masked pixel
+    """
+    if np.mean(mask) > 0.5:
+        print('Is your mask inverted??')
+    m = 1-mask
+    m[0] = 0   # Include edges
+    m[-1] = 0
+    m[:,0] = 0
+    m[:,-1] = 0
+    if metric == 'euclidean':
+        distance_image = scipy.ndimage.distance_transform_edt( m )
+    else:
+        distance_image = scipy.ndimage.distance_transform_cdt( m, metric )
+    si = np.round( colfile['s_raw'] ).astype(int).clip( 0, distance_image.shape[0] - 1 )
+    fi = np.round( colfile['f_raw'] ).astype(int).clip( 0, distance_image.shape[0] - 1 )
+    return distance_image[ si, fi ]
+
+
+def filter_peaks_by_distance_to_mask( colfile, mask, min_distance=10, metric='euclidean' ):
+    """
+    Computes the distance from peaks in colfile to masked pixels or detector 
+    edge. Calls peak_distance_to_mask for you and then filters.
+
+    colfile needs s_raw + f_raw for peak positions
+    mask = here we assume 1 == masked, 0 == active
+    if metric is "euclidean" -> scipy.ndimage.distance_transform_edt
+              in "taxicab"/"chessboard" -> scipy.ndimage.distance_transform_cdt
+    min_distance = cut off for removing peaks (distance > min_distance)
+       Should be a larger than typical widths
+       e.g. 10 pixels for sharp peaks
+
+    returns: copy of colfile with peaks close to a mask removed
+    """
+    dist = peak_distance_to_mask( colfile, mask, metric=metric )
+    return colfile.copyrows( dist > min_distance )
