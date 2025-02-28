@@ -285,6 +285,15 @@ class columnfile(object):
             fout.write(format_str % tuple( [col[i] for col in self.__data] ) )
         fout.close()
 
+    def write_hdf5(self, filename):
+        with h5py.File(filename, "w") as f:
+            meta_group = f.create_group("parameters")
+            for key, value in self.parameters.get_parameters().items():
+                meta_group.attrs[key] = value
+            data_group = f.create_group("columndata")
+            for title, col in zip(self.titles, self.bigarray):
+                data_group.create_dataset(title, data=col)
+
     def readfile(self, filename):
         """
         Reads in an ascii columned file
@@ -340,7 +349,22 @@ class columnfile(object):
         self.parameters.dumbtypecheck()
         self.set_attributes()
 
+    @classmethod
+    def read_hdf5(cls, filename):
+        with h5py.File(filename, "r") as f:
+            parameters_data = {k: v for k, v in f["parameters"].attrs.items()}
+            parameters_obj = parameters.parameters(**parameters_data)
+            data_group = f["columndata"]
+            titles = list(data_group.keys())
+            bigarray = [data_group[title][:] for title in titles]
 
+            # Create columnfile instance
+            colfile = cls(filename=filename, new=True)
+            colfile.parameters = parameters_obj
+            colfile.titles = titles
+            colfile.set_bigarray(bigarray)
+        return colfile
+    
     def filter(self, mask):
         """
         mask is an nrows long array of true/false
