@@ -422,32 +422,58 @@ class DataSet:
         logging.info("imported omega/dty")
 
     def guess_shape(self):
-        """Guess the shape if it was not given"""
-        npts = np.sum(self.frames_per_scan)
-        if len(self.scans) == 1:  # probably fscan2d or f2scan
-            with h5py.File(self.masterfile, "r") as hin:
-                s = hin[self.scans[0]]
-                title = s["title"].asstr()[()]
-                print("Scan title", title)
-                if title.split()[0] == "fscan2d":
-                    s0 = s["instrument/fscan_parameters/slow_npoints"][()]
-                    s1 = s["instrument/fscan_parameters/fast_npoints"][()]
-                    file_nums = np.arange(s0 * s1).reshape((s0, s1))
-                    # slice notation means last frame+1 to be inclusive
-                    self.scans = [
-                        "%s::[%d:%d]" % (self.scans[0], row[0], row[-1] + 1)
-                        for row in file_nums
-                    ]
-                elif title.split()[0] == "f2scan":
-                    # good luck ? Assuming rotation was the inner loop here:
-                    step = s["instrument/fscan_parameters/step_size"][()]
-                    s1 = int(np.round(360 / step))
-                    s0 = npts // s1
-                    logging.warning("Dataset might need to be reshaped")
-                else:
-                    s0 = 1
-                    s1 = npts
-        elif len(self.scans) > 1:
+        npts = np.sum( self.frames_per_scan )
+        if os.path.exists(self.masterfile):
+            # strip [i::j] from self.scans if already there:
+            seen = set()
+            scans = []
+            snames = [ s.split('::')[0] for s in self.scans ]
+            for s in snames:
+                if s not in seen:
+                    seen.add( s )
+                    scans.append( s )
+            # number of turns
+            rotations = []
+            for i, scan in enumerate(scans):
+                with h5py.File(self.masterfile, "r") as hin:
+                    s = hin[scan]
+                    title = s["title"].asstr()[()]
+                    # print("Scan title", title)
+                    if title.split()[0] == "fscan2d":
+                        s0 = s["instrument/fscan_parameters/slow_npoints"][()]
+                        s1 = s["instrument/fscan_parameters/fast_npoints"][()]
+                        if s0 > 1:
+                            file_nums = np.arange(s0 * s1).reshape((s0, s1))
+                            # slice notation means last frame+1 to be inclusive
+                            rotations += [
+                                "%s::[%d:%d]" % (scan, row[0], row[-1] + 1)
+                                for row in file_nums
+                                ]
+                        else:
+                            rotations += [ scan, ]
+                    elif title.split()[0] == "f2scan":
+                        # good luck ? Assuming rotation was the inner loop here:
+                        step = s["instrument/fscan_parameters/step_size"][()]
+                        s1 = int(np.round(360 / step))
+                        s0 = self.frames_per_scan[i] // s1
+                        # logging.warning("Dataset might need to be reshaped")
+                        if s0 > 1:
+                            file_nums = np.arange( s0 * s1 ).reshape((s0, s1))
+                            if (s1 * s0) != self.frames_per_scan[i]:
+                                logging.warning( 'scan %s problem in guessing f2scan shape s1 = %d s0 = %s nframes = %d'%(
+                                    scan, s1, s0, self.frames_per_scan[i] ) )
+                            rotations += [
+                                "%s::[%d:%d]" % (scan, row[0], row[-1] + 1)
+                                for row in file_nums
+                                ]
+                        else:
+                            rotations += [ scan, ]
+                    else:
+                        s0 = 1
+                        s1 = npts
+                        rotations.append( scan )
+            self.scans = rotations
+        if len(self.scans) > 1:
             s0 = len(self.scans)
             s1 = npts // s0
         else:
@@ -456,14 +482,14 @@ class DataSet:
             s1 = 0
         self.shape = s0, s1
         if np.prod(self.shape) != npts:
-            print("Warning: irregular scan - might be bugs in here")
-            print(npts, len(self.scans))
+                print("Warning: irregular scan - might be bugs in here")
+                print(npts, len(self.scans))
         self.omega = np.array(self.omega).reshape(self.shape)
         self.dty = np.array(self.dty).reshape(self.shape)
         logging.info(
-            "sinogram shape = ( %d , %d ) imageshape = ( %d , %d)"
-            % (self.shape[0], self.shape[1], self.imageshape[0], self.imageshape[1])
-        )
+                "sinogram shape = ( %d , %d ) imageshape = ( %d , %d)"
+                % (self.shape[0], self.shape[1], self.imageshape[0], self.imageshape[1])
+            )
 
     def guessbins(self):
         ny, nomega = self.shape
