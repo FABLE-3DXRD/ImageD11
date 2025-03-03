@@ -74,6 +74,7 @@ INTS = [
     "Min_s",
     "Max_s",
     "spot3d_id",
+    "spot4d_id",
     "h", "k", "l",
     "onfirst", "onlast", "labels",
     "labels",
