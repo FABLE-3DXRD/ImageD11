@@ -69,17 +69,17 @@ def do3dmerge(cf_2d_dict, n, omega, radius=1.6):
     for i in range(1, len(n)):  # match these to previous
         flo = order[i - 1]
         fhi = order[i]
-        tlo = trees[flo]
-        thi = trees[fhi]
         # 1.6 is how close centers should be to overlap
         lol = trees[flo].query_ball_tree(trees[fhi], r=radius)
         for srcpk, destpks in enumerate(lol):  # dest is strictly higher than src
             for destpk in destpks:
                 krow.append(srcpk + p[flo])
                 kcol.append(destpk + p[fhi])
+        
     csr = scipy.sparse.csr_matrix(
         (np.ones(len(krow), dtype=bool), (kcol, krow)), shape=(len(o), len(o))
     )
+    
     # connected components == find all overlapping peaks
     ncomp, labels = scipy.sparse.csgraph.connected_components(
         csr, directed=False, return_labels=True
@@ -107,6 +107,115 @@ def do3dmerge(cf_2d_dict, n, omega, radius=1.6):
 
     cf_2d_dict["spot3d_id"] = labels
     return cf_3d_dict
+
+
+def do4dmerge(cf_2d_dict, n, omega, dty, ostep, ystep, radius=1.6):
+    """
+    Merges the peaks in cf_2d_dict if the center is within radius pixels
+    n = the number of peaks on each frame in cf_2d_dict
+    omega = the rotation motor position for each frame
+    dty = the dty motor position for each frame
+
+    returns cf_4d_dict = merged peaks, as well as the input
+    """
+    s = cf_2d_dict["s_raw"]
+    f = cf_2d_dict["f_raw"]
+    o = cf_2d_dict["o_raw"]
+    d = cf_2d_dict["dty"]
+    I = cf_2d_dict["s_I"]
+    s1 = cf_2d_dict["s_1"]
+
+    print("Making 4D merge")
+
+    # pointers to frames in s,f,o,d,I,n,s1
+    p = np.cumsum(
+        np.concatenate(
+            (
+                [
+                    0,
+                ],
+                n,
+            )
+        )
+    )
+    # make a KDTree for each frame (wastes a bit of memory, but easier for sorting later)
+    trees = [
+        scipy.spatial.cKDTree(np.transpose((s[p[i] : p[i + 1]], f[p[i] : p[i + 1]])))
+        for i in range(len(n))
+    ]
+    print("made trees")
+    # sys.stdout.flush()
+    # because interlaced might not be in order
+    
+    # make tree of (omega, dty)
+    
+    frames_dty = dty.ravel()
+    frames_omega = omega.ravel() % 360
+    om_dty_tree = scipy.spatial.cKDTree(np.transpose((frames_dty, frames_omega)))
+    
+    # peaks that overlap, k : 0 -> npks == len(s|f|o|d)
+    # diagonal
+    krow = list(range(len(o)))
+    kcol = list(range(len(o)))
+    # iterate over flat list of frame numbers starting from 1 (not 0)
+    for i in range(1, len(n)):
+        # find the tree point with 
+        dist, idx_omlow = om_dty_tree.query((frames_dty[i], frames_omega[i] - ostep))
+        if dist < ostep:
+            flo_om = idx_omlow
+            fhi_om = i
+            # 1.6 is how close centers should be to overlap
+            lol = trees[flo_om].query_ball_tree(trees[fhi_om], r=radius)
+            for srcpk, destpks in enumerate(lol):  # dest is strictly higher than src
+                for destpk in destpks:
+                    krow.append(srcpk + p[flo_om])
+                    kcol.append(destpk + p[fhi_om])
+        # over dty
+        dist, idx_dtylow = om_dty_tree.query((frames_dty[i] - ystep, frames_omega[i]))
+        
+        if dist < ystep:
+            flo_dty = idx_dtylow
+            fhi_dty = i
+            lol = trees[flo_dty].query_ball_tree(trees[fhi_dty], r=radius)
+            for srcpk, destpks in enumerate(lol):  # dest is strictly higher than src
+                for destpk in destpks:
+                    krow.append(srcpk + p[flo_dty])
+                    kcol.append(destpk + p[fhi_dty])
+    
+    csr = scipy.sparse.csr_matrix(
+        (np.ones(len(krow), dtype=bool), (kcol, krow)), shape=(len(o), len(o))
+    )
+    
+    # connected components == find all overlapping peaks
+    ncomp, labels = scipy.sparse.csgraph.connected_components(
+        csr, directed=False, return_labels=True
+    )
+    print("connected components")
+    # sys.stdout.flush()
+    # Now merge the properties
+    npkmerged = np.bincount(labels, minlength=ncomp)  # number of peaks that were merged
+    s4d1 = np.bincount(labels, minlength=ncomp, weights=s1)  # s_1
+    s4dI = np.bincount(labels, minlength=ncomp, weights=I)  # s_I
+    ssI = np.bincount(labels, minlength=ncomp, weights=I * s)  # s_sI
+    sfI = np.bincount(labels, minlength=ncomp, weights=I * f)  # s_sI
+    soI = np.bincount(labels, minlength=ncomp, weights=I * o)  # s_sI
+    sdI = np.bincount(labels, minlength=ncomp, weights=I * d)  # s_sI
+    s4d = ssI / s4dI
+    f4d = sfI / s4dI
+    o4d = soI / s4dI
+    d4d = sdI / s4dI
+
+    cf_4d_dict = {
+        "s_raw": s4d,
+        "f_raw": f4d,
+        "omega": o4d,
+        "dty": d4d,
+        "sum_intensity": s4dI,
+        "Number_of_pixels": s4d1,
+    }
+
+    cf_2d_dict["spot4d_id"] = labels
+    return cf_4d_dict
 
 
 class worker:
@@ -148,13 +257,15 @@ class worker:
             if isinstance(flatfile, np.ndarray):
                 self.flat = flatfile
             else:
-                self.flat = fabio.open(flatfile).data
+                self.flat = fabio.open(flatfile).data.astype(np.float32)
+            # normalise flat
+            self.flat /= self.flat.mean()
 
         if darkfile is not None:
-            if isinstance(flatfile, np.ndarray):
-                self.flat = flatfile
+            if isinstance(darkfile, np.ndarray):
+                self.dark = darkfile
             else:
-                self.flat = fabio.open(flatfile).data
+                self.dark = fabio.open(darkfile).data.astype(np.float32)
 
         if bgfile is not None:
             if isinstance(bgfile, np.ndarray):
@@ -191,9 +302,9 @@ class worker:
         """
         cor = img.astype(np.float32)
         if self.dark is not None:
-            np.subtract(img, self.dark, img)
+            np.subtract(cor, self.dark, cor)
         if self.flat is not None:
-            np.divide(img, self.flat, img)
+            np.divide(img, self.flat, cor)
         return cor
 
     def bgsub(self, img):
@@ -357,6 +468,7 @@ PKSAVE = [
     "m_so",
     "m_fo",
 ]
+
 PKCOL = [getattr(ImageD11.cImageD11, p) for p in PKSAVE]
 
 def segment_master_file(
@@ -396,6 +508,7 @@ def peaks_list_to_dict(all_frames_peaks_list):
     for peak_index, properties in all_frames_peaks_list:
         for title, column_index in zip(PKSAVE, PKCOL):
             peaks_2d_dict[title].extend(properties[:, column_index])
+
         num_peaks.append(properties.shape[0])
     
     # Convert lists to numpy arrays
@@ -415,33 +528,87 @@ def segment_dataset(
     Process a dataset by collecting all 2d peaks (for frames),
     merge them,
     and performing spatial correction (detector plane correction)
-    Returns columnfile_2d, and columnfile_3d
+    Performs 4D merge if you give more than one scan number
+    Returns columnfile_2d, columnfile_3d (and columnfile_4d if relevant)
     """
     # Step 1: collect all peaks
-    all_frames_peaks_list = segment_master_file(
-        dataset.masterfile,
-        "%s/measurement/%s"%(dataset.scans[scan_number], dataset.detector),
-        dataset.omega[scan_number],
-        worker_args,
-        num_cpus,
-        **process_map_kwargs
-    )
+    # see if scan_number is an iterable
+    do_4d = False
+    try:
+        iterator = iter(scan_number)
+    except TypeError:
+        # scan_number not iterable
+        all_frames_peaks_list = segment_master_file(
+            dataset.masterfile,
+            "%s/measurement/%s"%(dataset.scans[scan_number], dataset.detector),
+            dataset.omega[scan_number],
+            worker_args,
+            num_cpus,
+            **process_map_kwargs
+        )
+        
+        # Step 2: merge collected peaks data into dict
+        peaks_2d_dict, num_peaks = peaks_list_to_dict(
+            all_frames_peaks_list
+        )
+        
+    else:
+        # scan number is iterable
+        do_4d = True
+        # for loop over scan numbers
+        # concatenate dicts together
+        from collections import defaultdict
+        merged_dict = defaultdict(list)
+        
+        num_peaks_all = []
+        
+        import time
+        for sn in scan_number:
+            # get all_frames_peaks_list
 
-    # Step 2: merge collected peaks data into dict
-    peaks_2d_dict, num_peaks = peaks_list_to_dict(
-        all_frames_peaks_list
-    )
+            all_frames_peaks_list = segment_master_file(
+            dataset.masterfile,
+            "%s/measurement/%s"%(dataset.scans[sn], dataset.detector),
+            dataset.omega[sn],
+            worker_args,
+            num_cpus,
+            **process_map_kwargs
+            )
+            
+            peaks_2d_dict, num_peaks = peaks_list_to_dict(all_frames_peaks_list)
+
+            peaks_2d_dict["dty"] = np.full_like(peaks_2d_dict["s_raw"], dataset.dty[sn][0])
+            for key, arr in peaks_2d_dict.items():
+                merged_dict[key].append(arr)
+                
+            num_peaks_all.extend(num_peaks)
+
+        peaks_2d_dict = {key: np.concatenate(arrs) for key, arrs in merged_dict.items()}
+        num_peaks = num_peaks_all
 
     # Step 3: Perform 3d merge
-    omega_angles = dataset.omega[scan_number]
-    peak_3d_dict = do3dmerge(peaks_2d_dict, num_peaks, omega_angles)
+    if not do_4d:
+        omega_angles = dataset.omega[scan_number]
+        peak_3d_dict = do3dmerge(peaks_2d_dict, num_peaks, omega_angles)
+    
+    # Step 4: Optionally perform 4d merge
+    if do_4d:
+        omega_angles = dataset.omega[scan_number]
+        dty_values = dataset.dty[scan_number]
+        peak_4d_dict = do4dmerge(peaks_2d_dict, num_peaks, omega_angles, dty_values, dataset.ostep, dataset.ystep)
 
     # Step 4: Spatial Correction
     peaks_2d_dict["omega"] = peaks_2d_dict["o_raw"]
     peaks_2d_dict.pop("o_raw")
+    peaks_2d_dict["sum_intensity"] = peaks_2d_dict["s_I"].copy()
+    peaks_2d_dict["Number_of_pixels"] = peaks_2d_dict["s_1"].copy()
     columnfile_2d = dataset.get_colfile_from_peaks_dict(peaks_2d_dict)
-
-    peak_3d_dict["spot3d_id"] = np.arange(len(peak_3d_dict["s_raw"]))
-    columnfile_3d = dataset.get_colfile_from_peaks_dict(peak_3d_dict)
-
-    return columnfile_2d, columnfile_3d
+    
+    if do_4d:
+        peak_4d_dict["spot4d_id"] = np.arange(len(peak_4d_dict["s_raw"]))
+        columnfile_4d = dataset.get_colfile_from_peaks_dict(peak_4d_dict)
+        return columnfile_2d, columnfile_4d
+    else:
+        peak_3d_dict["spot3d_id"] = np.arange(len(peak_3d_dict["s_raw"]))
+        columnfile_3d = dataset.get_colfile_from_peaks_dict(peak_3d_dict)
+        return columnfile_2d, columnfile_3d
