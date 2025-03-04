@@ -499,6 +499,147 @@ def test_FeAu_JADB_pbp():
     nb_path = os.path.join(scan_nb_prefix, '7_stack_layers.ipynb')
     notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
 
+    
+def test_FeAu_f2scan_JADB_pbp():
+    # where is the data?
+    dataroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/RAW_DATA"
+    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/PROCESSED_DATA/20250305_JADB"
+    PYTHONPATH = sys.path[0]
+    # find layers to process
+    sample = "FeAu_No1_190um"
+    first_dataset = "2um_redo_z_0"
+    dset_prefix = "2um_redo_z"
+    skips_dict = {sample: []}
+    sample_list = [sample]
+    samples_dict = find_datasets_to_process(dataroot, skips_dict, dset_prefix, sample_list)
+
+    nb_params = [
+        ('0_segment_and_label.ipynb',
+         {'maskfile': "/data/id11/nanoscope/Eiger/eiger_mask_E-08-0144_20240205.edf",
+          'e2dxfile': "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/pars/e2dx_E-08-0144_20240205.edf",
+          'e2dyfile': "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/pars/e2dy_E-08-0144_20240205.edf",
+          'detector': 'eiger',
+          'omegamotor': 'owisRz_cen360',
+          'dtymotor': 'diffty',
+          'options': {'cut': 1, 'pixels_in_spot': 3, 'howmany': 100000},
+          },
+         ),
+        ('pbp_1_indexing.ipynb',
+         {'par_file': "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/pars/pars.json",
+          'phase_str': 'Fe_bcc',
+          'minpkint': 5,
+          'hkl_tol': 0.05,
+          'fpks': 0.9,
+          'ds_tol': 0.004,
+          'etacut': 0.1,
+          'ifrac': 5e-3,
+          'y0': 14.30168621868912,
+          'symmetry': 'cubic',
+          'foridx': [0, 1, 3, 5, 7],
+          'forgen': [1, 5, 7],
+          'uniqcut': 0.85,
+          'use_cluster': False,
+          }
+         ),
+        ('pbp_1_indexing.ipynb',
+         {'par_file': "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/pars/pars.json",
+          'phase_str': 'Au_fcc',
+          'minpkint': 5,
+          'hkl_tol': 0.05,
+          'fpks': 0.9,
+          'ds_tol': 0.004,
+          'etacut': 0.1,
+          'ifrac': 5e-3,
+          'y0': 14.30168621868912,
+          'symmetry': 'cubic',
+          'foridx': [0, 1, 2, 3, 4],
+          'forgen': [0, 1, 4],
+          'uniqcut': 0.85,
+          'use_cluster': False,
+          }
+         ),
+        ('pbp_2_visualise.ipynb',
+         {'phase_str': 'Fe_bcc',
+          'min_unique': 25,
+          }
+         ),
+        ('pbp_2_visualise.ipynb',
+         {'phase_str': 'Au_fcc',
+          'min_unique': 25,
+          }
+         ),
+        ('pbp_3_refinement.ipynb',
+         {'phase_str': 'Fe_bcc',
+          'min_unique': 22,
+          'manual_threshold': None,
+          'y0': 14.30168621868912,
+          'hkl_tol_origins': 0.075,
+          'hkl_tol_refine': 0.15,
+          'hkl_tol_refine_merged': 0.075,
+          'ds_tol': 0.006,
+          'ifrac': 0,
+          'rings_to_refine': None,
+          'set_mask_from_input': True,
+          'use_cluster': False,
+          }
+         ),
+        ('pbp_3_refinement.ipynb',
+         {'phase_str': 'Au_fcc',
+          'min_unique': 22,
+          'manual_threshold': None,
+          'y0': 14.30168621868912,
+          'hkl_tol_origins': 0.075,
+          'hkl_tol_refine': 0.125,
+          'hkl_tol_refine_merged': 0.075,
+          'ds_tol': 0.006,
+          'ifrac': 0,
+          'rings_to_refine': [0, 2, 3, 4, 5, 6, 7, 8],
+          'set_mask_from_input': True,
+          'use_cluster': False,
+          }
+         ),
+        ('4_visualise.ipynb',
+         {'phase_str': 'Fe_bcc',
+          'min_unique': 120,
+          }
+         ),
+        ('4_visualise.ipynb',
+         {'phase_str': 'Au_fcc',
+          'min_unique': 120,
+          }
+         ),
+        ('5_combine_phases.ipynb',
+         {'phase_strs': ['Fe_bcc', 'Au_fcc'],
+          'combine_refined': True,
+          }
+         ),
+    ]
+
+    notebooks_to_execute = prepare_notebooks_for_datasets(samples_dict,
+                                                          nb_params,
+                                                          dataroot,
+                                                          analysisroot,
+                                                          PYTHONPATH=PYTHONPATH,
+                                                          notebook_parent_dir=scan_nb_prefix)
+
+    for nb_path in notebooks_to_execute:
+        notebook_exec_pmill(nb_path, nb_path, None)
+
+    # now run the final notebook to merge slices together
+    # work out the path to the first dataset
+    dset_path = os.path.join(analysisroot, sample, f'{sample}_{first_dataset}', f'{sample}_{first_dataset}_dataset.h5')
+    nb_param = {'PYTHONPATH': PYTHONPATH,  # 7_stack_layers.ipynb
+                'dset_path': dset_path,
+                'dset_prefix': dset_prefix,
+                'stack_combined': True,
+                'stack_refined': True,
+                'zstep': 50.0,
+                }
+
+    nb_path = os.path.join(scan_nb_prefix, '7_stack_layers.ipynb')
+    notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
+    
+    
 
 def test_FeAu_JADB_bb():
     # where is the data?
@@ -797,6 +938,7 @@ if __name__ == '__main__':
     # test_pbp_route()
     # test_FeAu_JADB_tomo()
     # test_FeAu_JADB_pbp()
-    test_FeAu_JADB_bb()
-    test_FeAu_JADB_bb_grid()
-    test_FeAu_JADB_bb_friedel()
+    test_FeAu_f2scan_JADB_pbp()
+    # test_FeAu_JADB_bb()
+    # test_FeAu_JADB_bb_grid()
+    # test_FeAu_JADB_bb_friedel()
