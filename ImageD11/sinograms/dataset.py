@@ -622,7 +622,7 @@ class DataSet:
         hint: if you want to return a constant, use this:
         ref_value_func=lambda x: 1e5
         """
-        self.monitor = self.get_monitor()
+        self.monitor = self.get_monitor(name=name)
         self.monitor_ref = ref_value_func(self.monitor)
         
         self.reset_peaks_cache()
