@@ -144,10 +144,6 @@ misori_cubic = """computes the trace of the smallest misorientation
           xzy   yzx   zyx
 Beware : work in progress. Which point group is this?
 """
-misori_cubic_pairs = """Computes the dissimilarity matrix to use for clustering
-of orientations. Fills in an upper triangular matrix that you can try
-to pass to scipy.cluster routines
-"""
 misori_monoclinic = """assumes a unique b axis and only checks
 the flip of b -> -b
 Not sure about the point group here. Is is 2/m  ??
@@ -170,8 +166,7 @@ misori_tetragonal = """computes the trace of the smallest misorientation
  Beware: work in progress
 """
 overlaps = """determines which of (row1,col1,labels1) and (row2,col2,labels2)
-are overlapped. 
-   
+are overlapped.
 """
 put_incr32 = """does the simple loop : data[ind] += vals
 not sure why this isn't in numpy
@@ -322,7 +317,6 @@ __all__ = [
     "make_clean_mask",
     "mask_to_coo",
     "misori_cubic",
-    "misori_cubic_pairs",
     "misori_monoclinic",
     "misori_orthorhombic",
     "misori_tetragonal",
