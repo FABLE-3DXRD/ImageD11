@@ -1,6 +1,6 @@
 
 from __future__ import print_function
-from ImageD11.cImageD11 import misori_cubic, misori_cubic_pairs, \
+from ImageD11.cImageD11 import misori_cubic, \
     misori_orthorhombic, misori_tetragonal, misori_monoclinic
 
 import xfab.symmetry
@@ -176,22 +176,6 @@ class test_random_orientations( unittest.TestCase ):
         if self.DOBENCH:
             print("C %d pairs in %f s,  %f s per pair"%(
                 NROT*NROT*2, t1-t0, (t1-t0)/NROT))
-
-    def test_cubic_pairmat(self):
-        N = 500
-        U = make_random_orientations( N )
-        m0 = []
-        t0 = timer()
-        for i in range(N):
-            for j in range(i+1,N):
-                m0.append( misori_cubic( U[i], U[j] ) )
-        t1 = timer()
-        m1 = np.zeros( len(m0), float )
-        misori_cubic_pairs( U, m1 )
-        t2 = timer()
-        if self.DOBENCH:
-            print( "time for distance matrix",t1-t0, t2-t1)
-        self.assertTrue( np.allclose( m0, m1 ) )
 
 
 if __name__=="__main__":

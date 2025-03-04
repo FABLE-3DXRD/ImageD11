@@ -287,9 +287,7 @@ interface
         integer, intent(hide), depend(i) :: nnz = shape( i, 0)
         real th
         integer, intent(inout), dimension(nnz) :: lbl
-	! nested brackets no longer accepted numpy/f2py glitch
-        !integer, intent(inout), dimension((ni+2)*(nj+2)) :: Z 
-	integer, intent(inout), dimension(ni*nj+2*ni+2*nj+4) :: Z
+        integer, intent(inout), dimension(ni*nj+2*ni+2*nj+4) :: Z
         integer :: ni, nj
         ! Returns
         integer :: sparse_connectedpixels_splat
@@ -387,15 +385,17 @@ interface
         threadsafe
     end function compress_duplicates
 
-    function coverlaps( row1, col1, labels1, nnz1, row2, col2, labels2, nnz2, mat, npk1, npk2, results)
-!DOC overlaps determines which of (row1,col1,labels1) and (row2,col2,labels2) 
-!DOC are overlapped. 
-!DOC    
+    function coverlaps( row1, col1, labels1, nnz1, &
+                        row2, col2, labels2, &
+                        nnz2, mat, npk1, npk2, results)
+!DOC overlaps determines which of (row1,col1,labels1) and (row2,col2,labels2)
+!DOC are overlapped.
+!DOC
         intent(c) coverlaps
         intent(c)
         integer(kind=-2), dimension(nnz1), intent(c) :: row1, col1
         integer, intent(hide), depend(row1) :: nnz1 = shape(row1,0)
-        integer(kind=-2), dimension(nnz2), intent(c) :: row2, col2 
+        integer(kind=-2), dimension(nnz2), intent(c) :: row2, col2
         integer, intent(hide), depend(row2) :: nnz2 = shape(row2,0)
         integer, dimension(nnz1), intent(c) :: labels1
         integer, dimension(nnz2), intent(c) :: labels2
@@ -699,19 +699,6 @@ interface
         double precision :: misori_monoclinic
         threadsafe
     end function misori_monoclinic
-
-    subroutine misori_cubic_pairs( u, dist, n)
-!DOC misori_cubic_pairs Computes the dissimilarity matrix to use for clustering
-!DOC of orientations. Fills in an upper triangular matrix that you can try
-!DOC to pass to scipy.cluster routines
-        intent(c) misori_cubic_pairs
-        intent(c)
-        double precision, intent(in) :: u(n,3,3)
-        integer, intent( hidden ), depend(u) :: n
-        !double precision, intent(inout) :: dist( (n*(n-1)/2) )
-	double precision, intent(inout) :: dist( n*(n-1)/2 )
-        ! NOT threadsafe
-    end subroutine misori_cubic_pairs
 
     function count_shared( pi, ni, pj, nj )
 !DOC count_shared takes two sorted arrays in pi and pj and counts
