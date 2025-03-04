@@ -875,7 +875,7 @@ double misori_monoclinic(vec u1[3], vec u2[3]) {
         intent(c)
         double precision, intent(in) :: u(n,3,3)
         integer, intent( hidden ), depend(u) :: n
-        double precision, intent(inout) :: dist( (n*(n-1)/2) )
+        double precision, intent(inout) :: dist( n*(n-1)/2 )
         ! NOT threadsafe
     end subroutine misori_cubic_pairs
 F2PY_WRAPPER_END */

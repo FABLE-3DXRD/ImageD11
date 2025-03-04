@@ -14,58 +14,58 @@ interface
 usercode '''
 /* This runs inside the init part of the module as it is after interface */
 #define str(x) (#x)
-PyDict_SetItemString(d,str(s_1)    ,PyInt_FromLong(s_1));
-PyDict_SetItemString(d,str(s_I)    ,PyInt_FromLong(s_I));
-PyDict_SetItemString(d,str(s_I2)   ,PyInt_FromLong(s_I2));
-PyDict_SetItemString(d,str(s_fI)   ,PyInt_FromLong(s_fI));
-PyDict_SetItemString(d,str(s_ffI)  ,PyInt_FromLong(s_ffI));
-PyDict_SetItemString(d,str(s_sI)   ,PyInt_FromLong(s_sI));
-PyDict_SetItemString(d,str(s_ssI)  ,PyInt_FromLong(s_ssI));
-PyDict_SetItemString(d,str(s_sfI)  ,PyInt_FromLong(s_sfI));
-PyDict_SetItemString(d,str(s_oI)   ,PyInt_FromLong(s_oI));
-PyDict_SetItemString(d,str(s_ooI)  ,PyInt_FromLong(s_ooI));
-PyDict_SetItemString(d,str(s_soI)  ,PyInt_FromLong(s_soI));
-PyDict_SetItemString(d,str(s_foI)  ,PyInt_FromLong(s_foI));
-PyDict_SetItemString(d,str(mx_I)   ,PyInt_FromLong(mx_I));
-PyDict_SetItemString(d,str(mx_I_f) ,PyInt_FromLong(mx_I_f));
-PyDict_SetItemString(d,str(mx_I_s) ,PyInt_FromLong(mx_I_s));
-PyDict_SetItemString(d,str(mx_I_o) ,PyInt_FromLong(mx_I_o));
-PyDict_SetItemString(d,str(bb_mx_f),PyInt_FromLong(bb_mx_f));
-PyDict_SetItemString(d,str(bb_mx_s),PyInt_FromLong(bb_mx_s));
-PyDict_SetItemString(d,str(bb_mx_o),PyInt_FromLong(bb_mx_o));
-PyDict_SetItemString(d,str(bb_mn_f),PyInt_FromLong(bb_mn_f));
-PyDict_SetItemString(d,str(bb_mn_s),PyInt_FromLong(bb_mn_s));
-PyDict_SetItemString(d,str(bb_mn_o),PyInt_FromLong(bb_mn_o));
+PyDict_SetItemString(d,str(s_1)    ,PyLong_FromLong(s_1));
+PyDict_SetItemString(d,str(s_I)    ,PyLong_FromLong(s_I));
+PyDict_SetItemString(d,str(s_I2)   ,PyLong_FromLong(s_I2));
+PyDict_SetItemString(d,str(s_fI)   ,PyLong_FromLong(s_fI));
+PyDict_SetItemString(d,str(s_ffI)  ,PyLong_FromLong(s_ffI));
+PyDict_SetItemString(d,str(s_sI)   ,PyLong_FromLong(s_sI));
+PyDict_SetItemString(d,str(s_ssI)  ,PyLong_FromLong(s_ssI));
+PyDict_SetItemString(d,str(s_sfI)  ,PyLong_FromLong(s_sfI));
+PyDict_SetItemString(d,str(s_oI)   ,PyLong_FromLong(s_oI));
+PyDict_SetItemString(d,str(s_ooI)  ,PyLong_FromLong(s_ooI));
+PyDict_SetItemString(d,str(s_soI)  ,PyLong_FromLong(s_soI));
+PyDict_SetItemString(d,str(s_foI)  ,PyLong_FromLong(s_foI));
+PyDict_SetItemString(d,str(mx_I)   ,PyLong_FromLong(mx_I));
+PyDict_SetItemString(d,str(mx_I_f) ,PyLong_FromLong(mx_I_f));
+PyDict_SetItemString(d,str(mx_I_s) ,PyLong_FromLong(mx_I_s));
+PyDict_SetItemString(d,str(mx_I_o) ,PyLong_FromLong(mx_I_o));
+PyDict_SetItemString(d,str(bb_mx_f),PyLong_FromLong(bb_mx_f));
+PyDict_SetItemString(d,str(bb_mx_s),PyLong_FromLong(bb_mx_s));
+PyDict_SetItemString(d,str(bb_mx_o),PyLong_FromLong(bb_mx_o));
+PyDict_SetItemString(d,str(bb_mn_f),PyLong_FromLong(bb_mn_f));
+PyDict_SetItemString(d,str(bb_mn_s),PyLong_FromLong(bb_mn_s));
+PyDict_SetItemString(d,str(bb_mn_o),PyLong_FromLong(bb_mn_o));
 
-PyDict_SetItemString(d,str(avg_i),PyInt_FromLong(avg_i));
-PyDict_SetItemString(d,str(f_raw),PyInt_FromLong(f_raw));
-PyDict_SetItemString(d,str(s_raw),PyInt_FromLong(s_raw));
-PyDict_SetItemString(d,str(f_cen),PyInt_FromLong(f_cen));
-PyDict_SetItemString(d,str(s_cen),PyInt_FromLong(s_cen));
-PyDict_SetItemString(d,str(o_raw),PyInt_FromLong(o_raw));
-PyDict_SetItemString(d,str(m_ff),PyInt_FromLong(m_ff));
-PyDict_SetItemString(d,str(m_ss),PyInt_FromLong(m_ss));
-PyDict_SetItemString(d,str(m_oo),PyInt_FromLong(m_oo));
-PyDict_SetItemString(d,str(m_sf),PyInt_FromLong(m_sf));
-PyDict_SetItemString(d,str(m_so),PyInt_FromLong(m_so));
-PyDict_SetItemString(d,str(m_fo),PyInt_FromLong(m_fo));
-PyDict_SetItemString(d,str(dety),PyInt_FromLong(dety));
-PyDict_SetItemString(d,str(detz),PyInt_FromLong(detz));
+PyDict_SetItemString(d,str(avg_i),PyLong_FromLong(avg_i));
+PyDict_SetItemString(d,str(f_raw),PyLong_FromLong(f_raw));
+PyDict_SetItemString(d,str(s_raw),PyLong_FromLong(s_raw));
+PyDict_SetItemString(d,str(f_cen),PyLong_FromLong(f_cen));
+PyDict_SetItemString(d,str(s_cen),PyLong_FromLong(s_cen));
+PyDict_SetItemString(d,str(o_raw),PyLong_FromLong(o_raw));
+PyDict_SetItemString(d,str(m_ff),PyLong_FromLong(m_ff));
+PyDict_SetItemString(d,str(m_ss),PyLong_FromLong(m_ss));
+PyDict_SetItemString(d,str(m_oo),PyLong_FromLong(m_oo));
+PyDict_SetItemString(d,str(m_sf),PyLong_FromLong(m_sf));
+PyDict_SetItemString(d,str(m_so),PyLong_FromLong(m_so));
+PyDict_SetItemString(d,str(m_fo),PyLong_FromLong(m_fo));
+PyDict_SetItemString(d,str(dety),PyLong_FromLong(dety));
+PyDict_SetItemString(d,str(detz),PyLong_FromLong(detz));
 
-PyDict_SetItemString(d,str(NPROPERTY),PyInt_FromLong(NPROPERTY));
+PyDict_SetItemString(d,str(NPROPERTY),PyLong_FromLong(NPROPERTY));
 
-PyDict_SetItemString(d,str(s2D_1),PyInt_FromLong(s2D_1));
-PyDict_SetItemString(d,str(s2D_I),PyInt_FromLong(s2D_I));
-PyDict_SetItemString(d,str(s2D_fI),PyInt_FromLong(s2D_fI));
-PyDict_SetItemString(d,str(s2D_sI),PyInt_FromLong(s2D_sI));
-PyDict_SetItemString(d,str(s2D_ffI),PyInt_FromLong(s2D_ffI));
-PyDict_SetItemString(d,str(s2D_sfI),PyInt_FromLong(s2D_sfI));
-PyDict_SetItemString(d,str(s2D_ssI),PyInt_FromLong(s2D_ssI));
-PyDict_SetItemString(d,str(s2D_bb_mx_f),PyInt_FromLong(s2D_bb_mx_f));
-PyDict_SetItemString(d,str(s2D_bb_mx_s),PyInt_FromLong(s2D_bb_mx_s));
-PyDict_SetItemString(d,str(s2D_bb_mn_f),PyInt_FromLong(s2D_bb_mn_f));
-PyDict_SetItemString(d,str(s2D_bb_mn_s),PyInt_FromLong(s2D_bb_mn_s));
-PyDict_SetItemString(d,str(NPROPERTY2D),PyInt_FromLong(NPROPERTY2D));
+PyDict_SetItemString(d,str(s2D_1),PyLong_FromLong(s2D_1));
+PyDict_SetItemString(d,str(s2D_I),PyLong_FromLong(s2D_I));
+PyDict_SetItemString(d,str(s2D_fI),PyLong_FromLong(s2D_fI));
+PyDict_SetItemString(d,str(s2D_sI),PyLong_FromLong(s2D_sI));
+PyDict_SetItemString(d,str(s2D_ffI),PyLong_FromLong(s2D_ffI));
+PyDict_SetItemString(d,str(s2D_sfI),PyLong_FromLong(s2D_sfI));
+PyDict_SetItemString(d,str(s2D_ssI),PyLong_FromLong(s2D_ssI));
+PyDict_SetItemString(d,str(s2D_bb_mx_f),PyLong_FromLong(s2D_bb_mx_f));
+PyDict_SetItemString(d,str(s2D_bb_mx_s),PyLong_FromLong(s2D_bb_mx_s));
+PyDict_SetItemString(d,str(s2D_bb_mn_f),PyLong_FromLong(s2D_bb_mn_f));
+PyDict_SetItemString(d,str(s2D_bb_mn_s),PyLong_FromLong(s2D_bb_mn_s));
+PyDict_SetItemString(d,str(NPROPERTY2D),PyLong_FromLong(NPROPERTY2D));
 /* ends user code */
 '''
 end interface
@@ -131,7 +131,7 @@ def write_docs( inp, outf ):
         docf.write("__all__ = [\n" + ",\n".join(['    "%s"'%(k) for k in keys ])+  "]")
 
 
-for name in ['"c:\Program Files\LLVM\bin\clang-format" ',
+for name in [r"c:\Program Files\LLVM\bin\clang-format",
              'clang-format-10',
              'clang-format' ]:
     if os.path.exists(name) or os.system(name+" -version")==0:

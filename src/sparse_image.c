@@ -259,7 +259,7 @@ int sparse_connectedpixels(float *restrict v, uint16_t *restrict i,
         integer, intent(hide), depend(i) :: nnz = shape( i, 0)
         real th
         integer, intent(inout), dimension(nnz) :: lbl
-        integer, intent(inout), dimension((ni+2)*(nj+2)) :: Z
+        integer, intent(inout), dimension(ni*nj+2*ni+2*nj+4) :: Z
         integer :: ni, nj
         ! Returns
         integer :: sparse_connectedpixels_splat
@@ -1037,4 +1037,4 @@ def mato(k):
               mat, ctmem )
     return npk, ctmem[:,:npk]
     
-    */
+*/
