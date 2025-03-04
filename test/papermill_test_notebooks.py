@@ -224,6 +224,8 @@ def test_FeAu_JADB_tomo():
           'omegamotor': 'rot_center',
           'dtymotor': 'dty',
           'options': {'cut': 1, 'pixels_in_spot': 3, 'howmany': 100000},
+          'normalise_intensities_to_monitor': True,
+          'monitor_name': 'fpico6'
           },
          ),
         ('tomo_1_index.ipynb',
@@ -382,6 +384,8 @@ def test_FeAu_JADB_pbp():
           'omegamotor': 'rot_center',
           'dtymotor': 'dty',
           'options': {'cut': 1, 'pixels_in_spot': 3, 'howmany': 100000},
+          'normalise_intensities_to_monitor': True,
+          'monitor_name': 'fpico6'
           },
          ),
         ('pbp_1_indexing.ipynb',
@@ -503,7 +507,7 @@ def test_FeAu_JADB_pbp():
 def test_FeAu_f2scan_JADB_pbp():
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/RAW_DATA"
-    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/PROCESSED_DATA/20250305_JADB"
+    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/PROCESSED_DATA/20250306_JADB"
     PYTHONPATH = sys.path[0]
     # find layers to process
     sample = "FeAu_No1_190um"
@@ -522,6 +526,8 @@ def test_FeAu_f2scan_JADB_pbp():
           'omegamotor': 'owisRz_cen360',
           'dtymotor': 'diffty',
           'options': {'cut': 1, 'pixels_in_spot': 3, 'howmany': 100000},
+          'normalise_intensities_to_monitor': True,
+          'monitor_name': 'fpico3'
           },
          ),
         ('pbp_1_indexing.ipynb',
@@ -644,7 +650,7 @@ def test_FeAu_f2scan_JADB_pbp():
 def test_FeAu_JADB_bb():
     # where is the data?
     dataroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/'
-    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250228_JADB/default'
+    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250304_JADB/default'
     PYTHONPATH = sys.path[0]
     # find layers to process
     sample = 'FeAu_0p5_tR'
@@ -683,7 +689,9 @@ def test_FeAu_JADB_bb():
                  "minpx": 3,
                  "m_offset_thresh": 100,
                  "m_ratio_thresh": 150,
-             }
+             },
+             'normalise_intensities_to_monitor': True,
+             'monitor_name': 'fpico3'
          }  # end this dict
          ),  # end this tuple for this notebook
         ('1_index_default.ipynb',
@@ -734,7 +742,7 @@ def test_FeAu_JADB_bb():
 def test_FeAu_JADB_bb_grid():
     # where is the data?
     dataroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/'
-    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250228_JADB/grid'
+    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250304_JADB/grid'
     PYTHONPATH = sys.path[0]
     # find layers to process
     sample = 'FeAu_0p5_tR'
@@ -773,7 +781,9 @@ def test_FeAu_JADB_bb_grid():
                  "minpx": 3,
                  "m_offset_thresh": 100,
                  "m_ratio_thresh": 150,
-             }
+             },
+             'normalise_intensities_to_monitor': True,
+             'monitor_name': 'fpico3'
          }  # end this dict
          ),  # end this tuple for this notebook
         ('1_index_grid.ipynb',
@@ -834,7 +844,7 @@ def test_FeAu_JADB_bb_grid():
 def test_FeAu_JADB_bb_friedel():
     # where is the data?
     dataroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/'
-    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250228_JADB/friedel'
+    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250304_JADB/friedel'
     PYTHONPATH = sys.path[0]
     # find layers to process
     sample = 'FeAu_0p5_tR'
@@ -873,7 +883,9 @@ def test_FeAu_JADB_bb_friedel():
                  "minpx": 3,
                  "m_offset_thresh": 100,
                  "m_ratio_thresh": 150,
-             }
+             },
+             'normalise_intensities_to_monitor': True,
+             'monitor_name': 'fpico3'
          }  # end this dict
          ),  # end this tuple for this notebook
         ('1_index_friedel.ipynb',
@@ -939,6 +951,6 @@ if __name__ == '__main__':
     # test_FeAu_JADB_tomo()
     # test_FeAu_JADB_pbp()
     test_FeAu_f2scan_JADB_pbp()
-    # test_FeAu_JADB_bb()
+    test_FeAu_JADB_bb()
     # test_FeAu_JADB_bb_grid()
     # test_FeAu_JADB_bb_friedel()
