@@ -57,6 +57,7 @@ class DataSet:
         "omegamotor",
         "dtymotor",
         "monitorname",
+        "monitor_ref",
         "pksfile",
         "sparsefile",
         "parfile",
@@ -134,6 +135,7 @@ class DataSet:
         self.dty = None
         self.monitor = None
         self.monitorname = None
+        self.monitor_ref = None
 
         self._peaks_table = None
         self._pk2d = None
@@ -585,20 +587,60 @@ class DataSet:
                 else:
                     mon = hin[scan]["measurement"][name][:]
                 monitor.append(mon)
-        self.monitor = np.concatenate(monitor).reshape(self.shape)
-        return self.monitor
+
+        return np.concatenate(monitor).reshape(self.shape)
+    
+    def reset_peaks_cache(self):
+        """
+        Clear cached peaks table - relevant if you set a monitor which will change intensities in columnfiles.
+        """
+        import warnings
+        if self._pk2d is not None:
+            # we have an existing 2D peaks table
+            warnings.warn("Clearing cached pk2d")
+            self._pk2d = None
+        
+        if self._pk4d is not None:
+            # we have an existing 4D peaks table
+            warnings.warn("Clearing cached pk4d")
+            self._pk4d = None
+        
+        if os.path.exists(self.col2dfile):
+             warnings.warn("I found an existing 2D colfile on disk - you probably want to remake this with ds.get_cf_2d(ignore_existing=True)")
+                
+        if os.path.exists(self.col4dfile):
+             warnings.warn("I found an existing 4D colfile on disk - you probably want to remake this with ds.get_cf_4d(ignore_existing=True)")
+    
+    def set_monitor(self, name="fpico6", ref_value_func=np.mean):
+        """
+        Sets self.monitor and self.monitor_ref after calling self.get_monitor()
+        Clears cached pk2d and pk4d so they can be re-computed
+        
+        ref_value_func: function to apply to self.monitor to generate a reference value
+        when we normalise, we multiply by ref_value_func(self.monitor)/self.monitor
+        we suggest np.mean as an example...
+        hint: if you want to return a constant, use this:
+        ref_value_func=lambda x: 1e5
+        """
+        self.monitor = self.get_monitor()
+        self.monitor_ref = ref_value_func(self.monitor)
+        
+        self.reset_peaks_cache()
+        
     
     def get_monitor_pk2d(self, pk2d, name='fpico6'):
         """
         To be used to normalise the peaks 2d
         """
-        if self.monitor is None :
-            self.get_monitor( name )
+        if self.monitor is None:
+            monitor = self.get_monitor(name)
+        else:
+            monitor = self.monitor
         iy = np.digitize( pk2d['dty'], self.ybinedges ) - 1
         io = np.digitize( pk2d['omega'], self.obinedges ) - 1 
         #pk2d['iy'] = iy  # cache these too ?
         #pk2d['io'] = io
-        return self.monitor[ iy, io ]
+        return monitor[ iy, io ]
 
     def guess_detector(self):
         """Guess which detector we are using from the masterfile"""
@@ -711,13 +753,25 @@ class DataSet:
     @property
     def pk2d(self):
         if self._pk2d is None:
-            self._pk2d = self.peaks_table.pk2d(self.omega, self.dty)
+            if self.monitor is not None:
+                # we normalise
+                scale_factor = self.monitor_ref/self.monitor
+                self._pk2d = self.peaks_table.pk2d(self.omega, self.dty, scale_factor=scale_factor)
+            else:
+                # don't normalise
+                self._pk2d = self.peaks_table.pk2d(self.omega, self.dty)
         return self._pk2d
 
     @property
     def pk4d(self):
         if self._pk4d is None:
-            self._pk4d = self.peaks_table.pk2dmerge(self.omega, self.dty)
+            if self.monitor is not None:
+                # we normalise
+                scale_factor = self.monitor_ref/self.monitor
+                self._pk4d = self.peaks_table.pk2dmerge(self.omega, self.dty, scale_factor=scale_factor)
+            else:
+                # don't normalise
+                self._pk4d = self.peaks_table.pk2dmerge(self.omega, self.dty)
         return self._pk4d
 
     def get_colfile_from_peaks_dict(self, peaks_dict=None):
@@ -746,14 +800,14 @@ class DataSet:
         cf.parameters.loadparameters(self.parfile, phase_name=phase_name)
         cf.updateGeometry()
 
-    def get_cf_2d(self):
-        if os.path.exists(self.col2dfile):
+    def get_cf_2d(self, ignore_existing=False):
+        if os.path.exists(self.col2dfile) and not ignore_existing:
             print("Loading existing colfile from", self.col2dfile)
             return self.get_cf_2d_from_disk()
         return self.get_colfile_from_peaks_dict()
 
-    def get_cf_4d(self):
-        if os.path.exists(self.col4dfile):
+    def get_cf_4d(self, ignore_existing=False):
+        if os.path.exists(self.col4dfile) and not ignore_existing:
             print("Loading existing colfile from", self.col4dfile)
             return self.get_cf_4d_from_disk()
         return self.get_colfile_from_peaks_dict(peaks_dict=self.pk4d)
