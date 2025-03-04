@@ -473,7 +473,7 @@ class DataSet:
                         s1 = npts
                         rotations.append( scan )
             self.scans = rotations
-        if len(self.scans) > 1:
+        if len(self.scans) >= 1:
             s0 = len(self.scans)
             s1 = npts // s0
         else:
