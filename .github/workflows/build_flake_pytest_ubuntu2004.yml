@@ -11,7 +11,8 @@ on:
 jobs:
   build:
     # because ESRF forces 20.04 for now.
-    runs-on: ubuntu-20.04
+    # github is not allowing any more !
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
