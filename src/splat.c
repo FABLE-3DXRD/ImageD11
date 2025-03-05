@@ -43,9 +43,12 @@ void splat(uint8_t rgba[], int w, int h, double gve[][3], int ng, double u[9],
         rgba[i + 3] = 255;
     }
     for (i = 0; i < ng; i++) {
-        imx = (int)(s[0] * gve[i][0] + s[1] * gve[i][1] + s[2] * gve[i][2]) + w2;
-        imy = (int)(s[3] * gve[i][0] + s[4] * gve[i][1] + s[5] * gve[i][2]) + h2;
-        imz = (int)(s[6] * gve[i][0] + s[7] * gve[i][1] + s[8] * gve[i][2]) + 128;
+        imx =
+            (int)(s[0] * gve[i][0] + s[1] * gve[i][1] + s[2] * gve[i][2]) + w2;
+        imy =
+            (int)(s[3] * gve[i][0] + s[4] * gve[i][1] + s[5] * gve[i][2]) + h2;
+        imz =
+            (int)(s[6] * gve[i][0] + s[7] * gve[i][1] + s[8] * gve[i][2]) + 128;
         if ((imx > npx) && (imx < w - npx) && (imy > npx) && (imy < h - npx) &&
             (imz >= 0) && (imz < 256)) {
             for (j = -npx; j <= npx; j++) {

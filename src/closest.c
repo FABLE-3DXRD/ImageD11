@@ -6,7 +6,7 @@
 
 typedef double vec[3];
 
-#define DEG(x) ((x)*180. / 3.14159265358979323846264338327950288)
+#define DEG(x) ((x) * 180. / 3.14159265358979323846264338327950288)
 
 /*
 # ImageD11_v1.x Software for beamline ID11
@@ -82,7 +82,7 @@ double conv_double_to_int_safe(double x) { return floor(x + 0.5); }
  * https://stackoverflow.com/questions/59632005/why-does-this-code-beat-rint-and-how-to-i-protect-it-from-ffast-math-and-frie
  */
 #define MAGIC 6755399441055744.0
-#define conv_double_to_int_fast(x) ((x+MAGIC)-MAGIC)
+#define conv_double_to_int_fast(x) ((x + MAGIC) - MAGIC)
 
 /* DLL_LOCAL
 inline double conv_double_to_int_fast(double x) {
@@ -97,25 +97,26 @@ inline double conv_double_to_int_fast(double x) {
         integer :: verify_rounding, n
     end function verify_rounding
 F2PY_WRAPPER_END */
-int verify_rounding( int n ){
+int verify_rounding(int n) {
     int i, hfast, hslow, bad = 0;
     double v;
-    
-    for( i = -100; i < 200; i++ ){
-        v = n + i*50.0;
-        hfast = conv_double_to_int_fast( v );
-        hslow = conv_double_to_int_safe( v );
-        if ( hfast != hslow ) bad++;
+
+    for (i = -100; i < 200; i++) {
+        v = n + i * 50.0;
+        hfast = conv_double_to_int_fast(v);
+        hslow = conv_double_to_int_safe(v);
+        if (hfast != hslow)
+            bad++;
     }
-    for( i = -100; i < 200; i++ ){
-        v = -n + i*50.0;
-        hfast = conv_double_to_int_fast( v );
-        hslow = conv_double_to_int_safe( v );
-        if ( hfast != hslow ) bad++;
+    for (i = -100; i < 200; i++) {
+        v = -n + i * 50.0;
+        hfast = conv_double_to_int_fast(v);
+        hslow = conv_double_to_int_safe(v);
+        if (hfast != hslow)
+            bad++;
     }
     return bad;
 }
-
 
 /* F2PY_WRAPPER_START
     subroutine closest_vec( x, dim, nv, ic )
@@ -313,8 +314,8 @@ void score_and_refine(vec ubi[3], vec gv[], double tol, int *n_arg,
                     H[i][j] = H[i][j] + ih[j] * ih[i];
                 }
             } /* End lsq addins */
-        }     /* End selected peaks */
-    }         /* End first loop over spots */
+        } /* End selected peaks */
+    } /* End first loop over spots */
 
     /* Now solve the least squares problem */
     /* inverse overwrites H with the inverse */
@@ -370,7 +371,8 @@ int score_and_assign(vec *restrict ubi, vec *restrict gv, double tol,
     int k, n;
     tolsq = tol * tol;
     n = 0;
-#pragma omp parallel for private(h0, h1, h2, t0, t1, t2, sumsq) reduction(+ : n) schedule(static, 4096)
+#pragma omp parallel for private(h0, h1, h2, t0, t1, t2, sumsq)                \
+    reduction(+ : n) schedule(static, 4096)
     for (k = 0; k < ng; k++) {
         h0 = ubi[0][0] * gv[k][0] + ubi[0][1] * gv[k][1] + ubi[0][2] * gv[k][2];
         h1 = ubi[1][0] * gv[k][0] + ubi[1][1] * gv[k][1] + ubi[1][2] * gv[k][2];
@@ -864,37 +866,6 @@ double misori_monoclinic(vec u1[3], vec u2[3]) {
         }
     }
     return t;
-}
-
-/* F2PY_WRAPPER_START
-    subroutine misori_cubic_pairs( u, dist, n)
-!DOC misori_cubic_pairs Computes the dissimilarity matrix to use for clustering
-!DOC of orientations. Fills in an upper triangular matrix that you can try
-!DOC to pass to scipy.cluster routines
-        intent(c) misori_cubic_pairs
-        intent(c)
-        double precision, intent(in) :: u(n,3,3)
-        integer, intent( hidden ), depend(u) :: n
-        double precision, intent(inout) :: dist( (n*(n-1)/2) )
-        ! NOT threadsafe
-    end subroutine misori_cubic_pairs
-F2PY_WRAPPER_END */
-void misori_cubic_pairs(vec u[], double pairs[], int n) {
-    /* Computes the dissimilarity matrix to use for clustering
-     */
-    int i, j, k;
-    /* static, 1 means interleaved - leads to false sharing in pairs write
-     * but tries to deal with the rows getting shorter
-     */
-#pragma omp parallel for private(i, j, k) schedule(static, 1)
-    for (i = 0; i < n; i++) {
-        for (j = i + 1; j < n; j++) {
-            /* https://stackoverflow.com/questions/27086195/linear-index-upper-triangular-matrix
-             */
-            k = (n * (n - 1) / 2) - (n - i) * ((n - i) - 1) / 2 + j - i - 1;
-            pairs[k] = misori_cubic(&u[i * 3], &u[j * 3]);
-        }
-    }
 }
 
 /* F2PY_WRAPPER_START

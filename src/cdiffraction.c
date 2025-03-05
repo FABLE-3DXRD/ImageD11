@@ -74,17 +74,17 @@ void compute_geometry(double xlylzl[][3], double omega[], double omegasign,
         vec3sub(xlylzl[i], o, d);
         modyz = 1. / sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
         // two theta
-        out[i][0] = DEG * atan2( sqrt( d[1]*d[1] + d[2]*d[2] ), d[0] );
+        out[i][0] = DEG * atan2(sqrt(d[1] * d[1] + d[2] * d[2]), d[0]);
         //     ! k-vector
         ds = 1. / wvln;
         k[0] = ds * (d[0] * modyz - 1.);
         k[1] = ds * d[1] * modyz;
         k[2] = ds * d[2] * modyz;
         // eta
-        out[i][1] = DEG * atan2( -d[1], d[2] );
+        out[i][1] = DEG * atan2(-d[1], d[2]);
         // dstar
-        out[i][2] = sqrt( k[0]*k[0] +  k[1]*k[1] +  k[2]*k[2] );
-        // g-vector            
+        out[i][2] = sqrt(k[0] * k[0] + k[1] * k[1] + k[2] * k[2]);
+        // g-vector
         matTvec(mat, k, v);
         // Forwards rotation with omega finally
         out[i][3] = co * v[0] + so * v[1];
@@ -92,9 +92,6 @@ void compute_geometry(double xlylzl[][3], double omega[], double omegasign,
         out[i][5] = v[2];
     } //  enddo
 } // end subroutine compute_geometry
-
-
-
 
 /* F2PY_WRAPPER_START
     subroutine compute_gv(xlylzl,omega,omegasign,wvln,wedge,chi,t,gv,ng)
@@ -223,7 +220,7 @@ void compute_xlylzl(double s[], double f[], double p[4], double r[9],
             //  ! Skip as v[0] is zero : r(1,j)*v(1)
             xlylzl[i][j] = r[3 * j + 1] * v[1] + r[3 * j + 2] * v[2] + dist[j];
         } // enddo
-    }     // enddo
+    } // enddo
 } // end subroutine compute_xlylzl
 
 /* F2PY_WRAPPER_START
