@@ -3,7 +3,7 @@ from __future__ import print_function
 
 from .rc_array import rc_array
 
-from numpy import dot, round_, array, allclose, asarray, fabs,\
+from numpy import dot, array, allclose, asarray, fabs, round, \
     argmin, argmax, sqrt, argsort, take, sum, where, ndarray, eye,\
     zeros, cross, pi, arccos, floor
 from numpy.linalg import inv, LinAlgError, det
@@ -46,7 +46,7 @@ def mod(x,y):
     """
     if __debug__: 
         b4  = dot(x,x)
-    n   = round_(fparl(x,y))
+    n   = round(fparl(x,y))
     ret = x - n * y
     if __debug__:
         af  = dot(ret,ret)
@@ -238,7 +238,7 @@ class lattice(object):
         """ Give back the nearest lattice point indices, 
         in the same direction """
         new_vecs = vecs.flip(self.matrix(vecs.direction))
-        int_vecs = round_(new_vecs)
+        int_vecs = round(new_vecs)
         return int_vecs.flip(self.matrix(int_vecs.direction))
         
     def remainders(self, vecs):

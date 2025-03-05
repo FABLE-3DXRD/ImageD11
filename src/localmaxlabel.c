@@ -35,7 +35,8 @@ int neighbormax(const float *restrict im, // input
         lout[dim1 * (dim0 - 1) + i] = 0;
         l[dim1 * (dim0 - 1) + i] = 0;
     }
-#pragma omp parallel for private( j, p, k0, k1, k2, mx0, mx1, mx2 ) reduction(+:npks)
+#pragma omp parallel for private(j, p, k0, k1, k2, mx0, mx1, mx2)              \
+    reduction(+ : npks)
     for (i = dim1; i < (dim0 - 1) * dim1; i = i + dim1) {
         // skipping 1 pixel border
         lout[i] = 0; // set edges to zero: pixel j=0:
@@ -184,9 +185,10 @@ int localmaxlabel(const float *restrict im, // input
             while (l[q]) {
                 q = q + o[l[q]];
                 k++;
-            }                  // Now q addresses a max or a correct label
+            } // Now q addresses a max or a correct label
             lout[i] = lout[q]; // take label from max
-            if (k > 0) { // relabel the path taken while we know the top label value
+            if (k >
+                0) { // relabel the path taken while we know the top label value
                 q = i + o[l[i]];
                 while (l[q]) {
                     if ((q >= lo) && (q < hi)) {
