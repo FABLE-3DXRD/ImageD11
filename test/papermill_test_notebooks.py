@@ -691,7 +691,7 @@ def test_FeAu_JADB_bb():
                  "m_ratio_thresh": 150,
              },
              'normalise_intensities_to_monitor': True,
-             'monitor_name': 'fpico3'
+             'monitor_name': 'fpico4'
          }  # end this dict
          ),  # end this tuple for this notebook
         ('1_index_default.ipynb',
@@ -783,7 +783,7 @@ def test_FeAu_JADB_bb_grid():
                  "m_ratio_thresh": 150,
              },
              'normalise_intensities_to_monitor': True,
-             'monitor_name': 'fpico3'
+             'monitor_name': 'fpico4'
          }  # end this dict
          ),  # end this tuple for this notebook
         ('1_index_grid.ipynb',
@@ -885,7 +885,7 @@ def test_FeAu_JADB_bb_friedel():
                  "m_ratio_thresh": 150,
              },
              'normalise_intensities_to_monitor': True,
-             'monitor_name': 'fpico3'
+             'monitor_name': 'fpico4'
          }  # end this dict
          ),  # end this tuple for this notebook
         ('1_index_friedel.ipynb',
