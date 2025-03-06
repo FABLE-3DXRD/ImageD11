@@ -489,7 +489,7 @@ def segment_master_file(
     num_threads = num_cpus or max(1, ImageD11.cImageD11.cores_available() - 1)
     num_frames = omega_angles.shape[0]
     args = [
-        (master_file, frames_dataset, i, omega_angles[i], worker_args, scale_factor[i]) 
+        (master_file, frames_dataset, i, omega_angles[i], worker_args, scale_factor[i] if scale_factor else None) 
         for i in range(num_frames)
     ]
     all_frames_peaks_list = process_map(
