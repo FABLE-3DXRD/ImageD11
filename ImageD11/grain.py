@@ -316,7 +316,8 @@ def write_grain_file(filename, list_of_grains):
     f = open(filename, "w")
     for g in list_of_grains:
         t = g.translation
-        f.write("#translation: %g %g %g\n" % (t[0], t[1], t[2]))
+        if t is not None:
+            f.write("#translation: %g %g %g\n" % (t[0], t[1], t[2]))
         if hasattr(g, "name"):
             f.write("#name %s\n" % (g.name.rstrip()))
         if hasattr(g, "intensity_info"):
