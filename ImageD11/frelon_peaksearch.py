@@ -307,12 +307,14 @@ class worker:
             np.divide(img, self.flat, cor)
         return cor
 
-    def bgsub(self, img):
+    def bgsub(self, img, scale_factor=None):
         """
         This attempts to remove a background by rescaling the self.bg image.
 
         """
         img = self.correct(img)
+        if scale_factor is not None:
+            img = img * scale_factor
         if self.bg is None:  # use image border
             self.scale = 1
             self.offset = np.median(
@@ -339,12 +341,12 @@ class worker:
             img_masked[self.mask == 1] = 0
         return img_masked
 
-    def peaksearch(self, img, omega=0):
+    def peaksearch(self, img, omega=0, scale_factor=None):
         if self.wrk is None:
             self.wrk = np.empty(img.shape, "b")
             self.labels = np.empty(img.shape, "i")
-
-        self.cor = self.bgsub(img)
+        
+        self.cor = self.bgsub(img, scale_factor=scale_factor)
         self.cor = self.masksub(self.cor)
         # smooth the image for labelling (removes noise maxima)
         self.smoothed = scipy.ndimage.gaussian_filter(self.cor, self.smoothsigma)
@@ -396,11 +398,11 @@ def get_dset(h5name, dsetname):
 
 
 def pps(arg):
-    hname, dsetname, num, omega, worker_args = arg
+    hname, dsetname, num, omega, worker_args, scale_factor = arg
     if pps.worker is None:
         pps.worker = worker(**worker_args)
     frm = get_dset(hname, dsetname)[num]
-    pks = pps.worker.peaksearch(frm, omega=omega)
+    pks = pps.worker.peaksearch(frm, omega=omega, scale_factor=scale_factor)
     return num, pks
 
 
@@ -477,6 +479,7 @@ def segment_master_file(
     omega_angles,
     worker_args,
     num_cpus=None,
+    scale_factor=None,
     **process_map_kwargs
 ):
     """
@@ -486,7 +489,7 @@ def segment_master_file(
     num_threads = num_cpus or max(1, ImageD11.cImageD11.cores_available() - 1)
     num_frames = omega_angles.shape[0]
     args = [
-        (master_file, frames_dataset, i, omega_angles[i], worker_args) 
+        (master_file, frames_dataset, i, omega_angles[i], worker_args, scale_factor[i]) 
         for i in range(num_frames)
     ]
     all_frames_peaks_list = process_map(
@@ -522,6 +525,8 @@ def segment_dataset(
         worker_args, 
         num_cpus=None, 
         scan_number=0,
+        monitor_name=None,
+        monitor_ref_func=np.mean,
         **process_map_kwargs
 ):
     """
@@ -530,8 +535,26 @@ def segment_dataset(
     and performing spatial correction (detector plane correction)
     Performs 4D merge if you give more than one scan number
     Returns columnfile_2d, columnfile_3d (and columnfile_4d if relevant)
+    
+    dataset: ImageD11.sinograms.dataset.Dataset object
+    worker_args: arguments to the peaksearch worker
+    num_cpus: number of CPUs to multiprocess over
+    scan_number: which scan number (or numbers) in ds.scans to segment.
+    monitor_name: name of a monitor to look for via ds.set_monitor(name)
+    Intensities will be scaled during semgnetation if a name is provided
+    monitor_ref_func: function to apply to ds.monitor to generate a reference value
+    when we normalise, we multiply by ref_value_func(ds.monitor)/ds.monitor
+    we suggest np.mean as an example...
+    hint: if you want to return a constant, use this:
+    ref_value_func=lambda x: 1e5
     """
     # Step 1: collect all peaks
+    if monitor_name is not None:
+        dataset.set_monitor(name=monitor_name, ref_value_func=monitor_ref_func)
+        dataset.save()
+        scale_factor = dataset.monitor_ref/dataset.monitor
+    else:
+        scale_factor=None
     # see if scan_number is an iterable
     do_4d = False
     try:
@@ -544,6 +567,7 @@ def segment_dataset(
             dataset.omega[scan_number],
             worker_args,
             num_cpus,
+            scale_factor[scan_number],
             **process_map_kwargs
         )
         
@@ -572,6 +596,7 @@ def segment_dataset(
             dataset.omega[sn],
             worker_args,
             num_cpus,
+            scale_factor[sn],
             **process_map_kwargs
             )
             
