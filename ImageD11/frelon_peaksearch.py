@@ -307,12 +307,14 @@ class worker:
             np.divide(img, self.flat, cor)
         return cor
 
-    def bgsub(self, img):
+    def bgsub(self, img, scale_factor=None):
         """
         This attempts to remove a background by rescaling the self.bg image.
 
         """
         img = self.correct(img)
+        if scale_factor is not None:
+            img = img * scale_factor
         if self.bg is None:  # use image border
             self.scale = 1
             self.offset = np.median(
@@ -343,11 +345,8 @@ class worker:
         if self.wrk is None:
             self.wrk = np.empty(img.shape, "b")
             self.labels = np.empty(img.shape, "i")
-        if scale_factor is not None:
-            # scale this image by the scale factor
-            img = img * scale_factor
         
-        self.cor = self.bgsub(img)
+        self.cor = self.bgsub(img, scale_factor=scale_factor)
         self.cor = self.masksub(self.cor)
         # smooth the image for labelling (removes noise maxima)
         self.smoothed = scipy.ndimage.gaussian_filter(self.cor, self.smoothsigma)
