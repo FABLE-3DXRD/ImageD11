@@ -488,10 +488,17 @@ def segment_master_file(
     """
     num_threads = num_cpus or max(1, ImageD11.cImageD11.cores_available() - 1)
     num_frames = omega_angles.shape[0]
-    args = [
-        (master_file, frames_dataset, i, omega_angles[i], worker_args, scale_factor[i]) 
-        for i in range(num_frames)
-    ]
+    if scale_factor is None:
+        args = [
+            (master_file, frames_dataset, i, omega_angles[i], worker_args, None) 
+            for i in range(num_frames)
+        ]
+    else:
+        assert len(omega_angles) == len(scale_factor), "The shape of omega_angles and scale_factor should agree"
+        args = [
+            (master_file, frames_dataset, i, omega_angles[i], worker_args, scale_factor[i]) 
+            for i in range(num_frames)
+        ] 
     all_frames_peaks_list = process_map(
         pps, 
         args, 
@@ -561,15 +568,26 @@ def segment_dataset(
         iterator = iter(scan_number)
     except TypeError:
         # scan_number not iterable
-        all_frames_peaks_list = segment_master_file(
-            dataset.masterfile,
-            "%s/measurement/%s"%(dataset.scans[scan_number], dataset.detector),
-            dataset.omega[scan_number],
-            worker_args,
-            num_cpus,
-            scale_factor[scan_number],
-            **process_map_kwargs
-        )
+        if scale_factor is None:
+            all_frames_peaks_list = segment_master_file(
+                dataset.masterfile,
+                "%s/measurement/%s"%(dataset.scans[scan_number], dataset.detector),
+                dataset.omega[scan_number],
+                worker_args,
+                num_cpus,
+                None,
+                **process_map_kwargs
+            )
+        else:
+            all_frames_peaks_list = segment_master_file(
+                dataset.masterfile,
+                "%s/measurement/%s"%(dataset.scans[scan_number], dataset.detector),
+                dataset.omega[scan_number],
+                worker_args,
+                num_cpus,
+                scale_factor[scan_number],
+                **process_map_kwargs
+            )
         
         # Step 2: merge collected peaks data into dict
         peaks_2d_dict, num_peaks = peaks_list_to_dict(
@@ -589,16 +607,27 @@ def segment_dataset(
         import time
         for sn in scan_number:
             # get all_frames_peaks_list
-
-            all_frames_peaks_list = segment_master_file(
-            dataset.masterfile,
-            "%s/measurement/%s"%(dataset.scans[sn], dataset.detector),
-            dataset.omega[sn],
-            worker_args,
-            num_cpus,
-            scale_factor[sn],
-            **process_map_kwargs
-            )
+            
+            if scale_factor is None:
+                all_frames_peaks_list = segment_master_file(
+                    dataset.masterfile,
+                    "%s/measurement/%s"%(dataset.scans[sn], dataset.detector),
+                    dataset.omega[sn],
+                    worker_args,
+                    num_cpus,
+                    None,
+                    **process_map_kwargs
+                )
+            else:
+                all_frames_peaks_list = segment_master_file(
+                    dataset.masterfile,
+                    "%s/measurement/%s"%(dataset.scans[scan_number], dataset.detector),
+                    dataset.omega[scan_number],
+                    worker_args,
+                    num_cpus,
+                    scale_factor[sn],
+                    **process_map_kwargs
+                )
             
             peaks_2d_dict, num_peaks = peaks_list_to_dict(all_frames_peaks_list)
 
