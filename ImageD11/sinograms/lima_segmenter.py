@@ -63,6 +63,7 @@ class SegmenterOptions:
         self.howmany = howmany
         self.pixels_in_spot = pixels_in_spot
         self.maskfile = maskfile
+        self.mask = None
         self.bgfile = bgfile
         self.bg = None
         self.files_per_core = files_per_core
@@ -302,6 +303,9 @@ def segment_lima(args):
             g.attrs["shape1"] = frms.shape[2]
             npx = 0
             nframes = frms.shape[0]
+            if OPTIONS.mask is None:
+                # put in a dummy now that we have the frame shape
+                OPTIONS.mask = np.ones((frms.shape[1], frms.shape[2]), dtype=np.uint8)
             for i, spf in enumerate(reader(frms, OPTIONS.mask, OPTIONS.cut)):
                 if i % 100 == 0:
                     if spf is None:
@@ -403,10 +407,11 @@ def setup_slurm_array(dsname, dsgroup="/", pythonpath=None):
     options = SegmenterOptions()
     options.load(dsname, dsgroup + "/lima_segmenter")
     options.setup()
-    print("# Opened mask",
-          options.maskfile,
-          " %.2f %% pixels are active" % (100 * options.mask.mean()),
-        )
+    if options.mask is not None:
+        print("# Opened mask",
+              options.maskfile,
+              " %.2f %% pixels are active" % (100 * options.mask.mean()),
+             )
     files_per_job = options.files_per_core * options.cores_per_job
     jobs_needed = math.ceil(nfiles / files_per_job)
     sbat = os.path.join(sdir, "lima_segmenter_slurm.sh")
