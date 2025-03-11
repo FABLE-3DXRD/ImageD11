@@ -8,7 +8,7 @@ jobs:
     docker:
       # specify the version you desire here
       # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
-      - image: circleci/python:3.8.0
+      - image: circleci/python:3.10.0
       
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -33,7 +33,7 @@ jobs:
             . venv/bin/activate
             python3 -m pip install pip setuptools --upgrade
             python3 -m pip install pytest numpy
-            python3 -m pip install --only-binary pyFAI
+            python3 -m pip install --prefer-binary pyFAI
             python3 -m pip install --editable .[full]
 
       - save_cache:
