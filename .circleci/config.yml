@@ -33,7 +33,7 @@ jobs:
             . venv/bin/activate
             python3 -m pip install pip setuptools --upgrade
             python3 -m pip install pytest numpy
-            python3 -m pip install pyFAI --only-binary
+            python3 -m pip install --only-binary pyFAI
             python3 -m pip install --editable .[full]
 
       - save_cache:
