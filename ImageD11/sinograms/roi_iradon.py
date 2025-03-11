@@ -340,45 +340,49 @@ def fxyrot(colrow, angle=0, center=0, projection_shifts=None):
     return colrow + center
 
 
-# TODO: Validate!
-@numba.njit(boundscheck=False)
+@numba.njit(cache=True)
 def recon_cens(omega, dty, ybins, imsize, wt, y0=0.0):
-    """ Back project the peak centers into a map 
+    """ Back project the peak centers into a map
     
-    omega, dty = peak co-ordinates in the sinogram
-    ybins = spatial binning
+    omega, dty = peak co-ordinates in the sinogram (degrees)
+    ybins = spatial binning. Usually dataset.ybincens
     imsize = probably len(ybins)+1
     wt = intensity, probably ones()
+
+    see test/silicon/check_centers.ipynb
     """
-    r = np.zeros((imsize, imsize), dtype=np.float32)
+    r = np.zeros((imsize, imsize), dtype=np.dtype(np.float32))
     rc = imsize // 2
     for i in range(len(omega)):
-        s, c = np.sin(omega[i]), np.cos(omega[i])
+        o = np.radians(omega[i])
+        s, c = np.sin(o), np.cos(o)
+        # Offset of this peak in dty in units of ystep
         yv = (dty[i] - y0) / (ybins[1] - ybins[0])
         if abs(c) > abs(s):
-            # going across image, beam is along x
-            for p in range(imsize):
-                k = p - rc  # -rc -> rc
-                v = ((-yv - k * s) / c) + rc
+            # cos(omega) ~ 1 means x axis vertical in the image
+            # going down image, beam is along x
+            for p in range(imsize): # walk up/down image
+                k = p - rc  # -rc -> rc, distance to center
+                v = ((-yv - k * s) / c) + rc # needs a picture
                 j = int(np.floor(v))
                 f = (j + 1) - v
-                if (j >= 0) & (j < imsize):
-                    r[j, p] += wt[i] * f
+                if (j > 0) & (j <= imsize):
+                    r[p, imsize - j] += wt[i] * f
                 f = v - j
-                if ((j + 1) >= 0) & ((j + 1) < imsize):
-                    r[j + 1, p] += wt[i] * f
+                if ((j + 1) > 0) & ((j + 1) <= imsize):
+                    r[p, imsize-(j + 1)] += wt[i] * f
         else:
             # going along image
-            for p in range(imsize):
+            for p in range(1,imsize+1):
                 j = p - rc  # -rc -> rc
                 v = ((-yv - j * c) / s) + rc
                 k = int(np.floor(v))
                 f = (k + 1) - v
                 if (k >= 0) & (k < imsize):
-                    r[p, k] += wt[i] * f
+                    r[k, imsize - p] += wt[i] * f
                 f = v - k
                 if ((k + 1) >= 0) & ((k + 1) < imsize):
-                    r[p, k + 1] += wt[i] * f
+                    r[k + 1, imsize - p] += wt[i] * f
     return r
 
 
