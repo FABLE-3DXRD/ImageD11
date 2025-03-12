@@ -91,8 +91,8 @@ def do3dmerge(cf_2d_dict, n, omega, radius=1.6):
     s3d1 = np.bincount(labels, minlength=ncomp, weights=s1)  # s_1
     s3dI = np.bincount(labels, minlength=ncomp, weights=I)  # s_I
     ssI = np.bincount(labels, minlength=ncomp, weights=I * s)  # s_sI
-    sfI = np.bincount(labels, minlength=ncomp, weights=I * f)  # s_sI
-    soI = np.bincount(labels, minlength=ncomp, weights=I * o)  # s_sI
+    sfI = np.bincount(labels, minlength=ncomp, weights=I * f)  # s_fI
+    soI = np.bincount(labels, minlength=ncomp, weights=I * o)  # s_oI
     s3d = ssI / s3dI
     f3d = sfI / s3dI
     o3d = soI / s3dI
@@ -572,7 +572,7 @@ def segment_dataset(
             all_frames_peaks_list = segment_master_file(
                 dataset.masterfile,
                 "%s/measurement/%s"%(dataset.scans[scan_number], dataset.detector),
-                dataset.omega[scan_number],
+                dataset.omega_for_bins[scan_number],
                 worker_args,
                 num_cpus,
                 None,
@@ -582,7 +582,7 @@ def segment_dataset(
             all_frames_peaks_list = segment_master_file(
                 dataset.masterfile,
                 "%s/measurement/%s"%(dataset.scans[scan_number], dataset.detector),
-                dataset.omega[scan_number],
+                dataset.omega_for_bins[scan_number],
                 worker_args,
                 num_cpus,
                 scale_factor[scan_number],
@@ -612,7 +612,7 @@ def segment_dataset(
                 all_frames_peaks_list = segment_master_file(
                     dataset.masterfile,
                     "%s/measurement/%s"%(dataset.scans[sn], dataset.detector),
-                    dataset.omega[sn],
+                    dataset.omega_for_bins[sn],
                     worker_args,
                     num_cpus,
                     None,
@@ -622,7 +622,7 @@ def segment_dataset(
                 all_frames_peaks_list = segment_master_file(
                     dataset.masterfile,
                     "%s/measurement/%s"%(dataset.scans[scan_number], dataset.detector),
-                    dataset.omega[scan_number],
+                    dataset.omega_for_bins[scan_number],
                     worker_args,
                     num_cpus,
                     scale_factor[sn],
@@ -642,12 +642,12 @@ def segment_dataset(
 
     # Step 3: Perform 3d merge
     if not do_4d:
-        omega_angles = dataset.omega[scan_number]
+        omega_angles = dataset.omega_for_bins[scan_number]
         peak_3d_dict = do3dmerge(peaks_2d_dict, num_peaks, omega_angles)
     
     # Step 4: Optionally perform 4d merge
     if do_4d:
-        omega_angles = dataset.omega[scan_number]
+        omega_angles = dataset.omega_for_bins[scan_number]
         dty_values = dataset.dty[scan_number]
         peak_4d_dict = do4dmerge(peaks_2d_dict, num_peaks, omega_angles, dty_values, dataset.ostep, dataset.ystep)
 

@@ -79,6 +79,7 @@ class DataSet:
     # sinograms
     NDNAMES = (
         "omega",
+        "omega_for_bins",
         "dty",
         "nnz",
         "frames_per_file",
@@ -509,7 +510,7 @@ class DataSet:
             self.omax = self.omega.max()
             self.obincens = np.linspace(self.omin, self.omax, nomega)
         self.ostep = (self.omax - self.omin) / (nomega - 1)
-        if self.obinedges is not None:
+        if self.obinedges is None:
             self.obinedges = np.linspace(
                self.omin - self.ostep / 2, self.omax + self.ostep / 2, nomega + 1
             )
@@ -534,7 +535,7 @@ class DataSet:
             self.ystep = (self.ymax - self.ymin) / (ny - 1)
         else:
             self.ystep = 1
-        if self.ybinedges is not None:
+        if self.ybinedges is None:
             self.ybinedges = np.linspace(
                 self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1
             )
@@ -774,10 +775,10 @@ class DataSet:
             if self.monitor is not None:
                 # we normalise
                 scale_factor = self.monitor_ref/self.monitor
-                self._pk2d = self.peaks_table.pk2d(self.omega, self.dty, scale_factor=scale_factor)
+                self._pk2d = self.peaks_table.pk2d(self.omega_for_bins, self.dty, scale_factor=scale_factor)
             else:
                 # don't normalise
-                self._pk2d = self.peaks_table.pk2d(self.omega, self.dty)
+                self._pk2d = self.peaks_table.pk2d(self.omega_for_bins, self.dty)
         return self._pk2d
 
     @property
@@ -786,10 +787,10 @@ class DataSet:
             if self.monitor is not None:
                 # we normalise
                 scale_factor = self.monitor_ref/self.monitor
-                self._pk4d = self.peaks_table.pk2dmerge(self.omega, self.dty, scale_factor=scale_factor)
+                self._pk4d = self.peaks_table.pk2dmerge(self.omega_for_bins, self.dty, scale_factor=scale_factor)
             else:
                 # don't normalise
-                self._pk4d = self.peaks_table.pk2dmerge(self.omega, self.dty)
+                self._pk4d = self.peaks_table.pk2dmerge(self.omega_for_bins, self.dty)
         return self._pk4d
 
     def get_colfile_from_peaks_dict(self, peaks_dict=None):
