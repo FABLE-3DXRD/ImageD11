@@ -85,6 +85,8 @@ class DataSet:
         "nlm",
         "frames_per_scan",
         "monitor",
+        "ybinedges", "ybincens",
+        "obinedges", "obincens"
     )
 
     def __init__(
@@ -136,6 +138,10 @@ class DataSet:
         self.monitor = None
         self.monitorname = None
         self.monitor_ref = None
+        self.ybinedges = None
+        self.ybincens = None
+        self.obinedges = None
+        self.obincens = None
 
         self._peaks_table = None
         self._pk2d = None
@@ -495,8 +501,18 @@ class DataSet:
 
     def guessbins(self):
         ny, nomega = self.shape
-        self.omin = self.omega.min()
-        self.omax = self.omega.max()
+        if self.obincens is not None:
+            self.omin = self.obincens[0]
+            self.omax = self.obincens[-1]
+        else:
+            self.omin = self.omega.min()
+            self.omax = self.omega.max()
+            self.obincens = np.linspace(self.omin, self.omax, nomega)
+        self.ostep = (self.omax - self.omin) / (nomega - 1)
+        if self.obinedges is not None:
+            self.obinedges = np.linspace(
+               self.omin - self.ostep / 2, self.omax + self.ostep / 2, nomega + 1
+            )
         if (self.omax - self.omin) > 360:
             # multi-turn scan...
             self.omin = 0.0
@@ -507,24 +523,26 @@ class DataSet:
         # values 0, 1, 2
         # shape = 3
         # step = 1
-        self.ostep = (self.omax - self.omin) / (nomega - 1)
-        self.ymin = self.dty.min()
-        self.ymax = self.dty.max()
+        if self.ybincens is not None:
+            self.ymin = self.ybincens[0]
+            self.ymax = self.ybincens[-1]
+        else:
+            self.ymin = self.dty.min()
+            self.ymax = self.dty.max()
+            self.ybincens = np.linspace(self.ymin, self.ymax, ny)
         if ny > 1:
             self.ystep = (self.ymax - self.ymin) / (ny - 1)
         else:
             self.ystep = 1
-        self.obincens = np.linspace(self.omin, self.omax, nomega)
-        self.ybincens = np.linspace(self.ymin, self.ymax, ny)
-        self.obinedges = np.linspace(
-            self.omin - self.ostep / 2, self.omax + self.ostep / 2, nomega + 1
-        )
-        self.ybinedges = np.linspace(
-            self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1
-        )
+        if self.ybinedges is not None:
+            self.ybinedges = np.linspace(
+                self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1
+            )
 
     def correct_bins_for_half_scan(self, y0=0):
-        """Pads the dataset to become bigger and symmetric"""
+        """Pads the dataset to become bigger and symmetric
+        Updates self.ybincens
+        """
         # TODO: We need to keep track of which bins are "real" and measured and which aren't
         c0 = y0
         # check / fix the centre of rotation
