@@ -14,7 +14,7 @@ import numpy as np
 import ImageD11.transformer
 import pyFAI
 from datetime import datetime
-from ImageD11.forward_model.io import read_matlab_file
+from ImageD11.forward_model.io import read_matlab_file, read_h5_file
 from scipy.optimize import minimize
 import logging
 
@@ -95,8 +95,16 @@ def convert_DCTpars2p(par_path, Binning = None, verbose = 1):
     a dictionary of p, which has keys of rawfile, Lsam2det, tilt_xyz, RotDet, dety0, detz0, dety00, detz00, wedge, pixelysize, pixelzsize,
                                          detysize, detzsize, BeamStopY, BeamStopZ, S, flip_lr_flag, flip_ud_flag, wavelength, Energy etc.
     """
-    mat_data = read_matlab_file(par_path)
-    parameters = mat_data['parameters']
+    if par_path.endswith('.mat'):
+        mat_data = read_matlab_file(par_path)
+        if 'parameters' in mat_data.keys():
+            parameters = mat_data['parameters']  # old parameters file version: parameters saved as a one single struct
+        else:
+            parameters = mat_data.copy()         # new parameters file version: parameters saved as multiple structs, i.e. acq, labgeo, detgeo, rec, index etc.
+    elif par_path.endswith('.h5'):
+        parameters = read_h5_file(par_path)
+    else:
+        raise Exception('At present, the input parameters file must be in .h5 or .mat format')
     
     p = {}
     p['rawfile'] = par_path
@@ -210,7 +218,7 @@ def convert_DCTpars2p(par_path, Binning = None, verbose = 1):
         p['BeamStopZ'][0]   = np.floor(p['BeamStopZ'][0]/Binning)
         p['BeamStopZ'][1]   = np.ceil(p['BeamStopZ'][1]/Binning)
         if verbose >= 1:
-            logging.info('Detector images are binned to {:.1f} * {:.1f}'.format(Binning, Binning))    
+            logging.info('Detector images are binned to {:.1f} * {:.1f}'.format(Binning, Binning))
     return p
     
     
