@@ -15,13 +15,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             cibw_archs: "auto64"
           #- os: ubuntu-20.04
           #  cibw_archs: "auto32"
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             cibw_archs: "aarch64"
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             cibw_archs: "ppc64le"
           - os: windows-2019
             cibw_archs: "auto64"
