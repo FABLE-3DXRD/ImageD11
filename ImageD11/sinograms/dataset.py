@@ -79,6 +79,7 @@ class DataSet:
     # sinograms
     NDNAMES = (
         "omega",
+        "omega_for_bins",
         "dty",
         "nnz",
         "frames_per_file",
