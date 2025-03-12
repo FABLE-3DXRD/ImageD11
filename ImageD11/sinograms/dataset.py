@@ -510,7 +510,7 @@ class DataSet:
             self.omax = self.omega.max()
             self.obincens = np.linspace(self.omin, self.omax, nomega)
         self.ostep = (self.omax - self.omin) / (nomega - 1)
-        if self.obinedges is not None:
+        if self.obinedges is None:
             self.obinedges = np.linspace(
                self.omin - self.ostep / 2, self.omax + self.ostep / 2, nomega + 1
             )
@@ -535,7 +535,7 @@ class DataSet:
             self.ystep = (self.ymax - self.ymin) / (ny - 1)
         else:
             self.ystep = 1
-        if self.ybinedges is not None:
+        if self.ybinedges is None:
             self.ybinedges = np.linspace(
                 self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1
             )
