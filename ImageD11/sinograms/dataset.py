@@ -502,25 +502,25 @@ class DataSet:
 
     def guessbins(self):
         ny, nomega = self.shape
-        if self.obincens is not None:
-            self.omin = self.obincens[0]
-            self.omax = self.obincens[-1]
-        else:
+        if self.obincens is None:
             self.omin = self.omega.min()
             self.omax = self.omega.max()
+            if (self.omax - self.omin) > 360:
+                # multi-turn scan...
+                self.omin = 0.0
+                self.omax = 360.0
+                self.omega_for_bins = self.omega % 360
+            else:
+                self.omega_for_bins = self.omega
             self.obincens = np.linspace(self.omin, self.omax, nomega)
+        else:
+            self.omin = self.obincens[0]
+            self.omax = self.obincens[-1]
         self.ostep = (self.omax - self.omin) / (nomega - 1)
         if self.obinedges is None:
             self.obinedges = np.linspace(
                self.omin - self.ostep / 2, self.omax + self.ostep / 2, nomega + 1
             )
-        if (self.omax - self.omin) > 360:
-            # multi-turn scan...
-            self.omin = 0.0
-            self.omax = 360.0
-            self.omega_for_bins = self.omega % 360
-        else:
-            self.omega_for_bins = self.omega
         # values 0, 1, 2
         # shape = 3
         # step = 1
