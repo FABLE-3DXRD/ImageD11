@@ -187,8 +187,7 @@ def iradon(radon_image,
             return result
 
     if workers == 1:
-        for iangle in range(angles_count):
-            recm += run_interp((iangle,))
+        recm += run_interp(range(angles_count))
     else:
         if workers is None or workers < 1:
             workers = cImageD11.cores_available()
