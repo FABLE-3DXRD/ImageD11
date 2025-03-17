@@ -191,7 +191,7 @@ def iradon(radon_image,
             recm += run_interp((iangle,))
     else:
         if workers is None or workers < 1:
-            workers = max( 1, cImageD11.cores_available() - 1 )
+            workers = cImageD11.cores_available()
 
         # apply interpolants in parallel
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
