@@ -158,42 +158,45 @@ def iradon(radon_image,
     # if we are linear interpolating, np.interp is much faster
 
     if interpolation == "linear":
-        def run_interp(i):
-            t = ypr * np.cos(rtheta[i]) - xpr * np.sin(rtheta[i])
-            if projection_shifts is not None:
-                xi = x + projection_shifts.T[i]
-            else:
-                xi = x
-
-            result = np.interp(t, xi, radon_filtered[:, i], left=0, right=0)
+        def run_interp(idx):
+            result = 0
+            for i in idx:
+                t = ypr * np.cos(rtheta[i]) - xpr * np.sin(rtheta[i])
+                if projection_shifts is not None:
+                    xi = x + projection_shifts.T[i]
+                else:
+                    xi = x
+                result += np.interp(t, xi, radon_filtered[:, i], left=0, right=0)
             return result
     else:
-        def run_interp(i):
-            t = ypr * np.cos(rtheta[i]) - xpr * np.sin(rtheta[i])
-            if projection_shifts is not None:
-                xi = x + projection_shifts.T[i]
-            else:
-                xi = x
-
-            interpolant = interp1d(xi, radon_filtered[:, i],
-                                   kind=interpolation,
-                                   copy=False,
-                                   assume_sorted=True,
-                                   bounds_error=False,
-                                   fill_value=0)
-            result = interpolant(t)
+        def run_interp(idx):
+            result = 0
+            for i in idx:
+                t = ypr * np.cos(rtheta[i]) - xpr * np.sin(rtheta[i])
+                if projection_shifts is not None:
+                    xi = x + projection_shifts.T[i]
+                else:
+                    xi = x
+                interpolant = interp1d(xi, radon_filtered[:, i],
+                                       kind=interpolation,
+                                       copy=False,
+                                       assume_sorted=True,
+                                       bounds_error=False,
+                                       fill_value=0)
+                result += interpolant(t)
             return result
 
     if workers == 1:
-        for angle in range(angles_count):
-            recm += run_interp(angle)
+        recm += run_interp(range(angles_count))
     else:
         if workers is None or workers < 1:
             workers = cImageD11.cores_available()
 
         # apply interpolants in parallel
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
-            for interp_result in pool.map(run_interp, range(angles_count)):
+            todo = list(range(angles_count))
+            jobs = [ todo[j::workers] for j in range(workers) ]
+            for interp_result in pool.map(run_interp, jobs):
                 recm += interp_result
 
     recm *= np.pi / (2 * angles_count)
