@@ -38,6 +38,36 @@ def guess_chunks(name, shape):
     return shape
 
 
+def guess_omega_step( omega, rptcut=0.02 ):
+    """
+    Estimates the step in omega angle data for multi-turn
+
+    Case 1: more turns try to interleave intentionally (irrationals)
+        - step should reduce smoothly as more frames are added
+        - example: step = pi or sqrt(2) or 180 * (3 - np.sqrt(5)) or any irrational
+        - data improve resolution 'forever'
+    Case 2: more turns repeat the same angles over and over
+        - step stays the same when more frames are added
+        - example: 0.25, 0.3, 0.5, 1.0, etc
+    Case 1&2: Prime rationals. Frames start interleaving, eventually repeat.
+        - example: 17 degree step. Needs 17 turns, then starts repeating.
+        - example: 1/3607 degree step. Needs a lot of turns, then starts repeating.
+
+    rptcut = tolerance to decide if frames are the same angle.
+             A fraction of the largest step found.
+    """
+    omega = np.asarray(omega)
+    v = (omega - omega.min()) % 360    # Values mod 360 to put frames in order
+    v.sort()           # Adjacent frames in angle
+    dv = v[1:]-v[:-1]  # Step from one frame to the next
+    # If we have (many) intentional repeats the pattern is
+    # 0,0,0,step,0,0,0,step,0,0,0,step,...
+    # The max is the largest step we might want to use
+    # The min may be zero
+    guess = dv[dv>(dv.max()*rptcut)].mean()
+    # print('mx, avg',dv.max(), dv.mean(), guess)
+    return guess
+
 class DataSet:
     """One DataSet instance per detector!"""
 
@@ -501,6 +531,15 @@ class DataSet:
             )
 
     def guessbins(self):
+        """
+        Attempts to estimate the step size in the data by looking at the numbers
+        in self.omega and self.dty that should already have self.shape reflecting
+        the length of the individual scans.
+
+        Perhaps this is the wrong approach. But we don't have it in the bliss data.
+
+        The data might not be on a regular grid.
+        """
         ny, nomega = self.shape
         if self.obincens is None:
             self.omin = self.omega.min()
@@ -510,14 +549,28 @@ class DataSet:
                 self.omin = 0.0
                 self.omax = 360.0
                 self.omega_for_bins = self.omega % 360
+                # assume the first scan is representative
+                # if you have different steps in different scans ... that is bad
+                self.ostep = guess_omega_step( self.omega[0] )
+                #                                               include endpoint
+                self.obincens = np.arange(self.omin, self.omax + self.ostep*0.1, self.ostep)
+                if self.obinedges is None:
+                    self.obinedges = np.arange(
+                       self.omin - self.ostep / 2, self.omax + self.ostep / 1.9, self.ostep
+                    )
             else:
                 self.omega_for_bins = self.omega
-            self.obincens = np.linspace(self.omin, self.omax, nomega)
-        else:
+                self.ostep = (self.omax - self.omin) / (nomega - 1)
+                self.obincens = np.linspace(self.omin, self.omax, nomega)
+        else: # self.obincens was loaded
             self.omin = self.obincens[0]
             self.omax = self.obincens[-1]
-        self.ostep = (self.omax - self.omin) / (nomega - 1)
-        if self.obinedges is None:
+            self.ostep = np.mean(self.obincens[1:] - self.obincens[:-1])
+            if (self.omax - self.omin)>=360:
+                self.omega_for_bins = self.omega % 360
+            else:
+                self.omega_for_bins = self.omega
+        if self.obinedges is None: # catches last 3 else here.
             self.obinedges = np.linspace(
                self.omin - self.ostep / 2, self.omax + self.ostep / 2, nomega + 1
             )
