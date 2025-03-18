@@ -304,7 +304,7 @@ class worker:
         if self.dark is not None:
             np.subtract(cor, self.dark, cor)
         if self.flat is not None:
-            np.divide(img, self.flat, cor)
+            np.divide(cor, self.flat, cor)
         return cor
 
     def bgsub(self, img, scale_factor=None):
