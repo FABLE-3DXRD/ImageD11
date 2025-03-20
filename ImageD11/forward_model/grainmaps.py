@@ -510,7 +510,11 @@ def indexing_iterative(cf_strong, grains, ds, ucell, pars, ds_max = 1.6, tol_ang
     
     # specify our ImageD11 indexer with these peaks
     print('****************** step 3: index additional grains with all the left peaks ***************************')
-    indexer_rest = ImageD11.indexing.indexer_from_colfile(cf_strong_rest)
+    if 'cell__a' in pars.parameters.keys():
+        indexer_rest = ImageD11.indexing.indexer_from_colfile(cf_strong_rest)
+    else:
+        # new pars format
+        indexer_rest = ImageD11.indexing.indexer_from_colfile_and_ucell(cf_strong_rest, ucell=ucell)
     print("Indexing {} peaks".format(cf_strong_rest.nrows))
     
     # USER: set a tolerance in d-space (for assigning peaks to powder rings)
