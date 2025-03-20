@@ -491,12 +491,14 @@ def indexing_iterative(cf_strong, grains, ds, ucell, pars, ds_max = 1.6, tol_ang
     print(args)
     
     # find all the peaks that have matched with already-indexed grains
-    print('****************** step 1: find all the peaks that are matched wwith already-indexed grains using forward model ***************************')
+    print('****************** step 1: find all the peaks that are matched with already-indexed grains using forward model ***************************')
     cf_matched_all, Comp_all = forward_model.forward_match_peaks(cf_strong, grains, ds, ucell, pars, ds_max = ds_max, tol_angle = tol_angle, tol_pixel=tol_pixel, thres_int=None)
     
     # find all the peaks that left unmatched
     print('****************** step 2: find all the peaks that are left unindexed ***************************')
+    print('****************** Removing un-matched peaks ...')
     cf_clean = forward_model.cf_remove_unmatched_peaks(cf_strong, cf_matched_all)
+    print('****************** Getting the rest of the peaks by comparing the difference between cf_strong and cf_clean')
     cf_strong_rest, cf_clean_diff = forward_model.cf_set_difference(cf_strong, cf_clean, tol = 0.001)
     
     print('Sinograme of all matched peaks')
@@ -559,6 +561,7 @@ def indexing_iterative(cf_strong, grains, ds, ucell, pars, ds_max = 1.6, tol_ang
     # merge duplicated grains
     print('****************** step 4: merge grains by removing duplicated grains based on their misorientations ***************************')
     grains_new = merge_grains(grains, grains_rest, crystal_system = crystal_system, tol_misori = tol_misori)
+    print('****************** Number of previously indexed, currently indexed and final merged grains:')
     print(len(grains), len(grains_rest), len(grains_new))
           
     # update grain IDs to the grains
