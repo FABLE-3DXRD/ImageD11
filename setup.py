@@ -27,7 +27,7 @@ import sys
 from io import open # this misery may never end.
 # For pip / bdist_wheel etc
 import os, platform, os.path
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 from setuptools.command import build_ext
 #
 import numpy, numpy.f2py   # force wrapper re-generation
@@ -216,16 +216,17 @@ setup(name='ImageD11',
       setup_requires = minimal,   # to compile
       install_requires = minimal + useful,
       extras_require = { 'full' : more, 'rare' : rare },
-      packages = ["ImageD11",
-                  "ImageD11.tkGui",
-                  "ImageD11.silxGui",
-                  "ImageD11.nbGui",
-                  "ImageD11.sinograms",
-                  "ImageD11.sandbox",
-                 ],
-      package_dir = {"ImageD11":"ImageD11"},
+      packages = find_packages( include=['ImageD11'
+                                        ] ),
+      package_dir = {"ImageD11": "ImageD11"},
       url = "http://github.com/jonwright/ImageD11",
-      package_data = {"ImageD11" : ["doc/*.html", "data/*", "sandbox/*.py" ]},
+      include_package_data=True,
+      package_data = {"ImageD11.data" : [ "data/*"],
+                      "ImageD11.nbGui" : ["ImageD11.nbGui/*.ipynb", ],
+                      "ImageD11.nbGui.TDXRD" : ["ImageD11.nbGui.TDXRD/*.ipynb", ],
+                      "ImageD11.nbGui.S3DXRD" : ["ImageD11.nbGui.S3DXRD/*.ipynb", ],
+                      "ImageD11.nbGui.calibration" : ["ImageD11.nbGui.calibration/*.ipynb", ],
+                     },
       scripts = scripts,
       long_description = readme,
       long_description_content_type='text/markdown',
