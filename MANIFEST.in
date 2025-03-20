@@ -24,15 +24,8 @@ recursive-include docs *.rtf
 recursive-include docs *.svg
 recursive-include docs *.txt
 recursive-include docs *.zip
-recursive-include docs *.ipynb
+# for now : recursive-include docs *.ipynb
 recursive-include docs Makefile
-recursive-include sandbox *.c
-recursive-include sandbox *.cl
-recursive-include sandbox *.gif
-recursive-include sandbox *.par
-recursive-include sandbox *.py
-recursive-include sandbox *.sh
-recursive-include sandbox *.txt
 recursive-include scripts *.py
 recursive-include src *.c
 recursive-include src *.h
@@ -66,7 +59,7 @@ recursive-include test *.ubi
 recursive-include webgui *.html
 recursive-include webgui *.js
 recursive-include webgui *.md
-prune ImageD11src/depreciated 
+prune ImageD11src/depreciated
 prune src/old
 exclude **/.ipynb_checkpoints/*
-global-prune .ipynb_checkpoints
+exclude *new
