@@ -470,7 +470,7 @@ def setup(
     pixels_in_spot=3,
     maskfile="",
     bgfile="",
-    cores_per_job=8,
+    cores_per_job=1,
     files_per_core=8,
     pythonpath=None,
 ):
