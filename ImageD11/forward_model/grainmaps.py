@@ -516,7 +516,7 @@ def DS_to_paraview(DS, h5name = 'DS.h5'):
                 fileID.write('    </Attribute>\n')
             elif n_dims == 5:
                 assert map_shape == tensor_dims, "Tensor {} shape {} does not match {}".format(key_name, map_shape, tensor_dims)
-                # Define the 9 tensor components (xx, xy, xz, yx, yy, yz, zx, zy, zz) for UBI or eps_sample
+                # Define the 9 tensor components, e.g. (xx, xy, xz, yx, yy, yz, zx, zy, zz) for eps_sample
                 if key_name == 'eps_sample':
                     tensor_components = [
                         ('xx', 0, 0), ('xy', 0, 1), ('xz', 0, 2),
@@ -528,15 +528,15 @@ def DS_to_paraview(DS, h5name = 'DS.h5'):
                         ('11', 0, 0), ('12', 0, 1), ('13', 0, 2),
                         ('21', 1, 0), ('22', 1, 1), ('23', 1, 2),
                         ('31', 2, 0), ('32', 2, 1), ('33', 2, 2)
-                    ]                    
+                    ]
                 for comp_name, i, j in tensor_components:
                     attr_name = "{}_{}".format(key_name, comp_name)
                     fileID.write('    <Attribute Name="%s" AttributeType="Scalar" Center="Cell">\n' % attr_name)
                     fileID.write('      <DataItem ItemType="HyperSlab" %s>\n' % ScalarDimensionsStr)
                     fileID.write('        <DataItem Dimensions="3 5" Format="XML">\n')
-                    fileID.write(f'         {0} {0} {0} {i} {j}\n')  # Origin: fix i, j for the component
-                    fileID.write(f'         {1} {1} {1} {1} {1}\n')  # Stride: 1 in all dims
-                    fileID.write(f'         {dims[0]} {dims[1]} {dims[2]} {1} {1}\n')  # Count: full 3D, 1x1 in tensor dims
+                    fileID.write('         %d %d %d %d %d\n' % (0, 0, 0, i, j))  # Origin: fix i, j for the component
+                    fileID.write('         %d %d %d %d %d\n' % (1, 1, 1, 1, 1))  # Stride: 1 in all dims
+                    fileID.write('         %d %d %d %d %d\n' % (dims[0], dims[1], dims[2], 1, 1))  # Count: full 3D, 1x1 in tensor dims
                     fileID.write('        </DataItem>\n')
                     fileID.write('        <DataItem Format="HDF" NumberType="Float" Precision="6" %s >%s:/%s</DataItem>\n' % (
                         TensorDimensionsStr, h5_relpath, '/' + key_name))
