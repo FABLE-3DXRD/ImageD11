@@ -446,6 +446,109 @@ def DS_merge_and_identify_grains_sub(DS, FirstGrainID = 0, min_misori = 3.0, dis
     print('{} grains identified out of {} regions.'.format(i+1, id0))
     
     return DS_merge
+
+
+def DS_to_paraview(DS, h5name = 'DS.h5'):
+    """
+    Write an .xdmf file that lets you read the DS data with ParaView
+
+    Arguments:
+    DS                -- a dictionary contains DS-like map from the output of ImageD11.forward_model.grainmap class
+    h5name            -- the corresponding h5 filename, if not exist, I will creat one
+    """
+    assert 'labels' in DS.keys() and 'voxel_size' in DS.keys(), 'DS keys must contain "labels" and "voxel_size"'
+    h5_relpath = os.path.split(h5name)[1]
+    xdmf_filename = h5name.replace('.h5', '.xdmf')
+    # write an .h5 file if it does not exist
+    if not os.path.exists(h5name):
+        print('{} is not found; I am creating one ...'.format(h5name))       
+        with h5py.File(h5name, 'w') as hout:
+            for key, value in DS.items():
+                hout.create_dataset(key, data = value)
+        print('Done with saving DS to {}'.format(h5name))
+
+    dims = DS['labels'].shape
+    scalar_dims = dims
+    vector_dims = dims + (3,)
+    tensor_dims = dims + (3, 3,)
+    MeshDimensions = (dims[0] + 1, dims[1] + 1, dims[2] + 1)
+
+    MeshDimensionsStr = 'Dimensions="%d %d %d"' % MeshDimensions
+    ScalarDimensionsStr = 'Dimensions="%d %d %d"' % scalar_dims
+    VectorDimensionsStr = 'Dimensions="%d %d %d %d"' % vector_dims
+    TensorDimensionsStr = 'Dimensions="%d %d %d %d %d"' % tensor_dims
+
+    steps = tuple(DS['voxel_size'])
+
+    # Write .xdmf file
+    with open(xdmf_filename, 'wt') as fileID:
+        fileID.write('<?xml version="1.0"?>\n')
+        fileID.write('<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd"[]>\n')
+        fileID.write('<Xdmf xmlns:xi="http://www.w3.org/2003/XInclude" Version="2.2">\n')
+        fileID.write(' <Domain>\n')
+        fileID.write('  <Grid Name="GM3D" GridType="Uniform">\n')
+        fileID.write('   <Topology TopologyType="3DCoRectMesh" %s></Topology>\n' % MeshDimensionsStr)
+        fileID.write('    <Geometry Type="ORIGIN_DXDYDZ">\n')
+        fileID.write('     <!-- Origin  Z, Y, X -->\n')
+        fileID.write('     <DataItem Format="XML" Dimensions="3">0 0 0</DataItem>\n')
+        fileID.write('     <!-- DxDyDz (Spacing/Resolution) Z, Y, X -->\n')
+        fileID.write('     <DataItem Format="XML" Dimensions="3">%.6f %.6f %.6f</DataItem>\n' % steps)
+        fileID.write('    </Geometry>\n')
+
+        # iterate over all the keys
+        for key_name in DS.keys():
+            array = DS[key_name]
+
+            # work out what sort of array we have
+            map_shape = array.shape
+            n_dims = len(map_shape)
+            if n_dims == 3:
+                # scalar field
+                fileID.write('    <Attribute Name="%s" AttributeType="Scalar" Center="Cell">\n' % key_name)
+                fileID.write('      <DataItem Format="HDF" %s NumberType="Float" Precision="6" >%s:/%s</DataItem>\n' % (
+                        ScalarDimensionsStr, h5_relpath, '/' + key_name))
+                fileID.write('    </Attribute>\n')
+            elif n_dims == 4:
+                # vector field (like IPF)
+                fileID.write('    <Attribute Name="%s" AttributeType="Vector" Center="Cell">\n' % key_name)
+                fileID.write('      <DataItem Format="HDF" %s NumberType="Float" Precision="6" >%s:/%s</DataItem>\n' % (
+                        VectorDimensionsStr, h5_relpath, '/' + key_name))
+                fileID.write('    </Attribute>\n')
+            elif n_dims == 5:
+                assert map_shape == tensor_dims, "Tensor {} shape {} does not match {}".format(key_name, map_shape, tensor_dims)
+                # Define the 9 tensor components, e.g. (xx, xy, xz, yx, yy, yz, zx, zy, zz) for eps_sample
+                if key_name == 'eps_sample':
+                    tensor_components = [
+                        ('xx', 0, 0), ('xy', 0, 1), ('xz', 0, 2),
+                        ('yx', 1, 0), ('yy', 1, 1), ('yz', 1, 2),
+                        ('zx', 2, 0), ('zy', 2, 1), ('zz', 2, 2)
+                    ]
+                else:
+                    tensor_components = [
+                        ('11', 0, 0), ('12', 0, 1), ('13', 0, 2),
+                        ('21', 1, 0), ('22', 1, 1), ('23', 1, 2),
+                        ('31', 2, 0), ('32', 2, 1), ('33', 2, 2)
+                    ]
+                for comp_name, i, j in tensor_components:
+                    attr_name = "{}_{}".format(key_name, comp_name)
+                    fileID.write('    <Attribute Name="%s" AttributeType="Scalar" Center="Cell">\n' % attr_name)
+                    fileID.write('      <DataItem ItemType="HyperSlab" %s>\n' % ScalarDimensionsStr)
+                    fileID.write('        <DataItem Dimensions="3 5" Format="XML">\n')
+                    fileID.write('         %d %d %d %d %d\n' % (0, 0, 0, i, j))  # Origin: fix i, j for the component
+                    fileID.write('         %d %d %d %d %d\n' % (1, 1, 1, 1, 1))  # Stride: 1 in all dims
+                    fileID.write('         %d %d %d %d %d\n' % (dims[0], dims[1], dims[2], 1, 1))  # Count: full 3D, 1x1 in tensor dims
+                    fileID.write('        </DataItem>\n')
+                    fileID.write('        <DataItem Format="HDF" NumberType="Float" Precision="6" %s >%s:/%s</DataItem>\n' % (
+                        TensorDimensionsStr, h5_relpath, '/' + key_name))
+                    fileID.write('      </DataItem>\n')
+                    fileID.write('    </Attribute>\n')
+                continue
+            else:
+                continue
+        fileID.write('  </Grid>\n')
+        fileID.write(' </Domain>\n')
+        fileID.write('</Xdmf>\n')
+    print('Done with writing xdmf file to {}'.format(xdmf_filename))
     
 
 def indexing_iterative(cf_strong, grains, ds, ucell, pars, ds_max = 1.6, tol_angle = 0.25, tol_pixel =3, peak_assign_tol = 0.25, tol_misori = 3, crystal_system='cubic', **kwargs):
