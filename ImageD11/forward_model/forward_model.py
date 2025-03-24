@@ -14,12 +14,12 @@ import ImageD11.transformer
 from ImageD11.forward_model import pars_conversion
 from matplotlib import pyplot as plt
 import logging
-from numba import njit
+from numba import njit, prange
 
 econst = 12.3984
 logging.basicConfig(level=logging.INFO, force=True)
 
-def forward_match_peaks(cf_strong, grains, ds, ucell, pars, ds_max = 2.0, tol_angle=1, tol_pixel=10, thres_int = None, verbose = 1):
+def forward_match_peaks(cf_strong, grains, ds, ucell, pars, ds_max = 1.6, tol_angle=1, tol_pixel=5, thres_int = None, vectorized_comp=True, verbose = 1):
     """
     Perform forward calculation to find the matched fwd peaks and exp peaks
 
@@ -34,6 +34,7 @@ def forward_match_peaks(cf_strong, grains, ds, ucell, pars, ds_max = 2.0, tol_an
     tol_angle -- tolerance of angles for matching peaks
     tol_piexl -- tolerance of pixels for matching peaks
     thres_int -- intensity threshold, None as default to not remove peaks
+    vectorized_comp -- flag for vectorized comparison [bool]
     verbose   -- verbose level for displaying print out
 
     Returns:
@@ -57,7 +58,7 @@ def forward_match_peaks(cf_strong, grains, ds, ucell, pars, ds_max = 2.0, tol_an
         B = grains[i].B
 
         fwd, Nr_simu = forward_comp(pos, U, B, ucell, pars, ds_max = ds_max, rot_start = rot_min, rot_end = rot_max, rot_step = rot_step, verbose = verbose)
-        cf_matched, fwd_matched, ij, Completeness = find_matching_peaks(cf_strong, fwd, dsmax = ds_max, tol_angle=tol_angle, tol_pixel=tol_pixel)
+        cf_matched, fwd_matched, ij, Completeness = find_matching_peaks(cf_strong, fwd, dsmax = ds_max, tol_angle=tol_angle, tol_pixel=tol_pixel, vectorized_comp=vectorized_comp)
         if thres_int is not None:
              cf_matched = cf_remove_weak_peaks(cf_matched, thres_int = thres_int)
         Comp_all.append([Completeness, cf_matched.nrows/Nr_simu])
@@ -408,7 +409,7 @@ def get_ds_max(pars):
     return ds_max
 
 
-def find_matching_peaks(cf, fwd, dsmax=1.5, tol_angle=0.1, tol_pixel=0.55):
+def find_matching_peaks(cf, fwd, dsmax=1.5, tol_angle=0.1, tol_pixel=0.55, vectorized_comp=True):
     """
     Matching the peaks from cf to the forward calculated peaks by checking differences in omega, tth, fc(dety), sc(detz)
 
@@ -418,6 +419,7 @@ def find_matching_peaks(cf, fwd, dsmax=1.5, tol_angle=0.1, tol_pixel=0.55):
     dsmax -- maximum ds [Angstrom^-1]
     tol_angle -- tolerance for matching angles, omega and two-theta [deg]
     tol_pixel -- tolerance for matching pixel coordinate, dety (fc) and detz (sc), [pixel]
+    vectorized_comp -- flag for vectorized comparison [bool]
 
     Returns:
     cf_matched -- colume file that only matches with forward calculated peaks
@@ -438,18 +440,48 @@ def find_matching_peaks(cf, fwd, dsmax=1.5, tol_angle=0.1, tol_pixel=0.55):
     fwd_sc = np.array([row[5] for row in fwd])
     fwd_HitDetFlag = np.array([row[8] for row in fwd])
     
-    # Vectorized differences
-    diff_omega = np.abs(cf_omega[:, np.newaxis] - fwd_omega)
-    diff_tth = np.abs(cf_tth[:, np.newaxis] - fwd_tth)
-    diff_fc = np.abs(cf_fc[:, np.newaxis] - fwd_fc)
-    diff_sc = np.abs(cf_sc[:, np.newaxis] - fwd_sc)
+    # Vectorized differences, fast but more memory consuming
+    if vectorized_comp:
+        diff_omega = np.abs(cf_omega[:, np.newaxis] - fwd_omega)
+        diff_tth = np.abs(cf_tth[:, np.newaxis] - fwd_tth)
+        diff_fc = np.abs(cf_fc[:, np.newaxis] - fwd_fc)
+        diff_sc = np.abs(cf_sc[:, np.newaxis] - fwd_sc)
+
+        # Apply tolerances
+        matches = (diff_omega < tol_angle) & (diff_tth < tol_angle) & (diff_fc < tol_pixel) & (diff_sc < tol_pixel)
+
+        # Clean up after matches is computed
+        del diff_omega, diff_tth, diff_fc, diff_sc
+        del cf_omega, cf_tth, cf_fc, cf_sc
+        del fwd_omega, fwd_tth, fwd_fc, fwd_sc
+        # Create a boolean mask for the cf object
+        matched_cf_indices, matched_fwd_indices = np.where(matches)
+        del matches
+    else:
+        # incremental matching, slower but less memory consuming
+        matched_cf_indices = set()
+        matched_fwd_indices = set()
+        for i in range(cf.nrows):
+            omega_diff = np.abs(cf_omega[i] - fwd_omega)
+            tth_diff = np.abs(cf_tth[i] - fwd_tth)
+            fc_diff = np.abs(cf_fc[i] - fwd_fc)
+            sc_diff = np.abs(cf_sc[i] - fwd_sc)
+
+            # Find matches for this row
+            matches = (omega_diff < tol_angle) & (tth_diff < tol_angle) & (fc_diff < tol_pixel) & (sc_diff < tol_pixel)
+            matched_indices = np.where(matches)[0]  # Indices in cf2 that match
+
+            if len(matched_indices) > 0:
+                matched_cf_indices.add(i)
+                matched_fwd_indices.update(matched_indices)
+
+        # Clean up arrays no longer needed
+        del omega_diff, tth_diff, fc_diff, sc_diff
+        del cf_omega, cf_tth, cf_fc, cf_sc
+        del fwd_omega, fwd_tth, fwd_fc, fwd_sc
     
-    # Apply tolerances
-    matches = (diff_omega < tol_angle) & (diff_tth < tol_angle) & (diff_fc < tol_pixel) & (diff_sc < tol_pixel)
-    
-    
-    # Create a boolean mask for the cf object
-    matched_cf_indices, matched_fwd_indices = np.where(matches)
+    matched_cf_indices = list(matched_cf_indices)
+    matched_fwd_indices = list(matched_fwd_indices)
     
     matched_mask = np.zeros(cf.nrows, dtype=bool)
     matched_mask[matched_cf_indices] = True
@@ -469,7 +501,6 @@ def find_matching_peaks(cf, fwd, dsmax=1.5, tol_angle=0.1, tol_pixel=0.55):
     print('Found {}/{} matched peaks, completeness = {}'.format(len(fwd_matched), np.where(fwd_HitDetFlag==True)[0].shape[0], Completeness))
     
     return cf_matched, fwd_matched, ij, Completeness
-
 
 
 def cf_remove_weak_peaks(cf, percent_int = 20, thres_int = None):
@@ -496,7 +527,7 @@ def cf_remove_weak_peaks(cf, percent_int = 20, thres_int = None):
     return cf_out
 
 
-def cf_set_difference(cf1, cf2, tol = 0.001):
+def cf_set_difference(cf1, cf2, tol=0.001, chunk_size=100):
     """
     Matching the peaks from cf to the forward calculated peaks by checking differences in omega, tth, fc(dety), sc(detz)
 
@@ -504,12 +535,12 @@ def cf_set_difference(cf1, cf2, tol = 0.001):
     cf1 -- ImageD11 column file [object]
     cf2 -- ImageD11 column file [object]
     tol -- tolerance for matching the peaks, dty, omega, sc and fc
+    chunk_size -- number of cf1 rows to process at a time (tune for memory/speed)
 
     Returns:
     cf1_diff -- rest of the peaks from cf1 which is not contained in cf2
     cf2_diff -- rest of the peaks from cf2 which is not contained in cf1
     """
-    
     cf1_omega = np.array(cf1.omega)
     cf1_dty = np.array(cf1.dty)
     cf1_fc = np.array(cf1.fc)
@@ -520,37 +551,71 @@ def cf_set_difference(cf1, cf2, tol = 0.001):
     cf2_fc = np.array(cf2.fc)
     cf2_sc = np.array(cf2.sc)
     
-    # Vectorized differences
-    diff_dty = np.abs(cf1_dty[:, np.newaxis] - cf2_dty)
-    diff_omega = np.abs(cf1_omega[:, np.newaxis] - cf2_omega)
-    diff_fc = np.abs(cf1_fc[:, np.newaxis] - cf2_fc)
-    diff_sc = np.abs(cf1_sc[:, np.newaxis] - cf2_sc)
+    # Initialize match arrays
+    matched_cf1 = np.zeros(cf1.nrows, dtype=np.bool_)
+    matched_cf2 = np.zeros(cf2.nrows, dtype=np.bool_)
     
-    # Apply tolerances
-    matches = (diff_dty < tol) & (diff_omega < tol) & (diff_fc < tol) & (diff_sc < tol)
+    # Process cf1 in chunks
+    n_chunks = (cf1.nrows + chunk_size - 1) // chunk_size  # Ceiling division
+    for chunk_idx in range(n_chunks):
+        start = chunk_idx * chunk_size
+        end = min(start + chunk_size, cf1.nrows)
+        
+        # Extract chunk
+        cf1_dty_chunk = cf1_dty[start:end]
+        cf1_omega_chunk = cf1_omega[start:end]
+        cf1_fc_chunk = cf1_fc[start:end]
+        cf1_sc_chunk = cf1_sc[start:end]
+        
+        # Find matches for this chunk
+        find_matches_chunk(cf1_dty_chunk, cf1_omega_chunk, cf1_fc_chunk, cf1_sc_chunk,
+                          cf2_dty, cf2_omega, cf2_fc, cf2_sc, tol, start, matched_cf1, matched_cf2)
     
-    # Create a boolean mask for the cf object
-    matched_cf1_indices, matched_cf2_indices = np.where(matches)
+    # Clean up
+    del cf1_omega, cf1_dty, cf1_fc, cf1_sc
+    del cf2_omega, cf2_dty, cf2_fc, cf2_sc
     
-    diff_mask1 = np.ones(cf1.nrows, dtype=bool)
-    diff_mask1[matched_cf1_indices] = False
+    # Create difference masks (unmatched peaks)
+    diff_mask1 = ~matched_cf1  # Invert: True where no match
+    diff_mask2 = ~matched_cf2
     
-    diff_mask2 = np.ones(cf2.nrows, dtype=bool)
-    diff_mask2[matched_cf2_indices] = False
-    
-    # Filter cf using the boolean mask
+    # Filter
     cf1_diff = cf1.copy()
     cf1_diff.filter(diff_mask1)
+    del diff_mask1
     
     cf2_diff = cf2.copy()
     cf2_diff.filter(diff_mask2)
+    del diff_mask2
     
     print('Found {}/{} different peaks for cf1'.format(cf1_diff.nrows, cf1.nrows))
     print('Found {}/{} different peaks for cf2'.format(cf2_diff.nrows, cf2.nrows))
     
-    del cf1, cf2  # Removes the local references to free memory use
-
+    del cf1, cf2
+    
     return cf1_diff, cf2_diff
+
+
+@njit
+def find_matches_chunk(cf1_dty_chunk, cf1_omega_chunk, cf1_fc_chunk, cf1_sc_chunk, cf2_dty, cf2_omega, cf2_fc, cf2_sc, tol, start_idx, matched_cf1, matched_cf2):
+    chunk_size = len(cf1_dty_chunk)
+    for i in prange(chunk_size):  # Parallel loop with Numba
+        for j in range(len(cf2_dty)):
+            dty_diff = abs(cf1_dty_chunk[i] - cf2_dty[j])
+            if dty_diff >= tol:
+                continue
+            omega_diff = abs(cf1_omega_chunk[i] - cf2_omega[j])
+            if omega_diff >= tol:
+                continue
+            fc_diff = abs(cf1_fc_chunk[i] - cf2_fc[j])
+            if fc_diff >= tol:
+                continue
+            sc_diff = abs(cf1_sc_chunk[i] - cf2_sc[j])
+            if sc_diff >= tol:
+                continue
+            # Match found
+            matched_cf1[start_idx + i] = True
+            matched_cf2[j] = True
 
 
 def cf_plot_sino(cfs):
