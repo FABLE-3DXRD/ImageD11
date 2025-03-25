@@ -166,8 +166,8 @@ class Phases(AnalysisSchema):
     Reads analysis parameters from file
     Contains self.unitcells which is a dict of unitcell objects
     """
-    def __init__(self, filename):
-        super(Phases, self).__init__(filename)
+    def __init__(self, filename=None):
+        super(Phases, self).__init__(filename=filename)
         self.unitcells = {}
         if filename is not None:
             self.get_unitcells()
