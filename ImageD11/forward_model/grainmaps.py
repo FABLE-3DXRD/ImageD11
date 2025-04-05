@@ -382,7 +382,7 @@ def DS_merge_and_identify_grains_sub(DS, FirstGrainID = 0, min_misori = 3.0, dis
                 neigb_vol = DS['labels'] == id_neigb_j
                 indices_neigb = np.array(np.where(neigb_vol)).T
 
-                r1 = get_mean_rod(DS['Rod'][indices_neigb[:, 0], indices_neigb[:, 1], indices_neigb[:, 2], :].T)
+                r1 = get_mean_rod(DS['Rod'][indices_neigb[:, 0], indices_neigb[:, 1], indices_neigb[:, 2], :], auto_check = False)
                 U1 = ori_converter.quat2u(ori_converter.rod2quat(r1))
                 the_angle, _, _ = disorientation(U0, U1, crystal_structure=crystal_structure)
 
@@ -876,7 +876,7 @@ def read_intensity_info(text):
     return data
 
 
-def get_mean_rod(rod, kmeans_flag=False):
+def get_mean_rod(rod, kmeans_flag=False, auto_check = True):
     """
     Compute the mean Rodrigues vector with optional k-means clustering.
     
@@ -892,6 +892,8 @@ def get_mean_rod(rod, kmeans_flag=False):
     # Ensure rod has shape (n, 3)
     if rod.shape[1] != 3 and rod.shape[0] == 3:
         rod = rod.T
+    # Remove rows with any NaN values
+    rod = rod[~np.isnan(rod).any(axis=1)]
     
     if kmeans_flag and len(rod) > 1:
         # Perform k-means clustering
