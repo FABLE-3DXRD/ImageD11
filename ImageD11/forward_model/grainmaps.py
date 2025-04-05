@@ -890,7 +890,7 @@ def get_mean_rod(rod, kmeans_flag=False, auto_check = True):
     rod = np.array(rod)
     
     # Ensure rod has shape (n, 3)
-    if rod.shape[1] != 3 and rod.shape[0] == 3:
+    if auto_check and (rod.shape[1] != 3 and rod.shape[0] == 3):
         rod = rod.T
     # Remove rows with any NaN values
     rod = rod[~np.isnan(rod).any(axis=1)]
