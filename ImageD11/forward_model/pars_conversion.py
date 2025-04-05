@@ -37,7 +37,8 @@ def convert_ImageD11pars2p(pars, verbose = 1):
         p['rawfile'] = pars.parameters['filename']
     except Exception as e:
         # sometime there is no "filename" key
-        logging.info("An unexpected error occurred: {}".format(e))
+        if verbose > 1:
+            logging.info("An unexpected error occurred: {}".format(e))
     p['Lsam2det'] = pars.parameters['distance']/1000.0
     p['tilt_xyz'] = [np.rad2deg(pars.parameters['tilt_x']), np.rad2deg(pars.parameters['tilt_y']), np.rad2deg(pars.parameters['tilt_z'])]  # [deg]
     p['RotDet'] = get_det_R(pars.parameters['tilt_x'], pars.parameters['tilt_y'], pars.parameters['tilt_z'], verbose)
