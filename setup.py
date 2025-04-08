@@ -81,12 +81,11 @@ class build_ext_subclass( build_ext.build_ext ):
             CF = os.environ.get("CFLAGS").split()
         if "LDFLAGS" in os.environ:
             LF = os.environ.get("LDFLAGS").split()
-        for e in self.extensions:
-            if c in copt:
-               e.extra_compile_args = copt[ c ] + CF
-               e.extra_link_args = lopt[ c ] + LF
-        print("Customised compiler",c,e.extra_compile_args,
-                    e.extra_link_args)
+        if c in copt:
+            ext.extra_compile_args = copt[ c ] + CF
+            ext.extra_link_args = lopt[ c ] + LF
+        print("Customised compiler",c,ext.extra_compile_args,
+                    ext.extra_link_args)
         if ext.sources[0].endswith('.pyf'):
             name = ext.sources[0]
             # generate wrappers
