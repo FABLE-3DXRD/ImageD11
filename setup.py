@@ -78,15 +78,14 @@ class build_ext_subclass( build_ext.build_ext ):
         c = self.compiler.compiler_type
         CF = [] ; LF=[]
         if "CFLAGS" in os.environ:
-            CF = os.environ.get("CFLAGS").split(" ")
+            CF = os.environ.get("CFLAGS").split()
         if "LDFLAGS" in os.environ:
-            LF = os.environ.get("LDFLAGS").split(" ")
-        for e in self.extensions:
-            if c in copt:
-               e.extra_compile_args = copt[ c ] + CF
-               e.extra_link_args = lopt[ c ] + LF
-        print("Customised compiler",c,e.extra_compile_args,
-                    e.extra_link_args)
+            LF = os.environ.get("LDFLAGS").split()
+        if c in copt:
+            ext.extra_compile_args = copt[ c ] + CF
+            ext.extra_link_args = lopt[ c ] + LF
+        print("Customised compiler",c,ext.extra_compile_args,
+                    ext.extra_link_args)
         if ext.sources[0].endswith('.pyf'):
             name = ext.sources[0]
             # generate wrappers
@@ -105,7 +104,7 @@ cnames =  "_cImageD11.pyf blobs.c cdiffraction.c cimaged11utils.c"+\
 
 csources = [os.path.join('src',c) for c in cnames.split()]
 
-extension = Extension( "_cImageD11",  csources,
+extension = Extension( "ImageD11._cImageD11",  csources,
                 include_dirs = [ 'src',numpy.get_include(), numpy.f2py.get_include() ])
 
 ################################################################################
@@ -211,7 +210,6 @@ setup(name='ImageD11',
       description='ImageD11',
       license = "GPL",
 #      python_requires='<3.12',  # Numba still not working for 3.12
-      ext_package = "ImageD11",   # Puts extensions in the ImageD11 directory
       ext_modules = [extension,],
       setup_requires = minimal,   # to compile
       install_requires = minimal + useful,
