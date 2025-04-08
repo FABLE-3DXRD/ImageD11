@@ -78,9 +78,9 @@ class build_ext_subclass( build_ext.build_ext ):
         c = self.compiler.compiler_type
         CF = [] ; LF=[]
         if "CFLAGS" in os.environ:
-            CF = os.environ.get("CFLAGS").split(" ")
+            CF = os.environ.get("CFLAGS").split()
         if "LDFLAGS" in os.environ:
-            LF = os.environ.get("LDFLAGS").split(" ")
+            LF = os.environ.get("LDFLAGS").split()
         for e in self.extensions:
             if c in copt:
                e.extra_compile_args = copt[ c ] + CF
