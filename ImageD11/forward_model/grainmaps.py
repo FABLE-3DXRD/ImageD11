@@ -1081,6 +1081,8 @@ class Symmetry(enum.Enum):
 
     def symmetry_operators(self, use_miller_bravais=False):
         """Define the equivalent crystal symmetries.
+        Note that it takes the highest symmetry in each of the 7 crystal systems
+        This may not be quite right if a specific point group with less symmetry is desired
 
         Those come from Randle & Engler, 2000. For instance in the cubic
         crystal struture, for instance there are 24 equivalent cube orientations.
@@ -1144,12 +1146,21 @@ class Symmetry(enum.Enum):
               sym[8] = np.array([[-0.5, s60, 0.], [s60, 0.5, 0.], [0., 0., -1.]])
               sym[9] = np.array([[-1., 0., 0.], [0., 1., 0.], [0., 0., -1.]])
               sym[10] = np.array([[-0.5, -s60, 0.], [-s60, 0.5, 0.], [0., 0., -1.]])
-              sym[11] = np.array([[0.5, -s60, 0.], [-s60, -0.5, 0.], [0., 0., -1.]])
+              sym[11] = np.array([[0.5, -s60, 0.], [-s60, -0.5, 0.], [0., 0., -1.]])               
+        elif self is Symmetry.trigonal:
+              sym = np.zeros((6, 3, 3), dtype=float)
+              s60 = np.sin(60 * np.pi / 180)
+              sym[0] = np.array([[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]])
+              sym[1] = np.array([[-0.5, -s60, 0.], [s60, -0.5, 0.], [0., 0., 1.]])
+              sym[2] = np.array([[-0.5, s60, 0.], [-s60, -0.5, 0.], [0., 0., 1.]])
+              sym[3] = np.array([[1., 0., 0.], [0., -1., 0.], [0., 0., -1.]])    
+              sym[4] = np.array([[-0.5, s60, 0.], [s60, 0.5, 0.], [0., 0., -1.]])
+              sym[5] = np.array([[-0.5, -s60, 0.], [-s60, 0.5, 0.], [0., 0., -1.]])
         elif self is Symmetry.orthorhombic:
             sym = np.zeros((4, 3, 3), dtype=float)
             sym[0] = np.array([[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]])
             sym[1] = np.array([[1., 0., 0.], [0., -1., 0.], [0., 0., -1.]])
-            sym[2] = np.array([[-1., 0., -1.], [0., 1., 0.], [0., 0., -1.]])
+            sym[2] = np.array([[-1., 0., 0.], [0., 1., 0.], [0., 0., -1.]])
             sym[3] = np.array([[-1., 0., 0.], [0., -1., 0.], [0., 0., 1.]])
         elif self is Symmetry.tetragonal:
             sym = np.zeros((8, 3, 3), dtype=float)
@@ -1161,6 +1172,10 @@ class Symmetry(enum.Enum):
             sym[5] = np.array([[-1., 0., 0.], [0., 1., 0.], [0., 0., -1.]])
             sym[6] = np.array([[0., 1., 0.], [1., 0., 0.], [0., 0., -1.]])
             sym[7] = np.array([[0., -1., 0.], [-1., 0., 0.], [0., 0., -1.]])
+        elif self is Symmetry.monoclinic:
+            sym = np.zeros((2, 3, 3), dtype=float)
+            sym[0] = np.array([[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]])
+            sym[1] = np.array([[-1., 0., 0.], [0., -1., 0.], [0., 0., 1.]])
         elif self is Symmetry.triclinic:
             sym = np.zeros((1, 3, 3), dtype=float)
             sym[0] = np.array([[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]])
@@ -1448,8 +1463,14 @@ def disorientation(ori1, ori2, crystal_structure=Symmetry.triclinic):
         oi_list = np.einsum('nij,jk->nik', symmetries, ori2)
 
         # Compute all combinations of symmetrized ori1 and ori2
-        oj_list_T = np.transpose(oj_list, axes=(0, 2, 1))
-        delta_list = np.einsum('bij,bjk->bik', oi_list, oj_list_T)
+        delta_list_AB = np.einsum('aij,bkj->abik', oi_list, oj_list)
+        delta_list_BA = np.einsum('aij,bkj->abik', oj_list, oi_list)
+        
+        # Flatten (2*Nsymmetry*Nsymmetry, 3, 3)
+        delta_list = np.concatenate([
+            delta_list_AB.reshape(-1, 3, 3),
+            delta_list_BA.reshape(-1, 3, 3)
+        ])
 
         # Calculate misorientation angles for all delta matrices
         mis_angles = np.array([misorientation_angle_from_delta(delta) for delta in delta_list])
