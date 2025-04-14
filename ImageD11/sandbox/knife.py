@@ -305,7 +305,7 @@ def fit_fluo():
 #    pl.show()
 
     def fitfunc( args ):
-        global Y
+        #flake8: global Y
         radius, position, fwhm, eta, bkg, scale = args
         yc = convoluted_cylinder_thickness( x,radius, position, fwhm, eta )
         calc = bkg+scale*yc

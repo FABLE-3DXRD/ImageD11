@@ -10,7 +10,8 @@ from ImageD11 import sparseframe, cImageD11, columnfile, blobcorrector
 timer= timeit.default_timer
 T0 = START = timer()
 def bench(msg):
-    global T0, START
+    #flake8: global T0
+    global START
     end = timer()
     print(msg, "%.4f /s %.4f /s"%( end - START, end - T0 ) )
     START = end

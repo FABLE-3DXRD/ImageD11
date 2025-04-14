@@ -1805,7 +1805,7 @@ def idxpoint(
                 continue
     if ImageD11.indexing.loglevel <= 3:
         sys.stdout.flush()
-    global symglobal
+    #flake8: global symglobal
     ind.ubis = [sym_u.find_uniq_u(ubi, symglobal) for ubi in ind.ubis]
     # count the unique peaks per grain
     uniqs = np.empty((len(ind.ubis), 2), int)

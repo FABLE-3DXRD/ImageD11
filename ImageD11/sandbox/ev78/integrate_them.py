@@ -81,7 +81,7 @@ def calcfrom1d( integrator, tth, I, shape):
                               I )
     calcimage.shape = shape
     # Solid angle correction
-    global SOLID_ANGLE
+    # flake8: global SOLID_ANGLE
     if SOLID_ANGLE:
         numpy.multiply( calcimage, integrator._dssa, calcimage )
     return calcimage
@@ -264,7 +264,7 @@ def integrate_them( o ):
             outFile = f.replace(f2d["input_extn"], f2d["output_extn"])
         else:
             outFile = f.replace(o.extn,".dat")
-        global SOLID_ANGLE
+        #flake8: global SOLID_ANGLE
         if 0:
             from matplotlib.pylab import imshow, figure, show, log, plot
             #imshow(log(fo.data))
