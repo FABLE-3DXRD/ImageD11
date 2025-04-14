@@ -74,7 +74,7 @@ def top_pixels( nnz, row, col, val, howmany ):
     - howmany is the maximum number of pixels to return
     """
     # quick return if there are already few enough pixels
-    global thresholds
+    #flake8: global thresholds
     if nnz <= howmany:
         return nnz
     # histogram of how many pixels are above each threshold
@@ -113,7 +113,7 @@ def choose_parallel( args ):
     col = np.empty(msk.size, np.uint16)
     val = np.empty(msk.size, frm.dtype)
     nnz = select( frm, msk, row, col, val)
-    global howmany
+    #flake8: global howmany
     if nnz == 0:
         sf = None
     else:
@@ -123,7 +123,7 @@ def choose_parallel( args ):
         s = sparseframe.sparse_frame( row[:nnz].copy(), col[:nnz].copy(),
                                       frm.shape )
         s.set_pixels("intensity", val[:nnz].copy())
-        global pixels_in_spot
+        #flake8: global pixels_in_spot
         if pixels_in_spot <= 1:
             sf = s
         else: 
@@ -210,7 +210,7 @@ def segment_scans(fname, scans, outname, mypool,
                 nimg = frms.shape[0]
                 args = [ (fname, address, i) for i in range(nimg) ]
             # CLOSE the input file here
-            global CORES
+            #flake8: global CORES
             # approx 1440 frames, 40 cores
             chunksize = max(1,len(args)//CORES//8)
             for i, spf in mypool.map( choose_parallel, args, 

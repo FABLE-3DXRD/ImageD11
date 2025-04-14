@@ -201,7 +201,7 @@ class frmtosparse:
 
 
 def clean(nnz, row, col, val):
-    global OPTIONS
+    #flake8: global OPTIONS
     if nnz == 0:
         return None
     if nnz > OPTIONS.howmany:
@@ -345,7 +345,7 @@ def initOptions(h5name, jobid):
 
 
 def main(h5name, jobid):
-    global OPTIONS
+    #flake8: global OPTIONS
     initOptions(h5name, jobid)
     options = OPTIONS
     assert options is not None
