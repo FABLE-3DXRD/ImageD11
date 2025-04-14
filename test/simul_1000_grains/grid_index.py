@@ -76,7 +76,7 @@ def domap(  OmFloat,  OmSlop,
             tolseq = [ 0.03, 0.02, 0.01],
             symmetry = "triclinic"):
     """mapping function - does what makemap.py does"""
-    global NPKS
+    #flake8: global NPKS
     ss = sys.stdout # turns off printing
     
 

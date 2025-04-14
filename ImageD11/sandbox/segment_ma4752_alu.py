@@ -50,7 +50,7 @@ from ImageD11 import sparseframe, cImageD11
 
 @numba.njit
 def select( img, msk, row, col, val ):
-    global CUT
+    #flake8: global CUT
     cut = CUT
     # Choose the pixels that are > cut and put into sparse arrays
     k = 0
