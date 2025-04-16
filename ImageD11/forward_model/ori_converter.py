@@ -109,9 +109,14 @@ def quat2u(q):
 
 @njit
 def rod2quat(r):
-
-	s = 1 / np.sqrt(1 + np.linalg.norm(r)**2)
-	return np.array([s, s * r[0], s * r[1], s * r[2]])
+	norm_sq = r[0]**2 + r[1]**2 + r[2]**2
+	s = 1 / np.sqrt(1 + norm_sq)
+	q = np.empty(4, dtype = np.float64)
+	q[0] = s
+	q[1] = s*r[0]
+	q[2] = s*r[1]
+	q[3] = s*r[2]
+	return q
 
 
 @njit
