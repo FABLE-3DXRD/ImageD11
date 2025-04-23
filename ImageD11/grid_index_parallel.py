@@ -287,8 +287,8 @@ def grid_index_parallel( fltfile, parfile, tmp, gridpars, translations ):
     gridpars = initgrid( fltfile, parfile, tmp, gridpars )
     print( "Done init" )
     if 'NPROC' not in gridpars or gridpars['NPROC'] is None:
-        NPR =  multiprocessing.cpu_count() - 1
-        cImageD11.cimaged11_omp_set_num_threads(2) # assume hyperthreading is useful?
+        NPR = max( cImageD11.cores_available() - 1, 1 )
+        cImageD11.cimaged11_omp_set_num_threads(1)
     else:
         NPR = int(gridpars['NPROC'])
     if 'NTHREAD' in gridpars:
