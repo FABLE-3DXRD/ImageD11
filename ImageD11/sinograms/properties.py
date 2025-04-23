@@ -731,7 +731,7 @@ def find_ND_labels(i, j, npks, verbose=1):
     return n, labels
 
 
-def pks_table_from_scan(sparsefilename, ds, row):
+def pks_table_from_scan(sparsefilename, ds, row, algorithm='lmlabel', wtmax=None):
     """
     Labels one rotation scan to a peaks table
 
@@ -746,7 +746,7 @@ def pks_table_from_scan(sparsefilename, ds, row):
     """
     sps = ImageD11.sparseframe.SparseScan(sparsefilename, ds.scans[row])
     sps.motors["omega"] = ds.omega[row]
-    peaks, pairs = ImageD11.sinograms.properties.props(sps, row)
+    peaks, pairs = ImageD11.sinograms.properties.props(sps, row, algorithm=algorithm, wtmax=wtmax)
     # which frame/peak is which in the peaks array
     # For the 3D merging
     n1 = sum(pairs[k][0] for k in pairs)  # how many overlaps were found:
@@ -992,7 +992,9 @@ def main(dsfilename, sparsefile=None, pksfile=None, options={}):
             t("%s connected components" % (str(cc[0])))
         else:
             # single scan. Skips a lot of hassle.
-            rmem = pks_table_from_scan(sparsefile, ds, 0)
+            rmem = pks_table_from_scan(sparsefile, ds, 0,
+                                       algorithm=options['algorithm'],
+                                       wtmax=options['wtmax'])
         rmem.save(pksfile)
         t("write hdf5")
     except Exception as e:
