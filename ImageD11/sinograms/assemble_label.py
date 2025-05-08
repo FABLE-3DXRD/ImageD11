@@ -68,6 +68,36 @@ def getsparse(dsobj, num):
     return row, col, intensity, nnz
 
 
+def make_sparse_vds(dsobj, nums, grp,
+                    names = ('row','col','intensity','nnz')):
+    """
+    dsobj = DataSet object
+    nums = indices of the sparsefiles in dset.sparsefiles
+    names = data to be linked
+
+    create vds links in grp pointing at names in nums
+    """
+    for name in names:
+        total_size = 0
+        sources = []
+        for num in nums:
+            hname = dsobj.sparsefiles[num]
+            hfullname = os.path.join( dsobj.analysispath, hname )
+            with h5py.File(hfullname, "r" ) as hin:
+                source_array = hin[dsobj.limapath][name]
+                total_size += len(source_array)
+                sources.append( h5py.VirtualSource( hname,
+                                                    dsobj.limapath + '/' + name,
+                                                    shape = source_array.shape ) )
+                dt = source_array.dtype
+        layout = h5py.VirtualLayout( shape=(total_size,), dtype = dt )
+        start = 0
+        for source in sources:
+            layout[ start : start + source.shape[0] ] = source
+            start += source.shape[0]
+        grp.create_virtual_dataset(name, layout)
+
+
 @numba.njit(boundscheck=True)
 def filterpixels(cutimage, row, col, intensity, nnz):
     """
@@ -102,7 +132,12 @@ def filterpixels(cutimage, row, col, intensity, nnz):
 
 
 def harvest_masterfile(
-    dset, outname, scanmotors=SCANMOTORS, headermotors=HEADERMOTORS, cutimage=None
+        dset,
+        outname,
+        scanmotors=SCANMOTORS,
+        headermotors=HEADERMOTORS,
+        cutimage=None,
+        use_vds=True,
 ):
     """
     dset = ImageD11.sinograms.dataset.DataSet object
@@ -171,40 +206,57 @@ def harvest_masterfile(
         print("Loading pixels:", end=" ")
         for scan in done:
             g = hout.require_group(scan)
-            for name in "row", "col":
-                if name not in g:
-                    g.create_dataset(name, shape=(0,), dtype=np.uint16, **opts)
-            if "intensity" not in g:
-                g.create_dataset(
-                    "intensity", shape=(0,), dtype=g.attrs["itype"], **opts
-                )
             nfrm = g.attrs["nframes"]
-            g.require_dataset("nnz", shape=(nfrm,), dtype=np.uint32)
             nstart = nread = npx = pstart = 0
-            while nread < nfrm:
-                row, col, intensity, nnz = getsparse(dset, idx)
-                if cutimage is not None:
-                    row, col, intensity, nnz = filterpixels(
-                        cutimage, row, col, intensity, nnz
+            if use_vds:
+                assert cutimage is None
+                # dset.frames_per_file
+                # dset.frames_per_scan
+                nums = [idx,]
+                nread = dset.frames_per_file[idx]
+                while nread < nfrm:
+                    idx += 1
+                    nums.append( idx )
+                    nread += dset.frames_per_file[idx]
+                try:
+                    make_sparse_vds(dset, nums, g)
+                except Exception as e:
+                    print("Error",nums,list(g), scan,e)
+                    raise
+                idx += 1
+            else:
+                g.require_dataset("nnz", shape=(nfrm,), dtype=np.uint32)
+                for name in "row", "col":
+                    if name not in g:
+                        g.create_dataset(name, shape=(0,), dtype=np.uint16, **opts)
+                if "intensity" not in g:
+                    g.create_dataset(
+                        "intensity", shape=(0,), dtype=g.attrs["itype"], **opts
                     )
-                idx += 1  # loop over sparse files in this scan
-                nread = nstart + len(nnz)  # number of frames in this limafile
-                g["nnz"][nstart:nread] = nnz
-                nstart = nread
-                pread = pstart + len(row)  # number of pixels in this limafile
-                g["row"].resize((pread,))
-                g["row"][pstart:pread] = row
-                g["col"].resize((pread,))
-                g["col"][pstart:pread] = col
-                g["intensity"].resize((pread,))
-                g["intensity"][pstart:pread] = intensity
-                pstart = pread
+                while nread < nfrm:
+                    row, col, intensity, nnz = getsparse(dset, idx)
+                    if cutimage is not None:
+                        row, col, intensity, nnz = filterpixels(
+                            cutimage, row, col, intensity, nnz
+                        )
+                    idx += 1  # loop over sparse files in this scan
+                    nread = nstart + len(nnz)  # number of frames in this limafile
+                    g["nnz"][nstart:nread] = nnz
+                    nstart = nread
+                    pread = pstart + len(row)  # number of pixels in this limafile
+                    g["row"].resize((pread,))
+                    g["row"][pstart:pread] = row
+                    g["col"].resize((pread,))
+                    g["col"][pstart:pread] = col
+                    g["intensity"].resize((pread,))
+                    g["intensity"][pstart:pread] = intensity
+                    pstart = pread
             print(scan, end=", ")
         print()
     return outname
 
 
-def main(dsname, outname=None, cutimage=None):
+def main(dsname, outname=None, cutimage=None, use_vds=True):
     """
     dsname = Dataset describing the masterfile + segmentation etc
     outname = sparse pixels file to write. Defaults to dset.sparsefile
@@ -216,8 +268,9 @@ def main(dsname, outname=None, cutimage=None):
     if outname is None:
         outname = dset.sparsefile
     if cutimage is not None:
+        assert (not use_vds)
         cutimage = fabio.open(cutimage).data
-    harvest_masterfile(dset, outname, cutimage=cutimage)
+    harvest_masterfile(dset, outname, cutimage=cutimage, use_vds=use_vds)
 
 
 if __name__ == "__main__":
