@@ -256,7 +256,7 @@ def harvest_masterfile(
     return outname
 
 
-def main(dsname, outname=None, cutimage=None, use_vds=True):
+def main(dsname, outname=None, cutimage=None, use_vds=False):
     """
     dsname = Dataset describing the masterfile + segmentation etc
     outname = sparse pixels file to write. Defaults to dset.sparsefile
