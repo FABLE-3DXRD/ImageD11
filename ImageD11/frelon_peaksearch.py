@@ -621,8 +621,8 @@ def segment_dataset(
             else:
                 all_frames_peaks_list = segment_master_file(
                     dataset.masterfile,
-                    "%s/measurement/%s"%(dataset.scans[scan_number], dataset.detector),
-                    dataset.omega_for_bins[scan_number],
+                    "%s/measurement/%s"%(dataset.scans[sn], dataset.detector),
+                    dataset.omega_for_bins[sn],
                     worker_args,
                     num_cpus,
                     scale_factor[sn],
