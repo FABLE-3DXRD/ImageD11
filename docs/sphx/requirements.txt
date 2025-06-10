@@ -138,7 +138,7 @@ pyyaml==6.0.2
     # via
     #   ImageD11 (setup.py)
     #   dask
-requests==2.32.3
+requests==2.32.4
     # via pooch
 scikit-image==0.24.0
     # via ImageD11 (setup.py)
