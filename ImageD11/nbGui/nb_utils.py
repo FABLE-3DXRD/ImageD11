@@ -297,7 +297,7 @@ date
     return bash_script_path, recons_path
 
 
-def prepare_astra_bash(ds, grainsfile, id11_code_path, group_name='grains'):
+def prepare_astra_bash(ds, grainsfile, id11_code_path, group_name='grains', memory=150):
     slurm_astra_path = os.path.join(ds.analysispath, "slurm_astra")
 
     if not os.path.exists(slurm_astra_path):
@@ -320,7 +320,7 @@ def prepare_astra_bash(ds, grainsfile, id11_code_path, group_name='grains'):
 #SBATCH --gres=gpu:1
 # define memory needs and number of tasks for each array job
 #SBATCH --ntasks=1
-#
+#SBATCH --mem={memory}G
 date
 module load cuda
 echo PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} {group_name} > {log_path} 2>&1
