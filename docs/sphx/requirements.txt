@@ -166,7 +166,7 @@ tqdm==4.67.1
     #   orix
 typing-extensions==4.12.2
     # via orix
-urllib3==2.2.3
+urllib3==2.5.0
     # via requests
 xfab==0.0.6
     # via ImageD11 (setup.py)
