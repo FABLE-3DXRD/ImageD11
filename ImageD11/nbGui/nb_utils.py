@@ -333,6 +333,7 @@ date
                grainsfile=grainsfile,
                dsfile=ds.dsfile,
                group_name=group_name,
+               memory=memory,
                log_path=log_path)
 
     with open(bash_script_path, "w") as bashscriptfile:
