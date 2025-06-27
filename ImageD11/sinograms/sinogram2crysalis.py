@@ -79,7 +79,7 @@ def integrate_sino( ds, image_mask, sinomask=None, nomega = 10):
     sinomask = which frames to use
     nomega = number of omegasteps to combine
     """
-    global readlock 
+    #flake8: global readlock 
     
     if sinomask is not None:
         assert sinomask.shape == ds.shape
@@ -215,7 +215,7 @@ if __name__=="__main__":
 
     # Dummy file opener
     def myopenimage( filename ):
-        global spx
+        #flake8: global spx
         '''flips to reverse order - need to fix this properly ... '''
         return SinoScan( spx[::-1] )
 

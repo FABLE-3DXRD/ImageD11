@@ -43,7 +43,8 @@ colors = (np.random.random( (len(gve),4))*255).astype( np.uint8 )
 
 
 def rotate():
-    global u, rz, rgba, gve, l, nframes
+    #flake8: global u, rz, rgba, gve, l, nframes
+    global u
     t0 = timer()
     u = np.dot( rz, np.reshape(u,(3,3) ))
     nbsplat.nbsplat( rgba, gve.T, u*(w+h)/2, 2 , colors=colors )

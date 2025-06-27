@@ -1594,17 +1594,9 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
                 if grain_npks > min_grain_npks:
                     w, ubifit, residuals, rank, sing_vals = weighted_lstsq_ubi_fit(grain_ydist, gve_grain, hkl)
                     
-                    problem_fitting = False
-                    try:
-                        # get U from UBI without using ImageD11 grain class
-                        ucell = ubi_to_unitcell(ubifit)
-                        U = ubi_and_ucell_to_u(ubifit, ucell)
-                    except:
-                        problem_fitting = True
-
                     # check the quality of the fit
                     worth_fitting = (ubifit is not None) and (rank == 3) and (np.linalg.cond(ubifit) < 1e14) and (
-                            np.linalg.det(ubifit) > 0) and (np.linalg.matrix_rank(ubifit) == 3) and (not np.any(np.isnan(U))) and (not problem_fitting)
+                            np.linalg.det(ubifit) > 0) and (np.linalg.matrix_rank(ubifit) == 3)
 
                     # do we like the quality?
                     if worth_fitting:
@@ -1639,7 +1631,10 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
                         gve_grain_strainfit = gve_voxel_merged[:, grain_peak_mask]
                         hkl = hkli[:, grain_peak_mask]
                         ydist = ydist_grain[grain_peak_mask]
-
+                        
+                        ucell = ubi_to_unitcell(ubifit)
+                        U = ubi_and_ucell_to_u(ubifit, ucell)
+                        
                         gve0 = U.dot(B0).dot(hkl.astype(np.float64))
                         gTg0 = np.sum(gve_grain_strainfit * gve0, axis=0)
                         gTg = np.sum(gve_grain_strainfit * gve_grain_strainfit, axis=0)
@@ -1810,7 +1805,7 @@ def idxpoint(
                 continue
     if ImageD11.indexing.loglevel <= 3:
         sys.stdout.flush()
-    global symglobal
+    #flake8: global symglobal
     ind.ubis = [sym_u.find_uniq_u(ubi, symglobal) for ubi in ind.ubis]
     # count the unique peaks per grain
     uniqs = np.empty((len(ind.ubis), 2), int)
