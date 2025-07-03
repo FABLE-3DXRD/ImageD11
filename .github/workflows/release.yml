@@ -45,8 +45,8 @@ jobs:
           CIBW_BUILD_VERBOSITY: 1
           CIBW_PROJECT_REQUIRES_PYTHON: ">=3.8"
           CIBW_BUILD: cp38-* cp39-* cp310-* cp311-* cp312-* cp313-*
-          # Do not build for pypy, muslinux and python3.12 on ppc64le
-          CIBW_SKIP: pp* *-musllinux_* cp312-*linux_ppc64le cp313-*linux_ppc64le
+          # Do not build for muslinux and python>=3.12 on ppc64le
+          CIBW_SKIP: "*-musllinux_* cp312-*linux_ppc64le cp313-*linux_ppc64le"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
           # Use silx wheelhouse: needed for ppc64le
@@ -59,8 +59,8 @@ jobs:
           CIBW_BEFORE_TEST: "pip install --only-binary :all: fabio PyQt5 pyFAI"
           CIBW_TEST_EXTRAS: full
           CIBW_TEST_COMMAND: pytest {project}/test
-          # Skip tests for 32bits and emulated architectures, arm64 macos and on Windows
-          CIBW_TEST_SKIP: "*-*linux_i686 *-*linux_{aarch64,ppc64le,s390x} *-macosx_arm64 *-macosx_universal2:arm64 *-win32 *-win_amd64"
+          # Skip tests for 32bits, emulated architectures, on Windows and on macos python313 (missing siphash wheel)
+          CIBW_TEST_SKIP: "*-*linux_i686 *-*linux_{aarch64,ppc64le,s390x} *-win32 *-win_amd64 cp313-macosx_universal2"
 
       - uses: actions/upload-artifact@v4
         with:
