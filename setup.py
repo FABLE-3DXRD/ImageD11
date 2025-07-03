@@ -140,7 +140,6 @@ scripts = ["ImageD11/rsv_mapper.py",
 # sfood -I ImageD11/depreciated -I build/ -v -u >sfood.out 2>sfood.err
 
 minimal = [  # can't compile without this
-    "six",
     'numpy',
     "setuptools",
     ]
