@@ -40,7 +40,7 @@ jobs:
           platforms: all
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.16.5
+        uses: pypa/cibuildwheel@v3.0.0
         env:
           CIBW_BUILD_VERBOSITY: 1
           CIBW_PROJECT_REQUIRES_PYTHON: ">=3.8"
@@ -51,6 +51,10 @@ jobs:
 
           # Use silx wheelhouse: needed for ppc64le
           CIBW_ENVIRONMENT_LINUX: "PIP_FIND_LINKS=https://www.silx.org/pub/wheelhouse/ PIP_TRUSTED_HOST=www.silx.org"
+
+          # Build without isolation needed to use older wheels for ppc64le
+          CIBW_BEFORE_BUILD: "pip install setuptools six wheel numpy --only-binary :all:"
+          CIBW_BUILD_FRONTEND: "build; args: --no-isolation"
 
           CIBW_BEFORE_TEST: "pip install --only-binary :all: fabio PyQt5 pyFAI"
           CIBW_TEST_EXTRAS: full
