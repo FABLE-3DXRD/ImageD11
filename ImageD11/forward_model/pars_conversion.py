@@ -527,8 +527,10 @@ def calc_err(ImageD11_pars, poni_path, parameter = None):
                 err[key] = poni_results[key]*10 - ImageD11_pars[key]
             elif key == 'y_center' or key == 'z_center':
                 err[key] = poni_results[key] - ImageD11_pars[key] - 0.5  # poni has 0.5 pixels bigger than ImageD11, which is due to difference in counting from the side or the center of the first pixel
-            else:
+            elif 'shape' not in key:
                 err[key] = poni_results[key] - ImageD11_pars[key]
+            else:
+                continue
             print('{} error: {:.6f}'.format(key, err[key]))
     else:
         err = poni_results[parameter] - ImageD11_pars[parameter]
