@@ -875,7 +875,7 @@ def plot_grains_polefig( hkls, cf, grains,
     for g in grains:
         gc = g.UB.dot( hklT )
         gcalc.append(gc)
-    gcalc = np.concatenate(gcalc, axis=0)
+    gcalc = np.concatenate(gcalc, axis=1)
     dsvals = np.linalg.norm( gcalc, axis=0 )
     # average and std of computed peaks
     m , s = dsvals.mean(), dsvals.std()
