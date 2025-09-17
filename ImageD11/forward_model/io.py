@@ -33,8 +33,6 @@ from PIL import Image
 from tqdm import tqdm
 import logging
 
-from numba import njit
-
 logging.basicConfig(level=logging.INFO, force=True)
 
 
@@ -626,69 +624,6 @@ def read_fsparse(h5_file, group_name = "/entry_0000/ESRF-ID11/eiger/data"):
             if name in g.keys():
                 fsparse_pks[name] = g[name][()]
     return fsparse_pks
-
-
-def convert_fsparse_pks2image(fsparse_pks, detector_name='eiger'):
-    """
-    Convert fsparse_pks to raw image that should be the same as the raw data except being cleaned and without the module gaps
-    Args:
-        fsparse_pks <dict>, sparse peaks dictionary containing col, row, nnz, intensity in uint16, e.g. fsparse_pks = io.read_fsparse(sparse_file)
-        detector_name <str>, default as 'eiger'
-    Returns:
-        im <np.uint16>, a 3D image stack with peak intensities
-        
-    Example to use:
-        from ImageD11.forward_model import io
-        scan_no = 100
-        sparse_folder = os.path.join(ds.analysispath, 'sparsefiles')
-        sparse_name = 'scan{}'.format(str(scan_no).zfill(4)) + '_eiger_0000_sparse.h5'
-        sparse_file = os.path.join(sparse_folder, sparse_name)
-        fsparse_pks = io.read_fsparse(sparse_file)
-        im = io.convert_fsparse_pks2image(fsparse_pks)
-    """
-    cols = np.asarray(fsparse_pks['col'])
-    rows = np.asarray(fsparse_pks['row'])
-    intensities = np.asarray(fsparse_pks['intensity'])
-    nnzs = np.asarray(fsparse_pks['nnz'])
-    
-    return convert_fsparse_pks2image_njit(cols, rows, intensities, nnzs, detector_name)
-
-
-@njit
-def convert_fsparse_pks2image_njit(cols, rows, intensities, nnzs, detector_name='eiger'):
-    """
-    Convert sparse peaks to raw image that should be the same as the raw data except being cleaned and without the module gaps
-    Args:
-        cols: array of column coordinates
-        rows: array of row coordinates  
-        intensities: array of intensity values
-        nnzs: array of number of pixels in each 2D frame
-        detector_name: default as 'eiger'
-    Returns:
-        im <np.uint16>, a 3D image stack with peak intensities
-    """
-    if detector_name.lower() == 'eiger':
-        rowsize = 2162
-        colsize = 2068
-    else:
-        # take it as frelon3
-        rowsize = 2048
-        colsize = 2048
-    
-    im = np.zeros((nnzs.shape[0], rowsize, colsize), dtype=np.uint16)
-    pks_count = 0
-    for j, nnz in enumerate(nnzs):
-        ind_start = pks_count
-        ind_end = pks_count + nnz
-        for i in np.arange(ind_start, ind_end):
-            col = cols[i]
-            row = rows[i]
-            intensity = intensities[i]
-            if 0 <= row < rowsize and 0 <= col < colsize:
-                im[j, row, col] = intensity
-        pks_count += nnz
-    print('Total number of non-zero pixels: ', pks_count)
-    return im
 
 
 def copytree_with_progress(src, dst, skip_keys=None, create_subfolder = True, overwrite = False):

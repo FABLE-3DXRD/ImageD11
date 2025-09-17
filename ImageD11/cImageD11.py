@@ -165,7 +165,7 @@ assert verify_rounding(20) == 0, "Problem with cImageD11 fast rounding code"
 
 
 # dsb = np.floor( cf.ds * istep ).astype(int).clip(0,hbins-1)
-@numba.njit(parallel=True)
+@numba.njit(parallel=True, cache = True)
 def array_bin( ary, inverse_step, nbins ):
     """ Find integer bins for array reals from 0 to nbins and 1/step
     returns int( floor( ary * inverse_step ) ).clip(0,nbins-1)
@@ -178,8 +178,17 @@ def array_bin( ary, inverse_step, nbins ):
     return out
 
 
-@numba.njit(parallel=True)
+@numba.njit(parallel=True, cache = True)
 def array_lt( ary, cut, out):
     """ parallel ary < cut """
     for i in numba.prange(ary.size):
         out[i] = ary[i] < cut
+
+
+@numba.njit(parallel=True, cache = True)
+def parallel_zeros( shape, dtype ):
+    """ Like numpy.zeros but threaded """
+    a = np.empty( shape, dtype=dtype )
+    for i in numba.prange( a.size ):
+        a.flat[i] = 0
+    return a
