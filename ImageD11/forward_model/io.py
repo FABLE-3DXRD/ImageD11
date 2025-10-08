@@ -35,7 +35,36 @@ import logging
 
 logging.basicConfig(level=logging.INFO, force=True)
 
+def get_e2dx_from_h5(h5file, detector='eiger', save=True):
+    # h5file : distortion file as h5 (pyFAI convention)
+    # detector : Eiger 4M for ID11, or pilatus p3 for ID31
+    # return e2dx, e2dy : distortion maps as separate files for ImageD11
+    if 'pilatus' in detector:
+        s, f = np.mgrid[0:1679,0:1475] # From ID31 beamline
+        key_det = 'Pilatus_CdTe_2M'
+    elif 'eiger' in detector:
+        s, f = np.mgrid[0:2162,0:2068] # From ID11 beamline
+        key_det = 'Eiger2_CdTe_4M'
+    else:
+        print('Unknown detector')
+        return
 
+    with h5py.File(h5file, 'r') as hin:
+        # get the pixel size, suppose it is a squared pixel
+        ps = hin['entry_0000/pyFAI/'+key_det + '/pixel_size'][:] 
+        # get the distortion maps at every 4 corners (width,height,4,3)
+        d = hin['entry_0000/pyFAI/'+key_det + '/pixel_corners'][:]
+    # Approximation of the distortion ~. It might be improved
+    pxs  = np.mean(d[:,:,:,1], axis = 2)/ps.mean()
+    pxf  = np.mean(d[:,:,:,2], axis = 2)/ps.mean()
+    e2dy = pxs - s
+    e2dx = pxf - f
+
+    if save:
+        fabio.edfimage.edfimage(e2dx.astype(np.float32)).write("e2dx.edf")
+        fabio.edfimage.edfimage(e2dy.astype(np.float32)).write("e2dy.edf")
+    return e2dx, e2dy
+    
 def read_images_from_h5(h5name, scan = '1.1', detector = None, StartIndex = None, EndIndex = None):
     # read images from h5 file
     # StartIndex starts from 0
