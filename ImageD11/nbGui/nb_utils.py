@@ -5,6 +5,7 @@ from collections import OrderedDict
 
 import h5py
 import numpy as np
+import fabio
 from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
 from scipy.optimize import curve_fit
@@ -296,7 +297,7 @@ date
     return bash_script_path, recons_path
 
 
-def prepare_astra_bash(ds, grainsfile, id11_code_path, group_name='grains'):
+def prepare_astra_bash(ds, grainsfile, id11_code_path, group_name='grains', memory=150):
     slurm_astra_path = os.path.join(ds.analysispath, "slurm_astra")
 
     if not os.path.exists(slurm_astra_path):
@@ -319,7 +320,7 @@ def prepare_astra_bash(ds, grainsfile, id11_code_path, group_name='grains'):
 #SBATCH --gres=gpu:1
 # define memory needs and number of tasks for each array job
 #SBATCH --ntasks=1
-#
+#SBATCH --mem={memory}G
 date
 module load cuda
 echo PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} {group_name} > {log_path} 2>&1
@@ -332,6 +333,7 @@ date
                grainsfile=grainsfile,
                dsfile=ds.dsfile,
                group_name=group_name,
+               memory=memory,
                log_path=log_path)
 
     with open(bash_script_path, "w") as bashscriptfile:
@@ -828,6 +830,134 @@ def refine_grain_positions(cf_3d, ds, grains, parfile, symmetry="cubic", cf_frac
     grains2 = ImageD11.grain.read_grain_file(tmp_map_path)
 
     return grains2
+
+def stereo( v, ix, iy, iz ):
+    """
+    Stereographic projection
+
+    v = vector [3,n]
+    ix = XX axis choice
+    iy = YY axis choice
+    iz = ZZ axis choice (the normal to the plot)
+
+    Reflects to the positive hemisphere.
+        e.g.: if v[iz] < 0 we use -v
+    Normalises and plots the projection onto the plane to the point at 0,0,-1 (e.g. 1+z further away)
+    """
+    v = np.asarray( v )
+    n = v / np.linalg.norm(v, axis=0 )
+    X = n[ix] * np.sign( n[iz] ) / (1 + abs(n[iz]))
+    Y = n[iy] * np.sign( n[iz] ) / (1 + abs(n[iz]))
+    return X, Y
+
+
+def plot_grains_polefig( hkls, cf, grains,
+                        dstol=0.006, Imin=0, hbins=128, powder_max_pts=1e6,
+                        cmapname='jet'
+                       ):
+    """
+    Plot a plot figure of hkl and show where the grains are
+
+    hkls = list of hkls to use. Might be ucell.ringhkls[ ucell.ringds[ j ] ]
+    cf   = columnfile for plotting. Probably a cf_2d
+    grains = list of grains for plotting
+    dstol = which peaks from cf.ds to be plotted on pole figure
+    Imin = cutoff to filter cf and remove noise
+    pbins = binning for drawing the pole figure. Depends a bit on your screen resolution.
+    cmapname = color scheme for your grains
+    """
+    # Pick one of the hkls for the plot titles:
+    hklT = np.transpose( hkls )
+    ilabel = np.argmax( np.sum( hklT, axis=0) )
+    title = tuple(hklT[:,ilabel])
+    # Generate the computed spot positions for all of our grains:
+    gcalc = []
+    for g in grains:
+        gc = g.UB.dot( hklT )
+        gcalc.append(gc)
+    gcalc = np.concatenate(gcalc, axis=1)
+    dsvals = np.linalg.norm( gcalc, axis=0 )
+    # average and std of computed peaks
+    m , s = dsvals.mean(), dsvals.std()
+    if (dsvals.max()  > m + dstol) or (dsvals.min() < m - dstol ):
+        import warnings
+        warnings.warn('Your dstol is lower than the spread of your grains hkl peak positions')
+    # The peaks for the pole figure
+    pks = ( abs(cf.ds - m) < dstol ) & (cf.sum_intensity > Imin )
+    # plot the observed data
+    # ...and the grains
+    # x,y   y,z   x,z
+    gve = cf.gx[pks], cf.gy[pks], cf.gz[pks]
+    I = cf.sum_intensity[ pks ]
+    # powderskip :
+    end = cf.nrows-1
+    if powder_max_pts > 0:
+        end = min( powder_max_pts, end )
+    # Now the plotting:
+    f, a = plt.subplots( 2,2, figsize=(8,6), constrained_layout=True)
+    a  = a.ravel()
+    a[0].plot( cf.ds[:end], cf.sum_intensity[:end], ',', label='powder')
+    a[0].plot( cf.ds[pks], cf.sum_intensity[pks], '.', label='on pole figure')
+    a[0].set( yscale='log', xlabel='dstar',)
+    a[0].legend()
+    ka = 1 # which axis to plot
+    rng = -1.1, 1.1 # which range for gve
+    cmap = plt.matplotlib.colormaps[ cmapname ]
+    colors = cmap(np.linspace(0, 1, len(grains)))
+
+    for ix,iy,iz in ( 0, 1, 2), (1,2,0), (0, 2, 1) : # the x/y/z axis choices
+        xx, yy = stereo( gve, ix, iy, iz)
+        a[ka].hist2d( xx, yy, weights=np.sqrt(I), bins=hbins, norm='log', cmap='gray_r')
+        a[ka].set( xlabel='xyz'[ix], ylabel='xyz'[iy], aspect='equal', xlim=rng, ylim=rng,
+                 title=str(title)+' : '+'xyz'[iz])
+        for ig, g in enumerate(grains):
+            xx, yy = stereo( g.UB.dot( hklT ), ix, iy, iz)
+            a[ka].scatter( xx , yy, s=50, facecolors='none', edgecolors=colors[ig])
+        ka += 1
+    # Doesn't return the figure.... should it?
+
+def plot_eta_vs_omega_error( cf, title=None ):
+    """
+    Diagnostic plot for a wedge error on a .flt.new columnfile coming out of makemap.py
+
+    cf = columnfile .flt.new from makemap.py
+    title = title for the plot
+    """
+    f, a = plt.subplots(1,1,constrained_layout=True)
+    m = cf.tth_per_grain > 0
+    a.plot( cf.eta_per_grain[m], (cf.omegacalc_per_grain -cf.omega)[m], ".")
+    a.set(title=title, xlabel='eta', ylabel='omega error')
+
+
+def plot_strain_errors( cf, grains, maskfile=None, wavelength=None ):
+    """
+    Diagnostic plot for a strain errors on a .flt.new columnfile coming out of makemap.py
+
+    cf = columnfile
+    grains = grains to plot the peaks (matching cf.labels)
+    maskfile = for the f_raw, s_raw plot
+    wavelength = needed for tth to ds if not in colf.parameters
+    """
+    f, ax = plt.subplots(2,3,constrained_layout=True, figsize=(10,6))
+    ax = ax.ravel()
+    if wavelength is None:
+        wavelength = cf.parameters.get('wavelength')
+    ds_per_grain = 2 * np.sin( np.radians( cf.tth_per_grain/2 ) ) / wavelength
+    for i, g in enumerate( grains ):
+        gcalc = g.UB.dot( (cf.h, cf.k, cf.l) )
+        dscalc = np.linalg.norm( gcalc, axis=0 )
+        m = cf.labels == i
+        strain = ( ds_per_grain[m] - dscalc[m] ) / dscalc[m]
+        for j, name in enumerate(( 'eta_per_grain', 'omega', 'tth_per_grain', 'Number_of_pixels', 'sum_intensity' )):
+            ax[j].plot( cf[name][m], strain, '.')
+            ax[j].set( xlabel=name, ylabel='strain')
+        if maskfile is not None:
+            ax[5].imshow( fabio.open( maskfile ).data, vmin=0, vmax=5, cmap='gray_r', origin='lower' )
+        scat = ax[5].scatter( cf.f_raw[m], cf.s_raw[m], c=strain )
+    ax[4].set( xscale='log' )  # intensity
+    ax[5].set( aspect='equal')
+    f.colorbar(scat, ax=ax[5])
+
 
 ### (hopefully) no longer used
 
