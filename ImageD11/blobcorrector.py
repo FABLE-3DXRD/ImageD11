@@ -333,6 +333,13 @@ def get_e2dx_from_h5(h5file, detector='eiger'):
     pxf  = numpy.mean(d[:,:,:,2], axis = 2)/ps.mean()
     e2dy = pxs - s
     e2dx = pxf - f
+<<<<<<< HEAD
+=======
+
+    if save:
+        fabio.edfimage.edfimage(e2dx.astype(numpy.float32)).write(detector+"_e2dx.edf")
+        fabio.edfimage.edfimage(e2dy.astype(numpy.float32)).write(detector+"_e2dy.edf")
+>>>>>>> 7658848c050a296ed63beae51baffa22b40331a7
     return e2dx, e2dy
 
 class detector_spatial(object):
