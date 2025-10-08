@@ -119,10 +119,11 @@ class sparse_frame( object ):
         else:
             assert out.shape == self.shape
         assert len(data) == self.nnz
-        scipy.sparse.coo_matrix((data, (self.row, self.col)), shape=(self.shape)).todense(out=out)
+        # scipy.sparse.coo_matrix((data, (self.row, self.col)), shape=(self.shape)).todense(out=out)
         # does not handle duplicate indices if they were present:
         #        adr = self.row.astype(np.intp) * self.shape[1] + self.col
         #        out.flat[adr] = data
+        out[ self.row, self.col ] = data
         return out
 
     def mask( self, msk ):
@@ -259,10 +260,23 @@ class SparseScan( object ):
                 if name in grp:
                     setattr( self, name, grp[name][s:e] )
             if 'intensity' in self.names:
+                self.intensity_input_dtype = self.intensity.dtype
                 self.intensity = self.intensity.astype(np.float32)
             # pointers into this scan
             self.nnz = nnz[start:end]
             self.ipt = nnz_to_pointer( self.nnz )
+
+    @property
+    def frame_id(self):
+        """ returns the frame ID of each pixel """
+        return np.repeat( np.arange(self.shape[0], dtype=np.intp ), self.nnz )
+
+    def to_dense(self, out=None):
+        """ returns a dense image stack """
+        if out is None:
+            out = cImageD11.parallel_zeros( self.shape, self.intensity_input_dtype )
+        out[ self.frame_id, self.row, self.col ] = self.intensity
+        return out
 
     def getframe(self, i, SAFE=SAFE):
         # (self, row, col, shape, itype=np.uint16, pixels=None):
