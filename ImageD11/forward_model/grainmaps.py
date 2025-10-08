@@ -381,7 +381,9 @@ def DS_merge_and_identify_grains_sub(DS, FirstGrainID = 0, min_misori = 3.0, dis
             for id_neigb_j in id_neigb:
                 neigb_vol = DS['labels'] == id_neigb_j
                 indices_neigb = np.array(np.where(neigb_vol)).T
-
+                # Check if there are any voxels for neighboring grain ID
+                if len(indices_neigb) == 0:
+                    continue
                 r1 = get_mean_rod(DS['Rod'][indices_neigb[:, 0], indices_neigb[:, 1], indices_neigb[:, 2], :], auto_check = False)
                 U1 = ori_converter.quat2u(ori_converter.rod2quat(r1))
                 the_angle, _, _ = disorientation(U0, U1, crystal_structure=crystal_structure)
@@ -926,11 +928,13 @@ def get_mean_rod(rod, kmeans_flag=False, auto_check = True):
             rod_mean = C[0]
     else:
         # Compute the median for the entire set
-        mid_ind = len(rod) // 2
-        rod_mean = np.zeros(3)
-        for i in range(3):
-            rod_temp = np.sort(rod[:, i])
-            rod_mean[i] = rod_temp[mid_ind]
+        # This is OK when the Rodrigues are located in the same fundamental zone, but would be wrong if not. Be careful !
+        rod_mean = np.median(rod, axis=0) if rod.shape[0] > 0 else np.zeros(3)
+        # mid_ind = len(rod) // 2
+        # rod_mean = np.zeros(3)
+        # for i in range(3):
+        #     rod_temp = np.sort(rod[:, i])
+        #     rod_mean[i] = rod_temp[mid_ind]
     
     return rod_mean
 

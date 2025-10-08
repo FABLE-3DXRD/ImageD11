@@ -89,6 +89,7 @@ class beam:
         else:
             self.name = None
             print('Beam character cannot be identified; Only supporting parallel, cone and pencil beam for now !')
+        self.update()
     
     def set_beam_spectrum(self, plot_flag = False):
         """
@@ -171,7 +172,15 @@ class beam:
         assert frac >= 0 and frac <= 1, "frac must be in [0, 1]"
         intensities_gaussian = self.gaussian(x)
         intensities_lorentzian = self.lorentzian(x)
-        return frac * intensities_lorentzian + (1 - frac) * intensities_gaussian   
+        return frac * intensities_lorentzian + (1 - frac) * intensities_gaussian
+
+    def update(self):
+        """
+        Update beam class properties
+        """
+        self.set_beam_spectrum()
+        self.set_beam_shape()
+        self.is_updated = True
 
 
 class sample:
@@ -862,28 +871,29 @@ def forward_peaks_voxels(beam, sample, omega_angles, ucell, pars, dty=0.0,
     if verbose >= 1:
         logging.info("Computing dty = {} took {} seconds ...".format(dty, t1-t0))
     
-    # sum of intensity: scalable with an arbitrary factor
-    Ahkls = ucell.gethkls(ds_max)  # a list of structure_factor + hkl
-    ds_values = np.array(find_ds_for_multiple_targets(Ahkls, fwd_peaks[:, 12:15]), dtype='float') # 1 / d-spacing
-    # TODO: make a structure_factor calculation given atomic sites and sint, see structure_factor.m in DCT code
-    structure_factor = 1.0/ds_values # there is no function to calculate structure factor, so take it proportional to 1/d* first for the moment
+    if fwd_peaks.size > 0:
+        # sum of intensity: scalable with an arbitrary factor
+        Ahkls = ucell.gethkls(ds_max)  # a list of structure_factor + hkl
+        ds_values = np.array(find_ds_for_multiple_targets(Ahkls, fwd_peaks[:, 12:15]), dtype='float') # 1 / d-spacing
+        # TODO: make a structure_factor calculation given atomic sites and sint, see structure_factor.m in DCT code
+        structure_factor = 1.0/ds_values # there is no function to calculate structure factor, so take it proportional to 1/d* first for the moment
+        
+        Vcell = cellvolume(ucell.lattice_parameters)    # unit cell volume [angstrom^3]
+        Vvoxel = DS['voxel_size'][0] * DS['voxel_size'][1] * DS['voxel_size'][2] # voxel volume [um^3]
+        K1 = K1_calc()                                  # square of Thomson scattering lenth r0^2 [mm^2]
+        K2 = (pars.parameters['wavelength']**3) * fwd_peaks[:, 4]*Vvoxel * 1e12 / (Vcell**2)  # K2, dimensionless [-]
+        
+        # K1 * K2 * I0 * Lorentz * Polarization * trans_factor * structure_factor * exp_time
+        intensity = K1 * K2 * beam.flux * fwd_peaks[:, 4] * fwd_peaks[:, 20] * fwd_peaks[:, 21] * fwd_peaks[:, 22] * structure_factor * exp_time # [-]
+        
+        fwd_peaks = np.hstack([fwd_peaks, intensity.reshape(-1, 1)]) # append the 'intensity' to the last column for fwd_peaks
+        fwd_peaks = np.hstack([fwd_peaks, ds_values.reshape(-1, 1)]) # append 'ds_values' to the last column for fwd_peaks
     
-    Vcell = cellvolume(ucell.lattice_parameters)    # unit cell volume [angstrom^3]
-    Vvoxel = DS['voxel_size'][0] * DS['voxel_size'][1] * DS['voxel_size'][2] # voxel volume [um^3]
-    K1 = K1_calc()                                  # square of Thomson scattering lenth r0^2 [mm^2]
-    K2 = (pars.parameters['wavelength']**3) * fwd_peaks[:, 4]*Vvoxel * 1e12 / (Vcell**2)  # K2, dimensionless [-]
-    
-    # K1 * K2 * I0 * Lorentz * Polarization * trans_factor * structure_factor * exp_time
-    intensity = K1 * K2 * beam.flux * fwd_peaks[:, 4] * fwd_peaks[:, 20] * fwd_peaks[:, 21] * fwd_peaks[:, 22] * structure_factor * exp_time # [-]
-    
-    fwd_peaks = np.hstack([fwd_peaks, intensity.reshape(-1, 1)]) # append the 'intensity' to the last column for fwd_peaks
-    fwd_peaks = np.hstack([fwd_peaks, ds_values.reshape(-1, 1)]) # append 'ds_values' to the last column for fwd_peaks
-
-    # shift sampos_y back, remember to account for dty + y0_offset shift for reproducing fwd_peaks calculation
-    fwd_peaks[:,6] = fwd_peaks[:,6] + (-args['dty'] - args['y0_offset'])/1000.0 # sampos_y [mm]
-    
-    if plot_peaks:
-        plot_fwd_peaks(fwd_peaks)
+        # shift sampos_y back, remember to account for dty + y0_offset shift for reproducing fwd_peaks calculation
+        fwd_peaks[:,6] = fwd_peaks[:,6] + (-args['dty'] - args['y0_offset'])/1000.0 # sampos_y [mm]
+        
+        if plot_peaks:
+            plot_fwd_peaks(fwd_peaks)
         
     return fwd_peaks
 
@@ -1024,6 +1034,9 @@ def intersected_voxels_3d(grid_size, ray_origin, ray_direction, voxel_size = [1.
 
     tol_distances = np.array(weight_pos)*ray_size
     weights       = np.array(weight)
+    if tol_distances[-1] < 0.5:
+        # when beam size is much smaller than voxel size, tol_distances must be bigger than half voxel
+        tol_distances = tol_distances * 0.75/tol_distances[-1]
 
     if mask is None:
         x, y, z = np.meshgrid(
