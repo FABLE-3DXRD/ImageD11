@@ -318,7 +318,7 @@ def get_e2dx_from_h5(h5file, detector='eiger', save=True):
     elif 'eiger' in detector.lower():
         key_det = 'Eiger2_CdTe_4M'
     else:
-        print(f'Neither Eiger or Pilatus --> Unknown detector {detector}')
+        print('Neither Eiger or Pilatus --> Unknown detector {}'.format(detector))
         return
         
     with h5py.File(h5file, 'r') as hin:
