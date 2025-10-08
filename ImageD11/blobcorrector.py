@@ -327,10 +327,10 @@ def get_e2dx_from_h5(h5file, detector='eiger', save=True):
         ps = hin['entry_0000/pyFAI/'+key_det + '/pixel_size'][:] 
         # get the distortion maps at every 4 corners (width,height,4,3)
         d = hin['entry_0000/pyFAI/'+key_det + '/pixel_corners'][:]
-    s, f = np.mgrid[0:d.shape[0],0:d.shape[1]]
+    s, f = numpy.mgrid[0:d.shape[0],0:d.shape[1]]
           
-    pxs  = np.mean(d[:,:,:,1], axis = 2)/ps.mean()
-    pxf  = np.mean(d[:,:,:,2], axis = 2)/ps.mean()
+    pxs  = numpy.mean(d[:,:,:,1], axis = 2)/ps.mean()
+    pxf  = numpy.mean(d[:,:,:,2], axis = 2)/ps.mean()
     e2dy = pxs - s
     e2dx = pxf - f
 
