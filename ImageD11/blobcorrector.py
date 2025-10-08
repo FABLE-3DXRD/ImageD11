@@ -32,6 +32,7 @@ import logging, numpy, math
 import numba
 import fabio
 from scipy.interpolate import bisplev
+import h5py
 
 def readfit2dfloats(filep, nfl):
     """
@@ -334,8 +335,8 @@ def get_e2dx_from_h5(h5file, detector='eiger', save=True):
     e2dx = pxf - f
 
     if save:
-        fabio.edfimage.edfimage(e2dx.astype(np.float32)).write(f"{detector}_e2dx.edf")
-        fabio.edfimage.edfimage(e2dy.astype(np.float32)).write(f"{detector}_e2dy.edf")
+        fabio.edfimage.edfimage(e2dx.astype(numpy.float32)).write(detector+"_e2dx.edf")
+        fabio.edfimage.edfimage(e2dy.astype(numpy.float32)).write(detector+"_e2dy.edf")
     return e2dx, e2dy
 
 class detector_spatial(object):
