@@ -309,13 +309,13 @@ def apply_lut_parallel(sr, fr, sc, fc, dx, dy):
 def get_e2dx_from_h5(h5file, detector='eiger', save=True):
     # Get e2dx and e2dy from detector h5 file (pyFAI convention)
     # Only
-    if 'pilatus' in lower(detector):
+    if 'pilatus' in detector.lower():
          # From ID31 beamline
         key_det = 'Pilatus_CdTe_2M'
-    elif 'p3' in lower(detector):
+    elif 'p3' in detector.lower():
          # From ID31 beamline
         key_det = 'Pilatus_CdTe_2M'
-    elif 'eiger' in lower(detector):
+    elif 'eiger' in detector.lower():
         key_det = 'Eiger2_CdTe_4M'
     else:
         print(f'Neither Eiger or Pilatus --> Unknown detector {detector}')
