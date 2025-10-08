@@ -32,6 +32,7 @@ import logging, numpy, math
 import numba
 import fabio
 from scipy.interpolate import bisplev
+import h5py
 
 def readfit2dfloats(filep, nfl):
     """
@@ -306,7 +307,7 @@ def apply_lut_parallel(sr, fr, sc, fc, dx, dy):
         sc[i] = sr[i] + dy[ si, fi ]
         fc[i] = fr[i] + dx[ si, fi ]
 
-def get_e2dx_from_h5(h5file, detector='eiger', save=True):
+def get_e2dx_from_h5(h5file, detector='eiger'):
     # Get e2dx and e2dy from detector h5 file (pyFAI convention)
     # Only
     if 'pilatus' in detector.lower():
@@ -326,30 +327,27 @@ def get_e2dx_from_h5(h5file, detector='eiger', save=True):
         ps = hin['entry_0000/pyFAI/'+key_det + '/pixel_size'][:] 
         # get the distortion maps at every 4 corners (width,height,4,3)
         d = hin['entry_0000/pyFAI/'+key_det + '/pixel_corners'][:]
-    s, f = np.mgrid[0:d.shape[0],0:d.shape[1]]
+    s, f = numpy.mgrid[0:d.shape[0],0:d.shape[1]]
           
-    pxs  = np.mean(d[:,:,:,1], axis = 2)/ps.mean()
-    pxf  = np.mean(d[:,:,:,2], axis = 2)/ps.mean()
+    pxs  = numpy.mean(d[:,:,:,1], axis = 2)/ps.mean()
+    pxf  = numpy.mean(d[:,:,:,2], axis = 2)/ps.mean()
     e2dy = pxs - s
     e2dx = pxf - f
-
-    if save:
-        fabio.edfimage.edfimage(e2dx.astype(np.float32)).write(f"{detector}_e2dx.edf")
-        fabio.edfimage.edfimage(e2dy.astype(np.float32)).write(f"{detector}_e2dy.edf")
     return e2dx, e2dy
 
 class detector_spatial(object):
-    
-    def __init__(self, 
+    def __init__(self,
                  dxfile="/data/id11/nanoscope/Eiger/spatial_20210415_JW/e2dx.edf",
                  dyfile="/data/id11/nanoscope/Eiger/spatial_20210415_JW/e2dy.edf",
                  h5file=None,
                  detector='eiger'):
         if h5file is not None:
-            self.dx, self.dy = get_e2dx_from_h5(h5file, detector=detector, save=False)
+            self.dx, self.dy = get_e2dx_from_h5(h5file, detector=detector)
+            print('Using detectorh5 file to correct the distortions.')
         else:
             self.dx = fabio.open(dxfile).data  # x == fast direction at ID11
             self.dy = fabio.open(dyfile).data  # y == slow direction
+            print('Using e2dx and e2dy files to correct the distortions.')
         assert self.dx.shape == self.dy.shape
 
     def __call__(self, pks, parallel=None):
@@ -374,7 +372,39 @@ class detector_spatial(object):
         s = self.dx.shape
         i, j = numpy.mgrid[ 0:s[0], 0:s[1] ]
         return self.dy + j, self.dx + i
-        
+
+class eiger_spatial(object):
+    def __init__(self, 
+                 dxfile="/data/id11/nanoscope/Eiger/spatial_20210415_JW/e2dx.edf",
+                 dyfile="/data/id11/nanoscope/Eiger/spatial_20210415_JW/e2dy.edf",):
+        self.dx = fabio.open(dxfile).data  # x == fast direction at ID11
+        self.dy = fabio.open(dyfile).data  # y == slow direction
+        print('The usage of e2dx and e2dy files is deprecated since 10/2025.\nIt is now recommended to load the distortion files as an h5 file.')
+        assert self.dx.shape == self.dy.shape
+
+    def __call__(self, pks, parallel=None):
+        n = len(pks['s_raw'])
+        if parallel is None:
+            parallel = n > 1e6
+        if parallel:
+            sc = numpy.empty( n, float )
+            fc = numpy.empty( n, float )
+            apply_lut_parallel( pks['s_raw'], pks['f_raw'], sc, fc, self.dx, self.dy )
+            pks['sc'] = sc
+            pks['fc'] = fc
+        else:
+            si = numpy.round(pks['s_raw']).astype(int)
+            fi = numpy.round(pks['f_raw']).astype(int)
+            pks['fc'] = self.dx[ si, fi ] + pks['f_raw']
+            pks['sc'] = self.dy[ si, fi ] + pks['s_raw']
+        return pks
+    
+    def pixel_lut(self):
+        """ returns (slow, fast) pixel postions of an image """
+        s = self.dx.shape
+        i, j = numpy.mgrid[ 0:s[0], 0:s[1] ]
+        return self.dy + j, self.dx + i
+     
 def correct_cf_with_spline(cf, spline_file):
     """Creates a correctorclass from the spline file
        Corrects the columnfile with the spline file
@@ -383,10 +413,10 @@ def correct_cf_with_spline(cf, spline_file):
     corrector.correct_px_lut(cf)
     return cf
 
-def correct_cf_with_dxdyfiles(cf, dxfile, dyfile, detector):
+def correct_cf_with_dxdyfiles(cf, dxfile, dyfile):
     """Corrects the columnfile with the dx/dy file
        Returns the corrected columnfile"""
-    es = detector_spatial( dxfile=dxfile, dyfile=dyfile, detector=detector)
+    es = eiger_spatial( dxfile=dxfile, dyfile=dyfile)
     pkin = { 's_raw': cf['s_raw'], 'f_raw': cf['f_raw'] }
     pkout = es( pkin )
     cf.addcolumn( pkout['sc'], 'sc' )
