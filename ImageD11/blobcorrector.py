@@ -372,7 +372,9 @@ class detector_spatial(object):
         s = self.dx.shape
         i, j = numpy.mgrid[ 0:s[0], 0:s[1] ]
         return self.dy + j, self.dx + i
-     
+
+eiger_spatial = detector_spatial
+
 def correct_cf_with_spline(cf, spline_file):
     """Creates a correctorclass from the spline file
        Corrects the columnfile with the spline file
@@ -384,7 +386,6 @@ def correct_cf_with_spline(cf, spline_file):
 def correct_cf_with_dxdyfiles(cf, dxfile, dyfile):
     """Corrects the columnfile with the dx/dy file
        Returns the corrected columnfile"""
-    eiger_spatial = detector_spatial
     es = eiger_spatial(dxfile=dxfile, dyfile=dyfile)
     pkin = { 's_raw': cf['s_raw'], 'f_raw': cf['f_raw'] }
     pkout = es( pkin )

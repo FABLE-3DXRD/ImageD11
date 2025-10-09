@@ -2,7 +2,7 @@
 
 ImageD11 is a python code for identifying individual grains in spotty area detector X-ray diffraction images.
 
-Version 2.1.1, Jon Wright, wright@esrf.fr
+Version 2.1.3, Jon Wright and co-authors, wright@esrf.fr
 
 This is the source code for ImageD11. Probably you wanted a compiled version.
 
