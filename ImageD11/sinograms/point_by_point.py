@@ -1923,19 +1923,16 @@ class PBP:
 
     def setpeaks(self, colf, icolf_filename=None):
         """
-        This is called on the main parent process
-
-        The peaks will be written to file
+        Given a cf_2d in RAM (colf), make an icolf in RAM which contains the selection of peaks we want to index
         """
-        if icolf_filename is None:
-            icolf_filename = self.dset.icolfile
-        # Load the peaks
+        # Load parameters if not already loaded
         colf.parameters.loadparameters(self.parfile, phase_name=self.phase_name)
         if "ds" not in colf.titles:
             colf.updateGeometry()  # for ds
         #
         uc = unitcell.unitcell_from_parameters(colf.parameters)
         uc.makerings(colf.ds.max(), self.ds_tol)
+        self.uc = uc
         # peaks that are on rings
         sel = np.zeros(colf.nrows, bool)
         # rings to use for indexing
@@ -1985,9 +1982,12 @@ class PBP:
 
         # peaks that are on any rings
         self.colf = colf
-        self.icolf = colf.copy()
-        self.icolf.filter(sel)
+        self.icolf = colf.copyrows(isel)
+
+        # how many peaks did we see?
         self.npks = npks
+
+        # now we can compute npks too
         if self.fpks < 1:
             self.minpks = int(npks * self.fpks)
         else:
@@ -2001,11 +2001,14 @@ class PBP:
             self.forgen,
         )
         self.hmax = hmax
+
+        # now save the peaks to disk
+        if icolf_filename is None:
+            icolf_filename = self.dset.icolfile
         if os.path.exists(icolf_filename):
             os.remove(icolf_filename)
         ImageD11.columnfile.colfile_to_hdf(self.icolf, icolf_filename, compression=None)
         self.icolf_filename = icolf_filename
-        self.uc = uc
 
     def iplot(self, skip=1):
         import pylab as pl
@@ -2030,6 +2033,75 @@ class PBP:
         ax[0].vlines(self.uc.ringds, 1e4, 3e4, color='red', label=self.phase_name)
         return f, ax
 
+    def write_config(self, config_path, cpus_per_chunk):
+        with open(config_path, 'w') as f:
+            f.write(f"dset_path={self.dset.dsfile}\n")
+            f.write(f"parfile={self.parfile}\n")
+            f.write(f"phase_name={self.phase_name}\n")
+            f.write(f"symmetry={self.symmetry}\n")
+            f.write(f"icolf_filename={self.icolf_filename}\n")
+            f.write(f"y0={self.y0}\n")
+            f.write(f"hkl_tol={self.hkl_tol}\n")
+            f.write(f"ds_tol={self.ds_tol}\n")
+            f.write(f"cosine_tol={self.cosine_tol}\n")
+            f.write(f"minpks={self.minpks}\n")
+            f.write(f"hmax={self.hmax}\n")
+            f.write(f"forgen={','.join(map(str, self.forgen))}\n")
+            f.write(f"uniqcut={self.uniqcut}\n")
+            f.write(f"nprocs={cpus_per_chunk}\n")
+
+    def submit_slurm_chunks(self, grains_prefix, id11_code_path, gridstep=1, n_chunks=4, cpus_per_chunk=64, time_h=48, partition="nice-long", mem_G=32):
+        ds = self.dset
+        slurm_pbp_path = os.path.join(ds.analysispath, "slurm_pbp")
+
+        if not os.path.exists(slurm_pbp_path):
+            os.mkdir(slurm_pbp_path)
+
+        bash_script_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm.sh')
+        python_script_path = os.path.join(id11_code_path, "ImageD11/nbGui/S3DXRD/run_pbp_recon_chunk.py")
+        outfile_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_%A_%a.out')
+        errfile_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_%A_%a.err')
+        config_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_config.txt')
+        
+        self.write_config(config_path, cpus_per_chunk=cpus_per_chunk)
+        
+        # Automatically generate all points
+        all_points = geometry.step_grid_from_ybincens(self.ybincens, self.ystep, gridstep, self.y0)
+        
+        # Split into chunks, one per array task
+        chunks = np.array_split(all_points, n_chunks)
+        
+        # Save each chunk to text file using np.savetxt
+        for idx, chunk in enumerate(chunks):
+            chunk_prefix = os.path.join(slurm_pbp_path, ds.dsname +  f"_chunk_")
+            chunk_suffix = ".txt"
+            chunk_file = f"{chunk_prefix}{idx}{chunk_suffix}"
+            np.savetxt(chunk_file, chunk, fmt='%d')
+        
+        # Create single sbatch script using job array
+        sbatch_content = f"""#!/bin/bash
+
+#SBATCH --job-name=pbp_scanning
+#SBATCH --output={outfile_path}
+#SBATCH --error={errfile_path}
+#SBATCH --time={time_h}:00:00
+#SBATCH --partition={partition}
+#SBATCH --cpus-per-task={cpus_per_chunk}
+#SBATCH --array=0-{n_chunks - 1}
+#SBATCH --mem={mem_G}G
+source /cvmfs/hpc.esrf.fr/software/packages/linux/x86_64/jupyter-slurm/latest/envs/jupyter-slurm/bin/activate
+CHUNK_FILE={chunk_prefix}${{SLURM_ARRAY_TASK_ID}}{chunk_suffix}
+OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
+{config_path} $CHUNK_FILE {grains_prefix}${{SLURM_ARRAY_TASK_ID}}.txt
+"""
+        with open(bash_script_path, 'w') as f:
+            f.write(sbatch_content)
+
+        # output file paths
+        grains_files = [f'{grains_prefix}{chunk}.txt' for chunk in range(n_chunks)]
+        
+        return bash_script_path, grains_files
+    
     def point_by_point(
             self,
             grains_filename,
@@ -2043,7 +2115,11 @@ class PBP:
         grains_filename = output file
         icolf_filename = hdf5file to write. Allows mmap to be used.
         """
+        if icolf_filename is not None:
+            self.icolf_filename = icolf_filename
+        
         self.loglevel = loglevel
+        
         start = time.time()
         # FIXME - look at dataset ybincens and roi_iradon output_size ?
         if nprocs is None:
