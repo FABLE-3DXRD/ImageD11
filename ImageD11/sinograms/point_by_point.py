@@ -1299,7 +1299,7 @@ date
                    errfile_path=errfile_path,
                    python_script_path=python_script_path,
                    id11_code_path=id11_code_path,
-                   pbp_object_file=pbp_object_file,
+                   pbp_object_file=os.path.abspath(pbp_object_file).replace('/mnt/storage',''),
                    log_path=log_path)
 
     with open(bash_script_path, "w") as bashscriptfile:
@@ -1805,7 +1805,7 @@ def idxpoint(
                 continue
     if ImageD11.indexing.loglevel <= 3:
         sys.stdout.flush()
-    global symglobal
+    #flake8: global symglobal
     ind.ubis = [sym_u.find_uniq_u(ubi, symglobal) for ubi in ind.ubis]
     # count the unique peaks per grain
     uniqs = np.empty((len(ind.ubis), 2), int)
