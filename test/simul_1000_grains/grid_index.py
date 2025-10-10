@@ -76,7 +76,7 @@ def domap(  OmFloat,  OmSlop,
             tolseq = [ 0.03, 0.02, 0.01],
             symmetry = "triclinic"):
     """mapping function - does what makemap.py does"""
-    global NPKS
+    #flake8: global NPKS
     ss = sys.stdout # turns off printing
     
 
@@ -116,12 +116,12 @@ def domap(  OmFloat,  OmSlop,
 
 
 def doindex( gve, x, y, z, w):
-    global NUL
-    global tmp
-    global NPKS
-    global UC
-    global TOLSEQ
-    global CONSINE_TOL
+    #flake8: global NUL
+    #flake8: global tmp
+    #flake8: global NPKS
+    #flake8: global UC
+    #flake8: global TOLSEQ
+    #flake8: global CONSINE_TOL
     ss = sys.stdout # turns of printing
     sys.stdout = NUL
     myindexer = indexing.indexer(

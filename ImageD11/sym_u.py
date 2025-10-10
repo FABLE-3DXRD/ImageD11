@@ -98,7 +98,7 @@ class group:
         """
         ensure all items = op(x,y) are in group
         """
-        global DEBUG
+        #flake8: global DEBUG
         if DEBUG:
             print("making new group")
         new = True
@@ -116,7 +116,7 @@ class group:
 symcache = {}
 
 def generate_group(*args):
-    global symcache
+    #flake8: global symcache
     if args in symcache:
         return symcache[args]
     g=group()

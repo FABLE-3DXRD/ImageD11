@@ -448,12 +448,16 @@ class DataSet:
                     self.dty[i] = np.full(self.frames_per_scan[i], dty[0])
         for b in bad:
             dom = [
-                (abs(self.omega[i][0] - self.omega[b]), i)
+                (abs(self.omega[i][0] - self.omega[b])[0], i)  # always length-1 arrays, take first element
                 for i in range(len(self.scans))
                 if i not in bad
             ]
+            # dom is a list of tuples of (first omega value, i)
+            # make it into an array
+            dom = np.array(dom)
+            
             if len(dom) > 0:
-                j = np.argmin(dom[0][1])
+                j = int(dom[np.argmin(dom[:,0])][1])  # get argmin of omega column of dom, go there, then take the corresponding i
                 self.omega[b] = self.omega[j]  # best match
                 print(
                     "replace bad scan omega", b, self.scans[b], "with", j, self.scans[j]

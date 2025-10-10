@@ -240,6 +240,15 @@ def initgrid( fltfile, parfile, tmp, gridpars ):
         assert "yc" in col.titles
         col.addcolumn( col.yc.copy(), "fc")
     mytransformer.colfile.writefile( "%s.flt"%(tmp))
+    if ('output_filename' not in gridpars) or (gridpars['output_filename'] is None):
+        gridpars['output_filename'] = "all"+tmp+".map"
+    try: # verify writable
+        with open( gridpars['output_filename'], 'a' ) as fout:
+            fout.write('#\n')
+        print("Writing output to", gridpars['output_filename'])
+    except Exception as e:
+        print("Error writing to", gridpars['output_filename'])
+        raise
     return gridpars
 
 
@@ -278,8 +287,8 @@ def grid_index_parallel( fltfile, parfile, tmp, gridpars, translations ):
     gridpars = initgrid( fltfile, parfile, tmp, gridpars )
     print( "Done init" )
     if 'NPROC' not in gridpars or gridpars['NPROC'] is None:
-        NPR =  multiprocessing.cpu_count() - 1
-        cImageD11.cimaged11_omp_set_num_threads(2) # assume hyperthreading is useful?
+        NPR = max( cImageD11.cores_available() - 1, 1 )
+        cImageD11.cimaged11_omp_set_num_threads(1)
     else:
         NPR = int(gridpars['NPROC'])
     if 'NTHREAD' in gridpars:
@@ -307,7 +316,7 @@ def grid_index_parallel( fltfile, parfile, tmp, gridpars, translations ):
             print( "Got % 5d new %d from %d"%(gnow, gnow-gb4, len(grs) ) )
             if len(ul.uniqgrains) > lastsave:
                 lastsave = len( ul.uniqgrains )
-                grain.write_grain_file( "all"+tmp+".map", ul.uniqgrains )
+                grain.write_grain_file( gridpars['output_filename'], ul.uniqgrains )
             if pa._number_left == 0:
                 break
         except Queue.Empty:
@@ -317,7 +326,7 @@ def grid_index_parallel( fltfile, parfile, tmp, gridpars, translations ):
         except KeyboardInterrupt:
             break
     # write here to be on the safe side .... 
-    grain.write_grain_file( "all"+tmp+".map", ul.uniqgrains )
+    grain.write_grain_file( gridpars['output_filename'], ul.uniqgrains )
     p.close()
     p.join()
 
@@ -345,6 +354,7 @@ if __name__=="__main__":
         'toldist' : 100.,
         'NPROC' : None, # guess from cpu_count
         'NTHREAD' : 2 ,
+        'output_filename' : None, # defaults to "all"+tmp+".map"
     }
             
     # grid to search

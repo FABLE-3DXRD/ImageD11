@@ -37,15 +37,16 @@ def convert_ImageD11pars2p(pars, verbose = 1):
         p['rawfile'] = pars.parameters['filename']
     except Exception as e:
         # sometime there is no "filename" key
-        logging.info("An unexpected error occurred: {}".format(e))
+        if verbose > 1:
+            logging.info("An unexpected error occurred: {}".format(e))
     p['Lsam2det'] = pars.parameters['distance']/1000.0
     p['tilt_xyz'] = [np.rad2deg(pars.parameters['tilt_x']), np.rad2deg(pars.parameters['tilt_y']), np.rad2deg(pars.parameters['tilt_z'])]  # [deg]
     p['RotDet'] = get_det_R(pars.parameters['tilt_x'], pars.parameters['tilt_y'], pars.parameters['tilt_z'], verbose)
     p['pixelysize'] = pars.parameters['y_size']/1000.0
     p['pixelzsize'] = pars.parameters['z_size']/1000.0
     if pars.parameters['o11'] == -1 and pars.parameters['o22'] == -1:
-        p['detysize'] = 2162
-        p['detzsize'] = 2068
+        p['detysize'] = 2068
+        p['detzsize'] = 2162
         p['flip_lr_flag'] = False
         p['flip_ud_flag'] = False
     elif pars.parameters['o11'] == 1 and pars.parameters['o22'] == -1:
@@ -56,8 +57,8 @@ def convert_ImageD11pars2p(pars, verbose = 1):
     else:
         if verbose >= 1:
             logging.info('Note this detector configuration is not supported yet; Set to not have any flips - equivalent to Eiger !')
-        p['detysize'] = 2162
-        p['detzsize'] = 2068
+        p['detysize'] = 2068
+        p['detzsize'] = 2162
         p['flip_lr_flag'] = False
         p['flip_ud_flag'] = False
     p['dety0'] = pars.parameters['y_center']
@@ -287,7 +288,7 @@ def build_ImageD11par_from_poni(lattice_par, sgno, poni_file, par_path = 'demo.p
     lattice_par = [5.43094, 5.43094, 5.43094, 90, 90, 90] # Si cube
     sgno = 227
     poni_file = 'demo.poni'
-    build_par_from_poni(lattice_par, sgno, poni_file, par_path = 'demo.pars', detector = 'Eiger')
+    build_ImageD11par_from_poni(lattice_par, sgno, poni_file, par_path = 'demo.pars', detector = 'Eiger')
     """
     poni_results = pyFAI.load(poni_file).getImageD11()
     write_ImageD11pars_from_poni(lattice_par, sgno, poni_results, par_path = par_path, detector = detector)
@@ -355,8 +356,7 @@ def build_poni_from_ImageD11par(par_file, spatial_file = None, poni_path = 'demo
     print('Initial guess: {}'.format(params0))
     result = minimize(error_function, x0 = params0, args=(trn.pars, poni_path, formatted_time, spatial_file, tilt_x, tilt_y, tilt_z, wavelength), method = 'BFGS')
     
-
-    print('Initial guess: {}'.format(params0))
+    # print('Initial guess: {}'.format(params0))
     print('Final fitted results: {}'.format(result.x))
     
     # check the errors again
@@ -366,9 +366,15 @@ def build_poni_from_ImageD11par(par_file, spatial_file = None, poni_path = 'demo
     return err    
     
     
-def auto_load_spatial_file(detector):
+def auto_load_spatial_file(detector, exp_date=None):
     if detector in ['Eiger', 'eiger']:
-        spatial_file = '/data/id11/nanoscope/Eiger/newSpatial_E-08-0144_20240205.h5'
+        cutoff_date = datetime(2025, 8, 28).date() # August 28, 2025 new spatial with the replaced right-bottom module
+        if exp_date is None:
+            exp_date = datetime.now().date()
+        if exp_date < cutoff_date:
+            spatial_file = '/data/id11/nanoscope/Eiger/newSpatial_E-08-0144_20240205.h5'
+        else:
+            spatial_file = '/data/id11/nanoscope/Eiger/newSpatial_20250819.h5'
     elif detector in ['Frelon36', 'frelon36']:
         spatial_file = "/data/id11/3dxrd/inhouse/Frelon36/frelon36_spline_20240604_full.h5"
     elif detector in ['Frelon4M', 'frelon4M', 'frelon4m']:
@@ -381,13 +387,13 @@ def auto_load_spatial_file(detector):
 
 def write_ImageD11pars_from_poni(lattice_par, sgno, poni_results, par_path = 'demo.pars', detector = 'Eiger'):
     """
-    write ImageD11 pars from a pyFAI poni file   
+    write ImageD11 pars from a pyFAI poni file
 
     Example:
     lattice_par = [5.43094, 5.43094, 5.43094, 90, 90, 90] # Si cube
     sgno = 227
     poni_results = pyFAI.load('demo.poni').getImageD11()
-    write_pars_from_poni(lattice_par, sgno, poni_results, par_path = 'demo.pars', detector = 'Eiger')
+    write_ImageD11pars_from_poni(lattice_par, sgno, poni_results, par_path = 'demo.pars', detector = 'Eiger')
     """
     
     if detector in ['Eiger', 'eiger']:
@@ -526,9 +532,11 @@ def calc_err(ImageD11_pars, poni_path, parameter = None):
                 err[key] = poni_results[key]*10 - ImageD11_pars[key]
             elif key == 'y_center' or key == 'z_center':
                 err[key] = poni_results[key] - ImageD11_pars[key] - 0.5  # poni has 0.5 pixels bigger than ImageD11, which is due to difference in counting from the side or the center of the first pixel
-            else:
+            elif 'shape' not in key:
                 err[key] = poni_results[key] - ImageD11_pars[key]
-            print('{} error: {:.6f}'.format(key, err[key]))
+            else:
+                continue
+            # print('{} error: {:.6f}'.format(key, err[key]))
     else:
         err = poni_results[parameter] - ImageD11_pars[parameter]
     return err
