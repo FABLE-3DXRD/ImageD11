@@ -7,7 +7,7 @@ import logging
 import ImageD11.grain
 import ImageD11.unitcell
 import ImageD11.sinograms.properties
-from ImageD11.blobcorrector import correct_cf_with_dxdyfiles, correct_cf_with_spline
+from ImageD11.blobcorrector import correct_cf_with_dxdyfiles, correct_cf_with_spline, correct_cf_with_h5files
 from ImageD11.columnfile import colfile_from_dict
 
 """
@@ -93,6 +93,7 @@ class DataSet:
         "parfile",
         "e2dxfile",
         "e2dyfile",
+        "detectorh5",
         "splinefile",
         "maskfile",
         "bgfile",
@@ -862,12 +863,13 @@ class DataSet:
         cf = colfile_from_dict(peaks_dict)
 
         # Define spatial correction
-        if hasattr(self, "e2dxfile") and (self.e2dxfile is not None):
+        if hasattr(self, "detectorh5") and (self.detectorh5 is not None):
+            cf = correct_cf_with_h5files(cf, self.detectorh5, self.detector)
+        elif hasattr(self, "e2dxfile") and (self.e2dxfile is not None):
             cf = correct_cf_with_dxdyfiles(cf, self.e2dxfile, self.e2dyfile)
         else:
             if self.splinefile is not None:
                 cf = correct_cf_with_spline(cf, self.splinefile)
-
         # Generate columnfile from peaks table
         return cf
 
