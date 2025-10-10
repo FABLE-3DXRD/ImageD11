@@ -286,7 +286,7 @@ date
                cores_per_task=cores_per_task,
                python_script_path=python_script_path,
                id11_code_path=id11_code_path,
-               grainsfile=os.path.abspath(grainsfile).replace('/mnt/storage',''),
+               grainsfile=os.path.abspath(ds.grainsfile).replace('/mnt/storage',''),
                reconfile=reconfile,
                dsfile=ds.dsfile,
                log_path=log_path)
