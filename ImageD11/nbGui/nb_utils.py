@@ -286,7 +286,7 @@ date
                cores_per_task=cores_per_task,
                python_script_path=python_script_path,
                id11_code_path=id11_code_path,
-               grainsfile=ds.grainsfile,
+               grainsfile=os.path.abspath(ds.grainsfile).replace('/mnt/storage',''),
                reconfile=reconfile,
                dsfile=ds.dsfile,
                log_path=log_path)
@@ -330,8 +330,8 @@ date
                errfile_path=errfile_path,
                python_script_path=python_script_path,
                id11_code_path=id11_code_path,
-               grainsfile=grainsfile,
-               dsfile=ds.dsfile,
+               grainsfile=os.path.abspath(grainsfile).replace('/mnt/storage',''),
+               dsfile=os.path.abspath(ds.dsfile).replace('/mnt/storage',''),
                group_name=group_name,
                memory=memory,
                log_path=log_path)
@@ -377,7 +377,7 @@ date
                    errfile_path=errfile_path,
                    python_script_path=python_script_path,
                    id11_code_path=id11_code_path,
-                   dsfile=ds.dsfile,
+                   dsfile=os.path.abspath(ds.dsfile).replace('/mnt/storage',''),
                    hkltol=pbp_object.hkl_tol,
                    fpks=pbp_object.fpks,
                    dstol=pbp_object.ds_tol,

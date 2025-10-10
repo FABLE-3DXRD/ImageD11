@@ -1299,7 +1299,7 @@ date
                    errfile_path=errfile_path,
                    python_script_path=python_script_path,
                    id11_code_path=id11_code_path,
-                   pbp_object_file=pbp_object_file,
+                   pbp_object_file=os.path.abspath(pbp_object_file).replace('/mnt/storage',''),
                    log_path=log_path)
 
     with open(bash_script_path, "w") as bashscriptfile:
