@@ -2057,11 +2057,11 @@ class PBP:
         if not os.path.exists(slurm_pbp_path):
             os.mkdir(slurm_pbp_path)
 
-        bash_script_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm.sh')
+        bash_script_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_' + self.phase_name + '.txt')
         python_script_path = os.path.join(id11_code_path, "ImageD11/nbGui/S3DXRD/run_pbp_recon_chunk.py")
-        outfile_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_%A_%a.out')
-        errfile_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_%A_%a.err')
-        config_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_config.txt')
+        outfile_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_' + self.phase_name + '_%A_%a.out')
+        errfile_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_' + self.phase_name + '_%A_%a.err')
+        config_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_config_' + self.phase_name + ".txt")
         
         self.write_config(config_path, cpus_per_chunk=cpus_per_chunk)
         
@@ -2073,7 +2073,7 @@ class PBP:
         
         # Save each chunk to text file using np.savetxt
         for idx, chunk in enumerate(chunks):
-            chunk_prefix = os.path.join(slurm_pbp_path, ds.dsname + "_chunk_")
+            chunk_prefix = os.path.join(slurm_pbp_path, ds.dsname + "_chunk_" + self.phase_name + "_")
             chunk_suffix = ".txt"
             chunk_file = "{}{}{}".format(chunk_prefix, idx, chunk_suffix)
             np.savetxt(chunk_file, chunk, fmt='%d')

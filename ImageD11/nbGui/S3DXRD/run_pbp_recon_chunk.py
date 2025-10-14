@@ -1,3 +1,4 @@
+import os
 import sys
 import numpy as np
 from ImageD11.sinograms.point_by_point import PBP, initializer
@@ -31,15 +32,6 @@ def run_chunk(config_path, indices_path, grains_file):
     ystep = dset.ystep
     ymin = ybincens.min()
     
-    # # Initialize globals needed for indexing
-    # initializer(
-    #     parfile=config['parfile'],
-    #     phase_name=config['phase_name'],
-    #     symmetry=config['symmetry'],
-    #     colfile=config['icolf_filename'],
-    #     loglevel=3
-    # )
-    
     pbp_args = {
         'parfile': config['parfile'],
         'dset': dset,
@@ -71,6 +63,38 @@ def run_chunk(config_path, indices_path, grains_file):
         nprocs=config['nprocs'],
         debugpoints=points
     )
+
+
+def merge_chunk_outputs(files, output_file):
+    """
+    Merge multiple text files into one, keeping only the first header line.
+    
+    Args:
+        files (list of str): List of input text file paths.
+        output_file (str): Path to the output merged file.
+    """
+    if not files:
+        print("No files found to merge.")
+        return
+
+    with open(output_file, "w") as out_f:
+        # Write the header from the first file
+        with open(files[0], "r") as f:
+            header = f.readline()
+            if not header:
+                print("First file {} is empty.".format(files[0]))
+                return
+            out_f.write(header)
+
+        # Append all others, skipping headers
+        for path in files:
+            with open(path, "r") as f:
+                f.readline()  # skip header
+                for line in f:
+                    out_f.write(line)
+
+    print("Merged {} files into {}".format(len(files), output_file))
+
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:

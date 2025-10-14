@@ -161,7 +161,12 @@ def test_pbp_route():
           'foridx': [0, 1, 3, 5, 7],
           'forgen': [1, 5, 7],
           'uniqcut': 0.85,
-          'use_cluster': False
+          'use_cluster': True,
+          'n_chunks': 2,
+          'cpus_per_chunk': 4,
+          'time_h': 1,
+          'partition': 'nice',
+          'mem_G': 8
           }
          ),
         ('pbp_2_visualise.ipynb',
@@ -205,7 +210,7 @@ def test_pbp_route():
 def test_FeAu_JADB_tomo():
     # where is the data?
     dataroot = '/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/RAW_DATA'
-    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/PROCESSED_DATA/20250228_JADB/tomo_route'
+    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/PROCESSED_DATA/20250402_JADB/tomo_route'
     PYTHONPATH = sys.path[0]
     # find layers to process
     sample = 'FeAu_0p5_tR_nscope'
@@ -365,7 +370,7 @@ def test_FeAu_JADB_tomo():
 def test_FeAu_JADB_pbp():
     # where is the data?
     dataroot = '/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/RAW_DATA'
-    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/PROCESSED_DATA/20250228_JADB/pbp_route'
+    analysisroot = '/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/PROCESSED_DATA/20250402_JADB/pbp_route'
     PYTHONPATH = sys.path[0]
     # find layers to process
     sample = 'FeAu_0p5_tR_nscope'
@@ -507,7 +512,7 @@ def test_FeAu_JADB_pbp():
 def test_FeAu_f2scan_JADB_pbp():
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/RAW_DATA"
-    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/PROCESSED_DATA/20250306_JADB"
+    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/PROCESSED_DATA/20250402_JADB"
     PYTHONPATH = sys.path[0]
     # find layers to process
     sample = "FeAu_No1_190um"
@@ -947,10 +952,10 @@ def test_FeAu_JADB_bb_friedel():
 if __name__ == '__main__':
     print(papermill.__path__)
     # test_tomographic_route()
-    # test_pbp_route()
+    test_pbp_route()
     # test_FeAu_JADB_tomo()
     # test_FeAu_JADB_pbp()
-    test_FeAu_f2scan_JADB_pbp()
-    test_FeAu_JADB_bb()
+    # test_FeAu_f2scan_JADB_pbp()
+    # test_FeAu_JADB_bb()
     # test_FeAu_JADB_bb_grid()
     # test_FeAu_JADB_bb_friedel()
