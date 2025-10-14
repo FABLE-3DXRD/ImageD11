@@ -2035,20 +2035,20 @@ class PBP:
 
     def write_config(self, config_path, cpus_per_chunk):
         with open(config_path, 'w') as f:
-            f.write(f"dset_path={self.dset.dsfile}\n")
-            f.write(f"parfile={self.parfile}\n")
-            f.write(f"phase_name={self.phase_name}\n")
-            f.write(f"symmetry={self.symmetry}\n")
-            f.write(f"icolf_filename={self.icolf_filename}\n")
-            f.write(f"y0={self.y0}\n")
-            f.write(f"hkl_tol={self.hkl_tol}\n")
-            f.write(f"ds_tol={self.ds_tol}\n")
-            f.write(f"cosine_tol={self.cosine_tol}\n")
-            f.write(f"minpks={self.minpks}\n")
-            f.write(f"hmax={self.hmax}\n")
-            f.write(f"forgen={','.join(map(str, self.forgen))}\n")
-            f.write(f"uniqcut={self.uniqcut}\n")
-            f.write(f"nprocs={cpus_per_chunk}\n")
+            f.write("dset_path={}\n".format(self.dset.dsfile))
+            f.write("parfile={}\n".format(self.parfile))
+            f.write("phase_name={}\n".format(self.phase_name))
+            f.write("symmetry={}\n".format(self.symmetry))
+            f.write("icolf_filename={}\n".format(self.icolf_filename))
+            f.write("y0={}\n".format(self.y0))
+            f.write("hkl_tol={}\n".format(self.hkl_tol))
+            f.write("ds_tol={}\n".format(self.ds_tol))
+            f.write("cosine_tol={}\n".format(self.cosine_tol))
+            f.write("minpks={}\n".format(self.minpks))
+            f.write("hmax={}\n".format(self.hmax))
+            f.write("forgen={}\n".format(','.join(map(str, self.forgen))))
+            f.write("uniqcut={}\n".format(self.uniqcut))
+            f.write("nprocs={}\n".format(cpus_per_chunk))
 
     def submit_slurm_chunks(self, grains_prefix, id11_code_path, gridstep=1, n_chunks=4, cpus_per_chunk=64, time_h=48, partition="nice-long", mem_G=32):
         ds = self.dset
