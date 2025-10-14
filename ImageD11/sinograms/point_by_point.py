@@ -2050,7 +2050,7 @@ class PBP:
             f.write("uniqcut={}\n".format(self.uniqcut))
             f.write("nprocs={}\n".format(cpus_per_chunk))
 
-    def submit_slurm_chunks(self, grains_prefix, id11_code_path, gridstep=1, n_chunks=4, cpus_per_chunk=64, time_h=48, partition="nice-long", mem_G=32):
+    def submit_slurm_chunks(self, grains_prefix, id11_code_path, gridstep=1, n_chunks=4, cpus_per_chunk=64, time_h=48, partition="nice-long", mem_G=32, debugpoints=None):
         ds = self.dset
         slurm_pbp_path = os.path.join(ds.analysispath, "slurm_pbp")
 
@@ -2066,7 +2066,10 @@ class PBP:
         self.write_config(config_path, cpus_per_chunk=cpus_per_chunk)
         
         # Automatically generate all points
-        all_points = geometry.step_grid_from_ybincens(self.ybincens, self.ystep, gridstep, self.y0)
+        if debugpoints is None:
+            all_points = geometry.step_grid_from_ybincens(self.ybincens, self.ystep, gridstep, self.y0)
+        else:
+            all_points = np.array(debugpoints)
         
         # Split into chunks, one per array task
         chunks = np.array_split(all_points, n_chunks)
