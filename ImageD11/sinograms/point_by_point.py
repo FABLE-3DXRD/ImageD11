@@ -2073,6 +2073,7 @@ class PBP:
         
         # Save each chunk to text file using np.savetxt
         for idx, chunk in enumerate(chunks):
+            np.random.shuffle(chunk)  # shuffle points within each chunk
             chunk_prefix = os.path.join(slurm_pbp_path, ds.dsname + "_chunk_" + self.phase_name + "_")
             chunk_suffix = ".txt"
             chunk_file = "{}{}{}".format(chunk_prefix, idx, chunk_suffix)
