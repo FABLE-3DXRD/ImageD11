@@ -2073,13 +2073,13 @@ class PBP:
         
         # Save each chunk to text file using np.savetxt
         for idx, chunk in enumerate(chunks):
-            chunk_prefix = os.path.join(slurm_pbp_path, ds.dsname +  f"_chunk_")
+            chunk_prefix = os.path.join(slurm_pbp_path, ds.dsname + "_chunk_")
             chunk_suffix = ".txt"
-            chunk_file = f"{chunk_prefix}{idx}{chunk_suffix}"
+            chunk_file = "{}{}{}".format(chunk_prefix, idx, chunk_suffix)
             np.savetxt(chunk_file, chunk, fmt='%d')
         
         # Create single sbatch script using job array
-        sbatch_content = f"""#!/bin/bash
+        sbatch_content = """#!/bin/bash
 
 #SBATCH --job-name=pbp_scanning
 #SBATCH --output={outfile_path}
@@ -2087,18 +2087,33 @@ class PBP:
 #SBATCH --time={time_h}:00:00
 #SBATCH --partition={partition}
 #SBATCH --cpus-per-task={cpus_per_chunk}
-#SBATCH --array=0-{n_chunks - 1}
+#SBATCH --array=0-{array_end}
 #SBATCH --mem={mem_G}G
 source /cvmfs/hpc.esrf.fr/software/packages/linux/x86_64/jupyter-slurm/latest/envs/jupyter-slurm/bin/activate
 CHUNK_FILE={chunk_prefix}${{SLURM_ARRAY_TASK_ID}}{chunk_suffix}
 OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
 {config_path} $CHUNK_FILE {grains_prefix}${{SLURM_ARRAY_TASK_ID}}.txt
-"""
+""".format(
+            outfile_path=outfile_path,
+            errfile_path=errfile_path,
+            time_h=time_h,
+            partition=partition,
+            cpus_per_chunk=cpus_per_chunk,
+            array_end=n_chunks - 1,
+            mem_G=mem_G,
+            chunk_prefix=chunk_prefix,
+            chunk_suffix=chunk_suffix,
+            id11_code_path=id11_code_path,
+            python_script_path=python_script_path,
+            config_path=config_path,
+            grains_prefix=grains_prefix
+        )
+        
         with open(bash_script_path, 'w') as f:
             f.write(sbatch_content)
 
         # output file paths
-        grains_files = [f'{grains_prefix}{chunk}.txt' for chunk in range(n_chunks)]
+        grains_files = ['{}{}.txt'.format(grains_prefix, chunk) for chunk in range(n_chunks)]
         
         return bash_script_path, grains_files
     
