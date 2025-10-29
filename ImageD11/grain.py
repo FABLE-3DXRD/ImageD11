@@ -376,7 +376,7 @@ def read_grain_file(filename):
 STRINGATTRS = ["intensity_info", "name"]
 NUMATTRS = ["npks", "nuniq"]
 ARRATTRS = ["translation"]
-
+MATATTRS = ["UB", "ubi", "B", "U", "mt", "rmt"]
 
 def write_grain_file_h5(filename, list_of_grains, group_name='grains'):
     """Write list of grains to H5py file."""
@@ -410,3 +410,121 @@ def read_grain_file_h5(filename, group_name='grains'):
             grains.append(g)
 
     return grains
+
+
+def export_to_vtp_paraview(grains, output_path, colour='npks'):
+    """Export list of grains to vtp file for Paraview visualisation, with colour as the active array"""
+    import vtk
+    from vtk.util import numpy_support as ns
+
+    def add_scalar_attribute(pd, attr, np_array):
+        """Add scalar attribute array to polydata"""
+        attr_array = ns.numpy_to_vtk(np_array, deep=True)
+        attr_array.SetName(attr)
+        pd.GetPointData().AddArray(attr_array)
+    
+    def add_vector_attribute(pd, attr, np_array):
+        """Add vector attribute array to polydata"""
+        attr_array = ns.numpy_to_vtk(np_array, deep=True)
+        attr_array.SetNumberOfComponents(np_array.shape[1])  # required for vectors
+        attr_array.SetName(attr)
+        pd.GetPointData().AddArray(attr_array)
+    
+    # ensure we have ipf colours
+    rgbattr = 'rgb_z'
+    try:
+        col = [getattr(grain, rgbattr) for grain in grains]  # IPF colour
+    except AttributeError:
+        # couldn't get the IPF attributes
+        # try to compute it first
+        # will still fail if we don't have reference unitcells
+        from ImageD11.nbGui.nb_utils import get_rgbs_for_grains
+        get_rgbs_for_grains(grains)
+        col = [getattr(grain, rgbattr) for grain in grains]  # IPF colour
+
+    translations = np.array([grain.translation for grain in grains])
+    
+    points = vtk.vtkPoints()
+    verts = vtk.vtkCellArray()
+    
+    for i, t in enumerate(translations):
+        pid = points.InsertNextPoint(t[0], t[1], t[2])
+        verts.InsertNextCell(1)
+        verts.InsertCellPoint(pid)
+    
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetVerts(verts)
+
+    # add scalar attributes to polydata
+    for numattr in NUMATTRS:
+        np_array = np.array([float(getattr(grain, numattr)) for grain in grains])
+        add_scalar_attribute(polydata, numattr, np_array)
+    
+    # compute volumes
+    prop_volumes = np.array([float(grain.intensity_info.split("mean = ")[1].split(" , ")[0].replace("'", "")) for grain in grains])
+    prop_radii = np.cbrt(3*prop_volumes/(4*np.pi))
+    
+    add_scalar_attribute(polydata, 'prop_volume', prop_volumes)
+    add_scalar_attribute(polydata, 'prop_radius', prop_radii)
+    
+    # add vector attributes (e.g. colours)
+    for vecattr in ["rgb_x", "rgb_y", "rgb_z", "Rod", "unitcell"]:
+        np_array = np.array([getattr(grain, vecattr) for grain in grains])
+        add_vector_attribute(polydata, vecattr, np_array)
+
+    # compute quaternions for glyph orientation in Paraview
+    from scipy.spatial.transform import Rotation as R 
+    quats = R.from_matrix([g.U for g in grains]).as_quat(scalar_first=True)  # WXYZ order to match Paraview
+    
+    add_vector_attribute(polydata, 'quat', quats)
+
+    # it's also useful to have lab-frame vector fields for (x_c, y_c, z_c) and (a, b, c) and (astar, bstar, cstar) for viz
+    # x_c, y_c, z_c are columns of U
+    add_vector_attribute(polydata, "x_c", np.array([g.U[:, 0] for g in grains]))
+    add_vector_attribute(polydata, "y_c", np.array([g.U[:, 1] for g in grains]))
+    add_vector_attribute(polydata, "z_c", np.array([g.U[:, 2] for g in grains]))
+
+    # a, b, c are rows of UBI (because we invert)
+    add_vector_attribute(polydata, "a", np.array([g.ubi[0, :] for g in grains]))
+    add_vector_attribute(polydata, "b", np.array([g.ubi[1, :] for g in grains]))
+    add_vector_attribute(polydata, "c", np.array([g.ubi[2, :] for g in grains]))
+
+    # a*, b*, c* are columns of UB
+    add_vector_attribute(polydata, "astar", np.array([g.UB[:, 0] for g in grains]))
+    add_vector_attribute(polydata, "bstar", np.array([g.UB[:, 1] for g in grains]))
+    add_vector_attribute(polydata, "cstar", np.array([g.UB[:, 2] for g in grains]))
+    
+    # add matrix attributes
+    for matattr in MATATTRS:
+        tensor_components = [
+            ('11', 0, 0), ('12', 0, 1), ('13', 0, 2),
+            ('21', 1, 0), ('22', 1, 1), ('23', 1, 2),
+            ('31', 2, 0), ('32', 2, 1), ('33', 2, 2)
+        ]
+        for comp_name, i, j in tensor_components:
+            attr_name = "{}_{}".format(matattr, comp_name)
+            np_array = np.array([getattr(grain, matattr)[i, j] for grain in grains])
+            add_scalar_attribute(polydata, attr_name, np_array)
+
+    eps_s = np.array([grain.eps_sample_matrix(dzero_cell=grain.ref_unitcell.lattice_parameters) for grain in grains])
+    eps_c = np.array([grain.eps_grain_matrix(dzero_cell=grain.ref_unitcell.lattice_parameters) for grain in grains])
+
+    # it's a strain tensor, so we can name them xx, yy, zz etc
+    tensor_components = [
+        ('xx', 0, 0), ('xy', 0, 1), ('xz', 0, 2),
+        ('yx', 1, 0), ('yy', 1, 1), ('yz', 1, 2),
+        ('zx', 2, 0), ('zy', 2, 1), ('zz', 2, 2)
+    ]
+    for comp_name, i, j in tensor_components:
+        add_scalar_attribute(polydata, "eps_s_{}".format(comp_name), eps_s[:,i,j])
+        add_scalar_attribute(polydata, "eps_c_{}".format(comp_name), eps_c[:,i,j])
+    
+    # set the active scalars
+    polydata.GetPointData().SetActiveScalars(colour)
+    
+    # export to file
+    writer = vtk.vtkXMLPolyDataWriter()
+    writer.SetFileName(output_path)
+    writer.SetInputData(polydata)
+    writer.Write()
