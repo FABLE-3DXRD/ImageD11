@@ -413,9 +413,13 @@ def read_grain_file_h5(filename, group_name='grains'):
 
 
 def export_to_vtp_paraview(grains, output_path, colour='npks'):
-    """Export list of grains to vtp file for Paraview visualisation, with colour as the active array"""
+    """
+    Export list of grains to vtp file for Paraview visualisation, with helpful arrays included.
+    Thanks to Marilyn Sarkis for the idea.
+    """
     import vtk
     from vtk.util import numpy_support as ns
+    from scipy.spatial.transform import Rotation as R 
 
     def add_scalar_attribute(pd, attr, np_array):
         """Add scalar attribute array to polydata"""
@@ -474,7 +478,7 @@ def export_to_vtp_paraview(grains, output_path, colour='npks'):
         add_vector_attribute(polydata, vecattr, np_array)
 
     # compute quaternions for glyph orientation in Paraview
-    from scipy.spatial.transform import Rotation as R 
+
     quats = R.from_matrix([g.U for g in grains]).as_quat(scalar_first=True)  # WXYZ order to match Paraview
     
     add_vector_attribute(polydata, 'quat', quats)
