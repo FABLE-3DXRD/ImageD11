@@ -2057,7 +2057,7 @@ class PBP:
         if not os.path.exists(slurm_pbp_path):
             os.mkdir(slurm_pbp_path)
 
-        bash_script_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_' + self.phase_name + '.txt')
+        bash_script_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_' + self.phase_name + '.sh')
         python_script_path = os.path.join(id11_code_path, "ImageD11/nbGui/S3DXRD/run_pbp_recon_chunk.py")
         outfile_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_' + self.phase_name + '_%A_%a.out')
         errfile_path = os.path.join(slurm_pbp_path, ds.dsname + '_pbp_recon_slurm_' + self.phase_name + '_%A_%a.err')
