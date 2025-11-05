@@ -485,7 +485,11 @@ def assign_peaks_to_grains(grains, cf, tol):
     labels = np.zeros(cf.nrows, 'i')
     # get all g-vectors from columnfile (updateGeometry)
     # should we instead calculate considering grain translations? (probably!)
-    gv = np.transpose((cf.gx, cf.gy, cf.gz)).astype(float)
+    # gv = np.transpose((cf.gx, cf.gy, cf.gz)).astype(float) # not C_CONTIGUOUS !
+    gv = np.empty( (cf.nrows, 3), float )
+    gv[:,0] = cf.gx
+    gv[:,1] = cf.gy
+    gv[:,2] = cf.gz
     # column to store drlv2 (error in hkl)
     drlv2 = np.ones(cf.nrows, 'd')
     # iterate over all grains
