@@ -1469,6 +1469,13 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
 
     all_idx = np.arange(len(ri_col))
 
+    # get g-vectors for all peaks
+    gve_all = compute_gve(sc, fc, omega, xpos,
+                         distance=distance, y_center=y_center, y_size=y_size, tilt_y=tilt_y,
+                         z_center=z_center, z_size=z_size, tilt_z=tilt_z, tilt_x=tilt_x,
+                         o11=o11, o12=o12, o21=o21, o22=o22,
+                         t_x=t_x, t_y=t_y, t_z=t_z, wedge=wedge, chi=chi, wavelength=wavelength)
+
     for refine_idx in numba.prange(npoints):
         ri, rj = refine_points[refine_idx]
         if mask[ri, rj]:
@@ -1507,12 +1514,7 @@ def refine_map(refine_points, all_pbpmap_ubis, ri_col, rj_col, sx_grid, sy_grid,
             xpos_local = xpos[local_idx]
             eta_local = eta[local_idx]
 
-            # get g-vectors for this voxel
-            gve_voxel = compute_gve(sc_local, fc_local, omega_local, xpos_local,
-                                    distance=distance, y_center=y_center, y_size=y_size, tilt_y=tilt_y,
-                                    z_center=z_center, z_size=z_size, tilt_z=tilt_z, tilt_x=tilt_x,
-                                    o11=o11, o12=o12, o21=o21, o22=o22,
-                                    t_x=t_x, t_y=t_y, t_z=t_z, wedge=wedge, chi=chi, wavelength=wavelength)
+            gve_voxel = gve_all[:, local_idx]
 
             # iterate through the ubis at this voxel
             for ubi_idx in np.arange(ubis_here.shape[2]):
