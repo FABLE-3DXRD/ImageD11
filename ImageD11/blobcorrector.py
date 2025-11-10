@@ -308,6 +308,7 @@ def apply_lut_parallel(sr, fr, sc, fc, dx, dy):
         fc[i] = fr[i] + dx[ si, fi ]
 
 def get_e2dx_from_h5(h5file, detector='eiger'):
+    # FIXME - the detector argument should be able to give the address in the h5 file.
     # Get e2dx and e2dy from detector h5 file (pyFAI convention)
     # Only
     if 'pilatus' in detector.lower():
@@ -343,11 +344,11 @@ class detector_spatial(object):
                  detector='eiger'):
         if h5file is not None:
             self.dx, self.dy = get_e2dx_from_h5(h5file, detector=detector)
-            print('Using detectorh5 file to correct the distortions.')
+            # print('Using detectorh5 file to correct the distortions.')
         else:
             self.dx = fabio.open(dxfile).data  # x == fast direction at ID11
             self.dy = fabio.open(dyfile).data  # y == slow direction
-            print('Using e2dx and e2dy files to correct the distortions.')
+            # print('Using e2dx and e2dy files to correct the distortions.')
         assert self.dx.shape == self.dy.shape
 
     def __call__(self, pks, parallel=None):
