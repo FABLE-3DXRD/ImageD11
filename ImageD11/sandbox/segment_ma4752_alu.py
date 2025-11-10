@@ -19,7 +19,6 @@ MASKFILE = "/data/id11/nanoscope/Eiger/mask_20210428.edf"
 CORES = None # guess the number of cores to use
 
 import sys, os
-HNAME = sys.argv[1]
 
 
 ###################### should not need to change much below here
@@ -166,7 +165,7 @@ def segment_scans(fname, scans, outname, mypool,
                 hout.attrs['h5input'] = fname
                 gin = hin[scan]
                 bad = 1
-                title = hin[scan]['title'][()]
+                title = hin[scan]['title'].asstr()[()]
                 print('# ',scan,title)
                 print('# time now',time.ctime(),"\n#", end =' ')
                 for scantype in SCANTYPES:
@@ -257,7 +256,7 @@ if __name__=="__main__":
     
     import concurrent.futures
     
-    
+    HNAME = sys.argv[1]    
     outh5 = os.path.split(HNAME)[-1].replace(".h5","_sparsefull.h5")
     outpath= "/data/visitor/ma4752/id11/segmented"
     OUTNAME = os.path.join( outpath, outh5 )
