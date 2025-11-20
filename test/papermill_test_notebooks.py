@@ -451,8 +451,8 @@ def test_FeAu_JADB_tomo(aroot):
     dset_path = os.path.join(
         analysisroot,
         sample,
-        f"{sample}_{first_dataset}",
-        f"{sample}_{first_dataset}_dataset.h5",
+        "%s_%s"%(sample,first_dataset),
+        "%s_%s_dataset.h5"%(sample,first_dataset),
     )
     nb_param = {
         "CHECKOUT_PATH": checkout_folder,
@@ -630,8 +630,8 @@ def test_FeAu_JADB_pbp(aroot):
     dset_path = os.path.join(
         analysisroot,
         sample,
-        f"{sample}_{first_dataset}",
-        f"{sample}_{first_dataset}_dataset.h5",
+        "%s_%s"%(sample,first_dataset),
+        "%s_%s_dataset.h5"%(sample,first_dataset),
     )
     nb_param = {
         "CHECKOUT_PATH": checkout_folder,
@@ -809,8 +809,8 @@ def test_FeAu_f2scan_JADB_pbp(aroot):
     dset_path = os.path.join(
         analysisroot,
         sample,
-        f"{sample}_{first_dataset}",
-        f"{sample}_{first_dataset}_dataset.h5",
+        "%s_%s"%(sample,first_dataset),
+        "%s_%s_dataset.h5"%(sample,first_dataset),
     )
     nb_param = {
         "CHECKOUT_PATH": checkout_folder,
@@ -916,8 +916,8 @@ def test_FeAu_JADB_bb(aroot):
     dset_path = os.path.join(
         analysisroot,
         sample,
-        f"{sample}_{first_dataset}",
-        f"{sample}_{first_dataset}_dataset.h5",
+        "%s_%s"%(sample,first_dataset),
+        "%s_%s_dataset.h5"%(sample,first_dataset),
     )
     nb_param = {  # 3_merge_slices.ipynb
         "CHECKOUT_PATH": checkout_folder,
@@ -1037,8 +1037,8 @@ def test_FeAu_JADB_bb_grid(aroot):
     dset_path = os.path.join(
         analysisroot,
         sample,
-        f"{sample}_{first_dataset}",
-        f"{sample}_{first_dataset}_dataset.h5",
+        "%s_%s"%(sample,first_dataset),
+        "%s_%s_dataset.h5"%(sample,first_dataset),
     )
     nb_param = {  # 3_merge_slices.ipynb
         "CHECKOUT_PATH": checkout_folder,
@@ -1155,8 +1155,8 @@ def test_FeAu_JADB_bb_friedel(aroot):
     dset_path = os.path.join(
         analysisroot,
         sample,
-        f"{sample}_{first_dataset}",
-        f"{sample}_{first_dataset}_dataset.h5",
+        "%s_%s"%(sample,first_dataset),
+        "%s_%s_dataset.h5"%(sample,first_dataset),
     )
     nb_param = {  # 3_merge_slices.ipynb
         "CHECKOUT_PATH": checkout_folder,
