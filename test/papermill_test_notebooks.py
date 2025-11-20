@@ -1,4 +1,3 @@
-# flake8: noqa
 """
 Python script to automatically end-to-end test our Jupyter notebooks
 Currently implemented: nothing (indev)
@@ -18,6 +17,12 @@ import sys, os
 def fix_esrf_path(p):
     if p.startswith("/gpfs") and p.find("/data/") > 0:
         return p[p.find("/data/") :]
+    return p
+
+def analysis_folder( aroot, name ):
+    p = os.path.join( aroot, name )
+    if not os.path.exists( p ):
+        os.makedirs( p )
     return p
 
 
@@ -87,8 +92,8 @@ def notebook_route(
 
 
 # test the full tomographic route from start to finish
-def test_tomographic_route():
-    tomo_dir = "tomo_route"
+def test_tomographic_route(aroot):
+    tomo_dir = analysis_folder(aroot, "tomo_route" )
     dataroot = os.path.join(tomo_dir, "raw")
     analysisroot = os.path.join(tomo_dir, "processed")
 
@@ -183,8 +188,8 @@ def test_tomographic_route():
 
 
 # test the full point-by-point route from start to finish
-def test_pbp_route():
-    tomo_dir = "pbp_route"
+def test_pbp_route(aroot):
+    tomo_dir = analysis_folder(aroot, "pbp_route")
     dataroot = os.path.join(tomo_dir, "raw")
     analysisroot = os.path.join(tomo_dir, "processed")
 
@@ -272,10 +277,10 @@ def test_pbp_route():
         notebook_exec_pmill(nb_path, nb_path, None)
 
 
-def test_FeAu_JADB_tomo():
+def test_FeAu_JADB_tomo(aroot):
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/RAW_DATA"
-    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/PROCESSED_DATA/20250402_JADB/tomo_route"
+    analysisroot = analysis_folder(aroot, "tomo_route" )
     # find layers to process
     sample = "FeAu_0p5_tR_nscope"
     first_dataset = "top_200um"
@@ -463,10 +468,10 @@ def test_FeAu_JADB_tomo():
     notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
 
 
-def test_FeAu_JADB_pbp():
+def test_FeAu_JADB_pbp(aroot):
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/RAW_DATA"
-    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/PROCESSED_DATA/20250402_JADB/pbp_route"
+    analysisroot = analysis_folder( aroot, 'pbp_route' )
     # find layers to process
     sample = "FeAu_0p5_tR_nscope"
     first_dataset = "top_200um"
@@ -642,10 +647,10 @@ def test_FeAu_JADB_pbp():
     notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
 
 
-def test_FeAu_f2scan_JADB_pbp():
+def test_FeAu_f2scan_JADB_pbp(aroot):
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/RAW_DATA"
-    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/PROCESSED_DATA/20250402_JADB"
+    analysisroot = analysis_folder( aroot, "pbp_route" )
     # find layers to process
     sample = "FeAu_No1_190um"
     first_dataset = "2um_redo_z_0"
@@ -821,10 +826,10 @@ def test_FeAu_f2scan_JADB_pbp():
     notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
 
 
-def test_FeAu_JADB_bb():
+def test_FeAu_JADB_bb(aroot):
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/"
-    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250304_JADB/default"
+    analysisroot = analysis_folder(aroot, "frelon" )
     # find layers to process
     sample = "FeAu_0p5_tR"
     first_dataset = "ff1"
@@ -927,10 +932,10 @@ def test_FeAu_JADB_bb():
     notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
 
 
-def test_FeAu_JADB_bb_grid():
+def test_FeAu_JADB_bb_grid(aroot):
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/"
-    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250304_JADB/grid"
+    analysisroot = analysis_folder(aroot, 'grid')
     # find layers to process
     sample = "FeAu_0p5_tR"
     first_dataset = "ff1"
@@ -1048,10 +1053,10 @@ def test_FeAu_JADB_bb_grid():
     notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
 
 
-def test_FeAu_JADB_bb_friedel():
+def test_FeAu_JADB_bb_friedel(aroot):
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/"
-    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250304_JADB/friedel"
+    analysisroot = analysis_folder( aroot, "friedel" )
     # find layers to process
     sample = "FeAu_0p5_tR"
     first_dataset = "ff1"
@@ -1168,12 +1173,17 @@ def test_FeAu_JADB_bb_friedel():
 
 if __name__ == "__main__":
     print(papermill.__path__)
-    test_tomographic_route()
-    test_pbp_route()
-    # FIXME: None of these are re-usable by anyone except James who owns those folders
-    # test_FeAu_JADB_tomo()
-    # test_FeAu_JADB_pbp()
-    # test_FeAu_f2scan_JADB_pbp()
-    # test_FeAu_JADB_bb()
-    # test_FeAu_JADB_bb_grid()
-    # test_FeAu_JADB_bb_friedel()
+    try:
+        destination_folder = sys.argv[1]
+        print("I am going to create output in", destination_folder)
+    except:
+        print("Usage: python papermill_test_notebooks.py /path/you/can/write/to/20251120" )
+        raise
+    test_tomographic_route(destination_folder)
+    test_pbp_route(destination_folder)
+    test_FeAu_JADB_tomo(destination_folder)
+    test_FeAu_JADB_pbp(destination_folder)
+    test_FeAu_f2scan_JADB_pbp(destination_folder)
+    test_FeAu_JADB_bb(destination_folder)
+    test_FeAu_JADB_bb_grid(destination_folder)
+    test_FeAu_JADB_bb_friedel(destination_folder)
