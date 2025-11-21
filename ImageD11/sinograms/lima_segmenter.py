@@ -200,22 +200,27 @@ class frmtosparse:
         return nnz, self.row[:nnz], self.col[:nnz], self.val[:nnz]
 
 
-def clean(nnz, row, col, val):
+def clean(nnz, row, col, val, config_options= None):
     #flake8: global OPTIONS
+    if config_options is None:
+        options = OPTIONS
+    else:
+        options = config_options
+
     if nnz == 0:
         return None
-    if nnz > OPTIONS.howmany:
-        nnz = top_pixels(nnz, row, col, val, OPTIONS.howmany, OPTIONS.thresholds)
+    if nnz > options.howmany:
+        nnz = top_pixels(nnz, row, col, val, options.howmany, options.thresholds)
         # Now get rid of the single pixel 'peaks'
         #   (for the mallocs, data is copied here)
         s = sparseframe.sparse_frame(
-            row[:nnz].copy(), col[:nnz].copy(), OPTIONS.mask.shape
+            row[:nnz].copy(), col[:nnz].copy(), options.mask.shape
         )
         s.set_pixels("intensity", val[:nnz].copy())
     else:
-        s = sparseframe.sparse_frame(row, col, OPTIONS.mask.shape)
+        s = sparseframe.sparse_frame(row, col, options.mask.shape)
         s.set_pixels("intensity", val)
-    if OPTIONS.pixels_in_spot <= 1:
+    if options.pixels_in_spot <= 1:
         return s
     # label them according to the connected objects
     s.set_pixels("f32", s.pixels["intensity"].astype(np.float32))
@@ -229,7 +234,7 @@ def clean(nnz, row, col, val):
     #    npx = mom[:, cImageD11.s2D_1]
     npx = np.bincount(s.pixels["cp"], minlength=npk)
     pxcounts = npx[s.pixels["cp"]]
-    pxmsk = pxcounts >= OPTIONS.pixels_in_spot
+    pxmsk = pxcounts >= options.pixels_in_spot
     if pxmsk.sum() == 0:
         return None
     sf = s.mask(pxmsk)
