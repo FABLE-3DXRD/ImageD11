@@ -8,10 +8,12 @@ Make the code parallel over lima files ...
  - read an input file which has the source/destination file names for this job
 """
 
+import os
+# because multiprocessing
+os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
 import sys
 import time
-import os
 import math
 import logging
 import numpy as np
@@ -368,25 +370,40 @@ def main(h5name, jobid):
             )
         )
     if options.cores_per_job > 1:
-        ImageD11.cImageD11.check_multiprocessing(patch=True)  # avoid fork
         import multiprocessing
+        # Gemini suggested fork to suppress the multiprocessing context errors
+        # We must ensure that hdf5 has not got any files open when doing this
+        # Both spawn and forkserver run into problems reproducibly.
+        ctx = multiprocessing.get_context('fork')
+        num_processes = min(options.cores_per_job, len(args))
+        print("# Starting pool with", num_processes, " workers...", flush=True)
 
-        with multiprocessing.Pool(
-            processes=options.cores_per_job,
+        mypool = ctx.Pool(
+            processes=num_processes,
             initializer=initOptions,
             initargs=(h5name, jobid),
-        ) as mypool:
+        )
+        try:
             donefile = sys.stdout
-            for fname in mypool.map(segment_lima, args, chunksize=1):
-                donefile.write(fname + "\n")
+            for fname in mypool.imap_unordered(segment_lima, args, chunksize=1):
+                donefile.write(str(fname) + "\n")
                 donefile.flush()
+        except Exception as e:
+            print(f"Main loop error: {e}", file=sys.stderr)
+            # If the main loop dies, we must kill the pool to stop things hanging
+            mypool.terminate()        
+        finally:
+            # 4. Clean shutdown
+            print("# Closing pool...", flush=True)
+            mypool.close()
+            mypool.join()
+            print("# Pool closed.", flush=True)
     else:
         for arg in args:
             fname = segment_lima(arg)
             print(fname)
             sys.stdout.flush()
-
-    print("All done")
+    print("# All done")
 
 
 def setup_slurm_array(dsname, dsgroup="/", pythonpath=None):
@@ -434,7 +451,7 @@ def setup_slurm_array(dsname, dsgroup="/", pythonpath=None):
 #SBATCH --job-name=array-lima_segmenter
 #SBATCH --output=%s/lima_segmenter_%%A_%%a.out
 #SBATCH --error=%s/lima_segmenter_%%A_%%a.err
-#SBATCH --array=0-%d
+#SBATCH --array=1-%d
 #SBATCH --time=02:00:00
 # define memory needs and number of tasks for each array job
 #SBATCH --ntasks=1
@@ -443,10 +460,11 @@ def setup_slurm_array(dsname, dsgroup="/", pythonpath=None):
 date
 echo Running on $HOSTNAME : %s
 # Hypothesis: multiprocessing collisions in /tmp
-mkdir /tmp/$USER_$SLURM_ARRAY_TASK_ID
-export TMPDIR=/tmp/$USER_$SLURM_ARRAY_TASK_ID
+export TMPDIR="/tmp/${USER}_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}"
+echo $TMPDIR
+mkdir $TMPDIR
 OMP_NUM_THREADS=1 %s > %s/lima_segmenter_$SLURM_ARRAY_TASK_ID.log 2>&1
-rm -rf /tmp/$USER_$SLURM_ARRAY_TASK_ID/
+rm -rf $TMPDIR
 date
 """
             % (sdir, sdir, jobs_needed, options.cores_per_job, command, command, sdir)
