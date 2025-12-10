@@ -94,21 +94,27 @@ class grainmap:
         convert tensor_map to a dictionary like DS, which is similar to fwd-DCT struct, easier for subsequent operation
         """
         tensor_map = self.read_tensor_map()
-        
+        tensor_map_flag = False
         for key in tensor_map.keys():
             if 'TensorMap' in key:
                 print('Got the key name {}'.format(key))
                 keyname = key
+                tensor_map_flag = True
         
         print('********************* Converting to DS format *****************************')
         keys_list = ['B', 'U', 'UB', 'UBI', 'eps_sample', 'euler', 'ipf_x', 'ipf_y', 'ipf_z', 'mt', 'nuniq', 'phase_ids', 'unitcell', 'intensity', 'labels']
-        DS = {}
-        for k in keys_list:
-            if k in tensor_map[keyname]['maps'].keys():
-                print('Loading {} with a shape of {} to DS ...'.format(k, tensor_map[keyname]['maps'][k].shape))
-                DS[k] = tensor_map[keyname]['maps'][k]
-        if 'step' in tensor_map[keyname].keys():
-            DS['voxel_size'] = tensor_map[keyname]['step'] # [um/pixel]
+        if tensor_map_flag:
+            # it reads directly as a tensor map
+            DS = {}
+            for k in keys_list:
+                if k in tensor_map[keyname]['maps'].keys():
+                    print('Loading {} with a shape of {} to DS ...'.format(k, tensor_map[keyname]['maps'][k].shape))
+                    DS[k] = tensor_map[keyname]['maps'][k]
+            if 'step' in tensor_map[keyname].keys():
+                DS['voxel_size'] = tensor_map[keyname]['step'] # [um/pixel]
+        else:
+            # the provided map is a DS-like dictionary map already
+            DS = tensor_map
         
         
         DS['Rod'] = np.empty((DS['UBI'].shape[0], DS['UBI'].shape[1], DS['UBI'].shape[2], 3))
