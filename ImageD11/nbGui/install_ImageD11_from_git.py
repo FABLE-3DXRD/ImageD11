@@ -66,6 +66,16 @@ def setup_ImageD11_from_git(path=None, checkout="ImageD11"):
     Called from notebooks, installs a git checkout of ImageD11 to override
     the one from the system (in case you need some latest features).
     """
+    if checkout is None and path is None:
+        # we assume you want the system python
+        import ImageD11
+
+        folder = os.path.split(ImageD11.__file__)[-1]
+        pythonpath = os.path.split(folder)[-1]
+        # probably cvmfs ..., but if it holds /data/
+        if pythonpath.find("/data/") > 0:
+            pythonpath = pythonpath[pythonpath.find("/data/") :]
+        return pythonpath
     if path is None:
         return run_ImageD11_from_git(guess_ImageD11_code_path(), checkout)
     else:
