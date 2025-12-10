@@ -4,7 +4,8 @@
 # Suitable for both s3DXRD using pencil beam and box-beam 3DXRD
 # Haixing Fang, haixing.fang@esrf.fr
 # Jan 2nd, 2025
-# updated on January 30, 2025
+# version 1.0: updated on January 30, 2025
+# version 1.1: fixed a bug with ray origin on December 10, 2025
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -726,7 +727,7 @@ date""".format(
                     self.cf_4d = colfile_from_hdf(self.cf_4d_file)
                     self.peaks_4d = io.convert_cf_to_fwd_peaks(self.cf_4d)
                     if self.verbose >= 1:
-                        logging.info('loaded 4D peaks from {}'.format(self.cf_4d_file))   
+                        logging.info('loaded 4D peaks from {}'.format(self.cf_4d_file))
         else:
             self.get_cf()
 
@@ -973,11 +974,17 @@ def intersected_sample_pos(mask, dty = 0.0, y0_offset = 0.0, voxel_size = [1.0, 
     
     if not isinstance(voxel_size, np.ndarray):
         voxel_size = np.array(voxel_size, dtype='float')
+    #Omega = forward_model.get_omega_matrix(np.deg2rad(-omega))
+    #ray_direction = np.dot(Omega, [1.0, 0.0, 0.0])
+    #grid_size = mask.shape
+    #assert len(grid_size) == 3, "The input mask must be in 3D"
+    #ray_origin = [0.0, -dty - y0_offset, 0.0]
+    
     Omega = forward_model.get_omega_matrix(np.deg2rad(-omega))
     ray_direction = np.dot(Omega, [1.0, 0.0, 0.0])
     grid_size = mask.shape
     assert len(grid_size) == 3, "The input mask must be in 3D"
-    ray_origin = [0.0, -dty - y0_offset, 0.0]
+    ray_origin = np.dot(Omega, [0.0, -dty - y0_offset, 0.0]) # the absolute distance between the ray and the rotation center keeps as a constant of dty+y0_offset
 
     intersected_voxels = intersected_voxels_3d(grid_size, ray_origin, ray_direction, voxel_size = voxel_size,
                                                ray_size=ray_size, weight = weight, weight_pos = weight_pos, mask = mask, plot_flag = plot_flag)
@@ -1028,8 +1035,12 @@ def intersected_voxels_3d(grid_size, ray_origin, ray_direction, voxel_size = [1.
     grid_extent = np.array(grid_size) * voxel_size
     max_extent = np.linalg.norm(grid_extent)
 
-    t_values = np.linspace(-0.707 * max_extent + ray_origin[1], 0.707 * max_extent + ray_origin[1], int(max(grid_size)*1.414))
-    ray_shift = np.array([grid_size[1] / 2 + 0.5, grid_size[1] / 2 + 0.5, 0.0]) * voxel_size
+    #t_values = np.linspace(-0.707 * max_extent + ray_origin[1], 0.707 * max_extent + ray_origin[1], int(max(grid_size)*1.414))
+    #ray_shift = np.array([grid_size[1] / 2 + 0.5, grid_size[1] / 2 + 0.5, 0.0]) * voxel_size
+    #ray_path = np.array(ray_origin) / voxel_size + ray_shift + np.outer(t_values, ray_direction)
+
+    t_values = np.linspace(-0.707 * max_extent + np.linalg.norm(ray_origin), 0.707 * max_extent + np.linalg.norm(ray_origin), int(max(grid_size)*1.414))
+    ray_shift = np.array([grid_size[0] / 2 + 0.5, grid_size[1] / 2 + 0.5, 0.0]) * voxel_size
     ray_path = np.array(ray_origin) / voxel_size + ray_shift + np.outer(t_values, ray_direction)
 
     tol_distances = np.array(weight_pos)*ray_size
@@ -1348,11 +1359,11 @@ def ensure_2d_array(target_hkls):
 
 def plot_fwd_peaks(fwd_peaks):
     assert fwd_peaks.shape[1] == 25, "fwd_peaks shapes are not qualified"
-    f, ax = plt.subplots(1, 2, figsize=(15, 9))
+    f, ax = plt.subplots(1, 2, figsize=(12, 6))
 
     sc = ax[0].scatter(fwd_peaks[:, 18], fwd_peaks[:, 19], c=fwd_peaks[:, 23], cmap='viridis', s=8)
     ax[0].set_aspect('equal', 'box')
-    cb = f.colorbar(sc, ax=ax[0])
+    cb = f.colorbar(sc, ax=ax[0], fraction=0.046, pad=0.04)
     # cb.set_label('Intensity', fontsize = 20)
     cb.ax.tick_params(labelsize=14)
     ax[0].set_xlabel('fc (pixel)', fontsize = 20)
@@ -1363,7 +1374,7 @@ def plot_fwd_peaks(fwd_peaks):
 
     sc = ax[1].scatter(fwd_peaks[:, 5], fwd_peaks[:, 6], c=fwd_peaks[:, 23], cmap='viridis', s=8)
     ax[1].set_aspect('equal', 'box')
-    cb = f.colorbar(sc, ax=ax[1])
+    cb = f.colorbar(sc, ax=ax[1], fraction=0.046, pad=0.04)
     cb.set_label('Intensity', fontsize = 20)
     cb.ax.tick_params(labelsize=14)
     ax[1].set_xlabel('X (mm)', fontsize = 20)
