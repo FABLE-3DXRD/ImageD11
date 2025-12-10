@@ -1,32 +1,107 @@
-# flake8: noqa
 """
 Python script to automatically end-to-end test our Jupyter notebooks
 Currently implemented: nothing (indev)
+
 To run this notebook, you need papermill in your Python environment.
-As of 2025/01/21, this is not available in the default Jupyter environment.
+This should be in the default Jupyter environment at ESRF now.
 
-I suggest to do the following:
-cd to your ImageD11 git checkout folder
-$ pip install papermill ansicolors -t . --no-deps
+It attempts to run tests on the ESRF file system and cluster.
 
-This file will add its parent folder (../) to the system path so it can be imported
-So you get local ImageD11 and local papermill
+It should be able to run these tests using whatever version your system is finding,
+or from a git checkout, so you get the local ImageD11 for testing.
+
+If you want to test the system python installation:
+
+    python papermill_test_notebooks.py --system /my/space/on/the/file/system/for/results    
+
+example to test a specific git tag (only works if this commit is in the tree and you are at ESRF):
+
+    git clone https://github.com/FABLE_3DXRD/ImageD11 ImageD11_for_test
+    cd ImageD11_for_test
+    git checkout v2.3.4
+    python setup.py build_ext --inplace
+    cd test
+    python papermill_test_notebooks.py /my/space/on/the/file/system/for/results 
+
+As of December 2025, both git and the jupyter-slurm conda are supposed to be working.
 """
+
 import sys, os
 
+def clean_esrf_path(
+        fname,
+        fakeroots=(
+            "/mnt/storage",
+            "/gpfs/easy",
+        ),
+    ):
+        for item in fakeroots:
+            if fname.startswith(item):
+                return fname.replace(item, "")
+        return fname
 
-def fix_esrf_path(p):
-    if p.startswith("/gpfs") and p.find("/data/") > 0:
-        return p[p.find("/data/") :]
+if __name__ == "__main__":
+    # This has to come before importing ImageD11 if it changes sys.path
+    import argparse, sys
+
+    parser = argparse.ArgumentParser(
+        prog=sys.argv[0],
+        description="Runs end-to-end testcases using papermill at ESRF",
+    )
+    parser.add_argument("destination_folder")
+    parser.add_argument(
+        "-s",
+        "--system",
+        action="store_true",
+        help="Use the system installation of ImageD11 and not this git checkout",
+    )
+    opts = parser.parse_args()
+    destination_folder = opts.destination_folder
+    print("I am going to create output in", destination_folder, opts.system)
+    if opts.system:
+        # If we want to test the system install (conda or pip venv that is activated)
+        # Then stop setting PYTHONPATH and send these variable in as None
+        import ImageD11
+        checkout_name = None
+        checkout_folder = None
+        folder = os.path.split(ImageD11.__file__)[0]
+        pythonpath = os.path.split(folder)[0]
+        # probably cvmfs ..., but if it holds /data/
+        if pythonpath.find("/data/") > 0:
+            pythonpath = pythonpath[pythonpath.find("/data/") :]
+        print("We should be using the system python", pythonpath)
+    else:
+        # If we are working from git, this is where to find the code
+        items = os.path.abspath(__file__).split( os.path.sep ) # this files location (test)
+        # this file = items[-1]
+        # test = items[-2]
+        checkout_name = items[-3]
+        checkout_folder = clean_esrf_path( os.path.sep.join( items[:-3] ) )
+        print(items)
+        print( os.path.sep.join( items[:-3] ) )
+        print("Checkout folder", checkout_folder, "Checkout name", checkout_name)
+        pp = os.path.join( checkout_folder, checkout_name )
+        print("Expected pythonpath", pp )
+        assert os.path.exists(pp), "If you want to test a git version please check it out yourself"
+        sys.path.insert(0, pp)        
+        import ImageD11.nbGui.install_ImageD11_from_git
+        pythonpath = ImageD11.nbGui.install_ImageD11_from_git.run_ImageD11_from_git(
+            checkout_folder, checkout_name
+        )
+
+# FIXME: these are distributed these in the releases.
+#  ... we miss some kind of get_notebook thing for copying them into users folders.
+nb_base_prefix = os.path.join("..", "ImageD11", "nbGui")
+scan_nb_prefix = os.path.join(nb_base_prefix, "S3DXRD")
+bb_nb_prefix = os.path.join(nb_base_prefix, "TDXRD")
+
+
+def analysis_folder(aroot, name):
+    """ Create an analysis folder if needed """
+    p = os.path.join(aroot, name)
+    if not os.path.exists(p):
+        os.makedirs(p)
     return p
-
-
-checkout_name = os.path.split(os.path.abspath(".."))[-1]
-checkout_folder = fix_esrf_path(os.path.abspath("../.."))
-
-sys.path.insert(0, checkout_folder)
-print("ImageD11 path:", sys.path[0])
-
 
 os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"  # ignore papermill debugger warnings
 
@@ -38,10 +113,41 @@ from ImageD11.nbGui.nb_utils import (
     notebook_exec_pmill,
 )
 
-nb_base_prefix = os.path.join("..", "ImageD11", "nbGui")
-scan_nb_prefix = os.path.join(nb_base_prefix, "S3DXRD")
-bb_nb_prefix = os.path.join(nb_base_prefix, "TDXRD")
 
+try:
+    from ImageD11.nbGui.nb_utils import prepare_notebooks
+except:
+    def prepare_notebooks(
+        samples_dict,
+        notebooks,
+        dataroot,
+        analysisroot,
+        CHECKOUT_PATH=None,
+        IMAGED11_PATH=None,
+        notebook_parent_dir=None,
+        ):
+        PYTHONPATH = None  # do nothing
+        if IMAGED11_PATH is not None and CHECKOUT_PATH is not None:
+            PYTHONPATH = os.path.join(IMAGED11_PATH, CHECKOUT_PATH)
+        # Insert IMAGED11_PATH and CHECKOUT_PATH into nbparams only if they are requested
+        # Some notebooks will never need git (e.g. standalone doc style)
+        import papermill
+        for nb_name, nb_params in notebooks:
+            # Check what the notebook is expecting
+            nb_path = os.path.join( notebook_parent_dir, nb_name ) 
+            expected_pars = papermill.inspect_notebook(nb_path)
+            if "CHECKOUT_PATH" in expected_pars:
+                nb_params["CHECKOUT_PATH"] = CHECKOUT_PATH
+            if "IMAGED11_PATH" in expected_pars:
+                nb_params["IMAGED11_PATH"] = IMAGED11_PATH
+        return prepare_notebooks_for_datasets(
+            samples_dict,
+            notebooks,
+            dataroot,
+            analysisroot,
+            PYTHONPATH=PYTHONPATH,
+            notebook_parent_dir=notebook_parent_dir,
+        )
 
 def notebook_route(
     base_dir,
@@ -87,12 +193,11 @@ def notebook_route(
 
 
 # test the full tomographic route from start to finish
-def test_tomographic_route():
-    tomo_dir = "tomo_route"
+def test_tomographic_route(aroot):
+    tomo_dir = analysis_folder(aroot, "tomo_route")
     dataroot = os.path.join(tomo_dir, "raw")
     analysisroot = os.path.join(tomo_dir, "processed")
 
-    CHECKOUT_PATH = sys.path[0]
     sample = "Si_cube"
     dataset = "S3DXRD_nt_moves_dty"
     samples_dict = {sample: [dataset]}
@@ -168,7 +273,7 @@ def test_tomographic_route():
         ),
     ]
 
-    notebooks_to_execute = prepare_notebooks_for_datasets(
+    notebooks_to_execute = prepare_notebooks(
         samples_dict,
         nb_params,
         dataroot,
@@ -183,8 +288,8 @@ def test_tomographic_route():
 
 
 # test the full point-by-point route from start to finish
-def test_pbp_route():
-    tomo_dir = "pbp_route"
+def test_pbp_route(aroot):
+    tomo_dir = analysis_folder(aroot, "pbp_route")
     dataroot = os.path.join(tomo_dir, "raw")
     analysisroot = os.path.join(tomo_dir, "processed")
 
@@ -258,7 +363,7 @@ def test_pbp_route():
         ),
     ]
 
-    notebooks_to_execute = prepare_notebooks_for_datasets(
+    notebooks_to_execute = prepare_notebooks(
         samples_dict,
         nb_params,
         dataroot,
@@ -272,10 +377,10 @@ def test_pbp_route():
         notebook_exec_pmill(nb_path, nb_path, None)
 
 
-def test_FeAu_JADB_tomo():
+def test_FeAu_JADB_tomo(aroot):
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/RAW_DATA"
-    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/PROCESSED_DATA/20250402_JADB/tomo_route"
+    analysisroot = analysis_folder(aroot, "tomo_route")
     # find layers to process
     sample = "FeAu_0p5_tR_nscope"
     first_dataset = "top_200um"
@@ -428,7 +533,7 @@ def test_FeAu_JADB_tomo():
         ),
     ]
 
-    notebooks_to_execute = prepare_notebooks_for_datasets(
+    notebooks_to_execute = prepare_notebooks(
         samples_dict,
         nb_params,
         dataroot,
@@ -446,8 +551,8 @@ def test_FeAu_JADB_tomo():
     dset_path = os.path.join(
         analysisroot,
         sample,
-        f"{sample}_{first_dataset}",
-        f"{sample}_{first_dataset}_dataset.h5",
+        "%s_%s" % (sample, first_dataset),
+        "%s_%s_dataset.h5" % (sample, first_dataset),
     )
     nb_param = {
         "CHECKOUT_PATH": checkout_folder,
@@ -463,10 +568,10 @@ def test_FeAu_JADB_tomo():
     notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
 
 
-def test_FeAu_JADB_pbp():
+def test_FeAu_JADB_pbp(aroot):
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/RAW_DATA"
-    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/PROCESSED_DATA/20250402_JADB/pbp_route"
+    analysisroot = analysis_folder(aroot, "pbp_route")
     # find layers to process
     sample = "FeAu_0p5_tR_nscope"
     first_dataset = "top_200um"
@@ -607,7 +712,7 @@ def test_FeAu_JADB_pbp():
         ),
     ]
 
-    notebooks_to_execute = prepare_notebooks_for_datasets(
+    notebooks_to_execute = prepare_notebooks(
         samples_dict,
         nb_params,
         dataroot,
@@ -625,8 +730,8 @@ def test_FeAu_JADB_pbp():
     dset_path = os.path.join(
         analysisroot,
         sample,
-        f"{sample}_{first_dataset}",
-        f"{sample}_{first_dataset}_dataset.h5",
+        "%s_%s" % (sample, first_dataset),
+        "%s_%s_dataset.h5" % (sample, first_dataset),
     )
     nb_param = {
         "CHECKOUT_PATH": checkout_folder,
@@ -642,10 +747,10 @@ def test_FeAu_JADB_pbp():
     notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
 
 
-def test_FeAu_f2scan_JADB_pbp():
+def test_FeAu_f2scan_JADB_pbp(aroot):
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/RAW_DATA"
-    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/PROCESSED_DATA/20250402_JADB"
+    analysisroot = analysis_folder(aroot, "pbp_route")
     # find layers to process
     sample = "FeAu_No1_190um"
     first_dataset = "2um_redo_z_0"
@@ -786,7 +891,7 @@ def test_FeAu_f2scan_JADB_pbp():
         ),
     ]
 
-    notebooks_to_execute = prepare_notebooks_for_datasets(
+    notebooks_to_execute = prepare_notebooks(
         samples_dict,
         nb_params,
         dataroot,
@@ -804,8 +909,8 @@ def test_FeAu_f2scan_JADB_pbp():
     dset_path = os.path.join(
         analysisroot,
         sample,
-        f"{sample}_{first_dataset}",
-        f"{sample}_{first_dataset}_dataset.h5",
+        "%s_%s" % (sample, first_dataset),
+        "%s_%s_dataset.h5" % (sample, first_dataset),
     )
     nb_param = {
         "CHECKOUT_PATH": checkout_folder,
@@ -821,10 +926,10 @@ def test_FeAu_f2scan_JADB_pbp():
     notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
 
 
-def test_FeAu_JADB_bb():
+def test_FeAu_JADB_bb(aroot):
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/"
-    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250304_JADB/default"
+    analysisroot = analysis_folder(aroot, "frelon")
     # find layers to process
     sample = "FeAu_0p5_tR"
     first_dataset = "ff1"
@@ -893,7 +998,7 @@ def test_FeAu_JADB_bb():
         ),
     ]
 
-    notebooks_to_execute = prepare_notebooks_for_datasets(
+    notebooks_to_execute = prepare_notebooks(
         samples_dict,
         nb_params,
         dataroot,
@@ -911,8 +1016,8 @@ def test_FeAu_JADB_bb():
     dset_path = os.path.join(
         analysisroot,
         sample,
-        f"{sample}_{first_dataset}",
-        f"{sample}_{first_dataset}_dataset.h5",
+        "%s_%s" % (sample, first_dataset),
+        "%s_%s_dataset.h5" % (sample, first_dataset),
     )
     nb_param = {  # 3_merge_slices.ipynb
         "CHECKOUT_PATH": checkout_folder,
@@ -927,10 +1032,10 @@ def test_FeAu_JADB_bb():
     notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
 
 
-def test_FeAu_JADB_bb_grid():
+def test_FeAu_JADB_bb_grid(aroot):
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/"
-    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250304_JADB/grid"
+    analysisroot = analysis_folder(aroot, "grid")
     # find layers to process
     sample = "FeAu_0p5_tR"
     first_dataset = "ff1"
@@ -1014,7 +1119,7 @@ def test_FeAu_JADB_bb_grid():
         ),
     ]
 
-    notebooks_to_execute = prepare_notebooks_for_datasets(
+    notebooks_to_execute = prepare_notebooks(
         samples_dict,
         nb_params,
         dataroot,
@@ -1032,8 +1137,8 @@ def test_FeAu_JADB_bb_grid():
     dset_path = os.path.join(
         analysisroot,
         sample,
-        f"{sample}_{first_dataset}",
-        f"{sample}_{first_dataset}_dataset.h5",
+        "%s_%s" % (sample, first_dataset),
+        "%s_%s_dataset.h5" % (sample, first_dataset),
     )
     nb_param = {  # 3_merge_slices.ipynb
         "CHECKOUT_PATH": checkout_folder,
@@ -1048,10 +1153,10 @@ def test_FeAu_JADB_bb_grid():
     notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
 
 
-def test_FeAu_JADB_bb_friedel():
+def test_FeAu_JADB_bb_friedel(aroot):
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/"
-    analysisroot = "/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/PROCESSED_DATA/20250304_JADB/friedel"
+    analysisroot = analysis_folder(aroot, "friedel")
     # find layers to process
     sample = "FeAu_0p5_tR"
     first_dataset = "ff1"
@@ -1132,7 +1237,7 @@ def test_FeAu_JADB_bb_friedel():
         ),
     ]
 
-    notebooks_to_execute = prepare_notebooks_for_datasets(
+    notebooks_to_execute = prepare_notebooks(
         samples_dict,
         nb_params,
         dataroot,
@@ -1150,8 +1255,8 @@ def test_FeAu_JADB_bb_friedel():
     dset_path = os.path.join(
         analysisroot,
         sample,
-        f"{sample}_{first_dataset}",
-        f"{sample}_{first_dataset}_dataset.h5",
+        "%s_%s" % (sample, first_dataset),
+        "%s_%s_dataset.h5" % (sample, first_dataset),
     )
     nb_param = {  # 3_merge_slices.ipynb
         "CHECKOUT_PATH": checkout_folder,
@@ -1166,14 +1271,13 @@ def test_FeAu_JADB_bb_friedel():
     notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
 
 
-if __name__ == "__main__":
+if __name__=="__main__":
     print(papermill.__path__)
-    test_tomographic_route()
-    test_pbp_route()
-    # FIXME: None of these are re-usable by anyone except James who owns those folders
-    # test_FeAu_JADB_tomo()
-    # test_FeAu_JADB_pbp()
-    # test_FeAu_f2scan_JADB_pbp()
-    # test_FeAu_JADB_bb()
-    # test_FeAu_JADB_bb_grid()
-    # test_FeAu_JADB_bb_friedel()
+    test_tomographic_route(destination_folder)
+    test_pbp_route(destination_folder)
+    test_FeAu_JADB_tomo(destination_folder)
+    test_FeAu_JADB_pbp(destination_folder)
+    test_FeAu_f2scan_JADB_pbp(destination_folder)
+    test_FeAu_JADB_bb(destination_folder)
+    test_FeAu_JADB_bb_grid(destination_folder)
+    test_FeAu_JADB_bb_friedel(destination_folder)
