@@ -25,6 +25,19 @@ from ImageD11.peakselect import select_ring_peaks_by_intensity
 ### General utilities (for all notebooks)
 
 
+def clean_esrf_path(
+    fname,
+    fakeroots=(
+        "/mnt/storage",
+        "/gpfs/easy",
+    ),
+):
+    for item in fakeroots:
+        if fname.startswith(item):
+            return fname.replace(item, "")
+    return fname
+
+
 def is_notebook_executed(nb_path):
     import nbformat
 
@@ -94,13 +107,65 @@ def notebook_exec_pmill(
     papermill.execute_notebook(nb_input_path, nb_output_path, parameters=params_dict)
 
 
-def prepare_notebooks_for_datasets(
+def prepare_notebooks(
     samples_dict,
     notebooks,
     dataroot,
     analysisroot,
     CHECKOUT_PATH=None,
     IMAGED11_PATH=None,
+    notebook_parent_dir=None,
+):
+    """
+    Prepare, but not execute, a series of notebooks for each dataset in samples_dict.
+
+    Calls the old prepare_notebooks_for_datasets
+
+    Places the prepared notebooks for each dataset like PROCESSED_DATA/sample/sample_dataset/foo.ipynb
+    Returns a list of absolute paths of notebooks to execute.
+
+    samples_dict: dict of {sample1: [ds1, ds2, ds3], sample2: [ds1, ds2, ds3]} etc.
+    notebooks: list of tuples of [(notebook_filename.ipynb, {params_for_notebook_1.ipynb})] etc.
+        Param dicts should not contain dataroot, analysisroot, sample, dataset or dsfile information.
+        Those are instead prepared by this function in the "0...ipynb" notebook that creates the dataset
+
+    dataroot: path to raw data folder
+    analysisroot: path to root of analysis folder (usually PROCESSED_DATA)
+    CHECKOUT_PATH: place to check out a git version of ImageD11.
+    IMAGED11_PATH: name of the checkout folder. None means use the system ImageD11.
+    notebook_parent_dir: path to parent directory of input notebooks. Default: current working directory
+    """
+    PYTHONPATH = None  # do nothing
+    if IMAGED11_PATH is not None and CHECKOUT_PATH is not None:
+        PYTHONPATH = os.path.join(IMAGED11_PATH, CHECKOUT_PATH)
+    # Insert IMAGED11_PATH and CHECKOUT_PATH into nbparams only if they are requested
+    # Some notebooks will never need git (e.g. standalone doc style)
+    import papermill
+
+    for nb_name, nb_params in notebooks:
+        # Check what the notebook is expecting
+        nb_path = os.path.join(notebook_parent_dir, nb_name)
+        expected_pars = papermill.inspect_notebook(nb_path)
+        if "CHECKOUT_PATH" in expected_pars:
+            nb_params["CHECKOUT_PATH"] = CHECKOUT_PATH
+        if "IMAGED11_PATH" in expected_pars:
+            nb_params["IMAGED11_PATH"] = IMAGED11_PATH
+    return prepare_notebooks_for_datasets(
+        samples_dict,
+        notebooks,
+        dataroot,
+        analysisroot,
+        PYTHONPATH=PYTHONPATH,
+        notebook_parent_dir=notebook_parent_dir,
+    )
+
+
+def prepare_notebooks_for_datasets(
+    samples_dict,
+    notebooks,
+    dataroot,
+    analysisroot,
+    PYTHONPATH=None,
     notebook_parent_dir=None,
 ):
     """
@@ -116,7 +181,7 @@ def prepare_notebooks_for_datasets(
     notebook_parent_dir: path to parent directory of input notebooks. Default: current working directory
     """
     if notebook_parent_dir is None:
-        notebook_parent_dir = os.path.abspath("./")
+        notebook_parent_dir = clean_esrf_path(os.path.abspath("."))
 
     notebooks_to_execute = []
     for sample, datasets in samples_dict.items():
@@ -139,10 +204,8 @@ def prepare_notebooks_for_datasets(
                 )  # use the notebook from the current folder
                 nb_out = os.path.join(ds.analysispath, nb_name)
                 # prepare parameters for this notebook
-                if CHECKOUT_PATH is not None:
-                    nb_params["CHECKOUT_PATH"] = CHECKOUT_PATH
-                if IMAGED11_PATH is not None:
-                    nb_params["IMAGED11_PATH"] = IMAGED11_PATH
+                if PYTHONPATH is not None:
+                    nb_params["PYTHONPATH"] = PYTHONPATH
                 if nb_name.startswith("0"):
                     # the first notebook, segmentation, so we don't have a dataset name yet
                     nb_params["dataroot"] = ds.dataroot
@@ -352,7 +415,7 @@ date
         cores_per_task=cores_per_task,
         python_script_path=python_script_path,
         id11_code_path=id11_code_path,
-        grainsfile=os.path.abspath(ds.grainsfile).replace("/mnt/storage", ""),
+        grainsfile=clean_esrf_path(os.path.abspath(ds.grainsfile)),
         reconfile=reconfile,
         dsfile=ds.dsfile,
         log_path=log_path,
@@ -407,8 +470,8 @@ date
         errfile_path=errfile_path,
         python_script_path=python_script_path,
         id11_code_path=id11_code_path,
-        grainsfile=os.path.abspath(grainsfile).replace("/mnt/storage", ""),
-        dsfile=os.path.abspath(ds.dsfile).replace("/mnt/storage", ""),
+        grainsfile=clean_esrf_path(os.path.abspath(grainsfile)),
+        dsfile=clean_esrf_path(os.path.abspath(ds.dsfile)),
         group_name=group_name,
         memory=memory,
         log_path=log_path,
@@ -459,7 +522,7 @@ date
         errfile_path=errfile_path,
         python_script_path=python_script_path,
         id11_code_path=id11_code_path,
-        dsfile=os.path.abspath(ds.dsfile).replace("/mnt/storage", ""),
+        dsfile=clean_esrf_path(os.path.abspath(ds.dsfile)),
         hkltol=pbp_object.hkl_tol,
         fpks=pbp_object.fpks,
         dstol=pbp_object.ds_tol,
@@ -573,7 +636,7 @@ def assign_peaks_to_grains(grains, cf, tol):
     labels = np.zeros(cf.nrows, "i")
     # get all g-vectors from columnfile (updateGeometry)
     # should we instead calculate considering grain translations? (probably!)
-    # gv = np.transpose((cf.gx, cf.gy, cf.gz)).astype(float) # not C_CONTIGUOUS !
+    # gv = np.transpose((cf.gx, cf.gy, cf.gz)).astype(float) # not C_CONTIGUOUS
     gv = np.empty((cf.nrows, 3), float)
     gv[:, 0] = cf.gx
     gv[:, 1] = cf.gy
