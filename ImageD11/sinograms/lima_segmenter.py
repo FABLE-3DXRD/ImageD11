@@ -389,7 +389,7 @@ def main(h5name, jobid):
                 donefile.write(str(fname) + "\n")
                 donefile.flush()
         except Exception as e:
-            print(f"Main loop error: {e}", file=sys.stderr)
+            print(f"Main loop error: ", e, file=sys.stderr)
             # If the main loop dies, we must kill the pool to stop things hanging
             mypool.terminate()        
         finally:
