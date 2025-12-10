@@ -69,9 +69,8 @@ def setup_ImageD11_from_git(path=None, checkout="ImageD11"):
     if checkout is None and path is None:
         # we assume you want the system python
         import ImageD11
-
-        folder = os.path.split(ImageD11.__file__)[-1]
-        pythonpath = os.path.split(folder)[-1]
+        folder = os.path.split(ImageD11.__file__)[0]
+        pythonpath = os.path.split(folder)[0]
         # probably cvmfs ..., but if it holds /data/
         if pythonpath.find("/data/") > 0:
             pythonpath = pythonpath[pythonpath.find("/data/") :]

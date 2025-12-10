@@ -64,7 +64,12 @@ if __name__ == "__main__":
         import ImageD11
         checkout_name = None
         checkout_folder = None
-        print("We should be using the system python")
+        folder = os.path.split(ImageD11.__file__)[0]
+        pythonpath = os.path.split(folder)[0]
+        # probably cvmfs ..., but if it holds /data/
+        if pythonpath.find("/data/") > 0:
+            pythonpath = pythonpath[pythonpath.find("/data/") :]
+        print("We should be using the system python", pythonpath)
     else:
         # If we are working from git, this is where to find the code
         items = os.path.abspath(__file__).split( os.path.sep ) # this files location (test)
