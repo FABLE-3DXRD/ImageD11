@@ -56,8 +56,8 @@ class SegmenterOptions:
         pixels_in_spot=3,
         maskfile="",
         bgfile="",
-        cores_per_job=1,  # avoid buggy multiprocessing. Can't fix.
-        files_per_core=8,
+        cores_per_job=16,
+        files_per_core=4,
     ):
         self.cut = cut
         self.howmany = howmany
@@ -479,8 +479,8 @@ def setup(
     pixels_in_spot=3,
     maskfile="",
     bgfile="",
-    cores_per_job=1,
-    files_per_core=8,
+    cores_per_job=16,
+    files_per_core=4,
     pythonpath=None,
 ):
     """
