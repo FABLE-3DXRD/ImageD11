@@ -442,7 +442,11 @@ def setup_slurm_array(dsname, dsgroup="/", pythonpath=None):
 #
 date
 echo Running on $HOSTNAME : %s
+# Hypothesis: multiprocessing collisions in /tmp
+mkdir /tmp/$USER_$SLURM_ARRAY_TASK_ID
+export TMPDIR=/tmp/$USER_$SLURM_ARRAY_TASK_ID
 OMP_NUM_THREADS=1 %s > %s/lima_segmenter_$SLURM_ARRAY_TASK_ID.log 2>&1
+rm -rf /tmp/$USER_$SLURM_ARRAY_TASK_ID/
 date
 """
             % (sdir, sdir, jobs_needed, options.cores_per_job, command, command, sdir)
