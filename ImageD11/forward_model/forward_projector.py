@@ -1041,7 +1041,7 @@ def intersected_voxels_3d(grid_size, ray_origin, ray_direction, voxel_size = [1.
 
     t_values = np.linspace(-0.707 * max_extent + np.linalg.norm(ray_origin), 0.707 * max_extent + np.linalg.norm(ray_origin), int(max(grid_size)*1.414))
     ray_shift = np.array([grid_size[0] / 2 + 0.5, grid_size[1] / 2 + 0.5, 0.0]) * voxel_size
-    ray_path = np.array(ray_origin) / voxel_size + ray_shift + np.outer(t_values, ray_direction)
+    ray_path = np.array(ray_origin) + ray_shift + np.outer(t_values, ray_direction)
 
     tol_distances = np.array(weight_pos)*ray_size
     weights       = np.array(weight)
