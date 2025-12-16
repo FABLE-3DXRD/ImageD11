@@ -374,7 +374,14 @@ def main(h5name, jobid):
         # Gemini suggested fork to suppress the multiprocessing context errors
         # We must ensure that hdf5 has not got any files open when doing this
         # Both spawn and forkserver run into problems reproducibly.
-        ctx = multiprocessing.get_context('fork')
+        ctx_type = 'spawn' # windows/mac
+        if 'linux' in sys.platform:
+            ctx_type = 'fork' 
+        # Long term: this is going to break. We need a better model for the 
+        # nested parallel processing of running many slurm jobs and each job
+        # running a bunch of processes. Or we need to fix /dev/shm at ESRF.
+        # The SemLocks are not multi-multi-process safe.
+        ctx = multiprocessing.get_context(ctx_type)
         num_processes = min(options.cores_per_job, len(args))
         print("# Starting pool with", num_processes, " workers...", flush=True)
 
@@ -435,7 +442,7 @@ def setup_slurm_array(dsname, dsgroup="/", pythonpath=None):
               " %.2f %% pixels are active" % (100 * options.mask.mean()),
              )
     files_per_job = options.files_per_core * options.cores_per_job
-    jobs_needed = math.ceil(nfiles / files_per_job)
+    jobs_needed = math.ceil(nfiles / files_per_job) - 1
     sbat = os.path.join(sdir, "lima_segmenter_slurm.sh")
     if pythonpath is None:
         cmd = sys.executable
@@ -451,7 +458,7 @@ def setup_slurm_array(dsname, dsgroup="/", pythonpath=None):
 #SBATCH --job-name=array-lima_segmenter
 #SBATCH --output=%s/lima_segmenter_%%A_%%a.out
 #SBATCH --error=%s/lima_segmenter_%%A_%%a.err
-#SBATCH --array=1-%d
+#SBATCH --array=0-%d
 #SBATCH --time=02:00:00
 # define memory needs and number of tasks for each array job
 #SBATCH --ntasks=1
