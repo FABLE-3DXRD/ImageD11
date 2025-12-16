@@ -377,7 +377,27 @@ class forward_projector:
         self.set_acquisition()
         self.set_opts_seg()
         self.set_image_size()
-    
+        self.check_halfy()
+
+    def check_halfy(self):
+        #quick check to see if halfy is big enough
+        if self.sample_mask is None:
+            mask_tmp = (self.sample_input.DS['labels'] > -1) & (~np.isnan(self.sample_input.DS['U'][:, :, :, 0, 0]))
+            mask_tmp = np.transpose(mask_tmp, (2, 1, 0))
+        else:
+            mask_tmp = self.sample_mask
+        center = (mask_tmp.shape[0]/2, mask_tmp.shape[1]/2)
+        radius = self.args["halfy"]/np.mean(self.sample_input.DS['voxel_size']) #radius covered by halfy, in pixels
+        x = np.linspace(0, mask_tmp.shape[0], mask_tmp.shape[1])
+        y = np.linspace(0, mask_tmp.shape[1], mask_tmp.shape[1])
+        xv, yv = np.meshgrid(x, y)
+        dist_from_center = np.sqrt((xv - center[0])**2 + (yv-center[1])**2)
+        mask_circle = dist_from_center >= radius
+        combine_mask = mask_circle*mask_tmp[:,:,0]
+        if self.verbose >= 1 and np.sum(combine_mask)>=1:
+            logging.warning('****** WARNING ******')
+            logging.warning('half_y = {} is too small, you should increase it.'.format(self.args["halfy"]))
+            
     def set_beam(self):
         """
         set the X-ray beam source, including beam energy, FWHM, flux, shape, source-to-sample distance, name etc.
