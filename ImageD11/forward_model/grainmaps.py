@@ -603,7 +603,12 @@ def DS_IGM_calc(DS, grain_ids=None, crystal_system='cubic', plot_flag=True):
                 U_voxels = DS['U'][gid_ind[:,0], gid_ind[:,1], gid_ind[:,2], :, :]
                 # Repeat U_mean to match U_voxels shape
                 U_mean_rep = np.repeat(U_mean[np.newaxis, :, :], U_voxels.shape[0], axis=0)  # Shape: (N, 3, 3)
-                angles, axes, axes_xyz = disorientation_list(U_mean_rep.transpose(0, 2, 1), U_voxels.transpose(0, 2, 1), crystal_structure=crystal_structure)
+                if U_voxels.shape[0]>1:
+                    angles, axes, axes_xyz = disorientation_list(U_mean_rep.transpose(0, 2, 1), U_voxels.transpose(0, 2, 1), crystal_structure=crystal_structure)
+                else:
+                    # if it is only one orientation
+                    # angles, axes, axes_xyz = disorientation(np.squeeze(U_mean_rep).T, np.squeeze(U_voxels).T, crystal_structure=crystal_structure)
+                    angles = 0.0
                 IGM[gid_ind[:,0], gid_ind[:,1], gid_ind[:,2]] = np.rad2deg(angles)
                 mis_ori = [np.mean(IGM[gid_ind[:,0], gid_ind[:,1], gid_ind[:,2]]), np.std(IGM[gid_ind[:,0], gid_ind[:,1], gid_ind[:,2]])]
                 print('Done IGM for label ID {} / {}: {} voxels with mean misori of {} +- {} degrees'.format(gid, len(grain_ids), U_voxels.shape[0], mis_ori[0], mis_ori[1]))
