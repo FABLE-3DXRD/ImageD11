@@ -415,7 +415,7 @@ class forward_projector:
                     mask = (self.sample_input.DS['labels'] == gid_mask) & (~np.isnan(self.sample_input.DS['U'][:, :, :, 0, 0]))
                 else:
                     mask += (self.sample_input.DS['labels'] == gid_mask) & (~np.isnan(self.sample_input.DS['U'][:, :, :, 0, 0]))
-            mask = np.moveaxis(mask, 0, 2)
+            mask = np.transpose(mask, (2, 1, 0))
             self.sample_mask = mask
         else:
             self.sample_mask = None
@@ -828,7 +828,7 @@ def forward_peaks_voxels(beam, sample, omega_angles, ucell, pars, dty=0.0,
     DS = sample.DS
     if mask is None:
         mask = (DS['labels'] > -1) & (~np.isnan(DS['U'][:, :, :, 0, 0]))
-        mask = np.moveaxis(mask, 0, 2)
+        mask = np.transpose(mask, (2, 1, 0))
     Lsam2det = pars.get_parameters()['distance'] / 1000.0
     rot_step = omega_angles[1] - omega_angles[0]
     if rot_step < 0:
@@ -1359,7 +1359,7 @@ def ensure_2d_array(target_hkls):
 
 def plot_fwd_peaks(fwd_peaks):
     assert fwd_peaks.shape[1] == 25, "fwd_peaks shapes are not qualified"
-    f, ax = plt.subplots(1, 2, figsize=(12, 6))
+    f, ax = plt.subplots(1, 2, figsize=(15, 6))
 
     sc = ax[0].scatter(fwd_peaks[:, 18], fwd_peaks[:, 19], c=fwd_peaks[:, 23], cmap='viridis', s=8)
     ax[0].set_aspect('equal', 'box')
@@ -1406,17 +1406,13 @@ def make_intensity_map(x_positions, y_positions, intensities, x_range = None, y_
     assert (x_positions.size == y_positions.size) and (x_positions.size == intensities.size), "The sizes of x, y, intensities must be the same"
 
     # Compute the bounds of the grid
-    if x_range is None:
-        x_min, x_max = np.min(x_positions), np.max(x_positions)
-    else:
-        x_min = x_range[0]
-        x_max = x_range[1]
-    if y_range is None:
-        y_min, y_max = np.min(y_positions), np.max(y_positions)
-    else:
-        y_min = y_range[0]
-        y_max = y_range[1]
-
+    x_min, x_max = (x_range if x_range is not None else 
+                    (np.min(x_positions), np.max(x_positions)))
+    y_min, y_max = (y_range if y_range is not None else 
+                    (np.min(y_positions), np.max(y_positions)))
+    x_min, x_max = min(x_min, np.min(x_positions)), max(x_max, np.max(x_positions))
+    y_min, y_max = min(y_min, np.min(y_positions)), max(y_max, np.max(y_positions))
+    
     # Determine the grid size
     x_bins = int(np.ceil((x_max - x_min) / pixel_size))
     y_bins = int(np.ceil((y_max - y_min) / pixel_size))
