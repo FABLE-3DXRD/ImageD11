@@ -1122,30 +1122,40 @@ class TensorMap:
         Note that no Euler or spatial conversions are needed"""
         
         def get_laue_class_number(sgno):
+            # go from xfab Laue class string to an index to the list of Laue groups in mtex
+            
             import xfab.sglib
-            laue_groups = {
-                ('-1'): 1,
-                ('2/m'): 2,
-                ('mmm'): 3,
-                ('-3'): 4,
-                ('-3m', '-3m1', '-31m'): 5,
-                ('4/m'): 6,
-                ('4/mmm'): 7,
-                ('6/m'): 8,
-                ('6/mmm'): 9,
-                ('m-3'): 10,
-                ('m-3m'): 11
+            # matlab indexing convention (array starts at 1)
+            # Laue = {'-1','2/m','mmm','4/m','4/mmm','-3','-3m','6/m','6/mmm','m3','m3m'};
+            # mtex/interfaces/loadEBSD_ctf.m
+            laue_group_to_idx = {
+                '-1': 1,
+                '2/m': 2,
+                'mmm': 3,
+                '4/m': 4,
+                '4/mmm': 5,
+                '-3': 6,
+                '-3m': 7,
+                '-3m1': 7,
+                '-31m': 7,
+                '6/m': 8,
+                '6/mmm': 9,
+                'm-3': 10,
+                'm-3m': 11
             }
+            # Go from the space group number (from ImageD11) to an xfab sglib space group object
             try:
                 sgobj = getattr(xfab.sglib, 'Sg' + str(sgno))('standard')
             except AttributeError:
                 raise ValueError("Unknown spacegroup number: " + str(sgno))
+            # get Laue string from this space group object
             laue_str = sgobj.Laue
-            for laue_group, laue_group_num in laue_groups.items():
-                if laue_str in laue_group:
-                    return laue_group_num
-            raise ValueError("Couldn't get Laue group number for spacegroup " + str(sgno))
-        
+            # convert to Laue number following MTEX convention above:
+            try:
+                laue_group_num = laue_group_to_idx[laue_str]
+                return laue_group_num
+            except KeyError:
+                ValueError("Couldn't get Laue group number for spacegroup " + str(sgno))
         
         euler_slice = np.degrees(self.euler[z_index, :, :])  # covert to degrees
         phase_slice = self.phase_ids[z_index, :, :] + 1  # unindexed should be 0
