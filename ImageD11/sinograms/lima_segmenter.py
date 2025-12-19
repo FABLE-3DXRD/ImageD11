@@ -8,10 +8,12 @@ Make the code parallel over lima files ...
  - read an input file which has the source/destination file names for this job
 """
 
+import os
+# because multiprocessing
+os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
 import sys
 import time
-import os
 import math
 import logging
 import numpy as np
@@ -56,8 +58,8 @@ class SegmenterOptions:
         pixels_in_spot=3,
         maskfile="",
         bgfile="",
-        cores_per_job=1,  # avoid buggy multiprocessing. Can't fix.
-        files_per_core=8,
+        cores_per_job=16,
+        files_per_core=4,
     ):
         self.cut = cut
         self.howmany = howmany
@@ -200,22 +202,27 @@ class frmtosparse:
         return nnz, self.row[:nnz], self.col[:nnz], self.val[:nnz]
 
 
-def clean(nnz, row, col, val):
+def clean(nnz, row, col, val, config_options= None):
     #flake8: global OPTIONS
+    if config_options is None:
+        options = OPTIONS
+    else:
+        options = config_options
+
     if nnz == 0:
         return None
-    if nnz > OPTIONS.howmany:
-        nnz = top_pixels(nnz, row, col, val, OPTIONS.howmany, OPTIONS.thresholds)
+    if nnz > options.howmany:
+        nnz = top_pixels(nnz, row, col, val, options.howmany, options.thresholds)
         # Now get rid of the single pixel 'peaks'
         #   (for the mallocs, data is copied here)
         s = sparseframe.sparse_frame(
-            row[:nnz].copy(), col[:nnz].copy(), OPTIONS.mask.shape
+            row[:nnz].copy(), col[:nnz].copy(), options.mask.shape
         )
         s.set_pixels("intensity", val[:nnz].copy())
     else:
-        s = sparseframe.sparse_frame(row, col, OPTIONS.mask.shape)
+        s = sparseframe.sparse_frame(row, col, options.mask.shape)
         s.set_pixels("intensity", val)
-    if OPTIONS.pixels_in_spot <= 1:
+    if options.pixels_in_spot <= 1:
         return s
     # label them according to the connected objects
     s.set_pixels("f32", s.pixels["intensity"].astype(np.float32))
@@ -229,7 +236,7 @@ def clean(nnz, row, col, val):
     #    npx = mom[:, cImageD11.s2D_1]
     npx = np.bincount(s.pixels["cp"], minlength=npk)
     pxcounts = npx[s.pixels["cp"]]
-    pxmsk = pxcounts >= OPTIONS.pixels_in_spot
+    pxmsk = pxcounts >= options.pixels_in_spot
     if pxmsk.sum() == 0:
         return None
     sf = s.mask(pxmsk)
@@ -363,25 +370,47 @@ def main(h5name, jobid):
             )
         )
     if options.cores_per_job > 1:
-        ImageD11.cImageD11.check_multiprocessing(patch=True)  # avoid fork
         import multiprocessing
+        # Gemini suggested fork to suppress the multiprocessing context errors
+        # We must ensure that hdf5 has not got any files open when doing this
+        # Both spawn and forkserver run into problems reproducibly.
+        ctx_type = 'spawn' # windows/mac
+        if 'linux' in sys.platform:
+            ctx_type = 'fork' 
+        # Long term: this is going to break. We need a better model for the 
+        # nested parallel processing of running many slurm jobs and each job
+        # running a bunch of processes. Or we need to fix /dev/shm at ESRF.
+        # The SemLocks are not multi-multi-process safe.
+        ctx = multiprocessing.get_context(ctx_type)
+        num_processes = min(options.cores_per_job, len(args))
+        print("# Starting pool with", num_processes, " workers...", flush=True)
 
-        with multiprocessing.Pool(
-            processes=options.cores_per_job,
+        mypool = ctx.Pool(
+            processes=num_processes,
             initializer=initOptions,
             initargs=(h5name, jobid),
-        ) as mypool:
+        )
+        try:
             donefile = sys.stdout
-            for fname in mypool.map(segment_lima, args, chunksize=1):
-                donefile.write(fname + "\n")
+            for fname in mypool.imap_unordered(segment_lima, args, chunksize=1):
+                donefile.write(str(fname) + "\n")
                 donefile.flush()
+        except Exception as e:
+            print("Main loop error: ", e, file=sys.stderr)
+            # If the main loop dies, we must kill the pool to stop things hanging
+            mypool.terminate()        
+        finally:
+            # 4. Clean shutdown
+            print("# Closing pool...", flush=True)
+            mypool.close()
+            mypool.join()
+            print("# Pool closed.", flush=True)
     else:
         for arg in args:
             fname = segment_lima(arg)
             print(fname)
             sys.stdout.flush()
-
-    print("All done")
+    print("# All done")
 
 
 def setup_slurm_array(dsname, dsgroup="/", pythonpath=None):
@@ -413,7 +442,7 @@ def setup_slurm_array(dsname, dsgroup="/", pythonpath=None):
               " %.2f %% pixels are active" % (100 * options.mask.mean()),
              )
     files_per_job = options.files_per_core * options.cores_per_job
-    jobs_needed = math.ceil(nfiles / files_per_job)
+    jobs_needed = math.ceil(nfiles / files_per_job) - 1
     sbat = os.path.join(sdir, "lima_segmenter_slurm.sh")
     if pythonpath is None:
         cmd = sys.executable
@@ -437,7 +466,12 @@ def setup_slurm_array(dsname, dsgroup="/", pythonpath=None):
 #
 date
 echo Running on $HOSTNAME : %s
+# Hypothesis: multiprocessing collisions in /tmp
+export TMPDIR="/tmp/${USER}_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}"
+echo $TMPDIR
+mkdir $TMPDIR
 OMP_NUM_THREADS=1 %s > %s/lima_segmenter_$SLURM_ARRAY_TASK_ID.log 2>&1
+rm -rf $TMPDIR
 date
 """
             % (sdir, sdir, jobs_needed, options.cores_per_job, command, command, sdir)
@@ -470,8 +504,8 @@ def setup(
     pixels_in_spot=3,
     maskfile="",
     bgfile="",
-    cores_per_job=1,
-    files_per_core=8,
+    cores_per_job=16,
+    files_per_core=4,
     pythonpath=None,
 ):
     """

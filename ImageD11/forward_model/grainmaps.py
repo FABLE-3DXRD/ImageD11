@@ -94,21 +94,27 @@ class grainmap:
         convert tensor_map to a dictionary like DS, which is similar to fwd-DCT struct, easier for subsequent operation
         """
         tensor_map = self.read_tensor_map()
-        
+        tensor_map_flag = False
         for key in tensor_map.keys():
             if 'TensorMap' in key:
                 print('Got the key name {}'.format(key))
                 keyname = key
+                tensor_map_flag = True
         
         print('********************* Converting to DS format *****************************')
         keys_list = ['B', 'U', 'UB', 'UBI', 'eps_sample', 'euler', 'ipf_x', 'ipf_y', 'ipf_z', 'mt', 'nuniq', 'phase_ids', 'unitcell', 'intensity', 'labels']
-        DS = {}
-        for k in keys_list:
-            if k in tensor_map[keyname]['maps'].keys():
-                print('Loading {} with a shape of {} to DS ...'.format(k, tensor_map[keyname]['maps'][k].shape))
-                DS[k] = tensor_map[keyname]['maps'][k]
-        if 'step' in tensor_map[keyname].keys():
-            DS['voxel_size'] = tensor_map[keyname]['step'] # [um/pixel]
+        if tensor_map_flag:
+            # it reads directly as a tensor map
+            DS = {}
+            for k in keys_list:
+                if k in tensor_map[keyname]['maps'].keys():
+                    print('Loading {} with a shape of {} to DS ...'.format(k, tensor_map[keyname]['maps'][k].shape))
+                    DS[k] = tensor_map[keyname]['maps'][k]
+            if 'step' in tensor_map[keyname].keys():
+                DS['voxel_size'] = tensor_map[keyname]['step'] # [um/pixel]
+        else:
+            # the provided map is a DS-like dictionary map already
+            DS = tensor_map
         
         
         DS['Rod'] = np.empty((DS['UBI'].shape[0], DS['UBI'].shape[1], DS['UBI'].shape[2], 3))
@@ -551,7 +557,73 @@ def DS_to_paraview(DS, h5name = 'DS.h5'):
         fileID.write(' </Domain>\n')
         fileID.write('</Xdmf>\n')
     print('Done with writing xdmf file to {}'.format(xdmf_filename))
-    
+
+
+def DS_IGM_calc(DS, grain_ids=None, crystal_system='cubic', plot_flag=True):
+    """
+    compute intragranular misorientation (IGM) for each grain
+    run DS_merge_and_identify_grains if the grain voxels have not been merged
+    TODO: parallelize the orientation conversion, a bit slow for large number of voxels for now
+    Args:
+        DS                -- grain map dictionary, gm = grainmap(tensor_map_file); DS = gm.DS
+        grain_ids         -- list of grain label IDs to compute, None means compute all grains
+        crystal_system    -- crystal system name one of ['cubic', 'hexagonal', 'orthorhombic', 'tetragonal', 'trigonal', 'monoclinic', 'triclinic']
+        plot_flag         -- plot flag
+    Returns:
+        IGM               -- IGM map in degrees
+    """
+    print("******************************************************* Important Note ***************************************************************")
+    print("If the voxel orientations have not been merged to identify grains, please run ImageD11.forward_model.grainmaps.DS_merge_and_identify_grains first !")
+    if crystal_system in ['cubic', 'hexagonal', 'orthorhombic', 'tetragonal', 'trigonal', 'monoclinic', 'triclinic']:
+        print('{} is OK'.format(crystal_system))
+        crystal_structure = Symmetry[crystal_system]
+    else:
+        raise ValueError('{} is not supported.'.format(crystal_system))
+        
+    def u2rod(Us):
+        rod = np.zeros((Us.shape[0], 3), dtype='float')
+        for i, U in enumerate(Us):
+            rod[i,:] = ori_converter.quat2rod(ori_converter.u2quat(U))
+        return rod
+
+    IGM = np.full(DS['labels'].shape[0:3], np.nan, dtype='float')
+    if grain_ids is None:
+        grain_ids = np.unique(DS['labels'])
+    if not isinstance(grain_ids, list):
+        grain_ids = list(grain_ids)
+    for gid in grain_ids:
+        if gid > -1:
+            gid_mask = (DS['labels'] == gid) & (~np.isnan(DS['U'][..., 0, 0]))
+            gid_ind = np.argwhere(gid_mask)
+            if gid_ind.size > 0:
+                Us = DS['U'][gid_ind[:,0], gid_ind[:,1], gid_ind[:,2], :, :]
+                rods = u2rod(Us)
+                rod_mean = get_mean_rod(rods)
+                U_mean = ori_converter.quat2u(ori_converter.rod2quat(rod_mean))
+                U_voxels = DS['U'][gid_ind[:,0], gid_ind[:,1], gid_ind[:,2], :, :]
+                # Repeat U_mean to match U_voxels shape
+                U_mean_rep = np.repeat(U_mean[np.newaxis, :, :], U_voxels.shape[0], axis=0)  # Shape: (N, 3, 3)
+                if U_voxels.shape[0]>1:
+                    angles, axes, axes_xyz = disorientation_list(U_mean_rep.transpose(0, 2, 1), U_voxels.transpose(0, 2, 1), crystal_structure=crystal_structure)
+                else:
+                    # if it is only one orientation
+                    # angles, axes, axes_xyz = disorientation(np.squeeze(U_mean_rep).T, np.squeeze(U_voxels).T, crystal_structure=crystal_structure)
+                    angles = 0.0
+                IGM[gid_ind[:,0], gid_ind[:,1], gid_ind[:,2]] = np.rad2deg(angles)
+                mis_ori = [np.mean(IGM[gid_ind[:,0], gid_ind[:,1], gid_ind[:,2]]), np.std(IGM[gid_ind[:,0], gid_ind[:,1], gid_ind[:,2]])]
+                print('Done IGM for label ID {} / {}: {} voxels with mean misori of {} +- {} degrees'.format(gid, len(grain_ids), U_voxels.shape[0], mis_ori[0], mis_ori[1]))
+    if plot_flag:
+        f, a = plt.subplots(1, 2, figsize=(12, 6))
+        img0 = a[0].imshow(DS['labels'][0,...], origin='lower')
+        cbar0 = plt.colorbar(img0, ax=a[0], fraction=0.046, pad=0.04)
+        cbar0.set_label('Label ID', fontsize=12)
+        img1 = a[1].imshow(IGM[0,...], origin='lower')
+        cbar1 = plt.colorbar(img1, ax=a[1], fraction=0.046, pad=0.04)
+        cbar1.set_label('IGM (deg)', fontsize=12)
+        plt.tight_layout()
+        plt.show()
+    return IGM
+
 
 def indexing_iterative(cf_strong, grains, ds, ucell, pars, ds_max = 1.6, tol_angle = 0.25, tol_pixel =3, peak_assign_tol = 0.25, tol_misori = 3, crystal_system='cubic', **kwargs):
     """
@@ -1420,8 +1492,6 @@ def disorientation_list(ori1_list, ori2_list, crystal_structure=Symmetry.triclin
         for idx in range(num_orientations):
             ori1 = ori1_list[idx]
             ori2 = ori2_list[idx]
-            print(ori1)
-
             the_angle, the_axis, the_axis_xyz = disorientation(ori1, ori2, crystal_structure=crystal_structure)
             angles.append(the_angle)
             axes.append(the_axis)

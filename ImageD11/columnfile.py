@@ -148,6 +148,7 @@ class columnfile(object):
         self.titles = []
         self.filename = filename
         self.__data = []
+        self.sortedby = None 
         if filename is not None:
             self.parameters = parameters.parameters(filename=filename)
         else:
@@ -249,6 +250,7 @@ class columnfile(object):
         col = self.getcolumn( name )
         order = np.argsort( col )
         self.reorder( order )
+        self.sortedby = name 
 
     def reorder( self, indices ):
         """
@@ -580,6 +582,9 @@ try:
         else:
             g = h.create_group( name )
         g.attrs['ImageD11_type'] = 'peaks'
+
+        if getattr(c, 'sortedby', None) is not None:
+            g.attrs['sorted_by'] = str(c.sortedby)
         for t in c.titles:
             if t in INTS:
                 ty = np.int64
@@ -672,6 +677,7 @@ try:
             col = columnfile( filename=name, new=True )
         else:
             col = obj
+        col.sortedby = g.attrs.get('sorted_by', None)
         col.nrows = len( g[newtitles[0]] )
         for name in newtitles:
             col.addcolumn( g[name][:].copy(), name )
