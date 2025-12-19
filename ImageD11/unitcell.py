@@ -372,7 +372,7 @@ class unitcell:
         phase = self.orix_phase
         B0_id11 = self.B  # get the ImageD11 B0 matrix
         B0_orix = phase.structure.lattice.recbase  # get the orix B0 matrix
-        U_orix = Umats @ (B0_id11 @ np.linalg.inv(B0_orix))
+        U_orix = Umats.dot(B0_id11.dot(np.linalg.inv(B0_orix)))
 
         # swapaxes performs the transposition, works for (3,3) or (N,3,3)
         final_ori = Orientation.from_matrix(np.swapaxes(U_orix, -1, -2), symmetry=phase.point_group)
