@@ -618,7 +618,7 @@ def find_matches_chunk(cf1_dty_chunk, cf1_omega_chunk, cf1_fc_chunk, cf1_sc_chun
             matched_cf2[j] = True
 
 
-def cf_plot_sino(cfs):
+def cf_plot_sino(cfs, skip=1):
     """
     plot sinogram for each cf wrapped in a list
     """
@@ -629,15 +629,15 @@ def cf_plot_sino(cfs):
         ncf = 1         # assume the input is a single cf
     print('Got {} colume file object(s)'.format(ncf))
         
-    f, a = plt.subplots(1, ncf, figsize=(6*ncf, 6),sharex=True,sharey=True)
+    f, a = plt.subplots(1, ncf, figsize=(8*ncf, 6),sharex=True,sharey=True)
     
     # If there is only one subplot (ncf == 1), treat `a` as a list for consistency
     if ncf == 1:
         a = [a]
     
     for i, cf in enumerate(cfs):
-        scatter = a[i].scatter(cf.omega, cf.dty, 
-                       c=np.log10(cf.sum_intensity), s=8, cmap='viridis')
+        scatter = a[i].scatter(cf.omega[::skip], cf.dty[::skip], 
+                       c=np.log10(cf.sum_intensity[::skip]), s=8, cmap='viridis')
         cbar = plt.colorbar(scatter, ax=a[i])
         cbar.set_label('Sum Intensity')  # Label for the colorbar
         a[i].set_xlabel('Omega ($^{o}$)')

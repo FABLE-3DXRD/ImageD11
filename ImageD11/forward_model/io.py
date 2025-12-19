@@ -444,7 +444,7 @@ def print_all_keys(d, prefix=""):
             print_all_keys(value, prefix=full_key)
 
 
-def write_fwd_peaks(fwd_peaks, output_folder = None, fname_prefix = None, verbose = 1):
+def write_fwd_peaks(fwd_peaks, output_folder = None, fname_prefix = None, fname_with_dty = True, verbose = 1):
     """
     Write fwd_peaks to an h5 file with each column as a separate dataset, see how to compute fwd_peaks in forward_projector.py.
 
@@ -452,6 +452,7 @@ def write_fwd_peaks(fwd_peaks, output_folder = None, fname_prefix = None, verbos
         fwd_peaks (array): an N*25 array containing forward computed peaks
         output_folder (string): output folder
         fname_prefix (string): filename prefix, "fpks_" by default
+        fname_with_dty (bool): filename with dty or not, True by default (for CPU calculation), False for cuda calculated peaks
         verbose: logging level, 0, 1 or 2
         
     Returns:
@@ -462,9 +463,12 @@ def write_fwd_peaks(fwd_peaks, output_folder = None, fname_prefix = None, verbos
         output_folder = os.getcwd()
     if fname_prefix is None:
         fname_prefix = 'fpks'
-        
-    dty = fwd_peaks[0, 8]
-    outname = os.path.join(output_folder, fname_prefix + '_dty_' + str(round(dty, 2)).replace('.', 'p') + '.h5')  # e.g. dty = 0.1, outname = 'fpks_dty_0p10.h5'
+
+    if fname_with_dty:
+        dty = fwd_peaks[0, 8]
+        outname = os.path.join(output_folder, fname_prefix + '_dty_' + str(round(dty, 2)).replace('.', 'p') + '.h5')  # e.g. dty = 0.1, outname = 'fpks_dty_0p10.h5'
+    else:
+        outname = os.path.join(output_folder, fname_prefix + '.h5') # e.g. for cuda_forward_calc, outname = 'fpks_cuda.h5'
     
     col_names = ['grainID', 'voxel_zyx', 'weight', 'pos_xyz', 'dty', 'omega', 'tth', 'eta', 'hkl',
                  'g_xyz', 'det_pixel_yz', 'lorentz', 'polarization', 'transmission', 'sum_intensity', 'ds']

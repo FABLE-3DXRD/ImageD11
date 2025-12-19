@@ -55,7 +55,7 @@ print("Building version |%s|"%get_version(), "on system:", platform.system())
 
 copt =  {
     'msvc': ['/openmp', '/O2'] ,
-    'unix': ['-fopenmp', '-O2', ], # '-DF2PY_REPORT_ON_ARRAY_COPY=100', '-DNPY_DISABLE_OPTIMIZATION=1' ] ,
+    'unix': ['-fopenmp', '-O2', '-DF2PY_REPORT_ON_ARRAY_COPY=100'],# '-DNPY_DISABLE_OPTIMIZATION=1' ] ,
     'mingw32': ['-fopenmp', '-O2'] ,
  }
 
@@ -161,7 +161,8 @@ useful = [   # stuff you probably want, and should be able to get easily
     "pytest",       # for the CI
     'numba==0.46.0 ; python_version < "3" ',       # for some test cases
     'llvmlite==0.30.0 ; python_version < "3" ',    # for some test cases
-    'numba ; python_version >= "3" ',               # for some test cases
+    'numba ; python_version >= "3" and python_version < "3.14" ',               # for some test cases
+    'numba>=0.63.0b1; python_version == "3.14"',
     "bslz4_to_sparse",
     "fast_histogram",
     "scikit-image",
