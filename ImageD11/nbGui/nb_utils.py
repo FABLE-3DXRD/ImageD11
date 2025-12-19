@@ -620,14 +620,14 @@ def plot_grain_sinograms(grains, cf, n_grains_to_plot=None):
 
 
 def get_rgbs_for_grains(grains):
-    # get the UB matrices for each grain
-    UBs = np.array([g.UB for g in grains])
+    # get the U matrices for each grain
+    Us = np.array([g.U for g in grains])
 
     # get the reference unit cell of one of the grains (should be the same for all)
     ref_ucell = grains[0].ref_unitcell
 
     # get a meta orientation for all the grains
-    meta_ori = ref_ucell.get_orix_orien(UBs)
+    meta_ori = ref_ucell.get_orix_orien_fast(Us)
 
     rgb_x_all = ref_ucell.get_ipf_colour_from_orix_orien(meta_ori, axis=np.array([1., 0, 0]))
     rgb_y_all = ref_ucell.get_ipf_colour_from_orix_orien(meta_ori, axis=np.array([0., 1, 0]))
@@ -662,26 +662,26 @@ def plot_all_ipfs_from_meta_orien(meta_orien, ref_ucell, **plot_kwargs):
 
 def plot_inverse_pole_figure(grains, axis=np.array([0., 0, 1]), **plot_kwargs):
     # get the UB matrices for each grain
-    UBs = np.array([g.UB for g in grains])
+    Us = np.array([g.U for g in grains])
 
     # get the reference unit cell of one of the grains (should be the same for all)
     ref_ucell = grains[0].ref_unitcell
 
     # get a meta orientation for all the grains
-    meta_orien = ref_ucell.get_orix_orien(UBs)
+    meta_orien = ref_ucell.get_orix_orien_fast(Us)
 
     plot_inverse_pole_figure_from_meta_orien(meta_orien, ref_ucell, axis, **plot_kwargs)
 
 
 def plot_direct_pole_figure(grains, uvw=np.array([1., 0., 0.]), **plot_kwargs):
     # get the UB matrices for each grain
-    UBs = np.array([g.UB for g in grains])
+    Us = np.array([g.U for g in grains])
 
     # get the reference unit cell of one of the grains (should be the same for all)
     ref_ucell = grains[0].ref_unitcell
 
     # make a combined orientation from them (makes plot much faster)
-    meta_orien = ref_ucell.get_orix_orien(UBs)
+    meta_orien = ref_ucell.get_orix_orien_fast(Us)
 
     try:
         from orix.vector import Miller

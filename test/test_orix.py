@@ -39,6 +39,30 @@ class TestOrixPhase(unittest.TestCase):
 class TestGetOrixOrien(unittest.TestCase):
     """Tests unitcell.get_orix_orien"""
 
+    def test_fast(self):
+        # make sure fast matches original
+
+        # print("")
+        # set up hexagonal B matrix
+        hex_ucell_array = np.array([3, 3, 4.0, 90.0, 90.0, 120.0])
+        hex_ucell = unitcell(hex_ucell_array, symmetry=194)
+
+        B = hex_ucell.B
+
+        # set up reference unit cell
+        ref_hex_ucell_array = np.array([3, 3, 4.0, 90.0, 90.0, 120.0])
+        ref_hex_ucell = unitcell(ref_hex_ucell_array, symmetry=194)
+
+        # many random orientations
+        Us = R.random(1000).as_matrix()
+
+        UBs = np.dot(Us, B)
+
+        orix_phase = ref_hex_ucell.orix_phase
+        orix_orien_slow = ref_hex_ucell.get_orix_orien(UBs)
+        orix_orien_fast = ref_hex_ucell.get_orix_orien_fast(Us)
+        self.assertTrue(np.allclose(orix_orien_slow.to_matrix(), orix_orien_fast.to_matrix()))
+
     def test_no_spacegroup(self):
         # set up hexagonal B matrix without a spacegroup
         hex_ucell_array = np.array([3, 3, 4.1, 90.0, 90.0, 120.0])
@@ -259,6 +283,53 @@ class TestIPFCol(unittest.TestCase):
         rgb = ref_cubic_ucell.get_ipf_colour(UBs=UB, axis=np.array([1, 0, 0]))
         blue = np.array([0.0, 0.0, 1.0])
         self.assertTrue(np.allclose(rgb, blue, atol=0.01))
+
+    def test_hexagonal_fast(self):
+        # set up hexagonal B matrix
+        hex_ucell_array = np.array([3, 3, 4, 90.0, 90.0, 120.0])
+        hex_ucell = unitcell(hex_ucell_array, symmetry="P")
+
+        B = hex_ucell.B
+
+        # set up reference unit cell
+        ref_hex_ucell_array = np.array([3, 3, 4.0, 90.0, 90.0, 120.0])
+        ref_hex_ucell = unitcell(ref_hex_ucell_array, symmetry=194)
+
+        # set up U matrix
+
+        # we want:
+        # a* to point in +Z lab
+        # b* to point in +X lab
+        # c* to point in +Y lab
+
+        U = np.squeeze(R.from_euler("zyx", [-90, 0, -90], degrees=True).as_matrix())
+        UB = np.dot(U, B)
+        
+        rgb_slow = ref_hex_ucell.get_ipf_colour(UBs=UB, axis=np.array([0, 0, 1]))
+        rgb_fast = ref_hex_ucell.get_ipf_colour_fast(Us=U, axis=np.array([0, 0, 1]))
+        self.assertTrue(np.allclose(rgb_slow, rgb_fast))
+        
+
+        # on an IPF-Z:
+        # a* should be parallel to Z
+        # (100) (10-10) should be along Z
+        # on TSL, (10-10) is blue
+
+        rgb_slow = ref_hex_ucell.get_ipf_colour(UBs=UB, axis=np.array([0, 0, 1]))
+        rgb_fast = ref_hex_ucell.get_ipf_colour_fast(Us=U, axis=np.array([0, 0, 1]))
+        blue = np.array([0.0, 0.0, 1.0])
+        self.assertTrue(np.allclose(rgb_slow, blue, atol=0.01))
+        self.assertTrue(np.allclose(rgb_fast, blue, atol=0.01))
+
+        # on an IPF-Y, c* should be parallel to Y
+        # c* is (0001) normal
+
+        rgb_slow = ref_hex_ucell.get_ipf_colour(UBs=UB, axis=np.array([0, 1, 0]))
+        rgb_fast = ref_hex_ucell.get_ipf_colour_fast(Us=U, axis=np.array([0, 1, 0]))
+        red = np.array([1.0, 0.0, 0.0])
+
+        self.assertTrue(np.allclose(rgb_slow, red, atol=0.01))
+        self.assertTrue(np.allclose(rgb_fast, red, atol=0.01))
 
     def test_hexagonal(self):
         # set up hexagonal B matrix
