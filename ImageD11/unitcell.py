@@ -352,6 +352,33 @@ class unitcell:
 
         return final_ori
 
+    def get_orix_orien_fast(self, Umats):
+        """NOTE - Supply U not UB!
+           Get an Orix orientation (containing one or more orientations)
+           using self.orix_phase from an array of ImageD11 U matrices.
+           """
+        try:
+            from orix.quaternion import Orientation
+        except ImportError:
+            raise ImportError("Missing orix, can't compute orix orien!")
+
+        # U.B is invariant
+        # U_id11 B_id11 == U_orix B_orix
+        # U_orix = U_id11 B_id11 (B_orix)^-1
+        # then in orix, orientations are lab -> crystal
+        # in ImageD11, orientations are crystal -> lab
+        # given U_orix with shape (N, 3, 3) we transpose the last 2 axes accordingly
+        
+        phase = self.orix_phase
+        B0_id11 = self.B  # get the ImageD11 B0 matrix
+        B0_orix = phase.structure.lattice.recbase  # get the orix B0 matrix
+        U_orix = Umats.dot(B0_id11.dot(np.linalg.inv(B0_orix)))
+
+        # swapaxes performs the transposition, works for (3,3) or (N,3,3)
+        final_ori = Orientation.from_matrix(np.swapaxes(U_orix, -1, -2), symmetry=phase.point_group)
+
+        return final_ori
+
     def get_ipf_colour_from_orix_orien(self, orix_orien, axis=np.array([0., 0., 1.])):
         """Gets the TSL IPF colour(s) (Nolze, 2016) in the laboratory frame from an orix orientation
            10.1107/S1600576716012942
@@ -369,8 +396,20 @@ class unitcell:
 
         return rgb
 
+    def get_ipf_colour_fast(self, Us, axis=np.array([0., 0., 1.])):
+        """Gets the TSL IPF colour (Nolze, 2016) in the laboratory frame for a list of U matrices
+           10.1107/S1600576716012942
+           axis is an axis vector in the laboratory frame
+           optionally return the orien which is useful for IPF plotting"""
+
+        orien = self.get_orix_orien_fast(Us)
+
+        rgb = self.get_ipf_colour_from_orix_orien(orien, axis=axis)
+
+        return np.squeeze(rgb)
+    
     def get_ipf_colour(self, UBs, axis=np.array([0., 0., 1.])):
-        """Gets the TSL IPF colour (Nolze, 2016) in the laboratory frame for a list of UB matrices
+        """Gets the TSL IPF colour (Nolze, 2016) in the laboratory frame for a list of U matrices
            10.1107/S1600576716012942
            axis is an axis vector in the laboratory frame
            optionally return the orien which is useful for IPF plotting"""
@@ -560,6 +599,7 @@ class unitcell:
         t2 is in the plane of both   (unit vector along g1x(g1xg2))
         t3 is perpendicular to both  (unit vector along g1xg2)
         """
+        # normalized dot product
         costheta = np.dot(g1, g2) / np.sqrt((g1 * g1).sum() * (g2 * g2).sum())
         hab, c2ab, matrs = self.getanglehkls(ring1, ring2)
         if crange > 0:

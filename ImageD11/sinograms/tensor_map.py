@@ -20,7 +20,7 @@ from ImageD11 import unitcell
 # e.g these can be called and broadcasted for a UBI map of (1,200,500,3,3)
 
 # take in a nxn float64 array, return a nxn float64 array
-@numba.guvectorize([(numba.float64[:, :], numba.float64[:, :])], '(n,n)->(n,n)', nopython=True, cache = True)
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:, :])], '(n,n)->(n,n)', nopython=True, cache = True, target='parallel')
 def fast_invert(mat, res):
     """
     Fast matrix invert.
@@ -42,7 +42,7 @@ def fast_invert(mat, res):
 
 
 # take in a nxn float64 array, return a nxn float64 array
-@numba.guvectorize([(numba.float64[:, :], numba.float64[:, :])], '(n,n)->(n,n)', nopython=True, cache = True)
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:, :])], '(n,n)->(n,n)', nopython=True, cache = True, target='parallel')
 def ubi_to_mt(ubi, res):
     """
     Compute metric tensor from UBI matrix, the same way as in ``ImageD11.grain``.
@@ -64,7 +64,7 @@ def ubi_to_mt(ubi, res):
 
 
 # take in a nxn float64 array and a dummy variable p-length float64 vector (required by numba), return a p-length float64 vector
-@numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:])], '(n,n),(p)->(p)', nopython=True, cache = True)
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:])], '(n,n),(p)->(p)', nopython=True, cache = True, target='parallel')
 def mt_to_unitcell(mt, dum, res):
     """
     Get unitcell parameters array ``[a, b, c, alpha, beta, gamma]`` from the metric tensor.
@@ -103,7 +103,7 @@ def mt_to_unitcell(mt, dum, res):
 
 
 # take in a p-length float64 vector and a dummy variable nxn float64 array (required by numba), return a nxn float64 array
-@numba.guvectorize([(numba.float64[:], numba.float64[:, :], numba.float64[:, :])], '(p),(n,n)->(n,n)', nopython=True, cache = True)
+@numba.guvectorize([(numba.float64[:], numba.float64[:, :], numba.float64[:, :])], '(p),(n,n)->(n,n)', nopython=True, cache = True, target='parallel')
 def unitcell_to_b(unitcell, dum, res):
     """
     Get B matrix from unitcell, the same way as in ``ImageD11.grain`` (via ``ImageD11.unitcell``).
@@ -160,7 +160,7 @@ def unitcell_to_b(unitcell, dum, res):
 
 # take in a nxn float64 array, return a nxn float64 array
 @numba.guvectorize([(numba.float64[:, :], numba.float64[:, :], numba.float64[:, :])], '(n,n),(n,n)->(n,n)',
-                   nopython=True, cache = True)
+                   nopython=True, cache = True, target='parallel')
 def ubi_and_b_to_u(ubi, b, res):
     """
     Get U matrix from UBI and B matrices, the same way as in ``ImageD11.grain``.
@@ -187,7 +187,7 @@ def ubi_and_b_to_u(ubi, b, res):
         res[...] = np.dot(b, ubi).T
 
 
-@numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:, :])], '(n,n),(p)->(n,n)', nopython=True, cache = True)
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:, :])], '(n,n),(p)->(n,n)', nopython=True, cache = True, target='parallel')
 def ubi_and_unitcell_to_eps_sample(ubi, dzero_cell, res):
     """
     Get Biot strain tensor (3x3) in sample reference frame from UBI array and unitcell array.
@@ -250,7 +250,7 @@ def ubi_and_unitcell_to_eps_sample(ubi, dzero_cell, res):
         res[...] = em
 
 
-@numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:, :])], '(n,n),(p)->(n,n)', nopython=True, cache = True)
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:, :])], '(n,n),(p)->(n,n)', nopython=True, cache = True, target='parallel')
 def ubi_and_unitcell_to_eps_crystal(ubi, dzero_cell, res):
     """
     Get Biot strain tensor (3x3) in crystal reference frame from UBI and unitcell.
@@ -314,7 +314,7 @@ def ubi_and_unitcell_to_eps_crystal(ubi, dzero_cell, res):
 
 
 @numba.guvectorize([(numba.float64[:, :], numba.float64[:, :], numba.float64[:, :])],
-                   '(n,n),(n,n)->(n,n)', nopython=True, cache = True)
+                   '(n,n),(n,n)->(n,n)', nopython=True, cache = True, target='parallel')
 def tensor_crystal_to_sample(tensor_crystal, U, res):
     """
     Rotate tensor from crystal to sample reference frame.
@@ -340,7 +340,7 @@ def tensor_crystal_to_sample(tensor_crystal, U, res):
 
 
 @numba.guvectorize([(numba.float64[:, :], numba.float64[:, :], numba.float64[:, :])],
-                   '(n,n),(n,n)->(n,n)', nopython=True, cache = True)
+                   '(n,n),(n,n)->(n,n)', nopython=True, cache = True, target='parallel')
 def tensor_sample_to_crystal(tensor_sample, U, res):
     """
     Rotate tensor from sample to crystal reference frame.
@@ -366,7 +366,7 @@ def tensor_sample_to_crystal(tensor_sample, U, res):
 
 
 @numba.guvectorize([(numba.float64[:, :], numba.float64[:, :], numba.float64[:, :], numba.float64[:], numba.float64[:, :])],
-                   '(n,n),(k,k),(n,n),()->(n,n)', nopython=True, cache = True)
+                   '(n,n),(k,k),(n,n),()->(n,n)', nopython=True, cache = True, target='parallel')
 def strain_crystal_to_stress_crystal(strain_crystal, stiffness_tensor, B0, phase_mask, res):
     """
     Convert Biot strain tensor (ImageD11 coordinate system) to Biot stress tensor (ImageD11 coordinate system).
@@ -453,7 +453,7 @@ def strain_crystal_to_stress_crystal(strain_crystal, stiffness_tensor, B0, phase
         res[...] = stress_crystal
 
 
-@numba.guvectorize([(numba.float64[:, :], numba.float64[:])], '(n,n)->()', nopython=True, cache = True)
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:])], '(n,n)->()', nopython=True, cache = True, target='parallel')
 def sig_to_vm(sig, res):
     """Get von-Mises stress scalar from stress tensor"""
     sig11 = sig[0, 0]
@@ -489,7 +489,7 @@ def _arctan2(y, x):
 
 
 # take in a nxn float64 array and a dummy variable p-length float64 vector (required by numba), return a p-length float64 vector
-@numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:])], '(n,n),(p)->(p)', nopython=True, cache = True)
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:])], '(n,n),(p)->(p)', nopython=True, cache = True, target='parallel')
 def u_to_euler(u, dum, res):
     """Get Euler angles (radians) from U matrix, the same way as in xfab.tools
     To use (no need to pre-populate res):
@@ -938,17 +938,18 @@ class TensorMap:
             phase_mask = self.phase_ids == phase_id
 
             # Get a mask for non-nan UBs
-            non_nan_mask = ~np.isnan(self.UB[:, :, :, 0, 0])
+            non_nan_mask = ~np.isnan(self.U[:, :, :, 0, 0])
 
             # Combine masks
             total_mask = phase_mask & non_nan_mask
-            UBcalc = self.UB[total_mask]
+            # UBcalc = self.UB[total_mask]
+            Ucalc = self.U[total_mask]
 
             # Get the reference orientation for this phase
             ref_unitcell = self.phases[phase_id]
 
             # Calculate meta orien
-            meta_orien = ref_unitcell.get_orix_orien(UBcalc)
+            meta_orien = ref_unitcell.get_orix_orien_fast(Ucalc)
 
             self._meta_orix_oriens[phase_id] = meta_orien
             return self._meta_orix_oriens[phase_id]

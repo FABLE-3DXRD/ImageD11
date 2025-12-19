@@ -230,7 +230,7 @@ class grain:
     def orix_orien(self):
         if self._orix_orien is None:
             # get the orix orientation from the reference unit cell
-            self._orix_orien = self.ref_unitcell.get_orix_orien(self.UB)
+            self._orix_orien = self.ref_unitcell.get_orix_orien_fast(self.U)
         return self._orix_orien
 
     # TODO: classmethod for from_orix_orien to make a grain from an orientation
@@ -238,7 +238,7 @@ class grain:
     def get_ipf_colour(self, axis=np.array([0., 0., 1.])):
         """Calls ImageD11.unitcell.unitcell.get_ipf_colour with the grain's UB"""
 
-        return self.ref_unitcell.get_ipf_colour(self.UB, axis)
+        return self.ref_unitcell.get_ipf_colour_fast(self.U, axis)
 
     def to_h5py_group(self, parent_group, group_name):
         """Creates a H5Py group for this grain.
