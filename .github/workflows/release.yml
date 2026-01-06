@@ -56,7 +56,7 @@ jobs:
           CIBW_BEFORE_BUILD: pip install setuptools wheel "numpy; python_version >= '3.9'" "oldest-supported-numpy; python_version < '3.9'" --only-binary numpy
           CIBW_BUILD_FRONTEND: "build; args: --no-isolation"
 
-          CIBW_BEFORE_TEST: "pip install --only-binary :all: fabio PyQt5 pyFAI"
+          CIBW_BEFORE_TEST: "pip install --only-binary :all: numba fabio PyQt5 pyFAI"
           CIBW_TEST_EXTRAS: full
           CIBW_TEST_COMMAND: pytest {project}/test
           # Skip tests for 32bits, emulated architectures, on Windows and on macos python313 (missing siphash wheel)
