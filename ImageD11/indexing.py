@@ -458,7 +458,7 @@ class indexer:
         # Report on assignments
         ds = np.array(self.ds)
         logging.info(
-            "Ring     (  h,  k,  l) Mult  total indexed to_index  ubis  peaks_per_ubi   tth"
+            "Ring     (  h,  k,  l) Mult  total indexed to_index  ubis  peaks_per_ubi   tth  ds"
         )
         minpks = 0
         # try reverse order instead
@@ -481,7 +481,7 @@ class indexer:
                 expected_npks = "N/A"
             tth = 2 * np.degrees(np.arcsin(dsr[j] * self.wavelength / 2))
             logging.info(
-                "Ring %-3d (%3d,%3d,%3d)  %3d  %5d   %5d    %5d %5s     %2s  %.2f"
+                "Ring %-3d (%3d,%3d,%3d)  %3d  %5d   %5d    %5d %5s     %2s  %.2f  %.2f"
                 % (
                     j,
                     h[0],
@@ -494,6 +494,7 @@ class indexer:
                     expected_orients,
                     expected_npks,
                     tth,
+                    dsr[j],
                 )
             )
         if minpks > 0:
