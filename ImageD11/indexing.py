@@ -461,6 +461,7 @@ class indexer:
             "Ring     (  h,  k,  l) Mult  total indexed to_index  ubis  peaks_per_ubi   tth  ds"
         )
         minpks = 0
+        tths = self.unitcell.ringtths(self.wavelength)
         # try reverse order instead
         for j in range(len(dsr))[::-1]:
             ind = np.compress(np.equal(self.ra, j), np.arange(self.ra.shape[0]))
@@ -479,7 +480,7 @@ class indexer:
             else:
                 expected_orients = "N/A"
                 expected_npks = "N/A"
-            tth = 2 * np.degrees(np.arcsin(dsr[j] * self.wavelength / 2))
+            tth = tths[j]
             logging.info(
                 "Ring %-3d (%3d,%3d,%3d)  %3d  %5d   %5d    %5d %5s     %2s  %.2f  %.2f"
                 % (
