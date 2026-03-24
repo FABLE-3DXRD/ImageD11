@@ -519,7 +519,6 @@ def prepare_pbp_bash(pbp_object, id11_code_path, minpkint):
 
 #
 date
-source /cvmfs/hpc.esrf.fr/software/packages/linux/x86_64/jupyter-slurm/latest/envs/jupyter-slurm/bin/activate
 echo OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {phase_name} {minpkint} > {log_path} 2>&1
 OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {dsfile} {hkltol} {fpks} {dstol} {etacut} {ifrac} {costol} {y0} {symmetry} {foridx} {forgen} {uniqcut} {phase_name} {minpkint} > {log_path} 2>&1
 date
