@@ -867,9 +867,10 @@ class DataSet:
             cf = correct_cf_with_h5files(cf, self.detectorh5, self.detector)
         elif hasattr(self, "e2dxfile") and (self.e2dxfile is not None):
             cf = correct_cf_with_dxdyfiles(cf, self.e2dxfile, self.e2dyfile)
+        elif hasattr(self, "splinefile") and (self.splinefile is not None):
+            cf = correct_cf_with_spline(cf, self.splinefile)
         else:
-            if self.splinefile is not None:
-                cf = correct_cf_with_spline(cf, self.splinefile)
+            print('No spatial correction files supplied. Will return uncorrected file.')
         # Generate columnfile from peaks table
         return cf
 
