@@ -135,9 +135,13 @@ def prepare_notebooks(
     IMAGED11_PATH: name of the checkout folder. None means use the system ImageD11.
     notebook_parent_dir: path to parent directory of input notebooks. Default: current working directory
     """
-    PYTHONPATH = None  # do nothing
+
     if IMAGED11_PATH is not None and CHECKOUT_PATH is not None:
         PYTHONPATH = os.path.join(IMAGED11_PATH, CHECKOUT_PATH)
+    else:
+        import site
+        PYTHONPATH = site.getsitepackages()[0]
+
     # Insert IMAGED11_PATH and CHECKOUT_PATH into nbparams only if they are requested
     # Some notebooks will never need git (e.g. standalone doc style)
     import papermill
@@ -174,7 +178,7 @@ def prepare_notebooks_for_datasets(
     Returns a list of absolute paths of notebooks to execute.
 
     samples_dict: dict of {sample1: [ds1, ds2, ds3], sample2: [ds1, ds2, ds3]} etc.
-    notebooks: list of tuples of [(notebook_filename.ipynb, {params_for_notebook_1.ipynb})] etc. Param dicts should not contain dataroot, analysisroot, sample, dataset or dsfile information - those are intsead prepared by this function.
+    notebooks: list of tuples of [(notebook_filename.ipynb, {params_for_notebook_1.ipynb})] etc. Param dicts should not contain dataroot, analysisroot, sample, dataset or dsfile information - those are instead prepared by this function.
     dataroot: path to raw data folder
     analysisroot: path to root of analysis folder (usually PROCESSED_DATA)
     PYTHONPATH: Python path
@@ -204,8 +208,10 @@ def prepare_notebooks_for_datasets(
                 )  # use the notebook from the current folder
                 nb_out = os.path.join(ds.analysispath, nb_name)
                 # prepare parameters for this notebook
-                if PYTHONPATH is not None:
-                    nb_params["PYTHONPATH"] = PYTHONPATH
+                # PYTHONPATH no longer needed
+                # should be determined from CHECKOUT_PATH and IMAGED11_PATH automatically
+                # if PYTHONPATH is not None:
+                #     nb_params["PYTHONPATH"] = PYTHONPATH
                 if nb_name.startswith("0"):
                     # the first notebook, segmentation, so we don't have a dataset name yet
                     nb_params["dataroot"] = ds.dataroot
