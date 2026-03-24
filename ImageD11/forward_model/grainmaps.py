@@ -1251,7 +1251,7 @@ class Symmetry(enum.Enum):
         elif self is Symmetry.monoclinic:
             sym = np.zeros((2, 3, 3), dtype=float)
             sym[0] = np.array([[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]])
-            sym[1] = np.array([[-1., 0., 0.], [0., -1., 0.], [0., 0., 1.]])
+            sym[1] = np.array([[-1., 0., 0.], [0., 1., 0.], [0., 0., -1.]])
         elif self is Symmetry.triclinic:
             sym = np.zeros((1, 3, 3), dtype=float)
             sym[0] = np.array([[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]])

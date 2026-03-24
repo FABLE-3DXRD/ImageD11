@@ -270,6 +270,8 @@ class unitcell:
         self.limit = 0
 
         self.ringtol = 0.001
+        self.ringds = []  # a list of floats
+        self.ringhkls = {}  # a dict of lists of integer hkl
         # used for caching
         self.anglehkl_cache = {"ringtol": self.ringtol,
                                "B": self.B,
@@ -544,6 +546,19 @@ class unitcell:
                 self.ringds.append(peak[0])
                 self.ringhkls[self.ringds[-1]] = [peak[1]]
         self.ringtol = tol
+
+    def ringtths(self, wavelength):
+        """
+        Computes the two theta values of powder rings, given a wavelength.
+        `makerings` must be called beforehand.
+        """
+        ring_ds = self.ringds
+        if len(ring_ds) == 0:
+            raise ValueError('No rings found. Call `makerings` before calling this function.')
+        tth = []
+        for ds in ring_ds:
+            tth.append(2 * np.degrees(np.arcsin(ds * wavelength / 2)))
+        return tth
 
     def anglehkls(self, h1, h2):
         """
