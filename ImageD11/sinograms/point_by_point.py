@@ -48,7 +48,7 @@ from ImageD11.sinograms.sinogram import save_array
 
 # GOTO - find somewhere!
 # Everything written in Numba could move to C?
-@numba.njit(boundscheck=True, cache = True)
+@numba.njit(boundscheck=True, cache=True)
 def hkluniq(ubi, gx, gy, gz, eta, m, tol, hmax):
     """count uniq peaks - move to cImageD11 in the future"""
     # index from -hmax to hmax
@@ -81,7 +81,7 @@ def hkluniq(ubi, gx, gy, gz, eta, m, tol, hmax):
 
 # stuff we need to compute g-vectors
 # from ImageD11.transform
-@numba.njit(cache = True)
+@numba.njit(cache=True)
 def detector_rotation_matrix(tilt_x, tilt_y, tilt_z):
     r1 = np.array([[np.cos(tilt_z), -np.sin(tilt_z), 0.0],  # note this is r.h.
                    [np.sin(tilt_z), np.cos(tilt_z), 0.0],
@@ -96,7 +96,7 @@ def detector_rotation_matrix(tilt_x, tilt_y, tilt_z):
     return r2r1
 
 
-@numba.njit(cache = True)
+@numba.njit(cache=True)
 def compute_grain_origins(omega, wedge, chi, t_x, t_y, t_z):
     w = np.radians(wedge)
     WI = np.array([[np.cos(w),         0, -np.sin(w)],
@@ -134,7 +134,7 @@ def compute_grain_origins(omega, wedge, chi, t_x, t_y, t_z):
     return t
 
 
-@numba.njit(cache = True)
+@numba.njit(cache=True)
 def compute_xyz_lab(sc, fc,
                     y_center=0., y_size=0., tilt_y=0.,
                     z_center=0., z_size=0., tilt_z=0.,
@@ -1291,7 +1291,6 @@ def prepare_refine_bash(pbp_object, id11_code_path, output_filename):
 
 #
 date
-source /cvmfs/hpc.esrf.fr/software/packages/linux/x86_64/jupyter-slurm/latest/envs/jupyter-slurm/bin/activate
 echo OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {pbp_object_file} > {log_path} 2>&1
 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH={id11_code_path} python3 {python_script_path} {pbp_object_file} > {log_path} 2>&1
 date
@@ -2095,7 +2094,6 @@ class PBP:
 #SBATCH --cpus-per-task={cpus_per_chunk}
 #SBATCH --array=0-{array_end}
 #SBATCH --mem={mem_G}G
-source /cvmfs/hpc.esrf.fr/software/packages/linux/x86_64/jupyter-slurm/latest/envs/jupyter-slurm/bin/activate
 CHUNK_FILE={chunk_prefix}${{SLURM_ARRAY_TASK_ID}}{chunk_suffix}
 OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
 {config_path} $CHUNK_FILE {grains_prefix}${{SLURM_ARRAY_TASK_ID}}.txt

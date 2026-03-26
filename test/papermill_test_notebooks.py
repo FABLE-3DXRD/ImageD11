@@ -126,9 +126,12 @@ except:
         IMAGED11_PATH=None,
         notebook_parent_dir=None,
         ):
-        PYTHONPATH = None  # do nothing
+
         if IMAGED11_PATH is not None and CHECKOUT_PATH is not None:
             PYTHONPATH = os.path.join(IMAGED11_PATH, CHECKOUT_PATH)
+        else:
+            import site
+            PYTHONPATH = site.getsitepackages()[0]
         # Insert IMAGED11_PATH and CHECKOUT_PATH into nbparams only if they are requested
         # Some notebooks will never need git (e.g. standalone doc style)
         import papermill
@@ -926,6 +929,379 @@ def test_FeAu_f2scan_JADB_pbp(aroot):
     notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
 
 
+def test_FeAu_JADB_tomo_deth5(aroot):
+    # where is the data?
+    dataroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/RAW_DATA"
+    analysisroot = analysis_folder(aroot, "tomo_route")
+    # find layers to process
+    sample = "FeAu_0p5_tR_nscope"
+    first_dataset = "top_200um"
+    dset_prefix = "top"
+    skips_dict = {sample: []}
+    sample_list = [sample]
+    samples_dict = find_datasets_to_process(
+        dataroot, skips_dict, dset_prefix, sample_list
+    )
+
+    nb_params = [
+        (
+            "0_segment_and_label.ipynb",
+            {
+                "maskfile": "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/pars/mask_with_gaps_E-08-0173.edf",
+                "detectorh5": "/data/id11/nanoscope/Eiger/spatial_20250826_LJ/newSpatial_20250819.h5",
+                "detector": "eiger",
+                "omegamotor": "rot_center",
+                "dtymotor": "dty",
+                "options": {"cut": 1, "pixels_in_spot": 3, "howmany": 100000},
+                "normalise_intensities_to_monitor": True,
+                "monitor_name": "fpico6",
+            },
+        ),
+        (
+            "tomo_1_index.ipynb",
+            {
+                "par_file": "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/pars/pars.json",
+                "phase_str": "Fe",
+                "min_frames_per_peak": 0,
+                "cf_strong_frac": 0.9939,
+                "cf_strong_dsmax": 1.594,
+                "cf_strong_dstol": 0.005,
+                "rings_for_gen": [0, 1, 3],
+                "rings_for_scoring": [0, 1, 2, 3, 4],
+                "hkl_tols_seq": [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.075],
+                "fracs": [0.9, 0.7],
+                "max_grains": 1000,
+                "peak_assign_tol": 0.05,
+            },
+        ),
+        (
+            "tomo_1_index_minor_phase.ipynb",
+            {
+                "major_phase_strs": ["Fe"],
+                "minor_phase_str": "Au",
+                "remove_major_phase_peaks": True,
+                "min_frames_per_peak": 0,
+                "major_phase_cf_dstol": 0.0035,
+                "minor_phase_cf_frac": 0.9,
+                "minor_phase_cf_dsmax": 1.594,
+                "minor_phase_cf_dstol": 0.0045,
+                "rings_for_gen": [0, 4, 5],
+                "rings_for_scoring": [0, 2, 3, 4, 5, 6, 7, 8, 10, 12, 13],
+                "hkl_tols_seq": [0.01, 0.02, 0.03, 0.04, 0.05],
+                "fracs": [0.9, 0.7],
+                "max_grains": 1000,
+                "peak_assign_tol": 0.05,
+            },
+        ),
+        (
+            "tomo_2_map.ipynb",
+            {
+                "phase_str": "Fe",
+                "cf_strong_frac": 0.9975,
+                "cf_strong_dstol": 0.005,
+                "is_half_scan": False,
+                "halfmask_radius": 25,
+                "peak_assign_tol": 0.05,
+                "draw_mask_interactive": False,
+                "manual_threshold": None,
+                "hkltol": 0.25,
+                "correct_sinos_with_ring_current": True,
+                "first_tmap_cutoff_level": 0.4,
+                "niter": 500,
+                "second_tmap_cutoff_level": 0.05,
+            },
+        ),
+        (
+            "tomo_2_map_minor_phase.ipynb",
+            {
+                "major_phase_strs": ["Fe"],
+                "minor_phase_str": "Au",
+                "remove_major_phase_peaks": True,
+                "major_phase_cf_dstol": 0.005,
+                "minor_phase_cf_frac": 0.9975,
+                "minor_phase_cf_dstol": 0.005,
+                "is_half_scan": False,
+                "halfmask_radius": 25,
+                "peak_assign_tol": 0.05,
+                "hkltol": 0.25,
+                "correct_sinos_with_ring_current": True,
+                "first_tmap_cutoff_level": 0.4,
+                "niter": 500,
+                "second_tmap_cutoff_level": 0.5,
+                "grain_too_many_px": 10,
+            },
+        ),
+        (
+            "tomo_3_refinement.ipynb",
+            {
+                "phase_str": "Fe",
+                "default_npks": 20,
+                "default_nuniq": 20,
+                "hkl_tol_origins": 0.05,
+                "hkl_tol_refine": 0.1,
+                "hkl_tol_refine_merged": 0.05,
+                "ds_tol": 0.004,
+                "ifrac": 7e-3,
+                "rings_to_refine": None,
+                "use_cluster": False,
+            },
+        ),
+        (
+            "tomo_3_refinement.ipynb",
+            {
+                "phase_str": "Au",
+                "default_npks": 20,
+                "default_nuniq": 20,
+                "hkl_tol_origins": 0.05,
+                "hkl_tol_refine": 0.1,
+                "hkl_tol_refine_merged": 0.05,
+                "ds_tol": 0.006,
+                "ifrac": 1e-3,
+                "rings_to_refine": [0, 2, 3, 4, 5, 6, 7, 8, 10, 12, 13],
+                "use_cluster": False,
+            },
+        ),
+        (
+            "4_visualise.ipynb",
+            {
+                "phase_str": "Fe",
+                "min_unique": 250,
+            },
+        ),
+        (
+            "4_visualise.ipynb",
+            {
+                "phase_str": "Au",
+                "min_unique": 0,
+            },
+        ),
+        (
+            "5_combine_phases.ipynb",
+            {
+                "phase_strs": ["Fe", "Au"],
+                "combine_refined": True,
+            },
+        ),
+    ]
+
+    notebooks_to_execute = prepare_notebooks(
+        samples_dict,
+        nb_params,
+        dataroot,
+        analysisroot,
+        CHECKOUT_PATH=checkout_folder,
+        IMAGED11_PATH=checkout_name,
+        notebook_parent_dir=scan_nb_prefix,
+    )
+
+    for nb_path in notebooks_to_execute:
+        notebook_exec_pmill(nb_path, nb_path, None)
+
+    # now run the final notebook to merge slices together
+    # work out the path to the first dataset
+    dset_path = os.path.join(
+        analysisroot,
+        sample,
+        "%s_%s" % (sample, first_dataset),
+        "%s_%s_dataset.h5" % (sample, first_dataset),
+    )
+    nb_param = {
+        "CHECKOUT_PATH": checkout_folder,
+        "IMAGED11_PATH": checkout_name,
+        "dset_path": dset_path,
+        "dset_prefix": dset_prefix,
+        "stack_combined": True,
+        "stack_refined": True,
+        "zstep": 50.0,
+    }
+
+    nb_path = os.path.join(scan_nb_prefix, "7_stack_layers.ipynb")
+    notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
+
+
+
+def test_FeAu_JADB_pbp_deth5(aroot):
+    # where is the data?
+    dataroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/RAW_DATA"
+    analysisroot = analysis_folder(aroot, "pbp_route")
+    # find layers to process
+    sample = "FeAu_0p5_tR_nscope"
+    first_dataset = "top_200um"
+    dset_prefix = "top"
+    skips_dict = {sample: []}
+    sample_list = [sample]
+    samples_dict = find_datasets_to_process(
+        dataroot, skips_dict, dset_prefix, sample_list
+    )
+
+    nb_params = [
+        (
+            "0_segment_and_label.ipynb",
+            {
+                "maskfile": "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/pars/mask_with_gaps_E-08-0173.edf",
+                "detectorh5": "/data/id11/nanoscope/Eiger/spatial_20250826_LJ/newSpatial_20250819.h5",
+                "detector": "eiger",
+                "omegamotor": "rot_center",
+                "dtymotor": "dty",
+                "options": {"cut": 1, "pixels_in_spot": 3, "howmany": 100000},
+                "normalise_intensities_to_monitor": True,
+                "monitor_name": "fpico6",
+            },
+        ),
+        (
+            "pbp_1_indexing.ipynb",
+            {
+                "par_file": "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/pars/pars.json",
+                "phase_str": "Fe",
+                "minpkint": 5,
+                "hkl_tol": 0.03,
+                "fpks": 30,
+                "ds_tol": 0.008,
+                "etacut": 0.1,
+                "ifrac": 2e-3,
+                "y0": -16.0,
+                "symmetry": "cubic",
+                "foridx": [0, 1, 3, 5, 7],
+                "forgen": [1, 5, 7],
+                "uniqcut": 0.85,
+                "mask_before_indexing": True,
+                "draw_mask_interactive": False,
+                "manual_threshold": None,
+                "use_cluster": True,
+                "n_chunks": 2,
+                "cpus_per_chunk": 8,
+                "time_h": 1,
+                "partition": "low",
+            },
+        ),
+        (
+            "pbp_1_indexing.ipynb",
+            {
+                "par_file": "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu/pars/pars.json",
+                "phase_str": "Au",
+                "minpkint": 5,
+                "hkl_tol": 0.03,
+                "fpks": 30,
+                "ds_tol": 0.008,
+                "etacut": 0.1,
+                "ifrac": 2e-3,
+                "y0": -16.0,
+                "symmetry": "cubic",
+                "foridx": [0, 3, 5, 7],
+                "forgen": [0, 5, 7],
+                "uniqcut": 0.85,
+                "mask_before_indexing": True,
+                "draw_mask_interactive": False,
+                "manual_threshold": None,
+                "use_cluster": False,
+            },
+        ),
+        (
+            "pbp_2_visualise.ipynb",
+            {
+                "phase_str": "Fe",
+                "min_unique": 20,
+            },
+        ),
+        (
+            "pbp_2_visualise.ipynb",
+            {
+                "phase_str": "Au",
+                "min_unique": 10,
+            },
+        ),
+        (
+            "pbp_3_refinement.ipynb",
+            {
+                "phase_str": "Fe",
+                "min_unique": 20,
+                "manual_threshold": None,
+                "y0": -16.0,
+                "hkl_tol_origins": 0.05,
+                "hkl_tol_refine": 0.1,
+                "hkl_tol_refine_merged": 0.05,
+                "ds_tol": 0.004,
+                "ifrac": 7e-3,
+                "rings_to_refine": None,
+                "set_mask_from_input": True,
+                "use_cluster": False,
+            },
+        ),
+        (
+            "pbp_3_refinement.ipynb",
+            {
+                "phase_str": "Au",
+                "min_unique": 10,
+                "manual_threshold": None,
+                "y0": -16.0,
+                "hkl_tol_origins": 0.05,
+                "hkl_tol_refine": 0.1,
+                "hkl_tol_refine_merged": 0.05,
+                "ds_tol": 0.004,
+                "ifrac": 7e-3,
+                "rings_to_refine": None,
+                "set_mask_from_input": True,
+                "use_cluster": False,
+            },
+        ),
+        (
+            "4_visualise.ipynb",
+            {
+                "phase_str": "Fe",
+                "min_unique": 250,
+            },
+        ),
+        (
+            "4_visualise.ipynb",
+            {
+                "phase_str": "Au",
+                "min_unique": 100,
+            },
+        ),
+        (
+            "5_combine_phases.ipynb",
+            {
+                "phase_strs": ["Fe", "Au"],
+                "combine_refined": True,
+            },
+        ),
+    ]
+
+    notebooks_to_execute = prepare_notebooks(
+        samples_dict,
+        nb_params,
+        dataroot,
+        analysisroot,
+        CHECKOUT_PATH=checkout_folder,
+        IMAGED11_PATH=checkout_name,
+        notebook_parent_dir=scan_nb_prefix,
+    )
+
+    for nb_path in notebooks_to_execute:
+        notebook_exec_pmill(nb_path, nb_path, None)
+
+    # now run the final notebook to merge slices together
+    # work out the path to the first dataset
+    dset_path = os.path.join(
+        analysisroot,
+        sample,
+        "%s_%s" % (sample, first_dataset),
+        "%s_%s_dataset.h5" % (sample, first_dataset),
+    )
+    nb_param = {
+        "CHECKOUT_PATH": checkout_folder,
+        "IMAGED11_PATH": checkout_name,
+        "dset_path": dset_path,
+        "dset_prefix": dset_prefix,
+        "stack_combined": True,
+        "stack_refined": True,
+        "zstep": 50.0,
+    }
+
+    nb_path = os.path.join(scan_nb_prefix, "7_stack_layers.ipynb")
+    notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
+
+
 def test_FeAu_JADB_bb(aroot):
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/"
@@ -1281,3 +1657,6 @@ if __name__=="__main__":
     test_FeAu_JADB_bb(destination_folder)
     test_FeAu_JADB_bb_grid(destination_folder)
     test_FeAu_JADB_bb_friedel(destination_folder)
+    # just testing deth5 and new pbp cluster options
+    # test_FeAu_JADB_tomo_deth5(destination_folder)
+    # test_FeAu_JADB_pbp_deth5(destination_folder)
