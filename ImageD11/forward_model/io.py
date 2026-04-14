@@ -11,7 +11,7 @@
 # March 20, 2024
 # updated on January 30, 2025
 
-import os, shutil
+import os, sys, shutil
 import glob
 
 import numpy as np
@@ -394,7 +394,7 @@ def write_xdmf(h5name, xdmf_filename = None, ctrl = 'recon_mlem', attributes = [
 
     
 def camera_names_ID11():
-    return ['marana3', 'marana1', 'marana2', 'marana', 'frelon1', 'frelon3', 'frelon6', 'eiger', 'basler_eh32', 'frelon16']
+    return ['marana3', 'marana1', 'marana2', 'marana', 'frelon1', 'frelon3', 'frelon6', 'eiger', 'basler_eh32', 'frelon16', 'pco1']
 
 
 def guess_camera_name(h5name, scan = '1.1'):
@@ -628,6 +628,32 @@ def read_fsparse(h5_file, group_name = "/entry_0000/ESRF-ID11/eiger/data"):
             if name in g.keys():
                 fsparse_pks[name] = g[name][()]
     return fsparse_pks
+
+
+def deep_getsizeof(obj, seen=None):
+    """
+    Get memory info of a dict, list, tuple or set, it does so recursively so that it can collect memory info of all elements.
+    Args:
+        obj: an object, e.g. dict, list, tuple or set
+    Returns:
+        size: size of the object in bytes
+    Example to use:
+        size_bytes = deep_getsizeof(sparse_cuda_dict)
+        print(size_bytes / (1024**3), "GB")
+    """
+    if seen is None:
+        seen = set()
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    seen.add(obj_id)
+    size = sys.getsizeof(obj)
+    if isinstance(obj, dict):
+        size += sum(deep_getsizeof(k, seen) + deep_getsizeof(v, seen)
+                    for k, v in obj.items())
+    elif isinstance(obj, (list, tuple, set)):
+        size += sum(deep_getsizeof(i, seen) for i in obj)
+    return size
 
 
 def copytree_with_progress(src, dst, skip_keys=None, create_subfolder = True, overwrite = False):

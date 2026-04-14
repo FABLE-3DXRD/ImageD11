@@ -6,6 +6,7 @@
 # Jan 2nd, 2025
 # version 1.0: updated on January 30, 2025
 # version 1.1: fixed a bug with ray origin on December 10, 2025
+# version 1.2: some clean-ups and ensure all print-outs go to .out file instead of .log file, April 12, 2026
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -39,7 +40,11 @@ from ImageD11.columnfile import colfile_from_hdf
 from ImageD11.nbGui.nb_utils import slurm_submit_and_wait
 
 econst = 12.3984
-logging.basicConfig(level=logging.INFO, force=True)
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout,
+    force=True
+)
 os.environ["JOBLIB_TEMP_FOLDER"] = "/tmp_14_days/slurm/log"
 
 """
@@ -380,14 +385,14 @@ class forward_projector:
         self.check_halfy()
 
     def check_halfy(self):
-        #quick check to see if halfy is big enough
+        # quick check to see if halfy is big enough to include all sample voxels to be illuminated
         if self.sample_mask is None:
             mask_tmp = (self.sample_input.DS['labels'] > -1) & (~np.isnan(self.sample_input.DS['U'][:, :, :, 0, 0]))
             mask_tmp = np.transpose(mask_tmp, (2, 1, 0))
         else:
             mask_tmp = self.sample_mask
         center = (mask_tmp.shape[0]/2, mask_tmp.shape[1]/2)
-        radius = self.args["halfy"]/np.mean(self.sample_input.DS['voxel_size']) #radius covered by halfy, in pixels
+        radius = self.args["halfy"]/np.mean(self.sample_input.DS['voxel_size']) # radius covered by halfy, [pixel]
         x = np.linspace(0, mask_tmp.shape[0], mask_tmp.shape[1])
         y = np.linspace(0, mask_tmp.shape[1], mask_tmp.shape[1])
         xv, yv = np.meshgrid(x, y)
@@ -396,8 +401,9 @@ class forward_projector:
         combine_mask = mask_circle*mask_tmp[:,:,0]
         if self.verbose >= 1 and np.sum(combine_mask)>=1:
             logging.warning('****** WARNING ******')
-            logging.warning('half_y = {} is too small, you should increase it.'.format(self.args["halfy"]))
-            
+            logging.info('halfy = {} um is too small, you should increase to ~{:6f} um.'.format(self.args["halfy"],
+                         self.args["halfy"] + 2.5*np.sum(combine_mask)/(2*np.pi*radius)*np.mean(self.sample_input.DS['voxel_size'])))
+
     def set_beam(self):
         """
         set the X-ray beam source, including beam energy, FWHM, flux, shape, source-to-sample distance, name etc.
@@ -406,7 +412,7 @@ class forward_projector:
         
     def set_sample(self):
         """
-        set the sample properties: including the grain map, voxel size, .
+        set the sample properties: including the grain map, voxel size, density, mass absorption.
         """
         self.sample_input = sample(self.sample_filename, min_misori = self.args['min_misori'], crystal_system = self.args['crystal_system'],
                                       remove_small_grains = self.args['remove_small_grains'], min_vol = self.args['min_vol'])    
@@ -620,19 +626,23 @@ class forward_projector:
 #SBATCH --mem-per-cpu=8000
 #SBATCH --time=01:00:00
 
+module load jupyter-slurm/2025.04.5
+echo "===== JOB START ====="
 date
-source /cvmfs/hpc.esrf.fr/software/packages/linux/x86_64/jupyter-slurm/latest/envs/jupyter-slurm/bin/activate
+
 log_path="{log_path}_${{SLURM_JOB_ID}}_${{SLURM_ARRAY_TASK_ID}}.log"
 dty_file="{dty_file_list}"
 dty_values=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" $dty_file)
-echo "OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH={id11_code_path}" >> $log_path 2>&1
-OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH={id11_code_path} \
+echo "OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH={id11_code_path}"
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH={id11_code_path}
+export PYTHONPATH={id11_code_path}
 python3 -c "from ImageD11.forward_model import forward_projector; \
 fp = forward_projector.forward_projector(sample_filename='{sample_filename}', pars_filename='{pars_filename}', \
 phase_name='{phase_name}', output_folder='{output_folder}', gids_mask={gids_mask}, \
 verbose={verbose}, auto_set={auto_set}, detector_mask={detector_mask}, to_sparse={to_sparse}, \
 read_fwd_peaks_from_file={read_fwd_peaks_from_file}, **{args}); \
-fp.run_series_dty([float(v) for v in '$dty_values'.split()])" >> $log_path 2>&1
+fp.run_series_dty([float(v) for v in '$dty_values'.split()])"
+echo "===== JOB END ====="
 date""".format(
             outfile_path=outfile_path,
             errfile_path=errfile_path,
@@ -780,6 +790,7 @@ date""".format(
     def plot_cf(self, cf_type = '2d', m=None):
         """
         plot the sinogram of cf peaks, i.e. dty vs omega colored by peak intensity
+        m is a boolen mask
         """
         plt.figure(figsize=(10,8))
         if cf_type == '2d':
@@ -870,7 +881,7 @@ def forward_peaks_voxels(beam, sample, omega_angles, ucell, pars, dty=0.0,
     t0 = time.time()
     results = Parallel(n_jobs=-1, backend="loky")(delayed(process_omega)(
         omega, mask, DS, beam, sample, pars, ucell, rot_step, ds_max, Lsam2det, args, verbose
-    ) for omega in tqdm(omega_angles, desc="Processing omega angles"))
+    ) for omega in tqdm(omega_angles, desc="Processing omega angles", file=sys.stdout))
     # # Regarding multiprocessing.Pool, tried chunk, shared memory etc, it does not help to improve the speed
     # set_tmp_dir()
     # with multiprocessing.Pool(processes=min(multiprocessing.cpu_count(), 24)) as pool:
