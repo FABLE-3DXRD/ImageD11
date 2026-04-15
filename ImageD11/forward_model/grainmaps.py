@@ -51,12 +51,13 @@ class grainmap:
     example:
     filename = ds.grains_file
     gm = grainmap(filename)
-    gm.merge_and_identify_grains(FirstGrainID = 0, dis_tol = np.sqrt(2))
+    gm.merge_and_identify_grains(FirstGrainID = 0, dis_tol = np.sqrt(3))
     DS = gm.DS
     '''
-    def __init__(self, filename = None, outname = None, min_misori = 3, crystal_system = 'cubic', remove_small_grains = True, min_vol = 2):
+    def __init__(self, filename = None, outname = None, min_misori = 3, crystal_system = 'cubic', remove_small_grains = True, min_vol = 2, verbose = 0):
         self.filename = filename
         self.outname = outname
+        self.verbose = verbose
         if self.outname is None and self.filename is not None:
             self.outname = os.path.join(os.path.split(self.filename)[0], 'DS.h5')
         if filename is not None:
@@ -68,19 +69,21 @@ class grainmap:
         self.crystal_system = crystal_system
         self.remove_small_grains = remove_small_grains
         self.min_vol = min_vol
-        print('****************************************** Parameters for operating the grain map: ')
-        print('Output file name: {}'.format(self.outname))
-        print('min_misori = {}'.format(min_misori))
-        print('crystal_system: {}'.format(crystal_system))
-        print('remove_small_grains = {}'.format(remove_small_grains))
-        print('min_vol = {} voxels'.format(min_vol))
-        
+        if self.verbose >= 1:
+            print('****************************************** Parameters for operating the grain map: ')
+            print('Output file name: {}'.format(self.outname))
+            print('min_misori = {}'.format(min_misori))
+            print('crystal_system: {}'.format(crystal_system))
+            print('remove_small_grains = {}'.format(remove_small_grains))
+            print('min_vol = {} voxels'.format(min_vol))
+            
     
     def read_tensor_map(self):
         if os.path.exists(self.filename):
             tensor_map = io.read_h5_file(self.filename)
             if isinstance(tensor_map, dict):
-                io.print_all_keys(tensor_map)
+                if self.verbose >= 1:
+                    io.print_all_keys(tensor_map)
             else:
                 print("The file did not produce a dictionary.")
             return tensor_map
@@ -97,7 +100,8 @@ class grainmap:
         tensor_map_flag = False
         for key in tensor_map.keys():
             if 'TensorMap' in key:
-                print('Got the key name {}'.format(key))
+                if self.verbose >= 1:
+                    print('Got the key name {}'.format(key))
                 keyname = key
                 tensor_map_flag = True
         
@@ -108,7 +112,8 @@ class grainmap:
             DS = {}
             for k in keys_list:
                 if k in tensor_map[keyname]['maps'].keys():
-                    print('Loading {} with a shape of {} to DS ...'.format(k, tensor_map[keyname]['maps'][k].shape))
+                    if self.verbose >= 1:
+                        print('Loading {} with a shape of {} to DS ...'.format(k, tensor_map[keyname]['maps'][k].shape))
                     DS[k] = tensor_map[keyname]['maps'][k]
             if 'step' in tensor_map[keyname].keys():
                 DS['voxel_size'] = tensor_map[keyname]['step'] # [um/pixel]
@@ -131,7 +136,7 @@ class grainmap:
             print('Found a map (dimensions {}) with {} voxels to be labeled with grain ID'.format(DS['labels'].shape, np.max(DS['labels'])))
             print('Please note: current labels are only randomized without any region merging !!!')
 
-        # get U from UBI if no 'U' existed
+        # get U from UBI if no 'U' existed, this is usually the case with tensor map before refinement
         if 'U' not in DS.keys() and 'UBI' in DS.keys():
             try:
                 latticepar = np.array(tensor_map[keyname]['phases']['0'].decode('utf-8').split(), dtype = float)
@@ -141,11 +146,15 @@ class grainmap:
                 
                 DS['U'] = np.empty((DS['UBI'].shape[0], DS['UBI'].shape[1], DS['UBI'].shape[2], 3, 3))
                 DS['U'].fill(np.nan)
+
+                DS['B'] = np.empty((DS['UBI'].shape[0], DS['UBI'].shape[1], DS['UBI'].shape[2], 3, 3))
+                DS['B'].fill(np.nan)
                 
                 indices = np.argwhere(~np.isnan(DS['UBI'][:, :, :, 0, 0]))
                 for (i, j, k) in indices:
                     DS['U'][i, j, k, :, :] = np.dot(B, DS['UBI'][i, j, k, :, :]).T
-                print('Done with deriving U matrix !')
+                    DS['B'][i, j, k, :, :] = B
+                print('Done with deriving U and B matrices !')
             except KeyError as e:
                 print("Key error: {}".format(e))
             except Exception as e:
@@ -284,7 +293,7 @@ def DS_remove_small_grains(DS, min_vol = 2):
     return DS_out
 
 
-def DS_merge_and_identify_grains_sub(DS, FirstGrainID = 0, min_misori = 3.0, dis_tol = np.sqrt(2), crystal_system = 'cubic'):
+def DS_merge_and_identify_grains_sub(DS, FirstGrainID = 0, min_misori = 3.0, dis_tol = np.sqrt(3), crystal_system = 'cubic'):
     
     """
     sub function:
@@ -296,7 +305,7 @@ def DS_merge_and_identify_grains_sub(DS, FirstGrainID = 0, min_misori = 3.0, dis
     DS                -- grain map dictionary, gm = grainmap(tensor_map_file); DS = gm.DS
     FirstGrainID      -- First grain ID to be considered for merging, by default = 0
     min_misori        -- misorientation for merging regions
-    dis_tol           -- maximum distance around the target voxel for identifying its neigboring grains, np.sqrt(2) corresponds to distance to the diagonal voxel in 2D
+    dis_tol           -- maximum distance around the target voxel for identifying its neigboring grains, np.sqrt(3) ensure the diagonal voxel in 2D included
     crystal_system    -- crystal system name one of ['cubic', 'hexagonal', 'orthorhombic', 'tetragonal', 'trigonal', 'monoclinic', 'triclinic']
 
     Returns:
