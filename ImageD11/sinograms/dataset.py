@@ -597,47 +597,47 @@ class DataSet:
             self.ybinedges = np.linspace(
                 self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1
             )
-            
-            
-def correct_bins_for_half_scan(self, y0 = 0.0):
-    """
-    Pad self.ybincens / self.ybinedges around the bin nearest to y0
-    so that the dataset becomes symmetric. 
-    The original measured bins are never moved; only virtual bins are added
-    on whichever side is shorter. A boolean mask records which bins are real.
+                 
+    def correct_bins_for_half_scan(self, y0 = 0.0):
+        """
+        Pad self.ybincens / self.ybinedges around the bin nearest to y0
+        so that the dataset becomes symmetric. 
+        The original measured bins are never moved; only virtual bins are added
+        on whichever side is shorter. A boolean mask records which bins are real.
  
-    Sets self.ybin_real_mask : bool array on self.ybincens, False on virtual bins
-    """
-    ystep = self.ystep
-    # Recover original measured bins
-    if hasattr(self, 'ybin_real_mask'):
-        yc_orig = np.asarray(self.ybincens, dtype=float)[self.ybin_real_mask]
-    else:
-        yc_orig = np.asarray(self.ybincens, dtype=float).copy()
-    # get the bin closest to y0
-    central_bin    = int(np.argmin(np.abs(yc_orig - y0)))
-    central_val    = yc_orig[central_bin]
-    # Distance from central_val to each end of the measured range
-    lo_dist = central_val - yc_orig[0]
-    hi_dist = yc_orig[-1] - central_val
-    half    = np.ceil(max(lo_dist, hi_dist) / ystep) * ystep
-    # Build symmetric grid centred on central_val, with the same ystep
-    n_half    = int(round(half / ystep))
-    new_cens  = central_val + np.arange(-n_half, n_half + 1) * ystep
-    new_edges = central_val - ystep / 2 + np.arange(-n_half, n_half + 2) * ystep
-    # Real-bin mask: True where new_cens matches an orig_cens within ystep/4
-    real_mask = np.array([
-        np.any(np.abs(yc_orig - cv) < ystep / 4)
-        for cv in new_cens])
-    # Update bins
-    self.ybincens       = new_cens
-    self.ybinedges      = new_edges
-    self.ybin_real_mask = real_mask
-    n_pad = int((~real_mask).sum())
-    print(
-        f"[correct_bins_for_half_scan]  y0 = {y0:.4f}, central bin value = {central_val:.4f}, central bin id: {central_bin}, "
-        f"halfrange={half:.4f}, n_bins={len(new_cens)} "
-        f"({real_mask.sum()} real + {n_pad} padded).")
+        Sets self.ybin_real_mask : bool array on self.ybincens, False on virtual bins
+        """
+        ystep = self.ystep
+        # Recover original measured bins
+        if hasattr(self, 'ybin_real_mask'):
+            yc_orig = np.asarray(self.ybincens, dtype=float)[self.ybin_real_mask]
+        else:
+            yc_orig = np.asarray(self.ybincens, dtype=float).copy()
+        # get the bin closest to y0
+        central_bin    = int(np.argmin(np.abs(yc_orig - y0)))
+        central_val    = yc_orig[central_bin]
+        # Distance from central_val to each end of the measured range
+        lo_dist = central_val - yc_orig[0]
+        hi_dist = yc_orig[-1] - central_val
+        half    = np.ceil(max(lo_dist, hi_dist) / ystep) * ystep
+        # Build symmetric grid centred on central_val, with the same ystep
+        n_half    = int(round(half / ystep))
+        new_cens  = central_val + np.arange(-n_half, n_half + 1) * ystep
+        new_edges = central_val - ystep / 2 + np.arange(-n_half, n_half + 2) * ystep
+        # Real-bin mask: True where new_cens matches an orig_cens within ystep/4
+        real_mask = np.array([
+            np.any(np.abs(yc_orig - cv) < ystep / 4)
+            for cv in new_cens])
+        # Update bins
+        self.ybincens       = new_cens
+        self.ybinedges      = new_edges
+        self.ybin_real_mask = real_mask
+        n_pad = int((~real_mask).sum())
+        print(
+        "[correct_bins_for_half_scan]  y0 = {:.4f}, central bin value = {:.4f}, central bin id: {}, "
+        "halfrange={:.4f}, n_bins={} "
+        "({} real + {} padded).".format(y0, central_val, central_bin, half,
+                                        len(new_cens), real_mask.sum(), n_pad))
 
     def get_ring_current_per_scan(self):
         """Gets the ring current for each scan (i.e rotation/y-step)
