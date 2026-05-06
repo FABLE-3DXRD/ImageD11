@@ -172,6 +172,7 @@ class DataSet:
         self.monitor_ref = None
         self.ybinedges = None
         self.ybincens = None
+        self.y0 = None
         self.obinedges = None
         self.obincens = None
 
@@ -597,7 +598,11 @@ class DataSet:
             self.ybinedges = np.linspace(
                 self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1
             )
-                 
+        # try to estimate y0 from ybins. Maybe not the best approach?
+        # Rotation centre position should be somewhere in the master hdf5 file
+        if self.y0 is None:  
+            self.y0 = np.round((self.ymin + self.ymax) / 2, 6)
+                  
     def correct_bins_for_half_scan(self, y0 = 0.0):
         """
         Pad self.ybincens / self.ybinedges around the bin nearest to y0
@@ -638,6 +643,347 @@ class DataSet:
         "halfrange={:.4f}, n_bins={} "
         "({} real + {} padded).".format(y0, central_val, central_bin, half,
                                         len(new_cens), real_mask.sum(), n_pad))
+
+    # ------------------------------------------------------------------
+    # Peak-pairing helpers: sort dataset by dty scans / dty-omega frames
+    # ------------------------------------------------------------------
+    def get_dty_pairs(self):
+        """
+        Find mirror pairs of dty scans on each side of the central y0:
+            scan hi :  dty = y0 + Δy
+            scan lo :  dty = y0 - Δy
+
+        Sets self.dty_pairs: list of Pair namedtuples ('Pair', ['yi_hi', 'yi_lo', 'dty_hi', 'dty_lo'])
+        where yi_* are indices into self.ybincens.
+        """
+        from collections import namedtuple
+        y0 = self.y0
+        if y0 != 0:
+            self.correct_bins_for_half_scan(y0)
+ 
+        yc       = self.ybincens.copy()
+        n_y      = len(yc)
+        yi0      = n_y // 2
+ 
+        Pair = namedtuple('Pair', ['yi_hi', 'yi_lo', 'dty_hi', 'dty_lo'])
+ 
+        def _make_pair(yi_hi, yi_lo):
+            return Pair(
+                yi_hi  = yi_hi,
+                yi_lo  = yi_lo,
+                dty_hi = float(yc[yi_hi]),
+                dty_lo = float(yc[yi_lo]))
+ 
+        # If odd number of steps (odd n_y), central bin is paired with itself; then mirror pairs outward
+        pairs = []
+        for yi in range(0, yi0 + 1):
+            pairs.append(_make_pair(yi0 + yi, yi0 - yi))
+ 
+        self.dty_pairs = pairs
+        print("[get_dty_pairs] {n} pairs of dty scans (y0={y0})".format(
+            n=len(pairs), y0=y0))
+ 
+    def get_omega_dty_pairs(self):
+        """
+        Find mirror pairs of frames (A, B) in omega and dty:
+            frame A :  dty = y0 + Δy ,  omega = ω
+            frame B :  dty = y0 - Δy ,  omega = (ω + 180) mod 360
+ 
+        Sets self.omega_dty_pairs: list of Pair namedtuples
+        ('Pair', ['yi_A','yi_B','omi_A','omi_B', 'dty_A','dty_B','omega_A','omega_B'])
+        with indices yi*, omi* into self.ybincens and self.obincens
+        """
+        from collections import namedtuple
+        y0 = self.y0
+        if y0 != 0:
+            self.correct_bins_for_half_scan(y0)
+ 
+        yc       = self.ybincens.copy()
+        oc       = self.obincens.copy()
+        n_y      = len(yc)
+        n_o      = len(oc)
+        k        = n_o // 2          # index shift for a 180-deg omega step
+ 
+        # Sanity checks
+        if self.omax - self.omin < 181:
+            raise ValueError(
+                "Half-rotation acquisition: cannot pair frames in omega.")
+        if n_o % 2 != 0:
+            raise ValueError(
+                "omega_bin_centers must have an even number of bins, "
+                "got {n}. Switch to dty-scan-wise pairing.".format(n=n_o))
+        if not np.allclose((oc[k:] - oc[:k]) % 360, 180.0, atol=self.ostep / 2):
+            raise ValueError(
+                "self.obincens[i + k] is not self.obincens[i] + 180 deg for all i. "
+                "Check that omega covers exactly 360 deg with uniform spacing.")
+ 
+        Pair = namedtuple('Pair', ['yi_A', 'yi_B', 'omi_A', 'omi_B', 'dty_A', 'dty_B', 'omega_A', 'omega_B'])
+ 
+        def _make_pair(oi_A, yi_A, oi_B, yi_B):
+            return Pair(
+                yi_A    = yi_A,
+                yi_B    = yi_B,
+                omi_A   = oi_A,
+                omi_B   = oi_B,
+                dty_A   = float(yc[yi_A]),
+                dty_B   = float(yc[yi_B]),
+                omega_A = float(oc[oi_A]),
+                omega_B = float(oc[oi_B]))
+ 
+        pairs = []
+ 
+        if n_y % 2 == 1:
+            # Odd number of dty steps → central bin exists
+            yi0 = n_y // 2
+            # Off-centre bins: pair mirror scans (yi0+yi, yi0-yi)
+            for yi in range(1, yi0 + 1):
+                yi_hi = yi0 + yi
+                yi_lo = yi0 - yi
+                for oi in range(n_o):
+                    oi_lo = (oi + k) % n_o
+                    pairs.append(_make_pair(oi, yi_hi, oi_lo, yi_lo))
+ 
+            # Central bin: pair lower-omega half with upper half (same yi)
+            for oi in range(k):
+                pairs.append(_make_pair(oi, yi0, oi + k, yi0))
+ 
+        else:
+            # Even number of dty steps → no central bin
+            half = n_y // 2
+            for yi_hi in range(half, n_y):
+                yi_lo = n_y - 1 - yi_hi
+                for oi in range(n_o):
+                    oi_lo = (oi + k) % n_o
+                    pairs.append(_make_pair(oi, yi_hi, oi_lo, yi_lo))
+ 
+        self.omega_dty_pairs = pairs
+ 
+        n_y0  = sum(1 for p in pairs if p.yi_A == p.yi_B)
+        n_off = len(pairs) - n_y0
+        print(
+            "[get_omega_dty_pairs] {ntot} pairs of 2D frames (y0={y0}): "
+            "{ny0} at y0 (omega-only), {noff} off-y0.".format(
+                ntot=len(pairs), y0=y0, ny0=n_y0, noff=n_off))
+  
+    def sort_by_dty(self, cf):
+        """
+        Sort columnfile cf by dty and build an index table for quick peak selection by dty scan.
+ 
+        Sets ds.dty_scans_index : dict { yi : (slice(lo, hi), n_peaks, total_intensity) }
+        yi is a dty-scan index matching those in self.dty_pairs. 
+        Scans with zero peaks are absent from the dict.
+        """
+        yc  = self.ybincens
+        ybe = self.ybinedges
+ 
+        # Remove any stale index tables
+        for attr in ('dty_scans_index', 'frames_index'):
+            if hasattr(self, attr):
+                delattr(self, attr)
+ 
+        # Assign each peak to its dty bin and sort
+        dtyi  = np.clip(
+            np.searchsorted(ybe, cf.dty, side="right") - 1, 0, len(yc) - 1)
+        order = np.argsort(dtyi)
+        cf.reorder(order)
+        cf.sortedby = "dty"
+ 
+        dtyi_s = dtyi[order]
+        _, first_idx, counts = np.unique(
+            dtyi_s, return_index=True, return_counts=True)
+ 
+        dty_scans_index = {}
+        for lo, cnt in zip(first_idx, counts):
+            key  = int(dtyi_s[lo])
+            slc  = slice(int(lo), int(lo + cnt))
+            Itot = cf.sum_intensity[slc].sum()
+            dty_scans_index[key] = (slc, cnt, Itot)
+ 
+        self.dty_scans_index = dty_scans_index
+ 
+        n_empty = len(yc) - len(dty_scans_index)
+        print(
+            "[sort_by_dty]  {npk} peaks sorted; "
+            "{nne} non-empty dty scans ({ne} scans have no peaks).".format(
+                npk=cf.nrows, nne=len(dty_scans_index), ne=n_empty))
+
+    def sort_by_sinogram(self, cf):
+        """
+        Sort columnfile cf in sinogram space (omega primary, dty secondary)
+        and build a frame-level index table for quick peak selection.
+
+        Sets self.frames_index : dict { (omi, yi) : (slice(lo, hi), n_peaks, total_intensity) }
+        Keys match those in self.omega_dty_pairs.
+        Frames with zero peaks are absent from the dict.
+        """
+        oc  = self.obincens
+        yc  = self.ybincens
+        obe = self.obinedges
+        ybe = self.ybinedges
+ 
+        # Remove any stale index tables
+        for attr in ('dty_scans_index', 'frames_index'):
+            if hasattr(self, attr):
+                delattr(self, attr)
+ 
+        # Assign each peak to its (omega, dty) bin
+        i_omega = np.clip(
+            np.searchsorted(obe, cf.omega, side="right") - 1, 0, len(oc) - 1)
+        j_dty   = np.clip(
+            np.searchsorted(ybe, cf.dty,   side="right") - 1, 0, len(yc) - 1)
+ 
+        # Sort in-place: omega primary, dty secondary
+        order = np.lexsort((j_dty, i_omega))
+        cf.reorder(order)
+        cf.sortedby = "omega_dty"
+ 
+        i_omega_s = i_omega[order]
+        j_dty_s   = j_dty[order]
+ 
+        bin_pairs = np.column_stack([i_omega_s, j_dty_s])
+        _, first_idx, counts = np.unique(
+            bin_pairs, axis=0, return_index=True, return_counts=True)
+ 
+        frames_index = {}
+        for lo, cnt in zip(first_idx, counts):
+            key  = (int(i_omega_s[lo]), int(j_dty_s[lo]))
+            slc  = slice(int(lo), int(lo + cnt))
+            Itot = cf.sum_intensity[slc].sum()
+            frames_index[key] = (slc, cnt, Itot)
+ 
+        self.frames_index = frames_index
+ 
+        n_total = len(oc) * len(yc)
+        n_empty = n_total - len(frames_index)
+        print(
+            "[sort_by_sinogram]  {npk} peaks sorted; "
+            "{nne} non-empty frames indexed "
+            "({ne} frames have no peaks).".format(
+                npk=cf.nrows, nne=len(frames_index), ne=n_empty))
+        
+    def valid_pairs(self):
+        """
+        Return a boolean array marking pairs where both members contain
+        at least one peak in the current index table (frames_index or dty_scans_index)
+        Automatically detects which index table is present in self.
+        """
+        index_table = next(
+            (a for a in ('frames_index', 'dty_scans_index')
+             if hasattr(self, a)), None)
+        if index_table is None:
+            raise RuntimeError(
+                "No index table found in dataset. "
+                "Run sort_by_sinogram() or sort_by_dty() first.")
+ 
+        pair_attr = 'omega_dty_pairs' if 'frames' in index_table else 'dty_pairs'
+        pairs     = getattr(self, pair_attr, None)
+        idx_dict  = getattr(self, index_table)
+ 
+        valid = np.zeros(len(pairs), dtype=bool)
+ 
+        for i, p in enumerate(pairs):
+            if 'omega' in pair_attr:
+                key_A = (p.omi_A, p.yi_A)
+                key_B = (p.omi_B, p.yi_B)
+            else:
+                key_A = p.yi_hi
+                key_B = p.yi_lo
+            if key_A in idx_dict and key_B in idx_dict:
+                valid[i] = True
+ 
+        print(
+            "[valid_pairs]  {ntot} pairs checked in {pl}\n"
+            "  found {nv} pairs where both members have peaks "
+            "({pct:.2f}% valid).".format(
+                ntot=len(valid), pl=pair_attr,
+                nv=valid.sum(),
+                pct=valid.sum() / len(valid) * 100))
+ 
+        return valid
+
+    def check_dty_symmetry(self, cf, saveplot=False):
+        """
+        Plot N_peaks and total_intensity vs. abs(dty) for mirror dty_scans
+        (y0+Δy, y0-Δy) and check their correlation.
+ 
+        If alignment is correct, values should match between mirror scans.
+        Significant mismatch suggests an incorrect y0, sample movement, or
+        a beam issue during scanning.
+        """
+        import matplotlib.pyplot as plt
+
+        if not hasattr(self, 'dty_pairs'):
+            self.get_dty_pairs(self.y0)
+        if not hasattr(self, 'dty_scans_index'):
+            self.sort_by_dty(cf)
+        
+        valid = self.valid_pairs()
+        
+        # paired dty scans on the hi and lo side
+        scan_id_hi = np.array( [p.yi_hi for p in self.dty_pairs] )
+        scan_id_lo = np.array( [p.yi_lo for p in self.dty_pairs] )
+
+        # x-axis: dty position (flipped for lo side)
+        x_hi = self.ybincens[scan_id_hi]
+        x_lo = -self.ybincens[scan_id_lo]
+        
+        # y-axis: n_peaks and log(sum_intensity) + ratios hi/lo 
+        npks_hi = [self.dty_scans_index[yi][1] if v else np.nan for yi,v in zip(scan_id_hi, valid)]
+        npks_lo = [self.dty_scans_index[yi][1] if v else np.nan for yi,v in zip(scan_id_lo, valid)]
+        sumI_hi = [self.dty_scans_index[yi][2] if v else np.nan for yi,v in zip(scan_id_hi, valid)]
+        sumI_lo = [self.dty_scans_index[yi][2] if v else np.nan for yi,v in zip(scan_id_lo, valid)]
+        log_sumI_hi = np.log10(sumI_hi)
+        log_sumI_lo = np.log10(sumI_lo)
+        ratio_npks  = np.array(npks_hi) / np.array(npks_lo)
+        ratio_sumI  = log_sumI_hi / log_sumI_lo
+        # correlation coeff between hi and lo sides 
+        corr_npks = np.corrcoef(np.array(npks_hi)[valid],
+                                np.array(npks_lo)[valid])[0, 1]
+        corr_sumI = np.corrcoef(log_sumI_hi[valid],
+                                log_sumI_lo[valid])[0, 1]
+
+        # plot figure
+        fig, axes = plt.subplots(2, 2, figsize=(12, 8), sharex=True)
+        axes = axes.flatten()
+ 
+        # Panel 1: n_peaks per scan
+        axes[0].plot(x_hi[1:], npks_hi[1:], '.-', label='hi-side (dty > 0)')
+        axes[0].plot(x_lo[1:], npks_lo[1:], '.-', label='lo-side (dty < 0)')
+        axes[0].set_ylabel('npks per scan')
+        axes[0].set_title('Number of peaks per scan')
+        axes[0].legend()
+        axes[0].text(0.05, 0.9, 'Corr: {:.3f}'.format(corr_npks),
+                     transform=axes[0].transAxes)
+ 
+        # Panel 2: log(total intensity) per scan
+        axes[1].plot(x_hi[1:], log_sumI_hi[1:], '.-')
+        axes[1].plot(x_lo,     log_sumI_lo,      '.-')
+        axes[1].set_title('Total intensity per scan')
+        axes[1].set_ylabel('log10(sumI) per scan')
+        axes[1].text(0.05, 0.9, 'Corr: {:.3f}'.format(corr_sumI),
+                     transform=axes[1].transAxes)
+ 
+        # Panel 3: ratio of n_peaks (hi/lo)
+        axes[2].plot(x_hi[1:], ratio_npks[1:], 'k.-')
+        axes[2].axhline(1, color='gray', linestyle='--')
+        axes[2].set_ylabel('Ratio npks (hi/lo)')
+        axes[2].set_xlabel('dty (flipped for lo)')
+ 
+        # Panel 4: ratio of log(sumI) (hi/lo)
+        axes[3].plot(x_hi[1:], ratio_sumI[1:], 'k.-')
+        axes[3].axhline(1, color='gray', linestyle='--')
+        axes[3].set_ylabel('Ratio log10(sumI) (hi/lo)')
+        axes[3].set_xlabel('dty (flipped for lo)')
+ 
+        fig.suptitle('dty alignment - ' + str(self.dsname), fontsize=14)
+        plt.tight_layout()
+ 
+        if saveplot:
+            fname = os.path.join(
+                self.analysispath, self.dsname + '_dty_alignment.svg')
+            fig.savefig(fname, format='svg')
+        return fig
+ 
 
     def get_ring_current_per_scan(self):
         """Gets the ring current for each scan (i.e rotation/y-step)
