@@ -239,7 +239,8 @@ def DS_merge_and_identify_grains(DS, FirstGrainID = 0, min_misori = 3.0, dis_tol
     Merge regions within which the voxel misorientation is smaller than a pre-defined values
     New grain ID will be assigned to DS dictionary 'labels' key
     Optional to keep the first grain IDs static by defining FirstGrainID (by default = 0 means no first grains to be static)
-    To clean up further, please run <<DS_clean_small_grains>>
+    To clean up further, please run <<DS_clean_small_grains>> and/or <<DS_relabel_disconnected_regions>>
+    But always ending with running the current function
 
     Arguments:
         DS                -- grain map dictionary, gm = grainmap(tensor_map_file); DS = gm.DS
@@ -256,6 +257,26 @@ def DS_merge_and_identify_grains(DS, FirstGrainID = 0, min_misori = 3.0, dis_tol
     stop_merge = False
     count = 0
     start_time = time.time()
+
+    # for 3D map, re-assign the labels sequentially because the same label may appear at different 2D layers
+    if DS['labels'].shape[0] > 1:
+        if verbose >= 0:
+            print("Re-assign sequential labels to the 3D map before merging")
+        new_labels = np.full_like(DS['labels'], -1)
+        next_id = 0
+        for z in range(DS['labels'].shape[0]):
+            layer_in = DS['labels'][z, ...]
+            layer_out = np.full_like(layer_in, -1)
+            
+            unique_ids = np.unique(layer_in)
+            unique_ids = unique_ids[unique_ids != -1]
+            # remap each value to the next global ID
+            for old_id in unique_ids:
+                layer_out[layer_in == old_id] = next_id
+                next_id += 1
+            new_labels[z, ...] = layer_out
+        DS['labels'] = new_labels
+    
     while not stop_merge:
         DS_new = DS_merge_and_identify_grains_sub(DS, FirstGrainID = FirstGrainID, min_misori = min_misori, dis_tol = dis_tol, crystal_system = crystal_system, verbose = verbose)
 
@@ -428,7 +449,7 @@ def DS_clean_small_grains(DS, min_vol = 6, FirstGrainID = 0, dis_tol = np.sqrt(3
             U1 = ori_converter.quat2u(ori_converter.rod2quat(r1))
     
             # check misorientation
-            the_angle, _, _ = disorientation(U0, U1, crystal_structure=crystal_structure)
+            the_angle, _, _ = disorientation(U0.T, U1.T, crystal_structure=crystal_structure)
             if np.rad2deg(the_angle) > min_misori:
                 # update additional parameters
                 for key in key_5d:
@@ -443,7 +464,7 @@ def DS_clean_small_grains(DS, min_vol = 6, FirstGrainID = 0, dis_tol = np.sqrt(3
             else:
                 # only update labels
                 DS_out['labels'][id_indices[:, 0], id_indices[:, 1], id_indices[:, 2]] = most_common_id_neigb
-                print(most_common_id_neigb, j, id_indices)
+                # print(most_common_id_neigb, j, id_indices)
         else:
             DS_out['labels'][id_indices[:, 0], id_indices[:, 1], id_indices[:, 2]] = -1
     if verbose >= 0:
@@ -660,7 +681,7 @@ def DS_merge_and_identify_grains_sub(DS, FirstGrainID = 0, min_misori = 3.0, dis
                     continue
                 r1 = get_mean_rod(DS['Rod'][indices_neigb[:, 0], indices_neigb[:, 1], indices_neigb[:, 2], :], auto_check = False)
                 U1 = ori_converter.quat2u(ori_converter.rod2quat(r1))
-                the_angle, _, _ = disorientation(U0, U1, crystal_structure=crystal_structure)
+                the_angle, _, _ = disorientation(U0.T, U1.T, crystal_structure=crystal_structure)
 
                 ang_list.append(np.rad2deg(the_angle))
                 V1_list.append(Vregion[id_neigb_j])
@@ -1337,7 +1358,8 @@ def KAM_kernel(kernel_size=5, sigma=1.0, kernel_cutoff=50):
     return kernel_bin
 
 
-def DS_KAM_and_GB(DS, kernel_size=5, kernel_cutoff=50, tol_dist=1.732, crystal_system='cubic', misorientation_threshold=(0, 10), fill_value=np.nan, n_jobs=-1, Umis_flag=True, plot_flag=True):
+def DS_KAM_and_GB(DS, kernel_size=5, kernel_cutoff=50, tol_dist=1.732, crystal_system='cubic', misorientation_threshold=(0, 10),
+                  fill_value=np.nan, n_jobs=-1, Umis_flag=True, slice_no = 0, plot_flag=True):
     """
     Compute Kernal Average Misorientation (KAM) and grain-boundary (GB) misorientation on the grainmap (parallelized with joblib)
     Exclude the neiboring voxels misorientation outside the bounds defined in misorientation_threshold
@@ -1352,6 +1374,7 @@ def DS_KAM_and_GB(DS, kernel_size=5, kernel_cutoff=50, tol_dist=1.732, crystal_s
         fill_value                  -- To put where mask is false, np.nan by default
         n_jobs                      -- Number of parallel jobs, -1 uses all available cores
         Umis_flag                   -- True to use xfab.symmetry.Umis, False to use grainmaps.disorientation_list
+        slice_no                    -- int, slice indice for plotting, 0 by default for 2D map, while it becomes useful for 3D map
         plot_flag                   -- bool, plot flag
     Returns:
         KAM_map                     -- kernel average misorientation map in degrees, 3D numpy array (Z,Y,X)
@@ -1459,29 +1482,29 @@ def DS_KAM_and_GB(DS, kernel_size=5, kernel_cutoff=50, tol_dist=1.732, crystal_s
         try:
             f, a = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(12,8))
             a = a.ravel()
-            im = a[0].imshow(DS['ipf_z'][0,...], origin='lower')
+            im = a[0].imshow(DS['ipf_z'][slice_no,...], origin='lower')
             a[0].set_title('(a) ipf_z')
             a[0].set_xlabel('Lab X axis --->')
             a[0].set_ylabel('Lab Y axis --->')
              # colorbar is not meaningful but to ensure the same size as other subplots
             plt.colorbar(im, ax=a[0], fraction=0.046, pad=0.04)
 
-            im = a[1].imshow(KAM_map[0,:,:], origin='lower')
+            im = a[1].imshow(KAM_map[slice_no,:,:], origin='lower')
             a[1].set_title('(b) KAM with grain boundary (deg)')
             a[1].set_xlabel('Lab X axis --->')
             a[1].set_ylabel('Lab Y axis --->')
             im_overlay = np.zeros(GB_map['mask'].shape[1:] + (4,))
-            im_overlay[GB_map['mask'][0,...]] = [1, 1, 1, 1]  # white with 0% transparency
+            im_overlay[GB_map['mask'][slice_no,...]] = [1, 1, 1, 1]  # white with 0% transparency
             # Overlay on the existing plot
             a[1].imshow(im_overlay, origin='lower', alpha=0.95)
             plt.colorbar(im, ax=a[1], fraction=0.046, pad=0.04)
             
-            im = a[2].imshow(KAM_map[0,:,:], origin='lower')
+            im = a[2].imshow(KAM_map[slice_no,:,:], origin='lower')
             a[2].set_title('(c) KAM (deg)')
             a[2].set_xlabel('Lab X axis --->')
             a[2].set_ylabel('Lab Y axis --->')
             plt.colorbar(im, ax=a[2], fraction=0.046, pad=0.04)
-            im = a[3].imshow(GB_map['misori'][0,:,:], origin='lower')
+            im = a[3].imshow(GB_map['misori'][slice_no,:,:], origin='lower')
             a[3].set_title('(d) GB misori (deg)')
             a[3].set_xlabel('Lab X axis --->')
             a[3].set_ylabel('Lab Y axis --->')
