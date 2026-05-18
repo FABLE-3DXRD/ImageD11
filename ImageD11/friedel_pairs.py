@@ -353,8 +353,8 @@ class PeakSubsets:
 
         # check if any slice is missing data
         missing = []
-        if slc_1 is None: missing.append(f"A{idx_A}")
-        if slc_2 is None: missing.append(f"B{idx_B}")
+        if slc_1 is None: missing.append("idx1:{}".format(idx1))
+        if slc_2 is None: missing.append("idx2:{}".format(idx2))
 
         if len(missing) > 0:
             return None, None
