@@ -17,15 +17,9 @@
 
 # TO DO:
 #  - add updage_geometry function to compute corrected coordinates (gvecs, tth, ds, etc.).
-#    should all arise from g_im ~ -g_ip for (h,k,l), -(h,k,l) pairs -> same for eta and omega pairs
-#    Needs gvtoxyz in ImageD11.transformer?
-#  - add relocate_pairs function to solve the coordinates in the sample
-
-# TO FIX:
-#   - relocating in sample coords by solving linear equation does not work for omega pairs. Figure out why
 
 # written by Jean-Baptiste Jacob, jean-baptiste.jacob@esrf.fr
-# Last updated: 13 May 2026
+# Last updated: 18 May 2026
 
 
 import os, sys
