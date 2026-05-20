@@ -106,10 +106,10 @@ class PeakSubsets:
         where yi_* are indices into ds.ybincens.
         """
         if y0 is None:
-            y0 = self.dataset.y0
-        if y0 != 0:
+            y0 = 0
+        elif y0 != 0:
             self.dataset.correct_bins_for_half_scan(y0)
-            y0 = self.dataset.y0
+        setattr(self.dataset, 'y0', y0)
 
         yc       = self.ybincens.copy()
         n_y      = len(yc)
@@ -326,7 +326,7 @@ class PeakSubsets:
 
             setattr(self, 'valid_'+subset_type+'_subsets', valid)
 
-    def select_pair(self, pair_id: int, subset_type = 'scans', return_as = 'idx'):
+    def select_pair(self, pair_id, subset_type = 'scans', return_as = 'idx'):
         """
         select a pair of subsets from one of the pairs list"""
         
@@ -567,8 +567,11 @@ class FriedelPairIndexer:
             idx1 = np.nonzero(self.cf.eta < 0)[0]
             idx2 = np.nonzero(self.cf.eta > 0)[0]
         else:
-            idx1 = np.nonzero(self.cf.omega%360 > 180)[0]
-            idx2 = np.nonzero(self.cf.omega%360 < 180)[0]
+            if self.cf.omega.max() - self.cf.omega.min() > 181:
+                idx1 = np.nonzero(self.cf.omega%360 > 180)[0]
+                idx2 = np.nonzero(self.cf.omega%360 < 180)[0]
+            else:
+                raise ValueError("Half acquisition. Cannot find omega pairs.")
 
         self.cf.addcolumn(np.full(self.cf.nrows, -1, dtype=int), pair_type+'_pair_id')
         
@@ -947,6 +950,7 @@ class FriedelPairIndexer:
         LUT         = getattr(Psub, chunk_type+'_LUT', None)
         pairs_list  = getattr(Psub, chunk_type+'_subsets', None)
         valid_pairs = getattr(Psub, 'valid_'+chunk_type+'_subsets', None)
+        
         if LUT is None:
             raise RuntimeError(
                 'Lookup table not found in PeakSubsets.'
@@ -961,6 +965,10 @@ class FriedelPairIndexer:
         if (chunk_type=='frames' and self.cf.sortedby != 'dty_omega') or (chunk_type=='scans' and not self.cf.sortedby.startswith('dty')):
             raise RuntimeError(
                 'columnfile is not properly sorted. Run PeakSubsets.sort_by_sinogram().')
+        if self.cf.omega.max() - self.cf.omega.min() < 181:
+                raise ValueError(
+                    "Half acquisition. Cannot find omega pairs.")
+            
         return pairs_list, valid_pairs, LUT
 
     def estimate_search_scales(self, idx1, idx2, dist_cutoff, pair_type='omega'):
@@ -1578,7 +1586,7 @@ def plot_pair_distances(cf, pair_type='omega', bins=50, log_scale=False, **kwarg
     return fig, axes
 
 
-def locate_eta_pairs(cf, pairs, y0=0.):
+def locate_eta_pairs(cf, pairs, ds=None, y0=0.):
     """
     Fit the centre of mass position of eta-pairs and write results
     back into cf as new columns 'xs' and 'ys'.
