@@ -393,8 +393,8 @@ class forward_projector:
             mask_tmp = self.sample_mask
         center = (mask_tmp.shape[0]/2, mask_tmp.shape[1]/2)
         radius = self.args["halfy"]/np.mean(self.sample_input.DS['voxel_size']) # radius covered by halfy, [pixel]
-        x = np.linspace(0, mask_tmp.shape[0], mask_tmp.shape[1])
-        y = np.linspace(0, mask_tmp.shape[1], mask_tmp.shape[1])
+        x = np.linspace(0, mask_tmp.shape[1], mask_tmp.shape[1])
+        y = np.linspace(0, mask_tmp.shape[0], mask_tmp.shape[0])
         xv, yv = np.meshgrid(x, y)
         dist_from_center = np.sqrt((xv - center[0])**2 + (yv-center[1])**2)
         mask_circle = dist_from_center >= radius
@@ -954,6 +954,8 @@ def process_omega(omega, mask, DS, beam, sample, pars, ucell, rot_step, ds_max, 
                     eta_rad = np.arccos(np.dot(np.array([0, Gt[1], Gt[2]]) / np.linalg.norm([0, Gt[1], Gt[2]]), np.array([0, 0, 1])))
                     if Gt[1] > 0:
                         eta_rad = 2 * np.pi - eta_rad
+                    if eta_rad > np.pi:
+                        eta_rad -= 2*np.pi  # bring eta_rad range from [0, 2*np.pi] to the range of [-np.pi, np.pi] 
                     eta = np.rad2deg(eta_rad)
                     rho_rad = eta_rad + np.pi / 2
 
