@@ -81,6 +81,8 @@ INTS = [
     "Grain",
     "grainno",
     "grain_id",
+    "omega_pair_id",
+    "eta_pair_id",
     "IKEY",
     "npk2d",
     ]
