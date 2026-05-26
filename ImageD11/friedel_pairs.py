@@ -15,11 +15,8 @@
 # Friedel pair matching handled by FriedelPairIndexer obj. 
 # For the chunk method, columnfile splitting handled by PeakSubsets obj. 
 
-# TO DO:
-#  - add updage_geometry function to compute corrected coordinates (gvecs, tth, ds, etc.).
-
 # written by Jean-Baptiste Jacob, jean-baptiste.jacob@esrf.fr
-# Last updated: 18 May 2026
+# Last updated: 26 May 2026
 
 
 import os, sys
@@ -38,14 +35,16 @@ from ImageD11 import columnfile, transform
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+os.environ["NUMBA_THREADING_LAYER"] = "workqueue"
 
 
 
 #  ──────────────────────────────────────────────────────────────────────────────────────────
 # PeakSubset: peak sorting and subset selection for pairing
 # ──────────────────────────────────────────────────────────────────────────────────────────
-Pair_dty = namedtuple('Pair', ['yi_hi', 'yi_lo', 'dty_hi', 'dty_lo'])
+Pair_dty       = namedtuple('Pair', ['yi_hi', 'yi_lo', 'dty_hi', 'dty_lo'])
 Pair_omega_dty = namedtuple('Pair', ['yi_A', 'yi_B', 'omi_A', 'omi_B', 'dty_A', 'dty_B', 'omega_A', 'omega_B'])
+Pair_eta       = namedtuple('Pair', ['ei_hi', 'ei_lo', 'eta_hi', 'eta_lo'])
 
 def _make_dty_pair(yi_hi, yi_lo, yc):
     return Pair_dty(
@@ -65,24 +64,44 @@ def _make_omega_dty_pair(oi_A, yi_A, oi_B, yi_B, yc, oc):
         omega_A=float(oc[oi_A]),
         omega_B=float(oc[oi_B]))
 
+def _make_eta_pair(ei_hi, ei_lo, ec):
+    return Pair_eta(
+                ei_hi=ei_hi,
+                ei_lo=ei_lo,
+                eta_hi=float(ec[ei_hi]),
+                eta_lo=float(ec[ei_lo]))
+
+    
 class PeakSubsets:
     """
     Make list of paired subsets (subset_1, subset_2) from whole dataset for matching Friedel pairs. 
-    Subsets are either pairs of mirror dty scans or mirror omega-dty frames (omega-pairs)
-    columnfile is sorted by sinogram order (dty, omega) and subset indices are stored in
-    lookup tables (LUT) for fast selection. 
+    Subsets are either:
+        - pairs of mirror dty scans
+        - pairs of mirror omega-dty frames (omega-pairs)
+        - pairs of mirror eta bins (eta, eta+180°) (eta-pairs)
+    Columnfile is sorted, either in sinogram order (dty, omega) for omega-pairs or in eta order for eta-pairs 
+    and subset indices are stored in lookup tables (LUT) for fast selection. 
     """
-    def __init__(self, cf, ds):
+    def __init__(self, cf, ds, n_eta_bins=360, y0=None):
         self.columnfile = cf
         self.dataset = ds
-        self.frames_LUT = None
+        self.is_half_acquisition = cf.omega.max() - cf.omega.min() < 181
         self.scans_LUT = None
+        self.frames_LUT = None
+        self.eta_bins_LUT = None
         self.scans_subsets = None
         self.frames_subsets = None
+        self.eta_bins_subsets = None
         self.valid_scans_subsets = None
         self.valid_frames_subsets = None
+        self.valid_eta_bins_subsets = None
+        
         self._set_aliases()
-        self._compute_subsets()
+        self._get_y0(y0)
+        self._compute_subsets(n_eta_bins)
+        
+        if self.is_half_acquisition:
+            logger.warning('half-rotations acquisition: cannot pair dty scans and frames!')
 
     def _set_aliases(self):
         self.obincens = self.dataset.obincens
@@ -90,61 +109,77 @@ class PeakSubsets:
         self.ybincens = self.dataset.ybincens
         self.ybinedges = self.dataset.ybinedges
 
-    def _compute_subsets(self):
-        self.get_scan_subsets()
-        self.get_frames_subsets()
+    def _compute_subsets(self, n_eta_bins):
+        if not self.is_half_acquisition:
+            self.get_scan_subsets()
+            self.get_frames_subsets()
+        self.get_eta_bins_subsets(n_eta_bins)
+
+    def _reset_LUTs(self):
+        for attr in list(self.__dict__.keys()):
+            if attr.endswith('_LUT'):
+                setattr(self, attr, None)
+
+    def _get_y0(self, y0):
+        if y0 is None:
+            y0 = 0.5 * (self.dataset.ymax + self.dataset.ymin)
+        self.dataset.y0 = y0
+        self.dataset.correct_bins_for_half_scan(self.dataset.y0)
                 
     # --- Internal methods ---
 
-    def get_scan_subsets(self, y0=None):
+    def get_scan_subsets(self):
         """
         Find mirror pairs of dty scans on each side of the central y0:
             scan hi :  dty = y0 + Δy
             scan lo :  dty = y0 - Δy
 
-        Sets ds.dty_pairs: list of Pair namedtuples ('Pair', ['yi_hi', 'yi_lo', 'dty_hi', 'dty_lo'])
+        Sets ds.scans_subsets: list of Pair namedtuples ('Pair', ['yi_hi', 'yi_lo', 'dty_hi', 'dty_lo'])
         where yi_* are indices into ds.ybincens.
         """
-        if y0 is None:
-            y0 = 0
-        elif y0 != 0:
-            self.dataset.correct_bins_for_half_scan(y0)
-        setattr(self.dataset, 'y0', y0)
+        if self.is_half_acquisition:
+            raise ValueError(
+                "Half-rotation acquisition: cannot pair frames in omega.")
 
         yc       = self.ybincens.copy()
         n_y      = len(yc)
-        yi0      = n_y // 2
-
+        y0 = self.dataset.y0
+        
         pairs = []
-        for yi in range(0, yi0 + 1):
-            pairs.append(_make_dty_pair(yi0 + yi, yi0 - yi, yc))
+        if n_y % 2 == 1:
+            # Odd number of dty steps → central bin exists
+            yi0 = n_y // 2
+            for yi in range(0, yi0 + 1):
+                pairs.append(_make_dty_pair(yi0 + yi, yi0 - yi, yc))
+        else:
+            # Even number of dty steps → no central bin
+            half = n_y // 2
+            for yi_hi in range(half, n_y):
+                yi_lo = n_y - 1 - yi_hi
+                pairs.append(_make_dty_pair(yi_hi, yi_lo, yc))
 
         self.scans_subsets = pairs
         logger.info("[get_scans_subsets] %d pairs of dty scans (y0=%s)", len(pairs), y0)
 
-    def get_frames_subsets(self, y0=None):
+    def get_frames_subsets(self):
         """
         Find mirror pairs of frames (A, B) in omega and dty:
             frame A :  dty = y0 + Δy ,  omega = ω
             frame B :  dty = y0 - Δy ,  omega = (ω + 180) mod 360
 
-        Sets ds.omega_dty_pairs: list of Pair namedtuples
+        Sets ds.frames_subsets: list of Pair namedtuples
         ('Pair', ['yi_A','yi_B','omi_A','omi_B', 'dty_A','dty_B','omega_A','omega_B'])
         with indices yi*, omi* into ds.ybincens and ds.obincens
         """
-        if y0 is None:
-            y0 = self.dataset.y0
-        if y0 != 0 and self.dataset.ybin_real_mask is None:
-            self.dataset.correct_bins_for_half_scan(y0)
-
-        yc       = self.ybincens.copy()
-        oc       = self.obincens.copy()
-        n_y      = len(yc)
-        n_o      = len(oc)
-        k        = n_o // 2          # index shift for a 180-deg omega step
+        yc   = self.ybincens.copy()
+        y0   = self.dataset.y0
+        oc   = self.obincens.copy()
+        n_y  = len(yc)
+        n_o  = len(oc)
+        k    = n_o // 2          # index shift for a 180-deg omega step
 
         # Sanity checks
-        if self.dataset.omax - self.dataset.omin < 181:
+        if self.is_half_acquisition:
             raise ValueError(
                 "Half-rotation acquisition: cannot pair frames in omega.")
         if n_o % 2 != 0:
@@ -191,16 +226,47 @@ class PeakSubsets:
             "%d at y0 (omega-only), %d off-y0.",
             len(pairs), y0, n_y0, n_off)
 
+    def _get_eta_bins(self, n_bins):
+        """ compute eta bins """
+        emin, emax = -180, 180
+        eta_step = (emax - emin) / n_bins
+        self.ebinedges = np.linspace(emin, emax, n_bins+1)
+        self.ebincens  = np.linspace(emin + eta_step / 2, emax - eta_step / 2, len(self.ebinedges) - 1)
     
+    def get_eta_bins_subsets(self, n_bins):
+        """
+        Find mirror pairs of eta bins:
+            bin lo :  eta_lo
+            bin hi :  eta_lo + 180
+
+        Sets ds.eta_bins_subsets: list of Pair namedtuples ('Pair', ['ei_hi', 'ei_lo', 'eta_hi', 'eta_lo'])
+        where ei_* are indices into self.ebincens.
+        """
+        self._get_eta_bins(n_bins)
+        ec = self.ebincens
+        eb = self.ebinedges
+        n_eta = len(ec)
+        eta_half = n_eta // 2          # index shift for a 180-deg omega step
+        pairs = []
+        for ei_lo in range(0, eta_half):
+            ei_hi = (ei_lo + eta_half ) % n_eta
+            pairs.append(_make_eta_pair(ei_hi, ei_lo, ec))
+        self.eta_bins_subsets = pairs
+
+        logger.info(
+            "[get_eta_bins_subsets] %d pairs of eta bins ",
+            len(pairs))
+    
+
     def sort_by_sinogram(self):
         """
         Sort columnfile in sinogram space (dty primary, omega secondary)
         and build frame-level and scan-level lookup tables for quick peak selection
-        by omega and dty bins. 
+        by omega and dty bins.
 
         Sets
         self.scans_LUT : dict { yi, slice(lo, hi), n_peaks, total_intensity) }
-        self.frames_index : dict { (omi, yi), slice(lo, hi), n_peaks, total_intensity) }
+        self.frames_LUT : dict { (omi, yi), slice(lo, hi), n_peaks, total_intensity) }
         
         y_i / om_y_i indices match those in self.scans_subsets and self.frames_subsets
         Frames / scans with zero peaks are absent from the dict.
@@ -209,112 +275,159 @@ class PeakSubsets:
         yc  = self.ybincens
         obe = self.obinedges
         ybe = self.ybinedges
+        self._reset_LUTs()
+        BinEntry = namedtuple('BinEntry', ['slice', 'npeaks', 'sumI'])
 
-        if (self.columnfile.sortedby == "dty_omega") and self.frames_LUT:
-            n_frames_total = len(oc) * len(yc)
-            n_frames_empty = n_frames_total - len(self.frames_LUT)
-            n_scans_total  = len(yc)
-            n_scans_empty  = n_scans_total - len(self.scans_LUT)
-            
-            logger.info(
-                "[sort_by_sinogram] peakfile already sorted\n%d peaks sorted; "
-                "%d non-empty frames indexed (%d frames have no peaks).",
-                self.columnfile.nrows, len(self.frames_LUT), n_frames_empty)
-            return
-            
-
-        # Initialize scans / frames LUT
-        setattr(self, 'frames_LUT', {})
-        setattr(self, 'scans_LUT' , {})
-        BinEntry = namedtuple('BinEntry', ['slice', 'npeaks', 'sumI'])  # 
-        
-        # 1. Binning and Sorting by dty and omega
+        # 1. Bin assignment
         i_omega = np.clip(
-            np.searchsorted(obe, self.columnfile.omega, side="right") - 1, 0, len(oc) - 1)
-        j_dty   = np.clip(
-            np.searchsorted(ybe, self.columnfile.dty,   side="right") - 1, 0, len(yc) - 1)
+            np.searchsorted(obe, self.columnfile.omega, side="right") - 1,
+            0, len(oc) - 1).astype(np.int32)          # int32 saves memory vs int64
+        j_dty = np.clip(
+            np.searchsorted(ybe, self.columnfile.dty,  side="right") - 1,
+            0, len(yc) - 1).astype(np.int32)
 
-        # Sort in-place: dty primary, omega secondary
-        order = np.lexsort((i_omega, j_dty))
-        self.columnfile.reorder(order)
-        self.columnfile.sortedby = "dty_omega"
+        # 2. Sort (skip if already done)
+        if self.columnfile.sortedby == "dty_omega":
+            logger.info("[sort_by_sinogram] already sorted, %d peaks", self.columnfile.nrows)
+            i_omega_s, j_dty_s = i_omega, j_dty
+        else:
+            logger.info("[sort_by_sinogram] sorting %d peaks…", self.columnfile.nrows)
 
-        i_omega_s = i_omega[order]
-        j_dty_s   = j_dty[order]
+            # Encode two int32 indices into one int64 key → single argsort pass,
+            n_omega   = len(oc)
+            keys      = j_dty.astype(np.int64) * n_omega + i_omega  
+            order     = np.argsort(keys, kind="stable")               
 
-        # 2. Build frames_LUT: Mapping (i, j) -> BinEntry
-        bin_pairs = np.column_stack([i_omega_s, j_dty_s])
-        _, first_idx, counts = np.unique(bin_pairs, axis=0, return_index=True, return_counts=True)
-
-        self.frames_LUT = {}
-        for lo, cnt in zip(first_idx, counts):
-            om_y_i = (int(i_omega_s[lo]), int(j_dty_s[lo]))
-            slc    = slice(int(lo), int(lo + cnt))
-            Itot   = self.columnfile.sum_intensity[slc].sum()
+            self.columnfile.reorder(order)
+            self.columnfile.sortedby = "dty_omega"
+            i_omega_s = i_omega[order]
+            j_dty_s   = j_dty[order]
     
-            # Direct dictionary assignment using the tuple key
-            self.frames_LUT[om_y_i] = BinEntry(slice=slc, npeaks=int(cnt), sumI=Itot)
+        # 3. Build frames_LUT
+        first_idx_f, counts_f = _rle2(i_omega_s, j_dty_s)
+        # Vectorised group sums — single reduceat call, no Python loop over groups
+        group_sums_f = np.add.reduceat(self.columnfile.sum_intensity, first_idx_f)
 
+        self.frames_LUT = {
+            (int(i_omega_s[lo]), int(j_dty_s[lo])): BinEntry(
+                slice=slice(int(lo), int(lo + cnt)),
+                npeaks=int(cnt),
+                sumI=float(gs))
+            for lo, cnt, gs in zip(first_idx_f, counts_f, group_sums_f)}
 
-        # 3. Build scans_LUT: Mapping j -> BinEntry
-        _, first_idx_dty, counts_dty = np.unique(j_dty_s, return_index=True, return_counts=True)
+        # 4. Build scans_LUT
+        first_idx_s, counts_s = _rle1(j_dty_s)
+        group_sums_s = np.add.reduceat(self.columnfile.sum_intensity, first_idx_s)
 
-        self.scans_LUT = {}
-        for lo, cnt in zip(first_idx_dty, counts_dty):
-            y_i  = int(j_dty_s[lo])
-            slc  = slice(int(lo), int(lo + cnt))
-            Itot = self.columnfile.sum_intensity[slc].sum()
-    
-            # Direct dictionary assignment using the integer key
-            self.scans_LUT[y_i] = BinEntry(slice=slc, npeaks=int(cnt), sumI=Itot)
+        self.scans_LUT = {
+            int(j_dty_s[lo]): BinEntry(
+                slice=slice(int(lo), int(lo + cnt)),
+                npeaks=int(cnt),
+                sumI=float(gs))
+            for lo, cnt, gs in zip(first_idx_s, counts_s, group_sums_s) }
 
-        # 4. Statistics
+        # 5. Statistics
         n_frames_total = len(oc) * len(yc)
-        n_frames_empty = n_frames_total - len(self.frames_LUT)
         n_scans_total  = len(yc)
-        n_scans_empty  = n_scans_total - len(self.scans_LUT)
+        logger.info("%d non-empty frames (%d empty).",
+                    len(self.frames_LUT), n_frames_total - len(self.frames_LUT))
+        logger.info("%d non-empty scans  (%d empty).",
+                    len(self.scans_LUT),  n_scans_total  - len(self.scans_LUT))
+
+
+    def sort_by_eta(self):
+        """
+        Sort columnfile in eta bins order and build lookup table for quick peak selection
+
+        Sets
+        self.eta_bins_LUT : dict { ei, slice(lo, hi), n_peaks, total_intensity) }
+        ei indices match those in self.eta_bins_subsets
+        """
+        # initialize LUTs
+        ec = self.ebincens
+        eb = self.ebinedges
+        self._reset_LUTs()
+        BinEntry = namedtuple('BinEntry', ['slice', 'npeaks', 'sumI'])  
+
+        # skip sorting if already done
+        if self.columnfile.sortedby == "eta":
+            logger.info("[sort_by_sinogram] peakfile already sorted – %d peaks",
+                        self.columnfile.nrows)
+            # 1. bin by eta
+            i_eta = np.clip(
+                    np.searchsorted(eb, self.columnfile.eta, side="right") - 1, 0, len(ec) - 1)
+            i_eta_s = i_eta
+
+        # 1. bin by eta and sort
+        else:
+            logger.info("[sort_by_sinogram] sorting columnfile in eta order  –  %d peaks to sort, may take some time... ",
+                        self.columnfile.nrows)
         
-        logger.info(
-            "[sort_by_sinogram]\n%d peaks sorted; "
-            "%d non-empty frames indexed (%d frames have no peaks).",
-            self.columnfile.nrows, len(self.frames_LUT), n_frames_empty)
-        logger.info(
-            "%d non-empty scans indexed (%d scans have no peaks).",
-            len(self.scans_LUT), n_scans_empty)
+            i_eta = np.clip(
+                    np.searchsorted(eb, self.columnfile.eta, side="right") - 1, 0, len(ec) - 1)
+            order = np.argsort(i_eta)
+            self.columnfile.reorder(order)
+            self.columnfile.sortedby = "eta"
+            i_eta_s = i_eta[order]  # sorted array
 
+        # 2. Build eta_bins_LUT: Mapping (ei) -> BinEntry
+        first_idx, counts = _rle1(i_eta_s)
+        group_sums = np.add.reduceat(self.columnfile.sum_intensity, first_idx)
 
+        self.eta_bins_LUT = {
+            int(i_eta_s[lo]): BinEntry(
+                slice=slice(int(lo), int(lo + cnt)),
+                npeaks=int(cnt),
+                sumI=float(gs))
+            for lo, cnt, gs in zip(first_idx, counts, group_sums)}
+        
+        # 3. Statistics
+        n_bins_total = len(ec)
+        n_bins_empty = n_bins_total - len(self.eta_bins_LUT)
+        logger.info(
+            "%d non-empty bins indexed (%d bins have no peaks).",
+             len(self.eta_bins_LUT), n_bins_empty)
+        
+    
     def find_valid_subsets(self):
         """
-        compute boolean arrays marking paired subsets where both members contain
+        compute boolean arrays identifying paired subsets where both members contain
         at least one peak in corresponding lookup table (frames_LUT or scans_LUT).
         Sets new attributes self.valid_scans_subsets / self.valid_frames_subsets
         """
-        for subset_type in ['scans', 'frames']:
+
+        # which types of subsets: eta_bins / scans + frames. depends on sorting order
+        cf = self.columnfile
+        subset_type_list = ['eta_bins'] if cf.sortedby == 'eta' else ['scans', 'frames']
+        
+        for subset_type in subset_type_list:
             # Check if LUT is defined in PeakSubset
             LUT_name = str(subset_type + '_LUT')
             LUT = getattr(self, LUT_name, None)
             if LUT is None:
                 raise RuntimeError(
                     "Lookup table {LUT_name} not found in PeakSubset. "
-                    "Run sort_by_sinogram() first.".format(LUT_name=LUT_name))
+                    "Run sort_by_sinogram() or sort_by_eta() first.".format(LUT_name=LUT_name))
              # Get corresponding list of subsets
-            if LUT_name == 'frames_LUT':
-                pairs = self.frames_subsets
-            elif LUT_name == 'scans_LUT':
-                pairs = self.scans_subsets
-            else:
-                raise ValueError("Unknown LUT: {LUT}. Expected 'frames_LUT' or 'scans_LUT'.".format(LUT=LUT_name))
+            pairs = getattr(self, subset_type+'_subsets', None)
+            if pairs is None:
+                raise RuntimeError(
+                    "paired subsets list not found")
             
             valid_keys = set(LUT.keys())
             valid = np.zeros(len(pairs), dtype=bool)
 
-            if 'frames' in LUT_name:
+            if subset_type == 'frames' :
                 for i, p in enumerate(pairs):
                     if (p.omi_A, p.yi_A) in valid_keys and (p.omi_B, p.yi_B) in valid_keys:
                         valid[i] = True
-            else:
+            elif  subset_type == 'scans':
                 for i, p in enumerate(pairs):
                     if p.yi_hi in valid_keys and p.yi_lo in valid_keys:
+                        valid[i] = True
+            else:
+                for i, p in enumerate(pairs):
+                    if p.ei_hi in valid_keys and p.ei_lo in valid_keys:
                         valid[i] = True
 
             nv = valid.sum()
@@ -323,9 +436,9 @@ class PeakSubsets:
                 "  found %d subset pairs where both members have peaks "
                 "(%.2f%% valid).",
                 len(valid), LUT_name, nv, nv / len(valid) * 100)
-
             setattr(self, 'valid_'+subset_type+'_subsets', valid)
 
+            
     def select_pair(self, pair_id, subset_type = 'scans', return_as = 'idx'):
         """
         select a pair of subsets from one of the pairs list"""
@@ -336,7 +449,7 @@ class PeakSubsets:
 
         if LUT is None:
             raise RuntimeError(
-            "Lookup table not found. run sort_by_sinogram(), or check input name.")
+            "Lookup table not found. run sort_by_sinogram() / sort_by_eta_bins(), or check input name.")
 
         # select pair in pairs list
         pair = pairs_list[pair_id]
@@ -344,9 +457,12 @@ class PeakSubsets:
         if subset_type == 'frames':
             idx1 = (pair.omi_A, pair.yi_A)   
             idx2 = (pair.omi_B, pair.yi_B)   
-        else :
+        elif subset_type == 'scans':
             idx1 = pair.yi_hi   
-            idx2 = pair.yi_lo   
+            idx2 = pair.yi_lo
+        else:
+            idx1 = pair.ei_hi   
+            idx2 = pair.ei_lo
         
         slc_1 = LUT[idx1].slice
         slc_2 = LUT[idx2].slice
@@ -376,83 +492,159 @@ class PeakSubsets:
                 {t: cf.getcolumn(t)[slc] for t in cf.titles})
             return _make_cf(slc_1), _make_cf(slc_2)
 
-            
-    def check_dty_symmetry(self, saveplot=False):
-        """
-        Plot N_peaks and total_intensity vs. abs(dty) for mirror dty_scans
-        (y0+Δy, y0-Δy) and check their correlation.
+    def _extended_pair_selec(self, pair_id, subset_type='eta_bins'):
+        """ window selection of peaks around central bin k: [k-1:k+1]."""
+        # central bin
+        pid = pair_id
+        pairs_list = getattr(self, subset_type+'_subsets', None)
+                             
+        b1, b2 = self.select_pair(pid, subset_type, return_as = 'idx')
+        # neighbour bins. specific cases at boundaries
+        if pid == 0:
+            b1_sup, b2_sup = self.select_pair(pid+1, subset_type, return_as = 'idx')
+            b1 = np.concatenate((b1, b1_sup))
+            b2 = np.concatenate((b2, b2_sup))
+        elif pid == len(pairs_list) -1:
+            b1_inf, b2_inf = self.select_pair(pid-1, subset_type, return_as = 'idx')
+            b1 = np.concatenate((b1_inf, b1))
+            b2 = np.concatenate((b2_inf, b2))
+        else:
+            b1_inf, b2_inf = self.select_pair(pid-1, subset_type, return_as = 'idx')
+            b1_sup, b2_sup = self.select_pair(pid+1, subset_type, return_as = 'idx')
+            b1 = np.concatenate((b1_inf, b1, b1_sup))
+            b2 = np.concatenate((b2_inf, b2, b2_sup))
+        # return sorted indices
+        return np.sort(b1), np.sort(b2)
 
-        If alignment is correct, values should match between mirror scans.
-        Significant mismatch suggests an incorrect y0, sample movement, or
-        a beam issue during scanning.
+    def check_symmetry(self, saveplot=False):
         """
+        Plot N_peaks and total_intensity vs. position for mirror dty scans
+        (y0+Δy, y0-Δy) or mirror eta bins (eta, eta+180°) and check their correlation.
 
-        if not hasattr(self, 'scans_subsets'):
-            self.get_scan_subsets()
-        if not hasattr(self, 'scans_LUT'):
-            self.sort_by_sinogram()
-        if 'valid_pairs_subsets' not in self.__dict__.keys():
-            valid = self.valid_scans_subsets
+        If alignment is correct, values should match between mirror pairs.
+        Significant mismatch suggests an incorrect y0 (for dty), sample movement,
+        or a beam issue during scanning.
+
+        Parameters
+        ----------
+        saveplot : bool, save figure to analysispath (dty mode only)
+        """
+        # ── auto-detect mode ─────────────────────────────────────────────────
+        mode = None
+        for attr in ['scans_LUT', 'eta_bins_LUT']:
+            if getattr(self, attr, None) is not None:
+                mode = attr.replace('_LUT', '')
+            else:
+                continue
+        if mode is None:
+            raise RuntimeError(
+                    'No LUT found. Run sort_by_sinogram() or sort_by_eta() first.')
         
-        # paired dty scans on the hi and lo side
-        scan_id_hi = np.array( [p.yi_hi for p in self.scans_subsets] )
-        scan_id_lo = np.array( [p.yi_lo for p in self.scans_subsets] )
+        self.find_valid_subsets()
+        
+        # ── mode-specific setup ───────────────────────────────────────────────
+        if mode == 'scans':
+            valid    = self.valid_scans_subsets
+            id_hi    = np.array([p.yi_hi for p in self.scans_subsets])
+            id_lo    = np.array([p.yi_lo for p in self.scans_subsets])
+            lut      = self.scans_LUT
+            y0       = self.dataset.y0
+            x_hi     = np.abs(self.ybincens[id_hi] - y0)
+            x_lo     = np.abs(self.ybincens[id_lo] - y0)
+            xlabel   = '|dty - y0|'
+            lo_label = 'lo-side (dty - y0 < 0)'
+            hi_label = 'hi-side (dty - y0 > 0)'
+            title    = 'dty symmetry - ' + str(self.dataset.dsname)
+            #logger.info("lo:{}, hi:{}",x_lo, x_hi)
 
-        # x-axis: dty position (flipped for lo side)
-        y0 = self.dataset.y0
-        x_hi = self.ybincens[scan_id_hi] - y0
-        x_lo = y0 - self.ybincens[scan_id_lo]
+        else:
+            valid    = self.valid_eta_bins_subsets
+            id_hi    = np.array([p.ei_hi for p in self.eta_bins_subsets])
+            id_lo    = np.array([p.ei_lo for p in self.eta_bins_subsets])
+            lut      = self.eta_bins_LUT
+            x_hi     = self.ebincens[id_hi]
+            x_lo     = self.ebincens[id_lo] + 180
+            xlabel   = 'eta (deg) [+180 for lo-side]'
+            lo_label = 'lo-side (eta < 0)'
+            hi_label = 'hi-side (eta > 0)'
+            title    = 'eta symmetry - ' + str(self.dataset.dsname)
 
-        # y-axis: n_peaks and sum_intensity, NaN for invalid pairs
-        npks_hi = np.array([self.scans_LUT[yi].npeaks if v else np.nan for yi,v in zip(scan_id_hi, valid)])
-        npks_lo = np.array([self.scans_LUT[yi].npeaks if v else np.nan for yi,v in zip(scan_id_lo, valid)])
-        sumI_hi = np.array([self.scans_LUT[yi].sumI if v else np.nan for yi,v in zip(scan_id_hi, valid)])
-        sumI_lo = np.array([self.scans_LUT[yi].sumI if v else np.nan for yi,v in zip(scan_id_lo, valid)])
+        # ── data extraction ───────────────────────────────────────────────────
+        npks_hi    = np.array([lut[i].npeaks if v else np.nan for i, v in zip(id_hi, valid)])
+        npks_lo    = np.array([lut[i].npeaks if v else np.nan for i, v in zip(id_lo, valid)])
+        sumI_hi    = np.array([lut[i].sumI   if v else np.nan for i, v in zip(id_hi, valid)])
+        sumI_lo    = np.array([lut[i].sumI   if v else np.nan for i, v in zip(id_lo, valid)])
 
         log_sumI_hi = np.log10(sumI_hi)
         log_sumI_lo = np.log10(sumI_lo)
-        ratio_npks  = np.array(npks_hi) / np.array(npks_lo)
+        ratio_npks  = npks_hi / npks_lo
         ratio_sumI  = log_sumI_hi / log_sumI_lo
-        # correlation coeff between hi and lo sides
-        corr_npks = np.corrcoef(np.array(npks_hi)[valid],
-                                np.array(npks_lo)[valid])[0, 1]
-        corr_sumI = np.corrcoef(log_sumI_hi[valid],
-                                log_sumI_lo[valid])[0, 1]
 
-        # plot figure
+        corr_npks = np.corrcoef(npks_hi[valid],    npks_lo[valid])[0, 1]
+        corr_sumI = np.corrcoef(log_sumI_hi[valid], log_sumI_lo[valid])[0, 1]
+
+        # ── plot ──────────────────────────────────────────────────────────────
         fig, axes = plt.subplots(2, 2, figsize=(12, 8), sharex=True)
         axes = axes.flatten()
 
-        # Panel 1: n_peaks per scan
-        axes[0].plot(x_hi[1:], npks_hi[1:], '.-', label='hi-side (dty - y0 > 0)')
-        axes[0].plot(x_lo[1:], npks_lo[1:], '.-', label='lo-side (dty - y0 < 0)')
+        axes[0].plot(x_hi[1:], npks_hi[1:],    '.-', label=hi_label)
+        axes[0].plot(x_lo[1:], npks_lo[1:],    '.-', label=lo_label)
         axes[0].set_ylabel('npks per scan')
-        axes[0].set_title('Number of peaks per scan | Corr = {:.3f}'.format(corr_npks))
+        axes[0].set_title('Number of peaks | Corr = {:.3f}'.format(corr_npks))
         axes[0].legend()
-        # Panel 2: log(total intensity) per scan
+
         axes[1].plot(x_hi[1:], log_sumI_hi[1:], '.-')
-        axes[1].plot(x_lo,     log_sumI_lo,      '.-')
-        axes[1].set_title('Total intensity per scan | Corr = {:.3f}'.format(corr_sumI))
+        axes[1].plot(x_lo[1:], log_sumI_lo[1:], '.-')
+        axes[1].set_title('Total intensity | Corr = {:.3f}'.format(corr_sumI))
         axes[1].set_ylabel('log10(sumI) per scan')
-        # Panel 3: ratio of n_peaks (hi/lo)
+
         axes[2].plot(x_hi[1:], ratio_npks[1:], 'k.-')
         axes[2].axhline(1, color='gray', linestyle='--')
         axes[2].set_ylabel('Ratio npks (hi/lo)')
-        axes[2].set_xlabel('|dty - y0| (flipped for lo side)')
-        # Panel 4: ratio of log(sumI) (hi/lo)
+        axes[2].set_xlabel(xlabel)
+
         axes[3].plot(x_hi[1:], ratio_sumI[1:], 'k.-')
         axes[3].axhline(1, color='gray', linestyle='--')
         axes[3].set_ylabel('Ratio log10(sumI) (hi/lo)')
-        axes[3].set_xlabel('|dty - y0| (flipped for lo side)')
+        axes[3].set_xlabel(xlabel)
 
-        fig.suptitle('dty alignment - ' + str(self.dataset.dsname), fontsize=14)
+        fig.suptitle(title, fontsize=14)
         plt.tight_layout()
 
-        if saveplot:
+        if saveplot and mode == 'dty':
             fname = os.path.join(
-                self.dataset.analysispath, self.dataset.dsname + '_dty_alignment.svg')
+                self.dataset.analysispath,
+                self.dataset.dsname + '_dty_alignment.svg')
             fig.savefig(fname, format='svg')
+
         return fig
+
+
+def _rle1(a):
+    """Return (first_indices, counts) for a single sorted index array."""
+    n = len(a)
+    if n == 0:
+        return np.empty(0, np.intp), np.empty(0, np.intp)
+    boundary        = np.empty(n + 1, dtype=np.bool_)
+    boundary[0]     = True
+    boundary[n]     = True
+    boundary[1:n]   = a[1:] != a[:-1]
+    starts          = np.flatnonzero(boundary[:-1])
+    counts          = np.diff(np.flatnonzero(boundary))
+    return starts, counts
+
+def _rle2(a, b):
+    """Return (first_indices, counts) for sorted parallel index arrays."""
+    n = len(a)
+    if n == 0:
+        return np.empty(0, np.intp), np.empty(0, np.intp)
+    boundary        = np.empty(n + 1, dtype=np.bool_)
+    boundary[0]     = True
+    boundary[n]     = True
+    boundary[1:n]   = (a[1:] != a[:-1]) | (b[1:] != b[:-1])
+    starts          = np.flatnonzero(boundary[:-1])   # first_idx
+    counts          = np.diff(np.flatnonzero(boundary))
+    return starts, counts
 
 
 
@@ -513,25 +705,31 @@ class FriedelPairIndexer:
                 n_steps=self.n_steps,
                 n_out=len(self.outputs)))
 
-    def set_peak_subsets(self):
+    def set_peak_subsets(self, n_eta_bins=360):
         self.logger.info('--- SET PEAKSUBSETS ---')
-        self.PeakSubsets = PeakSubsets(self.cf, self.ds)
-        self.logger.info('Sorting columnfile in sinogram order. May take a bit of time...')
-        self.PeakSubsets.sort_by_sinogram()
+        self.PeakSubsets = PeakSubsets(self.cf, self.ds, n_eta_bins)
+
+    def sort_peak_subsets(self, pair_type='omega'):
+        if pair_type == 'omega':
+            if self.PeakSubsets.is_half_acquisition:
+                raise ValueError("Half acquisition. Cannot find omega pairs.")
+            self.PeakSubsets.sort_by_sinogram()
+        else:
+            self.PeakSubsets.sort_by_eta() 
         self.PeakSubsets.find_valid_subsets()
 
-    def reset_outputs(self, pair_id=None):
+    def reset_outputs(self, pair_id_col=None):
         self.outputs = []
         # reset the eta/omega_pair_id column in cf
-        if pair_id is not None:
-            if pair_id in self.cf.titles:
+        if pair_id_col is not None:
+            if pair_id_col in self.cf.titles:
                 initvals =  np.full(self.cf.nrows, -1, dtype=int)
-                self.cf.addcolumn(initvals, pair_id)               
+                self.cf.addcolumn(initvals, pair_id_col)               
 
     # ------------------------------------------------------------------
     #  High-level API — Friedel pairing functions
     # ------------------------------------------------------------------
-    def match_friedel_pairs(self, pair_type = 'omega', drop_unpaired=False, filter_mode = 'strict', doplot=True):
+    def match_friedel_pairs(self, pair_type = 'omega', drop_unpaired=False, filter_mode = 'relaxed', doplot=True):
         """
         Find Friedel pairs using a KDTree approach. The columnfile is split
         into two symmetric parts, and the symmetric partner is flipped to match
@@ -615,11 +813,15 @@ class FriedelPairIndexer:
         return self.cf
         
 
-    def match_omega_pairs_by_chunks(self, chunk_type='scans', 
-                                    filter_mode='strict',
-                                    drop_unpaired = False,
-                                    n_workers=1,
-                                    doplot = True):
+    def match_friedel_pairs_by_chunks(self,
+                                     chunk_type ='scans', 
+                                     filter_mode='relaxed',
+                                     n_eta_bins = 360,
+                                     drop_unpaired = False,
+                                     extended_bin_search=False,
+                                     n_workers=1,
+                                     reset_psub = False,
+                                     doplot = True):
         """
         Find Friedel pairs in a large columnfile using a chunked KDTree approach.
         Instead of building KDTrees over the whole columnfile, pairs are searched
@@ -631,8 +833,13 @@ class FriedelPairIndexer:
 
         Parameters
         ----------
-        chunk_type    : str 'frames', 'scans' (default: 'scans')
+        chunk_type    : str 'frames', 'scans', 'eta_bins' ( default: 'scans')
+                        For omega pairs, use 'frames' or 'scans' for friedel pair search at 
+                        different levels of chunking granularity.
+                        For eta pairs, use 'eta_bins' 
+        n_eta_bins    : int, even nb. number of bins for eta chunks.  
         drop_unpaired : bool (default False)
+        reset_psub    : bool (default False). reset self.Peaksubset if True. 
         n_workers     : int number of parallel worker processes.
                         -1 = use all available cores
         filter_mode   : str; 'strict' or 'relaxed' (default strict)
@@ -645,11 +852,14 @@ class FriedelPairIndexer:
         """
         global _shared_cf
 
+        pair_type = 'eta' if chunk_type == 'eta_bins' else 'omega'
+        self.logger.info('--- MATCH FRIEDEL PAIRS [%s pairs] ---', pair_type)
+
         # ── 1. Checks + init ───────────────────────────────────────────────────
         self.logger.info('--- INITIALIZATION ---')
-        self.reset_outputs()
+        self.reset_outputs(pair_type+'_pair_id')
 
-        pairs_list, valid_pairs, LUT = self.checks_before_pairing(chunk_type)
+        pairs_list, valid_pairs, LUT = self.initialize_peaksubsets(chunk_type, n_eta_bins, reset_psub)
         Psub  = self.PeakSubsets
         n_valid = valid_pairs.sum()
 
@@ -669,7 +879,7 @@ class FriedelPairIndexer:
 
         # find weight factors for optimal rescaling
         _, rescaling_wts = self.estimate_search_scales(
-            idx1_pilot, idx2_pilot, 0.5 * dist_max, pair_type='omega')
+            idx1_pilot, idx2_pilot, 0.5 * dist_max, pair_type=pair_type)
         
         # combine user weights with auto-rescaling
         _w = {'gx': 1., 'gy': 1., 'gz': 1., 'eta': 1., 'I': 1.}
@@ -692,11 +902,24 @@ class FriedelPairIndexer:
         for pid in range(len(pairs_list)):
             if not valid_pairs[pid]:
                 continue
-            idx1, idx2 = self.PeakSubsets.select_pair(pid, subset_type = chunk_type, return_as='idx')
+            
+            # extended bin search: 3 contiguous bins grouped in selection
+            if extended_bin_search:
+                # select only even indices subsets -> 1-bin overlap between each subset 
+                if pid % 2 != 0:
+                    continue
+                # skip last bin: already in the last extended selection
+                if (pid >= len(pairs_list)-1):
+                    continue
+
+            if extended_bin_search and chunk_type!='frames':
+                idx1, idx2 = self.PeakSubsets._extended_pair_selec(pid, chunk_type)
+            else:
+                idx1, idx2 = self.PeakSubsets.select_pair(pid, chunk_type, return_as='idx')
 
             worker_args.append((
                 pid, idx1, idx2,
-                'omega',
+                pair_type,
                 filter_mode,
                 weights_eff,
                 self.tol_gv, self.tol_eta, self.tol_logI,
@@ -742,13 +965,14 @@ class FriedelPairIndexer:
         # ── 4. Merge ─────────────────────────────────────────────────────────
         self.logger.info('--- MERGING OUTPUTS ---')
         # unique pair identifier in omega_pair_id. -1 for unpaired peaks
-        self.merge_outputs(pair_type='omega',
+        self.merge_outputs(pair_type=pair_type,
                            drop_broken=True,
                            drop_unpaired=drop_unpaired)
 
         if doplot:
-            _ = plot_pair_distances(self.cf, pair_type = 'omega', bins=50, log_scale=False)
+            _ = plot_pair_distances(self.cf, pair_type = pair_type, bins=50, log_scale=False)
         return self.cf
+
 
     
     def match_quadruplets(self):
@@ -933,28 +1157,37 @@ class FriedelPairIndexer:
 
         return quad_arr
 
-        
+    
     # ------------------------------------------------------------------
     #  High-level helpers
     # ------------------------------------------------------------------
-    def checks_before_pairing(self, chunk_type='scans'):
-        """ Initialization and checks for match_omega_pairs_by_chunks(): """
-        
-        assert chunk_type in ['frames','scans'], "chunk_type must be 'frames' or 'scans' " 
-        self.logger.info('Chunk type for pairing: %s', chunk_type)
-              
-        if self.PeakSubsets is None:
-            self.set_peak_subsets()
+    def initialize_peaksubsets(self, chunk_type='scans', n_eta_bins=None, reset=False):
+        """ Initialization and checks for match_friedel_pairs_by_chunks(): """
 
+        # identify chunking scheme and pair_type
+        assert chunk_type in ['frames','scans', 'eta_bins'], "chunk_type must be 'frames', 'scans' or 'eta_bins' " 
+        self.logger.info('Chunk type for pairing: %s', chunk_type)
+        pair_type = 'eta' if chunk_type=='eta_bins' else 'omega'
+
+        # initialize peaksubset and sort accordingly with pair_type
+        if self.PeakSubsets is None or reset:
+            logger.info('reset Peaksubsets with %d eta bins', n_eta_bins)
+            self.PeakSubsets = None
+            self.set_peak_subsets(n_eta_bins)
+            
+        self.sort_peak_subsets(pair_type)
         Psub = self.PeakSubsets
+        
         LUT         = getattr(Psub, chunk_type+'_LUT', None)
         pairs_list  = getattr(Psub, chunk_type+'_subsets', None)
         valid_pairs = getattr(Psub, 'valid_'+chunk_type+'_subsets', None)
-        
+
+        if (pair_type) == 'omega' and Psub.is_half_acquisition:
+            raise ValueError(
+                    "Half acquisition. Cannot find omega pairs.")
         if LUT is None:
             raise RuntimeError(
-                'Lookup table not found in PeakSubsets.'
-                'Run self.PeakSubsets.sort_by_sinogram(), or check input name.')
+                'Lookup table not found in PeakSubsets')
         if pairs_list is None:
             raise RuntimeError(
                 'Pairs list not found in PeakSubsets')
@@ -962,15 +1195,11 @@ class FriedelPairIndexer:
             raise RuntimeError(
                 'No list of valid subset in PeakSubsets.'
                 'Run self.PeakSubsets.find_valid_subsets()') 
-        if (chunk_type=='frames' and self.cf.sortedby != 'dty_omega') or (chunk_type=='scans' and not self.cf.sortedby.startswith('dty')):
-            raise RuntimeError(
-                'columnfile is not properly sorted. Run PeakSubsets.sort_by_sinogram().')
-        if self.cf.omega.max() - self.cf.omega.min() < 181:
-                raise ValueError(
-                    "Half acquisition. Cannot find omega pairs.")
             
         return pairs_list, valid_pairs, LUT
 
+
+        
     def estimate_search_scales(self, idx1, idx2, dist_cutoff, pair_type='omega'):
         """
         Pilot pairing on a small subset to estimate typical pair distances
@@ -1040,6 +1269,7 @@ class FriedelPairIndexer:
         self.logger.info('  logI:  %.4f', d_logI_med)
         self.logger.info('  Euclidean dist: %.4f', d_eucl)
         return scales, weights_dict
+        
 
     def run_pairing(self, idx1, idx2, pair_type='omega',
                      filter_mode = 'strict', weights=None):
@@ -1089,6 +1319,131 @@ class FriedelPairIndexer:
         valid_outputs = [o for o in self.outputs if len(o['idx']) > 0]
 
         if valid_outputs:
+            # ── collect all candidates ────────────────────────────────────────
+            # idx_ref and idx_partner are the two interleaved entries per pair
+            cand_dist  = np.concatenate([o['d_gv'][0::2]    for o in valid_outputs])
+            cand_i1    = np.concatenate([o['idx'][0::2]     for o in valid_outputs])
+            cand_i2    = np.concatenate([o['idx'][1::2]     for o in valid_outputs])
+
+            n_cand = len(cand_dist)
+            self.logger.info('  %d candidate pairs from %d chunks',
+                             n_cand, len(valid_outputs))
+
+            # ── deduplicate exact duplicates first (same i1, i2 pair) ────────
+            # sort by (i1, i2) then keep the one with smallest gvec_dist
+            lex_order  = np.lexsort((cand_dist, cand_i2, cand_i1))
+            cand_dist  = cand_dist[lex_order]
+            cand_i1    = cand_i1[lex_order]
+            cand_i2    = cand_i2[lex_order]
+
+            # first occurrence after lex sort has the smallest dist for each (i1,i2)
+            pair_keys        = np.stack([cand_i1, cand_i2], axis=1)
+            _, unique_pairs  = np.unique(pair_keys, axis=0, return_index=True)
+            cand_dist  = cand_dist[unique_pairs]
+            cand_i1    = cand_i1[unique_pairs]
+            cand_i2    = cand_i2[unique_pairs]
+
+            n_unique = len(cand_dist)
+            self.logger.info('  %d unique candidate pairs after deduplication',
+                             n_unique)
+            
+            # ── greedy matching: sort by quality, accept if both peaks free ───
+            quality_order = np.argsort(cand_dist)
+            cand_dist     = cand_dist[quality_order]
+            cand_i1       = cand_i1[quality_order]
+            cand_i2       = cand_i2[quality_order]
+
+            free = np.ones(cf_target.nrows, dtype=bool)
+            both_free  = free[cand_i1] & free[cand_i2]
+            
+            # iterate in quality order and fix the sequential dependency with a small loop
+            # (sequential because accepting pair k changes freedom for pair k+1)
+            accepted   = np.zeros(n_unique, dtype=bool)
+
+            for k in range(n_unique):
+                i1k, i2k = cand_i1[k], cand_i2[k]
+                if free[i1k] and free[i2k]:
+                    accepted[k]  = True
+                    free[i1k]    = False
+                    free[i2k]    = False
+
+            n_accepted = accepted.sum()
+            self.logger.info('  %d pairs accepted by greedy matching', n_accepted)
+
+            # ── assign globally unique pair_ids and scatter into label_col ───
+            pair_ids         = np.arange(n_accepted)
+            accepted_i1      = cand_i1[accepted]
+            accepted_i2      = cand_i2[accepted]
+        
+            label_col[accepted_i1] = pair_ids
+            label_col[accepted_i2] = pair_ids
+            next_id = n_accepted
+
+        # ── validation ────────────────────────────────────────────────────
+        paired  = label_col[label_col != -1]
+        n_total = cf_target.nrows
+        I_total = cf_target.sum_intensity.sum()
+
+        if len(paired) > 0:
+            counts     = np.bincount(paired)
+            singletons = (counts == 1).sum()
+
+            if singletons > 0:
+                self.logger.warning('  %d pair_id(s) appear only once — broken pairs',
+                    singletons)
+                if drop_broken:
+                    # identify broken pair_ids and reset to -1
+                    broken_ids  = np.where(counts == 1)[0]
+                    broken_mask = np.isin(label_col, broken_ids)
+                    label_col[broken_mask] = -1
+                    self.logger.info('  %d peaks reassigned to -1', broken_mask.sum())
+            else:
+                self.logger.info('  OK: all pair_ids appear exactly twice')
+
+        paired_mask = label_col != -1
+        n_paired    = paired_mask.sum()
+        I_paired    = cf_target.sum_intensity[paired_mask].sum()
+        self.logger.info('  %d pairs, %d peaks paired (%.1f%%)',
+            int(n_paired//2), n_paired, 100.0 * n_paired / n_total)
+        self.logger.info('  %.1f%% of total intensity matched',
+            100.0 * I_paired / I_total)
+
+        if drop_unpaired:
+            self.logger.info('FILTERING: %d peaks not matching in any pair -> remove from cf',
+                (~paired_mask).sum())
+            cf_target.filter(paired_mask)
+            self.logger.info('Done')
+            
+
+    def merge_outputs__(self, cf_target=None, pair_type='omega',
+                      drop_broken=False, drop_unpaired = False):
+        """
+        Merge all dicts of pair_ids in self.outputs into self.cf.
+        For chunk-based matching, pair-id labels are made globally unique
+        across chunks.
+
+        Parameters
+        ----------
+        cf_target     : columnfile to write into (defaults to self.cf)
+        pair_type     : 'omega' or 'eta'
+        drop_broken   : bool — if True, remove singleton pair_ids from cf
+        drop_unpaired : bool — if True, remove non-paired peaks from cf
+        """
+        if cf_target is None:
+            cf_target = self.cf
+
+        # add pair_id column (or reset it if already there)
+        label_col_name = '{}_pair_id'.format(pair_type)
+        cf_target.addcolumn(np.full(cf_target.nrows, -1, dtype=int), label_col_name)
+        label_col = cf_target.getcolumn(label_col_name)
+
+        self.logger.info('--- MERGING OUTPUTS  [%s-pair] ---', pair_type)
+        self.logger.info('  %d chunk(s) to merge  (%d peaks total)',
+            len(self.outputs), cf_target.nrows)
+
+        valid_outputs = [o for o in self.outputs if len(o['idx']) > 0]
+
+        if valid_outputs:
             # compute the id offset for each chunk: cumulative sum of chunk sizes
             chunk_sizes = np.array([o['pair_id'].max() + 1 for o in valid_outputs])
             offsets     = np.concatenate([[0], np.cumsum(chunk_sizes)[:-1]])
@@ -1097,6 +1452,22 @@ class FriedelPairIndexer:
             all_idx     = np.concatenate([o['idx'] for o in valid_outputs])
             all_pair_id = np.concatenate([o['pair_id'] + off
                                   for o, off in zip(valid_outputs, offsets)])
+            all_gvec_dist = np.concatenate([o['d_gv'] for o in valid_outputs])
+
+            # ── collision resolution: keep the assignment with smallest gvec_dist ──
+            unique_idx, first_occurrence = np.unique(all_idx, return_index=True)
+            n_collisions = (np.bincount(
+                np.searchsorted(unique_idx, all_idx)) > 1).sum()   # for reporting
+
+            if n_collisions > 0:
+                self.logger.info(' %d cf indices claimed by more than one chunk ', n_collisions)
+                self.logger.info('— resolving by min gvec_dist')
+
+                # sort worst -> best: last write (best distance) wins
+                order        = np.argsort(all_gvec_dist)[::-1]
+                all_idx      = all_idx[order]
+                all_pair_id  = all_pair_id[order]
+                all_gvec_dist = all_gvec_dist[order]
 
             label_col[all_idx] = all_pair_id
             next_id = int(chunk_sizes.sum())
@@ -1135,6 +1506,7 @@ class FriedelPairIndexer:
                 (~paired_mask).sum())
             cf_target.filter(paired_mask)
             self.logger.info('Done')
+
 
 
 # ─────────────────────────────────────────────
@@ -1451,45 +1823,48 @@ def _run_pairing(cf, idx1, idx2,
 
 
     # relaxed filter_mode: apply tolerance filters once after loop
-    if filter_mode == 'relaxed':
-        tol_mask = _filter_pairs_physical(
-                cf, idx1[paired_mask], partner1[paired_mask],
-                pair_type, tol_gv, tol_eta, tol_logI)
+    tol_mask = _filter_pairs_physical(
+            cf, idx1[paired_mask], partner1[paired_mask],
+            pair_type, tol_gv, tol_eta, tol_logI)
         
-        wrong_om = _wrong_omegas(cf, idx1[paired_mask], partner1[paired_mask],
+    wrong_om = _wrong_omegas(cf, idx1[paired_mask], partner1[paired_mask],
                                  tol=1e-4)
-        tol_mask &= ~wrong_om
+    tol_mask &= ~wrong_om
         
-        n_pairs = tol_mask.sum()
-        idx1_paired = idx1[paired_mask][tol_mask]
-        idx2_paired = partner1[paired_mask][tol_mask]
+    n_pairs = tol_mask.sum()
+    idx1_paired = idx1[paired_mask][tol_mask]
+    idx2_paired = partner1[paired_mask][tol_mask]
             
-        _print('Applying tolerance filters')
-        _print('Total pairs after filtering : {} / {}'.format(n_pairs, n_total))
-        _print(_progress_bar(n_pairs, n_total))
+    _print('Applying final tolerance filters')
+    _print('Total pairs after filtering : {} / {}'.format(n_pairs, n_total))
+    _print(_progress_bar(n_pairs, n_total))
         
-    else:
-        idx1_paired = idx1[paired_mask]
-        idx2_paired = partner1[paired_mask]
-
     if n_pairs < 1:
         _print('  WARNING: No pairs found — returning empty output.')
         result = {'idx'      : np.array([], dtype=int),
-                  'pair_id'  : np.array([], dtype=int)}
+                  'pair_id'  : np.array([], dtype=int),
+                  'd_gv'     : np.array([], dtype=float)}
         return result
 
     local_ids   = np.arange(n_pairs)
     # interleave [ref0, partner0, ref1, partner1, ...]
     idx_out    = np.empty(2 * n_pairs, dtype=int)
     pid_out    = np.empty(2 * n_pairs, dtype=int)
+    dgv_out    = np.empty(2 * n_pairs, dtype=float)
+    d_gv, _, _ = _physical_pair_distance(cf,idx1_paired,idx2_paired,pair_type)
+    
     idx_out[0::2]    = idx1_paired;  idx_out[1::2]    = idx2_paired
     pid_out[0::2]    = local_ids;    pid_out[1::2]    = local_ids
-
+    dgv_out[0::2]    = d_gv     ;    dgv_out[1::2]    = d_gv
+        
     _print('\n{}\n'.format('-' * 50))
 
     result = {'idx'    : idx_out,
-              'pair_id': pid_out}
+              'pair_id': pid_out,
+              'd_gv'   : dgv_out}
+    
     return result
+
 
 def _worker_run_pairing(args):
     """ Module-level worker function for parallelised chunk pairing """
