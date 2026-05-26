@@ -101,7 +101,11 @@ def forward_comp(pos, U, B, ucell, pars, ds_max = 1.2, rot_start = -91, rot_end 
     Gw = np.dot(p['S'], np.dot(U, np.dot(B, hkls.T)))
     # Glen = np.sqrt(Gw[0, :]**2 + Gw[1, :]**2 + Gw[2, :]**2)
     Glen = np.linalg.norm(Gw, axis=0)
-    theta = np.arcsin(Glen / (2*Klen))
+    
+    # theta = np.arcsin(Glen / (2*Klen))
+    arg = Glen / (2*Klen)
+    arg = np.clip(arg, -1.0, 1.0)
+    theta = np.arcsin(arg)
     
     a = Gw[0,:]/Glen
     b = -Gw[1,:]/Glen
@@ -618,9 +622,14 @@ def find_matches_chunk(cf1_dty_chunk, cf1_omega_chunk, cf1_fc_chunk, cf1_sc_chun
             matched_cf2[j] = True
 
 
-def cf_plot_sino(cfs, skip=1):
+def cf_plot_sino(cfs, skip=1, hist2d_plot=False, bins=(3620, 400)):
     """
     plot sinogram for each cf wrapped in a list
+    Args:
+        cfs (list): list of ImageD11 column files
+        skip (int): every point to skip for speeding up plotting
+        hist2d_plot (bool): False for scatter plot, True for hist2d
+        bins (tuple): N_omega * N_dty, used when hist2d_plot is True
     """
     if isinstance(cfs, list):
         ncf = len(cfs)  # assume the input is a list containing multiple cf
@@ -636,10 +645,13 @@ def cf_plot_sino(cfs, skip=1):
         a = [a]
     
     for i, cf in enumerate(cfs):
-        scatter = a[i].scatter(cf.omega[::skip], cf.dty[::skip], 
-                       c=np.log10(cf.sum_intensity[::skip]), s=8, cmap='viridis')
-        cbar = plt.colorbar(scatter, ax=a[i])
-        cbar.set_label('Sum Intensity')  # Label for the colorbar
+        if hist2d_plot:
+            scatter = a[i].hist2d( cf.omega[::skip], cf.dty[::skip], weights= np.log(cf.sum_intensity[::skip]), bins = bins, norm='log')
+        else:
+            scatter = a[i].scatter(cf.omega[::skip], cf.dty[::skip], 
+                           c=np.log10(cf.sum_intensity[::skip]), s=8, cmap='viridis')
+            cbar = plt.colorbar(scatter, ax=a[i])
+            cbar.set_label('Sum Intensity')  # Label for the colorbar        
         a[i].set_xlabel('Omega ($^{o}$)')
         a[i].set_ylabel('dty ($\mu$m)')
     
