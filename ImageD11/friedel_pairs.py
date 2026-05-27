@@ -19,13 +19,13 @@
 # Last updated: 26 May 2026
 
 
-import os, sys
+import os, sys, time
 import logging
-from contextlib import contextmanager
 import numpy as np
-from collections import namedtuple
-from tqdm import tqdm
 import multiprocessing as mp
+from collections import namedtuple
+from contextlib import contextmanager
+from tqdm import tqdm
 
 import scipy.spatial
 from scipy.sparse import csr_matrix
@@ -729,7 +729,11 @@ class FriedelPairIndexer:
     # ------------------------------------------------------------------
     #  High-level API — Friedel pairing functions
     # ------------------------------------------------------------------
-    def match_friedel_pairs(self, pair_type = 'omega', drop_unpaired=False, filter_mode = 'relaxed', doplot=True):
+    def match_friedel_pairs(self, pair_type = 'omega',
+                            drop_unpaired=False,
+                            filter_mode = 'relaxed',
+                            doplot=True,
+                            timeout = 120):
         """
         Find Friedel pairs using a KDTree approach. The columnfile is split
         into two symmetric parts, and the symmetric partner is flipped to match
@@ -745,6 +749,7 @@ class FriedelPairIndexer:
         ----------
         pair_type     : str; 'omega' or 'eta'
         drop_unpaired : bool; If True non-paired peaks are filtered out from self.cf 
+        timeout       : float; max execution time (s) before timeout for _run_pairing.
         filter_mode   : str; 'strict' or 'relaxed'
                         controls how threshold filtering is performed during the search
                         strict is slower but allows higher completeness for pair matching
@@ -802,7 +807,8 @@ class FriedelPairIndexer:
         self.run_pairing(idx1, idx2,
                          pair_type   = pair_type,
                          filter_mode = filter_mode,
-                         weights     = weights_eff)
+                         weights     = weights_eff,
+                         t_max = timeout)
         
         self.merge_outputs(pair_type     = pair_type,
                            drop_broken   = True,
@@ -819,7 +825,8 @@ class FriedelPairIndexer:
                                      n_eta_bins = 360,
                                      drop_unpaired = False,
                                      extended_bin_search=False,
-                                     n_workers=1,
+                                     n_workers=-1,
+                                     timeout = 120, 
                                      reset_psub = False,
                                      doplot = True):
         """
@@ -871,10 +878,13 @@ class FriedelPairIndexer:
         # ── 2. Search-space calibration ──────────────────────────────────────
         self.logger.info('--- SEARCH SPACE CALIBRATION [pilot pairing] ---')
 
+       # pilot_chunk = 'eta_bins' if chunk_type == 'eta_bins' else 'scans'
+        
         # pick a pair near the middle — avoids edge scans with fewer peaks
         s0 = len(pairs_list) // 2
         while not valid_pairs[s0]:
             s0 += 1
+        
         idx1_pilot, idx2_pilot = Psub.select_pair(s0, chunk_type, return_as='idx')
 
         # find weight factors for optimal rescaling
@@ -895,6 +905,14 @@ class FriedelPairIndexer:
 
         #─ ─ 3. Friedel pair matching (parallelize across chunks) ────────────────
         self.logger.info('--- FRIEDEL PAIR MATCHING ---')
+
+        # Resolve number of workers
+        n_cores = len(os.sched_getaffinity(os.getpid())) - 1
+        if n_workers == -1:
+            n_workers = n_cores
+        else:
+            n_workers = max(1, min(n_workers, n_cores))
+        verbose = (n_workers == 1)
         
         # Build worker argument list 
         worker_args = []
@@ -923,16 +941,9 @@ class FriedelPairIndexer:
                 filter_mode,
                 weights_eff,
                 self.tol_gv, self.tol_eta, self.tol_logI,
-                self.n_steps,
+                self.n_steps, timeout, verbose,
             ))
 
-        # Resolve number of workers
-        n_cores    = len(os.sched_getaffinity(os.getpid())) - 1
-        if n_workers == -1:
-            n_workers = n_cores
-        else:
-            n_workers = max(1, min(n_workers, n_cores))
-        
         self.logger.info('  %d chunks  |  %d worker(s)  |  %d cores available',
             len(worker_args), n_workers, n_cores)
 
@@ -942,7 +953,6 @@ class FriedelPairIndexer:
             if n_workers == 1:
                 # serial path — useful for debugging, avoids fork overhead
                 raw_results = [_worker_run_pairing(a) for a in tqdm(worker_args)]
-
             else:
                 ctx  = mp.get_context('fork')
                 with ctx.Pool(processes=n_workers,
@@ -964,10 +974,12 @@ class FriedelPairIndexer:
 
         # ── 4. Merge ─────────────────────────────────────────────────────────
         self.logger.info('--- MERGING OUTPUTS ---')
+        deduplicate = extended_bin_search == True
         # unique pair identifier in omega_pair_id. -1 for unpaired peaks
         self.merge_outputs(pair_type=pair_type,
                            drop_broken=True,
-                           drop_unpaired=drop_unpaired)
+                           drop_unpaired=drop_unpaired,
+                           deduplicate = deduplicate)
 
         if doplot:
             _ = plot_pair_distances(self.cf, pair_type = pair_type, bins=50, log_scale=False)
@@ -1233,7 +1245,7 @@ class FriedelPairIndexer:
             cutoff_i = step_size * i
             dij = _compute_dist_matrix(s1, s2, cutoff_i)
             dists, rows, cols = _clean_dist_matrix(dij, verbose=False)
-            self.logger.debug('  pilot search: cutoff=%.4f  pairs found: %d',
+            self.logger.info('  pilot search: cutoff=%.4f  pairs found: %d',
                 cutoff_i, len(rows))
             if len(rows) >= min_pairs:
                 break
@@ -1271,8 +1283,11 @@ class FriedelPairIndexer:
         return scales, weights_dict
         
 
-    def run_pairing(self, idx1, idx2, pair_type='omega',
-                     filter_mode = 'strict', weights=None):
+    def run_pairing(self, idx1, idx2,
+                    pair_type='omega',
+                    filter_mode = 'strict',
+                    weights=None,
+                    t_max = 120):
         """ class-level launcher for _run_pairing"""
 
         verbose = self.logger.getEffectiveLevel() < 30
@@ -1285,13 +1300,14 @@ class FriedelPairIndexer:
                                 tol_eta     = self.tol_eta,
                                 tol_logI    = self.tol_logI,
                                 n_steps     = self.n_steps,
-                                verbose     = verbose)
+                                verbose     = verbose,
+                                t_max       = t_max)
         
         self.outputs.append(results)
 
         
     def merge_outputs(self, cf_target=None, pair_type='omega',
-                      drop_broken=False, drop_unpaired = False):
+                      drop_broken=False, drop_unpaired = False, deduplicate=False):
         """
         Merge all dicts of pair_ids in self.outputs into self.cf.
         For chunk-based matching, pair-id labels are made globally unique
@@ -1331,49 +1347,54 @@ class FriedelPairIndexer:
 
             # ── deduplicate exact duplicates first (same i1, i2 pair) ────────
             # sort by (i1, i2) then keep the one with smallest gvec_dist
-            lex_order  = np.lexsort((cand_dist, cand_i2, cand_i1))
-            cand_dist  = cand_dist[lex_order]
-            cand_i1    = cand_i1[lex_order]
-            cand_i2    = cand_i2[lex_order]
+            if deduplicate:
+                lex_order  = np.lexsort((cand_dist, cand_i2, cand_i1))
+                cand_dist  = cand_dist[lex_order]
+                cand_i1    = cand_i1[lex_order]
+                cand_i2    = cand_i2[lex_order]
+                # first occurrence after lex sort has the smallest dist for each (i1,i2)
+                pair_keys        = np.stack([cand_i1, cand_i2], axis=1)
+                _, unique_pairs  = np.unique(pair_keys, axis=0, return_index=True)
+                cand_dist  = cand_dist[unique_pairs]
+                cand_i1    = cand_i1[unique_pairs]
+                cand_i2    = cand_i2[unique_pairs]
 
-            # first occurrence after lex sort has the smallest dist for each (i1,i2)
-            pair_keys        = np.stack([cand_i1, cand_i2], axis=1)
-            _, unique_pairs  = np.unique(pair_keys, axis=0, return_index=True)
-            cand_dist  = cand_dist[unique_pairs]
-            cand_i1    = cand_i1[unique_pairs]
-            cand_i2    = cand_i2[unique_pairs]
-
-            n_unique = len(cand_dist)
-            self.logger.info('  %d unique candidate pairs after deduplication',
-                             n_unique)
+                n_unique = len(cand_dist)
+                self.logger.info('  %d unique candidate pairs after deduplication',
+                                 n_unique)
             
-            # ── greedy matching: sort by quality, accept if both peaks free ───
-            quality_order = np.argsort(cand_dist)
-            cand_dist     = cand_dist[quality_order]
-            cand_i1       = cand_i1[quality_order]
-            cand_i2       = cand_i2[quality_order]
+                # ── greedy matching: sort by quality, accept if both peaks free ───
+                quality_order = np.argsort(cand_dist)
+                cand_dist     = cand_dist[quality_order]
+                cand_i1       = cand_i1[quality_order]
+                cand_i2       = cand_i2[quality_order]
 
-            free = np.ones(cf_target.nrows, dtype=bool)
-            both_free  = free[cand_i1] & free[cand_i2]
+                free = np.ones(cf_target.nrows, dtype=bool)
+                both_free  = free[cand_i1] & free[cand_i2]
             
-            # iterate in quality order and fix the sequential dependency with a small loop
-            # (sequential because accepting pair k changes freedom for pair k+1)
-            accepted   = np.zeros(n_unique, dtype=bool)
+                # iterate in quality order and fix the sequential dependency with a small loop
+                # (sequential because accepting pair k changes freedom for pair k+1)
+                accepted   = np.zeros(n_unique, dtype=bool)
 
-            for k in range(n_unique):
-                i1k, i2k = cand_i1[k], cand_i2[k]
-                if free[i1k] and free[i2k]:
-                    accepted[k]  = True
-                    free[i1k]    = False
-                    free[i2k]    = False
+                for k in range(n_unique):
+                    i1k, i2k = cand_i1[k], cand_i2[k]
+                    if free[i1k] and free[i2k]:
+                        accepted[k]  = True
+                        free[i1k]    = False
+                        free[i2k]    = False
 
-            n_accepted = accepted.sum()
-            self.logger.info('  %d pairs accepted by greedy matching', n_accepted)
+                n_accepted = accepted.sum()
+                self.logger.info('  %d pairs accepted by greedy matching', n_accepted)
 
-            # ── assign globally unique pair_ids and scatter into label_col ───
-            pair_ids         = np.arange(n_accepted)
-            accepted_i1      = cand_i1[accepted]
-            accepted_i2      = cand_i2[accepted]
+                # ── assign globally unique pair_ids and scatter into label_col ───
+                pair_ids         = np.arange(n_accepted)
+                accepted_i1      = cand_i1[accepted]
+                accepted_i2      = cand_i2[accepted]
+            else:
+                n_accepted   = len(cand_i1)
+                pair_ids     = np.arange(n_accepted)
+                accepted_i1  = cand_i1
+                accepted_i2  = cand_i2
         
             label_col[accepted_i1] = pair_ids
             label_col[accepted_i2] = pair_ids
@@ -1414,98 +1435,6 @@ class FriedelPairIndexer:
             cf_target.filter(paired_mask)
             self.logger.info('Done')
             
-
-    def merge_outputs__(self, cf_target=None, pair_type='omega',
-                      drop_broken=False, drop_unpaired = False):
-        """
-        Merge all dicts of pair_ids in self.outputs into self.cf.
-        For chunk-based matching, pair-id labels are made globally unique
-        across chunks.
-
-        Parameters
-        ----------
-        cf_target     : columnfile to write into (defaults to self.cf)
-        pair_type     : 'omega' or 'eta'
-        drop_broken   : bool — if True, remove singleton pair_ids from cf
-        drop_unpaired : bool — if True, remove non-paired peaks from cf
-        """
-        if cf_target is None:
-            cf_target = self.cf
-
-        # add pair_id column (or reset it if already there)
-        label_col_name = '{}_pair_id'.format(pair_type)
-        cf_target.addcolumn(np.full(cf_target.nrows, -1, dtype=int), label_col_name)
-        label_col = cf_target.getcolumn(label_col_name)
-
-        self.logger.info('--- MERGING OUTPUTS  [%s-pair] ---', pair_type)
-        self.logger.info('  %d chunk(s) to merge  (%d peaks total)',
-            len(self.outputs), cf_target.nrows)
-
-        valid_outputs = [o for o in self.outputs if len(o['idx']) > 0]
-
-        if valid_outputs:
-            # compute the id offset for each chunk: cumulative sum of chunk sizes
-            chunk_sizes = np.array([o['pair_id'].max() + 1 for o in valid_outputs])
-            offsets     = np.concatenate([[0], np.cumsum(chunk_sizes)[:-1]])
-
-            # shift each chunk's pair_ids to the global range and concatenate
-            all_idx     = np.concatenate([o['idx'] for o in valid_outputs])
-            all_pair_id = np.concatenate([o['pair_id'] + off
-                                  for o, off in zip(valid_outputs, offsets)])
-            all_gvec_dist = np.concatenate([o['d_gv'] for o in valid_outputs])
-
-            # ── collision resolution: keep the assignment with smallest gvec_dist ──
-            unique_idx, first_occurrence = np.unique(all_idx, return_index=True)
-            n_collisions = (np.bincount(
-                np.searchsorted(unique_idx, all_idx)) > 1).sum()   # for reporting
-
-            if n_collisions > 0:
-                self.logger.info(' %d cf indices claimed by more than one chunk ', n_collisions)
-                self.logger.info('— resolving by min gvec_dist')
-
-                # sort worst -> best: last write (best distance) wins
-                order        = np.argsort(all_gvec_dist)[::-1]
-                all_idx      = all_idx[order]
-                all_pair_id  = all_pair_id[order]
-                all_gvec_dist = all_gvec_dist[order]
-
-            label_col[all_idx] = all_pair_id
-            next_id = int(chunk_sizes.sum())
-
-        # ── validation ────────────────────────────────────────────────────
-        paired  = label_col[label_col != -1]
-        n_total = cf_target.nrows
-        I_total = cf_target.sum_intensity.sum()
-
-        if len(paired) > 0:
-            counts     = np.bincount(paired)
-            singletons = (counts == 1).sum()
-
-            if singletons > 0:
-                self.logger.warning('  %d pair_id(s) appear only once — broken pairs',
-                    singletons)
-                if drop_broken:
-                    # identify broken pair_ids and reset to -1
-                    broken_ids  = np.where(counts == 1)[0]
-                    broken_mask = np.isin(label_col, broken_ids)
-                    label_col[broken_mask] = -1
-                    self.logger.info('  %d peaks reassigned to -1', broken_mask.sum())
-            else:
-                self.logger.info('  OK: all pair_ids appear exactly twice')
-
-        paired_mask = label_col != -1
-        n_paired    = paired_mask.sum()
-        I_paired    = cf_target.sum_intensity[paired_mask].sum()
-        self.logger.info('  %d pairs, %d peaks paired (%.1f%%)',
-            int(n_paired//2), n_paired, 100.0 * n_paired / n_total)
-        self.logger.info('  %.1f%% of total intensity matched',
-            100.0 * I_paired / I_total)
-
-        if drop_unpaired:
-            self.logger.info('FILTERING: %d peaks not matching in any pair -> remove from cf',
-                (~paired_mask).sum())
-            cf_target.filter(paired_mask)
-            self.logger.info('Done')
 
 
 
@@ -1557,15 +1486,41 @@ def _search_space(cf, idx, weights=None, flip=None):
         gz   * _w['gz'],
         eta  * _w['eta'],
         logI * _w['I']])
+
     return space, _w
+
+# slow whith large dist_cutoff
+#def _compute_dist_matrix__(space_ref, space_partner, dist_cutoff):
+#    """
+#    Build sparse distance matrix between reference and partner search spaces.
+#    """
+#    tree_ref     = scipy.spatial.cKDTree(space_ref)
+#    tree_partner = scipy.spatial.cKDTree(space_partner)
+#    dij = csr_matrix(tree_ref.sparse_distance_matrix(tree_partner, dist_cutoff))
+#    return dij
 
 def _compute_dist_matrix(space_ref, space_partner, dist_cutoff):
     """
-    Build sparse distance matrix between reference and partner search spaces.
+    Find nearest neighbour in space_partner for each point in space_ref,
+    within dist_cutoff. Returns as a sparse matrix. 
     """
-    tree_ref     = scipy.spatial.cKDTree(space_ref)
     tree_partner = scipy.spatial.cKDTree(space_partner)
-    dij = csr_matrix(tree_ref.sparse_distance_matrix(tree_partner, dist_cutoff))
+    # k=1: only the single nearest neighbour
+    dists, col_ind = tree_partner.query(
+        space_ref,
+        k=1,
+        distance_upper_bound=dist_cutoff,
+        workers=1)     
+
+    # filter out points with no neighbour within cutoff
+    valid    = np.isfinite(dists)
+    row_ind  = np.where(valid)[0]
+    col_ind  = col_ind[valid]
+    dists    = dists[valid]
+
+    dij = csr_matrix(
+        (dists, (row_ind, col_ind)),
+        shape=(len(space_ref), len(space_partner)))
     return dij
 
 def _clean_dist_matrix(dij, verbose=True):
@@ -1687,6 +1642,7 @@ def _run_pairing(cf, idx1, idx2,
                  tol_eta=0.5,
                  tol_logI=np.inf,
                  n_steps=5,
+                 t_max = 120,
                  verbose=True):
     """
     Find Friedel pairs between two subsets of cf defined by idx1, idx2.
@@ -1703,6 +1659,7 @@ def _run_pairing(cf, idx1, idx2,
     tol_eta     : float — eta angle tolerance (degrees)
     tol_logI    : float — log10(intensity) tolerance (np.inf to ignore)
     n_steps     : int   — number of distance increments in iterative search
+    t_max       : max execution time (seconds) — stop early if exceeded
     verbose     : bool
     filter_mode: 'strict' or 'relaxed' (default: strict) 
             "strict"  -> tolerance filter applied at each KDtree search iteration.
@@ -1753,18 +1710,35 @@ def _run_pairing(cf, idx1, idx2,
     # ── 2. Iterative matching ─────────────────────────────────────────
     _section('ITERATIVE PAIR MATCHING [{} steps]'.format(len(dist_steps)) )
 
+    t_start  = time.perf_counter()
+    timed_out = False
+
     for i, dist_cutoff in enumerate(dist_steps):
+
+         # ── timeout check ───────────────
+        elapsed = time.perf_counter() - t_start
+        if elapsed > t_max:
+            timed_out = True
+            logger.warning(
+                '_run_pairing timed out after %.1f s at step %d/%d '
+                '(cutoff=%.4f). Returning %d pairs matched so far. '
+                'Consider tightening tolerances or adjusting weights.',
+                elapsed, i + 1, n_steps, dist_cutoff, (~free1).sum())
+            break
+        
         if free1.sum() < 1 or free2.sum() < 1:
             _print('  No free peaks remaining — stopping early.')
             break
-        # indices into global cf
+            
+        # ── indices into global cf ─────────
         cur_idx1 = idx1[free1]
         cur_idx2 = idx2[free2]
-            
+
+         # ── search space construction ─────
         space_1, _ = _search_space(cf, cur_idx1, _w)
         space_2, _ = _search_space(cf, cur_idx2, _w, flip=pair_type)
 
-        # compute distance matrix and clean it
+        # ── KDTree distance matrix
         dij = _compute_dist_matrix(space_1, space_2, dist_cutoff)
         if dij.nnz == 0:
             _print('  step {i}/{n}  cutoff={c:.4f}  -> no candidates'.format(
@@ -1777,7 +1751,7 @@ def _run_pairing(cf, idx1, idx2,
                 i=i+1, n=n_steps, c=dist_cutoff))
             continue
                 
-        # strict filter_mode: apply tolerance filters within loop
+        # ── tolerance filtering (strict filter_mode)
         if filter_mode == 'strict':
             tol_mask = _filter_pairs_physical(
                             cf, cur_idx1[local_rows], cur_idx2[local_cols],
@@ -1798,7 +1772,7 @@ def _run_pairing(cf, idx1, idx2,
                 i=i+1, n=n_steps, c=dist_cutoff))
             continue
 
-        # map identified pairs into global cf
+        # ── map local indices into global cf indices
         cf_idx1 = cur_idx1[local_rows]
         cf_idx2 = cur_idx2[local_cols]
         pos1    = np.searchsorted(idx1, cf_idx1)
@@ -1869,8 +1843,8 @@ def _run_pairing(cf, idx1, idx2,
 def _worker_run_pairing(args):
     """ Module-level worker function for parallelised chunk pairing """
     pid, idx1, idx2, pair_type, filter_mode, weights, \
-        tol_gv, tol_eta, tol_logI, n_steps = args
-
+        tol_gv, tol_eta, tol_logI, n_steps, t_max, verbose = args
+    
     out = _run_pairing(
         _shared_cf,
         idx1, idx2,
@@ -1881,7 +1855,8 @@ def _worker_run_pairing(args):
         tol_eta=tol_eta,
         tol_logI=tol_logI,
         n_steps=n_steps,
-        verbose=False)
+        t_max=t_max,
+        verbose=verbose)
     return pid, out
 
 def _worker_initializer():
@@ -1894,12 +1869,17 @@ def _worker_initializer():
 # ─────────────────────────────────────────────
 def get_pairs(cf, pair_type='omega'):
     """ returns (idx1, idx2) : index positions of pairs in cf """
-    pair_id_col = cf.getcolumn(pair_type + '_pair_id')
-    paired = np.nonzero(pair_id_col > -1)[0]
+    pair_id_name = pair_type + '_pair_id'
+    pair_id_col = cf.getcolumn(pair_id_name)        
+    paired = np.flatnonzero(pair_id_col > -1)
+    if cf.sortedby == pair_id_name:
+        idx1  = paired[::2]
+        idx2  = paired[1::2]
+    else:
     # sort so that pair_ids run [0,0,1,1,2,2,...] 
-    order = np.argsort(pair_id_col[paired], kind='stable')
-    idx1  = paired[order][::2]
-    idx2  = paired[order][1::2]
+        order = np.argsort(pair_id_col[paired], kind='stable')
+        idx1  = paired[order][::2]
+        idx2  = paired[order][1::2]
     return idx1, idx2
     
 
@@ -2001,59 +1981,62 @@ def locate_omega_pairs(cf, pairs, ds=None, y0=0):
     """
     Fit the centre of mass position of omega-pairs and write results
     back into cf as new columns 'xs' and 'ys'.
-
     For omega-pairs the linear system used in 'locate_eta_pairs' is near-singular
     (paired peaks are ~180 degrees apart in omega), so the position is recovered from
     two-theta and dty:
-
     dx  : x-shift from rotation centre, derived from tth asymmetry
     ylab: y-shift in lab frame, taken as dty - y0
     Then rotate (dx, ylab) back into sample coordinates using omega.
-
-    xlab, ylab and omega are averaged to make sure both peaks in eahc pair have the same (xs,ys) coordinates  
+    xlab, ylab and omega are averaged to make sure both peaks in each pair have the same (xs,ys) coordinates
     """
     i1, i2 = pairs
     L = cf.parameters.get('distance')
     if ds is not None and 'frelon' in ds.detector:
-        L /= 1000  # Frelon dty in mm. divide by 1000 to match units
+        L /= 1000
 
-    xlab = np.empty(cf.nrows, dtype=float)
-    ylab = np.empty(cf.nrows, dtype=float)
-    xs   = np.empty(cf.nrows, dtype=float)
-    ys   = np.empty(cf.nrows, dtype=float)
+    # ── dx from two-theta asymmetry — 
+    tantth1 = np.tan(np.radians(cf.tth[i1]))
+    tantth2 = np.tan(np.radians(cf.tth[i2]))
+    dx      = L * (tantth1 - tantth2) / (tantth1 + tantth2)   
 
-    # shift from rot center along x-axis: same absolute distance dx but reversed sign 
-    tantth1  = np.tan(np.radians(cf.tth[i1]))
-    tantth2  = np.tan(np.radians(cf.tth[i2]))
-    dx       = L * (tantth1-tantth2) / (tantth1+tantth2)  
-    xlab[i1] = dx
-    xlab[i2] = -dx
-    
-    # shift along y-axis given by motor position : use the mean as the best estimate of the true ylab
-    dy   = (cf.dty[i1] - cf.dty[i2]) / 2 
-    ylab[i1] = y0 + dy
-    ylab[i2] = y0 - dy
+    # ── ylab from averaged dty — 
+    dy   = (cf.dty[i1] - cf.dty[i2]) / 2                      
+    # i1 sees +dx, +dy;  i2 sees -dx, -dy
+    xlab_i1 =  dx;   xlab_i2 = -dx
+    ylab_i1 = y0 + dy;  ylab_i2 = y0 - dy
 
-    # rotate peak coords in sample reference frame (xs,ys).
-    # use averaged omega values to make sure paired peaks are relocated to the same spot 
-    xy_lab  = np.transpose((xlab,ylab))
-    xy_s    = np.transpose((xs,ys))
-    
-    r = np.radians(cf.omega)
-    co,so = np.cos(r), np.sin(r)
-    co_av = (co[i1]-co[i2]) / 2 
-    so_av = (so[i1]-so[i2]) / 2    
+    # ── averaged rotation matrix 
+    r  = np.radians(cf.omega)
+    co, so = np.cos(r), np.sin(r)
+    co_av  = (co[i1] - co[i2]) / 2                            
+    so_av  = (so[i1] - so[i2]) / 2                           
 
-    R = np.transpose( ((co_av , so_av),
-                       (-so_av, co_av)), axes=(2,0,1))
+    # ── lab -> sample rotation ───
+    #   xs =  co_av * xlab + so_av * ylab
+    #   ys = -so_av * xlab + co_av * ylab
+    xs_i1 =  co_av * xlab_i1 + so_av * ylab_i1    
+    ys_i1 = -so_av * xlab_i1 + co_av * ylab_i1    
 
-    xy_s[i1] = np.einsum('ijk,ik->ij',R,xy_lab[i1])
-    xy_s[i2] = np.einsum('ijk,ik->ij',-R,xy_lab[i2])
-    xs = xy_s[:,0]
-    ys = xy_s[:,1]
-    
+    xs_i2 = -co_av * xlab_i2 - so_av * ylab_i2    # (-R applied)
+    ys_i2 =  so_av * xlab_i2 - co_av * ylab_i2    
+
+    # xs_i1 == xs_i2 and ys_i1 == ys_i2 by construction — average for numerical safety
+    xs_pairs = 0.5 * (xs_i1 + xs_i2)
+    ys_pairs = 0.5 * (ys_i1 + ys_i2)
+
+    # ── scatter into cf-length arrays ───
+    xs = np.full(cf.nrows, np.nan)
+    ys = np.full(cf.nrows, np.nan)
+    xs[i1] = xs_pairs;  xs[i2] = xs_pairs
+    ys[i1] = ys_pairs;  ys[i2] = ys_pairs
+
+    # ── write to cf ──
     for name, col in (('xs', xs), ('ys', ys)):
-        cf.addcolumn(col, name)
+        if name in cf.titles:
+            cf.getcolumn(name)[:] = col
+        else:
+            cf.addcolumn(col, name)
+
     return xs, ys
 
 
