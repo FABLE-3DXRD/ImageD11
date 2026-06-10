@@ -43,7 +43,7 @@ hdf5plugin==5.0.0 ; python_version >= "3"
     # via
     #   ImageD11 (setup.py)
     #   fabio
-idna==3.10
+idna==3.15
     # via requests
 imageio==2.36.1
     # via scikit-image
