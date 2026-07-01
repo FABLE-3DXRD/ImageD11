@@ -523,7 +523,7 @@ def match_friedel_pairs_pipeline(dsfile,
                 colfile = ds.col4dfile.replace('peaks_4d','peaks_4d_paired')
             
             if os.path.exists(colfile):
-                subprocess.run(f'rm {colfile}'.split(' '), check=True)  # delete file if exists
+                subprocess.run(['rm', colfile], check=True)
             ImageD11.columnfile.colfile_to_hdf(cf_paired, colfile, name='peaks')
             logger.info('Saved to %s', colfile)
                 

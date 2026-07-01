@@ -2059,9 +2059,11 @@ def update_geometry_fpairs(cf, ds=None, add_xyz_lab=False, relocate_pairs=True):
    - relocate_fpairs
     """
     if cf.parameters is None:
-        cf.setparameters( pars )
+        raise ValueError(
+            'No parameters in cf'
+        )
     pars = cf.parameters
-    assert "omega_pair_id" in cf.titles, 'no omega pairs. compute them first'
+    assert "omega_pair_id" in cf.titles, 'no omega pairs in cf. Compute them first'
     if "sc" in cf.titles and "fc" in cf.titles:
             sc, fc = cf.sc, cf.fc
     elif "xc" in cf.titles and "yc" in cf.titles:
