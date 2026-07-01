@@ -124,6 +124,7 @@ class PeakSubsets:
         if y0 is None:
             y0 = 0.5 * (self.dataset.ymax + self.dataset.ymin)
         self.dataset.y0 = y0
+        self.dataset.save()
         self.dataset.correct_bins_for_half_scan(self.dataset.y0)
                 
     # --- Internal methods ---
@@ -516,7 +517,7 @@ class PeakSubsets:
         # return sorted indices
         return np.sort(b1), np.sort(b2)
 
-    def check_symmetry(self, saveplot=False):
+    def check_symmetry(self):
         """
         Plot N_peaks and total_intensity vs. position for mirror dty scans
         (y0+Δy, y0-Δy) or mirror eta bins (eta, eta+180°) and check their correlation.
@@ -524,10 +525,6 @@ class PeakSubsets:
         If alignment is correct, values should match between mirror pairs.
         Significant mismatch suggests an incorrect y0 (for dty), sample movement,
         or a beam issue during scanning.
-
-        Parameters
-        ----------
-        saveplot : bool, save figure to analysispath (dty mode only)
         """
         # ── auto-detect mode ─────────────────────────────────────────────────
         mode = None
@@ -611,13 +608,7 @@ class PeakSubsets:
         fig.suptitle(title, fontsize=14)
         plt.tight_layout()
 
-        if saveplot and mode == 'dty':
-            fname = os.path.join(
-                self.dataset.analysispath,
-                self.dataset.dsname + '_dty_alignment.svg')
-            fig.savefig(fname, format='svg')
-
-        return fig
+        return fig, axes
 
 
 def _rle1(a):
@@ -705,9 +696,9 @@ class FriedelPairIndexer:
                 n_steps=self.n_steps,
                 n_out=len(self.outputs)))
 
-    def set_peak_subsets(self, n_eta_bins=360):
+    def set_peak_subsets(self, n_eta_bins=360, y0=None):
         self.logger.info('--- SET PEAKSUBSETS ---')
-        self.PeakSubsets = PeakSubsets(self.cf, self.ds, n_eta_bins)
+        self.PeakSubsets = PeakSubsets(self.cf, self.ds, n_eta_bins, y0)
 
     def sort_peak_subsets(self, pair_type='omega'):
         if pair_type == 'omega':
@@ -880,8 +871,8 @@ class FriedelPairIndexer:
 
        # pilot_chunk = 'eta_bins' if chunk_type == 'eta_bins' else 'scans'
         
-        # pick a pair near the middle — avoids edge scans with fewer peaks
-        s0 = len(pairs_list) // 2
+        # pick a pair near the middle 
+        s0 = 0
         while not valid_pairs[s0]:
             s0 += 1
         
@@ -1262,9 +1253,9 @@ class FriedelPairIndexer:
         d_gv, d_eta, d_logI = _physical_pair_distance( cf, idx1[rows], idx2[cols], pair_type)
 
         # scale factors: median absolute deviation — robust to outliers
-        d_gv_med  = np.median(d_gv)
-        d_eta_med = np.median(d_eta)
-        d_logI_med = np.median(d_logI)
+        d_gv_med  = np.nanmedian(d_gv)
+        d_eta_med = np.nanmedian(d_eta)
+        d_logI_med = np.nanmedian(d_logI)
 
         scales = np.array([d_gv_med, d_gv_med, d_gv_med, d_eta_med, d_logI_med])
         scales = np.where(scales < 1e-3 * np.median(scales), np.inf, scales) # near zero -> inf 
@@ -1435,8 +1426,6 @@ class FriedelPairIndexer:
             cf_target.filter(paired_mask)
             self.logger.info('Done')
             
-
-
 
 # ─────────────────────────────────────────────
 #  Friedel Pair Indexing Helpers
@@ -1944,7 +1933,9 @@ def plot_pair_distances(cf, pair_type='omega', bins=50, log_scale=False, **kwarg
 def locate_eta_pairs(cf, pairs, ds=None, y0=0.):
     """
     Fit the centre of mass position of eta-pairs and write results
-    back into cf as new columns 'xs' and 'ys'.
+    back into cf as new columns 'sx' and 'sy'.
+    Works only for scanning-3DXRD. For Box-beam, the relocation problems 
+    has two more degrees of freedom and cannot be solved with only one pair. 
 
     Parameters
     ----------
@@ -1963,41 +1954,48 @@ def locate_eta_pairs(cf, pairs, ds=None, y0=0.):
     R = np.transpose(((so[i1], co[i1]),
                       (so[i2], co[i2])), axes=(2, 0, 1))
 
-    xs_pairs, ys_pairs = np.linalg.solve(R, y).T
+    sx_pairs, sy_pairs = np.linalg.solve(R, y).T
 
-    # ── write into cf. Overwrite pre-existing xs,ys
-    xs = np.full(cf.nrows, np.nan)
-    ys = np.full(cf.nrows, np.nan)
-    xs[i1] = xs_pairs;  xs[i2] = xs_pairs
-    ys[i1] = ys_pairs;  ys[i2] = ys_pairs
+    # ── write into cf. Overwrite pre-existing sx, sy
+    sx = np.full(cf.nrows, np.nan)
+    sy = np.full(cf.nrows, np.nan)
+    sx[i1] = sx_pairs;  sx[i2] = sx_pairs
+    sy[i1] = sy_pairs;  sy[i2] = sy_pairs
 
-    for name, col in (('xs', xs), ('ys', ys)):
+    for name, col in (('sx', sx), ('sy', sy)):
         cf.addcolumn(col, name)
 
-    return xs, ys
+    return sx, sy
 
 
-def locate_omega_pairs(cf, pairs, ds=None, y0=0):
+def locate_omega_pairs(cf, pairs, ds=None, y0=None):
     """
     Fit the centre of mass position of omega-pairs and write results
-    back into cf as new columns 'xs' and 'ys'.
+    back into cf as new columns 'sx' and 'sy'.
+    Works only for scanning-3DXRD. For Box-beam, the relocation problems 
+    has two more degrees of freedom and cannot be solved with only one pair. 
+    
     For omega-pairs the linear system used in 'locate_eta_pairs' is near-singular
     (paired peaks are ~180 degrees apart in omega), so the position is recovered from
     two-theta and dty:
     dx  : x-shift from rotation centre, derived from tth asymmetry
     ylab: y-shift in lab frame, taken as dty - y0
     Then rotate (dx, ylab) back into sample coordinates using omega.
-    xlab, ylab and omega are averaged to make sure both peaks in each pair have the same (xs,ys) coordinates
+    xlab, ylab and omega are averaged to make sure both peaks in each pair have the same (sx, sy) coordinates
     """
     i1, i2 = pairs
     L = cf.parameters.get('distance')
-    if ds is not None and 'frelon' in ds.detector:
+    if ds is not None and ds.dtymotor == 'diffty':    # diffty is in mm on TDXRD sation
         L /= 1000
-
+    if hasattr(ds, 'y0'):
+        y0 = ds.y0
+    elif y0 is None:
+        y0 = 0.5 * (ds.ymax + ds.ymin)
+  
     # ── dx from two-theta asymmetry — 
     tantth1 = np.tan(np.radians(cf.tth[i1]))
     tantth2 = np.tan(np.radians(cf.tth[i2]))
-    dx      = L * (tantth1 - tantth2) / (tantth1 + tantth2)   
+    dx      = L * (tantth1 - tantth2) / (tantth1 + tantth2)
 
     # ── ylab from averaged dty — 
     dy   = (cf.dty[i1] - cf.dty[i2]) / 2                      
@@ -2012,31 +2010,99 @@ def locate_omega_pairs(cf, pairs, ds=None, y0=0):
     so_av  = (so[i1] - so[i2]) / 2                           
 
     # ── lab -> sample rotation ───
-    #   xs =  co_av * xlab + so_av * ylab
-    #   ys = -so_av * xlab + co_av * ylab
-    xs_i1 =  co_av * xlab_i1 + so_av * ylab_i1    
-    ys_i1 = -so_av * xlab_i1 + co_av * ylab_i1    
+    #   sx =  co_av * xlab + so_av * ylab
+    #   sy = -so_av * xlab + co_av * ylab
+    sx_i1 =  co_av * xlab_i1 + so_av * ylab_i1    
+    sy_i1 = -so_av * xlab_i1 + co_av * ylab_i1    
 
-    xs_i2 = -co_av * xlab_i2 - so_av * ylab_i2    # (-R applied)
-    ys_i2 =  so_av * xlab_i2 - co_av * ylab_i2    
+    sx_i2 = -co_av * xlab_i2 - so_av * ylab_i2    # (-R applied)
+    sy_i2 =  so_av * xlab_i2 - co_av * ylab_i2    
 
-    # xs_i1 == xs_i2 and ys_i1 == ys_i2 by construction — average for numerical safety
-    xs_pairs = 0.5 * (xs_i1 + xs_i2)
-    ys_pairs = 0.5 * (ys_i1 + ys_i2)
+    # sx_i1 == sx_i2 and sy_i1 == sy_i2 by construction — average for numerical safety
+    sx_pairs = 0.5 * (sx_i1 + sx_i2)
+    sy_pairs = 0.5 * (sy_i1 + sy_i2)
 
     # ── scatter into cf-length arrays ───
-    xs = np.full(cf.nrows, np.nan)
-    ys = np.full(cf.nrows, np.nan)
-    xs[i1] = xs_pairs;  xs[i2] = xs_pairs
-    ys[i1] = ys_pairs;  ys[i2] = ys_pairs
+    sx = np.full(cf.nrows, np.nan)
+    sy = np.full(cf.nrows, np.nan)
+    sx[i1] = sx_pairs;  sx[i2] = sx_pairs
+    sy[i1] = sy_pairs;  sy[i2] = sy_pairs
 
     # ── write to cf ──
-    for name, col in (('xs', xs), ('ys', ys)):
+    for name, col in (('sx', sx), ('sy', sy)):
         if name in cf.titles:
             cf.getcolumn(name)[:] = col
         else:
             cf.addcolumn(col, name)
 
-    return xs, ys
+    return sx, sy
+
+
+def update_geometry_fpairs(cf, ds=None, add_xyz_lab=False, relocate_pairs=True):
+    """
+    Update diffraction geometry for (scanning)-3DXRD data using Friedel-pairs (omega-pair) symmetry correction:
+    similar to cf.updateGeometry() but uses Friedel-pairs to correct for the offset from rotation-center.
+    Details in Jacob et al. 2024, https://doi.org/10.1107/S1600576724009634
+
+    Update the following columns in the ColumnFile:
+    'tth', 'eta', 'ds', 'gx', 'gy', 'gz'
+    If ``add_xyz_lab`` True:
+    'xl', 'yl', 'zl' also updated
+    If ``relocate_pairs`` True: 
+    add 'sx' and 'sy' coordinates computed from omega pairs
+
+    Parameters
+    ----------
+   -  cf : ImageD11 ColumnFile 
+   -  ds : ImageD11.sinogram dataset (optional).
+   -  add_xyz_lab : bool, optional. Add corrected lab-frame coordinates to cf
+   - relocate_fpairs
+    """
+    if cf.parameters is None:
+        cf.setparameters( pars )
+    pars = cf.parameters
+    assert "omega_pair_id" in cf.titles, 'no omega pairs. compute them first'
+    if "sc" in cf.titles and "fc" in cf.titles:
+            sc, fc = cf.sc, cf.fc
+    elif "xc" in cf.titles and "yc" in cf.titles:
+            sc, fc = cf.xc, cf.yc
+    else:
+        raise Exception("columnfile file misses xc/yc or sc/fc")
+    
+    # xyz coordinates in non-corrected geometry.
+    comp = transform.Ctransform(pars.parameters)
+    xyz_non_corr = comp.sf2xyz(sc, fc)
+    i1, i2 = get_pairs(cf, pair_type = 'omega')
+    
+    # SOURCE RELOCATION: use raw (non-corrected) tth
+    if relocate_pairs:
+        tth_raw = comp.xyz2geometry( xyz_non_corr, cf.omega, tx=0, ty=0, tz=0)[:,0]
+        cf.addcolumn(tth_raw, 'tth')
+        _ = locate_omega_pairs(cf, (i1,i2), ds)
+        
+    # FRIEDEL PAIR CORRECTION
+    # Back-rotate half of the peaks to give a more intuitive geometry where paired peaks are aligned with the diffraction source origin
+    R = np.diag([-1,-1,1])     
+    xyz_corr = 1/2 * (xyz_non_corr[i1] - xyz_non_corr[i2].dot(R))
+   
+    # merge arrays to go back to original colf size
+    xyz_corr_full = np.full( (cf.nrows, 3), np.nan, dtype=xyz_non_corr.dtype)
+    xyz_corr_full[i1] = xyz_corr
+    xyz_corr_full[i2] = xyz_corr.dot(-R)
+    del xyz_corr
+
+    # compute geometry with corrected peaks
+    out = comp.xyz2geometry( xyz_corr_full, cf.omega, tx=0, ty=0, tz=0 )
+    for i,name in enumerate(("tth", "eta", "ds", "gx", "gy", "gz")):
+        cf.addcolumn( out[:,i], name )
+    if add_xyz_lab:
+        for i,name in enumerate(['xl','yl','zl']):
+            cf.addcolumn( xyz_corr_full[:,i], name )
+        
+
+        
+        
+
+
 
 
