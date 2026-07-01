@@ -1,5 +1,5 @@
 """
-match_fpairs_s3dxrd.py
+match_friedel_pairs.py
 ======================
 Standalone pipeline script for Friedel pair matching in scanning_3DXRD datasets.
  
@@ -56,7 +56,7 @@ import matplotlib.pyplot as plt
 
 # Python path: needs to be sorted out. I copied the stuff we put at the beginning of notebooks to load ImageD11 from local user folder (cloned from github), but in production this should not be here
 # python environment stuff
-IMAGED11_PATH = None  # None means do not use git, otherwise enter the name of the folder to use for the git checkout "ImageD11" or "ImageD11_version_xx", etc
+IMAGED11_PATH = 'ImageD11'  # None means do not use git, otherwise enter the name of the folder to use for the git checkout "ImageD11" or "ImageD11_version_xx", etc
 CHECKOUT_PATH = 'ImageD11'  # the name of the git checkout folder within path. None means guess
 
 if IMAGED11_PATH is not None:
@@ -217,7 +217,7 @@ def _figure_path(dsfile, suffix):
 def _log_path(dsfile):
     ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     return os.path.join(_basedir(dsfile),
-                        'match_fpairs_s3dxrd_{}.log'.format(ts))
+                        'match_friedel_pairs_{}.log'.format(ts))
  
 def _save_figure(fig, path, logger):
     try:
