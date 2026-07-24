@@ -13,6 +13,10 @@
 # Haixing Fang, haixing.fang@esrf.fr
 # Dec 9, 2024
 # updated on January 30, 2025
+# main updates in April 2026:
+# - add DS_clean_small_grains and DS_relabel_disconnected_regions, which can replace noisy voxels by neighboting voxels' information and relabel disconnected regions, respectively
+# - made disorientation about 4 times faster
+# - a few clean ups to ensure the operation on the grain map is clean and efficient, especially for DS_merge_and_identify_grains
 
 import os
 import enum
@@ -22,6 +26,9 @@ import numpy as np
 from numpy import pi, dot, transpose, radians
 import matplotlib
 from matplotlib import pyplot as plt
+from numba import njit
+import logging
+import copy
 
 from joblib import Parallel, delayed
 import time
@@ -51,12 +58,13 @@ class grainmap:
     example:
     filename = ds.grains_file
     gm = grainmap(filename)
-    gm.merge_and_identify_grains(FirstGrainID = 0, dis_tol = np.sqrt(2))
+    gm.merge_and_identify_grains(FirstGrainID = 0, dis_tol = np.sqrt(3))
     DS = gm.DS
     '''
-    def __init__(self, filename = None, outname = None, min_misori = 3, crystal_system = 'cubic', remove_small_grains = True, min_vol = 2):
+    def __init__(self, filename = None, outname = None, min_misori = 3, crystal_system = 'cubic', remove_small_grains = True, min_vol = 3, verbose = 0):
         self.filename = filename
         self.outname = outname
+        self.verbose = verbose
         if self.outname is None and self.filename is not None:
             self.outname = os.path.join(os.path.split(self.filename)[0], 'DS.h5')
         if filename is not None:
@@ -68,19 +76,21 @@ class grainmap:
         self.crystal_system = crystal_system
         self.remove_small_grains = remove_small_grains
         self.min_vol = min_vol
-        print('****************************************** Parameters for operating the grain map: ')
-        print('Output file name: {}'.format(self.outname))
-        print('min_misori = {}'.format(min_misori))
-        print('crystal_system: {}'.format(crystal_system))
-        print('remove_small_grains = {}'.format(remove_small_grains))
-        print('min_vol = {} voxels'.format(min_vol))
-        
+        if self.verbose >= 1:
+            print('****************************************** Parameters for operating the grain map: ')
+            print('Output file name: {}'.format(self.outname))
+            print('min_misori = {}'.format(min_misori))
+            print('crystal_system: {}'.format(crystal_system))
+            print('remove_small_grains = {}'.format(remove_small_grains))
+            print('min_vol = {} voxels'.format(min_vol))
+            
     
     def read_tensor_map(self):
         if os.path.exists(self.filename):
             tensor_map = io.read_h5_file(self.filename)
             if isinstance(tensor_map, dict):
-                io.print_all_keys(tensor_map)
+                if self.verbose >= 1:
+                    io.print_all_keys(tensor_map)
             else:
                 print("The file did not produce a dictionary.")
             return tensor_map
@@ -97,7 +107,8 @@ class grainmap:
         tensor_map_flag = False
         for key in tensor_map.keys():
             if 'TensorMap' in key:
-                print('Got the key name {}'.format(key))
+                if self.verbose >= 1:
+                    print('Got the key name {}'.format(key))
                 keyname = key
                 tensor_map_flag = True
         
@@ -108,7 +119,8 @@ class grainmap:
             DS = {}
             for k in keys_list:
                 if k in tensor_map[keyname]['maps'].keys():
-                    print('Loading {} with a shape of {} to DS ...'.format(k, tensor_map[keyname]['maps'][k].shape))
+                    if self.verbose >= 1:
+                        print('Loading {} with a shape of {} to DS ...'.format(k, tensor_map[keyname]['maps'][k].shape))
                     DS[k] = tensor_map[keyname]['maps'][k]
             if 'step' in tensor_map[keyname].keys():
                 DS['voxel_size'] = tensor_map[keyname]['step'] # [um/pixel]
@@ -131,7 +143,7 @@ class grainmap:
             print('Found a map (dimensions {}) with {} voxels to be labeled with grain ID'.format(DS['labels'].shape, np.max(DS['labels'])))
             print('Please note: current labels are only randomized without any region merging !!!')
 
-        # get U from UBI if no 'U' existed
+        # get U from UBI if no 'U' existed, this is usually the case with tensor map before refinement
         if 'U' not in DS.keys() and 'UBI' in DS.keys():
             try:
                 latticepar = np.array(tensor_map[keyname]['phases']['0'].decode('utf-8').split(), dtype = float)
@@ -141,11 +153,15 @@ class grainmap:
                 
                 DS['U'] = np.empty((DS['UBI'].shape[0], DS['UBI'].shape[1], DS['UBI'].shape[2], 3, 3))
                 DS['U'].fill(np.nan)
+
+                DS['B'] = np.empty((DS['UBI'].shape[0], DS['UBI'].shape[1], DS['UBI'].shape[2], 3, 3))
+                DS['B'].fill(np.nan)
                 
                 indices = np.argwhere(~np.isnan(DS['UBI'][:, :, :, 0, 0]))
                 for (i, j, k) in indices:
                     DS['U'][i, j, k, :, :] = np.dot(B, DS['UBI'][i, j, k, :, :]).T
-                print('Done with deriving U matrix !')
+                    DS['B'][i, j, k, :, :] = B
+                print('Done with deriving U and B matrices !')
             except KeyError as e:
                 print("Key error: {}".format(e))
             except Exception as e:
@@ -167,15 +183,17 @@ class grainmap:
         return DS, tensor_map
     
     
-    def merge_and_identify_grains(self, FirstGrainID = 0, dis_tol = np.sqrt(2), count_max = 100):
+    def merge_and_identify_grains(self, FirstGrainID = 0, dis_tol = np.sqrt(3), count_max = 100, connectivity=2, relabel_disconnected=False):
         """
         merge regions and identify grains to update grain IDs, i.e. 'labels' in DS
-        default option to also remove small grains, e.g. remove grain IDs with size no bigger than 2 voxels
+        default option to also clean up small grains, e.g. replace noisy voxels by neigboring voxels' information
         """
         self.DS = DS_merge_and_identify_grains(self.DS, FirstGrainID = FirstGrainID, min_misori = self.min_misori, dis_tol = dis_tol, crystal_system = self.crystal_system, count_max = count_max)
         if self.remove_small_grains:
-            self.DS = DS_remove_small_grains(self.DS, self.min_vol)
-        
+            # self.DS = DS_remove_small_grains(self.DS, self.min_vol)
+            self.DS = DS_clean_small_grains(self.DS, FirstGrainID=FirstGrainID, min_vol=self.min_vol, dis_tol=dis_tol, min_misori=self.min_misori, crystal_system=self.crystal_system,
+                                            connectivity=connectivity, verbose=self.verbose, relabel_disconnected=relabel_disconnected)
+
     
     def write_DS(self):
         """
@@ -204,7 +222,8 @@ class grainmap:
     
     'TODO'
     """
-    method to create grain boundaries and compute boundary misorientations    
+    method to create grain boundaries and compute boundary misorientations
+    method to compute kernel average misorientation (including GB and/or excluding GB)
     method for cropping
     method for rotating
     method for rescaling
@@ -214,30 +233,52 @@ class grainmap:
     """
 
 
-def DS_merge_and_identify_grains(DS, FirstGrainID = 0, min_misori = 3.0, dis_tol = np.sqrt(2), crystal_system = 'cubic', count_max = 100):
+def DS_merge_and_identify_grains(DS, FirstGrainID = 0, min_misori = 3.0, dis_tol = np.sqrt(3), crystal_system = 'cubic', count_max = 100, verbose=0):
 
     """
     Merge regions within which the voxel misorientation is smaller than a pre-defined values
     New grain ID will be assigned to DS dictionary 'labels' key
     Optional to keep the first grain IDs static by defining FirstGrainID (by default = 0 means no first grains to be static)
+    To clean up further, please run <<DS_clean_small_grains>> and/or <<DS_relabel_disconnected_regions>>
+    But always ending with running the current function
 
     Arguments:
-    DS                -- grain map dictionary, gm = grainmap(tensor_map_file); DS = gm.DS
-    FirstGrainID      -- First grain ID to be considered for merging, by default = 0
-    min_misori        -- misorientation for merging regions
-    dis_tol           -- maximum distance around the target voxel for identifying its neigboring grains, np.sqrt(2) corresponds to the diagonal voxel
-    crystal_system    -- crystal system name one of ['cubic', 'hexagonal', 'orthorhombic', 'tetragonal', 'trigonal', 'monoclinic', 'triclinic']
-    count_max         -- maximum iterations for merging regions
-
+        DS                -- grain map dictionary, gm = grainmap(tensor_map_file); DS = gm.DS
+        FirstGrainID      -- First grain ID to be considered for merging, by default = 0
+        min_misori        -- misorientation for merging regions
+        dis_tol           -- maximum distance around the target voxel for identifying its neigboring grains, np.sqrt(3) corresponds to the end of the diagonal voxel
+        crystal_system    -- crystal system name one of ['cubic', 'hexagonal', 'orthorhombic', 'tetragonal', 'trigonal', 'monoclinic', 'triclinic']
+        count_max         -- maximum iterations for merging regions
+        verbose           -- verose level, 0, 1, 2
     Returns:
-    DS_new          -- DS grain map dictionary with updated grain IDs
+        DS_new          -- DS grain map dictionary with updated grain IDs
     """
-    
+    DS = DS_check(DS)
     stop_merge = False
     count = 0
     start_time = time.time()
+
+    # for 3D map, re-assign the labels sequentially because the same label may appear at different 2D layers
+    if DS['labels'].shape[0] > 1:
+        if verbose >= 0:
+            print("Re-assign sequential labels to the 3D map before merging")
+        new_labels = np.full_like(DS['labels'], -1)
+        next_id = 0
+        for z in range(DS['labels'].shape[0]):
+            layer_in = DS['labels'][z, ...]
+            layer_out = np.full_like(layer_in, -1)
+            
+            unique_ids = np.unique(layer_in)
+            unique_ids = unique_ids[unique_ids != -1]
+            # remap each value to the next global ID
+            for old_id in unique_ids:
+                layer_out[layer_in == old_id] = next_id
+                next_id += 1
+            new_labels[z, ...] = layer_out
+        DS['labels'] = new_labels
+    
     while not stop_merge:
-        DS_new = DS_merge_and_identify_grains_sub(DS, FirstGrainID = FirstGrainID, min_misori = min_misori, dis_tol = dis_tol, crystal_system = crystal_system)
+        DS_new = DS_merge_and_identify_grains_sub(DS, FirstGrainID = FirstGrainID, min_misori = min_misori, dis_tol = dis_tol, crystal_system = crystal_system, verbose = verbose)
 
         N_old = np.max(DS['labels'])
         N_new = np.max(DS_new['labels'])
@@ -258,34 +299,265 @@ def DS_merge_and_identify_grains(DS, FirstGrainID = 0, min_misori = 3.0, dis_tol
 
 def DS_remove_small_grains(DS, min_vol = 2):
     """
-    Remove small grains defined by no bigger than min_vol voxels
+    Remove small grains defined by no bigger than min_vol voxels, replace these noisy voxels by empty
+    If you want to clean up noisy voxels by replacing with neighboring grain information, please use <<DS_clean_small_grains>>
+    In general, it is recommended to run <<DS_clean_small_grains>> instead
     
     Arguments:
     DS                -- grain map dictionary, gm = grainmap(tensor_map_file); DS = gm.DS
     min_vol           -- minimum number of voxels to be kept in DS [voxel]
 
     Returns:
-    DS_out            -- DS grain map dictionary with updated grain IDs
+    DS_out            -- DS grain map dictionary with small/noisy grains removed
     """
     
     assert 'labels' in DS.keys(), "labels must be in DS keys"
-    DS_out = DS.copy()
+    DS_out = {}
+    for key, value in DS.items():
+        if isinstance(value, np.ndarray):
+            DS_out[key] = value.copy()
+        else:
+            DS_out[key] = copy.deepcopy(value)
     count1 = 0
     count2 = 0
+    key_5d = ['B', 'U', 'UB', 'UBI']
+    key_4d = ['ipf_x', 'ipf_y', 'ipf_z', 'Rod']
+    key_3d_to_zero = ['completeness', 'intensity', 'nuniq']
+    key_3d_to_minus1 = ['labels', 'phase_ids']
     for j in range(np.max(DS['labels'])+1):
         ind = np.array(np.where(DS['labels'] == j)).T
         Vregion = ind.shape[0] # number of voxels for each grain
         if Vregion <= min_vol:
             count1 += 1
-            DS_out['labels'][ind[:,0], ind[:,1], ind[:,2]] = -1
+            for key in key_5d:
+                if key in DS.keys():
+                    DS_out[key][ind[:,0], ind[:,1], ind[:,2],:,:] = np.nan
+            for key in key_4d:
+                if key in DS.keys():
+                    DS_out[key][ind[:,0], ind[:,1], ind[:,2],:] = np.nan
+            for key in key_3d_to_zero:
+                if key in DS.keys():
+                    DS_out[key][ind[:,0], ind[:,1], ind[:,2]] = 0
+            for key in key_3d_to_minus1:
+                if key in DS.keys():
+                    DS_out[key][ind[:,0], ind[:,1], ind[:,2]] = -1
         elif Vregion > min_vol:
             count2 += 1
     print('Found and removed {} small grains with size <= {} voxels; {} grains left now.'.format(count1, min_vol, count2))
     return DS_out
 
 
-def DS_merge_and_identify_grains_sub(DS, FirstGrainID = 0, min_misori = 3.0, dis_tol = np.sqrt(2), crystal_system = 'cubic'):
+def DS_clean_small_grains(DS, min_vol = 6, FirstGrainID = 0, dis_tol = np.sqrt(3), min_misori = 3.0, crystal_system = 'cubic', relabel_disconnected = False, connectivity = 2, verbose = 0):
+    """
+    Clean small grains defined by no bigger than min_vol voxels
+    Two clean-ups:
+    1) for isolated small grains, replace their voxels by neighboring voxels' labels, U etc
+    2) for isolated regions that have the same label as a big parent region, assign them with a new label
+    For purely removing small grain voxels, please use DS_out = DS_remove_small_grains(DS, min_vol = min_vol)
     
+    Arguments:
+        DS                -- grain map dictionary, gm = grainmap(tensor_map_file); DS = gm.DS
+        FirstGrainID      -- First grain ID to be considered for checking, by default = 0
+        min_misori        -- misorientation to identify whether to only update labels or update all
+        dis_tol           -- maximum distance around the target voxel for identifying its neigboring grains, np.sqrt(3) ensure the end of the diagonal voxel in 2D included
+        relabel_disconnected (bool)  -- flag to relabel the disconnected regions, False by default
+        crystal_system    -- crystal system name one of ['cubic', 'hexagonal', 'orthorhombic', 'tetragonal', 'trigonal', 'monoclinic', 'triclinic']
+        connectivity (int): Label connected components (connectivity=1 for 6-connectivity, 2 for 18-connectivity, 3 for 26-connectivity)
+        verbose           -- verose level, 0, 1, 2
+    Returns:
+        DS_out2           -- DS grain map dictionary with small/noisy grains cleaned up and isolated big grain regions re-labeled   
+    """
+    if crystal_system in ['cubic', 'hexagonal', 'orthorhombic', 'tetragonal', 'trigonal', 'monoclinic', 'triclinic']:
+        if verbose >=1:
+            logging.info('{} is OK'.format(crystal_system))
+        crystal_structure = Symmetry[crystal_system]
+    else:
+        raise ValueError('{} is not supported.'.format(crystal_system))
+        
+    assert 'labels' in DS.keys(), "labels must be in DS keys"
+    
+    # Create a deep copy instead of shallow copy, e.g. DS_out = DS.copy()
+    DS = DS_check(DS)
+    DS_out = {}
+    for key, value in DS.items():
+        if isinstance(value, np.ndarray):
+            DS_out[key] = value.copy()
+        else:
+            DS_out[key] = copy.deepcopy(value)
+    
+    count1 = 0
+    count2 = 0
+    cutbox = np.zeros((3, 2), dtype=int)
+    key_5d = ['B', 'U', 'UB', 'UBI']
+    key_4d = ['ipf_x', 'ipf_y', 'ipf_z', 'Rod']
+    key_3d = ['completeness', 'intensity', 'nuniq', 'labels', 'phase_ids']
+
+    ids = np.unique(DS['labels'].ravel())
+    ids = ids[ids >= FirstGrainID]  # Filter IDs greater than or equal to FirstGrainID
+    ids = np.sort(ids)
+    for j in ids:
+        id_vol = DS['labels'] == j
+        if np.where(id_vol)[0].shape[0] > min_vol:
+            count2 += 1
+            continue
+        count1 += 1
+        id_bbox = np.array(np.where(id_vol > 0)).T
+        cutbox[:, 0] = np.maximum(np.min(id_bbox, axis=0) - 2, 0)
+        cutbox[:, 1] = np.minimum(np.max(id_bbox, axis=0) + 2, np.array(DS['labels'].shape) - 1)
+        
+        slices = tuple(slice(cutbox[ii, 0], cutbox[ii, 1] + 1) for ii in range(3))
+        id_vol_cut = id_vol[slices]
+        vol_cut = DS['labels'][slices]
+        id_indices = np.array(np.where(id_vol)).T
+        
+        # Compute distance map and neighbors
+        id_dismap = distance_transform_edt(~id_vol_cut)  # Equivalent to bwdist in MATLAB
+        id_neigb = (id_dismap > 0) & (id_dismap < dis_tol)
+        
+        ids_neigb = vol_cut[id_neigb]
+        # Filter out -1
+        filtered_ids_neigb = ids_neigb[ids_neigb != -1]
+        if len(filtered_ids_neigb) > 0:
+            # Find unique values and their counts
+            unique_ids_neigb, counts = np.unique(filtered_ids_neigb, return_counts=True)
+            # Find the index of maximum count
+            max_count_index = np.argmax(counts)
+            most_common_id_neigb = unique_ids_neigb[max_count_index]
+            if verbose >= 1:
+                logging.info("Noise grain label {}: found most frequent neighboring label (excluding -1) {} with {} times".format(j, most_common_id_neigb, counts[max_count_index]))
+            
+            # get indices for the most frequent neighboring label
+            indices_in_cut = np.array(np.where(vol_cut == most_common_id_neigb)).T
+            indices_original = indices_in_cut + np.array([cutbox[0,0], cutbox[1,0], cutbox[2,0]])
+            # print(DS['labels'][indices_original[:,0], indices_original[:,1], indices_original[:,2]])
+    
+            # for noisy grain
+            if len(id_indices) > 1:
+                # Multiple indices case
+                id_indices_ind = np.ravel_multi_index(
+                    (id_indices[:, 0], id_indices[:, 1], id_indices[:, 2]), id_vol.shape
+                )
+                r0 = get_mean_rod(DS['Rod'][id_indices[:, 0], id_indices[:, 1], id_indices[:, 2], :])
+            else:
+                r0 = np.ravel(DS['Rod'][id_indices[:, 0], id_indices[:, 1], id_indices[:, 2]])
+            # get the information for the target region
+            U0 = ori_converter.quat2u(ori_converter.rod2quat(r0))
+            euler_angles0 = ori_converter.u2euler(U0)
+    
+            # for most frequent neighboring grain
+            r1 = get_mean_rod(DS['Rod'][indices_original[:, 0], indices_original[:, 1], indices_original[:, 2], :], auto_check = False)
+            U1 = ori_converter.quat2u(ori_converter.rod2quat(r1))
+    
+            # check misorientation
+            the_angle, _, _ = disorientation(U0.T, U1.T, crystal_structure=crystal_structure)
+            if np.rad2deg(the_angle) > min_misori:
+                # update additional parameters
+                for key in key_5d:
+                    if key in DS.keys():
+                        DS_out[key][id_indices[:, 0], id_indices[:, 1], id_indices[:, 2], :, :] = DS[key][indices_original[0, 0], indices_original[0, 1], indices_original[0, 2], :, :]
+                for key in key_4d:
+                    if key in DS.keys():
+                        DS_out[key][id_indices[:, 0], id_indices[:, 1], id_indices[:, 2], :] = DS[key][indices_original[0, 0], indices_original[0, 1], indices_original[0, 2], :]
+                for key in key_3d:
+                    if key in DS.keys():
+                        DS_out[key][id_indices[:, 0], id_indices[:, 1], id_indices[:, 2]] = DS[key][indices_original[0, 0], indices_original[0, 1], indices_original[0, 2]]
+            else:
+                # only update labels
+                DS_out['labels'][id_indices[:, 0], id_indices[:, 1], id_indices[:, 2]] = most_common_id_neigb
+                # print(most_common_id_neigb, j, id_indices)
+        else:
+            DS_out['labels'][id_indices[:, 0], id_indices[:, 1], id_indices[:, 2]] = -1
+    if verbose >= 0:
+        logging.info('Found and removed {} small grains with size <= {} voxels; {} grains left now.'.format(count1, min_vol, count2))
+        
+    # update grain labels by getting rid of the zeros labels
+    if verbose >= 0:
+        logging.info('Now I will update grain labels from {}...'.format(FirstGrainID))
+    DS_out2 = {}
+    for key, value in DS_out.items():
+        if isinstance(value, np.ndarray):
+            DS_out2[key] = value.copy()
+        else:
+            DS_out2[key] = copy.deepcopy(value)
+    ids = np.unique(DS_out['labels'].ravel())
+    ids = ids[ids >= FirstGrainID]  # Filter IDs greater than or equal to FirstGrainID
+    ids = np.sort(ids)
+    count = 0
+    DS_out2['labels'] = np.zeros_like(DS_out2['labels'])-1
+    for j in ids:
+        id_vol = DS_out['labels'] == j
+        if np.where(id_vol)[0].shape[0] > 0:
+            DS_out2['labels'][id_vol] = count + FirstGrainID
+            count += 1
+    if relabel_disconnected:
+        try:
+            DS_out2 = DS_relabel_disconnected_regions(DS_out2, connectivity=connectivity, verbose=verbose)
+        except Exception as e:
+            logging.error("Failed to call DS_relabel_disconnected_regions: {}".format(e))
+    return DS_out2
+
+
+def DS_relabel_disconnected_regions(DS, connectivity=2, verbose=0):
+    """
+    Relabel disconnected regions for DS grain map, i.e. to deal the case where the same grain labeled regions are actually not connected
+    Using skimage.measure.label for connected component analysis.
+    Arguments:
+        DS (dict):          grain map dictionary, gm = grainmap(tensor_map_file); DS = gm.DS
+        connectivity (int): Label connected components (connectivity=1 for 6-connectivity, 2 for 18-connectivity, 3 for 26-connectivity)
+        verbose (int):      verose level, 0, 1, 2
+    Returns:
+        DS_out (dict):      DS grain map dictionary output
+    """
+    from skimage import measure
+    DS = DS_check(DS)
+    DS_out = {}
+    for key, value in DS.items():
+        if isinstance(value, np.ndarray):
+            DS_out[key] = value.copy()
+        else:
+            DS_out[key] = copy.deepcopy(value)
+        
+    labels = DS_out['labels'].copy()
+    # Get unique grain IDs
+    unique_ids = np.unique(labels)
+    unique_ids = unique_ids[unique_ids != -1]
+    label_mapping = {}
+    next_new_id = np.max(unique_ids) + 1 if len(unique_ids) > 0 else 1
+    
+    for grain_id in unique_ids:
+        grain_mask = (labels == grain_id)
+        labeled_regions = measure.label(grain_mask, connectivity=connectivity)
+        num_regions = labeled_regions.max()
+        if num_regions > 1:
+            if verbose >= 1:
+                print("Grain {} has {} disconnected regions".format(grain_id, num_regions))
+            # Calculate region sizes
+            region_sizes = []
+            for region_id in range(1, num_regions + 1):
+                region_size = np.sum(labeled_regions == region_id)
+                region_sizes.append((region_id, region_size))
+            region_sizes.sort(key=lambda x: x[1], reverse=True)
+            
+            # Keep largest region with original ID
+            largest_region_id = region_sizes[0][0]
+            
+            # Assign new IDs to smaller regions
+            for region_id, region_size in region_sizes[1:]:
+                new_id = next_new_id
+                next_new_id += 1
+                label_mapping[(grain_id, region_id)] = new_id
+                region_mask = (labeled_regions == region_id)
+                labels[region_mask] = new_id
+                if verbose >= 1:
+                    print("Grain ID {}: Region {} with {} voxels has now been updated to have a new label of {}".format(grain_id, region_id, region_size, new_id))
+    
+    DS_out['labels'] = labels
+    if verbose >= 0:
+        print("Relabeled {} disconnected regions".format(len(label_mapping)))
+    return DS_out
+
+
+def DS_merge_and_identify_grains_sub(DS, FirstGrainID = 0, min_misori = 3.0, dis_tol = np.sqrt(3), crystal_system = 'cubic', verbose = 0):
     """
     sub function:
     Merge regions within which the voxel misorientation is smaller than a pre-defined values
@@ -293,21 +565,37 @@ def DS_merge_and_identify_grains_sub(DS, FirstGrainID = 0, min_misori = 3.0, dis
     Optional to keep the first grain IDs static by defining FirstGrainID (by default = 0 means no first grains to be static)
 
     Arguments:
-    DS                -- grain map dictionary, gm = grainmap(tensor_map_file); DS = gm.DS
-    FirstGrainID      -- First grain ID to be considered for merging, by default = 0
-    min_misori        -- misorientation for merging regions
-    dis_tol           -- maximum distance around the target voxel for identifying its neigboring grains, np.sqrt(2) corresponds to distance to the diagonal voxel in 2D
-    crystal_system    -- crystal system name one of ['cubic', 'hexagonal', 'orthorhombic', 'tetragonal', 'trigonal', 'monoclinic', 'triclinic']
-
+        DS                -- grain map dictionary, gm = grainmap(tensor_map_file); DS = gm.DS
+        FirstGrainID      -- First grain ID to be considered for merging, by default = 0
+        min_misori        -- misorientation for merging regions
+        dis_tol           -- maximum distance around the target voxel for identifying its neigboring grains, np.sqrt(3) ensure the end of the diagonal voxel in 2D included
+        crystal_system    -- crystal system name one of ['cubic', 'hexagonal', 'orthorhombic', 'tetragonal', 'trigonal', 'monoclinic', 'triclinic']
+        verbose           -- verose level, 0, 1, 2
     Returns:
-    DS_merge          -- DS grain map dictionary with updated grain IDs
+        DS_merge          -- DS grain map dictionary with updated grain IDs
     """
-    
     if crystal_system in ['cubic', 'hexagonal', 'orthorhombic', 'tetragonal', 'trigonal', 'monoclinic', 'triclinic']:
-        print('{} is OK'.format(crystal_system))
+        if verbose >=1:
+            logging.info('{} is OK'.format(crystal_system))
         crystal_structure = Symmetry[crystal_system]
     else:
         raise ValueError('{} is not supported.'.format(crystal_system))
+
+    if 'Rod' not in DS.keys():
+        DS['Rod'] = np.empty((DS['U'].shape[0], DS['U'].shape[1], DS['U'].shape[2], 3))
+        DS['Rod'].fill(np.nan)
+        # assign Rodrigues vector
+        try:
+            print("Getting Rodrigues vectors from U matrices")
+            for i in range(DS['U'].shape[0]):
+                for j in range(DS['U'].shape[1]):
+                    for k in range(DS['U'].shape[2]):
+                        if not np.isnan(DS['U'][i, j, k, 0, 0]):
+                            DS['Rod'][i, j, k] = ori_converter.quat2rod(ori_converter.u2quat(DS['U'][i, j, k, :, :]))
+        except KeyError as e:
+            print("Key error: {}".format(e))
+        except Exception as e:
+            print("An unexpected error occurred: {}".format(e))
     
     DS_merge = DS.copy()
     DS_merge['labels'] = np.zeros_like(DS['labels']) - 1
@@ -316,14 +604,15 @@ def DS_merge_and_identify_grains_sub(DS, FirstGrainID = 0, min_misori = 3.0, dis
     id = id[id >= FirstGrainID]  # Filter IDs greater than or equal to FirstGrainID
     id = np.sort(id)
     id0 = len(id)
-    print('Initial number of grain IDs is {}'.format(id0))
+    if verbose >=0:
+        logging.info('Initial number of grain IDs is {}'.format(id0))
 
     # Initialize Vregion array to store the number of voxels for each region
     Vregion=np.zeros((np.max(DS['labels'])+1, 1), dtype = 'int64')
     print('Get the number of voxels for each of the {} regions ...'.format(len(id)) )       
     for j in range(np.max(DS['labels'])+1):
         Vregion[j] = np.array(np.where(DS['labels'] == j)).T.shape[0] # number of voxels for each region
-        if j % 20000 == 0 or j == np.max(DS['labels'])-1:
+        if verbose >= 1 and (j % 20000 == 0 or j == np.max(DS['labels'])-1):
             print('Done for {} regions ...'.format(j))
             
     # Retrieve GrainIDs for the unchanged ones
@@ -392,7 +681,7 @@ def DS_merge_and_identify_grains_sub(DS, FirstGrainID = 0, min_misori = 3.0, dis
                     continue
                 r1 = get_mean_rod(DS['Rod'][indices_neigb[:, 0], indices_neigb[:, 1], indices_neigb[:, 2], :], auto_check = False)
                 U1 = ori_converter.quat2u(ori_converter.rod2quat(r1))
-                the_angle, _, _ = disorientation(U0, U1, crystal_structure=crystal_structure)
+                the_angle, _, _ = disorientation(U0.T, U1.T, crystal_structure=crystal_structure)
 
                 ang_list.append(np.rad2deg(the_angle))
                 V1_list.append(Vregion[id_neigb_j])
@@ -444,16 +733,39 @@ def DS_merge_and_identify_grains_sub(DS, FirstGrainID = 0, min_misori = 3.0, dis
             id = np.setdiff1d(id, id[0])
 
         # Display progress
-        if i > 1 and i % 10000 == 0:
+        if i > 1 and i % 10000 == 0 and verbose >= 0:
             print('{} grains identified. {} regions have been merged and {} regions waiting for merging ...'.format(i+1, id0 - len(id), len(id)))
 
         stop_merge = id.size == 0
 
     end_time = time.time()
-    print("The whole merging took {:.4f} seconds".format(end_time - start_time))
-    print('{} grains identified out of {} regions.'.format(i+1, id0))
+    if verbose >= 0:
+        logging.info("The whole merging took {:.4f} seconds".format(end_time - start_time))
+        logging.info('{} grains identified out of {} regions.'.format(i+1, id0))
     
     return DS_merge
+
+
+def DS_check(DS):
+    """
+    Check for NaN values in U matrix and invalidate corresponding labels.
+    Arguments:
+        DS -- grain map dictionary with 'U' and 'labels' keys
+    Returns:
+        DS -- updated dictionary with invalid labels set to -1
+    """
+    assert 'labels' in DS.keys(), "labels must be in DS keys"
+    assert 'U' in DS.keys(), "U must be in DS keys"
+    nan_mask = np.isnan(DS['U'][..., 0, 0])
+    valid_labels_mask = DS['labels'] > -1
+    # Combine masks: where U has NaN and label is valid
+    invalid_mask = nan_mask & valid_labels_mask
+    count = np.sum(invalid_mask)
+    # Set invalid labels to -1
+    DS['labels'][invalid_mask] = -1
+    if count > 0:
+        print("Found {} voxels with NaN in U matrix but valid labels. The labels have been set to -1.".format(count))
+    return DS
 
 
 def DS_to_paraview(DS, h5name = 'DS.h5'):
@@ -1011,6 +1323,200 @@ def get_mean_rod(rod, kmeans_flag=False, auto_check = True):
     return rod_mean
 
 
+def KAM_kernel(kernel_size=5, sigma=1.0, kernel_cutoff=50):
+    """
+    Create a gaussian kernel of KxKxK dimensions, binarized it upon kernel_cutoff (%)
+    TODO: non-square kernel size
+    Args:
+        kernel_size (int): size of the kernel (odd number recommended)
+        sigma (float): standard deviation of Gaussian
+        kernel_cutoff (int): percentile threshold for binarization
+    Returns:
+        kernel_bin: binarized 3D kernel for KAM computation, 0s and 1s
+    """
+    # Ensure kernel_size is odd
+    if kernel_size % 2 == 0:
+        kernel_size += 1
+        print("Warning: kernel_size must be odd. Using {}".format(kernel_size))
+    
+    # Create coordinate grid centered at 0
+    r = kernel_size // 2
+    coords = np.arange(-r, r + 1)
+    
+    # distances to the center
+    X, Y, Z = np.meshgrid(coords, coords, coords, indexing='ij')
+    squared_distances = X**2 + Y**2 + Z**2
+    distances = np.sqrt(squared_distances)
+    
+    # Vectorized Gaussian computation
+    kernel = np.exp(-0.5 * (distances / sigma)**2) / (sigma * np.sqrt(2*np.pi))
+    
+    # Binarize
+    cutoff = np.percentile(kernel, kernel_cutoff)
+    kernel_bin = (kernel >= cutoff).astype(np.uint8)
+    
+    return kernel_bin
+
+
+def DS_KAM_and_GB(DS, kernel_size=5, kernel_cutoff=50, tol_dist=1.732, crystal_system='cubic', misorientation_threshold=(0, 10),
+                  fill_value=np.nan, n_jobs=-1, Umis_flag=True, slice_no = 0, plot_flag=True):
+    """
+    Compute Kernal Average Misorientation (KAM) and grain-boundary (GB) misorientation on the grainmap (parallelized with joblib)
+    Exclude the neiboring voxels misorientation outside the bounds defined in misorientation_threshold
+    Any neighboring voxels have misorientation > higher bound of misorientation_threshold is considered as GB voxel
+    Args:
+        DS                          -- DS dict expressing a grain map
+        kernel_size                 -- int, size of the kernel
+        kernel_cutoff               -- int, threshold value for the gaussian cutoff (in percentage)
+        tol_dist                    -- maximum distance between neighboring voxels to be considered as grain boundary voxels [voxel]
+        crystal_system              -- crystal system name as str
+        misorientation_threshold    -- tuple, Reject neiboring voxels' misorientations outside this range
+        fill_value                  -- To put where mask is false, np.nan by default
+        n_jobs                      -- Number of parallel jobs, -1 uses all available cores
+        Umis_flag                   -- True to use xfab.symmetry.Umis, False to use grainmaps.disorientation_list
+        slice_no                    -- int, slice indice for plotting, 0 by default for 2D map, while it becomes useful for 3D map
+        plot_flag                   -- bool, plot flag
+    Returns:
+        KAM_map                     -- kernel average misorientation map in degrees, 3D numpy array (Z,Y,X)
+        GB_map                      -- dict, grain boundary voxel map, keys include "mask", "misori"
+    Bench mark testing for a (1, 361, 361) map with fcc structure: it takes 36.4 s with Umis, while it takes 1.2 min with grainmaps.disorientation.
+    Comparisons for other crystal systems to be done
+    """
+    kernel = KAM_kernel(kernel_size, kernel_cutoff)
+    # precompute neighbor offsets from kernel
+    kernel_center = np.array(kernel.shape) // 2
+    offsets = np.argwhere(kernel) - kernel_center
+    pad = kernel_size // 2
+
+    # crystal symmetry
+    valid_systems = ['cubic', 'hexagonal', 'orthorhombic',
+                     'tetragonal', 'trigonal', 'monoclinic', 'triclinic']
+    if crystal_system not in valid_systems:
+        raise ValueError("{} not supported".format(crystal_system))
+
+    crystal_structure = Symmetry[crystal_system]
+    if Umis_flag:
+        try:
+            from xfab.symmetry import Umis
+            Umis_list = ['triclinic', 'monoclinic', 'orthorhombic',
+                         'tetragonal', 'trigonal', 'hexagonal', 'cubic']
+            n_Umis = Umis_list.index(crystal_system.lower()) + 1
+        except Exception as e:
+            print("Failed to use xfab.symmetry.Umis: {}".format(e))
+            print("Switching to use grainmaps.disorientation_list")
+            Umis_flag = False
+    
+    # make sure labels > -1 has available U matrices
+    assert 'labels' in DS.keys(), 'DS keys must contain "labels"'
+    DS = DS_check(DS)
+    mask = DS['labels'] > -1
+
+    # add padding to consider boundaries etc.
+    orientation_map = np.pad(DS['U'],
+        ((pad, pad), (pad, pad), (pad, pad), (0, 0), (0, 0)),
+        mode='constant')
+    mask = np.pad(mask, ((pad, pad), (pad, pad), (pad, pad)), constant_values=False)
+
+    Z, Y, X = mask.shape
+    min_angle, max_angle = misorientation_threshold
+
+    # --- Generator ---
+    def voxel_generator():
+        for k in range(pad, Z - pad):
+            for i in range(pad, Y - pad):
+                for j in range(pad, X - pad):
+                    if mask[k, i, j]:
+                        yield k, i, j
+
+    # --- Core computation ---
+    def process_voxel(k, i, j, tol_dist):
+        center = orientation_map[k, i, j]
+        if not center.any():
+            return (k, i, j, fill_value)
+        neighbors_idx = offsets + np.array([k, i, j])
+        angles = []
+        GB_voxel_flag = False
+        GB_misori = 0.0
+        for c in neighbors_idx:
+            neighbor = orientation_map[c[0], c[1], c[2]]
+            dist = np.sqrt(np.sum((c - (k, i, j))**2))
+            # neighbor must have valid U matrix
+            if not neighbor.any() or np.isnan(neighbor).any():
+                continue
+            if Umis_flag:
+                angle = Umis(center, neighbor, n_Umis)[:, 1].min()
+            else:
+                angle_rad, _, _ = disorientation(np.asarray(center, dtype='float').T,
+                                             np.asarray(neighbor, dtype='float').T,
+                                             crystal_structure)
+                angle = np.rad2deg(angle_rad)
+            if min_angle <= angle <= max_angle:
+                # consider as intragranular voxel
+                angles.append(angle)
+            elif angle > max_angle and dist <= tol_dist:
+                # consider as grain-boundary voxel
+                GB_voxel_flag = True
+                GB_misori = angle
+        val = np.nanmean(angles) if angles else fill_value
+        return (k, i, j, val, GB_voxel_flag, GB_misori)
+
+    # execute in parallel
+    # results = Parallel(n_jobs=n_jobs, verbose=5)(delayed(process_voxel)(k, i, j, tol_dist) for k, i, j in voxel_generator())
+    voxel_list = list(voxel_generator())
+    results = Parallel(n_jobs=n_jobs, verbose=0)(delayed(process_voxel)(k, i, j, tol_dist) 
+        for k, i, j in tqdm(voxel_list, desc="Processing voxels"))
+    
+    # build KAM_map and GB_map
+    KAM_map = np.full((Z, Y, X), fill_value)
+    GB_map = {"mask": np.full((Z, Y, X), False),
+          "misori": np.full((Z, Y, X), fill_value)}
+    for k, i, j, val, GB_voxel_flag, GB_misori in results:
+        KAM_map[k, i, j] = val
+        GB_map['mask'][k, i, j] = GB_voxel_flag
+        GB_map['misori'][k, i, j] = GB_misori
+    # remove padding
+    KAM_map = KAM_map[pad:-pad, pad:-pad, pad:-pad]
+    for key in GB_map.keys():
+        GB_map[key] = GB_map[key][pad:-pad, pad:-pad, pad:-pad]
+    if plot_flag:
+        try:
+            f, a = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(12,8))
+            a = a.ravel()
+            im = a[0].imshow(DS['ipf_z'][slice_no,...], origin='lower')
+            a[0].set_title('(a) ipf_z')
+            a[0].set_xlabel('Lab X axis --->')
+            a[0].set_ylabel('Lab Y axis --->')
+             # colorbar is not meaningful but to ensure the same size as other subplots
+            plt.colorbar(im, ax=a[0], fraction=0.046, pad=0.04)
+
+            im = a[1].imshow(KAM_map[slice_no,:,:], origin='lower')
+            a[1].set_title('(b) KAM with grain boundary (deg)')
+            a[1].set_xlabel('Lab X axis --->')
+            a[1].set_ylabel('Lab Y axis --->')
+            im_overlay = np.zeros(GB_map['mask'].shape[1:] + (4,))
+            im_overlay[GB_map['mask'][slice_no,...]] = [1, 1, 1, 1]  # white with 0% transparency
+            # Overlay on the existing plot
+            a[1].imshow(im_overlay, origin='lower', alpha=0.95)
+            plt.colorbar(im, ax=a[1], fraction=0.046, pad=0.04)
+            
+            im = a[2].imshow(KAM_map[slice_no,:,:], origin='lower')
+            a[2].set_title('(c) KAM (deg)')
+            a[2].set_xlabel('Lab X axis --->')
+            a[2].set_ylabel('Lab Y axis --->')
+            plt.colorbar(im, ax=a[2], fraction=0.046, pad=0.04)
+            im = a[3].imshow(GB_map['misori'][slice_no,:,:], origin='lower')
+            a[3].set_title('(d) GB misori (deg)')
+            a[3].set_xlabel('Lab X axis --->')
+            a[3].set_ylabel('Lab Y axis --->')
+            plt.colorbar(im, ax=a[3], fraction=0.046, pad=0.04)
+            
+            plt.tight_layout()
+            plt.show()
+        except Exception as e:
+            print("Failed to plot KAM map: {}".format(e))
+    return KAM_map, GB_map
+
+
 # this class comes from pymicro/crystal/lattice.py
 class Symmetry(enum.Enum):
     """
@@ -1453,14 +1959,15 @@ class Symmetry(enum.Enum):
 
 
 # these functions are adapted from pymicro/crystal/microstructure.py
+# but every one has been rewritten to correct bugs and improve efficiency
 def disorientation_list(ori1_list, ori2_list, crystal_structure=Symmetry.triclinic):
     """
     Compute the misorientation for lists of crystal orientations.
     
     Arguments:
-    ori1_list: A list or array of 3x3 rotation matrices (shape: [N, 3, 3])
+    ori1_list: A list or array of 3x3 rotation matrices (shape: [N, 3, 3] or [3, 3])
         describing the first set of orientations.
-    ori2_list: A list or array of 3x3 rotation matrices (shape: [N, 3, 3])
+    ori2_list: A list or array of 3x3 rotation matrices (shape: [N, 3, 3] or [3, 3])
         describing the second set of orientations.
     crystal_structure: An instance of the `Symmetry` class describing the crystal symmetry.
     
@@ -1473,14 +1980,25 @@ def disorientation_list(ori1_list, ori2_list, crystal_structure=Symmetry.triclin
     # Ensure inputs are numpy arrays
     ori1_list = np.asarray(ori1_list)
     ori2_list = np.asarray(ori2_list)
-    assert len(ori1_list) == len(ori2_list), "ori1_list must be the same length as ori2_list"
     symmetries = crystal_structure.symmetry_operators()  # Shape: [num_sym_ops, 3, 3]
-    if len(ori1_list.shape) == 2:
+    if len(ori1_list.shape) == 2 and len(ori2_list.shape) == 2:
+        # both are 3*3 arrays
         num_orientations = 1
-    elif len(ori1_list.shape) == 3:
+    elif len(ori1_list.shape) == 3 and len(ori2_list.shape)==2:
+        # ori1_list is N*3*3, but ori2_list is 3*3 array
+        num_orientations = len(ori1_list)
+        ori2_list = np.repeat(ori2_list[np.newaxis, :, :], num_orientations, axis=0)
+    elif len(ori1_list.shape) == 2 and len(ori2_list.shape)==3:
+        # ori1_list is 3*3, but ori2_list is N*3*3 array
+        num_orientations = len(ori2_list)
+        ori1_list = np.repeat(ori1_list[np.newaxis, :, :], num_orientations, axis=0)
+    elif len(ori1_list.shape) == 3 and len(ori2_list.shape)==3:
+        # both are N*3*3 arrays
         num_orientations = len(ori1_list)
     else:
         print('Only supports 2 or 3 dimensional inputs.')
+
+    assert len(ori1_list) == len(ori2_list), "ori1_list must have the same length as ori2_list"
 
     # Initialize outputs
     angles = []
@@ -1497,6 +2015,8 @@ def disorientation_list(ori1_list, ori2_list, crystal_structure=Symmetry.triclin
             axes.append(the_axis)
             axes_xyz.append(the_axis_xyz)
     else:
+        ori1_list = np.squeeze(ori1_list)
+        ori2_list = np.squeeze(ori2_list)
         the_angle, the_axis, the_axis_xyz = disorientation(ori1_list, ori2_list, crystal_structure=crystal_structure)
         angles.append(the_angle)
         axes.append(the_axis)
@@ -1508,6 +2028,9 @@ def disorientation_list(ori1_list, ori2_list, crystal_structure=Symmetry.triclin
 def disorientation(ori1, ori2, crystal_structure=Symmetry.triclinic):
     """
     Compute the disorientation between two orientations using vectorized symmetry operations.
+    Note that ori1 and ori2 are matrices converting sample to grain, i.e. transpose of standard U matrix
+    If you input U matrices directly, it does not affect the output of misorientation angle, but it affects the misorientation axes
+    Therefore, it is recommend to input U1.T and U2.T
 
     Arguments:
     ori1: A 3x3 rotation matrix representing the first orientation.
@@ -1519,7 +2042,7 @@ def disorientation(ori1, ori2, crystal_structure=Symmetry.triclinic):
                   
     Replace the function disorientation_deprecated, speed up by 10x faster
     """
-    if (ori1 == ori2).all():
+    if np.allclose(ori1, ori2, rtol=1e-06, atol=1e-08):
         the_angle = 0.0
         the_axis = np.array([0.0, 0.0, 1.0])
         the_axis_xyz = np.array([0.0, 0.0, 1.0])
@@ -1626,38 +2149,41 @@ def disorientation_deprecated(ori1, ori2, crystal_structure=Symmetry.triclinic):
     return the_angle, the_axis, the_axis_xyz
 
 
+@njit
 def misorientation_angle_from_delta(delta):
-    """Compute the misorientation angle from the misorientation matrix.
-
-    Compute the angle associated with this misorientation matrix :math:`\\Delta g`.
-    It is defined as :math:`\\omega = \\arccos(\\text{trace}(\\Delta g)/2-1)`.
-    To avoid float rounding point error, the value of :math:`\\cos\\omega`
-    is clipped to [-1.0, 1.0].
-
-    .. note::
-
-      This does not account for the crystal symmetries. If you want to
-      find the disorientation between two orientations, use the
-      :py:meth:`~pymicro.crystal.microstructure.Orientation.disorientation`
-      method.
-
+    """
+    Compute the misorientation angle from the misorientation matrix.
+    It is defined as: ω = arccos((trace(Δg) - 1)/2)
+    Rewritten to be supported by numba.njit
+    
     :param delta: The 3x3 misorientation matrix.
     :returns float: the misorientation angle in radians.
     """
-    cw = np.clip(0.5 * (delta.trace() - 1), -1., 1.)
+    trace_val = delta[0, 0] + delta[1, 1] + delta[2, 2]
+    cw = 0.5 * (trace_val - 1)
+    # Manual clamp since np.clip does not work with scalars in Numba
+    if cw > 1.0:
+        cw = 1.0
+    elif cw < -1.0:
+        cw = -1.0
     omega = np.arccos(cw)
     return omega
 
 
+@njit
 def misorientation_axis_from_delta(delta):
-    """Compute the misorientation axis from the misorientation matrix.
-
+    """
+    Compute the misorientation axis from the misorientation matrix.
+    
     :param delta: The 3x3 misorientation matrix.
     :returns: the misorientation axis (normalised vector).
     """
-    n = np.array([delta[1, 2] - delta[2, 1], delta[2, 0] -
-                  delta[0, 2], delta[0, 1] - delta[1, 0]])
-    n /= np.sqrt((delta[1, 2] - delta[2, 1]) ** 2 +
-                 (delta[2, 0] - delta[0, 2]) ** 2 +
-                 (delta[0, 1] - delta[1, 0]) ** 2)
+    n = np.array([delta[1, 2] - delta[2, 1],
+                  delta[2, 0] - delta[0, 2],
+                  delta[0, 1] - delta[1, 0]])
+    norm = np.sqrt(n[0]**2 + n[1]**2 + n[2]**2)
+    if norm > 0:
+        n[0] /= norm
+        n[1] /= norm
+        n[2] /= norm
     return n
