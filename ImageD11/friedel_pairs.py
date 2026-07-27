@@ -96,8 +96,8 @@ class PeakSubsets:
         self.valid_frames_subsets = None
         self.valid_eta_bins_subsets = None
         
-        self._set_aliases()
         self._get_y0(y0)
+        self._set_aliases()
         self._compute_subsets(n_eta_bins)
         
         if self.is_half_acquisition:
@@ -352,7 +352,7 @@ class PeakSubsets:
 
         # skip sorting if already done
         if self.columnfile.sortedby == "eta":
-            logger.info("[sort_by_sinogram] peakfile already sorted – %d peaks",
+            logger.info("[sort_by_eta] peakfile already sorted – %d peaks",
                         self.columnfile.nrows)
             # 1. bin by eta
             i_eta = np.clip(
@@ -361,7 +361,7 @@ class PeakSubsets:
 
         # 1. bin by eta and sort
         else:
-            logger.info("[sort_by_sinogram] sorting columnfile in eta order  –  %d peaks to sort, may take some time... ",
+            logger.info("[sort_by_eta] sorting columnfile in eta order  –  %d peaks to sort, may take some time... ",
                         self.columnfile.nrows)
         
             i_eta = np.clip(
@@ -464,7 +464,7 @@ class PeakSubsets:
         else:
             idx1 = pair.ei_hi   
             idx2 = pair.ei_lo
-        
+
         slc_1 = LUT[idx1].slice
         slc_2 = LUT[idx2].slice
 
@@ -875,13 +875,15 @@ class FriedelPairIndexer:
         s0 = 0
         while not valid_pairs[s0]:
             s0 += 1
-        
         idx1_pilot, idx2_pilot = Psub.select_pair(s0, chunk_type, return_as='idx')
 
         # find weight factors for optimal rescaling
-        _, rescaling_wts = self.estimate_search_scales(
-            idx1_pilot, idx2_pilot, 0.5 * dist_max, pair_type=pair_type)
-        
+        try:
+            _, rescaling_wts = self.estimate_search_scales(
+                idx1_pilot, idx2_pilot, 0.5 * dist_max, pair_type=pair_type)
+        except RuntimeError:
+            rescaling_wts = {'gx': 1., 'gy': 1., 'gz': 1., 'eta': 1., 'I': 1.}
+            
         # combine user weights with auto-rescaling
         _w = {'gx': 1., 'gy': 1., 'gz': 1., 'eta': 1., 'I': 1.}
         if self.weights is not None:
@@ -922,7 +924,10 @@ class FriedelPairIndexer:
                     continue
 
             if extended_bin_search and chunk_type!='frames':
-                idx1, idx2 = self.PeakSubsets._extended_pair_selec(pid, chunk_type)
+                try:
+                    idx1, idx2 = self.PeakSubsets._extended_pair_selec(pid, chunk_type)
+                except KeyError as e: # with extended selection one bounding pair may end up being non-valid pair. in this case, use regular selection instead
+                    idx1, idx2 = self.PeakSubsets.select_pair(pid, chunk_type, return_as='idx')
             else:
                 idx1, idx2 = self.PeakSubsets.select_pair(pid, chunk_type, return_as='idx')
 
