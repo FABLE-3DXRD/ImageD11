@@ -422,7 +422,7 @@ void refine_assigned(vec ubi[3], vec gv[], int labels[], int label, int *npk,
     n = 0;
     sumsqtot = 0;
     for ( i = 0; i < 3; i++ ){
-        for ( j = 0; j < 3; i++ ){
+        for ( j = 0; j < 3; j++ ){
             R[i][j] = 0.;
             H[i][j] = 0.;
             UB[i][j] = 0.;
