@@ -1649,14 +1649,14 @@ def test_FeAu_JADB_bb_friedel(aroot):
 
 if __name__=="__main__":
     print(papermill.__path__)
-    test_tomographic_route(destination_folder)
-    test_pbp_route(destination_folder)
-    test_FeAu_JADB_tomo(destination_folder)
-    test_FeAu_JADB_pbp(destination_folder)
-    test_FeAu_f2scan_JADB_pbp(destination_folder)
-    test_FeAu_JADB_bb(destination_folder)
-    test_FeAu_JADB_bb_grid(destination_folder)
-    test_FeAu_JADB_bb_friedel(destination_folder)
+    # test_tomographic_route(destination_folder)
+    # test_pbp_route(destination_folder)
+    # test_FeAu_JADB_tomo(destination_folder)
+    # test_FeAu_JADB_pbp(destination_folder)
+    # test_FeAu_f2scan_JADB_pbp(destination_folder)
+    # test_FeAu_JADB_bb(destination_folder)
+    # test_FeAu_JADB_bb_grid(destination_folder)
+    # test_FeAu_JADB_bb_friedel(destination_folder)
     # just testing deth5 and new pbp cluster options
     # test_FeAu_JADB_tomo_deth5(destination_folder)
-    # test_FeAu_JADB_pbp_deth5(destination_folder)
+    test_FeAu_JADB_pbp_deth5(destination_folder)
