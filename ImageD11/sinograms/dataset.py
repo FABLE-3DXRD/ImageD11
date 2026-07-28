@@ -7,7 +7,7 @@ import logging
 import ImageD11.grain
 import ImageD11.unitcell
 import ImageD11.sinograms.properties
-from ImageD11.blobcorrector import correct_cf_with_dxdyfiles, correct_cf_with_spline, correct_cf_with_h5files
+from ImageD11.blobcorrector import get_corrector
 from ImageD11.columnfile import colfile_from_dict
 
 """
@@ -105,6 +105,7 @@ class DataSet:
         "sparsefile",
         "icolfile",
         "pbpfile",
+        "y0"
     )
     STRINGLISTS = ("scans", "imagefiles", "sparsefiles")
     # sinograms
@@ -284,7 +285,10 @@ class DataSet:
         print("# Collected %d missing %d" % (self.check_images()))
         print("# Segmented %d missing %d" % (self.check_sparse()))
 
-    def import_all(self, scans=None, shape=None):
+    def import_all(self,
+                   scans=None, shape=None,
+                   guess_y0=True
+                  ):
         # collect the data
         self.import_scans(scans=scans)
         # lima frames
@@ -293,6 +297,8 @@ class DataSet:
         self.import_motors_from_master()
         self.guess_shape()
         self.guessbins()
+        if guess_y0:
+            self.guess_y0()
         # pixels per frame
         try:
             self.import_nnz()
@@ -598,6 +604,12 @@ class DataSet:
                 self.ymin - self.ystep / 2, self.ymax + self.ystep / 2, ny + 1
             )
 
+    def guess_y0(self):
+        """Guess y0 from y bins. We assume the scan is symmetric across y0.
+        Should be good for an initial guess."""
+        y0 = (self.ymax + self.ymin)/2
+        self.y0 = y0
+    
     def correct_bins_for_half_scan(self, y0 = 0.0):
         """
         Pad self.ybincens / self.ybinedges around the bin nearest to y0
@@ -856,31 +868,46 @@ class DataSet:
                 self._pk4d = self.peaks_table.pk2dmerge(self.omega_for_bins, self.dty)
         return self._pk4d
 
+    def get_spatial_corrector(self):
+        """Return a spatial corrector callable built from whichever distortion
+        source is set on self, in priority order: detectorh5, then e2dx/e2dy
+        files, then splinefile. Returns None if none is configured.
+    
+        The returned callable takes a columnfile and adds the
+        'sc'/'fc' corrected coordinate columns:
+            corrector = self.get_spatial_corrector()
+            if corrector is not None:
+                cf = corrector(cf)
+        """
+        return get_corrector(
+            spline_file=getattr(self, "splinefile", None),
+            dxfile=getattr(self, "e2dxfile", None),
+            dyfile=getattr(self, "e2dyfile", None),
+            h5file=getattr(self, "detectorh5", None),
+            detector=getattr(self, "detector", "eiger"),
+        )
+    
     def get_colfile_from_peaks_dict(self, peaks_dict=None):
         """Converts a dictionary of peaks (peaks_dict) into an ImageD11 columnfile
         adds on the geometric computations (tth, eta, gvector, etc)
         Uses self.pk2d if no peaks_dict provided"""
         # TODO add optional peaks mask
-
         if peaks_dict is None:
             peaks_dict = self.pk2d
-
         cf = colfile_from_dict(peaks_dict)
-
-        # Define spatial correction
-        if hasattr(self, "detectorh5") and (self.detectorh5 is not None):
-            cf = correct_cf_with_h5files(cf, self.detectorh5, self.detector)
-        elif hasattr(self, "e2dxfile") and (self.e2dxfile is not None):
-            cf = correct_cf_with_dxdyfiles(cf, self.e2dxfile, self.e2dyfile)
-        elif hasattr(self, "splinefile") and (self.splinefile is not None):
-            cf = correct_cf_with_spline(cf, self.splinefile)
+    
+        corrector = self.get_spatial_corrector()
+        if corrector is not None:
+            cf = corrector(cf)
         else:
             print('No spatial correction files supplied. Will return uncorrected file.')
-        # Generate columnfile from peaks table
+    
         return cf
 
     def update_colfile_pars(self, cf, phase_name=None):
         """Load parameters and update geometry for colfile"""
+        if (not hasattr(self, 'parfile')) or (self.parfile is None):
+            raise AttributeError("You must supply a parameter file first with ds.parfile = '/path/to/pars.json'")
         cf.parameters.loadparameters(self.parfile, phase_name=phase_name)
         cf.updateGeometry()
 
