@@ -68,6 +68,23 @@ def guess_omega_step( omega, rptcut=0.02 ):
     # print('mx, avg',dv.max(), dv.mean(), guess)
     return guess
 
+def get_rotations_images(all_angles):
+    """
+    Detect rotation boundaries where angle resets from ~360 back to ~0.
+    Returns list of image counts per rotation.
+    """
+    all_angles = np.asarray(all_angles)
+    
+    # A reset happens where the angle drops (next angle < current angle)
+    diffs = np.diff(all_angles)
+    reset_indices = np.where(diffs < 0)[0] + 1  # +1 because diff shifts by 1
+    
+    # Build list of sizes from boundary indices
+    boundaries = np.concatenate([[0], reset_indices, [len(all_angles)]])
+    rotations_images = np.diff(boundaries).tolist()
+    
+    return rotations_images
+        
 class DataSet:
     """One DataSet instance per detector!"""
 
@@ -464,7 +481,7 @@ class DataSet:
                     "replace bad scan omega", b, self.scans[b], "with", j, self.scans[j]
                 )
         logging.info("imported omega/dty")
-
+    
     def guess_shape(self):
         npts = np.sum( self.frames_per_scan )
         if os.path.exists(self.masterfile):
@@ -476,9 +493,23 @@ class DataSet:
                 if s not in seen:
                     seen.add( s )
                     scans.append( s )
+        
             # number of turns
             rotations = []
             for i, scan in enumerate(scans):
+                #umregular grid of rotationnal images
+                rot_images = get_rotations_images(self.omega[i])
+                unregular_grid = False
+                if max(rot_images) != min(rot_images):
+                    print('Unregulare grid detected')
+                    print('Max number of step per rotation: %d'%(max(rot_images)))
+                    print('Min number of step per rotation: %d'%(min(rot_images)))
+                    unregular_grid = True
+                    rot_images = rot_images[:-1] #disregard last dty step on the irregular grid
+                    
+                raw_angles = self.omega[i]
+                raw_dty = self.dty[i]
+                
                 with h5py.File(self.masterfile, "r") as hin:
                     s = hin[scan]
                     title = s["title"].asstr()[()]
@@ -498,15 +529,36 @@ class DataSet:
                     elif title.split()[0] == "f2scan":
                         # good luck ? Assuming rotation was the inner loop here:
                         step = s["instrument/fscan_parameters/step_size"][()]
+                        print('step is', step)
                         s1 = int(np.round(360 / step))
-                        s0 = self.frames_per_scan[i] // s1
+                        print('s1 is', s1)
+                        if unregular_grid:
+                            #Remove the last dty step for this unregular grid
+                            s0 = self.frames_per_scan[i] // s1 -1
+                        else:
+                            s0 = self.frames_per_scan[i] // s1
+                        print('s0 is', s0)
                         # logging.warning("Dataset might need to be reshaped")
                         if s0 > 1:
-                            file_nums = np.arange( s0 * s1 ).reshape((s0, s1))
+                           
                             if (s1 * s0) != self.frames_per_scan[i]:
                                 logging.warning( 'scan %s problem in guessing f2scan shape s1 = %d s0 = %s nframes = %d'%(
                                     scan, s1, s0, self.frames_per_scan[i] ) )
-                            rotations += [
+                            if unregular_grid:
+                                file_nums = []
+                                n_tot_im = 0
+                                for i, r in enumerate(rot_images):
+                                    file_nums.append(np.arange(n_tot_im, n_tot_im+r))
+                                    n_tot_im += r
+                                rotations = []
+                                for row in file_nums:
+                                    if len(row) == s1 :
+                                        rotations.append("%s::[%d:%d]" % (scan, row[0], row[-1] + 1))
+                                    else:
+                                        rotations.append("%s::[%d:%d]" % (scan, row[0], row[-2] + 1))
+                            else:
+                                file_nums = np.arange( s0 * s1 ).reshape((s0, s1))
+                                rotations += [
                                 "%s::[%d:%d]" % (scan, row[0], row[-1] + 1)
                                 for row in file_nums
                                 ]
@@ -516,10 +568,14 @@ class DataSet:
                         s0 = 1
                         s1 = npts
                         rotations.append( scan )
+            print(f'len rotation: {len(rotations)}')
             self.scans = rotations
         if len(self.scans) >= 1:
             s0 = len(self.scans)
-            s1 = npts // s0
+            if unregular_grid:
+                s1 = int(np.round(360 / step))
+            else:
+                s1 = npts // s0
         else:
             # no scans
             s0 = 0
@@ -528,12 +584,30 @@ class DataSet:
         if np.prod(self.shape) != npts:
                 print("Warning: irregular scan - might be bugs in here")
                 print(npts, len(self.scans))
-        self.omega = np.array(self.omega).reshape(self.shape)
-        self.dty = np.array(self.dty).reshape(self.shape)
-        logging.info(
-                "sinogram shape = ( %d , %d ) imageshape = ( %d , %d)"
-                % (self.shape[0], self.shape[1], self.imageshape[0], self.imageshape[1])
-            )
+    
+        # NEW - we truncate frames to frames_per_scan, throw away any left.
+        # there's probably a better way but it runs...
+        if unregular_grid:
+            ds_omega = []
+            ds_dty = []
+            for row in file_nums:
+                if len(row) == s1 :
+                    omega_real = raw_angles[row[0]:row[-1] + 1]
+                    dty_real = raw_dty[row[0]:row[-1] + 1]
+                else:
+                    omega_real = raw_angles[row[0]:row[-2] + 1]
+                    dty_real = raw_dty[row[0]:row[-2] + 1]
+                ds_omega.append(omega_real)
+                ds_dty.append(dty_real)
+            self.omega = np.array(ds_omega)
+            self.dty = np.array(ds_dty)
+        else:
+            self.omega = np.array(self.omega)[0,:self.frames_per_scan[0]].reshape(self.shape)
+            self.dty = np.array(self.dty)[0,:self.frames_per_scan[0]].reshape(self.shape)
+            logging.info(
+                    "sinogram shape = ( %d , %d ) imageshape = ( %d , %d)"
+                    % (self.shape[0], self.shape[1], self.imageshape[0], self.imageshape[1])
+                )
 
     def guessbins(self):
         """
