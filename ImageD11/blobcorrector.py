@@ -403,6 +403,49 @@ def correct_cf_with_h5files(cf, detectorh5file, detector):
     cf.addcolumn( pkout['sc'], 'sc' )
     cf.addcolumn( pkout['fc'], 'fc' )
     return cf
+
+def get_corrector(spline_file=None,
+                  dxfile=None, dyfile=None,
+                  h5file=None, detector='eiger'):
+    """
+    Return a callable that corrects a columnfile, adding the
+    'sc'/'fc' columns from the raw 's_raw'/'f_raw' coordinates.
+
+    Distortion sources, in priority order if more than one is given:
+      1. h5file (+ detector) : a pyFAI detector h5 file
+      2. dxfile and dyfile   : e2dx / e2dy distortion maps (edf files)
+      3. spline_file         : a fit2d spline file
+
+    Returns None if no source is supplied, so the caller can decide how to
+    handle the uncorrected case.
+
+    Usage:
+        corrector = get_corrector(spline_file="frelon.spline")
+        if corrector is not None:
+            cf = corrector(cf)
+    """
+    if h5file is not None:
+        es = detector_spatial(h5file=h5file, detector=detector)
+    elif dxfile is not None and dyfile is not None:
+        es = detector_spatial(dxfile=dxfile, dyfile=dyfile)
+    elif spline_file is not None:
+        corrector = correctorclass(spline_file)
+
+        def apply_correction(cf):
+            corrector.correct_px_lut(cf)
+            return cf
+        return apply_correction
+    else:
+        return None
+
+    def apply_correction(cf):
+        pkin = {'s_raw': cf['s_raw'], 'f_raw': cf['f_raw']}
+        pkout = es(pkin)
+        cf.addcolumn(pkout['sc'], 'sc')
+        cf.addcolumn(pkout['fc'], 'fc')
+        return cf
+    return apply_correction
+
 #
 #"""
 #http://homepages.inf.ed.ac.uk/rbf/CVonline/LOCAL_COPIES/OWENS/LECT5/node5.html
