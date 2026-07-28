@@ -300,9 +300,9 @@ def fit_sine_wave(omega, dty, initial_guess, weights=None):
     return sx_out, sy_out, y0_out
 
 
-def sx_sy_y0_from_dty_omega(dty, omega, weights=None):
+def sx_sy_y0_from_dty_omega(dty, omega, y0=0, weights=None):
     """Fits sine wave to dty vs omega plot, extracts sx, sy, y0"""
-    initial_guess = (0.5, 0.5, 0)
+    initial_guess = (0.5, 0.5, y0)
 
     sx, sy, y0 = fit_sine_wave(omega, dty, initial_guess, weights=weights)
 
