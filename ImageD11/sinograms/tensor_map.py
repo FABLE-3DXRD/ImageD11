@@ -1409,37 +1409,44 @@ class TensorMap:
         return tensor_map
 
     @classmethod
-    def from_grainsinos(cls, grainsinos, method="iradon", use_gids=True, cutoff_level=0.1, steps=None):
+    def from_grainsinos(cls, grainsinos, method="iradon", use_gids=True,
+                        cutoff_level=0.1, steps=None,
+                        sf_normalisation=False, sf_norm_mult=4, smooth_labels=False, smooth_size=5):
         """Build a TensorMap object from a list of GrainSinos.
         method is the recon that we look for inside each grainsino
-        use_gids will look for grainsino.grain.gid inside each grainsino to use as the label
-        if it can't find it, it will use the increment"""
-
-        # make empty maps container
+        use_gids will look for grainsino.grain.gid inside each grainsino to use as
+        the label; if it can't find it, it will use the increment.
+    
+        sf_normalisation : intensity normalisation scheme.
+            False (default) -> per-grain recon is mean-normalised and clipped to
+                [0, 1], and unwon pixels are zeroed at the end (original behaviour).
+            True -> recons are kept on their own (structure-factor-corrected) scale,
+                then the whole intensity map is globally rescaled and clipped. Use
+                this when the recons already carry meaningful relative intensities.
+        sf_norm_mult : what to multiply by before normalising the whole map
+    
+        smooth_labels : if True, median-filter the grain label map (size=smooth_size)
+            after the greedy assignment, then regenerate the intensity/phase/UBI/IPF
+            maps from the smoothed labels. Off by default.
+    
+        With sf_normalisation=False and smooth_labels=False this reproduces the
+        original from_grainsinos output.
+        """
         maps = dict()
-
-        # make empty phases container
         phases = dict()
-
-        # get the labels for each grain
+        
+        # labels for each grain
         grain_labels = [inc for inc, _ in enumerate(grainsinos)]
         if use_gids:
             try:
                 grain_labels = [gs.grain.gid for gs in grainsinos]
             except AttributeError:
                 print("Some/all GIDs are missing! Using increments instead:")
-
-        # check that each grain has a reference unitcell
-        # if it doesn't, 
-
-        # work out the phase for each grain to decide how many phases we have
-        # use a set to remove duplicate phases
-        # if this fails, we can't continue
+        
+        # phases (set removes duplicates)
         try:
             phase_set = {gs.grain.ref_unitcell for gs in grainsinos}
             phases_list = list(phase_set)
-
-            # add the phases we found to the phases dictionary
             for phase_inc, phase in enumerate(phases_list):
                 phases[phase_inc] = phase
         except NameError:
@@ -1447,122 +1454,205 @@ class TensorMap:
         
         if not all([method in gs.recons for gs in grainsinos]):
             raise AttributeError("Not all grainsinos have the method you specified! Check if your reconstructions worked")
-
-        # work out the phase ID for each grain
+        
         phase_ids = [phases_list.index(gs.grain.ref_unitcell) for gs in grainsinos]
-
-        # construct the maps in reconstruction space
-        # we will convert them all at the end before adding
-
+        
         map_shape = grainsinos[0].recons[method].shape
-
-        # make an empty grain label map
+        
         grain_labels_map = np.full(map_shape, -1)
-
-        # make an empty intensity map
         raw_intensity_map = np.full(map_shape, cutoff_level)
-
-        # make an empty phase ID map
         phase_id_map = np.full(map_shape, -1)
-
-        # make an empty UBI map full of nan (invalid value)
         ubi_map = np.full((map_shape[:2] + (3, 3)), np.nan, float)
-
-        # check if we have IPF colours
-
-        have_ipfs = False
-        if all([all([hasattr(gs.grain, attr) for attr in ("rgb_x", "rgb_y", "rgb_z")]) for gs in grainsinos]):
-            have_ipfs = True
-
-        # IPF maps
+        
+        have_ipfs = all(
+            all(hasattr(gs.grain, attr) for attr in ("rgb_x", "rgb_y", "rgb_z"))
+            for gs in grainsinos
+        )
         if have_ipfs:
-            redx = np.zeros(map_shape)
-            grnx = np.zeros(map_shape)
-            blux = np.zeros(map_shape)
-
-            redy = np.zeros(map_shape)
-            grny = np.zeros(map_shape)
-            bluy = np.zeros(map_shape)
-
-            redz = np.zeros(map_shape)
-            grnz = np.zeros(map_shape)
-            bluz = np.zeros(map_shape)
-
-        # normalisation function
-        def norm(r):
-            m = r > r.max() * 0.2
-            return (r / r[m].mean()).clip(0, 1)
-
+            redx = np.zeros(map_shape); grnx = np.zeros(map_shape); blux = np.zeros(map_shape)
+            redy = np.zeros(map_shape); grny = np.zeros(map_shape); bluy = np.zeros(map_shape)
+            redz = np.zeros(map_shape); grnz = np.zeros(map_shape); bluz = np.zeros(map_shape)
+        
+        # normalisation of each grain's recon, selected by mode
+        if sf_normalisation:
+            def norm(r):
+                return r
+        else:
+            def norm(r):
+                m = r > r.max() * 0.2
+                return (r / r[m].mean()).clip(0, 1)
+        
+        # --- Pass 1: greedy label assignment by intensity ---
+        for label, gs in zip(grain_labels, grainsinos):
+            g_raw_intensity = norm(gs.recons[method])
+            mask = g_raw_intensity > raw_intensity_map
+            raw_intensity_map = np.where(mask, g_raw_intensity, raw_intensity_map)
+            grain_labels_map[mask] = label
+        
+        # --- optional label smoothing ---
+        if smooth_labels:
+            from scipy.ndimage import median_filter
+            grain_labels_map = median_filter(grain_labels_map, size=smooth_size)
+        
+        # --- Pass 2: (re)generate intensity / phase / UBI / IPF from final labels ---
+        raw_intensity_map = np.full(map_shape, cutoff_level)
         for label, gs, phase_id in zip(grain_labels, grainsinos, phase_ids):
             g_raw_intensity = norm(gs.recons[method])
-            g_raw_intensity_mask = g_raw_intensity > raw_intensity_map
-            g_raw_intensity_map = g_raw_intensity[g_raw_intensity_mask]
-            raw_intensity_map[g_raw_intensity_mask] = g_raw_intensity_map
-            grain_labels_map[g_raw_intensity_mask] = label
-            phase_id_map[g_raw_intensity_mask] = phase_id
-            ubi_map[g_raw_intensity_mask] = gs.grain.ubi
-
+            mask = grain_labels_map == label
+            
+            raw_intensity_map[mask] = g_raw_intensity[mask]
+            phase_id_map[mask] = phase_id
+            ubi_map[mask] = gs.grain.ubi
+            
             if have_ipfs:
-                redx[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_x[0]
-                grnx[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_x[1]
-                blux[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_x[2]
-
-                redy[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_y[0]
-                grny[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_y[1]
-                bluy[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_y[2]
-
-                redz[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_z[0]
-                grnz[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_z[1]
-                bluz[g_raw_intensity_mask] = g_raw_intensity_map * gs.grain.rgb_z[2]
-
-        raw_intensity_map[raw_intensity_map <= cutoff_level] = 0.0
-
+                gi = g_raw_intensity[mask]
+                redx[mask] = gi * gs.grain.rgb_x[0]
+                grnx[mask] = gi * gs.grain.rgb_x[1]
+                blux[mask] = gi * gs.grain.rgb_x[2]
+                redy[mask] = gi * gs.grain.rgb_y[0]
+                grny[mask] = gi * gs.grain.rgb_y[1]
+                bluy[mask] = gi * gs.grain.rgb_y[2]
+                redz[mask] = gi * gs.grain.rgb_z[0]
+                grnz[mask] = gi * gs.grain.rgb_z[1]
+                bluz[mask] = gi * gs.grain.rgb_z[2]
+                
+        # --- final intensity normalisation, selected by mode ---
+        if sf_normalisation:
+            norm_scale = raw_intensity_map[raw_intensity_map > 0].mean() * sf_norm_mult
+            raw_intensity_map = (raw_intensity_map / norm_scale).clip(0, 1)
+        else:
+            norm_scale = None
+            raw_intensity_map[raw_intensity_map <= cutoff_level] = 0.0
+        
         maps["intensity"] = cls.recon_order_to_map_order(raw_intensity_map)
         maps["labels"] = cls.recon_order_to_map_order(grain_labels_map)
         maps["phase_ids"] = cls.recon_order_to_map_order(phase_id_map)
         maps["UBI"] = cls.recon_order_to_map_order(ubi_map)
-
+        
         if have_ipfs:
             rgb_x_map = np.transpose((redx, grnx, blux), axes=(1, 2, 0))
             rgb_y_map = np.transpose((redy, grny, bluy), axes=(1, 2, 0))
             rgb_z_map = np.transpose((redz, grnz, bluz), axes=(1, 2, 0))
-
+            
+            if sf_normalisation:
+                rgb_x_map = (rgb_x_map / norm_scale).clip(0, 1)
+                rgb_y_map = (rgb_y_map / norm_scale).clip(0, 1)
+                rgb_z_map = (rgb_z_map / norm_scale).clip(0, 1)
+            
             maps["ipf_x"] = cls.recon_order_to_map_order(rgb_x_map)
             maps["ipf_y"] = cls.recon_order_to_map_order(rgb_y_map)
             maps["ipf_z"] = cls.recon_order_to_map_order(rgb_z_map)
-
-        # get the step size from the dataset of one of the grainsino objects
+        
         if steps is None:
             ystep = grainsinos[0].ds.ystep
             steps = (1.0, ystep, ystep)
-
+        
         tensor_map = cls(maps=maps, phases=phases, steps=steps)
-
         return tensor_map
+
+    @staticmethod
+    def _stack_pad_value(map_name, dtype):
+        """Fill value for voxels added when padding a layer to a common (NY, NX)
+        shape. These voxels lie outside that layer's reconstructed area, so they
+        take each map's 'no data' value."""
+        if map_name in ('labels', 'phase_ids'):
+            return -1
+        if np.issubdtype(dtype, np.floating):
+            if map_name == 'intensity' or map_name.startswith('ipf'):
+                return 0.0
+            return np.nan
+        return 0
+    
+    @staticmethod
+    def _rotation_axis_indices(ny, nx):
+        """Index of the rotation axis S on the map (Y, X) axes for a layer of
+        in-plane shape (ny, nx). S is at recon index shape//2; carried through the
+        single -Y flip in recon_order_to_map_order this becomes:
+          Y: ny - 1 - ny//2   (Y axis is flipped)
+          X: nx // 2           (X axis is not flipped)"""
+        return ny - 1 - ny // 2, nx // 2
+
+    @classmethod
+    def _common_recon_grid(cls, shapes):
+        """shapes: iterable of (ny, nx) per layer. Return a grid spec that places
+        the rotation axis S at a common index on each axis across all layers:
+        (before_y, after_y, before_x, after_x, out_ny, out_nx)."""
+        s = [cls._rotation_axis_indices(ny, nx) for ny, nx in shapes]
+        before_y = max(sy for sy, _ in s)
+        after_y  = max(ny - 1 - sy for (ny, _), (sy, _) in zip(shapes, s))
+        before_x = max(sx for _, sx in s)
+        after_x  = max(nx - 1 - sx for (_, nx), (_, sx) in zip(shapes, s))
+        return (before_y, after_y, before_x, after_x,
+                before_y + after_y + 1, before_x + after_x + 1)
+
+    @classmethod
+    def _pad_to_common_grid(cls, arr, grid, pad_value):
+        """Symmetric-about-S pad of a (NZ, NY, NX, ...) array onto a common grid
+        from _common_recon_grid. Leaves Z and any trailing tensor axes untouched."""
+        before_y, after_y, before_x, after_x, out_ny, out_nx = grid
+        ny, nx = arr.shape[1], arr.shape[2]
+        sy, sx = cls._rotation_axis_indices(ny, nx)
+        pad_y_before = before_y - sy
+        pad_x_before = before_x - sx
+        pad_width = [(0, 0)] * arr.ndim
+        pad_width[1] = (pad_y_before, out_ny - ny - pad_y_before)
+        pad_width[2] = (pad_x_before, out_nx - nx - pad_x_before)
+        return np.pad(arr, pad_width, mode='constant', constant_values=pad_value)
 
     @classmethod
     def from_stack(cls, tensormaps, zstep=1.0):
-        """Stack multiple TensorMaps together along Z. The order of tensormaps will determine the Z-order, lowest-index first.
-        All Tensor Maps in tensormaps must have the same phase mapping (i.e phase 0 is always the same unitcell)"""
+        """Stack multiple TensorMaps together along Z. The order of tensormaps
+        determines the Z-order, lowest-index first. All TensorMaps must share the
+        same phase mapping (i.e. phase 0 is always the same unitcell).
+
+        The in-plane (NY, NX) shape may differ between layers: a layer's recon size
+        is ``ny + pad`` (iradon) or set by ``step_grid_from_ybincens`` (PBP), and
+        ``pad`` / grid extent depend on that layer's fitted ``y0``. Small y0
+        variations therefore give slightly different layer sizes.
+
+        Every layer is reconstructed with the rotation axis S at ``shape // 2`` in
+        recon space (iradon ``output_size // 2``; PBP ``step_to_recon`` ``shape // 2``).
+        Carried through the single ``-Y`` flip in ``recon_order_to_map_order``, S
+        sits at map-Y index ``NY - 1 - NY//2`` and map-X index ``NX // 2`` (these
+        differ by one for even sizes). We pad every layer onto a common, S-aligned
+        grid before concatenating, keeping the rotation axis aligned through the
+        stack. Padded voxels take each map's 'no data' value."""
         combined_maps = {}
         tm0 = tensormaps[0]
 
         # work out what map names we have in all of our tensormaps
-        common_map_names = [map_name for map_name in tm0.keys() if all([map_name in tm.keys() for tm in tensormaps])]
+        common_map_names = [map_name for map_name in tm0.keys()
+                            if all([map_name in tm.keys() for tm in tensormaps])]
+
+        # common S-aligned in-plane grid across all layers
+        grid = cls._common_recon_grid([(tm.shape[1], tm.shape[2]) for tm in tensormaps])
 
         for map_name in common_map_names:
-            # just concatenate the maps together (defaults to first axis which is Z)
-            combined_maps[map_name] = np.concatenate([tm.maps[map_name] for tm in tensormaps])
+            pad_value = cls._stack_pad_value(map_name, tm0.maps[map_name].dtype)
+
+            # pad each layer onto the common grid, then concatenate along Z (axis 0)
+            combined_maps[map_name] = np.concatenate(
+                [cls._pad_to_common_grid(tm.maps[map_name], grid, pad_value)
+                 for tm in tensormaps], axis=0)
 
         # make the tensormap object
-        combined_tensormap = cls(maps=combined_maps, phases=tm0.phases, steps=(zstep, tm0.steps[1], tm0.steps[2]))
+        combined_tensormap = cls(maps=combined_maps, phases=tm0.phases,
+                                 steps=(zstep, tm0.steps[1], tm0.steps[2]))
         return combined_tensormap
 
     @classmethod
     def from_combine_phases(cls, tensormaps):
-        """Combine multiple mono-phase TensorMaps with different phases into one TensorMap.
-           For now, this handles grain label collisions by offsetting the grain labels of
-           subsequent tensormaps before adding"""
+        """Combine multiple mono-phase TensorMaps with different phases into one
+        TensorMap. Handles grain-label collisions by offsetting the grain labels of
+        subsequent tensormaps before adding.
+
+        The in-plane (NY, NX) shape may differ between inputs: each phase is
+        reconstructed independently, so its ``pad`` / grid extent depends on that
+        phase's fitted ``y0`` (see from_stack). We pad every input onto a common,
+        S-aligned grid before overlaying. Because padded voxels take each map's
+        'no data' value, padded phase_ids become -1 and so never overwrite a real
+        voxel from another phase. Z must already match across inputs (same physical
+        layers, different phases)."""
         combined_maps = {}
         tm0 = tensormaps[0]
 
@@ -1571,51 +1661,64 @@ class TensorMap:
             if len(tm.phases) > 1:
                 raise ValueError("Each input TensorMap should only have one phase!")
 
+        # Z (axis 0) must match; only NY/NX are reconciled by padding
+        if len({tm.shape[0] for tm in tensormaps}) > 1:
+            raise ValueError("All input TensorMaps must have the same number of Z layers!")
+
         # combine phases
         combined_phases = {inc: tm.phases[0] for inc, tm in enumerate(tensormaps)}
 
         # work out what map names we have in all of our tensormaps
-        common_map_names = [map_name for map_name in tm0.keys() if all([map_name in tm.keys() for tm in tensormaps])]
+        common_map_names = [map_name for map_name in tm0.keys()
+                            if all([map_name in tm.keys() for tm in tensormaps])]
+
+        # common S-aligned in-plane grid, then pad every common map of every input
+        # onto it up front (so phase_ids padded to -1 correctly marks 'no data')
+        grid = cls._common_recon_grid([(tm.shape[1], tm.shape[2]) for tm in tensormaps])
+        padded = [
+            {name: cls._pad_to_common_grid(tm[name], grid,
+                                           cls._stack_pad_value(name, tm[name].dtype))
+             for name in common_map_names}
+            for tm in tensormaps
+        ]
 
         for map_name in common_map_names:
-            # get the base array (the first tensormap)
-            base_arr = tm0[map_name].copy()
+            # get the base array (the first tensormap), now padded
+            base_arr = padded[0][map_name].copy()
 
             # iterate over the other tensormaps
-            for tm_inc, tm in enumerate(tensormaps[1:]):
+            for tm_inc, pm in enumerate(padded[1:]):
                 tm_inc += 1  # because we start at 1:
-                # update the base array where the other tensormaps have nonzero phases
+                # update the base array where the other tensormaps have real phases
                 if map_name == 'phase_ids':
                     # we are updating the phase id map for the combined TensorMap
                     # so the new array we put in is just the tm_inc
-
                     new_arr = tm_inc
                 elif map_name == 'labels':
-                    # for now, we need to make sure there's no collisions between grain IDs
-                    # for now we are shifting grain labels of subsequent maps
+                    # avoid collisions between grain IDs by shifting subsequent maps
                     # get the highest current grain ID
                     max_prev_gid = np.max(base_arr)
 
-                    # make a version of labels for this tensormap that's shifted by max_prev_gid + 1
-                    shifted_labels = tm['labels'].copy()
-                    shifted_labels = np.where(shifted_labels > -1, shifted_labels + (max_prev_gid + 1), shifted_labels)
+                    # make a version of labels for this tensormap shifted by max_prev_gid + 1
+                    shifted_labels = pm['labels'].copy()
+                    shifted_labels = np.where(shifted_labels > -1,
+                                              shifted_labels + (max_prev_gid + 1),
+                                              shifted_labels)
 
-                    # make sure that aside from -1, no grain labels intersect between base_arr and the shifted labels we will introduce
-                    assert len(np.intersect1d(np.unique(base_arr)[1:], np.unique(shifted_labels)[1:])) == 0
+                    # aside from -1, no grain labels should intersect
+                    assert len(np.intersect1d(np.unique(base_arr)[1:],
+                                              np.unique(shifted_labels)[1:])) == 0
 
                     new_arr = shifted_labels
                 else:
-                    new_arr = tm[map_name]
+                    new_arr = pm[map_name]
 
                 # selectively overwrite base_arr with new_arr
-                # the array slicing stuff below is to allow arbitrary rightward broadcasting
-                # phase_id is (NZ, NY, NX) but base_arr might be UBI for example (NZ, NY, NX, 3, 3)
-                # Numpy can auto-broadcast leftwards (e.g (NZ, NY, NX) to (3, 3, NZ, NY, NX))
-                # but not rightwards!
-                # so we need to slice like this (NZ, NY, NX)[..., np.newaxis, np.newaxis]
-                # In Python 2, slicing grammar is different, so we can't invoke ... directly inside a tuple
-                base_arr = np.where((tm['phase_ids'] > -1)[(Ellipsis,) + (np.newaxis,) * (base_arr.ndim - 3)], new_arr,
-                                    base_arr)
+                # rightward-broadcast the (NZ, NY, NX) phase mask over any trailing
+                # tensor axes: (NZ, NY, NX)[..., np.newaxis, np.newaxis]
+                base_arr = np.where(
+                    (pm['phase_ids'] > -1)[(Ellipsis,) + (np.newaxis,) * (base_arr.ndim - 3)],
+                    new_arr, base_arr)
 
             combined_maps[map_name] = base_arr
 
