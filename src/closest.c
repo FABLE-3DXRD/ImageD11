@@ -828,7 +828,7 @@ double misori_tetragonal(vec u1[3], vec u2[3]) {
     }
     m1 = fabs(r[0][0]) + fabs(r[1][1]);
     m2 = fabs(r[1][0]) + fabs(r[0][1]);
-    if (m2 > m3) {
+    if (m1 > m2) {
         return m1 + m3;
     } else {
         return m2 + m3;
