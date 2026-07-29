@@ -284,7 +284,7 @@ class test_localmaxlabel( unittest.TestCase ):
             [0, 0, 0, 3, 0,],
             [0, 0, 2, 3, 0,],
             [0, 0, 0, 0, 0,],            
-        ])
+        ], dtype=np.float32)
         la = np.empty( im.shape, 'i' )
         wk = np.empty( im.shape, 'b' )
         npks = localmaxlabel( im, la, wk )
@@ -309,7 +309,7 @@ class test_localmaxlabel( unittest.TestCase ):
             [0, 0, 0, 3, 0,],
             [0, 0, 2, 3, 0,],
             [0, 0, 0, 0, 0,],            
-        ])
+        ], dtype=np.float32)
         la = np.empty( im.shape, 'i' )
         wk = np.empty( im.shape, 'b' )
         npks = localmaxlabel( im, la, wk )
