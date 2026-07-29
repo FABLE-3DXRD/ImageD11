@@ -721,7 +721,7 @@ class Ctransform(object):
             self.pars["wavelength"],
             self.pars["wedge"],
             self.pars["chi"],
-            np.array((tx, ty, tz)),
+            np.array((tx, ty, tz), dtype=float),
             out,
         )
         return out
@@ -768,7 +768,7 @@ class Ctransform(object):
             self.pars["wavelength"],
             self.pars["wedge"],
             self.pars["chi"],
-            np.array((tx, ty, tz)),
+            np.array((tx, ty, tz), dtype=float),
             out,
         )
         return out
