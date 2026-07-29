@@ -90,7 +90,9 @@ class SegmenterOptions:
             assert self.mask.min() < 2
             assert self.mask.max() >= 0
         if len(self.bgfile):
-            self.bg = fabio.open(self.bgfile).data
+            bgname = self.bgfile.split("::", 1)[0]
+            if not h5py.is_hdf5(bgname):
+                self.bg = fabio.open(self.bgfile).data
 
     def load(self, h5name, h5group):
 
@@ -249,29 +251,58 @@ def reader(frms, mask, cut, start=0):
     returns sparseframes
     """
     assert start < len(frms)
-    if (
-        (chunk2sparse is not None)
-        and ("32008" in frms._filters)
-        and (not frms.is_virtual)
-        and (OPTIONS.bg is None)
-    ):
-        print("# reading compressed chunks")
-        fun = chunk2sparse(mask, dtype=frms.dtype)
-        for i in range(start, frms.shape[0]):
-            filters, chunk = frms.id.read_direct_chunk((i, 0, 0))
-            npx, row, col, val = fun.coo(chunk, cut)
-            spf = clean(npx, row, col, val)
-            yield spf
-    else:
-        fun = frmtosparse(mask, frms.dtype)
-        for i in range(start, frms.shape[0]):
-            frm = frms[i]
-            if OPTIONS.bg is not None:
-                frm = frm.astype(np.float32) - OPTIONS.bg
-            npx, row, col, val = fun(frm, cut)
-            spf = clean(npx, row, col, val)
-            yield spf
-
+    bgh5 = None
+    bg = OPTIONS.bg
+    try:
+        if len(OPTIONS.bgfile):
+            bgname, separator, bgpath = OPTIONS.bgfile.partition("::")
+            if h5py.is_hdf5(bgname):
+                bgh5 = h5py.File(bgname, "r")
+                if not separator:
+                    bgpath = frms.name
+                bg = bgh5[bgpath]
+                if bg.ndim == 2:
+                    if bg.shape != frms.shape[1:]:
+                        raise ValueError(
+                            "Background shape %s does not match frame shape %s"
+                            % (bg.shape, frms.shape[1:])
+                        )
+                elif bg.ndim == 3:
+                    if bg.shape != frms.shape:
+                        raise ValueError(
+                            "Background stack shape %s does not match frame stack shape %s"
+                            % (bg.shape, frms.shape)
+                        )
+                else:
+                    raise ValueError("Background must be a 2D image or 3D frame stack")
+        if (
+            (chunk2sparse is not None)
+            and ("32008" in frms._filters)
+            and (not frms.is_virtual)
+            and (bg is None)
+        ):
+            print("# reading compressed chunks")
+            fun = chunk2sparse(mask, dtype=frms.dtype)
+            for i in range(start, frms.shape[0]):
+                filters, chunk = frms.id.read_direct_chunk((i, 0, 0))
+                npx, row, col, val = fun.coo(chunk, cut)
+                spf = clean(npx, row, col, val)
+                yield spf
+        else:
+            fun = frmtosparse(mask, frms.dtype)
+            for i in range(start, frms.shape[0]):
+                frm = frms[i]
+                if bg is not None:
+                    if bg.ndim == 3:
+                        frm = frm.astype(np.float32) - bg[i]
+                    else:
+                        frm = frm.astype(np.float32) - bg
+                npx, row, col, val = fun(frm, cut)
+                spf = clean(npx, row, col, val)
+                yield spf
+    finally:
+        if bgh5 is not None:
+            bgh5.close()
 
 def segment_lima(args):
     """Does segmentation on a single hdf5

@@ -16,6 +16,7 @@ class SegmenterGui:
         self.dset = dset
         self.fig = None
         self.options = {"maskfile": dset.maskfile,
+                        "bgfile": getattr(dset, "bgfile", ""),
                         "cut": cut,
                         "pixels_in_spot": pixels_in_spot,
                         "howmany": howmany}
@@ -101,7 +102,6 @@ class FrelonSegmenterGui:
     """ UI for a jupyter notebook to set the segmentation parameters
     From @jadball notebook, @jadball refactored to put in a python file
     """
-
     def __init__(self, dset, worker_func, process_func, counter="_roi1", scan=None, frame=None, **options):
         self.dset = dset
         self.worker_func = worker_func
@@ -160,7 +160,6 @@ class FrelonSegmenterGui:
         self.options["minpx"] = minpx
         self.options["m_offset_thresh"] = m_offset_thresh
         self.options["m_ratio_thresh"] = m_ratio_thresh
-
         image_worker, self.fc, self.sc, self.npeaks = self.segment_frame()
         self.smoothed_image = image_worker.smoothed
         if self.fig is None:
