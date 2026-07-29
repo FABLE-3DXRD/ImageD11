@@ -1411,7 +1411,7 @@ class TensorMap:
     @classmethod
     def from_grainsinos(cls, grainsinos, method="iradon", use_gids=True,
                         cutoff_level=0.1, steps=None,
-                        sf_normalisation=False, sf_norm_mult=4, smooth_labels=False, smooth_size=5):
+                        sf_normalisation=False, sf_norm_percentile=99, smooth_labels=False, smooth_size=5):
         """Build a TensorMap object from a list of GrainSinos.
         method is the recon that we look for inside each grainsino
         use_gids will look for grainsino.grain.gid inside each grainsino to use as
@@ -1423,7 +1423,9 @@ class TensorMap:
             True -> recons are kept on their own (structure-factor-corrected) scale,
                 then the whole intensity map is globally rescaled and clipped. Use
                 this when the recons already carry meaningful relative intensities.
-        sf_norm_mult : what to multiply by before normalising the whole map
+        sf_norm_percentile : for the sf_normalisation route, the intensity percentile
+        (over nonzero voxels) that maps to 1.0; everything scales 0-1 from that and
+        values above it are clipped. E.g. 99 means the 99th-percentile voxel becomes 1.
     
         smooth_labels : if True, median-filter the grain label map (size=smooth_size)
             after the greedy assignment, then regenerate the intensity/phase/UBI/IPF
@@ -1516,10 +1518,15 @@ class TensorMap:
                 grnz[mask] = gi * gs.grain.rgb_z[1]
                 bluz[mask] = gi * gs.grain.rgb_z[2]
                 
-        # --- final intensity normalisation, selected by mode ---
+    # --- final intensity normalisation, selected by mode ---
         if sf_normalisation:
-            norm_scale = raw_intensity_map[raw_intensity_map > 0].mean() * sf_norm_mult
+            # percentile over WON voxels only — including the cutoff_level background
+            # (usually most of the map) drags the percentile onto cutoff_level when
+            # grains are sparse, collapsing norm_scale and saturating everything to 1.
+            won = raw_intensity_map[grain_labels_map != -1]
+            norm_scale = np.percentile(won, sf_norm_percentile) if won.size else 1.0
             raw_intensity_map = (raw_intensity_map / norm_scale).clip(0, 1)
+            raw_intensity_map[grain_labels_map == -1] = 0
         else:
             norm_scale = None
             raw_intensity_map[raw_intensity_map <= cutoff_level] = 0.0
