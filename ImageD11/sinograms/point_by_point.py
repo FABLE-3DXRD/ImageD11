@@ -1014,7 +1014,8 @@ class PBPRefine:
                     continue
 
     @classmethod
-    def from_h5(cls, filename, h5group='PBPRefine'):
+    def from_h5(cls, filename, h5group='PBPRefine',
+                load_peaks=True, load_input=True, load_output=True):
         # load the stuff in
         # then make an object
         manager_filename = filename
@@ -1058,23 +1059,26 @@ class PBPRefine:
             setattr(refine_obj, array_attr, array)
 
         # load the stuff we found
-        print('Loading peaks')
-        try:
-            refine_obj.loadpeaks(refine_obj.icolf_filename)
-        except AttributeError:
-            pass
+        if load_peaks:
+            print('Loading peaks')
+            try:
+                refine_obj.loadpeaks(refine_obj.icolf_filename)
+            except AttributeError:
+                pass
 
-        print('Loading input map')
-        try:
-            refine_obj.loadmap(refine_obj.pbpmap_filename)
-        except AttributeError:
-            pass
+        if load_input:
+            print('Loading input map')
+            try:
+                refine_obj.loadmap(refine_obj.pbpmap_filename)
+            except AttributeError:
+                pass
 
-        print('Loading output map')
-        try:
-            refine_obj.loadmap(refine_obj.refinedmap_filename, refined=True)
-        except (AttributeError, OSError):
-            pass
+        if load_output:
+            print('Loading output map')
+            try:
+                refine_obj.loadmap(refine_obj.refinedmap_filename, refined=True)
+            except (AttributeError, OSError):
+                pass
         return refine_obj
 
     def get_origins(self, guess_speed=True, guess_npks=10000, save_peaks_after=True):
