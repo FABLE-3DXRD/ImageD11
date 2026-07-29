@@ -887,7 +887,7 @@ class DataSet:
             detector=getattr(self, "detector", "eiger"),
         )
     
-    def get_colfile_from_peaks_dict(self, peaks_dict=None):
+    def get_colfile_from_peaks_dict(self, peaks_dict=None, corrector=None):
         """Converts a dictionary of peaks (peaks_dict) into an ImageD11 columnfile
         adds on the geometric computations (tth, eta, gvector, etc)
         Uses self.pk2d if no peaks_dict provided"""
@@ -895,8 +895,10 @@ class DataSet:
         if peaks_dict is None:
             peaks_dict = self.pk2d
         cf = colfile_from_dict(peaks_dict)
-    
-        corrector = self.get_spatial_corrector()
+
+        # if no corrector is supplied, try to get one
+        if corrector is None:
+            corrector = self.get_spatial_corrector()
         if corrector is not None:
             cf = corrector(cf)
         else:
