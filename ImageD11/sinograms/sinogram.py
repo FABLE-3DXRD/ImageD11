@@ -13,15 +13,6 @@ import ImageD11.sinograms.roi_iradon
 import ImageD11.sinograms.geometry
 from ImageD11.refinegrains import lf, polarization
 
-def get_colfile_from_peaks_dict_fast(peaks_dict, spatial_corrector):
-    """Same as ds.get_colfile_from_peaks_dict, but skips rebuilding the
-    detector_spatial object (and re-reading the h5 file) every call."""
-    cf = ImageD11.columnfile.colfile_from_dict(peaks_dict)
-    if spatial_corrector is not None:
-        cf = spatial_corrector(cf)
-    return cf
-
-
 # OPTIONAL structure factor correction for when we build sinograms.
 class StructureFactorCorrection:
     """hkl lookup + structure factors used to correct peak intensities when
@@ -86,129 +77,102 @@ class GrainSinogram:
         self.recon_niter = None
         self.recon_y0 = None
 
+
     def prepare_peaks_from_2d(self, cf_2d, grain_label, hkltol=0.25, gv=None):
-        """Prepare peaks used for sinograms from 2D peaks data.
-        Performs greedy assignment of all 2d peaks to this grain.
-        Pass a precomputed gv (shape (nrows, 3), C-contiguous float64) when
-        calling in a loop over grains to avoid rebuilding it each time."""
+        """cf_2d is an already spatially-corrected 2D columnfile with geometry.
+        Keeps only the columns the sinogram build needs, to save memory."""
         if gv is None:
-            gv = np.ascontiguousarray(
-                np.array((cf_2d.gx, cf_2d.gy, cf_2d.gz), dtype=float).T
-            )
+            gv = np.ascontiguousarray(np.array((cf_2d.gx, cf_2d.gy, cf_2d.gz), dtype=float).T)
         labels = np.zeros(cf_2d.nrows, "i")
         drlv2 = np.ones(cf_2d.nrows, "d")
         ImageD11.cImageD11.score_and_assign(
-            self.grain.ubi, gv, hkltol, drlv2, labels, grain_label
-        )
-        m = labels == grain_label
-        cols = ("dty", "omega", "gx", "gy", "gz", "eta", "sum_intensity")
-        cf_dict = {c: getattr(cf_2d, c)[m] for c in cols}
-        self.cf_for_sino = ImageD11.columnfile.colfile_from_dict(cf_dict)
+            self.grain.ubi, gv, hkltol, drlv2, labels, grain_label)
+        cols = ("dty", "omega", "gx", "gy", "gz", "eta", "sum_intensity", "tth")
+        self.cf_for_sino = cf_2d.copyrows_cols(labels == grain_label, cols)
+        self.compute_hkl(store=True)   # adds h, k, l; score_and_assign enforced hkltol
 
-    def prepare_peaks_from_4d(self, cf_4d, gord, inds, grain_label, hkltol=0.25):
-        """Prepares peaks used for sinograms from 4D peaks data.
-        cf_4d should contain grain assignments
-        grain_label should be the label for this grain"""
-        # fail if not already assigned
+
+    def prepare_peaks_from_4d(self, cf_4d, gord, inds, grain_label, spatial_corrector, hkltol=0.25):
+        """Subset THIS grain's 2D peaks out of ds.pk2d, spatially correct and add
+        geometry on that subset only, then compute/store hkl and apply hkl tolerance.
+        Never materialises a global cf_2d."""
         if "grain_id" not in cf_4d.titles:
             raise ValueError("cf_4d does not contain grain assignments!")
-
-        grain_peaks_2d = gord[inds[grain_label + 1] : inds[grain_label + 2]]
-
-        # Filter the peaks table to the peaks for this grain only
-        p2d = {p: self.ds.pk2d[p][grain_peaks_2d] for p in self.ds.pk2d}
-
-        # Make a spatially corrected columnfile from the filtered peaks table
-        flt = self.ds.get_colfile_from_peaks_dict(peaks_dict=p2d)
-        # Make sure the columnfile has the correct geometry and phase
+        idx = gord[inds[grain_label + 1] : inds[grain_label + 2]]
+        p2d = {p: self.ds.pk2d[p][idx] for p in self.ds.pk2d}
+        flt = self.ds.get_colfile_from_peaks_dict(p2d, spatial_corrector)
         flt.parameters = cf_4d.parameters
         flt.updateGeometry()
-
-        # Filter the columnfile by hkl tol
-        hkl_real = np.dot(
-            self.grain.ubi, (flt.gx, flt.gy, flt.gz)
-        )  # calculate hkl of all assigned peaks
-        hkl_int = np.round(hkl_real).astype(int)  # round to nearest integer
-        dh = ((hkl_real - hkl_int) ** 2).sum(axis=0)  # calculate square of difference
-
-        flt.filter(
-            dh < hkltol * hkltol
-        )  # filter all assigned peaks to be less than hkltol squared
-
         self.cf_for_sino = flt
+        hkl_real, hkl_int = self.compute_hkl(store=True)
+        self.filter_hkltol(hkltol, hkl_real, hkl_int)
 
-
-    def prepare_peaks_from_4d_fast(self, cf_4d, gord, inds, grain_label, spatial_corrector, hkltol=0.25):
-        """Same as self.prepare_peaks_from_4d, but uses get_colfile_from_peaks_dict_fast
-        instead of self.ds.get_colfile_from_peaks_dict, avoiding the per-grain spatial corrector reload."""
-        if "grain_id" not in cf_4d.titles:
-            raise ValueError("cf_4d does not contain grain assignments!")
-        grain_peaks_2d = gord[inds[grain_label + 1]: inds[grain_label + 2]]
-        p2d = {p: self.ds.pk2d[p][grain_peaks_2d] for p in self.ds.pk2d}
-        flt = get_colfile_from_peaks_dict_fast(p2d, spatial_corrector)
-        flt.parameters = cf_4d.parameters
-        flt.updateGeometry()
-        hkl_real = np.dot(self.grain.ubi, (flt.gx, flt.gy, flt.gz))
+    def compute_hkl(self, store=True):
+        """Integer hkl for self.cf_for_sino from grain.ubi. Returns (hkl_real, hkl_int),
+        both (3, N). If store, writes integer 'h','k','l' columns."""
+        cf = self.cf_for_sino
+        hkl_real = np.dot(self.grain.ubi, (cf.gx, cf.gy, cf.gz))
         hkl_int = np.round(hkl_real).astype(int)
-        dh = ((hkl_real - hkl_int) ** 2).sum(axis=0)
-        flt.filter(dh < hkltol * hkltol)
-        self.cf_for_sino = flt
+        if store:
+            cf.addcolumn(hkl_int[0], "h")
+            cf.addcolumn(hkl_int[1], "k")
+            cf.addcolumn(hkl_int[2], "l")
+        return hkl_real, hkl_int
 
-    def _hkl_from_cf(self):
-        """Integer hkl (shape (3, N)) for the peaks currently in self.cf_for_sino."""
-        return np.round(
-            np.dot(self.grain.ubi,
-                   (self.cf_for_sino.gx, self.cf_for_sino.gy, self.cf_for_sino.gz))
-        ).astype(int)
+    def filter_hkltol(self, hkltol=0.25, hkl_real=None, hkl_int=None):
+        """Drop peaks whose g-vector is > hkltol from an integer hkl."""
+        cf = self.cf_for_sino
+        if hkl_real is None:
+            hkl_real, hkl_int = self.compute_hkl(store=False)
+        dh2 = ((hkl_real - hkl_int) ** 2).sum(axis=0)
+        cf.filter(dh2 < hkltol * hkltol)
+
+    def filter_valid_hkls(self, sf_correction):
+        """Drop peaks whose integer hkl is not tabulated in sf_correction.
+        Needs h,k,l columns (prepare_peaks_* / compute_hkl provides them)."""
+        cf = self.cf_for_sino
+        cf.filter(sf_correction.valid_mask(np.array((cf.h, cf.k, cf.l))))
+
+    def compute_corrected_intensity(self, out_column="corr_sum_intensity",
+                                    in_column="sum_intensity",
+                                    sf_correction=None, apply_lf_pol=True):
+        """Write a corrected-intensity column and return its name.
+        correction = lf/pol (needs tth,eta) and/or 1/structure-factor (needs every hkl
+        tabulated — run filter_valid_hkls first)."""
+        cf = self.cf_for_sino
+        corr = np.ones(cf.nrows, "d")
+        if apply_lf_pol:
+            corr *= lf(cf.tth, cf.eta)
+            corr /= polarization(cf.tth, cf.eta)
+        if sf_correction is not None:
+            corr /= sf_correction.sf_values(np.array((cf.h, cf.k, cf.l)))
+        cf.addcolumn(cf[in_column] * corr, out_column)
+        return out_column
     
-    def build_sinogram(self, columns=("omega",), sf_correction=None,
-                       apply_sf_correction=True, apply_lf_pol=None):
-        """
-        Computes sinogram for this grain using all peaks in self.cf_for_sino
-    
-        columns = list of columns to produce sinograms of intensity*value
-    
-        sf_correction : optional StructureFactorCorrection. When supplied AND
-            apply_sf_correction is True, peaks whose hkl is not tabulated are
-            dropped and surviving intensities are divided by the structure factor.
-            Needs a CIF to build.
-    
-        apply_lf_pol : whether to apply Lorentz (lf) and polarization corrections.
-            These only need tth/eta, so they work without a CIF. Default None means
-            "follow the structure-factor correction" — on when sf is applied, off
-            otherwise. Pass True to apply lf/pol on their own (no CIF available),
-            or False to disable.
-    
-        When any correction is applied the projections are left on their corrected
-        intensity scale rather than normalised per row.
-        """
-        do_sf = sf_correction is not None and apply_sf_correction
-        if apply_lf_pol is None:
-            apply_lf_pol = do_sf
-        do_correction = do_sf or apply_lf_pol
-    
+    def build_sinogram(self, columns=("omega",), intensity_column="sum_intensity",
+                       normalise=True):
+        """Build the sinogram from self.cf_for_sino. Assumes preparation is done:
+        'h','k','l' columns exist, any hkl/validity filtering already applied, and the
+        signal lives in intensity_column. normalise divides each projection row by its max
+        (original default); pass False to keep a corrected intensity scale."""
+        cf = self.cf_for_sino
         for a in columns:
-            assert a in self.cf_for_sino.titles
+            assert a in cf.titles
         assert "omega" in columns
+        assert intensity_column in cf.titles
+        for c in "hkl":
+            assert c in cf.titles, "call compute_hkl() / prepare_peaks_* first"
     
-        hkl = self._hkl_from_cf()
-        if do_sf:
-            # drop peaks whose hkl is not in the lookup table, then recompute hkl
-            self.cf_for_sino.filter(sf_correction.valid_mask(hkl))
-            hkl = self._hkl_from_cf()
-    
+        hkl = np.array((cf.h, cf.k, cf.l))
         NY = len(self.ds.ybincens)
-        iy = np.round(
-            (self.cf_for_sino.dty - self.ds.ybincens[0])
-            / (self.ds.ybincens[1] - self.ds.ybincens[0])
-        ).astype(int)
-    
-        etasigns = np.sign(self.cf_for_sino.eta)
+        iy = np.round((cf.dty - self.ds.ybincens[0])
+                      / (self.ds.ybincens[1] - self.ds.ybincens[0])).astype(int)
+        etasigns = np.sign(cf.eta)
     
         hklmin = hkl.min(axis=1)
         dh = hkl - hklmin[:, np.newaxis]
         de = (etasigns.astype(int) + 1) // 2
-        pkmsk = np.zeros(list(dh.max(axis=1) + 1) + [2, ], int)
+        pkmsk = np.zeros(list(dh.max(axis=1) + 1) + [2], int)
         pkmsk[dh[0], dh[1], dh[2], de] = 1
         pkrow = np.cumsum(pkmsk.ravel()).reshape(pkmsk.shape) - 1
         pkhkle = np.arange(np.prod(pkmsk.shape), dtype=int)[pkmsk.flat == 1]
@@ -220,37 +184,24 @@ class GrainSinogram:
         hits = np.zeros((npks, NY), "f")
         adr = (destRow * NY + iy).astype("q")
     
-        # signal to accumulate, with whichever corrections are enabled
-        if do_correction:
-            corr = np.ones(len(self.cf_for_sino.eta), "d")
-            if apply_lf_pol:
-                corr *= lf(self.cf_for_sino.tth, self.cf_for_sino.eta)
-                corr /= polarization(self.cf_for_sino.tth, self.cf_for_sino.eta)
-            if do_sf:
-                corr /= sf_correction.sf_values(hkl)
-            sig = (self.cf_for_sino.sum_intensity * corr).astype("f")
-        else:
-            sig = self.cf_for_sino.sum_intensity.astype("f")
-    
+        sig = cf[intensity_column].astype("f")
         ImageD11.cImageD11.put_incr64(sino, adr, sig)
         ImageD11.cImageD11.put_incr64(hits, adr, np.ones(len(de), dtype="f"))
     
         angs = {}
         for name in columns:
-            if name == "sum_intensity":
+            if name == intensity_column:
                 continue
             angs[name] = np.zeros((npks, NY), "f")
-            ImageD11.cImageD11.put_incr64(
-                angs[name], adr, (self.cf_for_sino[name] * sig).astype("f")
-            )
+            ImageD11.cImageD11.put_incr64(angs[name], adr, (cf[name] * sig).astype("f"))
         sinoangles = angs["omega"].sum(axis=1) / sino.sum(axis=1)
     
-        if do_correction:
-            self.proj_scale = np.ones(npks, "f")
-            self.sino = sino
-        else:
+        if normalise:
             self.proj_scale = sino.max(axis=1)
             self.sino = sino / self.proj_scale[:, np.newaxis]
+        else:
+            self.proj_scale = np.ones(npks, "f")
+            self.sino = sino
     
         order = np.lexsort((np.arange(npks), sinoangles))
         self.sinoangles = sinoangles[order]
@@ -258,12 +209,12 @@ class GrainSinogram:
         self.proj_scale = self.proj_scale[order]
         if len(columns) > 1:
             self.angle_wt_sinos = {
-                name: angs[name][order].T for name in columns if name != "sum_intensity"
-            }
-            if "sum_intensity" in columns:
-                self.angle_wt_sinos["sum_intensity"] = sino[order].T
+                name: angs[name][order].T for name in columns if name != intensity_column}
+            if intensity_column in columns:
+                self.angle_wt_sinos[intensity_column] = sino[order].T
         self.hits = hits
         self.hkle = pkindices[:, order]
+
 
     def update_lab_position_from_peaks(self, cf_4d, grain_label, y0_guess):
         """Updates translation of self.grain using peaks in assigned 4D colfile.
@@ -968,27 +919,17 @@ def find_grain_id(spot3d_id, grain_id, spot2d_label, grain_label, order, nthread
                 grain_label[i] = grain_id[pcf]
 
 
-def get_2d_peaks_from_4d_peaks(p2d, cf):
-    """
-    inds is an array which tells you which 2D spots each grain owns
-    the 2D spots are sorted by spot ID
-    inds tells you for each grain were you can find its associated 2D spots"""
-    # Big scary block
-
-    # Ensure cf is sorted by spot3d_id
-    # NOTE: spot3d_id should be spot4d_id, because we have merged into 4D?
+def get_2d_peaks_from_4d_peaks(p2d, cf, return_labels=False):
+    """inds tells you, for each grain, where its 2D spots live in the sorted order.
+    return_labels also returns grain_2d_id: one int per 2D peak giving its grain,
+    a compact selector into p2d you can store once and reuse."""
     assert (np.argsort(cf.spot3d_id) == np.arange(cf.nrows)).all()
-
     numba_order, numba_histo = counting_sort(p2d["spot3d_id"])
-
     grain_2d_id = palloc(p2d["spot3d_id"].shape, np.dtype(int))
-
     cleanid = cf.grain_id.copy()
-
     find_grain_id(cf.spot3d_id, cleanid, p2d["spot3d_id"], grain_2d_id, numba_order)
-
     gord, counts = counting_sort(grain_2d_id)
-
     inds = np.concatenate(((0,), np.cumsum(counts)))
-
+    if return_labels:
+        return gord, inds, grain_2d_id
     return gord, inds
