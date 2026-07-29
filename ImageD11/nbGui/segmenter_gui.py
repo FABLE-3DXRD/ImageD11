@@ -46,12 +46,12 @@ class SegmenterGui:
             step=1,
             description="Pixels in Spot:",
         )
-        howmany_slider = widgets.FloatSlider(
-            value=np.log2(howmany),
-            min=np.log2(10),
-            max=np.ceil(np.log2(10**15)),
-            step=0.5,
-            description="log2(howmany):",
+        howmany_slider = widgets.IntSlider(
+            value=np.log10(howmany),
+            min=1,
+            max=15,
+            step=1,
+            description="log(howmany):",
         )
         self.widget = widgets.interactive(
             self.update_image,
@@ -163,7 +163,7 @@ class SegmenterGui:
         )
 
     def update_image(self, cut, pixels_in_spot, howmany):
-        howmany_exp = int(round(2**howmany))
+        howmany_exp = 10**howmany
         self.options["cut"] = cut
         self.options["pixels_in_spot"] = pixels_in_spot
         self.options["howmany"] = howmany_exp

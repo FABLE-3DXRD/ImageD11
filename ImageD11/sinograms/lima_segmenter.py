@@ -1,3 +1,5 @@
+from __future__ import print_function, division
+
 """Do segmentation of lima/eiger files with no notion of metadata
 Blocking will come via lima saving, so about 1000 frames per file
 
@@ -19,6 +21,7 @@ import warnings
 
 import fabio
 import h5py
+import hdf5plugin
 import numba
 import numpy as np
 
