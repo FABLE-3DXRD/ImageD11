@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import subprocess, sys, os
 
 test_dir = os.path.dirname(os.path.abspath(__file__))
@@ -17,7 +17,7 @@ except ImportError:
         sys.executable, "-m", "pip", "install",
         "https://github.com/jonwright/c2ImageD11.git",
         "--upgrade",
-        f"--target={c2_target}",
+        "--target={}".format(c2_target),
     ])
     pythonpath = env.get("PYTHONPATH", "")
     env["PYTHONPATH"] = c2_target + (os.pathsep + pythonpath if pythonpath else "")
@@ -39,6 +39,8 @@ r2 = subprocess.run(
 
 # Summary
 print("\n" + "=" * 50)
-print(f"f2py backend:      {'PASS' if r1.returncode == 0 else 'FAIL'} ({r1.returncode})")
-print(f"c2ImageD11 backend: {'PASS' if r2.returncode == 0 else 'FAIL'} ({r2.returncode})")
+print("f2py backend:      {} ({})".format(
+    'PASS' if r1.returncode == 0 else 'FAIL', r1.returncode))
+print("c2ImageD11 backend: {} ({})".format(
+    'PASS' if r2.returncode == 0 else 'FAIL', r2.returncode))
 sys.exit(0 if r1.returncode == 0 and r2.returncode == 0 else 1)
