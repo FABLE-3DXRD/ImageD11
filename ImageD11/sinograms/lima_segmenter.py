@@ -522,11 +522,15 @@ def sbatchlocal(fname, cores=None):
     for line in lines:
         if line.find('--array=')>=0:
             start, end = line.split('=')[-1].split('-')
+    # SLURM "--array=start-end" is INCLUSIVE of end, so the range must go to
+    # end + 1. Without the +1 the final array task is skipped, and a single-job
+    # array (--array=0-0) would run nothing at all.
     commands = [ 'SLURM_ARRAY_TASK_ID=%d bash %s > %s_%d.log'%(i, fname, fname, i )
-                for i in range(int(start), int(end)) ]
+                for i in range(int(start), int(end) + 1) ]
     with concurrent.futures.ThreadPoolExecutor(max_workers = cores) as pool:
         for _ in pool.map( os.system, commands ):
             pass
+
 
 def setup(
     dsname,
