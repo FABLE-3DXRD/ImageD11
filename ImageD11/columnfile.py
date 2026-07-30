@@ -930,7 +930,13 @@ try:
             column_titles = raw[first_data_row - 1].replace("# ", "").lstrip(" ").split()
             # print(f"Column titles are {column_titles}")
 
-            self._df = pd.read_csv(filename, skiprows=range(first_data_row), sep=r'\s+', header=None, names=column_titles)
+            dtype = {}
+            for name in column_titles:
+                if name in FLOATS:
+                    dtype[name] = float
+                elif name in INTS:
+                    dtype[name] = int
+            self._df = pd.read_csv(filename, skiprows=range(first_data_row), sep=r'\s+', header=None, names=column_titles, dtype=dtype)
 
             self.parameters.dumbtypecheck()
             # self.set_attributes()
