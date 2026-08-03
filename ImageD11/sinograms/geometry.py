@@ -300,9 +300,9 @@ def fit_sine_wave(omega, dty, initial_guess, weights=None):
     return sx_out, sy_out, y0_out
 
 
-def sx_sy_y0_from_dty_omega(dty, omega, weights=None):
+def sx_sy_y0_from_dty_omega(dty, omega, y0=0, weights=None):
     """Fits sine wave to dty vs omega plot, extracts sx, sy, y0"""
-    initial_guess = (0.5, 0.5, 0)
+    initial_guess = (0.5, 0.5, y0)
 
     sx, sy, y0 = fit_sine_wave(omega, dty, initial_guess, weights=weights)
 
@@ -512,3 +512,18 @@ def step_grid_from_ybincens(ybincens, step_size, gridstep, y0):
     ints = range(y_min_int, y_max_int + 1, gridstep)
     step_points = [(si, sj) for si in ints for sj in ints]
     return step_points
+
+
+def recon_bins(ybincens, ymin, ystep, y0):
+    """Bin edges for the padded/shifted reconstruction, in sample-frame
+    units (i.e. distance from the rotation axis S), centered on S."""
+    ny = ybincens.shape[0]
+    shift, pad = sino_shift_and_pad(y0, ny, ymin, ystep)
+    n_recon = ny + pad
+    # window is [-n_recon/2, n_recon/2], centered on S
+    # by construction (that's what the shift/pad correction achieves)
+    edges = (np.arange(n_recon + 1) - n_recon / 2) * ystep
+
+    bin_centres = edges[:-1] + ystep / 2
+    
+    return edges, bin_centres

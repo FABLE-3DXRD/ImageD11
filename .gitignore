@@ -104,3 +104,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# c2ImageD11 migration test: pip --target dir
+test/c2ImageD11_migration/c2_git/

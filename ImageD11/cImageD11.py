@@ -6,19 +6,27 @@ import warnings
 from ImageD11 import cImageD11_docstrings
 import numba, numpy as np
 
-try:
-    from ImageD11._cImageD11 import *
-    import ImageD11._cImageD11
-except ImportError:
-    print("Failed to import compiled C code for cImageD11 module")
-    print("Are you running from a source directory?")
-    print("Try something like:")
-    print("   python -m pip install --editable .")
-    print("or:")
-    print("   python setup.py develop")
-    print("or:")
-    print("   python setup.py build_ext --inplace")
-    raise
+if os.environ.get("IMAGED11_USE_C2") == "1":
+    import c2ImageD11
+    from c2ImageD11 import *
+    C2_BACKEND = True
+    C2_VERSION = getattr(c2ImageD11, "__version__", None)
+else:
+    try:
+        from ImageD11._cImageD11 import *
+        import ImageD11._cImageD11
+    except ImportError:
+        print("Failed to import compiled C code for cImageD11 module")
+        print("Are you running from a source directory?")
+        print("Try something like:")
+        print("   python -m pip install --editable .")
+        print("or:")
+        print("   python setup.py develop")
+        print("or:")
+        print("   python setup.py build_ext --inplace")
+        raise
+    C2_BACKEND = False
+    C2_VERSION = None
 
 # Check for the use of openmp interactions with os.fork and multiprocessing
 
@@ -158,7 +166,8 @@ def fill_in_docstrings():
             func.__doc__ = fix_doc(func.__doc__, doc)
 
 
-fill_in_docstrings()
+if not C2_BACKEND:
+    fill_in_docstrings()
 
 assert verify_rounding(20) == 0, "Problem with cImageD11 fast rounding code"
 

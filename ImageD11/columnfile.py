@@ -391,6 +391,24 @@ class columnfile(object):
         #cnw.set_attributes()
         return cnw
 
+    def copyrows_cols(self, rows, cols):
+        """
+        Returns a copy of select rows AND select columns of the columnfile.
+        rows : bool mask or integer index array over rows
+        cols : list of column names to keep (others are dropped, saving memory)
+        Like copyrows, but narrows to `cols` so unwanted columns are never copied.
+        """
+        self.chkarray()
+        missing = [c for c in cols if c not in self.titles]
+        if missing:
+            raise KeyError("Columns not in file: " + ", ".join(missing))
+        cnw = columnfile(self.filename, new=True)
+        cnw.titles = [t for t in cols]
+        cnw.parameters = parameters.parameters(**self.parameters.parameters.copy())
+        idx = {t: i for i, t in enumerate(self.titles)}
+        cnw.bigarray = [self.__data[idx[t]][rows] for t in cols]
+        return cnw
+    
     def chkarray(self):
         """
         Ensure self.bigarray holds our attributes
@@ -912,7 +930,13 @@ try:
             column_titles = raw[first_data_row - 1].replace("# ", "").lstrip(" ").split()
             # print(f"Column titles are {column_titles}")
 
-            self._df = pd.read_csv(filename, skiprows=range(first_data_row), sep=r'\s+', header=None, names=column_titles)
+            dtype = {}
+            for name in column_titles:
+                if name in FLOATS:
+                    dtype[name] = float
+                elif name in INTS:
+                    dtype[name] = int
+            self._df = pd.read_csv(filename, skiprows=range(first_data_row), sep=r'\s+', header=None, names=column_titles, dtype=dtype)
 
             self.parameters.dumbtypecheck()
             # self.set_attributes()
