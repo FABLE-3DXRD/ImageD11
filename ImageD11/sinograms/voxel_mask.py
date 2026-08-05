@@ -5,7 +5,7 @@ import numpy as np
 
 
 @numba.njit(cache=True)
-def get_voxel_idx(
+def fill_voxel_idx(
     xi0,
     yi0,
     y0,
@@ -56,13 +56,21 @@ def get_voxel_idx(
         The y distances are the absolute distances of the peaks from the voxel centroid position. These are guaranteed to be
         less than or equal to ystep.
 
-    Raises:
-        :obj:`ValueError`: If the buffer arrays are too small. Then simply try to set your buffer size larger.
+    Returns:
+        :obj:`int`: the number of peaks written into the buffers, or -1 if the
+        buffers were too small.
+
+    Note:
+        This returns a sentinel rather than raising because it is meant to be
+        callable from inside a numba prange, where an exception is not
+        reliably propagated: the thread stops writing and every item it still
+        owned is silently left unfilled. get_voxel_idx() wraps this and raises,
+        for Python-level callers.
     """
     n_bins = sin_omega_bins.size
 
     if n_bins == 0:  # this should never happen, but just to be clean...
-        return np.empty(0, dtype=np.int64), np.empty(0, dtype=np.float64)
+        return 0
 
     # figure out a safe dty padding for each omega bin such that no peak is forgotten.
     y_bins_diff = np.empty(n_bins, dtype=np.int64)
@@ -96,7 +104,10 @@ def get_voxel_idx(
         y = y0 - xi0 * sin_omega_bins[i] - yi0 * cos_omega_bins[i]
 
         # convert to integer index
-        y_index = int((y - ymin) * inv_ystep + 0.5)
+        # floor(x + 0.5), not int(x + 0.5): int() truncates toward zero and so
+        # rounds the wrong way for negative indices, which occur whenever the
+        # voxel sinusoid swings below ymin.
+        y_index = int(np.floor((y - ymin) * inv_ystep + 0.5))
 
         # get the dty padding for this omega bin, i.e we will not
         # just grab the y_index in the bin but some amount of neighboring
@@ -140,12 +151,98 @@ def get_voxel_idx(
             # if so, then keep it.
             if ydist <= ystep:
                 if m >= buffer_size:
-                    raise ValueError("Buffer is too small")
+                    return -1
                 idx_buffer[m] = j  # these now refer to the sorted peaks!
                 ydist_buffer[m] = ydist
                 m += 1
 
+    return m
+
+
+@numba.njit(cache=True)
+def get_voxel_idx(
+    xi0,
+    yi0,
+    y0,
+    ystep,
+    ymin,
+    omega_partitions,
+    dty_partitions,
+    dty_sorted,
+    sin_omega_sorted,
+    cos_omega_sorted,
+    sin_omega_bins,
+    cos_omega_bins,
+    idx_buffer,
+    ydist_buffer,
+):
+    """Slice-returning wrapper around fill_voxel_idx(). See that for details.
+
+    Raises:
+        :obj:`ValueError`: If the buffer arrays are too small. Then simply try to set your buffer size larger.
+    """
+    m = fill_voxel_idx(
+        xi0, yi0, y0, ystep, ymin,
+        omega_partitions, dty_partitions, dty_sorted,
+        sin_omega_sorted, cos_omega_sorted,
+        sin_omega_bins, cos_omega_bins,
+        idx_buffer, ydist_buffer,
+    )
+    if m < 0:
+        raise ValueError("Buffer is too small")
     return idx_buffer[:m], ydist_buffer[:m]
+
+
+@numba.njit(cache=True, parallel=True)
+def max_candidates(
+    xi0s,
+    yi0s,
+    y0,
+    ystep,
+    ymin,
+    omega_partitions,
+    dty_partitions,
+    sin_omega_bins,
+    cos_omega_bins,
+):
+    """Upper bound on how many peaks any of these voxels can pull out.
+
+    Walks the same omega bins and dty sub-partitions as fill_voxel_idx() but
+    reads only the partition offsets, never the peak data. Use it to size the
+    buffers up front so fill_voxel_idx() can never signal an overflow, which
+    is what you want when calling it from a prange.
+    """
+    n_bins = sin_omega_bins.size
+    row_len_minus_1 = dty_partitions.shape[1] - 1
+    inv_ystep = 1.0 / ystep
+    best = np.zeros(xi0s.size, dtype=np.int64)
+    for v in numba.prange(xi0s.size):
+        xi0 = xi0s[v]
+        yi0 = yi0s[v]
+        total = 0
+        y_prev = y0 - xi0 * sin_omega_bins[0] - yi0 * cos_omega_bins[0]
+        pad = 1
+        for i in range(n_bins):
+            if i + 1 < n_bins:
+                y_next = y0 - xi0 * sin_omega_bins[i + 1] - yi0 * cos_omega_bins[i + 1]
+                diff = y_next - y_prev
+                if diff < 0.0:
+                    diff = -diff
+                pad = int(diff * inv_ystep + 0.5) + 1
+            else:
+                y_next = y_prev
+            y_index = int(np.floor((y_prev - ymin) * inv_ystep + 0.5))
+            padded_low = y_index - pad
+            if padded_low < 0:
+                padded_low = 0
+            padded_high = y_index + pad + 1
+            if padded_high > row_len_minus_1:
+                padded_high = row_len_minus_1
+            if padded_high > 0 and padded_low < row_len_minus_1:
+                total += dty_partitions[i, padded_high] - dty_partitions[i, padded_low]
+            y_prev = y_next
+        best[v] = total
+    return best.max()
 
 
 class VoxelSinoMasker:
@@ -232,7 +329,8 @@ class VoxelSinoMasker:
             2 * omega_binsize
         )  # a factor of 2 here seems to work nicely from empricial testing
 
-    def partition(self, omega_binsize=None):
+    def partition(self, omega_binsize=None, inplace=False,
+                  omega_bin_indices=None, omega_bins=None):
         """Partition the peaks for fast peak masking.
 
         A partition scheme is used such that peaks are sorted by omega (primary) and dty (secondary).
@@ -252,26 +350,39 @@ class VoxelSinoMasker:
         Args:
             omega_binsize (:obj:`float`): The omega bin size. If None, a heuristic will be used to find a good value. (degrees)
                 (note that this is not the same as the experimental stepsize of the omega motor.)
+            inplace (:obj:`bool`): If True, reorder self.omega and self.dty in place. These are the
+                same arrays the caller passed to __init__, so in place means the caller's columns are
+                reordered too and every other column they hold is then misaligned against them.
+                Defaults to False, which costs one copy of each.
+            omega_bin_indices (:obj:`np.ndarray`): Optional precomputed bin index per peak, e.g. decoded
+                from a frame number. Overrides omega_binsize.
+            omega_bins (:obj:`np.ndarray`): Bin centres in degrees matching omega_bin_indices.
 
         Raises:
             :obj:`ValueError`: If the omega binsize is not set and the heuristic fails to find a good value.
         """
-        if omega_binsize is None:
-            self.omega_binsize = self._heuristic_omega_binsize()
+        if omega_bin_indices is not None:
+            # caller supplied the binning, e.g. exact frames decoded from a
+            # frame number column
+            self.omega_binsize = None
+            omega_bin_indices = np.ascontiguousarray(omega_bin_indices, dtype=np.int64)
+            omega_bin_indices = omega_bin_indices - omega_bin_indices.min()
+            omega_bins = np.asarray(omega_bins, dtype=np.float64)[
+                : omega_bin_indices.max() + 1
+            ]
         else:
-            self.omega_binsize = omega_binsize
+            if omega_binsize is None:
+                self.omega_binsize = self._heuristic_omega_binsize()
+            else:
+                self.omega_binsize = omega_binsize
 
-        omin = self.omega.min()
+            omin = self.omega.min()
 
-        omega_bin_indices = np.round((self.omega - omin) / self.omega_binsize).astype(
-            np.int64
-        )
-        max_idx = omega_bin_indices.max()
-        omega_bins = omin + self.omega_binsize * np.arange(max_idx + 1)
-
-        omega_bin_indices = np.round((self.omega - omin) / self.omega_binsize).astype(
-            np.int64
-        )
+            omega_bin_indices = np.round(
+                (self.omega - omin) / self.omega_binsize
+            ).astype(np.int64)
+            max_idx = omega_bin_indices.max()
+            omega_bins = omin + self.omega_binsize * np.arange(max_idx + 1)
 
         peak_ordering = np.lexsort((self.dty, omega_bin_indices))
         omega_bin_indices_sorted = omega_bin_indices[peak_ordering]
@@ -306,8 +417,13 @@ class VoxelSinoMasker:
         self.omega_bins = omega_bins
         self.dty_partitions = dty_partitions
 
-        self.dty[:] = self.dty[peak_ordering]  # overwrite to save memory
-        self.omega[:] = self.omega[peak_ordering]  # overwrite to save memory
+        if inplace:
+            # saves memory, but overwrites the arrays the caller handed us
+            self.dty[:] = self.dty[peak_ordering]
+            self.omega[:] = self.omega[peak_ordering]
+        else:
+            self.dty = self.dty[peak_ordering]
+            self.omega = self.omega[peak_ordering]
         self.sinomega = np.sin(np.radians(self.omega))
         self.cosomega = np.cos(np.radians(self.omega))
 
@@ -344,6 +460,27 @@ class VoxelSinoMasker:
                 self.sort_by_partitions(value)
         else:
             raise ValueError("Unsupported type: {}".format(type(peaks)))
+
+    def max_candidates(self, xi0s, yi0s, ystep, y0):
+        """Largest number of peaks any of these voxels can pull out of the partition.
+
+        Size the buffers with this and fill_voxel_idx() can never overflow, which
+        matters when calling it from a prange where the -1 return is the only
+        signal you get.
+        """
+        return int(
+            max_candidates(
+                np.ascontiguousarray(xi0s, dtype=np.float64),
+                np.ascontiguousarray(yi0s, dtype=np.float64),
+                y0,
+                ystep,
+                self.ymin,
+                self.omega_partitions,
+                self.dty_partitions,
+                self.sinomega_bins,
+                self.cosomega_bins,
+            )
+        )
 
     def _build_buffers(self, buffer_size):
         self.buffer_size = buffer_size
