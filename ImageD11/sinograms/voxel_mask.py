@@ -50,13 +50,6 @@ def fill_voxel_idx(
             is 100% safe, but likely very very overkill.
 
     Returns:
-        :obj:`tuple`: A tuple containing the voxel indices and y distances.
-        The voxel indices are the indices of the peaks that are within the voxela and
-        refers to peaks that follow the same ordering as dty_sorted.
-        The y distances are the absolute distances of the peaks from the voxel centroid position. These are guaranteed to be
-        less than or equal to ystep.
-
-    Returns:
         :obj:`int`: the number of peaks written into the buffers, or -1 if the
         buffers were too small.
 
@@ -518,7 +511,6 @@ class VoxelSinoMasker:
         idx, ydist = self._mask(xi0, yi0, ystep, y0)
         return idx, ydist
 
-
 if __name__ == "__main__":
     dty_stepsize = 0.003  # 3 microns scan step
     omega_stepsize = 0.05
@@ -557,28 +549,35 @@ if __name__ == "__main__":
     y0 = -0.023
     ystep = dty_stepsize
 
+    def brute_force_mask(xi0, yi0, y0, ystep, sinomega, cosomega, dty):
+        """Reference: test the predicate against every peak in the sinogram.
+
+        This is what the partitioning scheme has to reproduce exactly, and
+        what it is avoiding -- it touches all n_peaks for every voxel.
+        """
+        ydist = np.abs(y0 - xi0 * sinomega - yi0 * cosomega - dty)
+        idx = np.where(ydist <= ystep)[0]
+        return idx, ydist[idx]
+
     peak_selector = VoxelSinoMasker(omega, dty, dty_stepsize)
     peak_selector.partition()
 
     print("Number of peaks: {}".format(n_peaks))
     print("Omega binsize: {}".format(peak_selector.omega_binsize))
-    print("Number of omega bins: {}".format(peak_selector.omega_bins))
+    print("Number of omega bins: {}".format(peak_selector.omega_bins.size))
 
     idx, ydist = peak_selector.mask(xi0, yi0, ystep, y0)
 
     # What we expect to get is this:
-    import ImageD11.sinograms.point_by_point as pbp
-
-    expected_idx, expected_ydist = pbp.get_voxel_idx(
-        y0,
+    expected_idx, expected_ydist = brute_force_mask(
         xi0,
         yi0,
+        y0,
+        ystep,
         peak_selector.sinomega,
         peak_selector.cosomega,
         peak_selector.dty,
-        ystep,
     )
-    expected_ydist = expected_ydist[expected_idx]
     assert np.allclose(np.sort(idx), np.sort(expected_idx))
     assert np.allclose(np.sort(ydist), np.sort(expected_ydist))
 
@@ -630,36 +629,36 @@ if __name__ == "__main__":
     )
 
     # early warmup
-    idx, ydist = pbp.get_voxel_idx(
-        y0,
+    idx, ydist = brute_force_mask(
         xi0,
         yi0,
+        y0,
+        ystep,
         peak_selector.sinomega,
         peak_selector.cosomega,
         peak_selector.dty,
-        ystep,
     )
     t1 = time.perf_counter()
     for i in range(len(ys)):
         for j in range(len(ys)):
-            idx, ydist = pbp.get_voxel_idx(
+            idx, ydist = brute_force_mask(
+                ys[i],
+                ys[j],
                 y0,
-                xi0,
-                yi0,
+                ystep,
                 peak_selector.sinomega,
                 peak_selector.cosomega,
                 peak_selector.dty,
-                ystep,
             )
     t2 = time.perf_counter()
 
-    time_per_call_pbp = (t2 - t1) / (len(ys) * len(ys))
+    time_per_call_brute_force = (t2 - t1) / (len(ys) * len(ys))
     print(
-        "Time per ImageD11.sinograms.point_by_point.get_voxel_idx call: {}".format(
-            time_per_call_pbp
-        )
+        "Time per full-scan reference mask call: {}".format(time_per_call_brute_force)
     )
 
-    print("Speedup: {:.1f} x".format(time_per_call_pbp / time_per_call_voxel_mask))
+    print(
+        "Speedup: {:.1f} x".format(time_per_call_brute_force / time_per_call_voxel_mask)
+    )
 
     plt.show()
