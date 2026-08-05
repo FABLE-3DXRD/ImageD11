@@ -821,6 +821,7 @@ def build_peak_index(refine, omega_binsize="auto", omega_step=None,
 
     # our frame decode, handed to Axel's partitioner as explicit bins
     kw = {}
+    got = None
     if omega_step is not None:
         kw = dict(omega_binsize=float(omega_step))
     elif omega_binsize not in (None, "auto"):
@@ -851,6 +852,7 @@ def build_peak_index(refine, omega_binsize="auto", omega_step=None,
                 dev = _d
     ray_margin = 1.5 + rmax * np.radians(dev) / refine.ystep + 0.5
 
+    
     if verbose:
         print("peak index: %d omega bins x %d dty bins = %d cells, %.1f "
               "peaks/cell (%.2f s)" % (nom, ndty, nom * ndty,
