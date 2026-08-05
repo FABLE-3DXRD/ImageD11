@@ -447,6 +447,23 @@ class GrainSinogram:
         return grainsino_obj
 
 
+from scipy.ndimage import shift as ndi_shift
+
+def shift_sinogram(sino, shift_amount, order=3):
+    """
+    Shift a sinogram along dty by a possibly non-integer
+    amount, equivalent to astra.functions.geom_postalignment(proj_geom, shift).
+    """
+    if shift_amount == 0:
+        return sino
+    return ndi_shift(
+        sino,
+        shift=(shift_amount, 0),   # shift along dty axis only, not angles
+        order=order,               # cubic spline interpolation for sub-pixel accuracy
+        mode="constant",
+        cval=0.0,
+    )
+
 def run_astra(
     sino,
     angles,
@@ -458,30 +475,25 @@ def run_astra(
     workers=None,
 ):
     import astra
-
     angles = np.radians(angles)
     allowed_methods = [
-        "BP",
-        "SIRT",
-        "BP_CUDA",
-        "FBP_CUDA",
-        "SIRT_CUDA",
-        "SART_CUDA",
-        "CGLS_CUDA",
-        "EM_CUDA",
+        "BP", "FBP", "SIRT", "EM",
+        "BP_CUDA", "FBP_CUDA", "SIRT_CUDA", "SART_CUDA", "CGLS_CUDA", "EM_CUDA",
     ]
     if astra_method not in allowed_methods:
         raise ValueError("Unsupported method!")
+
     manual_mask = None
-    if astra_method == "EM_CUDA" and mask is not None:
-        # print("Can't use mask with EM_CUDA method!")
+    if astra_method in ["EM_CUDA", "FBP"] and mask is not None:
         manual_mask = mask.copy()
         mask = None
 
+    if shift != 0:
+        sino = shift_sinogram(sino, shift)
+
     vol_geom = astra.create_vol_geom((sino.shape[0] + pad, sino.shape[0] + pad))
     proj_geom = astra.create_proj_geom("parallel", 1.0, sino.shape[0], angles)
-    if shift != 0:
-        proj_geom = astra.functions.geom_postalignment(proj_geom, shift)
+    # no more geom_postalignment call - proj_geom stays plain "parallel"
     proj_id = astra.create_projector("linear", proj_geom, vol_geom)
     proj_data_id = astra.data2d.create("-sino", proj_geom, data=sino.T)
     if astra_method == "EM_CUDA":
@@ -497,13 +509,14 @@ def run_astra(
     cfg["ProjectionDataId"] = proj_data_id
     cfg["ReconstructionDataId"] = rec_id
     cfg["option"] = {}
-    if astra_method != "EM_CUDA":
+    if astra_method not in ["EM_CUDA", "FBP"]:
         cfg["option"]["MinConstraint"] = 0
         cfg["option"]["MaxConstraint"] = 1
 
     if mask is not None:
-        mask_id = astra.data2d.create("-vol", vol_geom, mask)
-        cfg["option"]["ReconstructionMaskId"] = mask_id
+        if astra_method != ["FBP"]:
+            mask_id = astra.data2d.create("-vol", vol_geom, mask)
+            cfg["option"]["ReconstructionMaskId"] = mask_id
 
     alg_id = astra.algorithm.create(cfg)
     astra.algorithm.run(alg_id, iterations=niter)
@@ -518,7 +531,7 @@ def run_astra(
     if mask is not None:
         astra.data2d.delete(mask_id)
 
-    if astra_method == "EM_CUDA" and manual_mask is not None:
+    if astra_method in ["EM_CUDA", "FBP"] and manual_mask is not None:
         # manually mask
         recon = np.where(manual_mask, recon, 0.0)
 
