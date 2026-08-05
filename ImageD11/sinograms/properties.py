@@ -578,6 +578,7 @@ class pks_table:
             "Number_of_pixels": s1,
             "sum_intensity": sI,
             "spot3d_id": self.glabel,
+            "frm": frm
         }
         return allpks
 
