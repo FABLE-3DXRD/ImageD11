@@ -1,4 +1,4 @@
-def main(h5name, dsfile, group_name):
+def main(h5name, dsfile, group_name, method):
     print('Loading dataset')
     # load the dataset
     ds = ImageD11.sinograms.dataset.load(dsfile)
@@ -8,7 +8,7 @@ def main(h5name, dsfile, group_name):
     
     print('Reconstructing grain sinograms')
     for inc, gs in enumerate(grainsinos):
-        gs.recon(method="astra", astra_method="EM_CUDA")
+        gs.recon(method="astra", astra_method="method)
         print('Reconstructed ' + str(inc+1) + '/' + str(len(grainsinos)))
 
     # mask recon after running
@@ -32,5 +32,6 @@ if __name__ == "__main__":
     h5name = sys.argv[1]
     dsfile = sys.argv[2]
     group_name = sys.argv[3]
+    method = sys.argv[4]
     
-    main(h5name, dsfile, group_name)
+    main(h5name, dsfile, group_name, method)
