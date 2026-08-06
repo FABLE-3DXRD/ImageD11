@@ -1450,8 +1450,8 @@ class PBPRefine:
 
         # peaks that are on any rings
         self.colf = colf
-        self.icolf = colf.copy()
-        self.icolf.filter(sel)
+        self.icolf = colf.copyrows(sel)
+        
         self.npks = npks
         print(
             "Using for refinement:",
