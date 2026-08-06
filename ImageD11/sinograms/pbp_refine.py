@@ -1098,7 +1098,7 @@ def compute_origins(singlemap, sample_mask,
                                 e1 = hf1 - np.round(hf1)
                                 e2 = hf2 - np.round(hf2)
                                 if e0 * e0 + e1 * e1 + e2 * e2 < hkl_tol:
-                                    w = 1.0 / (yd + 1.0)
+                                    w = 1.0 / (yd + 1.0)  # TODO: this is 1.0 um hard-coded!
                                     accx[q - plo] += sxv * w
                                     accy[q - plo] += syv * w
                                     accw[q - plo] += w
@@ -1148,7 +1148,7 @@ def compute_origins(singlemap, sample_mask,
                                 e1 = hf1 - np.round(hf1)
                                 e2 = hf2 - np.round(hf2)
                                 if e0 * e0 + e1 * e1 + e2 * e2 < hkl_tol:
-                                    w = 1.0 / (yd + 1.0)
+                                    w = 1.0 / (yd + 1.0)  # TODO: this is 1.0 um hard-coded!
                                     accx[q - plo] += sxv * w
                                     accy[q - plo] += syv * w
                                     accw[q - plo] += w
@@ -1227,7 +1227,8 @@ class PBPRefine:
                  ifrac=None,
                  forref=None,
                  y0=0.0,
-                 min_grain_npks=6
+                 min_grain_npks=6,
+                 beam_size=None,
                  ):
         self.dset = dset
         self.phase_name = phase_name
@@ -1251,6 +1252,24 @@ class PBPRefine:
         self.ystep = self.dset.ystep
         self.y0 = y0
         self.ybincens = self.dset.ybincens
+
+        # X-ray beam size, in the same units as the dty motor.
+        #
+        # The distance weighting in both the UBI and the strain fit uses
+        # beam_size/3 as its regularisation length: w = r / (ydist + r).
+        # Henningsson et al. eq (18) writes that as 1 um, for a 3 um beam.
+        #
+        # This is the only absolute length in the refinement. Everything else
+        # (the dty window, the ray strip, the omega binsize heuristic) is a
+        # ratio and cancels, and the g-vectors are in 1/wavelength regardless.
+        # Left as a bare 1.0 it means "1 um" whatever the motor units, so on a
+        # mm dataset the weighting goes flat and every peak on the ray counts
+        # the same however far the beam passed from the voxel centre.
+        #
+        # Defaults to ystep, i.e. assumes the scan step matches the beam. Set
+        # it explicitly if you know better -- it is a physical property of the
+        # beamline, not of the scan.
+        self.beam_size = self.ystep if beam_size is None else float(beam_size)
 
         # set default paths
         self.pbpmap_filename = self.dset.refmapfile  # pbp map input
@@ -1535,7 +1554,7 @@ class PBPRefine:
 
             pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine',
                     'hkl_tol_refine_merged', 'ds_tol', 'etacut', 'ifrac',
-                    'forref', 'y0', 'min_grain_npks']
+                    'forref', 'y0', 'min_grain_npks','beam_size']
             for par in pars:
                 try:
                     if getattr(self, par) is not None:
@@ -1571,7 +1590,7 @@ class PBPRefine:
 
             pars = ['phase_name', 'hkl_tol_origins', 'hkl_tol_refine',
                     'hkl_tol_refine_merged', 'ds_tol', 'etacut', 'ifrac',
-                    'forref', 'y0', 'min_grain_npks']
+                    'forref', 'y0', 'min_grain_npks','beam_size']
             pars_dict = {}
             for par in pars:
                 try:
@@ -1779,6 +1798,11 @@ class PBPRefine:
         uc = unitcell.unitcell_from_parameters(self.icolf.parameters)
         B0 = unitcell_to_b(uc.lattice_parameters, np.eye(3))
 
+        weight_reg = self.beam_size / 3.0
+        if verbose:
+            print("beam size %.4g, fit weight regularisation %.4g "
+                  "(ystep %.4g)" % (self.beam_size, weight_reg, self.ystep))
+
         t0 = time.perf_counter()
         (ubis_m, eps_m, npks, nuniq,
          overflow, degenerate, gather_fail) = refine_map(
@@ -1799,7 +1823,7 @@ class PBPRefine:
             float(pars["t_x"]), float(pars["t_y"]), float(pars["t_z"]),
             float(pars["wedge"]), float(pars["chi"]), float(pars["wavelength"]),
             float(self.hkl_tol_refine), float(self.hkl_tol_refine_merged),
-            int(self.min_grain_npks), 1e-4,
+            int(self.min_grain_npks), 1e-4, weight_reg,
             maxlocal, nchunks,
         )
         if verbose:
@@ -1921,7 +1945,7 @@ def refine_map(
     distance, y_center, y_size, tilt_y, z_center, z_size, tilt_z, tilt_x,
     o11, o12, o21, o22, t_x, t_y, t_z, wedge, chi, wavelength,
     # tolerances
-    tol, merge_tol, min_grain_npks, gnoise_std,
+    tol, merge_tol, min_grain_npks, sigma_g, weight_reg,
     # execution
     maxlocal, nchunks,
 ):
@@ -1967,14 +1991,18 @@ def refine_map(
 
         fit_sel = np.empty(maxlocal, dtype=np.int64)
         fit_hkl = np.empty((maxlocal, 3), dtype=np.int64)
-        dstrain = np.empty(maxlocal, dtype=np.float64)
-        wts = np.empty(maxlocal, dtype=np.float64)
 
-        G3 = np.empty((3, 3), dtype=np.float64)
-        C3 = np.empty((3, 3), dtype=np.float64)
-        A6 = np.empty((6, 6), dtype=np.float64)
-        B6 = np.empty((6, 1), dtype=np.float64)
-        Mrow = np.empty(6, dtype=np.float64)
+        # UBI fit
+        GtWWG = np.empty((3, 3), dtype=np.float64)   # sum w^2 G G^T
+        GtWWH = np.empty((3, 3), dtype=np.float64)   # sum w^2 G G_hkl^T
+
+        # strain fit
+        y_eps = np.empty(maxlocal, dtype=np.float64)   # eq (14) measurements
+        Mj = np.empty(6, dtype=np.float64)             # eq (16) one row of M
+        Wdiag = np.empty(maxlocal, dtype=np.float64)   # eq (18) weights
+        MtWWM = np.empty((6, 6), dtype=np.float64)     # eq (20) normal matrix
+        MtWWy = np.empty((6, 1), dtype=np.float64)     # eq (20) rhs, then s
+        
         ubi_out = np.empty((3, 3), dtype=np.float64)
         Umat = np.empty((3, 3), dtype=np.float64)
         n_ovf = 0
@@ -2045,24 +2073,25 @@ def refine_map(
                 # ---- assign with `tol` ------------------------------------
                 nsel = 0
                 for t in range(nloc):
-                    g0 = gvl[t, 0]
-                    g1 = gvl[t, 1]
-                    g2 = gvl[t, 2]
-                    hf0 = u00 * g0 + u01 * g1 + u02 * g2
-                    hf1 = u10 * g0 + u11 * g1 + u12 * g2
-                    hf2 = u20 * g0 + u21 * g1 + u22 * g2
-                    hi0 = np.round(hf0)
+                    Gx = gvl[t, 0]
+                    Gy = gvl[t, 1]
+                    Gz = gvl[t, 2]
+                    hf0 = u00 * Gx + u01 * Gy + u02 * Gz    # (UB)^-1 G
+                    hf1 = u10 * Gx + u11 * Gy + u12 * Gz
+                    hf2 = u20 * Gx + u21 * Gy + u22 * Gz
+                    hi0 = np.round(hf0)                     # nearest integers
                     hi1 = np.round(hf1)
                     hi2 = np.round(hf2)
-                    e0 = hf0 - hi0
-                    e1 = hf1 - hi1
-                    e2 = hf2 - hi2
-                    if e0 * e0 + e1 * e1 + e2 * e2 < tolsq_assign:
+                    dh0 = hf0 - hi0                         # eq (8) residual
+                    dh1 = hf1 - hi1
+                    dh2 = hf2 - hi2
+                    if dh0 * dh0 + dh1 * dh1 + dh2 * dh2 < tolsq_assign:
                         sel[nsel] = t
                         hklsel[nsel, 0] = np.int64(hi0)
                         hklsel[nsel, 1] = np.int64(hi1)
                         hklsel[nsel, 2] = np.int64(hi2)
                         nsel += 1
+
                 if nsel == 0:
                     continue
 
@@ -2123,6 +2152,7 @@ def refine_map(
                 if ng == 0:
                     continue
 
+                # merged g-vectors
                 gvm = compute_gve(
                     c_sc[:ng], c_fc[:ng], c_om[:ng], c_xp[:ng],
                     distance=distance, y_center=y_center, y_size=y_size,
@@ -2133,77 +2163,80 @@ def refine_map(
                     wedge=wedge, chi=chi, wavelength=wavelength,
                 )  # (3, ng)
 
-                # ---- reassign the merged peaks with `merge_tol` -----------
+                # ---- reassign the merged peaks, eq (8) with e_hkl ---------
                 nfit = 0
                 for t in range(ng):
-                    g0 = gvm[0, t]
-                    g1 = gvm[1, t]
-                    g2 = gvm[2, t]
-                    hf0 = u00 * g0 + u01 * g1 + u02 * g2
-                    hf1 = u10 * g0 + u11 * g1 + u12 * g2
-                    hf2 = u20 * g0 + u21 * g1 + u22 * g2
-                    hi0 = np.round(hf0)
+                    Gx = gvm[0, t]                          # G, eq (5)
+                    Gy = gvm[1, t]
+                    Gz = gvm[2, t]
+                    hf0 = u00 * Gx + u01 * Gy + u02 * Gz    # (UB)^-1 G
+                    hf1 = u10 * Gx + u11 * Gy + u12 * Gz
+                    hf2 = u20 * Gx + u21 * Gy + u22 * Gz
+                    hi0 = np.round(hf0)                     # nearest integers
                     hi1 = np.round(hf1)
                     hi2 = np.round(hf2)
-                    e0 = hf0 - hi0
-                    e1 = hf1 - hi1
-                    e2 = hf2 - hi2
-                    if e0 * e0 + e1 * e1 + e2 * e2 < tolsq_merge:
+                    dh0 = hf0 - hi0                         # eq (8) residual
+                    dh1 = hf1 - hi1
+                    dh2 = hf2 - hi2
+                    if dh0 * dh0 + dh1 * dh1 + dh2 * dh2 < tolsq_merge:
                         fit_sel[nfit] = t
-                        fit_hkl[nfit, 0] = np.int64(hi0)
+                        fit_hkl[nfit, 0] = np.int64(hi0)    # G_hkl
                         fit_hkl[nfit, 1] = np.int64(hi1)
                         fit_hkl[nfit, 2] = np.int64(hi2)
                         nfit += 1
-
+ 
                 if nfit <= min_grain_npks:
                     continue
 
                 # ---- weighted UBI fit via 3x3 normal equations ------------
                 for a in range(3):
                     for b in range(3):
-                        G3[a, b] = 0.0
-                        C3[a, b] = 0.0
+                        GtWWG[a, b] = 0.0
+                        GtWWH[a, b] = 0.0
                 for t in range(nfit):
                     ii = fit_sel[t]
-                    w = 1.0 / (g_yd[ii] + 1.0)
+                    # eq (6): 1 at the beam centre, beam_size/3 regularisation
+                    w = weight_reg / (g_yd[ii] + weight_reg)
                     ww = w * w
-                    g0 = gvm[0, ii]
-                    g1 = gvm[1, ii]
-                    g2 = gvm[2, ii]
-                    h0 = np.float64(fit_hkl[t, 0])
+                    Gx = gvm[0, ii]                     # G, eq (5)
+                    Gy = gvm[1, ii]
+                    Gz = gvm[2, ii]
+                    h0 = np.float64(fit_hkl[t, 0])      # G_hkl
                     h1 = np.float64(fit_hkl[t, 1])
                     h2 = np.float64(fit_hkl[t, 2])
-                    G3[0, 0] += ww * g0 * g0
-                    G3[0, 1] += ww * g0 * g1
-                    G3[0, 2] += ww * g0 * g2
-                    G3[1, 1] += ww * g1 * g1
-                    G3[1, 2] += ww * g1 * g2
-                    G3[2, 2] += ww * g2 * g2
-                    C3[0, 0] += ww * g0 * h0
-                    C3[0, 1] += ww * g0 * h1
-                    C3[0, 2] += ww * g0 * h2
-                    C3[1, 0] += ww * g1 * h0
-                    C3[1, 1] += ww * g1 * h1
-                    C3[1, 2] += ww * g1 * h2
-                    C3[2, 0] += ww * g2 * h0
-                    C3[2, 1] += ww * g2 * h1
-                    C3[2, 2] += ww * g2 * h2
-                G3[1, 0] = G3[0, 1]
-                G3[2, 0] = G3[0, 2]
-                G3[2, 1] = G3[1, 2]
-
-                scale = G3[0, 0]
-                if G3[1, 1] > scale:
-                    scale = G3[1, 1]
-                if G3[2, 2] > scale:
-                    scale = G3[2, 2]
-                ok = _chol_solve(G3, C3, 3, 3, 1e-14 * scale)
-
+                    GtWWG[0, 0] += ww * Gx * Gx
+                    GtWWG[0, 1] += ww * Gx * Gy
+                    GtWWG[0, 2] += ww * Gx * Gz
+                    GtWWG[1, 1] += ww * Gy * Gy
+                    GtWWG[1, 2] += ww * Gy * Gz
+                    GtWWG[2, 2] += ww * Gz * Gz
+                    GtWWH[0, 0] += ww * Gx * h0
+                    GtWWH[0, 1] += ww * Gx * h1
+                    GtWWH[0, 2] += ww * Gx * h2
+                    GtWWH[1, 0] += ww * Gy * h0
+                    GtWWH[1, 1] += ww * Gy * h1
+                    GtWWH[1, 2] += ww * Gy * h2
+                    GtWWH[2, 0] += ww * Gz * h0
+                    GtWWH[2, 1] += ww * Gz * h1
+                    GtWWH[2, 2] += ww * Gz * h2
+                GtWWG[1, 0] = GtWWG[0, 1]
+                GtWWG[2, 0] = GtWWG[0, 2]
+                GtWWG[2, 1] = GtWWG[1, 2]
+ 
+                scale = GtWWG[0, 0]
+                if GtWWG[1, 1] > scale:
+                    scale = GtWWG[1, 1]
+                if GtWWG[2, 2] > scale:
+                    scale = GtWWG[2, 2]
+                ok = _chol_solve(GtWWG, GtWWH, 3, 3, 1e-14 * scale)
+ 
                 if ok:
-                    # C3 now holds X = (A^T A)^-1 A^T B; ubifit = X.T
+                    # GtWWH now holds X = (G^T W^T W G)^-1 G^T W^T W G_hkl,
+                    # and (UB)^-1 = X^T, so that (UB)^-1 G ~= G_hkl.
                     for a in range(3):
                         for b in range(3):
-                            ubi_out[a, b] = C3[b, a]
+                            ubi_out[a, b] = GtWWH[b, a]
+
                     finite = True
                     for a in range(3):
                         for b in range(3):
@@ -2235,21 +2268,23 @@ def refine_map(
                 v10 = ubi_out[1, 0]; v11 = ubi_out[1, 1]; v12 = ubi_out[1, 2]
                 v20 = ubi_out[2, 0]; v21 = ubi_out[2, 1]; v22 = ubi_out[2, 2]
 
+                # how many peaks we fit strain with
+                # ---- reassign with the refined (UB)^-1, eq (8) ------------
                 nfit2 = 0
                 for t in range(ng):
-                    g0 = gvm[0, t]
-                    g1 = gvm[1, t]
-                    g2 = gvm[2, t]
-                    hf0 = v00 * g0 + v01 * g1 + v02 * g2
-                    hf1 = v10 * g0 + v11 * g1 + v12 * g2
-                    hf2 = v20 * g0 + v21 * g1 + v22 * g2
+                    Gx = gvm[0, t]
+                    Gy = gvm[1, t]
+                    Gz = gvm[2, t]
+                    hf0 = v00 * Gx + v01 * Gy + v02 * Gz
+                    hf1 = v10 * Gx + v11 * Gy + v12 * Gz
+                    hf2 = v20 * Gx + v21 * Gy + v22 * Gz
                     hi0 = np.round(hf0)
                     hi1 = np.round(hf1)
                     hi2 = np.round(hf2)
-                    e0 = hf0 - hi0
-                    e1 = hf1 - hi1
-                    e2 = hf2 - hi2
-                    if e0 * e0 + e1 * e1 + e2 * e2 < tolsq_merge:
+                    dh0 = hf0 - hi0
+                    dh1 = hf1 - hi1
+                    dh2 = hf2 - hi2
+                    if dh0 * dh0 + dh1 * dh1 + dh2 * dh2 < tolsq_merge:
                         fit_sel[nfit2] = t
                         fit_hkl[nfit2, 0] = np.int64(hi0)
                         fit_hkl[nfit2, 1] = np.int64(hi1)
@@ -2273,105 +2308,118 @@ def refine_map(
                 if not worth_fitting or nfit2 == 0:
                     continue
 
-                # ---- directional strain -> 6x6 normal equations ------------
+                # ---- directional strain, Henningsson et al. eq (12)-(20) ---
                 if not _ubi_to_u_safe(ubi_out, Umat):
                     n_degen += 1
                     continue          # cell is degenerate: no strain, no crash
-                UB0 = Umat.dot(B0)
-
-                smean = 0.0
+                UB0 = Umat.dot(B0)    # U.B0, the undeformed reference cell
+ 
+                mu_eps = 0.0
                 for t in range(nfit2):
                     ii = fit_sel[t]
-                    g0 = gvm[0, ii]
-                    g1 = gvm[1, ii]
-                    g2 = gvm[2, ii]
+                    Gx = gvm[0, ii]           # G, measured diffraction vector
+                    Gy = gvm[1, ii]
+                    Gz = gvm[2, ii]
                     h0 = np.float64(fit_hkl[t, 0])
-                    h1 = np.float64(fit_hkl[t, 1])
+                    h1 = np.float64(fit_hkl[t, 1])      # integer hkl
                     h2 = np.float64(fit_hkl[t, 2])
-                    e0 = UB0[0, 0] * h0 + UB0[0, 1] * h1 + UB0[0, 2] * h2
-                    e1 = UB0[1, 0] * h0 + UB0[1, 1] * h1 + UB0[1, 2] * h2
-                    e2 = UB0[2, 0] * h0 + UB0[2, 1] * h1 + UB0[2, 2] * h2
-                    gTg0 = g0 * e0 + g1 * e1 + g2 * e2
-                    gTg = g0 * g0 + g1 * g1 + g2 * g2
-                    ds = (gTg0 / gTg) - 1.0
-                    dstrain[t] = ds
-                    smean += ds
-                    # weight: 1/(ydist+1) scaled by the propagated strain noise
-                    a2 = (e0 * e0 + e1 * e1 + e2 * e2) * gnoise_std * gnoise_std
-                    if gTg != 0.0:
-                        sig = np.sqrt(a2 / (gTg * gTg))
+                    # G0 = U.B0.h, the model diffraction vector
+                    G0x = UB0[0, 0] * h0 + UB0[0, 1] * h1 + UB0[0, 2] * h2
+                    G0y = UB0[1, 0] * h0 + UB0[1, 1] * h1 + UB0[1, 2] * h2
+                    G0z = UB0[2, 0] * h0 + UB0[2, 1] * h1 + UB0[2, 2] * h2
+ 
+                    GtG0 = Gx * G0x + Gy * G0y + Gz * G0z
+                    GtG = Gx * Gx + Gy * Gy + Gz * Gz
+                    eps = (GtG0 / GtG) - 1.0            # eq (12)
+                    y_eps[t] = eps
+                    mu_eps += eps
+ 
+                    # eq (18). The first factor down-weights peaks whose ray
+                    # passes further from the voxel centroid; the second is
+                    # sigma_g propagated onto eps through eq (12).
+                    # there's a factor of GtG missing from the equation in the paper
+                    # but this form is correct!
+                    G0tG0 = G0x * G0x + G0y * G0y + G0z * G0z
+                    if GtG != 0.0:
+                        sigma_eps_i = np.sqrt(sigma_g * sigma_g * G0tG0
+                                              / (GtG * GtG))
                     else:
-                        sig = 1.0
-                    wts[t] = (1.0 / (g_yd[ii] + 1.0)) / sig
-                smean /= nfit2
-                svar = 0.0
+                        sigma_eps_i = 1.0
+                    Wdiag[t] = (weight_reg / (g_yd[ii] + weight_reg)) / sigma_eps_i
+ 
+                mu_eps /= nfit2
+                var_eps = 0.0
                 for t in range(nfit2):
-                    d = dstrain[t] - smean
-                    svar += d * d
-                sstd = np.sqrt(svar / nfit2)
-                hi_cut = smean + 3.5 * sstd
-                lo_cut = smean - 3.5 * sstd
-
+                    d = y_eps[t] - mu_eps
+                    var_eps += d * d
+                sigma_eps = np.sqrt(var_eps / nfit2)
+                eps_hi = mu_eps + 3.5 * sigma_eps       # eq (19)
+                eps_lo = mu_eps - 3.5 * sigma_eps
+ 
                 wmax = 0.0
                 for t in range(nfit2):
-                    if dstrain[t] > hi_cut or dstrain[t] < lo_cut:
-                        wts[t] = 0.0
-                    elif wts[t] > wmax:
-                        wmax = wts[t]
+                    if y_eps[t] > eps_hi or y_eps[t] < eps_lo:
+                        Wdiag[t] = 0.0                  # outlier, eq (19)
+                    elif Wdiag[t] > wmax:
+                        wmax = Wdiag[t]
                 if wmax <= 0.0:
                     continue
                 for t in range(nfit2):
-                    wts[t] /= wmax
-
+                    Wdiag[t] /= wmax
+ 
+                # eq (20): s = (M^T W^T W M)^-1 M^T W^T W y, accumulated
+                # directly rather than materialising M and W.
                 for a in range(6):
-                    B6[a, 0] = 0.0
+                    MtWWy[a, 0] = 0.0
                     for b in range(6):
-                        A6[a, b] = 0.0
+                        MtWWM[a, b] = 0.0
                 for t in range(nfit2):
-                    w = wts[t]
+                    w = Wdiag[t]
                     if w == 0.0:
                         continue
                     ii = fit_sel[t]
-                    g0 = gvm[0, ii]
-                    g1 = gvm[1, ii]
-                    g2 = gvm[2, ii]
-                    nrm = np.sqrt(g0 * g0 + g1 * g1 + g2 * g2)
-                    kx = g0 / nrm
-                    ky = g1 / nrm
-                    kz = g2 / nrm
-                    Mrow[0] = kx * kx
-                    Mrow[1] = ky * ky
-                    Mrow[2] = kz * kz
-                    Mrow[3] = 2.0 * kx * ky
-                    Mrow[4] = 2.0 * kx * kz
-                    Mrow[5] = 2.0 * ky * kz
+                    Gx = gvm[0, ii]
+                    Gy = gvm[1, ii]
+                    Gz = gvm[2, ii]
+                    Gnorm = np.sqrt(Gx * Gx + Gy * Gy + Gz * Gz)
+                    k1 = Gx / Gnorm                     # kappa, eq (17)
+                    k2 = Gy / Gnorm
+                    k3 = Gz / Gnorm
+                    Mj[0] = k1 * k1                     # eq (16)
+                    Mj[1] = k2 * k2
+                    Mj[2] = k3 * k3
+                    Mj[3] = 2.0 * k1 * k2
+                    Mj[4] = 2.0 * k1 * k3
+                    Mj[5] = 2.0 * k2 * k3
                     ww = w * w
                     for a in range(6):
-                        B6[a, 0] += ww * Mrow[a] * dstrain[t]
+                        MtWWy[a, 0] += ww * Mj[a] * y_eps[t]
                         for b in range(a, 6):
-                            A6[a, b] += ww * Mrow[a] * Mrow[b]
+                            MtWWM[a, b] += ww * Mj[a] * Mj[b]
                 for a in range(6):
                     for b in range(a):
-                        A6[a, b] = A6[b, a]
-
-                dscale = A6[0, 0]
+                        MtWWM[a, b] = MtWWM[b, a]
+ 
+                mscale = MtWWM[0, 0]
                 for a in range(1, 6):
-                    if A6[a, a] > dscale:
-                        dscale = A6[a, a]
-                if not _chol_solve(A6, B6, 6, 1, 1e-14 * dscale):
+                    if MtWWM[a, a] > mscale:
+                        mscale = MtWWM[a, a]
+                if not _chol_solve(MtWWM, MtWWy, 6, 1, 1e-14 * mscale):
                     continue
-
-                sxx = B6[0, 0]; syy = B6[1, 0]; szz = B6[2, 0]
-                sxy = B6[3, 0]; sxz = B6[4, 0]; syz = B6[5, 0]
-                final_eps[row, 0, 0] = sxx
-                final_eps[row, 0, 1] = sxy
-                final_eps[row, 0, 2] = sxz
-                final_eps[row, 1, 0] = sxy
-                final_eps[row, 1, 1] = syy
-                final_eps[row, 1, 2] = syz
-                final_eps[row, 2, 0] = sxz
-                final_eps[row, 2, 1] = syz
-                final_eps[row, 2, 2] = szz
+ 
+                # MtWWy now holds s = [eps_xx, eps_yy, eps_zz,
+                #                      eps_xy, eps_xz, eps_yz], eq (15)
+                eps_xx = MtWWy[0, 0]; eps_yy = MtWWy[1, 0]; eps_zz = MtWWy[2, 0]
+                eps_xy = MtWWy[3, 0]; eps_xz = MtWWy[4, 0]; eps_yz = MtWWy[5, 0]
+                final_eps[row, 0, 0] = eps_xx
+                final_eps[row, 0, 1] = eps_xy
+                final_eps[row, 0, 2] = eps_xz
+                final_eps[row, 1, 0] = eps_xy
+                final_eps[row, 1, 1] = eps_yy
+                final_eps[row, 1, 2] = eps_yz
+                final_eps[row, 2, 0] = eps_xz
+                final_eps[row, 2, 1] = eps_yz
+                final_eps[row, 2, 2] = eps_zz
 
         overflow[chunk] = n_ovf
         degenerate[chunk] = n_degen
