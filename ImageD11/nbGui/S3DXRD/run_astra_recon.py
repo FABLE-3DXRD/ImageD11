@@ -8,7 +8,7 @@ def main(h5name, dsfile, group_name, method):
     
     print('Reconstructing grain sinograms')
     for inc, gs in enumerate(grainsinos):
-        gs.recon(method="astra", astra_method="method)
+        gs.recon(method="astra", astra_method=method)
         print('Reconstructed ' + str(inc+1) + '/' + str(len(grainsinos)))
 
     # mask recon after running
