@@ -38,7 +38,10 @@ import ImageD11.sinograms.dataset
 import ImageD11.indexing
 from ImageD11.columnfile import columnfile
 from ImageD11.sinograms import geometry
-from ImageD11.sinograms.voxel_mask import VoxelSinoMasker, fill_voxel_idx
+from ImageD11.sinograms.voxel_mask import (
+    VoxelSinoMasker, fill_voxel_idx, max_candidates as vm_max_candidates,
+    default_index_filename, _peak_index_fingerprint,
+    save_peak_index, load_peak_index)
 
 # GOTO - find somewhere!
 # Everything written in Numba could move to C?
@@ -281,27 +284,25 @@ def select_point_peaks(si, sj, ystep, y0, ymin,
  
     relax=False reproduces geometry.dtyimask_from_step_sincos exactly:
         dty_to_dtyi(y0 - sx sin(w) - sy cos(w)) == dtyi
-    i.e. only the single nearest scan row at each omega, |ddty| <= ystep/2.
+    i.e. only the nearest scan row at each omega.
  
-    relax=True uses the refiner's predicate instead:
-        |y0 - sx sin(w) - sy cos(w) - dty| <= ystep
-    which is the two nearest scan rows, |ddty| <= ystep. Measured on a 275-row
-    scan this is exactly 2.00x the peaks, all of the extra ones sitting 0.5 to
-    1.0 ystep out, i.e. one scan row away.
+    relax=True uses the refiner's predicate, |.| <= ystep, which is the two
+    nearest rows -- exactly 2x the peaks on a 275-row scan, all of the extra
+    ones one scan row away. Different question, not a tolerance to tune: bin
+    equality asks "was this peak measured at the scan position that puts this
+    voxel in the beam", which is what you want when deciding what sits at
+    (si, sj). The refiner pairs the looser form with a 1/(ydist+r) weight;
+    the indexer has no weighting, so relaxing doubles the vote of
+    neighbouring material at full strength.
  
-    These are different questions, not a tolerance to tune:
-      - bin equality asks "was this peak measured at the scan position that
-        puts this voxel in the beam", which is what you want when *deciding*
-        what sits at (si, sj)
-      - the relaxed form asks "within one step of it", which is what you want
-        when *fitting* an orientation you have already assigned, and the
-        refiner pairs it with a 1/(ydist+1) weight so the off-row peaks count
-        for less. The indexer has no such weighting -- every peak counts the
-        same in ind.scorethem() and in hkluniq.
+    ymin MUST be the same origin the dtyi column was built with -- normally
+    ds.ybincens.min(), not the partition's lowest observed dty. They differ
+    by however many outer scan rows have no surviving peaks, and the
+    selection is then offset by that many rows at every point.
  
     All peak arrays must be in partition order. Returns the number written
-    into `out`, or -1 if the buffers were too small (never raises -- this is
-    called per point in worker processes and a raise here is a silent skip).
+    into `out`, or -1 if the buffers were too small (never raises -- this
+    runs per point in worker processes, where a raise is a silent skip).
     """
     sx = si * ystep
     sy = -sj * ystep          # geometry.step_to_sample: note the sign on sy
@@ -314,22 +315,21 @@ def select_point_peaks(si, sj, ystep, y0, ymin,
         return -1
  
     if relax:
-        # fill_voxel_idx already applied |dty_calc - dty| <= ystep
         for t in range(n):
             out[t] = idx_buf[t]
         return n
  
-    # tighten to dty_to_dtyi(dty_calc) == dtyi. round() here matches numpy's
-    # round-half-to-even, which is what geometry.dty_to_dtyi uses.
     m = 0
     inv_ystep = 1.0 / ystep
     for t in range(n):
         q = idx_buf[t]
         dty_calc = y0 - sx * sinomega[q] - sy * cosomega[q]
+        # round() here matches numpy's round-half-to-even, as dty_to_dtyi uses
         if int(round((dty_calc - ymin) * inv_ystep)) == dtyi[q]:
             out[m] = q
             m += 1
     return m
+
 
 def idxpoint(si, sj,
     omega, sinomega, cosomega, dty, dtyi, xl, yl, zl, eta,
@@ -370,22 +370,22 @@ def idxpoint(si, sj,
     npk = select_point_peaks(
         si, sj, ystep, y0, ymin,
         omega_partitions, dty_partitions,
-        sinomega, cosomega, dty, dtyi,
+        sinomega, cosomega, dty, dtyi,          # the mmap'd columns, already permuted
         sinomega_bins, cosomega_bins,
         idx_buf, ydist_buf, sel_buf, relax_mask)
-    if npk <= 0:
-        # npk < 0 means the buffer was short, which max_candidates should
-        # have prevented; either way there is nothing to index here
+    if npk < 0:
+        raise ValueError(
+            "peak buffer too small at (%d, %d) -- maxlocal was computed for "
+            "the standard grid; this point is outside it" % (si, sj))
+    if npk == 0:
         return [(0, 0, np.eye(3))]
-    sel = sel_buf[:npk]
- 
-    # gathers are now O(npk), not O(N_peaks)
+    sel = sel_buf[:npk]                          # icolf rows directly
+
     gv, gx, gy, gz = get_local_gv(si, sj, ystep,
                                   omega[sel], sinomega[sel], cosomega[sel],
                                   xl[sel], yl[sel], zl[sel])
     eta_local = eta[sel]
-    gv_local_mask = gv            # isel is all-True within the icolf
-
+    gv_local_mask = gv                           # isel all-True within the icolf
 
     # index with masked g-vectors
     ind = ImageD11.indexing.indexer(
@@ -449,12 +449,17 @@ def proxy(args):
         i, j,
         sm["omega"], sm["sinomega"], sm["cosomega"], sm["dty"], sm["dtyi"],
         sm["xl"], sm["yl"], sm["zl"], sm["eta"],
-        partglobal["omega_partitions"], partglobal["dty_partitions"],
-        partglobal["sinomega_bins"], partglobal["cosomega_bins"],
-        bufglobal["idx"], bufglobal["ydist"], bufglobal["sel"],
+        omega_partitions=partglobal["omega_partitions"],
+        dty_partitions=partglobal["dty_partitions"],
+        sinomega_bins=partglobal["usin"],
+        cosomega_bins=partglobal["ucos"],
+        idx_buf=bufglobal["idx"],
+        ydist_buf=bufglobal["ydist"],
+        sel_buf=bufglobal["sel"],
         **idxopts
     )
     return i, j, g
+
 
 
 
@@ -467,31 +472,39 @@ partglobal = None
 bufglobal = None
  
  
-def initializer(parfile, phase_name, symmetry, colfile, loglevel=3,
-                buffer_size=None):
+def initializer(parfile, phase_name, symmetry, colfile, index_filename,
+                fingerprint, loglevel=3):
     global ucglobal, symglobal, parglobal, colglobal, partglobal, bufglobal
-    if threadpoolctl is not None:
-        threadpoolctl.threadpool_limits(limits=1)
-    parglobal = parameters.read_par_file(parfile, phase_name=phase_name)
-    ucglobal = unitcell.unitcell_from_parameters(parglobal)
-    symglobal = sym_u.getgroup(symmetry)()
-    colglobal = ImageD11.columnfile.mmap_h5colf(colfile)
-    ImageD11.indexing.loglevel = loglevel
+    try:
+        if threadpoolctl is not None:
+            threadpoolctl.threadpool_limits(limits=1)
+        parglobal = parameters.read_par_file(parfile, phase_name=phase_name)
+        ucglobal = unitcell.unitcell_from_parameters(parglobal)
+        symglobal = sym_u.getgroup(symmetry)()
+        colglobal = ImageD11.columnfile.mmap_h5colf(colfile)
+        ImageD11.indexing.loglevel = loglevel
  
-    with h5py.File(colfile, "r") as hin:
-        g = hin["PBPPartition"]
-        partglobal = {k: g[k][:] for k in
-                      ("omega_partitions", "dty_partitions",
-                       "sinomega_bins", "cosomega_bins")}
-        partglobal["ymin"] = float(g.attrs["ymin"])
+        # mmap, not read: identical and read-only in every worker, so one
+        # mapping through the page cache replaces one copy per process
+        partglobal = load_peak_index(index_filename, fingerprint, mmap=True)
+        if partglobal is None:
+            raise RuntimeError(
+                "peak index %s is missing or stale -- rerun setpeaks()"
+                % index_filename)
  
-    # scratch, allocated once per worker rather than once per point
-    if buffer_size is None:
-        buffer_size = max(1024, colglobal.nrows // 10)
-    bufglobal = dict(idx=np.empty(buffer_size, np.int64),
-                     ydist=np.empty(buffer_size, np.float64),
-                     sel=np.empty(buffer_size, np.int64))
-
+        n = partglobal["maxlocal"]
+        bufglobal = dict(idx=np.empty(n, np.int64),
+                         ydist=np.empty(n, np.float64),
+                         sel=np.empty(n, np.int64))
+    except Exception:
+        # Pool discards initializer exceptions and respawns the worker, so a
+        # failure here is an invisible infinite loop that looks like a
+        # slowdown. Make it loud.
+        import traceback
+        print("INITIALIZER FAILED in pid %d" % os.getpid(), file=sys.stderr)
+        traceback.print_exc()
+        sys.stderr.flush()
+        raise
 
 
 class PBP:
@@ -541,6 +554,70 @@ class PBP:
         self.loglevel = loglevel
         self.phase_name = phase_name
 
+        self.icolf_filename = None      # set by setpeaks
+        self.index_filename = None      # set by setpeaks
+        self.index_fingerprint = None
+
+
+    def _build_index(self, omega_binsize=None, verbose=True):
+        """Partition the peaks and cache it beside the icolf.
+ 
+        Construction differs from PBPRefine -- there is no reconstruction
+        mask here, so no r_max and no ray_margin -- but the cache format,
+        fingerprint and invalidation are shared.
+        """
+        self.index_filename = default_index_filename(self)
+        fp = _peak_index_fingerprint(self, omega_binsize=omega_binsize)
+        self.index_fingerprint = fp
+        cached = load_peak_index(self.index_filename, fp)
+        if cached is not None:
+            if verbose:
+                print("loaded peak index from %s (%d omega bins, %d dty bins,"
+                      " maxlocal %s)" % (self.index_filename, cached["nom"],
+                                         cached["ndty"], cached["maxlocal"]))
+            return cached
+ 
+        omega = np.ascontiguousarray(self.icolf.omega, dtype=np.float64)
+        dty = np.ascontiguousarray(self.icolf.dty, dtype=np.float64)
+        M = VoxelSinoMasker(omega, dty, self.ystep, ymin=self.ymin)
+        M.partition(omega_binsize=omega_binsize)     # inplace=False
+        nom = int(M.sinomega_bins.size)
+        ndty = int(M.dty_partitions.shape[1]) - 1
+ 
+        # Worst-case peaks any point can pull out, so the workers can size
+        # their buffers exactly instead of guessing. This uses the refiner's
+        # |.| <= ystep predicate, which is a superset of bin equality, so it
+        # is a valid bound for both relax settings.
+        pts = np.asarray(geometry.step_grid_from_ybincens(
+            self.ybincens, self.ystep, 1, self.y0))
+        maxlocal = int(vm_max_candidates(
+            np.ascontiguousarray(pts[:, 0] * self.ystep, dtype=np.float64),
+            np.ascontiguousarray(-pts[:, 1] * self.ystep, dtype=np.float64),
+            self.y0, self.ystep, M.ymin,
+            M.omega_partitions, M.dty_partitions,
+            M.sinomega_bins, M.cosomega_bins))
+        maxlocal = max(maxlocal, 1)
+ 
+        idx = dict(order=M.peak_ordering,
+                   omega_partitions=M.omega_partitions,
+                   dty_partitions=M.dty_partitions,
+                   usin=M.sinomega_bins, ucos=M.cosomega_bins,
+                   nom=nom, ndty=ndty, ymin=float(M.ymin),
+                   ray_margin=0.0, dev=0.0,      # refiner-only, unused here
+                   maxlocal=maxlocal)
+        if verbose:
+            print("indexing partition: %d omega bins (%s) x %d dty bins, "
+                  "worst-case %d peaks/point"
+                  % (nom, "%.4f deg" % M.omega_binsize, ndty, maxlocal))
+        try:
+            save_peak_index(idx, self.index_filename, fp)
+            if verbose:
+                print("saved peak index to %s" % self.index_filename)
+        except OSError as e:
+            print("could not write index cache (%s), continuing" % e)
+        return idx
+
+    
     def setpeaks(self, colf, icolf_filename=None):
         """
         Given a cf_2d in RAM (colf), make an icolf in RAM which contains the selection of peaks we want to index
@@ -604,24 +681,15 @@ class PBP:
         self.colf = colf
         self.icolf = colf.copyrows(isel)
 
+        # Partition once, then put the peaks in partition order on disk so
+        # the workers can mmap the columns and do no reordering at all.
+        # ymin must be ybincens.min(), the same origin dtyi was built with.
         masker = VoxelSinoMasker(np.ascontiguousarray(self.icolf.omega),
                                  np.ascontiguousarray(self.icolf.dty),
-                                 self.ystep)
-        masker.partition()                       # heuristic picks the omega bins
-        order = masker.peak_ordering
-     
-        # put the peaks in partition order so the workers do no reordering
-        self.icolf = self.icolf.copyrows(order)
-        self.partition = dict(
-            omega_partitions=masker.omega_partitions,
-            dty_partitions=masker.dty_partitions,
-            sinomega_bins=masker.sinomega_bins,
-            cosomega_bins=masker.cosomega_bins,
-            ymin=float(masker.ymin),
-        )
-        print("indexing partition: %d omega bins (%.4f deg) x %d dty bins"
-              % (masker.sinomega_bins.size, masker.omega_binsize,
-                 masker.dty_partitions.shape[1] - 1))
+                                 self.ystep, ymin=self.ymin)
+        masker.partition()
+        self.icolf = self.icolf.copyrows(masker.peak_ordering)
+        self._masker = masker          # _build_index reuses it, no re-partition
 
         # how many peaks did we see?
         self.npks = npks
@@ -648,17 +716,21 @@ class PBP:
             os.remove(icolf_filename)
         ImageD11.columnfile.colfile_to_hdf(self.icolf, icolf_filename, compression=None)
 
-        with h5py.File(icolf_filename, "a") as hout:
-            g = hout.require_group("PBPPartition")
-            for k, v in self.partition.items():
-                if np.isscalar(v):
-                    g.attrs[k] = v
-                else:
-                    if k in g:
-                        del g[k]
-                    g.create_dataset(k, data=v)
-        
         self.icolf_filename = icolf_filename
+
+        self._build_index()
+        
+        # write partition to h5:
+        # with h5py.File(icolf_filename, "a") as hout:
+        #     g = hout.require_group("PBPPartition")
+        #     for k, v in self.partition.items():
+        #         if np.isscalar(v):
+        #             g.attrs[k] = v
+        #         else:
+        #             if k in g:
+        #                 del g[k]
+        #             g.create_dataset(k, data=v)
+
 
     def iplot(self, skip=1):
         import pylab as pl
@@ -690,6 +762,8 @@ class PBP:
             f.write("phase_name={}\n".format(self.phase_name))
             f.write("symmetry={}\n".format(self.symmetry))
             f.write("icolf_filename={}\n".format(self.icolf_filename))
+            f.write("index_filename={}\n".format(self.index_filename))
+            f.write("index_fingerprint={}\n".format(self.index_fingerprint))
             f.write("y0={}\n".format(self.y0))
             f.write("hkl_tol={}\n".format(self.hkl_tol))
             f.write("ds_tol={}\n".format(self.ds_tol))
@@ -743,6 +817,8 @@ class PBP:
 #SBATCH --cpus-per-task={cpus_per_chunk}
 #SBATCH --array=0-{array_end}
 #SBATCH --mem={mem_G}G
+export NUMBA_CACHE_DIR=/tmp/numba_${{SLURM_JOB_ID}}_${{SLURM_ARRAY_TASK_ID}}
+mkdir -p $NUMBA_CACHE_DIR
 CHUNK_FILE={chunk_prefix}${{SLURM_ARRAY_TASK_ID}}{chunk_suffix}
 OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
 {config_path} $CHUNK_FILE {grains_prefix}${{SLURM_ARRAY_TASK_ID}}.txt
@@ -774,6 +850,8 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
             self,
             grains_filename,
             icolf_filename=None,  # use self
+            index_filename=None,  # use self
+            index_fingerprint=None,  # use self
             nprocs=None,
             gridstep=1,
             debugpoints=None,
@@ -782,9 +860,16 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
         """
         grains_filename = output file
         icolf_filename = hdf5file to write. Allows mmap to be used.
+        index_filename = hdf5file for voxel_mask index to mmap
         """
         if icolf_filename is not None:
             self.icolf_filename = icolf_filename
+
+        if index_filename is not None:
+            self.index_filename = index_filename
+
+        if index_fingerprint is not None:
+            self.index_fingerprint = index_fingerprint
         
         self.loglevel = loglevel
         
@@ -792,6 +877,11 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
         # FIXME - look at dataset ybincens and roi_iradon output_size ?
         if nprocs is None:
             nprocs = cImageD11.cores_available()
+
+        print("nprocs=%s cores_available=%s SLURM_CPUS_PER_TASK=%s cache_dir=%s"
+          % (nprocs, cImageD11.cores_available(),
+             os.environ.get("SLURM_CPUS_PER_TASK"),
+             os.environ.get("NUMBA_CACHE_DIR")), flush=True)
 
         idxopt = {
             "ystep": self.ystep,
@@ -813,8 +903,43 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
         else:
             args = [(i, j, idxopt) for i, j in debugpoints]
         # gmap = {}
+
+        # Warm the numba on-disk cache in the parent. With forkserver the
+        # compiled code is not inherited, but a warm cache turns a compile
+        # into a load in each worker. The argument TYPES must match what the
+        # worker passes: a read-only memmap is a distinct numba type from a
+        # writable array, so this loads the index and columns the same way
+        # initializer does rather than using dummy arrays.
+        _part = load_peak_index(self.index_filename, self.index_fingerprint,
+                                mmap=True)
+        _sm = ImageD11.columnfile.mmap_h5colf(self.icolf_filename)
+        _n = _part["maxlocal"]
+        _t0 = time.time()
+        select_point_peaks(
+            0, 0,
+            float(self.ystep), float(self.y0), float(self.ymin),
+            _part["omega_partitions"], _part["dty_partitions"],
+            _sm["sinomega"], _sm["cosomega"], _sm["dty"], _sm["dtyi"],
+            _part["usin"], _part["ucos"],
+            np.empty(_n, np.int64), np.empty(_n, np.float64),
+            np.empty(_n, np.int64),
+            False)
+        print("numba warmup %.1f s, cache hits %d misses %d"
+              % (time.time() - _t0,
+                 sum(select_point_peaks.stats.cache_hits.values()),
+                 sum(select_point_peaks.stats.cache_misses.values())),
+                 flush=True)
+        for _f in (select_point_peaks, fill_voxel_idx):
+            print("  %s: hits %d misses %d"
+                  % (_f.__name__,
+                     sum(_f.stats.cache_hits.values()),
+                     sum(_f.stats.cache_misses.values())), flush=True)
+        del _part, _sm
+        
         t0 = time.time()
         # main process is writing
+
+        
         with open(grains_filename, "w") as gout:
             gout.write(
                 "#  i  j  ntotal  nuniq  ubi00  ubi01  ubi02  ubi10  ubi11  ubi12  ubi20  ubi21  ubi22\n"
@@ -829,6 +954,8 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
                             self.phase_name,
                             self.symmetry,
                             self.icolf_filename,
+                            self.index_filename,
+                            self.index_fingerprint,
                             self.loglevel,
                     ),
             ) as p:

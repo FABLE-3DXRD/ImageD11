@@ -38,7 +38,9 @@ from ImageD11.sinograms.tensor_map import unitcell_to_b
 from ImageD11.sinograms.sinogram import save_array
 from ImageD11.sinograms.point_by_point import PBPMap
 from ImageD11.sinograms.voxel_mask import (
-    VoxelSinoMasker, fill_voxel_idx, max_candidates as vm_max_candidates)
+    VoxelSinoMasker, fill_voxel_idx, max_candidates as vm_max_candidates,
+    default_index_filename, _peak_index_fingerprint,
+    save_peak_index, load_peak_index)
 
 # --------------------------------------------------------------------------
 # glibc allocator tuning.  Numba's NRT calls malloc; blocks above the mmap
@@ -535,49 +537,7 @@ def _ubi_to_u_safe(ubi, U):
     return True
 
 
-# ==========================================================================
-#  INDEX CACHE
-#
-#  Split in two, because get_origins needs the bucket index but runs *before*
-#  xpos_refined exists -- it is what produces it.
-#
-#    PBPPeakIndex : the (omega frame, dtyi) CSR and the permutation.
-#                   Depends on omega, dty, dtyi, ystep, y0, mask shape.
-#                   Used by both get_origins and run_refine.
-#    PBPGveCache  : gve_all in permuted order.
-#                   Additionally depends on sc, fc, xpos_refined and the
-#                   geometry parameters. Only run_refine needs it.
-#
-#  Not cached: the permuted columns and the pbpmap CSR, which are a
-#  fancy-index and a counting sort away and cost less than writing them out.
-# ==========================================================================
-_PEAK_H5GROUP = "PBPPeakIndex"
 _GVE_H5GROUP = "PBPGveCache"
-_INDEX_VERSION = 4
-
-
-def _hash_cols(h, icolf, names):
-    for name in names:
-        if name not in icolf.titles:
-            h.update(("%s:absent;" % name).encode())
-            continue
-        arr = np.ascontiguousarray(getattr(icolf, name))
-        h.update(name.encode())
-        h.update(arr.dtype.str.encode())
-        h.update(np.int64(arr.shape[0]).tobytes())
-        h.update(arr.tobytes())
-
-
-def _peak_index_fingerprint(refine, omega_binsize="auto", omega_step=None):
-    """Inputs build_peak_index depends on. Deliberately excludes xpos_refined."""
-    h = hashlib.blake2b(digest_size=16)
-    h.update(("v%d peak" % _INDEX_VERSION).encode())
-    _hash_cols(h, refine.icolf, ("omega", "dty", "dtyi", "frm"))
-    h.update(repr((float(refine.ystep), float(refine.y0),
-                   None if omega_step is None else float(omega_step),
-                   omega_binsize,
-                   tuple(refine.mask.shape))).encode())
-    return h.hexdigest()
 
 
 def _gve_fingerprint(refine, peak_fingerprint):
@@ -590,47 +550,6 @@ def _gve_fingerprint(refine, peak_fingerprint):
     for k in sorted(pars):
         h.update(("%s=%r;" % (k, pars[k])).encode())
     return h.hexdigest()
-
-
-def save_peak_index(idx, filename, fingerprint):
-    with h5py.File(filename, "a") as hout:
-        if _PEAK_H5GROUP in hout:
-            del hout[_PEAK_H5GROUP]
-        g = hout.create_group(_PEAK_H5GROUP)
-        g.attrs["fingerprint"] = fingerprint
-        g.attrs["version"] = _INDEX_VERSION
-        for k in ("nom", "ndty"):
-            g.attrs[k] = int(idx[k])
-        for k in ("ymin", "ray_margin", "dev"):
-            g.attrs[k] = float(idx[k])
-        for k in ("order", "omega_partitions", "dty_partitions", "usin", "ucos"):
-            g.create_dataset(k, data=idx[k])
-
-
-def load_peak_index(filename, fingerprint):
-    if filename is None or not os.path.exists(filename):
-        return None
-    try:
-        with h5py.File(filename, "r") as hin:
-            if _PEAK_H5GROUP not in hin:
-                return None
-            g = hin[_PEAK_H5GROUP]
-            if g.attrs.get("version", -1) != _INDEX_VERSION:
-                return None
-            if g.attrs.get("fingerprint", "") != fingerprint:
-                return None
-            return dict(
-                nom=int(g.attrs["nom"]), ndty=int(g.attrs["ndty"]),
-                ymin=float(g.attrs["ymin"]),
-                ray_margin=float(g.attrs["ray_margin"]),
-                dev=float(g.attrs["dev"]),
-                order=g["order"][:],
-                omega_partitions=g["omega_partitions"][:],
-                dty_partitions=g["dty_partitions"][:],
-                usin=g["usin"][:], ucos=g["ucos"][:],
-            )
-    except (OSError, KeyError):
-        return None
 
 
 def save_gve_cache(gve_all, filename, fingerprint):
@@ -659,12 +578,6 @@ def load_gve_cache(filename, fingerprint):
     except (OSError, KeyError):
         return None
 
-
-def default_index_filename(refine):
-    base = getattr(refine, "icolf_filename", None)
-    if base is None:
-        raise ValueError("no icolf_filename to derive an index cache path from")
-    return os.path.splitext(base)[0] + "_pbpindex.h5"
 
 
 # ==========================================================================
@@ -834,7 +747,7 @@ def build_peak_index(refine, omega_binsize="auto", omega_step=None,
             kw = dict(omega_binsize=None)               # his heuristic
 
     t0 = time.perf_counter()
-    M = VoxelSinoMasker(omega, dty, refine.ystep)
+    M = VoxelSinoMasker(omega, dty, refine.ystep, ymin=refine.ymin)
     M.partition(**kw)                           # inplace=False: icolf untouched
     nom = int(M.sinomega_bins.size)
     ndty = int(M.dty_partitions.shape[1]) - 1
@@ -872,7 +785,8 @@ def build_peak_index(refine, omega_binsize="auto", omega_step=None,
                usin=M.sinomega_bins, ucos=M.cosomega_bins,
                nom=nom, ndty=ndty, ymin=float(M.ymin),
                ray_margin=ray_margin, dev=dev,
-               dbin=dbin, cache_filename=cache_filename)
+               dbin=dbin, cache_filename=cache_filename,
+               maxlocal=None)
 
     if use_cache:
         refine.index_filename = cache_filename
@@ -1252,6 +1166,7 @@ class PBPRefine:
         self.ystep = self.dset.ystep
         self.y0 = y0
         self.ybincens = self.dset.ybincens
+        self.ymin = self.ybincens.min()
 
         # X-ray beam size, in the same units as the dty motor.
         #

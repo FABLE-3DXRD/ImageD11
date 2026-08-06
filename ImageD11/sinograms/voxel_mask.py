@@ -1,7 +1,163 @@
 """Written by Axel Henningsson, 2026."""
 
+import os, sys
 import numba
 import numpy as np
+import hashlib
+import h5py
+import hdf5plugin
+
+# ==========================================================================
+#  INDEX CACHE
+#
+#  Split in two, because get_origins needs the bucket index but runs *before*
+#  xpos_refined exists -- it is what produces it.
+#
+#    PBPPeakIndex : the (omega frame, dtyi) CSR and the permutation.
+#                   Depends on omega, dty, dtyi, ystep, y0, mask shape.
+#                   Used by both get_origins and run_refine.
+#    PBPGveCache  : gve_all in permuted order.
+#                   Additionally depends on sc, fc, xpos_refined and the
+#                   geometry parameters. Only run_refine needs it.
+#
+#  Not cached: the permuted columns and the pbpmap CSR, which are a
+#  fancy-index and a counting sort away and cost less than writing them out.
+# ==========================================================================
+_PEAK_H5GROUP = "PBPPeakIndex"
+_GVE_H5GROUP = "PBPGveCache"
+_INDEX_VERSION = 4
+
+
+def _hash_cols(h, icolf, names):
+    for name in names:
+        if name not in icolf.titles:
+            h.update(("%s:absent;" % name).encode())
+            continue
+        arr = np.ascontiguousarray(getattr(icolf, name))
+        h.update(name.encode())
+        h.update(arr.dtype.str.encode())
+        h.update(np.int64(arr.shape[0]).tobytes())
+        h.update(arr.tobytes())
+
+
+def _peak_index_fingerprint(refine, omega_binsize="auto", omega_step=None):
+    """Inputs build_peak_index depends on. Deliberately excludes xpos_refined.
+ 
+    Works for both PBPRefine and PBP: the reconstruction grid shape is only
+    included when there is one.
+    """
+    h = hashlib.blake2b(digest_size=16)
+    h.update(("v%d peak" % _INDEX_VERSION).encode())
+    _hash_cols(h, refine.icolf, ("omega", "dty", "dtyi", "frm"))
+    mask = getattr(refine, "mask", None)
+    h.update(repr((float(refine.ystep), float(refine.y0), float(refine.ymin),
+                   None if omega_step is None else float(omega_step),
+                   omega_binsize,
+                   None if mask is None else tuple(mask.shape))).encode())
+    return h.hexdigest()
+
+
+def _gve_fingerprint(refine, peak_fingerprint):
+    """Everything the g-vectors depend on, on top of the peak index."""
+    h = hashlib.blake2b(digest_size=16)
+    h.update(("v%d gve " % _INDEX_VERSION).encode())
+    h.update(peak_fingerprint.encode())
+    _hash_cols(h, refine.icolf, ("sc", "fc", "xpos_refined"))
+    pars = refine.icolf.parameters.get_parameters()
+    for k in sorted(pars):
+        h.update(("%s=%r;" % (k, pars[k])).encode())
+    return h.hexdigest()
+
+
+def save_peak_index(idx, filename, fingerprint):
+    with h5py.File(filename, "a") as hout:
+        if _PEAK_H5GROUP in hout:
+            del hout[_PEAK_H5GROUP]
+        g = hout.create_group(_PEAK_H5GROUP)
+        g.attrs["fingerprint"] = fingerprint
+        g.attrs["version"] = _INDEX_VERSION
+        for k in ("nom", "ndty"):
+            g.attrs[k] = int(idx[k])
+        # optional: only the indexer pre-computes it
+        if idx.get("maxlocal") is not None:
+            g.attrs["maxlocal"] = int(idx["maxlocal"])
+        for k in ("ymin", "ray_margin", "dev"):
+            g.attrs[k] = float(idx[k])
+        # no chunks, no compression -> contiguous -> id.get_offset() works,
+        # which is what makes the mmap path below possible. Do not add
+        # compression here without also disabling that path.
+        for k in ("order", "omega_partitions", "dty_partitions", "usin", "ucos"):
+            g.create_dataset(k, data=idx[k])
+
+
+
+def load_peak_index(filename, fingerprint, mmap=False, verbose=True):
+    """
+    mmap=True returns read-only np.memmap views instead of copies.
+ 
+    Use it from multiprocessing workers: the arrays are identical in every
+    worker and never written, so one mapping shared through the page cache
+    replaces one heap copy per process. Falls back to a read for any dataset
+    that is not contiguous.
+    """
+    if filename is None:
+        return None
+    if not os.path.exists(filename):
+        if verbose:
+            print("index: %s does not exist" % filename, file=sys.stderr)
+        return None
+    try:
+        hin = h5py.File(filename, "r")
+    except OSError as e:
+        # HDF5 file locking on GPFS/NFS lands here. Do not report it as a
+        # stale cache -- set HDF5_USE_FILE_LOCKING=FALSE.
+        print("index: cannot open %s: %s" % (filename, e), file=sys.stderr)
+        return None
+    with hin:
+        if _PEAK_H5GROUP not in hin:
+            print("index: no %s group" % _PEAK_H5GROUP, file=sys.stderr)
+            return None
+        g = hin[_PEAK_H5GROUP]
+        v = g.attrs.get("version", -1)
+        if v != _INDEX_VERSION:
+            print("index: version %s, expected %d" % (v, _INDEX_VERSION),
+                  file=sys.stderr)
+            return None
+        got = g.attrs.get("fingerprint", "")
+        if got != fingerprint:
+            print("index: fingerprint %s, expected %s" % (got, fingerprint),
+                  file=sys.stderr)
+            return None
+ 
+        def get(k):
+            d = g[k]
+            if not mmap:
+                return d[:]
+            off = d.id.get_offset()
+            if off is None:          # chunked/compressed: cannot map
+                return d[:]
+            return np.memmap(filename, dtype=d.dtype, mode="r",
+                             offset=off, shape=d.shape)
+
+        return dict(
+            nom=int(g.attrs["nom"]), ndty=int(g.attrs["ndty"]),
+            ymin=float(g.attrs["ymin"]),
+            ray_margin=float(g.attrs["ray_margin"]),
+            dev=float(g.attrs["dev"]),
+            maxlocal=(int(g.attrs["maxlocal"])
+                      if "maxlocal" in g.attrs else None),
+            order=get("order"),
+            omega_partitions=get("omega_partitions"),
+            dty_partitions=get("dty_partitions"),
+            usin=get("usin"), ucos=get("ucos"),
+        )
+
+
+def default_index_filename(refine):
+    base = getattr(refine, "icolf_filename", None)
+    if base is None:
+        raise ValueError("no icolf_filename to derive an index cache path from")
+    return os.path.splitext(base)[0] + "_pbpindex.h5"
 
 
 @numba.njit(cache=True)
@@ -257,6 +413,7 @@ class VoxelSinoMasker:
         dty (:obj:`np.ndarray`): The dty values, one per peak, shape=(n_peaks,).
         dty_stepsize (:obj:`float`): The dty step size, assumed to be constant such that the
             scan defines a regular grid in dty.
+        ymin: ds.ybincens.min()
 
     Attributes:
         omega_binsize (:obj:`float`): The omega bin size.
@@ -273,9 +430,14 @@ class VoxelSinoMasker:
         dty_stepsize (:obj:`float`): The dty step size.
     """
 
-    def __init__(self, omega, dty, dty_stepsize):
+    def __init__(self, omega, dty, dty_stepsize, ymin=None):
         self.uniq_dtys = np.unique(dty)
-        self.ymin = dty.min()
+        # Origin of the dty bin grid. Defaults to the lowest observed dty,
+        # which is fine for a self-contained partition, but callers that
+        # compare bin indices against a dtyi column computed elsewhere must
+        # pass the same origin that column used -- normally ds.ybincens.min().
+        # They differ by however many outer scan rows contain no peaks.
+        self.ymin = dty.min() if ymin is None else float(ymin)
 
         float_yindex = (dty - self.ymin) / dty_stepsize
         delta_yindex_stepsize = np.abs(float_yindex - np.round(float_yindex))
@@ -359,7 +521,6 @@ class VoxelSinoMasker:
             # frame number column
             self.omega_binsize = None
             omega_bin_indices = np.ascontiguousarray(omega_bin_indices, dtype=np.int64)
-            omega_bin_indices = omega_bin_indices - omega_bin_indices.min()
             omega_bins = np.asarray(omega_bins, dtype=np.float64)[
                 : omega_bin_indices.max() + 1
             ]
@@ -379,7 +540,7 @@ class VoxelSinoMasker:
 
         peak_ordering = np.lexsort((self.dty, omega_bin_indices))
         omega_bin_indices_sorted = omega_bin_indices[peak_ordering]
-        omega_partition_lengths = np.bincount(omega_bin_indices_sorted)
+        omega_partition_lengths = np.bincount(omega_bin_indices_sorted, minlength=omega_bins.size)
         omega_partitions = np.zeros(omega_bins.size + 1, dtype=np.int64)
         omega_partitions[1:] = np.cumsum(omega_partition_lengths)
 
