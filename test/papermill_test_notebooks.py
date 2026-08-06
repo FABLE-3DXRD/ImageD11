@@ -2111,6 +2111,197 @@ def test_FeAu_JADB_pbp_fast(aroot):
     notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
 
 
+def test_FeAu_f2scan_JADB_pbp_fast(aroot):
+    # where is the data?
+    dataroot = "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/RAW_DATA"
+    analysisroot = analysis_folder(aroot, "pbp_route")
+    # find layers to process
+    sample = "FeAu_No1_190um"
+    first_dataset = "2um_redo_z_0"
+    dset_prefix = "2um_redo_z"
+    skips_dict = {sample: []}
+    sample_list = [sample]
+    samples_dict = find_datasets_to_process(
+        dataroot, skips_dict, dset_prefix, sample_list
+    )
+
+    nb_params = [
+        (
+            "0_segment_and_label.ipynb",
+            {
+                "maskfile": "/data/id11/nanoscope/Eiger/eiger_mask_E-08-0144_20240205.edf",
+                "e2dxfile": "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/pars/e2dx_E-08-0144_20240205.edf",
+                "e2dyfile": "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/pars/e2dy_E-08-0144_20240205.edf",
+                "detector": "eiger",
+                "omegamotor": "owisRz_cen360",
+                "dtymotor": "diffty",
+                "options": {"cut": 1, "pixels_in_spot": 3, "howmany": 100000},
+                "normalise_intensities_to_monitor": True,
+                "monitor_name": "fpico3",
+                "segment_local": False,
+                "ncores_local": None,
+            },
+        ),
+        (
+            "pbp_1_indexing.ipynb",
+            {
+                "par_file": "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/pars/pars.json",
+                "phase_str": "Fe_bcc",
+                "minpkint": 5,
+                "hkl_tol": 0.05,
+                "fpks": 0.9,
+                "ds_tol": 0.004,
+                "etacut": 0.1,
+                "ifrac": 5e-3,
+                "drop_input_peaks": True,
+                "y0_manual": 14.30168621868912,
+                "symmetry": "cubic",
+                "foridx": [0, 1, 3, 5, 7],
+                "forgen": [1, 5, 7],
+                "uniqcut": 0.85,
+                "mask_before_indexing": True,
+                "draw_mask_interactive": False,
+                "manual_threshold": None,
+                "use_cluster": False,
+                "n_chunks": 2,
+                "cpus_per_chunk": 8,
+                "time_h": 1,
+                "partition": "nice",
+            },
+        ),
+        (
+            "pbp_1_indexing.ipynb",
+            {
+                "par_file": "/data/id11/inhouse2/test_data_3DXRD/S3DXRD/FeAu_f2scan/pars/pars.json",
+                "phase_str": "Au_fcc",
+                "minpkint": 5,
+                "hkl_tol": 0.05,
+                "fpks": 0.9,
+                "ds_tol": 0.004,
+                "etacut": 0.1,
+                "ifrac": 5e-3,
+                "y0_manual": 14.30168621868912,
+                "symmetry": "cubic",
+                "foridx": [0, 1, 2, 3, 4],
+                "forgen": [0, 1, 4],
+                "uniqcut": 0.85,
+                "mask_before_indexing": True,
+                "draw_mask_interactive": False,
+                "manual_threshold": None,
+                "use_cluster": False,
+                "n_chunks": 2,
+                "cpus_per_chunk": 8,
+                "time_h": 1,
+                "partition": "low",
+            },
+        ),
+        (
+            "pbp_2_visualise.ipynb",
+            {
+                "phase_str": "Fe_bcc",
+                "min_unique": 25,
+            },
+        ),
+        (
+            "pbp_2_visualise.ipynb",
+            {
+                "phase_str": "Au_fcc",
+                "min_unique": 25,
+            },
+        ),
+        (
+            "pbp_3_refinement.ipynb",
+            {
+                "phase_str": "Fe_bcc",
+                "min_unique": 22,
+                "manual_threshold": None,
+                "y0_manual": 14.30168621868912,
+                "hkl_tol_origins": 0.075,
+                "hkl_tol_refine": 0.15,
+                "hkl_tol_refine_merged": 0.075,
+                "ds_tol": 0.006,
+                "ifrac": 0,
+                "drop_input_peaks": True,
+                "rings_to_refine": None,
+                "set_mask_from_input": True,
+                "use_cluster": False,
+            },
+        ),
+        (
+            "pbp_3_refinement.ipynb",
+            {
+                "phase_str": "Au_fcc",
+                "min_unique": 22,
+                "manual_threshold": None,
+                "y0_manual": 14.30168621868912,
+                "hkl_tol_origins": 0.075,
+                "hkl_tol_refine": 0.125,
+                "hkl_tol_refine_merged": 0.075,
+                "ds_tol": 0.006,
+                "ifrac": 0,
+                "rings_to_refine": [0, 2, 3, 4, 5, 6, 7, 8],
+                "set_mask_from_input": True,
+                "use_cluster": False,
+            },
+        ),
+        (
+            "4_visualise.ipynb",
+            {
+                "phase_str": "Fe_bcc",
+                "min_unique": 120,
+            },
+        ),
+        (
+            "4_visualise.ipynb",
+            {
+                "phase_str": "Au_fcc",
+                "min_unique": 120,
+            },
+        ),
+        (
+            "5_combine_phases.ipynb",
+            {
+                "phase_strs": ["Fe_bcc", "Au_fcc"],
+                "combine_refined": True,
+            },
+        ),
+    ]
+
+    notebooks_to_execute = prepare_notebooks(
+        samples_dict,
+        nb_params,
+        dataroot,
+        analysisroot,
+        CHECKOUT_PATH=checkout_folder,
+        IMAGED11_PATH=checkout_name,
+        notebook_parent_dir=scan_nb_prefix,
+    )
+
+    for nb_path in notebooks_to_execute:
+        notebook_exec_pmill(nb_path, nb_path, None)
+
+    # now run the final notebook to merge slices together
+    # work out the path to the first dataset
+    dset_path = os.path.join(
+        analysisroot,
+        sample,
+        "%s_%s" % (sample, first_dataset),
+        "%s_%s_dataset.h5" % (sample, first_dataset),
+    )
+    nb_param = {
+        "CHECKOUT_PATH": checkout_folder,
+        "IMAGED11_PATH": checkout_name,
+        "dset_path": dset_path,
+        "dset_prefix": dset_prefix,
+        "stack_combined": True,
+        "stack_refined": True,
+        "zstep": 50.0,
+    }
+
+    nb_path = os.path.join(scan_nb_prefix, "7_stack_layers.ipynb")
+    notebook_route(analysisroot, [nb_path], [nb_param], skip_dir_check=True)
+
+    
 def test_FeAu_JADB_bb(aroot):
     # where is the data?
     dataroot = "/data/id11/inhouse2/test_data_3DXRD/TDXRD/FeAu/RAW_DATA/"
@@ -2478,3 +2669,4 @@ if __name__=="__main__":
     # fast + local
     # test_FeAu_JADB_tomo_fast(destination_folder)
     # test_FeAu_JADB_pbp_fast(destination_folder)
+    # test_FeAu_f2scan_JADB_pbp_fast(destination_folder)
