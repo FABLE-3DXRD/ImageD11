@@ -1,4 +1,136 @@
-"""Point-by-point refinement code. Originally written by Axel Henningsson with adaptations by James Ball"""
+"""Point-by-point refinement of orientation and strain.
+
+Originally written by Axel Henningsson, with adaptations by James Ball.
+
+https://www.nature.com/articles/s41598-024-71006-0
+
+The method follows Henningsson et al., and the equation numbers below refer
+to the supplementary material of that paper. This module refines what the
+point-by-point indexer produced: for every voxel and every candidate
+orientation it selects the peaks that saw that voxel, refines the unit cell
+matrix, and then fits an elastic strain tensor.
+
+Notation, and where each symbol lives in the code
+-------------------------------------------------
+    G           measured diffraction vector, in sample coordinates
+                    G = U B G_hkl                                   eq (5)
+                (eq (4) is the same in the lab frame, with the turntable
+                rotation Omega applied; everything here works in sample
+                coordinates, so Omega does not appear)
+    G_hkl       integer Miller indices                       -> fit_hkl
+    (UB)^-1     unit cell matrix inverse, "the UBI"          -> ubi_out
+    U, B0       orientation, and the undeformed reference B  -> Umat, B0
+    y + dy      distance from the beam to the voxel centroid -> g_yd
+
+Peak selection
+--------------
+A peak is assigned to a voxel when the beam was illuminating that voxel as
+the peak was recorded, i.e. when
+
+    | y0 - sx sin(w) - sy cos(w) - dty |  <=  ystep
+
+for the peak's own omega and dty. sx, sy is the voxel centroid in sample
+coordinates and y0 the rotation axis offset. ystep is the scan step, which
+is set to the measured beam FWHM.
+
+Peaks recorded at different omega that share (h, k, l), the sign of eta and
+the scan line are merged into one intensity-weighted peak before fitting.
+
+Orientation refinement, eq (6) to (11)
+--------------------------------------
+Each merged peak carries a weight that falls off with how far the beam
+passed from the voxel centre:
+
+    w = r / (y + dy + r)                                     eq (6)
+
+r is a regularisation length, so that w = 1 for a peak straight through the
+centroid. The paper writes r as 1 um for a 3 um beam; it is beam_size / 3,
+and lives in the code as `weight_reg`. This is the only absolute length in
+the module -- everything else is a ratio of lengths and is therefore free of
+any assumption about the dty motor units.
+
+A peak counts towards the fit when its Miller indices come out close enough
+to integers:
+
+    || (UB)^-1 G - round((UB)^-1 G) ||_2  <  e_hkl            eq (8)
+
+with e_hkl = hkl_tol_refine before merging and hkl_tol_refine_merged after.
+
+The unit cell matrix is then the weighted least squares solution over all
+such peaks, eq (11). The code solves the equivalent normal equations
+directly, accumulating
+
+    GtWWG = sum_n w^2 G G^T          GtWWH = sum_n w^2 G G_hkl^T
+
+and getting (UB)^-1 from a 3x3 Cholesky rather than forming the full system
+of eq (7) and (10).
+
+Strain refinement, eq (12) to (20)
+----------------------------------
+Each merged peak is reduced to one scalar strain along its own scattering
+direction, by comparing the measured G with the one the refined orientation
+and an undeformed reference cell predict, G0 = U B0 G_hkl:
+
+    eps = (G^T G0) / (G^T G) - 1                             eq (12)
+
+The elastic strain tensor is the unknown that reproduces those numbers,
+
+    eps = (G^T eps_tensor G) / (G^T G)                       eq (13)
+
+which is linear in the six independent components, so many measurements form
+
+    y = M s                                                  eq (14)
+    s = [eps_xx, eps_yy, eps_zz, eps_xy, eps_xz, eps_yz]     eq (15)
+    M_j = [k1^2, k2^2, k3^2, 2 k1 k2, 2 k1 k3, 2 k2 k3]      eq (16)
+    kappa = G / ||G||_2                                      eq (17)
+
+Weights combine the beam-proximity factor of eq (6) with the g-vector noise
+sigma_g propagated through eq (12):
+
+    w = ( r / (y + dy + r) ) * ( sigma_g^2 G0^T G0 / (G^T G)^2 )^(-1/2)
+                                                             eq (18)
+
+Measurements more than 3.5 standard deviations from the mean directional
+strain are dropped, eq (19), and the tensor is the weighted least squares
+solution, eq (20). As with the orientation fit the code accumulates the
+normal equations (MtWWM, MtWWy) and solves a 6x6 Cholesky rather than
+building M and W.
+
+The whole procedure runs independently for every voxel and every candidate
+orientation.
+
+Where this code differs from the paper
+--------------------------------------
+Four differences, none of them large, all deliberate:
+
+  * eq (10) and (11) fit the flattened UB by minimising the residual in
+    G space. This code minimises in hkl space and obtains (UB)^-1 directly,
+    which is what ImageD11's own indexing.refine does (Paciorek et al.,
+    Acta A55 543, 1999). Least squares is not invariant under inverting the
+    model, so the two differ -- by about 1e-8 in strain, four orders below
+    the strain precision.
+
+  * eq (18) as printed has (G^T G) where the code has (G^T G)^2. Propagating
+    sigma_g through eq (12) gives sigma_eps = sigma_g / ||G||, which is what
+    the code computes; the printed form reduces to a constant and would not
+    weight anything. Confirmed typo with Axel.
+
+  * eq (8) as printed omits the subtraction of the rounded indices. The code
+    tests the residual, which is what the surrounding text describes.
+
+  * the origin calculation in the original implementation compared the
+    SQUARED hkl residual against an unsquared hkl_tol, so a nominal 0.05
+    was really a tolerance of sqrt(0.05) = 0.224. Axel has confirmed this
+    was a typo. Here hkl_tol_origins is squared before comparison, matching
+    hkl_tol_refine, so 0.05 now means 0.05. Origins computed with earlier
+    versions of this code, and with the original, used the looser value.
+
+Two apparent typos in the supplement, for anyone reading along: eq (9) lists
+UB23 twice and omits UB22, and eq (15) is labelled y where eq (14) and (20)
+call it s.
+"""
+
+
 from __future__ import print_function, division
 
 import os
@@ -40,7 +172,7 @@ from ImageD11.sinograms.point_by_point import PBPMap
 from ImageD11.sinograms.voxel_mask import (
     VoxelSinoMasker, fill_voxel_idx, max_candidates as vm_max_candidates,
     default_index_filename, _peak_index_fingerprint,
-    save_peak_index, load_peak_index)
+    save_peak_index, load_peak_index, _INDEX_VERSION, _hash_cols)
 
 # --------------------------------------------------------------------------
 # glibc allocator tuning.  Numba's NRT calls malloc; blocks above the mmap
@@ -539,7 +671,6 @@ def _ubi_to_u_safe(ubi, U):
 
 _GVE_H5GROUP = "PBPGveCache"
 
-
 def _gve_fingerprint(refine, peak_fingerprint):
     """Everything the g-vectors depend on, on top of the peak index."""
     h = hashlib.blake2b(digest_size=16)
@@ -905,10 +1036,11 @@ def grid_axes(sx_grid, sy_grid):
 def compute_origins(singlemap, sample_mask,
                     gve, sinomega, cosomega, dty,
                     sx_ax, sy_ax, dsx, dsy,
-                    y0, ystep, hkl_tol,
+                    y0, ystep, hkl_tol, weight_reg,
                     omega_partitions, dty_partitions, nom, ndty,
                     usin, ucos, ymin, ray_margin,
                     max_cell, nchunks):
+
     """
     Compute the origin of diffraction for each peak.
 
@@ -940,6 +1072,9 @@ def compute_origins(singlemap, sample_mask,
     NJ = sy_ax.shape[0]
     lx_modified = np.zeros(npk, dtype=np.float64)
     W = ystep * ray_margin
+
+    # the very original function was checking tolsq. this may have been a bug.
+    tolsq = hkl_tol * hkl_tol
 
     for chunk in numba.prange(nchunks):
         accx = np.zeros(max_cell, dtype=np.float64)
@@ -986,36 +1121,40 @@ def compute_origins(singlemap, sample_mask,
                                 continue
                             sxv = sx_ax[i]
                             syv = sy_ax[j]
-                            o00 = singlemap[i, j, 0, 0]
-                            if np.isnan(o00):
+                            # (UB)^-1 for this voxel, from the single-valued map
+                            u00 = singlemap[i, j, 0, 0]
+                            if np.isnan(u00):
                                 continue
-                            o01 = singlemap[i, j, 0, 1]
-                            o02 = singlemap[i, j, 0, 2]
-                            o10 = singlemap[i, j, 1, 0]
-                            o11 = singlemap[i, j, 1, 1]
-                            o12 = singlemap[i, j, 1, 2]
-                            o20 = singlemap[i, j, 2, 0]
-                            o21 = singlemap[i, j, 2, 1]
-                            o22 = singlemap[i, j, 2, 2]
+                            u01 = singlemap[i, j, 0, 1]
+                            u02 = singlemap[i, j, 0, 2]
+                            u10 = singlemap[i, j, 1, 0]
+                            u11 = singlemap[i, j, 1, 1]
+                            u12 = singlemap[i, j, 1, 2]
+                            u20 = singlemap[i, j, 2, 0]
+                            u21 = singlemap[i, j, 2, 1]
+                            u22 = singlemap[i, j, 2, 2]
                             for q in range(plo, phi):
+                                # y + dy of eq (6): beam to voxel centroid
                                 yd = abs(y0 - sxv * sinomega[q]
                                          - syv * cosomega[q] - dty[q])
                                 if yd > ystep:
                                     continue
-                                g0 = gve[q, 0]
-                                g1 = gve[q, 1]
-                                g2 = gve[q, 2]
-                                hf0 = o00 * g0 + o01 * g1 + o02 * g2
-                                hf1 = o10 * g0 + o11 * g1 + o12 * g2
-                                hf2 = o20 * g0 + o21 * g1 + o22 * g2
-                                e0 = hf0 - np.round(hf0)
-                                e1 = hf1 - np.round(hf1)
-                                e2 = hf2 - np.round(hf2)
-                                if e0 * e0 + e1 * e1 + e2 * e2 < hkl_tol:
-                                    w = 1.0 / (yd + 1.0)  # TODO: this is 1.0 um hard-coded!
+                                Gx = gve[q, 0]              # G, eq (5)
+                                Gy = gve[q, 1]
+                                Gz = gve[q, 2]
+                                hf0 = u00 * Gx + u01 * Gy + u02 * Gz
+                                hf1 = u10 * Gx + u11 * Gy + u12 * Gz
+                                hf2 = u20 * Gx + u21 * Gy + u22 * Gz
+                                dh0 = hf0 - np.round(hf0)   # eq (8) residual
+                                dh1 = hf1 - np.round(hf1)
+                                dh2 = hf2 - np.round(hf2)
+                                if dh0 * dh0 + dh1 * dh1 + dh2 * dh2 < tolsq:
+                                    # eq (6)
+                                    w = weight_reg / (yd + weight_reg)
                                     accx[q - plo] += sxv * w
                                     accy[q - plo] += syv * w
                                     accw[q - plo] += w
+
                 else:
                     for j in range(NJ):
                         B = y0 - sy_ax[j] * co - dty_c
@@ -1036,33 +1175,36 @@ def compute_origins(singlemap, sample_mask,
                                 continue
                             sxv = sx_ax[i]
                             syv = sy_ax[j]
-                            o00 = singlemap[i, j, 0, 0]
-                            if np.isnan(o00):
+                            # (UB)^-1 for this voxel, from the single-valued map
+                            u00 = singlemap[i, j, 0, 0]
+                            if np.isnan(u00):
                                 continue
-                            o01 = singlemap[i, j, 0, 1]
-                            o02 = singlemap[i, j, 0, 2]
-                            o10 = singlemap[i, j, 1, 0]
-                            o11 = singlemap[i, j, 1, 1]
-                            o12 = singlemap[i, j, 1, 2]
-                            o20 = singlemap[i, j, 2, 0]
-                            o21 = singlemap[i, j, 2, 1]
-                            o22 = singlemap[i, j, 2, 2]
+                            u01 = singlemap[i, j, 0, 1]
+                            u02 = singlemap[i, j, 0, 2]
+                            u10 = singlemap[i, j, 1, 0]
+                            u11 = singlemap[i, j, 1, 1]
+                            u12 = singlemap[i, j, 1, 2]
+                            u20 = singlemap[i, j, 2, 0]
+                            u21 = singlemap[i, j, 2, 1]
+                            u22 = singlemap[i, j, 2, 2]
                             for q in range(plo, phi):
+                                # y + dy of eq (6): beam to voxel centroid
                                 yd = abs(y0 - sxv * sinomega[q]
                                          - syv * cosomega[q] - dty[q])
                                 if yd > ystep:
                                     continue
-                                g0 = gve[q, 0]
-                                g1 = gve[q, 1]
-                                g2 = gve[q, 2]
-                                hf0 = o00 * g0 + o01 * g1 + o02 * g2
-                                hf1 = o10 * g0 + o11 * g1 + o12 * g2
-                                hf2 = o20 * g0 + o21 * g1 + o22 * g2
-                                e0 = hf0 - np.round(hf0)
-                                e1 = hf1 - np.round(hf1)
-                                e2 = hf2 - np.round(hf2)
-                                if e0 * e0 + e1 * e1 + e2 * e2 < hkl_tol:
-                                    w = 1.0 / (yd + 1.0)  # TODO: this is 1.0 um hard-coded!
+                                Gx = gve[q, 0]              # G, eq (5)
+                                Gy = gve[q, 1]
+                                Gz = gve[q, 2]
+                                hf0 = u00 * Gx + u01 * Gy + u02 * Gz
+                                hf1 = u10 * Gx + u11 * Gy + u12 * Gz
+                                hf2 = u20 * Gx + u21 * Gy + u22 * Gz
+                                dh0 = hf0 - np.round(hf0)   # eq (8) residual
+                                dh1 = hf1 - np.round(hf1)
+                                dh2 = hf2 - np.round(hf2)
+                                if dh0 * dh0 + dh1 * dh1 + dh2 * dh2 < tolsq:
+                                    # eq (6)
+                                    w = weight_reg / (yd + weight_reg)
                                     accx[q - plo] += sxv * w
                                     accy[q - plo] += syv * w
                                     accw[q - plo] += w
@@ -1133,7 +1275,7 @@ class PBPRefine:
     def __init__(self,
                  dset,
                  phase_name,
-                 hkl_tol_origins=0.05,
+                 hkl_tol_origins=0.05,  # we forgot to square this before!
                  hkl_tol_refine=0.1,
                  hkl_tol_refine_merged=0.05,
                  ds_tol=0.005,
@@ -1600,11 +1742,16 @@ class PBPRefine:
                   % (nvox / max(ncells, 1), mask.size))
             print("running on %d threads" % nthreads)
 
+        weight_reg = self.beam_size / 3.0
+        if verbose:
+            print("beam size %.4g, origin weight regularisation %.4g"
+                  % (self.beam_size, weight_reg))
+
         t0 = time.perf_counter()
         lx_perm = compute_origins(
             singlemap, mask, gve, sinomega, cosomega, dty,
             sx_ax, sy_ax, dsx, dsy,
-            self.y0, self.ystep, self.hkl_tol_origins,
+            self.y0, self.ystep, self.hkl_tol_origins, weight_reg,
             idx["omega_partitions"], idx["dty_partitions"],
             idx["nom"], idx["ndty"], idx["usin"], idx["ucos"],
             idx["ymin"], idx["ray_margin"],
