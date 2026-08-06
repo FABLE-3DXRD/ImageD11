@@ -1421,7 +1421,7 @@ class PBPRefine:
             self._plot_ds = np.array(colf.ds[::step])
             self._plot_I = np.array(colf.sum_intensity[::step])
             self.colf = None
-        self.icolf = colf.copyrows(isel)
+        self.icolf = colf.copyrows(sel)
         
         self.npks = npks
         print(
