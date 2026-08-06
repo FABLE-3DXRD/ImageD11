@@ -24,7 +24,6 @@ import hdf5plugin
 #  fancy-index and a counting sort away and cost less than writing them out.
 # ==========================================================================
 _PEAK_H5GROUP = "PBPPeakIndex"
-_GVE_H5GROUP = "PBPGveCache"
 _INDEX_VERSION = 4
 
 
