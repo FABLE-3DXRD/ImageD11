@@ -36,7 +36,8 @@ def _hash_cols(h, icolf, names):
         h.update(name.encode())
         h.update(arr.dtype.str.encode())
         h.update(np.int64(arr.shape[0]).tobytes())
-        h.update(arr.tobytes())
+        h.update(arr)          # was arr.tobytes() -- a full copy of the column
+
 
 
 def _peak_index_fingerprint(refine, omega_binsize="auto", omega_step=None):
@@ -157,6 +158,64 @@ def default_index_filename(refine):
     if base is None:
         raise ValueError("no icolf_filename to derive an index cache path from")
     return os.path.splitext(base)[0] + "_pbpindex.h5"
+
+
+def _frame_index_from_frm(refine, omega, verbose=True):
+    """
+    Omega bin index via the per-peak frame number.
+
+    frm says which frame each peak came from. We do NOT assume the
+    frame-in-scan index tracks omega: a zigzag scan, or a rotation that runs
+    continuously across dty rows, breaks that and there is nothing in the file
+    that promises otherwise. Instead we bin each *frame's* omega once, straight
+    out of dset.omega, and index that table with frm. Exact for any scan
+    ordering, and it digitizes nscans*nframes values rather than one per peak.
+
+    Returns (iomega, obincens, dev) or None if unusable.
+    """
+    icolf = refine.icolf
+    if "frm" not in icolf.titles:
+        return None
+    dset = getattr(refine, "dset", None)
+    om_img = getattr(dset, "omega", None)
+    edges = getattr(dset, "obinedges", None)
+    cens = getattr(dset, "obincens", None)
+    if om_img is None or edges is None or cens is None:
+        if verbose:
+            print("frm present but dset.omega/obinedges missing; "
+                  "falling back to omega binning")
+        return None
+    om_img = np.asarray(om_img, dtype=np.float64)
+    edges = np.asarray(edges, dtype=np.float64)
+    cens = np.asarray(cens, dtype=np.float64)
+    frm = np.round(np.asarray(icolf.frm, dtype=np.float64)).astype(np.int64)
+    if frm.size == 0 or frm.min() < 0 or frm.max() >= om_img.size:
+        if verbose:
+            print("frm values fall outside dset.omega (%d frames); "
+                  "falling back to omega binning" % om_img.size)
+        return None
+
+    flat = om_img.ravel()
+    if edges[0] >= -1e-9 and flat.min() < -1e-9:
+        flat = flat % 360.0
+    iom_of_frame = np.digitize(flat, edges) - 1
+    np.clip(iom_of_frame, 0, len(cens) - 1, out=iom_of_frame)
+    iomega = iom_of_frame[frm]
+    dev = float(np.abs(omega - cens[iomega]).max())
+
+    if verbose:
+        live = int((np.bincount(iomega, minlength=len(cens)) > 0).sum())
+        note = ""
+        if om_img.ndim == 2 and "dtyi" in icolf.titles:
+            # does the scan row implied by frm agree with the dty bin?
+            iscan = frm // om_img.shape[1]
+            db = np.asarray(icolf.dtyi, dtype=np.int64)
+            note = (", scan row agrees with dty bin for %.1f%% of peaks"
+                    % (100.0 * float((iscan == db - db.min()).mean())))
+        print("omega bins via frm: %d bins (%d with peaks), %.1f peaks/bin, "
+              "|omega - bin centre| max %.5f deg%s"
+              % (len(cens), live, frm.size / max(live, 1), dev, note))
+    return iomega, cens, dev
 
 
 @numba.njit(cache=True)
@@ -430,22 +489,25 @@ class VoxelSinoMasker:
     """
 
     def __init__(self, omega, dty, dty_stepsize, ymin=None):
-        self.uniq_dtys = np.unique(dty)
-        # Origin of the dty bin grid. Defaults to the lowest observed dty,
-        # which is fine for a self-contained partition, but callers that
-        # compare bin indices against a dtyi column computed elsewhere must
-        # pass the same origin that column used -- normally ds.ybincens.min().
-        # They differ by however many outer scan rows contain no peaks.
+        self.uniq_dtys = np.array([np.abs(dty).max()])
         self.ymin = dty.min() if ymin is None else float(ymin)
 
-        float_yindex = (dty - self.ymin) / dty_stepsize
-        delta_yindex_stepsize = np.abs(float_yindex - np.round(float_yindex))
-        if not np.less_equal(delta_yindex_stepsize, 0.01).all():
+        # dty need NOT lie on a grid. The partition is a spatial hash and the
+        # exact predicate is applied per peak with that peak's own dty, so a
+        # continuously-moving dty motor is fine -- the buckets just fill
+        # evenly rather than clustering. What must hold is that dty_stepsize
+        # is a sensible bucket width for the range being covered.
+        span = float(dty.max() - self.ymin)
+        nbin = span / dty_stepsize
+        if not np.isfinite(nbin) or nbin < 1 or nbin > 1e7:
             raise ValueError(
-                "dty_stepsize must be a divisor of the unique dty values, however it \
-                appears you have scanned an irregular grid in dty since there is \
-                more than 1 percent drift in the dty values - this is not supported!"
-            )
+                "dty spans %.4g with dty_stepsize %.4g -- that is %.3g bins. "
+                "Check dty_stepsize." % (span, dty_stepsize, nbin))
+        if dty.min() < self.ymin - 0.5 * dty_stepsize:
+            raise ValueError(
+                "dty.min() = %.6g is below ymin = %.6g by more than half a "
+                "step, so peaks would bin to negative rows."
+                % (dty.min(), self.ymin))
 
         self.n_peaks = len(dty)
         self.omega = omega
@@ -484,7 +546,9 @@ class VoxelSinoMasker:
         )  # a factor of 2 here seems to work nicely from empricial testing
 
     def partition(self, omega_binsize=None, inplace=False,
-                  omega_bin_indices=None, omega_bins=None):
+                  omega_bin_indices=None, omega_bins=None,
+                  keep_columns=True):
+
         """Partition the peaks for fast peak masking.
 
         A partition scheme is used such that peaks are sorted by omega (primary) and dty (secondary).
@@ -511,6 +575,11 @@ class VoxelSinoMasker:
             omega_bin_indices (:obj:`np.ndarray`): Optional precomputed bin index per peak, e.g. decoded
                 from a frame number. Overrides omega_binsize.
             omega_bins (:obj:`np.ndarray`): Bin centres in degrees matching omega_bin_indices.
+            keep_columns (:obj:`bool`): If False, the permuted dty/omega/
+                sinomega/cosomega copies and the mask() buffers are not
+                built. Saves four full columns of memory. mask() then raises;
+                use this when you only want peak_ordering and the partition
+                arrays and will permute your own columns.
 
         Raises:
             :obj:`ValueError`: If the omega binsize is not set and the heuristic fails to find a good value.
@@ -550,6 +619,20 @@ class VoxelSinoMasker:
         )
         ymax_index = dty_bin_indices.max()
 
+        nbytes = omega_bins.size * (ymax_index + 2) * 8
+        if nbytes > 2e9:
+            raise ValueError(
+                "the partition would need %.1f GB (%d omega bins x %d dty "
+                "bins). Pass a coarser omega_binsize -- the dty window per "
+                "bin widens to compensate, and the optimum is fairly flat."
+                % (nbytes / 1e9, omega_bins.size, ymax_index + 2))
+        if nbytes > 2e8:
+            print("note: partition is %.0f MB (%d x %d)"
+                  % (nbytes / 1e6, omega_bins.size, ymax_index + 2))
+ 
+        dty_partitions = np.empty((omega_bins.size, ymax_index + 2),
+                                  dtype=np.int64)
+
         dty_partitions = np.empty((omega_bins.size, ymax_index + 2), dtype=np.int64)
         for i in range(omega_bins.size):
             dty_indices_for_bin = dty_bin_indices[
@@ -570,6 +653,21 @@ class VoxelSinoMasker:
         self.omega_bins = omega_bins
         self.dty_partitions = dty_partitions
 
+        if not keep_columns:
+            # partition arrays and peak_ordering only -- callers that permute
+            # their own columns do not need these, and they are four full
+            # columns of memory.
+            self.dty = None
+            self.omega = None
+            self.sinomega = None
+            self.cosomega = None
+            self.sinomega_bins = np.sin(np.radians(omega_bins))
+            self.cosomega_bins = np.cos(np.radians(omega_bins))
+            self.buffer_size = 0
+            self.idx_buffer = None
+            self.ydist_buffer = None
+            return
+ 
         if inplace:
             # saves memory, but overwrites the arrays the caller handed us
             self.dty[:] = self.dty[peak_ordering]
@@ -579,10 +677,10 @@ class VoxelSinoMasker:
             self.omega = self.omega[peak_ordering]
         self.sinomega = np.sin(np.radians(self.omega))
         self.cosomega = np.cos(np.radians(self.omega))
-
+ 
         self.sinomega_bins = np.sin(np.radians(omega_bins))
         self.cosomega_bins = np.cos(np.radians(omega_bins))
-
+ 
         # we default to a 5% buffer, this should be very safe, altough
         # we have fallbacks in case of a sharp corner.
         self._build_buffers(self.n_peaks // 20)
@@ -641,6 +739,12 @@ class VoxelSinoMasker:
         self.ydist_buffer = np.empty(buffer_size, dtype=np.float64)
 
     def _mask(self, xi0, yi0, ystep, y0):
+        if self.dty is None:
+            raise ValueError(
+                "partition(keep_columns=False) was used, so the permuted "
+                "columns and mask buffers were not built. Re-partition with "
+                "keep_columns=True to use mask().")
+
         return get_voxel_idx(
             xi0,
             yi0,

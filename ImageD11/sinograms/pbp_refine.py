@@ -172,7 +172,7 @@ from ImageD11.sinograms.point_by_point import PBPMap
 from ImageD11.sinograms.voxel_mask import (
     VoxelSinoMasker, fill_voxel_idx, max_candidates as vm_max_candidates,
     default_index_filename, _peak_index_fingerprint,
-    save_peak_index, load_peak_index, _INDEX_VERSION, _hash_cols)
+    save_peak_index, load_peak_index, _INDEX_VERSION, _hash_cols, _frame_index_from_frm)
 
 # --------------------------------------------------------------------------
 # glibc allocator tuning.  Numba's NRT calls malloc; blocks above the mmap
@@ -716,37 +716,54 @@ def load_gve_cache(filename, fingerprint):
 # ==========================================================================
 def _omega_frame_index(refine, omega, omega_step=None, verbose=True):
     """
-    Map each peak onto an omega *frame*, not onto its exact encoder readback.
-
-    omega is read back from the rotation encoder, so nominally-identical frames
-    differ in the last few digits and np.unique returns roughly one value per
-    frame *per dty scan*. That makes the (omega, dtyi) index degenerate: far
-    too many cells, almost all empty, and the offset array stops fitting in
-    cache. Returns (iomega, omega_centres).
+    Map each peak onto an omega frame without needing a frm column.
+ 
+    For data segmented before frm existed. Bins on dset.obinedges, which is
+    one entry per omega position, so the result is the same shape as the frm
+    decode -- it just cannot tell two peaks on the same frame apart if the
+    encoder readback drifted across a bin edge.
+ 
+    Returns (iomega, omega_centres), or None if there is nothing better than
+    guessing, in which case the caller should use the heuristic.
+ 
+    Previously the last branch returned np.unique(omega). Do not do that:
+    omega is an encoder readback, so nominally-identical frames differ in the
+    last few digits and np.unique yields roughly one value per frame PER dty
+    row. On a 1250-row scan that is ~1.7M bins, almost all empty -- far worse
+    than the heuristic it was standing in for.
     """
     dset = getattr(refine, "dset", None)
-    if omega_step is None and dset is not None and getattr(dset, "obinedges", None) is not None:
-        edges = np.asarray(dset.obinedges, dtype=np.float64)
-        cens = np.asarray(dset.obincens, dtype=np.float64)
-        om = omega % 360.0 if edges[0] >= -1e-9 and omega.min() < -1e-9 else omega
-        iomega = np.digitize(om, edges) - 1
-        np.clip(iomega, 0, len(cens) - 1, out=iomega)
-        if verbose:
-            print("omega binned onto %d frames from dset.obinedges" % len(cens))
-        return iomega.astype(np.int64), cens
-
+ 
     if omega_step is not None:
         o0 = float(omega.min())
         iomega = np.round((omega - o0) / float(omega_step)).astype(np.int64)
         iomega -= iomega.min()
         cens = o0 + np.arange(iomega.max() + 1) * float(omega_step)
         if verbose:
-            print("omega binned onto %d frames with omega_step=%g"
-                  % (len(cens), omega_step))
+            print("omega bins: %d, from omega_step=%g" % (len(cens), omega_step))
         return iomega, cens
+ 
+    edges = getattr(dset, "obinedges", None) if dset is not None else None
+    cens = getattr(dset, "obincens", None) if dset is not None else None
+    if edges is None or cens is None:
+        if verbose:
+            print("omega bins: no frm and no dset.obinedges -- using the "
+                  "heuristic, which only guesses at the sample radius")
+        return None
+ 
+    edges = np.asarray(edges, dtype=np.float64)
+    cens = np.asarray(cens, dtype=np.float64)
+    om = omega % 360.0 if edges[0] >= -1e-9 and omega.min() < -1e-9 else omega
+    iomega = np.digitize(om, edges) - 1
+    np.clip(iomega, 0, len(cens) - 1, out=iomega)
+    iomega = iomega.astype(np.int64)
+    dev = float(np.abs(omega - cens[iomega]).max())
+    if verbose:
+        live = int((np.bincount(iomega, minlength=len(cens)) > 0).sum())
+        print("omega bins via obinedges (no frm): %d bins (%d with peaks), "
+              "|omega - bin centre| max %.5f deg" % (len(cens), live, dev))
+    return iomega, cens
 
-    cens, iomega = np.unique(omega, return_inverse=True)
-    return iomega.astype(np.int64), cens
 
 
 def heuristic_omega_binsize(ystep, rmax):
@@ -764,62 +781,7 @@ def heuristic_omega_binsize(ystep, rmax):
     return 2.0 * np.degrees(ystep / rmax)
 
 
-def _frame_index_from_frm(refine, omega, verbose=True):
-    """
-    Omega bin index via the per-peak frame number.
 
-    frm says which frame each peak came from. We do NOT assume the
-    frame-in-scan index tracks omega: a zigzag scan, or a rotation that runs
-    continuously across dty rows, breaks that and there is nothing in the file
-    that promises otherwise. Instead we bin each *frame's* omega once, straight
-    out of dset.omega, and index that table with frm. Exact for any scan
-    ordering, and it digitizes nscans*nframes values rather than one per peak.
-
-    Returns (iomega, obincens, dev) or None if unusable.
-    """
-    icolf = refine.icolf
-    if "frm" not in icolf.titles:
-        return None
-    dset = getattr(refine, "dset", None)
-    om_img = getattr(dset, "omega", None)
-    edges = getattr(dset, "obinedges", None)
-    cens = getattr(dset, "obincens", None)
-    if om_img is None or edges is None or cens is None:
-        if verbose:
-            print("frm present but dset.omega/obinedges missing; "
-                  "falling back to omega binning")
-        return None
-    om_img = np.asarray(om_img, dtype=np.float64)
-    edges = np.asarray(edges, dtype=np.float64)
-    cens = np.asarray(cens, dtype=np.float64)
-    frm = np.round(np.asarray(icolf.frm, dtype=np.float64)).astype(np.int64)
-    if frm.size == 0 or frm.min() < 0 or frm.max() >= om_img.size:
-        if verbose:
-            print("frm values fall outside dset.omega (%d frames); "
-                  "falling back to omega binning" % om_img.size)
-        return None
-
-    flat = om_img.ravel()
-    if edges[0] >= -1e-9 and flat.min() < -1e-9:
-        flat = flat % 360.0
-    iom_of_frame = np.digitize(flat, edges) - 1
-    np.clip(iom_of_frame, 0, len(cens) - 1, out=iom_of_frame)
-    iomega = iom_of_frame[frm]
-    dev = float(np.abs(omega - cens[iomega]).max())
-
-    if verbose:
-        live = int((np.bincount(iomega, minlength=len(cens)) > 0).sum())
-        note = ""
-        if om_img.ndim == 2 and "dtyi" in icolf.titles:
-            # does the scan row implied by frm agree with the dty bin?
-            iscan = frm // om_img.shape[1]
-            db = np.asarray(icolf.dtyi, dtype=np.int64)
-            note = (", scan row agrees with dty bin for %.1f%% of peaks"
-                    % (100.0 * float((iscan == db - db.min()).mean())))
-        print("omega bins via frm: %d bins (%d with peaks), %.1f peaks/bin, "
-              "|omega - bin centre| max %.5f deg%s"
-              % (len(cens), live, frm.size / max(live, 1), dev, note))
-    return iomega, cens, dev
 
 
 def build_peak_index(refine, omega_binsize="auto", omega_step=None,
@@ -869,31 +831,33 @@ def build_peak_index(refine, omega_binsize="auto", omega_step=None,
     if omega_step is not None:
         kw = dict(omega_binsize=float(omega_step))
     elif omega_binsize not in (None, "auto"):
-        kw = dict(omega_binsize=float(omega_binsize))   # explicit wins
+        kw = dict(omega_binsize=float(omega_binsize))      # explicit wins
     else:
-        got = _frame_index_from_frm(refine, omega, verbose)   # frm is the default
+        got = _frame_index_from_frm(refine, omega, verbose)     # 1. exact
+        if got is None:
+            got = _omega_frame_index(refine, omega, verbose=verbose)  # 2. edges
         if got is not None:
             kw = dict(omega_bin_indices=got[0], omega_bins=got[1])
-        elif omega_binsize == "auto":
-            kw = dict(omega_binsize=None)               # his heuristic
+        else:
+            kw = dict(omega_binsize=None)                   # 3. heuristic
 
     t0 = time.perf_counter()
     M = VoxelSinoMasker(omega, dty, refine.ystep, ymin=refine.ymin)
-    M.partition(**kw)                           # inplace=False: icolf untouched
+    M.partition(keep_columns=False, **kw)
     nom = int(M.sinomega_bins.size)
     ndty = int(M.dty_partitions.shape[1]) - 1
 
     # max |omega - bin centre|, which sets how far a ray can wander inside a
-    # cell and hence the voxel-strip half width used by compute_origins
+    # cell and hence the voxel-strip half width used by compute_origins.
+    # Computed from the unpermuted omega: keep_columns=False means the
+    # masker no longer holds a permuted copy.
     ob = np.asarray(M.omega_bins, dtype=np.float64)
-    dev = 0.0
-    for _i in range(nom):
-        _lo = int(M.omega_partitions[_i])
-        _hi = int(M.omega_partitions[_i + 1])
-        if _hi > _lo:
-            _d = float(np.abs(M.omega[_lo:_hi] - ob[_i]).max())
-            if _d > dev:
-                dev = _d
+    if got is not None:
+        iom = got[0]                       # the bin index we handed in
+    else:
+        iom = np.clip(np.round((omega - omega.min()) / M.omega_binsize
+                               ).astype(np.int64), 0, nom - 1)
+    dev = float(np.abs(omega - ob[iom]).max())
     ray_margin = 1.5 + rmax * np.radians(dev) / refine.ystep + 0.5
 
     
@@ -1390,7 +1354,7 @@ class PBPRefine:
         else:
             self.pbpmap_filename = filename
 
-    def setpeaks(self, colf, icolf_filename=None, del_existing=True, prompt_del=True):
+    def setpeaks(self, colf, icolf_filename=None, del_existing=True, prompt_del=True, keep_colf=True):
         """Similar to PBP.setpeaks for now"""
         if del_existing and prompt_del:
             print('I will delete an existing refined peaks H5 file if I find it on disk!')
@@ -1448,9 +1412,16 @@ class PBPRefine:
         colf.addcolumn(np.sin(np.radians(colf.omega)), "sinomega")
         colf.addcolumn(np.cos(np.radians(colf.omega)), "cosomega")
 
-        # peaks that are on any rings
-        self.colf = colf
-        self.icolf = colf.copyrows(sel)
+        if keep_colf:
+            self.colf = colf
+        else:
+            # iplot only needs these two, and only to draw. Keep a decimated
+            # copy so the plot survives; the full colf is often tens of GB.
+            step = max(1, colf.nrows // 2_000_000)
+            self._plot_ds = np.array(colf.ds[::step])
+            self._plot_I = np.array(colf.sum_intensity[::step])
+            self.colf = None
+        self.icolf = colf.copyrows(isel)
         
         self.npks = npks
         print(
@@ -1486,8 +1457,13 @@ class PBPRefine:
         """Same as PBP.iplot for now"""
         import pylab as pl
 
+        if self.colf is not None:
+            bg_ds, bg_I = self.colf.ds[::skip], self.colf.sum_intensity[::skip]
+        else:
+            bg_ds, bg_I = self._plot_ds, self._plot_I
+
         f, ax = pl.subplots(2, 1)
-        ax[0].plot(self.colf.ds[::skip], self.colf.sum_intensity[::skip], ",")
+        ax[0].plot(bg_ds, bg_I, ",")
         ax[0].plot(self.icolf.ds[::skip], self.icolf.sum_intensity[::skip], ",")
         ax[0].set(yscale="log", ylabel="sum intensity", xlabel=r'$d^{*}~(\AA^{-1})$')
         histo = self.dset.sinohist(
@@ -1716,8 +1692,10 @@ class PBPRefine:
 
         # g-vectors as the columnfile already has them (no xpos correction --
         # that is what we are about to compute), permuted into CSR order
-        gve = np.ascontiguousarray(
-            np.column_stack((self.icolf.gx, self.icolf.gy, self.icolf.gz))[order])
+        # single-copy, faster:
+        gve = np.empty((self.icolf.nrows, 3), dtype=np.float64)
+        for c, name in enumerate(("gx", "gy", "gz")):
+            np.take(getattr(self.icolf, name), order, out=gve[:, c])
         sinomega = np.ascontiguousarray(self.icolf.sinomega[order])
         cosomega = np.ascontiguousarray(self.icolf.cosomega[order])
         dty = np.ascontiguousarray(self.icolf.dty[order])

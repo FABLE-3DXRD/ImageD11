@@ -41,7 +41,7 @@ from ImageD11.sinograms import geometry
 from ImageD11.sinograms.voxel_mask import (
     VoxelSinoMasker, fill_voxel_idx, max_candidates as vm_max_candidates,
     default_index_filename, _peak_index_fingerprint,
-    save_peak_index, load_peak_index)
+    save_peak_index, load_peak_index, _frame_index_from_frm)
 
 # GOTO - find somewhere!
 # Everything written in Numba could move to C?
@@ -559,16 +559,17 @@ class PBP:
         self.index_fingerprint = None
 
 
-    def _build_index(self, omega_binsize=None, verbose=True):
-        """Partition the peaks and cache it beside the icolf.
+    def _build_index(self, verbose=True):
+        """Cache the partition setpeaks built, beside the icolf.
  
         Construction differs from PBPRefine -- there is no reconstruction
-        mask here, so no r_max and no ray_margin -- but the cache format,
-        fingerprint and invalidation are shared.
+        mask here, so no r_max and no ray_margin -- but the partition, the
+        omega binning, the fingerprint and the cache format are shared.
         """
         self.index_filename = default_index_filename(self)
-        fp = _peak_index_fingerprint(self, omega_binsize=omega_binsize)
+        fp = _peak_index_fingerprint(self)
         self.index_fingerprint = fp
+ 
         cached = load_peak_index(self.index_filename, fp)
         if cached is not None:
             if verbose:
@@ -577,22 +578,19 @@ class PBP:
                                          cached["ndty"], cached["maxlocal"]))
             return cached
  
-        omega = np.ascontiguousarray(self.icolf.omega, dtype=np.float64)
-        dty = np.ascontiguousarray(self.icolf.dty, dtype=np.float64)
-        M = VoxelSinoMasker(omega, dty, self.ystep, ymin=self.ymin)
-        M.partition(omega_binsize=omega_binsize)     # inplace=False
+        M = self._masker
         nom = int(M.sinomega_bins.size)
         ndty = int(M.dty_partitions.shape[1]) - 1
  
-        # Worst-case peaks any point can pull out, so the workers can size
-        # their buffers exactly instead of guessing. This uses the refiner's
-        # |.| <= ystep predicate, which is a superset of bin equality, so it
-        # is a valid bound for both relax settings.
+        # Worst case peaks any point can pull out, so the workers size their
+        # buffers exactly. Uses the refiner's |.| <= ystep predicate, which
+        # is a superset of bin equality, so it bounds both relax settings.
         pts = np.asarray(geometry.step_grid_from_ybincens(
             self.ybincens, self.ystep, 1, self.y0))
+        sx, sy = geometry.step_to_sample(pts[:, 0], pts[:, 1], self.ystep)
         maxlocal = int(vm_max_candidates(
-            np.ascontiguousarray(pts[:, 0] * self.ystep, dtype=np.float64),
-            np.ascontiguousarray(-pts[:, 1] * self.ystep, dtype=np.float64),
+            np.ascontiguousarray(sx, dtype=np.float64),
+            np.ascontiguousarray(sy, dtype=np.float64),
             self.y0, self.ystep, M.ymin,
             M.omega_partitions, M.dty_partitions,
             M.sinomega_bins, M.cosomega_bins))
@@ -603,12 +601,17 @@ class PBP:
                    dty_partitions=M.dty_partitions,
                    usin=M.sinomega_bins, ucos=M.cosomega_bins,
                    nom=nom, ndty=ndty, ymin=float(M.ymin),
-                   ray_margin=0.0, dev=0.0,      # refiner-only, unused here
+                   ray_margin=0.0, dev=0.0,     # refiner-only, unused here
                    maxlocal=maxlocal)
         if verbose:
-            print("indexing partition: %d omega bins (%s) x %d dty bins, "
-                  "worst-case %d peaks/point"
-                  % (nom, "%.4f deg" % M.omega_binsize, ndty, maxlocal))
+            print("indexing partition: %d omega bins x %d dty bins = %d "
+                  "cells, %.1f peaks/cell, worst-case %d peaks/point"
+                  % (nom, ndty, nom * ndty,
+                     self.icolf.nrows / float(nom * ndty), maxlocal))
+            if self.icolf.nrows < nom * ndty:
+                print("  WARNING: fewer peaks than cells -- the index is "
+                      "sparse and traversal will dominate. Check whether the "
+                      "frm decode ran; the heuristic over-refines without it.")
         try:
             save_peak_index(idx, self.index_filename, fp)
             if verbose:
@@ -618,7 +621,7 @@ class PBP:
         return idx
 
     
-    def setpeaks(self, colf, icolf_filename=None):
+    def setpeaks(self, colf, icolf_filename=None, keep_colf=True):
         """
         Given a cf_2d in RAM (colf), make an icolf in RAM which contains the selection of peaks we want to index
         """
@@ -677,22 +680,43 @@ class PBP:
         colf.addcolumn(np.sin(np.radians(colf.omega)), "sinomega")
         colf.addcolumn(np.cos(np.radians(colf.omega)), "cosomega")
 
-        # peaks that are on any rings
-        self.colf = colf
+        if keep_colf:
+            self.colf = colf
+        else:
+            # iplot only needs these two, and only to draw. Keep a decimated
+            # copy so the plot survives; the full colf is often tens of GB.
+            step = max(1, colf.nrows // 2_000_000)
+            self._plot_ds = np.array(colf.ds[::step])
+            self._plot_I = np.array(colf.sum_intensity[::step])
+            self.colf = None
         self.icolf = colf.copyrows(isel)
+ 
+        omega = np.ascontiguousarray(self.icolf.omega, dtype=np.float64)
+        dty = np.ascontiguousarray(self.icolf.dty, dtype=np.float64)
+ 
+        # Omega bins from the frame number where we have it: each frame gets
+        # its own bin, exactly, whatever order the scan ran in. Falls back to
+        # dset.obinedges for data segmented before frm existed, and to the
+        # heuristic if neither is available.
+        got = _frame_index_from_frm(self, omega, verbose=True)
+        if got is None:
+            got = _omega_frame_index(self, omega, verbose=True)
+        if got is not None:
+            kw = dict(omega_bin_indices=got[0], omega_bins=got[1])
+        else:
+            kw = dict(omega_binsize=None)
 
-        # Partition once, then put the peaks in partition order on disk so
-        # the workers can mmap the columns and do no reordering at all.
         # ymin must be ybincens.min(), the same origin dtyi was built with.
-        masker = VoxelSinoMasker(np.ascontiguousarray(self.icolf.omega),
-                                 np.ascontiguousarray(self.icolf.dty),
-                                 self.ystep, ymin=self.ymin)
-        masker.partition()
+        masker = VoxelSinoMasker(omega, dty, self.ystep, ymin=self.ymin)
+        masker.partition(keep_columns=False, **kw)
+ 
+        # put the peaks in partition order on disk so the workers can mmap
+        # the columns and do no reordering at all
         self.icolf = self.icolf.copyrows(masker.peak_ordering)
-        self._masker = masker          # _build_index reuses it, no re-partition
-
-        # how many peaks did we see?
+        self._masker = masker          # _build_index reuses it
+ 
         self.npks = npks
+
 
         # now we can compute npks too
         if self.fpks < 1:
@@ -735,8 +759,13 @@ class PBP:
     def iplot(self, skip=1):
         import pylab as pl
 
+        if self.colf is not None:
+            bg_ds, bg_I = self.colf.ds[::skip], self.colf.sum_intensity[::skip]
+        else:
+            bg_ds, bg_I = self._plot_ds, self._plot_I
+
         f, ax = pl.subplots(2, 1)
-        ax[0].plot(self.colf.ds[::skip], self.colf.sum_intensity[::skip], ",")
+        ax[0].plot(bg_ds, bg_I, ",")
         ax[0].plot(self.icolf.ds[::skip], self.icolf.sum_intensity[::skip], ",")
         ax[0].set(yscale="log", ylabel="sum intensity", xlabel=r'$d^{*}~(\AA^{-1})$')
         histo = self.dset.sinohist(
