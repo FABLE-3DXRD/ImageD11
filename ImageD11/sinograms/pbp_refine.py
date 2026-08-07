@@ -132,64 +132,78 @@ call it s.
 
 
 from __future__ import print_function, division
+from ImageD11.peakselect import mask_rings_by_ifrac
 
 import os
 
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
-import sys
-
-
 import ctypes
+import hashlib
 import platform
 import subprocess
-import hashlib
-
+import sys
 import time
-import numpy as np
-
-import h5py
-import numba
 
 # ignore Numba dot product performance warnings?
 import warnings
+
+import h5py
+import numba
+import numpy as np
+
 warnings.simplefilter('ignore', category=numba.core.errors.NumbaPerformanceWarning)
 
 from skimage.filters import threshold_otsu
 from skimage.morphology import convex_hull_image
 
-from ImageD11 import cImageD11
-from ImageD11 import unitcell
-import ImageD11.sinograms.dataset
 import ImageD11.indexing
-
+import ImageD11.sinograms.dataset
+from ImageD11 import cImageD11, unitcell
 from ImageD11.sinograms import geometry
-from ImageD11.sinograms.roi_iradon import run_iradon
-from ImageD11.sinograms.tensor_map import unitcell_to_b
-from ImageD11.sinograms.sinogram import save_array
 from ImageD11.sinograms.point_by_point import PBPMap
+from ImageD11.sinograms.roi_iradon import run_iradon
+from ImageD11.sinograms.sinogram import save_array
+from ImageD11.sinograms.tensor_map import unitcell_to_b
 from ImageD11.sinograms.voxel_mask import (
-    VoxelSinoMasker, fill_voxel_idx, max_candidates as vm_max_candidates,
-    default_index_filename, _peak_index_fingerprint,
-    save_peak_index, load_peak_index, _INDEX_VERSION, _hash_cols, _frame_index_from_frm)
+    _INDEX_VERSION,
+    VoxelSinoMasker,
+    _peak_index_fingerprint,
+    default_index_filename,
+    fill_voxel_idx,
+    load_peak_index,
+    save_peak_index,
+    choose_omega_bins,
+    _gve_fingerprint
+)
+from ImageD11.sinograms.voxel_mask import max_candidates as vm_max_candidates
 
-# --------------------------------------------------------------------------
-# glibc allocator tuning.  Numba's NRT calls malloc; blocks above the mmap
-# threshold (128 kB by default) are mmap'd and munmap'd on every alloc/free,
-# which means the kernel zero-fills every page again and every free triggers
-# a TLB shootdown IPI to all cores.  Raising the threshold keeps them in the
-# arena.  Harmless if it fails (musl, macOS, Windows).
-# --------------------------------------------------------------------------
-def _tune_malloc(threshold=1 << 30):
+
+def _tune_malloc(mmap_threshold=1 << 30, trim_threshold=None):
+    """
+    Raise glibc's mmap threshold so numba's NRT allocations stay in the
+    arena instead of being mmap'd and munmap'd per alloc/free.
+
+    Only matters for allocations above the 128 kB default -- in refine_map
+    that is compute_gve's (3, ng) temporaries, so ng > ~5500. The per-voxel
+    scratch is allocated once per chunk and never hits this path.
+
+    trim_threshold is left alone by default: raising it stops glibc
+    returning freed memory to the OS, which is the wrong trade in a process
+    handling hundreds of millions of peaks.
+
+    Harmless if it fails (musl, macOS, Windows).
+    """
     if platform.system() != "Linux":
         return False
     try:
         libc = ctypes.CDLL("libc.so.6", use_errno=True)
         M_TRIM_THRESHOLD = -1
         M_MMAP_THRESHOLD = -3
-        ok = libc.mallopt(M_TRIM_THRESHOLD, ctypes.c_int(threshold))
-        ok &= libc.mallopt(M_MMAP_THRESHOLD, ctypes.c_int(threshold))
+        ok = libc.mallopt(M_MMAP_THRESHOLD, ctypes.c_int(mmap_threshold))
+        if trim_threshold is not None:
+            ok &= libc.mallopt(M_TRIM_THRESHOLD, ctypes.c_int(trim_threshold))
         return bool(ok)
     except Exception:
         return False
@@ -222,7 +236,6 @@ def _etasign_code(e):
         return 1
     return 2
 
-
 @numba.njit(cache=True, inline="always")
 def _clamp_hkl(v):
     """|h| >= 2048 means a nonsense UBI. Clamping is safer than letting the
@@ -232,7 +245,6 @@ def _clamp_hkl(v):
     if v < -2047:
         return -2047
     return v
-
 
 @numba.njit(cache=True, inline="always")
 def _pack5(h, k, l, s, d):
@@ -265,7 +277,7 @@ def _siftdown(keys, idx, start, end):
 
 @numba.njit(cache=True)
 def _argsort_into(keys, n, idx):
-    """idx[0:n] <- argsort(keys[0:n]).  No allocation."""
+    """idx[0:n] <- argsort(keys[0:n]). No allocation."""
     for i in range(n):
         idx[i] = i
     for start in range(n // 2 - 1, -1, -1):
@@ -279,7 +291,7 @@ def _argsort_into(keys, n, idx):
 
 @numba.njit(cache=True)
 def _label_groups(keys, n, srt, labels):
-    """Assign a group label per entry, in ascending-key order.  Returns ngroups."""
+    """Assign a group label per entry, in ascending-key order. Returns ngroups."""
     if n == 0:
         return 0
     _argsort_into(keys, n, srt)
@@ -355,14 +367,6 @@ def detector_rotation_matrix(tilt_x, tilt_y, tilt_z):
 
 @numba.njit(cache=True)
 def compute_grain_origins(omega, wedge, chi, t_x, t_y, t_z):
-    w = np.radians(wedge)
-    WI = np.array([[np.cos(w),         0, -np.sin(w)],
-                   [0,           1.0,         0],
-                   [np.sin(w),         0,  np.cos(w)]], np.float64)
-    c = np.radians(chi)
-    CI = np.array([[1,            0.0,         0],
-                   [0,     np.cos(c), -np.sin(c)],
-                   [0,     np.sin(c),  np.cos(c)]], np.float64)
     t = np.zeros((3, omega.shape[0]), np.float64)  # crystal translations
     # Rotations in reverse order compared to making g-vector
     # also reverse directions. this is trans at all zero to
@@ -405,7 +409,7 @@ def compute_xyz_lab(sc, fc,
     peaks_on_detector = np.stack((sc, fc))
     peaks_on_detector[0, :] = (peaks_on_detector[0, :] - z_center) * z_size
     peaks_on_detector[1, :] = (peaks_on_detector[1, :] - y_center) * y_size
-    #
+    
     detector_orientation = [[o11, o12], [o21, o22]]
     flipped = np.dot(np.array(detector_orientation, np.float64),
                      peaks_on_detector)
@@ -668,19 +672,7 @@ def _ubi_to_u_safe(ubi, U):
             U[i, j] = Ut[i, j]
     return True
 
-
 _GVE_H5GROUP = "PBPGveCache"
-
-def _gve_fingerprint(refine, peak_fingerprint):
-    """Everything the g-vectors depend on, on top of the peak index."""
-    h = hashlib.blake2b(digest_size=16)
-    h.update(("v%d gve " % _INDEX_VERSION).encode())
-    h.update(peak_fingerprint.encode())
-    _hash_cols(h, refine.icolf, ("sc", "fc", "xpos_refined"))
-    pars = refine.icolf.parameters.get_parameters()
-    for k in sorted(pars):
-        h.update(("%s=%r;" % (k, pars[k])).encode())
-    return h.hexdigest()
 
 
 def save_gve_cache(gve_all, filename, fingerprint):
@@ -708,80 +700,6 @@ def load_gve_cache(filename, fingerprint):
             return g["gve_all"][:]
     except (OSError, KeyError):
         return None
-
-
-
-# ==========================================================================
-#  Python driver
-# ==========================================================================
-def _omega_frame_index(refine, omega, omega_step=None, verbose=True):
-    """
-    Map each peak onto an omega frame without needing a frm column.
- 
-    For data segmented before frm existed. Bins on dset.obinedges, which is
-    one entry per omega position, so the result is the same shape as the frm
-    decode -- it just cannot tell two peaks on the same frame apart if the
-    encoder readback drifted across a bin edge.
- 
-    Returns (iomega, omega_centres), or None if there is nothing better than
-    guessing, in which case the caller should use the heuristic.
- 
-    Previously the last branch returned np.unique(omega). Do not do that:
-    omega is an encoder readback, so nominally-identical frames differ in the
-    last few digits and np.unique yields roughly one value per frame PER dty
-    row. On a 1250-row scan that is ~1.7M bins, almost all empty -- far worse
-    than the heuristic it was standing in for.
-    """
-    dset = getattr(refine, "dset", None)
- 
-    if omega_step is not None:
-        o0 = float(omega.min())
-        iomega = np.round((omega - o0) / float(omega_step)).astype(np.int64)
-        iomega -= iomega.min()
-        cens = o0 + np.arange(iomega.max() + 1) * float(omega_step)
-        if verbose:
-            print("omega bins: %d, from omega_step=%g" % (len(cens), omega_step))
-        return iomega, cens
- 
-    edges = getattr(dset, "obinedges", None) if dset is not None else None
-    cens = getattr(dset, "obincens", None) if dset is not None else None
-    if edges is None or cens is None:
-        if verbose:
-            print("omega bins: no frm and no dset.obinedges -- using the "
-                  "heuristic, which only guesses at the sample radius")
-        return None
- 
-    edges = np.asarray(edges, dtype=np.float64)
-    cens = np.asarray(cens, dtype=np.float64)
-    om = omega % 360.0 if edges[0] >= -1e-9 and omega.min() < -1e-9 else omega
-    iomega = np.digitize(om, edges) - 1
-    np.clip(iomega, 0, len(cens) - 1, out=iomega)
-    iomega = iomega.astype(np.int64)
-    dev = float(np.abs(omega - cens[iomega]).max())
-    if verbose:
-        live = int((np.bincount(iomega, minlength=len(cens)) > 0).sum())
-        print("omega bins via obinedges (no frm): %d bins (%d with peaks), "
-              "|omega - bin centre| max %.5f deg" % (len(cens), live, dev))
-    return iomega, cens
-
-
-
-def heuristic_omega_binsize(ystep, rmax):
-    """
-    Omega bin width such that a voxel at r_max moves ~2*ystep per bin step.
-
-    From Axel Henningsson's voxel_mask.VoxelSinoMasker._heuristic_omega_binsize.
-    Coarser bins mean fewer outer iterations per voxel but a wider dty window;
-    this factor of 2 is his empirical compromise. His version bounds the voxel
-    radius as sqrt(2)*max(|dty|); we have the real r_max from the mask, so we
-    use that.
-    """
-    if rmax <= 0.0:
-        return 180.0
-    return 2.0 * np.degrees(ystep / rmax)
-
-
-
 
 
 def build_peak_index(refine, omega_binsize="auto", omega_step=None,
@@ -825,41 +743,20 @@ def build_peak_index(refine, omega_binsize="auto", omega_step=None,
     dty = np.ascontiguousarray(icolf.dty, dtype=np.float64)
     rmax = float(np.hypot(refine.sx_grid, refine.sy_grid)[refine.mask].max())
 
-    # our frame decode, handed to Axel's partitioner as explicit bins
-    kw = {}
-    got = None
-    if omega_step is not None:
-        kw = dict(omega_binsize=float(omega_step))
-    elif omega_binsize not in (None, "auto"):
-        kw = dict(omega_binsize=float(omega_binsize))      # explicit wins
-    else:
-        got = _frame_index_from_frm(refine, omega, verbose)     # 1. exact
-        if got is None:
-            got = _omega_frame_index(refine, omega, verbose=verbose)  # 2. edges
-        if got is not None:
-            kw = dict(omega_bin_indices=got[0], omega_bins=got[1])
-        else:
-            kw = dict(omega_binsize=None)                   # 3. heuristic
-
     t0 = time.perf_counter()
+    kw, iom = choose_omega_bins(refine, omega, omega_binsize, omega_step,
+                                verbose)
     M = VoxelSinoMasker(omega, dty, refine.ystep, ymin=refine.ymin)
     M.partition(keep_columns=False, **kw)
     nom = int(M.sinomega_bins.size)
     ndty = int(M.dty_partitions.shape[1]) - 1
 
-    # max |omega - bin centre|, which sets how far a ray can wander inside a
-    # cell and hence the voxel-strip half width used by compute_origins.
-    # Computed from the unpermuted omega: keep_columns=False means the
-    # masker no longer holds a permuted copy.
     ob = np.asarray(M.omega_bins, dtype=np.float64)
-    if got is not None:
-        iom = got[0]                       # the bin index we handed in
-    else:
+    if iom is None:                       # heuristic or explicit binsize
         iom = np.clip(np.round((omega - omega.min()) / M.omega_binsize
                                ).astype(np.int64), 0, nom - 1)
     dev = float(np.abs(omega - ob[iom]).max())
     ray_margin = 1.5 + rmax * np.radians(dev) / refine.ystep + 0.5
-
     
     if verbose:
         print("peak index: %d omega bins x %d dty bins = %d cells, %.1f "
@@ -868,7 +765,7 @@ def build_peak_index(refine, omega_binsize="auto", omega_step=None,
                                        time.perf_counter() - t0))
         print("  binsize %s, max |omega - bin centre| %.5f deg, r_max %.1f "
               "-> ray half-width %.2f*ystep"
-              % ("supplied frames" if got is not None
+              % ("supplied frames" if M.omega_binsize is None
                  else "%.4f deg" % M.omega_binsize, dev, rmax, ray_margin))
         if n < nom * ndty:
             print("  WARNING: fewer peaks than cells (%.2f/cell); the index is "
@@ -993,9 +890,6 @@ def grid_axes(sx_grid, sy_grid):
     return sx_ax, sy_ax, float(dsx), float(dsy)
 
 
-# ==========================================================================
-#  Origins
-# ==========================================================================
 @numba.njit(cache=True, parallel=True)
 def compute_origins(singlemap, sample_mask,
                     gve, sinomega, cosomega, dty,
@@ -1037,7 +931,7 @@ def compute_origins(singlemap, sample_mask,
     lx_modified = np.zeros(npk, dtype=np.float64)
     W = ystep * ray_margin
 
-    # the very original function was checking tolsq. this may have been a bug.
+    # the very original function was checking tolsq. this was a bug.
     tolsq = hkl_tol * hkl_tol
 
     for chunk in numba.prange(nchunks):
@@ -1185,7 +1079,7 @@ def compute_origins(singlemap, sample_mask,
 
 @numba.njit(cache=True, parallel=True)
 def count_ray_voxels(sample_mask, sx_ax, sy_ax, dsx, dsy, y0, ystep,
-                     omega_partitions, dty_partitions, nom, ndty,
+                     dty_partitions, nom, ndty,
                      usin, ucos, ymin, ray_margin):
     """Diagnostic: mean voxels visited per non-empty cell, and cell occupancy."""
     NI = sx_ax.shape[0]
@@ -1367,42 +1261,11 @@ class PBPRefine:
         self.dset.update_colfile_pars(colf, phase_name=self.phase_name)
 
         uc = unitcell.unitcell_from_parameters(colf.parameters)
-        uc.makerings(colf.ds.max(), self.ds_tol)
-        # peaks that are on rings
-        sel = np.zeros(colf.nrows, bool)
-        # rings to use for indexing
-        isel = np.zeros(colf.nrows, bool)
-        npks = 0
-        if self.forref is None:
-            self.forref = range(len(uc.ringds))
-        hmax = 0
-        for i in range(len(uc.ringds)):
-            ds = uc.ringds[i]
-            hkls = uc.ringhkls[ds]
-            if i in self.forref:
-                rm = abs(colf.ds - ds) < self.ds_tol
-                if rm.sum() == 0:
-                    continue
-                icut = np.max(colf.sum_intensity[rm]) * self.ifrac
-                rm = rm & (colf.sum_intensity > icut)
-                isel |= rm
-                npks += len(hkls)
-                print(
-                    i,
-                    "%.4f" % (ds),
-                    hkls[-1],
-                    len(hkls),
-                    rm.sum(),
-                    "used, sum_intensity>",
-                    icut,
-                )
-                sel |= rm
-                for hkl in hkls:
-                    hmax = max(np.abs(hkl).max(), hmax)
-            else:
-                print(i, "%.4f" % (ds), hkls[-1], len(hkls), "skipped")
 
-        isel = isel & ((np.abs(np.sin(np.radians(colf.eta)))) > self.etacut)
+        sel, npks, hmax = mask_rings_by_ifrac(
+            colf, self.ds_tol, colf.ds.max(), self.ifrac, uc,
+            forref=self.forref, verbose=True, return_npks_hmax=True)
+        isel = sel & (np.abs(np.sin(np.radians(colf.eta))) > self.etacut)
 
         colf.addcolumn(isel, "isel")  # peaks selected for refinement
         dtyi = geometry.dty_to_dtyi(colf.dty, self.ystep, self.ybincens.min())
@@ -1661,7 +1524,6 @@ class PBPRefine:
                 pass
         return refine_obj
 
-    # ----------------------------------------------------------------------
     def get_origins(self, save_peaks_after=True, nthreads=None, nchunks=None,
                     omega_binsize="auto", omega_step=None, index_cache=None,
                     cache_filename=None, use_cache=True, verbose=True,
@@ -1712,7 +1574,7 @@ class PBPRefine:
         if verbose:
             nvox, ncells = count_ray_voxels(
                 mask, sx_ax, sy_ax, dsx, dsy, self.y0, self.ystep,
-                idx["omega_partitions"], idx["dty_partitions"],
+                idx["dty_partitions"],
                 idx["nom"], idx["ndty"], idx["usin"], idx["ucos"],
                 idx["ymin"], idx["ray_margin"])
             print("%d non-empty cells, max %d peaks in a cell" % (ncells, max_cell))
@@ -1748,7 +1610,6 @@ class PBPRefine:
             self.savepeaks()
         return lx_modified
 
-    # ----------------------------------------------------------------------
     def run_refine(self, points_step_space=None, npoints=None,
                    output_filename=None, use_cluster=False, pythonpath=None,
                    nthreads=None, nchunks=None, omega_binsize="auto", omega_step=None,
@@ -1850,7 +1711,7 @@ class PBPRefine:
             idx["pstart"], idx["porder"], idx["pbpmap_ubis"], idx["nrj"],
             self.sx_grid, self.sy_grid, self.mask,
             idx["omega_partitions"], idx["dty_partitions"],
-            idx["nom"], idx["ndty"], idx["usin"], idx["ucos"],
+            idx["usin"], idx["ucos"],
             idx["ymin"],
             pk["sc"], pk["fc"], pk["eta"], pk["sum_intensity"],
             pk["sinomega"], pk["cosomega"], pk["omega"], pk["dty"], pk["dtyi"],
@@ -1977,7 +1838,7 @@ def refine_map(
     # sample grids / mask
     sx_grid, sy_grid, mask,
     # peak data, PERMUTED into partition order, all C-contiguous
-    omega_partitions, dty_partitions, nom, ndty, usin, ucos, ymin,
+    omega_partitions, dty_partitions, usin, ucos, ymin,
     sc, fc, eta, sum_intensity, sinomega, cosomega, omega, dty, dtyi, xpos,
     gve_all,                                   # (N, 3)
     # geometry

@@ -24,7 +24,7 @@ import hdf5plugin
 #  fancy-index and a counting sort away and cost less than writing them out.
 # ==========================================================================
 _PEAK_H5GROUP = "PBPPeakIndex"
-_INDEX_VERSION = 4
+_INDEX_VERSION = 5
 
 
 def _hash_cols(h, icolf, names):
@@ -37,8 +37,6 @@ def _hash_cols(h, icolf, names):
         h.update(arr.dtype.str.encode())
         h.update(np.int64(arr.shape[0]).tobytes())
         h.update(arr)          # was arr.tobytes() -- a full copy of the column
-
-
 
 def _peak_index_fingerprint(refine, omega_binsize="auto", omega_step=None):
     """Inputs build_peak_index depends on. Deliberately excludes xpos_refined.
@@ -160,6 +158,56 @@ def default_index_filename(refine):
     return os.path.splitext(base)[0] + "_pbpindex.h5"
 
 
+def _omega_frame_index(refine, omega, omega_step=None, verbose=True):
+    """
+    Map each peak onto an omega frame without needing a frm column.
+ 
+    For data segmented before frm existed. Bins on dset.obinedges, which is
+    one entry per omega position, so the result is the same shape as the frm
+    decode -- it just cannot tell two peaks on the same frame apart if the
+    encoder readback drifted across a bin edge.
+ 
+    Returns (iomega, omega_centres), or None if there is nothing better than
+    guessing, in which case the caller should use the heuristic.
+ 
+    Previously the last branch returned np.unique(omega). Do not do that:
+    omega is an encoder readback, so nominally-identical frames differ in the
+    last few digits and np.unique yields roughly one value per frame PER dty
+    row. On a 1250-row scan that is ~1.7M bins, almost all empty -- far worse
+    than the heuristic it was standing in for.
+    """
+    dset = getattr(refine, "dset", None)
+ 
+    if omega_step is not None:
+        o0 = float(omega.min())
+        iomega = np.round((omega - o0) / float(omega_step)).astype(np.int64)
+        iomega -= iomega.min()
+        cens = o0 + np.arange(iomega.max() + 1) * float(omega_step)
+        if verbose:
+            print("omega bins: %d, from omega_step=%g" % (len(cens), omega_step))
+        return iomega, cens
+ 
+    edges = getattr(dset, "obinedges", None) if dset is not None else None
+    cens = getattr(dset, "obincens", None) if dset is not None else None
+    if edges is None or cens is None:
+        if verbose:
+            print("omega bins: no frm and no dset.obinedges -- using the "
+                  "heuristic, which only guesses at the sample radius")
+        return None
+ 
+    edges = np.asarray(edges, dtype=np.float64)
+    cens = np.asarray(cens, dtype=np.float64)
+    om = omega % 360.0 if edges[0] >= -1e-9 and omega.min() < -1e-9 else omega
+    iomega = np.digitize(om, edges) - 1
+    np.clip(iomega, 0, len(cens) - 1, out=iomega)
+    iomega = iomega.astype(np.int64)
+    dev = float(np.abs(omega - cens[iomega]).max())
+    if verbose:
+        live = int((np.bincount(iomega, minlength=len(cens)) > 0).sum())
+        print("omega bins via obinedges (no frm): %d bins (%d with peaks), "
+              "|omega - bin centre| max %.5f deg" % (len(cens), live, dev))
+    return iomega, cens
+
 def _frame_index_from_frm(refine, omega, verbose=True):
     """
     Omega bin index via the per-peak frame number.
@@ -216,6 +264,46 @@ def _frame_index_from_frm(refine, omega, verbose=True):
               "|omega - bin centre| max %.5f deg%s"
               % (len(cens), live, frm.size / max(live, 1), dev, note))
     return iomega, cens, dev
+
+
+def choose_omega_bins(obj, omega, omega_binsize="auto", omega_step=None,
+                      verbose=True):
+    """
+    Decide how to bin omega, best method first.
+ 
+        1. frm column decoded through dset.omega / obinedges  -- exact
+        2. dset.obinedges alone                               -- pre-frm data
+        3. VoxelSinoMasker's heuristic                        -- last resort
+ 
+    An explicit omega_step or omega_binsize overrides all three.
+ 
+    obj needs .icolf and .dset; both PBPRefine and PBP have them.
+ 
+    Returns (kw, iomega) where kw goes straight to partition(**kw) and
+    iomega is the per-peak bin index, or None when the heuristic is used and
+    the caller must reconstruct it. Callers that need `dev` should use
+    iomega rather than the masker's permuted omega, which keep_columns=False
+    does not build.
+    """
+    if omega_step is not None:
+        if verbose:
+            print("omega bins: omega_step=%g (explicit)" % omega_step)
+        return dict(omega_binsize=float(omega_step)), None
+ 
+    if omega_binsize not in (None, "auto"):
+        if verbose:
+            print("omega bins: omega_binsize=%g (explicit)" % omega_binsize)
+        return dict(omega_binsize=float(omega_binsize)), None
+ 
+    got = _frame_index_from_frm(obj, omega, verbose)          # 1
+    if got is None:
+        got = _omega_frame_index(obj, omega, verbose=verbose)  # 2
+    if got is not None:
+        # _frame_index_from_frm returns 3 values, _omega_frame_index 2;
+        # the first two are the same in both
+        return dict(omega_bin_indices=got[0], omega_bins=got[1]), got[0]
+ 
+    return dict(omega_binsize=None), None                      # 3
 
 
 @numba.njit(cache=True)
@@ -407,7 +495,6 @@ def max_candidates(
     y0,
     ystep,
     ymin,
-    omega_partitions,
     dty_partitions,
     sin_omega_bins,
     cos_omega_bins,
@@ -629,9 +716,6 @@ class VoxelSinoMasker:
         if nbytes > 2e8:
             print("note: partition is %.0f MB (%d x %d)"
                   % (nbytes / 1e6, omega_bins.size, ymax_index + 2))
- 
-        dty_partitions = np.empty((omega_bins.size, ymax_index + 2),
-                                  dtype=np.int64)
 
         dty_partitions = np.empty((omega_bins.size, ymax_index + 2), dtype=np.int64)
         for i in range(omega_bins.size):
@@ -707,7 +791,7 @@ class VoxelSinoMasker:
             for value in peaks:
                 self.sort_by_partitions(value)
         elif isinstance(peaks, dict):
-            for key, value in peaks.items():
+            for value in peaks.values():
                 self.sort_by_partitions(value)
         else:
             raise ValueError("Unsupported type: {}".format(type(peaks)))
@@ -726,7 +810,6 @@ class VoxelSinoMasker:
                 y0,
                 ystep,
                 self.ymin,
-                self.omega_partitions,
                 self.dty_partitions,
                 self.sinomega_bins,
                 self.cosomega_bins,

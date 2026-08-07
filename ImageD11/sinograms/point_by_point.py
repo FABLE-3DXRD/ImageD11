@@ -21,9 +21,7 @@ except ImportError:
 import multiprocessing
 import time, random
 import numpy as np
-import subprocess
 
-import h5py
 import numba
 
 # ignore Numba dot product performance warnings?
@@ -37,11 +35,12 @@ from ImageD11 import sym_u, unitcell, parameters
 import ImageD11.sinograms.dataset
 import ImageD11.indexing
 from ImageD11.columnfile import columnfile
+from ImageD11.peakselect import mask_rings_by_ifrac
 from ImageD11.sinograms import geometry
 from ImageD11.sinograms.voxel_mask import (
     VoxelSinoMasker, fill_voxel_idx, max_candidates as vm_max_candidates,
     default_index_filename, _peak_index_fingerprint,
-    save_peak_index, load_peak_index, _frame_index_from_frm)
+    save_peak_index, load_peak_index, choose_omega_bins)
 
 # GOTO - find somewhere!
 # Everything written in Numba could move to C?
@@ -460,9 +459,6 @@ def proxy(args):
     )
     return i, j, g
 
-
-
-
 # one of these per process:
 ucglobal = None
 symglobal = None
@@ -470,8 +466,7 @@ parglobal = None
 colglobal = None
 partglobal = None
 bufglobal = None
- 
- 
+
 def initializer(parfile, phase_name, symmetry, colfile, index_filename,
                 fingerprint, loglevel=3):
     global ucglobal, symglobal, parglobal, colglobal, partglobal, bufglobal
@@ -558,7 +553,6 @@ class PBP:
         self.index_filename = None      # set by setpeaks
         self.index_fingerprint = None
 
-
     def _build_index(self, verbose=True):
         """Cache the partition setpeaks built, beside the icolf.
  
@@ -629,47 +623,14 @@ class PBP:
         colf.parameters.loadparameters(self.parfile, phase_name=self.phase_name)
         if "ds" not in colf.titles:
             colf.updateGeometry()  # for ds
-        #
-        uc = unitcell.unitcell_from_parameters(colf.parameters)
-        uc.makerings(colf.ds.max(), self.ds_tol)
-        self.uc = uc
-        # peaks that are on rings
-        sel = np.zeros(colf.nrows, bool)
-        # rings to use for indexing
-        isel = np.zeros(colf.nrows, bool)
-        npks = 0
-        if self.foridx is None:
-            self.foridx = range(len(uc.ringds))
-        hmax = 0
-        for i in range(len(uc.ringds)):
-            ds = uc.ringds[i]
-            hkls = uc.ringhkls[ds]
-            if i in self.foridx:
-                rm = abs(colf.ds - ds) < self.ds_tol
-                if rm.sum() == 0:
-                    continue
-                icut = np.max(colf.sum_intensity[rm]) * self.ifrac
-                rm = rm & (colf.sum_intensity > icut)
-                isel |= rm
-                npks += len(hkls)
-                print(
-                    i,
-                    "%.4f" % (ds),
-                    hkls[-1],
-                    len(hkls),
-                    rm.sum(),
-                    "used, sum_intensity>",
-                    icut,
-                )
-                sel |= rm
-                for hkl in hkls:
-                    hmax = max(np.abs(hkl).max(), hmax)
-            else:
-                print(i, "%.4f" % (ds), hkls[-1], len(hkls), "skipped")
-        if self.forgen is None:
-            self.forgen = self.foridx
 
-        isel = isel & ((np.abs(np.sin(np.radians(colf.eta)))) > self.etacut)
+        uc = unitcell.unitcell_from_parameters(colf.parameters)
+        self.uc = uc
+
+        sel, npks, hmax = mask_rings_by_ifrac(
+            colf, self.ds_tol, colf.ds.max(), self.ifrac, uc,
+            forref=self.foridx, verbose=True, return_npks_hmax=True)
+        isel = sel & (np.abs(np.sin(np.radians(colf.eta))) > self.etacut)
 
         colf.addcolumn(isel, "isel")  # peaks selected for indexing
 
@@ -694,19 +655,7 @@ class PBP:
         omega = np.ascontiguousarray(self.icolf.omega, dtype=np.float64)
         dty = np.ascontiguousarray(self.icolf.dty, dtype=np.float64)
  
-        # Omega bins from the frame number where we have it: each frame gets
-        # its own bin, exactly, whatever order the scan ran in. Falls back to
-        # dset.obinedges for data segmented before frm existed, and to the
-        # heuristic if neither is available.
-        got = _frame_index_from_frm(self, omega, verbose=True)
-        if got is None:
-            got = _omega_frame_index(self, omega, verbose=True)
-        if got is not None:
-            kw = dict(omega_bin_indices=got[0], omega_bins=got[1])
-        else:
-            kw = dict(omega_binsize=None)
-
-        # ymin must be ybincens.min(), the same origin dtyi was built with.
+        kw, _ = choose_omega_bins(self, omega, verbose=True)
         masker = VoxelSinoMasker(omega, dty, self.ystep, ymin=self.ymin)
         masker.partition(keep_columns=False, **kw)
  
@@ -716,7 +665,6 @@ class PBP:
         self._masker = masker          # _build_index reuses it
  
         self.npks = npks
-
 
         # now we can compute npks too
         if self.fpks < 1:
@@ -743,17 +691,6 @@ class PBP:
         self.icolf_filename = icolf_filename
 
         self._build_index()
-        
-        # write partition to h5:
-        # with h5py.File(icolf_filename, "a") as hout:
-        #     g = hout.require_group("PBPPartition")
-        #     for k, v in self.partition.items():
-        #         if np.isscalar(v):
-        #             g.attrs[k] = v
-        #         else:
-        #             if k in g:
-        #                 del g[k]
-        #             g.create_dataset(k, data=v)
 
 
     def iplot(self, skip=1):
@@ -967,7 +904,6 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
         
         t0 = time.time()
         # main process is writing
-
         
         with open(grains_filename, "w") as gout:
             gout.write(
