@@ -20,7 +20,7 @@ def load_config(config_path):
             elif key in {'minpks', 'nprocs', 'hmax'}:
                 val = int(val)
             else:
-                val = val  # parfile, phase_name, symmetry, icolf_filename, index_filename
+                val = val  # parfile, phase_name, symmetry, icolf_filename, index_filename, index_fingerprint
             config[key] = val
     return config
 
