@@ -39,8 +39,8 @@ from ImageD11.peakselect import mask_rings_by_ifrac
 from ImageD11.sinograms import geometry
 from ImageD11.sinograms.voxel_mask import (
     VoxelSinoMasker, fill_voxel_idx, max_candidates as vm_max_candidates,
-    default_index_filename, _peak_index_fingerprint,
-    save_peak_index, load_peak_index, choose_omega_bins)
+    default_index_filename, _calc_peak_fingerprint,
+    save_peak_index_cache, load_peak_index_cache, choose_omega_bins)
 
 # GOTO - find somewhere!
 # Everything written in Numba could move to C?
@@ -480,7 +480,7 @@ def initializer(parfile, phase_name, symmetry, colfile, index_filename,
  
         # mmap, not read: identical and read-only in every worker, so one
         # mapping through the page cache replaces one copy per process
-        partglobal = load_peak_index(index_filename, fingerprint, mmap=True)
+        partglobal = load_peak_index_cache(index_filename, fingerprint, mmap=True)
         if partglobal is None:
             raise RuntimeError(
                 "peak index %s is missing or stale -- rerun setpeaks()"
@@ -560,10 +560,10 @@ class PBP:
         omega binning, the fingerprint and the cache format are shared.
         """
         self.index_filename = default_index_filename(self)
-        fp = _peak_index_fingerprint(self)
+        fp = _calc_peak_fingerprint(self)
         self.index_fingerprint = fp
  
-        cached = load_peak_index(self.index_filename, fp)
+        cached = load_peak_index_cache(self.index_filename, fp)
         if cached is not None:
             if verbose:
                 print("loaded peak index from %s (%d omega bins, %d dty bins,"
@@ -606,7 +606,7 @@ class PBP:
                       "sparse and traversal will dominate. Check whether the "
                       "frm decode ran; the heuristic over-refines without it.")
         try:
-            save_peak_index(idx, self.index_filename, fp)
+            save_peak_index_cache(idx, self.index_filename, fp)
             if verbose:
                 print("saved peak index to %s" % self.index_filename)
         except OSError as e:
@@ -877,7 +877,7 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
         # worker passes: a read-only memmap is a distinct numba type from a
         # writable array, so this loads the index and columns the same way
         # initializer does rather than using dummy arrays.
-        _part = load_peak_index(self.index_filename, self.index_fingerprint,
+        _part = load_peak_index_cache(self.index_filename, self.index_fingerprint,
                                 mmap=True)
         _sm = ImageD11.columnfile.mmap_h5colf(self.icolf_filename)
         _n = _part["maxlocal"]

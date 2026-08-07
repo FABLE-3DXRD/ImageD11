@@ -1,31 +1,31 @@
-"""Written by Axel Henningsson, 2026."""
+"""Written by Axel Henningsson, 2026.
+
+Updated and slightly mangled by James Ball, 2026.
+
+
+DEFINITIONS
+
+- Peak index
+The (omega frame, dtyi) CSR and the permutation.
+Depends on omega, dty, dtyi, ystep, y0, mask shape.
+Used by both indexing and refinement
+"""
 
 import os, sys
 import numba
 import numpy as np
 import hashlib
 import h5py
-import hdf5plugin
 
-# ==========================================================================
-#  INDEX CACHE
-#
-#  Split in two, because get_origins needs the bucket index but runs *before*
-#  xpos_refined exists -- it is what produces it.
-#
-#    PBPPeakIndex : the (omega frame, dtyi) CSR and the permutation.
-#                   Depends on omega, dty, dtyi, ystep, y0, mask shape.
-#                   Used by both get_origins and run_refine.
-#    PBPGveCache  : gve_all in permuted order.
-#                   Additionally depends on sc, fc, xpos_refined and the
-#                   geometry parameters. Only run_refine needs it.
-#
-#  Not cached: the permuted columns and the pbpmap CSR, which are a
-#  fancy-index and a counting sort away and cost less than writing them out.
-# ==========================================================================
-_PEAK_H5GROUP = "PBPPeakIndex"
-_INDEX_VERSION = 6
+# -------- CACHING -------- #
+# We often go between a local machine and one/many cluster machines.
+# To avoid re-computing the peak index all the time, we can cache it to disk.
+# This is loaded when needed.
+# Caches are fingerprinted to make sure we don't accept an invalid cache.
 
+_CACHE_VERSION = 6
+
+## Helper functions
 
 def _hash_cols(h, icolf, names):
     for name in names:
@@ -38,27 +38,58 @@ def _hash_cols(h, icolf, names):
         h.update(np.int64(arr.shape[0]).tobytes())
         h.update(arr)          # was arr.tobytes() -- a full copy of the column
 
-def _peak_index_fingerprint(refine, omega_binsize="auto", omega_step=None):
-    """Inputs build_peak_index depends on. Deliberately excludes xpos_refined.
- 
+## Fingerprinting
+
+def _calc_peak_fingerprint(manager, omega_binsize="auto", omega_step=None):
+    """Make a fingerprint of everything that's required to build a peak index.
+
     Works for both PBPRefine and PBP: the reconstruction grid shape is only
     included when there is one.
+
+    If fingerprints match, the same peak index will be made.
+
+    Parameters
+    ----------
+    manager
+        Either a PBP or PBPRefine object.
+    omega_binsize, optional
+        _description_, by default "auto"
+    omega_step, optional
+        _description_, by default None
+
+    Returns
+    -------
+        Fingerprint of peak index
     """
+
     h = hashlib.blake2b(digest_size=16)
-    h.update(("v%d peak" % _INDEX_VERSION).encode())
-    _hash_cols(h, refine.icolf, ("omega", "dty", "dtyi", "frm"))
-    mask = getattr(refine, "mask", None)
-    h.update(repr((float(refine.ystep), float(refine.y0), float(refine.ymin),
+    h.update(("v%d peak" % _CACHE_VERSION).encode())
+    _hash_cols(h, manager.icolf, ("omega", "dty", "dtyi", "frm"))
+    mask = getattr(manager, "mask", None)
+    h.update(repr((float(manager.ystep), float(manager.y0), float(manager.ymin),
                    None if omega_step is None else float(omega_step),
                    omega_binsize,
                    None if mask is None else tuple(mask.shape))).encode())
     return h.hexdigest()
 
 
-def _gve_fingerprint(refine, peak_fingerprint):
-    """Everything the g-vectors depend on, on top of the peak index."""
+def _calc_gve_fingerprint(refine, peak_fingerprint):
+    """Extend the peak fingerprint to include columns that are needed to compute g-vectors.
+
+    Parameters
+    ----------
+    refine
+        PBPRefine object
+    peak_fingerprint
+        Compute with _calc_peak_fingerprint
+
+    Returns
+    -------
+        _description_
+    """
+
     h = hashlib.blake2b(digest_size=16)
-    h.update(("v%d gve " % _INDEX_VERSION).encode())
+    h.update(("v%d gve " % _CACHE_VERSION).encode())
     h.update(peak_fingerprint.encode())
     _hash_cols(h, refine.icolf, ("sc", "fc", "xpos_refined"))
     pars = refine.icolf.parameters.get_parameters()
@@ -67,13 +98,52 @@ def _gve_fingerprint(refine, peak_fingerprint):
     return h.hexdigest()
 
 
-def save_peak_index(idx, filename, fingerprint):
+## Save and load caches
+_PEAK_H5GROUP = "PBPPeakIndex"
+_GVE_H5GROUP = "PBPGveCache"
+
+
+def default_index_filename(manager):
+    """Generate a default filename for the peak + gve index.
+
+    Parameters
+    ----------
+    manager
+        PBP or PBPRefine object
+
+    Returns
+    -------
+        Filename to save/load peak index/gve caches
+
+    Raises
+    ------
+    ValueError
+        If no icolf_filename on the manager object
+    """
+    base = getattr(manager, "icolf_filename", None)
+    if base is None:
+        raise ValueError("no icolf_filename to derive an index cache path from")
+    return os.path.splitext(base)[0] + "_pbpindex.h5"
+
+
+def save_peak_index_cache(idx, filename, peak_fingerprint):
+    """Save peak index to an on-disk H5 cache, with fingerprinting and versioning.
+
+    Parameters
+    ----------
+    idx
+        Peak index to cache
+    filename
+        Filename to save to
+    peak_fingerprint
+        Compute with _calc_peak_fingerprint
+    """
     with h5py.File(filename, "a") as hout:
         if _PEAK_H5GROUP in hout:
             del hout[_PEAK_H5GROUP]
         g = hout.create_group(_PEAK_H5GROUP)
-        g.attrs["fingerprint"] = fingerprint
-        g.attrs["version"] = _INDEX_VERSION
+        g.attrs["fingerprint"] = peak_fingerprint
+        g.attrs["version"] = _CACHE_VERSION
         for k in ("nom", "ndty"):
             g.attrs[k] = int(idx[k])
         # optional: only the indexer pre-computes it
@@ -88,16 +158,52 @@ def save_peak_index(idx, filename, fingerprint):
             g.create_dataset(k, data=idx[k])
 
 
+def save_gve_cache(gve, filename, gve_fingerprint):
+    """Save g-vectors to an on-disk H5 cache, with fingerprinting and versioning.
 
-def load_peak_index(filename, fingerprint, mmap=False, verbose=True):
+    Parameters
+    ----------
+    gve_all
+        G-vectors to cache
+    filename
+        Filename to save to
+    gve_fingerprint
+        Compute with _calc_gve_fingerprint
     """
-    mmap=True returns read-only np.memmap views instead of copies.
- 
+    
+    with h5py.File(filename, "a") as hout:
+        if _GVE_H5GROUP in hout:
+            del hout[_GVE_H5GROUP]
+        g = hout.create_group(_GVE_H5GROUP)
+        g.attrs["fingerprint"] = gve_fingerprint
+        g.attrs["version"] = _CACHE_VERSION
+        g.create_dataset("gve_all", data=gve)
+
+
+def load_peak_index_cache(filename, peak_fingerprint, mmap=False, verbose=True):
+    """Load peak index from an on-disk H5 cache, with optional mem-map.
+
     Use it from multiprocessing workers: the arrays are identical in every
     worker and never written, so one mapping shared through the page cache
     replaces one heap copy per process. Falls back to a read for any dataset
     that is not contiguous.
+
+    Parameters
+    ----------
+    filename
+        Filename to load from
+    peak_fingerprint
+        Compute with _calc_peak_fingerprint
+    mmap, optional
+        returns read-only np.memmap views instead of copies. by default False
+    verbose, optional
+        Print info, by default True
+
+    Returns
+    -------
+        Dictionary representing a peak index
     """
+
     if filename is None:
         return None
     if not os.path.exists(filename):
@@ -117,13 +223,13 @@ def load_peak_index(filename, fingerprint, mmap=False, verbose=True):
             return None
         g = hin[_PEAK_H5GROUP]
         v = g.attrs.get("version", -1)
-        if v != _INDEX_VERSION:
-            print("index: version %s, expected %d" % (v, _INDEX_VERSION),
+        if v != _CACHE_VERSION:
+            print("index: version %s, expected %d" % (v, _CACHE_VERSION),
                   file=sys.stderr)
             return None
         got = g.attrs.get("fingerprint", "")
-        if got != fingerprint:
-            print("index: fingerprint %s, expected %s" % (got, fingerprint),
+        if got != peak_fingerprint:
+            print("index: fingerprint %s, expected %s" % (got, peak_fingerprint),
                   file=sys.stderr)
             return None
  
@@ -151,66 +257,46 @@ def load_peak_index(filename, fingerprint, mmap=False, verbose=True):
         )
 
 
-def default_index_filename(refine):
-    base = getattr(refine, "icolf_filename", None)
-    if base is None:
-        raise ValueError("no icolf_filename to derive an index cache path from")
-    return os.path.splitext(base)[0] + "_pbpindex.h5"
+def load_gve_cache(filename, gve_fingerprint):
+    """Load gves from an on-disk H5 cache.
 
+    Unlike load_peak_index_cache, this is only used in PBPRefine, so no memmap needed.
 
-def _omega_frame_index(refine, omega, omega_step=None, verbose=True):
+    Parameters
+    ----------
+    filename
+        Filename to load from
+    gve_fingerprint
+        Compute with _calc_gve_fingerprint
+
+    Returns
+    -------
+        Cached g-vectors
     """
-    Map each peak onto an omega frame without needing a frm column.
- 
-    For data segmented before frm existed. Bins on dset.obinedges, which is
-    one entry per omega position, so the result is the same shape as the frm
-    decode -- it just cannot tell two peaks on the same frame apart if the
-    encoder readback drifted across a bin edge.
- 
-    Returns (iomega, omega_centres), or None if there is nothing better than
-    guessing, in which case the caller should use the heuristic.
- 
-    Previously the last branch returned np.unique(omega). Do not do that:
-    omega is an encoder readback, so nominally-identical frames differ in the
-    last few digits and np.unique yields roughly one value per frame PER dty
-    row. On a 1250-row scan that is ~1.7M bins, almost all empty -- far worse
-    than the heuristic it was standing in for.
-    """
-    dset = getattr(refine, "dset", None)
- 
-    if omega_step is not None:
-        o0 = float(omega.min())
-        iomega = np.round((omega - o0) / float(omega_step)).astype(np.int64)
-        iomega -= iomega.min()
-        cens = o0 + np.arange(iomega.max() + 1) * float(omega_step)
-        if verbose:
-            print("omega bins: %d, from omega_step=%g" % (len(cens), omega_step))
-        return iomega, cens
- 
-    edges = getattr(dset, "obinedges", None) if dset is not None else None
-    cens = getattr(dset, "obincens", None) if dset is not None else None
-    if edges is None or cens is None:
-        if verbose:
-            print("omega bins: no frm and no dset.obinedges -- using the "
-                  "heuristic, which only guesses at the sample radius")
+    if filename is None or not os.path.exists(filename):
         return None
- 
-    edges = np.asarray(edges, dtype=np.float64)
-    cens = np.asarray(cens, dtype=np.float64)
-    om = omega % 360.0 if edges[0] >= -1e-9 and omega.min() < -1e-9 else omega
-    iomega = np.digitize(om, edges) - 1
-    np.clip(iomega, 0, len(cens) - 1, out=iomega)
-    iomega = iomega.astype(np.int64)
-    dev = float(np.abs(omega - cens[iomega]).max())
-    if verbose:
-        live = int((np.bincount(iomega, minlength=len(cens)) > 0).sum())
-        print("omega bins via obinedges (no frm): %d bins (%d with peaks), "
-              "|omega - bin centre| max %.5f deg" % (len(cens), live, dev))
-    return iomega, cens
+    try:
+        with h5py.File(filename, "r") as hin:
+            if _GVE_H5GROUP not in hin:
+                return None
+            g = hin[_GVE_H5GROUP]
+            if g.attrs.get("version", -1) != _CACHE_VERSION:
+                return None
+            if g.attrs.get("fingerprint", "") != gve_fingerprint:
+                return None
+            return g["gve_all"][:]
+    except (OSError, KeyError):
+        return None
 
-def _frame_index_from_frm(refine, omega, verbose=True):
-    """
-    Omega bin index via the per-peak frame number.
+# -------- OMEGA BINNING -------- #
+# Here we have a few different functions that give us an omega bin index for each peak.
+# We can choose different ways to do this based on what information we have:
+# 1. Frame number
+# If you segmented recently, you'll have frame number available in cf_2d
+# It's a direct lookup from frame number to omega bin index
+
+def _omega_bin_index_from_frm(manager, omega, verbose=True):
+    """Omega bin index via the per-peak frame number.
 
     frm says which frame each peak came from. We do NOT assume the
     frame-in-scan index tracks omega: a zigzag scan, or a rotation that runs
@@ -219,12 +305,29 @@ def _frame_index_from_frm(refine, omega, verbose=True):
     out of dset.omega, and index that table with frm. Exact for any scan
     ordering, and it digitizes nscans*nframes values rather than one per peak.
 
-    Returns (iomega, obincens, dev) or None if unusable.
+    Parameters
+    ----------
+    manager
+        PBP or PBPRefine object
+    omega
+        Columnfile column
+    verbose, optional
+        Print diagnostics, by default True
+
+    Returns
+    -------
+    iomega
+        Like dtyi but for omega. Integer omega_steps away from omega min.
+    cens
+        ???
+    dev
+        ???
     """
-    icolf = refine.icolf
+
+    icolf = manager.icolf
     if "frm" not in icolf.titles:
         return None
-    dset = getattr(refine, "dset", None)
+    dset = getattr(manager, "dset", None)
     om_img = getattr(dset, "omega", None)
     edges = getattr(dset, "obinedges", None)
     cens = getattr(dset, "obincens", None)
@@ -265,26 +368,106 @@ def _frame_index_from_frm(refine, omega, verbose=True):
               % (len(cens), live, frm.size / max(live, 1), dev, note))
     return iomega, cens, dev
 
+def _omega_bin_index(manager, omega, omega_step=None, verbose=True):
+    """Map each peak onto an omega frame without needing a frm column.
+ 
+    For data segmented before frm existed. Bins on dset.obinedges, which is
+    one entry per omega position, so the result is the same shape as the frm
+    decode.
+ 
+    Returns (iomega, omega_centres), or None if there is nothing better than
+    guessing, in which case the caller should use the heuristic.
 
-def choose_omega_bins(obj, omega, omega_binsize="auto", omega_step=None,
-                      verbose=True):
+    Parameters
+    ----------
+    manager
+        PBP or PBPRefine object
+    omega
+        Columnfile column
+    omega_step, optional
+        _description_, by default None
+    verbose, optional
+        Print diagnostics, by default True
+
+    Returns
+    -------
+    iomega
+        Like dtyi but for omega. Integer omega_steps away from omega min.
+    cens
+        ???
     """
-    Decide how to bin omega, best method first.
+
+    dset = getattr(manager, "dset", None)
  
-        1. frm column decoded through dset.omega / obinedges  -- exact
-        2. dset.obinedges alone                               -- pre-frm data
-        3. VoxelSinoMasker's heuristic                        -- last resort
+    if omega_step is not None:
+        o0 = float(omega.min())
+        iomega = np.round((omega - o0) / float(omega_step)).astype(np.int64)
+        iomega -= iomega.min()
+        cens = o0 + np.arange(iomega.max() + 1) * float(omega_step)
+        if verbose:
+            print("omega bins: %d, from omega_step=%g" % (len(cens), omega_step))
+        return iomega, cens
  
+    edges = getattr(dset, "obinedges", None) if dset is not None else None
+    cens = getattr(dset, "obincens", None) if dset is not None else None
+    if edges is None or cens is None:
+        if verbose:
+            print("omega bins: no frm and no dset.obinedges -- using the "
+                  "heuristic, which only guesses at the sample radius")
+        return None
+ 
+    edges = np.asarray(edges, dtype=np.float64)
+    cens = np.asarray(cens, dtype=np.float64)
+    om = omega % 360.0 if edges[0] >= -1e-9 and omega.min() < -1e-9 else omega
+    iomega = np.digitize(om, edges) - 1
+    np.clip(iomega, 0, len(cens) - 1, out=iomega)
+    iomega = iomega.astype(np.int64)
+    dev = float(np.abs(omega - cens[iomega]).max())
+    if verbose:
+        live = int((np.bincount(iomega, minlength=len(cens)) > 0).sum())
+        print("omega bins via obinedges (no frm): %d bins (%d with peaks), "
+              "|omega - bin centre| max %.5f deg" % (len(cens), live, dev))
+    return iomega, cens
+
+
+def choose_omega_bins(manager, omega, omega_binsize="auto", omega_step=None,
+                      verbose=True):
+    """Decide how to bin omega, best method first.
+
+    1. frm column decoded through dset.omega / obinedges  -- exact
+    2. dset.obinedges alone                               -- pre-frm data
+    3. VoxelSinoMasker's heuristic                        -- last resort
+
     An explicit omega_step or omega_binsize overrides all three.
- 
+
     obj needs .icolf and .dset; both PBPRefine and PBP have them.
- 
+
     Returns (kw, iomega) where kw goes straight to partition(**kw) and
     iomega is the per-peak bin index, or None when the heuristic is used and
     the caller must reconstruct it. Callers that need `dev` should use
     iomega rather than the masker's permuted omega, which keep_columns=False
     does not build.
+
+    Parameters
+    ----------
+    manager
+        PBP or PBPRefine object
+    omega
+        Columnfile column
+    omega_binsize, optional
+        _description_, by default "auto"
+    omega_step, optional
+        _description_, by default None
+    verbose, optional
+        _description_, by default True
+
+    Returns
+    -------
+    (kw, iomega)
+        iomega: Like dtyi but for omega. Integer omega_steps away from omega min.
+        kw: dict of the stuff you need to build
     """
+
     if omega_step is not None:
         if verbose:
             print("omega bins: omega_step=%g (explicit)" % omega_step)
@@ -295,9 +478,9 @@ def choose_omega_bins(obj, omega, omega_binsize="auto", omega_step=None,
             print("omega bins: omega_binsize=%g (explicit)" % omega_binsize)
         return dict(omega_binsize=float(omega_binsize)), None
  
-    got = _frame_index_from_frm(obj, omega, verbose)          # 1
+    got = _omega_bin_index_from_frm(manager, omega, verbose)          # 1
     if got is None:
-        got = _omega_frame_index(obj, omega, verbose=verbose)  # 2
+        got = _omega_bin_index(manager, omega, verbose=verbose)  # 2
     if got is not None:
         # _frame_index_from_frm returns 3 values, _omega_frame_index 2;
         # the first two are the same in both
@@ -320,8 +503,8 @@ def fill_voxel_idx(
     cos_omega_sorted,
     sin_omega_bins,
     cos_omega_bins,
-    idx_buffer,  # you will want to reuse these for all voxels!
-    ydist_buffer,  # you will want to reuse these for all voxels
+    idx_buffer,    # | you will want to reuse these for all voxels!
+    ydist_buffer,  # |
 ):
     """Get the voxel indices and y-distances for a given voxel centroid position.
 
@@ -510,7 +693,7 @@ def max_candidates(
     row_len_minus_1 = dty_partitions.shape[1] - 1
     inv_ystep = 1.0 / ystep
     best = np.zeros(xi0s.size, dtype=np.int64)
-    for v in numba.prange(xi0s.size):
+    for v in numba.prange(xi0s.size):  # ty: ignore[not-iterable]
         xi0 = xi0s[v]
         yi0 = yi0s[v]
         total = 0

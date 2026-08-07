@@ -8,7 +8,7 @@ if int(sys.version_info.major) == 2:
 else:
     from ImageD11.sinograms.voxel_mask import (
         VoxelSinoMasker, fill_voxel_idx, max_candidates,
-        save_peak_index, load_peak_index)
+        save_peak_index_cache, load_peak_index_cache)
 
 
 YSTEP = 2.0
@@ -206,9 +206,9 @@ class TestIndexCache(unittest.TestCase):
         m.partition()
         idx = self._idx(m)
         fn = os.path.join(tempfile.mkdtemp(), "idx.h5")
-        save_peak_index(idx, fn, "abc123")
+        save_peak_index_cache(idx, fn, "abc123")
 
-        got = load_peak_index(fn, "abc123")
+        got = load_peak_index_cache(fn, "abc123")
         self.assertIsNotNone(got)
         for k in ("order", "omega_partitions", "dty_partitions", "usin", "ucos"):
             self.assertTrue(np.array_equal(np.asarray(got[k]), idx[k]), k)
@@ -216,10 +216,10 @@ class TestIndexCache(unittest.TestCase):
         self.assertAlmostEqual(got["ymin"], YBIN_MIN)
 
         # wrong fingerprint -> None, not a stale index
-        self.assertIsNone(load_peak_index(fn, "different"))
+        self.assertIsNone(load_peak_index_cache(fn, "different"))
 
         # mmap path must give the same values
-        mm = load_peak_index(fn, "abc123", mmap=True)
+        mm = load_peak_index_cache(fn, "abc123", mmap=True)
         self.assertIsNotNone(mm)
         self.assertTrue(np.array_equal(np.asarray(mm["dty_partitions"]),
                                        idx["dty_partitions"]))

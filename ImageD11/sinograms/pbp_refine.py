@@ -167,15 +167,16 @@ from ImageD11.sinograms.roi_iradon import run_iradon
 from ImageD11.sinograms.sinogram import save_array
 from ImageD11.sinograms.tensor_map import unitcell_to_b
 from ImageD11.sinograms.voxel_mask import (
-    _INDEX_VERSION,
     VoxelSinoMasker,
-    _peak_index_fingerprint,
+    _calc_peak_fingerprint,
     default_index_filename,
     fill_voxel_idx,
-    load_peak_index,
-    save_peak_index,
+    load_peak_index_cache,
+    save_peak_index_cache,
+    load_gve_cache,
+    save_gve_cache,
     choose_omega_bins,
-    _gve_fingerprint
+    _calc_gve_fingerprint
 )
 from ImageD11.sinograms.voxel_mask import max_candidates as vm_max_candidates
 
@@ -672,34 +673,9 @@ def _ubi_to_u_safe(ubi, U):
             U[i, j] = Ut[i, j]
     return True
 
-_GVE_H5GROUP = "PBPGveCache"
 
 
-def save_gve_cache(gve_all, filename, fingerprint):
-    with h5py.File(filename, "a") as hout:
-        if _GVE_H5GROUP in hout:
-            del hout[_GVE_H5GROUP]
-        g = hout.create_group(_GVE_H5GROUP)
-        g.attrs["fingerprint"] = fingerprint
-        g.attrs["version"] = _INDEX_VERSION
-        g.create_dataset("gve_all", data=gve_all)
 
-
-def load_gve_cache(filename, fingerprint):
-    if filename is None or not os.path.exists(filename):
-        return None
-    try:
-        with h5py.File(filename, "r") as hin:
-            if _GVE_H5GROUP not in hin:
-                return None
-            g = hin[_GVE_H5GROUP]
-            if g.attrs.get("version", -1) != _INDEX_VERSION:
-                return None
-            if g.attrs.get("fingerprint", "") != fingerprint:
-                return None
-            return g["gve_all"][:]
-    except (OSError, KeyError):
-        return None
 
 
 def build_peak_index(refine, omega_binsize="auto", omega_step=None,
@@ -723,9 +699,9 @@ def build_peak_index(refine, omega_binsize="auto", omega_step=None,
         except ValueError:
             use_cache = False
 
-    fingerprint = (_peak_index_fingerprint(refine, omega_binsize, omega_step)
+    fingerprint = (_calc_peak_fingerprint(refine, omega_binsize, omega_step)
                    if use_cache else None)
-    cached = load_peak_index(cache_filename, fingerprint) if use_cache else None
+    cached = load_peak_index_cache(cache_filename, fingerprint) if use_cache else None
 
     dtyi = np.ascontiguousarray(icolf.dtyi, dtype=np.int64)
     dbin = dtyi - int(dtyi.min())
@@ -783,7 +759,7 @@ def build_peak_index(refine, omega_binsize="auto", omega_step=None,
     if use_cache:
         refine.index_filename = cache_filename
         try:
-            save_peak_index(idx, cache_filename, fingerprint)
+            save_peak_index_cache(idx, cache_filename, fingerprint)
             if verbose:
                 print("saved peak index to %s" % cache_filename)
         except OSError as e:
@@ -821,8 +797,8 @@ def build_indexes(refine, omega_binsize="auto", omega_step=None,
 
     gve_all = None
     if use_cache and cache_filename is not None:
-        gfp = _gve_fingerprint(refine,
-            _peak_index_fingerprint(refine, omega_binsize, omega_step))
+        gfp = _calc_gve_fingerprint(refine,
+            _calc_peak_fingerprint(refine, omega_binsize, omega_step))
         gve_all = load_gve_cache(cache_filename, gfp)
         if gve_all is not None and verbose:
             print("loaded g-vectors from %s" % cache_filename)
