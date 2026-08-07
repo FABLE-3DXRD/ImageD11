@@ -1261,13 +1261,17 @@ class PBPRefine:
         self.dset.update_colfile_pars(colf, phase_name=self.phase_name)
 
         uc = unitcell.unitcell_from_parameters(colf.parameters)
+        uc.makerings(colf.ds.max(), self.ds_tol)
+        if self.forref is None:
+            self.forref = range(len(uc.ringds))
 
         sel, npks, hmax = mask_rings_by_ifrac(
             colf, self.ds_tol, colf.ds.max(), self.ifrac, uc,
             forref=self.forref, verbose=True, return_npks_hmax=True)
+        
+        # peaks we refine with
         isel = sel & (np.abs(np.sin(np.radians(colf.eta))) > self.etacut)
 
-        colf.addcolumn(isel, "isel")  # peaks selected for refinement
         dtyi = geometry.dty_to_dtyi(colf.dty, self.ystep, self.ybincens.min())
         colf.addcolumn(dtyi, "dtyi")
 
@@ -1284,7 +1288,7 @@ class PBPRefine:
             self._plot_ds = np.array(colf.ds[::step])
             self._plot_I = np.array(colf.sum_intensity[::step])
             self.colf = None
-        self.icolf = colf.copyrows(sel)
+        self.icolf = colf.copyrows(isel)
         
         self.npks = npks
         print(
@@ -1686,7 +1690,7 @@ class PBPRefine:
             np.ascontiguousarray(self.sx_grid[self.mask], dtype=np.float64),
             np.ascontiguousarray(self.sy_grid[self.mask], dtype=np.float64),
             self.y0, self.ystep, idx["ymin"],
-            idx["omega_partitions"], idx["dty_partitions"],
+            idx["dty_partitions"],
             idx["usin"], idx["ucos"]))
         maxlocal = max(maxlocal, 1)
         if verbose:

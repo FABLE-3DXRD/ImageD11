@@ -24,7 +24,7 @@ import hdf5plugin
 #  fancy-index and a counting sort away and cost less than writing them out.
 # ==========================================================================
 _PEAK_H5GROUP = "PBPPeakIndex"
-_INDEX_VERSION = 5
+_INDEX_VERSION = 6
 
 
 def _hash_cols(h, icolf, names):

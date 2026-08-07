@@ -384,13 +384,12 @@ def idxpoint(si, sj,
                                   omega[sel], sinomega[sel], cosomega[sel],
                                   xl[sel], yl[sel], zl[sel])
     eta_local = eta[sel]
-    gv_local_mask = gv                           # isel all-True within the icolf
 
     # index with masked g-vectors
     ind = ImageD11.indexing.indexer(
         unitcell=ucglobal,
         wavelength=parglobal.get("wavelength"),
-        gv=gv_local_mask,
+        gv=gv,
     )
     ind.minpks = minpks
     ind.hkl_tol = hkl_tol
@@ -586,7 +585,7 @@ class PBP:
             np.ascontiguousarray(sx, dtype=np.float64),
             np.ascontiguousarray(sy, dtype=np.float64),
             self.y0, self.ystep, M.ymin,
-            M.omega_partitions, M.dty_partitions,
+            M.dty_partitions,
             M.sinomega_bins, M.cosomega_bins))
         maxlocal = max(maxlocal, 1)
  
@@ -614,7 +613,6 @@ class PBP:
             print("could not write index cache (%s), continuing" % e)
         return idx
 
-    
     def setpeaks(self, colf, icolf_filename=None, keep_colf=True):
         """
         Given a cf_2d in RAM (colf), make an icolf in RAM which contains the selection of peaks we want to index
@@ -625,14 +623,16 @@ class PBP:
             colf.updateGeometry()  # for ds
 
         uc = unitcell.unitcell_from_parameters(colf.parameters)
+        uc.makerings(colf.ds.max(), self.ds_tol)
         self.uc = uc
+
+        if self.foridx is None:
+            self.foridx = range(len(uc.ringds))
 
         sel, npks, hmax = mask_rings_by_ifrac(
             colf, self.ds_tol, colf.ds.max(), self.ifrac, uc,
             forref=self.foridx, verbose=True, return_npks_hmax=True)
         isel = sel & (np.abs(np.sin(np.radians(colf.eta))) > self.etacut)
-
-        colf.addcolumn(isel, "isel")  # peaks selected for indexing
 
         dtyi = geometry.dty_to_dtyi(colf.dty, self.ystep, self.ymin)
         colf.addcolumn(dtyi, "dtyi")
@@ -674,10 +674,11 @@ class PBP:
         print(
             "Using for indexing:",
             self.icolf.nrows,
-            "npks, minpks, forgen",
+            "npks, minpks, forgen, foridx",
             self.npks,
             self.minpks,
             self.forgen,
+            self.foridx
         )
         self.hmax = hmax
 
