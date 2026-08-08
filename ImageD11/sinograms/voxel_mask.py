@@ -2,13 +2,36 @@
 
 Updated and slightly mangled by James Ball, 2026.
 
+A voxel at (sx,sy) is illuminated when:
+| y0 - sx*sin(omega) - sy*cos(omega) - dty | <= ystep
+for one voxel that traces a sinusoid in (omega, dty) space.
+The thing we want to avoid is finding the peaks for a given (sx,sy) by
+testing this predicate against every peak in the sinogram, which is very slow.
 
-DEFINITIONS
+We do this in the following way (see VoxelSinoMasker.partition() for details):
+1. We bin the peaks in omega and dty, either by supplied bin edges or by a heuristic that guesses a good bin size.
+2. We sort the peaks by omega (primary) and dty (secondary) using their bin indices to determine a peak ordering
+3. We make partition arrays, which track the start of each omega and dty bin in the sorted arrays
+omega_partitions[i] is the index of the first (sorted) peak in omega bin i
+dty_partitions[i,j] is the index of the first (sorted) peak in omega bin i and dty bin j
+4. We precompute sin(omega) and cos(omega) for each peak for speed
+5. We precompute sin(omega_bin) and cos(omega_bin) for each omega bin for speed
 
-- Peak index
-The (omega frame, dtyi) CSR and the permutation.
-Depends on omega, dty, dtyi, ystep, y0, mask shape.
-Used by both indexing and refinement
+Then, to find the peaks that illuminate a voxel at (sx,sy) (see fill_voxel_idx() for details):
+1. We walk the omega bins, and for each bin compute the dty value of the voxel at that omega
+2. We determine the dty bin that corresponds to that dty value
+3. We determine the corresponding dty bin for the -next- omega bin
+4. This tells us, as a function of omega, which dty bins we need to visit to find the peaks that illuminate the voxel
+5. We walk the omega bins again, computing the y coordinate of the voxel at that omega, and the corresponding dty bin
+6. Including the dty bin padding from the previous step, we now know the dty partitions to visit for this omega bin
+7. We get the start and end indices from dty_partitions and omega_partitions
+8. Within an omega partition, peaks are monotonically increasing in dty, so we can just do peaks[start:end]
+9. For any peak in that range, we compute the exact y distance to the voxel and check if it is within ystep. If so, we keep it.
+10. We fill the idx_buffer and ydist_buffer with the indices and distances of the peaks that illuminate the voxel.
+We also keep track of how many peaks we found (m), and return that number. If the buffers are too small, we return -1.
+
+We now have an idx_buffer and ydist_buffer that contain the indices and distances of the peaks that illuminate the voxel at (sx,sy).
+By just returning the first m elements of the buffers, we can avoid any memory allocation and reuse the buffers for all voxels in a grid.
 """
 
 import os, sys
@@ -289,7 +312,21 @@ def load_gve_cache(filename, gve_fingerprint):
         return None
 
 # -------- OMEGA BINNING -------- #
-# Here we have a few different functions that give us an omega bin index for each peak.
+# A voxel at (sx,sy) is illuminated when:
+# | y0 - sx*sin(omega) - sy*cos(omega) - dty | <= ystep
+# for one voxel that traces a sinusoid in (omega, dty) space.
+# The thing we want to avoid is finding the peaks for a given (sx,sy) by
+# testing this predicate against every peak in the sinogram, which is very slow.
+# 
+# Instead:
+# 1. Put peaks into (omega, dty) bins
+# 2. Given a (sx,sy) voxel, walk over omega bins
+# 3. For each omega bin, compute the dty range that satisfies the predicate
+# 4. Use the dty partition to find the peaks in that range, and test the predicate on them.
+# 
+# This is basically a heirarchical spatial hash: the omega bins are the first level,
+# and the dty bins are the second level.
+# 
 # We can choose different ways to do this based on what information we have:
 # 1. Frame number
 # If you segmented recently, you'll have frame number available in cf_2d
@@ -491,8 +528,8 @@ def choose_omega_bins(manager, omega, omega_binsize="auto", omega_step=None,
 
 @numba.njit(cache=True)
 def fill_voxel_idx(
-    xi0,
-    yi0,
+    sx,
+    sy,
     y0,
     ystep,
     ymin,
@@ -514,8 +551,8 @@ def fill_voxel_idx(
     the entire sinogram.
 
     Args:
-        xi0 (:obj:`float`): The x-coordinate of the voxel position in sample coordinates.
-        yi0 (:obj:`float`): The y-coordinate of the voxel position in sample coordinates.
+        sx (:obj:`float`): The x-coordinate of the voxel position in sample coordinates.
+        sy (:obj:`float`): The y-coordinate of the voxel position in sample coordinates.
         y0 (:obj:`float`): Rotaiton axis offset.
         ystep (:obj:`float`): The y-step size. Voxels with centroids within ystep from the beam
             center are masked.
@@ -554,10 +591,14 @@ def fill_voxel_idx(
     y_bins_diff = np.empty(n_bins, dtype=np.int64)
     inv_ystep = 1.0 / ystep
 
-    y_prev = y0 - xi0 * sin_omega_bins[0] - yi0 * cos_omega_bins[0]
+    # First dty value for the first omega bin
+    y_prev = y0 - sx * sin_omega_bins[0] - sy * cos_omega_bins[0]
 
+    # Loop over omega bins
+    # This lets us work out how many dty bins we need to consider for each omega bin, so that we don't miss any peaks.
     for i in range(n_bins - 1):  # every omega partition bin...
-        y_next = y0 - xi0 * sin_omega_bins[i + 1] - yi0 * cos_omega_bins[i + 1]
+        y_next = y0 - sx * sin_omega_bins[i + 1] - sy * cos_omega_bins[i + 1]
+        # Difference in y between the next bin and the previous bin
         diff = (
             y_next - y_prev
         )  # TODO: this is a safe upper bound, but it could likely be tightened with a second order Taylor or similar.
@@ -579,7 +620,7 @@ def fill_voxel_idx(
     buffer_size = idx_buffer.size
     for i in range(n_bins):  # for every omega bin...
         # compute where we are in y
-        y = y0 - xi0 * sin_omega_bins[i] - yi0 * cos_omega_bins[i]
+        y = y0 - sx * sin_omega_bins[i] - sy * cos_omega_bins[i]
 
         # convert to integer index
         # floor(x + 0.5), not int(x + 0.5): int() truncates toward zero and so
@@ -593,6 +634,7 @@ def fill_voxel_idx(
         dty_partition_padding = y_bins_diff[i]
 
         padded_low = y_index - dty_partition_padding
+        # clip to the valid range of dty partitions, which is [0, row_len-1]
         if padded_low < 0:
             padded_low = 0
         padded_high = y_index + dty_partition_padding + 1
@@ -600,12 +642,14 @@ def fill_voxel_idx(
             padded_high = row_len_minus_1
 
         # if there is simply no scan close to the voxel for this omega bin, then skip it completely.
-        # this corre
         if padded_high <= 0:
             continue
 
         if padded_low >= row_len_minus_1:
             continue
+
+        # if we got here, for a given (sx,sy) voxel, at this omega,
+        # there is a dty sub-partition that we need to consider.
 
         # get the safe start and end of the dty sub-partition for this omega bin
         dty_partition_start = dty_partitions[i, padded_low]
@@ -614,7 +658,7 @@ def fill_voxel_idx(
         # get the start of the omega partition
         omega_partition_start = omega_partitions[i]
 
-        # iterate over the feasible dty chunk in global indices
+        # iterate over the feasible dty chunk in global peak indices
         for j in range(
             omega_partition_start + dty_partition_start,
             omega_partition_start + dty_partition_end,
@@ -623,7 +667,7 @@ def fill_voxel_idx(
             dty_val = dty_sorted[j]
             s = sin_omega_sorted[j]
             c = cos_omega_sorted[j]
-            ydist = abs(y0 - xi0 * s - yi0 * c - dty_val)
+            ydist = abs(y0 - sx * s - sy * c - dty_val)
 
             # Check if the peak is within ystep of the voxel centroid
             # if so, then keep it.
@@ -639,8 +683,8 @@ def fill_voxel_idx(
 
 @numba.njit(cache=True)
 def get_voxel_idx(
-    xi0,
-    yi0,
+    sx,
+    sy,
     y0,
     ystep,
     ymin,
@@ -660,7 +704,7 @@ def get_voxel_idx(
         :obj:`ValueError`: If the buffer arrays are too small. Then simply try to set your buffer size larger.
     """
     m = fill_voxel_idx(
-        xi0, yi0, y0, ystep, ymin,
+        sx, sy, y0, ystep, ymin,
         omega_partitions, dty_partitions, dty_sorted,
         sin_omega_sorted, cos_omega_sorted,
         sin_omega_bins, cos_omega_bins,
@@ -673,8 +717,8 @@ def get_voxel_idx(
 
 @numba.njit(cache=True, parallel=True)
 def max_candidates(
-    xi0s,
-    yi0s,
+    sx_arr,
+    sy_arr,
     y0,
     ystep,
     ymin,
@@ -682,26 +726,53 @@ def max_candidates(
     sin_omega_bins,
     cos_omega_bins,
 ):
-    """Upper bound on how many peaks any of these voxels can pull out.
+    """Upper bound on how many peaks can be found per voxel.
 
-    Walks the same omega bins and dty sub-partitions as fill_voxel_idx() but
-    reads only the partition offsets, never the peak data. Use it to size the
-    buffers up front so fill_voxel_idx() can never signal an overflow, which
-    is what you want when calling it from a prange.
+    Works very similarly to fill_voxel_idx().
+    Here, we only read the partition offsets to find out how many peaks are in the dty sub-partition for each omega bin.
+    We never compute the predicate on a peak level, so this remains fast.
+    This is used to determine the appropriate buffer size for the idx_buffer and ydist_buffer that are used in fill_voxel_idx().
+
+    Parameters
+    ----------
+    sx_arr
+        Array of x-coordinates of the voxel positions in sample coordinates.
+    sy_arr
+        Array of y-coordinates of the voxel positions in sample coordinates.
+    y0
+        The rotation axis offset.
+    ystep
+        The y-step size.
+    ymin
+        The minimum y-coordinate.
+    dty_partitions
+        The dty partitions.
+    sin_omega_bins
+        The sin_omega bins.
+    cos_omega_bins
+        The cos_omega bins.
+
+    Returns
+    -------
+        The maximum number of candidates across all supplied voxels
     """
+
     n_bins = sin_omega_bins.size
     row_len_minus_1 = dty_partitions.shape[1] - 1
     inv_ystep = 1.0 / ystep
-    best = np.zeros(xi0s.size, dtype=np.int64)
-    for v in numba.prange(xi0s.size):  # ty: ignore[not-iterable]
-        xi0 = xi0s[v]
-        yi0 = yi0s[v]
+    best = np.zeros(sx_arr.size, dtype=np.int64)
+    # loop over voxels in parallel
+    for v in numba.prange(sx_arr.size):  # ty: ignore[not-iterable]
+        sx = sx_arr[v]
+        sy = sy_arr[v]
         total = 0
-        y_prev = y0 - xi0 * sin_omega_bins[0] - yi0 * cos_omega_bins[0]
+        # compute the y-value for the first omega bin
+        y_prev = y0 - sx * sin_omega_bins[0] - sy * cos_omega_bins[0]
         pad = 1
+        # loop over other omega bins
         for i in range(n_bins):
             if i + 1 < n_bins:
-                y_next = y0 - xi0 * sin_omega_bins[i + 1] - yi0 * cos_omega_bins[i + 1]
+                y_next = y0 - sx * sin_omega_bins[i + 1] - sy * cos_omega_bins[i + 1]
                 diff = y_next - y_prev
                 if diff < 0.0:
                     diff = -diff
@@ -716,6 +787,7 @@ def max_candidates(
             if padded_high > row_len_minus_1:
                 padded_high = row_len_minus_1
             if padded_high > 0 and padded_low < row_len_minus_1:
+                # Count the number of peaks in the dty sub-partition for this omega bin
                 total += dty_partitions[i, padded_high] - dty_partitions[i, padded_low]
             y_prev = y_next
         best[v] = total
@@ -732,6 +804,9 @@ class VoxelSinoMasker:
 
     The partition scheme is built on the assumption that the scan defines a regular grid in dty. Omega values can be
     arbitrary, (i.e merged 3d peaks should work as well as single 2d peaks).
+
+    omega_partitions[i] is the index of the first (sorted) peak in omega bin i
+    dty_partitions[i,j] is the index of the first (sorted) peak in omega bin i and dty bin j
 
     Adaptable omega bin sizes are used to chunk the data over angles. For a call to mask() the algorithm then
     oterates over the omega bins and collects partitions of dty values that are candidates for the voxel.
@@ -791,6 +866,13 @@ class VoxelSinoMasker:
         self.omega_partitions = None
         self.omega_bins = None
         self.dty_partitions = None
+    
+    def __str__(self):
+        return (f"VoxelSinoMasker(n_peaks={self.n_peaks}, "
+                f"omega_range=[{self.omega.min():.2f}, {self.omega.max():.2f}], "
+                f"dty_range=[{self.dty.min():.6g}, {self.dty.max():.6g}], "
+                f"dty_stepsize={self.dty_stepsize:.6g}, "
+                f"omega_binsize={self.omega_binsize})")
 
     def _heuristic_omega_binsize(self):
         # find the omega binsize such that for any voxel on a regular grid
@@ -833,7 +915,7 @@ class VoxelSinoMasker:
         For a finer omega_binsize the algorithm can decrease the size of the dty partitions it needs to visit, however,
         more omega bins are then required. For any dataset there exists an optimal omega_binsize that minimizes the number
         of flops. This can also be machine dependent, so for absolutely best performance you should test different values.
-        However, the defualt heuristic should be very performant for most datasets.
+        However, the default heuristic should be very performant for most datasets.
 
         Args:
             omega_binsize (:obj:`float`): The omega bin size. If None, a heuristic will be used to find a good value. (degrees)
@@ -854,6 +936,9 @@ class VoxelSinoMasker:
         Raises:
             :obj:`ValueError`: If the omega binsize is not set and the heuristic fails to find a good value.
         """
+        # Prepare the omega bins
+        # Depends on whether the caller has supplied a frm column/obincens or not. If they have, we can use that to get the exact binning.
+        # Otherwise, we need to use the heuristic to find a good binning.
         if omega_bin_indices is not None:
             # caller supplied the binning, e.g. exact frames decoded from a
             # frame number column
@@ -876,14 +961,19 @@ class VoxelSinoMasker:
             max_idx = omega_bin_indices.max()
             omega_bins = omin + self.omega_binsize * np.arange(max_idx + 1)
 
+        # Lexsort by dty first, then omega, so that the omega partitions are contiguous and the dty partitions are contiguous within each omega partition.
+        # omega_bin_indices is npeaks long and could be unsorted
         peak_ordering = np.lexsort((self.dty, omega_bin_indices))
         omega_bin_indices_sorted = omega_bin_indices[peak_ordering]
+        # work out the length of each omega partition and the start of each partition in the sorted array
         omega_partition_lengths = np.bincount(omega_bin_indices_sorted, minlength=omega_bins.size)
         omega_partitions = np.zeros(omega_bins.size + 1, dtype=np.int64)
         omega_partitions[1:] = np.cumsum(omega_partition_lengths)
 
         # get also the dty partitions
+        # sort them in the same way as omega
         dty_sorted = self.dty[peak_ordering]
+        # this is dtyi
         dty_bin_indices = np.round((dty_sorted - self.ymin) / self.dty_stepsize).astype(
             np.int64
         )
@@ -937,10 +1027,10 @@ class VoxelSinoMasker:
  
         if inplace:
             # saves memory, but overwrites the arrays the caller handed us
-            self.dty[:] = self.dty[peak_ordering]
+            self.dty[:] = dty_sorted
             self.omega[:] = self.omega[peak_ordering]
         else:
-            self.dty = self.dty[peak_ordering]
+            self.dty = dty_sorted
             self.omega = self.omega[peak_ordering]
         self.sinomega = np.sin(np.radians(self.omega))
         self.cosomega = np.cos(np.radians(self.omega))
