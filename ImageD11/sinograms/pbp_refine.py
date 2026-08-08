@@ -699,7 +699,7 @@ def build_partition(refine, omega_binsize="auto", omega_step=None,
     refine.index_fingerprint = index_fingerprint
 
     dtyi = np.ascontiguousarray(icolf.dtyi, dtype=np.int64)
-    dbin = dtyi - int(dtyi.min())
+    dbin = dtyi
 
     if cached is not None:
         if verbose:
@@ -788,7 +788,7 @@ def build_indexes(refine, omega_binsize="auto", omega_step=None,
         "sum_intensity": col("sum_intensity"),
         "sinomega": col("sinomega"), "cosomega": col("cosomega"),
         "omega": col("omega"), "dty": col("dty"),
-        "dtyi": np.ascontiguousarray(dbin[order]),
+        "dtyi": col("dtyi", np.int64),
         "xpos": col("xpos_refined"),
     }
 
