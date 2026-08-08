@@ -407,7 +407,7 @@ def _omega_bin_index_from_frm(manager, omega, verbose=True):
             iscan = frm // om_img.shape[1]
             db = np.asarray(icolf.dtyi, dtype=np.int64)
             note = (", scan row agrees with dty bin for %.1f%% of peaks"
-                    % (100.0 * float((iscan == db - db.min()).mean())))
+                    % (100.0 * float((iscan == db).mean())))
         print("omega bins via frm: %d bins (%d with peaks), %.1f peaks/bin, "
               "|omega - bin centre| max %.5f deg%s"
               % (len(cens), live, frm.size / max(live, 1), dev, note))
