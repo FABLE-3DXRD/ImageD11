@@ -278,31 +278,43 @@ def select_point_peaks(si, sj, ystep, y0, ymin,
                        sinomega, cosomega, dty, dtyi,
                        sinomega_bins, cosomega_bins,
                        idx_buf, ydist_buf, out, relax):
-    """
-    Peaks that put step-space point (si, sj) in the beam.
- 
+    """Peaks that put step-space point (si, sj) in the beam.
+
+    Wraps fill_voxel_idx() but with an optional stricter predicate (relax=False)
+    The original geometry.dtyimask_from_step_sincos() predicate is exact equality of the dtyi bin
+    The voxel_mask predicate is |.| <= ystep, which is the two nearest rows -- exactly 2x the peaks
+     
     relax=False reproduces geometry.dtyimask_from_step_sincos exactly:
         dty_to_dtyi(y0 - sx sin(w) - sy cos(w)) == dtyi
-    i.e. only the nearest scan row at each omega.
- 
-    relax=True uses the refiner's predicate, |.| <= ystep, which is the two
-    nearest rows -- exactly 2x the peaks on a 275-row scan, all of the extra
-    ones one scan row away. Different question, not a tolerance to tune: bin
-    equality asks "was this peak measured at the scan position that puts this
-    voxel in the beam", which is what you want when deciding what sits at
-    (si, sj). The refiner pairs the looser form with a 1/(ydist+r) weight;
-    the indexer has no weighting, so relaxing doubles the vote of
-    neighbouring material at full strength.
- 
-    ymin MUST be the same origin the dtyi column was built with -- normally
-    ds.ybincens.min(), not the partition's lowest observed dty. They differ
-    by however many outer scan rows have no surviving peaks, and the
-    selection is then offset by that many rows at every point.
- 
-    All peak arrays must be in partition order. Returns the number written
-    into `out`, or -1 if the buffers were too small (never raises -- this
-    runs per point in worker processes, where a raise is a silent skip).
+
+    Fills idx_buf, ydist_buf and out (sel_buf) inplace
+
+
+    Parameters
+    ----------
+    si, sj
+        Sample indices in step space
+    ystep, y0, ymin
+        Passed to fill_voxel_idx()
+    omega_partitions, dty_partitions
+        See VoxelSinoMasker documentation
+    sinomega, cosomega, dty, dtyi
+        Columnfile columns, needed for the stricter predicate when relax=False
+    sinomega_bins, cosomega_bins
+        See VoxelSinoMasker documentation
+    idx_buf, ydist_buf
+        Buffers for fill_voxel_idx() to write into
+    out
+        sel_buf: stricter version of idx_buf when relax=False
+    relax
+        Use voxel_mask predicate (|.| <= ystep) instead of exact equality of the dtyi bin
+
+    Returns
+    -------
+    m
+        Number of peaks written into out, or -1 if nothing was written because the buffers were too small
     """
+
     sx = si * ystep
     sy = -sj * ystep          # geometry.step_to_sample: note the sign on sy
  
@@ -310,10 +322,10 @@ def select_point_peaks(si, sj, ystep, y0, ymin,
                        omega_partitions, dty_partitions, dty,
                        sinomega, cosomega, sinomega_bins, cosomega_bins,
                        idx_buf, ydist_buf)
-    if n < 0:
+    if n < 0:  # buffer too small, catch and return -1 to the caller
         return -1
  
-    if relax:
+    if relax:  # match voxel_mask predicate, so just return the peaks that fill_voxel_idx() found
         for t in range(n):
             out[t] = idx_buf[t]
         return n
@@ -338,34 +350,60 @@ def idxpoint(si, sj,
     ystep=2.00, y0=0.0, ymin=-2.00, minpks=1000, hkl_tol=0.1,
     ds_tol=0.005, cosine_tol=np.cos(np.radians(90 - 0.1)), forgen=None, hmax=-1,
     uniqcut=0.75, relax_mask=False):
-    """
-    Indexing function called at one point in space.
+    """Indexing function called at one point in space.
+    
     Selects peaks from the sinogram and attempts to index.
-    More of this could be indexing.py I guess.
 
-    si, sj = position in step space (origin is rotation axis)
+    Parameters
+    ----------
+    si, sj
+        Voxel indices in step space
+    omega, sinomega, cosomega, dty, dtyi, xl, yl, zl, eta
+        Columnfile columns, already permuted to partition order
+    omega_partitions
+        omega_partitions[i] is the index of the first (sorted) peak in omega bin i
+    dty_partitions
+        dty_partitions[i,j] is the index of the first (sorted) peak in omega bin i and dty bin j
+    sinomega_bins, cosomega_bins
+        For speed
+    idx_buf
+        Buffer - will be filled with the indices of the peaks that put (si, sj) in the beam
+    ydist_buf
+        Buffer - will be filled with the ydist of the peaks that put (si, sj) in the beam
+    sel_buf
+        Buffer - used if relax_mask=False to select the peaks that put (si, sj) in the beam and satisfy the stricter predicate
+    ystep, y0, ymin
+        Passed to fill_voxel_idx()
+    minpks, optional
+        number of peaks to find with rings, by default 1000
+    hkl_tol, optional
+        ImageD11 tolerance of indexed == | h-int(h) | < hkl_tol, by default 0.1
+    ds_tol, optional
+        Ring assignment tolerance, by default 0.005
+    cosine_tol, optional
+        Cosine tolerance for finding pairs of peaks, by default np.cos(np.radians(90 - 0.1))
+    forgen, optional
+        Rings to generate orientations, by default None
+    hmax, optional
+        Maximum hkl value, by default -1
+    uniqcut, optional
+        Unique peaks cutoff (uniq> ucut * max are returned), by default 0.75
+    relax_mask, optional
+        Use previously-used stricter predicate for ydist, by default False
 
-    Effectively a columnfile:
-        sinomega = column of sinomega
-        cosomega = column of cosomega
-        dtyi = column of dty on integer bins
-        gx/gy/gz/eta = peak co-ordinates
+    Returns
+    -------
+        list of (npks, nuniq, ubi)
 
-    ystep, y0 = compute the dtyi bins to select peaks (dtymask function above)
-
-    forgen = the rings to use for INDEXING / orientation searching (a speedup effect)
-
-    minpks = number of peaks to find with rings
-    hkl_tol = ImageD11 tolerance of indexed == | h-int(h) | < hkl_tol
-    cosine_tol = ImageD11 tolerance for finding pairs of peaks
-
-    uniqcut = unique peaks cutoff (uniq> ucut * max are returned)
-
-    returns a list of :
-        (npks, nuniq, ubi)
+    Raises
+    ------
+    ValueError
+        If peak buffer too small for this point. This shouldn't happen if max_canidates was computed correctly
     """
-    cImageD11.cimaged11_omp_set_num_threads(1)
-    # args    isel, omega, dtyi, gx, gy, gz
+    cImageD11.cimaged11_omp_set_num_threads(1)  # ty: ignore[unresolved-attribute]
+
+    # fill idx_buf, ydist_buf, sel_buf
+    # idx_buf and sel_buf are peak indices into the partitioned columns
     npk = select_point_peaks(
         si, sj, ystep, y0, ymin,
         omega_partitions, dty_partitions,
@@ -378,11 +416,14 @@ def idxpoint(si, sj,
             "the standard grid; this point is outside it" % (si, sj))
     if npk == 0:
         return [(0, 0, np.eye(3))]
-    sel = sel_buf[:npk]                          # icolf rows directly
+    # sel_buf is sized for max_candidates, but only the first npk entries are valid
+    sel = sel_buf[:npk] # indices to icolf
 
-    gv, gx, gy, gz = get_local_gv(si, sj, ystep,
-                                  omega[sel], sinomega[sel], cosomega[sel],
-                                  xl[sel], yl[sel], zl[sel])
+    gv, gx, gy, gz = get_local_gv(
+        si, sj, ystep,
+        omega[sel], sinomega[sel], cosomega[sel],
+        xl[sel], yl[sel], zl[sel]
+    )
     eta_local = eta[sel]
 
     # index with masked g-vectors
@@ -487,9 +528,10 @@ def initializer(parfile, phase_name, symmetry, colfile, index_filename,
                 % index_filename)
  
         n = partglobal["maxlocal"]
-        bufglobal = dict(idx=np.empty(n, np.int64),
-                         ydist=np.empty(n, np.float64),
-                         sel=np.empty(n, np.int64))
+        bufglobal = {
+            "idx": np.empty(n, np.int64),
+            "ydist": np.empty(n, np.float64),
+            "sel": np.empty(n, np.int64)}
     except Exception:
         # Pool discards initializer exceptions and respawns the worker, so a
         # failure here is an invisible infinite loop that looks like a
@@ -553,16 +595,17 @@ class PBP:
         self.index_fingerprint = None
 
     def _build_index(self, verbose=True):
-        """Cache the partition setpeaks built, beside the icolf.
- 
-        Construction differs from PBPRefine -- there is no reconstruction
-        mask here, so no r_max and no ray_margin -- but the partition, the
-        omega binning, the fingerprint and the cache format are shared.
-        """
+        """Take a pre-generated partition, size the buffers with max_candidates, cache it to disk
+        ready for memmap in the workers. Returns the partition dictionary."""
+
+        # Determine the cache filename
         self.index_filename = default_index_filename(self)
+        # Compute a fingerprint of the peaks and parameters that affect the partition
+        # Without this, it would be easy to load invalid caches that no longer apply to us
         fp = _calc_peak_fingerprint(self)
         self.index_fingerprint = fp
- 
+
+        # Try to load the cache from disk
         cached = load_peak_index_cache(self.index_filename, fp)
         if cached is not None:
             if verbose:
@@ -570,17 +613,27 @@ class PBP:
                       " maxlocal %s)" % (self.index_filename, cached["nom"],
                                          cached["ndty"], cached["maxlocal"]))
             return cached
- 
+
+        # If we got here, we don't have a cache, or it's stale.
+        # The partition is already built in self._masker,
+        # now we need to size the buffers and cache for mem-map in the workers.
         M = self._masker
+        # Number of omega bins
         nom = int(M.sinomega_bins.size)
+        # Number of dty bins - bin edges - 1
         ndty = int(M.dty_partitions.shape[1]) - 1
  
         # Worst case peaks any point can pull out, so the workers size their
         # buffers exactly. Uses the refiner's |.| <= ystep predicate, which
         # is a superset of bin equality, so it bounds both relax settings.
+
+        # Determine the worst-case number of peaks any voxel could access
+        # This is possible because we know the voxel grid we would visit
+        # First, get the sx, sy arrays
         pts = np.asarray(geometry.step_grid_from_ybincens(
             self.ybincens, self.ystep, 1, self.y0))
         sx, sy = geometry.step_to_sample(pts[:, 0], pts[:, 1], self.ystep)
+        # Max size of buffers
         maxlocal = int(vm_max_candidates(
             np.ascontiguousarray(sx, dtype=np.float64),
             np.ascontiguousarray(sy, dtype=np.float64),
@@ -588,14 +641,19 @@ class PBP:
             M.dty_partitions,
             M.sinomega_bins, M.cosomega_bins))
         maxlocal = max(maxlocal, 1)
- 
-        idx = dict(order=M.peak_ordering,
-                   omega_partitions=M.omega_partitions,
-                   dty_partitions=M.dty_partitions,
-                   usin=M.sinomega_bins, ucos=M.cosomega_bins,
-                   nom=nom, ndty=ndty, ymin=float(M.ymin),
-                   ray_margin=0.0, dev=0.0,     # refiner-only, unused here
-                   maxlocal=maxlocal)
+
+        # Big dictionary of anything that could change the partitioning
+        # This is what is mem-mapped in the workers, so they can size their buffers and select peaks
+        # Also helps with running on the cluster
+        idx = {
+            "order": M.peak_ordering,
+            "omega_partitions": M.omega_partitions,
+            "dty_partitions": M.dty_partitions,
+            "usin": M.sinomega_bins, "ucos": M.cosomega_bins,
+            "nom": nom, "ndty": ndty, "ymin": float(M.ymin),
+            "ray_margin": 0.0, "dev": 0.0,     # refiner-only, unused here
+            "maxlocal": maxlocal
+        }
         if verbose:
             print("indexing partition: %d omega bins x %d dty bins = %d "
                   "cells, %.1f peaks/cell, worst-case %d peaks/point"
@@ -606,6 +664,7 @@ class PBP:
                       "sparse and traversal will dominate. Check whether the "
                       "frm decode ran; the heuristic over-refines without it.")
         try:
+            # Now cache the partition to disk for future runs
             save_peak_index_cache(idx, self.index_filename, fp)
             if verbose:
                 print("saved peak index to %s" % self.index_filename)
@@ -651,20 +710,20 @@ class PBP:
             self._plot_I = np.array(colf.sum_intensity[::step])
             self.colf = None
         self.icolf = colf.copyrows(isel)
- 
+
         omega = np.ascontiguousarray(self.icolf.omega, dtype=np.float64)
         dty = np.ascontiguousarray(self.icolf.dty, dtype=np.float64)
- 
+
+        # Choose omega bins for the partitioning of the icolf
         kw, _ = choose_omega_bins(self, omega, verbose=True)
+
+        # Now build the partition, for fast selection of peaks at each point in the scan.
         masker = VoxelSinoMasker(omega, dty, self.ystep, ymin=self.ymin)
         masker.partition(keep_columns=False, **kw)
- 
-        # put the peaks in partition order on disk so the workers can mmap
-        # the columns and do no reordering at all
-        self.icolf = self.icolf.copyrows(masker.peak_ordering)
         self._masker = masker          # _build_index reuses it
- 
-        self.npks = npks
+
+        # Reorder the icolf to match the partitioning, so that the partition indices are valid for the icolf
+        self.icolf.reorder(masker.peak_ordering)
 
         # now we can compute npks too
         if self.fpks < 1:
@@ -675,7 +734,7 @@ class PBP:
             "Using for indexing:",
             self.icolf.nrows,
             "npks, minpks, forgen, foridx",
-            self.npks,
+            npks,
             self.minpks,
             self.forgen,
             self.foridx
@@ -683,6 +742,7 @@ class PBP:
         self.hmax = hmax
 
         # now save the peaks to disk
+
         if icolf_filename is None:
             icolf_filename = self.dset.icolfile
         if os.path.exists(icolf_filename):
@@ -691,6 +751,8 @@ class PBP:
 
         self.icolf_filename = icolf_filename
 
+        # Prepare the partition index for memory mapping in the workers
+        # It is actually mem-mapped in the initializer
         self._build_index()
 
 

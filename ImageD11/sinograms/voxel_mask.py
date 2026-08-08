@@ -32,18 +32,21 @@ We also keep track of how many peaks we found (m), and return that number. If th
 
 We now have an idx_buffer and ydist_buffer that contain the indices and distances of the peaks that illuminate the voxel at (sx,sy).
 By just returning the first m elements of the buffers, we can avoid any memory allocation and reuse the buffers for all voxels in a grid.
+These buffers can be optimally sized for a given (sx,sy) grid - see max_candidates for details.
 """
 
-import os, sys
+import hashlib
+import os
+import sys
+
+import h5py
 import numba
 import numpy as np
-import hashlib
-import h5py
 
 # -------- CACHING -------- #
-# We often go between a local machine and one/many cluster machines.
-# To avoid re-computing the peak index all the time, we can cache it to disk.
-# This is loaded when needed.
+# It is handy to cache the results of a partition to disk, so that we can reuse it later without recomputing it.
+# This is useful for memory-mapping between workers (pbp indexing)
+# and also going between a local machine and a cluster machine.
 # Caches are fingerprinted to make sure we don't accept an invalid cache.
 
 _CACHE_VERSION = 6
@@ -64,7 +67,8 @@ def _hash_cols(h, icolf, names):
 ## Fingerprinting
 
 def _calc_peak_fingerprint(manager, omega_binsize="auto", omega_step=None):
-    """Make a fingerprint of everything that's required to build a peak index.
+    """Make a fingerprint of everything that's required to use a
+    previously-computed partition to mask peaks for a given voxel.
 
     Works for both PBPRefine and PBP: the reconstruction grid shape is only
     included when there is one.
@@ -331,6 +335,10 @@ def load_gve_cache(filename, gve_fingerprint):
 # 1. Frame number
 # If you segmented recently, you'll have frame number available in cf_2d
 # It's a direct lookup from frame number to omega bin index
+# 2. dset.obinedges
+# If you segmented before frame number was available, you can use the dset.obinedges to bin omega
+# 3. Heuristic
+# If you don't have either of the above, we can use a heuristic to bin omega based on the dty bins
 
 def _omega_bin_index_from_frm(manager, omega, verbose=True):
     """Omega bin index via the per-peak frame number.
@@ -354,11 +362,11 @@ def _omega_bin_index_from_frm(manager, omega, verbose=True):
     Returns
     -------
     iomega
-        Like dtyi but for omega. Integer omega_steps away from omega min.
+        Omega bin indices per peak
     cens
-        ???
+        Omega bin centers
     dev
-        ???
+        Maximum deviation from bin centers
     """
 
     icolf = manager.icolf
@@ -429,9 +437,9 @@ def _omega_bin_index(manager, omega, omega_step=None, verbose=True):
     Returns
     -------
     iomega
-        Like dtyi but for omega. Integer omega_steps away from omega min.
+        Omega bin indices per peak
     cens
-        ???
+        Omega bin centers
     """
 
     dset = getattr(manager, "dset", None)
@@ -477,7 +485,7 @@ def choose_omega_bins(manager, omega, omega_binsize="auto", omega_step=None,
 
     An explicit omega_step or omega_binsize overrides all three.
 
-    obj needs .icolf and .dset; both PBPRefine and PBP have them.
+    manager needs .icolf and .dset; both PBPRefine and PBP have them.
 
     Returns (kw, iomega) where kw goes straight to partition(**kw) and
     iomega is the per-peak bin index, or None when the heuristic is used and
@@ -516,9 +524,9 @@ def choose_omega_bins(manager, omega, omega_binsize="auto", omega_step=None,
         return dict(omega_binsize=float(omega_binsize)), None
  
     got = _omega_bin_index_from_frm(manager, omega, verbose)          # 1
-    if got is None:
+    if got is None:  # frm not available, fall back to obinedges
         got = _omega_bin_index(manager, omega, verbose=verbose)  # 2
-    if got is not None:
+    if got is not None:  # frm or obinedges passed
         # _frame_index_from_frm returns 3 values, _omega_frame_index 2;
         # the first two are the same in both
         return dict(omega_bin_indices=got[0], omega_bins=got[1]), got[0]
@@ -672,7 +680,7 @@ def fill_voxel_idx(
             # Check if the peak is within ystep of the voxel centroid
             # if so, then keep it.
             if ydist <= ystep:
-                if m >= buffer_size:
+                if m >= buffer_size:  # buffer is too small, return sentinel
                     return -1
                 idx_buffer[m] = j  # these now refer to the sorted peaks!
                 ydist_buffer[m] = ydist
@@ -1040,41 +1048,14 @@ class VoxelSinoMasker:
  
         # we default to a 5% buffer, this should be very safe, altough
         # we have fallbacks in case of a sharp corner.
+        # this can be optimised via max_candidates() if the caller knows the voxel grid in advance
         self._build_buffers(self.n_peaks // 20)
-
-    def sort_by_partitions(self, peaks):
-        """In place sorting of peak columns, such as sc, fc, sum_intensity, etc. by partitions
-
-        This method is to be called once after a desired partition has been set. The peak
-        order is then compatible with the partition indices, and can be used to mask peaks
-        fast with the class mask method for single thread test and with get_voxel_idx()
-        integrated code.
-
-        Args:
-            peaks (:obj:`np.ndarray` | :obj:`list` | :obj:`dict`): Peak columns to sort, such as sc, fc, sum_intensity, etc. shape=(n_peaks,).
-            these can be either a single column (numpy array) or a multi-column (list or dict) of columns.
-        """
-        if self.peak_ordering is None:
-            raise ValueError(
-                "Peak ordering is not set, please call partition() first to set the partition indices."
-            )
-        if isinstance(peaks, np.ndarray):
-            peaks[:] = peaks[self.peak_ordering]
-        elif isinstance(peaks, list):
-            for value in peaks:
-                self.sort_by_partitions(value)
-        elif isinstance(peaks, dict):
-            for value in peaks.values():
-                self.sort_by_partitions(value)
-        else:
-            raise ValueError("Unsupported type: {}".format(type(peaks)))
 
     def max_candidates(self, xi0s, yi0s, ystep, y0):
         """Largest number of peaks any of these voxels can pull out of the partition.
 
-        Size the buffers with this and fill_voxel_idx() can never overflow, which
-        matters when calling it from a prange where the -1 return is the only
-        signal you get.
+        If you size the buffers with this, fill_voxel_idx() can never overflow, which
+        matters when using Numba to avoid getting invalid results.
         """
         return int(
             max_candidates(
