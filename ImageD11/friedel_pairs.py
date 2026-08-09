@@ -1956,8 +1956,8 @@ def locate_eta_pairs(cf, pairs, ds=None, y0=0.):
     y = np.transpose((cf.dty[i1] - y0,
                       cf.dty[i2] - y0))
 
-    R = np.transpose(((so[i1], co[i1]),
-                      (so[i2], co[i2])), axes=(2, 0, 1))
+    R = np.transpose(((-so[i1], -co[i1]),
+                      (-so[i2], -co[i2])), axes=(2, 0, 1))
 
     sx_pairs, sy_pairs = np.linalg.solve(R, y).T
 
@@ -1996,6 +1996,14 @@ def locate_omega_pairs(cf, pairs, ds=None, y0=None):
         y0 = ds.y0
     elif y0 is None:
         y0 = 0.5 * (ds.ymax + ds.ymin)
+
+    # check tth has not been updated before. otherwise, relocation will fail
+    if np.allclose(cf.tth[i1], cf.tth[i2]):
+        raise ValueError(
+            'Geometry has already been updated with omega pairs.'
+            'Trying to relocate peaks with updated tth will return inconsistent positions'
+            '(sx,sy) coordinates should already be in cf. If not, re-run update_geometry_fpairs to get correct peak relocation'
+        )
   
     # ── dx from two-theta asymmetry — 
     tantth1 = np.tan(np.radians(cf.tth[i1]))
