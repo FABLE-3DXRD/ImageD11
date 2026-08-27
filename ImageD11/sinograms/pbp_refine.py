@@ -163,7 +163,6 @@ from ImageD11.sinograms.tensor_map import unitcell_to_b
 from ImageD11.sinograms.voxel_mask import (
     VoxelSinoMasker,
     choose_omega_bins,
-    default_index_filename,
     fill_voxel_idx,
 )
 from ImageD11.sinograms.voxel_mask import max_candidates as vm_max_candidates
@@ -310,6 +309,55 @@ def _det3(m):
     )
 
 
+@numba.njit(cache=True, inline="always")
+def _sv_extremes(m):
+    """Largest and smallest singular value of a 3x3, with no allocation.
+ 
+    They are the square roots of the extreme eigenvalues of m m^T, and a
+    symmetric 3x3 eigenvalue problem has a closed form (Cardano, in the
+    stable Deledalle/Smith arrangement). Squaring the matrix squares the
+    condition number, so smin here is only trustworthy while cond(m) is below
+    about 1e7 -- see _well_conditioned, which is what uses it.
+    """
+    a00 = m[0, 0] * m[0, 0] + m[0, 1] * m[0, 1] + m[0, 2] * m[0, 2]
+    a11 = m[1, 0] * m[1, 0] + m[1, 1] * m[1, 1] + m[1, 2] * m[1, 2]
+    a22 = m[2, 0] * m[2, 0] + m[2, 1] * m[2, 1] + m[2, 2] * m[2, 2]
+    a01 = m[0, 0] * m[1, 0] + m[0, 1] * m[1, 1] + m[0, 2] * m[1, 2]
+    a02 = m[0, 0] * m[2, 0] + m[0, 1] * m[2, 1] + m[0, 2] * m[2, 2]
+    a12 = m[1, 0] * m[2, 0] + m[1, 1] * m[2, 1] + m[1, 2] * m[2, 2]
+    q = (a00 + a11 + a22) / 3.0
+    b00 = a00 - q
+    b11 = a11 - q
+    b22 = a22 - q
+    p2 = (b00 * b00 + b11 * b11 + b22 * b22
+          + 2.0 * (a01 * a01 + a02 * a02 + a12 * a12)) / 6.0
+    if p2 <= 0.0:
+        hi = q
+        lo = q
+    else:
+        pp = np.sqrt(p2)
+        d = (b00 * (b11 * b22 - a12 * a12)
+             - a01 * (a01 * b22 - a12 * a02)
+             + a02 * (a01 * a12 - b11 * a02)) / (2.0 * pp * pp * pp)
+        if d < -1.0:
+            d = -1.0
+        if d > 1.0:
+            d = 1.0
+        phi = np.arccos(d) / 3.0
+        hi = q + 2.0 * pp * np.cos(phi)
+        lo = q + 2.0 * pp * np.cos(phi + 2.0943951023931953)   # + 2pi/3
+        mid = 3.0 * q - hi - lo
+        if lo > mid:
+            lo = mid
+        if hi < mid:
+            hi = mid
+    if lo < 0.0:
+        lo = 0.0
+    if hi < 0.0:
+        hi = 0.0
+    return np.sqrt(hi), np.sqrt(lo)
+
+
 @numba.njit(cache=True)
 def _chol_solve(A, B, n, nrhs, pivot_tol):
     """
@@ -341,9 +389,64 @@ def _chol_solve(A, B, n, nrhs, pivot_tol):
             B[i, c] = s / A[i, i]
     return True
 
+@numba.njit(cache=True)
+def _well_conditioned(m, guard=1e6, cond_max=1e14):
+    """Is m of rank 3 with cond(m) < cond_max? The worth_fitting test.
+ 
+    np.linalg.svd on a 3x3 costs about 3 us and allocates LAPACK workspace,
+    once per candidate UBI and inside a prange. _sv_extremes answers the same
+    question for free, but only while cond(m) is well below 1e7. So: trust it
+    when it says the matrix is comfortably conditioned (a decade of margin at
+    guard = 1e6), and pay for LAPACK only in the ambiguous band, which real
+    UBIs essentially never reach. Checked against pure LAPACK on 60000
+    matrices from cond 1 to rank-deficient: no disagreements.
+    """
+    smax, smin = _sv_extremes(m)
+    if smin > 0.0 and smax < smin * guard:
+        return True
+    sv = np.linalg.svd(m)[1]
+    smax = sv[0]
+    smin = sv[2]
+    if smin <= 0.0:
+        return False
+    if not (smin > smax * 3.0 * 2.220446049250313e-16):
+        return False
+    return (smax / smin) < cond_max
+
 
 # stuff we need to compute g-vectors
 # from ImageD11.transform
+
+def gvec_pars(pars):
+    """Pack the sample<->lab part of the pars for the fast kernels.
+ 
+    Returns (A, oc, invwvln, a_is_eye):
+ 
+      A        (3, 3)  W(wedge) @ C(chi).  origin_lab = A @ R(omega) @ t and
+                       g = R(omega)^T @ A^T @ k, matching ImageD11's
+                       compute_grain_origins and compute_g_from_k.
+      oc       (3, 3)  origin_lab[i] = cos(om) oc[i,0] + sin(om) oc[i,1]
+                                       + oc[i,2]
+      invwvln  1 / wavelength
+      a_is_eye True when wedge == chi == 0, so A^T can be skipped
+    """
+    def g(k):
+        return float(pars[k])
+    wedge, chi = g("wedge"), g("chi")
+    tx, ty, tz = g("t_x"), g("t_y"), g("t_z")
+    cw, sw = np.cos(np.radians(wedge)), np.sin(np.radians(wedge))
+    cc, sc_ = np.cos(np.radians(chi)), np.sin(np.radians(chi))
+    W = np.array([[cw, 0.0, -sw], [0.0, 1.0, 0.0], [sw, 0.0, cw]], np.float64)
+    C = np.array([[1.0, 0.0, 0.0], [0.0, cc, -sc_], [0.0, sc_, cc]], np.float64)
+    A = np.ascontiguousarray(W @ C)
+    oc = np.empty((3, 3), np.float64)
+    oc[:, 0] = A[:, 0] * tx + A[:, 1] * ty
+    oc[:, 1] = A[:, 1] * tx - A[:, 0] * ty
+    oc[:, 2] = A[:, 2] * tz
+    return A, oc, 1.0 / g("wavelength"), (wedge == 0.0 and chi == 0.0)
+
+
+
 @numba.njit(cache=True)
 def detector_rotation_matrix(tilt_x, tilt_y, tilt_z):
     r1 = np.array([[np.cos(tilt_z), -np.sin(tilt_z), 0.0],  # note this is r.h.
@@ -359,173 +462,65 @@ def detector_rotation_matrix(tilt_x, tilt_y, tilt_z):
     return r2r1
 
 
-@numba.njit(cache=True)
-def compute_grain_origins(omega, wedge, chi, t_x, t_y, t_z):
-    t = np.zeros((3, omega.shape[0]), np.float64)  # crystal translations
-    # Rotations in reverse order compared to making g-vector
-    # also reverse directions. this is trans at all zero to
-    # current setting. gv is scattering vector to all zero
-    om_r = np.radians(omega)
-    # This is the real rotation (right handed, g back to k)
-    t[0, :] = np.cos(om_r) * t_x - np.sin(om_r) * t_y
-    t[1, :] = np.sin(om_r) * t_x + np.cos(om_r) * t_y
-    t[2, :] = t_z
-    if chi != 0.0:
-        c = np.cos(np.radians(chi))
-        s = np.sin(np.radians(chi))
-        u = np.zeros(t.shape, np.float64)
-        u[0, :] = t[0, :]
-        u[1, :] = c * t[1, :] + -s * t[2, :]
-        u[2, :] = s * t[1, :] + c * t[2, :]
-        t = u
-    if wedge != 0.0:
-        c = np.cos(np.radians(wedge))
-        s = np.sin(np.radians(wedge))
-        u = np.zeros(t.shape, np.float64)
-        u[0, :] = c * t[0, :] + -s * t[2, :]
-        u[1, :] = t[1, :]
-        u[2, :] = s * t[0, :] + c * t[2, :]
-        t = u
-    return t
-
-
-@numba.njit(cache=True)
-def compute_xyz_lab(sc, fc,
-                    y_center=0., y_size=0., tilt_y=0.,
-                    z_center=0., z_size=0., tilt_z=0.,
-                    tilt_x=0.,
-                    distance=0.,
-                    o11=1.0, o12=0.0, o21=0.0, o22=-1.0):
-    # Matrix for the tilt rotations
-    r2r1 = detector_rotation_matrix(tilt_x, tilt_y, tilt_z)
-    # Peak positions in 3D space
-    #  - apply detector orientation
-    peaks_on_detector = np.stack((sc, fc))
-    peaks_on_detector[0, :] = (peaks_on_detector[0, :] - z_center) * z_size
-    peaks_on_detector[1, :] = (peaks_on_detector[1, :] - y_center) * y_size
-    
-    detector_orientation = [[o11, o12], [o21, o22]]
-    flipped = np.dot(np.array(detector_orientation, np.float64),
-                     peaks_on_detector)
-
-    vec = np.stack((np.zeros(flipped.shape[1]), flipped[1, :], flipped[0, :]))
-
-    # Position of diffraction spots in 3d space after detector tilts about
-    # the beam centre on the detector
-    rotvec = np.dot(r2r1, vec)
-    # Now add the distance (along x)
-    rotvec[0, :] = rotvec[0, :] + distance
-    return rotvec
-
-
-@numba.njit(cache=True)
-def compute_tth_eta_from_xyz(peaks_xyz, omega,
-                             t_x=0.0, t_y=0.0, t_z=0.0,
-                             wedge=0.0,  # Wedge == theta on 4circ
-                             chi=0.0):  # last line is for laziness -
-
-    s1 = peaks_xyz - compute_grain_origins(omega, wedge, chi, t_x, t_y, t_z)
-
-    # CHANGED to HFP convention 4-9-2007
-    eta = np.degrees(np.arctan2(-s1[1, :], s1[2, :]))
-    s1_perp_x = np.sqrt(s1[1, :] * s1[1, :] + s1[2, :] * s1[2, :])
-    tth = np.degrees(np.arctan2(s1_perp_x, s1[0, :]))
-    return tth, eta
-
-
-@numba.njit(cache=True)
-def compute_tth_eta(sc, fc, omega,
-                    y_center=0., y_size=0., tilt_y=0.,
-                    z_center=0., z_size=0., tilt_z=0.,
-                    tilt_x=0.,
-                    distance=0.,
-                    o11=1.0, o12=0.0, o21=0.0, o22=-1.0,
-                    t_x=0.0, t_y=0.0, t_z=0.0,
-                    wedge=0.0,
-                    chi=0.0):
-    peaks_xyz = compute_xyz_lab(
-        sc, fc,
-        y_center=y_center, y_size=y_size, tilt_y=tilt_y,
-        z_center=z_center, z_size=z_size, tilt_z=tilt_z,
-        tilt_x=tilt_x,
-        distance=distance,
-        o11=o11, o12=o12, o21=o21, o22=o22)
-
-    tth, eta = compute_tth_eta_from_xyz(
-        peaks_xyz, omega,
-        t_x=t_x, t_y=t_y, t_z=t_z,
-        wedge=wedge,
-        chi=chi)
-
-    return tth, eta
-
-
-@numba.njit(cache=True)
-def compute_k_vectors(tth, eta, wvln):
+@numba.njit(cache=True, inline="always")
+def gvec_one(xl, yl, zl, xpos, so, co, A, oc, invw, a_is_eye):
+    """One g-vector, no allocation and no trig.
+ 
+    xl, yl, zl  peak position in the lab frame, at the nominal distance
+    xpos        diffraction origin along lab x (the refined origin)
+    so, co      sin, cos of that peak's omega
     """
-    generate k vectors - scattering vectors in laboratory frame
-    """
-    tth = np.radians(tth)
-    eta = np.radians(eta)
-    c = np.cos(tth / 2)  # cos theta
-    s = np.sin(tth / 2)  # sin theta
-    ds = 2 * s / wvln
-    k = np.zeros((3, tth.shape[0]), np.float64)
-    # x - along incident beam
-    k[0, :] = -ds * s  # this is negative x
-    # y - towards door
-    k[1, :] = -ds * c * np.sin(eta)  # CHANGED eta to HFP convention 4-9-2007
-    # z - towards roof
-    k[2, :] = ds * c * np.cos(eta)
-    return k
+    o0 = co * oc[0, 0] + so * oc[0, 1] + oc[0, 2] + xpos
+    o1 = co * oc[1, 0] + so * oc[1, 1] + oc[1, 2]
+    o2 = co * oc[2, 0] + so * oc[2, 1] + oc[2, 2]
+    dx = xl - o0
+    dy = yl - o1
+    dz = zl - o2
+    r = invw / np.sqrt(dx * dx + dy * dy + dz * dz)
+    kx = dx * r - invw              # k_out - k_in, k_in = (1, 0, 0) / wvln
+    ky = dy * r
+    kz = dz * r
+    if a_is_eye:
+        ux = kx
+        uy = ky
+        uz = kz
+    else:                           # u = A^T k = C(chi)^T W(wedge)^T k
+        ux = A[0, 0] * kx + A[1, 0] * ky + A[2, 0] * kz
+        uy = A[0, 1] * kx + A[1, 1] * ky + A[2, 1] * kz
+        uz = A[0, 2] * kx + A[1, 2] * ky + A[2, 2] * kz
+    return co * ux + so * uy, co * uy - so * ux, uz     # g = R(omega)^T u
 
 
-@numba.njit(cache=True)
-def compute_g_from_k(k, omega, wedge=0, chi=0):
-    """
-    Compute g-vectors with cached k-vectors
-    """
-    om = np.radians(omega)
-    # G-vectors - rotate k onto the crystal axes
-    g = np.zeros((3, k.shape[1]), np.float64)
-    t = np.zeros((3, k.shape[1]), np.float64)
 
-    if wedge != 0.0:
-        c = np.cos(np.radians(wedge))
-        s = np.sin(np.radians(wedge))
-        t[0, :] = c * k[0, :] + s * k[2, :]
-        t[1, :] = k[1, :]
-        t[2, :] = -s * k[0, :] + c * k[2, :]
-        k = t.copy()
-    if chi != 0.0:
-        c = np.cos(np.radians(chi))
-        s = np.sin(np.radians(chi))
-        t[0, :] = k[0, :]
-        t[1, :] = c * k[1, :] + s * k[2, :]
-        t[2, :] = -s * k[1, :] + c * k[2, :]
-        k = t.copy()
-    # This is the reverse rotation (left handed, k back to g)
-    g[0, :] = np.cos(om) * k[0, :] + np.sin(om) * k[1, :]
-    g[1, :] = -np.sin(om) * k[0, :] + np.cos(om) * k[1, :]
-    g[2, :] = k[2, :]
-    return g
-
-
-@numba.njit(cache=True)
-def compute_g_vectors(tth,
-                      eta,
-                      omega,
-                      wvln,
-                      wedge=0.0,
-                      chi=0.0):
+@numba.njit(cache=True, parallel=True)
+def gvectors_from_lab(xl, yl, zl, xpos, sinomega, cosomega,
+                      A, oc, invw, a_is_eye, nblocks):
+    """(N, 3) g-vectors, C-contiguous, in one parallel pass.
+ 
+    Blocked rather than a bare prange over N, because refine_map sets
+    numba.set_parallel_chunksize(1) and that would otherwise make every
+    single peak its own task.
     """
-    Generates spot positions in reciprocal space from
-      twotheta, wavelength, omega and eta
-    Assumes single axis vertical
-    ... unless a wedge angle is specified
-    """
-    k = compute_k_vectors(tth, eta, wvln)
-    return compute_g_from_k(k, omega, wedge, chi)
+    n = xl.shape[0]
+    out = np.empty((n, 3), np.float64)
+    if nblocks < 1:
+        nblocks = 1
+    bs = (n + nblocks - 1) // nblocks
+    if bs < 1:
+        bs = 1
+    for b in numba.prange(nblocks):
+        lo = b * bs
+        hi = lo + bs
+        if hi > n:
+            hi = n
+        for q in range(lo, hi):
+            gx, gy, gz = gvec_one(xl[q], yl[q], zl[q], xpos[q],
+                                  sinomega[q], cosomega[q],
+                                  A, oc, invw, a_is_eye)
+            out[q, 0] = gx
+            out[q, 1] = gy
+            out[q, 2] = gz
+    return out
 
 
 @numba.njit(cache=True)
@@ -681,9 +676,6 @@ def build_partition(refine, omega_binsize="auto", omega_step=None,
     icolf = refine.icolf
     n = icolf.nrows
  
-    dtyi = np.ascontiguousarray(icolf.dtyi, dtype=np.int64)
-    dbin = dtyi
- 
     # id(icolf) in the key means setpeaks and loadpeaks invalidate this for
     # free: both build the new columnfile while self.icolf still holds the
     # old one, so the addresses cannot collide. addcolumn does NOT
@@ -695,11 +687,10 @@ def build_partition(refine, omega_binsize="auto", omega_step=None,
         if verbose:
             print("reusing the partition built earlier this session")
         idx = dict(held[1])
-        idx["dbin"] = dbin
         return idx
  
     omega = np.ascontiguousarray(icolf.omega, dtype=np.float64)
-    dty = np.ascontiguousarray(icolf.dty, dtype=np.float64)
+    dty   = np.ascontiguousarray(icolf.dty,   dtype=np.float64)
     rmax = float(np.hypot(refine.sx_grid, refine.sy_grid)[refine.mask].max())
  
     t0 = time.perf_counter()
@@ -741,58 +732,63 @@ def build_partition(refine, omega_binsize="auto", omega_step=None,
            "usin": M.sinomega_bins, "ucos": M.cosomega_bins,
            "nom": nom, "ndty": ndty, "ymin": float(M.ymin),
            "ray_margin": ray_margin, "dev": dev,
-           "dbin": dbin}
+          }
  
     refine._partition = (memkey, dict(idx))
     return idx
 
 
 
-def build_indexes(refine, omega_binsize="auto", omega_step=None, verbose=True):
-    """Everything refine_map needs: the partition, the permuted columns, the
-    g-vectors and the pbpmap CSR."""
+def build_refine_inputs(refine, omega_binsize="auto", omega_step=None,
+                        verbose=True):
+    """Everything refine_map needs, on top of the partition.
+ 
+    Returns {"partition": ..., "peaks": ..., "pstart": ..., "porder": ...,
+             "pbpmap_ubis": ..., "nrj": ..., "gvec_pars": ...}
+    """
     icolf = refine.icolf
-    idx = build_partition(refine, omega_binsize=omega_binsize,
-                          omega_step=omega_step, verbose=verbose)
-    dbin = idx.pop("dbin")
-    order = idx["order"]
+    part = build_partition(refine, omega_binsize=omega_binsize,
+                           omega_step=omega_step, verbose=verbose)
+    order = part["order"]
  
     def col(name, dtype=np.float64):
         return np.ascontiguousarray(getattr(icolf, name)[order], dtype=dtype)
-
-    # We only permute the columns that we need for g-vector computation (with corrected xpos).
+ 
+    # We only permute the columns we need for the g-vector computation (with
+    # corrected xpos) and for the merge inside refine_map.
+    #
+    # xl, yl, zl replace sc, fc: they are the peak positions in the lab frame,
+    # which is what the g-vector needs. compute_xyz_lab is affine in (sc, fc),
+    # so the intensity-weighted mean of xl/yl/zl over a merge group equals
+    # xl/yl/zl of the mean sc, fc -- refine_map can therefore average these
+    # directly and never touch the detector transform.
     peaks_permuted = {
-        "sc": col("sc"), "fc": col("fc"), "eta": col("eta"),
+        "eta": col("eta"),
         "sum_intensity": col("sum_intensity"),
         "sinomega": col("sinomega"), "cosomega": col("cosomega"),
         "omega": col("omega"), "dty": col("dty"),
+        # int64, not the float64 default: _pack5 builds keys up to 2**58 and
+        # float64 has 53 bits of mantissa, so a float dtyi would collapse
+        # every dty distinction in the merge
         "dtyi": col("dtyi", np.int64),
         "xpos": col("xpos_refined"),
+        "xl": col("xl"), "yl": col("yl"), "zl": col("zl"),
     }
-
-
+ 
     # Remember these are permuted!
-
     pars = icolf.parameters.get_parameters()
+    gpars = gvec_pars(pars)
+ 
     t0 = time.perf_counter()
-    gve = compute_gve(
-        peaks_permuted["sc"], peaks_permuted["fc"], peaks_permuted["omega"], peaks_permuted["xpos"],
-        distance=float(pars["distance"]), y_center=float(pars["y_center"]),
-        y_size=float(pars["y_size"]), tilt_y=float(pars["tilt_y"]),
-        z_center=float(pars["z_center"]), z_size=float(pars["z_size"]),
-        tilt_z=float(pars["tilt_z"]), tilt_x=float(pars["tilt_x"]),
-        o11=float(pars["o11"]), o12=float(pars["o12"]),
-        o21=float(pars["o21"]), o22=float(pars["o22"]),
-        t_x=float(pars["t_x"]), t_y=float(pars["t_y"]), t_z=float(pars["t_z"]),
-        wedge=float(pars["wedge"]), chi=float(pars["chi"]),
-        wavelength=float(pars["wavelength"]),
-    )
-    gve_all = np.ascontiguousarray(gve.T)          # (N, 3)
+    peaks_permuted["gve_all"] = gvectors_from_lab(      # (N, 3)
+        peaks_permuted["xl"], peaks_permuted["yl"], peaks_permuted["zl"],
+        peaks_permuted["xpos"],
+        peaks_permuted["sinomega"], peaks_permuted["cosomega"],
+        gpars[0], gpars[1], gpars[2], gpars[3],
+        16 * max(numba.get_num_threads(), 1))
     if verbose:
         print("computed g-vectors in %.2f s" % (time.perf_counter() - t0))
-
-    peaks_permuted["gve_all"] = gve_all
-
+ 
     # ---- pbpmap CSR over (ri, rj), and (M, 3, 3) UBIs --------------------
     ri_col, rj_col = geometry.step_to_recon(refine.pbpmap.i, refine.pbpmap.j,
                                             refine.mask.shape)
@@ -800,13 +796,19 @@ def build_indexes(refine, omega_binsize="auto", omega_step=None, verbose=True):
     pcells = (np.asarray(ri_col, dtype=np.int64) * nrj
               + np.asarray(rj_col, dtype=np.int64))
     pstart, porder = build_csr(pcells, nri * nrj)
+ 
+    return {
+        "partition": part,
+        "peaks": peaks_permuted,
+        "pstart": pstart,
+        "porder": porder,
+        "pbpmap_ubis": np.ascontiguousarray(
+            refine.pbpmap.ubi.transpose(2, 0, 1)),
+        "nrj": nrj,
+        "gvec_pars": gpars,
+    }
 
-    idx["peaks"] = peaks_permuted
-    idx["pstart"] = pstart
-    idx["porder"] = porder
-    idx["pbpmap_ubis"] = np.ascontiguousarray(refine.pbpmap.ubi.transpose(2, 0, 1))
-    idx["nrj"] = nrj
-    return idx
+
 
 
 def grid_axes(sx_grid, sy_grid):
@@ -1462,12 +1464,12 @@ class PBPRefine:
         return refine_obj
 
     def get_origins(self, nthreads=None, nchunks=None,
-                    omega_binsize="auto", omega_step=None, index_cache=None,
+                    omega_binsize="auto", omega_step=None,
                     verbose=True):
         """Fill the xpos_refined column."""
         if 'xpos_refined' in self.icolf.titles:
             raise ValueError('We already have origins in self.icolf! Not recomputing')
-
+ 
         if nthreads is None:
             nthreads = max(cImageD11.cores_available() - 1, 1)
         numba.set_num_threads(nthreads)
@@ -1476,16 +1478,14 @@ class PBPRefine:
         except AttributeError:
             pass
         
-        # Build the partition
-        # Doesn't permute the peaks!
-        idx = index_cache if index_cache is not None else build_partition(
-            self, omega_binsize=omega_binsize, omega_step=omega_step, verbose=verbose
-        )
-        order = idx["order"]
-
+        # Build the partition. Doesn't permute the peaks!
+        part = build_partition(self, omega_binsize=omega_binsize,
+                               omega_step=omega_step, verbose=verbose)
+        order = part["order"]
+ 
         # Permute un-corrected g-vectors into partition order
         # also sinomega, cosomega, dty
-
+ 
         gve = np.empty((self.icolf.nrows, 3), dtype=np.float64)
         for c, name in enumerate(("gx", "gy", "gz")):
             np.take(getattr(self.icolf, name), order, out=gve[:, c])
@@ -1493,58 +1493,58 @@ class PBPRefine:
         cosomega = np.ascontiguousarray(self.icolf.cosomega[order])
         dty = np.ascontiguousarray(self.icolf.dty[order])
         # everything we need for compute_origins is now in partition order
-
+ 
         sx_ax, sy_ax, dsx, dsy = grid_axes(self.sx_grid, self.sy_grid)
         singlemap = np.ascontiguousarray(self.singlemap, dtype=np.float64)
         mask = np.ascontiguousarray(self.mask).astype(np.bool_)
-
-        max_cell = int(np.diff(idx["dty_partitions"], axis=1).max())
+ 
+        max_cell = int(np.diff(part["dty_partitions"], axis=1).max())
         if nchunks is None:
             nchunks = nthreads
-        nchunks = max(1, min(nchunks, idx["nom"]))
-
+        nchunks = max(1, min(nchunks, part["nom"]))
+ 
         if verbose:
             nvox, ncells = count_ray_voxels(
                 mask, sx_ax, sy_ax, dsx, dsy, self.y0, self.ystep,
-                idx["dty_partitions"],
-                idx["nom"], idx["ndty"], idx["usin"], idx["ucos"],
-                idx["ymin"], idx["ray_margin"])
+                part["dty_partitions"],
+                part["nom"], part["ndty"], part["usin"], part["ucos"],
+                part["ymin"], part["ray_margin"])
             print("%d non-empty cells, max %d peaks in a cell" % (ncells, max_cell))
             print("mean %.0f voxels visited per ray (full map would be %d)"
                   % (nvox / max(ncells, 1), mask.size))
             print("running on %d threads" % nthreads)
-
+ 
         weight_reg = self.beam_size / 3.0
         if verbose:
             print("beam size %.4g, origin weight regularisation %.4g"
                   % (self.beam_size, weight_reg))
-
+ 
         t0 = time.perf_counter()
         lx_perm = compute_origins(
             singlemap, mask, gve, sinomega, cosomega, dty,
             sx_ax, sy_ax, dsx, dsy,
             self.y0, self.ystep, self.hkl_tol_origins, weight_reg,
-            idx["omega_partitions"], idx["dty_partitions"],
-            idx["nom"], idx["ndty"], idx["usin"], idx["ucos"],
-            idx["ymin"], idx["ray_margin"],
+            part["omega_partitions"], part["dty_partitions"],
+            part["nom"], part["ndty"], part["usin"], part["ucos"],
+            part["ymin"], part["ray_margin"],
             max_cell, nchunks)
         if verbose:
             print("origins took %.1f s" % (time.perf_counter() - t0))
-
+ 
         # un-permute back to icolf row order
         lx_modified = np.empty_like(lx_perm)
         lx_modified[order] = lx_perm
-
+ 
         self.icolf.addcolumn(lx_modified, 'xpos_refined')
         print('xpos_refined column added to self.icolf')
-
+ 
         return lx_modified
 
     def run_refine(self, points_step_space=None, npoints=None,
                    output_filename=None, use_cluster=False, pythonpath=None,
                    nthreads=None, nchunks=None, omega_binsize="auto",
                    omega_step=None, 
-                   index_cache=None, save=True, verbose=True,
+                   save=True, verbose=True,
                    cpus_per_task=16, time_h=1, partition="nice", mem_G=32):
         """
         Refine every UBI candidate in self.pbpmap.
@@ -1561,9 +1561,8 @@ class PBPRefine:
                 raise ValueError("Choosing points to refine on the cluster is "
                                  "not implemented")
             # The worker does from_h5 -> loadpeaks, so the peaks and the maps
-            # have to be on disk. Nothing else does: it builds the partition
-            # and the g-vectors itself, and it is the only reader.
-
+            # have to be on disk.
+ 
             print("Saving peaks and maps for the worker")
             self.to_h5()
             print("Making bash script")
@@ -1590,20 +1589,19 @@ class PBPRefine:
  
         if nthreads is None:
             nthreads = max(cImageD11.cores_available() - 1, 1)
-
+ 
         numba.set_num_threads(nthreads)
         try:
             numba.set_parallel_chunksize(1)
         except AttributeError:
             pass
         
-        # If there's a good cache, build_indexes will also get it from disk
-        idx = index_cache if index_cache is not None else build_indexes(
-            self, omega_binsize=omega_binsize, omega_step=omega_step,
-            verbose=verbose)
-        # these are permuted by the partition scheme
-        pk = idx["peaks"]
-
+        # If there's a good cache, build_refine_inputs will also get it from disk
+        inputs = build_refine_inputs(self, omega_binsize=omega_binsize,
+                                     omega_step=omega_step, verbose=verbose)
+        part = inputs["partition"]
+        pk = inputs["peaks"]            # permuted by the partition scheme
+ 
         # voxels to refine
         if points_step_space is None:
             pts = np.array(np.nonzero(self.mask)).T
@@ -1614,56 +1612,53 @@ class PBPRefine:
                             for (si, sj) in points_step_space])
         points_ri = np.ascontiguousarray(pts[:, 0], dtype=np.int64)
         points_rj = np.ascontiguousarray(pts[:, 1], dtype=np.int64)
-
+ 
         # Points are divided into chunks based on how many threads we use
         # Each chunk is persistent so we don't malloc
         if nchunks is None:
             nchunks = nthreads
         nchunks = max(1, min(nchunks, len(points_ri)))
-
+ 
         # size the buffers
         maxlocal = int(vm_max_candidates(
             np.ascontiguousarray(self.sx_grid[self.mask], dtype=np.float64),
             np.ascontiguousarray(self.sy_grid[self.mask], dtype=np.float64),
-            self.y0, self.ystep, idx["ymin"],
-            idx["dty_partitions"],
-            idx["usin"], idx["ucos"]))
+            self.y0, self.ystep, part["ymin"],
+            part["dty_partitions"],
+            part["usin"], part["ucos"]))
         maxlocal = max(maxlocal, 1)
         if verbose:
             mb = maxlocal * 200 * nchunks / 1e6
             print("worst-case peaks on a single ray: %d" % maxlocal)
             print("scratch: ~%.0f MB across %d chunks (virtual; touched lazily)" % (mb, nchunks))
             print("launching numba parallel refinement on %d threads" % nthreads)
-
-        pars = self.icolf.parameters.get_parameters()
+ 
+        gpk = inputs["gvec_pars"]        # (A, oc, 1/wavelength, a_is_eye)
         uc = unitcell.unitcell_from_parameters(self.icolf.parameters)
         B0 = unitcell_to_b(uc.lattice_parameters, np.eye(3))
-
+ 
         weight_reg = self.beam_size / 3.0
         if verbose:
             print("beam size %.4g, fit weight regularisation %.4g "
                   "(ystep %.4g)" % (self.beam_size, weight_reg, self.ystep))
-
+ 
         t0 = time.perf_counter()
         (ubis_m, eps_m, npks, nuniq,
          overflow, degenerate, gather_fail) = refine_map(
             points_ri, points_rj,
-            idx["pstart"], idx["porder"], idx["pbpmap_ubis"], idx["nrj"],
+             # pbpmap CSR:
+            inputs["pstart"], inputs["porder"], inputs["pbpmap_ubis"], inputs["nrj"],
             self.sx_grid, self.sy_grid, self.mask,
-            idx["omega_partitions"], idx["dty_partitions"],
-            idx["usin"], idx["ucos"],
-            idx["ymin"],
+             # partition stuff:
+            part["omega_partitions"], part["dty_partitions"],
+            part["usin"], part["ucos"],
+            part["ymin"],
             # permuted peaks:
-            pk["sc"], pk["fc"], pk["eta"], pk["sum_intensity"],
+            pk["xl"], pk["yl"], pk["zl"], pk["eta"], pk["sum_intensity"],
             pk["sinomega"], pk["cosomega"], pk["omega"], pk["dty"], pk["dtyi"],
             pk["xpos"], pk["gve_all"],
             self.ystep, self.y0, B0,
-            float(pars["distance"]), float(pars["y_center"]), float(pars["y_size"]),
-            float(pars["tilt_y"]), float(pars["z_center"]), float(pars["z_size"]),
-            float(pars["tilt_z"]), float(pars["tilt_x"]),
-            float(pars["o11"]), float(pars["o12"]), float(pars["o21"]), float(pars["o22"]),
-            float(pars["t_x"]), float(pars["t_y"]), float(pars["t_z"]),
-            float(pars["wedge"]), float(pars["chi"]), float(pars["wavelength"]),
+            gpk[0], gpk[1], gpk[2], gpk[3],
             float(self.hkl_tol_refine), float(self.hkl_tol_refine_merged),
             int(self.min_grain_npks), 1e-4, weight_reg,
             maxlocal, nchunks,
@@ -1683,16 +1678,16 @@ class PBPRefine:
                   "in the merge key. That means some candidate UBIs are nonsense; "
                   "the affected voxels may merge peaks incorrectly."
                   % int(overflow.sum()))
-
+ 
         # back to the (3, 3, M) layout the rest of ImageD11 expects
         final_ubis = np.ascontiguousarray(ubis_m.transpose(1, 2, 0))
         final_eps = np.ascontiguousarray(eps_m.transpose(1, 2, 0))
-
+ 
         final_ubis[:, :, np.isnan(final_ubis[0, 0, :])] = np.eye(3)[..., np.newaxis]
         final_eps[:, :, np.isnan(final_eps[0, 0, :])] = 0
         npks[np.isnan(npks)] = 0
         nuniq[np.isnan(nuniq)] = 0
-
+ 
         output_map = PBPMap(new=True)
         output_map.nrows = final_ubis.shape[2]
         ub = final_ubis.reshape(9, final_ubis.shape[2])
@@ -1707,7 +1702,7 @@ class PBPRefine:
         for n, name in enumerate(("eps00", "eps01", "eps02", "eps10", "eps11",
                                   "eps12", "eps20", "eps21", "eps22")):
             output_map.addcolumn(ep[n], name)
-
+ 
         self.refinedmap = output_map
         if save:
             if verbose:
@@ -1780,12 +1775,11 @@ def refine_map(
     sx_grid, sy_grid, mask,
     # peak data, PERMUTED into partition order, all C-contiguous
     omega_partitions, dty_partitions, usin, ucos, ymin,
-    sc, fc, eta, sum_intensity, sinomega, cosomega, omega, dty, dtyi, xpos,
+    xl, yl, zl, eta, sum_intensity, sinomega, cosomega, omega, dty, dtyi, xpos,
     gve_all,                                   # (N, 3)
-    # geometry
+    # geometry: ystep/y0/B0, then the g-vector pack from gvec_pars()
     ystep, y0, B0,
-    distance, y_center, y_size, tilt_y, z_center, z_size, tilt_z, tilt_x,
-    o11, o12, o21, o22, t_x, t_y, t_z, wedge, chi, wavelength,
+    A, oc, invwvln, a_is_eye,
     # tolerances
     tol, merge_tol, min_grain_npks, sigma_g, weight_reg,
     # execution
@@ -1799,11 +1793,11 @@ def refine_map(
     overflow = np.zeros(nchunks, dtype=np.int64)
     degenerate = np.zeros(nchunks, dtype=np.int64)
     gather_fail = np.zeros(nchunks, dtype=np.int64)
-
+ 
     npoints = points_ri.shape[0]
     tolsq_assign = tol * tol
     tolsq_merge = merge_tol * merge_tol
-
+ 
     # paralellise over chunks
     # each chunk is persistent and does its own iteration over its voxels
     # this is MUCH better for memory allocation
@@ -1812,35 +1806,37 @@ def refine_map(
         loc = np.empty(maxlocal, dtype=np.int64)          # peak indices on the ray
         loc_yd = np.empty(maxlocal, dtype=np.float64)     # and their y distances
         gvl = np.empty((maxlocal, 3), dtype=np.float64)   # their g-vectors
-
+ 
         sel = np.empty(maxlocal, dtype=np.int64)          # assigned subset
         hklsel = np.empty((maxlocal, 3), dtype=np.int64)
         keys = np.empty(maxlocal, dtype=np.int64)
         srt = np.empty(maxlocal, dtype=np.int64)
         labels = np.empty(maxlocal, dtype=np.int64)
-
+ 
         m_sI = np.empty(maxlocal, dtype=np.float64)
-        m_sc = np.empty(maxlocal, dtype=np.float64)
-        m_fc = np.empty(maxlocal, dtype=np.float64)
+        # lab-frame peak positions, not sc/fc: compute_xyz_lab is affine in
+        # (sc, fc), so the intensity-weighted mean of xl/yl/zl is exactly
+        # xl/yl/zl of the intensity-weighted mean sc/fc. That takes the
+        # detector transform out of the inner loop entirely.
+        m_xl = np.empty(maxlocal, dtype=np.float64)
+        m_yl = np.empty(maxlocal, dtype=np.float64)
+        m_zl = np.empty(maxlocal, dtype=np.float64)
         m_om = np.empty(maxlocal, dtype=np.float64)
         m_dty = np.empty(maxlocal, dtype=np.float64)
         m_xp = np.empty(maxlocal, dtype=np.float64)
         m_eta = np.empty(maxlocal, dtype=np.float64)
-
+ 
         g_sel = np.empty(maxlocal, dtype=np.int64)        # merged peaks on the ray
         g_yd = np.empty(maxlocal, dtype=np.float64)
-        c_sc = np.empty(maxlocal, dtype=np.float64)
-        c_fc = np.empty(maxlocal, dtype=np.float64)
-        c_om = np.empty(maxlocal, dtype=np.float64)
-        c_xp = np.empty(maxlocal, dtype=np.float64)
-
+        gvm = np.empty((maxlocal, 3), dtype=np.float64)   # merged g-vectors
+ 
         fit_sel = np.empty(maxlocal, dtype=np.int64)
         fit_hkl = np.empty((maxlocal, 3), dtype=np.int64)
-
+ 
         # UBI fit
         GtWWG = np.empty((3, 3), dtype=np.float64)   # sum w^2 G G^T
         GtWWH = np.empty((3, 3), dtype=np.float64)   # sum w^2 G G_hkl^T
-
+ 
         # strain fit
         y_eps = np.empty(maxlocal, dtype=np.float64)   # eq (14) measurements
         Mj = np.empty(6, dtype=np.float64)             # eq (16) one row of M
@@ -1853,20 +1849,20 @@ def refine_map(
         n_ovf = 0
         n_degen = 0
         n_gfail = 0
-
+ 
         # voxels within each chunk
         for pi in range(chunk, npoints, nchunks):
             ri = points_ri[pi]
             rj = points_rj[pi]
             if not mask[ri, rj]:
                 continue
-
+ 
             cell = ri * nrj + rj
             plo = pstart[cell]
             phi = pstart[cell + 1]
             if phi == plo:
                 continue
-
+ 
             any_ubi = False
             for q in range(plo, phi):
                 if not np.isnan(pbpmap_ubis[porder[q], 0, 0]):
@@ -1874,10 +1870,10 @@ def refine_map(
                     break
             if not any_ubi:
                 continue
-
+ 
             xi0 = sx_grid[ri, rj]
             yi0 = sy_grid[ri, rj]
-
+ 
             # ---- gather the peaks whose ray passes through this voxel ------
             # voxel_mask.fill_voxel_idx is the authoritative selection: it
             # walks its own (omega bin, dty bin) partition with a per-bin dty
@@ -1900,7 +1896,7 @@ def refine_map(
                 gvl[t, 0] = gve_all[q, 0]
                 gvl[t, 1] = gve_all[q, 1]
                 gvl[t, 2] = gve_all[q, 2]
-
+ 
             # ---- loop over candidate UBIs at this voxel --------------------
             for q in range(plo, phi):
                 row = porder[q]
@@ -1915,7 +1911,7 @@ def refine_map(
                 u20 = pbpmap_ubis[row, 2, 0]
                 u21 = pbpmap_ubis[row, 2, 1]
                 u22 = pbpmap_ubis[row, 2, 2]
-
+ 
                 # ---- assign with `tol` ------------------------------------
                 nsel = 0
                 for t in range(nloc):
@@ -1937,10 +1933,10 @@ def refine_map(
                         hklsel[nsel, 1] = np.int64(hi1)
                         hklsel[nsel, 2] = np.int64(hi2)
                         nsel += 1
-
+ 
                 if nsel == 0:
                     continue
-
+ 
                 # ---- merge on (h, k, l, etasign, dtyi) --------------------
                 for t in range(nsel):
                     p = loc[sel[t]]
@@ -1952,11 +1948,12 @@ def refine_map(
                         n_ovf += 1
                     keys[t] = _pack5(h0i, h1i, h2i, _etasign_code(eta[p]), dtyi[p])
                 nlab = _label_groups(keys, nsel, srt, labels)
-
+ 
                 for t in range(nlab):
                     m_sI[t] = 0.0
-                    m_sc[t] = 0.0
-                    m_fc[t] = 0.0
+                    m_xl[t] = 0.0
+                    m_yl[t] = 0.0
+                    m_zl[t] = 0.0
                     m_om[t] = 0.0
                     m_dty[t] = 0.0
                     m_xp[t] = 0.0
@@ -1967,54 +1964,53 @@ def refine_map(
                     p = loc[sel[t]]
                     wI = sum_intensity[p]
                     m_sI[lb] += wI
-                    m_sc[lb] += sc[p] * wI
-                    m_fc[lb] += fc[p] * wI
+                    m_xl[lb] += xl[p] * wI
+                    m_yl[lb] += yl[p] * wI
+                    m_zl[lb] += zl[p] * wI
                     m_om[lb] += omega[p] * wI
                     m_dty[lb] += dty[p] * wI
                     m_xp[lb] += xpos[p] * wI
                     m_eta[lb] += eta[p] * wI
                 for t in range(nlab):
                     s = m_sI[t]
-                    m_sc[t] /= s
-                    m_fc[t] /= s
+                    m_xl[t] /= s
+                    m_yl[t] /= s
+                    m_zl[t] /= s
                     m_om[t] /= s
                     m_dty[t] /= s
                     m_xp[t] /= s
                     m_eta[t] /= s
-
-                # ---- re-apply the voxel mask to the merged peaks ----------
+ 
+                # ---- re-apply the voxel mask, and build the merged
+                #      g-vectors in the same pass. The mask test needs sin and
+                #      cos of the merged omega, which is exactly what the
+                #      g-vector needs, so they are computed once. Straight into
+                #      the pre-allocated gvm: no per-candidate allocation.
                 ng = 0
                 for t in range(nlab):
                     orad = np.radians(m_om[t])
-                    d = abs(y0 - xi0 * np.sin(orad) - yi0 * np.cos(orad) - m_dty[t])
+                    som = np.sin(orad)
+                    com = np.cos(orad)
+                    d = abs(y0 - xi0 * som - yi0 * com - m_dty[t])
                     if d <= ystep:
                         g_sel[ng] = t
                         g_yd[ng] = d
-                        c_sc[ng] = m_sc[t]
-                        c_fc[ng] = m_fc[t]
-                        c_om[ng] = m_om[t]
-                        c_xp[ng] = m_xp[t]
+                        gx, gy, gz = gvec_one(m_xl[t], m_yl[t], m_zl[t],
+                                              m_xp[t], som, com,
+                                              A, oc, invwvln, a_is_eye)
+                        gvm[ng, 0] = gx
+                        gvm[ng, 1] = gy
+                        gvm[ng, 2] = gz
                         ng += 1
                 if ng == 0:
                     continue
-
-                # merged g-vectors
-                gvm = compute_gve(
-                    c_sc[:ng], c_fc[:ng], c_om[:ng], c_xp[:ng],
-                    distance=distance, y_center=y_center, y_size=y_size,
-                    tilt_y=tilt_y, z_center=z_center, z_size=z_size,
-                    tilt_z=tilt_z, tilt_x=tilt_x,
-                    o11=o11, o12=o12, o21=o21, o22=o22,
-                    t_x=t_x, t_y=t_y, t_z=t_z,
-                    wedge=wedge, chi=chi, wavelength=wavelength,
-                )  # (3, ng)
-
+ 
                 # ---- reassign the merged peaks, eq (8) with e_hkl ---------
                 nfit = 0
                 for t in range(ng):
-                    Gx = gvm[0, t]                          # G, eq (5)
-                    Gy = gvm[1, t]
-                    Gz = gvm[2, t]
+                    Gx = gvm[t, 0]                          # G, eq (5)
+                    Gy = gvm[t, 1]
+                    Gz = gvm[t, 2]
                     hf0 = u00 * Gx + u01 * Gy + u02 * Gz    # (UB)^-1 G
                     hf1 = u10 * Gx + u11 * Gy + u12 * Gz
                     hf2 = u20 * Gx + u21 * Gy + u22 * Gz
@@ -2033,7 +2029,7 @@ def refine_map(
  
                 if nfit <= min_grain_npks:
                     continue
-
+ 
                 # ---- weighted UBI fit via 3x3 normal equations ------------
                 for a in range(3):
                     for b in range(3):
@@ -2044,9 +2040,9 @@ def refine_map(
                     # eq (6): 1 at the beam centre, beam_size/3 regularisation
                     w = weight_reg / (g_yd[ii] + weight_reg)
                     ww = w * w
-                    Gx = gvm[0, ii]                     # G, eq (5)
-                    Gy = gvm[1, ii]
-                    Gz = gvm[2, ii]
+                    Gx = gvm[ii, 0]                     # G, eq (5)
+                    Gy = gvm[ii, 1]
+                    Gz = gvm[ii, 2]
                     h0 = np.float64(fit_hkl[t, 0])      # G_hkl
                     h1 = np.float64(fit_hkl[t, 1])
                     h2 = np.float64(fit_hkl[t, 2])
@@ -2082,22 +2078,19 @@ def refine_map(
                     for a in range(3):
                         for b in range(3):
                             ubi_out[a, b] = GtWWH[b, a]
-
+ 
                     finite = True
                     for a in range(3):
                         for b in range(3):
                             if not np.isfinite(ubi_out[a, b]):
                                 finite = False
-                    dt = _det3(ubi_out) if finite else 0.0
-                    sv = np.linalg.svd(ubi_out)[1] if finite else np.zeros(3)
-                    smax = sv[0]
-                    smin = sv[2]
-                    rank3 = smin > smax * 3.0 * 2.220446049250313e-16
-                    cnd = 1e300 if smin <= 0.0 else smax / smin
-                    worth_fitting = finite and rank3 and (cnd < 1e14) and (dt > 0.0)
+                    # rank 3, cond < 1e14, positive determinant -- same test
+                    # as before, but without a LAPACK call per candidate
+                    worth_fitting = (finite and _det3(ubi_out) > 0.0
+                                     and _well_conditioned(ubi_out))
                 else:
                     worth_fitting = False
-
+ 
                 if not worth_fitting:
                     ubi_out[0, 0] = u00
                     ubi_out[0, 1] = u01
@@ -2108,19 +2101,19 @@ def refine_map(
                     ubi_out[2, 0] = u20
                     ubi_out[2, 1] = u21
                     ubi_out[2, 2] = u22
-
+ 
                 # ---- reassign with the (probably refined) UBI -------------
                 v00 = ubi_out[0, 0]; v01 = ubi_out[0, 1]; v02 = ubi_out[0, 2]
                 v10 = ubi_out[1, 0]; v11 = ubi_out[1, 1]; v12 = ubi_out[1, 2]
                 v20 = ubi_out[2, 0]; v21 = ubi_out[2, 1]; v22 = ubi_out[2, 2]
-
+ 
                 # how many peaks we fit strain with
                 # ---- reassign with the refined (UB)^-1, eq (8) ------------
                 nfit2 = 0
                 for t in range(ng):
-                    Gx = gvm[0, t]
-                    Gy = gvm[1, t]
-                    Gz = gvm[2, t]
+                    Gx = gvm[t, 0]
+                    Gy = gvm[t, 1]
+                    Gz = gvm[t, 2]
                     hf0 = v00 * Gx + v01 * Gy + v02 * Gz
                     hf1 = v10 * Gx + v11 * Gy + v12 * Gz
                     hf2 = v20 * Gx + v21 * Gy + v22 * Gz
@@ -2136,7 +2129,7 @@ def refine_map(
                         fit_hkl[nfit2, 1] = np.int64(hi1)
                         fit_hkl[nfit2, 2] = np.int64(hi2)
                         nfit2 += 1
-
+ 
                 # ---- unique peak count -----------------------------------
                 for t in range(nfit2):
                     keys[t] = _pack4(_clamp_hkl(fit_hkl[t, 0]),
@@ -2144,16 +2137,16 @@ def refine_map(
                                      _clamp_hkl(fit_hkl[t, 2]),
                                      _etasign_code(m_eta[g_sel[fit_sel[t]]]))
                 nuniq = _label_groups(keys, nfit2, srt, labels)
-
+ 
                 for a in range(3):
                     for b in range(3):
                         final_ubis[row, a, b] = ubi_out[a, b]
                 final_npks[row] = nfit2
                 final_nuniq[row] = nuniq
-
+ 
                 if not worth_fitting or nfit2 == 0:
                     continue
-
+ 
                 # ---- directional strain, Henningsson et al. eq (12)-(20) ---
                 if not _ubi_to_u_safe(ubi_out, Umat):
                     n_degen += 1
@@ -2163,9 +2156,9 @@ def refine_map(
                 mu_eps = 0.0
                 for t in range(nfit2):
                     ii = fit_sel[t]
-                    Gx = gvm[0, ii]           # G, measured diffraction vector
-                    Gy = gvm[1, ii]
-                    Gz = gvm[2, ii]
+                    Gx = gvm[ii, 0]           # G, measured diffraction vector
+                    Gy = gvm[ii, 1]
+                    Gz = gvm[ii, 2]
                     h0 = np.float64(fit_hkl[t, 0])
                     h1 = np.float64(fit_hkl[t, 1])      # integer hkl
                     h2 = np.float64(fit_hkl[t, 2])
@@ -2224,9 +2217,9 @@ def refine_map(
                     if w == 0.0:
                         continue
                     ii = fit_sel[t]
-                    Gx = gvm[0, ii]
-                    Gy = gvm[1, ii]
-                    Gz = gvm[2, ii]
+                    Gx = gvm[ii, 0]
+                    Gy = gvm[ii, 1]
+                    Gz = gvm[ii, 2]
                     Gnorm = np.sqrt(Gx * Gx + Gy * Gy + Gz * Gz)
                     k1 = Gx / Gnorm                     # kappa, eq (17)
                     k2 = Gy / Gnorm
@@ -2266,11 +2259,11 @@ def refine_map(
                 final_eps[row, 2, 0] = eps_xz
                 final_eps[row, 2, 1] = eps_yz
                 final_eps[row, 2, 2] = eps_zz
-
+ 
         overflow[chunk] = n_ovf
         degenerate[chunk] = n_degen
         gather_fail[chunk] = n_gfail
-
+ 
     return (final_ubis, final_eps, final_npks, final_nuniq,
             overflow, degenerate, gather_fail)
 

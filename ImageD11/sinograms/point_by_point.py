@@ -41,7 +41,8 @@ from ImageD11.sinograms.voxel_mask import (
     VoxelSinoMasker, fill_voxel_idx, max_candidates as vm_max_candidates,
     default_index_filename,
     save_peak_index_cache, load_peak_index_cache,
-    choose_omega_bins)
+    choose_omega_bins,
+    _CACHE_VERSION)
 
 # GOTO - find somewhere!
 # Everything written in Numba could move to C?
@@ -530,8 +531,8 @@ def initializer(parfile, phase_name, symmetry, colfile, index_filename, loglevel
         n = partglobal["maxlocal"]
         if n is None:
             raise RuntimeError(
-                "peak index %s has no maxlocal -- it predates _INDEX_VERSION "
-                "%d. Rerun setpeaks()." % (index_filename, _INDEX_VERSION))
+                "peak index %s has no maxlocal -- it predates _CACHE_VERSION "
+                "%d. Rerun setpeaks()." % (index_filename, _CACHE_VERSION))
 
         bufglobal = {
             "idx": np.empty(n, np.int64),
