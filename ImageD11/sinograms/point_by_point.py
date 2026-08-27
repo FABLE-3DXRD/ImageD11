@@ -39,8 +39,9 @@ from ImageD11.peakselect import mask_rings_by_ifrac
 from ImageD11.sinograms import geometry
 from ImageD11.sinograms.voxel_mask import (
     VoxelSinoMasker, fill_voxel_idx, max_candidates as vm_max_candidates,
-    default_index_filename, _calc_peak_fingerprint,
-    save_peak_index_cache, load_peak_index_cache, choose_omega_bins)
+    default_index_filename,
+    save_peak_index_cache, load_peak_index_cache,
+    choose_omega_bins)
 
 # GOTO - find somewhere!
 # Everything written in Numba could move to C?
@@ -507,8 +508,7 @@ colglobal = None
 partglobal = None
 bufglobal = None
 
-def initializer(parfile, phase_name, symmetry, colfile, index_filename,
-                fingerprint, loglevel=3):
+def initializer(parfile, phase_name, symmetry, colfile, index_filename, loglevel=3):
     global ucglobal, symglobal, parglobal, colglobal, partglobal, bufglobal
     try:
         if threadpoolctl is not None:
@@ -521,13 +521,18 @@ def initializer(parfile, phase_name, symmetry, colfile, index_filename,
  
         # mmap, not read: identical and read-only in every worker, so one
         # mapping through the page cache replaces one copy per process
-        partglobal = load_peak_index_cache(index_filename, fingerprint, mmap=True)
+        partglobal = load_peak_index_cache(index_filename, mmap=True)
         if partglobal is None:
             raise RuntimeError(
                 "peak index %s is missing or stale -- rerun setpeaks()"
                 % index_filename)
  
         n = partglobal["maxlocal"]
+        if n is None:
+            raise RuntimeError(
+                "peak index %s has no maxlocal -- it predates _INDEX_VERSION "
+                "%d. Rerun setpeaks()." % (index_filename, _INDEX_VERSION))
+
         bufglobal = {
             "idx": np.empty(n, np.int64),
             "ydist": np.empty(n, np.float64),
@@ -592,48 +597,26 @@ class PBP:
 
         self.icolf_filename = None      # set by setpeaks
         self.index_filename = None      # set by setpeaks
-        self.index_fingerprint = None
 
     def _build_index(self, verbose=True):
-        """Take a pre-generated partition, size the buffers with max_candidates, cache it to disk
-        ready for memmap in the workers. Returns the partition dictionary."""
-
-        # Determine the cache filename
+        """Take the partition setpeaks built, size the buffers with
+        max_candidates, and write it to disk ready for mmap in the workers.
+        Returns the partition dictionary.
+        """
         self.index_filename = default_index_filename(self)
-        # Compute a fingerprint of the peaks and parameters that affect the partition
-        # Without this, it would be easy to load invalid caches that no longer apply to us
-        fp = _calc_peak_fingerprint(self)
-        self.index_fingerprint = fp
-
-        # Try to load the cache from disk
-        cached = load_peak_index_cache(self.index_filename, fp)
-        if cached is not None:
-            if verbose:
-                print("loaded peak index from %s (%d omega bins, %d dty bins,"
-                      " maxlocal %s)" % (self.index_filename, cached["nom"],
-                                         cached["ndty"], cached["maxlocal"]))
-            return cached
-
-        # If we got here, we don't have a cache, or it's stale.
-        # The partition is already built in self._masker,
-        # now we need to size the buffers and cache for mem-map in the workers.
+ 
+        # The partition is already built in self._masker; we only need to
+        # size the buffers and write it out for the workers.
         M = self._masker
-        # Number of omega bins
-        nom = int(M.sinomega_bins.size)
-        # Number of dty bins - bin edges - 1
-        ndty = int(M.dty_partitions.shape[1]) - 1
+        nom = int(M.sinomega_bins.size)          # number of omega bins
+        ndty = int(M.dty_partitions.shape[1]) - 1  # bin edges - 1
  
         # Worst case peaks any point can pull out, so the workers size their
         # buffers exactly. Uses the refiner's |.| <= ystep predicate, which
-        # is a superset of bin equality, so it bounds both relax settings.
-
-        # Determine the worst-case number of peaks any voxel could access
-        # This is possible because we know the voxel grid we would visit
-        # First, get the sx, sy arrays
+        # is a superset of bin equality.
         pts = np.asarray(geometry.step_grid_from_ybincens(
             self.ybincens, self.ystep, 1, self.y0))
         sx, sy = geometry.step_to_sample(pts[:, 0], pts[:, 1], self.ystep)
-        # Max size of buffers
         maxlocal = int(vm_max_candidates(
             np.ascontiguousarray(sx, dtype=np.float64),
             np.ascontiguousarray(sy, dtype=np.float64),
@@ -641,10 +624,9 @@ class PBP:
             M.dty_partitions,
             M.sinomega_bins, M.cosomega_bins))
         maxlocal = max(maxlocal, 1)
-
-        # Big dictionary of anything that could change the partitioning
-        # This is what is mem-mapped in the workers, so they can size their buffers and select peaks
-        # Also helps with running on the cluster
+ 
+        # This is what gets mem-mapped in the workers, so they can size their
+        # buffers and select peaks. Also what makes the cluster path work.
         idx = {
             "order": M.peak_ordering,
             "omega_partitions": M.omega_partitions,
@@ -652,7 +634,7 @@ class PBP:
             "usin": M.sinomega_bins, "ucos": M.cosomega_bins,
             "nom": nom, "ndty": ndty, "ymin": float(M.ymin),
             "ray_margin": 0.0, "dev": 0.0,     # refiner-only, unused here
-            "maxlocal": maxlocal
+            "maxlocal": maxlocal,
         }
         if verbose:
             print("indexing partition: %d omega bins x %d dty bins = %d "
@@ -664,8 +646,7 @@ class PBP:
                       "sparse and traversal will dominate. Check whether the "
                       "frm decode ran; the heuristic over-refines without it.")
         try:
-            # Now cache the partition to disk for future runs
-            save_peak_index_cache(idx, self.index_filename, fp)
+            save_peak_index_cache(idx, self.index_filename)
             if verbose:
                 print("saved peak index to %s" % self.index_filename)
         except OSError as e:
@@ -742,7 +723,7 @@ class PBP:
         self.hmax = hmax
 
         # now save the peaks to disk
-
+        # Delete existing columnfile if present
         if icolf_filename is None:
             icolf_filename = self.dset.icolfile
         if os.path.exists(icolf_filename):
@@ -750,6 +731,11 @@ class PBP:
         ImageD11.columnfile.colfile_to_hdf(self.icolf, icolf_filename, compression=None)
 
         self.icolf_filename = icolf_filename
+
+        # Delete existing partition if present
+        index_filename = default_index_filename(self)
+        if os.path.exists(index_filename):
+            os.remove(index_filename)
 
         # Prepare the partition index for memory mapping in the workers
         # It is actually mem-mapped in the initializer
@@ -792,7 +778,6 @@ class PBP:
             f.write("symmetry={}\n".format(self.symmetry))
             f.write("icolf_filename={}\n".format(self.icolf_filename))
             f.write("index_filename={}\n".format(self.index_filename))
-            f.write("index_fingerprint={}\n".format(self.index_fingerprint))
             f.write("y0={}\n".format(self.y0))
             f.write("hkl_tol={}\n".format(self.hkl_tol))
             f.write("ds_tol={}\n".format(self.ds_tol))
@@ -880,7 +865,6 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
             grains_filename,
             icolf_filename=None,  # use self
             index_filename=None,  # use self
-            index_fingerprint=None,  # use self
             nprocs=None,
             gridstep=1,
             debugpoints=None,
@@ -896,9 +880,6 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
 
         if index_filename is not None:
             self.index_filename = index_filename
-
-        if index_fingerprint is not None:
-            self.index_fingerprint = index_fingerprint
         
         self.loglevel = loglevel
         
@@ -939,8 +920,12 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
         # worker passes: a read-only memmap is a distinct numba type from a
         # writable array, so this loads the index and columns the same way
         # initializer does rather than using dummy arrays.
-        _part = load_peak_index_cache(self.index_filename, self.index_fingerprint,
-                                mmap=True)
+        _part = load_peak_index_cache(self.index_filename, mmap=True)
+        if _part is None:
+            raise RuntimeError(
+                "peak index %s is missing or the wrong version -- rerun "
+                "setpeaks()" % self.index_filename)
+
         _sm = ImageD11.columnfile.mmap_h5colf(self.icolf_filename)
         _n = _part["maxlocal"]
         _t0 = time.time()
@@ -983,7 +968,6 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
                             self.symmetry,
                             self.icolf_filename,
                             self.index_filename,
-                            self.index_fingerprint,
                             self.loglevel,
                     ),
             ) as p:

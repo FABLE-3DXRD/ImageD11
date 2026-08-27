@@ -1,5 +1,8 @@
 import unittest
 
+import os
+import tempfile
+import h5py
 import numpy as np
 
 import sys
@@ -8,7 +11,7 @@ if int(sys.version_info.major) == 2:
 else:
     from ImageD11.sinograms.voxel_mask import (
         VoxelSinoMasker, fill_voxel_idx, max_candidates,
-        save_peak_index_cache, load_peak_index_cache)
+        save_peak_index_cache, load_peak_index_cache, _PEAK_H5GROUP, _CACHE_VERSION)
 
 
 YSTEP = 2.0
@@ -186,43 +189,57 @@ class TestMaxCandidates(unittest.TestCase):
 
 
 class TestIndexCache(unittest.TestCase):
-    """The cache must round-trip, and must refuse a stale fingerprint."""
-
-    def _idx(self, m):
-        return dict(order=m.peak_ordering,
-                    omega_partitions=m.omega_partitions,
-                    dty_partitions=m.dty_partitions,
-                    usin=m.sinomega_bins, ucos=m.cosomega_bins,
-                    nom=int(m.sinomega_bins.size),
-                    ndty=int(m.dty_partitions.shape[1]) - 1,
-                    ymin=float(m.ymin), ray_margin=2.0, dev=0.0,
-                    maxlocal=1234)
-
-    def test_round_trip_and_stale(self):
-        import os
-        import tempfile
-        omega, dty, _, _ = make_peaks(npk=20000)
-        m = VoxelSinoMasker(omega.copy(), dty.copy(), YSTEP, ymin=YBIN_MIN)
-        m.partition()
-        idx = self._idx(m)
-        fn = os.path.join(tempfile.mkdtemp(), "idx.h5")
-        save_peak_index_cache(idx, fn, "abc123")
-
-        got = load_peak_index_cache(fn, "abc123")
+    """The cache must round-trip, and must refuse a file it cannot trust."""
+    def _idx(self):
+        rng = np.random.default_rng(0)
+        return dict(order=rng.permutation(500),
+                    omega_partitions=np.arange(0, 501, 50),
+                    dty_partitions=rng.integers(0, 50, (10, 12)),
+                    usin=np.sin(np.linspace(0, 6, 10)),
+                    ucos=np.cos(np.linspace(0, 6, 10)),
+                    nom=10, ndty=11, ymin=YBIN_MIN,
+                    ray_margin=2.0, dev=0.0, maxlocal=1234)
+ 
+    def setUp(self):
+        self.idx = self._idx()
+        self.fn = os.path.join(tempfile.mkdtemp(), "idx.h5")
+        save_peak_index_cache(self.idx, self.fn)
+ 
+    def test_round_trip(self):
+        got = load_peak_index_cache(self.fn)
         self.assertIsNotNone(got)
         for k in ("order", "omega_partitions", "dty_partitions", "usin", "ucos"):
-            self.assertTrue(np.array_equal(np.asarray(got[k]), idx[k]), k)
+            self.assertTrue(np.array_equal(np.asarray(got[k]), self.idx[k]), k)
         self.assertEqual(got["maxlocal"], 1234)
         self.assertAlmostEqual(got["ymin"], YBIN_MIN)
-
-        # wrong fingerprint -> None, not a stale index
-        self.assertIsNone(load_peak_index_cache(fn, "different"))
-
-        # mmap path must give the same values
-        mm = load_peak_index_cache(fn, "abc123", mmap=True)
+        self.assertEqual(got["nom"], 10)
+ 
+    def test_mmap_matches(self):
+        mm = load_peak_index_cache(self.fn, mmap=True)
         self.assertIsNotNone(mm)
-        self.assertTrue(np.array_equal(np.asarray(mm["dty_partitions"]),
-                                       idx["dty_partitions"]))
+        for k in ("order", "omega_partitions", "dty_partitions", "usin", "ucos"):
+            self.assertTrue(np.array_equal(np.asarray(mm[k]), self.idx[k]), k)
+ 
+    def test_missing_file(self):
+        self.assertIsNone(load_peak_index_cache(self.fn + ".nope"))
+ 
+    def test_wrong_version(self):
+        # a file from an older ImageD11 must be refused, not half-read
+        with h5py.File(self.fn, "a") as h:
+            h[_PEAK_H5GROUP].attrs["version"] = _CACHE_VERSION - 1
+        self.assertIsNone(load_peak_index_cache(self.fn))
+ 
+    def test_no_group(self):
+        with h5py.File(self.fn, "a") as h:
+            del h[_PEAK_H5GROUP]
+        self.assertIsNone(load_peak_index_cache(self.fn))
+ 
+    def test_maxlocal_absent_is_none(self):
+        # initializer must be able to tell "no maxlocal" from a real value:
+        # np.empty(None) raises an unhelpful TypeError
+        with h5py.File(self.fn, "a") as h:
+            del h[_PEAK_H5GROUP].attrs["maxlocal"]
+        self.assertIsNone(load_peak_index_cache(self.fn)["maxlocal"])
 
 
 if __name__ == "__main__":

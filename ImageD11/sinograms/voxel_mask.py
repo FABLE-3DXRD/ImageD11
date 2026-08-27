@@ -9,33 +9,33 @@ The thing we want to avoid is finding the peaks for a given (sx,sy) by
 testing this predicate against every peak in the sinogram, which is very slow.
 
 We do this in the following way (see VoxelSinoMasker.partition() for details):
-1. We bin the peaks in omega and dty, either by supplied bin edges or by a heuristic that guesses a good bin size.
-2. We sort the peaks by omega (primary) and dty (secondary) using their bin indices to determine a peak ordering
+1. We bin the peaks in omega and dty, either by supplied omega bin centres or by a heuristic that guesses a good omega bin size. dty bins are fixed by ystep.
+2. We sort the peaks by omega bin indices (primary) and raw dty values (secondary) to determine a peak ordering. We use raw dty because it changes within an omega bin.
 3. We make partition arrays, which track the start of each omega and dty bin in the sorted arrays
 omega_partitions[i] is the index of the first (sorted) peak in omega bin i
-dty_partitions[i,j] is the index of the first (sorted) peak in omega bin i and dty bin j
+dty_partitions[i,j] is the offset, within omega bin i, of the first (sorted) peak in dty bin j
 4. We precompute sin(omega) and cos(omega) for each peak for speed
 5. We precompute sin(omega_bin) and cos(omega_bin) for each omega bin for speed
 
 Then, to find the peaks that illuminate a voxel at (sx,sy) (see fill_voxel_idx() for details):
 1. We walk the omega bins, and for each bin compute the dty value of the voxel at that omega
-2. We determine the dty bin that corresponds to that dty value
-3. We determine the corresponding dty bin for the -next- omega bin
-4. This tells us, as a function of omega, which dty bins we need to visit to find the peaks that illuminate the voxel
+2. We determine the corresponding dty value for the -next- omega bin
+3. We convert the difference in dty values between omega bins into a dty bin padding for that omega bin
+4. This tells us, as a function of omega, how "wide" our search space is in dty bins
 5. We walk the omega bins again, computing the y coordinate of the voxel at that omega, and the corresponding dty bin
 6. Including the dty bin padding from the previous step, we now know the dty partitions to visit for this omega bin
 7. We get the start and end indices from dty_partitions and omega_partitions
 8. Within an omega partition, peaks are monotonically increasing in dty, so we can just do peaks[start:end]
 9. For any peak in that range, we compute the exact y distance to the voxel and check if it is within ystep. If so, we keep it.
-10. We fill the idx_buffer and ydist_buffer with the indices and distances of the peaks that illuminate the voxel.
+10. We fill the idx_buffer and ydist_buffer with the (sorted!) indices and distances of the peaks that illuminate the voxel.
 We also keep track of how many peaks we found (m), and return that number. If the buffers are too small, we return -1.
+This whole process means that we never miss peaks. The only purpose is to reduce the number of peaks we have to test the predicate for.
 
 We now have an idx_buffer and ydist_buffer that contain the indices and distances of the peaks that illuminate the voxel at (sx,sy).
 By just returning the first m elements of the buffers, we can avoid any memory allocation and reuse the buffers for all voxels in a grid.
 These buffers can be optimally sized for a given (sx,sy) grid - see max_candidates for details.
 """
 
-import hashlib
 import os
 import sys
 
@@ -47,87 +47,12 @@ import numpy as np
 # It is handy to cache the results of a partition to disk, so that we can reuse it later without recomputing it.
 # This is useful for memory-mapping between workers (pbp indexing)
 # and also going between a local machine and a cluster machine.
-# Caches are fingerprinted to make sure we don't accept an invalid cache.
 
-_CACHE_VERSION = 6
-
-## Helper functions
-
-def _hash_cols(h, icolf, names):
-    for name in names:
-        if name not in icolf.titles:
-            h.update(("%s:absent;" % name).encode())
-            continue
-        arr = np.ascontiguousarray(getattr(icolf, name))
-        h.update(name.encode())
-        h.update(arr.dtype.str.encode())
-        h.update(np.int64(arr.shape[0]).tobytes())
-        h.update(arr)          # was arr.tobytes() -- a full copy of the column
-
-## Fingerprinting
-
-def _calc_peak_fingerprint(manager, omega_binsize="auto", omega_step=None):
-    """Make a fingerprint of everything that's required to use a
-    previously-computed partition to mask peaks for a given voxel.
-
-    Works for both PBPRefine and PBP: the reconstruction grid shape is only
-    included when there is one.
-
-    If fingerprints match, the same peak index will be made.
-
-    Parameters
-    ----------
-    manager
-        Either a PBP or PBPRefine object.
-    omega_binsize, optional
-        _description_, by default "auto"
-    omega_step, optional
-        _description_, by default None
-
-    Returns
-    -------
-        Fingerprint of peak index
-    """
-
-    h = hashlib.blake2b(digest_size=16)
-    h.update(("v%d peak" % _CACHE_VERSION).encode())
-    _hash_cols(h, manager.icolf, ("omega", "dty", "dtyi", "frm"))
-    mask = getattr(manager, "mask", None)
-    h.update(repr((float(manager.ystep), float(manager.y0), float(manager.ymin),
-                   None if omega_step is None else float(omega_step),
-                   omega_binsize,
-                   None if mask is None else tuple(mask.shape))).encode())
-    return h.hexdigest()
-
-
-def _calc_gve_fingerprint(refine, peak_fingerprint):
-    """Extend the peak fingerprint to include columns that are needed to compute g-vectors.
-
-    Parameters
-    ----------
-    refine
-        PBPRefine object
-    peak_fingerprint
-        Compute with _calc_peak_fingerprint
-
-    Returns
-    -------
-        _description_
-    """
-
-    h = hashlib.blake2b(digest_size=16)
-    h.update(("v%d gve " % _CACHE_VERSION).encode())
-    h.update(peak_fingerprint.encode())
-    _hash_cols(h, refine.icolf, ("sc", "fc", "xpos_refined"))
-    pars = refine.icolf.parameters.get_parameters()
-    for k in sorted(pars):
-        h.update(("%s=%r;" % (k, pars[k])).encode())
-    return h.hexdigest()
+_CACHE_VERSION = 7
 
 
 ## Save and load caches
 _PEAK_H5GROUP = "PBPPeakIndex"
-_GVE_H5GROUP = "PBPGveCache"
 
 
 def default_index_filename(manager):
@@ -153,8 +78,8 @@ def default_index_filename(manager):
     return os.path.splitext(base)[0] + "_pbpindex.h5"
 
 
-def save_peak_index_cache(idx, filename, peak_fingerprint):
-    """Save peak index to an on-disk H5 cache, with fingerprinting and versioning.
+def save_peak_index_cache(idx, filename):
+    """Save peak index to an on-disk H5 cache, with versioning.
 
     Parameters
     ----------
@@ -162,14 +87,12 @@ def save_peak_index_cache(idx, filename, peak_fingerprint):
         Peak index to cache
     filename
         Filename to save to
-    peak_fingerprint
-        Compute with _calc_peak_fingerprint
+
     """
     with h5py.File(filename, "a") as hout:
         if _PEAK_H5GROUP in hout:
             del hout[_PEAK_H5GROUP]
         g = hout.create_group(_PEAK_H5GROUP)
-        g.attrs["fingerprint"] = peak_fingerprint
         g.attrs["version"] = _CACHE_VERSION
         for k in ("nom", "ndty"):
             g.attrs[k] = int(idx[k])
@@ -185,29 +108,7 @@ def save_peak_index_cache(idx, filename, peak_fingerprint):
             g.create_dataset(k, data=idx[k])
 
 
-def save_gve_cache(gve, filename, gve_fingerprint):
-    """Save g-vectors to an on-disk H5 cache, with fingerprinting and versioning.
-
-    Parameters
-    ----------
-    gve_all
-        G-vectors to cache
-    filename
-        Filename to save to
-    gve_fingerprint
-        Compute with _calc_gve_fingerprint
-    """
-    
-    with h5py.File(filename, "a") as hout:
-        if _GVE_H5GROUP in hout:
-            del hout[_GVE_H5GROUP]
-        g = hout.create_group(_GVE_H5GROUP)
-        g.attrs["fingerprint"] = gve_fingerprint
-        g.attrs["version"] = _CACHE_VERSION
-        g.create_dataset("gve_all", data=gve)
-
-
-def load_peak_index_cache(filename, peak_fingerprint, mmap=False, verbose=True):
+def load_peak_index_cache(filename, mmap=False, verbose=True):
     """Load peak index from an on-disk H5 cache, with optional mem-map.
 
     Use it from multiprocessing workers: the arrays are identical in every
@@ -219,8 +120,6 @@ def load_peak_index_cache(filename, peak_fingerprint, mmap=False, verbose=True):
     ----------
     filename
         Filename to load from
-    peak_fingerprint
-        Compute with _calc_peak_fingerprint
     mmap, optional
         returns read-only np.memmap views instead of copies. by default False
     verbose, optional
@@ -251,13 +150,8 @@ def load_peak_index_cache(filename, peak_fingerprint, mmap=False, verbose=True):
         g = hin[_PEAK_H5GROUP]
         v = g.attrs.get("version", -1)
         if v != _CACHE_VERSION:
-            print("index: version %s, expected %d" % (v, _CACHE_VERSION),
-                  file=sys.stderr)
-            return None
-        got = g.attrs.get("fingerprint", "")
-        if got != peak_fingerprint:
-            print("index: fingerprint %s, expected %s" % (got, peak_fingerprint),
-                  file=sys.stderr)
+            print("index: version %s, expected %d -- rerun setpeaks()"
+                  % (v, _CACHE_VERSION), file=sys.stderr)
             return None
  
         def get(k):
@@ -269,7 +163,7 @@ def load_peak_index_cache(filename, peak_fingerprint, mmap=False, verbose=True):
                 return d[:]
             return np.memmap(filename, dtype=d.dtype, mode="r",
                              offset=off, shape=d.shape)
-
+ 
         return dict(
             nom=int(g.attrs["nom"]), ndty=int(g.attrs["ndty"]),
             ymin=float(g.attrs["ymin"]),
@@ -282,38 +176,6 @@ def load_peak_index_cache(filename, peak_fingerprint, mmap=False, verbose=True):
             dty_partitions=get("dty_partitions"),
             usin=get("usin"), ucos=get("ucos"),
         )
-
-
-def load_gve_cache(filename, gve_fingerprint):
-    """Load gves from an on-disk H5 cache.
-
-    Unlike load_peak_index_cache, this is only used in PBPRefine, so no memmap needed.
-
-    Parameters
-    ----------
-    filename
-        Filename to load from
-    gve_fingerprint
-        Compute with _calc_gve_fingerprint
-
-    Returns
-    -------
-        Cached g-vectors
-    """
-    if filename is None or not os.path.exists(filename):
-        return None
-    try:
-        with h5py.File(filename, "r") as hin:
-            if _GVE_H5GROUP not in hin:
-                return None
-            g = hin[_GVE_H5GROUP]
-            if g.attrs.get("version", -1) != _CACHE_VERSION:
-                return None
-            if g.attrs.get("fingerprint", "") != gve_fingerprint:
-                return None
-            return g["gve_all"][:]
-    except (OSError, KeyError):
-        return None
 
 # -------- OMEGA BINNING -------- #
 # A voxel at (sx,sy) is illuminated when:
@@ -814,7 +676,7 @@ class VoxelSinoMasker:
     arbitrary, (i.e merged 3d peaks should work as well as single 2d peaks).
 
     omega_partitions[i] is the index of the first (sorted) peak in omega bin i
-    dty_partitions[i,j] is the index of the first (sorted) peak in omega bin i and dty bin j
+    dty_partitions[i,j] is the offset, within omega bin i, of the first (sorted) peak in dty bin j
 
     Adaptable omega bin sizes are used to chunk the data over angles. For a call to mask() the algorithm then
     oterates over the omega bins and collects partitions of dty values that are candidates for the voxel.

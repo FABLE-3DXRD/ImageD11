@@ -162,15 +162,9 @@ from ImageD11.sinograms.sinogram import save_array
 from ImageD11.sinograms.tensor_map import unitcell_to_b
 from ImageD11.sinograms.voxel_mask import (
     VoxelSinoMasker,
-    _calc_gve_fingerprint,
-    _calc_peak_fingerprint,
     choose_omega_bins,
     default_index_filename,
     fill_voxel_idx,
-    load_gve_cache,
-    load_peak_index_cache,
-    save_gve_cache,
-    save_peak_index_cache,
 )
 from ImageD11.sinograms.voxel_mask import max_candidates as vm_max_candidates
 
@@ -674,46 +668,40 @@ def _ubi_to_u_safe(ubi, U):
 
 
 def build_partition(refine, omega_binsize="auto", omega_step=None,
-                     cache_filename=None, use_cache=True, verbose=True):
+                    verbose=True):
     """Partition the peaks into (omega bin, dty bin) cells.
+ 
+    See voxel_mask.VoxelSinoMasker.partition for how the partitioning works.
+ 
+    Path 1: already built this session, held as refine._partition
+    Path 2: build it
 
-    See voxel_mask.VoxelSinoMasker.partition for the details of the partitioning
-
-    Shared by get_origins and run_refine. Needs only omega, dty and dtyi, so
-    it can be built before xpos_refined exists.
+    This is not saved to disk, because we don't need to memmap like for indexing.
     """
     icolf = refine.icolf
     n = icolf.nrows
-
-    if use_cache and cache_filename is None:
-        try:
-            cache_filename = default_index_filename(refine)
-        except ValueError:
-            use_cache = False
-    
-    # Try to load the cache
-    index_fingerprint = (_calc_peak_fingerprint(refine, omega_binsize, omega_step)
-                   if use_cache else None)
-    cached = load_peak_index_cache(cache_filename, index_fingerprint) if use_cache else None
-    # remember the fingerprint for later
-    refine.index_fingerprint = index_fingerprint
-
+ 
     dtyi = np.ascontiguousarray(icolf.dtyi, dtype=np.int64)
     dbin = dtyi
-
-    if cached is not None:
+ 
+    # id(icolf) in the key means setpeaks and loadpeaks invalidate this for
+    # free: both build the new columnfile while self.icolf still holds the
+    # old one, so the addresses cannot collide. addcolumn does NOT
+    # invalidate, which is what we want -- get_origins adding xpos_refined
+    # leaves omega, dty, dtyi and frm untouched.
+    memkey = (omega_binsize, omega_step, id(icolf), icolf.nrows)
+    held = getattr(refine, "_partition", None)
+    if held is not None and held[0] == memkey:
         if verbose:
-            print("loaded peak index from %s (%d omega bins, %d dty bins)"
-                  % (cache_filename, cached["nom"], cached["ndty"]))
-        idx = dict(cached)
+            print("reusing the partition built earlier this session")
+        idx = dict(held[1])
         idx["dbin"] = dbin
-        idx["cache_filename"] = cache_filename
         return idx
-
+ 
     omega = np.ascontiguousarray(icolf.omega, dtype=np.float64)
     dty = np.ascontiguousarray(icolf.dty, dtype=np.float64)
     rmax = float(np.hypot(refine.sx_grid, refine.sy_grid)[refine.mask].max())
-
+ 
     t0 = time.perf_counter()
     kw, iom = choose_omega_bins(refine, omega, omega_binsize, omega_step,
                                 verbose)
@@ -721,15 +709,18 @@ def build_partition(refine, omega_binsize="auto", omega_step=None,
     M.partition(keep_columns=False, **kw)
     nom = int(M.sinomega_bins.size)
     ndty = int(M.dty_partitions.shape[1]) - 1
-
+ 
+    # max |omega - bin centre|, which sets how far a ray can wander inside a
+    # cell and hence the voxel-strip half width used by compute_origins.
+    # From the unpermuted omega: keep_columns=False means the masker no
+    # longer holds a permuted copy.
     ob = np.asarray(M.omega_bins, dtype=np.float64)
-    # If we didn't generate iom from choose_omega_bins, compute it from the binsize
     if iom is None:                       # heuristic or explicit binsize
         iom = np.clip(np.round((omega - omega.min()) / M.omega_binsize
                                ).astype(np.int64), 0, nom - 1)
     dev = float(np.abs(omega - ob[iom]).max())
     ray_margin = 1.5 + rmax * np.radians(dev) / refine.ystep + 0.5
-    
+ 
     if verbose:
         print("peak index: %d omega bins x %d dty bins = %d cells, %.1f "
               "peaks/cell (%.2f s)" % (nom, ndty, nom * ndty,
@@ -740,45 +731,32 @@ def build_partition(refine, omega_binsize="auto", omega_step=None,
               % ("supplied frames" if M.omega_binsize is None
                  else "%.4f deg" % M.omega_binsize, dev, rmax, ray_margin))
         if n < nom * ndty:
-            print("  WARNING: fewer peaks than cells (%.2f/cell); the index is "
-                  "sparse and traversal will dominate." % (n / float(nom * ndty)))
-
-    # Big dictionary of anything that could change the partitioning
-    # Also helps with running on the cluster
+            print("  WARNING: fewer peaks than cells (%.2f/cell); the index "
+                  "is sparse and traversal will dominate."
+                  % (n / float(nom * ndty)))
+ 
     idx = {"order": M.peak_ordering,
-               "omega_partitions": M.omega_partitions,
-               "dty_partitions": M.dty_partitions,
-               "usin": M.sinomega_bins, "ucos": M.cosomega_bins,
-               "nom": nom, "ndty": ndty, "ymin": float(M.ymin),
-               "ray_margin": ray_margin, "dev": dev,
-               "dbin": dbin, "cache_filename": cache_filename,
-               "maxlocal": None}
-
-    if use_cache:
-        refine.index_filename = cache_filename
-        try:
-            save_peak_index_cache(idx, cache_filename, index_fingerprint)
-            if verbose:
-                print("saved peak index to %s" % cache_filename)
-        except OSError as e:
-            print("could not write index cache (%s), continuing" % e)
+           "omega_partitions": M.omega_partitions,
+           "dty_partitions": M.dty_partitions,
+           "usin": M.sinomega_bins, "ucos": M.cosomega_bins,
+           "nom": nom, "ndty": ndty, "ymin": float(M.ymin),
+           "ray_margin": ray_margin, "dev": dev,
+           "dbin": dbin}
+ 
+    refine._partition = (memkey, dict(idx))
     return idx
 
 
-def build_indexes(refine, omega_binsize="auto", omega_step=None,
-                  cache_filename=None, use_cache=True, verbose=True):
-    """Partition the peaks, permute them in partition order, and compute g-vectors and the pbpmap CSR."""
+
+def build_indexes(refine, omega_binsize="auto", omega_step=None, verbose=True):
+    """Everything refine_map needs: the partition, the permuted columns, the
+    g-vectors and the pbpmap CSR."""
     icolf = refine.icolf
-    # Get a dict with partition results in it that we need
-    # This will load from cache by default
-    idx = build_partition(refine, omega_binsize=omega_binsize, omega_step=omega_step,
-                           cache_filename=cache_filename,
-                           use_cache=use_cache, verbose=verbose)
-    cache_filename = idx.pop("cache_filename")
+    idx = build_partition(refine, omega_binsize=omega_binsize,
+                          omega_step=omega_step, verbose=verbose)
     dbin = idx.pop("dbin")
     order = idx["order"]
-
-    # PERMUTATION HAPPENS HERE
+ 
     def col(name, dtype=np.float64):
         return np.ascontiguousarray(getattr(icolf, name)[order], dtype=dtype)
 
@@ -792,42 +770,27 @@ def build_indexes(refine, omega_binsize="auto", omega_step=None,
         "xpos": col("xpos_refined"),
     }
 
-    # Try to load pre-computed g-vectors from cache
-    gve_all = None
-    if use_cache and cache_filename is not None:
-        gfp = _calc_gve_fingerprint(refine,
-            _calc_peak_fingerprint(refine, omega_binsize, omega_step))
-        gve_all = load_gve_cache(cache_filename, gfp)
-        if gve_all is not None and verbose:
-            print("loaded g-vectors from %s" % cache_filename)
-    else:
-        gfp = None
 
-    # If we couldn't find g-vectors, compute them
     # Remember these are permuted!
-    if gve_all is None:
-        pars = icolf.parameters.get_parameters()
-        t0 = time.perf_counter()
-        gve = compute_gve(
-            peaks_permuted["sc"], peaks_permuted["fc"], peaks_permuted["omega"], peaks_permuted["xpos"],
-            distance=float(pars["distance"]), y_center=float(pars["y_center"]),
-            y_size=float(pars["y_size"]), tilt_y=float(pars["tilt_y"]),
-            z_center=float(pars["z_center"]), z_size=float(pars["z_size"]),
-            tilt_z=float(pars["tilt_z"]), tilt_x=float(pars["tilt_x"]),
-            o11=float(pars["o11"]), o12=float(pars["o12"]),
-            o21=float(pars["o21"]), o22=float(pars["o22"]),
-            t_x=float(pars["t_x"]), t_y=float(pars["t_y"]), t_z=float(pars["t_z"]),
-            wedge=float(pars["wedge"]), chi=float(pars["chi"]),
-            wavelength=float(pars["wavelength"]),
-        )
-        gve_all = np.ascontiguousarray(gve.T)          # (N, 3)
-        if verbose:
-            print("computed g-vectors in %.2f s" % (time.perf_counter() - t0))
-        if gfp is not None:
-            try:
-                save_gve_cache(gve_all, cache_filename, gfp)
-            except OSError as e:
-                print("could not write gve cache (%s), continuing" % e)
+
+    pars = icolf.parameters.get_parameters()
+    t0 = time.perf_counter()
+    gve = compute_gve(
+        peaks_permuted["sc"], peaks_permuted["fc"], peaks_permuted["omega"], peaks_permuted["xpos"],
+        distance=float(pars["distance"]), y_center=float(pars["y_center"]),
+        y_size=float(pars["y_size"]), tilt_y=float(pars["tilt_y"]),
+        z_center=float(pars["z_center"]), z_size=float(pars["z_size"]),
+        tilt_z=float(pars["tilt_z"]), tilt_x=float(pars["tilt_x"]),
+        o11=float(pars["o11"]), o12=float(pars["o12"]),
+        o21=float(pars["o21"]), o22=float(pars["o22"]),
+        t_x=float(pars["t_x"]), t_y=float(pars["t_y"]), t_z=float(pars["t_z"]),
+        wedge=float(pars["wedge"]), chi=float(pars["chi"]),
+        wavelength=float(pars["wavelength"]),
+    )
+    gve_all = np.ascontiguousarray(gve.T)          # (N, 3)
+    if verbose:
+        print("computed g-vectors in %.2f s" % (time.perf_counter() - t0))
+
     peaks_permuted["gve_all"] = gve_all
 
     # ---- pbpmap CSR over (ri, rj), and (M, 3, 3) UBIs --------------------
@@ -1167,7 +1130,6 @@ class PBPRefine:
         self.icolf_filename = self.dset.refpeaksfile  # icolf for refinement
         self.refinedmap_filename = self.dset.refoutfile  # refined pbp map output
         self.own_filename = self.dset.refmanfile  # myself as an H5
-        self.index_filename = default_index_filename(self)  # partition / gve cache
 
     def setmap(self, pbpmap):
         """Set an input PBPMap Python object to use"""
@@ -1224,14 +1186,11 @@ class PBPRefine:
         else:
             self.pbpmap_filename = filename
 
-    def setpeaks(self, colf, icolf_filename=None, del_existing=True, prompt_del=True, keep_colf=True):
-        """Similar to PBP.setpeaks for now"""
-        if del_existing and prompt_del:
-            print('I will delete an existing refined peaks H5 file if I find it on disk!')
-            print('Waiting 10 seconds for you to interrupt this if you are unhappy')
-            print('To disable this prompt, set prompt_del=False when calling setpeaks()')
-            time.sleep(10)
-            print('Continuing')
+    def setpeaks(self, colf, keep_colf=True):
+        """Set icolf to refine against.
+        
+        keep_colf: keep a reference to colf as self.colf (prevents `del colf` calls from notebook from working)
+         """
 
         # Set the parameters for the peaks
         self.dset.update_colfile_pars(colf, phase_name=self.phase_name)
@@ -1275,17 +1234,14 @@ class PBPRefine:
             self.forref,
         )
         self.uc = uc
-        self.savepeaks(icolf_filename=icolf_filename, del_existing=del_existing)
 
-        # unlike pbp index, partitioning happens in compute_origins
+        # unlike pbp index, partitioning happens in get_origins
 
-    def savepeaks(self, icolf_filename=None, del_existing=False):
+    def savepeaks(self, icolf_filename=None):
         if icolf_filename is None:
             icolf_filename = self.icolf_filename
         else:
             self.icolf_filename = icolf_filename
-        if os.path.exists(icolf_filename) and del_existing:
-            os.remove(icolf_filename)
         ImageD11.columnfile.colfile_to_hdf(self.icolf, icolf_filename, compression=None)
 
     def loadpeaks(self, icolf_filename=None):
@@ -1382,15 +1338,16 @@ class PBPRefine:
         else:
             raise ValueError('Unsupported method!')
 
-    def to_h5(self, filename=None, h5group='PBPRefine'):
+    def to_h5(self, filename=None, h5group='PBPRefine', save_peaks=True):
         # save to h5 file
         if filename is None:
             filename = self.own_filename
         else:
             self.own_filename = filename
 
-        print('Saving icolf to disk')
-        self.savepeaks(del_existing=False)
+        if save_peaks:
+            print('Saving icolf to disk')
+            self.savepeaks()
         print('Saving input map to disk')
         self.savemap()
         try:
@@ -1422,7 +1379,6 @@ class PBPRefine:
                 'pbpmapfile': 'pbpmap_filename',
                 'icolffile': 'icolf_filename',
                 'refmapfile': 'refinedmap_filename',
-                'indexfile': 'index_filename',
             }
             for path_name, attr_name in filename_mappings.items():
                 try:
@@ -1457,7 +1413,6 @@ class PBPRefine:
                 'pbpmapfile': 'pbpmap_filename',
                 'icolffile': 'icolf_filename',
                 'refmapfile': 'refinedmap_filename',
-                'indexfile': 'index_filename',
             }
             filenames = {}
             for attrkey, attrname in filename_mappings.items():
@@ -1506,20 +1461,12 @@ class PBPRefine:
                 pass
         return refine_obj
 
-    def get_origins(self, save_peaks_after=True, nthreads=None, nchunks=None,
+    def get_origins(self, nthreads=None, nchunks=None,
                     omega_binsize="auto", omega_step=None, index_cache=None,
-                    cache_filename=None, use_cache=True, verbose=True,
-                    guess_speed=None, guess_npks=None):
-        """
-        Fill the xpos_refined column.
-
-        guess_speed / guess_npks are accepted and ignored -- the timing probe
-        they drove was there because this used to take much longer!
-        """
+                    verbose=True):
+        """Fill the xpos_refined column."""
         if 'xpos_refined' in self.icolf.titles:
             raise ValueError('We already have origins in self.icolf! Not recomputing')
-        if guess_speed is not None or guess_npks is not None:
-            print("note: guess_speed/guess_npks are ignored")
 
         if nthreads is None:
             nthreads = max(cImageD11.cores_available() - 1, 1)
@@ -1531,10 +1478,9 @@ class PBPRefine:
         
         # Build the partition
         # Doesn't permute the peaks!
-        # By default this will cache to disk
         idx = index_cache if index_cache is not None else build_partition(
-            self, omega_binsize=omega_binsize, omega_step=omega_step,
-            cache_filename=cache_filename, use_cache=use_cache, verbose=verbose)
+            self, omega_binsize=omega_binsize, omega_step=omega_step, verbose=verbose
+        )
         order = idx["order"]
 
         # Permute un-corrected g-vectors into partition order
@@ -1591,42 +1537,34 @@ class PBPRefine:
 
         self.icolf.addcolumn(lx_modified, 'xpos_refined')
         print('xpos_refined column added to self.icolf')
-        if save_peaks_after:
-            print('Saving self.icolf to disk with new column')
-            self.savepeaks()
+
         return lx_modified
 
     def run_refine(self, points_step_space=None, npoints=None,
                    output_filename=None, use_cluster=False, pythonpath=None,
-                   nthreads=None, nchunks=None, omega_binsize="auto", omega_step=None,
-                   index_cache=None, cache_filename=None, use_cache=True,
-                   save=True, verbose=True,
+                   nthreads=None, nchunks=None, omega_binsize="auto",
+                   omega_step=None, 
+                   index_cache=None, save=True, verbose=True,
                    cpus_per_task=16, time_h=1, partition="nice", mem_G=32):
         """
         Refine every UBI candidate in self.pbpmap.
-
-        use_cluster=True builds the index locally, writes it to the cache
-        alongside self, and submits a slurm job that reloads both. The worker
-        then does almost nothing but the kernel, so ask for a short walltime.
+ 
+        Computes the diffraction origins first if they are not already there,
+        so on the cluster the worker does that too -- get_origins is the
+        expensive part and there is no reason to run it on a submission node.
+        Call get_origins() yourself first if you want to inspect them.
         """
-        if "xpos_refined" not in self.icolf.titles:
-            raise ValueError("Run get_origins() first -- no xpos_refined column")
-
         if use_cluster:
             if pythonpath is None:
                 raise ValueError("Must supply pythonpath to run on cluster!")
             if points_step_space is not None or npoints is not None:
                 raise ValueError("Choosing points to refine on the cluster is "
                                  "not implemented")
-            # build the index here so the worker loads it instead of redoing it
-            if verbose:
-                print("Building index before submission")
-            # Cache will be used if exists
-            # e.g. if you just ran get_origins
-            build_indexes(self, omega_binsize=omega_binsize, omega_step=omega_step,
-                          cache_filename=cache_filename, use_cache=True,
-                          verbose=verbose)
-            print("Saving everything to disk")
+            # The worker does from_h5 -> loadpeaks, so the peaks and the maps
+            # have to be on disk. Nothing else does: it builds the partition
+            # and the g-vectors itself, and it is the only reader.
+
+            print("Saving peaks and maps for the worker")
             self.to_h5()
             print("Making bash script")
             bash_script_path = prepare_refine_bash(
@@ -1641,9 +1579,18 @@ class PBPRefine:
             if result.returncode != 0:
                 print(result.stderr.decode("utf-8"))
             return None
-
+ 
+        # ---- origins, if we do not have them yet --------------------------
+        if "xpos_refined" not in self.icolf.titles:
+            if verbose:
+                print("no xpos_refined column -- computing origins first")
+            self.get_origins(nthreads=nthreads, nchunks=nchunks,
+                             omega_binsize=omega_binsize,
+                             omega_step=omega_step, verbose=verbose)
+ 
         if nthreads is None:
             nthreads = max(cImageD11.cores_available() - 1, 1)
+
         numba.set_num_threads(nthreads)
         try:
             numba.set_parallel_chunksize(1)
@@ -1653,7 +1600,7 @@ class PBPRefine:
         # If there's a good cache, build_indexes will also get it from disk
         idx = index_cache if index_cache is not None else build_indexes(
             self, omega_binsize=omega_binsize, omega_step=omega_step,
-            cache_filename=cache_filename, use_cache=use_cache, verbose=verbose)
+            verbose=verbose)
         # these are permuted by the partition scheme
         pk = idx["peaks"]
 
@@ -2341,8 +2288,7 @@ def main(argv=None):
     print("Loading refinement object from", pbprefinefile)
     refine = PBPRefine.from_h5(pbprefinefile)
     print("Running refinement on", nthreads, "threads")
-    refine.run_refine(output_filename=output_filename, nthreads=nthreads,
-                      cache_filename=getattr(refine, "index_filename", None))
+    refine.run_refine(output_filename=output_filename, nthreads=nthreads)
     print("Refinement complete!")
     return 0
 
