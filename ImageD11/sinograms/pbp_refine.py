@@ -438,7 +438,7 @@ def gvec_pars(pars):
     cc, sc_ = np.cos(np.radians(chi)), np.sin(np.radians(chi))
     W = np.array([[cw, 0.0, -sw], [0.0, 1.0, 0.0], [sw, 0.0, cw]], np.float64)
     C = np.array([[1.0, 0.0, 0.0], [0.0, cc, -sc_], [0.0, sc_, cc]], np.float64)
-    A = np.ascontiguousarray(W @ C)
+    A = np.ascontiguousarray(np.dot(W, C))
     oc = np.empty((3, 3), np.float64)
     oc[:, 0] = A[:, 0] * tx + A[:, 1] * ty
     oc[:, 1] = A[:, 1] * tx - A[:, 0] * ty
@@ -1221,7 +1221,7 @@ class PBPRefine:
         else:
             # iplot only needs these two, and only to draw. Keep a decimated
             # copy so the plot survives; the full colf is often tens of GB.
-            step = max(1, colf.nrows // 2_000_000)
+            step = max(1, colf.nrows // 2000000)
             self._plot_ds = np.array(colf.ds[::step])
             self._plot_I = np.array(colf.sum_intensity[::step])
             self.colf = None

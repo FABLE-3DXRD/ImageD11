@@ -35,6 +35,7 @@ We now have an idx_buffer and ydist_buffer that contain the indices and distance
 By just returning the first m elements of the buffers, we can avoid any memory allocation and reuse the buffers for all voxels in a grid.
 These buffers can be optimally sized for a given (sx,sy) grid - see max_candidates for details.
 """
+from __future__ import print_function
 
 import os
 import sys
@@ -738,11 +739,14 @@ class VoxelSinoMasker:
         self.dty_partitions = None
     
     def __str__(self):
-        return (f"VoxelSinoMasker(n_peaks={self.n_peaks}, "
-                f"omega_range=[{self.omega.min():.2f}, {self.omega.max():.2f}], "
-                f"dty_range=[{self.dty.min():.6g}, {self.dty.max():.6g}], "
-                f"dty_stepsize={self.dty_stepsize:.6g}, "
-                f"omega_binsize={self.omega_binsize})")
+        return ("VoxelSinoMasker(n_peaks={0}, "
+                "omega_range=[{1:.2f}, {2:.2f}], "
+                "dty_range=[{3:.6g}, {4:.6g}], "
+                "dty_stepsize={5:.6g}, "
+                "omega_binsize={6})").format(
+                    self.n_peaks, self.omega.min(), self.omega.max(),
+                    self.dty.min(), self.dty.max(), self.dty_stepsize,
+                    self.omega_binsize)
 
     def _heuristic_omega_binsize(self):
         # find the omega binsize such that for any voxel on a regular grid

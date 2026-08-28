@@ -687,7 +687,7 @@ class PBP:
         else:
             # iplot only needs these two, and only to draw. Keep a decimated
             # copy so the plot survives; the full colf is often tens of GB.
-            step = max(1, colf.nrows // 2_000_000)
+            step = max(1, colf.nrows // 2000000)
             self._plot_ds = np.array(colf.ds[::step])
             self._plot_I = np.array(colf.sum_intensity[::step])
             self.colf = None

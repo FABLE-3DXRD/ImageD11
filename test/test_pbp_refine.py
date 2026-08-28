@@ -48,15 +48,22 @@ omegasign = +1. TestOmegaSign pins that down in both directions -- if the
 convention is ever fixed in setpeaks, test_raw_omega_is_wrong_at_minus_one
 is the test that will start failing, and it should be deleted then.
 """
+
 import unittest
 
 import numpy as np
 
-import ImageD11.columnfile
-import ImageD11.parameters
-import ImageD11.transform as T
-import ImageD11.unitcell
-from ImageD11.sinograms import geometry as G, pbp_refine as M
+
+import sys
+if int(sys.version_info.major) == 2:
+    raise unittest.SkipTest('Skipping pbp_refine tests on Python 2')
+else:
+    import ImageD11.columnfile
+
+    import ImageD11.parameters
+    import ImageD11.transform as T
+    import ImageD11.unitcell
+    from ImageD11.sinograms import geometry as G, pbp_refine as M
 
 # --------------------------------------------------------------------------
 #  Geometry fixtures
@@ -357,7 +364,7 @@ class TestConditioning(unittest.TestCase):
                 e = np.array([1.0, rng.uniform(0.1, 1.0), 0.0])
             Q1, _ = np.linalg.qr(rng.normal(size=(3, 3)))
             Q2, _ = np.linalg.qr(rng.normal(size=(3, 3)))
-            yield (np.ascontiguousarray(Q1 @ np.diag(e) @ Q2.T)
+            yield (np.ascontiguousarray(Q1.dot(np.diag(e)).dot(Q2.T))
                    * 10.0 ** rng.uniform(-3.0, 3.0))
 
     def _lapack_verdict(self, U):
@@ -400,7 +407,7 @@ class TestConditioning(unittest.TestCase):
             e = 10.0 ** rng.uniform(-2.0, 0.0, 3)      # cond <= 100
             Q1, _ = np.linalg.qr(rng.normal(size=(3, 3)))
             Q2, _ = np.linalg.qr(rng.normal(size=(3, 3)))
-            U = np.ascontiguousarray(Q1 @ np.diag(e) @ Q2.T)
+            U = np.ascontiguousarray(Q1.dot(np.diag(e)).dot(Q2.T))
             sv = np.linalg.svd(U)[1]
             hi, lo = M._sv_extremes(U)
             errs[i] = max(abs(hi - sv[0]) / sv[0], abs(lo - sv[2]) / sv[2])
@@ -483,7 +490,7 @@ def compute_origins_ref(case, hkl_tol=0.05, weight_reg=YSTEP / 3.0):
             sel = yd <= YSTEP
             if not sel.any():
                 continue
-            hf = gve[sel] @ ubi.T                     # (m, 3) == ubi @ g
+            hf = gve[sel].dot(ubi.T)                     # (m, 3) == ubi @ g
             dh = hf - np.round(hf)
             hit = (dh * dh).sum(axis=1) < tolsq
             idx = np.nonzero(sel)[0][hit]
@@ -551,7 +558,7 @@ class TestOrigins(unittest.TestCase):
         vox = []
         for i in range(ni):
             for j in range(nj):
-                UB = Us[which[i, j]] @ B
+                UB = Us[which[i, j]].dot(B)
                 singlemap[i, j] = np.linalg.inv(UB)
                 vox.append((sx_grid[i, j], sy_grid[i, j], UB))
 
@@ -565,7 +572,7 @@ class TestOrigins(unittest.TestCase):
         rows = []
         for iv, (sx, sy, UB) in enumerate(vox):
             tth, etas, omegas = T.uncompute_g_vectors(
-                UB @ HKL, wvln, wedge=detkw["wedge"], chi=detkw["chi"])
+                UB.dot(HKL), wvln, wedge=detkw["wedge"], chi=detkw["chi"])
             ok = tth > 0.0        # invalid solutions come back zeroed
             if not ok.any():
                 continue
@@ -665,7 +672,7 @@ class TestOrigins(unittest.TestCase):
             g = np.asarray(T.compute_g_vectors(
                 tth, eta, om, wvln, wedge=detkw["wedge"],
                 chi=detkw["chi"]))
-            hkl = np.linalg.inv(UB) @ g
+            hkl = np.linalg.inv(UB).dot(g)
             worst = max(worst, float(np.abs(hkl - np.round(hkl)).max()))
         self.assertLess(worst, 0.02,
                         "worst hkl residual %.3g -- the forward model does "

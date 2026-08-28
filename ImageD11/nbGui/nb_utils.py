@@ -1280,7 +1280,7 @@ def plot_grain_recons(grainsinos, method="iradon"):
     a[0].set(
         xlabel="<-- Sample Y",
         ylabel="Sample X",
-        title=f"{method} Reconstruction"
+        title="{} Reconstruction".format(method)
     )
     a[1].set(
         xlabel=r'Projection angle ($\degree$)',
