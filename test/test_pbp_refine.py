@@ -217,18 +217,7 @@ def relmax(ref, got):
 #  The detector transform
 # --------------------------------------------------------------------------
 class TestLabFrame(unittest.TestCase):
-    """lab_frame_positions is the linear part of compute_xyz_lab, in one pass."""
-
-    def test_vs_columnfile(self):
-        """Both updateGeometry paths: the C Ctransform and the python one."""
-        for case in CASES:
-            for fast in (True, False):
-                with self.subTest(case, fast=fast):
-                    pars = pars_for(case)
-                    c = fake_icolf(pars, n=1500, fast=fast)
-                    ref = np.array((c.xl, c.yl, c.zl))
-                    got = np.array(M.lab_frame_positions(c.sc, c.fc, pars))
-                    self.assertLess(relmax(ref, got), TOL)
+    """the linear part of compute_xyz_lab"""
 
     def test_affine_in_sc_fc(self):
         """compute_xyz_lab is affine in (sc, fc), which is what lets

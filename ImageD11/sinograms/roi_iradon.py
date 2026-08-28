@@ -118,8 +118,7 @@ def iradon(radon_image,
     to_pad = _sinogram_pad(radon_image.shape[0], output_size)
     if projection_shifts is not None:
         assert projection_shifts.shape == radon_image.shape
-        projection_shifts = np.pad(projection_shifts, to_pad,
-                                   mode='constant', constant_values=0)
+        projection_shifts = np.pad(projection_shifts, to_pad, mode='edge')
     radon_image = np.pad(radon_image, to_pad,
                          mode='constant', constant_values=0)
     img_shape = radon_image.shape[0]
@@ -461,7 +460,7 @@ def mlem(sino,
         pad_width = [(pb, p - pb) for pb, p in zip(pad_before, pad)]
         pad_width[1] = (0, 0)
 
-        proj_shifts_padded = np.pad(projection_shifts, pad_width, mode='constant', constant_values=0)
+        proj_shifts_padded = np.pad(projection_shifts, pad_width, mode='edge')
 
     else:
         proj_shifts_padded = None
