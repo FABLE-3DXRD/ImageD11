@@ -119,7 +119,8 @@ class DataSet:
         "frames_per_scan",
         "monitor",
         "ybinedges", "ybincens",
-        "obinedges", "obincens"
+        "obinedges", "obincens",
+        "ybin_real_mask"
     )
 
     def __init__(
