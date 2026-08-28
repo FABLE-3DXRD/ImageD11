@@ -375,15 +375,46 @@ class TestConditioning(unittest.TestCase):
         return bool(rank3 and cnd < 1e14)
 
     def test_same_verdict_as_lapack(self):
+        """Agree with LAPACK wherever the answer is actually determined.
+ 
+        Right at cond_max it is not. Rounding one of these matrices into
+        float64 moves its smallest singular value by about eps*smax, which is
+        eps*cond in relative terms -- 2% at cond 1e14, and worse above it. So
+        for a matrix sitting within a couple of percent of the cut, "is
+        cond < 1e14" has no float64 answer: numpy's LAPACK and the one numba
+        links against can each return a different smin, both correct to the
+        accuracy available, and land on opposite sides. Asserting exact
+        agreement there makes the test pass or fail depending on the runner's
+        BLAS build, which is not something the code can control.
+ 
+        Only the threshold band of _matrices comes near the cut at all; the
+        realistic, moderately ill and rank deficient modes are orders of
+        magnitude clear of it, and the rank deficient ones are rejected on
+        condition number regardless of which side of the rank test they fall.
+        So skip the matrices float64 cannot place, and require exact agreement
+        on all the rest.
+        """
         n = 40000
-        bad = shortcut = 0
+        bad = shortcut = ambiguous = 0
         for U in self._matrices(n):
             hi, lo = M._sv_extremes(U)
             if lo > 0.0 and hi < lo * 1e6:
                 shortcut += 1
+            sv = np.linalg.svd(U)[1]
+            smax, smin = sv[0], sv[2]
+            if smin > 0.0:
+                cond = smax / smin
+                # how well is smin defined at this conditioning, relatively
+                slack = 8.0 * self.EPS * cond
+                if abs(cond / 1e14 - 1.0) < slack:
+                    ambiguous += 1
+                    continue
             if bool(M._well_conditioned(U)) != self._lapack_verdict(U):
                 bad += 1
         self.assertEqual(bad, 0, "%d/%d disagreements with LAPACK" % (bad, n))
+        self.assertLess(ambiguous, n // 20,
+                        "%d/%d matrices skipped as undecidable -- the guard "
+                        "band has swallowed the test" % (ambiguous, n))
         self.assertGreater(shortcut, n // 10,
                            "the analytic shortcut almost never fires, so the "
                            "cheap path is not being exercised")
