@@ -105,8 +105,6 @@ centre, so (0, 0) is the centre of the lower-left pixel:
 (0, 0) ------->
          j
 
-
-
 """
 from functools import partial
 
@@ -510,6 +508,8 @@ def sino_shift_and_pad(y0, ny, ymin, ystep):
     y0_px = (y0 - ymin)/ystep
     shift = ymid_px - y0_px
     pad = np.ceil(np.abs(shift) * 2).astype(int) + 1
+    if (ny + pad) % 2 == 0:      # keep the reconstruction odd-sized
+        pad += 1
     return shift, pad
 
 

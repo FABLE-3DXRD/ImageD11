@@ -243,7 +243,8 @@ class GrainSinogram:
 
     def correct_halfmask(self):
         """Applies halfmask correction to sinogram"""
-        self.ssino = ImageD11.sinograms.roi_iradon.apply_halfmask_to_sino(self.ssino)
+        self.ssino = ImageD11.sinograms.roi_iradon.apply_halfmask_to_sino(
+            self.ssino, real_mask=getattr(self.ds, "ybin_real_mask", None))
 
     def correct_ring_current(self, is_half_scan=False, min_ring_current_frac=0.5):
         """Corrects each row of the sinogram to the ring current of the corresponding scan"""
@@ -334,8 +335,26 @@ class GrainSinogram:
             # At the moment, we could pass None for pad or shift etc to recon_function if they are not manually set, which seems dangerous
             # Do we check for None at the start of this function?
             # Or do we initialise them to sensible default values inside __init__?
+            
         elif method == "astra":
             recon_function = run_astra
+
+        # These two are properties of the sinogram and of the finished
+        # reconstruction, not of the backend, so handle them here rather than
+        # inside each run_* function. Previously only iradon and mlem accepted
+        # them, and passing them with method="astra" raised TypeError.
+        apply_halfmask = extra_args.pop("apply_halfmask", False)
+        mask_central_zingers = extra_args.pop("mask_central_zingers", False)
+        central_mask_radius = extra_args.pop("central_mask_radius", 25)
+
+        if apply_halfmask:
+            axis_row = None
+            if self.recon_shift is not None:
+                axis_row = sino.shape[0] // 2 - self.recon_shift
+            sino = ImageD11.sinograms.roi_iradon.apply_halfmask_to_sino(
+                sino, axis_row=axis_row,
+                real_mask=getattr(self.ds, "ybin_real_mask", None))
+        
         recon = recon_function(
             sino=sino,
             angles=angles,
@@ -345,6 +364,10 @@ class GrainSinogram:
             mask=self.recon_mask,
             **extra_args
         )
+
+        if mask_central_zingers:
+            recon = ImageD11.sinograms.roi_iradon.correct_recon_central_zingers(
+                recon, radius=central_mask_radius)
 
         self.recons[method] = recon
         return recon
@@ -491,6 +514,8 @@ def run_astra(
     niter=100,
     astra_method="SIRT_CUDA",
     workers=None,
+    min_constraint=0,
+    max_constraint=None,
 ):
     import astra
     angles = np.radians(angles)
@@ -531,8 +556,14 @@ def run_astra(
     cfg["ReconstructionDataId"] = rec_id
     cfg["option"] = {}
     if astra_method not in ["EM_CUDA", "FBP"]:
-        cfg["option"]["MinConstraint"] = 0
-        cfg["option"]["MaxConstraint"] = 1
+        # These used to be hard-coded to [0, 1], which silently saturated the
+        # reconstruction whenever the sinogram was not normalised to a peak of 1
+        # (build_sinogram(normalise=False), correct_ring_current). Non-negativity
+        # is kept by default; the upper clamp is now opt-in.
+        if min_constraint is not None:
+            cfg["option"]["MinConstraint"] = min_constraint
+        if max_constraint is not None:
+            cfg["option"]["MaxConstraint"] = max_constraint
 
     if mask is not None:
         mask_id = astra.data2d.create("-vol", vol_geom, mask)

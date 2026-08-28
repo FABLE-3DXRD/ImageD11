@@ -11,10 +11,14 @@ Two acquisition types are covered:
   full  - 180 degrees of omega, dty scanned across the whole sample
   half  - 360 degrees of omega, dty scanned across half the sample
 
-crossed with a y0 error chosen so that the reconstruction comes out with an even
-size in one case and an odd size in the other. The parity matters: roi_iradon puts
-the rotation axis on integer index N//2, ASTRA centres the volume on the origin at
-(N-1)/2, and those only agree when N is odd.
+crossed with both parities of the reconstruction size. The parity matters:
+roi_iradon puts the rotation axis on integer index N//2, ASTRA centres the volume on
+the origin at (N-1)/2, and those only agree when N is odd.
+
+sino_shift_and_pad now always returns a pad that makes N = ny + pad odd, so the even
+cases are reached by adding one to its pad ("extra_pad" below). That is not a
+contrived situation: the notebooks let the user set pad by hand through
+update_recon_parameters, so the even path still has to reconstruct correctly.
 """
 
 from __future__ import print_function
@@ -52,16 +56,17 @@ TOL_PX = 0.35
 
 # Each case is a synthetic acquisition. y0 is the true rotation axis position; the
 # scan is not centred on it, which is the y0 error. The two y0 values in each pair
-# differ by half a dty step, which is what flips the parity of the output size.
+# differ by half a dty step, so the pair also covers two different sub-pixel shifts.
+# extra_pad is added to the pad from sino_shift_and_pad to force an even output size.
 SCANS = {
     "full_odd":  dict(omega=np.arange(0.0, 180.0, 1.0),
-                      ymin=13400.0, ymax=14600.0, y0=13955.0),
+                      ymin=13400.0, ymax=14600.0, y0=13955.0, extra_pad=0),
     "full_even": dict(omega=np.arange(0.0, 180.0, 1.0),
-                      ymin=13400.0, ymax=14600.0, y0=13950.0),
+                      ymin=13400.0, ymax=14600.0, y0=13950.0, extra_pad=1),
     "half_odd":  dict(omega=np.arange(0.0, 360.0, 1.0),
-                      ymin=13400.0, ymax=14060.0, y0=13995.0),
+                      ymin=13400.0, ymax=14060.0, y0=13995.0, extra_pad=0),
     "half_even": dict(omega=np.arange(0.0, 360.0, 1.0),
-                      ymin=13400.0, ymax=14060.0, y0=13990.0),
+                      ymin=13400.0, ymax=14060.0, y0=13990.0, extra_pad=1),
 }
 
 
@@ -86,6 +91,7 @@ def build_scan(name, sx=SX, sy=SY, ystep=YSTEP):
     sino /= sino.max()   # SIRT/BP clamp the reconstruction to [0, 1]
 
     shift, pad = geometry.sino_shift_and_pad(y0, ny, ymin, ystep)
+    pad = pad + p["extra_pad"]
     recon_shape = (ny + pad, ny + pad)
 
     return dict(name=name, sino=sino, omega=omega, ny=ny, ystep=ystep,
@@ -110,6 +116,7 @@ def peak_position(recon):
 
 class TestScanMatrix(unittest.TestCase):
     """The cases have to actually cover what they claim to cover."""
+
 
     def test_both_parities_present(self):
         parities = {}
@@ -138,6 +145,23 @@ class TestScanMatrix(unittest.TestCase):
             s = build_scan(name)
             self.assertGreater(s["dtyi"].max(), s["ny"] - 1, name)
 
+    # we now enforce odd sinograms in sino_shift_and_pad
+    def test_sino_shift_and_pad_is_always_odd(self):
+        # the odd-size invariant is what lets recon_to_step, recon_bins and ASTRA
+        # agree without a half-pixel correction, so pin it down directly rather
+        # than only through the scans above
+        ystep = YSTEP
+        for ny in range(40, 140):
+            for offset_steps in np.arange(-3.0, 3.01, 0.125):
+                y0 = (ny // 2 + offset_steps) * ystep
+                shift, pad = geometry.sino_shift_and_pad(y0, ny, 0.0, ystep)
+                self.assertEqual((ny + pad) % 2, 1,
+                                 "ny=%d offset=%.3f gave even size %d"
+                                 % (ny, offset_steps, ny + pad))
+                # must still be wide enough to hold the whole sample
+                self.assertGreaterEqual(pad, 2 * abs(shift),
+                                        "ny=%d offset=%.3f pad too small"
+                                        % (ny, offset_steps))
 
 class TestGeometryRoundTrips(unittest.TestCase):
 

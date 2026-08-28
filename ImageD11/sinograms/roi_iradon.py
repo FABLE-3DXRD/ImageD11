@@ -513,22 +513,44 @@ def apply_halfmask_to_sino(sino):
     return sino_halfmasked
 
 
-def correct_recon_central_zingers(recon, radius=25):
-    recon_corrected = recon.copy()
-    grs = recon.shape[0]
-    xpr, ypr = -grs // 2 + np.mgrid[:grs, :grs]
-    inner_mask_radius = radius
-    outer_mask_radius = inner_mask_radius + 2
+def apply_halfmask_to_sino(sino, axis_row=None, real_mask=None):
+    """Weight a half-scan sinogram before reconstruction.
 
-    inner_circle_mask = (xpr ** 2 + ypr ** 2) < inner_mask_radius ** 2
-    outer_circle_mask = (xpr ** 2 + ypr ** 2) < outer_mask_radius ** 2
+    In a half scan the dty range covers the rotation axis and one side of the sample
+    only, with omega over 360 degrees. Every point off the axis is then seen at half
+    the omega values, which is a complete half turn and enough to reconstruct. A point
+    on the axis has dty = y0 at every omega, so it is measured twice and needs weight
+    0.5; the unmeasured side is padded data and gets weight 0.
 
-    mask_ring = inner_circle_mask & outer_circle_mask
-    # we now have a mask to apply
-    fill_value = np.median(recon_corrected[mask_ring])
-    recon_corrected[inner_circle_mask] = fill_value
+    sino      : (ny, nangles), dty along the first axis
+    axis_row  : index of the rotation axis row. Defaults to len(sino) // 2, which is
+                where correct_bins_for_half_scan puts it.
+    real_mask : optional bool array over the ny rows, True on measured bins
+                (ds.ybin_real_mask). Used to decide which side was scanned. If not
+                given, the side holding more signal is used.
+    """
+    ny = sino.shape[0]
+    if axis_row is None:
+        axis_row = ny // 2
+    axis_row = int(np.clip(np.round(axis_row), 0, ny - 1))
 
-    return recon_corrected
+    if real_mask is not None:
+        real_mask = np.asarray(real_mask, dtype=bool)
+        if real_mask.shape[0] != ny:
+            raise ValueError("real_mask does not match the sinogram row count")
+        low_is_real = real_mask[:axis_row].sum() >= real_mask[axis_row + 1:].sum()
+    else:
+        low_is_real = (np.abs(sino[:axis_row]).sum()
+                       >= np.abs(sino[axis_row + 1:]).sum())
+
+    halfmask = np.zeros_like(sino)
+    if low_is_real:
+        halfmask[:axis_row, :] = 1.0
+    else:
+        halfmask[axis_row + 1:, :] = 1.0
+    halfmask[axis_row, :] = 0.5
+
+    return sino.copy() * halfmask
 
 
 def run_iradon(sino, angles, pad=20, shift=0,

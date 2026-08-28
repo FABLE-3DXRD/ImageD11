@@ -538,41 +538,41 @@ def build_csr(cells, ncell):
         fill[c] += 1
     return start, order
 
+# no longer needed as we go from xl, yl, zl
+# @numba.njit(cache=True)
+# def compute_gve(sc, fc, omega, xpos,
+#                 distance, y_center, y_size, tilt_y, z_center, z_size, tilt_z, tilt_x,
+#                 o11, o12, o21, o22,
+#                 t_x, t_y, t_z, wedge, chi, wavelength):
+#     this_distance = distance - xpos
 
-@numba.njit(cache=True)
-def compute_gve(sc, fc, omega, xpos,
-                distance, y_center, y_size, tilt_y, z_center, z_size, tilt_z, tilt_x,
-                o11, o12, o21, o22,
-                t_x, t_y, t_z, wedge, chi, wavelength):
-    this_distance = distance - xpos
+#     tth, eta = compute_tth_eta(sc, fc, omega,
+#                                y_center=y_center,
+#                                y_size=y_size,
+#                                tilt_y=tilt_y,
+#                                z_center=z_center,
+#                                z_size=z_size,
+#                                tilt_z=tilt_z,
+#                                tilt_x=tilt_x,
+#                                distance=this_distance,
+#                                o11=o11,
+#                                o12=o12,
+#                                o21=o21,
+#                                o22=o22,
+#                                t_x=t_x,
+#                                t_y=t_y,
+#                                t_z=t_z,
+#                                wedge=wedge,
+#                                chi=chi
+#                                )
 
-    tth, eta = compute_tth_eta(sc, fc, omega,
-                               y_center=y_center,
-                               y_size=y_size,
-                               tilt_y=tilt_y,
-                               z_center=z_center,
-                               z_size=z_size,
-                               tilt_z=tilt_z,
-                               tilt_x=tilt_x,
-                               distance=this_distance,
-                               o11=o11,
-                               o12=o12,
-                               o21=o21,
-                               o22=o22,
-                               t_x=t_x,
-                               t_y=t_y,
-                               t_z=t_z,
-                               wedge=wedge,
-                               chi=chi
-                               )
+#     gve = compute_g_vectors(tth, eta,
+#                             omega,
+#                             wavelength,
+#                             wedge=wedge,
+#                             chi=chi)
 
-    gve = compute_g_vectors(tth, eta,
-                            omega,
-                            wavelength,
-                            wedge=wedge,
-                            chi=chi)
-
-    return gve
+#     return gve
 
 
 @numba.njit(cache=True)

@@ -644,6 +644,11 @@ class DataSet:
         self.ybincens       = new_cens
         self.ybinedges      = new_edges
         self.ybin_real_mask = real_mask
+        # ymin / ymax are otherwise only set in guessbins, and the padding above can
+        # move ybincens[0]. Anything reading ds.ymin (recon_bins, guess_y0, dty_to_dtyi)
+        # would then be out by the width of the low-side padding.
+        self.ymin           = float(new_cens[0])
+        self.ymax           = float(new_cens[-1])
         n_pad = int((~real_mask).sum())
         print(
             "[correct_bins_for_half_scan]  y0 = {:.4f}, central bin value = {:.4f}, central bin id: {}, "
