@@ -540,8 +540,15 @@ def step_grid_from_ybincens(ybincens, step_size, gridstep, y0):
     y_largest = np.max(np.abs([y_min, y_max]))
     y_min = -y_largest
     y_max = y_largest
-    y_min_int = np.floor(y_min/step_size).astype(int)
     y_max_int = np.ceil(y_max/step_size).astype(int)
+    # Round the half extent up to a whole number of gridsteps. Without this the
+    # last point can land short of +y_max_int for gridstep > 1, leaving the grid
+    # asymmetric about the rotation axis: (0, 0) is then no longer a grid point
+    # and no longer the centre, so step_to_recon (which puts S at shape // 2)
+    # disagrees with the index the map is actually stored at. Rounding up only
+    # ever grows the grid, and is a no-op for gridstep = 1.
+    y_max_int = int(np.ceil(y_max_int / float(gridstep)) * gridstep)
+    y_min_int = -y_max_int
     ints = range(y_min_int, y_max_int + 1, gridstep)
     step_points = [(si, sj) for si in ints for sj in ints]
     return step_points
