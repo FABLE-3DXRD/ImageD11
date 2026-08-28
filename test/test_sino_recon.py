@@ -24,20 +24,24 @@ update_recon_parameters, so the even path still has to reconstruct correctly.
 from __future__ import print_function
 
 import unittest
-import warnings
 
-import numpy as np
+import sys
+if int(sys.version_info.major) == 2:
+    raise unittest.SkipTest('Skipping pbp_refine tests on Python 2')
+else:
+    import numpy as np
+    import warnings
+    
+    from ImageD11.sinograms.roi_iradon import run_iradon
+    from ImageD11.sinograms import geometry
 
-from ImageD11.sinograms import geometry
-from ImageD11.sinograms.roi_iradon import run_iradon
-
-try:
-    import astra
-except ImportError:
-    astra = None
-
-if astra is not None:
-    from ImageD11.sinograms.sinogram import run_astra
+    try:
+        import astra
+    except ImportError:
+        astra = None
+    
+    if astra is not None:
+        from ImageD11.sinograms.sinogram import run_astra
 
 HAVE_ASTRA = astra is not None
 HAVE_CUDA = bool(astra.use_cuda()) if HAVE_ASTRA else False
