@@ -410,6 +410,7 @@ class indexer:
         import copy
         # update, not replace: keeps unitcell and __pristine_dict itself, so
         # the dict only needs copying once rather than twice
+        # .... not sure about this!!! Jon was here in your repo !
         self.__dict__.update(copy.deepcopy(self.__pristine_dict))
 
     def __getattr__(self, name):
