@@ -37,6 +37,23 @@ from scipy.spatial.transform import Rotation as ScipyRotation
 from ImageD11.parameters import parameters, AnalysisSchema
 
 
+def _inv3(m):
+    """Closed-form 3x3 inverse. Raises LinAlgError on singular, like np.linalg.inv."""
+    a, b, c = m[0]
+    d, e, f = m[1]
+    g, h, i = m[2]
+    A =  e*i - f*h
+    B = -(d*i - f*g)
+    C =  d*h - e*g
+    det = a*A + b*B + c*C
+    if det == 0.0:
+        raise np.linalg.LinAlgError("Singular matrix")
+    r = 1.0 / det
+    return np.array((
+        (A*r,            -(b*i - c*h)*r,   (b*f - c*e)*r),
+        (B*r,             (a*i - c*g)*r,  -(a*f - c*d)*r),
+        (C*r,            -(a*h - b*g)*r,   (a*e - b*d)*r)))
+
 def radians(x):
     return x* math.pi / 180.
 
@@ -272,6 +289,7 @@ class unitcell:
         self.ringtol = 0.001
         self.ringds = []  # a list of floats
         self.ringhkls = {}  # a dict of lists of integer hkl
+        self._rings_for = None
         # used for caching
         self.anglehkl_cache = {"ringtol": self.ringtol,
                                "B": self.B,
@@ -454,6 +472,8 @@ class unitcell:
         for i in range(len(raw_peaks)):
             peaks.append([raw_peaks[i, 3] * 2,
                           (int(raw_peaks[i, 0]), int(raw_peaks[i, 1]), int(raw_peaks[i, 2]))])
+        # Sort the list: l (index 2) is primary, k (index 1) secondary, h (index 0) tertiary
+        peaks.sort(key=lambda x: (x[0], x[1][2], x[1][1], x[1][0]))
         self.peaks = peaks
         self.limit = dsmax
         return peaks
@@ -532,6 +552,12 @@ class unitcell:
         The tolerance is the difference in d* to decide
         if two peaks overlap
         """
+        # Cache if limit and tol are the same
+        # this is called each time by assigntorings
+        # slow if we are doing pbp indexing
+        if (getattr(self, "_rings_for", None) == (limit, tol)
+                and getattr(self, "ringds", None) is not None):
+            return
         self.peaks = self.gethkls(limit + tol)  # [ ds, [hkl] ]
         self.ringds = []  # a list of floats
         self.ringhkls = {}  # a dict of lists of integer hkl
@@ -602,6 +628,37 @@ class unitcell:
             val = self.anglehkl_cache[key]
         return val
     
+    def getcoses(self, ring1, ring2, tol=1e-5):
+        """
+        Distinct cosines between hkls of ring1 and ring2, descending,
+        with 180 degree pairs removed and near-duplicates collapsed.
+
+        Cached per ring pair -- indexer.find rebuilt this on every call, and
+        it depends only on the rings and the cell.
+        """
+        key = ('coses', ring1, ring2, tol)
+        if key in self.anglehkl_cache:
+            return self.anglehkl_cache[key]
+        hkls1 = self.ringhkls[self.ringds[int(ring1)]]
+        hkls2 = self.ringhkls[self.ringds[int(ring2)]]
+        cosangles = []
+        for h1 in hkls1:
+            for h2 in hkls2:
+                cosangles.append(self.anglehkls(h1, h2)[1])
+        cosangles.sort()
+        coses = []
+        while len(cosangles) > 0:
+            a = cosangles.pop()
+            if abs(a - 1.0) < tol or abs(a + 1.0) < tol:
+                continue
+            if len(coses) == 0:
+                coses.append(a)
+                continue
+            if abs(coses[-1] - a) > tol:
+                coses.append(a)
+        self.anglehkl_cache[key] = coses
+        return coses
+    
     def orient(self, ring1, g1, ring2, g2, verbose=0, crange=-1.):
         """
         Compute an orientation matrix using cell parameters and the indexing
@@ -659,7 +716,7 @@ class unitcell:
                 h = np.dot(UBI, g2)
                 print("(%9.3f, %9.3f, %9.3f)" % (h[0], h[1], h[2]))
             self.UBI = UBI
-            self.UB = np.linalg.inv(UBI)
+            self.UB = _inv3(UBI)
             self.UBIlist.append(UBI)
             UBlist.append(self.UB)
         # trim to uniq list? What about small distortions...

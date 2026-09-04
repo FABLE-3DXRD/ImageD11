@@ -432,5 +432,49 @@ class TestFullLoop(unittest.TestCase):
         self.assertTrue(np.abs(sy - sy_calc) < ystep)
 
 
+class TestStepGridSymmetry(unittest.TestCase):
+    """step_to_recon puts the rotation axis at shape // 2, and PBPMap indexes
+    its arrays as (i - i.min()). Those only agree if the step grid is symmetric
+    about zero, which needs the half extent to be a whole number of gridsteps.
+    gridstep is 1 everywhere in the shipped code, so this is the guard for
+    anyone who passes something else."""
+ 
+    YSTEP = 10.0
+ 
+    def _grid(self, ny, gridstep, offset=0.0):
+        ybincens = np.arange(ny) * self.YSTEP
+        y0 = ybincens.mean() + offset
+        pts = geometry.step_grid_from_ybincens(ybincens, self.YSTEP, gridstep, y0)
+        return np.array(sorted(set(p[0] for p in pts)))
+ 
+    def test_grid_is_symmetric_and_contains_the_axis(self):
+        for gridstep in (1, 2, 3, 4, 5, 7):
+            for ny in (41, 42, 67, 86, 121, 122, 275):
+                si = self._grid(ny, gridstep)
+                self.assertEqual(si.min(), -si.max(),
+                                 "gridstep=%d ny=%d: grid not symmetric about the "
+                                 "rotation axis" % (gridstep, ny))
+                self.assertIn(0, si,
+                              "gridstep=%d ny=%d: the rotation axis is not a grid "
+                              "point" % (gridstep, ny))
+ 
+    def test_step_to_recon_matches_map_indexing(self):
+        for gridstep in (1, 2, 3, 4, 5, 7):
+            for ny in (41, 42, 67, 86, 121, 122, 275):
+                si = self._grid(ny, gridstep)
+                nrecon = int(si.max() - si.min()) + 1
+                self.assertEqual(nrecon % 2, 1,
+                                 "gridstep=%d ny=%d: even reconstruction extent"
+                                 % (gridstep, ny))
+                from_map = si - si.min()                      # PBPMap.i_shift
+                from_geom = np.array([geometry.step_to_recon(int(v), 0,
+                                                             (nrecon, nrecon))[0]
+                                      for v in si])
+                np.testing.assert_array_equal(
+                    from_map, from_geom,
+                    "gridstep=%d ny=%d: step_to_recon disagrees with the index "
+                    "the map is stored at" % (gridstep, ny))
+
+
 if __name__ == "__main__":
     unittest.main()

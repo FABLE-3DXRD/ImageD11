@@ -231,14 +231,24 @@ def refine(UBI, gv, tol, quiet=True):
         logging.error("No contributing reflections for \n%s" % (str(UBI)))
         raise
     # drlv2_old=drlv2
-    R = np.zeros((3, 3), float)
-    H = np.zeros((3, 3), float)
-    for i in ind:
-        r = gv[i, :]
-        k = hint[:, i].astype(float)
-        #           print r,k
-        R = R + np.outer(r, k)
-        H = H + np.outer(k, k)
+    # R = np.zeros((3, 3), float)
+    # H = np.zeros((3, 3), float)
+    # for i in ind:
+    #     r = gv[i, :]
+    #     k = hint[:, i].astype(float)
+    #     #           print r,k
+    #     R = R + np.outer(r, k)
+    #     H = H + np.outer(k, k)
+    # R = sum_n r_n h_n^t  and  H = sum_n h_n h_n^t  are just two matrix
+    # products over the selected peaks. The per-peak loop called np.outer
+    # twice and rebound R and H each iteration, so it allocated four 3x3
+    # arrays per contributing reflection; np.outer itself is asarray +
+    # ravel + multiply.outer for nine flops. Same arithmetic, ~100x less
+    # of it.
+    r = gv[ind, :]                                        # (n, 3)
+    k = np.ascontiguousarray(hint[:, ind].T, dtype=float)      # (n, 3)
+    R = r.T.dot(k)
+    H = k.T.dot(k)
     try:
         HI = np.linalg.inv(H)
         UBoptimal = np.dot(R, HI)
@@ -246,6 +256,7 @@ def refine(UBI, gv, tol, quiet=True):
     except:
         # A singular matrix - this sucks.
         UBIo = UBI
+
     h = np.dot(UBIo, np.transpose(gv))
     hint = np.floor(h + 0.5).astype(int)  # rounds down
     diff = h - hint
@@ -381,11 +392,26 @@ class indexer:
             max_grains=self.max_grains,
         )
 
-        # Add a resetting functionality, adapted from
+        # adapted from:
         # stackoverflow.com/questions/4866587/pythonic-way-to-reset-an-objects-variables
+        # Snapshot for reset(). The unitcell is a shared input, not state:
+        # deep-copying it dragged ringhkls and anglehkl_cache along, ~2000
+        # nested copies per indexer.
         import copy
+        self.__pristine_dict = copy.deepcopy(
+            {k: v for k, v in self.__dict__.items() if k != "unitcell"})
 
-        self.__pristine_dict = copy.deepcopy(self.__dict__)
+    def reset(self):
+        """
+        To get a really clean indexer just create a new one (e.g. via __init__)
+        This was added for the gui to help it forget what happened before
+        but keep parameters as they were set
+        """
+        import copy
+        # update, not replace: keeps unitcell and __pristine_dict itself, so
+        # the dict only needs copying once rather than twice
+        # .... not sure about this!!! Jon was here in your repo !
+        self.__dict__.update(copy.deepcopy(self.__pristine_dict))
 
     def __getattr__(self, name):
         """got some time lost setting tol which does not exist
@@ -396,17 +422,6 @@ class indexer:
             raise KeyError("tol not in indexer")
         print("WARNING: creating indexer.%s" % (name))
         setattr(self, name, None)
-
-    def reset(self):
-        """
-        To get a really clean indexer just create a new one (e.g. via __init__)
-        This was added for the gui to help it forget what happened before
-        but keep parameters as they were set
-        """
-        import copy
-
-        self.__dict__ = copy.deepcopy(self.__pristine_dict)
-        self.__pristine_dict = copy.deepcopy(self.__dict__)
 
     def loadpars(self, filename=None):
         if filename is not None:
@@ -655,24 +670,25 @@ class indexer:
         logging.info("hkls of rings being used for indexing")
         logging.info("Ring 1: %s" % (str(hkls1)))
         logging.info("Ring 2: %s" % (str(hkls2)))
-        cosangles = []
-        for h1 in hkls1:
-            for h2 in hkls2:
-                ca = self.unitcell.anglehkls(h1, h2)
-                cosangles.append(ca[1])
-        cosangles.sort()
-        coses = []
-        while len(cosangles) > 0:
-            a = cosangles.pop()
-            if (
-                abs(a - 1.0) < 1e-5 or abs(a + 1.0) < 1e-5
-            ):  # Throw out 180 degree angles
-                continue
-            if len(coses) == 0:
-                coses.append(a)
-                continue
-            if abs(coses[-1] - a) > 1e-5:
-                coses.append(a)
+        # cosangles = []
+        # for h1 in hkls1:
+        #     for h2 in hkls2:
+        #         ca = self.unitcell.anglehkls(h1, h2)
+        #         cosangles.append(ca[1])
+        # cosangles.sort()
+        # coses = []
+        # while len(cosangles) > 0:
+        #     a = cosangles.pop()
+        #     if (
+        #         abs(a - 1.0) < 1e-5 or abs(a + 1.0) < 1e-5
+        #     ):  # Throw out 180 degree angles
+        #         continue
+        #     if len(coses) == 0:
+        #         coses.append(a)
+        #         continue
+        #     if abs(coses[-1] - a) > 1e-5:
+        #         coses.append(a)
+        coses = self.unitcell.getcoses(self.ring_1, self.ring_2)
         logging.info("Possible angles and cosines between peaks in rings:")
         for c in coses:
             logging.info("%.6f %.6f" % (math.acos(c) * 180 / math.pi, c))
@@ -1132,14 +1148,24 @@ class indexer:
         #    print "No contributing reflections for\n",UBI
         #    raise
         # drlv2_old=drlv2
-        R = np.zeros((3, 3), float)
-        H = np.zeros((3, 3), float)
-        for i in ind:
-            r = self.gv[i, :]
-            k = hint[:, i].astype(float)
-            #           print r,k
-            R = R + np.outer(r, k)
-            H = H + np.outer(k, k)
+        # R = np.zeros((3, 3), float)
+        # H = np.zeros((3, 3), float)
+        # for i in ind:
+        #     r = gv[i, :]
+        #     k = hint[:, i].astype(float)
+        #     #           print r,k
+        #     R = R + np.outer(r, k)
+        #     H = H + np.outer(k, k)
+        # R = sum_n r_n h_n^t  and  H = sum_n h_n h_n^t  are just two matrix
+        # products over the selected peaks. The per-peak loop called np.outer
+        # twice and rebound R and H each iteration, so it allocated four 3x3
+        # arrays per contributing reflection; np.outer itself is asarray +
+        # ravel + multiply.outer for nine flops. Same arithmetic, ~100x less
+        # of it.
+        r = self.gv[ind, :]                                        # (n, 3)
+        k = np.ascontiguousarray(hint[:, ind].T, dtype=float)      # (n, 3)
+        R = r.T.dot(k)
+        H = k.T.dot(k)
         try:
             HI = np.linalg.inv(H)
             UBoptimal = np.dot(R, HI)

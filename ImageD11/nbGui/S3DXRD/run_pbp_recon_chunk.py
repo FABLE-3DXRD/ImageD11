@@ -1,6 +1,7 @@
 import os
 import sys
 import numpy as np
+from ImageD11 import cImageD11
 from ImageD11.sinograms.point_by_point import PBP, initializer
 
 def load_config(config_path):
@@ -19,7 +20,7 @@ def load_config(config_path):
             elif key in {'minpks', 'nprocs', 'hmax'}:
                 val = int(val)
             else:
-                val = val  # parfile, phase_name, symmetry, icolf_filename
+                val = val  # parfile, phase_name, symmetry, icolf_filename, index_filename
             config[key] = val
     return config
 
@@ -55,11 +56,11 @@ def run_chunk(config_path, indices_path, grains_file):
     points = np.loadtxt(indices_path, dtype=int)
     points = [tuple(row) for row in points]
     
-    
     # Run indexing
     pbp.point_by_point(
         grains_filename=grains_file,
         icolf_filename=config['icolf_filename'],
+        index_filename=config['index_filename'],
         nprocs=config['nprocs'],
         debugpoints=points
     )
