@@ -327,6 +327,7 @@ def select_point_peaks(si, sj, ystep, y0, ymin,
     if n < 0:  # buffer too small, catch and return -1 to the caller
         return -1
  
+    # TODO: relax=True does not seem to be used or tested yet?
     if relax:  # match voxel_mask predicate, so just return the peaks that fill_voxel_idx() found
         for t in range(n):
             out[t] = idx_buf[t]
