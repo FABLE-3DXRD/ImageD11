@@ -572,6 +572,7 @@ class unitcell:
                 self.ringds.append(peak[0])
                 self.ringhkls[self.ringds[-1]] = [peak[1]]
         self.ringtol = tol
+        self._rings_for = (limit, tol)
 
     def ringtths(self, wavelength):
         """
