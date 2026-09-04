@@ -118,8 +118,7 @@ def iradon(radon_image,
     to_pad = _sinogram_pad(radon_image.shape[0], output_size)
     if projection_shifts is not None:
         assert projection_shifts.shape == radon_image.shape
-        projection_shifts = np.pad(projection_shifts, to_pad,
-                                   mode='constant', constant_values=0)
+        projection_shifts = np.pad(projection_shifts, to_pad, mode='edge')
     radon_image = np.pad(radon_image, to_pad,
                          mode='constant', constant_values=0)
     img_shape = radon_image.shape[0]
@@ -461,7 +460,7 @@ def mlem(sino,
         pad_width = [(pb, p - pb) for pb, p in zip(pad_before, pad)]
         pad_width[1] = (0, 0)
 
-        proj_shifts_padded = np.pad(projection_shifts, pad_width, mode='constant', constant_values=0)
+        proj_shifts_padded = np.pad(projection_shifts, pad_width, mode='edge')
 
     else:
         proj_shifts_padded = None
@@ -501,17 +500,44 @@ def mlem(sino,
 
     return mlem_rec
 
+def apply_halfmask_to_sino(sino, axis_row=None, real_mask=None):
+    """Weight a half-scan sinogram before reconstruction.
 
-def apply_halfmask_to_sino(sino):
-    """Applies halfmask correction to sinogram"""
+    In a half scan the dty range covers the rotation axis and one side of the sample
+    only, with omega over 360 degrees. Every point off the axis is then seen at half
+    the omega values, which is a complete half turn and enough to reconstruct. A point
+    on the axis has dty = y0 at every omega, so it is measured twice and needs weight
+    0.5; the unmeasured side is padded data and gets weight 0.
+
+    sino      : (ny, nangles), dty along the first axis
+    axis_row  : index of the rotation axis row. Defaults to len(sino) // 2, which is
+                where correct_bins_for_half_scan puts it.
+    real_mask : optional bool array over the ny rows, True on measured bins
+                (ds.ybin_real_mask). Used to decide which side was scanned. If not
+                given, the side holding more signal is used.
+    """
+    ny = sino.shape[0]
+    if axis_row is None:
+        axis_row = ny // 2
+    axis_row = int(np.clip(np.round(axis_row), 0, ny - 1))
+
+    if real_mask is not None:
+        real_mask = np.asarray(real_mask, dtype=bool)
+        if real_mask.shape[0] != ny:
+            raise ValueError("real_mask does not match the sinogram row count")
+        low_is_real = real_mask[:axis_row].sum() >= real_mask[axis_row + 1:].sum()
+    else:
+        low_is_real = (np.abs(sino[:axis_row]).sum()
+                       >= np.abs(sino[axis_row + 1:]).sum())
+
     halfmask = np.zeros_like(sino)
+    if low_is_real:
+        halfmask[:axis_row, :] = 1.0
+    else:
+        halfmask[axis_row + 1:, :] = 1.0
+    halfmask[axis_row, :] = 0.5
 
-    halfmask[:len(halfmask) // 2 - 1, :] = 1
-    halfmask[len(halfmask) // 2 - 1, :] = 0.5
-
-    sino_halfmasked = sino.copy() * halfmask
-
-    return sino_halfmasked
+    return sino.copy() * halfmask
 
 
 def correct_recon_central_zingers(recon, radius=25):
