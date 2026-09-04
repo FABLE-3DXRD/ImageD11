@@ -833,6 +833,13 @@ class PBP:
 #SBATCH --cpus-per-task={cpus_per_chunk}
 #SBATCH --array=0-{array_end}
 #SBATCH --mem={mem_G}G
+# TODO: per-(job,array-task) NUMBA_CACHE_DIR handling needs a cleanup --
+# it is only emitted for the pbp indexing sbatch script, not for
+# pbp_refine.prepare_refine_bash (whose refine_map is the heaviest
+# @numba.njit(cache=True) consumer) or lima_segmenter, and the directory
+# it creates in /tmp is never removed. A shared slurm preamble writer
+# (export + mkdir + trap 'rm -rf') used by every cluster job would fix
+# both; pyslurmutils may be worth looking at again for this.
 export NUMBA_CACHE_DIR=/tmp/numba_${{SLURM_JOB_ID}}_${{SLURM_ARRAY_TASK_ID}}
 mkdir -p $NUMBA_CACHE_DIR
 CHUNK_FILE={chunk_prefix}${{SLURM_ARRAY_TASK_ID}}{chunk_suffix}
