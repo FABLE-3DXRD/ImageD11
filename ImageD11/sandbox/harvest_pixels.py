@@ -35,9 +35,9 @@ def segment( fname, bg, datamem, datapath, block=128, nsigma=3. ):
     # check offset and noise
     avg,sig = cImageD11.array_mean_var_cut( datamem, cut=nsigma )
     # remove the frelon lines
-    datamem.shape = imo.data.shape[0]*(imo.data.shape[1]//block) , block
+    datamem = datamem.reshape(imo.data.shape[0]*(imo.data.shape[1]//block), block, copy=False)
     cImageD11.frelon_lines( datamem, avg + sig*nsigma )
-    datamem.shape = imo.data.shape
+    datamem = datamem.reshape(imo.data.shape, copy=False)
     # overwrites datamem (should copy before if you want it
     avg,sig = cImageD11.array_mean_var_cut( datamem, cut=nsigma )
     threshold = avg + sig * nsigma

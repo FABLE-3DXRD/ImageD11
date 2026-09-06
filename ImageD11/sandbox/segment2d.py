@@ -213,8 +213,8 @@ class radial(imgfilt):
         xp, yp = c.make_pixel_lut( dims )
         t, e = transform.compute_tth_eta( (xp.ravel(), yp.ravel()),
                                       **p.parameters )
-        t.shape=dims
-        e.shape=dims
+        t = t.reshape(dims, copy=False)
+        e = e.reshape(dims, copy=False)
         return t, e
 
     def make_lut( self, itth, eta ):

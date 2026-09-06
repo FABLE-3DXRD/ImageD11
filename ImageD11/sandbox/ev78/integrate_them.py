@@ -79,7 +79,7 @@ def calcfrom1d( integrator, tth, I, shape):
     calcimage = numpy.interp( ttha.ravel(),
                               tth*numpy.pi/180,
                               I )
-    calcimage.shape = shape
+    calcimage = calcimage.reshape(shape, copy=False)
     # Solid angle correction
     # flake8: global SOLID_ANGLE
     if SOLID_ANGLE:

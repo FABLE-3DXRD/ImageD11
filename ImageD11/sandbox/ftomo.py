@@ -82,7 +82,7 @@ class fourier_radial(object):
         cImageD11.put_incr( fimc, self.inds, faprojc.ravel())
         fim = fimr + fimc*1j
         fim = numpy.divide( fimr + fimc*1j, self.nim_div)
-        fim.shape = self.ftimshape 
+        fim = fim.reshape(self.ftimshape, copy=False)
         return fim
 
     def sino2im(self, sinogram, centrepixel ):

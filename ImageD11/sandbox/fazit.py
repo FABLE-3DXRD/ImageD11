@@ -138,7 +138,7 @@ print("memcpy %.2f s %.2f MB/s"%( t.min(), gdata.nbytes/t.min()/1e6 ))
 ao = np.arange( N*M, dtype=np.uint32 )
 # lut is sorted for reads. Use cachelen blocks instead
 a32 = lut.copy()
-a32.shape = a32.size//32 , 32
+a32 = a32.reshape(a32.size//32, 32, copy=False)
 maxread = a32.max( axis=1 )
 run_order = np.argsort( maxread )
 print(run_order.shape)
@@ -149,7 +149,7 @@ assert l32.shape == lut.shape
 
 # lut is sorted for reads. Use cachelen blocks instead
 d32 = adrout.copy()
-d32.shape = d32.size//32 , 32
+d32 = d32.reshape(d32.size//32, 32, copy=False)
 maxread = d32.max( axis=1 )
 run_order = np.argsort( maxread )
 print(run_order.shape)

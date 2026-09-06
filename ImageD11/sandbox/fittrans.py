@@ -79,7 +79,7 @@ def test_XL_to_gv():
     wedge = 0
     chi = 0
     XL = np.ones((15))
-    XL.shape=3,5
+    XL = XL.reshape(3, 5, copy=False)
     wavelength = 1.2345
     T = np.array( [0,0,0] )
     gnew = XL_to_gv( omega, wedge, chi, XL, wavelength, T[0],T[1],T[2])

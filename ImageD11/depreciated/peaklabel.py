@@ -158,9 +158,9 @@ def build_overlap_matrix(ds, hname):
     npk = ds.nlm.sum()
     ds.firstpk = np.zeros( ds.nlm.shape, int )
     s = ds.firstpk.shape
-    ds.firstpk.shape=-1
+    ds.firstpk = ds.firstpk.reshape(-1, copy=False)
     ds.firstpk[1:] = ds.nlm.ravel().cumsum()[:-1]
-    ds.firstpk.shape = s
+    ds.firstpk = ds.firstpk.reshape(s, copy=False)
     ds.coomat = IncrementalSymmetricCOOMatrix( (npk, npk), np.int32 )
     ds.coomat.addeye()
 
