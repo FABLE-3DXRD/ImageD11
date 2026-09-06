@@ -56,38 +56,20 @@ _CACHE_VERSION = 7
 _PEAK_H5GROUP = "PBPPeakIndex"
 
 
-def default_index_filename(manager):
-    """Generate a default filename for the peak + gve index.
-
-    Parameters
-    ----------
-    manager
-        PBP or PBPRefine object
-
-    Returns
-    -------
-        Filename to save/load peak index/gve caches
-
-    Raises
-    ------
-    ValueError
-        If no icolf_filename on the manager object
-    """
-    base = getattr(manager, "icolf_filename", None)
-    if base is None:
-        raise ValueError("no icolf_filename to derive an index cache path from")
-    return os.path.splitext(base)[0] + "_pbpindex.h5"
-
-
 def save_peak_index_cache(idx, filename):
-    """Save peak index to an on-disk H5 cache, with versioning.
+    """Save peak index into an HDF5 group in the icolf file, with versioning.
+
+    The peak index is a lookup/partition table FOR the icolf it accompanies,
+    so it is stored as the "PBPPeakIndex" group inside the same HDF5 file as
+    the icolf's "peaks" group rather than as a separate sidecar file. The
+    columns group is left untouched; only the peak index group is replaced.
 
     Parameters
     ----------
     idx
         Peak index to cache
     filename
-        Filename to save to
+        icolf HDF5 file to store the index group in
 
     """
     with h5py.File(filename, "a") as hout:
@@ -110,7 +92,10 @@ def save_peak_index_cache(idx, filename):
 
 
 def load_peak_index_cache(filename, mmap=False, verbose=True):
-    """Load peak index from an on-disk H5 cache, with optional mem-map.
+    """Load peak index from the icolf HDF5 file, with optional mem-map.
+
+    Reads the "PBPPeakIndex" group written by save_peak_index_cache from the
+    icolf HDF5 file.
 
     Use it from multiprocessing workers: the arrays are identical in every
     worker and never written, so one mapping shared through the page cache
@@ -120,7 +105,7 @@ def load_peak_index_cache(filename, mmap=False, verbose=True):
     Parameters
     ----------
     filename
-        Filename to load from
+        icolf HDF5 file to load the index group from
     mmap, optional
         returns read-only np.memmap views instead of copies. by default False
     verbose, optional

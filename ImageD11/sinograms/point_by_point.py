@@ -39,7 +39,6 @@ from ImageD11.peakselect import mask_rings_by_ifrac
 from ImageD11.sinograms import geometry
 from ImageD11.sinograms.voxel_mask import (
     VoxelSinoMasker, fill_voxel_idx, max_candidates as vm_max_candidates,
-    default_index_filename,
     save_peak_index_cache, load_peak_index_cache,
     choose_omega_bins,
     _CACHE_VERSION)
@@ -510,7 +509,7 @@ colglobal = None
 partglobal = None
 bufglobal = None
 
-def initializer(parfile, phase_name, symmetry, colfile, index_filename, loglevel=3):
+def initializer(parfile, phase_name, symmetry, colfile, loglevel=3):
     global ucglobal, symglobal, parglobal, colglobal, partglobal, bufglobal
     try:
         if threadpoolctl is not None:
@@ -522,18 +521,19 @@ def initializer(parfile, phase_name, symmetry, colfile, index_filename, loglevel
         ImageD11.indexing.loglevel = loglevel
  
         # mmap, not read: identical and read-only in every worker, so one
-        # mapping through the page cache replaces one copy per process
-        partglobal = load_peak_index_cache(index_filename, mmap=True)
+        # mapping through the page cache replaces one copy per process.
+        # The peak index lives in the PBPPeakIndex group of the icolf file.
+        partglobal = load_peak_index_cache(colfile, mmap=True)
         if partglobal is None:
             raise RuntimeError(
                 "peak index %s is missing or stale -- rerun setpeaks()"
-                % index_filename)
+                % colfile)
  
         n = partglobal["maxlocal"]
         if n is None:
             raise RuntimeError(
                 "peak index %s has no maxlocal -- it predates _CACHE_VERSION "
-                "%d. Rerun setpeaks()." % (index_filename, _CACHE_VERSION))
+                "%d. Rerun setpeaks()." % (colfile, _CACHE_VERSION))
 
         bufglobal = {
             "idx": np.empty(n, np.int64),
@@ -598,14 +598,15 @@ class PBP:
         self.phase_name = phase_name
 
         self.icolf_filename = None      # set by setpeaks
-        self.index_filename = None      # set by setpeaks
 
     def _build_index(self, verbose=True):
         """Take the partition setpeaks built, size the buffers with
         max_candidates, and write it to disk ready for mmap in the workers.
         Returns the partition dictionary.
         """
-        self.index_filename = default_index_filename(self)
+        # The partition is written into the PBPPeakIndex group of the icolf
+        # file (which setpeaks already wrote the peaks group into).
+        icolf_filename = self.icolf_filename
  
         # The partition is already built in self._masker; we only need to
         # size the buffers and write it out for the workers.
@@ -648,9 +649,9 @@ class PBP:
                       "sparse and traversal will dominate. Check whether the "
                       "frm decode ran; the heuristic over-refines without it.")
         try:
-            save_peak_index_cache(idx, self.index_filename)
+            save_peak_index_cache(idx, icolf_filename)
             if verbose:
-                print("saved peak index to %s" % self.index_filename)
+                print("saved peak index to %s" % icolf_filename)
         except OSError as e:
             print("could not write index cache (%s), continuing" % e)
         return idx
@@ -734,13 +735,10 @@ class PBP:
 
         self.icolf_filename = icolf_filename
 
-        # Delete existing partition if present
-        index_filename = default_index_filename(self)
-        if os.path.exists(index_filename):
-            os.remove(index_filename)
-
         # Prepare the partition index for memory mapping in the workers
-        # It is actually mem-mapped in the initializer
+        # It is actually mem-mapped in the initializer.
+        # The partition is stored in the PBPPeakIndex group of the icolf file
+        # (just written above), so there is no separate sidecar to delete.
         self._build_index()
 
 
@@ -779,7 +777,6 @@ class PBP:
             f.write("phase_name={}\n".format(self.phase_name))
             f.write("symmetry={}\n".format(self.symmetry))
             f.write("icolf_filename={}\n".format(self.icolf_filename))
-            f.write("index_filename={}\n".format(self.index_filename))
             f.write("y0={}\n".format(self.y0))
             f.write("hkl_tol={}\n".format(self.hkl_tol))
             f.write("ds_tol={}\n".format(self.ds_tol))
@@ -873,7 +870,6 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
             self,
             grains_filename,
             icolf_filename=None,  # use self
-            index_filename=None,  # use self
             nprocs=None,
             gridstep=1,
             debugpoints=None,
@@ -881,14 +877,11 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
     ):
         """
         grains_filename = output file
-        icolf_filename = hdf5file to write. Allows mmap to be used.
-        index_filename = hdf5file for voxel_mask index to mmap
+        icolf_filename = hdf5 file to read. Allows mmap to be used. The
+            voxel_mask peak index is read from its PBPPeakIndex group.
         """
         if icolf_filename is not None:
             self.icolf_filename = icolf_filename
-
-        if index_filename is not None:
-            self.index_filename = index_filename
         
         self.loglevel = loglevel
         
@@ -929,11 +922,11 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
         # worker passes: a read-only memmap is a distinct numba type from a
         # writable array, so this loads the index and columns the same way
         # initializer does rather than using dummy arrays.
-        _part = load_peak_index_cache(self.index_filename, mmap=True)
+        _part = load_peak_index_cache(self.icolf_filename, mmap=True)
         if _part is None:
             raise RuntimeError(
                 "peak index %s is missing or the wrong version -- rerun "
-                "setpeaks()" % self.index_filename)
+                "setpeaks()" % self.icolf_filename)
 
         _sm = ImageD11.columnfile.mmap_h5colf(self.icolf_filename)
         _n = _part["maxlocal"]
@@ -976,7 +969,6 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
                             self.phase_name,
                             self.symmetry,
                             self.icolf_filename,
-                            self.index_filename,
                             self.loglevel,
                     ),
             ) as p:
