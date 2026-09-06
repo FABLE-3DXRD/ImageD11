@@ -973,7 +973,7 @@ class TensorMap:
             if len(self.phases) == 0:
                 raise KeyError("No phases in self.phases to compute IPF colours for!")
 
-            rgb_map.shape = -1, 3
+            rgb_map = rgb_map.reshape(-1, 3, copy=False)
 
             # iterate over phases
             for phase_id in self.phases.keys():
@@ -984,7 +984,7 @@ class TensorMap:
                                                                                 axis=ipf_direction)
                 rgb_map[inds] = rgb_flat
 
-            rgb_map.shape = shape + (3,)
+            rgb_map = rgb_map.reshape(shape + (3,), copy=False)
 
             self.add_map('ipf_' + letter, rgb_map)
 

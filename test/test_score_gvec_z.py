@@ -57,7 +57,7 @@ class test_closest_vec( unittest.TestCase ):
         UB = np.linalg.inv( UBI )
 
         HKL = np.mgrid[-5:6, -5:6, -5:6].T.copy()
-        HKL.shape = HKL.shape[1]*HKL.shape[1]*HKL.shape[1] , 3
+        HKL = HKL.reshape(HKL.shape[1]*HKL.shape[1]*HKL.shape[1], 3, copy=False)
         for i in range(len(HKL)):
             if abs(HKL[i]).sum()==0:
                 HKL[i] = (1,1,1)

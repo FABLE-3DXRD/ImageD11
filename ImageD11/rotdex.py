@@ -138,12 +138,12 @@ def fit_ub_t( ub, translation, hkl, peaks_Cxyz, beam_Cxyz, wavelength):
         gcalc =  np.dot( ubnew , hkl ) # 3xn
         gdiff = gcalc - gobs
         #    print((gdiff*gdiff).ravel().sum(),tnew)
-        dg.shape = 12,3*npk
+        dg = dg.reshape(12, 3*npk, copy=False)
         mat = np.dot( dg, dg.T )
         rhs = np.dot( dg, gdiff.ravel() )
         imat = np.linalg.inv( mat )
         shifts = np.dot (imat, rhs )
-        dg.shape =  (12,3,npk) 
+        dg = dg.reshape(12, 3, npk, copy=False)
         ubnew = ubnew  - np.reshape(shifts[:9],(3,3))
         tnew  = tnew - shifts[9:]
     return ubnew, tnew
