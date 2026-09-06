@@ -633,12 +633,19 @@ def sparse_connected_pixels(
     return nlabel
 
 
-def sparse_localmax(frame, label_name="localmax", data_name="intensity"):
+def sparse_localmax(frame, label_name="localmax", data_name="intensity", smooth=False):
+    """smooth=True applies the same cImageD11.sparse_smooth pre-filter that
+    SparseScan.lmlabel already applies before localmax labelling.
+    Default is False to keep existing behaviour/output unchanged."""
     labels = np.zeros(frame.nnz, "i")
     vmx = np.zeros(frame.nnz, np.float32)
     imx = np.zeros(frame.nnz, "i")
+    if smooth:
+        signal = sparse_smooth(frame, data_name=data_name)
+    else:
+        signal = frame.pixels[data_name].astype(np.float32, copy=False)
     nlabel = cImageD11.sparse_localmaxlabel(
-        frame.pixels[data_name].astype(np.float32, copy=False),
+        signal,
         frame.row,
         frame.col,
         vmx,
