@@ -15,19 +15,19 @@ def grab2d( im, dark, nsigma=3., blocksize=256 ):
     csk =  np.empty( im.shape, 'b' )  # cleaned mask
     # subtract the background
     shape0 = im.shape
-    data.shape = data.size
-    dark.shape = dark.size
-    im.shape = im.size
+    data = data.reshape(data.size, copy=False)
+    dark = dark.reshape(dark.size, copy=False)
+    im = im.reshape(im.size, copy=False)
     cImageD11.uint16_to_float_darksub( data, dark, im )
     # compute the mean and std of the data trimming at nsigma
     avg, std = cImageD11.array_mean_var_cut( data, nsigma )
     threshold = avg + nsigma * std
     # remove the readout drift
-    data.shape = im.size // blocksize, blocksize
+    data = data.reshape(im.size // blocksize, blocksize, copy=False)
     cImageD11.frelon_lines( data, threshold )
-    data.shape = shape0
-    dark.shape = shape0
-    im.shape = shape0
+    data = data.reshape(shape0, copy=False)
+    dark = dark.reshape(shape0, copy=False)
+    im = im.reshape(shape0, copy=False)
     # threshold and clean
     nnz = cImageD11.make_clean_mask( data, threshold, msk, csk )
     row = np.empty( nnz, np.uint16 )

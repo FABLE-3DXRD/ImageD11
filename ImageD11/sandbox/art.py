@@ -79,7 +79,7 @@ def update_wtd( recon, proj, angle, msk, dbg=True ):
     #pl.show()
 
     # update = update 
-    update.shape = recon.shape
+    update = update.reshape(recon.shape, copy=False)
     print(update.sum(),error.sum(), end=' ')
     if dbg:
         pl.figure()

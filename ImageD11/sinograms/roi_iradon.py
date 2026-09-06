@@ -329,8 +329,8 @@ def fxyrot(colrow, angle=0, center=0, projection_shifts=None):
     col, row = colrow.T - center
     n = int(np.sqrt(col.shape[0]))
     assert n * n == col.shape[0]
-    col.shape = n, n
-    row.shape = n, n
+    col = col.reshape(n, n, copy=False)
+    row = row.reshape(n, n, copy=False)
     cos_a, sin_a = np.cos(angle), np.sin(angle)
     if projection_shifts is not None:
         ct = col.T

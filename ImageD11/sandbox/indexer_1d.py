@@ -344,7 +344,7 @@ class indexer:
         except:
             print(args, len(args))
             raise
-        p.shape = 4,3
+        p = p.reshape(4, 3, copy=False)
         ub = p[:3]
         t = p[3]
         gcalc = np.dot( ub, hkls )
@@ -361,7 +361,7 @@ class indexer:
         #print (gobs-gcalc).ravel()
         #1/0
         e = (gcalc - gobs.T).ravel()
-        p.shape = 12,
+        p = p.reshape(12, copy=False)
  #       print p-0.1,(e*e).sum()
         return e#(e*e).sum()
         

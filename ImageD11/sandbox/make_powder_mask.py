@@ -26,8 +26,8 @@ def make_powder_mask( parfile,
     xim, yim = spatial.make_pixel_lut ( dims )
     peaks = [ np.ravel( xim ) , np.ravel( yim ) ]
     tth , eta = transform.compute_tth_eta( peaks , **pars.get_parameters() )
-    tth.shape = dims
-    eta.shape = dims
+    tth = tth.reshape(dims, copy=False)
+    eta = eta.reshape(dims, copy=False)
     # Assume a circle geometry for now
     # tth * eta ~ length on detector
     # lim = tth * eta

@@ -574,8 +574,7 @@ class overlaps_matrix:
             self.npkmax = mx
             print("realloc", mx)
             self.realloc()
-        mat = self.matmem[: n1 * n2]
-        mat.shape = n1, n2
+        mat = self.matmem[: n1 * n2].reshape(n1, n2, copy=False)
         nov = cImageD11.coverlaps(
             row1, col1, labels1, row2, col2, labels2, mat, self.results
         )

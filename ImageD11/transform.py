@@ -845,11 +845,11 @@ class PixelLUT(object):
         )
         # scattering vectors:
         self.k = compute_k_vectors(self.tth, self.eta, self.pars.get("wavelength"))
-        self.sinthsq.shape = s
-        self.tth.shape = s
-        self.eta.shape = s
-        self.k.shape = (3, s[0], s[1])
-        self.xyz.shape = (3, s[0], s[1])
+        self.sinthsq = self.sinthsq.reshape(s, copy=False)
+        self.tth = self.tth.reshape(s, copy=False)
+        self.eta = self.eta.reshape(s, copy=False)
+        self.k = self.k.reshape((3, s[0], s[1]), copy=False)
+        self.xyz = self.xyz.reshape((3, s[0], s[1]), copy=False)
 
     def spatial(self, sraw, fraw):
         """applies a spatial distortion to sraw, fraw (for peak centroids)"""
