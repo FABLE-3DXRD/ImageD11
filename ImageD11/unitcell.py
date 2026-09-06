@@ -559,6 +559,10 @@ class unitcell:
                 and getattr(self, "ringds", None) is not None):
             return
         self.peaks = self.gethkls(limit + tol)  # [ ds, [hkl] ]
+        if len(self.peaks) == 0:
+            raise ValueError(
+                "No peaks found for limit=%s; try increasing limit" % (limit,)
+            )
         self.ringds = []  # a list of floats
         self.ringhkls = {}  # a dict of lists of integer hkl
         # Append first peak
