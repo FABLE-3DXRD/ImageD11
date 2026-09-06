@@ -49,12 +49,16 @@ def calc_gve_angles(pmap, hkls, pars):
     ub = np.linalg.inv(pmap.best_ubi[voxel_mask])
     # gve[xyz, voxel, hkl]
     gve = np.einsum('vij,hj->ivh', ub, hkls, order='C')
-    gve.shape = 3, -1
+    gve = gve.reshape(3, -1, copy=False)
     tth, (eta1, eta2), (omega1, omega2) = ImageD11.transform.uncompute_g_vectors(
         gve, pars.get('wavelength')
     )
     shape = ub.shape[0], len(hkls)
-    tth.shape = eta1.shape = eta2.shape = omega1.shape = omega2.shape = shape
+    tth = tth.reshape(shape, copy=False)
+    eta1 = eta1.reshape(shape, copy=False)
+    eta2 = eta2.reshape(shape, copy=False)
+    omega1 = omega1.reshape(shape, copy=False)
+    omega2 = omega2.reshape(shape, copy=False)
     return voxel_mask, tth, eta1, eta2, omega1, omega2
 
 
