@@ -180,6 +180,7 @@ more = [
     "lmfit",       # in sandbox
     "sympy",       # for maths
     'ipywidgets ; python_version >= "3"',  # for notebook nbGui
+    'jupyter ; python_version >= "3"',  # so users can open/run the nbGui notebooks
     'pyopencl; python_version >= "3"',    # (was?) in sandbox
     'numexpr <= 2.7.0; python_version < "3" ',
     'pyFAI ; python_version >= "3" ',   # pypi problematic
