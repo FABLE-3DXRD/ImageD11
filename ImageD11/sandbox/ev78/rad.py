@@ -2,6 +2,7 @@
 
 import math, numpy, time
 import h5py, sys
+from ImageD11 import nputils
 
 
 class fourier_radial(object):
@@ -81,7 +82,7 @@ class fourier_radial(object):
         fimc[self.inds] += faprojc
         fim = fimr + fimc*1j
         fim = numpy.divide( fimr + fimc*1j, self.nim_div)
-        fim = fim.reshape(self.ftimshape, copy=False)
+        fim = nputils.reshape_no_copy(fim, self.ftimshape)
         return fim
 
     def sino2im(self, sinogram, centrepixel ):

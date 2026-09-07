@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import fabio, numpy as np, h5py
+from ImageD11 import nputils
 
 # read in .txt file and .dat files
 
@@ -49,7 +50,7 @@ def decidegrid(vals):
     if len(vals) % blocksize != 0:
         print("Blocksize seems to be",blocksize, end=' ')
         print("you have",len(vals),"images. Problem.")
-    vals = vals.reshape(vals.shape[0]//blocksize, blocksize, vals.shape[1], copy=False)
+    vals = nputils.reshape_no_copy(vals, vals.shape[0]//blocksize, blocksize, vals.shape[1])
     # Find the best angular grid mapping onto this
     a0=vals[0,:,1]
     a1=vals[1,:,1]

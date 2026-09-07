@@ -44,7 +44,7 @@ import numpy as np
 import concurrent.futures, os
 import skimage.transform.radon_transform
 import numba
-from ImageD11 import cImageD11
+from ImageD11 import cImageD11, nputils
 
 
 def _sinogram_pad(n, o=None):
@@ -329,8 +329,8 @@ def fxyrot(colrow, angle=0, center=0, projection_shifts=None):
     col, row = colrow.T - center
     n = int(np.sqrt(col.shape[0]))
     assert n * n == col.shape[0]
-    col = col.reshape(n, n, copy=False)
-    row = row.reshape(n, n, copy=False)
+    col = nputils.reshape_no_copy(col, n, n)
+    row = nputils.reshape_no_copy(row, n, n)
     cos_a, sin_a = np.cos(angle), np.sin(angle)
     if projection_shifts is not None:
         ct = col.T

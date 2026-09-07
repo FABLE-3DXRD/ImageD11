@@ -6,7 +6,7 @@ import numpy as np #, numba
 import scipy.ndimage 
 import hdf5plugin, h5py, fabio
 from ImageD11 import cImageD11, sparseframe, blobcorrector, \
-    parameters, transform
+    parameters, transform, nputils
 import pylab as pl
 
 # Timer (could be a decorator ...)
@@ -214,8 +214,8 @@ class radial(imgfilt):
         xp, yp = c.make_pixel_lut( dims )
         t, e = transform.compute_tth_eta( (xp.ravel(), yp.ravel()),
                                       **p.parameters )
-        t = t.reshape(dims, copy=False)
-        e = e.reshape(dims, copy=False)
+        t = nputils.reshape_no_copy(t, dims)
+        e = nputils.reshape_no_copy(e, dims)
         return t, e
 
     def make_lut( self, itth, eta ):

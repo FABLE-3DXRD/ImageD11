@@ -6,7 +6,7 @@ isolated peaks
 """
 
 
-from ImageD11 import transform, parameters, blobcorrector
+from ImageD11 import transform, parameters, blobcorrector, nputils
 import numpy as np
 from fabio.openimage import openimage
 
@@ -26,8 +26,8 @@ def make_powder_mask( parfile,
     xim, yim = spatial.make_pixel_lut ( dims )
     peaks = [ np.ravel( xim ) , np.ravel( yim ) ]
     tth , eta = transform.compute_tth_eta( peaks , **pars.get_parameters() )
-    tth = tth.reshape(dims, copy=False)
-    eta = eta.reshape(dims, copy=False)
+    tth = nputils.reshape_no_copy(tth, dims)
+    eta = nputils.reshape_no_copy(eta, dims)
     # Assume a circle geometry for now
     # tth * eta ~ length on detector
     # lim = tth * eta

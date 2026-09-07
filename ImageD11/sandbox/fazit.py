@@ -5,7 +5,7 @@ fast radial regrouping method proposed by Peter Boesecke
 """
 import numpy as np, pylab as pl
 import timeit, sys
-from ImageD11 import cImageD11
+from ImageD11 import cImageD11, nputils
 timer = timeit.default_timer
 
 try:
@@ -138,7 +138,7 @@ print("memcpy %.2f s %.2f MB/s"%( t.min(), gdata.nbytes/t.min()/1e6 ))
 ao = np.arange( N*M, dtype=np.uint32 )
 # lut is sorted for reads. Use cachelen blocks instead
 a32 = lut.copy()
-a32 = a32.reshape(a32.size//32, 32, copy=False)
+a32 = nputils.reshape_no_copy(a32, a32.size//32, 32)
 maxread = a32.max( axis=1 )
 run_order = np.argsort( maxread )
 print(run_order.shape)
@@ -149,7 +149,7 @@ assert l32.shape == lut.shape
 
 # lut is sorted for reads. Use cachelen blocks instead
 d32 = adrout.copy()
-d32 = d32.reshape(d32.size//32, 32, copy=False)
+d32 = nputils.reshape_no_copy(d32, d32.size//32, 32)
 maxread = d32.max( axis=1 )
 run_order = np.argsort( maxread )
 print(run_order.shape)

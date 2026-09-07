@@ -2,7 +2,7 @@
 
 import h5py, os
 import numpy as np
-from ImageD11 import sparseframe, cImageD11
+from ImageD11 import sparseframe, cImageD11, nputils
 import scipy.sparse
 import scipy.sparse.csgraph
 
@@ -158,9 +158,9 @@ def build_overlap_matrix(ds, hname):
     npk = ds.nlm.sum()
     ds.firstpk = np.zeros( ds.nlm.shape, int )
     s = ds.firstpk.shape
-    ds.firstpk = ds.firstpk.reshape(-1, copy=False)
+    ds.firstpk = nputils.reshape_no_copy(ds.firstpk, -1)
     ds.firstpk[1:] = ds.nlm.ravel().cumsum()[:-1]
-    ds.firstpk = ds.firstpk.reshape(s, copy=False)
+    ds.firstpk = nputils.reshape_no_copy(ds.firstpk, s)
     ds.coomat = IncrementalSymmetricCOOMatrix( (npk, npk), np.int32 )
     ds.coomat.addeye()
 

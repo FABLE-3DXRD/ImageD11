@@ -4,7 +4,7 @@ from __future__ import print_function, division
 import glob, os, multiprocessing, time
 import numpy as np
 import fabio, h5py
-from ImageD11 import sparseframe, cImageD11
+from ImageD11 import sparseframe, cImageD11, nputils
 
 def ftomonames( scanpars, folder):
     """ nimages, extn, interlaced, iflip  in scanpars
@@ -35,9 +35,9 @@ def segment( fname, bg, datamem, datapath, block=128, nsigma=3. ):
     # check offset and noise
     avg,sig = cImageD11.array_mean_var_cut( datamem, cut=nsigma )
     # remove the frelon lines
-    datamem = datamem.reshape(imo.data.shape[0]*(imo.data.shape[1]//block), block, copy=False)
+    datamem = nputils.reshape_no_copy(datamem, imo.data.shape[0]*(imo.data.shape[1]//block), block)
     cImageD11.frelon_lines( datamem, avg + sig*nsigma )
-    datamem = datamem.reshape(imo.data.shape, copy=False)
+    datamem = nputils.reshape_no_copy(datamem, imo.data.shape)
     # overwrites datamem (should copy before if you want it
     avg,sig = cImageD11.array_mean_var_cut( datamem, cut=nsigma )
     threshold = avg + sig * nsigma

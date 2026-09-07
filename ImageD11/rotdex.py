@@ -5,7 +5,7 @@ from ImageD11.columnfile import columnfile
 from ImageD11.parameters import read_par_file
 from ImageD11.unitcell   import unitcell_from_parameters
 from ImageD11.grain      import read_grain_file, write_grain_file
-from ImageD11 import transform
+from ImageD11 import transform, nputils
 import numpy as np
 
 # idea:
@@ -138,12 +138,12 @@ def fit_ub_t( ub, translation, hkl, peaks_Cxyz, beam_Cxyz, wavelength):
         gcalc =  np.dot( ubnew , hkl ) # 3xn
         gdiff = gcalc - gobs
         #    print((gdiff*gdiff).ravel().sum(),tnew)
-        dg = dg.reshape(12, 3*npk, copy=False)
+        dg = nputils.reshape_no_copy(dg, 12, 3*npk)
         mat = np.dot( dg, dg.T )
         rhs = np.dot( dg, gdiff.ravel() )
         imat = np.linalg.inv( mat )
         shifts = np.dot (imat, rhs )
-        dg = dg.reshape(12, 3, npk, copy=False)
+        dg = nputils.reshape_no_copy(dg, 12, 3, npk)
         ubnew = ubnew  - np.reshape(shifts[:9],(3,3))
         tnew  = tnew - shifts[9:]
     return ubnew, tnew

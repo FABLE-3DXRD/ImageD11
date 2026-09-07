@@ -1,7 +1,7 @@
 
 from __future__ import print_function, division
 
-from ImageD11 import cImageD11
+from ImageD11 import cImageD11, nputils
 import numpy as np, time
 import unittest
 
@@ -57,7 +57,7 @@ class test_closest_vec( unittest.TestCase ):
         UB = np.linalg.inv( UBI )
 
         HKL = np.mgrid[-5:6, -5:6, -5:6].T.copy()
-        HKL = HKL.reshape(HKL.shape[1]*HKL.shape[1]*HKL.shape[1], 3, copy=False)
+        HKL = nputils.reshape_no_copy(HKL, HKL.shape[1]*HKL.shape[1]*HKL.shape[1], 3)
         for i in range(len(HKL)):
             if abs(HKL[i]).sum()==0:
                 HKL[i] = (1,1,1)

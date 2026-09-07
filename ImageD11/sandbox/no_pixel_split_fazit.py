@@ -3,7 +3,7 @@ from __future__ import print_function
 
 
 import sys, numpy, time
-from ImageD11 import cImageD11, blobcorrector, ImageD11_file_series
+from ImageD11 import cImageD11, blobcorrector, ImageD11_file_series, nputils
 from fabio.openimage import openimage
 from fabio.edfimage import edfimage
 
@@ -119,8 +119,8 @@ def main():
                 arsorted = mask.copy()
                 outmask = mask.copy()
                 outmask = outmask * 1e6
-                outmask = outmask.reshape(imageshape, copy=False)
-                arsorted = arsorted.reshape(imageshape, copy=False)
+                outmask = nputils.reshape_no_copy(outmask, imageshape)
+                arsorted = nputils.reshape_no_copy(arsorted, imageshape)
                 arsorted.sort(axis=1)
                 minds = numpy.array([ l.searchsorted(0.5) for l in arsorted ])
 
@@ -133,7 +133,7 @@ def main():
             start = time.time()
 
             numpy.multiply( outsum, 0, outsum )
-            outsum = outsum.reshape(flatshape, copy=False)
+            outsum = nputils.reshape_no_copy(outsum, flatshape)
 
             dm = (dataim.ravel()*fit2dmask).astype(numpy.float32)
             
@@ -148,7 +148,7 @@ def main():
             print(dataim.max(),dataim.min(), end=' ')
             print(scalar.max(),scalar.min(),outsum.min(), outsum.max( ))
 
-            outsum = outsum.reshape(imageshape, copy=False)
+            outsum = nputils.reshape_no_copy(outsum, imageshape)
             # saving edf
             e.data=outsum
             e.write( "r_"+fim.filename  , force_type=numpy.float32)
