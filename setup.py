@@ -24,6 +24,7 @@ Setup script
 You should run src/make_pyf.py to update the pyf wrapper and docs
 """
 import sys
+import copy
 from io import open # this misery may never end.
 # For pip / bdist_wheel etc
 import os, platform, os.path
@@ -86,16 +87,57 @@ class build_ext_subclass( build_ext.build_ext ):
             ext.extra_link_args = lopt[ c ] + LF
         print("Customised compiler",c,ext.extra_compile_args,
                     ext.extra_link_args)
-        if ext.sources[0].endswith('.pyf'):
-            name = ext.sources[0]
-            # generate wrappers
-            print('Creating f2py wrapper for', name)
-            numpy.f2py.run_main( [
-                #'--quiet',
-                name,])
-            ext.sources[0] = os.path.split(name)[-1].replace('.pyf', 'module.c')
-            ext.sources.append( os.path.join(numpy.f2py.get_include(), 'fortranobject.c' ) )
-        build_ext.build_ext.build_extension(self, ext)
+
+        if not ext.sources[0].endswith('.pyf'):
+            # No f2py wrapper involved: nothing special to do.
+            build_ext.build_ext.build_extension(self, ext)
+            return
+
+        # --- f2py extension: generate the C wrapper from the .pyf interface file ---
+        name = ext.sources[0]
+        # generate wrappers
+        print('Creating f2py wrapper for', name)
+        numpy.f2py.run_main( [
+            #'--quiet',
+            name,])
+
+        # IMPORTANT: `ext` is not a private, per-call object. It is the same
+        # `Extension` instance that setup.py built at module level and passed
+        # to `setup(ext_modules=[extension])`, and setuptools reuses that one
+        # object across every command run in this process (build_ext, egg_info,
+        # sdist, ...).
+        #
+        # A plain `pip install .` happens to be safe even if we mutated
+        # `ext.sources` in place here, because bdist_wheel runs egg_info
+        # (which writes SOURCES.txt by scanning ext.sources) *before* build_ext
+        # runs. By the time this function appends the absolute path to
+        # numpy's bundled fortranobject.c, nothing looks at ext.sources again.
+        #
+        # An *editable* install (`pip install -e .`) runs build_ext first (it
+        # needs a real compiled .so on disk for the editable finder to import),
+        # then runs egg_info afterwards -- in the same process, on the same
+        # `ext` object. So egg_info would see the absolute fortranobject.c
+        # path left behind by mutating ext.sources, and modern setuptools hard
+        # -rejects any absolute path found there ("setup script specifies an
+        # absolute path"), breaking editable installs only.
+        #
+        # Fix: never mutate `ext` at all. Compile a disposable *copy* instead,
+        # so whatever we add here (the generated wrapper, numpy's absolute
+        # fortranobject.c path) disappears with it, and every command that
+        # runs after us still sees the original, pristine, all-relative
+        # `extension` object.
+        patched = copy.copy(ext)          # shallow copy is enough: we only
+                                           # rebind .sources below, we never
+                                           # mutate the list in place.
+        patched.sources = (
+            [os.path.split(name)[-1].replace('.pyf', 'module.c')]  # f2py's generated wrapper .c
+            + list(ext.sources[1:])                                  # the other hand-written .c files
+            + [os.path.join(numpy.f2py.get_include(), 'fortranobject.c')]  # numpy's helper (absolute path)
+        )
+        # Compile the copy. Output filename/location is derived from
+        # `patched.name`, which is identical to `ext.name`, so the .so lands
+        # in exactly the same place it always did.
+        build_ext.build_ext.build_extension(self, patched)
 
 # note that the pyf must come first
 cnames =  "_cImageD11.pyf blobs.c cdiffraction.c cimaged11utils.c"+\
