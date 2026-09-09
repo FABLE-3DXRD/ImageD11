@@ -105,7 +105,7 @@ packaging==24.2
     #   scikit-image
 partd==1.4.2
     # via dask
-pillow==11.0.0
+pillow==12.3.0
     # via
     #   fabio
     #   imageio
