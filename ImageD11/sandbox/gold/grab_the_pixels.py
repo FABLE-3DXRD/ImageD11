@@ -1,7 +1,7 @@
 
 
 
-from ImageD11 import cImageD11, sparseframe
+from ImageD11 import cImageD11, sparseframe, nputils
 import numpy as np, fabio, h5py, os
 
 
@@ -15,19 +15,19 @@ def grab2d( im, dark, nsigma=3., blocksize=256 ):
     csk =  np.empty( im.shape, 'b' )  # cleaned mask
     # subtract the background
     shape0 = im.shape
-    data.shape = data.size
-    dark.shape = dark.size
-    im.shape = im.size
+    data = nputils.reshape_no_copy(data, data.size)
+    dark = nputils.reshape_no_copy(dark, dark.size)
+    im = nputils.reshape_no_copy(im, im.size)
     cImageD11.uint16_to_float_darksub( data, dark, im )
     # compute the mean and std of the data trimming at nsigma
     avg, std = cImageD11.array_mean_var_cut( data, nsigma )
     threshold = avg + nsigma * std
     # remove the readout drift
-    data.shape = im.size // blocksize, blocksize
+    data = nputils.reshape_no_copy(data, im.size // blocksize, blocksize)
     cImageD11.frelon_lines( data, threshold )
-    data.shape = shape0
-    dark.shape = shape0
-    im.shape = shape0
+    data = nputils.reshape_no_copy(data, shape0)
+    dark = nputils.reshape_no_copy(dark, shape0)
+    im = nputils.reshape_no_copy(im, shape0)
     # threshold and clean
     nnz = cImageD11.make_clean_mask( data, threshold, msk, csk )
     row = np.empty( nnz, np.uint16 )

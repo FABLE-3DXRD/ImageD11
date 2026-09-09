@@ -10,6 +10,7 @@ SOLID_ANGLE = True
 #print "PATH:", sys.path
 
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
+from ImageD11 import nputils
 
 class darkflood(object):
     """ 
@@ -79,7 +80,7 @@ def calcfrom1d( integrator, tth, I, shape):
     calcimage = numpy.interp( ttha.ravel(),
                               tth*numpy.pi/180,
                               I )
-    calcimage.shape = shape
+    calcimage = nputils.reshape_no_copy(calcimage, shape)
     # Solid angle correction
     # flake8: global SOLID_ANGLE
     if SOLID_ANGLE:

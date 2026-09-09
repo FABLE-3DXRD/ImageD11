@@ -2,7 +2,7 @@ from __future__ import print_function, division
 
 import time, sys
 import h5py, scipy.sparse, numpy as np  # , pylab as pl
-from ImageD11 import cImageD11
+from ImageD11 import cImageD11, nputils
 
 SAFE = True
 
@@ -574,8 +574,7 @@ class overlaps_matrix:
             self.npkmax = mx
             print("realloc", mx)
             self.realloc()
-        mat = self.matmem[: n1 * n2]
-        mat.shape = n1, n2
+        mat = nputils.reshape_no_copy(self.matmem[: n1 * n2], n1, n2)
         nov = cImageD11.coverlaps(
             row1, col1, labels1, row2, col2, labels2, mat, self.results
         )

@@ -20,7 +20,7 @@ from __future__ import print_function
 
 
 import numpy as np
-from ImageD11 import grain, transform, cImageD11, indexing, unitcell, refinegrains
+from ImageD11 import grain, transform, cImageD11, indexing, unitcell, refinegrains, nputils
 import scipy.optimize
 from scipy.spatial.transform import Rotation
 import math, time, sys, logging
@@ -344,7 +344,7 @@ class indexer:
         except:
             print(args, len(args))
             raise
-        p.shape = 4,3
+        p = nputils.reshape_no_copy(p, 4, 3)
         ub = p[:3]
         t = p[3]
         gcalc = np.dot( ub, hkls )
@@ -361,7 +361,7 @@ class indexer:
         #print (gobs-gcalc).ravel()
         #1/0
         e = (gcalc - gobs.T).ravel()
-        p.shape = 12,
+        p = nputils.reshape_no_copy(p, 12)
  #       print p-0.1,(e*e).sum()
         return e#(e*e).sum()
         

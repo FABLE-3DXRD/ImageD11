@@ -6,7 +6,7 @@ from __future__ import print_function, division
 Some simplistic ART algorithms
 """
 import numpy as np
-from ImageD11 import cImageD11
+from ImageD11 import cImageD11, nputils
 import pylab as pl
 
 
@@ -79,7 +79,7 @@ def update_wtd( recon, proj, angle, msk, dbg=True ):
     #pl.show()
 
     # update = update 
-    update.shape = recon.shape
+    update = nputils.reshape_no_copy(update, recon.shape)
     print(update.sum(),error.sum(), end=' ')
     if dbg:
         pl.figure()
