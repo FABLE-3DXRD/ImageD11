@@ -113,6 +113,12 @@ class group:
                         if DEBUG: print("adding",c,"to group")
                         self.group.append(c)
 
+    @property
+    def _group_stack(self):
+        if getattr(self, "_gs", None) is None or len(self._gs) != len(self.group):
+            self._gs = np.array(self.group)
+        return self._gs
+
 symcache = {}
 
 def generate_group(*args):
@@ -225,8 +231,15 @@ def monoclinic_b():
 def triclinic():
     return generate_group("x, y, z" )
 
-
 def find_uniq_u(u, grp, debug=0, func=np.trace):
+    if func is np.trace and not debug:
+        # trace(o.u) = sum_ij o_ij u_ji, so all the candidate traces at once
+        ops = grp._group_stack                      # (n, 3, 3), cached below
+        traces = ops.reshape(len(ops), 9).dot(np.asarray(u).T.ravel())
+        k = int(traces.argmax())
+        if traces[k] > np.trace(u):
+            return np.array(grp.op(ops[k], u))
+        return np.array(u)
     uniq = u
     tmax = func(uniq)
     for o in grp.group:
@@ -305,6 +318,7 @@ class trans_group(group):
             return x
     def isMember(self, x):
         return group.isMember(self, self.reduce(x))
+
 
 def test():
     assert np.allclose( m_from_string( "x,y,z" ), np.identity(3))

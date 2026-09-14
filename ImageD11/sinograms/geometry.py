@@ -21,12 +21,42 @@ I have therefore defined the reference frames in the following way:
    y0 is the true value of dty when the rotation axis intersects the beam.
 
 3. Step space
-   This is simply an integer discretisation of the sample frame.
+   An integer discretisation of the sample frame, in units of ystep:
+       si = sx / ystep
+       sj = -sy / ystep
+   The rotation axis sits at the centre of pixel (0, 0).
 
 
 4. Reconstruction space:
-   units are (ystep), origin in corner (matches iradon output) when plotted with origin="lower", coords are (ri, rj)
+   Step space shifted so that every index is positive. Units are (ystep), coords are
+   (ri, rj), and the array is plotted with origin="lower" to match iradon output:
+       ri = si + recon_shape[0] // 2
+       rj = sj + recon_shape[1] // 2
+   As in step space, integer (ri, rj) label pixel centres, so index (0, 0) is the
+   centre of the corner pixel rather than the outer corner of the image.
 
+   Note the integer division. The rotation axis always lands exactly on index
+   (recon_shape[0] // 2, recon_shape[1] // 2), i.e. always on a pixel centre. When
+   the reconstruction has an odd size that pixel is also the geometric middle of the
+   array. When it has an even size there is no middle pixel: the geometric centre is
+   at (N - 1) / 2, and the rotation axis sits half a pixel beyond it. Any code with
+   its own opinion about where the centre of a volume is has to be told which
+   convention we use, or it will be half a pixel out for even sizes. ASTRA is one
+   such case, as it centres its volume on (N - 1) / 2.
+
+5. Sinogram rows (dty and dtyi):
+   dtyi is an integer discretisation of the dty motor values, counted from ymin:
+       dtyi = round((dty - ymin) / ystep)
+   As above, an integer dtyi labels the centre of a dty bin, so dtyi_to_dty returns
+   bin centres and matches ds.ybincens.
+
+   The rotation axis is usually not on the middle row of the sinogram, because y0 is
+   rarely exactly at the centre of the scanned dty range. sino_shift_and_pad returns the
+   shift that moves it there, against the same ny // 2 convention as above:
+       shift = ny // 2 - (y0 - ymin) / ystep
+   The reconstruction routines treat sinogram row r as lying at (r - ny // 2 + shift)
+   relative to the rotation axis, so this puts the axis at 0 as intended. Using ny / 2
+   here instead would place the axis half a pixel off for odd ny.
 
 Diagrams are below, S indicates the rotation axis
 
@@ -64,15 +94,16 @@ Step space:
               -ve
 
 
-Reconstruction space (iradon output when plotted with origin="lower"):
-
+Reconstruction space (iradon output when plotted with origin="lower").
+S is at (recon_shape[0] // 2, recon_shape[1] // 2), and each label marks a pixel
+centre, so (0, 0) is the centre of the lower-left pixel:
+ 
    ^
    |
- i |      S
+ i |      S = (recon_shape[0] // 2, recon_shape[1] // 2)
    |
 (0, 0) ------->
          j
-
 
 """
 from functools import partial
@@ -471,12 +502,14 @@ def sino_shift_and_pad(y0, ny, ymin, ystep):
     Which should be double the shift
     """
     # get the middle row of the sinogram in pixel space
-    ymid_px = ny/2
+    ymid_px = ny//2
     # get the value of y0 in pixel space
     # this is the same as dty_to_dtyi without rounding
     y0_px = (y0 - ymin)/ystep
     shift = ymid_px - y0_px
     pad = np.ceil(np.abs(shift) * 2).astype(int) + 1
+    if (ny + pad) % 2 == 0:      # keep the reconstruction odd-sized
+        pad += 1
     return shift, pad
 
 
@@ -507,8 +540,15 @@ def step_grid_from_ybincens(ybincens, step_size, gridstep, y0):
     y_largest = np.max(np.abs([y_min, y_max]))
     y_min = -y_largest
     y_max = y_largest
-    y_min_int = np.floor(y_min/step_size).astype(int)
     y_max_int = np.ceil(y_max/step_size).astype(int)
+    # Round the half extent up to a whole number of gridsteps. Without this the
+    # last point can land short of +y_max_int for gridstep > 1, leaving the grid
+    # asymmetric about the rotation axis: (0, 0) is then no longer a grid point
+    # and no longer the centre, so step_to_recon (which puts S at shape // 2)
+    # disagrees with the index the map is actually stored at. Rounding up only
+    # ever grows the grid, and is a no-op for gridstep = 1.
+    y_max_int = int(np.ceil(y_max_int / float(gridstep)) * gridstep)
+    y_min_int = -y_max_int
     ints = range(y_min_int, y_max_int + 1, gridstep)
     step_points = [(si, sj) for si in ints for sj in ints]
     return step_points

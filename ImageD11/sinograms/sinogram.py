@@ -243,7 +243,8 @@ class GrainSinogram:
 
     def correct_halfmask(self):
         """Applies halfmask correction to sinogram"""
-        self.ssino = ImageD11.sinograms.roi_iradon.apply_halfmask_to_sino(self.ssino)
+        self.ssino = ImageD11.sinograms.roi_iradon.apply_halfmask_to_sino(
+            self.ssino, real_mask=getattr(self.ds, "ybin_real_mask", None))
 
     def correct_ring_current(self, is_half_scan=False, min_ring_current_frac=0.5):
         """Corrects each row of the sinogram to the ring current of the corresponding scan"""
@@ -334,8 +335,26 @@ class GrainSinogram:
             # At the moment, we could pass None for pad or shift etc to recon_function if they are not manually set, which seems dangerous
             # Do we check for None at the start of this function?
             # Or do we initialise them to sensible default values inside __init__?
+            
         elif method == "astra":
             recon_function = run_astra
+
+        # These two are properties of the sinogram and of the finished
+        # reconstruction, not of the backend, so handle them here rather than
+        # inside each run_* function. Previously only iradon and mlem accepted
+        # them, and passing them with method="astra" raised TypeError.
+        apply_halfmask = extra_args.pop("apply_halfmask", False)
+        mask_central_zingers = extra_args.pop("mask_central_zingers", False)
+        central_mask_radius = extra_args.pop("central_mask_radius", 25)
+
+        if apply_halfmask:
+            axis_row = None
+            if self.recon_shift is not None:
+                axis_row = sino.shape[0] // 2 - self.recon_shift
+            sino = ImageD11.sinograms.roi_iradon.apply_halfmask_to_sino(
+                sino, axis_row=axis_row,
+                real_mask=getattr(self.ds, "ybin_real_mask", None))
+        
         recon = recon_function(
             sino=sino,
             angles=angles,
@@ -345,6 +364,10 @@ class GrainSinogram:
             mask=self.recon_mask,
             **extra_args
         )
+
+        if mask_central_zingers:
+            recon = ImageD11.sinograms.roi_iradon.correct_recon_central_zingers(
+                recon, radius=central_mask_radius)
 
         self.recons[method] = recon
         return recon
@@ -447,6 +470,41 @@ class GrainSinogram:
         return grainsino_obj
 
 
+from scipy.ndimage import shift as ndi_shift
+
+def _astra_geoms(n, pad, angles):
+    """Volume + projection geometry matching roi_iradon's conventions."""
+    import astra
+    N = n + pad                                    # reconstruction size, as in run_iradon
+    (pb, pa), _ = ImageD11.sinograms.roi_iradon._sinogram_pad(n, N)   # same padding iradon uses internally
+    L = n + pb + pa
+    if L % 2 == 0:                                 # odd detector -> centre on integer index
+        pa += 1
+        L += 1
+    # roi_iradon puts the origin on integer index N//2; ASTRA centres the volume on
+    # the origin, i.e. (N-1)/2. Offset the window by half a pixel when N is even.
+    off = 0.5 if N % 2 == 0 else 0.0
+    vol_geom = astra.create_vol_geom(N, N,
+                                     -N / 2.0 - off, N / 2.0 - off,
+                                     -N / 2.0 + off, N / 2.0 + off)
+    proj_geom = astra.create_proj_geom("parallel", 1.0, L, angles)
+    return vol_geom, proj_geom, (pb, pa)
+
+def shift_sinogram(sino, shift_amount, order=1):
+    """
+    Shift a sinogram along dty by a possibly non-integer
+    amount, equivalent to astra.functions.geom_postalignment(proj_geom, shift).
+    """
+    if shift_amount == 0:
+        return sino
+    return ndi_shift(
+        sino,
+        shift=(shift_amount, 0),   # shift along dty axis only, not angles
+        order=order,               # linear spline interpolation for sub-pixel accuracy
+        mode="constant",
+        cval=0.0,
+    )
+
 def run_astra(
     sino,
     angles,
@@ -456,32 +514,32 @@ def run_astra(
     niter=100,
     astra_method="SIRT_CUDA",
     workers=None,
+    min_constraint=0,
+    max_constraint=None,
 ):
     import astra
-
     angles = np.radians(angles)
     allowed_methods = [
-        "BP",
-        "SIRT",
-        "BP_CUDA",
-        "FBP_CUDA",
-        "SIRT_CUDA",
-        "SART_CUDA",
-        "CGLS_CUDA",
-        "EM_CUDA",
+        "BP", "FBP", "SIRT",
+        "BP_CUDA", "FBP_CUDA", "SIRT_CUDA", "SART_CUDA", "CGLS_CUDA", "EM_CUDA",
     ]
     if astra_method not in allowed_methods:
         raise ValueError("Unsupported method!")
+
     manual_mask = None
-    if astra_method == "EM_CUDA" and mask is not None:
-        # print("Can't use mask with EM_CUDA method!")
+    if astra_method in ["EM_CUDA", "FBP", "FBP_CUDA", "BP_CUDA"] and mask is not None:
         manual_mask = mask.copy()
         mask = None
 
-    vol_geom = astra.create_vol_geom((sino.shape[0] + pad, sino.shape[0] + pad))
-    proj_geom = astra.create_proj_geom("parallel", 1.0, sino.shape[0], angles)
+    vol_geom, proj_geom, (pb, pa) = _astra_geoms(sino.shape[0], pad, angles)
+    sino = np.pad(sino, ((pb, pa), (0, 0)), mode="constant")
+
     if shift != 0:
-        proj_geom = astra.functions.geom_postalignment(proj_geom, shift)
+        if astra_method == "FBP":       # FBP rejects vec geometries
+            sino = shift_sinogram(sino, shift, order=1)
+        else:
+            proj_geom = astra.functions.geom_postalignment(proj_geom, shift)
+    
     proj_id = astra.create_projector("linear", proj_geom, vol_geom)
     proj_data_id = astra.data2d.create("-sino", proj_geom, data=sino.T)
     if astra_method == "EM_CUDA":
@@ -497,9 +555,15 @@ def run_astra(
     cfg["ProjectionDataId"] = proj_data_id
     cfg["ReconstructionDataId"] = rec_id
     cfg["option"] = {}
-    if astra_method != "EM_CUDA":
-        cfg["option"]["MinConstraint"] = 0
-        cfg["option"]["MaxConstraint"] = 1
+    if astra_method not in ["EM_CUDA", "FBP"]:
+        # These used to be hard-coded to [0, 1], which silently saturated the
+        # reconstruction whenever the sinogram was not normalised to a peak of 1
+        # (build_sinogram(normalise=False), correct_ring_current). Non-negativity
+        # is kept by default; the upper clamp is now opt-in.
+        if min_constraint is not None:
+            cfg["option"]["MinConstraint"] = min_constraint
+        if max_constraint is not None:
+            cfg["option"]["MaxConstraint"] = max_constraint
 
     if mask is not None:
         mask_id = astra.data2d.create("-vol", vol_geom, mask)
@@ -513,12 +577,12 @@ def run_astra(
     astra.algorithm.delete(alg_id)
     astra.data2d.delete(rec_id)
     astra.projector.delete(proj_id)
-    astra.projector.delete(proj_data_id)
+    astra.data2d.delete(proj_data_id)
 
     if mask is not None:
         astra.data2d.delete(mask_id)
 
-    if astra_method == "EM_CUDA" and manual_mask is not None:
+    if manual_mask is not None:
         # manually mask
         recon = np.where(manual_mask, recon, 0.0)
 

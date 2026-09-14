@@ -11,7 +11,6 @@ import ImageD11.unitcell
 import ImageD11.refinegrains
 import scipy.ndimage
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 def assign_ring_histo(cf, dsmax, hbins, cell):
@@ -61,7 +60,7 @@ def assign_ring_histo(cf, dsmax, hbins, cell):
     return (bcen,h,ra)
 
 
-def mask_rings_by_ifrac(colf, dstol, dsmax, ifrac, uc, forref=None):
+def mask_rings_by_ifrac(colf, dstol, dsmax, ifrac, uc, forref=None, verbose=False, return_npks_hmax=False):
     uc.makerings(colf.ds.max(), dstol)
     # peaks that are on rings
     sel = np.zeros(colf.nrows, bool)
@@ -81,10 +80,26 @@ def mask_rings_by_ifrac(colf, dstol, dsmax, ifrac, uc, forref=None):
                 icut = np.max(colf.sum_intensity[rm]) * ifrac
                 rm = rm & (colf.sum_intensity > icut)
                 npks += len(hkls)
+                if verbose:
+                    print(
+                    i,
+                    "%.4f" % (ds),
+                    hkls[-1],
+                    len(hkls),
+                    rm.sum(),
+                    "used, sum_intensity>",
+                    icut,
+                    )
                 sel |= rm
                 for hkl in hkls:
                     hmax = max(np.abs(hkl).max(), hmax)
-    return sel
+            else:
+                if verbose:
+                    print(i, "%.4f" % (ds), hkls[-1], len(hkls), "skipped")
+    if return_npks_hmax:
+        return sel, npks, hmax
+    else:
+        return sel
 
 
 def select_rings_by_ifrac(colf, dstol, dsmax, ifrac, uc, forref=None):

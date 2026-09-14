@@ -1,6 +1,7 @@
 import os
 import sys
 import numpy as np
+from ImageD11 import cImageD11
 from ImageD11.sinograms.point_by_point import PBP, initializer
 
 def load_config(config_path):
@@ -54,7 +55,6 @@ def run_chunk(config_path, indices_path, grains_file):
     # Load the points for this chunk
     points = np.loadtxt(indices_path, dtype=int)
     points = [tuple(row) for row in points]
-    
     
     # Run indexing
     pbp.point_by_point(

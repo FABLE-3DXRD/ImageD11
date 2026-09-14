@@ -433,7 +433,7 @@ date
     return bash_script_path, recons_path
 
 
-def prepare_astra_bash(ds, grainsfile, id11_code_path, group_name="grains", memory=150):
+def prepare_astra_bash(ds, grainsfile, id11_code_path, group_name="grains", memory=150, method='EM_CUDA'):
     slurm_astra_path = os.path.join(ds.analysispath, "slurm_astra")
 
     if not os.path.exists(slurm_astra_path):
@@ -468,8 +468,8 @@ def prepare_astra_bash(ds, grainsfile, id11_code_path, group_name="grains", memo
 #SBATCH --mem={memory}G
 date
 module load cuda
-echo PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} {group_name} > {log_path} 2>&1
-PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} {group_name} > {log_path} 2>&1
+echo PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} {group_name} {method} > {log_path} 2>&1
+PYTHONPATH={id11_code_path} python3 {python_script_path} {grainsfile} {dsfile} {group_name} {method} > {log_path} 2>&1
 date
     """.format(
         outfile_path=outfile_path,
@@ -480,6 +480,7 @@ date
         dsfile=clean_esrf_path(os.path.abspath(ds.dsfile)),
         group_name=group_name,
         memory=memory,
+        method=method,
         log_path=log_path,
     )
 
@@ -1231,6 +1232,64 @@ def plot_strain_errors(cf, grains, maskfile=None, wavelength=None):
     ax[4].set(xscale="log")  # intensity
     ax[5].set(aspect="equal")
     f.colorbar(scat, ax=ax[5])
+
+
+def plot_grain_recons(grainsinos, method="iradon"):
+    """
+    Interactive slider viewer for grain reconstructions + sinograms.
+
+    Parameters
+    ----------
+    grainsinos : list
+        List of GrainSinogram-like objects, each with .recons[method],
+        .sinoangles, and .ssino attributes.
+    method : str
+        Key into grainsinos[i].recons, e.g. "iradon" or "astra".
+
+    Note: for best interactive behaviour in Jupyter, run
+    `%matplotlib widget` (requires ipympl) once in a cell before calling
+    this function. Falls back gracefully if using webagg/inline instead.
+    """
+    import ipywidgets as widgets
+    ds = grainsinos[0].ds
+    
+    def update_frame(i):
+        rec.set_array(grainsinos[i].recons[method])
+        a[1].cla()
+        a[1].pcolormesh(grainsinos[i].sinoangles, ds.ybincens, grainsinos[i].ssino)
+        a[1].set(
+            xlabel=r'Projection angle ($\degree$)',
+            ylabel='dty',
+            title='Grain sinogram'
+        )
+        fig.suptitle("Grain " + str(i))
+        if fig.canvas.manager is not None:
+            fig.canvas.draw_idle()
+
+    frame_slider = widgets.IntSlider(
+        value=0,
+        min=0,
+        max=len(grainsinos) - 1,
+        step=1,
+        description='Grain:'
+    )
+
+    fig, a = plt.subplots(1, 2, figsize=(10, 5), constrained_layout=True)
+    rec = a[0].imshow(grainsinos[0].recons[method], vmin=0, origin="lower")
+    a[1].pcolormesh(grainsinos[0].sinoangles, ds.ybincens, grainsinos[0].ssino)
+    a[0].set(
+        xlabel="<-- Sample Y",
+        ylabel="Sample X",
+        title="{} Reconstruction".format(method)
+    )
+    a[1].set(
+        xlabel=r'Projection angle ($\degree$)',
+        ylabel='dty',
+        title='Grain sinogram'
+    )
+
+    widgets.interact(update_frame, i=frame_slider)
+    plt.show()
 
 
 ### (hopefully) no longer used

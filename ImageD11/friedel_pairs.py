@@ -1525,8 +1525,8 @@ def _clean_dist_matrix(dij, verbose=True):
     if dij.nnz == 0:
         return np.array([]), np.array([], dtype=int), np.array([], dtype=int)
 
-    nnz_col = np.count_nonzero(dij.count_nonzero(axis=0))
-    nnz_row = np.count_nonzero(dij.count_nonzero(axis=1))
+    nnz_col = np.count_nonzero(dij.getnnz(axis=0))
+    nnz_row = np.count_nonzero(dij.getnnz(axis=1))
     N_candidates = min(nnz_col, nnz_row)
 
     dij_inv      = dij.copy()
