@@ -7,10 +7,12 @@ warnings.simplefilter('ignore', category=numba.core.errors.NumbaPerformanceWarni
 
 import h5py
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 from ImageD11.sinograms.geometry import recon_to_step
 from ImageD11.sinograms.sinogram import save_array
 from ImageD11 import unitcell
+from ImageD11 import sym_u
 
 
 # from ImageD11.sinograms.point_by_point import nb_inv_3d
@@ -520,6 +522,262 @@ def u_to_euler(u, dum, res):
         res[..., 2] = phi2
 
 
+# Symmetry-aware misorientation and grain-averaging helpers.
+# These back TensorMap.get_mis2mean() and TensorMap.kam(), and the tensor
+# analogue TensorMap.grain_mean_tensor().
+
+# ImageD11.sym_u only ships ONE proper rotation group per crystal system - the
+# maximal (holohedral) one, e.g. tetragonal() is point group "422", not "4".
+# See sym_ops_from_phase for which Laue classes that does and doesn't cover.
+_SYM_U_CRYSTAL_SYSTEM_FN = {
+    'triclinic': sym_u.triclinic,
+    'monoclinic': sym_u.monoclinic_b,    # ITA standard unique-axis-b setting
+    'orthorhombic': sym_u.orthorhombic,
+    'tetragonal': sym_u.tetragonal,
+    'trigonal': sym_u.trigonal,          # hexagonal axes (a=b, gamma=120)
+    'hexagonal': sym_u.hexagonal,
+    'cubic': sym_u.cubic,
+}
+
+# Laue classes ImageD11.sym_u's crystal-system functions do not correctly
+# cover - either a strictly smaller proper point group (4/m, -3, 6/m, m-3), or
+# the same size but a different in-plane axis setting (-31m, see docstring).
+_SYM_U_UNSUPPORTED_LAUE = {'4/m', '-3', '-31m', '6/m', 'm-3'}
+
+
+def _frac_ops_to_cartesian(frac_ops, B):
+    """Convert symmetry operators expressed in fractional crystal-axis
+    coordinates (as returned by ImageD11.sym_u, e.g. sym_u.hexagonal().group)
+    into genuine proper rotations in the same Cartesian frame as an ImageD11 B
+    matrix / U matrix.
+
+    This matters whenever the crystal axes aren't all mutually orthogonal
+    (hexagonal, trigonal, monoclinic, triclinic): a fractional-coordinate
+    symmetry matrix is only a Cartesian rotation once conjugated by the
+    real-space lattice matrix A (columns = a, b, c in Cartesian coordinates,
+    A = inv(B).T). ImageD11.sym_u is also not internally consistent about
+    whether its stored matrices act on row- or column-fractional-coordinate
+    vectors (e.g. sym_u.hexagonal() and sym_u.trigonal() disagree), so each
+    group is checked against its own metric tensor and transposed first if
+    that convention fits better, before converting.
+    """
+    A = np.linalg.inv(B).T
+    Ainv = np.linalg.inv(A)
+    g = np.dot(A.T, A)                   # metric tensor in the fractional basis
+    frac_ops = np.asarray(frac_ops, dtype=float)
+    direct_ok = np.mean([np.allclose(np.dot(M.T, np.dot(g, M)), g, atol=1e-6)
+                         for M in frac_ops])
+    if direct_ok < 0.5:
+        frac_ops = np.transpose(frac_ops, (0, 2, 1))
+    cart_ops = np.einsum('ij,njk,kl->nil', A, frac_ops, Ainv)
+    cart_ops[np.abs(cart_ops) < 1e-10] = 0.0
+    return cart_ops
+
+
+def sym_ops_from_phase(ucell):
+    """Proper rotation operators (Nsym, 3, 3) for an ImageD11 unitcell, using
+    ImageD11.sym_u rather than orix.
+
+    Looks up the crystal system straight from the phase's integer spacegroup
+    number (via xfab.sglib, the same lookup TensorMap.to_ctf_mtex already
+    uses), picks the matching ImageD11.sym_u proper rotation group, and
+    converts it into the same crystal Cartesian frame as ucell.B / U (see
+    _frac_ops_to_cartesian) so it can be applied to U directly.
+
+    Two settings can't be picked automatically and fall back to sensible
+    defaults - pass sym_ops= explicitly instead if these don't match your
+    phase:
+
+      * monoclinic defaults to the ITA standard unique-axis-b setting
+        (ImageD11.sym_u.monoclinic_a() / monoclinic_c() for other settings).
+      * trigonal defaults to hexagonal axes (a=b, gamma=120), ImageD11's usual
+        convention. If ucell.lattice_parameters instead look like a primitive
+        rhombohedral setting (a=b=c, alpha=beta=gamma != 90),
+        ImageD11.sym_u.rhombohedralP() is used instead.
+
+    Raises ValueError for spacegroups with Laue class 4/m, -3, -31m, 6/m or
+    m-3. ImageD11.sym_u only ships the maximal proper rotation group per
+    crystal system (e.g. tetragonal() is point group 422, not 4), and for
+    these five Laue classes that's either a strictly bigger point group than
+    the crystal actually has, or (for -31m) the same size but with its 2-fold
+    axes rotated 30 degrees from where sym_u.trigonal() puts them. Using it
+    anyway would silently treat some non-equivalent orientations as
+    symmetry-equivalent. Pass sym_ops= explicitly for these phases (e.g. built
+    by hand with ImageD11.sym_u.generate_group(), then converted with
+    _frac_ops_to_cartesian).
+    """
+    try:
+        spacegroup = ucell.spacegroup
+    except AttributeError:
+        raise AttributeError(
+            "sym_ops_from_phase needs an integer spacegroup number on this "
+            "unitcell (unitcell(..., symmetry=<spacegroup number>)), not a "
+            "Bravais letter. Pass sym_ops= explicitly instead."
+        )
+
+    import xfab.sglib
+    try:
+        sgobj = getattr(xfab.sglib, 'Sg' + str(spacegroup))('standard')
+    except AttributeError:
+        raise ValueError("Unknown spacegroup number: %s" % (spacegroup,))
+
+    if sgobj.Laue in _SYM_U_UNSUPPORTED_LAUE:
+        raise ValueError(
+            "Spacegroup %s has Laue class %s: ImageD11.sym_u.%s() doesn't "
+            "cover its proper point group (see sym_ops_from_phase docstring). "
+            "Pass sym_ops= explicitly for this phase." % (
+                spacegroup, sgobj.Laue, sgobj.crystal_system))
+
+    system = sgobj.crystal_system
+    if system == 'trigonal':
+        a, b, c, alpha, beta, gamma = ucell.lattice_parameters
+        rhombohedral_axes = (np.isclose(a, b) and np.isclose(b, c)
+                              and np.isclose(alpha, beta) and np.isclose(beta, gamma)
+                              and not np.isclose(alpha, 90.0))
+        group_fn = sym_u.rhombohedralP if rhombohedral_axes else sym_u.trigonal
+    else:
+        try:
+            group_fn = _SYM_U_CRYSTAL_SYSTEM_FN[system]
+        except KeyError:
+            raise ValueError("Unrecognised crystal system: %s" % (system,))
+
+    frac_ops = np.asarray(group_fn().group)
+    ops = _frac_ops_to_cartesian(frac_ops, ucell.B)
+    # sym_u groups are already all proper rotations - this is a defensive filter
+    return ops[np.linalg.det(ops) > 0]
+
+
+def sym_reduce(U, U_ref, sym_ops):
+    """Pick, for each U, the symmetry equivalent U @ S closest to U_ref.
+
+    U, U_ref : (..., 3, 3) orientation matrices (crystal -> lab, as ImageD11 U)
+    sym_ops  : (Nsym, 3, 3) proper rotations in the crystal frame
+
+    Returns (U_reduced, disorientation_angle_in_radians).
+
+    Only one pass over the group is needed even though both crystals carry
+    symmetry: minimising the angle of S1.T @ (U_ref.T @ U) @ S2 over all pairs is
+    the same as minimising over (U_ref.T @ U) @ S for a single S, because
+    S1 @ (S1.T @ D @ S2) @ S1.T == D @ (S2 @ S1.T) and conjugation preserves the
+    rotation angle. So |G| operations, not |G|**2.
+    """
+    delta = np.einsum('...ji,...jk->...ik', U_ref, U)   # U_ref.T @ U
+    best_tr = np.full(delta.shape[:-2], -np.inf)
+    best_op = np.zeros(delta.shape[:-2], dtype=np.intp)
+    for i, s in enumerate(sym_ops):
+        tr = np.einsum('...ij,ji->...', delta, s)       # trace(delta @ s)
+        better = tr > best_tr
+        best_tr[better] = tr[better]
+        best_op[better] = i
+    angle = np.arccos(np.clip((best_tr - 1.0) * 0.5, -1.0, 1.0))
+    return np.matmul(U, sym_ops[best_op]), angle
+
+
+def grain_mean_U(U, labels, sym_ops, n_iter=3):
+    """Symmetry-aware mean orientation of each grain.
+
+    U      : (N, 3, 3) orientation matrices, no NaNs
+    labels : (N,)      integer grain labels
+    Returns (unique_labels (G,), U_mean (G, 3, 3), inverse (N,)) where
+    U_mean[inverse] is the mean orientation of each voxel's grain.
+
+    Averaging orientations naively is meaningless when symmetry-equivalent
+    variants are mixed, so every voxel is first pulled onto the branch closest
+    to a running reference, then averaged with Markley's method (principal
+    eigenvector of sum(q q.T), which is immune to the q/-q sign ambiguity).
+    The reference starts as one arbitrary member of the grain and is refined.
+    """
+    ulabels, first, inverse = np.unique(labels, return_index=True, return_inverse=True)
+    inverse = inverse.ravel()
+    ngrains = ulabels.size
+    U_mean = U[first]                       # seed: one arbitrary member per grain
+
+    for _ in range(n_iter):
+        U_red, _ = sym_reduce(U, U_mean[inverse], sym_ops)
+        q = Rotation.from_matrix(U_red).as_quat()             # (N, 4)
+        outer = (q[:, :, None] * q[:, None, :]).reshape(-1, 16)
+        acc = np.stack([np.bincount(inverse, weights=outer[:, k], minlength=ngrains)
+                        for k in range(16)], axis=-1).reshape(ngrains, 4, 4)
+        q_mean = np.linalg.eigh(acc)[1][:, :, -1]             # largest eigenvector
+        U_mean = Rotation.from_quat(q_mean).as_matrix()
+
+    return ulabels, U_mean, inverse
+
+
+def kernel_offsets(radius=1, metric='box', perimeter_only=False, steps=None):
+    """Neighbour offsets (dz, dy, dx) making up a KAM kernel.
+
+    radius  : kernel size, in voxels by default. If `steps` is given it is a
+              physical radius in the same units as steps (um), which is what you
+              want when the z step is much coarser than the x/y step - a
+              radius-1 box kernel on a 1x1x5 um grid is not isotropic.
+    metric  : 'box'     -> max|d| <= radius   (26 neighbours at radius 1 in 3D,
+                                               8 in a single-layer map)
+              'diamond' -> sum|d| <= radius   (6 neighbours at radius 1, i.e. the
+                                               face-sharing set)
+              'sphere'  -> |d| <= radius
+    perimeter_only : keep only the outer shell of the kernel, within one step of
+              the edge. This is the OIM "perimeter only" option, and it is the
+              one that keeps KAM comparable as you grow the kernel, since the
+              inner points otherwise dominate the average.
+
+    Returns only half the offsets: for every d returned, -d is omitted, because
+    disorientation is symmetric and each pair only needs computing once.
+    """
+    if steps is None:
+        steps = (1.0, 1.0, 1.0)
+    steps = np.asarray(steps, dtype=float)
+
+    nmax = np.floor(radius / steps + 1e-9).astype(int)
+    grid = np.meshgrid(*[np.arange(-n, n + 1) for n in nmax], indexing='ij')
+    offs = np.stack([g.ravel() for g in grid], axis=-1)
+    phys = offs * steps
+
+    if metric == 'box':
+        dist = np.abs(phys).max(axis=1)
+    elif metric == 'diamond':
+        dist = np.abs(phys).sum(axis=1)
+    elif metric == 'sphere':
+        dist = np.sqrt((phys ** 2).sum(axis=1))
+    else:
+        raise ValueError("metric must be 'box', 'diamond' or 'sphere'")
+
+    keep = (dist <= radius + 1e-9) & (dist > 0)
+    if perimeter_only:
+        keep &= dist > radius - steps.min() + 1e-9
+
+    offs = offs[keep]
+    # drop one of each +/- pair: keep those whose first nonzero component is +ve
+    lead = offs[np.arange(len(offs)), (offs != 0).argmax(axis=1)]
+    return offs[lead > 0]
+
+
+def _shift_slices(shape, offset):
+    """Slice pair such that a[dst] is element-wise paired with a[src] at +offset."""
+    dst, src = [], []
+    for n, d in zip(shape, offset):
+        if d >= 0:
+            dst.append(slice(0, max(n - d, 0)))
+            src.append(slice(min(d, n), n))
+        else:
+            dst.append(slice(min(-d, n), n))
+            src.append(slice(0, max(n + d, 0)))
+    return tuple(dst), tuple(src)
+
+
+def _equivalent(T, kind):
+    """von Mises equivalent scalar of a (..., 3, 3) tensor field.
+
+    strain: sqrt(2/3 e':e'),  stress: sqrt(3/2 s':s'), both taken on the
+    deviatoric part, both reducing to the axial value for a uniaxial state.
+    """
+    tr = np.trace(T, axis1=-2, axis2=-1)
+    dev = T - (tr / 3.0)[..., None, None] * np.eye(3)
+    j2 = (dev * dev).sum(axis=(-2, -1))
+    factor = 2.0 / 3.0 if kind == 'strain' else 1.5
+    return np.sqrt(factor * j2)
+
+
 class TensorMap:
     """This is a class to store a contiguous voxel-based representation of a sample.
     At its core is the self.maps attribute, which is a dictionary of Numpy arrays.
@@ -551,6 +809,12 @@ class TensorMap:
 
         # dict to store the meta orix orientations for each phase ID
         self._meta_orix_oriens = dict()
+
+        # per-grain orientation spread (label -> GOS), filled in by get_mis2mean()
+        self.gos = dict()
+
+        # per-grain tensor stats (map_name -> dict), filled in by grain_mean_tensor()
+        self.grain_tensors = dict()
 
         # dict to store grain merges
         # e.g when we merge together multiple TensorMap layers
@@ -922,6 +1186,155 @@ class TensorMap:
             self.add_map('sig_mises', sig_mises_map)
             return sig_mises_map
 
+    def grain_mean_tensor(self, map_name='eps_sample', stat='mean', weights=None,
+                          nsigma=3.0, n_clip=2, min_voxels=1, symmetrise=True,
+                          to_crystal=False, equivalent=None, prefix=None):
+        """Per-grain mean of a tensor map, and each voxel's residual from it.
+
+        The strain analogue of mis2mean. Works on any (NZ, NY, NX, ...) tensor map -
+        eps_sample, sig_sample, eps_crystal, whatever - grouped by the labels map.
+
+        Unlike orientations, symmetric tensors live in a flat vector space, so the
+        grain mean really is just the arithmetic mean. No fundamental zone, no
+        quaternions. Two things do still bite:
+
+          * average eps_SAMPLE, not eps_crystal. eps_crystal = U.T eps_sample U, so
+            picking a different symmetry variant U -> U S sends eps_crystal -> S.T
+            eps_crystal S. Indexing hands each voxel an arbitrary variant, so
+            averaging eps_crystal across a grain averages over the symmetry orbit
+            and gives nonsense. eps_sample is a lab frame quantity and is variant
+            independent. Use to_crystal=True to get the crystal frame answer the
+            safe way: average in the sample frame, then rotate once with the grain
+            mean U.
+
+          * the residual is immune to d0 errors, the mean is not. eps is measured
+            relative to the reference unitcell, so a wrong d0 adds a constant
+            offset to every voxel of that phase - which cancels exactly when you
+            subtract the grain mean. So the residual map is trustworthy even when
+            the absolute strain is not.
+
+        map_name  : any map with shape (NZ, NY, NX, ...). Fetched with getattr, so
+                    lazy properties like eps_sample compute themselves on demand.
+        stat      : 'mean'    - straight (optionally weighted) arithmetic mean
+                    'clipped' - iteratively reject voxels more than nsigma robust
+                                deviations from the mean, in Frobenius distance.
+                                Frame covariant, and the one to use on noisy maps.
+                    'median'  - componentwise median. Outlier resistant but NOT
+                                rotation covariant, so treat it as a pragmatic
+                                estimate rather than a tensor.
+        weights   : optional (NZ, NY, NX) weights, e.g. peak counts or 1/sigma**2.
+        min_voxels: grains with fewer valid voxels get NaN rather than a mean of one.
+        symmetrise: force (T + T.T)/2 before averaging.
+        to_crystal: also rotate the grain mean into the crystal frame using mean_U
+                    (run get_mis2mean first). Stores <prefix>_grain_crystal.
+        equivalent: 'strain' or 'stress' for the scalar measure. Inferred from
+                    map_name if left as None.
+
+        Adds, with prefix defaulting to map_name:
+            <prefix>_grain      (..., 3, 3) grain mean, broadcast to every voxel
+            <prefix>_res        (..., 3, 3) voxel minus grain mean
+            <prefix>_res_eq     (...)       equivalent scalar of the residual
+            <prefix>_res_hydro  (...)       hydrostatic part of the residual
+        ("_res" and not "_dev", to avoid colliding with eps_devia, which is the
+        deviatoric part of the strain and a completely different thing.)
+
+        Returns a dict with per-grain labels, means, voxel counts and residual RMS.
+        """
+        if 'labels' not in self.keys():
+            raise KeyError("No 'labels' map in self.maps to group voxels by!")
+
+        T = np.asarray(getattr(self, map_name), dtype=float)
+        shape = tuple(self.shape)
+        tail = T.shape[3:]
+        is_33 = tail == (3, 3)
+        if prefix is None:
+            prefix = map_name
+        if equivalent is None:
+            equivalent = 'stress' if map_name.startswith('sig') else 'strain'
+
+        if symmetrise and is_33:
+            T = 0.5 * (T + np.swapaxes(T, -1, -2))
+
+        labels = self.labels
+        axes = tuple(range(3, T.ndim))
+        valid = (labels >= 0) & np.isfinite(T).all(axis=axes)
+
+        ulabels, inverse = np.unique(labels[valid], return_inverse=True)
+        inverse = inverse.ravel()
+        ng = ulabels.size
+        ncomp = int(np.prod(tail)) if tail else 1
+        flat = T[valid].reshape(-1, ncomp)
+
+        w = np.ones(len(flat)) if weights is None else np.asarray(weights)[valid].astype(float)
+        keep = np.ones(len(flat), dtype=bool)
+
+        def weighted_mean(mask):
+            ww = np.where(mask, w, 0.0)
+            wsum = np.bincount(inverse, weights=ww, minlength=ng)
+            acc = np.stack([np.bincount(inverse, weights=ww * flat[:, k], minlength=ng)
+                            for k in range(ncomp)], axis=-1)
+            with np.errstate(invalid='ignore', divide='ignore'):
+                out = acc / wsum[:, None]
+            out[wsum <= 0] = np.nan
+            return out, wsum
+
+        if stat == 'median':
+            order = np.argsort(inverse, kind='stable')
+            edges = np.searchsorted(inverse[order], np.arange(ng + 1))
+            means = np.stack([np.median(flat[order[a:b]], axis=0)
+                              for a, b in zip(edges[:-1], edges[1:])])
+            nvox = np.bincount(inverse, minlength=ng).astype(float)
+        else:
+            means, _ = weighted_mean(keep)
+            if stat == 'clipped':
+                for _ in range(n_clip):
+                    d = np.sqrt(((flat - means[inverse]) ** 2).sum(axis=1))
+                    # robust scale per grain: 1.4826 * median absolute distance
+                    order = np.argsort(inverse, kind='stable')
+                    edges = np.searchsorted(inverse[order], np.arange(ng + 1))
+                    scale = np.array([np.median(d[order[a:b]]) if b > a else 0.0
+                                      for a, b in zip(edges[:-1], edges[1:])])
+                    scale = np.maximum(1.4826 * scale, 1e-12)
+                    keep = d <= nsigma * scale[inverse]
+                    # never clip a grain out of existence
+                    nk = np.bincount(inverse, weights=keep.astype(float), minlength=ng)
+                    keep |= (nk < 3)[inverse]
+                    means, _ = weighted_mean(keep)
+            elif stat != 'mean':
+                raise ValueError("stat must be 'mean', 'clipped' or 'median'")
+            nvox = np.bincount(inverse, weights=keep.astype(float), minlength=ng)
+
+        means[nvox < min_voxels] = np.nan
+        means = means.reshape((ng,) + tail)
+
+        grain = np.full(shape + tail, np.nan)
+        grain[valid] = means[inverse]
+        res = T - grain
+
+        self.add_map(prefix + '_grain', grain)
+        self.add_map(prefix + '_res', res)
+
+        rms = np.full(ng, np.nan)
+        if is_33:
+            eq = _equivalent(res, equivalent)
+            hyd = np.trace(res, axis1=-2, axis2=-1) / 3.0
+            self.add_map(prefix + '_res_eq', eq)
+            self.add_map(prefix + '_res_hydro', hyd)
+            good = valid & np.isfinite(eq)
+            rms = np.sqrt(np.bincount(inverse[good[valid]], weights=eq[good] ** 2, minlength=ng)
+                          / np.maximum(np.bincount(inverse[good[valid]], minlength=ng), 1))
+
+        if to_crystal:
+            if 'mean_U' not in self.keys():
+                raise KeyError("to_crystal needs 'mean_U' - run get_mis2mean() first")
+            Um = self.mean_U
+            self.add_map(prefix + '_grain_crystal',
+                         np.einsum('...ji,...jk,...kl->...il', Um, grain, Um))
+
+        out = {'labels': ulabels, 'mean': means, 'nvoxels': nvox, 'res_rms': rms}
+        self.grain_tensors[map_name] = out
+        return out
+
     def get_meta_orix_orien(self, phase_id=0):
         """Get a meta orix orientation for all voxels of a given phase ID"""
         if phase_id in self._meta_orix_oriens.keys():
@@ -987,6 +1400,136 @@ class TensorMap:
             rgb_map.shape = shape + (3,)
 
             self.add_map('ipf_' + letter, rgb_map)
+
+    def get_mis2mean(self, sym_ops=None, n_iter=3, degrees=True):
+        """Per-voxel misorientation to the mean orientation of its grain (GROD).
+
+        Requires a 'labels' map and a UBI (or U) map. Loops over phase IDs so each
+        phase uses its own symmetry. Voxels with label < 0 or NaN U stay NaN.
+
+        Adds 'mis2mean' (NZ, NY, NX) and 'mean_U' (NZ, NY, NX, 3, 3) to self.maps
+        and returns the mis2mean map. Also stores per-grain GOS in self.gos
+        (dict: label -> grain orientation spread).
+
+        sym_ops : optional (Nsym, 3, 3) override, e.g. cubic_sym_ops(), applied to
+                  every phase. Default is to pull them from self.phases.
+        """
+        if 'labels' not in self.keys():
+            raise KeyError("No 'labels' map in self.maps to group voxels by!")
+
+        U = self.U
+        labels = self.labels
+        if 'phase_ids' in self.keys():
+            phase_ids = self.phase_ids
+        else:
+            phase_ids = np.zeros(self.shape, dtype=int)
+
+        mis2mean = np.full(self.shape, np.nan, dtype=float)
+        mean_U = np.full(self.shape + (3, 3), np.nan, dtype=float)
+        gos = {}
+
+        valid = (labels >= 0) & ~np.isnan(U[..., 0, 0])
+
+        for phase_id in np.unique(phase_ids[valid]):
+            ops = sym_ops if sym_ops is not None else sym_ops_from_phase(self.phases[int(phase_id)])
+            mask = valid & (phase_ids == phase_id)
+            Uv = U[mask]
+
+            ulabels, Um, inverse = grain_mean_U(Uv, labels[mask], ops, n_iter=n_iter)
+            _, angle = sym_reduce(Uv, Um[inverse], ops)
+            if degrees:
+                angle = np.degrees(angle)
+
+            mean_U[mask] = Um[inverse]
+            mis2mean[mask] = angle
+            # grain orientation spread = mean of mis2mean over each grain
+            spread = np.bincount(inverse, weights=angle) / np.bincount(inverse)
+            gos.update({int(lab): s for lab, s in zip(ulabels, spread)})
+
+        self.add_map('mean_U', mean_U)
+        self.add_map('mis2mean', mis2mean)
+        self.gos = gos
+        return mis2mean
+
+    def kam(self, radius=1, metric='box', perimeter_only=False, use_steps=False,
+            max_misori=None, same_grain=False, sym_ops=None, degrees=True,
+            map_name='kam'):
+        """Kernel average misorientation: mean disorientation to the neighbours in a
+        kernel around each voxel.
+
+        radius / metric / perimeter_only / use_steps
+            Shape of the kernel - see kernel_offsets. use_steps=True switches radius
+            to physical units and uses self.steps, so anisotropic voxels behave.
+        max_misori
+            Ignore pairs above this angle (degrees). The usual EBSD convention is
+            ~5 deg; without it, voxels next to a grain boundary get a huge KAM that
+            swamps the intragranular signal.
+        same_grain
+            Alternative to max_misori if you have a labels map: only pair voxels
+            that share a label. Cleaner, since it uses your actual segmentation
+            rather than an angle cutoff.
+        map_name
+            Where to store the result, so you can keep several kernel sizes around
+            ('kam_r1', 'kam_r3', ...).
+
+        Voxels with no valid neighbour in the kernel come back NaN.
+        """
+        U = self.U
+        shape = tuple(self.shape)
+        if 'phase_ids' in self.keys():
+            phase_ids = self.phase_ids
+        else:
+            phase_ids = np.zeros(shape, dtype=int)
+        ok = ~np.isnan(U[..., 0, 0])
+
+        if same_grain:
+            if 'labels' not in self.keys():
+                raise KeyError("same_grain=True needs a 'labels' map")
+            labels = self.labels
+            ok = ok & (labels >= 0)
+
+        steps = self.steps if use_steps else None
+        offsets = kernel_offsets(radius, metric, perimeter_only, steps)
+
+        total = np.zeros(shape)
+        count = np.zeros(shape, dtype=int)
+        cache = {}
+
+        for off in offsets:
+            if np.any(np.abs(off) >= np.array(shape)):
+                continue                          # kernel overruns the map on this axis
+            dst, src = _shift_slices(shape, off)
+            pair_ok = ok[dst] & ok[src] & (phase_ids[dst] == phase_ids[src])
+            if same_grain:
+                pair_ok &= labels[dst] == labels[src]
+            if not pair_ok.any():
+                continue
+
+            angle = np.full(pair_ok.shape, np.nan)
+            for phase_id in np.unique(phase_ids[dst][pair_ok]):
+                phase_id = int(phase_id)
+                if phase_id not in cache:
+                    cache[phase_id] = (sym_ops if sym_ops is not None
+                                       else sym_ops_from_phase(self.phases[phase_id]))
+                m = pair_ok & (phase_ids[dst] == phase_id)
+                _, a = sym_reduce(U[dst][m], U[src][m], cache[phase_id])
+                angle[m] = np.degrees(a) if degrees else a
+
+            if max_misori is not None:
+                thr = max_misori if degrees else np.radians(max_misori)
+                pair_ok &= np.nan_to_num(angle, nan=np.inf) <= thr
+
+            contrib = np.where(pair_ok, np.nan_to_num(angle), 0.0)
+            # each pair feeds both of its endpoints, which is why half the offsets suffice
+            total[dst] += contrib
+            count[dst] += pair_ok
+            total[src] += contrib
+            count[src] += pair_ok
+
+        out = np.full(shape, np.nan)
+        np.divide(total, count, out=out, where=count > 0)
+        self.add_map(map_name, out)
+        return out
 
     def to_h5(self, h5file, h5group='TensorMap'):
         """Write all maps to an HDF5 file (h5file) with a parent group h5group. Creates h5group if doesn't already exist"""
