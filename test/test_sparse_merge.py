@@ -6,6 +6,7 @@ Tests for the unified sparse labelling / merging:
 from __future__ import print_function
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 import warnings
@@ -13,9 +14,17 @@ import warnings
 import h5py
 import numpy as np
 
-import ImageD11.sinograms.dataset
-import ImageD11.sinograms.properties as properties
-import ImageD11.frelon_peaksearch as frelon_peaksearch
+# python2: frelon_peaksearch needs functools.lru_cache, properties.main needs
+# multiprocessing shared memory and the writer needs concurrent.futures.
+IMPORT_ERROR = None
+try:
+    import ImageD11.sinograms.dataset
+    import ImageD11.sinograms.properties as properties
+    import ImageD11.frelon_peaksearch as frelon_peaksearch
+except Exception as e:
+    IMPORT_ERROR = e
+SKIP = (sys.version_info[0] < 3) or (IMPORT_ERROR is not None)
+REASON = "needs python3 (import error: %s)" % (IMPORT_ERROR,)
 
 NFRAMES = 12
 SHAPE = (96, 96)
@@ -108,6 +117,7 @@ def match(old, new, keys=("s_raw", "f_raw", "omega", "sum_intensity", "Number_of
     return {k: (np.asarray(old[k])[o], np.asarray(new[k])[n]) for k in keys}
 
 
+@unittest.skipIf(SKIP, REASON)
 class TestCentroidGate(unittest.TestCase):
     def test_gate(self):
         # three peaks, sI = 10, centroids at (0,0), (1,1), (5,0)
@@ -149,6 +159,7 @@ class TestCentroidGate(unittest.TestCase):
             properties.main("nofile", options={"max_centroid_dist": -1})
 
 
+@unittest.skipIf(SKIP, REASON)
 class TestSparseFrelon(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
