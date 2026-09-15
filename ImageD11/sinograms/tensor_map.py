@@ -563,9 +563,10 @@ def _frac_ops_to_cartesian(frac_ops, B):
     """
     A = np.linalg.inv(B).T
     Ainv = np.linalg.inv(A)
-    g = A.T @ A                          # metric tensor in the fractional basis
+    g = np.dot(A.T, A)                   # metric tensor in the fractional basis
     frac_ops = np.asarray(frac_ops, dtype=float)
-    direct_ok = np.mean([np.allclose(M.T @ g @ M, g, atol=1e-6) for M in frac_ops])
+    direct_ok = np.mean([np.allclose(np.dot(M.T, np.dot(g, M)), g, atol=1e-6)
+                         for M in frac_ops])
     if direct_ok < 0.5:
         frac_ops = np.transpose(frac_ops, (0, 2, 1))
     cart_ops = np.einsum('ij,njk,kl->nil', A, frac_ops, Ainv)
@@ -669,7 +670,7 @@ def sym_reduce(U, U_ref, sym_ops):
         best_tr[better] = tr[better]
         best_op[better] = i
     angle = np.arccos(np.clip((best_tr - 1.0) * 0.5, -1.0, 1.0))
-    return U @ sym_ops[best_op], angle
+    return np.matmul(U, sym_ops[best_op]), angle
 
 
 def grain_mean_U(U, labels, sym_ops, n_iter=3):
