@@ -118,8 +118,8 @@ def match(old, new, keys=("s_raw", "f_raw", "omega", "sum_intensity", "Number_of
 
 
 @unittest.skipIf(SKIP, REASON)
-class TestCentroidGate(unittest.TestCase):
-    def test_gate(self):
+class TestCentroidDistance(unittest.TestCase):
+    def test_distance(self):
         # three peaks, sI = 10, centroids at (0,0), (1,1), (5,0)
         s1 = [3, 3, 3]
         sI = [10, 10, 10]
@@ -128,12 +128,12 @@ class TestCentroidGate(unittest.TestCase):
         frm = [0, 1, 1]
         pk_props = np.array([s1, sI, srI, scI, frm], np.int64)
         rc = np.array([[0, 0], [1, 2], [4, 1]], np.int64)
-        keep = properties.centroid_gate(rc, pk_props, 1.6)
-        self.assertEqual(list(keep), [True, False])
-        keep = properties.centroid_gate(rc, pk_props, 5.0)
-        self.assertEqual(list(keep), [True, True])
+        d = properties.pair_centroid_distance(rc, pk_props)
+        np.testing.assert_allclose(d, [np.sqrt(2.0), 5.0])
+        self.assertEqual(list(d <= 1.6), [True, False])
+        self.assertEqual(list(d <= 5.0), [True, True])
 
-    def test_find_uniq_keep(self):
+    def test_cut_before_find_uniq(self):
         npk = np.array([[3, 2, 0]])
         pkst = properties.pks_table(npk=npk)
         pkst.pk_props[:] = np.array(
@@ -141,14 +141,19 @@ class TestCentroidGate(unittest.TestCase):
         )
         pkst.rc[:] = np.array([[0, 0], [1, 2], [4, 1]])
         n, labels = pkst.find_uniq()
-        self.assertEqual(n, 1)
-        keep = properties.merge_mask(pkst, 1.6, verbose=0)
-        n, labels = pkst.find_uniq(keep=keep)
+        self.assertEqual(n, 1)  # every overlap merges: one 3D peak
+        d = properties.pair_centroid_distance(pkst.rc, pkst.pk_props)
+        pkst.rc = pkst.rc[:, d <= 1.6]
+        n, labels = pkst.find_uniq()
         self.assertEqual(n, 2)
         self.assertEqual(labels[0], labels[1])
         self.assertNotEqual(labels[0], labels[2])
-        self.assertIsNone(properties.merge_mask(pkst, None))
         del pkst
+
+    def test_merge_options_in_init(self):
+        pkst = properties.pks_table(merge_options={"max_centroid_dist": 1.6})
+        self.assertEqual(pkst.merge_options["max_centroid_dist"], 1.6)
+        self.assertEqual(properties.pks_table().merge_options, {})
 
     def test_bad_options(self):
         with self.assertRaises(Exception):

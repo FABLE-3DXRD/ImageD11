@@ -230,6 +230,11 @@ class SparseScan(object):
         scan : a scan within that file
         motors : which motor channels to (try) to read
 
+        names : which pixel columns to read. Adding "labels" reads the 2D peak
+            labels that a segmenter stored in the file, together with nlabel.
+            The convention is the same as lmlabel/cplabel(countall=False):
+            labels run from 1 to nlabels[i] on frame i, 0 == background.
+
         start : first frame to read
         n = number of frames to read
 

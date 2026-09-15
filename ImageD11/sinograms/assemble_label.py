@@ -131,7 +131,6 @@ def filterpixels(cutimage, row, col, intensity, nnz):
     return row_out, col_out, intensity_out, nnz_out
 
 
-
 def write_scan_header(hin, hout, scan, detector,
                       scanmotors=SCANMOTORS, headermotors=HEADERMOTORS):
     """
@@ -166,7 +165,14 @@ def write_scan_header(hin, hout, scan, detector,
             data = gin["instrument/positioners"][m][()]
             ds = gip.require_dataset(m, shape=data.shape, dtype=data.dtype)
             ds[()] = data
-    frms = gin["measurement"][detector]
+    try:
+        frms = gin["measurement"][detector]
+    except Exception as e:
+        print(e)
+        print(list(gin))
+        print(list(gin["measurement"]))
+        print(detector)
+        raise
     g.attrs["itype"] = frms.dtype.name
     g.attrs["nframes"] = frms.shape[0]
     g.attrs["shape0"] = frms.shape[1]
