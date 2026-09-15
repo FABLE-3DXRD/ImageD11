@@ -192,18 +192,44 @@ def pairscans(s1, s2, omegatol=0.051):
     return pairs
 
 
+ALGORITHMS = ("lmlabel", "cplabel", "stored")
+
+
+def open_scan(hname, scan, algorithm="lmlabel"):
+    """
+    Opens a sparseframe.SparseScan with the pixel arrays needed for `algorithm`.
+    algorithm == 'stored' also reads the labels (and nlabel) written by the segmenter.
+    """
+    if algorithm not in ALGORITHMS:
+        raise ValueError("algorithm must be one of %s, got %s" % (ALGORITHMS, algorithm))
+    names = ("row", "col", "intensity")
+    if algorithm == "stored":
+        names = names + ("labels",)
+    return ImageD11.sparseframe.SparseScan(hname, scan, names=names)
+
+
 def props(scan, i, algorithm="lmlabel", wtmax=None):
     """
     scan = sparseframe.SparseScan object
     i = sinogram row id : used for tagging pairs
-    algorithm = 'lmlabel' | 'cplabel'
+    algorithm = 'lmlabel' | 'cplabel' | 'stored'
+        'stored' uses labels saved in the sparse file by the segmenter
+        (open the scan with open_scan(..., algorithm='stored'))
 
-    Labels the peaks with lmlabel
+    Labels the peaks (unless stored)
     Assumes a regular scan for labelling frames
     returns ( row, properties[(s1,sI,sRow,sCol,frame),:], pairs, scan )
     """
     scan.sinorow = i
-    getattr(scan, algorithm)(countall=False)  # labels all the pixels in the scan.
+    if algorithm == "stored":
+        if getattr(scan, "nlabels", None) is None or not hasattr(scan, "labels"):
+            raise ValueError(
+                "algorithm='stored' but no labels were loaded from %s %s. "
+                "Was this sparse file written with labels? "
+                "Use open_scan(..., algorithm='stored')" % (scan.hname, scan.scan)
+            )
+    else:
+        getattr(scan, algorithm)(countall=False)  # labels all the pixels in the scan.
     npks = scan.total_labels
     r = np.empty((5, npks), np.int64)
     s = 0
@@ -215,7 +241,9 @@ def props(scan, i, algorithm="lmlabel", wtmax=None):
         e = s + scan.nlabels[j]
         # [1:] means skip the background labels == 0 output
         r[0, s:e] = np.bincount(f0.pixels["labels"])[1:]
-        wt = f0.pixels["intensity"].astype(np.int64)
+        # float weights: segmenters may store background subtracted floats.
+        # (was int64, which truncates each pixel. Integer data are unchanged.)
+        wt = f0.pixels["intensity"].astype(np.float64)
         if wtmax is not None:
             m = wt > wtmax
             n = m.sum()
@@ -429,6 +457,9 @@ class pks_table:
         opts = {}  # No compression is faster
         with h5py.File(h5name, "a") as hout:
             grp = hout.require_group(group)
+            # record how the peaks were labelled and merged
+            for k, v in getattr(self, "merge_options", {}).items():
+                grp.attrs[k] = "None" if v is None else v
             ds = grp.require_dataset(
                 name="ipk",
                 shape=self.ipk.shape,
@@ -511,22 +542,32 @@ class pks_table:
         obj.npk = npk  # this is ugly. Sending as arg causes allocate.
         return obj
 
-    def find_uniq(self, outputfile=None, use_scipy=False):
-        """find the unique labels from the rc array"""
+    def find_uniq(self, outputfile=None, use_scipy=False, keep=None):
+        """find the unique labels from the rc array
+
+        keep = optional boolean mask over the columns of self.rc.
+               Only pairs with keep == True are used to merge peaks.
+               (e.g. from centroid_gate). self.rc itself is not modified.
+        """
         t = tictoc()
         n = self.ipk[-1]
+        rc = self.rc
+        if keep is not None:
+            keep = np.asarray(keep, dtype=bool)
+            assert keep.shape == (rc.shape[1],), "keep must match rc.shape[1]"
+            rc = rc[:, keep]
         #        print("Row/col sparse array")
         #        for i in range(3):
         #            print(self.rc[i].dtype,self.rc[i].shape)i
         if outputfile is not None:
             with h5py.File(outputfile, "w") as hout:
-                hout["data"] = self.rc[2]
-                hout["i"] = self.rc[0]
-                hout["j"] = self.rc[1]
+                hout["data"] = rc[2]
+                hout["i"] = rc[0]
+                hout["j"] = rc[1]
             return None, None
         if use_scipy:
             coo = scipy.sparse.coo_matrix(
-                (self.rc[2], (self.rc[0], self.rc[1])), shape=(n, n)
+                (rc[2], (rc[0], rc[1])), shape=(n, n)
             )
             t("coo")
             cc = scipy.sparse.csgraph.connected_components(
@@ -534,7 +575,7 @@ class pks_table:
             )
             t("find connected components")
         else:
-            cc = find_ND_labels(self.rc[0], self.rc[1], n)
+            cc = find_ND_labels(rc[0], rc[1], n)
         self.cc = cc
         self.nlabel, self.glabel = cc
         return cc
@@ -713,6 +754,46 @@ def get_clean_labels(labels):
     return n
 
 
+@numba.njit(parallel=True)
+def centroid_gate(rc, pk_props, maxdist):
+    """
+    Filter for the overlap pairs in rc.
+
+    rc = [ (i, j, npixels), npairs ] pairs of 2D peaks that share pixels
+    pk_props = [ (s1, sI, srI, scI, frame), npeaks ]
+    maxdist = maximum distance in pixels between the peak centroids
+
+    returns keep[k] = True if peaks rc[0,k], rc[1,k] have
+    centroids (srI/sI, scI/sI) within maxdist pixels
+    """
+    npairs = rc.shape[1]
+    keep = np.empty(npairs, np.bool_)
+    d2max = maxdist * maxdist
+    for k in numba.prange(npairs):
+        i = rc[0, k]
+        j = rc[1, k]
+        dr = pk_props[2, i] / pk_props[1, i] - pk_props[2, j] / pk_props[1, j]
+        dc = pk_props[3, i] / pk_props[1, i] - pk_props[3, j] / pk_props[1, j]
+        keep[k] = (dr * dr + dc * dc) <= d2max
+    return keep
+
+
+def merge_mask(pkst, max_centroid_dist=None, verbose=1):
+    """
+    Decide which overlap pairs are used for merging.
+    returns None (use all overlaps) or a boolean mask for pkst.find_uniq(keep=...)
+    """
+    if max_centroid_dist is None:
+        return None
+    keep = centroid_gate(pkst.rc, pkst.pk_props, float(max_centroid_dist))
+    if verbose:
+        print(
+            "centroid gate %.3f px: kept %d of %d overlapping pairs"
+            % (max_centroid_dist, keep.sum(), len(keep))
+        )
+    return keep
+
+
 def find_ND_labels(i, j, npks, verbose=1):
     start = time.time()
     labels = np.arange(npks, dtype=int)
@@ -732,20 +813,24 @@ def find_ND_labels(i, j, npks, verbose=1):
     return n, labels
 
 
-def pks_table_from_scan(sparsefilename, ds, row, algorithm='lmlabel', wtmax=None):
+def pks_table_from_scan(sparsefilename, ds, row, algorithm='lmlabel', wtmax=None,
+                        max_centroid_dist=None):
     """
     Labels one rotation scan to a peaks table
 
     sparsefilename = sparse pixels file
     dataset = ImageD11.sinograms.dataset
     row = index for dataset.scan[ row ]
+    algorithm = 'lmlabel' | 'cplabel' | 'stored'
+    max_centroid_dist = None (merge any overlapping peaks)
+                        or only merge overlapping peaks with centroids within this many pixels
 
     returns a pks_table.
         You might want to call one of "save" or "pk2d" or "pk2dmerge" on the result
 
     This is probably not threadsafe
     """
-    sps = ImageD11.sparseframe.SparseScan(sparsefilename, ds.scans[row])
+    sps = open_scan(sparsefilename, ds.scans[row], algorithm)
     sps.motors["omega"] = ds.omega[row]
     peaks, pairs = ImageD11.sinograms.properties.props(sps, row, algorithm=algorithm, wtmax=wtmax)
     # which frame/peak is which in the peaks array
@@ -777,7 +862,8 @@ def pks_table_from_scan(sparsefilename, ds, row, algorithm='lmlabel', wtmax=None
         rc[1, s:e] = pkid[frame2] + ijn[:, 1] - 1  # row
         rc[2, s:e] = ijn[:, 2]  # num pixels
         s = e
-    uni = pkst.find_uniq()
+    assert s == rc.shape[1]
+    uni = pkst.find_uniq(keep=merge_mask(pkst, max_centroid_dist))
     """
     if 0:  # future TODO : scoring overlaps better.
         ks = list(pairs.keys())
@@ -818,7 +904,7 @@ def process(qin, qshm, qout, hname, dsfilename, options):
     prev = None  # suppress flake8 idiocy
     # This is the 1D scan within the same row
     for i in range(start, end + 1):
-        scan = ImageD11.sparseframe.SparseScan(hname, scans[i])
+        scan = open_scan(hname, scans[i], options["algorithm"])
         scan.motors["omega"] = dset.omega[i]
         mypks[i], pii[i] = props(
             scan, i, algorithm=options["algorithm"], wtmax=options["wtmax"]
@@ -929,10 +1015,11 @@ def goforit(ds, sparsename, options):
 
 
 default_options = {
-    "algorithm": "lmlabel",
+    "algorithm": "lmlabel",  # | cplabel | stored
     "wtmax": None,  # value to replace saturated pixels
     "save_overlaps": False,
     "nproc": None,
+    "max_centroid_dist": None,  # None == merge any overlap, else pixels
 }
 
 
@@ -943,20 +1030,27 @@ def main(dsfilename, sparsefile=None, pksfile=None, options={}):
     pkname = File to receive output peaks (None = use dsname.pksfile)
 
     options : dictionary of options, to override
-
+        algorithm : 'lmlabel' | 'cplabel' | 'stored'
+            how to label pixels into 2D peaks. 'stored' uses the labels
+            written by the segmenter (frelon_peaksearch)
+        wtmax : value to replace saturated pixels
+        save_overlaps : write all overlapping pairs to pksfile+"_mat.h5" (debug)
+        nproc : None == guess
+        max_centroid_dist : None == merge 2D peaks on neighboring frames if
+            they share any pixel. Otherwise, they must also have centroids
+            within this many pixels (1.6 reproduces the old frelon merge)
     """
-    default_options = {
-        "algorithm": "lmlabel",  # | cplabel ]
-        "wtmax": None,  # value to replace saturated pixels
-        "save_overlaps": False,  # for debug
-        "nproc": None,  # None == guess
-    }
+    opts = dict(default_options)
     for k in options:
-        if k in default_options:
-            default_options[k] = options[k]
+        if k in opts:
+            opts[k] = options[k]
         else:
             raise Exception("I do not understand %s in options" % (str(k)))
-    options = default_options
+    options = opts
+    if options["algorithm"] not in ALGORITHMS:
+        raise ValueError("algorithm must be one of %s" % (str(ALGORITHMS)))
+    if options["max_centroid_dist"] is not None and options["max_centroid_dist"] <= 0:
+        raise ValueError("max_centroid_dist must be None or > 0")
 
     t = tictoc()
     ds = ImageD11.sinograms.dataset.load(dsfilename)
@@ -989,13 +1083,19 @@ def main(dsfilename, sparsefile=None, pksfile=None, options={}):
             if "save_overlaps" in options and options["save_overlaps"]:
                 rmem.save(pksfile + "_mat.h5", rc=True)
                 t("cache")
-            cc = rmem.find_uniq()
+            cc = rmem.find_uniq(keep=merge_mask(rmem, options["max_centroid_dist"]))
             t("%s connected components" % (str(cc[0])))
         else:
             # single scan. Skips a lot of hassle.
             rmem = pks_table_from_scan(sparsefile, ds, 0,
                                        algorithm=options['algorithm'],
-                                       wtmax=options['wtmax'])
+                                       wtmax=options['wtmax'],
+                                       max_centroid_dist=options['max_centroid_dist'])
+        rmem.merge_options = {
+            "algorithm": options["algorithm"],
+            "wtmax": options["wtmax"],
+            "max_centroid_dist": options["max_centroid_dist"],
+        }
         rmem.save(pksfile)
         t("write hdf5")
     except Exception as e:

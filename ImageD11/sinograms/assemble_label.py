@@ -131,6 +131,49 @@ def filterpixels(cutimage, row, col, intensity, nnz):
     return row_out, col_out, intensity_out, nnz_out
 
 
+
+def write_scan_header(hin, hout, scan, detector,
+                      scanmotors=SCANMOTORS, headermotors=HEADERMOTORS):
+    """
+    Copy the per-scan metadata that the sparse pixel readers need from the
+    bliss masterfile (hin) into the sparse file (hout).
+
+    hin, hout = open h5py.File objects
+    scan = "1.1" etc (no "::" slicing)
+    detector = name of the detector in measurement
+
+    Writes:
+        hout[scan]/measurement/<scanmotors>   (arrays)
+        hout[scan]/instrument/positioners/<headermotors>   (scalars)
+        hout[scan].attrs : itype, nframes, shape0, shape1
+    Returns the group in hout, or None if the scan is unusable.
+    """
+    for check in ("title", "measurement", "measurement/" + detector):
+        if check not in hin[scan]:
+            print(scan, "missing", check, "skipping")
+            return None
+    gin = hin[scan]
+    g = hout.require_group(scan)
+    gm = g.require_group("measurement")
+    for m in scanmotors:  # vary : many
+        if m in gin["measurement"]:
+            data = gin["measurement"][m][:]
+            ds = gm.require_dataset(m, shape=data.shape, dtype=data.dtype)
+            ds[()] = data
+    gip = g.require_group("instrument/positioners")
+    for m in headermotors:  # fixed : scalar
+        if "instrument/positioners/%s" % (m) in gin:
+            data = gin["instrument/positioners"][m][()]
+            ds = gip.require_dataset(m, shape=data.shape, dtype=data.dtype)
+            ds[()] = data
+    frms = gin["measurement"][detector]
+    g.attrs["itype"] = frms.dtype.name
+    g.attrs["nframes"] = frms.shape[0]
+    g.attrs["shape0"] = frms.shape[1]
+    g.attrs["shape1"] = frms.shape[2]
+    return g
+
+
 def harvest_masterfile(
         dset,
         outname,
@@ -162,41 +205,10 @@ def harvest_masterfile(
                     scan = scan.split("::")[0]
                 if scan in done:
                     continue
-                gin = hin[scan]
-                bad = False
-                for check in ("title", "measurement", "measurement/" + dset.detector):
-                    if check not in hin[scan]:
-                        print(scan, "missing", check, "skipping")
-                        bad = True
-                if bad:
+                if write_scan_header(hin, hout, scan, dset.detector,
+                                     scanmotors, headermotors) is None:
                     print("Skipping", scan)
                     continue
-                title = hin[scan]["title"][()]
-                g = hout.require_group(scan)
-                gm = g.require_group("measurement")
-                for m in scanmotors:  # vary : many
-                    if m in gin["measurement"]:
-                        data = data = gin["measurement"][m][:]
-                        ds = gm.require_dataset(m, shape=data.shape, dtype=data.dtype)
-                        ds[()] = data
-                gip = g.require_group("instrument/positioners")
-                for m in headermotors:  # fixed : scalar
-                    if "instrument/positioners/%s" % (m) in gin:
-                        data = gin["instrument/positioners"][m][()]
-                        ds = gip.require_dataset(m, shape=data.shape, dtype=data.dtype)
-                        ds[()] = data
-                try:
-                    frms = gin["measurement"][dset.detector]
-                except Exception as e:
-                    print(e)
-                    print(list(gin))
-                    print(list(gin["measurement"]))
-                    print(dset.detector)
-                    raise
-                g.attrs["itype"] = frms.dtype.name
-                g.attrs["nframes"] = frms.shape[0]
-                g.attrs["shape0"] = frms.shape[1]
-                g.attrs["shape1"] = frms.shape[2]
                 print(scan, end=", ")
                 done.append(scan)
             print()
