@@ -26,7 +26,7 @@ import fabio  # for LUT
 import numpy as np
 from numpy import radians, degrees
 
-from ImageD11 import cImageD11, gv_general
+from ImageD11 import cImageD11, gv_general, nputils
 
 try:
     # crazy debug
@@ -845,11 +845,11 @@ class PixelLUT(object):
         )
         # scattering vectors:
         self.k = compute_k_vectors(self.tth, self.eta, self.pars.get("wavelength"))
-        self.sinthsq.shape = s
-        self.tth.shape = s
-        self.eta.shape = s
-        self.k.shape = (3, s[0], s[1])
-        self.xyz.shape = (3, s[0], s[1])
+        self.sinthsq = nputils.reshape_no_copy(self.sinthsq, s)
+        self.tth = nputils.reshape_no_copy(self.tth, s)
+        self.eta = nputils.reshape_no_copy(self.eta, s)
+        self.k = nputils.reshape_no_copy(self.k, (3, s[0], s[1]))
+        self.xyz = nputils.reshape_no_copy(self.xyz, (3, s[0], s[1]))
 
     def spatial(self, sraw, fraw):
         """applies a spatial distortion to sraw, fraw (for peak centroids)"""

@@ -11,7 +11,7 @@ from scipy.spatial.transform import Rotation
 
 from ImageD11.sinograms.geometry import recon_to_step
 from ImageD11.sinograms.sinogram import save_array
-from ImageD11 import unitcell
+from ImageD11 import unitcell, nputils
 from ImageD11 import sym_u
 
 
@@ -1386,7 +1386,7 @@ class TensorMap:
             if len(self.phases) == 0:
                 raise KeyError("No phases in self.phases to compute IPF colours for!")
 
-            rgb_map.shape = -1, 3
+            rgb_map = nputils.reshape_no_copy(rgb_map, -1, 3)
 
             # iterate over phases
             for phase_id in self.phases.keys():
@@ -1397,7 +1397,7 @@ class TensorMap:
                                                                                 axis=ipf_direction)
                 rgb_map[inds] = rgb_flat
 
-            rgb_map.shape = shape + (3,)
+            rgb_map = nputils.reshape_no_copy(rgb_map, shape + (3,))
 
             self.add_map('ipf_' + letter, rgb_map)
 

@@ -1,7 +1,7 @@
 
 from __future__ import print_function
 import math, numpy, time
-from ImageD11 import cImageD11
+from ImageD11 import cImageD11, nputils
 from fabio.openimage import openimage
 print("Using class version")
 
@@ -82,7 +82,7 @@ class fourier_radial(object):
         cImageD11.put_incr( fimc, self.inds, faprojc.ravel())
         fim = fimr + fimc*1j
         fim = numpy.divide( fimr + fimc*1j, self.nim_div)
-        fim.shape = self.ftimshape 
+        fim = nputils.reshape_no_copy(fim, self.ftimshape)
         return fim
 
     def sino2im(self, sinogram, centrepixel ):

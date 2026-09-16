@@ -1,7 +1,7 @@
 
 import numpy as np
 import hdf5plugin, fabio
-from ImageD11 import blobcorrector, parameters, transform
+from ImageD11 import blobcorrector, parameters, transform, nputils
 import numba
 
 
@@ -15,8 +15,8 @@ def compute_tth_eta_lut( splinefile, pars, dims):
     xp, yp = c.make_pixel_lut( dims )
     t, e = transform.compute_tth_eta( (xp.ravel(), yp.ravel()),
                                       **p.parameters )
-    t.shape=dims
-    e.shape=dims
+    t = nputils.reshape_no_copy(t, dims)
+    e = nputils.reshape_no_copy(e, dims)
     return t, e
 
 

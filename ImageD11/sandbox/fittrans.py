@@ -3,7 +3,7 @@ from __future__ import print_function
 
 
 from ImageD11.columnfile import columnfile
-from ImageD11 import transform, parameters, unitcell, grain, gv_general
+from ImageD11 import transform, parameters, unitcell, grain, gv_general, nputils
 import numpy as np, time
 from matplotlib import pylab
 
@@ -79,7 +79,7 @@ def test_XL_to_gv():
     wedge = 0
     chi = 0
     XL = np.ones((15))
-    XL.shape=3,5
+    XL = nputils.reshape_no_copy(XL, 3, 5)
     wavelength = 1.2345
     T = np.array( [0,0,0] )
     gnew = XL_to_gv( omega, wedge, chi, XL, wavelength, T[0],T[1],T[2])
