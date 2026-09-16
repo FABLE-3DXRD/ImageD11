@@ -1,3 +1,5 @@
+import os
+
 import h5py
 import numpy as np
 import scipy
@@ -386,6 +388,56 @@ class worker:
         self.goodpeaks = self.blobs[self.enoughpx]
         return self.goodpeaks
 
+    def peaksearch_sparse(self, img, scale_factor=None):
+        """
+        Runs peaksearch and returns the pixels of the peaks it found, rather
+        than the blob moments that peaksearch returns.
+
+        img = raw detector frame
+        scale_factor = optional monitor normalisation. Used for thresholding,
+            as in peaksearch, but divided out again so that the saved pixels
+            are raw. Normalise later via ds.set_monitor when making columnfiles.
+
+        returns row, col, intensity, labels, nlabel
+
+            row, col  : uint16, in (row, col) sorted order
+            intensity : float32, background subtracted, following self.cor
+            labels    : int32, 1..nlabel on this frame, 0 is not stored
+            nlabel    : number of peaks on this frame
+
+        The pixels kept are those of self.goodpeaks: inside a labelled blob,
+        above the per peak background, in a blob with at least minpx pixels,
+        and with a positive intensity.
+
+        Peaks whose total intensity is below 1 are dropped, because
+        sinograms.properties.props sums the intensity into an integer and
+        raises on a peak that sums to zero.
+        """
+        self.peaksearch(img, omega=0, scale_factor=scale_factor)
+        keep = np.zeros(self.npks + 1, bool)  # label 0 is background
+        keep[1:] = self.enoughpx  # row k of blobs is label k+1
+        lab = np.where(self.m_top, self.labels, 0)
+        msk = keep[lab] & (lab > 0) & (self.cor > 0)
+        # np.nonzero on a 2D array gives row major order, so the pixels come
+        # out sorted by (row, col), which the sparse overlap code requires
+        row, col = np.nonzero(msk)
+        intensity = self.cor[row, col].astype(np.float32)
+        if scale_factor is not None:
+            intensity /= np.float32(scale_factor)
+        row = row.astype(np.uint16)
+        col = col.astype(np.uint16)
+        oldlab = lab[row, col]
+        if len(oldlab) == 0:
+            return row, col, intensity, oldlab.astype(np.int32), 0
+        # relabel 1..nlabel on this frame, dropping the too weak peaks
+        _, inv = np.unique(oldlab, return_inverse=True)
+        good = np.bincount(inv, weights=intensity) >= 1
+        if not good.all():
+            m = good[inv]
+            row, col, intensity, inv = row[m], col[m], intensity[m], inv[m]
+            inv = (np.cumsum(good) - 1)[inv]
+        return row, col, intensity, (inv + 1).astype(np.int32), int(good.sum())
+
     def plots(self):
         pass
 
@@ -404,6 +456,15 @@ def pps(arg):
     frm = get_dset(hname, dsetname)[num]
     pks = pps.worker.peaksearch(frm, omega=omega, scale_factor=scale_factor)
     return num, pks
+
+
+def pps_sparse(arg):
+    """As pps, but returns the peak pixels. See worker.peaksearch_sparse"""
+    hname, dsetname, num, worker_args, scale_factor = arg
+    if pps_sparse.worker is None:
+        pps_sparse.worker = worker(**worker_args)
+    frm = get_dset(hname, dsetname)[num]
+    return pps_sparse.worker.peaksearch_sparse(frm, scale_factor=scale_factor)
 
 
 def guess_bg(ds, scan_number=0, start=0, step=9, n=None):
@@ -434,6 +495,7 @@ def guess_bg(ds, scan_number=0, start=0, step=9, n=None):
 
 
 pps.worker = None
+pps_sparse.worker = None
 
 # PKSAVE = 's_raw f_raw o_raw s_1 s_I m_ss m_ff m_oo m_sf m_so m_fo'.split()
 PKSAVE = [
@@ -666,3 +728,144 @@ def segment_dataset(
         peak_3d_dict["spot3d_id"] = np.arange(len(peak_3d_dict["s_raw"]))
         columnfile_3d = dataset.get_colfile_from_peaks_dict(peak_3d_dict)
         return columnfile_2d, columnfile_3d
+
+
+# ---------------------------------------------------------------------------
+# Sparse pixel output.
+#
+# Writes the same file layout as ImageD11.sinograms.assemble_label, so that
+# frelon data can be read by anything that reads a sparse pixel file, plus the
+# per frame peak labels from the segmenter.
+#
+# Adapted from the work of @jadball in PR #633.
+# ---------------------------------------------------------------------------
+
+
+def frames_by_scan(dataset):
+    """
+    Map the rows of dataset.scans back onto the scans in the masterfile.
+
+    A row of the sinogram is one rotation. An fscan2d puts many rotations in
+    a single masterfile scan, and dataset.scans names them "1.1::[0:900]".
+
+    returns { masterfile_scan : [ (row, first_frame, last_frame+1), ... ] }
+    in the order they appear in dataset.scans.
+    """
+    plan = {}
+    with h5py.File(dataset.masterfile, "r") as hin:
+        for row, name in enumerate(dataset.scans):
+            if name.find("::") >= 0:
+                scan, idx = name.split("::")
+                start, end = [int(v) for v in idx[1:-1].split(":")]
+            else:
+                scan = name
+                start = 0
+                end = hin[scan]["measurement"][dataset.detector].shape[0]
+            plan.setdefault(scan, []).append((row, start, end))
+    return plan
+
+
+def segment_dataset_to_sparse(
+    dataset,
+    worker_args,
+    outname=None,
+    num_cpus=None,
+    monitor_name=None,
+    monitor_ref_func=np.mean,
+    frames_per_block=500,
+    **process_map_kwargs
+):
+    """
+    Segments the frelon frames of a dataset and saves the peak pixels, with
+    their per frame labels, into a sparse pixel file.
+
+    dataset: ImageD11.sinograms.dataset.DataSet
+    worker_args: arguments for the peaksearch worker, see `worker`
+    outname: sparse file to write. Defaults to dataset.sparsefile
+    num_cpus: number of processes, defaults to cores_available() - 1
+    monitor_name: see dataset.set_monitor. Used to normalise the frames for
+        thresholding. The pixels written are not normalised; the monitor stays
+        on the dataset so that ds.pk2d and friends normalise later.
+    monitor_ref_func: see dataset.set_monitor
+    frames_per_block: how many frames to segment before writing them out
+
+    Returns the name of the file written.
+    """
+    if outname is None:
+        outname = dataset.sparsefile
+    if outname is None:
+        raise ValueError("No outname given and dataset.sparsefile is not set")
+    if monitor_name is not None:
+        dataset.set_monitor(name=monitor_name, ref_value_func=monitor_ref_func)
+        scale_factor = dataset.monitor_ref / dataset.monitor
+    else:
+        scale_factor = None
+    plan = frames_by_scan(dataset)
+    num_threads = num_cpus or max(1, ImageD11.cImageD11.cores_available() - 1)
+    dirname = os.path.dirname(outname)
+    if dirname and not os.path.exists(dirname):
+        os.makedirs(dirname)
+    _write_sparse(dataset, worker_args, outname, plan, scale_factor,
+                  num_threads, frames_per_block, process_map_kwargs)
+    return outname
+
+
+def _write_sparse(dataset, worker_args, outname, plan, scale_factor,
+                  num_threads, frames_per_block, process_map_kwargs):
+    """Does the work for segment_dataset_to_sparse"""
+    from ImageD11.sinograms.assemble_label import write_scan_header
+
+    # match what lima_segmenter and assemble_label write
+    opts = {
+        "chunks": (10000,),
+        "maxshape": (None,),
+        "compression": "lzf",
+        "shuffle": True,
+    }
+    # intensity follows worker.cor, which is float32 after background
+    # subtraction. labels are the per frame peak labels, 1..nlabel.
+    dtypes = [("row", np.uint16), ("col", np.uint16),
+              ("intensity", np.float32), ("labels", np.int32)]
+    with h5py.File(outname, "a") as hout, h5py.File(dataset.masterfile, "r") as hin:
+        hout.attrs["h5input"] = dataset.masterfile
+        hout.attrs["segmenter"] = "ImageD11.frelon_peaksearch.segment_dataset_to_sparse"
+        # refuse to append to a previous segmentation
+        for scan in plan:
+            if scan in hout and "row" in hout[scan]:
+                raise ValueError(
+                    "%s already has pixels for scan %s. "
+                    "Remove the file to segment again." % (outname, scan))
+        for scan, rows in plan.items():
+            g = write_scan_header(hin, hout, scan, dataset.detector)
+            if g is None:
+                raise ValueError("Cannot read scan %s from %s" % (
+                    scan, dataset.masterfile))
+            nframes = int(g.attrs["nframes"])
+            # per frame scale factors, indexed like the frames in this scan
+            sf = [None] * nframes
+            if scale_factor is not None:
+                for row, start, end in rows:
+                    for k in range(start, end):
+                        sf[k] = float(scale_factor[row][k - start])
+            for name, dt in dtypes:
+                g.create_dataset(name, shape=(0,), dtype=dt, **opts)
+            nnz = g.create_dataset("nnz", shape=(nframes,), dtype=np.uint32)
+            nlabel = g.create_dataset("nlabel", shape=(nframes,), dtype=np.int32)
+            dsetname = "%s/measurement/%s" % (scan, dataset.detector)
+            args = [(dataset.masterfile, dsetname, k, worker_args, sf[k])
+                    for k in range(nframes)]
+            npx = 0
+            blocks = range(0, nframes, frames_per_block)
+            for b0 in tqdm(blocks, desc="segment %s" % scan):
+                b1 = min(nframes, b0 + frames_per_block)
+                results = process_map(pps_sparse, args[b0:b1],
+                                      chunksize=1, max_workers=num_threads,
+                                      disable=True, **process_map_kwargs)
+                nnz[b0:b1] = [len(r[0]) for r in results]
+                nlabel[b0:b1] = [r[4] for r in results]
+                n = sum(len(r[0]) for r in results)
+                for i, (name, _) in enumerate(dtypes):
+                    g[name].resize((npx + n,))
+                    g[name][npx:] = np.concatenate([r[i] for r in results])
+                npx += n
+            g.attrs["npx"] = npx

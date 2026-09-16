@@ -16,6 +16,7 @@ modules = [
     "test_localmaxlabel",
 #not a unittest    "test_overlapimage",
     "test_sparse_image",
+    "test_frelon_sparse",
     "test_cImageD11",
     "gv_general.test_gv_general",
     "test_columnfile",
