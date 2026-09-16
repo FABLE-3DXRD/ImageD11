@@ -105,7 +105,7 @@ packaging==24.2
     #   scikit-image
 partd==1.4.2
     # via dask
-pillow==11.0.0
+pillow==12.3.0
     # via
     #   fabio
     #   imageio
@@ -130,7 +130,7 @@ pyopengltk==0.0.4
     # via ImageD11 (setup.py)
 pyparsing==3.2.0
     # via matplotlib
-pytest==8.3.4
+pytest==9.0.3
     # via ImageD11 (setup.py)
 python-dateutil==2.9.0.post0
     # via matplotlib
@@ -138,7 +138,7 @@ pyyaml==6.0.2
     # via
     #   ImageD11 (setup.py)
     #   dask
-requests==2.32.3
+requests==2.33.0
     # via pooch
 scikit-image==0.24.0
     # via ImageD11 (setup.py)
@@ -166,7 +166,7 @@ tqdm==4.67.1
     #   orix
 typing-extensions==4.12.2
     # via orix
-urllib3==2.6.3
+urllib3==2.7.0
     # via requests
 xfab==0.0.6
     # via ImageD11 (setup.py)
