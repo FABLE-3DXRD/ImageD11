@@ -68,6 +68,7 @@ def compute_grain_origins(omega, wedge = 0.0, chi = 0.0,
     return t
 
 import ctypes, numpy as np
+from ImageD11 import nputils
 
 dll = ctypes.CDLL("./diffraction.so")
 
@@ -97,8 +98,8 @@ def flatfloat(a, shape=None):
     else:
         s=shape
     flat = np.array( np.array(a).ravel(), NPREAL )
-    flat.shape = s
-    return flat 
+    flat = nputils.reshape_no_copy( flat, s )
+    return flat
 
 
 if __name__=="__main__":
