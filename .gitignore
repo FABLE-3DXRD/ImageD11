@@ -107,3 +107,10 @@ ENV/
 
 # c2ImageD11 migration test: pip --target dir
 test/c2ImageD11_migration/c2_git/
+
+# f2py generated wrappers, written to the root by setup.py build_ext --inplace.
+# Anchored: src/_cImageD11.pyf is the tracked source these come from, and
+# ImageD11/depreciated/fsrc/fImageD11module.c is tracked too.
+/_cImageD11module.c
+/_cImageD11-f2pywrappers.f
+/_cImageD11-f2pywrappers2.f90

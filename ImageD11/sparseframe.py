@@ -4,8 +4,6 @@ import time, sys
 import h5py, scipy.sparse, numpy as np  # , pylab as pl
 from ImageD11 import cImageD11, nputils
 
-SAFE = True
-
 # see also sandbox/harvest_pixels.py
 
 NAMES = {
@@ -24,7 +22,7 @@ class sparse_frame(object):
        See SparseScan below for something aiming towards many frames
     """
 
-    def __init__(self, row, col, shape, itype=np.uint16, pixels=None, SAFE=SAFE):
+    def __init__(self, row, col, shape, itype=np.uint16, pixels=None):
         """row = slow direction
         col = fast direction
         shape = size of full image
@@ -33,9 +31,11 @@ class sparse_frame(object):
         nnz is implicit as len(row)==len(col)
         pixels = numpy arrays in a dict to name them
                  throw in a ary.attrs if you want to save some
+
+        row and col are cast to itype. Every caller allocates them as
+        itype already, so the cast is a no-op; if you pass something
+        wider it wraps, as numpy does everywhere else.
         """
-        if SAFE:
-            self.check(row, col, shape, itype, SAFE)
         self.shape = shape
         self.row = np.asarray(row, dtype=itype)
         self.col = np.asarray(col, dtype=itype)
@@ -81,18 +81,6 @@ class sparse_frame(object):
                 print(other.pixels[k])
                 return False
         return True
-
-    def check(self, row, col, shape, itype, SAFE=SAFE):
-        """Ensure the index data makes sense and fits"""
-        if SAFE:
-            lo = np.iinfo(itype).min
-            hi = np.iinfo(itype).max
-            assert len(shape) == 2
-            assert shape[0] >= lo and shape[0] < hi
-            assert shape[1] >= lo and shape[1] < hi
-            assert np.min(row) >= lo and np.max(row) < hi
-            assert np.min(col) >= lo and np.max(col) < hi
-            assert len(row) == len(col)
 
     def is_sorted(self):
         """Tests whether the data are sorted into slow/fast order
@@ -143,8 +131,7 @@ class sparse_frame(object):
 
     def set_pixels(self, name, values, meta=None):
         """Named arrays sharing these labels"""
-        if SAFE:
-            assert len(values) == self.nnz
+        assert len(values) == self.nnz
         self.pixels[name] = values
         if meta is not None:
             self.meta[name] = meta
@@ -162,8 +149,7 @@ class sparse_frame(object):
 
     def reorder(self, order):
         """Put the pixels into a different order (in place)"""
-        if SAFE:
-            assert len(order) == self.nnz
+        assert len(order) == self.nnz
         self.row[:] = self.row[order]
         self.col[:] = self.col[order]
         for name, px in self.pixels.items():
@@ -295,7 +281,7 @@ class SparseScan(object):
         out[self.frame_id, self.row, self.col] = self.intensity
         return out
 
-    def getframe(self, i, SAFE=SAFE):
+    def getframe(self, i):
         # (self, row, col, shape, itype=np.uint16, pixels=None):
         s = self.ipt[i]
         e = self.ipt[i + 1]
@@ -306,7 +292,6 @@ class SparseScan(object):
             self.col[s:e],
             self.shape[1:],
             pixels={name: getattr(self, name)[s:e] for name in self.names},
-            SAFE=SAFE,
         )
 
     def cplabel(self, threshold=0, countall=True):
