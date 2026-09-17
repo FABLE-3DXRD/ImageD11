@@ -268,6 +268,19 @@ class SparseScan(object):
             # pointers into this scan
             self.nnz = nnz[start:end]
             self.ipt = nnz_to_pointer(self.nnz)
+            # peak labels stored by a segmenter, rather than computed here by
+            # lmlabel or cplabel. Same convention as cplabel(countall=False):
+            # labels run 1..nlabels[i] on frame i, and 0 is not stored.
+            if "labels" in self.names:
+                if "labels" not in grp:
+                    raise ValueError(
+                        "%s:%s has no stored labels" % (hname, scan))
+                if "nlabel" not in grp:
+                    raise ValueError(
+                        "%s:%s has stored labels but no nlabel" % (hname, scan))
+                self.labels = self.labels.astype(np.int32)
+                self.nlabels = grp["nlabel"][start:end].astype(np.int32)
+                self.total_labels = int(self.nlabels.sum())
 
     @property
     def frame_id(self):

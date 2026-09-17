@@ -1,4 +1,5 @@
 import os
+import concurrent.futures
 
 import h5py
 import numpy as np
@@ -408,10 +409,6 @@ class worker:
         The pixels kept are those of self.goodpeaks: inside a labelled blob,
         above the per peak background, in a blob with at least minpx pixels,
         and with a positive intensity.
-
-        Peaks whose total intensity is below 1 are dropped, because
-        sinograms.properties.props sums the intensity into an integer and
-        raises on a peak that sums to zero.
         """
         self.peaksearch(img, omega=0, scale_factor=scale_factor)
         keep = np.zeros(self.npks + 1, bool)  # label 0 is background
@@ -429,14 +426,10 @@ class worker:
         oldlab = lab[row, col]
         if len(oldlab) == 0:
             return row, col, intensity, oldlab.astype(np.int32), 0
-        # relabel 1..nlabel on this frame, dropping the too weak peaks
-        _, inv = np.unique(oldlab, return_inverse=True)
-        good = np.bincount(inv, weights=intensity) >= 1
-        if not good.all():
-            m = good[inv]
-            row, col, intensity, inv = row[m], col[m], intensity[m], inv[m]
-            inv = (np.cumsum(good) - 1)[inv]
-        return row, col, intensity, (inv + 1).astype(np.int32), int(good.sum())
+        # renumber to 1..nlabel on this frame. Only positive pixels were
+        # kept, so every peak sums to more than zero.
+        uniq, inv = np.unique(oldlab, return_inverse=True)
+        return row, col, intensity, (inv + 1).astype(np.int32), len(uniq)
 
     def plots(self):
         pass
@@ -773,7 +766,6 @@ def segment_dataset_to_sparse(
     monitor_name=None,
     monitor_ref_func=np.mean,
     frames_per_block=500,
-    **process_map_kwargs
 ):
     """
     Segments the frelon frames of a dataset and saves the peak pixels, with
@@ -805,13 +797,29 @@ def segment_dataset_to_sparse(
     dirname = os.path.dirname(outname)
     if dirname and not os.path.exists(dirname):
         os.makedirs(dirname)
-    _write_sparse(dataset, worker_args, outname, plan, scale_factor,
-                  num_threads, frames_per_block, process_map_kwargs)
+    # Start the workers before this process opens any hdf5 file: with the
+    # fork start method a child inherits the open file handles otherwise.
+    pool = concurrent.futures.ProcessPoolExecutor(max_workers=num_threads)
+    list(pool.map(_noop, range(num_threads)))
+    try:
+        _write_sparse(dataset, worker_args, outname, plan, scale_factor,
+                      pool, frames_per_block)
+    finally:
+        pool.shutdown()
+    if outname != dataset.sparsefile:
+        # otherwise nothing can find the file we just wrote
+        dataset.sparsefile = outname
+        dataset.save()
     return outname
 
 
+def _noop(i):
+    """Used to start the worker processes, see segment_dataset_to_sparse"""
+    return i
+
+
 def _write_sparse(dataset, worker_args, outname, plan, scale_factor,
-                  num_threads, frames_per_block, process_map_kwargs):
+                  pool, frames_per_block):
     """Does the work for segment_dataset_to_sparse"""
     from ImageD11.sinograms.assemble_label import write_scan_header
 
@@ -858,9 +866,7 @@ def _write_sparse(dataset, worker_args, outname, plan, scale_factor,
             blocks = range(0, nframes, frames_per_block)
             for b0 in tqdm(blocks, desc="segment %s" % scan):
                 b1 = min(nframes, b0 + frames_per_block)
-                results = process_map(pps_sparse, args[b0:b1],
-                                      chunksize=1, max_workers=num_threads,
-                                      disable=True, **process_map_kwargs)
+                results = list(pool.map(pps_sparse, args[b0:b1], chunksize=4))
                 nnz[b0:b1] = [len(r[0]) for r in results]
                 nlabel[b0:b1] = [r[4] for r in results]
                 n = sum(len(r[0]) for r in results)

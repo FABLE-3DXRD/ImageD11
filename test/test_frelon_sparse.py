@@ -215,6 +215,38 @@ class TestSegmentToSparse(unittest.TestCase):
             frelon_peaksearch.segment_dataset_to_sparse,
             self.ds, WORKER_ARGS, self.sparsefile, 1)
 
+    def test_stored_labels_reach_properties(self):
+        """the whole route: segment to sparse, then merge the stored labels"""
+        import ImageD11.sinograms.properties as properties
+        pksfile = os.path.join(self.tmp, "pks.h5")
+        properties.main(self.ds.dsfile, self.sparsefile, pksfile,
+                        options={"algorithm": "stored"})
+        pks = properties.pks_table.load(pksfile)
+        # float pixels must not be summed into an integer, see moment_dtype
+        self.assertEqual(pks.pk_props.dtype, np.float64)
+        n2d = pks.pk_props.shape[1]
+        with h5py.File(self.sparsefile, "r") as h:
+            stored = sum(int(h[s]["nlabel"][:].sum()) for s in ("1.1", "2.1"))
+        self.assertEqual(n2d, stored, "every stored label should be a 2D peak")
+        self.assertGreater(pks.nlabel, 0)
+        self.assertLessEqual(pks.nlabel, n2d)
+        # the moments must survive: intensities are order 1e3 here, so an
+        # integer cast would not lose them, but a peak summing to zero would
+        self.assertTrue((pks.pk_props[1] > 0).all())
+
+    def test_stored_needs_the_labels_column(self):
+        """opening without the labels column must fail loudly, not silently"""
+        import ImageD11.sinograms.properties as properties
+        scan = ImageD11.sparseframe.SparseScan(self.sparsefile, "1.1")
+        self.assertRaises(ValueError, properties.props, scan, 0, "stored")
+
+    def test_eiger_style_integer_pixels_stay_int64(self):
+        """the dtype choice must not change the existing integer route"""
+        import ImageD11.sinograms.properties as properties
+        self.assertEqual(properties.moment_dtype(np.uint16), np.int64)
+        self.assertEqual(properties.moment_dtype(np.int32), np.int64)
+        self.assertEqual(properties.moment_dtype(np.float32), np.float64)
+
 
 if __name__ == "__main__":
     unittest.main()

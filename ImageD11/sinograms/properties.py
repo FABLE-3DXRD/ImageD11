@@ -192,20 +192,66 @@ def pairscans(s1, s2, omegatol=0.051):
     return pairs
 
 
+# pixel columns to read for each labelling. 'stored' uses the labels that a
+# segmenter already wrote into the sparse file, rather than labelling again.
+SCAN_NAMES = {
+    "lmlabel": ("row", "col", "intensity"),
+    "cplabel": ("row", "col", "intensity"),
+    "stored": ("row", "col", "intensity", "labels"),
+}
+
+ALGORITHMS = tuple(SCAN_NAMES)
+
+
+def moment_dtype(intensity_dtype):
+    """
+    The dtype for pk_props, which holds sums of intensity and of
+    intensity * position.
+
+    Integer pixels sum exactly in int64, which is what the eiger route
+    produces. A segmenter that subtracts a background gives float pixels,
+    and casting those to an integer would truncate every pixel below one
+    to zero, so they need float64.
+    """
+    if np.issubdtype(np.dtype(intensity_dtype), np.integer):
+        return np.int64
+    return np.float64
+
+
+def sparse_intensity_dtype(sparsefilename, scan):
+    """The dtype of the pixel intensities stored in a sparse file"""
+    with h5py.File(sparsefilename, "r") as hin:
+        return hin[scan.split("::")[0]]["intensity"].dtype
+
+
 def props(scan, i, algorithm="lmlabel", wtmax=None):
     """
     scan = sparseframe.SparseScan object
     i = sinogram row id : used for tagging pairs
-    algorithm = 'lmlabel' | 'cplabel'
+    algorithm = 'lmlabel' | 'cplabel' | 'stored'
+        'stored' uses the labels a segmenter wrote into the sparse file.
+        Open the scan with names=SCAN_NAMES[algorithm].
 
     Labels the peaks with lmlabel
     Assumes a regular scan for labelling frames
     returns ( row, properties[(s1,sI,sRow,sCol,frame),:], pairs, scan )
+
+    The properties follow the dtype of the pixel intensities, see moment_dtype.
     """
     scan.sinorow = i
-    getattr(scan, algorithm)(countall=False)  # labels all the pixels in the scan.
+    if algorithm == "stored":
+        if getattr(scan, "total_labels", None) is None:
+            raise ValueError(
+                "algorithm='stored' needs a scan opened with "
+                "names=SCAN_NAMES['stored'], got %s" % (list(scan.names),))
+    else:
+        getattr(scan, algorithm)(countall=False)  # labels the pixels
     npks = scan.total_labels
-    r = np.empty((5, npks), np.int64)
+    # SparseScan casts the pixels to float32 on read, so ask for the dtype
+    # they were stored with: eiger writes integer counts, a segmenter that
+    # subtracts a background writes floats.
+    dt = moment_dtype(getattr(scan, "intensity_input_dtype", np.int64))
+    r = np.empty((5, npks), dt)
     s = 0
     j0 = i * scan.shape[0]
     for j in range(scan.shape[0]):
@@ -215,7 +261,7 @@ def props(scan, i, algorithm="lmlabel", wtmax=None):
         e = s + scan.nlabels[j]
         # [1:] means skip the background labels == 0 output
         r[0, s:e] = np.bincount(f0.pixels["labels"])[1:]
-        wt = f0.pixels["intensity"].astype(np.int64)
+        wt = f0.pixels["intensity"].astype(dt)
         if wtmax is not None:
             m = wt > wtmax
             n = m.sum()
@@ -223,7 +269,9 @@ def props(scan, i, algorithm="lmlabel", wtmax=None):
                 wt[m] = wtmax
                 # print(scan,'replaced',n)
         signal = np.bincount(f0.pixels["labels"], weights=wt)[1:]
-        if signal.min() < 1:
+        # <= 0 is the same test as < 1 for the integer case, and is the
+        # right one when the intensities are floats
+        if signal.min() <= 0:
             print(
                 "Bad data",
                 scan.hname,
@@ -351,6 +399,7 @@ class pks_table:
         glabel=None,
         nlabel=0,
         use_shm=False,
+        pk_props_dtype=np.int64,
     ):
         """
         Cases:
@@ -366,6 +415,8 @@ class pks_table:
         self.glabel = glabel
         self.nlabel = nlabel
         self.use_shm = use_shm
+        # int64 for integer pixels, float64 for float ones. See moment_dtype.
+        self.pk_props_dtype = pk_props_dtype
         self.shared = {}
         # otherwise create
         if self.npk is not None:
@@ -395,7 +446,8 @@ class pks_table:
         rpk[0] = 0
         rpk[1:] = np.cumsum(npk[:, 1] + npk[:, 2])
         self.rpk = self.share("rpk", rpk)
-        self.pk_props = self.share("pk_props", shape=(5, s[0]), dtype=np.int64)
+        self.pk_props = self.share(
+            "pk_props", shape=(5, s[0]), dtype=self.pk_props_dtype)
         self.rc = self.share("rc", shape=(3, s[1] + s[2]), dtype=np.int64)
 
     def export(self):
@@ -592,8 +644,9 @@ def n_pk2d( s1, sI, srI, scI, frm, omega, dty ):
     for i in numba.prange( n ):
         s_raw[i] = srI[i]/sI[i]
         f_raw[i] = scI[i]/sI[i]
-        omegapk[i] = omega.flat[frm[i]]
-        dtypk[i] = dty.flat[frm[i]]
+        f = int(frm[i])            # pk_props may be float64, see moment_dtype
+        omegapk[i] = omega.flat[f]
+        dtypk[i] = dty.flat[f]
     return s_raw, f_raw, omegapk, dtypk
 
         
@@ -628,7 +681,7 @@ def numbapkmerge(labels, pks, omega, dty, out, scale_factor=None):
     for k in range(len(labels)):
         # get the frame ID of the peak
         
-        frm = pks[4, k]
+        frm = int(pks[4, k])       # pk_props may be float64, see moment_dtype
         o = omega.flat[frm]
         y = dty.flat[frm]
         if scale_factor is not None:
@@ -745,7 +798,8 @@ def pks_table_from_scan(sparsefilename, ds, row, algorithm='lmlabel', wtmax=None
 
     This is probably not threadsafe
     """
-    sps = ImageD11.sparseframe.SparseScan(sparsefilename, ds.scans[row])
+    sps = ImageD11.sparseframe.SparseScan(sparsefilename, ds.scans[row],
+                                          names=SCAN_NAMES[algorithm])
     sps.motors["omega"] = ds.omega[row]
     peaks, pairs = ImageD11.sinograms.properties.props(sps, row, algorithm=algorithm, wtmax=wtmax)
     # which frame/peak is which in the peaks array
@@ -756,7 +810,8 @@ def pks_table_from_scan(sparsefilename, ds, row, algorithm='lmlabel', wtmax=None
             (peaks.shape[1], n1, 0),
         ]
     )
-    pkst = ImageD11.sinograms.properties.pks_table(npk=npk, use_shm=False)
+    pkst = ImageD11.sinograms.properties.pks_table(
+        npk=npk, use_shm=False, pk_props_dtype=peaks.dtype)
     pkst.pk_props = peaks
     rc = pkst.rc
     s = 0
@@ -818,7 +873,8 @@ def process(qin, qshm, qout, hname, dsfilename, options):
     prev = None  # suppress flake8 idiocy
     # This is the 1D scan within the same row
     for i in range(start, end + 1):
-        scan = ImageD11.sparseframe.SparseScan(hname, scans[i])
+        scan = ImageD11.sparseframe.SparseScan(
+            hname, scans[i], names=SCAN_NAMES[options["algorithm"]])
         scan.motors["omega"] = dset.omega[i]
         mypks[i], pii[i] = props(
             scan, i, algorithm=options["algorithm"], wtmax=options["wtmax"]
@@ -913,7 +969,8 @@ def goforit(ds, sparsename, options):
             out.append(ans)
         ks, P = compute_storage(out)
         assert len(ks) == len(ds.scans)
-        mem = pks_table(P)
+        dt = moment_dtype(sparse_intensity_dtype(sparsename, ds.scans[0]))
+        mem = pks_table(P, pk_props_dtype=dt)
         shm = mem.export()
         # workers fill the shared memory
         for i in range(options["nproc"]):
@@ -946,7 +1003,7 @@ def main(dsfilename, sparsefile=None, pksfile=None, options={}):
 
     """
     default_options = {
-        "algorithm": "lmlabel",  # | cplabel ]
+        "algorithm": "lmlabel",  # | cplabel | stored
         "wtmax": None,  # value to replace saturated pixels
         "save_overlaps": False,  # for debug
         "nproc": None,  # None == guess
@@ -957,6 +1014,8 @@ def main(dsfilename, sparsefile=None, pksfile=None, options={}):
         else:
             raise Exception("I do not understand %s in options" % (str(k)))
     options = default_options
+    if options["algorithm"] not in ALGORITHMS:
+        raise ValueError("algorithm must be one of %s" % (str(ALGORITHMS),))
 
     t = tictoc()
     ds = ImageD11.sinograms.dataset.load(dsfilename)
