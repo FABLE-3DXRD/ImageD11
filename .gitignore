@@ -114,3 +114,20 @@ test/c2ImageD11_migration/c2_git/
 /_cImageD11module.c
 /_cImageD11-f2pywrappers.f
 /_cImageD11-f2pywrappers2.f90
+
+# Per branch working notes: what is and is not done, and why. Deliberately
+# not in git history, but kept in the tree so they are easy to find.
+TODO.*.md
+
+# left in test/ by running the test suite. These patterns do not cross a
+# directory separator, so the tracked inputs in test/*/ are unaffected.
+test/*.ubi.new
+test/*.ubi.fftnew
+test/eu.patterson_pks
+test/l1.out
+test/l2.out
+test/momentstest.out
+test/nac.db
+test/oldpars.par
+test/test.db
+test/test.flt
