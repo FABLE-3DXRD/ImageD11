@@ -1128,7 +1128,7 @@ class TensorMap:
             self.add_map('eps_devia', eps_devia_map)
             return eps_devia_map
 
-        @property
+    @property
     def eps_eigvals(self):
         """
         The per-voxel eigenvalues of eps_sample, sorted from highest to lowest.
@@ -1239,7 +1239,7 @@ class TensorMap:
             self.add_map('sig_mises', sig_mises_map)
             return sig_mises_map
 
-        @property
+    @property
     def sig_eigvals(self):
         """
         The per-voxel eigenvalues of sig_sample, sorted from highest to lowest.
