@@ -147,13 +147,33 @@ class TestDataSetOmegaWraps(unittest.TestCase):
         ds = DataSet(sample="S", dset="d", omega_wraps=True)
         self.assertTrue(ds.omega_wraps)
 
-    def test_omega_for_bins_still_folds_from_span(self):
-        """guessbins keeps folding omega_for_bins for a scan spanning >360, so
-        the bins line up, even though the omega_wraps flag stays False"""
-        ds = self.make_ds(3)
+    def test_wraps_false_does_not_fold_even_if_span_exceeds_360(self):
+        """an fscan2d that overruns 360 (say -1 to 361) is not periodic: its
+        ends are used for sample alignment, not merged, so guessbins must not
+        fold it just because the raw span exceeds 360"""
+        ds = DataSet(sample="S", dset="d")
+        ds.shape = (1, 1440)
+        ds.omega = np.linspace(-1, 361, 1440).reshape(1, 1440)
+        ds.dty = np.zeros((1, 1440))
         ds.guessbins()
         self.assertFalse(ds.omega_wraps)
-        self.assertTrue((ds.omega_for_bins == ds.omega % 360).all())
+        self.assertTrue((ds.omega_for_bins == ds.omega).all())
+        self.assertEqual(len(ds.obincens), 1440)
+
+    def test_wraps_true_folds_and_bins_match_the_shape(self):
+        """when omega does wrap, one bin per frame closes the circle: there is
+        no extra 0/360 bin (the off-by-one) and the folded omega stays in range"""
+        ds = self.make_ds(1, nomega=1440)
+        ds.omega = (np.arange(1440) * (360.0 / 1440)).reshape(1, 1440)
+        ds.dty = np.zeros((1, 1440))
+        ds.omega_wraps = True
+        ds.guessbins()
+        self.assertEqual(len(ds.obincens), 1440)
+        self.assertEqual(len(ds.obinedges), 1441)
+        self.assertAlmostEqual(len(ds.obincens) * ds.ostep, 360.0, places=9)
+        # all frames land in a bin
+        io = np.digitize(ds.omega_for_bins, ds.obinedges) - 1
+        self.assertTrue(((io >= 0) & (io < len(ds.obincens))).all())
 
     def test_pk4d_passes_omega_wraps(self):
         """the flag reaches pk2dmerge"""
@@ -161,17 +181,21 @@ class TestDataSetOmegaWraps(unittest.TestCase):
         ds.monitor = None
         ds.omega_for_bins = np.zeros(3)
         ds.dty = np.zeros(3)
+        ds.obinedges = np.array([-0.125, 0.125])
         ds.omega_wraps = True
         calls = {}
 
         class Fake(object):
-            def pk2dmerge(self, omega, dty, scale_factor=None, omega_wraps=False):
+            def pk2dmerge(self, omega, dty, scale_factor=None, omega_wraps=False,
+                          omega0=0.0):
                 calls["omega_wraps"] = omega_wraps
+                calls["omega0"] = omega0
                 return {}
 
         ds._peaks_table = Fake()
         ds.pk4d
         self.assertTrue(calls["omega_wraps"])
+        self.assertEqual(calls["omega0"], ds.obinedges[0])
 
     def test_flag_survives_save_and_load(self):
         tmp = tempfile.mkdtemp(prefix="id11_omega_wraps_")
