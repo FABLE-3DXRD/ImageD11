@@ -539,7 +539,8 @@ class pks_table:
         self.nlabel, self.glabel = cc
         return cc
 
-    def pk2dmerge(self, omega, dty, scale_factor=None, omega_wraps=False):
+    def pk2dmerge(self, omega, dty, scale_factor=None, omega_wraps=False,
+                 omega0=0.0):
         """
         creates a dictionary of the 3D peaks
         scale_factor: provide scale_factor with same shape as omega/dty
@@ -547,6 +548,14 @@ class pks_table:
             when the scan turns more than once, so that the same peak is seen at
             1 and 361 degrees and omega has been folded into 0-360. See
             numbapkmerge. dty is a translation and is never treated this way.
+        omega0: the low edge of the range to fold the result into, i.e.
+            ds.obinedges[0]. The running mean itself can land anywhere,
+            depending on which contribution happened to seed it, so without
+            this the same peak's omega could come out order-dependent, one
+            full turn away from where its own frames are (obinedges[0] is
+            usually not 0: see guessbins/bin_phase). Only used when
+            omega_wraps; ignored otherwise. Default 0.0 folds into [0, 360),
+            matching the plain omega % 360 this replaces.
         """
         assert omega.shape == dty.shape
         assert omega.size > self.pk_props[4].max()
@@ -556,7 +565,7 @@ class pks_table:
         n = numbapkmerge(self.glabel, self.pk_props, omega, dty, out,
                          scale_factor=scale_factor, omega_wraps=omega_wraps)
         if omega_wraps:
-            omegapk = out[4] % 360.0  # already a mean, and put back in range
+            omegapk = (out[4] - omega0) % 360.0 + omega0  # mean, back in range
         else:
             omegapk = out[4] / out[1]
         allpks = {
