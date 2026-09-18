@@ -539,21 +539,30 @@ class pks_table:
         self.nlabel, self.glabel = cc
         return cc
 
-    def pk2dmerge(self, omega, dty, scale_factor=None):
+    def pk2dmerge(self, omega, dty, scale_factor=None, omega_wraps=False):
         """
         creates a dictionary of the 3D peaks
         scale_factor: provide scale_factor with same shape as omega/dty
+        omega_wraps: average omega on the circle rather than linearly. Set this
+            when the scan turns more than once, so that the same peak is seen at
+            1 and 361 degrees and omega has been folded into 0-360. See
+            numbapkmerge. dty is a translation and is never treated this way.
         """
         assert omega.shape == dty.shape
         assert omega.size > self.pk_props[4].max()
 
         out = np.zeros((7, self.nlabel), float)
         
-        n = numbapkmerge(self.glabel, self.pk_props, omega, dty, out, scale_factor=scale_factor)
+        n = numbapkmerge(self.glabel, self.pk_props, omega, dty, out,
+                         scale_factor=scale_factor, omega_wraps=omega_wraps)
+        if omega_wraps:
+            omegapk = out[4] % 360.0  # already a mean, and put back in range
+        else:
+            omegapk = out[4] / out[1]
         allpks = {
             "s_raw": out[2] / out[1],
             "f_raw": out[3] / out[1],
-            "omega": out[4] / out[1],
+            "omega": omegapk,
             "Number_of_pixels": out[0],
             "sum_intensity": out[1],
             "dty": out[5] / out[1],
@@ -569,7 +578,8 @@ class pks_table:
         s1, sI, srI, scI, frm = self.pk_props
         s_raw, f_raw, omegapk, dtypk = n_pk2d( s1, sI, srI, scI, frm, omega, dty )
         if scale_factor is not None:
-            sI = sI * scale_factor.flat[frm]
+            # frm may be a float column: fancy indexing needs an int
+            sI = sI * scale_factor.flat[frm.astype(np.intp)]
         allpks = {
             "s_raw": s_raw,
             "f_raw": f_raw,
@@ -617,36 +627,59 @@ if 0:
 
 
 @numba.njit
-def numbapkmerge(labels, pks, omega, dty, out, scale_factor=None):
+def numbapkmerge(labels, pks, omega, dty, out, scale_factor=None, omega_wraps=False):
     """
     for N 2D peaks:
     labels: spot3(4)d_id label of each 2D peak
     pks: pk_props: (5, N) array of (s1, sI, srI, scI, frm) for each 2D peak
     omega, dty, scale_factor: arrays of shape ds.shape (sinogram shape) - indexed by frm
+    omega_wraps: the scan turns more than once, so omega is an angle mod 360 and
+        a peak can have contributions at 1 and 359 degrees. With it set, out[4]
+        holds the running weighted mean angle instead of the weighted sum,
+        updated in the form of Welford's online mean:
+
+            mean += (w / W) * (o - mean)       W = sum of the weights so far
+
+    (B. P. Welford, Technometrics 4(3) 419-420, 1962; Knuth, The Art of Computer
+    Programming Vol 2, 3rd ed, p.232.) Welford's reason is numerical; ours is
+    structural: the update needs the difference o - mean, so that difference can
+    be taken the short way round the circle, and the running mean itself is the
+    reference the unwrapping is measured against. dty is a translation and is
+    never treated as an angle. A cluster spanning more than 180 degrees has no
+    mean angle; nothing here detects that.
     """
     # loop over each 2D peak
     for k in range(len(labels)):
         # get the frame ID of the peak
-        
-        frm = pks[4, k]
+        frm = int(pks[4, k])       # frm may be a float column, index with int
         o = omega.flat[frm]
         y = dty.flat[frm]
+        wt = pks[1, k]  # sI, the weight, only used by the circular mean below
         if scale_factor is not None:
             scale = scale_factor.flat[frm]
+            wt = wt * scale
         j = labels[k]
         out[0, j] += pks[0, k]  # s1 == number of pixels in a peak
         if scale_factor is not None:
             out[1, j] += pks[1, k] * scale  # sI == sum of the intensity
             out[2, j] += pks[2, k] * scale  # srI === sum of intensity * row
             out[3, j] += pks[3, k] * scale  # scI === sum of intensity * column
-            out[4, j] += o * pks[1, k] * scale
             out[5, j] += y * pks[1, k] * scale
         else:
             out[1, j] += pks[1, k]  # sI == sum of the intensity
             out[2, j] += pks[2, k]  # srI === sum of intensity * row
             out[3, j] += pks[3, k]  # scI === sum of intensity * column
-            out[4, j] += o * pks[1, k]
             out[5, j] += y * pks[1, k]
+        if omega_wraps:
+            if out[6, j] == 0:
+                out[4, j] = o  # the first contribution seeds the reference angle
+            else:
+                d = ((o - out[4, j] + 180.0) % 360.0) - 180.0  # short way round
+                out[4, j] += (wt / out[1, j]) * d
+        elif scale_factor is not None:
+            out[4, j] += o * pks[1, k] * scale
+        else:
+            out[4, j] += o * pks[1, k]
         out[6, j] += 1  # s0 == number of 2D peaks
     return k
 
