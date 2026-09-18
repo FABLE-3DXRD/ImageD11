@@ -41,6 +41,31 @@ def fast_invert(mat, res):
         res[...] = np.nan
     else:
         res[...] = np.linalg.inv(mat)
+        
+
+@numba.guvectorize([(numba.float64[:, :], numba.float64[:], numba.float64[:, :])],'(n,n)->(n),(n,n)',nopython=True, cache=True, target='parallel')
+def eig_decomp(mat, eigvals, eigvecs):
+    """
+    eigen-decomposition of a symmetric NxN matrix. for eigen-strain, eigen-stress
+    To use (no need to pre-populate outputs): ``vals, vecs = fast_eig_decomp(mat)``
+    Automatically broadcastable over any higher-order size input array,
+    provided the last dimensions are ``NxN``, e.g ``(100, 100, 5, 3, 3)``.
+    Eigenvalues/eigenvectors are sorted from highest to lowest eigenvalue.
+    NaN input (checked on the [0,0] entry) propagates to NaN outputs.
+    
+    :param mat: The NxN symmetric matrix to decompose
+    :type mat: np.ndarray
+    :return: (eigvals, eigvecs) - eigvals shape (...,N), eigvecs shape (...,N,N)
+             with eigvecs[..., :, k] the eigenvector for eigvals[..., k]
+    :rtype: (np.ndarray, np.ndarray)
+    """
+    if np.isnan(mat[0, 0]):
+        eigvals[...] = np.nan
+        eigvecs[...] = np.nan
+    else:
+        vals, vecs = np.linalg.eigh(mat)  # ascending order
+        eigvals[...] = vals[::-1]
+        eigvecs[...] = vecs[:, ::-1]
 
 
 # take in a nxn float64 array, return a nxn float64 array
@@ -1103,6 +1128,34 @@ class TensorMap:
             self.add_map('eps_devia', eps_devia_map)
             return eps_devia_map
 
+    @property
+    def eps_eigvals(self):
+        """
+        The per-voxel eigenvalues of eps_sample, sorted from highest to lowest.
+        Shape (..., 3)
+        """
+        if 'eps_eigvals' in self.keys():
+            return self.maps['eps_eigvals']
+        else:
+            eigvals, eigvecs = eig_decomp(self.eps_sample)
+            self.add_map('eps_eigvals', eigvals)
+            self.add_map('eps_eigvecs', eigvecs)
+            return eigvals
+
+    @property
+    def eps_eigvecs(self):
+        """
+        The per-voxel eigenvectors of eps_sample, sorted to match eps_eigvals
+        (highest to lowest eigenvalue). Shape (..., 3, 3), columns are eigenvectors.
+        """
+        if 'eps_eigvecs' in self.keys():
+            return self.maps['eps_eigvecs']
+        else:
+            eigvals, eigvecs = eig_decomp(self.eps_sample)
+            self.add_map('eps_eigvals', eigvals)
+            self.add_map('eps_eigvecs', eigvecs)
+            return eigvecs
+
     # TODO - make multiphase - store C map for each voxel
     def get_stress(self, stiffness_tensor, phase_id):
         """
@@ -1185,6 +1238,34 @@ class TensorMap:
             sig_mises_map = sig_to_vm(self.sig_sample)
             self.add_map('sig_mises', sig_mises_map)
             return sig_mises_map
+
+    @property
+    def sig_eigvals(self):
+        """
+        The per-voxel eigenvalues of sig_sample, sorted from highest to lowest.
+        Shape (..., 3)
+        """
+        if 'sig_eigvals' in self.keys():
+            return self.maps['eps_eigvals']
+        else:
+            eigvals, eigvecs = eig_decomp(self.sig_sample)
+            self.add_map('sig_eigvals', eigvals)
+            self.add_map('sig_eigvecs', eigvecs)
+            return eigvals
+
+    @property
+    def sig_eigvecs(self):
+        """
+        The per-voxel eigenvectors of eps_sample, sorted to match eps_eigvals
+        (highest to lowest eigenvalue). Shape (..., 3, 3), columns are eigenvectors.
+        """
+        if 'eps_eigvecs' in self.keys():
+            return self.maps['sig_eigvecs']
+        else:
+            eigvals, eigvecs = eig_decomp(self.sig_sample)
+            self.add_map('sig_eigvals', eigvals)
+            self.add_map('sig_eigvecs', eigvecs)
+            return eigvecs
 
     def grain_mean_tensor(self, map_name='eps_sample', stat='mean', weights=None,
                           nsigma=3.0, n_clip=2, min_voxels=1, symmetrise=True,
