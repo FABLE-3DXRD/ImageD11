@@ -1013,7 +1013,37 @@ def compute_origins(singlemap, sample_mask,
                         q = plo + t
                         sxc = accx[t] / accw[t]
                         syc = accy[t] / accw[t]
-                        lx_modified[q] = sxc * cosomega[q] - syc * sinomega[q]
+                        # The mean is a valid origin only if it is itself a voxel
+                        # that indexes the peak otherwise nan.
+                        ic = int(np.round((sxc - sx_ax[0]) / dsx))
+                        jc = int(np.round((syc - sy_ax[0]) / dsy))
+                        if not (0 <= ic < NI and 0 <= jc < NJ
+                                and sample_mask[ic, jc]):
+                            continue
+                        # (UB)^-1 at the mean position
+                        c00 = singlemap[ic, jc, 0, 0]
+                        if np.isnan(c00):
+                            continue
+                        c01 = singlemap[ic, jc, 0, 1]
+                        c02 = singlemap[ic, jc, 0, 2]
+                        c10 = singlemap[ic, jc, 1, 0]
+                        c11 = singlemap[ic, jc, 1, 1]
+                        c12 = singlemap[ic, jc, 1, 2]
+                        c20 = singlemap[ic, jc, 2, 0]
+                        c21 = singlemap[ic, jc, 2, 1]
+                        c22 = singlemap[ic, jc, 2, 2]
+                        Gx = gve[q, 0]                      # G, eq (5)
+                        Gy = gve[q, 1]
+                        Gz = gve[q, 2]
+                        hf0 = c00 * Gx + c01 * Gy + c02 * Gz
+                        hf1 = c10 * Gx + c11 * Gy + c12 * Gz
+                        hf2 = c20 * Gx + c21 * Gy + c22 * Gz
+                        dh0 = hf0 - np.round(hf0)           # eq (8) residual
+                        dh1 = hf1 - np.round(hf1)
+                        dh2 = hf2 - np.round(hf2)
+                        if dh0 * dh0 + dh1 * dh1 + dh2 * dh2 < tolsq:
+                            lx_modified[q] = (sxc * cosomega[q]
+                                              - syc * sinomega[q])
 
     return lx_modified
 

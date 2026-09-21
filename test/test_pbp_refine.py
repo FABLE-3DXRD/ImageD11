@@ -532,9 +532,24 @@ def compute_origins_ref(case, hkl_tol=0.05, weight_reg=YSTEP / 3.0):
             nclaim[idx] += 1
     lx = np.full(n, np.nan)
     got = accw > 0.0
-    lx[got] = G.sample_to_lab_sincos(accx[got] / accw[got],
-                                     accy[got] / accw[got],
-                                     Y0, dty[got], so[got], co[got])[0]
+    sxc = accx[got] / accw[got]
+    syc = accy[got] / accw[got]
+    # the weighted mean must itself be a voxel that indexes the peak, else
+    # the claiming voxels were multi-modal and their mean means nothing
+    dsx = sx_ax[1] - sx_ax[0]
+    dsy = sy_ax[1] - sy_ax[0]
+    ic = np.round((sxc - sx_ax[0]) / dsx).astype(int)
+    jc = np.round((syc - sy_ax[0]) / dsy).astype(int)
+    ok = (ic >= 0) & (ic < sx_ax.size) & (jc >= 0) & (jc < sy_ax.size)
+    ic = np.clip(ic, 0, sx_ax.size - 1)
+    jc = np.clip(jc, 0, sy_ax.size - 1)
+    ok &= mask[ic, jc]
+    hf = np.einsum('nij,nj->ni', singlemap[ic, jc], gve[got])  # NaN rows fail
+    dh = hf - np.round(hf)
+    ok &= (dh * dh).sum(axis=1) < tolsq
+    idx = np.nonzero(got)[0][ok]
+    lx[idx] = G.sample_to_lab_sincos(sxc[ok], syc[ok],
+                                     Y0, dty[idx], so[idx], co[idx])[0]
     return lx, nclaim
 
 
