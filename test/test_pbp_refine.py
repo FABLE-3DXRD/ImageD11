@@ -530,7 +530,7 @@ def compute_origins_ref(case, hkl_tol=0.05, weight_reg=YSTEP / 3.0):
             accy[idx] += sy_ax[j] * w
             accw[idx] += w
             nclaim[idx] += 1
-    lx = np.zeros(n)
+    lx = np.full(n, np.nan)
     got = accw > 0.0
     lx[got] = G.sample_to_lab_sincos(accx[got] / accw[got],
                                      accy[got] / accw[got],
@@ -722,7 +722,11 @@ class TestOrigins(unittest.TestCase):
         tolerance picked to make the test pass. Measured worst: 1.2 ulp.
         """
         ulp = float(np.spacing(rmax))
-        d = np.abs(lx - ref)
+        nan_l, nan_r = np.isnan(lx), np.isnan(ref)
+        np.testing.assert_array_equal(
+            nan_l, nan_r,
+            err_msg="%sNaN pattern differs from the reference" % label)
+        d = np.abs(np.where(nan_l, 0.0, lx) - np.where(nan_r, 0.0, ref))
         few = nclaim <= 2
         if few.any():
             self.assertEqual(
@@ -746,6 +750,42 @@ class TestOrigins(unittest.TestCase):
         unclaimed -- not almost none."""
         self.assertEqual(int((self.nclaim == 0).sum()), 0)
         self.assertEqual(int(self.nclaim.min()), 1)
+
+    def test_unclaimed_peak_is_nan_not_zero(self):
+        """A peak no voxel can index has NO origin, and must come back NaN.
+
+        0.0 is not available as a sentinel: it is the lab x of the voxel on
+        the rotation axis, and of every voxel twice per turn -- which is why
+        test_single_claim_peaks_give_the_true_voxel refuses to assert lx != 0.
+        A peak left at 0.0 is the positive claim "this diffraction came from
+        the rotation axis". build_refine_inputs then builds it a plausible
+        g-vector, and refine_map can pick it up at any voxel on its ray.
+        """
+        case = dict(self.case)
+        gve = case["gve"].copy()
+        # stretch one peak's g-vector: same direction, so it still lands in
+        # the same (omega, dty) cell and the same voxels are walked, but no
+        # lattice in the map indexes it any more
+        victim = 0
+        gve[victim] = gve[victim] * (1.0 + np.sqrt(2.0) / 10.0)
+        case["gve"] = np.ascontiguousarray(gve)
+
+        lx, _ = self._run(case)
+        ref, nclaim = compute_origins_ref(case)
+
+        # the fixture has to actually produce an unclaimed peak for this to
+        # be testing anything
+        self.assertEqual(int(nclaim[victim]), 0,
+                         "fixture: the stretched peak is still claimed")
+        self.assertTrue(np.isnan(lx[victim]),
+                        "unclaimed peak got %r, expected NaN" % (lx[victim],))
+        self.assertTrue(np.isnan(ref[victim]),
+                        "the reference must agree: got %r" % (ref[victim],))
+        # exactly one peak changed: the NaN set grew by the victim and
+        # nothing else
+        grew = np.isnan(self.lx) | (np.arange(lx.size) == victim)
+        self.assertTrue(np.array_equal(np.isnan(lx), grew),
+                        "the stretched peak was not the only change")
 
     def test_matches_brute_force_reference(self):
         """compute_origins equals the brute-force reference on every peak: bit

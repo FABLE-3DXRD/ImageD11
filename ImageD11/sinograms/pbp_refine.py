@@ -869,7 +869,7 @@ def compute_origins(singlemap, sample_mask,
     npk = sinomega.shape[0]
     NI = sx_ax.shape[0]
     NJ = sy_ax.shape[0]
-    lx_modified = np.zeros(npk, dtype=np.float64)
+    lx_modified = np.full(npk, np.nan, dtype=np.float64)
     W = ystep * ray_margin
 
     # the very original function was checking tolsq. this was a bug.
@@ -1534,7 +1534,11 @@ class PBPRefine:
         # un-permute back to icolf row order
         lx_modified = np.empty_like(lx_perm)
         lx_modified[order] = lx_perm
- 
+        nbad = int(np.isnan(lx_modified).sum())
+        if nbad and verbose:
+            print("%d / %d peaks (%.2f%%) have no valid origin"
+                  % (nbad, lx_modified.size, 100.0 * nbad / lx_modified.size))
+
         self.icolf.addcolumn(lx_modified, 'xpos_refined')
         print('xpos_refined column added to self.icolf')
  
