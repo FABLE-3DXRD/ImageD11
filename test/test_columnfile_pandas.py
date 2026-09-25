@@ -1,8 +1,19 @@
+import subprocess
+import sys
 import unittest
 
 """ Write some test cases for the columnfile stuff """
 
 from ImageD11.columnfile import colfile_to_hdf, PandasColumnfile as columnfile
+
+
+class testlazyimport(unittest.TestCase):
+    def test_columnfile_does_not_import_pandas(self):
+        # pandas is only used by PandasColumnfile, and is slow to import,
+        # so plain columnfile usage should not pay for it
+        code = "import sys; import ImageD11.columnfile; print('pandas' in sys.modules)"
+        out = subprocess.check_output([sys.executable, "-c", code])
+        self.assertEqual(out.strip(), b"False")
 
 class testgeom(unittest.TestCase):
     def setUp(self):
