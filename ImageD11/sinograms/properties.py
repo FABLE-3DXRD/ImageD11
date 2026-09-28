@@ -200,12 +200,12 @@ def props(scan, i, algorithm="lmlabel", wtmax=None):
 
     Labels the peaks with lmlabel
     Assumes a regular scan for labelling frames
-    returns ( row, properties[(s1,sI,sRow,sCol,frame),:], pairs, scan )
+    returns ( row, properties[(s1,sI,sRow,sCol,frame,mxI),:], pairs, scan )
     """
     scan.sinorow = i
     getattr(scan, algorithm)(countall=False)  # labels all the pixels in the scan.
     npks = scan.total_labels
-    r = np.empty((5, npks), np.int64)
+    r = np.empty((6, npks), np.int64)
     s = 0
     j0 = i * scan.shape[0]
     for j in range(scan.shape[0]):
@@ -216,6 +216,9 @@ def props(scan, i, algorithm="lmlabel", wtmax=None):
         # [1:] means skip the background labels == 0 output
         r[0, s:e] = np.bincount(f0.pixels["labels"])[1:]
         wt = f0.pixels["intensity"].astype(np.int64)
+        mxI = np.zeros(scan.nlabels[j] + 1, np.int64)
+        np.maximum.at(mxI, f0.pixels["labels"], wt)
+        r[5, s:e] = mxI[1:]
         if wtmax is not None:
             m = wt > wtmax
             n = m.sum()
@@ -395,7 +398,7 @@ class pks_table:
         rpk[0] = 0
         rpk[1:] = np.cumsum(npk[:, 1] + npk[:, 2])
         self.rpk = self.share("rpk", rpk)
-        self.pk_props = self.share("pk_props", shape=(5, s[0]), dtype=np.int64)
+        self.pk_props = self.share("pk_props", shape=(6, s[0]), dtype=np.int64)
         self.rc = self.share("rc", shape=(3, s[1] + s[2]), dtype=np.int64)
 
     def export(self):
@@ -560,13 +563,17 @@ class pks_table:
             "spot3d_id": np.arange(self.nlabel),  # points back to labels in pk2d
             "npk2d": out[6],
         }
+        if len(self.pk_props) > 5:
+            mxI = np.zeros(self.nlabel)
+            np.maximum.at(mxI, self.glabel, self.pk_props[5])
+            allpks["IMax_int"] = mxI
         return allpks
 
     def pk2d(self, omega, dty, scale_factor=None):
         """
         scale_factor: provide scale_factor with same shape as omega/dty
         """
-        s1, sI, srI, scI, frm = self.pk_props
+        s1, sI, srI, scI, frm = self.pk_props[:5]
         s_raw, f_raw, omegapk, dtypk = n_pk2d( s1, sI, srI, scI, frm, omega, dty )
         if scale_factor is not None:
             sI = sI * scale_factor.flat[frm]
@@ -580,6 +587,8 @@ class pks_table:
             "spot3d_id": self.glabel,
             "frm": frm
         }
+        if len(self.pk_props) > 5:
+            allpks["IMax_int"] = self.pk_props[5]
         return allpks
 
 @numba.njit(parallel=True)
@@ -621,7 +630,7 @@ def numbapkmerge(labels, pks, omega, dty, out, scale_factor=None):
     """
     for N 2D peaks:
     labels: spot3(4)d_id label of each 2D peak
-    pks: pk_props: (5, N) array of (s1, sI, srI, scI, frm) for each 2D peak
+    pks: pk_props: (5 or 6, N) array of (s1, sI, srI, scI, frm) for each 2D peak
     omega, dty, scale_factor: arrays of shape ds.shape (sinogram shape) - indexed by frm
     """
     # loop over each 2D peak
