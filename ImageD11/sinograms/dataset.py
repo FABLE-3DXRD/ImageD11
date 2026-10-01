@@ -84,6 +84,18 @@ def get_rotations_images(omega):
     turn = np.floor((np.arange(len(omega)) + 0.5) * omegastep / 360.0).astype(np.int64)
     return np.bincount(turn - turn.min())
 
+
+def bin_phase(values, step):
+    """Where to put the first bin centre so that the bins line up with values.
+
+    Returns the circular mean of values modulo step, in [0, step). Circular
+    because the residuals pile up at both ends when the bins are nearly right,
+    and a linear mean would then land half a step away from all of them.
+    """
+    r = (np.asarray(values).ravel() % step) * (2 * np.pi / step)
+    phase = np.arctan2(np.sin(r).mean(), np.cos(r).mean()) * step / (2 * np.pi)
+    return phase % step
+
 class DataSet:
     """One DataSet instance per detector!"""
 
@@ -122,7 +134,8 @@ class DataSet:
         "icolfile",
         "pbpfile",
         "y0",
-        "f2scan_dy_domega"
+        "f2scan_dy_domega",
+        "omega_wraps",
     )
     STRINGLISTS = ("scans", "imagefiles", "sparsefiles")
     # sinograms
@@ -152,6 +165,7 @@ class DataSet:
         dtymotor="dty",
         filename=None,
         analysispath=None,
+        omega_wraps=False,
     ):
         """The things we need to know to process data"""
 
@@ -196,6 +210,11 @@ class DataSet:
         self.ybincens = None
         self.obinedges = None
         self.obincens = None
+        # Does the scan turn far enough that omega has to be averaged on the
+        # circle? Default False: a 4D peak is merged linearly. Set it True for
+        # a multi-turn scan (e.g. f2scan), or pass omega_wraps=True here. It is
+        # saved and loaded with the dataset.
+        self.omega_wraps = omega_wraps
 
         self._peaks_table = None
         self._pk2d = None
@@ -530,14 +549,17 @@ class DataSet:
                         else:
                             rotations += [ scan, ]
                     elif title.split()[0] == "f2scan":
-                        # a continuous rotation split into turns. Turn sizes
-                        # come from the omega column (get_rotations_images) and
-                        # the effective step is the measured mean, so the row
-                        # size follows the geometry rather than the setpoint.
-                        # Each row is R frames, where R is the shortest interior
-                        # turn: an interior row can never be short, so only the
-                        # first/last (possibly partial) turn is dropped, and an
-                        # over-long turn sheds its edge frame(s) to reach R.
+                        # a continuous rotation split into turns: the merged
+                        # omega must be averaged on the circle.
+                        self.omega_wraps = True
+                        # Turn sizes come from the omega column
+                        # (get_rotations_images) and the effective step is the
+                        # measured mean, so the row size follows the geometry
+                        # rather than the setpoint. Each row is R frames, where
+                        # R is the shortest interior turn: an interior row can
+                        # never be short, so only the first/last (possibly
+                        # partial) turn is dropped, and an over-long turn
+                        # sheds its edge frame(s) to reach R.
                         om = np.asarray(self.omega[i], float)
                         dty_i = np.asarray(self.dty[i], float)
                         counts = get_rotations_images(om)
@@ -609,20 +631,38 @@ class DataSet:
         if self.obincens is None:
             self.omin = self.omega.min()
             self.omax = self.omega.max()
-            if (self.omax - self.omin) > 360:
-                # multi-turn scan...
-                self.omin = 0.0
-                self.omax = 360.0
-                self.omega_for_bins = self.omega % 360
+            if self.omega_wraps:
+                # Multi-turn scan: every turn falls into one set of bins
+                # covering the circle.
+                # One bin per frame in a turn, because that is the shape the
+                # sinogram has to come out in. A whole number of steps then
+                # closes the circle: binning 0 and 360 is the same angle twice
+                # and the extra bin pushes a frame per turn into its neighbour.
+                nbins = nomega
+                self.ostep = 360.0 / nbins
                 # assume the first scan is representative
                 # if you have different steps in different scans ... that is bad
-                self.ostep = guess_omega_step( self.omega[0] )
-                #                                               include endpoint
-                self.obincens = np.arange(self.omin, self.omax + self.ostep*0.1, self.ostep)
+                measured = guess_omega_step(self.omega[0])
+                if abs(measured - self.ostep) > 0.01 * self.ostep:
+                    logging.warning(
+                        "omega step from the data is %f but %d frames per turn "
+                        "makes it %f. Is the scan shape %s right?"
+                        % (measured, nomega, self.ostep, (self.shape,)))
+                # Put the bins on the data. A frame is an exposure centre, so
+                # it is offset from the requested start by half a step, and
+                # bins anchored at zero then have their edges running through
+                # the middle of the frames.
+                phase = bin_phase(self.omega % 360, self.ostep)
+                self.obincens = phase + np.arange(nbins) * self.ostep
+                self.omin = self.obincens[0]
+                self.omax = self.obincens[-1]
+                # Fold onto the bins rather than onto 0-360, so that a frame
+                # just below the first edge comes back at the top instead of
+                # falling outside.
+                edge0 = phase - self.ostep / 2
+                self.omega_for_bins = (self.omega - edge0) % 360 + edge0
                 if self.obinedges is None:
-                    self.obinedges = np.arange(
-                       self.omin - self.ostep / 2, self.omax + self.ostep / 1.9, self.ostep
-                    )
+                    self.obinedges = edge0 + np.arange(nbins + 1) * self.ostep
             else:
                 self.omega_for_bins = self.omega
                 self.ostep = (self.omax - self.omin) / (nomega - 1)
@@ -631,8 +671,11 @@ class DataSet:
             self.omin = self.obincens[0]
             self.omax = self.obincens[-1]
             self.ostep = np.mean(self.obincens[1:] - self.obincens[:-1])
-            if (self.omax - self.omin)>=360:
-                self.omega_for_bins = self.omega % 360
+            if self.omega_wraps:
+                # Fold onto the same bins built by guessbins, whose first edge
+                # is the fold point (see bin_phase), not a hardcoded 0.
+                edge0 = self.omin - self.ostep / 2
+                self.omega_for_bins = (self.omega - edge0) % 360 + edge0
             else:
                 self.omega_for_bins = self.omega
         if self.obinedges is None: # catches last 3 else here.
@@ -877,8 +920,14 @@ class DataSet:
         if dty is None:
             dty = self.dty
             
-        if (self.omega.max() - self.omega.min()) > 360:
-            om_mod = omega % 360
+        if self.omega_wraps:
+            # Fold onto the same bins guessbins built, not onto 0-360: the
+            # bins do not start at 0 (see bin_phase), and omega here is
+            # normally already self.omega_for_bins, so this must agree with
+            # how that was folded or the histogram range and the data part
+            # company. Idempotent when it already has been.
+            edge0 = self.obinedges[0]
+            om_mod = (omega - edge0) % 360 + edge0
         else:
             om_mod = omega
         
@@ -926,13 +975,22 @@ class DataSet:
     @property
     def pk4d(self):
         if self._pk4d is None:
+            # obinedges[0] is where omega_for_bins was folded to (see
+            # guessbins/bin_phase, usually not 0): the merged omega must come
+            # back in that same frame, or it lands a full turn from its own
+            # frames right at the seam. See pk2dmerge.
+            omega0 = self.obinedges[0] if self.omega_wraps else 0.0
             if self.monitor is not None:
                 # we normalise
                 scale_factor = self.monitor_ref/self.monitor
-                self._pk4d = self.peaks_table.pk2dmerge(self.omega_for_bins, self.dty, scale_factor=scale_factor)
+                self._pk4d = self.peaks_table.pk2dmerge(
+                    self.omega_for_bins, self.dty, scale_factor=scale_factor,
+                    omega_wraps=bool(self.omega_wraps), omega0=omega0)
             else:
                 # don't normalise
-                self._pk4d = self.peaks_table.pk2dmerge(self.omega_for_bins, self.dty)
+                self._pk4d = self.peaks_table.pk2dmerge(
+                    self.omega_for_bins, self.dty,
+                    omega_wraps=bool(self.omega_wraps), omega0=omega0)
         return self._pk4d
 
     def get_spatial_corrector(self):
