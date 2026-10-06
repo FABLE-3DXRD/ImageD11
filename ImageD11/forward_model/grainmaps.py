@@ -113,7 +113,7 @@ class grainmap:
                 tensor_map_flag = True
         
         print('********************* Converting to DS format *****************************')
-        keys_list = ['B', 'U', 'UB', 'UBI', 'eps_sample', 'euler', 'ipf_x', 'ipf_y', 'ipf_z', 'mt', 'nuniq', 'phase_ids', 'unitcell', 'intensity', 'labels']
+        keys_list = ['B', 'U', 'UB', 'UBI', 'eps_sample', 'euler', 'ipf_x', 'ipf_y', 'ipf_z', 'mt', 'nuniq', 'phase_ids', 'unitcell', 'intensity', 'labels', 'completeness']
         if tensor_map_flag:
             # it reads directly as a tensor map
             DS = {}
@@ -347,6 +347,64 @@ def DS_remove_small_grains(DS, min_vol = 2):
     return DS_out
 
 
+def DS_segment_low_completeness(DS, min_completeness=0.3):
+    """
+    Remove indexed voxel below a completeness threshold.
+    Args:
+        DS:
+            DS grain-map dictionary.
+        min_completeness:
+            Minimum completeness value to retain a voxel.
+    Returns:
+        DS_out:
+            Filtered DS grain-map dictionary.
+    """
+    import copy
+    assert 'completeness' in DS.keys(), "completeness must be in DS keys"
+    assert 'mask' in DS.keys(), "mask must be in DS keys"
+
+    DS_out = {}
+    for key, value in DS.items():
+        DS_out[key] = value.copy() if isinstance(value, np.ndarray) else copy.deepcopy(value)
+
+    completeness = DS['completeness']
+    sample_mask = DS['mask']
+    if sample_mask.ndim == 2 and completeness.ndim == 3:
+        sample_mask = sample_mask[np.newaxis, :, :]
+    if sample_mask.shape != completeness.shape:
+        raise ValueError("Mask shape {} does not match completeness shape {}.".format(sample_mask.shape, completeness.shape))
+
+    low_comp_mask = sample_mask & np.isfinite(completeness) & (completeness < min_completeness)
+    ind = np.where(low_comp_mask)
+
+    keys_to_zero = ['completeness', 'ipf_x', 'ipf_y', 'ipf_z']
+    keys_to_minus1 = ['labels', 'phase_ids']
+
+    for key in keys_to_zero:
+        if key in DS_out.keys():
+            DS_out[key][ind] = 0
+
+    for key in keys_to_minus1:
+        if key in DS_out.keys():
+            DS_out[key][ind] = -1
+
+    for key, value in DS_out.items():
+        if key == 'mask' or key in keys_to_zero or key in keys_to_minus1:
+            continue
+        if not isinstance(value, np.ndarray) or value.ndim < completeness.ndim:
+            continue
+        if value.shape[:completeness.ndim] != completeness.shape:
+            continue
+        if not np.issubdtype(value.dtype, np.floating) and not np.issubdtype(value.dtype, np.complexfloating):
+            value = value.astype(np.float64)
+        value[ind] = np.nan
+        DS_out[key] = value
+
+    print('Found and removed {} voxels with completeness below {}.'.format(len(ind[0]), min_completeness))
+
+    return DS_out
+
+    
 def DS_clean_small_grains(DS, min_vol = 6, FirstGrainID = 0, dis_tol = np.sqrt(3), min_misori = 3.0, crystal_system = 'cubic', relabel_disconnected = False, connectivity = 2, verbose = 0):
     """
     Clean small grains defined by no bigger than min_vol voxels
