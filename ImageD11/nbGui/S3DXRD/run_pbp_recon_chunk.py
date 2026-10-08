@@ -15,7 +15,7 @@ def load_config(config_path):
             key, val = line.split('=', 1)
             if key == 'forgen':
                 val = [int(x) for x in val.split(',')]
-            elif key in {'y0', 'hkl_tol', 'ds_tol', 'cosine_tol', 'uniqcut'}:
+            elif key in {'y0', 'hkl_tol', 'ds_tol', 'cosine_tol', 'uniqcut', 'uniqueness'}:
                 val = float(val)
             elif key in {'minpks', 'nprocs', 'hmax'}:
                 val = int(val)
@@ -37,6 +37,7 @@ def run_chunk(config_path, indices_path, grains_file):
         'parfile': config['parfile'],
         'dset': dset,
         'hkl_tol': config['hkl_tol'],
+        'uniqueness': config.get('uniqueness', 0.5),  # absent in older configs
         'fpks': config['minpks'],
         'ds_tol': config['ds_tol'],
         'cosine_tol': config['cosine_tol'],
