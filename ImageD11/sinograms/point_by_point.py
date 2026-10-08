@@ -351,7 +351,7 @@ def idxpoint(si, sj,
     idx_buf, ydist_buf, sel_buf,
     ystep=2.00, y0=0.0, ymin=-2.00, minpks=1000, hkl_tol=0.1,
     ds_tol=0.005, cosine_tol=np.cos(np.radians(90 - 0.1)), forgen=None, hmax=-1,
-    uniqcut=0.75, relax_mask=False):
+    uniqcut=0.75, relax_mask=False, uniqueness=0.5):
     """Indexing function called at one point in space.
     
     Selects peaks from the sinogram and attempts to index.
@@ -392,6 +392,12 @@ def idxpoint(si, sj,
         Unique peaks cutoff (uniq> ucut * max are returned), by default 0.75
     relax_mask, optional
         Use previously-used stricter predicate for ydist, by default False
+    uniqueness, optional
+        indexer.uniqueness: an orientation is kept only if more than this
+        fraction of its peaks are not already claimed by an orientation
+        accepted earlier at this point. 0.5 (default) rejects duplicates, but
+        a Sigma3 twin shares ~1/3 of its reflections with the parent, so it
+        can reject the second member of a twin pair too.
 
     Returns
     -------
@@ -438,6 +444,7 @@ def idxpoint(si, sj,
     ind.hkl_tol = hkl_tol
     ind.cosine_tol = cosine_tol  # degrees
     ind.ds_tol = ds_tol
+    ind.uniqueness = uniqueness
     try:
         ind.assigntorings()
     except ValueError:
@@ -568,15 +575,18 @@ class PBP:
             foridx=None,
             forgen=None,
             uniqcut=0.75,
-            phase_name=None
+            phase_name=None,
+            uniqueness=0.5,
     ):
         """
         parfile = ImageD11 parameter file (for the unit cell + geometry)
         dsname = name of dset file, or object with "ybincens" array
+        uniqueness = indexer.uniqueness at each point (see idxpoint).
         """
         self.parfile = parfile
         self.dset = dset
         self.hkl_tol = hkl_tol
+        self.uniqueness = uniqueness
         self.fpks = fpks
         self.ds_tol = ds_tol
         self.etacut = etacut
@@ -779,6 +789,7 @@ class PBP:
             f.write("icolf_filename={}\n".format(self.icolf_filename))
             f.write("y0={}\n".format(self.y0))
             f.write("hkl_tol={}\n".format(self.hkl_tol))
+            f.write("uniqueness={}\n".format(self.uniqueness))
             f.write("ds_tol={}\n".format(self.ds_tol))
             f.write("cosine_tol={}\n".format(self.cosine_tol))
             f.write("minpks={}\n".format(self.minpks))
@@ -901,6 +912,7 @@ OMP_NUM_THREADS=1 PYTHONPATH={id11_code_path} python {python_script_path} \
             "ymin": self.ymin,
             "minpks": self.minpks,
             "hkl_tol": self.hkl_tol,
+            "uniqueness": self.uniqueness,
             "ds_tol": self.ds_tol,
             "cosine_tol": self.cosine_tol,
             "forgen": self.forgen,
