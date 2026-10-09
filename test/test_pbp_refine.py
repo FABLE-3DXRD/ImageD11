@@ -553,7 +553,7 @@ class TestOrigins(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.case = cls._make_case()
-        cls.lx, _ = cls._run(cls.case)
+        cls.lx, _, cls.found = cls._run(cls.case)
         cls.ref, cls.nclaim = compute_origins_ref(cls.case)
 
     # ---------------------------------------------------------- fixture
@@ -665,7 +665,7 @@ class TestOrigins(unittest.TestCase):
         part = M.build_partition(PartitionInput(case, ymin),
                                  omega_binsize=omega_binsize, verbose=False)
         order = part["order"]
-        lx_perm = M.compute_origins(
+        lx_perm, found_perm = M.compute_origins(
             case["singlemap"], case["mask"],
             np.ascontiguousarray(case["gve"][order]),
             np.ascontiguousarray(np.sin(np.radians(case["omega"]))[order]),
@@ -681,7 +681,9 @@ class TestOrigins(unittest.TestCase):
             int(np.diff(part["dty_partitions"], axis=1).max()), nchunks)
         lx = np.empty(case["npk"])
         lx[order] = lx_perm
-        return lx, part
+        found = np.empty(case["npk"], dtype=np.int8)
+        found[order] = found_perm
+        return lx, part, found
 
     # ---------------------------------------------------------- tests
     def test_forward_model_indexes(self):
@@ -747,6 +749,11 @@ class TestOrigins(unittest.TestCase):
         self.assertEqual(int((self.nclaim == 0).sum()), 0)
         self.assertEqual(int(self.nclaim.min()), 1)
 
+    def test_origin_found_flag(self):
+        """origin_found is 1 exactly where the reference has a claimant."""
+        np.testing.assert_array_equal(self.found,
+                                      (self.nclaim > 0).astype(np.int8))
+
     def test_matches_brute_force_reference(self):
         """compute_origins equals the brute-force reference on every peak: bit
         for bit where at most two voxels claimed it, and within 2 ulp of rmax
@@ -796,7 +803,7 @@ class TestOrigins(unittest.TestCase):
         the result must not depend on how the work is split."""
         for nch in (1, 2, 3, 7):
             with self.subTest(nchunks=nch):
-                lx, _ = self._run(self.case, nchunks=nch)
+                lx, _, _ = self._run(self.case, nchunks=nch)
                 self.assertTrue(
                     np.array_equal(lx, self.ref),
                     "max |dx| %.3g vs the brute-force reference"
@@ -810,7 +817,7 @@ class TestOrigins(unittest.TestCase):
         VoxelSinoMasker's own heuristic, which is what production uses."""
         for bs in (0.5, 1.0, 2.0, 5.0, 360.0, "auto"):
             with self.subTest(omega_binsize=bs):
-                lx, part = self._run(self.case, omega_binsize=bs)
+                lx, part, _ = self._run(self.case, omega_binsize=bs)
                 self._assert_matches_reference(
                     lx, self.ref, self.nclaim, self.case["rmax"],
                     label="binsize %s (ray_margin %.2f): "
@@ -829,7 +836,7 @@ class TestOrigins(unittest.TestCase):
                             ("dty.min() - 17.5 ystep", d0 - 17.5 * YSTEP),
                             ("half-scan pad, 200 ystep", d0 - 200.0 * YSTEP)):
             with self.subTest(ymin=label):
-                lx, part = self._run(self.case, ymin=ymin)
+                lx, part, _ = self._run(self.case, ymin=ymin)
                 self.assertTrue(
                     np.array_equal(lx, self.ref),
                     "%d peaks differ with ymin = %s (%d dty bins)"
@@ -851,7 +858,7 @@ class TestOrigins(unittest.TestCase):
         really sqrt(0.05) = 0.224."""
         multi = {}
         for tol in (0.02, 0.05, 0.10, 0.20):
-            lx, _ = self._run(self.case, hkl_tol=tol)
+            lx, _, _ = self._run(self.case, hkl_tol=tol)
             ref, nclaim = compute_origins_ref(self.case, hkl_tol=tol)
             multi[tol] = float((nclaim > 1).mean())
             with self.subTest(hkl_tol=tol):
@@ -872,7 +879,7 @@ class TestOrigins(unittest.TestCase):
         voxel. Still exact against the reference, still every peak claimed,
         and the mean should sit on the truth rather than beside it."""
         case = self._make_case(one_grain_per_voxel=False)
-        lx, _ = self._run(case)
+        lx, _, _ = self._run(case)
         ref, nclaim = compute_origins_ref(case)
         self._assert_matches_reference(lx, ref, nclaim, case["rmax"])
         self.assertEqual(int((nclaim == 0).sum()), 0)
