@@ -426,7 +426,7 @@ def predict_spots(ubi, translation, pars, ds_max, shape, e2dx=None, e2dy=None, o
 # ------------------------------------------------------------------------------------- integration kernel
 # accumulator columns for each (reflection, scan)
 ACC = ['box', 'bg', 'var', 'nframes', 'ms', 'mf', 'mw', 'mss', 'mff', 'mww', 'nclip', 'I_adj_mask', 'maxval',
-       'nbgpix']
+       'nbgpix', 'nnz']
 NACC = len(ACC)
 _I = dict((k, i) for i, k in enumerate(ACC))
 
@@ -472,11 +472,13 @@ def _integrate_frame(idx, vals, nfast, adj, spots, s0, f0, hs, hf, bw, nbox, nan
         bff = 0.0
         badj = 0.0
         vmax = 0.0
+        nnz = 0.0
         for p in range(lo, hi):
             r = idx[p] // nfast
             c = idx[p] - r * nfast
             if c < c0 or c > c1:
                 continue
+            nnz += 1.0
             v = vals[p]
             ds_ = r - s0[k]
             df_ = c - f0[k]
@@ -536,6 +538,7 @@ def _integrate_frame(idx, vals, nfast, adj, spots, s0, f0, hs, hf, bw, nbox, nan
         if vmax > acc[k, 12]:
             acc[k, 12] = vmax
         acc[k, 13] += nused
+        acc[k, 14] += nnz
 
 
 @numba.njit(cache=True)
@@ -890,7 +893,8 @@ class Harvester(object):
     def merged(self):
         """Per-reflection results (dict of arrays): I (net), sigI, bg, box, nscans, nframes, centroid
         (s, f, omega) and its distortion-corrected (sc, fc), rms widths (sig_s, sig_f, sig_omega), the
-        prediction, and the flags n_masked, touch_mask, edge, I_adj_mask, nclip."""
+        prediction, the flags n_masked, touch_mask, edge, I_adj_mask, nclip, and nnz (non-zero pixels read in
+        the box and annulus over all frames: the size of a sparse copy of the spots)."""
         sp, t = self.spots, self.results['total']
         out = dict((k, sp[k]) for k in ('grain', 'h', 'k', 'l', 'ds', 'tth', 'eta', 'omega', 's', 'f', 'sc', 'fc',
                                         'n_masked', 'touch_mask', 'edge', 'n_overlap'))
@@ -905,6 +909,7 @@ class Harvester(object):
         out['nclip'] = t[:, _I['nclip']]
         out['I_adj_mask'] = t[:, _I['I_adj_mask']]
         out['maxval'] = t[:, _I['maxval']]
+        out['nnz'] = t[:, _I['nnz']]
         with np.errstate(divide='ignore', invalid='ignore'):
             ds_ = t[:, _I['ms']] / I
             df_ = t[:, _I['mf']] / I
