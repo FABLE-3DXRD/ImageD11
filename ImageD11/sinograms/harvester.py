@@ -57,6 +57,7 @@ The pieces
 
 from __future__ import print_function, division
 
+import math
 import os
 import time
 import multiprocessing
@@ -568,6 +569,40 @@ def _count_overlaps(order, key, wf, s0, f0, hs, hf, ho, grain, dty, rad, ncf, wm
     return out
 
 
+@numba.njit(cache=True)
+def _overlap_contamination(key, wf, s, f, s0, f0, hs, hf, ho, sig_s, sig_f, sig_w, grain, dty, rad, I, ncf, wmax):
+    """for reflections sorted by (grid cell, omega): intensity of other grains' reflections expected inside each box,
+    sum_j max(I_j, 0) * (fraction of j's Gaussian profile, widths sig_*, inside i's box)"""
+    n = key.shape[0]
+    out = np.zeros(n)
+    nmax = np.zeros(n)
+    for i in range(n):
+        for dc in (-ncf - 1, -ncf, -ncf + 1, -1, 0, 1, ncf - 1, ncf, ncf + 1):
+            kk = key[i] + dc
+            lo = np.searchsorted(key, kk)
+            hi = np.searchsorted(key, kk + 1)
+            if hi <= lo:
+                continue
+            a = lo + np.searchsorted(wf[lo:hi], wf[i] - wmax)
+            b = lo + np.searchsorted(wf[lo:hi], wf[i] + wmax, side='right')
+            for j in range(a, b):
+                if j == i or grain[j] == grain[i] or I[j] <= 0:
+                    continue
+                if abs(dty[j] - dty[i]) >= rad[i] + rad[j]:
+                    continue
+                fr = 1.0
+                for c, w, sg, h in ((s[j] - s0[i], 0.0, sig_s[j], hs[i]), (f[j] - f0[i], 0.0, sig_f[j], hf[i]),
+                                    (wf[j] - wf[i], 0.0, sig_w[j], ho[i])):
+                    lo_ = (-h - 0.5 - c) / (np.sqrt(2.0) * sg)
+                    hi_ = (h + 0.5 - c) / (np.sqrt(2.0) * sg)
+                    fr *= 0.5 * (math.erf(hi_) - math.erf(lo_))
+                if fr > 1e-4:
+                    out[i] += fr * I[j]
+                    if fr * I[j] > nmax[i]:
+                        nmax[i] = fr * I[j]
+    return out, nmax
+
+
 def _box_sums(integral, s0, f0, hs, hf):
     """sums of an image over the boxes [s0-hs, s0+hs] x [f0-hf, f0+hf] from its integral image"""
     H, W = integral.shape[0] - 1, integral.shape[1] - 1
@@ -738,6 +773,35 @@ class Harvester(object):
         else:
             self._adj = np.zeros(int(np.prod(shape)), np.uint8)
         self._good = good
+
+    def overlap_contamination(self, I, sigmas=None):
+        """Intensity from other grains' reflections expected inside each box, from the harvested intensities I
+        (one per reflection, e.g. merged()['I']): sum over overlapping reflections j of max(I_j, 0) times the
+        fraction of j's Gaussian profile inside this box (widths from the ShoeboxModel, or box / (2 * 3)).
+        Returns (contamination, largest single contribution); compare with I and sigI."""
+        sp = self.spots
+        step = self.omega_step()
+        if sigmas is None:
+            if hasattr(self.box, 'sigmas'):
+                sigmas = self.box.sigmas(sp, self.pars, step)
+            else:
+                sigmas = (sp['hs'] / 3.0, sp['hf'] / 3.0, sp['ho'] / 3.0)
+        sig_s, sig_f, sig_w = [np.maximum(np.asarray(x, float), 0.3) for x in sigmas]
+        T = np.array([g.translation for g in self.grains], float)
+        g = sp['grain']
+        w = np.radians(sp['omega'])
+        dty = self.ds.y0 - T[g, 0] * np.sin(w) - T[g, 1] * np.cos(w)
+        cell = int(2 * max(sp['hs'].max(), sp['hf'].max()) + 1)
+        cs, cf = sp['s0'] // cell, sp['f0'] // cell
+        ncf = int(cf.max()) + 3
+        key = (cs + 1) * ncf + (cf + 1)
+        wf = sp['omega'] / step
+        o = np.lexsort((wf, key))
+        c, cmax = _overlap_contamination(key[o], wf[o], sp['s'][o], sp['f'][o], sp['s0'][o], sp['f0'][o], sp['hs'][o],
+                                         sp['hf'][o], sp['ho'][o], sig_s[o], sig_f[o], sig_w[o], g[o], dty[o],
+                                         self.radius[g][o], np.asarray(I, float)[o], ncf, int(2 * sp['ho'].max()))
+        inv = np.argsort(o)
+        return c[inv], cmax[inv]
 
     # ---------------------------------------------------------------- planning
     def plan_scan(self, iscan):
