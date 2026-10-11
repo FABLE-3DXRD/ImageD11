@@ -99,6 +99,30 @@ class testtransform(unittest.TestCase):
         self.assertAlmostEqual( np.abs(fc - self.peaks[1]).sum(), 0, 5 )
 
 
+    def test_origin(self):
+        """per-ray origin gives the same as the equivalent t_x, t_y, t_z translation, and as a per-peak distance"""
+        kw = dict(y_center=1032., y_size=0.05, tilt_y=0.001,
+                  z_center=1024., z_size=0.047, tilt_z=-0.002,
+                  distance=112.345, wedge=0.3, chi=0.2)
+        omega = np.linspace(-720, 720, len(self.peaks[0]))
+        t_x, t_y, t_z = 0.1, 0.2, 0.3
+        tth, eta = transform.compute_tth_eta(self.peaks, omega=omega, t_x=t_x, t_y=t_y, t_z=t_z, **kw)
+        go = transform.compute_grain_origins(omega, wedge=kw['wedge'], chi=kw['chi'], t_x=t_x, t_y=t_y, t_z=t_z)
+        fc0, sc0 = transform.compute_xyz_from_tth_eta(tth, eta, omega, t_x=t_x, t_y=t_y, t_z=t_z, **kw)
+        fc1, sc1 = transform.compute_xyz_from_tth_eta(tth, eta, omega, origin=go, **kw)
+        self.assertAlmostEqual(np.abs(sc0 - sc1).max(), 0, 8)
+        self.assertAlmostEqual(np.abs(fc0 - fc1).max(), 0, 8)
+        # a single x origin for all rays is the same as a per-peak distance
+        ox = np.linspace(-1., 1., len(tth))
+        o = np.zeros((3, len(tth)))
+        o[0] = ox
+        fc, sc = transform.compute_xyz_from_tth_eta(tth, eta, None, origin=o, **kw)
+        k2 = {k: v for k, v in kw.items() if k not in ('wedge', 'chi', 'distance')}
+        xyz = transform.compute_xyz_lab(np.array([sc, fc]), distance=kw['distance'] - ox, **k2)
+        t3, e3 = transform.compute_tth_eta_from_xyz(xyz, None)
+        self.assertAlmostEqual(np.abs(t3 - tth).max(), 0, 8)
+        self.assertAlmostEqual(np.abs(e3 - eta).max(), 0, 8)
+
 
 if __name__=="__main__":
     unittest.main()
