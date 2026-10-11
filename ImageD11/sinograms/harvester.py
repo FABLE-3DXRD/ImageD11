@@ -67,6 +67,7 @@ import h5py
 import numba
 
 import ImageD11.transform
+import ImageD11.blobcorrector
 import ImageD11.unitcell
 import ImageD11.columnfile
 
@@ -326,58 +327,28 @@ def lab_x(translation, omega):
     return translation[0] * np.cos(w) - translation[1] * np.sin(w)
 
 
+def _no_translation(pars):
+    """pars without the sample translation, which is handled by the per-ray origin"""
+    return {k: v for k, v in pars.items() if k not in ('t_x', 't_y', 't_z')}
+
+
 def detector_position(tth, eta, origin_x, pars):
-    """Corrected detector pixel (sc, fc) of rays (tth, eta) leaving the lab point (origin_x, 0, 0); origin_x
-    may be an array (one per ray). Ray / detector-plane intersection with the plane from compute_xyz_lab."""
-    p = dict(pars)
-    rtth, reta = np.radians(tth), np.radians(eta)
-    xyz = np.array([np.cos(rtth), -np.sin(rtth) * np.sin(reta), np.sin(rtth) * np.cos(reta)])
-    pk = ImageD11.transform.compute_xyz_lab(np.array([(1, 0), (0, 1), (0, 0)], float).T, **p)
-    d_s, d_f, d_o = pk[:, 0] - pk[:, 2], pk[:, 1] - pk[:, 2], pk[:, 2]
-    origin = np.zeros((3, np.size(tth)))
+    """Corrected detector pixel (sc, fc) of rays (tth, eta) leaving the lab point (origin_x, 0, 0);
+    origin_x may be an array (one per ray)."""
+    tth = np.asarray(tth, float)
+    origin = np.zeros((3, tth.size))
     origin[0] = origin_x
-    o = d_o[:, None] - origin                     # detector origin pixel, seen from each ray's origin
-    norm = np.cross(d_s, d_f).dot(xyz)
-    sc = np.einsum('ij,ij->j', np.cross(d_f[:, None], o, axis=0), xyz) / norm
-    fc = np.einsum('ij,ij->j', np.cross(o, d_s[:, None], axis=0), xyz) / norm
+    fc, sc = ImageD11.transform.compute_xyz_from_tth_eta(tth, eta, None, origin=origin, **_no_translation(pars))
     return sc, fc
 
 
 def tth_eta_from_pixels(sc, fc, origin_x, pars):
     """tth, eta of corrected pixels (sc, fc) for diffraction origins (origin_x, 0, 0): compute_xyz_lab with
     a per-peak distance, as in point_by_point"""
-    p = dict(pars)
+    p = _no_translation(pars)
     p['distance'] = pars['distance'] - np.asarray(origin_x, float)
     xyz = ImageD11.transform.compute_xyz_lab(np.array([sc, fc], float), **p)
     return ImageD11.transform.compute_tth_eta_from_xyz(xyz, None)
-
-
-def invert_distortion(sc, fc, e2dx, e2dy, iterations=5):
-    """Raw (s, f) pixel positions from distortion-corrected (sc, fc): corrected = raw + d(raw)"""
-    if e2dx is None:
-        return sc.copy(), fc.copy()
-    s, f = sc.copy(), fc.copy()
-    ns, nf = e2dx.shape
-    for _ in range(iterations):
-        i = np.clip(np.round(s).astype(int), 0, ns - 1)
-        j = np.clip(np.round(f).astype(int), 0, nf - 1)
-        s, f = sc - e2dy[i, j], fc - e2dx[i, j]
-    return s, f
-
-
-def correct_distortion(s, f, e2dx, e2dy):
-    """Distortion-corrected (sc, fc) from raw (s, f), bilinear in the maps"""
-    if e2dx is None:
-        return s.copy(), f.copy()
-    ns, nf = e2dx.shape
-    s0 = np.clip(np.floor(s).astype(int), 0, ns - 2)
-    f0 = np.clip(np.floor(f).astype(int), 0, nf - 2)
-    ds_, df_ = np.clip(s - s0, 0, 1), np.clip(f - f0, 0, 1)
-
-    def interp(m):
-        return ((1 - ds_) * (1 - df_) * m[s0, f0] + ds_ * (1 - df_) * m[s0 + 1, f0] +
-                (1 - ds_) * df_ * m[s0, f0 + 1] + ds_ * df_ * m[s0 + 1, f0 + 1])
-    return s + interp(e2dy), f + interp(e2dx)
 
 
 def predict_spots(ubi, translation, pars, ds_max, shape, e2dx=None, e2dy=None, omega_range=None, margin=10):
@@ -418,7 +389,7 @@ def predict_spots(ubi, translation, pars, ds_max, shape, e2dx=None, e2dy=None, o
         om = np.where((om < lo), om + 360, np.where(om > hi, om - 360, om))
         hkl, dsv, tth, eta, om = hkl[k], dsv[k], tth[k], eta[k], om[k]
     sc, fc = detector_position(tth, eta, lab_x(translation, om), pars)
-    s, f = invert_distortion(sc, fc, e2dx, e2dy)
+    s, f = ImageD11.blobcorrector.invert_dxdy(sc, fc, e2dx, e2dy)
     on = (s > -margin) & (s < shape[0] + margin) & (f > -margin) & (f < shape[1] + margin)
     return dict(h=hkl[on, 0], k=hkl[on, 1], l=hkl[on, 2], ds=dsv[on], tth=tth[on], eta=eta[on],
                 omega=om[on], sc=sc[on], fc=fc[on], s=s[on], f=f[on])
@@ -985,7 +956,7 @@ class Harvester(object):
             out['sig_f'] = np.sqrt(np.maximum(t[:, _I['mff']] / I - df_ ** 2, 0))
             out['sig_omega'] = np.sqrt(np.maximum(t[:, _I['mww']] / I - dw_ ** 2, 0))
         ok = np.isfinite(out['s']) & np.isfinite(out['f'])
-        sc, fc = correct_distortion(np.where(ok, out['s'], 0), np.where(ok, out['f'], 0), self.e2dx, self.e2dy)
+        sc, fc = ImageD11.blobcorrector.correct_dxdy_bilinear(np.where(ok, out['s'], 0), np.where(ok, out['f'], 0), self.e2dx, self.e2dy)
         out['sc'] = np.where(ok, sc, np.nan)
         out['fc'] = np.where(ok, fc, np.nan)
         return out
