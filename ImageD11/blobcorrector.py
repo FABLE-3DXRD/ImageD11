@@ -336,6 +336,40 @@ def get_e2dx_from_h5(h5file, detector='eiger'):
     e2dx = pxf - f
     return e2dx, e2dy
 
+def invert_dxdy(sc, fc, dx, dy, iterations=5):
+    """Raw (s, f) pixel positions from distortion corrected (sc, fc), where
+    corrected = raw + d(raw), dx/dy being the fast/slow displacement maps
+    (e2dx, e2dy). The maps are looked up at the nearest pixel, as in detector_spatial.
+    If dx is None there is no distortion and the input is returned (copied)."""
+    sc = numpy.asarray(sc, float)
+    fc = numpy.asarray(fc, float)
+    if dx is None:
+        return sc.copy(), fc.copy()
+    s, f = sc.copy(), fc.copy()
+    ns, nf = dx.shape
+    for _ in range(iterations):
+        i = numpy.clip(numpy.round(s).astype(int), 0, ns - 1)
+        j = numpy.clip(numpy.round(f).astype(int), 0, nf - 1)
+        s, f = sc - dy[i, j], fc - dx[i, j]
+    return s, f
+
+def correct_dxdy_bilinear(s, f, dx, dy):
+    """Distortion corrected (sc, fc) from raw (s, f), with the dx/dy maps
+    interpolated bilinearly (detector_spatial uses the nearest pixel).
+    If dx is None there is no distortion and the input is returned (copied)."""
+    s = numpy.asarray(s, float)
+    f = numpy.asarray(f, float)
+    if dx is None:
+        return s.copy(), f.copy()
+    ns, nf = dx.shape
+    s0 = numpy.clip(numpy.floor(s).astype(int), 0, ns - 2)
+    f0 = numpy.clip(numpy.floor(f).astype(int), 0, nf - 2)
+    ds_, df_ = numpy.clip(s - s0, 0, 1), numpy.clip(f - f0, 0, 1)
+    def interp(m):
+        return ((1 - ds_) * (1 - df_) * m[s0, f0] + ds_ * (1 - df_) * m[s0 + 1, f0] +
+                (1 - ds_) * df_ * m[s0, f0 + 1] + ds_ * df_ * m[s0 + 1, f0 + 1])
+    return s + interp(dy), f + interp(dx)
+
 class detector_spatial(object):
     def __init__(self,
                  dxfile="/data/id11/nanoscope/Eiger/spatial_20210415_JW/e2dx.edf",
@@ -368,11 +402,19 @@ class detector_spatial(object):
             pks['sc'] = self.dy[ si, fi ] + pks['s_raw']
         return pks
     
+    def correct_bilinear(self, s, f):
+        """ (sc, fc) for raw (s, f) arrays, dx/dy interpolated bilinearly """
+        return correct_dxdy_bilinear(s, f, self.dx, self.dy)
+
+    def distort(self, sc, fc, iterations=5):
+        """ raw (s, f) for corrected (sc, fc) arrays (inverse of the correction) """
+        return invert_dxdy(sc, fc, self.dx, self.dy, iterations=iterations)
+
     def pixel_lut(self):
         """ returns (slow, fast) pixel postions of an image """
         s = self.dx.shape
         i, j = numpy.mgrid[ 0:s[0], 0:s[1] ]
-        return self.dy + j, self.dx + i
+        return self.dy + i, self.dx + j
 
 eiger_spatial = detector_spatial
 
