@@ -196,7 +196,9 @@ useful = [   # stuff you probably want, and should be able to get easily
     'pyopengl ; python_version >= "3"',
     "pyopengltk",  # plot3d in tkGui
     "scipy",       #
-    'hdf5plugin==1.4.1 ; python_version < "3"',   #  and sys_platform == "win32" ',
+    'hdf5plugin==1.4.1 ; python_version < "3" and sys_platform == "win32"',
+    # 1.4.1 cannot create bitshuffle datasets with h5py 2.10 / HDF5 1.10.4 on linux; 2.3.2 is the last for python 2
+    'hdf5plugin ; python_version < "3" and sys_platform != "win32"',
     'hdf5plugin ; python_version >= "3" ',
     'h5py',
     'pyyaml',
