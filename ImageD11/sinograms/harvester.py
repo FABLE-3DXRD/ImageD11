@@ -215,7 +215,7 @@ def fit_shoebox_model(outfile, pars, model=None, min_snr=30.0, sin_eta_min=0.3, 
         good &= np.abs(np.sin(np.radians(sp['eta'][spot]))) >= sin_eta_min
         rows = np.flatnonzero(good)
         if len(rows) > nmax:
-            rows = np.sort(np.random.default_rng(seed).choice(rows, nmax, replace=False))
+            rows = np.sort(np.random.RandomState(seed).choice(rows, nmax, replace=False))
         mom = dict((k, ps[k][()][rows]) for k in ('ms', 'mss', 'mf', 'mff', 'mw', 'mww'))
         step = omega_step
         if step is None and 'box_omega_step' in h.attrs:

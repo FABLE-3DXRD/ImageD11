@@ -10,7 +10,7 @@ class test_dxdy(unittest.TestCase):
         self.dy = 0.3 * np.cos(s / 30.) - 0.002 * f      # slow
 
     def test_invert(self):
-        rng = np.random.default_rng(1)
+        rng = np.random.RandomState(1)
         s = rng.uniform(5, 190, 500)
         f = rng.uniform(5, 290, 500)
         sc, fc = blobcorrector.correct_dxdy_bilinear(s, f, self.dx, self.dy)
