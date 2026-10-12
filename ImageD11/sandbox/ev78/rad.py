@@ -38,8 +38,8 @@ class fourier_radial(object):
         # dimensions?
         cth = numpy.cos( self.theta ) # 1D
         sth = numpy.sin( self.theta ) # 1D
-        ia = numpy.round(numpy.outer( cth, xv )).astype(numpy.int).ravel()
-        ja = numpy.round(numpy.outer( sth, xv )).astype(numpy.int).ravel()
+        ia = numpy.round(numpy.outer( cth, xv )).astype(int).ravel()
+        ja = numpy.round(numpy.outer( sth, xv )).astype(int).ravel()
         on = numpy.ones(ja.shape,numpy.float32)
         jm = numpy.where(ja < 0, -on, on)
         numpy.multiply( ia, jm, ia ) #  if j<0: i=-i
@@ -54,7 +54,7 @@ class fourier_radial(object):
         # This is now more dense - bincount?
         # closest.put_incr( nim , inds, wons )
         nim[inds] += wons
-        nim = nim.astype(numpy.int)
+        nim = nim.astype(int)
         self.nim_div = nim + (nim==0)
         
 

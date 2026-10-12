@@ -82,10 +82,10 @@ def NumerictoImage( data, xxx_todo_changeme1,maxi=None,mini=None):
     width, height = image.shape[:2]
     if len(image.shape) == 3:
         mode = rawmode = 'RGB'
-        bits = np.transpose(image, (1,0,2)).tostring()
+        bits = np.transpose(image, (1,0,2)).tobytes()
     else:
         mode = rawmode = 'L'
-        bits = np.transpose(image, (1,0)).tostring()
+        bits = np.transpose(image, (1,0)).tobytes()
     image2 = Image.frombytes(mode, (width, height),
                                       bits, "raw", rawmode)
     image2=image2.resize((int(scalesx),int(scalesy)))

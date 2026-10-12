@@ -151,7 +151,7 @@ for num in range(first,last+1):
     r = where(r<65535,r,65535)
     out=open(opendata.makename(stem+".",num-skip,""),"wb")
     out.write(hl)
-    out.write(r.astype(UInt16).tostring())
+    out.write(r.astype(UInt16).tobytes())
     # write overflows
     length=0
     for i in indices:

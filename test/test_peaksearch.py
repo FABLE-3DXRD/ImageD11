@@ -17,7 +17,7 @@ def w(name,image,omega=0):
 
     \n\n"""%(omega))
     f.write(h.encode('utf-8'))
-    f.write(np.ravel(image).astype(np.uint16).tostring())
+    f.write(np.ravel(image).astype(np.uint16).tobytes())
     f.close()
 
 def makedata():

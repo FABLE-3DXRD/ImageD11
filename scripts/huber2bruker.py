@@ -323,7 +323,7 @@ class edf2bruker:
         outf.write(self.h)
         #self.tlog("write header")
         outim = numpy.flipud(corrected_image)
-        outf.write( outim.astype(numpy.uint16).tostring() )
+        outf.write( outim.astype(numpy.uint16).tobytes() )
         #self.tlog("write")
         outf.close()
         self.tlog("/s "+fileout + " " + self.darkflood.report + "\n")

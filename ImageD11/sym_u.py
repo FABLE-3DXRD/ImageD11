@@ -312,7 +312,7 @@ class trans_group(group):
         if ly2 > 1e-9:
             ny = np.dot(x,y)/ly2
             parl = ny * y
-            ints = np.round_(ny)
+            ints = np.round(ny)
             return x - ints * y
         else:
             return x

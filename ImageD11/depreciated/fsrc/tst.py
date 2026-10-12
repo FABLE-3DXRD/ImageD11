@@ -60,7 +60,7 @@ for i in range(10):
 
 d1 = time.time()-start   
 osi = p.get('omegasign')
-gvf = np.zeros(xlylzl.shape,np.float, order='F')
+gvf = np.zeros(xlylzl.shape,float, order='F')
 start = time.time()
 for i in range(100):
     fImageD11.compute_gv( xlylzl, c.omega, osi, wvln, wedge, chi, t, gvf )

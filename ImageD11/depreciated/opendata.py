@@ -412,7 +412,7 @@ def writebruker(filename,dataobject):
     # print
     out = open(filename,"wb")
     out.write(hs)
-    out.write(r.astype(np.uint16).tostring())
+    out.write(r.astype(np.uint16).tobytes())
     if noverfl > 0 :
         r = np.ravel(dataobject.data)
         length = 0
@@ -476,7 +476,7 @@ def writeedf(filename,dataobject):
     assert(len(h)==4096) , "bad edf header size "+str(len(h))
     f=open(filename,"wb")
     f.write(h)
-    f.write(dataobject.data.astype(np.float32).tostring())
+    f.write(dataobject.data.astype(np.float32).tobytes())
     f.close()
 
 def writedata(filename,dataobject):
