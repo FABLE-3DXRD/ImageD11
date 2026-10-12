@@ -283,7 +283,7 @@ class fittrans(object):
         if ds is None:
             ds = self.colfile.ds
         diffs = np.ones( self.colfile.nrows, np.float32 )
-        ra    = np.ones( self.colfile.nrows, np.int ) - 2
+        ra    = np.ones( self.colfile.nrows, int ) - 2
         for i in range(len(self.cell.ringds)):
             testdiff = abs( ds - self.cell.ringds[i] )
             msk = testdiff < diffs

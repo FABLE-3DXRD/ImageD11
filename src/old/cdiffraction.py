@@ -29,14 +29,14 @@ def compute_grain_origins(omega, wedge = 0.0, chi = 0.0,
     w=n.radians(wedge)
     WI = n.array( [ [ n.cos(w),         0, -n.sin(w)],
                     [      0,           1,         0],
-                    [ n.sin(w),         0,  n.cos(w)] ] , n.float)
+                    [ n.sin(w),         0,  n.cos(w)] ] , float)
     c=n.radians(chi)
     print ("WI",WI)
     CI = n.array( [ [      1,            0,         0],
                     [      0,     n.cos(c), -n.sin(c)],
-                    [      0,     n.sin(c),  n.cos(c)] ] , n.float)
+                    [      0,     n.sin(c),  n.cos(c)] ] , float)
     print( "CI",CI)
-    t   = n.zeros((3,omega.shape[0]),n.float) # crystal translations
+    t   = n.zeros((3,omega.shape[0]),float) # crystal translations
     # Rotations in reverse order compared to making g-vector
     # also reverse directions. this is trans at all zero to
     # current setting. gv is scattering vector to all zero
@@ -50,7 +50,7 @@ def compute_grain_origins(omega, wedge = 0.0, chi = 0.0,
     if chi != 0.0:
         c = n.cos(n.radians(chi))
         s = n.sin(n.radians(chi))
-        u = n.zeros(t.shape,n.float)
+        u = n.zeros(t.shape,float)
         u[0,:]= t[0,:]  
         u[1,:]=        c * t[1,:]    + -s * t[2,:]
         u[2,:]=        s * t[1,:]    +  c * t[2,:]
@@ -59,7 +59,7 @@ def compute_grain_origins(omega, wedge = 0.0, chi = 0.0,
     if wedge != 0.0:
         c = n.cos(n.radians(wedge))
         s = n.sin(n.radians(wedge))
-        u = n.zeros(t.shape,n.float)
+        u = n.zeros(t.shape,float)
         u[0,:]= c * t[0,:]           + -s * t[2,:]
         u[1,:]=            t[1,:]
         u[2,:]= s * t[0,:]           +  c * t[2,:]

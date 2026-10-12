@@ -26,7 +26,7 @@ def find_pair( c,
             #print(deta, deta.shape, i.sum(),j.sum())
             #print(dtth)
             m = (deta < etatol)&(dtth < tthtol)
-            inds = np.arange( len(ei)*len(ej), dtype=np.int ) [ m.ravel() ]
+            inds = np.arange( len(ei)*len(ej), dtype=int ) [ m.ravel() ]
             ip = inds % len(ei)
             jp = inds // len(ei)
             #print("Found",m.ravel().sum())

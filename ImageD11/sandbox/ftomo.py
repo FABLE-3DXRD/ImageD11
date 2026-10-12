@@ -41,8 +41,8 @@ class fourier_radial(object):
         # dimensions?
         cth = numpy.cos( self.theta ) # 1D
         sth = numpy.sin( self.theta ) # 1D
-        ia = numpy.round(numpy.outer( cth, xv )).astype(numpy.int)
-        ja = numpy.round(numpy.outer( sth, xv )).astype(numpy.int)
+        ia = numpy.round(numpy.outer( cth, xv )).astype(int)
+        ja = numpy.round(numpy.outer( sth, xv )).astype(int)
         on = numpy.array([1.0],numpy.float32)
         jm = numpy.where(ja < 0, -on, on)
         numpy.multiply( ia, jm, ia ) #  if j<0: i=-i
@@ -56,7 +56,7 @@ class fourier_radial(object):
         wons = numpy.ones( (len(inds)), dtype=numpy.float32 )
         # This is now more dense - bincount?
         cImageD11.put_incr( nim , inds, wons )
-        nim = nim.astype(numpy.int)
+        nim = nim.astype(int)
         self.nim_div = nim + (nim==0)
         
 

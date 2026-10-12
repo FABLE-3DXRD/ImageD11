@@ -20,6 +20,14 @@ import os,sys
 
 import numpy as np
 
+def _tobytes(a):
+    """ndarray to bytes: tobytes() (numpy >= 1.9) or tostring() (older numpy;
+    removed in numpy 2.x)"""
+    if hasattr(a, "tobytes"):
+        return a.tobytes()
+    return a.tostring()
+
+
 """
 TO DO
 
@@ -82,10 +90,10 @@ def NumerictoImage( data, xxx_todo_changeme1,maxi=None,mini=None):
     width, height = image.shape[:2]
     if len(image.shape) == 3:
         mode = rawmode = 'RGB'
-        bits = np.transpose(image, (1,0,2)).tostring()
+        bits = _tobytes(np.transpose(image, (1,0,2)))
     else:
         mode = rawmode = 'L'
-        bits = np.transpose(image, (1,0)).tostring()
+        bits = _tobytes(np.transpose(image, (1,0)))
     image2 = Image.frombytes(mode, (width, height),
                                       bits, "raw", rawmode)
     image2=image2.resize((int(scalesx),int(scalesy)))

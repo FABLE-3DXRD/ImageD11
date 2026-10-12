@@ -15,8 +15,8 @@ def nbsplat(
     astart = start = timer()
     h,w,d = rgba.shape
     rve = np.dot( M, gve )
-    order = np.empty( len(rve[0]), np.int )
-    tmp = np.empty( len(rve[0]), np.int )
+    order = np.empty( len(rve[0]), int )
+    tmp = np.empty( len(rve[0]), int )
     npk = do_zsort_clip( rve, tmp, w//2-npx, h//2-npx, zsort, order )
     i = (rve[1]+h//2).astype(int)
     j = (rve[0]+w//2).astype(int)
