@@ -281,9 +281,10 @@ class SparseFrameReader(object):
             raise ImportError('bslz4_to_sparse is not available')
         self.h = h5py.File(filename, 'r')
         self.d = self.h[path]
-        codec = bslz4_to_sparse.detect_codec(self.d)
-        self.dec = bslz4_to_sparse.chunk2sparse(np.ascontiguousarray(good, dtype=np.uint8), dtype=self.d.dtype,
-                                                codec=codec)
+        kw = {}
+        if hasattr(bslz4_to_sparse, 'detect_codec'):     # releases up to 0.0.16 are lz4 only, with no codec argument
+            kw['codec'] = bslz4_to_sparse.detect_codec(self.d)
+        self.dec = bslz4_to_sparse.chunk2sparse(np.ascontiguousarray(good, dtype=np.uint8), dtype=self.d.dtype, **kw)
 
     def __call__(self, i):
         _, chunk = self.d.id.read_direct_chunk((i, 0, 0))
