@@ -30,7 +30,7 @@ fast-histogram==0.14
     # via ImageD11 (setup.py)
 fonttools==4.60.2
     # via matplotlib
-fsspec==2024.10.0
+fsspec==2026.6.0
     # via dask
 h5py==3.12.1
     # via
