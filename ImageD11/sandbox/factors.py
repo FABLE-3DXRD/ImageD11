@@ -25,6 +25,14 @@ import glob, struct, logging
 
 import numpy as np
 
+def _tobytes(a):
+    """ndarray to bytes: tobytes() (numpy >= 1.9) or tostring() (older numpy;
+    removed in numpy 2.x)"""
+    if hasattr(a, "tobytes"):
+        return a.tobytes()
+    return a.tostring()
+
+
 from ImageD11 import opendata
 
 class factors:
@@ -74,10 +82,10 @@ class factors:
                                   s.shape[0],
                                   r.shape[0],
                                   r.shape[1]))
-            print(len(l.astype(float).tobytes()))
-            out.write(l.astype(float).tobytes())
-            out.write(s.astype(float).tobytes())
-            out.write(r.astype(float).tobytes())
+            print(len(_tobytes(l.astype(float))))
+            out.write(_tobytes(l.astype(float)))
+            out.write(_tobytes(s.astype(float)))
+            out.write(_tobytes(r.astype(float)))
             out.close()
 
     def loadsvd(self,filename):
@@ -122,8 +130,8 @@ class factors:
         out.write(struct.pack("lll",self.x.shape[0],
                                     self.obsdata.shape[0],
                                     self.obsdata.shape[1]))
-        out.write(self.x.astype(float).tobytes())
-        out.write(self.obsdata.astype(float).tobytes())
+        out.write(_tobytes(self.x.astype(float)))
+        out.write(_tobytes(self.obsdata.astype(float)))
         out.close()
 
     def readobsdata(self,filename):

@@ -28,6 +28,14 @@ A script to convert edf images into bruker format
 
 import time
 import numpy
+
+def _tobytes(a):
+    """ndarray to bytes: tobytes() (numpy >= 1.9) or tostring() (older numpy;
+    removed in numpy 2.x)"""
+    if hasattr(a, "tobytes"):
+        return a.tobytes()
+    return a.tostring()
+
 from fabio.openimage import openimage
 from fabio.brukerimage import brukerimage
 from fabio import file_series
@@ -323,7 +331,7 @@ class edf2bruker:
         outf.write(self.h)
         #self.tlog("write header")
         outim = numpy.flipud(corrected_image)
-        outf.write( outim.astype(numpy.uint16).tobytes() )
+        outf.write( _tobytes(outim.astype(numpy.uint16)) )
         #self.tlog("write")
         outf.close()
         self.tlog("/s "+fileout + " " + self.darkflood.report + "\n")

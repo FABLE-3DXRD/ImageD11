@@ -6,6 +6,14 @@ from __future__ import print_function
 
 import numpy as np
 
+def _tobytes(a):
+    """ndarray to bytes: tobytes() (numpy >= 1.9) or tostring() (older numpy;
+    removed in numpy 2.x)"""
+    if hasattr(a, "tobytes"):
+        return a.tobytes()
+    return a.tostring()
+
+
 def w(name,image,omega=0):
 
     f=open(name,"wb")
@@ -17,7 +25,7 @@ def w(name,image,omega=0):
 
     \n\n"""%(omega))
     f.write(h.encode('utf-8'))
-    f.write(np.ravel(image).astype(np.uint16).tobytes())
+    f.write(_tobytes(np.ravel(image).astype(np.uint16)))
     f.close()
 
 def makedata():

@@ -4,6 +4,14 @@ from __future__ import print_function
 
 from Numeric import *
 
+def _tobytes(a):
+    """ndarray to bytes: tobytes() (numpy >= 1.9) or tostring() (older numpy;
+    removed in numpy 2.x)"""
+    if hasattr(a, "tobytes"):
+        return a.tobytes()
+    return a.tostring()
+
+
 import sys,time
 starttime=time.time()
 
@@ -151,7 +159,7 @@ for num in range(first,last+1):
     r = where(r<65535,r,65535)
     out=open(opendata.makename(stem+".",num-skip,""),"wb")
     out.write(hl)
-    out.write(r.astype(UInt16).tobytes())
+    out.write(_tobytes(r.astype(UInt16)))
     # write overflows
     length=0
     for i in indices:
