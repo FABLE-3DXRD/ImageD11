@@ -7,12 +7,12 @@ import tempfile
 import unittest
 
 import numpy as np
-import h5py
 
 try:
-    import hdf5plugin
+    import hdf5plugin      # before h5py: old versions refuse otherwise
 except ImportError:
     hdf5plugin = None
+import h5py
 
 import ImageD11.grain
 from ImageD11.sinograms import harvester
@@ -57,11 +57,14 @@ def write_frames(ds, spots, intensity, sig_px, sig_om, bg, mask, seed=0):
     data = rng.poisson(frames + bg).astype(np.uint16)
     data[:, mask] = 0
     os.makedirs(os.path.join(ds.datapath, 'scan0001'))
-    kw = {}
-    if hdf5plugin is not None:
-        kw = dict(hdf5plugin.Bitshuffle(nelems=0, cname='lz4'))
     with h5py.File(os.path.join(ds.datapath, ds.imagefiles[0]), 'w') as h:
-        h.create_dataset('data', data=data, chunks=(1,) + SHAPE, **kw)
+        try:
+            # bitshuffle (filter 32008): 8192 byte blocks (4096 uint16) + lz4; the same on all hdf5plugin versions
+            h.create_dataset('data', data=data, chunks=(1,) + SHAPE, compression=32008, compression_opts=(4096, 2))
+            return True
+        except (ValueError, RuntimeError):     # no usable bitshuffle plugin (old hdf5plugin / HDF5)
+            h.create_dataset('data', data=data, chunks=(1,) + SHAPE)
+            return False
 
 
 class TestHarvester(unittest.TestCase):
@@ -85,7 +88,7 @@ class TestHarvester(unittest.TestCase):
         cls.truth['I'] = np.where(cls.painted, rng.uniform(200, 2000, len(sp['s'])), 0.0)
         cls.truth['s'] = sp['s'] + rng.uniform(-0.4, 0.4, len(sp['s']))     # real spots off the prediction
         cls.truth['f'] = sp['f'] + rng.uniform(-0.4, 0.4, len(sp['s']))
-        write_frames(cls.ds, cls.truth, cls.truth['I'], 1.0, 0.7, 0.2, cls.mask)
+        cls.compressed = write_frames(cls.ds, cls.truth, cls.truth['I'], 1.0, 0.7, 0.2, cls.mask)
 
     @classmethod
     def tearDownClass(cls):
@@ -145,6 +148,8 @@ class TestHarvester(unittest.TestCase):
     def test_sparse(self):
         if harvester.bslz4_to_sparse is None:
             self.skipTest('bslz4_to_sparse is not installed')
+        if not self.compressed:
+            self.skipTest('no bitshuffle plugin for h5py: the test file is not compressed')
         self.check(*self.harvest('sparse'))
 
 
