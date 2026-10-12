@@ -63,6 +63,11 @@ import time
 import multiprocessing
 
 import numpy as np
+try:
+    import hdf5plugin  # noqa: F401  (registers the bitshuffle / zstd filters for h5py; old versions need it before h5py)
+except ImportError:
+    hdf5plugin = None
+
 import h5py
 import numba
 
@@ -70,11 +75,6 @@ import ImageD11.transform
 import ImageD11.blobcorrector
 import ImageD11.unitcell
 import ImageD11.columnfile
-
-try:
-    import hdf5plugin  # noqa: F401  (registers the bitshuffle / zstd filters for h5py)
-except ImportError:
-    hdf5plugin = None
 
 try:
     import bslz4_to_sparse
