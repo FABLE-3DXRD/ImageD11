@@ -145,12 +145,140 @@ class TestHarvester(unittest.TestCase):
         clean = ~sp['touch_mask'] & ~sp['edge'] & (sp['n_overlap'] == 0) & self.painted
         self.assertLess(abs(np.median(m['I'][clean] / self.truth['I'][clean]) - 1), 0.03)
 
+    def test_profiles_and_weights(self):
+        if hdf5plugin is None:
+            self.skipTest('hdf5plugin is needed to read bitshuffle frames')
+        box = harvester.Box(half_s=5, half_f=5, half_omega=4, bg_width=5)
+        h = harvester.Harvester(self.ds, [self.grain], PARS, ds_max=0.75, radius=5.0, mask=self.mask, reader='h5py',
+                                box=box, profiles=True)
+        h.predict()
+        m = h.run(nproc=1, verbose=False)
+        sp = h.spots
+        prof, off = h.profile_data
+        seen = m['nframes'] > 0
+        for k in np.flatnonzero(seen):
+            for sl in harvester.profile_slices(sp['hs'][k], sp['hf'][k], sp['ho'][k], off[k]):
+                self.assertAlmostEqual(prof[sl].sum(), m['I'][k], delta=1e-6 * max(1.0, abs(m['I'][k])))
+        # weights = the true profile of each spot (normalised over its box)
+        om = self.ds.omega[0]
+        step = om[1] - om[0]
+        flat = np.zeros(off[-1])
+        for k in range(len(sp['s'])):
+            a, b, c = harvester.profile_slices(sp['hs'][k], sp['hf'][k], sp['ho'][k], off[k])
+            js = sp['s0'][k] + np.arange(-sp['hs'][k], sp['hs'][k] + 1)
+            jf = sp['f0'][k] + np.arange(-sp['hf'][k], sp['hf'][k] + 1)
+            t = np.arange(-sp['ho'][k], sp['ho'][k] + 1)
+            dom = om[np.clip(np.searchsorted(om, sp['omega'][k] + t * step - step / 2), 0, len(om) - 1)] - sp['omega'][k]
+            for sl, w in ((a, np.exp(-0.5 * (js - self.truth['s'][k]) ** 2)),
+                          (b, np.exp(-0.5 * (jf - self.truth['f'][k]) ** 2)),
+                          (c, np.exp(-0.5 * (dom / 0.7) ** 2))):
+                flat[sl] = w / w.sum()
+        hw = harvester.Harvester(self.ds, [self.grain], PARS, ds_max=0.75, radius=5.0, mask=self.mask,
+                                 reader='h5py', box=box, weights=(flat, off))
+        hw.predict()
+        out = os.path.join(self.tmp, 'weights.h5')
+        hw.run(nproc=1, verbose=False, outfile=out)
+        with h5py.File(out, 'r') as f:
+            ps = f['per_scan']
+            spot = ps['spot'][()]
+            wA, wB, wM, wC, wV = (ps[k][()].astype(float) for k in ('wA', 'wB', 'wM', 'wC', 'wVbg'))
+        clean = (~sp['touch_mask'] & ~sp['edge'] & (sp['n_overlap'] == 0) & self.painted)[spot] & (wB > 0)
+        I = self.truth['I'][spot][clean]
+        Iw = wA[clean] / wB[clean]
+        sig = np.sqrt((wM[clean] + I * wC[clean] + wV[clean]) / wB[clean] ** 2)
+        z = (Iw - I) / sig
+        self.assertLess(abs(np.median(Iw / I) - 1), 0.03)
+        # the variance model is calibrated, without scale factors
+        self.assertGreater(np.std(z), 0.8)
+        self.assertLess(np.std(z), 1.25)
+        # and the profile-fitted intensities are more precise than the box sums
+        Is = m['I'][spot][clean]
+        self.assertLess(np.std(Iw - I), np.std(Is - I))
+
+    def test_duplicates_and_learning(self):
+        if hdf5plugin is None:
+            self.skipTest('hdf5plugin is needed to read bitshuffle frames')
+        from ImageD11 import sym_u
+        a = np.radians(0.3)
+        R = np.array([[np.cos(a), -np.sin(a), 0], [np.sin(a), np.cos(a), 0], [0, 0, 1]])
+        twin = ImageD11.grain.grain(np.dot(self.grain.ubi, R.T), translation=np.zeros(3))   # the same crystal
+        box = harvester.Box(half_s=5, half_f=5, half_omega=4, bg_width=5)
+        h = harvester.Harvester(self.ds, [self.grain, twin], PARS, ds_max=0.75, radius=5.0, mask=self.mask,
+                                reader='h5py', box=box, profiles=True)
+        h.predict()
+        m = h.run(nproc=1, verbose=False)
+        sp = h.spots
+        n = np.bincount(sp['grain'])
+        M = h.pair_overlaps()
+        self.assertGreater(M[0, 1] / float(n[0]), 0.5)
+        groups, pairs = harvester.duplicate_groups(sp, m, [g.ubi for g in h.grains], sym_u.getgroup('cubic')().group,
+                                                   h.omega_step(), pair_overlaps=M)
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(sorted(groups[0]), [0, 1])
+        merged, match = harvester.union_spots(sp, groups[0], [g.ubi for g in h.grains], h.omega_step())
+        k0 = groups[0][0]
+        rows0 = np.flatnonzero(sp['grain'] == k0)
+        self.assertTrue(np.all(merged['hs'] >= sp['hs'][rows0]))
+        mm = match[groups[0][1]]
+        ok = mm >= 0
+        self.assertGreater(ok.mean(), 0.9)
+        # every matched box lies inside the union box
+        for c, hc in (('s0', 'hs'), ('f0', 'hf')):
+            self.assertTrue(np.all(np.abs(sp[c][mm[ok]] - merged[c][ok]) + sp[hc][mm[ok]] <= merged[hc][ok]))
+        d = h.deoverlap(m['I'])
+        painted = np.concatenate([self.painted, self.painted])
+        self.assertGreater(np.median(d['coincident_fraction'][painted & ~sp['edge']]), 0.5)
+        # profiles learned from the strong, clean spots match the true (Gaussian, 1 px) s profile
+        prof, off = h.profile_data
+        ref = (m['I'] > 20 * m['sigI']) & ~sp['touch_mask'] & ~sp['edge'] & (sp['grain'] == 0)
+        learned, nref, pooled = harvester.learn_profiles(sp, m['I'], m['sigI'], prof, off, ref, k=5, min_ref=5)
+        corr = []
+        for k in np.flatnonzero(ref):
+            a_, _, _ = harvester.profile_slices(sp['hs'][k], sp['hf'][k], sp['ho'][k], off[k])
+            js = sp['s0'][k] + np.arange(-sp['hs'][k], sp['hs'][k] + 1)
+            corr.append(np.corrcoef(learned[a_], np.exp(-0.5 * (js - sp['s'][k]) ** 2))[0, 1])
+        self.assertGreater(np.median(corr), 0.9)
+
     def test_sparse(self):
         if harvester.bslz4_to_sparse is None:
             self.skipTest('bslz4_to_sparse is not installed')
         if not self.compressed:
             self.skipTest('no bitshuffle plugin for h5py: the test file is not compressed')
         self.check(*self.harvest('sparse'))
+
+
+class TestDeoverlap(unittest.TestCase):
+
+    def test_solve(self):
+        import scipy.sparse
+        # 0, 1, 2 overlap partially; 3, 4 hold each other's peaks completely; 5 alone
+        F = np.zeros((6, 6))
+        F[0, 1], F[1, 0], F[2, 0] = 0.3, 0.1, 0.05
+        F[3, 4] = F[4, 3] = 1.0
+        T = np.array([100.0, 50.0, 10.0, 80.0, 20.0, 7.0])
+        I = T + np.dot(F, T)
+        d = harvester.deoverlap_solve(scipy.sparse.csr_matrix(F), I, np.sqrt(I))
+        self.assertTrue(np.allclose(d['I_deoverlapped'][:3], T[:3], rtol=1e-4))
+        self.assertTrue(np.allclose(d['contamination'][:3], np.dot(F, T)[:3], rtol=1e-4))
+        # the split of 3 and 4 is not measured: even, and their sum is kept
+        self.assertTrue(np.allclose(d['I_deoverlapped'][3:5], 50.0, rtol=1e-4))
+        self.assertEqual(d['I_deoverlapped'][5], 7.0)
+        self.assertEqual(list(d['largest_row']), [1, 0, 0, 4, 3, -1])
+        self.assertEqual(d['cluster'][5], -1)
+        self.assertEqual(d['cluster'][0], d['cluster'][2])
+        self.assertNotEqual(d['cluster'][0], d['cluster'][3])
+
+    def test_jacobi(self):
+        import scipy.sparse
+        F = np.zeros((6, 6))
+        F[0, 1], F[1, 0], F[2, 0] = 0.3, 0.1, 0.05
+        F[3, 4] = F[4, 3] = 1.0
+        T = np.array([100.0, 50.0, 10.0, 80.0, 20.0, 7.0])
+        I = T + np.dot(F, T)
+        d = harvester.deoverlap_jacobi(scipy.sparse.csr_matrix(F), I, niter=40)
+        self.assertTrue(np.allclose(d['I_deoverlapped'], [100, 50, 10, 50, 50, 7], rtol=1e-6))
+        self.assertTrue(np.allclose(d['contamination'][:3], np.dot(F, T)[:3], rtol=1e-6))
+        self.assertEqual(list(d['largest_row']), [1, 0, 0, 4, 3, -1])
 
 
 if __name__ == '__main__':
