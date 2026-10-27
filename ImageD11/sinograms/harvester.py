@@ -59,6 +59,7 @@ from __future__ import print_function, division
 
 import math
 import os
+import sys
 import time
 import multiprocessing
 
@@ -422,7 +423,31 @@ def _poisson_upper(mean, p):
 @numba.njit(cache=True)
 def _integrate_frame(idx, vals, nfast, adj, spots, s0, f0, hs, hf, bw, nbox, nann, S1s, S1f, S2s, S2f,
                      domega, scale, clipped, p_clip, acc):
+    """Accumulate one frame into acc[spots] (see ACC); no profiles. See _integrate_frame_core."""
+    z1 = np.zeros(1)
+    zi = np.zeros(1, np.int64)
+    _integrate_frame_core(idx, vals, nfast, adj, spots, s0, f0, hs, hf, bw, nbox, nann, S1s, S1f, S2s, S2f,
+                          domega, scale, clipped, p_clip, acc, 0, 1.0, zi, np.zeros((1, 1)), z1, zi, z1, zi, z1, z1,
+                          z1, np.zeros((1, NACCW)))
+
+
+NACCW = 7   # profile-weighted sums per (reflection, scan) (see Harvester, weights)
+ACCW = ['wA', 'wB', 'wQ', 'wW', 'wVbg', 'wM', 'wC']
+
+
+@numba.njit(cache=True)
+def _integrate_frame_core(idx, vals, nfast, adj, spots, s0, f0, hs, hf, bw, nbox, nann, S1s, S1f, S2s, S2f,
+                          domega, scale, clipped, p_clip, acc, mode, ostep, ho, gint, prof, poff, wflat, woff, SB, SW,
+                          SC, accw):
     """Accumulate one frame into acc[spots] (see ACC). idx ascending flat pixel indices, vals counts.
+    mode & 1: 1D profiles. prof[poff[k]:] holds, for reflection k, the background-subtracted sums over the box
+    projected on s (2 hs + 1), on f (2 hf + 1) and on omega (2 ho + 1 frames, by round(domega / ostep)).
+    gint is the integral image of the good-pixel mask, for the background per box row / column.
+    mode & 2: profile-weighted sums with the per-pixel weight S(s) F(f) W(omega) taken from wflat[woff[k]:]
+    (same layout as prof). SB[k], SW[k], SC[k] = sums over the good box pixels of (S F)^2, S F, (S F)^3. Adds to
+    accw[k]: A = sum w (x - bg), B = sum w^2, Q = sum w^2 x, Wt = sum w, Vbg = sum (W SW)^2 var(bg per pixel),
+    M = sum w^2 bg, C = sum w^3 (x in monitor-scaled counts). With w the profile of the peak, the variance of the
+    profile-fitted intensity A / B of a peak of intensity I is (M + I C + Vbg) / B^2.
     hs, hf, bw: per-reflection half sizes and annulus width.
     S1s.. are sums over the good box pixels of (s - s0), (f - f0) and their squares (for the background
     correction of the moments); domega[k] = omega_frame - omega_pred of spot k."""
@@ -446,6 +471,8 @@ def _integrate_frame(idx, vals, nfast, adj, spots, s0, f0, hs, hf, bw, nbox, nan
         badj = 0.0
         vmax = 0.0
         nnz = 0.0
+        wa = 0.0
+        wq = 0.0
         for p in range(lo, hi):
             r = idx[p] // nfast
             c = idx[p] - r * nfast
@@ -456,6 +483,13 @@ def _integrate_frame(idx, vals, nfast, adj, spots, s0, f0, hs, hf, bw, nbox, nan
             ds_ = r - s0[k]
             df_ = c - f0[k]
             if abs(ds_) <= hsk and abs(df_) <= hfk:
+                if mode & 1:
+                    prof[poff[k] + ds_ + hsk] += v * scale
+                    prof[poff[k] + 2 * hsk + 1 + df_ + hfk] += v * scale
+                if mode & 2:
+                    wsf = wflat[woff[k] + ds_ + hsk] * wflat[woff[k] + 2 * hsk + 1 + df_ + hfk]
+                    wa += wsf * v
+                    wq += wsf * wsf * v
                 bsum += v
                 bs += v * ds_
                 bf += v * df_
@@ -496,6 +530,36 @@ def _integrate_frame(idx, vals, nfast, adj, spots, s0, f0, hs, hf, bw, nbox, nan
         bg = m * nbox[k]
         net = bsum - bg
         sc2 = scale * scale
+        if mode & 3:
+            iw = int(np.floor(domega[kk] / ostep + 0.5)) + ho[k]
+            nwk = 2 * ho[k] + 1
+            if mode & 1:
+                nrow = gint.shape[0] - 1
+                ncol = gint.shape[1] - 1
+                ca = max(f0[k] - hfk, 0)
+                cb = min(f0[k] + hfk, ncol - 1)
+                ra = max(s0[k] - hsk, 0)
+                rb = min(s0[k] + hsk, nrow - 1)
+                for r in range(ra, rb + 1):
+                    if cb >= ca:
+                        ng = gint[r + 1, cb + 1] - gint[r, cb + 1] - gint[r + 1, ca] + gint[r, ca]
+                        prof[poff[k] + r - s0[k] + hsk] -= m * ng * scale
+                for c in range(ca, cb + 1):
+                    if rb >= ra:
+                        ng = gint[rb + 1, c + 1] - gint[ra, c + 1] - gint[rb + 1, c] + gint[ra, c]
+                        prof[poff[k] + 2 * hsk + 1 + c - f0[k] + hfk] -= m * ng * scale
+                if 0 <= iw < nwk:
+                    prof[poff[k] + 2 * hsk + 1 + 2 * hfk + 1 + iw] += net * scale
+            if mode & 2:
+                ww = wflat[woff[k] + 2 * hsk + 1 + 2 * hfk + 1 + iw] if 0 <= iw < nwk else 0.0
+                vm = m / nused if nused > 0 else 0.0
+                accw[k, 0] += ww * (wa - m * SW[k]) * scale
+                accw[k, 1] += ww * ww * SB[k]
+                accw[k, 2] += ww * ww * wq * sc2
+                accw[k, 3] += ww * SW[k]
+                accw[k, 4] += (ww * SW[k]) ** 2 * vm * sc2
+                accw[k, 5] += ww * ww * SB[k] * m * sc2
+                accw[k, 6] += ww * ww * ww * SC[k] * scale
         acc[k, 0] += bsum * scale
         acc[k, 1] += bg * scale
         acc[k, 2] += (bsum + (m / nused if nused > 0 else 0.0) * nbox[k] * nbox[k]) * sc2
@@ -575,6 +639,135 @@ def _overlap_contamination(key, wf, s, f, s0, f0, hs, hf, ho, sig_s, sig_f, sig_
     return out, nmax
 
 
+@numba.njit(cache=True)
+def _pair_overlaps(key, wf, s0, f0, hs, hf, ho, grain, dty, rad, ncf, wmax, ng):
+    """for reflections sorted by (grid cell, omega): M[gi, gj] = number of reflections of grain gi whose box is
+    overlapped by at least one box of grain gj while both grains can be in the beam"""
+    n = key.shape[0]
+    M = np.zeros((ng, ng), np.int32)
+    last = np.full(ng, -1, np.int64)
+    for i in range(n):
+        for dc in (-ncf - 1, -ncf, -ncf + 1, -1, 0, 1, ncf - 1, ncf, ncf + 1):
+            kk = key[i] + dc
+            lo = np.searchsorted(key, kk)
+            hi = np.searchsorted(key, kk + 1)
+            if hi <= lo:
+                continue
+            a = lo + np.searchsorted(wf[lo:hi], wf[i] - wmax)
+            b = lo + np.searchsorted(wf[lo:hi], wf[i] + wmax, side='right')
+            for j in range(a, b):
+                gj = grain[j]
+                if gj == grain[i] or last[gj] == i:
+                    continue
+                if abs(wf[j] - wf[i]) > ho[i] + ho[j]:
+                    continue
+                if abs(s0[j] - s0[i]) > hs[i] + hs[j] or abs(f0[j] - f0[i]) > hf[i] + hf[j]:
+                    continue
+                if abs(dty[j] - dty[i]) >= rad[i] + rad[j]:
+                    continue
+                last[gj] = i
+                M[grain[i], gj] += 1
+    return M
+
+
+@numba.njit(cache=True)
+def _profile_in_box(i, j, s, f, wf, s0, f0, hs, hf, ho, sig_s, sig_f, sig_w):
+    """fraction of reflection j's Gaussian profile (widths sig_*) inside the box of reflection i"""
+    fr = 1.0
+    for c, sg, h in ((s[j] - s0[i], sig_s[j], hs[i]), (f[j] - f0[i], sig_f[j], hf[i]),
+                     (wf[j] - wf[i], sig_w[j], ho[i])):
+        lo_ = (-h - 0.5 - c) / (np.sqrt(2.0) * sg)
+        hi_ = (h + 0.5 - c) / (np.sqrt(2.0) * sg)
+        fr *= 0.5 * (math.erf(hi_) - math.erf(lo_))
+    return fr
+
+
+@numba.njit(cache=True, parallel=True)
+def _overlap_fractions(key, wf, s, f, s0, f0, hs, hf, ho, sig_s, sig_f, sig_w, grain, dty, rad, ncf, wmax, frmin,
+                       ptr, col, frac):
+    """for reflections sorted by (grid cell, omega): CSR matrix F[i, j] = fraction of reflection j's profile inside
+    the box of i, other grains only, while both can be in the beam, F >= frmin. With col empty, ptr[i + 1] gets the
+    number of entries of row i (call again with the cumulated ptr and col, frac allocated to fill them)."""
+    n = key.shape[0]
+    fill = col.shape[0] > 0
+    for i in numba.prange(n):
+        k = ptr[i] if fill else 0
+        for dc in (-ncf - 1, -ncf, -ncf + 1, -1, 0, 1, ncf - 1, ncf, ncf + 1):
+            kk = key[i] + dc
+            lo = np.searchsorted(key, kk)
+            hi = np.searchsorted(key, kk + 1)
+            if hi <= lo:
+                continue
+            a = lo + np.searchsorted(wf[lo:hi], wf[i] - wmax)
+            b = lo + np.searchsorted(wf[lo:hi], wf[i] + wmax, side='right')
+            for j in range(a, b):
+                if j == i or grain[j] == grain[i]:
+                    continue
+                if abs(dty[j] - dty[i]) >= rad[i] + rad[j]:
+                    continue
+                fr = _profile_in_box(i, j, s, f, wf, s0, f0, hs, hf, ho, sig_s, sig_f, sig_w)
+                if fr < frmin:
+                    continue
+                if fill:
+                    col[k] = j
+                    frac[k] = fr
+                k += 1
+        if not fill:
+            ptr[i + 1] = k
+
+
+@numba.njit(cache=True)
+def _average_profiles(nbr, hs, hf, ho, ds_, df_, off, data, I, out):
+    """out[off[t]:] = mean over the neighbours r = nbr[t] (-1: none) of the profiles of r normalised by I[r],
+    resampled on t's box grid relative to its predicted position; then clipped at 0 and normalised to sum 1 per
+    dimension (flat if nothing was learned)"""
+    for t in range(nbr.shape[0]):
+        ns, nf, nw = 2 * hs[t] + 1, 2 * hf[t] + 1, 2 * ho[t] + 1
+        o = off[t]
+        nn = 0
+        for q in range(nbr.shape[1]):
+            r = nbr[t, q]
+            if r < 0:
+                continue
+            nn += 1
+            a = off[r]
+            nsr, nfr, nwr = 2 * hs[r] + 1, 2 * hf[r] + 1, 2 * ho[r] + 1
+            for dim in range(2):
+                n_t = ns if dim == 0 else nf
+                n_r = nsr if dim == 0 else nfr
+                h_t = hs[t] if dim == 0 else hf[t]
+                h_r = hs[r] if dim == 0 else hf[r]
+                d_t = ds_[t] if dim == 0 else df_[t]
+                d_r = ds_[r] if dim == 0 else df_[r]
+                base_r = a if dim == 0 else a + nsr
+                base_t = o if dim == 0 else o + ns
+                for j in range(n_t):
+                    x = j - h_t - d_t + d_r + h_r      # target pixel, relative to the prediction, on r's grid
+                    i0 = int(np.floor(x))
+                    w1 = x - i0
+                    v = 0.0
+                    if 0 <= i0 < n_r:
+                        v += (1 - w1) * data[base_r + i0]
+                    if 0 <= i0 + 1 < n_r:
+                        v += w1 * data[base_r + i0 + 1]
+                    out[base_t + j] += v / I[r]
+            for j in range(nw):
+                x = j - ho[t] + ho[r]
+                if 0 <= x < nwr:
+                    out[o + ns + nf + j] += data[a + nsr + nfr + x] / I[r]
+        if nn > 0:
+            for j in range(ns + nf + nw):
+                out[o + j] /= nn
+        for b0, n in ((o, ns), (o + ns, nf), (o + ns + nf, nw)):
+            tot = 0.0
+            for j in range(n):
+                if out[b0 + j] < 0:
+                    out[b0 + j] = 0.0
+                tot += out[b0 + j]
+            for j in range(n):
+                out[b0 + j] = out[b0 + j] / tot if tot > 0 else 1.0 / n
+
+
 def _box_sums(integral, s0, f0, hs, hf):
     """sums of an image over the boxes [s0-hs, s0+hs] x [f0-hf, f0+hf] from its integral image"""
     H, W = integral.shape[0] - 1, integral.shape[1] - 1
@@ -589,15 +782,299 @@ def _integral(img):
     return out
 
 
+def profile_slices(hs, hf, ho, offset):
+    """(s, f, omega) slices of one reflection's profiles in the flat profile array (see Harvester profiles)"""
+    a = int(offset)
+    b = a + 2 * int(hs) + 1
+    c = b + 2 * int(hf) + 1
+    return slice(a, b), slice(b, c), slice(c, c + 2 * int(ho) + 1)
+
+
+def learn_profiles(spots, I, sigI, profiles, offset, reference, k=15, min_ref=60):
+    """Expected s, f, omega profile of every reflection, learned from strong ones (the Harvester profiles option).
+
+    spots     : dict of arrays (grain, hs, hf, ho, s, f, s0, f0, tth, eta), one entry per reflection, grains sorted
+    I, sigI   : merged intensities (from the run that collected the profiles)
+    profiles, offset : the flat profiles and their offsets (Harvester.profile_data or the outfile group)
+    reference : bool, the reflections to learn from (e.g. I / sigI > 20, not touching the mask or another grain)
+    For each reflection: the mean of the normalised profiles of the k nearest references of the same grain in
+    (2theta, eta) (omega widths go as 1 / |sin eta|), relative to the predicted position, resampled onto its own box,
+    clipped at 0 and normalised to 1 per dimension. Grains with fewer than min_ref references use all grains.
+    A reference does not learn from itself. Returns (weights, n_ref, pooled): weights in the profile layout, to
+    use as Harvester(weights=(weights, offset))."""
+    from scipy.spatial import cKDTree
+    g = np.asarray(spots['grain'])
+    feat = np.column_stack((spots['tth'] / 2.0, 3 * np.cos(np.radians(spots['eta'])),
+                            3 * np.sin(np.radians(spots['eta']))))
+    ref = np.asarray(reference, bool) & (I > 0)
+    nbr = np.full((len(g), k), -1, np.int64)
+    pooled = np.zeros(len(g), bool)
+    iall = np.flatnonzero(ref)
+    tall = cKDTree(feat[iall])
+    start = np.searchsorted(g, np.arange(g.max() + 2))
+    for gi in range(g.max() + 1):
+        rows = np.arange(start[gi], start[gi + 1])
+        if len(rows) == 0:
+            continue
+        r = rows[ref[rows]]
+        if len(r) >= min_ref:
+            cand = r[cKDTree(feat[r]).query(feat[rows], k + 1)[1]]
+        else:
+            cand = iall[tall.query(feat[rows], k + 1)[1]]
+            pooled[rows] = True
+        cand = np.where(cand == rows[:, None], -1, cand)
+        o = np.argsort(cand < 0, axis=1, kind='stable')
+        nbr[rows] = np.take_along_axis(cand, o, 1)[:, :k]
+    out = np.zeros(int(offset[-1]))
+    _average_profiles(nbr, np.asarray(spots['hs'], np.int64), np.asarray(spots['hf'], np.int64),
+                      np.asarray(spots['ho'], np.int64), np.asarray(spots['s'] - spots['s0'], float),
+                      np.asarray(spots['f'] - spots['f0'], float), np.asarray(offset, np.int64),
+                      np.asarray(profiles, float), np.where(I != 0, I, 1.0).astype(float), out)
+    return out, (nbr >= 0).sum(1), pooled
+
+
+def misorientation(U1, U2, group):
+    """smallest rotation angle (deg) between the orientations U1 and U2 (crystal -> lab, orthonormal) under the
+    rotations of group (e.g. ImageD11.sym_u.getgroup('cubic')().group)"""
+    d = np.dot(U1.T, U2)
+    tr = max(np.trace(np.dot(np.asarray(op, float), d)) for op in group)
+    return np.degrees(np.arccos(np.clip((tr - 1) / 2, -1, 1)))
+
+
+def _match(H_a, ubi_a, ubi_b, H_b, om_a, om_b):
+    """for each reflection of grain a: the row of grain b with the same reflection (h_b = round(ubi_b inv(ubi_a))
+    h_a, the omega solution closest to a's), or -1"""
+    M = np.round(np.dot(ubi_b, np.linalg.inv(ubi_a))).astype(int)
+    hb = np.dot(H_a, M.T)
+    lut = {}
+    for q, key in enumerate(map(tuple, H_b)):
+        lut.setdefault(key, []).append(q)
+    out = np.full(len(H_a), -1, np.int64)
+    for p, key in enumerate(map(tuple, hb)):
+        c = lut.get(key)
+        if c:
+            out[p] = min(c, key=lambda q: abs((om_b[q] - om_a[p] + 180) % 360 - 180))
+    return out
+
+
+def union_spots(spots, members, ubis, omega_step, max_sep=4.0):
+    """One box per reflection for a group of duplicate grains (members: grain indices, the first is the main one):
+    each reflection of the main grain is matched to the same reflection of every other member (Miller indices
+    through round(ubi_b inv(ubi_a)), nearest omega solution, predicted positions within max_sep box half sizes)
+    and its box becomes the bounding box (s, f, omega) of all the matched boxes, so every pixel is counted once.
+    Returns (spots dict for the merged grain, {member: matched row of each main reflection, -1 if none})."""
+    start = np.searchsorted(spots['grain'], np.arange(np.max(spots['grain']) + 2))
+    blk = [dict((c, np.asarray(spots[c])[start[m]:start[m + 1]]) for c in spots) for m in members]
+    A = blk[0]
+    H = np.column_stack((A['h'], A['k'], A['l']))
+    lo_s, hi_s = A['s0'] - A['hs'], A['s0'] + A['hs']
+    lo_f, hi_f = A['f0'] - A['hf'], A['f0'] + A['hf']
+    lo_w, hi_w = A['omega'] - A['ho'] * omega_step, A['omega'] + A['ho'] * omega_step
+    bw = A['bw'].copy()
+    match = {members[0]: np.arange(start[members[0]], start[members[0] + 1])}
+    for m, B in zip(members[1:], blk[1:]):
+        j = _match(H, ubis[members[0]], ubis[m], np.column_stack((B['h'], B['k'], B['l'])), A['omega'], B['omega'])
+        a = np.flatnonzero(j >= 0)
+        b = j[a]
+        sep = np.max([np.abs(B['s'][b] - A['s'][a]) / A['hs'][a], np.abs(B['f'][b] - A['f'][a]) / A['hf'][a],
+                      np.abs(B['omega'][b] - A['omega'][a]) / omega_step / A['ho'][a]], axis=0)
+        a, b = a[sep < max_sep], b[sep < max_sep]
+        lo_s[a] = np.minimum(lo_s[a], B['s0'][b] - B['hs'][b]); hi_s[a] = np.maximum(hi_s[a], B['s0'][b] + B['hs'][b])
+        lo_f[a] = np.minimum(lo_f[a], B['f0'][b] - B['hf'][b]); hi_f[a] = np.maximum(hi_f[a], B['f0'][b] + B['hf'][b])
+        lo_w[a] = np.minimum(lo_w[a], B['omega'][b] - B['ho'][b] * omega_step)
+        hi_w[a] = np.maximum(hi_w[a], B['omega'][b] + B['ho'][b] * omega_step)
+        bw[a] = np.maximum(bw[a], B['bw'][b])
+        mm = np.full(len(H), -1, np.int64)
+        mm[a] = start[m] + b
+        match[m] = mm
+    sp = dict((c, A[c].copy()) for c in ('h', 'k', 'l', 'ds', 'tth', 'eta', 's', 'f', 'sc', 'fc'))
+    sp['s0'] = np.round((lo_s + hi_s) / 2.0).astype(np.int64)
+    sp['f0'] = np.round((lo_f + hi_f) / 2.0).astype(np.int64)
+    sp['hs'] = np.ceil(np.maximum(hi_s - sp['s0'], sp['s0'] - lo_s)).astype(np.int64)
+    sp['hf'] = np.ceil(np.maximum(hi_f - sp['f0'], sp['f0'] - lo_f)).astype(np.int64)
+    sp['omega'] = (lo_w + hi_w) / 2.0
+    sp['ho'] = np.ceil((hi_w - lo_w) / 2.0 / omega_step - 1e-6).astype(np.int64)
+    sp['bw'] = bw
+    return sp, match
+
+
+def duplicate_groups(spots, merged, ubis, group, omega_step, max_angle=2.0, min_shared=0.3, in_box=0.5,
+                     to_partner=0.5, min_snr=20.0, pair_overlaps=None):
+    """Groups of grains that integrate the same peaks (duplicate indexings of one crystal, or domains that the boxes
+    cannot resolve). A pair is a duplicate when the misorientation (under the rotations of group) is below max_angle,
+    they share boxes for more than min_shared of their reflections (pair_overlaps, from Harvester.pair_overlaps), and
+    either the partner's predicted peak lies inside the box for more than in_box of the reflections, or the measured
+    centroids (s, f, omega, in box half sizes) of strong reflections (I / sigI > min_snr) lie closer to the partner's
+    prediction than to their own for more than to_partner of them. merged: dict with I, sigI, s, f, omega. Pairs are joined into groups (union-find). Returns a list of lists of grain
+    indices, the main grain (most strong reflections) first, and the list of (gi, gj, angle, in_box, to_partner)."""
+    ng = len(ubis)
+    U = []
+    for u in ubis:
+        a, _, vt = np.linalg.svd(np.linalg.inv(u))
+        U.append(np.dot(a, vt))
+    F = pair_overlaps / np.maximum(np.bincount(spots['grain'], minlength=ng)[:, None], 1).astype(float)
+    start = np.searchsorted(spots['grain'], np.arange(ng + 1))
+    parent = list(range(ng))
+
+    def find(x):
+        while parent[x] != x:
+            x = parent[x]
+        return x
+    pairs = []
+    cand = np.argwhere(np.triu(np.maximum(F, F.T) > min_shared, 1))
+    for i, j in cand:
+        ang = misorientation(U[i], U[j], group)
+        if ang >= max_angle:
+            continue
+        best = (0.0, 0.0)
+        for a, b in ((i, j), (j, i)):
+            ra = np.arange(start[a], start[a + 1])
+            rb = np.arange(start[b], start[b + 1])
+            H = np.column_stack((spots['h'][ra], spots['k'][ra], spots['l'][ra]))
+            m = _match(H, ubis[a], ubis[b], np.column_stack((spots['h'][rb], spots['k'][rb], spots['l'][rb])),
+                       spots['omega'][ra], spots['omega'][rb])
+            ok = m >= 0
+            pa, pb = ra[ok], rb[m[ok]]
+            hs, hf, ho = spots['hs'][pa], spots['hf'][pa], spots['ho'][pa]
+            inb = np.mean((np.abs(spots['s'][pb] - spots['s'][pa]) <= hs) & (np.abs(spots['f'][pb] - spots['f'][pa]) <= hf)
+                          & (np.abs(spots['omega'][pb] - spots['omega'][pa]) <= ho * omega_step)) if ok.any() else 0.0
+            st = merged['I'][pa] > min_snr * merged['sigI'][pa]
+            wst = ho * omega_step
+            own = np.sqrt(((merged['s'][pa] - spots['s'][pa]) / hs) ** 2 + ((merged['f'][pa] - spots['f'][pa]) / hf) ** 2
+                          + ((merged['omega'][pa] - spots['omega'][pa]) / wst) ** 2)
+            par = np.sqrt(((merged['s'][pa] - spots['s'][pb]) / hs) ** 2 + ((merged['f'][pa] - spots['f'][pb]) / hf) ** 2
+                          + ((merged['omega'][pa] - spots['omega'][pb]) / wst) ** 2)
+            sel = st & np.isfinite(own) & np.isfinite(par)
+            tp = np.mean(par[sel] < own[sel]) if sel.sum() > 10 else 0.0
+            best = (max(best[0], inb), max(best[1], tp))
+        if best[0] > in_box or best[1] > to_partner:
+            pairs.append((int(i), int(j), ang, best[0], best[1]))
+            parent[find(i)] = find(j)
+    groups = {}
+    for i, j, _, _, _ in pairs:
+        for x in (i, j):
+            groups.setdefault(find(x), set()).add(x)
+    nstrong = np.bincount(spots['grain'], weights=merged['I'] > min_snr * merged['sigI'], minlength=ng)
+    out = [sorted(v, key=lambda x: -nstrong[x]) for v in groups.values()]
+    return out, pairs
+
+
 # ------------------------------------------------------------------------------------- the harvester
 _WORKER = {}
+
+
+def deoverlap_solve(F, I, sigI=None, ridge=1e-3, link=0.5, niter=50, tol=1e-3, verbose=False):
+    """The measured I of a box is its own reflection plus the parts of its neighbours' peaks inside it:
+    I = (1 + F) T, F[i, j] = fraction of reflection j's profile inside the box of i (Harvester.overlap_fractions).
+    T >= 0 is the weighted (1 / sigI^2) least-squares solution with a ridge (ridge T / sigI): where two boxes
+    hold each other's peaks (F[i, j] ~ F[j, i] ~ 1) the split of their sum is not measured and comes out even.
+    Solved by blocks: reflections linked by contributions that can matter, F[i, j] (max(I[j], 0) + sigI[j]) >=
+    link sigI[i] (either way), form a block (so boxes holding each other's peaks are always in one block), solved exactly (non-negative least squares) with the contributions from outside the block fixed at
+    the current T; repeated until T changes by less than tol sigI (at most niter times).
+    Returns a dict of arrays per reflection: contamination (F T), I_deoverlapped (T), largest (largest
+    F[i, j] T[j]), largest_row (its j, -1: none), coincident_fraction (largest F[i, j], geometry alone),
+    coincident_row, cluster (block label; -1: no overlap)."""
+    import scipy.sparse, scipy.sparse.csgraph, scipy.optimize
+    t0 = time.time()
+    F = scipy.sparse.csr_matrix(F)
+    I = np.asarray(I, float)
+    n = len(I)
+    sig = np.maximum(np.sqrt(np.maximum(np.abs(I), 1.0)) if sigI is None else np.asarray(sigI, float), 1.0)
+    T = np.maximum(I, 0)
+    Fc = F.tocoo()
+    r_, c_, v_ = Fc.row, Fc.col, Fc.data
+    strong = v_ * (T[c_] + sig[c_]) >= link * sig[r_]
+    G = scipy.sparse.csr_matrix((np.ones(strong.sum()), (r_[strong], c_[strong])), shape=(n, n))
+    G = (G + G.T).tocsr()
+    _, lab = scipy.sparse.csgraph.connected_components(G, directed=False)
+    nb = np.bincount(lab)
+    single = nb[lab] == 1
+    lab = np.where(single & (np.diff((F + F.T).tocsr().indptr) == 0), -1, lab)
+    inside = lab[r_] == lab[c_]
+    Fout = scipy.sparse.csr_matrix((v_[~inside], (r_[~inside], c_[~inside])), shape=(n, n))
+    # blocks of more than one reflection: members (sorted by block) and the entries inside each block
+    multi = np.flatnonzero(~single)
+    mo = multi[np.argsort(lab[multi], kind='stable')]
+    bstart = np.flatnonzero(np.r_[True, lab[mo][1:] != lab[mo][:-1], True])
+    loc = np.zeros(n, np.int64)
+    loc[mo] = np.arange(len(mo)) - np.repeat(bstart[:-1], np.diff(bstart))
+    bid = np.full(n, -1)
+    bid[mo] = np.repeat(np.arange(len(bstart) - 1), np.diff(bstart))
+    ein = np.flatnonzero(inside & (bid[r_] >= 0))
+    ein = ein[np.argsort(bid[r_[ein]], kind='stable')]
+    estart = np.searchsorted(bid[r_[ein]], np.arange(len(bstart)))
+    blocks = []
+    for k in range(len(bstart) - 1):
+        m = mo[bstart[k]:bstart[k + 1]]
+        e = ein[estart[k]:estart[k + 1]]
+        A = np.eye(len(m))
+        A[loc[r_[e]], loc[c_[e]]] += v_[e]
+        w = 1.0 / sig[m]
+        blocks.append((m, np.vstack([w[:, None] * A, ridge * np.diag(w)]), w))
+    if verbose:
+        print('deoverlap: %d single, %d blocks (largest %d), %d links outside blocks (%.0f s)' % (
+            single.sum(), len(blocks), np.diff(bstart).max() if len(blocks) else 0, Fout.nnz, time.time() - t0))
+    s1 = np.flatnonzero(single & (lab >= 0))        # no overlap at all (lab -1): T = max(I, 0)
+    for it in range(niter):
+        r = I - Fout.dot(T)
+        new = T.copy()
+        new[s1] = np.maximum(r[s1], 0) / (1 + ridge ** 2)
+        for m, Aw, w in blocks:
+            new[m] = scipy.optimize.nnls(Aw, np.concatenate([w * r[m], np.zeros(len(m))]))[0]
+        change = np.max(np.abs(new - T) / sig)
+        T = new
+        if verbose:
+            print('deoverlap: iteration %d, max change %.3g sigma (%.0f s)' % (it, change, time.time() - t0))
+        if change < tol:
+            break
+
+    return _deoverlap_result(F, T, cluster=lab)
+
+
+def _rowmax(M):
+    n = M.shape[0]
+    mx, arg = np.zeros(n), np.full(n, -1)
+    r_ = np.repeat(np.arange(n), np.diff(M.indptr))
+    k = np.lexsort((-M.data, r_))
+    if len(k):
+        first = k[np.r_[True, r_[k][1:] != r_[k][:-1]]]
+        mx[r_[first]], arg[r_[first]] = M.data[first], M.indices[first]
+    return mx, arg
+
+
+def _deoverlap_result(F, T, **extra):
+    largest, jmax = _rowmax(F.multiply(T[None, :]).tocsr())
+    frmax, jfr = _rowmax(F)
+    d = dict(contamination=F.dot(T), I_deoverlapped=T, largest=largest, largest_row=np.where(largest > 0, jmax, -1),
+             coincident_fraction=frmax, coincident_row=jfr)
+    d.update(extra)
+    return d
+
+
+def deoverlap_jacobi(F, I, niter=8, damping=0.5, verbose=False):
+    """I = (1 + F) T solved by the damped fixed point T <- damping T + (1 - damping) max(I - F T, 0) from
+    T = max(I, 0), niter times (not iterated to convergence: where boxes hold each other's peaks it oscillates).
+    Same F and returned dict as deoverlap_solve (no cluster); contamination (and largest) is F T with the T of
+    the last update's input."""
+    import scipy.sparse
+    F = scipy.sparse.csr_matrix(F)
+    I = np.asarray(I, float)
+    T = prev = np.maximum(I, 0)
+    for it in range(niter):
+        prev = T
+        T = damping * prev + (1 - damping) * np.maximum(I - F.dot(prev), 0)
+        if verbose:
+            print('deoverlap iteration %d: max change %.3g' % (it, np.max(np.abs(T - prev))))
+    d = _deoverlap_result(F, prev)
+    d['I_deoverlapped'] = T
+    return d
 
 
 def _work_scan(iscan):
     try:
         return _WORKER['h']._harvest_scan(iscan)
     except Exception as e:          # e.g. an image file that is unreadable or still being restored
-        return iscan, None, '%s: %r' % (_WORKER['h'].scan_file(iscan), e), 0, 0.0
+        return iscan, None, '%s: %r' % (_WORKER['h'].scan_file(iscan), e), 0, 0.0, None
 
 
 class Harvester(object):
@@ -615,10 +1092,18 @@ class Harvester(object):
     reader    : 'auto', 'sparse' (bslz4_to_sparse) or 'h5py'
     monitor   : normalise each frame by ds.monitor_ref / ds.monitor (if the dataset has a monitor)
     box       : Box (see auto_box)
+    profiles  : also collect, for every reflection, its background-subtracted 1D profiles on s, f and omega summed
+                over scans (the dty profile is the per-scan rows). Written to group 'profiles' of the outfile:
+                data[offset[k]:offset[k + 1]] = s profile (2 hs + 1), f profile (2 hf + 1), omega profile
+                (2 ho + 1 frames, relative to the predicted omega). See profile_slices.
+    weights   : None, or (flat, offset) per-pixel profile weights in the same layout as the profiles (S(s), F(f),
+                W(omega) for each reflection). Adds the profile-weighted sums of ACCW to each (reflection, scan)
+                row: the profile-fitted intensity of the row is wA / wB, its variance (wM + I wC + wVbg) / wB^2 for
+                a peak of intensity I (use a model I, not the noisy row: count-based weights bias weak means).
     """
 
     def __init__(self, ds, grains, pars, ds_max, radius=None, mask=None, datapath=None, reader='auto',
-                 monitor=True, box=None, e2dx=None, e2dy=None):
+                 monitor=True, box=None, e2dx=None, e2dy=None, profiles=False, weights=None):
         self.ds = ds
         self.grains = list(grains)
         if hasattr(pars, 'get_parameters'):
@@ -650,6 +1135,8 @@ class Harvester(object):
             self.scale = float(ref) / np.asarray(ds.monitor, float)
         self.spots = None
         self.results = None
+        self.profiles = bool(profiles)
+        self.weights = weights
 
     # ---------------------------------------------------------------- files
     def scan_file(self, iscan):
@@ -686,6 +1173,33 @@ class Harvester(object):
         self._static()
         self._overlaps()
         return sp
+
+    def profile_offsets(self):
+        """offsets of each reflection's [s | f | omega] profile in the flat profile array (length n + 1)"""
+        sp = self.spots
+        n = (2 * sp['hs'] + 1) + (2 * sp['hf'] + 1) + (2 * sp['ho'] + 1)
+        return np.concatenate([[0], np.cumsum(n)]).astype(np.int64)
+
+    def _weight_sums(self):
+        """SB, SW, SC = sums over the good box pixels of (S F)^2, S F and (S F)^3, per reflection, for the weights"""
+        sp = self.spots
+        flat, off = self.weights
+        good = self._good
+        H, W = good.shape
+        n = len(sp['hs'])
+        SB, SW, SC = np.zeros(n), np.zeros(n), np.zeros(n)
+        for k in range(n):
+            hs, hf, s0, f0 = int(sp['hs'][k]), int(sp['hf'][k]), int(sp['s0'][k]), int(sp['f0'][k])
+            S = flat[off[k]:off[k] + 2 * hs + 1]
+            F = flat[off[k] + 2 * hs + 1:off[k] + 2 * hs + 2 * hf + 2]
+            r0, c0 = s0 - hs, f0 - hf
+            a0, a1, b0, b1 = max(r0, 0), min(s0 + hs + 1, H), max(c0, 0), min(f0 + hf + 1, W)
+            if a1 <= a0 or b1 <= b0:
+                continue
+            g = good[a0:a1, b0:b1]
+            w = np.outer(S[a0 - r0:a1 - r0], F[b0 - c0:b1 - c0]) * g
+            SB[k], SW[k], SC[k] = (w * w).sum(), w.sum(), (w * w * w).sum()
+        return SB, SW, SC
 
     def omega_step(self):
         om = np.asarray(self.ds.omega[0], float)
@@ -775,6 +1289,70 @@ class Harvester(object):
         inv = np.argsort(o)
         return c[inv], cmax[inv]
 
+    def _grid_order(self):
+        """(key, omega in frames, sort order, ncf, dty of the grain at each reflection) for the neighbour kernels"""
+        sp = self.spots
+        T = np.array([g.translation for g in self.grains], float)
+        g = sp['grain']
+        w = np.radians(sp['omega'])
+        dty = self.ds.y0 - T[g, 0] * np.sin(w) - T[g, 1] * np.cos(w)
+        cell = int(2 * max(sp['hs'].max(), sp['hf'].max()) + 1)
+        cs, cf = sp['s0'] // cell, sp['f0'] // cell
+        ncf = int(cf.max()) + 3
+        key = (cs + 1) * ncf + (cf + 1)
+        wf = sp['omega'] / self.omega_step()
+        return key, wf, np.lexsort((wf, key)), ncf, dty
+
+    def pair_overlaps(self):
+        """(ngrains, ngrains): M[i, j] = number of reflections of grain i whose box overlaps a box of grain j (in s,
+        f, omega, while both can be in the beam). M[i, j] / (reflections of i) is the shared fraction."""
+        sp = self.spots
+        key, wf, o, ncf, dty = self._grid_order()
+        g = sp['grain']
+        return _pair_overlaps(key[o], wf[o], sp['s0'][o], sp['f0'][o], sp['hs'][o], sp['hf'][o], sp['ho'][o], g[o],
+                              dty[o], self.radius[g][o], ncf, int(2 * sp['ho'].max()), len(self.grains))
+
+    def overlap_fractions(self, sigmas=None, frmin=1e-4):
+        """sparse (nrefl, nrefl) CSR matrix F[i, j] = fraction of reflection j's profile (Gaussian, widths sigmas
+        = (s, f, omega in frames) per reflection; default ShoeboxModel.sigmas, else box half widths / 3) inside the
+        box of reflection i, for reflections of other grains while both can be in the beam (entries >= frmin)"""
+        import scipy.sparse
+        sp = self.spots
+        if sigmas is None:
+            if hasattr(self.box, 'sigmas'):
+                sigmas = self.box.sigmas(sp, self.pars, self.omega_step())
+            else:
+                sigmas = (sp['hs'] / 3.0, sp['hf'] / 3.0, sp['ho'] / 3.0)
+        sig_s, sig_f, sig_w = [np.maximum(np.asarray(x, float), 0.3) for x in sigmas]
+        key, wf, o, ncf, dty = self._grid_order()
+        g = sp['grain']
+        n = len(o)
+        args = (key[o], wf[o], sp['s'][o], sp['f'][o], sp['s0'][o], sp['f0'][o], sp['hs'][o], sp['hf'][o],
+                sp['ho'][o], sig_s[o], sig_f[o], sig_w[o], g[o], dty[o], self.radius[g][o], ncf,
+                int(2 * sp['ho'].max()), float(frmin))
+        ptr = np.zeros(n + 1, np.int64)
+        _overlap_fractions(*(args + (ptr, np.zeros(0, np.int64), np.zeros(0))))
+        ptr = np.cumsum(ptr)
+        col, frac = np.zeros(ptr[-1], np.int64), np.zeros(ptr[-1])
+        _overlap_fractions(*(args + (ptr, col, frac)))
+        rows = np.repeat(o, np.diff(ptr))     # back to the spot order
+        return scipy.sparse.csr_matrix((frac, (rows, o[col])), shape=(n, n))
+
+    def deoverlap(self, I, sigI=None, sigmas=None, frmin=1e-4, F=None, method='solve', verbose=False, **kw):
+        """Contamination of every box by other grains' peaks, with the intensities corrected for it, on the
+        overlap_fractions matrix F: method 'solve' (deoverlap_solve) or 'jacobi' (deoverlap_jacobi); kw go to
+        that function. Returns its dict."""
+        t0 = time.time()
+        if F is None:
+            F = self.overlap_fractions(sigmas, frmin)
+        if verbose:
+            print('deoverlap: %d overlaps (%.0f s)' % (F.nnz, time.time() - t0))
+        if method == 'jacobi':
+            return deoverlap_jacobi(F, I, verbose=verbose, **kw)
+        if method == 'solve':
+            return deoverlap_solve(F, I, sigI, verbose=verbose, **kw)
+        raise ValueError('deoverlap method %r' % method)
+
     # ---------------------------------------------------------------- planning
     def plan_scan(self, iscan):
         """(frame indices, CSR pointers, reflection ids, omega offsets) for one scan: which reflections
@@ -815,7 +1393,7 @@ class Harvester(object):
     def _harvest_scan(self, iscan):
         plan = self.plan_scan(iscan)
         if plan is None:
-            return iscan, None, None, 0, 0.0
+            return iscan, None, None, 0, 0.0, None
         frames, ptr, spot, dom = plan
         sp, b = self.spots, self.box
         ids = np.unique(spot)
@@ -824,18 +1402,39 @@ class Harvester(object):
         arr = dict((k, np.ascontiguousarray(sp[k][ids])) for k in ('s0', 'f0', 'hs', 'hf', 'bw', 'nbox', 'nann', 'S1s', 'S1f',
                                                                       'S2s', 'S2f'))
         t0 = time.time()
+        mode = (1 if self.profiles else 0) | (2 if self.weights is not None else 0)
+        ho = np.ascontiguousarray(sp['ho'][ids])
+        nprof = (2 * arr['hs'] + 1) + (2 * arr['hf'] + 1) + (2 * ho + 1)
+        poff = np.concatenate([[0], np.cumsum(nprof)[:-1]]).astype(np.int64)
+        prof = np.zeros(int(nprof.sum()) if mode & 1 else 1)
+        if mode & 2:
+            wflat, woff = self.weights[0], np.ascontiguousarray(self.weights[1][ids]).astype(np.int64)
+            SB, SW = np.ascontiguousarray(self._SB[ids]), np.ascontiguousarray(self._SW[ids])
+            SC = np.ascontiguousarray(self._SC[ids])
+        else:
+            wflat, woff, SB, SW, SC = np.zeros(1), np.zeros(1, np.int64), np.zeros(1), np.zeros(1), np.zeros(1)
+        accw = np.zeros((len(ids) if mode & 2 else 1, NACCW))
+        gint = self._gint if mode & 1 else np.zeros((1, 1))
         rd = open_reader(self.scan_file(iscan), self.ds.limapath, self._good, self.reader)
         nfast = self._good.shape[1]
+        step = self.omega_step()
         try:
             for j, fr in enumerate(frames):
                 idx, vals = rd(int(fr))
                 a, z = ptr[j], ptr[j + 1]
-                _integrate_frame(idx, vals, nfast, self._adj, local[a:z], arr['s0'], arr['f0'], arr['hs'], arr['hf'],
-                                 arr['bw'], arr['nbox'], arr['nann'], arr['S1s'], arr['S1f'], arr['S2s'], arr['S2f'],
-                                 dom[a:z], float(self.scale[iscan, fr]), b.bg_estimator == 'clipped', b.p_clip, acc)
+                _integrate_frame_core(idx, vals, nfast, self._adj, local[a:z], arr['s0'], arr['f0'], arr['hs'],
+                                      arr['hf'], arr['bw'], arr['nbox'], arr['nann'], arr['S1s'], arr['S1f'],
+                                      arr['S2s'], arr['S2f'], dom[a:z], float(self.scale[iscan, fr]),
+                                      b.bg_estimator == 'clipped', b.p_clip, acc, mode, step, ho, gint, prof, poff,
+                                      wflat, woff, SB, SW, SC, accw)
         finally:
             rd.close()
-        return iscan, ids, acc, len(frames), time.time() - t0
+        extra = {}
+        if mode & 1:
+            extra['prof'] = prof
+        if mode & 2:
+            extra['accw'] = accw
+        return iscan, ids, acc, len(frames), time.time() - t0, extra
 
     # ---------------------------------------------------------------- run
     def run(self, scans=None, nproc=None, outfile=None, verbose=True):
@@ -852,6 +1451,14 @@ class Harvester(object):
         nsp = len(self.spots['h'])
         tot = np.zeros((nsp, NACC))
         nscans = np.zeros(nsp, np.int32)
+        if self.profiles:
+            gpoff = self.profile_offsets()
+            gprof = np.zeros(int(gpoff[-1]))
+            good = self._good.astype(float)
+            self._gint = np.zeros((good.shape[0] + 1, good.shape[1] + 1))
+            self._gint[1:, 1:] = good.cumsum(0).cumsum(1)
+        if self.weights is not None:
+            self._SB, self._SW, self._SC = self._weight_sums()
         _WORKER['h'] = self
         h5 = None
         if outfile is not None:
@@ -862,7 +1469,7 @@ class Harvester(object):
             gps = h5.create_group('per_scan')
             dsets = dict(spot=gps.create_dataset('spot', (0,), np.int32, maxshape=(None,), chunks=(65536,)),
                          scan=gps.create_dataset('scan', (0,), np.int32, maxshape=(None,), chunks=(65536,)))
-            for k in ACC:
+            for k in ACC + (ACCW if self.weights is not None else []):
                 dsets[k] = gps.create_dataset(k, (0,), np.float32, maxshape=(None,), chunks=(65536,))
             h5.attrs['box'] = repr(self.box)
             h5.attrs['box_omega_step'] = self.omega_step()
@@ -874,22 +1481,31 @@ class Harvester(object):
         nframes = 0
         failed = []
         if nproc is None:
-            nproc = max(1, len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else os.cpu_count())
+            nproc = max(1, len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else
+                        multiprocessing.cpu_count())
         if nproc > 1:
-            pool = multiprocessing.get_context('fork').Pool(nproc)
+            # fork: the workers share the Harvester (python 2 has no get_context and forks)
+            mp = multiprocessing.get_context('fork') if hasattr(multiprocessing, 'get_context') else multiprocessing
+            pool = mp.Pool(nproc)
             it = pool.imap_unordered(_work_scan, scans)
         else:
             pool = None
             it = map(_work_scan, scans)
         try:
-            for k, (iscan, ids, acc, nf, dt) in enumerate(it):
+            for k, (iscan, ids, acc, nf, dt, extra) in enumerate(it):
                 if ids is None:
                     if acc is not None:
                         failed.append((iscan, acc))
                         if verbose:
-                            print('skipped scan %d: %s' % (iscan, acc), flush=True)
+                            print('skipped scan %d: %s' % (iscan, acc))
+                            sys.stdout.flush()
                     continue
                 nframes += nf
+                if self.profiles:
+                    n_ = np.diff(gpoff)[ids]
+                    src = np.arange(int(n_.sum()))
+                    dst = np.repeat(gpoff[ids], n_) + src - np.repeat(np.cumsum(n_) - n_, n_)
+                    gprof[dst] += extra['prof']
                 for c in range(NACC):
                     if ACC[c] == 'maxval':
                         tot[ids, c] = np.maximum(tot[ids, c], acc[:, c])
@@ -904,10 +1520,13 @@ class Harvester(object):
                     dsets['scan'][n0:] = iscan
                     for c, name in enumerate(ACC):
                         dsets[name][n0:] = acc[:, c]
+                    if self.weights is not None:
+                        for c, name in enumerate(ACCW):
+                            dsets[name][n0:] = extra['accw'][:, c]
                 if verbose and (k % 20 == 0 or k == len(scans) - 1):
                     el = time.time() - t0
-                    print('%d/%d scans, %d frames, %.0f s, %.0f frames/s' % (k + 1, len(scans), nframes, el, nframes / max(el, 1e-9)),
-                          flush=True)
+                    print('%d/%d scans, %d frames, %.0f s, %.0f frames/s' % (k + 1, len(scans), nframes, el, nframes / max(el, 1e-9)))
+                    sys.stdout.flush()
         finally:
             if pool is not None:
                 pool.close()
@@ -917,7 +1536,16 @@ class Harvester(object):
         if failed and verbose:
             print('%d scans could not be read and were skipped: %s' % (len(failed), [f[0] for f in failed]))
         m = self.merged()
+        if self.profiles:
+            self.profile_data = (gprof, gpoff)
         if h5 is not None:
+            if self.profiles:
+                gp = h5.create_group('profiles')
+                gp.create_dataset('offset', data=gpoff)
+                gp.create_dataset('data', data=gprof.astype(np.float32), chunks=True, compression='gzip')
+                gp.attrs['layout'] = ('data[offset[k]:offset[k+1]] = [s profile (2 hs + 1) | f profile (2 hf + 1) | '
+                                      'omega profile (2 ho + 1 frames, centred on the predicted omega)], net counts '
+                                      'summed over scans; dty profile = per_scan rows')
             h5.create_dataset('failed_scans', data=np.array([f[0] for f in failed], np.int32))
             gm = h5.create_group('merged')
             for k, v in m.items():
