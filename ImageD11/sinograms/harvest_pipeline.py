@@ -292,9 +292,10 @@ def step_harvest(cfg):
         h.predict()
     log('harvest: %d grains, %d reflections, %s' % (len(grains), len(h.spots['h']), box))
     t0 = time.time()
-    h.run(nproc=cfg['nproc'], outfile=fname)
+    part = fname + '.part'          # renamed when complete: an interrupted run leaves no harvest to reuse
+    h.run(nproc=cfg['nproc'], outfile=part)
     log('harvest %s: %.0f s' % (fname, time.time() - t0))
-    with h5py.File(fname, 'a') as f:
+    with h5py.File(part, 'a') as f:
         f.create_dataset('gid', data=np.array(gid))
         f.create_dataset('radius', data=np.array(radius))
         f.create_dataset('ubi', data=np.array([g.ubi for g in grains]))
@@ -304,7 +305,8 @@ def step_harvest(cfg):
         f.attrs['datapath'] = raw_data(cfg, ds)
         for k, v in fit.items():
             f.attrs['shoebox_fit_' + k] = v
-    stamp(fname, cfg)
+    stamp(part, cfg)
+    os.rename(part, fname)
 
 
 def step_duplicates(cfg):
