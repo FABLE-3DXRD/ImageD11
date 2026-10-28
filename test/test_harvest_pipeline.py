@@ -97,5 +97,76 @@ class TestHarvestPipeline(unittest.TestCase):
             self.assertTrue(np.allclose(f['0/I_final'][()] * T, I0, equal_nan=True))
 
 
+
+class TestHarvestStep(unittest.TestCase):
+    """the harvest step on the synthetic frames: the grains file and its labels replaced by stand-ins; the
+    ShoeboxModel instrumental terms are fitted to a pilot harvest (the painted spots are 1 px wide)"""
+
+    def setUp(self):
+        if hdf5plugin is None:
+            self.skipTest('hdf5plugin is needed to read bitshuffle frames')
+        from ImageD11.sinograms import sinogram
+        self.tmp = tempfile.mkdtemp()
+        ds = FakeDataset(self.tmp)
+        ds.ybincens, ds.ymin, ds.grainsfile = np.array([0.0]), 0.0, 'none'
+        g0 = ImageD11.grain.grain(np.eye(3) * 4.1, translation=np.zeros(3))
+        orange = (ds.omega.min() - 1, ds.omega.max() + 1)
+        sp = harvester.predict_spots(g0.ubi, g0.translation, PARS, 0.75, SHAPE, omega_range=orange)
+        painted = ((sp['omega'] > -85) & (sp['omega'] < 85) & (sp['s'] > 20) & (sp['s'] < SHAPE[0] - 20) &
+                   (sp['f'] > 20) & (sp['f'] < SHAPE[1] - 20))
+        I = np.where(painted, np.random.RandomState(1).uniform(2000, 20000, len(sp['s'])), 0.0)
+        write_frames(ds, sp, I, 1.0, 0.7, 0.2, np.zeros(SHAPE, bool))
+
+        class GS(object):
+            grain = g0
+        self.saved = (hp.dataset_and_pars, hp.labels_recon, sinogram.read_h5)
+        hp.dataset_and_pars = lambda cfg: (ds, PARS)
+        hp.labels_recon = lambda f, g: np.zeros((3, 3), int)
+        sinogram.read_h5 = lambda f, d, p: [GS()]
+        cfgfile = os.path.join(self.tmp, 'config.json')
+        with open(cfgfile, 'w') as f:
+            json.dump({"dataset": "fake", "phase": "fake", "outdir": os.path.join(self.tmp, 'out'), "nproc": 1,
+                       "harvest": {"reader": "h5py", "ds_max": 0.75, "fit_every": 1,
+                                   "box": {"psf": 2.0, "phi0": 0.2, "bandpass": 5e-3}}}, f)
+        self.cfg = hp.load_config(cfgfile)
+
+    def tearDown(self):
+        from ImageD11.sinograms import sinogram
+        if hasattr(self, 'saved'):
+            hp.dataset_and_pars, hp.labels_recon, sinogram.read_h5 = self.saved
+        shutil.rmtree(self.tmp)
+
+    def test_harvest_fit(self):
+        hp.step_harvest(self.cfg)
+        with h5py.File(hp.out(self.cfg, 'harvest.h5'), 'r') as f:
+            self.assertEqual(list(f['gid'][()]), [0])
+            self.assertIn('shoebox_fit_psf', f.attrs)
+            psf = f.attrs['shoebox_fit_psf']
+            self.assertLess(abs(psf - 1.0), 0.3)          # started at 2 px; the spots are 1 px wide
+            self.assertGreater(f['merged/I'][()].max(), 1000)
+
+
+class TestGrainSpreads(unittest.TestCase):
+
+    def test_spreads(self):
+        rng = np.random.RandomState(0)
+        n = 400
+        ubi0 = np.eye(3) * 4.0
+        ubis, epss = [], []
+        for k in range(n):
+            ax = rng.normal(size=3)
+            ax /= np.linalg.norm(ax)
+            t = np.radians(rng.normal(0, 0.1))
+            K = np.array([[0, -ax[2], ax[1]], [ax[2], 0, -ax[0]], [-ax[1], ax[0], 0]])
+            R = np.eye(3) + np.sin(t) * K + (1 - np.cos(t)) * np.dot(K, K)
+            ubis.append(np.dot(ubi0, R.T))
+            e = rng.normal(0, 1e-3, (3, 3))
+            epss.append((e + e.T) / 2)
+        u, phi, eps = hp.grain_spreads(np.array(ubis), np.array(epss), np.ones(n, bool))
+        self.assertTrue(np.allclose(u, ubi0, atol=0.01))
+        self.assertLess(abs(phi - 0.1) / 0.1, 0.1)          # rotations of N(0, 0.1 deg) about random axes
+        self.assertGreater(eps, 0)
+
+
 if __name__ == '__main__':
     unittest.main()
