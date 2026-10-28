@@ -10,7 +10,7 @@ Steps:
   harvest     box integration of every predicted reflection of every grain (Harvester), grains and radii from
               the dataset's grains file and TensorMap labels -> harvest.h5 (or reuse cfg harvest.file)
   duplicates  near-parallel grains sharing their peaks (Harvester.pair_overlaps, duplicate_groups)
-              -> duplicates.json
+              -> duplicates.json, pair_overlaps.h5
   pass1       harvest of the cleaned set: kept grains plus one union-box grain per duplicate group
               (union_spots), with 1D s, f, omega profiles -> pass1.h5
   sample      sample cross-section: MLEM of the sinogram of all pass-1 box sums (absorption.sample_shape)
@@ -267,7 +267,13 @@ def step_duplicates(cfg):
                       for i, j, a, b, t in pairs], provenance=provenance(cfg))
     with open(out(cfg, 'duplicates.json'), 'w') as fo:
         json.dump(res, fo, indent=1)
-    np.save(out(cfg, 'pair_overlaps.npy'), M)
+    with h5py.File(out(cfg, 'pair_overlaps.h5'), 'w') as fo:
+        d = fo.create_dataset('pair_overlaps', data=M, compression='gzip')
+        d.attrs['description'] = ('M[i, j] = number of reflections of grain i whose box overlaps a box of grain j '
+                                  '(s, f, omega, while both can be in the beam); rows and columns in the order of gid')
+        fo.create_dataset('gid', data=np.asarray(gid))
+        fo.create_dataset('nrefl', data=np.bincount(h.spots['grain'], minlength=len(gid)))
+    stamp(out(cfg, 'pair_overlaps.h5'), cfg)
     log('duplicates: %d groups %s (%.0f s)' % (len(groups), res['groups'], time.time() - t0))
 
 

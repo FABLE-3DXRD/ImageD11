@@ -65,6 +65,9 @@ class TestHarvestPipeline(unittest.TestCase):
         hp.run(self.cfg, hp.STEPS[1:])
         with open(hp.out(self.cfg, 'duplicates.json')) as f:
             self.assertEqual(json.load(f)['groups'], [[0, 1]])
+        with h5py.File(hp.out(self.cfg, 'pair_overlaps.h5'), 'r') as f:
+            self.assertEqual(f['pair_overlaps'].shape, (2, 2))
+            self.assertGreater(f['pair_overlaps'][0, 1], 0.5 * f['nrefl'][0])
         with h5py.File(hp.out(self.cfg, 'grains.h5'), 'r') as f:
             self.assertEqual(list(f.keys()), ['0'])
             g = f['0']
