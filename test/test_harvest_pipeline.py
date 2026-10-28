@@ -77,6 +77,17 @@ class TestHarvestPipeline(unittest.TestCase):
             H = g['refl_hkl'][()][ok]
             ratio = g['I_final'][()][ok] / np.array([t.get(tuple(x), np.nan) for x in H])
             self.assertLess(abs(np.nanmedian(ratio) - 1), 0.05)
+            I0 = g['I_final'][()]
+            self.assertTrue(np.all(g['transmission'][()] == 1))
+        with h5py.File(hp.out(self.cfg, 'sample.h5'), 'r') as f:
+            self.assertGreater(f['mask'][()].sum(), 0)
+        # with absorption: the same intensities divided by the traced transmission
+        self.cfg['absorption']['mu'] = 0.05
+        hp.run(self.cfg, ['grains'])
+        with h5py.File(hp.out(self.cfg, 'grains.h5'), 'r') as f:
+            T = f['0/transmission'][()]
+            self.assertTrue(np.all((T > 0) & (T <= 1)) and np.any(T < 1))
+            self.assertTrue(np.allclose(f['0/I_final'][()] * T, I0, equal_nan=True))
 
 
 if __name__ == '__main__':
