@@ -13,12 +13,16 @@ Steps:
               -> duplicates.json
   pass1       harvest of the cleaned set: kept grains plus one union-box grain per duplicate group
               (union_spots), with 1D s, f, omega profiles -> pass1.h5
+  sample      sample cross-section: MLEM of the sinogram of all pass-1 box sums (absorption.sample_shape)
+              -> sample.h5
   flags       contamination of every box by other grains' peaks (Harvester.deoverlap) -> flags.h5, and the
-              grain table (refine or drop, twin partners) -> grains.csv
+              grain table (refine or drop) -> grains.csv
   learn       s, f, omega profiles learned from strong clean reflections (learn_profiles) -> learned.h5
   pass2       profile-weighted harvest (Harvester weights) -> pass2.h5
   grains      per grain: shape by MLEM from its strongest reflections (profile_fit.mlem_shape), its projection
-              at every reflection, intensities (profile_fit.intensities) -> grains.h5, shapes.h5
+              at every reflection, intensities (profile_fit.intensities), absorption (cfg absorption.mu: the
+              traced path through the sample cross-section from the grain centre, absorption.path_lengths) and
+              the reflections to leave out (drop) -> grains.h5, shapes.h5
 
 Usage:  python -m ImageD11.sinograms.harvest_pipeline config.json [step ...]     (no step: all)
 Every output file carries the config, the ImageD11 version (and git commit for a checkout) and the versions of
@@ -39,7 +43,7 @@ import multiprocessing
 import numpy as np
 import h5py
 
-STEPS = ['harvest', 'duplicates', 'pass1', 'flags', 'learn', 'pass2', 'grains']
+STEPS = ['harvest', 'duplicates', 'pass1', 'sample', 'flags', 'learn', 'pass2', 'grains']
 COLS = ('grain', 'h', 'k', 'l', 'ds', 'tth', 'eta', 'omega', 's', 'f', 'sc', 'fc', 's0', 'f0', 'hs', 'hf', 'ho', 'bw')
 
 DEFAULTS = {
@@ -55,8 +59,11 @@ DEFAULTS = {
     "duplicates": {"symmetry": "cubic", "max_angle": 2.0, "min_shared": 0.3, "in_box": 0.5, "to_partner": 0.5,
                    "min_snr": 20.0},
     "flags": {"deoverlap": "jacobi", "deoverlap_args": {},   # Harvester.deoverlap method ('jacobi', 'solve'), kw
-              "contam_frac": 0.05, "contam_nsig": 2.0, "twin_angles": [], "twin_tol": 1.0,
+              "contam_frac": 0.05, "contam_nsig": 2.0,
               "min_clean": 500, "min_clean_frac": 0.5},
+    "sample": {"omega_bin": 1.0, "niter": 60, "threshold": 0.1},      # threshold: x 99th percentile density
+    "absorption": {"mu": None},  # linear absorption coefficient per dty unit (e.g. 1/um); None: no correction
+    "exclude": {"min_coverage": 0.98},   # fraction of the grain's projected shape inside the integrated dty rows
     "learn": {"snr_ref": 20.0, "k": 15, "min_ref": 60},
     "intensity": {"t_prof": 3.0, "rej": 4.0},
     "mlem": {"snr_min": 20.0, "nmax": 600, "niter": 40, "outsig": 5.0, "prop": 0.1, "out_at": [5, 15],
@@ -306,9 +313,37 @@ def step_pass1(cfg):
     harvest_with(cfg, sp, grains, radius, gid, members, out(cfg, 'pass1.h5'), profiles=True)
 
 
+def step_sample(cfg):
+    """sample cross-section from the sinogram of all pass-1 box sums -> sample.h5 (density, mask, sinogram)"""
+    from ImageD11.sinograms import absorption
+    from ImageD11.sinograms.geometry import recon_bins
+    c = cfg['sample']
+    ds, _ = dataset_and_pars(cfg)
+    ny = len(ds.ybincens)
+    om = np.asarray(ds.omega, float)
+    edges = np.arange(np.floor(om.min()), np.ceil(om.max()) + c['omega_bin'], c['omega_bin'])
+    with h5py.File(out(cfg, 'pass1.h5'), 'r') as f:
+        omega = f['spots/omega'][()]
+        ps = f['per_scan']
+        sino = np.zeros((len(edges) - 1, ny))
+        n, chunk = ps['spot'].shape[0], 1 << 25
+        for a in range(0, n, chunk):
+            sino += absorption.sinogram(omega, ps['spot'][a:a + chunk], ps['scan'][a:a + chunk],
+                                        ps['box'][a:a + chunk] - ps['bg'][a:a + chunk], edges, ny)
+    nb = len(recon_bins(ds.ybincens, ds.ymin, ds.ystep, ds.y0)[1])
+    rho, mask = absorption.sample_shape(sino, 0.5 * (edges[1:] + edges[:-1]), ds.y0, ds.ymin, ds.ystep, (nb, nb),
+                                        niter=c['niter'], threshold=c['threshold'])
+    with h5py.File(out(cfg, 'sample.h5'), 'w') as o:
+        o.create_dataset('density', data=rho.astype(np.float32), compression='gzip')
+        o.create_dataset('mask', data=mask, compression='gzip')
+        o.create_dataset('sinogram', data=sino.astype(np.float32), compression='gzip')
+        o.create_dataset('omega_edges', data=edges)
+    stamp(out(cfg, 'sample.h5'), cfg)
+    log('sample: %d pixels (equivalent diameter %.1f dty units)' % (mask.sum(), 2 * np.sqrt(mask.sum() / np.pi) * ds.ystep))
+
+
 def step_flags(cfg):
     from ImageD11.sinograms import harvester
-    from ImageD11 import sym_u
     c = cfg['flags']
     fn = out(cfg, 'pass1.h5')
     h = harvester_from_file(cfg, fn)
@@ -336,44 +371,28 @@ def step_flags(cfg):
     log('deoverlap %.0f s' % (time.time() - t0))
     flag = d['contamination'] > np.maximum(c['contam_frac'] * np.maximum(I, 0), c['contam_nsig'] * sigI)
     g = sp['grain']
-    U = []
-    for gr in h.grains:
-        u_, _, vt = np.linalg.svd(np.linalg.inv(gr.ubi))
-        U.append(np.dot(u_, vt))
-    grp = sym_u.getgroup(cfg['duplicates']['symmetry'])().group
-    src = d['largest_row']
-    has = flag & (src >= 0)
-    pairs = set(zip(g[has], g[np.maximum(src, 0)][has]))
-    twin_pair = {}
-    for a_, b_ in pairs:
-        ang = harvester.misorientation(U[a_], U[b_], grp)
-        twin_pair[(a_, b_)] = any(abs(ang - t) < c['twin_tol'] for t in c['twin_angles'])
-    by_twin = flag & np.array([twin_pair.get((a_, b_), False) for a_, b_ in zip(g, g[np.maximum(src, 0)])])
-    by_unrelated = flag & ~by_twin
     with h5py.File(out(cfg, 'flags.h5'), 'w') as o:
-        for k, v in dict(d, contaminated=flag, by_twin_partner=by_twin, by_unrelated=by_unrelated).items():
+        for k, v in dict(d, contaminated=flag).items():
             o.create_dataset(k, data=v, compression='gzip')
-        o.attrs['rule'] = ("contaminated = de-overlapped contamination > max(%g I, %g sigI); by_twin_partner = "
-                           "largest contributor at a twin misorientation" % (c['contam_frac'], c['contam_nsig']))
+        o.attrs['rule'] = "contaminated = de-overlapped contamination > max(%g I, %g sigI)" % (
+            c['contam_frac'], c['contam_nsig'])
     stamp(out(cfg, 'flags.h5'), cfg)
     sigf = I > 3 * sigI
     rows = []
     for k in range(len(h.grains)):
         m = (g == k) & sigf
-        n_clean = int((m & ~by_unrelated).sum())
-        twins = sorted(set(int(h.gid[b_]) for a_, b_ in pairs if a_ == k and twin_pair[(a_, b_)]))
+        n_clean = int((m & ~flag).sum())
         drop = n_clean < c['min_clean'] or n_clean < c['min_clean_frac'] * m.sum()
         rows.append(dict(gid=int(h.gid[k]), members=' '.join(members[k]), n_significant=int(m.sum()),
-                         n_clean=n_clean, frac_by_unrelated=float(by_unrelated[m].mean()) if m.any() else np.nan,
-                         frac_by_twin=float(by_twin[m].mean()) if m.any() else np.nan,
-                         twin_partners=' '.join(map(str, twins)), refine=not drop))
+                         n_clean=n_clean, frac_contaminated=float(flag[m].mean()) if m.any() else np.nan,
+                         refine=not drop))
     with open(out(cfg, 'grains.csv'), 'w') as fh:
-        w = csv.DictWriter(fh, fieldnames=['gid', 'members', 'n_significant', 'n_clean', 'frac_by_unrelated',
-                                           'frac_by_twin', 'twin_partners', 'refine'])
+        w = csv.DictWriter(fh, fieldnames=['gid', 'members', 'n_significant', 'n_clean', 'frac_contaminated',
+                                           'refine'])
         w.writeheader()
         w.writerows(rows)
-    log('flags: %.1f%% of significant reflections flagged (%.1f%% by unrelated grains); %d of %d grains dropped' % (
-        100 * flag[sigf].mean(), 100 * by_unrelated[sigf].mean(), sum(not r['refine'] for r in rows), len(rows)))
+    log('flags: %.1f%% of significant reflections contaminated; %d of %d grains dropped' % (
+        100 * flag[sigf].mean(), sum(not r['refine'] for r in rows), len(rows)))
 
 
 def step_learn(cfg):
@@ -438,8 +457,11 @@ def _grain(k):
     I_sum = np.where(seen, r0['net'], 0).sum(0)
     s_sum = np.sqrt(np.where(seen, r0['v_sum'], 0).sum(0))
     H = np.column_stack((sp['h'], sp['k'], sp['l']))
+    # boxes cut by the ends of the omega range
+    half = (sp['ho'] + 0.5) * G['ostep']
+    omega_edge = (sp['omega'] - half < G['omega_range'][0]) | (sp['omega'] + half > G['omega_range'][1])
     use = np.all(H % int(c['hkl_divisor']) == 0, axis=1) & ~G['drop'][a:b] & ~sp['edge'] & ~sp['touch_mask'] & \
-        (np.abs(np.sin(np.radians(sp['eta']))) >= c['min_sin_eta']) & (I_sum > c['snr_min'] * s_sum)
+        ~omega_edge & (np.abs(np.sin(np.radians(sp['eta']))) >= c['min_sin_eta']) & (I_sum > c['snr_min'] * s_sum)
     idx = np.flatnonzero(use)
     idx = idx[np.argsort(-(I_sum[idx] / s_sum[idx]))][:c['nmax']]
     shape2d = (len(G['bc']), len(G['bc']))
@@ -454,20 +476,35 @@ def _grain(k):
                                            out_at=tuple(c['out_at']))
     else:
         rho, nout = support.astype(float), 0       # too few strong reflections: the support disc
-    P = profile_fit.project(rho, sp['omega'], ds.y0, ds.ymin, ds.ystep, ny)[:, iscans].T
+    Pall = profile_fit.project(rho, sp['omega'], ds.y0, ds.ymin, ds.ystep, ny)
+    P = Pall[:, iscans].T
+    # fraction of the grain's projection on the rows that were integrated (the rest is outside the dty window)
+    ptot = Pall.sum(1)
+    coverage = np.where(ptot > 0, (P * seen).sum(0) / np.where(ptot > 0, ptot, 1), 0.0)
     res = profile_fit.intensities(A['box'], A['bg'], A['var'], A['nframes'], sp['nbox'], P, w=w,
                                   t_prof=ci['t_prof'], rej=ci['rej'])
     net_used = np.where(res['profile_used'][None, :], res['model'], r0['net'] * seen)
     r1 = profile_fit.row_estimates(A['box'], A['bg'], A['var'], A['nframes'], sp['nbox'], w, res['model'])
+    if G['mask'] is not None:
+        from ImageD11.sinograms import absorption
+        L = absorption.path_lengths(G['mask'], ds.ystep, G['T'][k][0], G['T'][k][1], sp['omega'], sp['tth'],
+                                    sp['eta'])
+        trans = np.exp(-cfg['absorption']['mu'] * L)
+    else:
+        trans = np.ones(nr)
+    overlap = G['drop'][a:b]
+    drop = overlap | sp['edge'] | sp['touch_mask'] | omega_edge | (coverage < cfg['exclude']['min_coverage'])
     grp = dict(iscan=iscans, dty=ds.ybincens[iscans], ubi=G['ubi'][k], translation=G['T'][k], refl_hkl=H,
                refl_omega=sp['omega'], refl_s=sp['s'], refl_f=sp['f'], refl_tth=sp['tth'], refl_eta=sp['eta'],
                refl_touch_mask=sp['touch_mask'], refl_edge=sp['edge'], refl_n_overlap=sp['n_overlap'],
                refl_hs=sp['hs'], refl_ho=sp['ho'], box=A['box'].astype(np.float32), bg=A['bg'].astype(np.float32),
                var=A['var'].astype(np.float32), nframes=A['nframes'].astype(np.float32),
-               net=net_used.astype(np.float32), I_final=res['I'], sigI_final=res['sigI'], I_sum=res['I_sum'],
+               net=(net_used / trans[None, :]).astype(np.float32), I_final=res['I'] / trans,
+               sigI_final=res['sigI'] / trans, transmission=trans, coverage=coverage, omega_edge=omega_edge,
+               overlap=overlap, I_sum=res['I_sum'],
                sigI_sum=res['sigI_sum'], I_prof=res['I_prof'], sigI_prof=res['sigI_prof'],
                profile_used=res['profile_used'], chi2=res['chi2'], wI=r1['prof'].astype(np.float32),
-               wvar=r1['v_prof'].astype(np.float32), drop=G['drop'][a:b], members=np.array(G['members'][k], dtype='S'))
+               wvar=r1['v_prof'].astype(np.float32), drop=drop, members=np.array(G['members'][k], dtype='S'))
     return int(G['gid'][k]), grp, rho.astype(np.float32), len(idx), nout
 
 
@@ -487,10 +524,17 @@ def step_grains(cfg):
                                                             'touch_mask', 'edge', 'n_overlap', 'hs', 'ho', 'nbox'))
         _G['gid'], _G['members'] = f['gid'][()], [x.split() for x in f['members'][()].astype(str)]
         _G['ubi'], _G['T'], _G['radius'] = f['ubi'][()], f['translation'][()], f['radius'][()]
-        _G['drop'] = fl['by_unrelated'][()]
+        _G['drop'] = fl['contaminated'][()]
     _G['start'] = np.searchsorted(_G['sp']['grain'], np.arange(len(_G['gid']) + 1))
     _G['rstart'] = np.searchsorted(_G['spot'], _G['start'])
     _G['cfg'], _G['ds'] = cfg, ds
+    om = np.asarray(ds.omega, float)
+    _G['omega_range'] = (om.min(), om.max())
+    _G['ostep'] = float(np.median(np.abs(np.diff(om, axis=-1))))
+    _G['mask'] = None
+    if cfg['absorption']['mu'] is not None:
+        with h5py.File(out(cfg, 'sample.h5'), 'r') as f:
+            _G['mask'] = f['mask'][()]
     _G['bc'] = recon_bins(ds.ybincens, ds.ymin, ds.ystep, ds.y0)[1]
     log('grains: loaded in %.0f s' % (time.time() - t0))
     # fork: the workers share _G (the default start method may be spawn; python 2 has no get_context and forks)

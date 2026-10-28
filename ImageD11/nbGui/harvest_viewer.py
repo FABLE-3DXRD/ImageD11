@@ -139,7 +139,8 @@ class Results(object):
             with h5py.File(self.grains, 'r') as f:
                 g = f[str(int(gid))]
                 for c in ('iscan', 'box', 'bg', 'var', 'nframes', 'I_final', 'sigI_final', 'I_sum', 'sigI_sum',
-                          'profile_used', 'drop', 'chi2', 'wI', 'wvar'):
+                          'profile_used', 'drop', 'chi2', 'wI', 'wvar', 'overlap', 'omega_edge', 'coverage',
+                          'transmission'):
                     if c in g:
                         z[c] = g[c][()]
                 z['model'] = g['net'][()]
@@ -234,7 +235,8 @@ class Results(object):
         for c in ('wI', 'wvar', 'model'):
             if c in z:
                 out['dty'][c] = z[c][:, j].astype(float)
-        for c in ('I_final', 'sigI_final', 'I_sum', 'sigI_sum', 'profile_used', 'chi2', 'drop'):
+        for c in ('I_final', 'sigI_final', 'I_sum', 'sigI_sum', 'profile_used', 'chi2', 'drop', 'overlap',
+                  'omega_edge', 'coverage', 'transmission', 'refl_touch_mask', 'refl_edge'):
             out[c] = z[c][j] if c in z else None
         if out['I_sum'] is None:
             out['I_sum'], out['sigI_sum'] = float(z['I'][j]), float(z['sigI'][j])
@@ -561,7 +563,13 @@ def draw_profiles(fig, p, why='', scan_dty=None):
     if final:
         used = 'dty profile fit (weak)' if p['profile_used'] else 'box sum'
         t += f"  ->  I_final {p['I_final']:.1f} +- {p['sigI_final']:.1f}  [{used}; chi2 {p['chi2']:.2f}"
-        t += '; DROPPED (contaminated)]' if p['drop'] else ']'
+        if p['transmission'] is not None:
+            t += f"; transmission {p['transmission']:.3f}; dty coverage {p['coverage']:.3f}"
+        if p['drop']:
+            why = [n for n, c in (('contaminated', 'overlap'), ('omega range end', 'omega_edge'),
+                                  ('touches mask', 'refl_touch_mask'), ('detector edge', 'refl_edge')) if p[c]]
+            t += '; DROPPED (%s)' % (', '.join(why) or 'dty coverage')
+        t += ']'
     if p['n_ref']:
         t += f"  learned from {p['n_ref']} strong refs{'; is a reference' if p['is_reference'] else ''}"
     fig.suptitle(t, fontsize=8)
