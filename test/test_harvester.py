@@ -247,6 +247,29 @@ class TestHarvester(unittest.TestCase):
         self.check(*self.harvest('sparse'))
 
 
+class TestTwinLaw(unittest.TestCase):
+
+    def test_distance(self):
+        from ImageD11 import sym_u
+        grp = sym_u.getgroup('cubic')().group
+        def rot(ang, ax):
+            ax = np.asarray(ax, float) / np.linalg.norm(ax)
+            K = np.array([[0, -ax[2], ax[1]], [ax[2], 0, -ax[0]], [-ax[1], ax[0], 0]])
+            t = np.radians(ang)
+            return np.eye(3) + np.sin(t) * K + (1 - np.cos(t)) * np.dot(K, K)
+        U1 = np.dot(rot(20, (1, 2, 0)), rot(35, (0, 0, 1)))
+        # 60 deg about another <111> of the crystal, plus a 0.3 deg deviation: a Sigma-3 twin
+        U2 = np.dot(U1, np.dot(rot(60, (-1, 1, 1)), rot(0.3, (1, 0, 0))))
+        self.assertLess(harvester.twin_law_distance(U1, U2, grp, 60, (1, 1, 1)), 0.31)
+        ang, ax = harvester.misorientation_axis(U1, U2, grp)
+        self.assertAlmostEqual(ang, 60, delta=0.31)
+        # 60 deg about <100>: same angle, not a Sigma-3 twin
+        U3 = np.dot(U1, rot(60, (1, 0, 0)))
+        self.assertAlmostEqual(harvester.misorientation(U1, U3, grp), 30, delta=1e-6)    # 60<100> = 30<100> (4-fold)
+        U4 = np.dot(U1, rot(55, (1, 1, 0)))
+        self.assertGreater(harvester.twin_law_distance(U1, U4, grp, 60, (1, 1, 1)), 5)
+
+
 class TestDeoverlap(unittest.TestCase):
 
     def test_solve(self):

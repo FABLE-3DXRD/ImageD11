@@ -841,6 +841,34 @@ def misorientation(U1, U2, group):
     return np.degrees(np.arccos(np.clip((tr - 1) / 2, -1, 1)))
 
 
+def misorientation_axis(U1, U2, group):
+    """(angle in deg, unit rotation axis in the crystal frame of U1) of the smallest rotation between the
+    orientations U1 and U2 under the rotations of group; the axis is (0, 0, 0) for no rotation"""
+    d = np.dot(U1.T, U2)
+    R = max((np.dot(np.asarray(op, float), d) for op in group), key=np.trace)
+    ang = np.arccos(np.clip((np.trace(R) - 1) / 2, -1, 1))
+    ax = np.array([R[2, 1] - R[1, 2], R[0, 2] - R[2, 0], R[1, 0] - R[0, 1]])
+    n = np.linalg.norm(ax)
+    if n < 1e-9:
+        if ang < 1e-6:
+            return 0.0, np.zeros(3)
+        # 180 degrees: the axis is the eigenvector of R with eigenvalue 1
+        w, v = np.linalg.eigh((R + R.T) / 2)
+        ax, n = v[:, np.argmax(w)], 1.0
+    return np.degrees(ang), ax / n
+
+
+def twin_law_distance(U1, U2, group, angle, axis):
+    """distance (deg) of the orientation U2 from U1 rotated by the twin law (angle in deg about the crystal axis,
+    e.g. 60, (1, 1, 1)), over the symmetry-equivalent axes of the law and of U2: 0 for an ideal twin"""
+    k = np.asarray(axis, float) / np.linalg.norm(axis)
+    K = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]])
+    t = np.radians(angle)
+    R = np.eye(3) + np.sin(t) * K + (1 - np.cos(t)) * np.dot(K, K)
+    ops = [np.asarray(op, float) for op in group]
+    return min(misorientation(np.dot(U1, np.dot(op, np.dot(R, op.T))), U2, group) for op in ops)
+
+
 def _match(H_a, ubi_a, ubi_b, H_b, om_a, om_b):
     """for each reflection of grain a: the row of grain b with the same reflection (h_b = round(ubi_b inv(ubi_a))
     h_a, the omega solution closest to a's), or -1"""
