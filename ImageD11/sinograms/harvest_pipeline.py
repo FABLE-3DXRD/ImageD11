@@ -20,8 +20,9 @@ Steps:
   learn       s, f, omega profiles learned from strong clean reflections (learn_profiles) -> learned.h5
   pass2       profile-weighted harvest (Harvester weights) -> pass2.h5
   grains      per grain: shape by MLEM from its strongest reflections (profile_fit.mlem_shape), its projection
-              at every reflection, intensities (profile_fit.intensities), absorption (cfg absorption.mu: the
-              traced path through the sample cross-section from the grain centre, absorption.path_lengths) and
+              at every reflection, intensities (profile_fit.intensities), absorption (cfg absorption: mu from
+              the formula and density by xraylib; the traced path through the sample cross-section from the grain
+              centre, absorption.path_lengths) and
               the reflections to leave out (drop) -> grains.h5, shapes.h5
 
 Usage:  python -m ImageD11.sinograms.harvest_pipeline config.json [step ...]     (no step: all)
@@ -62,7 +63,9 @@ DEFAULTS = {
               "contam_frac": 0.05, "contam_nsig": 2.0,
               "min_clean": 500, "min_clean_frac": 0.5},
     "sample": {"omega_bin": 1.0, "niter": 60, "threshold": 0.1},      # threshold: x 99th percentile density
-    "absorption": {"mu": None},  # linear absorption coefficient per dty unit (e.g. 1/um); None: no correction
+    "absorption": {"formula": None,     # chemical formula of the sample, e.g. "LaMn0.4Ga0.6O3"; None: no correction
+                   "density": None,     # g/cm3
+                   "dty_unit": None},   # length of one dty unit: "nm", "um" or "mm" (mu from xraylib)
     "exclude": {"min_coverage": 0.98},   # fraction of the grain's projected shape inside the integrated dty rows
     "learn": {"snr_ref": 20.0, "k": 15, "min_ref": 60},
     "intensity": {"t_prof": 3.0, "rej": 4.0},
@@ -489,7 +492,7 @@ def _grain(k):
         from ImageD11.sinograms import absorption
         L = absorption.path_lengths(G['mask'], ds.ystep, G['T'][k][0], G['T'][k][1], sp['omega'], sp['tth'],
                                     sp['eta'])
-        trans = np.exp(-cfg['absorption']['mu'] * L)
+        trans = np.exp(-G['mu'] * L)
     else:
         trans = np.ones(nr)
     overlap = G['drop'][a:b]
@@ -510,7 +513,7 @@ def _grain(k):
 
 def step_grains(cfg):
     from ImageD11.sinograms.geometry import recon_bins
-    ds, _ = dataset_and_pars(cfg)
+    ds, P = dataset_and_pars(cfg)
     t0 = time.time()
     with h5py.File(out(cfg, 'pass2.h5'), 'r') as f, h5py.File(out(cfg, 'flags.h5'), 'r') as fl:
         ps = f['per_scan']
@@ -531,8 +534,16 @@ def step_grains(cfg):
     om = np.asarray(ds.omega, float)
     _G['omega_range'] = (om.min(), om.max())
     _G['ostep'] = float(np.median(np.abs(np.diff(om, axis=-1))))
-    _G['mask'] = None
-    if cfg['absorption']['mu'] is not None:
+    _G['mask'], _G['mu'] = None, 0.0
+    ca = cfg['absorption']
+    if ca['formula'] is not None:
+        from ImageD11.sinograms import absorption
+        if ca['density'] is None or ca['dty_unit'] not in absorption.DTY_UNIT_CM:
+            raise ValueError('absorption needs density (g/cm3) and dty_unit (%s)' % sorted(absorption.DTY_UNIT_CM))
+        _G['mu'] = absorption.mu_per_dty_unit(ca['formula'], ca['density'], float(P.get('wavelength')),
+                                              ca['dty_unit'])
+        log('absorption: %s, %g g/cm3: mu = %.4g per dty unit (%.4g /cm)' % (
+            ca['formula'], ca['density'], _G['mu'], _G['mu'] / absorption.DTY_UNIT_CM[ca['dty_unit']]))
         with h5py.File(out(cfg, 'sample.h5'), 'r') as f:
             _G['mask'] = f['mask'][()]
     _G['bc'] = recon_bins(ds.ybincens, ds.ymin, ds.ystep, ds.y0)[1]
@@ -555,6 +566,8 @@ def step_grains(cfg):
     finally:
         pool.close()
         pool.join()
+    with h5py.File(out(cfg, 'grains.h5'), 'a') as fo:
+        fo.attrs['absorption_mu_per_dty_unit'] = _G['mu']
     stamp(out(cfg, 'grains.h5'), cfg)
     stamp(out(cfg, 'shapes.h5'), cfg)
 

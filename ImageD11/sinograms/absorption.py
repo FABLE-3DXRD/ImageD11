@@ -8,7 +8,7 @@ the grain maps. The sample is taken to extend along z (the rotation axis) with t
 diffracted ray's path is its chord in the cross-section divided by the horizontal fraction of its direction.
 The 3D shape is not known; for small 2theta this is the beam chord through the sample at (omega, dty).
 
-Lengths are in the units of dty (the reconstruction pixel is ystep); mu is per dty unit.
+Lengths are in the units of dty (the reconstruction pixel is ystep); mu is per dty unit (see mu_per_dty_unit).
 """
 
 from __future__ import print_function, division
@@ -18,6 +18,19 @@ import numba
 import scipy.ndimage
 
 from ImageD11.sinograms import geometry, profile_fit
+
+
+# length of one dty unit in cm
+DTY_UNIT_CM = {'nm': 1e-7, 'um': 1e-4, 'mm': 0.1}
+
+
+def mu_per_dty_unit(formula, density, wavelength, dty_unit):
+    """linear absorption coefficient per dty unit of a compound (chemical formula, e.g. 'LaMn0.4Ga0.6O3';
+    density in g/cm3) at the wavelength (Angstrom), from xraylib (total attenuation cross section).
+    dty_unit: 'nm', 'um' or 'mm', the length of one unit of dty (and of the grain translations)."""
+    import xraylib
+    energy = 12.398419843320026 / wavelength          # keV
+    return xraylib.CS_Total_CP(str(formula), energy) * float(density) * DTY_UNIT_CM[dty_unit]
 
 
 def sinogram(omega, spot, scan, net, omega_edges, ny):

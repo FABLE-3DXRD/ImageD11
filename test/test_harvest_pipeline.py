@@ -82,7 +82,11 @@ class TestHarvestPipeline(unittest.TestCase):
         with h5py.File(hp.out(self.cfg, 'sample.h5'), 'r') as f:
             self.assertGreater(f['mask'][()].sum(), 0)
         # with absorption: the same intensities divided by the traced transmission
-        self.cfg['absorption']['mu'] = 0.05
+        try:
+            import xraylib       # noqa: F401
+        except ImportError:
+            return
+        self.cfg['absorption'].update(formula='Si', density=2.33, dty_unit='mm')
         hp.run(self.cfg, ['grains'])
         with h5py.File(hp.out(self.cfg, 'grains.h5'), 'r') as f:
             T = f['0/transmission'][()]
