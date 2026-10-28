@@ -56,7 +56,11 @@ DEFAULTS = {
     "harvest": {"file": None,   # reuse this first harvest if it exists
                 "ds_max": 1.5, "reader": "sparse", "tensormap": None,     # None: TensorMap_<phase>
                 "radius_margin": 3.0,                                     # in dty steps
-                "box": {}},                                               # ShoeboxModel arguments
+                "refined_map": None,    # point-by-point refined map for UBIs and grain spreads; '': the default file
+                "ubi": "grains",        # grain UBIs: "grains" (the grains file) or "refined_map" (mean of the voxels)
+                "min_unique": 20, "min_voxels": 30,      # refined map: choose_best threshold, voxels per grain
+                "fit_every": 10,        # fit the ShoeboxModel instrumental terms to every n-th scan (0: no fit)
+                "box": {}},             # ShoeboxModel arguments (starting values of the fit)
     "duplicates": {"symmetry": "cubic", "max_angle": 2.0, "min_shared": 0.3, "in_box": 0.5, "to_partner": 0.5,
                    "min_snr": 20.0},
     "flags": {"deoverlap": "jacobi", "deoverlap_args": {},   # Harvester.deoverlap method ('jacobi', 'solve'), kw
@@ -200,9 +204,30 @@ def labels_recon(grainsfile, group):
 
 
 # ---------------------------------------------------------------------------------------------- steps
+def grain_spreads(ubi, eps, mask):
+    """(mean UBI, rms misorientation to the mean orientation in deg, rms deviatoric strain spread) of the voxels
+    mask of a refined point-by-point map (ubi (..., 3, 3), eps (..., 3, 3) strain tensors)"""
+    u = ubi[mask]
+    U = []
+    for b in np.linalg.inv(u):
+        w, _, vt = np.linalg.svd(b)
+        U.append(np.dot(w, vt))
+    U = np.array(U)
+    w, _, vt = np.linalg.svd(U.mean(0))
+    R0 = np.dot(w, vt)
+    ang = np.degrees(np.arccos(np.clip((np.einsum('nij,ij->n', U, R0) - 1) / 2, -1, 1)))
+    e = eps[mask]
+    ed = e - np.trace(e, axis1=1, axis2=2)[:, None, None] / 3 * np.eye(3)
+    return u.mean(0), np.sqrt(np.mean(ang ** 2)), np.sqrt(np.mean(np.sum((ed - ed.mean(0)) ** 2, axis=(1, 2)) / 6))
+
+
 def step_harvest(cfg):
-    """all grains of the phase in the grains file; radius = the furthest voxel of the grain's largest connected
-    region in the TensorMap labels from its position, plus radius_margin dty steps"""
+    """All grains of the phase in the grains file. radius = the furthest voxel of the grain's largest connected
+    region in the TensorMap labels from its position, plus radius_margin dty steps. With a refined point-by-point
+    map (harvest.refined_map; '' : the dataset's refine manager file for the phase), each grain's UBI (if
+    harvest.ubi == 'refined_map') and its orientation and strain spreads (ShoeboxModel phi, eps) come from its
+    voxels (at least min_voxels). The instrumental terms of the ShoeboxModel (psf, phi0, phi0_t, bandpass) are
+    fitted (harvester.fit_shoebox_model) to a pilot harvest of every fit_every-th scan, then all scans are harvested."""
     import scipy.ndimage as ndi
     import ImageD11.grain
     from ImageD11.sinograms import harvester
@@ -217,7 +242,15 @@ def step_harvest(cfg):
     gss = read_h5(ds.grainsfile, ds, cfg['phase'])
     labels = labels_recon(ds.grainsfile, c['tensormap'] or 'TensorMap_' + cfg['phase'])
     _, bc = recon_bins(ds.ybincens, ds.ymin, ds.ystep, ds.y0)
-    gid, grains, radius = [], [], []
+    rmap = None
+    if c['refined_map'] is not None:
+        from ImageD11.sinograms.pbp_refine import PBPRefine
+        path = c['refined_map'] or os.path.splitext(ds.refmanfile)[0] + '_' + cfg['phase'] + '.h5'
+        ref = PBPRefine.from_h5(path, load_peaks=False, load_input=False)
+        ref.refinedmap.choose_best(c['min_unique'])
+        rmap = ref.refinedmap.best_ubi, ref.refinedmap.best_eps
+        log('harvest: refined map %s' % path)
+    gid, grains, radius, phi, eps = [], [], [], [], []
     for k, gs in enumerate(gss):
         cc, n = ndi.label(labels == k)
         if n == 0:
@@ -227,12 +260,36 @@ def step_harvest(cfg):
         ii, jj = np.nonzero(main)
         t = np.asarray(gs.grain.translation, float)
         radius.append(np.hypot(bc[ii] - t[0], -bc[jj] - t[1]).max() + c['radius_margin'] * ds.ystep)
-        grains.append(ImageD11.grain.grain(gs.grain.ubi, translation=t))
+        ubi, ph, ep = gs.grain.ubi, np.nan, np.nan
+        if rmap is not None:
+            m = (labels == k) & np.isfinite(rmap[0][..., 0, 0])
+            if m.sum() >= c['min_voxels']:
+                u, ph, ep = grain_spreads(rmap[0], rmap[1], m)
+                if c['ubi'] == 'refined_map':
+                    ubi = u
+        grains.append(ImageD11.grain.grain(ubi, translation=t))
         gid.append(k)
-    box = harvester.ShoeboxModel(**c['box'])
+        phi.append(ph)
+        eps.append(ep)
+    phi, eps = np.array(phi), np.array(eps)
+    for x in (phi, eps):            # grains without enough refined voxels: the median of the others
+        x[~np.isfinite(x)] = np.median(x[np.isfinite(x)]) if np.isfinite(x).any() else 0.0
+    box = harvester.ShoeboxModel(phi=phi, eps=eps, **c['box'])
     h = harvester.Harvester(ds, grains, P, ds_max=c['ds_max'], radius=np.array(radius), datapath=raw_data(cfg, ds),
                             reader=c['reader'], box=box)
     h.predict()
+    fit = {}
+    if c['fit_every']:
+        pilot = out(cfg, 'harvest_pilot.h5')
+        t0 = time.time()
+        h.run(scans=h.present_scans()[::c['fit_every']], nproc=cfg['nproc'], outfile=pilot, verbose=False)
+        pars = P.get_parameters() if hasattr(P, 'get_parameters') else P
+        box, fit = harvester.fit_shoebox_model(pilot, pars, model=box, omega_step=h.omega_step())
+        os.remove(pilot)
+        log('harvest: ShoeboxModel fitted to every %d-th scan (%.0f s): %s' % (c['fit_every'], time.time() - t0, fit))
+        h = harvester.Harvester(ds, grains, P, ds_max=c['ds_max'], radius=np.array(radius),
+                                datapath=raw_data(cfg, ds), reader=c['reader'], box=box)
+        h.predict()
     log('harvest: %d grains, %d reflections, %s' % (len(grains), len(h.spots['h']), box))
     t0 = time.time()
     h.run(nproc=cfg['nproc'], outfile=fname)
@@ -242,7 +299,11 @@ def step_harvest(cfg):
         f.create_dataset('radius', data=np.array(radius))
         f.create_dataset('ubi', data=np.array([g.ubi for g in grains]))
         f.create_dataset('translation', data=np.array([g.translation for g in grains]))
+        f.create_dataset('phi', data=phi)
+        f.create_dataset('eps', data=eps)
         f.attrs['datapath'] = raw_data(cfg, ds)
+        for k, v in fit.items():
+            f.attrs['shoebox_fit_' + k] = v
     stamp(fname, cfg)
 
 
