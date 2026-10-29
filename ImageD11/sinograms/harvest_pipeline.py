@@ -60,6 +60,7 @@ DEFAULTS = {
                 "ubi": "grains",        # grain UBIs: "grains" (the grains file) or "refined_map" (mean of the voxels)
                 "min_unique": 20, "min_voxels": 30,      # refined map: choose_best threshold, voxels per grain
                 "fit_every": 10,        # fit the ShoeboxModel instrumental terms to every n-th scan (0: no fit)
+                "fit_nsigma": 3.0,      # box of the pilot harvest for that fit (box.nsigma is the final box)
                 "box": {}},             # ShoeboxModel arguments (starting values of the fit)
     "duplicates": {"symmetry": "cubic", "max_angle": 2.0, "min_shared": 0.3, "in_box": 0.5, "to_partner": 0.5,
                    "min_snr": 20.0},
@@ -226,8 +227,9 @@ def step_harvest(cfg):
     region in the TensorMap labels from its position, plus radius_margin dty steps. With a refined point-by-point
     map (harvest.refined_map; '' : the dataset's refine manager file for the phase), each grain's UBI (if
     harvest.ubi == 'refined_map') and its orientation and strain spreads (ShoeboxModel phi, eps) come from its
-    voxels (at least min_voxels). The instrumental terms of the ShoeboxModel (psf, phi0, phi0_t, bandpass) are
-    fitted (harvester.fit_shoebox_model) to a pilot harvest of every fit_every-th scan, then all scans are harvested."""
+    voxels (at least min_voxels). The instrumental terms of the ShoeboxModel (psf, phi0, phi0_t, omega0,
+    bandpass) are fitted (harvester.fit_shoebox_model) to a pilot harvest of every fit_every-th scan (box: fit_nsigma),
+    then all scans are harvested (box: box.nsigma)."""
     import scipy.ndimage as ndi
     import ImageD11.grain
     from ImageD11.sinograms import harvester
@@ -275,6 +277,9 @@ def step_harvest(cfg):
     for x in (phi, eps):            # grains without enough refined voxels: the median of the others
         x[~np.isfinite(x)] = np.median(x[np.isfinite(x)]) if np.isfinite(x).any() else 0.0
     box = harvester.ShoeboxModel(phi=phi, eps=eps, **c['box'])
+    nsigma = box.nsigma
+    if c['fit_every']:              # the widths are measured in a box that does not truncate them
+        box.nsigma = c['fit_nsigma']
     h = harvester.Harvester(ds, grains, P, ds_max=c['ds_max'], radius=np.array(radius), datapath=raw_data(cfg, ds),
                             reader=c['reader'], box=box)
     h.predict()
@@ -285,6 +290,7 @@ def step_harvest(cfg):
         h.run(scans=h.present_scans()[::c['fit_every']], nproc=cfg['nproc'], outfile=pilot, verbose=False)
         pars = P.get_parameters() if hasattr(P, 'get_parameters') else P
         box, fit = harvester.fit_shoebox_model(pilot, pars, model=box, omega_step=h.omega_step())
+        box.nsigma = nsigma
         os.remove(pilot)
         log('harvest: ShoeboxModel fitted to every %d-th scan (%.0f s): %s' % (c['fit_every'], time.time() - t0, fit))
         h = harvester.Harvester(ds, grains, P, ds_max=c['ds_max'], radius=np.array(radius),
@@ -428,7 +434,7 @@ def step_flags(cfg):
         k0 = dict((g, k) for k, g in enumerate(gid0))
         main = np.array([k0[int(m[0])] for m in members])
         kw = dict((k[4:], a[k]) for k in a if k.startswith('box_') and k[4:] in
-                  ('psf', 'bandpass', 'phi0', 'phi0_t', 'phi', 'eps', 'frame', 'sin_eta_min'))
+                  ('psf', 'bandpass', 'phi0', 'phi0_t', 'omega0', 'phi', 'eps', 'frame', 'sin_eta_min'))
         for k in ('phi', 'eps'):
             kw[k] = np.broadcast_to(np.asarray(kw.get(k, 0.0), float), (len(gid0),))[main]
         model = harvester.ShoeboxModel(**kw)

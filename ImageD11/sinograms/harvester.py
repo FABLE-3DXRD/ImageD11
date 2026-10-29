@@ -120,7 +120,7 @@ class ShoeboxModel(object):
     """Box size for each reflection from the expected spot shape (all spreads are rms, 1 sigma).
 
     Rocking width (rotation about z, beam along x), in omega:
-        sigma_omega^2 = (frame * step)^2 + (phi_tot^2 + (2 tan(theta) eps_tot)^2) / sin(eta)^2
+        sigma_omega^2 = (frame * step)^2 + omega0^2 + (phi_tot^2 + (2 tan(theta) eps_tot)^2) / sin(eta)^2
     On the detector, radial and tangential spreads (converted to pixels with the local gradients of tth
     and eta), plus the point spread:
         radial:      d(2 theta) = 2 tan(theta) eps_tot
@@ -132,6 +132,7 @@ class ShoeboxModel(object):
     bandpass       : relative energy bandpass dE/E (FWHM)
     phi0           : instrumental rocking spread (deg, rms): beam divergence and unresolved mosaicity
     phi0_t         : instrumental spread perpendicular to the scattering plane (deg); None = phi0
+    omega0         : rocking spread that does not depend on eta (deg, rms): wobble or jitter of the rotation
     phi, eps       : grain orientation spread (deg) and strain spread, rms: scalars or arrays over grains
                      (e.g. the voxel misorientation and strain spreads of a point-by-point refinement)
     frame          : rms of the omega integration of one frame, in frames (1/sqrt(12))
@@ -144,8 +145,8 @@ class ShoeboxModel(object):
 
     def __init__(self, psf=0.9, bandpass=2e-3, phi0=0.085, phi0_t=None, phi=0.0, eps=0.0, frame=1 / np.sqrt(12),
                  nsigma=3.0, margin_px=1.0, margin_frames=2.0, bg_factor=2.0, bg_min=4, max_half_frames=40,
-                 sin_eta_min=0.05, bg_estimator='clipped', p_clip=1e-3):
-        self.psf, self.bandpass, self.phi0, self.phi0_t = psf, bandpass, phi0, phi0_t
+                 sin_eta_min=0.05, bg_estimator='clipped', p_clip=1e-3, omega0=0.0):
+        self.psf, self.bandpass, self.phi0, self.phi0_t, self.omega0 = psf, bandpass, phi0, phi0_t, omega0
         self.phi, self.eps, self.frame = phi, eps, frame
         self.nsigma, self.margin_px, self.margin_frames = nsigma, margin_px, margin_frames
         self.bg_factor, self.bg_min = bg_factor, int(bg_min)
@@ -155,8 +156,10 @@ class ShoeboxModel(object):
         self.bg_estimator, self.p_clip = bg_estimator, float(p_clip)
 
     def __repr__(self):
-        return ('ShoeboxModel(psf=%g px, bandpass=%g, phi0=%g deg, phi=%s deg, eps=%s, nsigma=%g, bg_factor=%g)' %
-                (self.psf, self.bandpass, self.phi0, np.round(np.median(self.phi), 4), np.round(np.median(self.eps), 6),
+        return ('ShoeboxModel(psf=%g px, bandpass=%g, phi0=%g deg, omega0=%g deg, phi=%s deg, eps=%s, nsigma=%g, '
+                'bg_factor=%g)' %
+                (self.psf, self.bandpass, self.phi0, self.omega0, np.round(np.median(self.phi), 4),
+                 np.round(np.median(self.eps), 6),
                  self.nsigma, self.bg_factor))
 
     def sigmas(self, spots, pars, omega_step):
@@ -184,7 +187,7 @@ class ShoeboxModel(object):
         sig_f = np.sqrt(self.psf ** 2 + (R * r[1]) ** 2 + (T * t[1]) ** 2)
         se = np.maximum(np.abs(np.sin(np.radians(spots['eta']))), self.sin_eta_min)
         rock = np.sqrt(phi_tot ** 2 + (2 * np.tan(th) * eps_tot) ** 2) / se
-        sig_w = np.sqrt(self.frame ** 2 + (np.degrees(rock) / omega_step) ** 2)
+        sig_w = np.sqrt(self.frame ** 2 + (self.omega0 / omega_step) ** 2 + (np.degrees(rock) / omega_step) ** 2)
         return sig_s, sig_f, sig_w
 
     def sizes(self, spots, pars, omega_step):
@@ -199,8 +202,11 @@ class ShoeboxModel(object):
 
 def fit_shoebox_model(outfile, pars, model=None, min_snr=30.0, sin_eta_min=0.3, nmax=200000, seed=0, omega_step=None):
     """Fit the instrumental terms of a ShoeboxModel (psf, phi0 (rocking), phi0_t (perpendicular to the scattering
-    plane) and the instrumental d-spacing spread, reported as `bandpass` = 2.355 x eps0) to the per-scan box moments of strong, clean reflections in a harvest
-    file written by Harvester.run(outfile=...). The grain terms (model.phi, model.eps) are kept fixed.
+    plane), omega0 (rocking, independent of eta) and the instrumental d-spacing spread, reported as `bandpass` =
+    2.355 x eps0) to the per-scan box moments of strong, clean reflections in a harvest file written by
+    Harvester.run(outfile=...). The grain terms (model.phi, model.eps) are kept fixed. The residuals are
+    log(model / measured) widths: symmetric, so the broad scatter of the measured rocking widths does not bias
+    the fit (a residual relative to the measured width favours the narrow ones).
     Rows with |sin eta| < sin_eta_min are left out: their rocking curves are long and may be truncated by
     the box used for the harvest. Returns (fitted ShoeboxModel, dict of fit details)."""
     import copy
@@ -231,18 +237,24 @@ def fit_shoebox_model(outfile, pars, model=None, min_snr=30.0, sin_eta_min=0.3, 
     meas_w = meas_w / step
     trial = copy.copy(model)
 
+    ok = (meas_s > 0) & (meas_f > 0) & (meas_w > 0)
+    sub = dict((k, v[ok]) for k, v in sub.items())
+    meas_s, meas_f, meas_w = meas_s[ok], meas_f[ok], meas_w[ok]
+
     def setp(p):
-        trial.psf, trial.phi0, trial.phi0_t, trial.bandpass = p[0], p[1], p[2], p[3] * 2.355
+        trial.psf, trial.phi0, trial.phi0_t, trial.bandpass, trial.omega0 = p[0], p[1], p[2], p[3] * 2.355, p[4]
 
     def resid(p):
         setp(p)
         a, b, c = trial.sigmas(sub, pars, step)
-        return np.concatenate([(a - meas_s) / (meas_s + 0.3), (b - meas_f) / (meas_f + 0.3), (c - meas_w) / (meas_w + 0.3)])
-    p0 = [model.psf, model.phi0, model.phi0 if model.phi0_t is None else model.phi0_t, model.bandpass / 2.355]
-    r = scipy.optimize.least_squares(resid, p0, bounds=([0, 0, 0, 0], [10, 5, 5, 0.05]), loss='soft_l1', f_scale=0.3)
+        return np.log(np.concatenate([a / meas_s, b / meas_f, c / meas_w]))
+    p0 = [model.psf, model.phi0, model.phi0 if model.phi0_t is None else model.phi0_t, model.bandpass / 2.355,
+          model.omega0]
+    r = scipy.optimize.least_squares(resid, p0, bounds=([0, 0, 0, 0, 0], [10, 5, 5, 0.05, 5]), loss='soft_l1',
+                                     f_scale=0.3)
     setp(r.x)
     a, b, c = trial.sigmas(sub, pars, step)
-    info = dict(nrows=len(rows), psf=r.x[0], phi0=r.x[1], phi0_t=r.x[2], eps0=r.x[3],
+    info = dict(nrows=int(ok.sum()), psf=r.x[0], phi0=r.x[1], phi0_t=r.x[2], eps0=r.x[3], omega0=r.x[4],
                 median_ratio_s=float(np.median(meas_s / a)), median_ratio_f=float(np.median(meas_f / b)),
                 median_ratio_omega=float(np.median(meas_w / c)))
     return trial, info
