@@ -880,13 +880,8 @@ def plot_direct_pole_figure(grains, uvw=np.array([1.0, 0.0, 0.0]), **plot_kwargs
     # make a combined orientation from them (makes plot much faster)
     meta_orien = ref_ucell.get_orix_orien_fast(Us)
 
-    try:
-        from orix.vector import Miller
-    except ImportError:
-        raise ImportError("Missing orix, can't compute pole figure!")
-
-    # make Miller object from uvw
-    m1 = Miller(uvw=uvw, phase=ref_ucell.orix_phase).symmetrise(unique=True)
+    # the crystal direction and its symmetry equivalents, in the frame of the orientations
+    m1 = ref_ucell.get_orix_crystal_vectors(uvw=uvw)
 
     # get outer product of all orientations with the crystal direction we're interested in
     uvw_all = (~meta_orien).outer(m1)

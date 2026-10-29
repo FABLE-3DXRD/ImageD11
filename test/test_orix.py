@@ -371,5 +371,67 @@ class TestIPFCol(unittest.TestCase):
         self.assertTrue(np.allclose(rgb, red, atol=0.01))
 
 
+class TestOrixSymmetryAlignment(unittest.TestCase):
+    """Symmetry-equivalent orientations must look the same to orix (unitcell.orix_alignment).
+
+    orix defines point groups in its standard orientation (e.g. 2/m with the 2-fold along z); a b-unique monoclinic
+    cell, or a trigonal P312 / P31m / P-31m one, has its symmetry elsewhere in the lattice frame orix is given."""
+
+    CELLS = {2: [4, 5, 6, 80, 95, 105], 4: [4, 6, 8, 90, 105, 90], 12: [4, 6, 8, 90, 105, 90], 14: [4, 6, 8, 90, 105, 90],
+             15: [4, 6, 8, 90, 105, 90], 62: [4, 5, 6, 90, 90, 90], 139: [4, 4, 6, 90, 90, 90],
+             149: [3, 3, 5, 90, 90, 120], 157: [3, 3, 5, 90, 90, 120], 162: [3, 3, 5, 90, 90, 120],
+             164: [3, 3, 5, 90, 90, 120], 166: [3, 3, 5, 90, 90, 120], 194: [3, 3, 5, 90, 90, 120],
+             225: [4, 4, 4, 90, 90, 90]}
+
+    @staticmethod
+    def equivalents(ucell):
+        """The cell's symmetry rotations, in ImageD11's crystal frame: U and U.Q are the same grain."""
+        from ImageD11.unitcell import lattice_laue_rotations
+        lattice = ucell.orix_phase.structure.lattice
+        M = np.dot(ucell.B, np.linalg.inv(lattice.recbase))  # orix lattice frame -> ImageD11 frame
+        return [np.dot(M, np.dot(q, M.T)) for q in lattice_laue_rotations(lattice, ucell.spacegroup)]
+
+    def test_identity_where_orix_agrees(self):
+        for sg in (2, 62, 139, 164, 166, 194, 225):
+            ucell = unitcell(self.CELLS[sg], symmetry=sg)
+            self.assertTrue(np.allclose(ucell.orix_alignment, np.eye(3)), sg)
+
+    def test_equivalent_orientations(self):
+        """Same IPF colour, zero misorientation, for every symmetry-equivalent description of a grain."""
+        from orix.vector import Vector3d
+        from orix.plot import IPFColorKeyTSL
+        Us = R.random(10, random_state=1).as_matrix()
+        for sg, cell in self.CELLS.items():
+            ucell = unitcell(cell, symmetry=sg)
+            key = IPFColorKeyTSL(ucell.orix_phase.point_group, direction=Vector3d([0, 0, 1]))
+            for Q in self.equivalents(ucell):
+                o1 = ucell.get_orix_orien_fast(Us)
+                o2 = ucell.get_orix_orien_fast(np.matmul(Us, Q))
+                self.assertTrue(np.allclose(key.orientation2color(o1), key.orientation2color(o2), atol=1e-4), sg)
+                # diffraction sees the Laue group (Friedel): compare with it, as the IPF key does
+                o1.symmetry = o2.symmetry = ucell.orix_phase.point_group.laue
+                self.assertTrue(np.allclose(o1.angle_with(o2, degrees=True), 0, atol=1e-3), sg)
+
+    def test_fast_matches_slow_monoclinic(self):
+        ucell = unitcell(self.CELLS[14], symmetry=14)
+        Us = R.random(50, random_state=2).as_matrix()
+        slow = ucell.get_orix_orien(np.dot(Us, ucell.B))
+        fast = ucell.get_orix_orien_fast(Us)
+        self.assertTrue(np.allclose(slow.to_matrix(), fast.to_matrix()))
+        one = ucell.get_orix_orien(np.dot(Us[0], ucell.B))
+        self.assertTrue(np.allclose(one.to_matrix(), fast[0].to_matrix()))
+
+    def test_pole_figure_vectors(self):
+        """The lab directions of a crystal direction's equivalents do not depend on how the grain is described."""
+        for sg in (14, 162):
+            ucell = unitcell(self.CELLS[sg], symmetry=sg)
+            v = ucell.get_orix_crystal_vectors(uvw=[1, 2, 3])
+            U = R.random(1, random_state=3).as_matrix()
+            ref = np.sort(np.round((~ucell.get_orix_orien_fast(U)).outer(v).data.reshape(-1, 3), 6), axis=0)
+            for Q in self.equivalents(ucell):
+                lab = (~ucell.get_orix_orien_fast(np.matmul(U, Q))).outer(v).data.reshape(-1, 3)
+                self.assertTrue(np.allclose(np.sort(np.round(lab, 6), axis=0), ref, atol=1e-5), sg)
+
+
 if __name__ == "__main__":
     unittest.main()

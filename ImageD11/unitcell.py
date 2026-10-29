@@ -37,6 +37,98 @@ from scipy.spatial.transform import Rotation as ScipyRotation
 from ImageD11.parameters import parameters, AnalysisSchema
 
 
+# ---------------------------------------------------------------------------------------------------------------
+# orix interface: the crystal frame orix sees must match orix's point group.
+# orix defines each point group in its own standard orientation (e.g. 2/m with the 2-fold along z), while the
+# lattice it is paired with has its symmetry wherever the (diffpy) lattice puts it (b-unique monoclinic: the
+# 2-fold along y). Where the two differ, symmetry-equivalent orientations get different IPF colours, pole figures
+# and misorientations. We find, once per phase, the rotation C of the crystal frame with
+# {C Q C^T} = orix's rotations (Q: the lattice's own symmetry rotations), and use U C^T for orix.
+
+
+def _rotation_axis_order(R):
+    """Axis (unit vector) and order (2, 3, 4, 6) of a proper rotation; (None, 1) for the identity."""
+    angle = np.arccos(np.clip((np.trace(R) - 1) / 2, -1, 1))
+    if angle < 1e-6:
+        return None, 1
+    w, v = np.linalg.eig(R)
+    axis = np.real(v[:, np.argmin(np.abs(w - 1))])
+    return axis / np.linalg.norm(axis), int(round(2 * np.pi / angle))
+
+
+def _same_rotations(Ra, Rb, tol=1e-5):
+    """True if two lists of rotation matrices hold the same set."""
+    return len(Ra) == len(Rb) and all(min(np.abs(a - b).max() for b in Rb) < tol for a in Ra)
+
+
+def _unique_rotations(Rs):
+    out = []
+    for R in Rs:
+        if not any(np.abs(R - P).max() < 1e-6 for P in out):
+            out.append(R)
+    return out
+
+
+def _rotation_from_frames(u_from, u_to, v_from=None, v_to=None):
+    """Proper rotation taking u_from to u_to and, if given, v_from to v_to (same angle between them)."""
+    def frame(u, v):
+        e1 = u / np.linalg.norm(u)
+        if v is None:
+            v = np.eye(3)[np.argmin(np.abs(e1))]
+        e2 = v - np.dot(v, e1) * e1
+        e2 = e2 / np.linalg.norm(e2)
+        return np.column_stack((e1, e2, np.cross(e1, e2)))
+    return np.dot(frame(u_to, v_to), frame(u_from, v_from).T)
+
+
+def lattice_laue_rotations(lattice, spacegroup):
+    """Proper rotations of the Laue group of a space group, as Cartesian matrices in a diffpy Lattice's frame."""
+    from diffpy.structure.spacegroups import GetSpaceGroup
+    A = np.asarray(lattice.base, float).T  # columns: a, b, c
+    Ai = np.linalg.inv(A)
+    Qs = []
+    for op in GetSpaceGroup(spacegroup).iter_symops():
+        Q = np.dot(A, np.dot(np.asarray(op.R, float), Ai))
+        Qs.append(Q * np.sign(np.linalg.det(Q)))  # Laue group: the proper part of each operation
+    return _unique_rotations(Qs)
+
+
+def orix_symmetry_alignment(lattice, spacegroup, point_group):
+    """Rotation C of the crystal frame, so that the lattice's symmetry {C Q C^T} is orix's point group.
+
+    Returns the identity where they already agree, and None if no such rotation exists (e.g. a lattice
+    given in a setting other than the space group's standard one)."""
+    Q = lattice_laue_rotations(lattice, spacegroup)
+    O = _unique_rotations([np.asarray(m, float) for m in point_group.laue.proper_subgroup.to_matrix()])
+    if _same_rotations(Q, O):
+        return np.eye(3)
+    axes_q = [(a, n) for a, n in (_rotation_axis_order(R) for R in Q) if a is not None]
+    axes_o = [(a, n) for a, n in (_rotation_axis_order(R) for R in O) if a is not None]
+    if not axes_q or not axes_o:
+        return None
+    nmax = max(n for _, n in axes_o)
+    uo = [a for a, n in axes_o if n == nmax][0]
+    vos = [a for a, n in axes_o if abs(abs(np.dot(a, uo)) - 1) > 1e-6]
+    vo = vos[0] if vos else None
+    for uq, nq in axes_q:
+        if nq != nmax:
+            continue
+        for su in (1, -1):
+            if vo is None:
+                C = _rotation_from_frames(su * uq, uo)
+                if _same_rotations([np.dot(C, np.dot(q, C.T)) for q in Q], O):
+                    return C
+                continue
+            for vq, _ in axes_q:
+                for sv in (1, -1):
+                    if abs(np.dot(su * uq, sv * vq) - np.dot(uo, vo)) > 1e-6:
+                        continue
+                    C = _rotation_from_frames(su * uq, uo, sv * vq, vo)
+                    if _same_rotations([np.dot(C, np.dot(q, C.T)) for q in Q], O):
+                        return C
+    return None
+
+
 def _inv3(m):
     """Closed-form 3x3 inverse. Raises LinAlgError on singular, like np.linalg.inv."""
     a, b, c = m[0]
@@ -299,6 +391,7 @@ class unitcell:
         
         # orix stuff
         self._orix_phase = None
+        self._orix_alignment = None
     
     def __repr__(self):
         if (not hasattr(self, 'name')) or (self.name is None):
@@ -331,6 +424,32 @@ class unitcell:
             self._orix_phase = phase
         return self._orix_phase
 
+    @property
+    def orix_alignment(self):
+        """Rotation C taking this cell's crystal frame (as orix_phase's lattice holds it) to the frame of orix's
+        point group: orientations are passed to orix as U C^T. Identity when the two already agree."""
+        if self._orix_alignment is None:
+            phase = self.orix_phase
+            C = orix_symmetry_alignment(phase.structure.lattice, self.spacegroup, phase.point_group)
+            if C is None:
+                logging.warning("orix point group %s does not match the symmetry of space group %s for this cell: "
+                                "IPF colours of symmetry-equivalent orientations may differ" % (phase.point_group.name,
+                                                                                                 self.spacegroup))
+                C = np.eye(3)
+            self._orix_alignment = C
+        return self._orix_alignment
+
+    def get_orix_crystal_vectors(self, uvw=None, hkl=None):
+        """Crystal directions (uvw) or plane normals (hkl), with their symmetry equivalents, as an orix Vector3d in
+        the crystal frame of the orientations from get_orix_orien(_fast) (see orix_alignment)."""
+        try:
+            from orix.vector import Miller, Vector3d
+        except ImportError:
+            raise ImportError("Missing orix, can't compute crystal vectors!")
+        m = Miller(uvw=uvw, phase=self.orix_phase) if uvw is not None else Miller(hkl=hkl, phase=self.orix_phase)
+        v = Vector3d(np.dot(m.data.reshape(-1, 3), self.orix_alignment.T))
+        return self.orix_phase.point_group.outer(v).flatten().unique()
+
     def get_orix_orien(self, UBs):
         """Get an Orix orientation (containing one or more orientations)
            using self.orix_phase from an array of ImageD11 UB matrices"""
@@ -352,7 +471,8 @@ class unitcell:
             # only one UB matrix passed
             # this can be directly determined with one call to Orientation.from_align_vectors
             ori = Orientation.from_align_vectors(m1, (np.dot(UBs, m1.hkl.T)).T)
-            return ori
+            # in the frame of orix's point group (see orix_alignment)
+            return Orientation.from_matrix(np.dot(self.orix_alignment, ori.to_matrix()[0]), symmetry=phase.point_group)
 
         # the challenge is to quickly determine multiple orientations
 
@@ -368,6 +488,8 @@ class unitcell:
 
         # make a final orientation object from all the orientation matrices
         # make sure that symmetry is set
+        # in the frame of orix's point group (see orix_alignment)
+        matrices = np.matmul(self.orix_alignment, matrices)
         final_ori = Orientation.from_matrix(matrices, symmetry=phase.point_group)
 
         return final_ori
@@ -393,6 +515,8 @@ class unitcell:
         B0_id11 = self.B  # get the ImageD11 B0 matrix
         B0_orix = phase.structure.lattice.recbase  # get the orix B0 matrix
         U_orix = Umats.dot(B0_id11.dot(np.linalg.inv(B0_orix)))
+        # turn the crystal frame to the frame of orix's point group (see orix_alignment)
+        U_orix = np.matmul(U_orix, self.orix_alignment.T)
 
         # swapaxes performs the transposition, works for (3,3) or (N,3,3)
         final_ori = Orientation.from_matrix(np.swapaxes(U_orix, -1, -2), symmetry=phase.point_group)
