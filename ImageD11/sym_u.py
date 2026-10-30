@@ -233,6 +233,55 @@ def monoclinic_b():
 def triclinic():
     return generate_group("x, y, z" )
 
+# Generators of the rotations of each Laue class, in the ITA standard setting.
+# A Laue class is these rotations and their products with the inversion.
+# Rotations only: they act on orientations (op.ubi stays right handed).
+laue_generators = {
+    "-1"    : ("x, y, z",),                          # triclinic()
+    "2/m"   : ("-x,y,-z",),                          # monoclinic_b(), unique axis b
+    "mmm"   : ("-x,-y,z", "-x,y,-z"),                # orthorhombic()
+    "4/m"   : ("-y,x,z",),
+    "4/mmm" : ("-y,x,z", "-x,y,-z"),                 # tetragonal()
+    "-3"    : ("-y,x-y,z",),                         # hexagonal axes
+    "-3m1"  : ("-y,x-y,z", "y,x,-z"),                # trigonal(), 2-folds along a
+    "-31m"  : ("-y,x-y,z", "-y,-x,-z"),              # 2-folds along a*
+    "6/m"   : ("-y,x-y,z", "-x,-y,z"),
+    "6/mmm" : ("-y,x-y,z", "-x,-y,z", "y,x,-z"),     # hexagonal()
+    "m-3"   : ("z,x,y", "-x,-y,z"),
+    "m-3m"  : ("z,x,y", "-y,x,z"),                   # cubic()
+    "-3R"   : ("z,x,y",),                            # rhombohedral axes
+    "-3mR"  : ("z,x,y", "-z,-y,-x"),                 # rhombohedralP()
+}
+
+def laue_class(spacegroup, cell_choice="standard"):
+    """
+    The Laue class of a space group (number 1-230), a key of laue_generators.
+    cell_choice "rhombohedral" puts R space groups on rhombohedral axes.
+    """
+    from xfab import sg
+    spg = sg.sg(sgno=spacegroup)
+    if cell_choice == "rhombohedral" and spg.name.startswith("R"):
+        return {"-3": "-3R", "-3m1": "-3mR"}[spg.Laue]
+    return spg.Laue
+
+def laue_rotations(spacegroup, cell_choice="standard"):
+    """
+    Rotations of the Laue class of a space group (number 1-230).
+    These are the orientations diffraction cannot tell apart (Friedel's law).
+    cell_choice is "standard" or "rhombohedral" (R groups on rhombohedral axes)
+    Returns a group acting on ubi as op.ubi, like cubic() etc
+    """
+    return generate_group(*laue_generators[laue_class(spacegroup, cell_choice)])
+
+def cartesian(grp, B):
+    """
+    The operations of grp as rotations S of the crystal frame of B:
+    for ubi = (U.B)^-1, (op.ubi)^-1 = U.S.B
+    Returns an array (n, 3, 3) in the order of grp.group
+    """
+    Bi = np.linalg.inv(B)
+    return np.array([np.dot(B, np.dot(np.linalg.inv(o), Bi)) for o in grp.group])
+
 def find_uniq_u(u, grp, debug=0, func=np.trace):
     if func is np.trace and not debug:
         # trace(o.u) = sum_ij o_ij u_ji, so all the candidate traces at once
