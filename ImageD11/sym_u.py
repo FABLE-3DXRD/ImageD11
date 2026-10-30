@@ -231,6 +231,36 @@ def monoclinic_b():
 def triclinic():
     return generate_group("x, y, z" )
 
+def laue_rotations(spacegroup, cell_choice="standard"):
+    """
+    Rotations of the Laue class of a space group (number 1-230), from xfab.
+    These are the orientations diffraction cannot tell apart (Friedel's law).
+    cell_choice is "standard" or "rhombohedral" (R groups on rhombohedral axes)
+    Returns a group acting on ubi as op.ubi, like cubic() etc
+    """
+    key = ("laue_rotations", spacegroup, cell_choice)
+    if key in symcache:
+        return symcache[key]
+    from xfab import sg
+    g = group()
+    for r in sg.sg(sgno=spacegroup, cell_choice=cell_choice).rot:
+        # xfab has x' = W.x, here W.T acts on the rows of ubi.
+        # The inversion in the Laue class makes each operation proper.
+        w = np.array(r, float).T * np.sign(np.linalg.det(r))
+        if not g.isMember(w):
+            g.group.append(w)
+    symcache[key] = g
+    return g
+
+def cartesian(grp, B):
+    """
+    The operations of grp as rotations S of the crystal frame of B:
+    for ubi = (U.B)^-1, (op.ubi)^-1 = U.S.B
+    Returns an array (n, 3, 3) in the order of grp.group
+    """
+    Bi = np.linalg.inv(B)
+    return np.array([np.dot(B, np.dot(np.linalg.inv(o), Bi)) for o in grp.group])
+
 def find_uniq_u(u, grp, debug=0, func=np.trace):
     if func is np.trace and not debug:
         # trace(o.u) = sum_ij o_ij u_ji, so all the candidate traces at once

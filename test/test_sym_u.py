@@ -1,6 +1,7 @@
 
 import numpy as np
 import ImageD11.sym_u
+import ImageD11.unitcell
 import unittest
 
 class testsyms( unittest.TestCase ):
@@ -70,6 +71,65 @@ class test_orthorhombic_rh(  unittest.TestCase , trh):
     def setUp(self):
         self.ubi = np.array( [ (1,0,0), ( 0,1.3,0 ), (0,0,2.1) ] )
         self.c = ImageD11.sym_u.orthorhombic()
+
+
+# a cell in the standard setting of each crystal system
+CELLS = { 'triclinic' : (3.,4.,5.,80.,85.,95.),
+          'monoclinic' : (3.,4.,5.,90.,100.,90.),
+          'orthorhombic' : (3.,4.,5.,90.,90.,90.),
+          'tetragonal' : (3.,3.,5.,90.,90.,90.),
+          'trigonal' : (4.9,4.9,5.4,90.,90.,120.),
+          'hexagonal' : (3.,3.,5.,90.,90.,120.),
+          'cubic' : (4.,4.,4.,90.,90.,90.) }
+RHOMBOHEDRAL = (146, 148, 155, 160, 161, 166, 167)
+RCELL = (5.,5.,5.,70.,70.,70.)
+
+def all_settings():
+    from xfab import sg
+    for no in range(1, 231):
+        yield no, "standard", CELLS[ sg.sg(sgno=no).crystal_system ]
+    for no in RHOMBOHEDRAL:
+        yield no, "rhombohedral", RCELL
+
+class test_laue_rotations( unittest.TestCase ):
+
+    def test_groups_keep_cell(self):
+        for no, choice, cell in all_settings():
+            grp = ImageD11.sym_u.laue_rotations( no, choice )
+            ubi = np.linalg.inv( ImageD11.unitcell.unitcell( cell ).B )
+            g = np.dot( ubi, ubi.T )
+            for a in grp.group:
+                self.assertAlmostEqual( np.linalg.det( a ), 1 )
+                self.assertTrue( np.allclose( np.dot( np.dot( a, g ), a.T ), g ), (no, choice) )
+                for b in grp.group:
+                    self.assertTrue( grp.isMember( np.dot( a, b ) ), (no, choice) )
+
+    def test_sizes(self):
+        for no, n in [ (2,1), (14,2), (62,4), (88,4), (139,8), (148,3), (162,6),
+                       (164,6), (176,6), (194,12), (205,12), (225,24) ]:
+            self.assertEqual( len( ImageD11.sym_u.laue_rotations( no ).group ), n, no )
+
+    def test_same_as_holohedral_groups(self):
+        same = lambda g1, g2: len(g1.group) == len(g2.group) and all( g1.isMember(o) for o in g2.group )
+        for no, old in [ (2, 'triclinic'), (14, 'monoclinic_b'), (62, 'orthorhombic'),
+                         (139, 'tetragonal'), (194, 'hexagonal'), (225, 'cubic') ]:
+            self.assertTrue( same( ImageD11.sym_u.laue_rotations( no ),
+                                   ImageD11.sym_u.getgroup( old )() ), no )
+        self.assertTrue( same( ImageD11.sym_u.laue_rotations( 166, "rhombohedral" ),
+                               ImageD11.sym_u.rhombohedralP() ) )
+
+    def test_cartesian(self):
+        rng = np.random.RandomState( 42 )
+        for no, choice, cell in all_settings():
+            B = ImageD11.unitcell.unitcell( cell ).B
+            grp = ImageD11.sym_u.laue_rotations( no, choice )
+            S = ImageD11.sym_u.cartesian( grp, B )
+            U = np.linalg.qr( rng.normal( size = (3,3) ) )[0]
+            ubi = np.linalg.inv( np.dot( U, B ) )
+            for op, s in zip( grp.group, S ):
+                self.assertTrue( np.allclose( np.dot( s, s.T ), np.eye(3) ) )
+                self.assertTrue( np.allclose( np.linalg.inv( np.dot( op, ubi ) ),
+                                              np.dot( U, np.dot( s, B ) ) ) )
 
 
 

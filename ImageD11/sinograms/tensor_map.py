@@ -551,85 +551,16 @@ def u_to_euler(u, dum, res):
 # These back TensorMap.get_mis2mean() and TensorMap.kam(), and the tensor
 # analogue TensorMap.grain_mean_tensor().
 
-# ImageD11.sym_u only ships ONE proper rotation group per crystal system - the
-# maximal (holohedral) one, e.g. tetragonal() is point group "422", not "4".
-# See sym_ops_from_phase for which Laue classes that does and doesn't cover.
-_SYM_U_CRYSTAL_SYSTEM_FN = {
-    'triclinic': sym_u.triclinic,
-    'monoclinic': sym_u.monoclinic_b,    # ITA standard unique-axis-b setting
-    'orthorhombic': sym_u.orthorhombic,
-    'tetragonal': sym_u.tetragonal,
-    'trigonal': sym_u.trigonal,          # hexagonal axes (a=b, gamma=120)
-    'hexagonal': sym_u.hexagonal,
-    'cubic': sym_u.cubic,
-}
-
-# Laue classes ImageD11.sym_u's crystal-system functions do not correctly
-# cover - either a strictly smaller proper point group (4/m, -3, 6/m, m-3), or
-# the same size but a different in-plane axis setting (-31m, see docstring).
-_SYM_U_UNSUPPORTED_LAUE = {'4/m', '-3', '-31m', '6/m', 'm-3'}
-
-
-def _frac_ops_to_cartesian(frac_ops, B):
-    """Convert symmetry operators expressed in fractional crystal-axis
-    coordinates (as returned by ImageD11.sym_u, e.g. sym_u.hexagonal().group)
-    into genuine proper rotations in the same Cartesian frame as an ImageD11 B
-    matrix / U matrix.
-
-    This matters whenever the crystal axes aren't all mutually orthogonal
-    (hexagonal, trigonal, monoclinic, triclinic): a fractional-coordinate
-    symmetry matrix is only a Cartesian rotation once conjugated by the
-    real-space lattice matrix A (columns = a, b, c in Cartesian coordinates,
-    A = inv(B).T). ImageD11.sym_u is also not internally consistent about
-    whether its stored matrices act on row- or column-fractional-coordinate
-    vectors (e.g. sym_u.hexagonal() and sym_u.trigonal() disagree), so each
-    group is checked against its own metric tensor and transposed first if
-    that convention fits better, before converting.
-    """
-    A = np.linalg.inv(B).T
-    Ainv = np.linalg.inv(A)
-    g = np.dot(A.T, A)                   # metric tensor in the fractional basis
-    frac_ops = np.asarray(frac_ops, dtype=float)
-    direct_ok = np.mean([np.allclose(np.dot(M.T, np.dot(g, M)), g, atol=1e-6)
-                         for M in frac_ops])
-    if direct_ok < 0.5:
-        frac_ops = np.transpose(frac_ops, (0, 2, 1))
-    cart_ops = np.einsum('ij,njk,kl->nil', A, frac_ops, Ainv)
-    cart_ops[np.abs(cart_ops) < 1e-10] = 0.0
-    return cart_ops
-
-
 def sym_ops_from_phase(ucell):
-    """Proper rotation operators (Nsym, 3, 3) for an ImageD11 unitcell, using
-    ImageD11.sym_u rather than orix.
+    """Proper rotation operators (Nsym, 3, 3) for an ImageD11 unitcell: the
+    rotations of the Laue class of its spacegroup (ImageD11.sym_u.laue_rotations)
+    in the same crystal Cartesian frame as ucell.B / U, so they can be applied
+    to U directly.
 
-    Looks up the crystal system straight from the phase's integer spacegroup
-    number (via xfab.sglib, the same lookup TensorMap.to_ctf_mtex already
-    uses), picks the matching ImageD11.sym_u proper rotation group, and
-    converts it into the same crystal Cartesian frame as ucell.B / U (see
-    _frac_ops_to_cartesian) so it can be applied to U directly.
-
-    Two settings can't be picked automatically and fall back to sensible
-    defaults - pass sym_ops= explicitly instead if these don't match your
-    phase:
-
-      * monoclinic defaults to the ITA standard unique-axis-b setting
-        (ImageD11.sym_u.monoclinic_a() / monoclinic_c() for other settings).
-      * trigonal defaults to hexagonal axes (a=b, gamma=120), ImageD11's usual
-        convention. If ucell.lattice_parameters instead look like a primitive
-        rhombohedral setting (a=b=c, alpha=beta=gamma != 90),
-        ImageD11.sym_u.rhombohedralP() is used instead.
-
-    Raises ValueError for spacegroups with Laue class 4/m, -3, -31m, 6/m or
-    m-3. ImageD11.sym_u only ships the maximal proper rotation group per
-    crystal system (e.g. tetragonal() is point group 422, not 4), and for
-    these five Laue classes that's either a strictly bigger point group than
-    the crystal actually has, or (for -31m) the same size but with its 2-fold
-    axes rotated 30 degrees from where sym_u.trigonal() puts them. Using it
-    anyway would silently treat some non-equivalent orientations as
-    symmetry-equivalent. Pass sym_ops= explicitly for these phases (e.g. built
-    by hand with ImageD11.sym_u.generate_group(), then converted with
-    _frac_ops_to_cartesian).
+    The cell must be in the standard setting of its spacegroup (monoclinic:
+    unique axis b). R spacegroups may be on hexagonal or rhombohedral axes;
+    a=b=c, alpha=beta=gamma != 90 is taken as rhombohedral. Pass sym_ops=
+    explicitly for any other setting.
     """
     try:
         spacegroup = ucell.spacegroup
@@ -640,36 +571,17 @@ def sym_ops_from_phase(ucell):
             "Bravais letter. Pass sym_ops= explicitly instead."
         )
 
-    import xfab.sglib
-    try:
-        sgobj = getattr(xfab.sglib, 'Sg' + str(spacegroup))('standard')
-    except AttributeError:
-        raise ValueError("Unknown spacegroup number: %s" % (spacegroup,))
-
-    if sgobj.Laue in _SYM_U_UNSUPPORTED_LAUE:
+    a, b, c, alpha, beta, gamma = ucell.lattice_parameters
+    rhombohedral_axes = (np.isclose(a, b) and np.isclose(b, c)
+                         and np.isclose(alpha, beta) and np.isclose(beta, gamma)
+                         and not np.isclose(alpha, 90.0))
+    cell_choice = 'rhombohedral' if rhombohedral_axes else 'standard'
+    ops = sym_u.cartesian(sym_u.laue_rotations(spacegroup, cell_choice), ucell.B)
+    if not np.allclose(np.matmul(ops, np.transpose(ops, (0, 2, 1))), np.eye(3), atol=1e-6):
         raise ValueError(
-            "Spacegroup %s has Laue class %s: ImageD11.sym_u.%s() doesn't "
-            "cover its proper point group (see sym_ops_from_phase docstring). "
-            "Pass sym_ops= explicitly for this phase." % (
-                spacegroup, sgobj.Laue, sgobj.crystal_system))
-
-    system = sgobj.crystal_system
-    if system == 'trigonal':
-        a, b, c, alpha, beta, gamma = ucell.lattice_parameters
-        rhombohedral_axes = (np.isclose(a, b) and np.isclose(b, c)
-                              and np.isclose(alpha, beta) and np.isclose(beta, gamma)
-                              and not np.isclose(alpha, 90.0))
-        group_fn = sym_u.rhombohedralP if rhombohedral_axes else sym_u.trigonal
-    else:
-        try:
-            group_fn = _SYM_U_CRYSTAL_SYSTEM_FN[system]
-        except KeyError:
-            raise ValueError("Unrecognised crystal system: %s" % (system,))
-
-    frac_ops = np.asarray(group_fn().group)
-    ops = _frac_ops_to_cartesian(frac_ops, ucell.B)
-    # sym_u groups are already all proper rotations - this is a defensive filter
-    return ops[np.linalg.det(ops) > 0]
+            "Cell %s is not in the standard setting of spacegroup %s. "
+            "Pass sym_ops= explicitly instead." % (ucell.lattice_parameters, spacegroup))
+    return ops
 
 
 def sym_reduce(U, U_ref, sym_ops):
