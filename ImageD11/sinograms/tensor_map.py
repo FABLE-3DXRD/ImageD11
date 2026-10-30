@@ -558,9 +558,8 @@ def sym_ops_from_phase(ucell):
     to U directly.
 
     The cell must be in the standard setting of its spacegroup (monoclinic:
-    unique axis b). R spacegroups may be on hexagonal or rhombohedral axes;
-    a=b=c, alpha=beta=gamma != 90 is taken as rhombohedral. Pass sym_ops=
-    explicitly for any other setting.
+    unique axis b). R spacegroups may be on hexagonal or rhombohedral axes,
+    as ucell.cell_choice says. Pass sym_ops= explicitly for any other setting.
     """
     try:
         spacegroup = ucell.spacegroup
@@ -571,12 +570,7 @@ def sym_ops_from_phase(ucell):
             "Bravais letter. Pass sym_ops= explicitly instead."
         )
 
-    a, b, c, alpha, beta, gamma = ucell.lattice_parameters
-    rhombohedral_axes = (np.isclose(a, b) and np.isclose(b, c)
-                         and np.isclose(alpha, beta) and np.isclose(beta, gamma)
-                         and not np.isclose(alpha, 90.0))
-    cell_choice = 'rhombohedral' if rhombohedral_axes else 'standard'
-    ops = sym_u.cartesian(sym_u.laue_rotations(spacegroup, cell_choice), ucell.B)
+    ops = sym_u.cartesian(sym_u.laue_rotations(spacegroup, ucell.cell_choice), ucell.B)
     if not np.allclose(np.matmul(ops, np.transpose(ops, (0, 2, 1))), np.eye(3), atol=1e-6):
         raise ValueError(
             "Cell %s is not in the standard setting of spacegroup %s. "
