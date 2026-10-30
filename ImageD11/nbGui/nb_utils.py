@@ -16,6 +16,7 @@ import ImageD11.columnfile
 import ImageD11.grain
 import ImageD11.indexing
 import ImageD11.refinegrains
+import ImageD11.sym_u
 import ImageD11.unitcell
 import ImageD11.sinograms.roi_iradon
 import ImageD11.sinograms.properties
@@ -871,27 +872,21 @@ def plot_inverse_pole_figure(grains, axis=np.array([0.0, 0, 1]), **plot_kwargs):
 
 
 def plot_direct_pole_figure(grains, uvw=np.array([1.0, 0.0, 0.0]), **plot_kwargs):
-    # get the UB matrices for each grain
-    Us = np.array([g.U for g in grains])
-
-    # get the reference unit cell of one of the grains (should be the same for all)
+    # the crystal direction uvw and its equivalents, in the lab frame, for each grain
+    # the rows of ubi are a, b, c in the lab, and (op.ubi)^T.uvw gives the equivalents
     ref_ucell = grains[0].ref_unitcell
-
-    # make a combined orientation from them (makes plot much faster)
-    meta_orien = ref_ucell.get_orix_orien_fast(Us)
+    ops = ImageD11.sym_u.laue_rotations(ref_ucell.spacegroup, ref_ucell.cell_choice).group
+    uvws = [np.dot(op.T, uvw) for op in ops]
+    uvws = np.unique(np.round(uvws + [-v for v in uvws], 9), axis=0)  # with the inversion in the Laue class
+    ubis = np.array([g.ubi for g in grains])
+    xyz = np.einsum('gji,nj->gni', ubis, uvws).reshape(-1, 3)
 
     try:
-        from orix.vector import Miller
+        from orix.vector import Vector3d
     except ImportError:
-        raise ImportError("Missing orix, can't compute pole figure!")
+        raise ImportError("Missing orix, can't plot pole figure!")
 
-    # make Miller object from uvw
-    m1 = Miller(uvw=uvw, phase=ref_ucell.orix_phase).symmetrise(unique=True)
-
-    # get outer product of all orientations with the crystal direction we're interested in
-    uvw_all = (~meta_orien).outer(m1)
-
-    uvw_all.scatter(hemisphere="both", axes_labels=["X", "Y"], **plot_kwargs)
+    Vector3d(xyz).unit.scatter(hemisphere="both", axes_labels=["X", "Y"], **plot_kwargs)
 
 
 def plot_all_ipfs(grains, **plot_kwargs):
