@@ -203,7 +203,9 @@ def hexagonal():
 
 def trigonal():
     """ P321 150 """
-    return generate_group ( "y,-x-y,z", "y,x,-z" )
+    return generate_group ( "-y,x-y,z", "y,x,-z" )
+
+trigonalH = trigonal
 
 def rhombohedralP():
     """ R3 primitive """
@@ -412,7 +414,8 @@ def getgroup(s):
     """
     groups =['cubic', 'hexagonal','trigonal','tetragonal',
              'orthorhombic','monoclinic_c','monoclinic_a',
-             'monoclinic_b','triclinic','rhombohedralP'] 
+             'monoclinic_b','triclinic','rhombohedralP',
+             'trigonalH','trigonalP']
     if s in groups:
         return globals()[s]
     else:

@@ -73,8 +73,45 @@ class test_orthorhombic_rh(  unittest.TestCase , trh):
         self.c = ImageD11.sym_u.orthorhombic()
 
 
+# a cell compatible with each group, in the setting the group expects
+CELLS = { 'cubic' : (4.,4.,4.,90.,90.,90.),
+          'hexagonal' : (3.,3.,5.,90.,90.,120.),
+          'trigonal' : (4.913,4.913,5.405,90.,90.,120.),
+          'trigonalH' : (4.913,4.913,5.405,90.,90.,120.),
+          'trigonalP' : (5.,5.,5.,70.,70.,70.),
+          'rhombohedralP' : (5.,5.,5.,70.,70.,70.),
+          'tetragonal' : (3.,3.,5.,90.,90.,90.),
+          'orthorhombic' : (3.,4.,5.,90.,90.,90.),
+          'monoclinic_a' : (3.,4.,5.,100.,90.,90.),
+          'monoclinic_b' : (3.,4.,5.,90.,100.,90.),
+          'monoclinic_c' : (3.,4.,5.,90.,90.,100.),
+          'triclinic' : (3.,4.,5.,80.,85.,95.) }
+
+class test_ops_keep_cell( unittest.TestCase ):
+    """ op . ubi must describe the same lattice : the metric is unchanged """
+    def test_metric(self):
+        for name, cell in CELLS.items():
+            ubi = np.linalg.inv( ImageD11.unitcell.unitcell( cell ).B )
+            g = np.dot( ubi, ubi.T )
+            for op in ImageD11.sym_u.getgroup( name )().group:
+                gop = np.dot( np.dot( op, g ), op.T )
+                self.assertTrue( np.allclose( gop, g ), name )
+
+    def test_find_uniq_u_trigonal(self):
+        # issue 662 : alpha quartz came back as 4.913, 8.51, 5.405, 90, 90, 30
+        rng = np.random.RandomState( 42 )
+        B = ImageD11.unitcell.unitcell( CELLS['trigonal'] ).B
+        g = np.linalg.inv( np.dot( B.T, B ) )
+        grp = ImageD11.sym_u.trigonal()
+        for i in range( 100 ):
+            U = np.linalg.qr( rng.normal( size = (3,3) ) )[0]
+            ubi = np.linalg.inv( np.dot( U, B ) )
+            uniq = ImageD11.sym_u.find_uniq_u( ubi, grp )
+            self.assertTrue( np.allclose( np.dot( uniq, uniq.T ), g ) )
+
+
 # a cell in the standard setting of each crystal system
-CELLS = { 'triclinic' : (3.,4.,5.,80.,85.,95.),
+SYSTEM_CELLS = { 'triclinic' : (3.,4.,5.,80.,85.,95.),
           'monoclinic' : (3.,4.,5.,90.,100.,90.),
           'orthorhombic' : (3.,4.,5.,90.,90.,90.),
           'tetragonal' : (3.,3.,5.,90.,90.,90.),
@@ -87,7 +124,7 @@ RCELL = (5.,5.,5.,70.,70.,70.)
 def all_settings():
     from xfab import sg
     for no in range(1, 231):
-        yield no, "standard", CELLS[ sg.sg(sgno=no).crystal_system ]
+        yield no, "standard", SYSTEM_CELLS[ sg.sg(sgno=no).crystal_system ]
     for no in RHOMBOHEDRAL:
         yield no, "rhombohedral", RCELL
 
@@ -112,7 +149,8 @@ class test_laue_rotations( unittest.TestCase ):
     def test_same_as_holohedral_groups(self):
         same = lambda g1, g2: len(g1.group) == len(g2.group) and all( g1.isMember(o) for o in g2.group )
         for no, old in [ (2, 'triclinic'), (14, 'monoclinic_b'), (62, 'orthorhombic'),
-                         (139, 'tetragonal'), (194, 'hexagonal'), (225, 'cubic') ]:
+                         (139, 'tetragonal'), (150, 'trigonal'), (194, 'hexagonal'),
+                         (225, 'cubic') ]:
             self.assertTrue( same( ImageD11.sym_u.laue_rotations( no ),
                                    ImageD11.sym_u.getgroup( old )() ), no )
         self.assertTrue( same( ImageD11.sym_u.laue_rotations( 166, "rhombohedral" ),
