@@ -14,6 +14,15 @@ import os
 from pyopengltk import Opengl
 import OpenGL.GL as GL
 import OpenGL.GLU as GLU
+
+
+def _tobytes(a):
+    """ndarray to bytes: tobytes() (numpy >= 1.9) or tostring() (older numpy;
+    removed in numpy 2.x)"""
+    if hasattr(a, "tobytes"):
+        return a.tobytes()
+    return a.tostring()
+
 if sys.version_info[0] < 3:
     import Tkinter as Tk
 else:
@@ -140,7 +149,7 @@ class plot3d(Tk.Toplevel):
         if d.shape==(2048,2048):
             # rebin 2x2
             im=(d[::2,::2]+d[::2,1::2]+d[1::2,::2]+d[1::2,1::2])/4
-            self.image=(255-im).astype(numpy.uint8).tostring()
+            self.image=_tobytes((255-im).astype(numpy.uint8))
         self.imageWidth=1024
         self.imageHeight=1024
         # make a 2D array of x,y
@@ -230,8 +239,8 @@ class plot3d(Tk.Toplevel):
             self.npeaks=xyz.shape[0]
         GL.glDisableClientState(GL.GL_VERTEX_ARRAY)
         GL.glDisableClientState(GL.GL_COLOR_ARRAY)
-        GL.glVertexPointer( 3, GL.GL_FLOAT, 0, self.xyz.astype(numpy.float32).tostring() )
-        GL.glColorPointer( 3,  GL.GL_FLOAT, 0, self.color.astype(numpy.float32).tostring() )
+        GL.glVertexPointer( 3, GL.GL_FLOAT, 0, _tobytes(self.xyz.astype(numpy.float32)) )
+        GL.glColorPointer( 3,  GL.GL_FLOAT, 0, _tobytes(self.color.astype(numpy.float32)) )
         GL.glEnableClientState(GL.GL_VERTEX_ARRAY)
         GL.glEnableClientState(GL.GL_COLOR_ARRAY)
         self.o.tkRedraw()

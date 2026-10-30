@@ -3,6 +3,14 @@ from __future__ import print_function
 # Create objects to manipulate - they hold your data
 #
 import numpy as np
+
+def _tobytes(a):
+    """ndarray to bytes: tobytes() (numpy >= 1.9) or tostring() (older numpy;
+    removed in numpy 2.x)"""
+    if hasattr(a, "tobytes"):
+        return a.tobytes()
+    return a.tostring()
+
 from ImageD11 import peakmerge, indexing, transformer
 mypeakmerger = peakmerge.peakmerger()
 mytransformer = transformer.transformer()
@@ -59,7 +67,7 @@ def grids( flt, tol, npk ):
                 myindexer.ubis = []
                 myindexer.ga = -1*np.ones( (gv.shape[0],)  ,int)
                 myindexer.gvflat = np.reshape(np.fromstring(
-                    myindexer.gv.tostring(),float), myindexer.gv.shape)
+                    _tobytes(myindexer.gv),float), myindexer.gv.shape)
                 # ds for rings
                 print(gv.shape)
                 myindexer.ds = np.sqrt( gv[:,0]*gv[:,0] +

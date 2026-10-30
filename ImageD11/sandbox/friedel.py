@@ -78,7 +78,7 @@ def findpairs_2d( cf, dangle, omestep, fac = 1.5):
     # Collect all the spots into a histogram in 2D
     start = time.time()
     H, zHedges, yHedges = np.histogram2d( az, ay, ( zedges, yedges ) )
-    H = H.astype( np.int )
+    H = H.astype( int )
     NZ, NY = H.shape
     if __debug__: # checkng how binning worked
         print("H2D:",time.time()-start)
@@ -103,7 +103,7 @@ def findpairs_2d( cf, dangle, omestep, fac = 1.5):
     # loop over peaks, make location be given by pointer
     #  ... increment pointer to make space for next
     # first bin contains 2 peaks. Place these at 0,1. Next starts at 2.
-    ptemp = np.zeros(pointers.shape, np.int )
+    ptemp = np.zeros(pointers.shape, int )
     ptemp[0] = 0
     ptemp[1:] = pointers[:-1]
     # To index these pointers
@@ -116,7 +116,7 @@ def findpairs_2d( cf, dangle, omestep, fac = 1.5):
         order[i] = ptemp[p]   # output position
         ptemp[p] += 1
     # sort the columnfile and histogram indices
-    indices = np.arange( cf.nrows, dtype=np.int )
+    indices = np.arange( cf.nrows, dtype=int )
     indices.put( order, indices.copy())
     cf.reorder( indices )
     iy = iy[indices]

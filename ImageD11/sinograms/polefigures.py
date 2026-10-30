@@ -6,6 +6,9 @@
 import numpy as np
 import pylab as pl
 import os
+import copy
+import matplotlib.cm
+import matplotlib.colors
 import ImageD11.sinograms.dataset
 import ImageD11.sinograms.geometry
 import ImageD11.sparseframe
@@ -35,6 +38,27 @@ def ring_hkls(ucell, dsmax, n_rings=None):
     return np.array(hkls), mults
 
 
+def _hist_cmap():
+    """viridis, with empty (masked) bins drawn just below the low end"""
+    if hasattr(matplotlib, 'colormaps'):  # get_cmap removed in matplotlib 3.9
+        cmap = copy.copy(matplotlib.colormaps['viridis'])
+    else:
+        cmap = copy.copy(matplotlib.cm.get_cmap('viridis'))
+    cmap.set_bad(tuple(0.6 * c for c in cmap(0)[:3]))
+    return cmap
+
+
+def wrap_omega(omega, lo):
+    """Map omega (degrees) into [lo, lo+360). Circular, not a linear shift."""
+    return lo + (np.asarray(omega) - lo) % 360
+
+
+def _finite2(x, y):
+    """Drop points where either coordinate is not finite"""
+    ok = np.isfinite(x) & np.isfinite(y)
+    return x[ok], y[ok]
+
+
 def calc_gve_angles(pmap, hkls, pars):
     """
     For every indexed voxel of a point-by-point map (pmap), use its best
@@ -60,6 +84,10 @@ def calc_gve_angles(pmap, hkls, pars):
     eta2 = nputils.reshape_no_copy(eta2, shape)
     omega1 = nputils.reshape_no_copy(omega1, shape)
     omega2 = nputils.reshape_no_copy(omega2, shape)
+    # uncompute_g_vectors zeros unreachable hkls (tth == 0 only if invalid)
+    bad = ~(tth > 0)
+    for a in (tth, eta1, eta2, omega1, omega2):
+        a[bad] = np.nan
     return voxel_mask, tth, eta1, eta2, omega1, omega2
 
 
@@ -79,7 +107,7 @@ def calc_dty(ds, voxel_mask, omega1, omega2, y0):
     return dty1, dty2
 
 
-def plot_ring_polefigures(ref_ucell, mults, eta1, eta2, omega1, omega2, cf_2d, ds_tol=0.005, bin_deg=1.0):
+def plot_ring_polefigures(ref_ucell, mults, eta1, eta2, omega1, omega2, cf_2d, ds_tol=0.005, bin_deg=1.0, ds=None):
     """
     For each ring described by mults, compare the (eta, omega) pole figure
     forward-simulated from the point-by-point map (every indexed voxel's
@@ -90,22 +118,35 @@ def plot_ring_polefigures(ref_ucell, mults, eta1, eta2, omega1, omega2, cf_2d, d
     bin_deg gives sharper pole figure spots but needs more indexed voxels
     per spot to show up. dataset.ostep (the scan's angular step) is a
     natural alternative choice.
+
+    ds (a DataSet) sets the omega range from ds.obinedges; without it the
+    range of the observed cf_2d.omega is used.
     """
     start = 0
     ebins = np.arange(-180, 180, bin_deg)
-    obins = np.arange(-90, 90, bin_deg)
+    if ds is not None:
+        olo, ohi = ds.obinedges[0], ds.obinedges[-1]
+    else:
+        olo, ohi = cf_2d.omega.min(), cf_2d.omega.max()
+    obins = np.arange(olo, ohi + bin_deg, bin_deg)
+    cmap = _hist_cmap()
     for ring, m in enumerate(mults):
         end = start + m
         # both Friedel-pair solutions go in the same histogram - two separate
         # hist2d calls on one axes would paint over each other
         eta_calc = np.concatenate((eta1[:, start:end].ravel(), eta2[:, start:end].ravel()))
         omega_calc = np.concatenate((omega1[:, start:end].ravel(), omega2[:, start:end].ravel()))
-        f, a = pl.subplots(2, 1, constrained_layout=True, figsize=(9, 7))
-        a[0].hist2d(eta_calc, omega_calc, bins=(ebins, obins), norm='log')
+        f, a = pl.subplots(2, 1, constrained_layout=True, figsize=(9, 7),
+                           sharex=True, sharey=True)
+        omega_calc = wrap_omega(omega_calc, olo)
+        eta_calc, omega_calc = _finite2(eta_calc, omega_calc)
+        a[0].hist2d(eta_calc, omega_calc, bins=(ebins, obins),
+                    norm=matplotlib.colors.LogNorm(), cmap=cmap)
         title = 'Ring %d %s' % (ring, str(ref_ucell.ringhkls[ref_ucell.ringds[ring]][-1]))
         a[0].set(xlabel='eta', ylabel='omega', title='Calc: ' + title)
         cfr = cf_2d.copyrows(abs(cf_2d.ds - ref_ucell.ringds[ring]) < ds_tol)
-        a[1].hist2d(cfr.eta, cfr.omega, bins=(ebins, obins), weights=cfr.sum_intensity, norm='log')
+        a[1].hist2d(cfr.eta, cfr.omega, bins=(ebins, obins), weights=cfr.sum_intensity,
+                    norm=matplotlib.colors.LogNorm(), cmap=cmap)
         a[1].set(xlabel='eta', ylabel='omega', title='Obs: ' + title)
         start = end
 
@@ -120,18 +161,24 @@ def plot_ring_sinograms(ds, cf_2d, ref_ucell, mults, omega1, omega2, dty1, dty2,
     start = 0
     b = ds.obinedges[::omega_step]
     yb = ds.ybinedges
+    cmap = _hist_cmap()
     for ring, m in enumerate(mults):
         end = start + m
         # both Friedel-pair solutions go in the same histogram - two separate
         # hist2d calls on one axes would paint over each other
         omega_calc = np.concatenate((omega1[:, start:end].ravel(), omega2[:, start:end].ravel()))
         dty_calc = np.concatenate((dty1[:, start:end].ravel(), dty2[:, start:end].ravel()))
-        f, a = pl.subplots(1, 2, figsize=(12, 5), constrained_layout=True)
-        a[0].hist2d(omega_calc, dty_calc, bins=(b, yb), norm='log')
+        f, a = pl.subplots(1, 2, figsize=(12, 5), constrained_layout=True,
+                           sharex=True, sharey=True)
+        omega_calc = wrap_omega(omega_calc, ds.obinedges[0])
+        omega_calc, dty_calc = _finite2(omega_calc, dty_calc)
+        a[0].hist2d(omega_calc, dty_calc, bins=(b, yb),
+                    norm=matplotlib.colors.LogNorm(), cmap=cmap)
         title = 'Ring %d %s' % (ring, str(ref_ucell.ringhkls[ref_ucell.ringds[ring]][-1]))
         a[0].set(xlabel='Omega', ylabel='dty', title='Calc: ' + title)
         cfr = cf_2d.copyrows(abs(cf_2d.ds - ref_ucell.ringds[ring]) < ds_tol)
-        a[1].hist2d(cfr.omega, cfr.dty, bins=(b, yb), norm='log')
+        a[1].hist2d(cfr.omega, cfr.dty, bins=(b, yb),
+                    norm=matplotlib.colors.LogNorm(), cmap=cmap)
         a[1].set(xlabel='Omega', ylabel='dty', title='Obs: ' + title)
         start = end
 

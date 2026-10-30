@@ -66,7 +66,7 @@ for o11,o12,o21,o22 in [ [ 1,0,0,1],
                           [ 0, p.get('o12'), p.get('o11')]])
         r = np.dot(dmat, fmat)
 
-        outxyz = np.zeros( (c.nrows, 3), np.float )
+        outxyz = np.zeros( (c.nrows, 3), float )
         fImageD11.compute_xlylzl( pks[0].copy(), 
                                   pks[1].copy(),
                                   pars, r.T, dist,

@@ -30,7 +30,7 @@ fast-histogram==0.14
     # via ImageD11 (setup.py)
 fonttools==4.60.2
     # via matplotlib
-fsspec==2024.10.0
+fsspec==2026.6.0
     # via dask
 h5py==3.12.1
     # via
@@ -166,7 +166,7 @@ tqdm==4.67.1
     #   orix
 typing-extensions==4.12.2
     # via orix
-urllib3==2.7.0
+urllib3==2.8.0
     # via requests
 xfab==0.0.6
     # via ImageD11 (setup.py)

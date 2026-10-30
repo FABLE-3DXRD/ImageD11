@@ -310,7 +310,7 @@ for i in range(NROT):
 #    for j in range(3):
 #        p.add( "ub%d%d"%(i,j), ub[i,j], vary=True)
 
-x = np.arange(c.nrows*3, dtype=np.int )
+x = np.arange(c.nrows*3, dtype=int )
 
 
 #e0 = residual(  p, x, og, od, c.omega , plot=False)

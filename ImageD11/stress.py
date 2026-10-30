@@ -83,7 +83,7 @@ class EpsSigSolver:
         self.stress_unit = 'GPa'
         self.Cij_symmetry = Cij_symmetry[self.symmetry]
         self.Cij = self.form_stiffness_tensor()
-        if not np.alltrue(self.Cij == 0):
+        if not np.all(self.Cij == 0):
             self.Sij = np.linalg.inv(self.Cij)
         
         self.UBIs = UBI_list

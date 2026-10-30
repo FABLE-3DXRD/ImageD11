@@ -28,6 +28,14 @@ from data import data
 import gzip, bz2
 import numpy as np
 
+def _tobytes(a):
+    """ndarray to bytes: tobytes() (numpy >= 1.9) or tostring() (older numpy;
+    removed in numpy 2.x)"""
+    if hasattr(a, "tobytes"):
+        return a.tobytes()
+    return a.tostring()
+
+
 def opendata(filename):
     """
     Guesses the file type and return a data object
@@ -412,7 +420,7 @@ def writebruker(filename,dataobject):
     # print
     out = open(filename,"wb")
     out.write(hs)
-    out.write(r.astype(np.uint16).tostring())
+    out.write(_tobytes(r.astype(np.uint16)))
     if noverfl > 0 :
         r = np.ravel(dataobject.data)
         length = 0
@@ -476,7 +484,7 @@ def writeedf(filename,dataobject):
     assert(len(h)==4096) , "bad edf header size "+str(len(h))
     f=open(filename,"wb")
     f.write(h)
-    f.write(dataobject.data.astype(np.float32).tostring())
+    f.write(_tobytes(dataobject.data.astype(np.float32)))
     f.close()
 
 def writedata(filename,dataobject):

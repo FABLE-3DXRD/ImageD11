@@ -334,7 +334,7 @@ while k<2048:
     i16 = np.zeros(a.shape, np.int16)
     da = a[:,1:].astype(int) - a[:,:-1]
     i16[:,1:] = da
-    assert np.alltrue( i16[:,1:] == da ) , "clipping issue"
+    assert np.all( i16[:,1:] == da ) , "clipping issue"
     #    if k  == 1:
     print("highest jump was",abs(da).max())
     trans = measure( fazit_u32_i16,        "u32 i16  %4d "%(k), u32, i16  )

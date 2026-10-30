@@ -25,6 +25,14 @@ import glob, struct, logging
 
 import numpy as np
 
+def _tobytes(a):
+    """ndarray to bytes: tobytes() (numpy >= 1.9) or tostring() (older numpy;
+    removed in numpy 2.x)"""
+    if hasattr(a, "tobytes"):
+        return a.tobytes()
+    return a.tostring()
+
+
 from ImageD11 import opendata
 
 class factors:
@@ -74,10 +82,10 @@ class factors:
                                   s.shape[0],
                                   r.shape[0],
                                   r.shape[1]))
-            print(len(l.astype(float).tostring()))
-            out.write(l.astype(float).tostring())
-            out.write(s.astype(float).tostring())
-            out.write(r.astype(float).tostring())
+            print(len(_tobytes(l.astype(float))))
+            out.write(_tobytes(l.astype(float)))
+            out.write(_tobytes(s.astype(float)))
+            out.write(_tobytes(r.astype(float)))
             out.close()
 
     def loadsvd(self,filename):
@@ -87,9 +95,9 @@ class factors:
         out=open(filename,"rb")
         dims=struct.unpack("lllll",out.read(struct.calcsize("lllll")))
         print(dims,8*dims[0]*8*dims[1])
-        l=np.fromstring(out.read(8*dims[0]*dims[1]),float)
-        s=np.fromstring(out.read(8*dims[2]),float)
-        r=np.fromstring(out.read(8*dims[3]*dims[4]),float)
+        l=np.frombuffer(out.read(8*dims[0]*dims[1]),float).copy()
+        s=np.frombuffer(out.read(8*dims[2]),float).copy()
+        r=np.frombuffer(out.read(8*dims[3]*dims[4]),float).copy()
         print(l.shape,s.shape,r.shape,dims)
         l=np.reshape(l,(dims[0],dims[1]))
         r=np.reshape(r,(dims[3],dims[4]))
@@ -122,8 +130,8 @@ class factors:
         out.write(struct.pack("lll",self.x.shape[0],
                                     self.obsdata.shape[0],
                                     self.obsdata.shape[1]))
-        out.write(self.x.astype(float).tostring())
-        out.write(self.obsdata.astype(float).tostring())
+        out.write(_tobytes(self.x.astype(float)))
+        out.write(_tobytes(self.obsdata.astype(float)))
         out.close()
 
     def readobsdata(self,filename):
@@ -132,8 +140,8 @@ class factors:
         sizes=struct.unpack("lll",infile.read(struct.calcsize("lll")))
         # Type is Float therefore 8 bytes per item
         print(sizes)
-        self.x=np.fromstring(infile.read(sizes[0]*8),float)
-        self.obsdata=np.fromstring(infile.read(8*sizes[1]*sizes[2]),float)
+        self.x=np.frombuffer(infile.read(sizes[0]*8),float).copy()
+        self.obsdata=np.frombuffer(infile.read(8*sizes[1]*sizes[2]),float).copy()
         print(self.obsdata.shape)
         self.obsdata=np.reshape(self.obsdata,(sizes[1],sizes[2]))
         print(self.x.shape,self.obsdata.shape)

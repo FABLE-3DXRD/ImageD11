@@ -870,6 +870,7 @@ def compute_origins(singlemap, sample_mask,
     NI = sx_ax.shape[0]
     NJ = sy_ax.shape[0]
     lx_modified = np.zeros(npk, dtype=np.float64)
+    origin_found = np.zeros(npk, dtype=np.int8)
     W = ystep * ray_margin
 
     # the very original function was checking tolsq. this was a bug.
@@ -1014,8 +1015,9 @@ def compute_origins(singlemap, sample_mask,
                         sxc = accx[t] / accw[t]
                         syc = accy[t] / accw[t]
                         lx_modified[q] = sxc * cosomega[q] - syc * sinomega[q]
+                        origin_found[q] = 1
 
-    return lx_modified
+    return lx_modified,origin_found
 
 
 @numba.njit(cache=True, parallel=True)
@@ -1520,7 +1522,7 @@ class PBPRefine:
                   % (self.beam_size, weight_reg))
  
         t0 = time.perf_counter()
-        lx_perm = compute_origins(
+        lx_perm,found_perm = compute_origins(
             singlemap, mask, gve, sinomega, cosomega, dty,
             sx_ax, sy_ax, dsx, dsy,
             self.y0, self.ystep, self.hkl_tol_origins, weight_reg,
@@ -1534,8 +1536,16 @@ class PBPRefine:
         # un-permute back to icolf row order
         lx_modified = np.empty_like(lx_perm)
         lx_modified[order] = lx_perm
- 
+        origin_found = np.empty_like(found_perm)
+        origin_found[order] = found_perm
+
         self.icolf.addcolumn(lx_modified, 'xpos_refined')
+        self.icolf.addcolumn(origin_found, 'origin_found')
+        if verbose:
+            n = self.icolf.nrows
+            nmiss = n - int(origin_found.sum())
+            print("%d / %d peaks (%.2f%%) have no origin"
+                  % (nmiss, n, 100.0 * nmiss / max(n, 1)))
         print('xpos_refined column added to self.icolf')
  
         return lx_modified

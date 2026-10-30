@@ -240,8 +240,11 @@ def _omega_bin_index_from_frm(manager, omega, verbose=True):
         return None
 
     flat = om_img.ravel()
-    if edges[0] >= -1e-9 and flat.min() < -1e-9:
-        flat = flat % 360.0
+    if getattr(dset, "omega_wraps", False):
+        # Fold onto the bins' own fold point (obinedges[0], not 0), matching
+        # guessbins: the wrap bins can start below zero and end above it.
+        edge0 = edges[0]
+        flat = (flat - edge0) % 360.0 + edge0
     iom_of_frame = np.digitize(flat, edges) - 1
     np.clip(iom_of_frame, 0, len(cens) - 1, out=iom_of_frame)
     iomega = iom_of_frame[frm]
@@ -311,7 +314,11 @@ def _omega_bin_index(manager, omega, omega_step=None, verbose=True):
  
     edges = np.asarray(edges, dtype=np.float64)
     cens = np.asarray(cens, dtype=np.float64)
-    om = omega % 360.0 if edges[0] >= -1e-9 and omega.min() < -1e-9 else omega
+    if getattr(dset, "omega_wraps", False):
+        edge0 = edges[0]
+        om = (omega - edge0) % 360.0 + edge0
+    else:
+        om = omega
     iomega = np.digitize(om, edges) - 1
     np.clip(iomega, 0, len(cens) - 1, out=iomega)
     iomega = iomega.astype(np.int64)

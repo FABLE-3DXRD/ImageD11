@@ -20,6 +20,14 @@ import OpenGL.GL as OGL
 from OpenGL.GLU.projection import gluProject, gluUnProject
 import OpenGL.Tk as OTk
 import numpy as np
+
+def _tobytes(a):
+    """ndarray to bytes: tobytes() (numpy >= 1.9) or tostring() (older numpy;
+    removed in numpy 2.x)"""
+    if hasattr(a, "tobytes"):
+        return a.tobytes()
+    return a.tostring()
+
 import math
 import fabio
 
@@ -204,7 +212,7 @@ class checker:
         self.makeImage()
         OGL.glPixelStorei(OGL.GL_UNPACK_ALIGNMENT, 1)
 ##              glTexImage2D(GL_TEXTURE_2D, 0, 3, self.imageWidth, self.imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,  self.image)
-        s = self.image.tostring()
+        s = _tobytes(self.image)
         print(len(s),self.imageWidth*self.imageHeight)
         print(self.image.min(),self.image.max())
         OGL.glTexImage2D(OGL.GL_TEXTURE_2D, 0, OGL.GL_RGB, self.imageWidth, self.imageHeight, 0, OGL.GL_RGB ,OGL.GL_UNSIGNED_BYTE,  self.image)
