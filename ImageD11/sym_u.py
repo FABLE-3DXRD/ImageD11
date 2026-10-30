@@ -282,6 +282,55 @@ def cartesian(grp, B):
     Bi = np.linalg.inv(B)
     return np.array([np.dot(B, np.dot(np.linalg.inv(o), Bi)) for o in grp.group])
 
+def _axis_order(r):
+    """ Unit axis and order of a proper rotation, (None, 1) for the identity """
+    angle = np.arccos(np.clip((np.trace(r) - 1) / 2, -1, 1))
+    if angle < 1e-6:
+        return None, 1
+    w, v = np.linalg.eig(r)
+    axis = np.real(v[:, np.argmin(np.abs(w - 1))])
+    return axis / np.linalg.norm(axis), int(round(2 * np.pi / angle))
+
+def _same_set(a, b, tol=1e-6):
+    return len(a) == len(b) and all(min(np.abs(x - y).max() for y in b) < tol for x in a)
+
+def _frame(u, v):
+    """ Orthonormal frame (columns) with u first and v in the first plane """
+    e1 = u / np.linalg.norm(u)
+    e2 = v - np.dot(v, e1) * e1
+    e2 = e2 / np.linalg.norm(e2)
+    return np.column_stack((e1, e2, np.cross(e1, e2)))
+
+def align(rotations, target):
+    """
+    A rotation C with { C.r.C^T for r in rotations } == target, for two
+    lists of Cartesian rotations (e.g. from cartesian). The identity when
+    they are already the same. Raises ValueError if there is no such C.
+    """
+    if _same_set(rotations, target):
+        return np.eye(3)
+    axr = [ak for ak in map(_axis_order, rotations) if ak[0] is not None]
+    axt = [ak for ak in map(_axis_order, target) if ak[0] is not None]
+    if len(axr) == len(axt) > 0:
+        # take the highest order axis of target to one of rotations ...
+        n = max(k for a, k in axt)
+        ut = [a for a, k in axt if k == n][0]
+        # ... and a second axis of target, if there is one, to another
+        vts = [a for a, k in axt if abs(abs(np.dot(a, ut)) - 1) > 1e-6]
+        for ur in [s * a for a, k in axr if k == n for s in (1, -1)]:
+            if vts:
+                vt = vts[0]
+                vrs = [s * a for a, k in axr for s in (1, -1)
+                       if abs(np.dot(ur, s * a) - np.dot(ut, vt)) < 1e-6]
+            else:   # one axis : any perpendicular will do
+                vt = np.eye(3)[np.argmin(np.abs(ut))]
+                vrs = [np.eye(3)[np.argmin(np.abs(ur))]]
+            for vr in vrs:
+                C = np.dot(_frame(ut, vt), _frame(ur, vr).T)
+                if _same_set([np.dot(np.dot(C, r), C.T) for r in rotations], target):
+                    return C
+    raise ValueError("No rotation takes these rotations to the target")
+
 def find_uniq_u(u, grp, debug=0, func=np.trace):
     if func is np.trace and not debug:
         # trace(o.u) = sum_ij o_ij u_ji, so all the candidate traces at once

@@ -33,7 +33,6 @@ import numpy as np
 from numpy.linalg import inv
 from ImageD11 import cImageD11
 from xfab import tools
-from scipy.spatial.transform import Rotation as ScipyRotation
 from ImageD11.parameters import parameters, AnalysisSchema
 
 
@@ -319,6 +318,7 @@ class unitcell:
         
         # orix stuff
         self._orix_phase = None
+        self._orix_alignment = None
 
         self.sgname = sgname
         self.cell_choice = "standard"
@@ -385,46 +385,43 @@ class unitcell:
             self._orix_phase = phase
         return self._orix_phase
 
+    @property
+    def orix_alignment(self):
+        """Rotation C of the crystal frame (as in orix_phase) to where orix has the
+           point group of this cell: orientations go to orix as U.C^T.
+           orix fixes the lattice frame (x along a, z along c*) and each point group
+           to its standard axes. These disagree for b-unique 2/m (the 2-fold is along y),
+           -31m, and R groups on rhombohedral axes. C is the identity otherwise."""
+        if self._orix_alignment is None:
+            from ImageD11 import sym_u
+            phase = self.orix_phase
+            M = self.B.dot(np.linalg.inv(phase.structure.lattice.recbase))
+            Mi = np.linalg.inv(M)
+            # the cell's own rotations, as they act on orix orientations
+            ours = [Mi.dot(S).dot(M).T for S in
+                    sym_u.cartesian(sym_u.laue_rotations(self.spacegroup, self.cell_choice), self.B)]
+            theirs = []
+            for O in phase.point_group.laue.proper_subgroup.to_matrix():
+                if not any(np.abs(O - T).max() < 1e-6 for T in theirs):
+                    theirs.append(np.asarray(O, float))
+            try:
+                self._orix_alignment = sym_u.align(ours, theirs)
+            except ValueError:
+                logging.warning("Cell %s is not in the standard setting of space group %s: "
+                                "IPF colours of equivalent orientations may differ" % (
+                                    str(self.lattice_parameters), str(self.spacegroup)))
+                self._orix_alignment = np.eye(3)
+        return self._orix_alignment
+
     def get_orix_orien(self, UBs):
         """Get an Orix orientation (containing one or more orientations)
-           using self.orix_phase from an array of ImageD11 UB matrices"""
-        try:
-            from orix.vector import Miller
-            from orix.quaternion import Orientation
-        except ImportError:
-            raise ImportError("Missing orix, can't compute orix orien!")
-
-        phase = self.orix_phase
-
-        m1 = Miller(hkl=[[1, 0, 0], [0, 1, 0], [0, 0, 1]], phase=phase)
-        # this is the orix B matrix
-
-        # try to flatten UBs
+           using self.orix_phase from an array of ImageD11 UB matrices.
+           U is taken as grain.U does: B from the cell of each UB"""
         UBs = np.squeeze(UBs)
-
-        if UBs.shape == (3,3):
-            # only one UB matrix passed
-            # this can be directly determined with one call to Orientation.from_align_vectors
-            ori = Orientation.from_align_vectors(m1, (np.dot(UBs, m1.hkl.T)).T)
-            return ori
-
-        # the challenge is to quickly determine multiple orientations
-
-        m1_xyz = m1.unit.data
-        m1_hkl_transpose = m1.hkl.T
-
-        # determine all the orientation matrices from align vectors from scipy
-        matrices = np.zeros_like(UBs)
-        for inc, UB in enumerate(UBs):
-            rot, _ = ScipyRotation.align_vectors(m1_xyz, (np.dot(UB, m1_hkl_transpose)).T)
-
-            matrices[inc] = rot.as_matrix()
-
-        # make a final orientation object from all the orientation matrices
-        # make sure that symmetry is set
-        final_ori = Orientation.from_matrix(matrices, symmetry=phase.point_group)
-
-        return final_ori
+        # B is upper triangular (Busing and Levy) with B^T.B = UB^T.UB
+        UBTs = np.ascontiguousarray(np.swapaxes(UBs, -1, -2))  # matmul is slow on the transposed view
+        B = np.swapaxes(np.linalg.cholesky(np.matmul(UBTs, UBs)), -1, -2)
+        return self.get_orix_orien_fast(np.matmul(UBs, np.linalg.inv(B)))
 
     def get_orix_orien_fast(self, Umats):
         """NOTE - Supply U not UB!
@@ -442,11 +439,12 @@ class unitcell:
         # then in orix, orientations are lab -> crystal
         # in ImageD11, orientations are crystal -> lab
         # given U_orix with shape (N, 3, 3) we transpose the last 2 axes accordingly
+        # .C^T puts the crystal frame where orix has the point group (orix_alignment)
         
         phase = self.orix_phase
         B0_id11 = self.B  # get the ImageD11 B0 matrix
         B0_orix = phase.structure.lattice.recbase  # get the orix B0 matrix
-        U_orix = Umats.dot(B0_id11.dot(np.linalg.inv(B0_orix)))
+        U_orix = Umats.dot(B0_id11.dot(np.linalg.inv(B0_orix)).dot(self.orix_alignment.T))
 
         # swapaxes performs the transposition, works for (3,3) or (N,3,3)
         final_ori = Orientation.from_matrix(np.swapaxes(U_orix, -1, -2), symmetry=phase.point_group)

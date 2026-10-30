@@ -185,6 +185,34 @@ class test_laue_rotations( unittest.TestCase ):
 
 
 
+class test_align( unittest.TestCase ):
+
+    def test_align(self):
+        # a group and the same group turned by a random rotation Q
+        rng = np.random.RandomState( 42 )
+        for no, system in [ (14, 'monoclinic'), (88, 'tetragonal'), (150, 'trigonal'),
+                            (162, 'trigonal'), (194, 'hexagonal'), (225, 'cubic') ]:
+            B = ImageD11.unitcell.unitcell( SYSTEM_CELLS[ system ] ).B
+            S = ImageD11.sym_u.cartesian( ImageD11.sym_u.laue_rotations( no ), B )
+            Q = np.linalg.qr( rng.normal( size = (3,3) ) )[0]
+            Q = Q * np.sign( np.linalg.det( Q ) )
+            T = [ np.dot( np.dot( Q, s ), Q.T ) for s in S ]
+            C = ImageD11.sym_u.align( S, T )
+            self.assertTrue( np.allclose( np.dot( C, C.T ), np.eye(3) ) )
+            self.assertAlmostEqual( np.linalg.det( C ), 1 )
+            for s in S:
+                c = np.dot( np.dot( C, s ), C.T )
+                self.assertTrue( min( np.abs( c - t ).max() for t in T ) < 1e-6, no )
+            self.assertTrue( np.allclose( ImageD11.sym_u.align( S, S ), np.eye(3) ) )
+
+    def test_no_alignment(self):
+        # 222 and 4 both have four rotations, but no rotation takes one to the other
+        S222 = ImageD11.sym_u.cartesian( ImageD11.sym_u.laue_rotations( 62 ), np.eye(3) )
+        S4 = ImageD11.sym_u.cartesian( ImageD11.sym_u.laue_rotations( 83 ), np.eye(3) )
+        with self.assertRaises( ValueError ):
+            ImageD11.sym_u.align( S222, S4 )
+
+
 if __name__=="__main__":
     unittest.main()
 
