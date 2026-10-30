@@ -98,6 +98,7 @@ class TestHarvestPipeline(unittest.TestCase):
 
 
 
+@unittest.skipIf(int(sys.version_info.major) == 2, "roi_iradon needs scipy.fft, not on Python 2")
 class TestHarvestStep(unittest.TestCase):
     """the harvest step on the synthetic frames: the grains file and its labels replaced by stand-ins; the
     ShoeboxModel instrumental terms are fitted to a pilot harvest (the painted spots are 1 px wide)"""

@@ -764,9 +764,9 @@ def _average_profiles(nbr, hs, hf, ho, ds_, df_, off, data, I, out):
                         v += w1 * data[base_r + i0 + 1]
                     out[base_t + j] += v / I[r]
             for j in range(nw):
-                x = j - ho[t] + ho[r]
-                if 0 <= x < nwr:
-                    out[o + ns + nf + j] += data[a + nsr + nfr + x] / I[r]
+                xw = j - ho[t] + ho[r]
+                if 0 <= xw < nwr:
+                    out[o + ns + nf + j] += data[a + nsr + nfr + xw] / I[r]
         if nn > 0:
             for j in range(ns + nf + nw):
                 out[o + j] /= nn
