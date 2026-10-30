@@ -197,13 +197,29 @@ class test_align( unittest.TestCase ):
             Q = np.linalg.qr( rng.normal( size = (3,3) ) )[0]
             Q = Q * np.sign( np.linalg.det( Q ) )
             T = [ np.dot( np.dot( Q, s ), Q.T ) for s in S ]
-            C = ImageD11.sym_u.align( S, T )
+            # refs that Q satisfies exactly, so the answer is Q (or t.Q, t in T)
+            refs = [ (u, np.dot( Q, u )) for u in ( (1., 0, 0), (0, 0, 1.) ) ]
+            C = ImageD11.sym_u.align( S, T, refs )
             self.assertTrue( np.allclose( np.dot( C, C.T ), np.eye(3) ) )
             self.assertAlmostEqual( np.linalg.det( C ), 1 )
             for s in S:
                 c = np.dot( np.dot( C, s ), C.T )
                 self.assertTrue( min( np.abs( c - t ).max() for t in T ) < 1e-6, no )
+            self.assertTrue( min( np.abs( np.dot( C, Q.T ) - t ).max() for t in T ) < 1e-6, no )
             self.assertTrue( np.allclose( ImageD11.sym_u.align( S, S ), np.eye(3) ) )
+
+    def test_refs_needed(self):
+        # 2/m turned : any turn about the 2-fold also works, refs must choose
+        S = ImageD11.sym_u.cartesian( ImageD11.sym_u.laue_rotations( 14 ), np.eye(3) )
+        Q = np.array( [ [ 1., 0, 0 ], [ 0, 0, -1 ], [ 0, 1, 0 ] ] )
+        T = [ np.dot( np.dot( Q, s ), Q.T ) for s in S ]
+        with self.assertRaises( ValueError ):
+            ImageD11.sym_u.align( S, T )
+        # one ref leaves b -> +z or -z, the second chooses
+        with self.assertRaises( ValueError ):
+            ImageD11.sym_u.align( S, T, [ ((1., 0, 0), (1., 0, 0)) ] )
+        C = ImageD11.sym_u.align( S, T, [ ((1., 0, 0), (1., 0, 0)), ((0, 1., 0), (0, 0, 1.)) ] )
+        self.assertTrue( np.allclose( C, Q ) )
 
     def test_no_alignment(self):
         # 222 and 4 both have four rotations, but no rotation takes one to the other

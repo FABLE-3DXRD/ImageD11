@@ -391,12 +391,31 @@ class unitcell:
            point group of this cell: orientations go to orix as U.C^T.
            orix fixes the lattice frame (x along a, z along c*) and each point group
            to its standard axes. These disagree for b-unique 2/m (the 2-fold is along y),
-           -31m, and R groups on rhombohedral axes. C is the identity otherwise."""
+           -31m, and R groups on rhombohedral axes. C is the identity otherwise.
+           Several C do that and give different colours (e.g. any turn about the 2-fold
+           of 2/m, or +-30 degrees for -31m): the symmetry does not choose. Here:
+           - R groups on rhombohedral axes are coloured as the same lattice on its
+             hexagonal (obverse) axes, where orix needs no turn.
+           - otherwise C takes a* as close as it can to orix's x (a* is x in ImageD11's
+             frame, and MTEX's default), then b as close as it can to +z. For -31m
+             this gives MTEX's colours. For 2/m, orix's colour key is not MTEX's."""
         if self._orix_alignment is None:
             from ImageD11 import sym_u
             phase = self.orix_phase
             M = self.B.dot(np.linalg.inv(phase.structure.lattice.recbase))
             Mi = np.linalg.inv(M)
+            if self.cell_choice == "rhombohedral":
+                # a_h = a - b, b_h = b - c, c_h = a + b + c : rows of ubi_h = P.ubi
+                P = np.array([[1., -1., 0.], [0., 1., -1.], [1., 1., 1.]])
+                a, alpha = self.lattice_parameters[0], radians(self.lattice_parameters[3])
+                hexcell = unitcell([2 * a * math.sin(alpha / 2), 2 * a * math.sin(alpha / 2),
+                                    a * math.sqrt(3 * (1 + 2 * math.cos(alpha))), 90., 90., 120.],
+                                   self.spacegroup)
+                # U_h = U.N, then as get_orix_orien_fast does for hexcell
+                N = hexcell.B.dot(P).dot(np.linalg.inv(self.B)).T
+                Mh = hexcell.B.dot(np.linalg.inv(hexcell.orix_phase.structure.lattice.recbase))
+                self._orix_alignment = Mi.dot(N).dot(Mh).dot(hexcell.orix_alignment.T).T
+                return self._orix_alignment
             # the cell's own rotations, as they act on orix orientations
             ours = [Mi.dot(S).dot(M).T for S in
                     sym_u.cartesian(sym_u.laue_rotations(self.spacegroup, self.cell_choice), self.B)]
@@ -404,12 +423,16 @@ class unitcell:
             for O in phase.point_group.laue.proper_subgroup.to_matrix():
                 if not any(np.abs(O - T).max() < 1e-6 for T in theirs):
                     theirs.append(np.asarray(O, float))
+            # a* and b in orix's crystal frame: orix vector = M^T . ImageD11 vector
+            astar = M[0]
+            b = M.T.dot(np.linalg.inv(self.B)[1])
             try:
-                self._orix_alignment = sym_u.align(ours, theirs)
-            except ValueError:
-                logging.warning("Cell %s is not in the standard setting of space group %s: "
-                                "IPF colours of equivalent orientations may differ" % (
-                                    str(self.lattice_parameters), str(self.spacegroup)))
+                self._orix_alignment = sym_u.align(ours, theirs,
+                                                   refs=[(astar, (1., 0., 0.)), (b, (0., 0., 1.))])
+            except ValueError as e:
+                logging.warning("Cell %s, space group %s: %s. IPF colours of equivalent "
+                                "orientations may differ" % (str(self.lattice_parameters),
+                                                             str(self.spacegroup), str(e)))
                 self._orix_alignment = np.eye(3)
         return self._orix_alignment
 
@@ -454,7 +477,9 @@ class unitcell:
     def get_ipf_colour_from_orix_orien(self, orix_orien, axis=np.array([0., 0., 1.])):
         """Gets the TSL IPF colour(s) (Nolze, 2016) in the laboratory frame from an orix orientation
            10.1107/S1600576716012942
-           axis is an axis vector in the laboratory frame"""
+           axis is an axis vector in the laboratory frame
+           The colours are orix's (IPFColorKeyTSL). They agree with MTEX's, except for
+           Laue class 2/m, where the two keys differ."""
         try:
             from orix.vector.vector3d import Vector3d
             from orix.plot import IPFColorKeyTSL

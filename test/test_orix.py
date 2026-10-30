@@ -417,6 +417,35 @@ class TestOrixAlignment(unittest.TestCase):
             changed = cell.spacegroup in (4, 14, 15, 149, 157, 162) or cell.cell_choice == "rhombohedral"
             self.assertEqual(not np.allclose(cell.orix_alignment, np.eye(3)), changed, sg)
 
+    def test_convention(self):
+        # the choice orix leaves open (unitcell.orix_alignment): a* on orix's x, then b to +z
+        for lp, sg in [(self.MONO, 14), (self.HEX, 162), (self.HEX, 149)]:
+            cell = unitcell(lp, sg)
+            M = cell.B.dot(np.linalg.inv(cell.orix_phase.structure.lattice.recbase))
+            astar = cell.orix_alignment.dot(M[0])
+            self.assertTrue(np.allclose(astar / np.linalg.norm(astar), (1, 0, 0)), sg)
+        cell = unitcell(self.MONO, 14)
+        M = cell.B.dot(np.linalg.inv(cell.orix_phase.structure.lattice.recbase))
+        b = cell.orix_alignment.dot(M.T.dot(np.linalg.inv(cell.B)[1]))
+        self.assertTrue(np.allclose(b / np.linalg.norm(b), (0, 0, 1)))
+
+    def test_rhombohedral_as_hexagonal(self):
+        # an R group on rhombohedral axes gets the colours of its hexagonal (obverse) axes
+        from orix.vector import Vector3d
+        from orix.plot import IPFColorKeyTSL
+        Us = R.random(20, random_state=42).as_matrix()
+        a, al = 5., np.radians(70.)
+        hexagonal = [2 * a * np.sin(al / 2), 2 * a * np.sin(al / 2), a * np.sqrt(3 * (1 + 2 * np.cos(al))), 90, 90, 120]
+        P = np.array([[1., -1., 0.], [0., 1., -1.], [1., 1., 1.]])
+        for sg in (148, 166):
+            r, h = unitcell(self.RHOMB, sg), unitcell(hexagonal, sg)
+            N = h.B.dot(P).dot(np.linalg.inv(r.B)).T     # U on hexagonal axes = U.N
+            for axis in np.eye(3):
+                key = IPFColorKeyTSL(r.orix_phase.point_group, direction=Vector3d(axis))
+                self.assertTrue(np.allclose(key.orientation2color(r.get_orix_orien_fast(Us)),
+                                            key.orientation2color(h.get_orix_orien_fast(np.matmul(Us, N))),
+                                            atol=1e-3), sg)
+
     def test_slow_is_fast(self):
         # get_orix_orien(UB) takes U as grain.U does, also for strained UBs
         from ImageD11.grain import grain
