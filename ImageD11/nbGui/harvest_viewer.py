@@ -21,6 +21,7 @@ In a notebook:
 Without the GUI:  src = hv.Results('run', hv.Context('dataset.h5', 'phase'));  g = hv.GrainView(src, gid)
                   r = hv.reharvest(src, g.spot[j], iscan)
 """
+from __future__ import print_function
 import os
 
 import numpy as np
@@ -497,26 +498,36 @@ def reharvest(src, ispot, iscan, extra=3, z=None):
 def describe(r):
     """one-paragraph text of a reharvest() result, with the check against the stored row"""
     sp, t, s = r['spot'], r['total'], r['stored']
-    lines = [f"spot {r['ispot']} grain-index {int(sp['grain'])} hkl ({int(sp['h'])} {int(sp['k'])} {int(sp['l'])})  "
-             f"tth {sp['tth']:.3f}  eta {sp['eta']:.1f}  omega {sp['omega']:.3f}",
-             f"scan {r['iscan']} dty {r['dty']:.2f} (grain centre at this omega {r['dty_pred']:.2f}; in beam: {r['inbeam']})",
-             f"box {2 * int(sp['hs']) + 1}x{2 * int(sp['hf']) + 1} px x {int(r['used'].sum())} frames, annulus {int(sp['bw'])} px; "
-             f"nbox {sp['nbox']:.0f}, nann {sp['nann']:.0f}; edge {bool(sp['edge'])} touch_mask {bool(sp['touch_mask'])} "
-             f"n_overlap {int(sp['n_overlap'])}",
-             f"re-harvest: box {t['box']:.1f}  bg {t['bg']:.1f}  net {t['net']:.1f}  sig {np.sqrt(max(t['var'], 0)):.1f}  "
-             f"clipped annulus px {t['nclip']:.0f}  nframes {t['nframes']:.0f}"]
+    lines = ["spot {} grain-index {} hkl ({} {} {})  "
+             "tth {:.3f}  eta {:.1f}  omega {:.3f}".format(
+                 r['ispot'], int(sp['grain']), int(sp['h']), int(sp['k']), int(sp['l']), sp['tth'],
+                 sp['eta'], sp['omega']),
+             "scan {} dty {:.2f} (grain centre at this omega {:.2f}; in beam: {})".format(
+                 r['iscan'], r['dty'], r['dty_pred'], r['inbeam']),
+             "box {}x{} px x {} frames, annulus {} px; "
+             "nbox {:.0f}, nann {:.0f}; edge {} touch_mask {} "
+             "n_overlap {}".format(
+                 2 * int(sp['hs']) + 1, 2 * int(sp['hf']) + 1, int(r['used'].sum()), int(sp['bw']),
+                 sp['nbox'], sp['nann'], bool(sp['edge']), bool(sp['touch_mask']), int(sp['n_overlap'])),
+             "re-harvest: box {:.1f}  bg {:.1f}  net {:.1f}  sig {:.1f}  "
+             "clipped annulus px {:.0f}  nframes {:.0f}".format(
+                 t['box'], t['bg'], t['net'], np.sqrt(max(t['var'], 0)), t['nclip'], t['nframes'])]
     nb = r['neighbours']
     inbox = ((np.abs(nb['s0'] - sp['s0']) <= nb['hs'] + sp['hs']) & (np.abs(nb['f0'] - sp['f0']) <= nb['hf'] + sp['hf']) &
              (np.abs(nb['omega'] - sp['omega']) <= (nb['ho'] + sp['ho'] + 1) * r['omega_step']))
     o = inbox & nb['inbeam'] & ~nb['same_grain']
-    lines.append(f"other-grain boxes overlapping the peak box, grain in beam on this scan: {int(o.sum())} "
-                 f"(grains {sorted(set(int(x) for x in nb['gid'][o]))[:20]});  not in beam: {int((inbox & ~nb['inbeam']).sum())}")
+    lines.append("other-grain boxes overlapping the peak box, grain in beam on this scan: {} "
+                 "(grains {});  not in beam: {}".format(
+                     int(o.sum()), sorted(set(int(x) for x in nb['gid'][o]))[:20],
+                     int((inbox & ~nb['inbeam']).sum())))
     if s is None or s['nframes'] == 0:
         lines.append('stored: (not integrated on this scan)')
     else:
         ok = np.isclose(s['box'], t['box'], rtol=1e-4, atol=0.5) and np.isclose(s['bg'], t['bg'], rtol=1e-4, atol=0.5)
-        lines.append(f"stored    : box {s['box']:.1f}  bg {s['bg']:.1f}  net {s['net']:.1f}  sig {np.sqrt(max(s['var'], 0)):.1f}  "
-                     f"nframes {s['nframes']:.0f}   -> {'MATCH' if ok else 'DIFFERENT'}")
+        lines.append("stored    : box {:.1f}  bg {:.1f}  net {:.1f}  sig {:.1f}  "
+                     "nframes {:.0f}   -> {}".format(
+                         s['box'], s['bg'], s['net'], np.sqrt(max(s['var'], 0)), s['nframes'],
+                         'MATCH' if ok else 'DIFFERENT'))
     return '\n'.join(lines)
 
 
@@ -559,19 +570,19 @@ def draw_profiles(fig, p, why='', scan_dty=None):
     ax.set_xlabel('dty', fontsize=8)
     ax.tick_params(labelsize=7)
     ax.legend(fontsize=6)
-    t = f"spot {p['spot']} hkl {p['hkl']}: I_sum {p['I_sum']:.1f} +- {p['sigI_sum']:.1f}"
+    t = "spot {} hkl {}: I_sum {:.1f} +- {:.1f}".format(p['spot'], p['hkl'], p['I_sum'], p['sigI_sum'])
     if final:
         used = 'dty profile fit (weak)' if p['profile_used'] else 'box sum'
-        t += f"  ->  I_final {p['I_final']:.1f} +- {p['sigI_final']:.1f}  [{used}; chi2 {p['chi2']:.2f}"
+        t += "  ->  I_final {:.1f} +- {:.1f}  [{}; chi2 {:.2f}".format(p['I_final'], p['sigI_final'], used, p['chi2'])
         if p['transmission'] is not None:
-            t += f"; transmission {p['transmission']:.3f}; dty coverage {p['coverage']:.3f}"
+            t += "; transmission {:.3f}; dty coverage {:.3f}".format(p['transmission'], p['coverage'])
         if p['drop']:
             why = [n for n, c in (('contaminated', 'overlap'), ('omega range end', 'omega_edge'),
                                   ('touches mask', 'refl_touch_mask'), ('detector edge', 'refl_edge')) if p[c]]
             t += '; DROPPED (%s)' % (', '.join(why) or 'dty coverage')
         t += ']'
     if p['n_ref']:
-        t += f"  learned from {p['n_ref']} strong refs{'; is a reference' if p['is_reference'] else ''}"
+        t += "  learned from {} strong refs{}".format(p['n_ref'], '; is a reference' if p['is_reference'] else '')
     fig.suptitle(t, fontsize=8)
     return fig
 
@@ -664,7 +675,7 @@ class Viewer(object):
 
     def switch(self, name):
         """show another set of results; keeps the grain, or goes to the grain it was merged into"""
-        self.status(f'opening {name} ...')
+        self.status('opening {} ...'.format(name))
         self.source = name
         self.src = self.results(name)
         gid = self.src.into.get(int(self.gid), int(self.gid))
@@ -673,7 +684,7 @@ class Viewer(object):
         self.load(gid)
 
     def status(self, s):
-        self.w_status.value = f'<b>{s}</b>'
+        self.w_status.value = '<b>{}</b>'.format(s)
 
     # ---------------------------------------------------------------- events
     def on_click(self, ev):
@@ -710,14 +721,14 @@ class Viewer(object):
 
     # ---------------------------------------------------------------- grain
     def load(self, gid, reshape=False):
-        self.status(f'loading grain {gid} ...')
+        self.status('loading grain {} ...'.format(gid))
         try:
             if reshape and self.g is not None:
                 self.g.set_shape(self.w_shape.value)
             else:
                 self.g = GrainView(self.src, gid, shape=self.w_shape.value)
         except Exception as e:
-            self.status(f'grain {gid}: {e!r}')
+            self.status('grain {}: {!r}'.format(gid, e))
             return
         self.gid = int(gid)
         self.w_gid.value = self.gid
@@ -729,7 +740,8 @@ class Viewer(object):
         g = self.g
         strong = np.argsort(np.where(g.valid.any(1), g.I / np.maximum(g.sigI, 1e-9), -np.inf))[::-1]
         self.select_row(int(strong[0]))
-        self.status(f'grain {gid}: {len(g.spot)} reflections x {len(g.iscan)} scans; shape={g.shape_mode}')
+        self.status('grain {}: {} reflections x {} scans; shape={}'.format(
+            gid, len(g.spot), len(g.iscan), g.shape_mode))
 
     def draw_map(self):
         ax = self.ax_map
@@ -739,7 +751,7 @@ class Viewer(object):
         if self.g is not None:
             ax.contour(idmap == self.gid, levels=[0.5], colors='k', linewidths=1.2)
             ax.contour(self.g.rho > 0, levels=[0.5], colors='w', linewidths=0.6, linestyles=':')
-        ax.set_title(f'{self.source}: grain map - click a grain; grain {self.gid}', fontsize=9, loc='left')
+        ax.set_title('{}: grain map - click a grain; grain {}'.format(self.source, self.gid), fontsize=9, loc='left')
         ax.set_xticks([])
         ax.set_yticks([])
         self.fig.canvas.draw_idle()
@@ -774,16 +786,16 @@ class Viewer(object):
         ax.imshow(im, aspect='auto', origin='lower', interpolation='nearest', cmap=cm, vmin=vmin, vmax=vmax,
                   extent=(d[0] - 0.05, d[-1] + 0.05, -0.5, len(self.rows) - 0.5))
         ax.set_xlabel('dty')
-        ax.set_ylabel(f'reflection (sorted by {self.w_sort.value})')
-        ax.set_title(f'grain {g.gid}: {mode}   [{vmin:.3g}, {vmax:.3g}]', fontsize=9, loc='left')
+        ax.set_ylabel('reflection (sorted by {})'.format(self.w_sort.value))
+        ax.set_title('grain {}: {}   [{:.3g}, {:.3g}]'.format(g.gid, mode, vmin, vmax), fontsize=9, loc='left')
 
         def fmt(x, y):
             r = int(round(y))
             if not (0 <= r < len(self.rows)):
                 return ''
             j = self.rows[r]
-            return (f'dty {x:.2f}  hkl {tuple(g.hkl[j])}  omega {g.omega[j]:.2f}  tth {g.tth[j]:.2f}  '
-                    f'{self.w_sort.value} {key[j]:.3g}')
+            return ('dty {:.2f}  hkl {}  omega {:.2f}  tth {:.2f}  '
+                    '{} {:.3g}'.format(x, tuple(g.hkl[j]), g.omega[j], g.tth[j], self.w_sort.value, key[j]))
         ax.format_coord = fmt
         self.sel_h = ax.axhline(0, color='r', lw=0.8)
         self.sel_v = ax.axvline(d[0], color='r', lw=0.8)
@@ -851,9 +863,9 @@ class Viewer(object):
         ax.plot(d[m], g.box[j][m], '.', color='0.6', ms=3, label='box (sum)')
         ax.plot(d[m], g.bg[j][m], '-', color='tab:blue', lw=1, label='bg (annulus x nbox)')
         ax.errorbar(d[m], g.net[j][m], sig[m], fmt='o', color='k', ms=3, lw=0.8, label='net = box - bg (obs)')
-        ax.plot(d, g.a[j] * g.calc[j], '-', color='tab:red', lw=1.5, label=f'calc  a P  (a={g.a[j]:.3g})')
+        ax.plot(d, g.a[j] * g.calc[j], '-', color='tab:red', lw=1.5, label='calc  a P  (a={:.3g})'.format(g.a[j]))
         ax.plot(d, g.a2[j] * g.calc[j] + g.b2[j], '--', color='tab:orange', lw=1.2,
-                label=f'a2 P + b2  (b2={g.b2[j]:.3g} = {g.offset_sig[j]:.2f} sigma)')
+                label='a2 P + b2  (b2={:.3g} = {:.2f} sigma)'.format(g.b2[j], g.offset_sig[j]))
         ax.axhline(0, color='k', lw=0.5)
         ax.axvspan(d[col] - 0.05, d[col] + 0.05, color='r', alpha=0.15)
         ax.set_xlabel('dty')
@@ -862,16 +874,18 @@ class Viewer(object):
             ax.set_xlim(d[m].min() - 0.3, d[m].max() + 0.3)
         fl = ' EDGE' if g.edge[j] else ''
         fl += ' MASK' if g.touch[j] else ''
-        ax.set_title(f'hkl {tuple(int(x) for x in g.hkl[j])}  omega {g.omega[j]:.2f}  tth {g.tth[j]:.2f}  '
-                     f'eta {g.eta[j]:.1f}  I/sig {g.I[j] / max(g.sigI[j], 1e-9):.1f}  n_overlap {g.n_overlap[j]}{fl}'
-                     '  - click a scan', fontsize=8, loc='left')
+        ax.set_title('hkl {}  omega {:.2f}  tth {:.2f}  '
+                     'eta {:.1f}  I/sig {:.1f}  n_overlap {}{}'
+                     '  - click a scan'.format(
+                         tuple(int(x) for x in g.hkl[j]), g.omega[j], g.tth[j], g.eta[j],
+                         g.I[j] / max(g.sigI[j], 1e-9), g.n_overlap[j], fl), fontsize=8, loc='left')
         ax.legend(fontsize=7, loc='upper right')
         self.mark_selection()
         self.fig.canvas.draw_idle()
         try:
             p, why = self.src.profiles_1d(self.gid, self.j, g.z)
         except Exception as e:
-            p, why = None, f'profiles: {e!r}'
+            p, why = None, 'profiles: {!r}'.format(e)
         self.p = p
         draw_profiles(self.fig3, p, why, scan_dty=g.dty[col])
         self.fig3.canvas.draw_idle()
@@ -889,21 +903,23 @@ class Viewer(object):
             l.remove()
         self.ax_prof.axvspan(g.dty[col] - 0.05, g.dty[col] + 0.05, color='r', alpha=0.15)
         self.fig.canvas.draw_idle()
-        self.status(f're-harvesting spot {g.spot[self.j]} on scan {g.iscan[col]} from the raw frames ...')
+        self.status('re-harvesting spot {} on scan {} from the raw frames ...'.format(g.spot[self.j], g.iscan[col]))
         try:
             self.r = reharvest(self.src, int(g.spot[self.j]), int(g.iscan[col]), extra=self.w_extra.value, z=g.z)
         except Exception as e:
-            self.status(f're-harvest failed: {e!r}')
+            self.status('re-harvest failed: {!r}'.format(e))
             return
         self.w_text.clear_output()
         with self.w_text:
             print(describe(self.r))
-            print(f"calc at this scan: a P = {g.a[self.j] * g.calc[self.j, col]:.1f}   "
-                  f"a2 P + b2 = {g.a2[self.j] * g.calc[self.j, col] + g.b2[self.j]:.1f}   "
-                  f"(obs net {g.net[self.j, col]:.1f})")
+            print("calc at this scan: a P = {:.1f}   "
+                  "a2 P + b2 = {:.1f}   "
+                  "(obs net {:.1f})".format(
+                      g.a[self.j] * g.calc[self.j, col], g.a2[self.j] * g.calc[self.j, col] + g.b2[self.j],
+                      g.net[self.j, col]))
         draw_boxes(self.fig2, self.r, log=self.w_log.value, all_neighbours=self.w_allnb.value)
         self.fig2.canvas.draw_idle()
-        self.status(f'grain {self.gid}  reflection {self.j}  scan {g.iscan[col]} (dty {g.dty[col]:.2f})')
+        self.status('grain {}  reflection {}  scan {} (dty {:.2f})'.format(self.gid, self.j, g.iscan[col], g.dty[col]))
 
 
 def draw_boxes(fig, r, log=False, ncols=None, all_neighbours=False):
@@ -956,7 +972,7 @@ def draw_boxes(fig, r, log=False, ncols=None, all_neighbours=False):
         ax.set_ylim(2 * rs + 0.5, -0.5)
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.set_title(f"{r['omega'][i]:.2f}" + (' *' if r['used'][i] else ''), fontsize=7,
+        ax.set_title("{:.2f}".format(r['omega'][i]) + (' *' if r['used'][i] else ''), fontsize=7,
                      color='r' if r['used'][i] else 'k')
     ax = fig.add_subplot(gs[nr, :])
     pf = r['per_frame']
@@ -976,9 +992,11 @@ def draw_boxes(fig, r, log=False, ncols=None, all_neighbours=False):
     ax.legend(fontsize=7, ncol=4, loc='upper left')
     t = r['total']
     s = r['stored']
-    chk = '' if s is None else f"   stored box {s['box']:.0f} bg {s['bg']:.0f} net {s['net']:.0f}"
-    fig.suptitle(f"spot {r['ispot']} ({int(sp['h'])} {int(sp['k'])} {int(sp['l'])})  scan {r['iscan']} dty {r['dty']:.2f}"
-                 f"  in beam {r['inbeam']}   re-harvest box {t['box']:.0f} bg {t['bg']:.0f} net {t['net']:.0f} "
-                 f"sig {np.sqrt(max(t['var'], 0)):.0f}{chk}\n[red box / cyan annulus / x clipped / dashed: other boxes "
-                 f"orange=other grain in beam, grey=not in beam, green=same grain]", fontsize=8)
+    chk = '' if s is None else "   stored box {:.0f} bg {:.0f} net {:.0f}".format(s['box'], s['bg'], s['net'])
+    fig.suptitle("spot {} ({} {} {})  scan {} dty {:.2f}"
+                 "  in beam {}   re-harvest box {:.0f} bg {:.0f} net {:.0f} "
+                 "sig {:.0f}{}\n[red box / cyan annulus / x clipped / dashed: other boxes "
+                 "orange=other grain in beam, grey=not in beam, green=same grain]".format(
+                     r['ispot'], int(sp['h']), int(sp['k']), int(sp['l']), r['iscan'], r['dty'], r['inbeam'],
+                     t['box'], t['bg'], t['net'], np.sqrt(max(t['var'], 0)), chk), fontsize=8)
     return fig
