@@ -141,20 +141,34 @@ class test_laue_rotations( unittest.TestCase ):
                 for b in grp.group:
                     self.assertTrue( grp.isMember( np.dot( a, b ) ), (no, choice) )
 
+    def test_same_as_xfab(self):
+        # the table against the operators xfab lists for every space group
+        from xfab import sg
+        for no, choice, cell in all_settings():
+            ops = []
+            for r in sg.sg( sgno = no, cell_choice = choice ).rot:
+                # xfab has x' = W.x, sym_u has W.T ; times det for the rotation part
+                w = np.array( r, float ).T * np.sign( np.linalg.det( r ) )
+                if not any( np.allclose( w, o ) for o in ops ):
+                    ops.append( w )
+            grp = ImageD11.sym_u.laue_rotations( no, choice )
+            self.assertEqual( len( grp.group ), len( ops ), (no, choice) )
+            for o in ops:
+                self.assertTrue( grp.isMember( o ), (no, choice) )
+
     def test_sizes(self):
         for no, n in [ (2,1), (14,2), (62,4), (88,4), (139,8), (148,3), (162,6),
                        (164,6), (176,6), (194,12), (205,12), (225,24) ]:
             self.assertEqual( len( ImageD11.sym_u.laue_rotations( no ).group ), n, no )
 
     def test_same_as_holohedral_groups(self):
-        same = lambda g1, g2: len(g1.group) == len(g2.group) and all( g1.isMember(o) for o in g2.group )
         for no, old in [ (2, 'triclinic'), (14, 'monoclinic_b'), (62, 'orthorhombic'),
                          (139, 'tetragonal'), (150, 'trigonal'), (194, 'hexagonal'),
                          (225, 'cubic') ]:
-            self.assertTrue( same( ImageD11.sym_u.laue_rotations( no ),
-                                   ImageD11.sym_u.getgroup( old )() ), no )
-        self.assertTrue( same( ImageD11.sym_u.laue_rotations( 166, "rhombohedral" ),
-                               ImageD11.sym_u.rhombohedralP() ) )
+            self.assertTrue( ImageD11.sym_u.laue_rotations( no ) is
+                             ImageD11.sym_u.getgroup( old )(), no )
+        self.assertTrue( ImageD11.sym_u.laue_rotations( 166, "rhombohedral" ) is
+                         ImageD11.sym_u.rhombohedralP() )
 
     def test_cartesian(self):
         rng = np.random.RandomState( 42 )
