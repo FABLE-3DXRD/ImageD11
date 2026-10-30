@@ -1,6 +1,11 @@
 
-import numpy as np
+import sys
 import unittest
+
+if int(sys.version_info.major) == 2:
+    raise unittest.SkipTest("Skipping tensor_map tests on Python 2")
+
+import numpy as np
 from ImageD11 import unitcell
 from ImageD11.sinograms.tensor_map import sym_ops_from_phase
 
