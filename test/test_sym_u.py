@@ -1,6 +1,7 @@
 
 import numpy as np
 import ImageD11.sym_u
+import ImageD11.unitcell
 import unittest
 
 class testsyms( unittest.TestCase ):
@@ -70,6 +71,43 @@ class test_orthorhombic_rh(  unittest.TestCase , trh):
     def setUp(self):
         self.ubi = np.array( [ (1,0,0), ( 0,1.3,0 ), (0,0,2.1) ] )
         self.c = ImageD11.sym_u.orthorhombic()
+
+
+# a cell compatible with each group, in the setting the group expects
+CELLS = { 'cubic' : (4.,4.,4.,90.,90.,90.),
+          'hexagonal' : (3.,3.,5.,90.,90.,120.),
+          'trigonal' : (4.913,4.913,5.405,90.,90.,120.),
+          'trigonalH' : (4.913,4.913,5.405,90.,90.,120.),
+          'trigonalP' : (5.,5.,5.,70.,70.,70.),
+          'rhombohedralP' : (5.,5.,5.,70.,70.,70.),
+          'tetragonal' : (3.,3.,5.,90.,90.,90.),
+          'orthorhombic' : (3.,4.,5.,90.,90.,90.),
+          'monoclinic_a' : (3.,4.,5.,100.,90.,90.),
+          'monoclinic_b' : (3.,4.,5.,90.,100.,90.),
+          'monoclinic_c' : (3.,4.,5.,90.,90.,100.),
+          'triclinic' : (3.,4.,5.,80.,85.,95.) }
+
+class test_ops_keep_cell( unittest.TestCase ):
+    """ op . ubi must describe the same lattice : the metric is unchanged """
+    def test_metric(self):
+        for name, cell in CELLS.items():
+            ubi = np.linalg.inv( ImageD11.unitcell.unitcell( cell ).B )
+            g = np.dot( ubi, ubi.T )
+            for op in ImageD11.sym_u.getgroup( name )().group:
+                gop = np.dot( np.dot( op, g ), op.T )
+                self.assertTrue( np.allclose( gop, g ), name )
+
+    def test_find_uniq_u_trigonal(self):
+        # issue 662 : alpha quartz came back as 4.913, 8.51, 5.405, 90, 90, 30
+        rng = np.random.RandomState( 42 )
+        B = ImageD11.unitcell.unitcell( CELLS['trigonal'] ).B
+        g = np.linalg.inv( np.dot( B.T, B ) )
+        grp = ImageD11.sym_u.trigonal()
+        for i in range( 100 ):
+            U = np.linalg.qr( rng.normal( size = (3,3) ) )[0]
+            ubi = np.linalg.inv( np.dot( U, B ) )
+            uniq = ImageD11.sym_u.find_uniq_u( ubi, grp )
+            self.assertTrue( np.allclose( np.dot( uniq, uniq.T ), g ) )
 
 
 
