@@ -282,6 +282,78 @@ def cartesian(grp, B):
     Bi = np.linalg.inv(B)
     return np.array([np.dot(B, np.dot(np.linalg.inv(o), Bi)) for o in grp.group])
 
+def _axis_order(r):
+    """ Unit axis and order of a proper rotation, (None, 1) for the identity """
+    angle = np.arccos(np.clip((np.trace(r) - 1) / 2, -1, 1))
+    if angle < 1e-6:
+        return None, 1
+    w, v = np.linalg.eig(r)
+    axis = np.real(v[:, np.argmin(np.abs(w - 1))])
+    return axis / np.linalg.norm(axis), int(round(2 * np.pi / angle))
+
+def _same_set(a, b, tol=1e-6):
+    return len(a) == len(b) and all(min(np.abs(x - y).max() for y in b) < tol for x in a)
+
+def _frame(u, v):
+    """ Orthonormal frame (columns) with u first and v in the first plane """
+    e1 = u / np.linalg.norm(u)
+    e2 = v - np.dot(v, e1) * e1
+    e2 = e2 / np.linalg.norm(e2)
+    return np.column_stack((e1, e2, np.cross(e1, e2)))
+
+def align(rotations, target, refs=()):
+    """
+    A rotation C with { C.r.C^T for r in rotations } == target, for two
+    lists of Cartesian rotations (e.g. from cartesian). The identity when
+    they are already the same. Raises ValueError if there is no such C.
+    Usually several C do this and they are not equivalent: e.g. any turn
+    about the axis when there is only one (Laue classes 2/m, 4/m, -3, 6/m),
+    or turning -31m by +30 or -30 degrees onto -3m1. refs, a list of
+    (u, v) pairs, chooses between them: C takes u as close as possible
+    to v, the first pair first, later pairs for ties. Raises ValueError if
+    refs leave more than one choice. C and t.C, t in target, are the same.
+    """
+    if _same_set(rotations, target):
+        return np.eye(3)
+    refs = [(np.asarray(u, float), np.asarray(v, float)) for u, v in refs]
+    axr = [ak for ak in map(_axis_order, rotations) if ak[0] is not None]
+    axt = [ak for ak in map(_axis_order, target) if ak[0] is not None]
+    found = []
+    if len(axr) == len(axt) > 0:
+        # take the highest order axis of target to one of rotations ...
+        n = max(k for a, k in axt)
+        ut = [a for a, k in axt if k == n][0]
+        # ... and a second axis of target, if there is one, to another
+        vts = [a for a, k in axt if abs(abs(np.dot(a, ut)) - 1) > 1e-6]
+        for ur in [s * a for a, k in axr if k == n for s in (1, -1)]:
+            if vts:
+                vt = vts[0]
+                vrs = [s * a for a, k in axr for s in (1, -1)
+                       if abs(np.dot(ur, s * a) - np.dot(ut, vt)) < 1e-6]
+            else:   # one axis : turn about it to take the first ref closest
+                if not refs:
+                    raise ValueError("One rotation axis : refs are needed to choose C")
+                u, v = refs[0]
+                vr = u - np.dot(u, ur) * ur
+                vt = v - np.dot(v, ut) * ut
+                if min(np.linalg.norm(vr), np.linalg.norm(vt)) < 1e-6:
+                    raise ValueError("The first ref is along the rotation axis")
+                vrs = [vr]
+            for vr in vrs:
+                C = np.dot(_frame(ut, vt), _frame(ur, vr).T)
+                if _same_set([np.dot(np.dot(C, r), C.T) for r in rotations], target):
+                    found.append(C)
+    if not found:
+        raise ValueError("No rotation takes these rotations to the target")
+    for u, v in refs:
+        score = [np.dot(np.dot(C, u), v) for C in found]
+        found = [C for C, x in zip(found, score) if x > max(score) - 1e-6]
+    C = found[0]
+    for D in found:   # the rest must be t.C
+        if min(np.abs(np.dot(D, C.T) - t).max() for t in target) > 1e-6:
+            raise ValueError("refs leave more than one choice of C")
+    return C
+
 def find_uniq_u(u, grp, debug=0, func=np.trace):
     if func is np.trace and not debug:
         # trace(o.u) = sum_ij o_ij u_ji, so all the candidate traces at once

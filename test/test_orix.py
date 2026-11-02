@@ -371,5 +371,93 @@ class TestIPFCol(unittest.TestCase):
         self.assertTrue(np.allclose(rgb, red, atol=0.01))
 
 
+class TestOrixAlignment(unittest.TestCase):
+    """Symmetry-equivalent descriptions of a grain are the same orientation for orix (issue 674)"""
+
+    MONO = [3, 4, 5, 90, 100, 90]
+    HEX = [4.9, 4.9, 5.4, 90, 90, 120]
+    RHOMB = [5, 5, 5, 70, 70, 70]
+    CASES = [(MONO, 4), (MONO, 14), (MONO, 15), ([3, 4, 5, 90, 90, 90], 62),
+             ([3, 3, 5, 90, 90, 90], 88), ([3, 3, 5, 90, 90, 90], 139),
+             (HEX, 148), (HEX, 149), (HEX, 150), (HEX, 157), (HEX, 162), (HEX, 176), (HEX, 194),
+             ([4.9, 4.9, 13, 90, 90, 120], 166), (RHOMB, 148), (RHOMB, 166),
+             ([4, 4, 4, 90, 90, 90], 205), ([4, 4, 4, 90, 90, 90], 225), ([3, 4, 5, 80, 85, 95], 2)]
+
+    def equivalents(self, cell):
+        from ImageD11 import sym_u
+        return sym_u.cartesian(sym_u.laue_rotations(cell.spacegroup, cell.cell_choice), cell.B)
+
+    def test_same_colour(self):
+        from orix.vector import Vector3d
+        from orix.plot import IPFColorKeyTSL
+        Us = R.random(20, random_state=42).as_matrix()
+        for lp, sg in self.CASES:
+            cell = unitcell(lp, sg)
+            for axis in np.eye(3):
+                key = IPFColorKeyTSL(cell.orix_phase.point_group, direction=Vector3d(axis))
+                rgb = key.orientation2color(cell.get_orix_orien_fast(Us))
+                for S in self.equivalents(cell):
+                    rgb_S = key.orientation2color(cell.get_orix_orien_fast(np.matmul(Us, S)))
+                    # orix's colour key has ~1e-5 noise (also cubic); the bug was ~0.9
+                    self.assertTrue(np.allclose(rgb, rgb_S, atol=1e-3), (sg, cell.cell_choice))
+
+    def test_same_orientation(self):
+        # centrosymmetric point groups, where the Laue rotations are all in the point group
+        Us = R.random(20, random_state=42).as_matrix()
+        for lp, sg in [(self.MONO, 14), (self.MONO, 15), (self.HEX, 162), (self.RHOMB, 166)]:
+            cell = unitcell(lp, sg)
+            o = cell.get_orix_orien_fast(Us)
+            for S in self.equivalents(cell):
+                angle = o.angle_with(cell.get_orix_orien_fast(np.matmul(Us, S)))
+                self.assertTrue(np.allclose(angle, 0, atol=1e-6), sg)
+
+    def test_identity_where_orix_agrees(self):
+        for lp, sg in self.CASES:
+            cell = unitcell(lp, sg)
+            changed = cell.spacegroup in (4, 14, 15, 149, 157, 162) or cell.cell_choice == "rhombohedral"
+            self.assertEqual(not np.allclose(cell.orix_alignment, np.eye(3)), changed, sg)
+
+    def test_convention(self):
+        # the choice orix leaves open (unitcell.orix_alignment): a* on orix's x, then b to +z
+        for lp, sg in [(self.MONO, 14), (self.HEX, 162), (self.HEX, 149)]:
+            cell = unitcell(lp, sg)
+            M = cell.B.dot(np.linalg.inv(cell.orix_phase.structure.lattice.recbase))
+            astar = cell.orix_alignment.dot(M[0])
+            self.assertTrue(np.allclose(astar / np.linalg.norm(astar), (1, 0, 0)), sg)
+        cell = unitcell(self.MONO, 14)
+        M = cell.B.dot(np.linalg.inv(cell.orix_phase.structure.lattice.recbase))
+        b = cell.orix_alignment.dot(M.T.dot(np.linalg.inv(cell.B)[1]))
+        self.assertTrue(np.allclose(b / np.linalg.norm(b), (0, 0, 1)))
+
+    def test_rhombohedral_as_hexagonal(self):
+        # an R group on rhombohedral axes gets the colours of its hexagonal (obverse) axes
+        from orix.vector import Vector3d
+        from orix.plot import IPFColorKeyTSL
+        Us = R.random(20, random_state=42).as_matrix()
+        a, al = 5., np.radians(70.)
+        hexagonal = [2 * a * np.sin(al / 2), 2 * a * np.sin(al / 2), a * np.sqrt(3 * (1 + 2 * np.cos(al))), 90, 90, 120]
+        P = np.array([[1., -1., 0.], [0., 1., -1.], [1., 1., 1.]])
+        for sg in (148, 166):
+            r, h = unitcell(self.RHOMB, sg), unitcell(hexagonal, sg)
+            N = h.B.dot(P).dot(np.linalg.inv(r.B)).T     # U on hexagonal axes = U.N
+            for axis in np.eye(3):
+                key = IPFColorKeyTSL(r.orix_phase.point_group, direction=Vector3d(axis))
+                self.assertTrue(np.allclose(key.orientation2color(r.get_orix_orien_fast(Us)),
+                                            key.orientation2color(h.get_orix_orien_fast(np.matmul(Us, N))),
+                                            atol=1e-3), sg)
+
+    def test_slow_is_fast(self):
+        # get_orix_orien(UB) takes U as grain.U does, also for strained UBs
+        from ImageD11.grain import grain
+        cell = unitcell(self.MONO, 14)
+        rng = np.random.RandomState(42)
+        Us = R.random(20, random_state=42).as_matrix()
+        eps = 1e-3 * rng.normal(size=(20, 3, 3))
+        UBs = np.matmul(np.matmul(np.eye(3) + eps + np.swapaxes(eps, 1, 2), Us), cell.B)
+        Ug = np.array([grain(np.linalg.inv(UB)).U for UB in UBs])
+        self.assertTrue(np.allclose(cell.get_orix_orien(UBs).to_matrix(),
+                                    cell.get_orix_orien_fast(Ug).to_matrix()))
+
+
 if __name__ == "__main__":
     unittest.main()
