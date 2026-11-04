@@ -411,6 +411,22 @@ lower hemisphere, seen from above, when the sector reaches it. The corners are
 labelled with their [uvw]. Check: in equal area the sector covers
 4 pi / |group folded with| to 5.4 % (101 x 101 pixels, every key).
 
+`plot_ipf` is the inverse pole figure: each grain's folded direction
+(`ipf_points`, in its own metric, about its own out-of-screen and east axes) as
+a point in its colour on the faded key, zoomed to the sector. The key is drawn
+in the metric of the first grain; the sector is the same figure in every
+metric (5.5), only the east axis can turn with the metric (by the strain).
+Check: each point lands on the pixel of `key_image` with its colour, to one
+pixel (`test_ipf_wiring.py`).
+
+In ImageD11 the point group comes from the unit cell's space group
+(`spacegroup_group`, `unitcell.ipf_group`; R groups on rhombohedral axes when
+the cell is). `unitcell.get_ipf_colour*`, `grain.get_ipf_colour`,
+`nb_utils.get_rgbs_for_grains`, `TensorMap.get_ipf_maps` and the
+`nb_utils.plot_*inverse_pole_figure*` plots use `rgb_colors`, with
+`key="tsl"` or `"hsv"`. Colours from ubi use each ubi's own metric; from U
+(`get_ipf_colour_fast`) or an orix orientation, the unit cell's.
+
 ## 10. Not covered
 
 - maxAngle and the other non-default HSV options.

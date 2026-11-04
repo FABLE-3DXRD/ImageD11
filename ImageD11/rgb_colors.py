@@ -50,13 +50,29 @@ _NAMES = {}
 
 def group_name(grp):
     """The ipf_keys.GROUPS name of a sym_u group, found from its operations"""
+    return _name_of(grp.group)
+
+
+def _name_of(ops):
     if not _NAMES:
         for name in GROUPS:
             _NAMES[_opset(point_group(name).group)] = name
-    s = _opset(grp.group)
+    s = _opset(ops)
     if s not in _NAMES:
-        raise ValueError("No colour key for this group (%d operations)" % len(grp.group))
+        raise ValueError("No colour key for this group (%d operations)" % len(ops))
     return _NAMES[s]
+
+
+def spacegroup_group(spacegroup, cell_choice="standard"):
+    """The ipf_keys.GROUPS name of the point group of a space group (1-230).
+    cell_choice "rhombohedral" puts R groups on rhombohedral axes (as unitcell)"""
+    from xfab import sg
+    spg = sg.sg(sgno=spacegroup)
+    # xfab rotations act on uvw columns, sym_u holds their transposes
+    name = _name_of([np.transpose(r) for r in spg.rot])
+    if cell_choice == "rhombohedral" and spg.name.startswith("R"):
+        name = {"3": "3R", "-3": "-3R", "321": "32R", "3m1": "3mR", "-3m1": "-3mR"}[name]
+    return name
 
 
 def _uvw_ops(grp):
@@ -470,29 +486,95 @@ def key_image(ubi, group, view="default", key="tsl", projection="stereographic",
         panel = 0 if np.dot(v, z) >= -1e-9 else 1
         if panel >= len(images):
             continue
-        ct = abs(np.dot(v, z))
+        ct = min(abs(np.dot(v, z)), 1.0)
         r = np.tan(np.arccos(ct) / 2) if projection == "stereographic" else np.sqrt(2) * np.sin(np.arccos(ct) / 2)
         p = np.arctan2(np.dot(v, y), np.dot(v, e))
         labels.append((panel, r * np.cos(p), r * np.sin(p), _uvw_label(np.dot(v, Li[0]))))
     return images, labels
 
 
-def plot_key(ubi, group, view="default", key="tsl", projection="stereographic", n=301, axes=None):
-    """Draw key_image with matplotlib. Returns the axes."""
+def plot_key(ubi, group, view="default", key="tsl", projection="stereographic", n=301, axes=None,
+             alpha=1.0, zoom=True):
+    """Draw key_image with matplotlib (alpha fades it, zoom shows the sector
+    rather than the whole projection), on axes with one per panel.
+    Returns the axes used."""
     import matplotlib.pyplot as plt
     images, labels = key_image(ubi, group, view, key, projection, n)
     if axes is None:
         axes = plt.subplots(1, len(images), squeeze=False)[1][0]
+    if len(axes) < len(images):
+        raise ValueError("This key has %d panels (upper and lower hemisphere): give %d axes" % (
+            len(images), len(images)))
+    axes = axes[:len(images)]
     name = group_name(group) if hasattr(group, "group") else group
     for i, (ax, img) in enumerate(zip(axes, images)):
+        rows, cols = np.nonzero(img[..., 3] > 0)
+        img[..., 3] *= alpha
         ax.imshow(img, extent=(-1, 1, -1, 1), origin="lower")
         ax.add_patch(plt.Circle((0, 0), 1, fill=False, color="k", lw=0.5))
         for panel, x, y, s in labels:
             if panel == i and s is not None:
                 ax.annotate(s, (x, y), fontsize=8, ha="center", va="bottom")
-        ax.set_xlim(-1.15, 1.15)
-        ax.set_ylim(-1.15, 1.15)
+        g = np.linspace(-1, 1, n)
+        x, y = (g[cols], g[rows]) if zoom else (g, g)
+        pad = 0.1 * max(np.ptp(x), np.ptp(y))
+        ax.set_xlim(x.min() - pad, x.max() + pad)
+        ax.set_ylim(y.min() - pad, y.max() + pad)
         ax.set_aspect("equal")
         ax.axis("off")
         ax.set_title("%s %s %s%s" % (name, key.upper(), view, " (lower)" if i else ""), fontsize=9)
+    return axes
+
+
+def ipf_points(ubis, group, view="default", key="tsl", axis=(0.0, 0.0, 1.0), projection="stereographic",
+               chunk=4096):
+    """
+    Where each ubi goes in the drawing of key_image: the crystal direction
+    along axis, folded into the sector as for ubi_to_rgb, projected about the
+    out-of-screen axis of the view with its east axis to the right.
+    Returns x, y (n,) and panel (n,): 1 for the lower hemisphere (seen from above).
+    """
+    name = group_name(group) if hasattr(group, "group") else group
+    k = _Key(name, key, view)
+    ubis = np.asarray(ubis, float).reshape(-1, 3, 3)
+    gs = symmetric_metric(ubis, point_group(name))[0]
+    uvw = np.einsum("nji,j->ni", np.linalg.inv(ubis), np.asarray(axis, float))
+    oos, east = ("+c*", "+a") if view == "default" else view.split("|")
+    T = GROUPS[name].get("hexagonal_axes")
+    out = np.empty((len(ubis), 3))
+    for i in range(0, len(ubis), chunk):
+        sl = slice(i, i + chunk)
+        L = np.linalg.cholesky(gs[sl])
+        Li = np.linalg.inv(L)
+        x = _unit(np.einsum("nji,nj->ni", L, k.fold(uvw[sl], gs[sl])))
+        z = _vec(L, Li, _view_axis(oos, T))
+        e = _vec(L, Li, _view_axis(east, T))
+        e = _unit(e - _dot(e, z)[:, None] * z)
+        cz = _dot(x, z)
+        theta = np.arctan2(np.sqrt(np.maximum(1 - cz * cz, 0)), np.abs(cz))
+        r = np.tan(theta / 2) if projection == "stereographic" else np.sqrt(2) * np.sin(theta / 2)
+        phi = np.arctan2(_dot(x, np.cross(z, e)), _dot(x, e))
+        out[sl] = np.array([r * np.cos(phi), r * np.sin(phi), cz < 0]).T
+    return out[:, 0], out[:, 1], out[:, 2].astype(int)
+
+
+def plot_ipf(ubis, group, view="default", key="tsl", axis=(0.0, 0.0, 1.0), projection="stereographic",
+             axes=None, n=301, alpha=0.3, **scatter_kwargs):
+    """
+    Inverse pole figure: each ubi as a point in its colour (ubi_to_rgb) on the
+    key (plot_key, faded by alpha, drawn in the metric of the first ubi).
+    Returns the axes.
+    """
+    ubis = np.asarray(ubis, float).reshape(-1, 3, 3)
+    rgb = ubi_to_rgb(ubis, group, view, key, axis)
+    x, y, panel = ipf_points(ubis, group, view, key, axis, projection)
+    axes = plot_key(ubis[0], group, view, key, projection, n, axes, alpha)
+    kw = {"s": 4, "edgecolors": "k", "linewidths": 0.2}
+    kw.update(scatter_kwargs)
+    for i, ax in enumerate(axes):
+        # plot_key returns one axes per panel: without a lower panel the
+        # sector only touches the equator
+        m = (panel == i) | ((panel >= len(axes)) & (i == 0))
+        ax.scatter(x[m], y[m], c=rgb[m], **kw)
+        ax.set_title(ax.get_title() + ", axis %s" % (np.round(np.asarray(axis, float), 3),), fontsize=9)
     return axes
