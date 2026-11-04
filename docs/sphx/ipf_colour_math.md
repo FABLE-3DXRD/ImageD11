@@ -256,6 +256,18 @@ between them (and between 0, the vertices, rho and 2 pi) is integrated by
 16, 24, 32 and 64 points differ from 128 by 1.5e-7, 1.1e-10, 2.5e-13 and
 2.6e-14; against `ipf_ref.py` with 200000 steps the colours differ by 1.4e-9.
 
+The table omega(rho) is the same for every grain of a key. The sector is made
+of lattice planes and directions, and the metrics a group allows only stretch
+it along directions it is symmetric about: the dot products of the unit
+vectors the colour uses (planes, vertices, c, the hue reference rx actually
+used) are the same in every allowed metric (`TestHueTable`, 20 % strain, to
+1e-12). A grain's metric still gives its own x, so its r and rho, exactly.
+`rgb_colors` builds the table once per call from the first grain: each arc in
+64 pieces, 32 point Gauss per piece; a grain's omega is the table at the knot
+below rho plus 8 point Gauss on the rest of that piece. Against the
+integral per grain the colours differ by 2.3e-13 (300 strained grains, every
+key and view).
+
 ### 5.6 TSL colour
 
     hue = omega / 2 pi,   lightness L = 1/2 + r/2,   saturation 1,   no hue correction

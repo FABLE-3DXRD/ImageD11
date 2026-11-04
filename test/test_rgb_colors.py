@@ -112,6 +112,54 @@ class TestInvariance(unittest.TestCase):
                     self.assertLess(np.abs(a - b).max(), 1e-9, (h, kind, view))
 
 
+class TestHueTable(unittest.TestCase):
+    """the even-hue table is made once per key, from the first grain"""
+
+    def figure(self, k, gs):
+        """dot products of the unit vectors the colour uses: planes, corners,
+        centre and hue reference, (n,m,m)"""
+        L = np.linalg.cholesky(gs)
+        Li = np.linalg.inv(L)
+        N, V, edges = rgb_colors._region(L, Li, k.planes if k.kind == "hsv" else k.normals)
+        c = rgb_colors._centre(N, V, edges)
+        for s in N[:, len(k.normals):].transpose(1, 0, 2):
+            c = np.where((rgb_colors._dot(c, s) < 1e-5)[:, None], c - 2 * rgb_colors._dot(c, s)[:, None] * s, c)
+        rx = rgb_colors._vec(L, Li, k.oos) - c
+        flat = np.sqrt(rgb_colors._dot(rx, rx) - rgb_colors._dot(rx, c) ** 2) < 1e-10
+        rx[flat] = (rgb_colors._vec(L, Li, k.hue_ref) - c)[flat]
+        X = np.concatenate([N, c[:, None], rgb_colors._unit(rx - rgb_colors._dot(rx, c)[:, None] * c)[:, None]] +
+                           ([] if V is None else [V]), axis=1)
+        return np.einsum("nai,nbi->nab", X, X)
+
+    def test_same_figure(self):
+        """the sector is the same figure in every metric its group allows"""
+        with open(os.path.join(HERE, "ipf_oracle.json")) as f:
+            oracle = json.load(f)
+        rng = np.random.RandomState(4)
+        for name in GROUPS:
+            eps = rng.uniform(-0.2, 0.2, (50, 3, 3))
+            ubis = np.einsum("ij,njk->nik", cell_ubi(oracle[name]["test_cell"]),
+                             np.eye(3) + (eps + eps.transpose(0, 2, 1)) / 2)
+            gs, _ = rgb_colors.symmetric_metric(ubis, rgb_colors.point_group(name))
+            for kind in ("tsl", "hsv"):
+                for k in GROUPS[name][kind]:
+                    G = self.figure(rgb_colors._Key(name, kind, k["views"][0]), gs)
+                    self.assertLess(np.abs(G - G[:1]).max(), 1e-12, (name, kind, k["views"]))
+
+    def test_first_grain(self):
+        """the colours do not depend on which grain made the table"""
+        rng = np.random.RandomState(6)
+        for name, cell in [("6/mmm", [3, 3, 5, 90, 90, 120]), ("112/m", [4, 5, 6, 90, 90, 100]),
+                           ("m-3", [4, 4, 4, 90, 90, 90])]:
+            eps = rng.uniform(-3e-3, 3e-3, (100, 3, 3))
+            ubis = np.einsum("ij,njk,nkl->nil", cell_ubi(cell), np.eye(3) + (eps + eps.transpose(0, 2, 1)) / 2,
+                             rotations(rng, 100))
+            for kind in ("tsl", "hsv"):
+                a = rgb_colors.ubi_to_rgb(ubis, name, key=kind)
+                b = rgb_colors.ubi_to_rgb(ubis[::-1], name, key=kind)[::-1]
+                self.assertLess(np.abs(a - b).max(), 1e-12, (name, kind))
+
+
 class TestKeyImage(unittest.TestCase):
 
     def test_area(self):

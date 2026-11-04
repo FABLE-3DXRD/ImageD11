@@ -97,6 +97,7 @@ class _Key(object):
         self.planes = tuple(k["normals"]) + tuple(k.get("split", ()))
         self.oos = k["out_of_screen"]
         self.hue_ref = k["hue_ref"]
+        self.hue_table = None
 
     def fold(self, uvw, gs):
         """the image M.uvw inside the sector, (n,3): h.uvw >= 0 for each
@@ -202,6 +203,7 @@ def _azimuth(c, rx, v):
 
 
 _GX, _GW = np.polynomial.legendre.leggauss(32)
+_PX, _PW = np.polynomial.legendre.leggauss(8)
 
 
 def _exit(N, c, n0, rho):
@@ -215,39 +217,48 @@ def _exit(N, c, n0, rho):
     return np.arctan2(a, B * np.cos(rho)[..., None] + A * np.sin(rho)[..., None]).min(axis=-1)
 
 
-def _even_hue(N, V, c, rx, rho_x):
+def _hue_table(N, V, c, rx, pieces=64):
     """MTEX polarCoordinates/correctAngle: the hue grows with the integral over
     the azimuth of the distance from the centre to the boundary; with 3 corners
     each edge gets a third of the hue circle.  The distance is smooth between
-    corners, so the integral is Gauss-Legendre on each arc between them (MTEX
-    sums 1000 steps)."""
-    n, nv = V.shape[:2]
+    corners, so the integral is Gauss-Legendre on pieces of the arcs between
+    them (MTEX sums 1000 steps).
+    The sector is the same figure in every metric of the group (it is made of
+    lattice planes and directions whose angles the group fixes; tested), so
+    the table comes from the first grain and serves all: knots (k,), hue at
+    the knots (k,), dhue/dintegral on each piece (k-1,) and the figure."""
+    N, V, c, rx = N[:1], V[:1], c[:1], rx[:1]
     rxp = _unit(rx - _dot(rx, c)[:, None] * c)
     n0 = _unit(np.cross(rxp, c))
-    rv = np.sort(_azimuth(c[:, None], rx[:, None], V), axis=1)
-    b = np.concatenate([np.zeros((n, 1)), rv, np.full((n, 1), 2 * np.pi)], axis=1)
-
-    def integral(lo, hi):
-        x = ((lo + hi) / 2)[..., None] + ((hi - lo) / 2)[..., None] * _GX
-        f = _exit(N, c, n0, x.reshape(n, -1)).reshape(x.shape)
-        return np.dot(f, _GW) * (hi - lo) / 2
-
-    lo, hi = b[:, :-1], b[:, 1:]
-    arcs = integral(lo, hi)                               # (n, nv+1)
-    r = np.arange(n)
-    j = np.minimum((hi <= rho_x[:, None]).sum(1), nv)     # the arc holding rho_x
-    part = integral(lo[r, j], rho_x)
-    before = np.where(np.arange(nv + 1) < j[:, None], arcs, 0)
-    if nv == 3:
+    b = np.concatenate([[0], np.sort(_azimuth(c[:, None], rx[:, None], V)[0]), [2 * np.pi]])
+    knots = np.concatenate([np.linspace(lo, hi, pieces + 1)[:-1] for lo, hi in zip(b[:-1], b[1:])] +
+                           [[2 * np.pi]])
+    arc = np.repeat(np.arange(len(b) - 1), pieces)
+    half = np.diff(knots) / 2
+    x = (knots[:-1] + half)[:, None] + half[:, None] * _GX
+    piece = np.dot(_exit(N, c, n0, x.reshape(1, -1)).reshape(x.shape), _GW) * half
+    if V.shape[1] == 3:
         # arcs 0 and 3 are one edge, across rho = 0
-        label = np.arange(nv + 1) % 3
-        s = np.array([arcs[:, label == a].sum(1) for a in range(3)]).T
-        w = 1 / (3 * s[:, label])
-        return 2 * np.pi * ((before * w).sum(1) + part * w[r, j])
-    return 2 * np.pi * (before.sum(1) + part) / arcs.sum(1)
+        label = arc % 3
+        w = 1 / (3 * np.bincount(label, piece)[label])
+    else:
+        w = np.full(len(piece), 1 / piece.sum())
+    hue = 2 * np.pi * np.concatenate([[0], np.cumsum(piece * w)])
+    return knots, hue, 2 * np.pi * w, (N, c, n0)
 
 
-def _polar(N, V, x, c, ref, oos):
+def _even_hue(table, rho):
+    """the hue at azimuths rho (n,): the table up to the knot below, then
+    Gauss on the rest of that piece"""
+    knots, hue, w, (N, c, n0) = table
+    p = np.clip(np.searchsorted(knots, rho, side="right") - 1, 0, len(w) - 1)
+    half = (rho - knots[p]) / 2
+    x = (knots[p] + half)[:, None] + half[:, None] * _PX
+    f = _exit(N, c, n0, x.reshape(1, -1)).reshape(x.shape)
+    return hue[p] + w[p] * np.dot(f, _PW) * half
+
+
+def _polar(key, N, V, x, c, ref, oos):
     """MTEX sphericalRegion.polarCoordinates: radius 1 at the centre, 0 on the
     boundary, and the hue angle"""
     vxc = _unit(np.cross(x, c))
@@ -262,7 +273,9 @@ def _polar(N, V, x, c, ref, oos):
     rx[flat] = (ref - c)[flat]
     rho = _azimuth(c, rx, x)
     if V is not None:
-        rho = _even_hue(N, V, c, rx, rho)
+        if key.hue_table is None:
+            key.hue_table = _hue_table(N, V, c, rx)
+        rho = _even_hue(key.hue_table, rho)
     return r, rho
 
 
@@ -317,7 +330,7 @@ def _region(L, Li, planes):
 def _tsl(key, L, Li, x):
     N, V, edges = _region(L, Li, key.normals)
     c = _centre(N, V, edges)
-    r, rho = _polar(N, V, x, c, _vec(L, Li, key.hue_ref), _vec(L, Li, key.oos))
+    r, rho = _polar(key, N, V, x, c, _vec(L, Li, key.hue_ref), _vec(L, Li, key.oos))
     return _ar2rgb(np.mod(rho / 2 / np.pi, 1), 0.5 + r / 2, 1.0, False)
 
 
@@ -335,7 +348,7 @@ def _hsv(key, L, Li, x, gray_value=(0.2, 0.5), gray_gradient=0.5):
         c = np.where(flip[:, None], c - 2 * _dot(c, s)[:, None] * s, c)
         switch ^= flip
     white ^= switch
-    r, rho = _polar(N, V, x, c, _vec(L, Li, key.hue_ref), _vec(L, Li, key.oos))
+    r, rho = _polar(key, N, V, x, c, _vec(L, Li, key.hue_ref), _vec(L, Li, key.oos))
     radius = np.where(white, 0.5 + r / 2, (1 - r) / 2)
     th = radius * np.pi
     hi = th > np.pi / 2

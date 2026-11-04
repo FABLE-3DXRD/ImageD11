@@ -131,10 +131,11 @@ Keep `.py` files ASCII (`->`, `--`, `deg`, `Angstrom`, `omega`, `sigma`); then n
   `test/ipf_oracle.json` by `test/ipf_keys/make_shipped.py` from MATLAB output;
   the maths is in `docs/sphx/ipf_colour_math.md`. Folds with integer ops,
   angles use the symmetrised metric g_s (warns above 5e-3 strain). The hue
-  integral (Gauss on arcs) and the 4-corner centre are exact: MTEX differs by
+  integral (Gauss on arcs, one table per key: the sector is the same figure in
+  every metric the group allows) and the 4-corner centre are exact: MTEX differs by
   5.5e-5, and 4.7e-3 for TSL m-3/23. The HSV hue correction starts at 0 (MTEX
   1.7e-3, a jump on one half circle): HSV is up to 9.5e-3 from MTEX.
-  1e6 ubi in 14-21 s (numpy 2.5.4). `key_image` / `plot_key` draw the legend.
+  1e6 ubi in 2-8 s on one core (numpy 2.5.4). `key_image` / `plot_key` draw the legend.
 - orix and pymtex are not references: orix uses other keys for -1, monoclinic,
   3, -3, 321, 312, 3m1, -3m1, 6, -6, 6/m and is 0.005-0.009 off elsewhere;
   pymtex differs for monoclinic HSV/TSL (see test/ipf_keys/ipf_keys.md).
