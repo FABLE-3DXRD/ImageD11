@@ -23,7 +23,8 @@ Pairing options JSON keys (all optional -- defaults shown):
     tol_logI           : null          (null -> np.inf)
     weights            : {"gx":1,"gy":1,"gz":1,"eta":1,"I":1}
     # pairing strategy
-    pair_type          : "omega"       ("omega" | "eta" | "all")
+    pair_type          : "all"         ("omega" | "eta" | "horizontal" | "all"
+                                        or a list, e.g. ["omega"])
     filter_mode        : "relaxed"
     n_eta_bins         : 360
     drop_unpaired      : false
@@ -82,7 +83,7 @@ class Options:
         self.weights             = {'gx': 1., 'gy': 1., 'gz': 1.,
                                     'eta': 1., 'I': 1.}
         # -- pairing strategy ------------------------------------------
-        self.pair_type           = 'omega' # 'omega' | 'eta' | 'all'
+        self.pair_type           = 'all'   # 'omega' | 'eta' | 'horizontal' | 'all' | list
         self.filter_mode         = 'relaxed'
         self.n_eta_bins          = 360
         self.drop_unpaired       = False
@@ -336,13 +337,14 @@ def submit_to_slurm(dsfile, parfile, pairing_options_file,
 def _run_pair_type(pair_type, FPIndexer, opts, cf, ds,
                    use_chunks, dsfile, logger):
     """
-    Run the full pairing sequence for a single pair_type ('omega' or 'eta').
+    Run the full pairing sequence for a single pair_type ('omega', 'eta' or 'horizontal').
     """
     logger.info('=' * 60)
     logger.info('PAIRING  [%s]', pair_type)
     logger.info('=' * 60)
  
-    chunk_type_map = {'omega': 'scans', 'eta': 'eta_bins'}
+    chunk_type_map = {'omega': 'scans', 'eta': 'eta_bins',
+                      'horizontal': 'minus_eta_bins'}
  
     if use_chunks:
         # -- chunk-based pairing ---------------------------------------
@@ -492,8 +494,12 @@ def match_friedel_pairs_pipeline(dsfile,
             n_steps  = opts.n_steps)
  
         # -- run pairing for requested pair_type(s) --------------------
-        pair_types = ['omega', 'eta'] if opts.pair_type == 'all' \
-                     else [opts.pair_type]
+        if opts.pair_type == 'all':
+            pair_types = ['omega', 'eta', 'horizontal']
+        elif isinstance(opts.pair_type, (list, tuple)):
+            pair_types = list(opts.pair_type)
+        else:
+            pair_types = [opts.pair_type]
  
         cf_paired = cf
         for pt in pair_types:
@@ -501,8 +507,8 @@ def match_friedel_pairs_pipeline(dsfile,
                 pt, FPIndexer, opts, cf_paired, ds,
                 use_chunks, dsfile, logger)
  
-        # -- match quadruplets if both pair types were run -------------
-        if opts.pair_type == 'all':
+        # -- match quadruplets if omega and eta pairs were run --
+        if 'omega' in pair_types and 'eta' in pair_types:
             logger.info('Matching quadruplets...')
             try:
                 quads = FPIndexer.match_quadruplets()

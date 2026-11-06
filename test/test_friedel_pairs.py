@@ -8,9 +8,9 @@ merged over y), on the omega frame containing it. The detector position uses
 the true grain position; the geometry is then computed as for measured data
 (grain assumed on the axis), so pairs carry realistic g and eta residuals.
 
-Truth: a vertical (omega) pair is -hkl at eta -> 180 - eta and a diagonal
-(eta) pair is -hkl at eta -> 180 + eta (true eta of the ray, from the forward
-model).
+Truth: a vertical (omega) pair is -hkl at eta -> 180 - eta, a diagonal (eta)
+pair is -hkl at eta -> 180 + eta and a horizontal pair is the same hkl at
+eta -> -eta (true eta of the ray, from the forward model).
 """
 from __future__ import print_function, division
 import os
@@ -122,6 +122,7 @@ def make_dataset(folder):
 EXPECTED = {   # pair_type -> (same hkl?, partner true eta from eta)
     'omega': (False, lambda e: 180 - e),
     'eta': (False, lambda e: 180 + e),
+    'horizontal': (True, lambda e: -e),
 }
 
 
@@ -190,7 +191,8 @@ def test_global(sim, folder, pair_type):
 
 CHUNKS = [('omega', 'scans'),
           ('omega', 'frames'),
-          ('eta', 'eta_bins')]
+          ('eta', 'eta_bins'),
+          ('horizontal', 'minus_eta_bins')]
 
 
 @pytest.mark.parametrize('pair_type,chunk_type', CHUNKS)
