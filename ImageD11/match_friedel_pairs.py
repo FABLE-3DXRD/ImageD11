@@ -54,17 +54,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 
-# Python path: needs to be sorted out. I copied the stuff we put at the beginning of notebooks to load ImageD11 from local user folder (cloned from github), but in production this should not be here
-# python environment stuff
-IMAGED11_PATH = '/home/esrf/jean1994b/ImageD11_jbjacob'  # None means do not use git, otherwise enter the name of the folder to use for the git checkout "ImageD11" or "ImageD11_version_xx", etc
-CHECKOUT_PATH = 'ImageD11'  # the name of the git checkout folder within path. None means guess
-
-if IMAGED11_PATH is not None:
-    if '/data/id11/nanoscope' not in sys.path:
-        sys.path.append('/data/id11/nanoscope')
-    import install_ImageD11_from_git
-    PYTHONPATH = install_ImageD11_from_git.setup_ImageD11_from_git(IMAGED11_PATH,CHECKOUT_PATH)
-
 import ImageD11.sinograms.dataset
 import ImageD11.columnfile
 import ImageD11.friedel_pairs as fp
@@ -234,14 +223,19 @@ def _save_figure(fig, path, logger):
 # =============================================================================
  
 def prepare_bash_script(dsfile, parfile, pairing_options_file,
-                         use2Dpeaks, opts):
-    """ Write a slurm batch script to the slurm/ subfolder """
+                         use2Dpeaks, opts, id11_code_path=None):
+    """ Write a slurm batch script to the slurm/ subfolder.
+    id11_code_path : folder holding the ImageD11 to run (PYTHONPATH of the job).
+                     None -> the one imported here. """
     
     sdir        = _slurm_dir(dsfile)
     script_path = os.path.join(sdir, '{}_match_friedel_pairs.sh'.format(_dsname(dsfile)))
  
+    if id11_code_path is None:
+        id11_code_path = os.path.dirname(os.path.dirname(os.path.abspath(ImageD11.__file__)))
+    this_script = os.path.join(id11_code_path, 'ImageD11', 'match_friedel_pairs.py')
+
     # build the python argument string -- omit optional args when None / empty
-    this_script = os.path.abspath(__file__)
     py_args     = [
         '-dsfile        {}'.format(dsfile),
         '-use2Dpeaks    {}'.format(use2Dpeaks),
@@ -273,10 +267,11 @@ def prepare_bash_script(dsfile, parfile, pairing_options_file,
         'echo "CPUs      : $SLURM_CPUS_PER_TASK"\n'
         'echo "Started   : $(date)"\n'
         'echo "dsfile    : {dsfile}"\n'
+        'echo "PYTHONPATH: {code_path}"\n'
         'echo "------------------------------------------------------------"\n'
         '\n'
         '# -- run pipeline ---------------------------------------------\n'
-        'python {script} \\\n'
+        'PYTHONPATH={code_path} python {script} \\\n'
         '    {py_args}\n'
         '\n'
         'echo "------------------------------------------------------------"\n'
@@ -291,6 +286,7 @@ def prepare_bash_script(dsfile, parfile, pairing_options_file,
         sdir      = sdir,
         dsfile    = dsfile,
         script    = this_script,
+        code_path = id11_code_path,
         py_args   = py_args_str,
     )
  
@@ -302,13 +298,13 @@ def prepare_bash_script(dsfile, parfile, pairing_options_file,
  
  
 def submit_to_slurm(dsfile, parfile, pairing_options_file,
-                     use2Dpeaks, opts):
+                     use2Dpeaks, opts, id11_code_path=None):
     """
     Prepare the batch script and submit it with sbatch.
     Returns job_id : str
     """
     script_path = prepare_bash_script(
-        dsfile, parfile, pairing_options_file, use2Dpeaks, opts)
+        dsfile, parfile, pairing_options_file, use2Dpeaks, opts, id11_code_path)
  
     print('Batch script written : {}'.format(script_path))
  
