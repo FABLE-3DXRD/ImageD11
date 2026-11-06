@@ -19,6 +19,7 @@
 # Last updated: 26 May 2026
 
 
+from __future__ import print_function, division
 import os, sys, time
 import logging
 import numpy as np
@@ -36,6 +37,7 @@ from ImageD11 import columnfile, transform
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 os.environ["NUMBA_THREADING_LAYER"] = "workqueue"
+_perf_counter = getattr(time, 'perf_counter', time.time)   # python 2.7: time.time
 
 
 
@@ -900,7 +902,10 @@ class FriedelPairIndexer:
         self.logger.info('--- FRIEDEL PAIR MATCHING ---')
 
         # Resolve number of workers
-        n_cores = len(os.sched_getaffinity(os.getpid())) - 1
+        if hasattr(os, 'sched_getaffinity'):
+            n_cores = len(os.sched_getaffinity(os.getpid())) - 1
+        else:   # python 2.7, macOS, Windows
+            n_cores = mp.cpu_count() - 1
         if n_workers == -1:
             n_workers = n_cores
         else:
@@ -1503,8 +1508,7 @@ def _compute_dist_matrix(space_ref, space_partner, dist_cutoff):
     dists, col_ind = tree_partner.query(
         space_ref,
         k=1,
-        distance_upper_bound=dist_cutoff,
-        workers=1)     
+        distance_upper_bound=dist_cutoff)
 
     # filter out points with no neighbour within cutoff
     valid    = np.isfinite(dists)
@@ -1704,13 +1708,13 @@ def _run_pairing(cf, idx1, idx2,
     # -- 2. Iterative matching -----------------------------------------
     _section('ITERATIVE PAIR MATCHING [{} steps]'.format(len(dist_steps)) )
 
-    t_start  = time.perf_counter()
+    t_start  = _perf_counter()
     timed_out = False
 
     for i, dist_cutoff in enumerate(dist_steps):
 
          # -- timeout check ---------------
-        elapsed = time.perf_counter() - t_start
+        elapsed = _perf_counter() - t_start
         if elapsed > t_max:
             timed_out = True
             logger.warning(
