@@ -871,13 +871,15 @@ class FriedelPairIndexer:
         # -- 2. Search-space calibration --------------------------------------
         self.logger.info('--- SEARCH SPACE CALIBRATION [pilot pairing] ---')
 
-       # pilot_chunk = 'eta_bins' if chunk_type == 'eta_bins' else 'scans'
-        
+        # a frame pair can hold a single peak: calibrate frames on a pair of scans
+        pilot_chunk = 'scans' if chunk_type == 'frames' else chunk_type
+        pilot_valid = getattr(Psub, 'valid_' + pilot_chunk + '_subsets')
+
         # pick a pair near the middle 
         s0 = 0
-        while not valid_pairs[s0]:
+        while not pilot_valid[s0]:
             s0 += 1
-        idx1_pilot, idx2_pilot = Psub.select_pair(s0, chunk_type, return_as='idx')
+        idx1_pilot, idx2_pilot = Psub.select_pair(s0, pilot_chunk, return_as='idx')
 
         # find weight factors for optimal rescaling
         try:
