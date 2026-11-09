@@ -31,7 +31,6 @@ from tqdm import tqdm
 import scipy.spatial
 from scipy.sparse import csr_matrix
 
-import matplotlib.pyplot as plt
 from ImageD11 import columnfile, transform
 
 logger = logging.getLogger(__name__)
@@ -583,6 +582,7 @@ class PeakSubsets:
         corr_sumI = np.corrcoef(log_sumI_hi[valid], log_sumI_lo[valid])[0, 1]
 
         # -- plot --------------------------------------------------------------
+        import matplotlib.pyplot as plt   # not at import: needs a backend
         fig, axes = plt.subplots(2, 2, figsize=(12, 8), sharex=True)
         axes = axes.flatten()
 
@@ -1911,6 +1911,7 @@ def plot_pair_distances(cf, pair_type='omega', bins=50, log_scale=False, **kwarg
     dists, _ = get_pair_distances(cf, pair_type)
         
     # -- plot -------------------------------------------------------------
+    import matplotlib.pyplot as plt   # not at import: needs a backend
     fig, axes = plt.subplots(1, 3, figsize=(12, 4))
     fig.suptitle(
         '{} pair distance distributions  (N={} pairs)'.format(
