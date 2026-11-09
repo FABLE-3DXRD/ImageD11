@@ -3,8 +3,8 @@
 #
 #    Friedel relationships
 #    ----------------------
-#    omega pairs : (h,k,l), -(h,k,l) reflexion 180° apart in ω:              g -> -g, eta -> 180 - eta
-#    eta pairs   : "entry" and "exit" (h,k,l),-(h,k,l) reflexions at ω ± θ:  g -> -g, eta -> 180 + eta
+#    omega pairs : (h,k,l), -(h,k,l) reflexion 180 deg apart in omega:              g -> -g, eta -> 180 - eta
+#    eta pairs   : "entry" and "exit" (h,k,l),-(h,k,l) reflexions at omega +- theta:  g -> -g, eta -> 180 + eta
 #
 # Works both for box-beam and scanning-3DXRD
 # Two modes of pairing: 
@@ -19,6 +19,7 @@
 # Last updated: 26 May 2026
 
 
+from __future__ import print_function, division
 import os, sys, time
 import logging
 import numpy as np
@@ -30,18 +31,18 @@ from tqdm import tqdm
 import scipy.spatial
 from scipy.sparse import csr_matrix
 
-import matplotlib.pyplot as plt
 from ImageD11 import columnfile, transform
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 os.environ["NUMBA_THREADING_LAYER"] = "workqueue"
+_perf_counter = getattr(time, 'perf_counter', time.time)   # python 2.7: time.time
 
 
 
-#  ──────────────────────────────────────────────────────────────────────────────────────────
+#  ------------------------------------------------------------------------------------------
 # PeakSubset: peak sorting and subset selection for pairing
-# ──────────────────────────────────────────────────────────────────────────────────────────
+# ------------------------------------------------------------------------------------------
 Pair_dty       = namedtuple('Pair', ['yi_hi', 'yi_lo', 'dty_hi', 'dty_lo'])
 Pair_omega_dty = namedtuple('Pair', ['yi_A', 'yi_B', 'omi_A', 'omi_B', 'dty_A', 'dty_B', 'omega_A', 'omega_B'])
 Pair_eta       = namedtuple('Pair', ['ei_hi', 'ei_lo', 'eta_hi', 'eta_lo'])
@@ -78,7 +79,7 @@ class PeakSubsets:
     Subsets are either:
         - pairs of mirror dty scans
         - pairs of mirror omega-dty frames (omega-pairs)
-        - pairs of mirror eta bins (eta, eta+180°) (eta-pairs)
+        - pairs of mirror eta bins (eta, eta+180 deg) (eta-pairs)
     Columnfile is sorted, either in sinogram order (dty, omega) for omega-pairs or in eta order for eta-pairs 
     and subset indices are stored in lookup tables (LUT) for fast selection. 
     """
@@ -132,8 +133,8 @@ class PeakSubsets:
     def get_scan_subsets(self):
         """
         Find mirror pairs of dty scans on each side of the central y0:
-            scan hi :  dty = y0 + Δy
-            scan lo :  dty = y0 - Δy
+            scan hi :  dty = y0 + dy
+            scan lo :  dty = y0 - dy
 
         Sets ds.scans_subsets: list of Pair namedtuples ('Pair', ['yi_hi', 'yi_lo', 'dty_hi', 'dty_lo'])
         where yi_* are indices into ds.ybincens.
@@ -148,12 +149,12 @@ class PeakSubsets:
         
         pairs = []
         if n_y % 2 == 1:
-            # Odd number of dty steps → central bin exists
+            # Odd number of dty steps -> central bin exists
             yi0 = n_y // 2
             for yi in range(0, yi0 + 1):
                 pairs.append(_make_dty_pair(yi0 + yi, yi0 - yi, yc))
         else:
-            # Even number of dty steps → no central bin
+            # Even number of dty steps -> no central bin
             half = n_y // 2
             for yi_hi in range(half, n_y):
                 yi_lo = n_y - 1 - yi_hi
@@ -165,8 +166,8 @@ class PeakSubsets:
     def get_frames_subsets(self):
         """
         Find mirror pairs of frames (A, B) in omega and dty:
-            frame A :  dty = y0 + Δy ,  omega = ω
-            frame B :  dty = y0 - Δy ,  omega = (ω + 180) mod 360
+            frame A :  dty = y0 + dy ,  omega = w
+            frame B :  dty = y0 - dy ,  omega = (w + 180) mod 360
 
         Sets ds.frames_subsets: list of Pair namedtuples
         ('Pair', ['yi_A','yi_B','omi_A','omi_B', 'dty_A','dty_B','omega_A','omega_B'])
@@ -195,7 +196,7 @@ class PeakSubsets:
         pairs = []
 
         if n_y % 2 == 1:
-            # Odd number of dty steps → central bin exists
+            # Odd number of dty steps -> central bin exists
             yi0 = n_y // 2
             # Off-centre bins: pair mirror scans (yi0+yi, yi0-yi)
             for yi in range(1, yi0 + 1):
@@ -210,7 +211,7 @@ class PeakSubsets:
                 pairs.append(_make_omega_dty_pair(oi, yi0, oi + k, yi0, yc, oc))
 
         else:
-            # Even number of dty steps → no central bin
+            # Even number of dty steps -> no central bin
             half = n_y // 2
             for yi_hi in range(half, n_y):
                 yi_lo = n_y - 1 - yi_hi
@@ -292,9 +293,9 @@ class PeakSubsets:
             logger.info("[sort_by_sinogram] already sorted, %d peaks", self.columnfile.nrows)
             i_omega_s, j_dty_s = i_omega, j_dty
         else:
-            logger.info("[sort_by_sinogram] sorting %d peaks…", self.columnfile.nrows)
+            logger.info("[sort_by_sinogram] sorting %d peaks...", self.columnfile.nrows)
 
-            # Encode two int32 indices into one int64 key → single argsort pass,
+            # Encode two int32 indices into one int64 key -> single argsort pass,
             n_omega   = len(oc)
             keys      = j_dty.astype(np.int64) * n_omega + i_omega  
             order     = np.argsort(keys, kind="stable")               
@@ -306,7 +307,7 @@ class PeakSubsets:
     
         # 3. Build frames_LUT
         first_idx_f, counts_f = _rle2(i_omega_s, j_dty_s)
-        # Vectorised group sums — single reduceat call, no Python loop over groups
+        # Vectorised group sums -- single reduceat call, no Python loop over groups
         group_sums_f = np.add.reduceat(self.columnfile.sum_intensity, first_idx_f)
 
         self.frames_LUT = {
@@ -352,7 +353,7 @@ class PeakSubsets:
 
         # skip sorting if already done
         if self.columnfile.sortedby == "eta":
-            logger.info("[sort_by_eta] peakfile already sorted – %d peaks",
+            logger.info("[sort_by_eta] peakfile already sorted - %d peaks",
                         self.columnfile.nrows)
             # 1. bin by eta
             i_eta = np.clip(
@@ -361,7 +362,7 @@ class PeakSubsets:
 
         # 1. bin by eta and sort
         else:
-            logger.info("[sort_by_eta] sorting columnfile in eta order  –  %d peaks to sort, may take some time... ",
+            logger.info("[sort_by_eta] sorting columnfile in eta order  -  %d peaks to sort, may take some time... ",
                         self.columnfile.nrows)
         
             i_eta = np.clip(
@@ -520,13 +521,13 @@ class PeakSubsets:
     def check_symmetry(self):
         """
         Plot N_peaks and total_intensity vs. position for mirror dty scans
-        (y0+Δy, y0-Δy) or mirror eta bins (eta, eta+180°) and check their correlation.
+        (y0+dy, y0-dy) or mirror eta bins (eta, eta+180 deg) and check their correlation.
 
         If alignment is correct, values should match between mirror pairs.
         Significant mismatch suggests an incorrect y0 (for dty), sample movement,
         or a beam issue during scanning.
         """
-        # ── auto-detect mode ─────────────────────────────────────────────────
+        # -- auto-detect mode -------------------------------------------------
         mode = None
         for attr in ['scans_LUT', 'eta_bins_LUT']:
             if getattr(self, attr, None) is not None:
@@ -539,7 +540,7 @@ class PeakSubsets:
         
         self.find_valid_subsets()
         
-        # ── mode-specific setup ───────────────────────────────────────────────
+        # -- mode-specific setup -----------------------------------------------
         if mode == 'scans':
             valid    = self.valid_scans_subsets
             id_hi    = np.array([p.yi_hi for p in self.scans_subsets])
@@ -566,7 +567,7 @@ class PeakSubsets:
             hi_label = 'hi-side (eta > 0)'
             title    = 'eta symmetry - ' + str(self.dataset.dsname)
 
-        # ── data extraction ───────────────────────────────────────────────────
+        # -- data extraction ---------------------------------------------------
         npks_hi    = np.array([lut[i].npeaks if v else np.nan for i, v in zip(id_hi, valid)])
         npks_lo    = np.array([lut[i].npeaks if v else np.nan for i, v in zip(id_lo, valid)])
         sumI_hi    = np.array([lut[i].sumI   if v else np.nan for i, v in zip(id_hi, valid)])
@@ -580,7 +581,8 @@ class PeakSubsets:
         corr_npks = np.corrcoef(npks_hi[valid],    npks_lo[valid])[0, 1]
         corr_sumI = np.corrcoef(log_sumI_hi[valid], log_sumI_lo[valid])[0, 1]
 
-        # ── plot ──────────────────────────────────────────────────────────────
+        # -- plot --------------------------------------------------------------
+        import matplotlib.pyplot as plt   # not at import: needs a backend
         fig, axes = plt.subplots(2, 2, figsize=(12, 8), sharex=True)
         axes = axes.flatten()
 
@@ -639,9 +641,9 @@ def _rle2(a, b):
 
 
 
-# ──────────────────────────────────────────────────────────────────────────────────────────
+# ------------------------------------------------------------------------------------------
 #  FriedelPairIndexer
-# ──────────────────────────────────────────────────────────────────────────────────────────
+# ------------------------------------------------------------------------------------------
 
 _shared_cf = None
 
@@ -651,19 +653,19 @@ class FriedelPairIndexer:
     
     Friedel relationships
     ----------------------
-    omega pairs : (h,k,l), -(h,k,l) reflexion 180° apart in ω:              g -> -g, eta -> 180 - eta
-    eta pairs   : "entry" and "exit" (h,k,l),-(h,k,l) reflexions at ω ± θ:  g -> -g, eta -> 180 + eta
+    omega pairs : (h,k,l), -(h,k,l) reflexion 180 deg apart in omega:              g -> -g, eta -> 180 - eta
+    eta pairs   : "entry" and "exit" (h,k,l),-(h,k,l) reflexions at omega +- theta:  g -> -g, eta -> 180 + eta
 
     Parameters 
     ----------
     cf          : ImageD11 columnfile 
     ds          : ImageD11.sinograms.dataset object
-    tol_gv      : float — g-vector tolerance
-    tol_eta     : float — eta angle tolerance (degrees)
-    tol_logI    : float — log10(intensity) tolerance (np.inf to ignore)
-    weights     : dict | None — User-defined weights for scaling search-space dimensions (Optional)
-    n_steps     : int — number of distance increments in iterative KDTree search
-    PeakSubsets : PeakSubsets object | None — paired subsets for friedel pair search by chunks
+    tol_gv      : float -- g-vector tolerance
+    tol_eta     : float -- eta angle tolerance (degrees)
+    tol_logI    : float -- log10(intensity) tolerance (np.inf to ignore)
+    weights     : dict | None -- User-defined weights for scaling search-space dimensions (Optional)
+    n_steps     : int -- number of distance increments in iterative KDTree search
+    PeakSubsets : PeakSubsets object | None -- paired subsets for friedel pair search by chunks
     """
 
     def __init__(self, cf, ds,
@@ -718,7 +720,7 @@ class FriedelPairIndexer:
                 self.cf.addcolumn(initvals, pair_id_col)               
 
     # ------------------------------------------------------------------
-    #  High-level API — Friedel pairing functions
+    #  High-level API -- Friedel pairing functions
     # ------------------------------------------------------------------
     def match_friedel_pairs(self, pair_type = 'omega',
                             drop_unpaired=False,
@@ -853,7 +855,7 @@ class FriedelPairIndexer:
         pair_type = 'eta' if chunk_type == 'eta_bins' else 'omega'
         self.logger.info('--- MATCH FRIEDEL PAIRS [%s pairs] ---', pair_type)
 
-        # ── 1. Checks + init ───────────────────────────────────────────────────
+        # -- 1. Checks + init ---------------------------------------------------
         self.logger.info('--- INITIALIZATION ---')
         self.reset_outputs(pair_type+'_pair_id')
 
@@ -866,16 +868,18 @@ class FriedelPairIndexer:
         
         self.logger.info('  %d pairs of subsets, %d valid', len(pairs_list), n_valid)
 
-        # ── 2. Search-space calibration ──────────────────────────────────────
+        # -- 2. Search-space calibration --------------------------------------
         self.logger.info('--- SEARCH SPACE CALIBRATION [pilot pairing] ---')
 
-       # pilot_chunk = 'eta_bins' if chunk_type == 'eta_bins' else 'scans'
-        
+        # a frame pair can hold a single peak: calibrate frames on a pair of scans
+        pilot_chunk = 'scans' if chunk_type == 'frames' else chunk_type
+        pilot_valid = getattr(Psub, 'valid_' + pilot_chunk + '_subsets')
+
         # pick a pair near the middle 
         s0 = 0
-        while not valid_pairs[s0]:
+        while not pilot_valid[s0]:
             s0 += 1
-        idx1_pilot, idx2_pilot = Psub.select_pair(s0, chunk_type, return_as='idx')
+        idx1_pilot, idx2_pilot = Psub.select_pair(s0, pilot_chunk, return_as='idx')
 
         # find weight factors for optimal rescaling
         try:
@@ -896,11 +900,14 @@ class FriedelPairIndexer:
             {k: '{:.3f}'.format(v) for k, v in weights_eff.items()})
         self.logger.info('  Rescaled dist_max : %.4f', dist_max)
 
-        #─ ─ 3. Friedel pair matching (parallelize across chunks) ────────────────
+        #- - 3. Friedel pair matching (parallelize across chunks) ----------------
         self.logger.info('--- FRIEDEL PAIR MATCHING ---')
 
         # Resolve number of workers
-        n_cores = len(os.sched_getaffinity(os.getpid())) - 1
+        if hasattr(os, 'sched_getaffinity'):
+            n_cores = len(os.sched_getaffinity(os.getpid())) - 1
+        else:   # python 2.7, macOS, Windows
+            n_cores = mp.cpu_count() - 1
         if n_workers == -1:
             n_workers = n_cores
         else:
@@ -947,7 +954,7 @@ class FriedelPairIndexer:
 
         try:
             if n_workers == 1:
-                # serial path — useful for debugging, avoids fork overhead
+                # serial path -- useful for debugging, avoids fork overhead
                 raw_results = [_worker_run_pairing(a) for a in tqdm(worker_args)]
             else:
                 ctx  = mp.get_context('fork')
@@ -968,7 +975,7 @@ class FriedelPairIndexer:
         raw_results.sort(key=lambda x: x[0])
         self.outputs = [out for _, out in raw_results]
 
-        # ── 4. Merge ─────────────────────────────────────────────────────────
+        # -- 4. Merge ---------------------------------------------------------
         self.logger.info('--- MERGING OUTPUTS ---')
         deduplicate = extended_bin_search == True
         # unique pair identifier in omega_pair_id. -1 for unpaired peaks
@@ -1010,7 +1017,7 @@ class FriedelPairIndexer:
         """
         cf = self.cf
 
-        # ── 0. Sanity checks ──────────────────────────────────────────────────
+        # -- 0. Sanity checks --------------------------------------------------
         for col in ('omega_pair_id', 'eta_pair_id'):
             if col not in cf.titles:
                 raise RuntimeError(
@@ -1020,7 +1027,7 @@ class FriedelPairIndexer:
         om_col  = cf.getcolumn('omega_pair_id')   # (nrows,)
         eta_col = cf.getcolumn('eta_pair_id')     # (nrows,)
 
-        # ── 1. Select peaks that belong to both an omega- and an eta-pair ─────
+        # -- 1. Select peaks that belong to both an omega- and an eta-pair -----
         self.logger.info('--- QUADRUPLET SEARCH ---')
 
         both_mask  = (om_col > -1) & (eta_col > -1)
@@ -1029,7 +1036,7 @@ class FriedelPairIndexer:
             n_both, cf.nrows)
 
         if n_both == 0:
-            self.logger.warning('  no doubly-paired peaks found — returning empty.')
+            self.logger.warning('  no doubly-paired peaks found -- returning empty.')
             cf.addcolumn(np.full(cf.nrows, -1, dtype=int), 'quadruplet_id')
             return np.empty((0, 4), dtype=int)
 
@@ -1037,7 +1044,7 @@ class FriedelPairIndexer:
         om_ids     = om_col[cf_indices]               # omega_pair_id for each
         eta_ids    = eta_col[cf_indices]              # eta_pair_id   for each
 
-        # ── 2. Build signature: omega_pair_id -> frozenset({eta_a, eta_b}) ────
+        # -- 2. Build signature: omega_pair_id -> frozenset({eta_a, eta_b}) ----
         # sort by om_id so peers are adjacent
         sort_om      = np.argsort(om_ids, kind='stable')
         om_sorted    = om_ids[sort_om]
@@ -1080,11 +1087,11 @@ class FriedelPairIndexer:
         eta_a[swap], eta_b[swap] = eta_b[swap].copy(), eta_a[swap].copy()
         cf_a[swap],  cf_b[swap]  = cf_b[swap].copy(),  cf_a[swap].copy()
 
-        # ── 3. Group omega-pairs by their (eta_a, eta_b) signature ───────────
+        # -- 3. Group omega-pairs by their (eta_a, eta_b) signature -----------
         #
         #  Encode the pair of eta ids as a single 64-bit integer for fast
         #  sorting/grouping (safe as long as eta_pair_id < 2^31 ~ 2 billion).
-        # ─────────────────────────────────────────────────────────────────────
+        # ---------------------------------------------------------------------
         max_eta_id  = int(eta_col.max()) + 1
         signature   = eta_a.astype(np.int64) * max_eta_id + eta_b.astype(np.int64)
         sort_sig    = np.argsort(signature, kind='stable')
@@ -1102,16 +1109,16 @@ class FriedelPairIndexer:
         n_groups    = (run_lengths >= 2).sum()
         self.logger.info('  Omega-pair groups sharing an eta signature : %d', n_groups)
 
-        # ── 4. Emit quadruplets ───────────────────────────────────────────────
+        # -- 4. Emit quadruplets -----------------------------------------------
         quadruplet_list = []
 
         for rs, rl in zip(run_starts, run_lengths):
             if rl < 2:
-                continue                        # singleton — no match
+                continue                        # singleton -- no match
 
             # take pairs within the group; warn if group > 2 (ambiguous)
             if rl > 2:
-                self.logger.debug('  NOTE: signature group of size %d — '
+                self.logger.debug('  NOTE: signature group of size %d -- '
                        'taking first pair only.', rl)
 
             # take the first two omega-pairs in the group
@@ -1125,7 +1132,7 @@ class FriedelPairIndexer:
                 cf_a_s[i0], cf_b_s[i0],
                 cf_a_s[i1], cf_b_s[i1]])
 
-        # ── 5. Write quadruplet_id column ─────────────────────────────────────
+        # -- 5. Write quadruplet_id column -------------------------------------
         quad_arr = np.array(quadruplet_list, dtype=int)   # (M, 4)
         n_quads  = len(quad_arr)
 
@@ -1141,7 +1148,7 @@ class FriedelPairIndexer:
         else:
             cf.addcolumn(quad_id_col, 'quadruplet_id')
 
-        # ── 6. Validation ─────────────────────────────────────────────────────
+        # -- 6. Validation -----------------------------------------------------
         self.logger.info('--- VALIDATION ---')
 
         assigned = quad_id_col[quad_id_col > -1]
@@ -1216,7 +1223,7 @@ class FriedelPairIndexer:
         Parameters
         ----------
         idx1, idx2   : index arrays into self.cf (reference / partner subset)
-        dist_cutoff  : float — initial normalised cutoff for the pilot KDTree
+        dist_cutoff  : float -- initial normalised cutoff for the pilot KDTree
         verbose      : bool
 
         Returns
@@ -1231,7 +1238,7 @@ class FriedelPairIndexer:
         s1, _ = _search_space(cf, idx1, weights=None)
         s2, _ = _search_space(cf, idx2, weights=None, flip=pair_type)
 
-        # iterative KDTree search — widen dist_cutoff in steps until enough pairs are found
+        # iterative KDTree search -- widen dist_cutoff in steps until enough pairs are found
         n_total   = min(len(idx1), len(idx2))
         min_pairs = int(0.5 * n_total) if n_total < 2000 else 1000
         step_size = dist_cutoff / 10
@@ -1257,7 +1264,7 @@ class FriedelPairIndexer:
         # per-dimension residuals
         d_gv, d_eta, d_logI = _physical_pair_distance( cf, idx1[rows], idx2[cols], pair_type)
 
-        # scale factors: median absolute deviation — robust to outliers
+        # scale factors: median absolute deviation -- robust to outliers
         d_gv_med  = np.nanmedian(d_gv)
         d_eta_med = np.nanmedian(d_eta)
         d_logI_med = np.nanmedian(d_logI)
@@ -1313,8 +1320,8 @@ class FriedelPairIndexer:
         ----------
         cf_target     : columnfile to write into (defaults to self.cf)
         pair_type     : 'omega' or 'eta'
-        drop_broken   : bool — if True, remove singleton pair_ids from cf
-        drop_unpaired : bool — if True, remove non-paired peaks from cf
+        drop_broken   : bool -- if True, remove singleton pair_ids from cf
+        drop_unpaired : bool -- if True, remove non-paired peaks from cf
         """
         if cf_target is None:
             cf_target = self.cf
@@ -1331,7 +1338,7 @@ class FriedelPairIndexer:
         valid_outputs = [o for o in self.outputs if len(o['idx']) > 0]
 
         if valid_outputs:
-            # ── collect all candidates ────────────────────────────────────────
+            # -- collect all candidates ----------------------------------------
             # idx_ref and idx_partner are the two interleaved entries per pair
             cand_dist  = np.concatenate([o['d_gv'][0::2]    for o in valid_outputs])
             cand_i1    = np.concatenate([o['idx'][0::2]     for o in valid_outputs])
@@ -1341,7 +1348,7 @@ class FriedelPairIndexer:
             self.logger.info('  %d candidate pairs from %d chunks',
                              n_cand, len(valid_outputs))
 
-            # ── deduplicate exact duplicates first (same i1, i2 pair) ────────
+            # -- deduplicate exact duplicates first (same i1, i2 pair) --------
             # sort by (i1, i2) then keep the one with smallest gvec_dist
             if deduplicate:
                 lex_order  = np.lexsort((cand_dist, cand_i2, cand_i1))
@@ -1359,7 +1366,7 @@ class FriedelPairIndexer:
                 self.logger.info('  %d unique candidate pairs after deduplication',
                                  n_unique)
             
-                # ── greedy matching: sort by quality, accept if both peaks free ───
+                # -- greedy matching: sort by quality, accept if both peaks free ---
                 quality_order = np.argsort(cand_dist)
                 cand_dist     = cand_dist[quality_order]
                 cand_i1       = cand_i1[quality_order]
@@ -1382,7 +1389,7 @@ class FriedelPairIndexer:
                 n_accepted = accepted.sum()
                 self.logger.info('  %d pairs accepted by greedy matching', n_accepted)
 
-                # ── assign globally unique pair_ids and scatter into label_col ───
+                # -- assign globally unique pair_ids and scatter into label_col ---
                 pair_ids         = np.arange(n_accepted)
                 accepted_i1      = cand_i1[accepted]
                 accepted_i2      = cand_i2[accepted]
@@ -1396,7 +1403,7 @@ class FriedelPairIndexer:
             label_col[accepted_i2] = pair_ids
             next_id = n_accepted
 
-        # ── validation ────────────────────────────────────────────────────
+        # -- validation ----------------------------------------------------
         paired  = label_col[label_col != -1]
         n_total = cf_target.nrows
         I_total = cf_target.sum_intensity.sum()
@@ -1406,7 +1413,7 @@ class FriedelPairIndexer:
             singletons = (counts == 1).sum()
 
             if singletons > 0:
-                self.logger.warning('  %d pair_id(s) appear only once — broken pairs',
+                self.logger.warning('  %d pair_id(s) appear only once -- broken pairs',
                     singletons)
                 if drop_broken:
                     # identify broken pair_ids and reset to -1
@@ -1432,9 +1439,9 @@ class FriedelPairIndexer:
             self.logger.info('Done')
             
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 #  Friedel Pair Indexing Helpers
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 def _wrap_eta(eta):
     return (eta + 180.0) % 360.0 - 180.0    # maps to (-180, 180]
 
@@ -1503,8 +1510,7 @@ def _compute_dist_matrix(space_ref, space_partner, dist_cutoff):
     dists, col_ind = tree_partner.query(
         space_ref,
         k=1,
-        distance_upper_bound=dist_cutoff,
-        workers=1)     
+        distance_upper_bound=dist_cutoff)
 
     # filter out points with no neighbour within cutoff
     valid    = np.isfinite(dists)
@@ -1612,7 +1618,7 @@ def _physical_to_normalised_cutoff(tol_gvec, tol_eta, tol_logI, weights=None):
 
     Returns
     -------
-    dist_max : float — normalised cutoff for KDTree
+    dist_max : float -- normalised cutoff for KDTree
     """
     _w = {'gx': 1., 'gy': 1., 'gz': 1., 'eta': 1., 'I': 1.}
     if weights is not None:
@@ -1645,15 +1651,15 @@ def _run_pairing(cf, idx1, idx2,
     Parameters
     ----------
     cf          : ImageD11 columnfile (read-only)
-    idx1, idx2  : int arrays — indices into cf defining the two subsets
+    idx1, idx2  : int arrays -- indices into cf defining the two subsets
     pair_type   : 'omega' or 'eta'
-    weights     : dict | None — search-space dimension weights,
+    weights     : dict | None -- search-space dimension weights,
                   keys: 'gx', 'gy', 'gz', 'eta', 'I'
-    tol_gv      : float — g-vector tolerance (Å⁻¹)
-    tol_eta     : float — eta angle tolerance (degrees)
-    tol_logI    : float — log10(intensity) tolerance (np.inf to ignore)
-    n_steps     : int   — number of distance increments in iterative search
-    t_max       : max execution time (seconds) — stop early if exceeded
+    tol_gv      : float -- g-vector tolerance (Angstrom^-1)
+    tol_eta     : float -- eta angle tolerance (degrees)
+    tol_logI    : float -- log10(intensity) tolerance (np.inf to ignore)
+    n_steps     : int   -- number of distance increments in iterative search
+    t_max       : max execution time (seconds) -- stop early if exceeded
     verbose     : bool
     filter_mode: 'strict' or 'relaxed' (default: strict) 
             "strict"  -> tolerance filter applied at each KDtree search iteration.
@@ -1686,7 +1692,7 @@ def _run_pairing(cf, idx1, idx2,
         return '  [{bar}] {pct:.1f}%  ({n}/{tot})'.format(
             bar=bar, pct=100 * frac, n=n_paired, tot=n_total)
 
-    # ── 1. Initialisation ─────────────────────────────────────────────
+    # -- 1. Initialisation ---------------------------------------------
     _section('FRIEDEL PAIR SEARCH  [{}]'.format(pair_type))
 
     free1    = np.ones(len(idx1), dtype=bool)
@@ -1701,16 +1707,16 @@ def _run_pairing(cf, idx1, idx2,
             tol_gv, tol_eta, tol_logI))
     _print('  dist_max   : {:.4f}  ({} steps)'.format(dist_max, n_steps))
 
-    # ── 2. Iterative matching ─────────────────────────────────────────
+    # -- 2. Iterative matching -----------------------------------------
     _section('ITERATIVE PAIR MATCHING [{} steps]'.format(len(dist_steps)) )
 
-    t_start  = time.perf_counter()
+    t_start  = _perf_counter()
     timed_out = False
 
     for i, dist_cutoff in enumerate(dist_steps):
 
-         # ── timeout check ───────────────
-        elapsed = time.perf_counter() - t_start
+         # -- timeout check ---------------
+        elapsed = _perf_counter() - t_start
         if elapsed > t_max:
             timed_out = True
             logger.warning(
@@ -1721,18 +1727,18 @@ def _run_pairing(cf, idx1, idx2,
             break
         
         if free1.sum() < 1 or free2.sum() < 1:
-            _print('  No free peaks remaining — stopping early.')
+            _print('  No free peaks remaining -- stopping early.')
             break
             
-        # ── indices into global cf ─────────
+        # -- indices into global cf ---------
         cur_idx1 = idx1[free1]
         cur_idx2 = idx2[free2]
 
-         # ── search space construction ─────
+         # -- search space construction -----
         space_1, _ = _search_space(cf, cur_idx1, _w)
         space_2, _ = _search_space(cf, cur_idx2, _w, flip=pair_type)
 
-        # ── KDTree distance matrix
+        # -- KDTree distance matrix
         dij = _compute_dist_matrix(space_1, space_2, dist_cutoff)
         if dij.nnz == 0:
             _print('  step {i}/{n}  cutoff={c:.4f}  -> no candidates'.format(
@@ -1745,7 +1751,7 @@ def _run_pairing(cf, idx1, idx2,
                 i=i+1, n=n_steps, c=dist_cutoff))
             continue
                 
-        # ── tolerance filtering (strict filter_mode)
+        # -- tolerance filtering (strict filter_mode)
         if filter_mode == 'strict':
             tol_mask = _filter_pairs_physical(
                             cf, cur_idx1[local_rows], cur_idx2[local_cols],
@@ -1766,7 +1772,7 @@ def _run_pairing(cf, idx1, idx2,
                 i=i+1, n=n_steps, c=dist_cutoff))
             continue
 
-        # ── map local indices into global cf indices
+        # -- map local indices into global cf indices
         cf_idx1 = cur_idx1[local_rows]
         cf_idx2 = cur_idx2[local_cols]
         pos1    = np.searchsorted(idx1, cf_idx1)
@@ -1781,7 +1787,7 @@ def _run_pairing(cf, idx1, idx2,
             i=i+1, n=n_steps, c=dist_cutoff, new=n_new))
         _print(_progress_bar(n_paired_so_far, n_total))
 
-    # ── 3. Assemble output ────────────────────────────────────────────
+    # -- 3. Assemble output --------------------------------------------
     _section('OUTPUT')
 
     paired_mask = ~free1
@@ -1808,7 +1814,7 @@ def _run_pairing(cf, idx1, idx2,
     _print(_progress_bar(n_pairs, n_total))
         
     if n_pairs < 1:
-        _print('  WARNING: No pairs found — returning empty output.')
+        _print('  WARNING: No pairs found -- returning empty output.')
         result = {'idx'      : np.array([], dtype=int),
                   'pair_id'  : np.array([], dtype=int),
                   'd_gv'     : np.array([], dtype=float)}
@@ -1858,9 +1864,9 @@ def _worker_initializer():
     import numba
     numba.get_num_threads()  # forces TBB reinit in the child
     
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 #  Other tools to work with Friedel pairs
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 def get_pairs(cf, pair_type='omega'):
     """ returns (idx1, idx2) : index positions of pairs in cf """
     pair_id_name = pair_type + '_pair_id'
@@ -1904,7 +1910,8 @@ def plot_pair_distances(cf, pair_type='omega', bins=50, log_scale=False, **kwarg
     """
     dists, _ = get_pair_distances(cf, pair_type)
         
-    # ── plot ─────────────────────────────────────────────────────────────
+    # -- plot -------------------------------------------------------------
+    import matplotlib.pyplot as plt   # not at import: needs a backend
     fig, axes = plt.subplots(1, 3, figsize=(12, 4))
     fig.suptitle(
         '{} pair distance distributions  (N={} pairs)'.format(
@@ -1961,7 +1968,7 @@ def locate_eta_pairs(cf, pairs, ds=None, y0=0.):
 
     sx_pairs, sy_pairs = np.linalg.solve(R, y).T
 
-    # ── write into cf. Overwrite pre-existing sx, sy
+    # -- write into cf. Overwrite pre-existing sx, sy
     sx = np.full(cf.nrows, np.nan)
     sy = np.full(cf.nrows, np.nan)
     sx[i1] = sx_pairs;  sx[i2] = sx_pairs
@@ -2005,24 +2012,24 @@ def locate_omega_pairs(cf, pairs, ds=None, y0=None):
             '(sx,sy) coordinates should already be in cf. If not, re-run update_geometry_fpairs to get correct peak relocation'
         )
   
-    # ── dx from two-theta asymmetry — 
+    # -- dx from two-theta asymmetry -- 
     tantth1 = np.tan(np.radians(cf.tth[i1]))
     tantth2 = np.tan(np.radians(cf.tth[i2]))
     dx      = L * (tantth1 - tantth2) / (tantth1 + tantth2)
 
-    # ── ylab from averaged dty — 
+    # -- ylab from averaged dty -- 
     dy   = (cf.dty[i1] - cf.dty[i2]) / 2                      
     # i1 sees +dx, +dy;  i2 sees -dx, -dy
     xlab_i1 =  dx;   xlab_i2 = -dx
     ylab_i1 = y0 + dy;  ylab_i2 = y0 - dy
 
-    # ── averaged rotation matrix 
+    # -- averaged rotation matrix 
     r  = np.radians(cf.omega)
     co, so = np.cos(r), np.sin(r)
     co_av  = (co[i1] - co[i2]) / 2                            
     so_av  = (so[i1] - so[i2]) / 2                           
 
-    # ── lab -> sample rotation ───
+    # -- lab -> sample rotation ---
     #   sx =  co_av * xlab + so_av * ylab
     #   sy = -so_av * xlab + co_av * ylab
     sx_i1 =  co_av * xlab_i1 + so_av * ylab_i1    
@@ -2031,17 +2038,17 @@ def locate_omega_pairs(cf, pairs, ds=None, y0=None):
     sx_i2 = -co_av * xlab_i2 - so_av * ylab_i2    # (-R applied)
     sy_i2 =  so_av * xlab_i2 - co_av * ylab_i2    
 
-    # sx_i1 == sx_i2 and sy_i1 == sy_i2 by construction — average for numerical safety
+    # sx_i1 == sx_i2 and sy_i1 == sy_i2 by construction -- average for numerical safety
     sx_pairs = 0.5 * (sx_i1 + sx_i2)
     sy_pairs = 0.5 * (sy_i1 + sy_i2)
 
-    # ── scatter into cf-length arrays ───
+    # -- scatter into cf-length arrays ---
     sx = np.full(cf.nrows, np.nan)
     sy = np.full(cf.nrows, np.nan)
     sx[i1] = sx_pairs;  sx[i2] = sx_pairs
     sy[i1] = sy_pairs;  sy[i2] = sy_pairs
 
-    # ── write to cf ──
+    # -- write to cf --
     for name, col in (('sx', sx), ('sy', sy)):
         if name in cf.titles:
             cf.getcolumn(name)[:] = col
