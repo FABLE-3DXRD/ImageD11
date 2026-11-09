@@ -3,27 +3,28 @@ match_friedel_pairs.py
 ======================
 Standalone pipeline script for Friedel pair matching in scanning_3DXRD datasets.
  
-Usage — run locally:
+Usage -- run locally:
     python match_friedel_pairs.py -dsfile /path/to/dataset.h5 \
                                   [-parfile /path/to/params.json] \
                                   [-pairing_options /path/to/options.json] \
                                   [-use2Dpeaks True]
  
-Usage — submit to slurm:
+Usage -- submit to slurm:
     python match_friedel_pairs.py -dsfile /path/to/dataset.h5 \
                                   [-parfile /path/to/params.json] \
                                   [-pairing_options /path/to/options.json] \
                                   [-use2Dpeaks True]
                                   -usecluster True
  
-Pairing options JSON keys (all optional — defaults shown):
+Pairing options JSON keys (all optional -- defaults shown):
     # tolerances
     tol_gv             : 0.05
     tol_eta            : 0.2
     tol_logI           : null          (null -> np.inf)
     weights            : {"gx":1,"gy":1,"gz":1,"eta":1,"I":1}
     # pairing strategy
-    pair_type          : "omega"       ("omega" | "eta" | "all")
+    pair_type          : "all"         ("omega" | "eta" | "horizontal" | "all"
+                                        or a list, e.g. ["omega"])
     filter_mode        : "relaxed"
     n_eta_bins         : 360
     drop_unpaired      : false
@@ -54,17 +55,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 
-# Python path: needs to be sorted out. I copied the stuff we put at the beginning of notebooks to load ImageD11 from local user folder (cloned from github), but in production this should not be here
-# python environment stuff
-IMAGED11_PATH = '/home/esrf/jean1994b/ImageD11_jbjacob'  # None means do not use git, otherwise enter the name of the folder to use for the git checkout "ImageD11" or "ImageD11_version_xx", etc
-CHECKOUT_PATH = 'ImageD11'  # the name of the git checkout folder within path. None means guess
-
-if IMAGED11_PATH is not None:
-    if '/data/id11/nanoscope' not in sys.path:
-        sys.path.append('/data/id11/nanoscope')
-    import install_ImageD11_from_git
-    PYTHONPATH = install_ImageD11_from_git.setup_ImageD11_from_git(IMAGED11_PATH,CHECKOUT_PATH)
-
 import ImageD11.sinograms.dataset
 import ImageD11.columnfile
 import ImageD11.friedel_pairs as fp
@@ -86,14 +76,14 @@ class Options:
     """
  
     def __init__(self):
-        # ── tolerances ────────────────────────────────────────────────
+        # -- tolerances ------------------------------------------------
         self.tol_gv              = 0.05
         self.tol_eta             = 0.2
         self.tol_logI            = None    # None -> np.inf at runtime
         self.weights             = {'gx': 1., 'gy': 1., 'gz': 1.,
                                     'eta': 1., 'I': 1.}
-        # ── pairing strategy ──────────────────────────────────────────
-        self.pair_type           = 'omega' # 'omega' | 'eta' | 'all'
+        # -- pairing strategy ------------------------------------------
+        self.pair_type           = 'all'   # 'omega' | 'eta' | 'horizontal' | 'all' | list
         self.filter_mode         = 'relaxed'
         self.n_eta_bins          = 360
         self.drop_unpaired       = False
@@ -101,7 +91,7 @@ class Options:
         self.n_workers           = -1
         self.timeout             = 120
         self.n_steps             = 25
-        # ── slurm / cluster ───────────────────────────────────────────
+        # -- slurm / cluster -------------------------------------------
         self.slurm_partition     = 'nice'
         self.slurm_mem_G         = 64
         self.slurm_time          = '02:00:00'
@@ -143,7 +133,7 @@ class Options:
  
  
 # =============================================================================
-#  Logger context manager — redirects to file
+#  Logger context manager -- redirects to file
 # =============================================================================
  
 @contextlib.contextmanager
@@ -158,14 +148,14 @@ def log_to_file(log_path, logger_name='ImageD11'):
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
     logging.getLogger('PIL').setLevel(logging.WARNING)
  
-    # file handler — captures everything at DEBUG level
+    # file handler -- captures everything at DEBUG level
     fh = logging.FileHandler(log_path, mode='a')
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(logging.Formatter(
         '%(asctime)s  %(levelname)-8s  %(name)s  %(message)s',
         datefmt='%H:%M:%S'))
  
-    # console handler — WARNING and above only
+    # console handler -- WARNING and above only
     ch = logging.StreamHandler(sys.stdout)
     ch.setLevel(logging.INFO)
     ch.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
@@ -234,14 +224,19 @@ def _save_figure(fig, path, logger):
 # =============================================================================
  
 def prepare_bash_script(dsfile, parfile, pairing_options_file,
-                         use2Dpeaks, opts):
-    """ Write a slurm batch script to the slurm/ subfolder """
+                         use2Dpeaks, opts, id11_code_path=None):
+    """ Write a slurm batch script to the slurm/ subfolder.
+    id11_code_path : folder holding the ImageD11 to run (PYTHONPATH of the job).
+                     None -> the one imported here. """
     
     sdir        = _slurm_dir(dsfile)
     script_path = os.path.join(sdir, '{}_match_friedel_pairs.sh'.format(_dsname(dsfile)))
  
-    # build the python argument string — omit optional args when None / empty
-    this_script = os.path.abspath(__file__)
+    if id11_code_path is None:
+        id11_code_path = os.path.dirname(os.path.dirname(os.path.abspath(ImageD11.__file__)))
+    this_script = os.path.join(id11_code_path, 'ImageD11', 'match_friedel_pairs.py')
+
+    # build the python argument string -- omit optional args when None / empty
     py_args     = [
         '-dsfile        {}'.format(dsfile),
         '-use2Dpeaks    {}'.format(use2Dpeaks),
@@ -266,17 +261,18 @@ def prepare_bash_script(dsfile, parfile, pairing_options_file,
         '#SBATCH --error={sdir}/{dsname}_%j.err\n'
         '#SBATCH --export=ALL,IS_SLURM_PIPELINE=1'
         '\n'
-        '# ── job info ─────────────────────────────────────────────────\n'
+        '# -- job info -------------------------------------------------\n'
         'echo "------------------------------------------------------------"\n'
         'echo "Job ID    : $SLURM_JOB_ID"\n'
         'echo "Node      : $SLURM_NODELIST"\n'
         'echo "CPUs      : $SLURM_CPUS_PER_TASK"\n'
         'echo "Started   : $(date)"\n'
         'echo "dsfile    : {dsfile}"\n'
+        'echo "PYTHONPATH: {code_path}"\n'
         'echo "------------------------------------------------------------"\n'
         '\n'
-        '# ── run pipeline ─────────────────────────────────────────────\n'
-        'python {script} \\\n'
+        '# -- run pipeline ---------------------------------------------\n'
+        'PYTHONPATH={code_path} python {script} \\\n'
         '    {py_args}\n'
         '\n'
         'echo "------------------------------------------------------------"\n'
@@ -291,6 +287,7 @@ def prepare_bash_script(dsfile, parfile, pairing_options_file,
         sdir      = sdir,
         dsfile    = dsfile,
         script    = this_script,
+        code_path = id11_code_path,
         py_args   = py_args_str,
     )
  
@@ -302,13 +299,13 @@ def prepare_bash_script(dsfile, parfile, pairing_options_file,
  
  
 def submit_to_slurm(dsfile, parfile, pairing_options_file,
-                     use2Dpeaks, opts):
+                     use2Dpeaks, opts, id11_code_path=None):
     """
     Prepare the batch script and submit it with sbatch.
     Returns job_id : str
     """
     script_path = prepare_bash_script(
-        dsfile, parfile, pairing_options_file, use2Dpeaks, opts)
+        dsfile, parfile, pairing_options_file, use2Dpeaks, opts, id11_code_path)
  
     print('Batch script written : {}'.format(script_path))
  
@@ -340,16 +337,17 @@ def submit_to_slurm(dsfile, parfile, pairing_options_file,
 def _run_pair_type(pair_type, FPIndexer, opts, cf, ds,
                    use_chunks, dsfile, logger):
     """
-    Run the full pairing sequence for a single pair_type ('omega' or 'eta').
+    Run the full pairing sequence for a single pair_type ('omega', 'eta' or 'horizontal').
     """
     logger.info('=' * 60)
     logger.info('PAIRING  [%s]', pair_type)
     logger.info('=' * 60)
  
-    chunk_type_map = {'omega': 'scans', 'eta': 'eta_bins'}
+    chunk_type_map = {'omega': 'scans', 'eta': 'eta_bins',
+                      'horizontal': 'minus_eta_bins'}
  
     if use_chunks:
-        # ── chunk-based pairing ───────────────────────────────────────
+        # -- chunk-based pairing ---------------------------------------
         chunk_type = chunk_type_map.get(pair_type)
  
         FPIndexer.set_peak_subsets(n_eta_bins=opts.n_eta_bins, y0 = opts.y0)
@@ -375,14 +373,14 @@ def _run_pair_type(pair_type, FPIndexer, opts, cf, ds,
             timeout=opts.timeout)
  
     else:
-        # ── global pairing ────────────────────────────────────────────
+        # -- global pairing --------------------------------------------
         cf_paired = FPIndexer.match_friedel_pairs(
             pair_type=pair_type,
             drop_unpaired=opts.drop_unpaired,
             filter_mode=opts.filter_mode,
             doplot=False)
  
-    # ── pair distance plot ────────────────────────────────────────────
+    # -- pair distance plot --------------------------------------------
     try:
         fig_dist, _ = fp.plot_pair_distances(cf=cf_paired, pair_type=pair_type)
         _save_figure(fig_dist,
@@ -392,7 +390,7 @@ def _run_pair_type(pair_type, FPIndexer, opts, cf, ds,
     except Exception as e:
         logger.warning('plot_pair_distances failed: %s', e)
  
-    # ── sample reconstruction plot ────────────────────────────────────
+    # -- sample reconstruction plot ------------------------------------
     try:
         i1, i2 = fp.get_pairs(cf_paired, pair_type)
         if pair_type == 'omega':
@@ -410,7 +408,7 @@ def _run_pair_type(pair_type, FPIndexer, opts, cf, ds,
             im = ax.pcolormesh(ds.ybinedges, ds.ybinedges, hist,
                                vmax=np.percentile(hist.ravel(), 99), rasterized=True)
             ax.set_aspect(1)
-            ax.set(title='{} pairs — sample reconstruction'.format(pair_type),
+            ax.set(title='{} pairs -- sample reconstruction'.format(pair_type),
                    ylabel='Sample Y axis',
                    xlabel='Sample X axis')
             plt.colorbar(im, ax=ax, orientation='vertical',
@@ -436,15 +434,15 @@ def match_friedel_pairs_pipeline(dsfile,
  
     Parameters
     ----------
-    dsfile               : str  — path to ImageD11 dataset .h5 file
-    parfile              : str  — path to parameters file (optional,
+    dsfile               : str  -- path to ImageD11 dataset .h5 file
+    parfile              : str  -- path to parameters file (optional,
                                   falls back to ds.parfile)
-    pairing_options_file : str  — path to JSON options file (optional)
-    use2Dpeaks           : bool — if True use 2D peaks, else 4D peaks
+    pairing_options_file : str  -- path to JSON options file (optional)
+    use2Dpeaks           : bool -- if True use 2D peaks, else 4D peaks
     """
     t0 = time.perf_counter()
  
-    # ── log file next to dataset ────────────────────────────────────── 
+    # -- log file next to dataset -------------------------------------- 
     log_path = _log_path(dsfile)
     
     with log_to_file(log_path) as logger:
@@ -454,7 +452,7 @@ def match_friedel_pairs_pipeline(dsfile,
         logger.info('options     : %s', pairing_options_file)
         logger.info('use2Dpeaks  : %s', use2Dpeaks)
  
-        # ── load options ──────────────────────────────────────────────
+        # -- load options ----------------------------------------------
         if pairing_options_file is not None:
             opts = Options.load(pairing_options_file)
             logger.info('Loaded pairing options from %s', pairing_options_file)
@@ -463,11 +461,11 @@ def match_friedel_pairs_pipeline(dsfile,
             logger.info('Using default pairing options')
         logger.info('%s', opts)
  
-        # ── load dataset ──────────────────────────────────────────────
+        # -- load dataset ----------------------------------------------
         logger.info('Loading dataset...')
         ds = ImageD11.sinograms.dataset.load(dsfile)
  
-        # ── load columnfile ───────────────────────────────────────────
+        # -- load columnfile -------------------------------------------
         logger.info('Loading columnfile (use2Dpeaks=%s)...', use2Dpeaks)
         if use2Dpeaks:
             cf = ds.get_cf_2d()
@@ -479,14 +477,14 @@ def match_friedel_pairs_pipeline(dsfile,
         cf.updateGeometry()
         logger.info('Columnfile loaded: %d peaks', cf.nrows)
  
-        # ── decide strategy: chunk-based or global ────────────────────
+        # -- decide strategy: chunk-based or global --------------------
         use_chunks = 'dty' in cf.titles
         if use_chunks:
-            logger.info('dty column found — using chunk-based pairing')
+            logger.info('dty column found -- using chunk-based pairing')
         else:
-            logger.info('No dty column — using global pairing')
+            logger.info('No dty column -- using global pairing')
  
-        # ── initialise FriedelPairIndexer ─────────────────────────────
+        # -- initialise FriedelPairIndexer -----------------------------
         FPIndexer = fp.FriedelPairIndexer(
             cf, ds,
             tol_gv   = opts.tol_gv,
@@ -495,9 +493,13 @@ def match_friedel_pairs_pipeline(dsfile,
             weights  = opts.weights,
             n_steps  = opts.n_steps)
  
-        # ── run pairing for requested pair_type(s) ────────────────────
-        pair_types = ['omega', 'eta'] if opts.pair_type == 'all' \
-                     else [opts.pair_type]
+        # -- run pairing for requested pair_type(s) --------------------
+        if opts.pair_type == 'all':
+            pair_types = ['omega', 'eta', 'horizontal']
+        elif isinstance(opts.pair_type, (list, tuple)):
+            pair_types = list(opts.pair_type)
+        else:
+            pair_types = [opts.pair_type]
  
         cf_paired = cf
         for pt in pair_types:
@@ -505,8 +507,8 @@ def match_friedel_pairs_pipeline(dsfile,
                 pt, FPIndexer, opts, cf_paired, ds,
                 use_chunks, dsfile, logger)
  
-        # ── match quadruplets if both pair types were run ─────────────
-        if opts.pair_type == 'all':
+        # -- match quadruplets if omega and eta pairs were run --
+        if 'omega' in pair_types and 'eta' in pair_types:
             logger.info('Matching quadruplets...')
             try:
                 quads = FPIndexer.match_quadruplets()
@@ -514,7 +516,7 @@ def match_friedel_pairs_pipeline(dsfile,
             except Exception as e:
                 logger.warning('match_quadruplets failed: %s', e)
  
-        # ── save columnfile ───────────────────────────────────────────
+        # -- save columnfile -------------------------------------------
         logger.info('Saving columnfile...')
         try:
             if use2Dpeaks:
@@ -533,9 +535,9 @@ def match_friedel_pairs_pipeline(dsfile,
  
         elapsed = time.perf_counter() - t0
         logger.info('Pipeline completed in %.1f s', elapsed)
-        print('Done in {:.1f} s — log: {}'.format(elapsed, log_path))
+        print('Done in {:.1f} s -- log: {}'.format(elapsed, log_path))
 
-    # ── remove log file if running inside a slurm job ───────────────── 
+    # -- remove log file if running inside a slurm job ----------------- 
     #  the .out file in slurm/ is already a full copy of stdout+stderr
     if os.environ.get('IS_SLURM_PIPELINE') == '1':
         try:
@@ -586,7 +588,7 @@ def main():
         opts = Options()
  
     if args.usecluster:
-        # ── slurm path: write script + submit, then exit ──────────────
+        # -- slurm path: write script + submit, then exit --------------
         submit_to_slurm(
             dsfile               = args.dsfile,
             parfile              = args.parfile,
@@ -594,7 +596,7 @@ def main():
             use2Dpeaks           = args.use2Dpeaks,
             opts                 = opts)
     else:
-        # ── local path: run pipeline in this process ──────────────────
+        # -- local path: run pipeline in this process ------------------
         match_friedel_pairs_pipeline(
             dsfile               = args.dsfile,
             parfile              = args.parfile,
