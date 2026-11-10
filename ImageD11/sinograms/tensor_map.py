@@ -1354,15 +1354,12 @@ class TensorMap:
             self._meta_orix_oriens[phase_id] = meta_orien
             return self._meta_orix_oriens[phase_id]
 
-    def get_ipf_maps(self):
-        """Calculate all IPF maps and add them to self.maps"""
+    def get_ipf_maps(self, key="tsl", backend="rgb_colors"):
+        """Calculate all IPF maps and add them to self.maps: colours of each voxel's UBI
+        with the point group of its phase (ImageD11.rgb_colors, key "tsl" or "hsv")
+        backend "orix": orix TSL colours of the meta orix orientation of each phase"""
         if 'phase_ids' not in self.keys():
             raise ValueError('No phase map to select from!')
-
-        try:
-            from orix.vector.vector3d import Vector3d
-        except ImportError:
-            raise ImportError("Missing diffpy and/or orix, can't compute orix phase!")
 
         shape = self.phase_ids.shape
 
@@ -1377,12 +1374,15 @@ class TensorMap:
 
             # iterate over phases
             for phase_id in self.phases.keys():
-                phase_mask = self.phase_ids == phase_id
-                inds = np.mgrid[0:shape[0] * shape[1] * shape[2]][phase_mask.ravel()]
-                ipf_direction = Vector3d(axis)
-                rgb_flat = self.phases[phase_id].get_ipf_colour_from_orix_orien(self.get_meta_orix_orien(phase_id),
-                                                                                axis=ipf_direction)
-                rgb_map[inds] = rgb_flat
+                if backend == "orix":
+                    phase_mask = self.phase_ids == phase_id
+                    inds = np.mgrid[0:shape[0] * shape[1] * shape[2]][phase_mask.ravel()]
+                    rgb_flat = self.phases[phase_id].get_ipf_colour_from_orix_orien(self.get_meta_orix_orien(phase_id),
+                                                                                    axis=axis, key=key, backend=backend)
+                    rgb_map[inds] = rgb_flat
+                    continue
+                mask = (self.phase_ids == phase_id) & np.isfinite(self.UBI).all(axis=(-2, -1))
+                rgb_map[mask.ravel()] = self.phases[phase_id].get_ipf_colour_from_ubi(self.UBI[mask], axis, key)
 
             rgb_map = nputils.reshape_no_copy(rgb_map, shape + (3,))
 

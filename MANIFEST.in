@@ -63,3 +63,4 @@ prune ImageD11src/depreciated
 prune src/old
 exclude **/.ipynb_checkpoints/*
 exclude *new
+recursive-include ImageD11/rgb_colors *.json *.m
