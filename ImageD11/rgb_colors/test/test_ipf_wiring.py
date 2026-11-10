@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 
 from ImageD11 import grain, rgb_colors, sym_u, unitcell
-from ImageD11.ipf_keys import GROUPS
+from ImageD11.rgb_colors.ipf_keys import GROUPS
 
 HEX = (3.0, 3.0, 5.0, 90.0, 90.0, 120.0)
 
@@ -82,6 +82,43 @@ class TestColours(unittest.TestCase):
             self.assertLess(np.abs(back - ubis).max() / np.abs(ubis).max(), 1e-11, sg)
             back = uc.get_ubi_from_orix_orien(uc.get_orix_orien(np.dot(U, uc.B)))
             self.assertLess(np.abs(back - ubis).max() / np.abs(ubis).max(), 1e-11, sg)
+
+
+class TestOrixBackend(unittest.TestCase):
+
+    def test_entry_points(self):
+        """backend="orix" through unitcell, grain, nb_utils and TensorMap; orix and
+           rgb_colors TSL agree for m-3m"""
+        try:
+            import orix  # noqa: F401
+        except ImportError:
+            self.skipTest("no orix")
+        rng = np.random.RandomState(7)
+        uc = unitcell.unitcell((4.0, 4.0, 4.0, 90.0, 90.0, 90.0), 225)
+        U = rotations(rng, 20)
+        ubis = np.linalg.inv(np.dot(U, uc.B))
+        axis = np.array([0.0, 1.0, 0.0])
+        rgb = uc.get_ipf_colour_fast(U, axis, backend="orix")
+        self.assertLess(np.abs(uc.get_ipf_colour(np.dot(U, uc.B), axis, backend="orix") - rgb).max(), 1e-12)
+        # measured 0.0087 (2000 grains, orix 0.15)
+        self.assertLess(np.abs(rgb_colors.ubi_to_rgb(ubis, "m-3m", axis=axis) - rgb).max(), 0.01)
+        with self.assertRaises(ValueError):
+            uc.get_ipf_colour_fast(U, axis, key="hsv", backend="orix")
+        grains = []
+        for ubi in ubis:
+            grains.append(grain.grain(ubi))
+            grains[-1].ref_unitcell = uc
+        self.assertLess(np.abs([g.get_ipf_colour(axis, backend="orix") for g in grains] - rgb).max(), 1e-12)
+        if sys.version_info[0] == 2:
+            return
+        from ImageD11.nbGui import nb_utils
+        from ImageD11.sinograms.tensor_map import TensorMap
+        nb_utils.get_rgbs_for_grains(grains, backend="orix")
+        self.assertLess(np.abs([g.rgb_y for g in grains] - rgb).max(), 1e-12)
+        tm = TensorMap(maps={"UBI": ubis.reshape(1, 4, 5, 3, 3), "phase_ids": np.zeros((1, 4, 5), int)},
+                       phases={0: uc})
+        tm.get_ipf_maps(backend="orix")
+        self.assertLess(np.abs(tm["ipf_y"].reshape(-1, 3) - rgb).max(), 1e-12)
 
 
 class TestTensorMap(unittest.TestCase):

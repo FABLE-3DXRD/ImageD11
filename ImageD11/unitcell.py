@@ -478,24 +478,49 @@ class unitcell:
         from ImageD11 import rgb_colors
         return rgb_colors.ubi_to_rgb(ubis, self.ipf_group, view, key, axis)
 
-    def get_ipf_colour_from_orix_orien(self, orix_orien, axis=np.array([0., 0., 1.]), key="tsl", view="default"):
+    def get_ipf_colour_from_orix_orien(self, orix_orien, axis=np.array([0., 0., 1.]), key="tsl", view="default",
+                                       backend="rgb_colors"):
         """IPF colour(s) (n, 3) in the laboratory frame from an orix orientation made with
            self.orix_phase, see get_ipf_colour_from_ubi
-           axis is an axis vector in the laboratory frame"""
+           axis is an axis vector in the laboratory frame
+           backend "orix": orix IPFColorKeyTSL (Nolze, 2016) 10.1107/S1600576716012942, key "tsl" only"""
+        if backend == "orix":
+            if key != "tsl" or view != "default":
+                raise ValueError("backend orix has only the TSL key and the default view")
+            try:
+                from orix.vector.vector3d import Vector3d
+                from orix.plot import IPFColorKeyTSL
+            except ImportError:
+                raise ImportError("Missing diffpy and/or orix, can't get IPF colour!")
+
+            ipf_direction = Vector3d(axis)
+
+            ipfkey = IPFColorKeyTSL(self.orix_phase.point_group, direction=ipf_direction)
+            rgb = ipfkey.orientation2color(orix_orien)
+
+            return rgb
         axis = np.asarray(getattr(axis, "data", axis), float).ravel()
         return self.get_ipf_colour_from_ubi(self.get_ubi_from_orix_orien(orix_orien), axis, key, view)
 
-    def get_ipf_colour_fast(self, Us, axis=np.array([0., 0., 1.]), key="tsl", view="default"):
+    def get_ipf_colour_fast(self, Us, axis=np.array([0., 0., 1.]), key="tsl", view="default", backend="rgb_colors"):
         """IPF colour(s) in the laboratory frame for a list of U matrices, with the
            metric of this unitcell, see get_ipf_colour_from_ubi
-           axis is an axis vector in the laboratory frame"""
+           axis is an axis vector in the laboratory frame
+           backend "orix": see get_ipf_colour_from_orix_orien"""
+        if backend == "orix":
+            orien = self.get_orix_orien_fast(Us)
+            return np.squeeze(self.get_ipf_colour_from_orix_orien(orien, axis, key, view, backend))
         ubis = np.linalg.inv(np.dot(Us, self.B))
         return np.squeeze(self.get_ipf_colour_from_ubi(ubis, axis, key, view))
 
-    def get_ipf_colour(self, UBs, axis=np.array([0., 0., 1.]), key="tsl", view="default"):
+    def get_ipf_colour(self, UBs, axis=np.array([0., 0., 1.]), key="tsl", view="default", backend="rgb_colors"):
         """IPF colour(s) in the laboratory frame for a list of UB matrices, see
            get_ipf_colour_from_ubi
-           axis is an axis vector in the laboratory frame"""
+           axis is an axis vector in the laboratory frame
+           backend "orix": see get_ipf_colour_from_orix_orien"""
+        if backend == "orix":
+            orien = self.get_orix_orien(UBs)
+            return np.squeeze(self.get_ipf_colour_from_orix_orien(orien, axis, key, view, backend))
         return np.squeeze(self.get_ipf_colour_from_ubi(np.linalg.inv(UBs), axis, key, view))
 
     def tostring(self):

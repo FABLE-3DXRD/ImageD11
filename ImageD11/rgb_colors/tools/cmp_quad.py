@@ -1,12 +1,12 @@
 """rgb_colors (Gauss on arcs) vs ipf_ref trapezoid with 1000 (MTEX) and 200000 steps, all keys, random directions"""
 from __future__ import print_function, division
 import json, sys, numpy as np
-sys.path.insert(0, "../../test")
+sys.path.insert(0, "../test")
 import ipf_ref
 from test_rgb_colors import cell_ubi, turn_to_z
 from ImageD11 import rgb_colors
 K = json.load(open("keys.json"))["groups"]
-O = json.load(open("../../test/ipf_oracle.json"))
+O = json.load(open("../test/ipf_oracle.json"))
 rng = np.random.RandomState(5)
 ca = ipf_ref.correct_angle
 w_fine, w_1000 = 0, 0

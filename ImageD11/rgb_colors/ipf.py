@@ -24,7 +24,7 @@ of MTEX's approximations done exactly: the hue integral (MTEX sums 1000 steps,
 up to 6e-5 in rgb) and the centre of a sector with 4 corners (TSL m-3 and 23;
 MTEX averages a 1 deg grid, up to 6e-3).  The HSV hue correction starts at 0,
 where MTEX's starts at 1.7e-3 and jumps (up to 1e-2 in rgb).
-See docs/sphx/ipf_colour_math.md.
+See ipf_colour_math.md.
 """
 
 from __future__ import print_function, division
@@ -33,7 +33,7 @@ import logging
 import numpy as np
 
 from ImageD11 import sym_u
-from ImageD11.ipf_keys import GROUPS
+from ImageD11.rgb_colors.ipf_keys import GROUPS
 
 
 def point_group(name):

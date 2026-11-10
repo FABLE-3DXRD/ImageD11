@@ -3,8 +3,8 @@
 The TSL and HSV inverse pole figure keys of MTEX 7.2.0, written with lattice
 vectors and a metric only. `ImageD11.rgb_colors` implements this file:
 `ubi_to_rgb(ubis, group, view, key, axis)` gives the colours and `plot_key` draws
-the legend. The keys are in `ImageD11/ipf_keys.py`. The scripts named below are
-in `test/ipf_keys/`: `keys.json` holds the keys as dumped from MATLAB, and
+the legend. The keys are in `ipf_keys.py`. The scripts named below are
+in `tools/`: `keys.json` holds the keys as dumped from MATLAB, and
 `ipf_ref.py`, an independent reference, follows this file line by line.
 
 Check (`check_ref.py`): MATLAB MTEX 7.2.0 colours for 500 random directions per
@@ -444,5 +444,5 @@ the cell is). `unitcell.get_ipf_colour*`, `grain.get_ipf_colour`,
 | `build_keys.py` | `keys.json` (157 KB; 72 KB without the check colours) |
 | `ipf_ref.py`, `check_ref.py` | this file as code, and its check against MATLAB |
 | `metric_strain.py`, `strain_fold.py` | section 3 |
-| `make_shipped.py` | `ImageD11/ipf_keys.py` and `test/ipf_oracle.json`, R groups added |
+| `make_shipped.py` | `ipf_keys.py` and `test/ipf_oracle.json`, R groups added |
 | `cmp_quad.py` | `rgb_colors` against `ipf_ref.py` with 1000 and 200000 steps (5.5) |

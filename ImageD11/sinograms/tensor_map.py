@@ -1354,9 +1354,10 @@ class TensorMap:
             self._meta_orix_oriens[phase_id] = meta_orien
             return self._meta_orix_oriens[phase_id]
 
-    def get_ipf_maps(self, key="tsl"):
+    def get_ipf_maps(self, key="tsl", backend="rgb_colors"):
         """Calculate all IPF maps and add them to self.maps: colours of each voxel's UBI
-        with the point group of its phase (ImageD11.rgb_colors, key "tsl" or "hsv")"""
+        with the point group of its phase (ImageD11.rgb_colors, key "tsl" or "hsv")
+        backend "orix": orix TSL colours of the meta orix orientation of each phase"""
         if 'phase_ids' not in self.keys():
             raise ValueError('No phase map to select from!')
 
@@ -1373,6 +1374,13 @@ class TensorMap:
 
             # iterate over phases
             for phase_id in self.phases.keys():
+                if backend == "orix":
+                    phase_mask = self.phase_ids == phase_id
+                    inds = np.mgrid[0:shape[0] * shape[1] * shape[2]][phase_mask.ravel()]
+                    rgb_flat = self.phases[phase_id].get_ipf_colour_from_orix_orien(self.get_meta_orix_orien(phase_id),
+                                                                                    axis=axis, key=key, backend=backend)
+                    rgb_map[inds] = rgb_flat
+                    continue
                 mask = (self.phase_ids == phase_id) & np.isfinite(self.UBI).all(axis=(-2, -1))
                 rgb_map[mask.ravel()] = self.phases[phase_id].get_ipf_colour_from_ubi(self.UBI[mask], axis, key)
 

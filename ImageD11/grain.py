@@ -235,11 +235,13 @@ class grain:
 
     # TODO: classmethod for from_orix_orien to make a grain from an orientation
 
-    def get_ipf_colour(self, axis=np.array([0., 0., 1.]), key="tsl"):
+    def get_ipf_colour(self, axis=np.array([0., 0., 1.]), key="tsl", backend="rgb_colors"):
         """IPF colour of the grain's ubi, with the point group of the reference unitcell
            (ImageD11.unitcell.unitcell.get_ipf_colour_from_ubi), key is "tsl" or "hsv"
+           backend "orix": unitcell.get_ipf_colour_fast with the grain's U
         """
-
+        if backend == "orix":
+            return self.ref_unitcell.get_ipf_colour_fast(self.U, axis, key, backend=backend)
         return np.squeeze(self.ref_unitcell.get_ipf_colour_from_ubi(self.ubi, axis, key))
 
     def to_h5py_group(self, parent_group, group_name):
