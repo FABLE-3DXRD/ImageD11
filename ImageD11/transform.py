@@ -288,10 +288,15 @@ def compute_xyz_from_tth_eta(
     #       == phi at chi=90
     wedge=0.0,  # Wedge == theta on 4circ
     chi=0.0,  # == chi - 90
+    origin=None,
     **kwds
 ):  # last line is for laziness -
     """
     Given the tth, eta and omega, compute the xyz on the detector
+
+    origin (optional) is the lab frame position, shape (3,) or (3,n), of the point the
+    rays leave from (e.g. the grain position at each omega). It is applied in
+    addition to any t_x, t_y, t_z translation (which needs omega).
 
     crystal_translation is the position of the grain giving rise
     to a diffraction spot
@@ -339,10 +344,17 @@ def compute_xyz_from_tth_eta(
     sc = np.dot(np.cross(df, dO), xyz) / norm
     fc = np.dot(np.cross(dO, ds), xyz) / norm
 
+    go = None
     if (t_x != 0) or (t_y != 0) or (t_z != 0):
         go = compute_grain_origins(
             omega, wedge=wedge, chi=chi, t_x=t_x, t_y=t_y, t_z=t_z
         )
+    if origin is not None:
+        origin = np.asarray(origin, float)
+        if origin.ndim == 1:  # one origin for all rays
+            origin = origin[:, np.newaxis]
+        go = origin if go is None else go + origin
+    if go is not None:
         # project these onto the detector face to give shifts
         sct = (xyz * np.cross(df, go.T).T).sum(axis=0) / norm
         fct = (xyz * np.cross(go.T, ds).T).sum(axis=0) / norm
