@@ -23,6 +23,7 @@ Without the GUI:  src = hv.Results('run', hv.Context('dataset.h5', 'phase'));  g
 """
 from __future__ import print_function
 import os
+import warnings
 
 import numpy as np
 import h5py
@@ -100,6 +101,7 @@ class Results(object):
         self.T, self.radius = f['translation'][()], f['radius'][()]
         self.omega_step = float(f.attrs['box_omega_step'])
         self._map, self._blocks, self._harv = None, None, None
+        self._hprof, self._hlearn, self._s0sort = None, None, None
 
     def __repr__(self):
         return 'Results(%s: %s%s%s)' % (self.name, self.harvest, ', ' + self.grains if self.grains else '',
@@ -107,6 +109,18 @@ class Results(object):
 
     def close(self):
         self.h5.close()
+        for f in (self._hprof, self._hlearn):
+            if f is not None and f is not self.h5:
+                f.close()
+        self._hprof, self._hlearn = None, None
+
+    def _open(self, name):
+        """h5 handle of the profiles / learned file, kept open"""
+        attr = '_h' + name
+        if getattr(self, attr) is None:
+            path = getattr(self, 'profiles' if name == 'prof' else 'learned')
+            setattr(self, attr, self.h5 if path == self.harvest else h5py.File(path, 'r'))
+        return getattr(self, attr)
 
     def index(self, gid):
         if int(gid) not in self.k_of:
@@ -212,18 +226,18 @@ class Results(object):
             return None, 'no 1D profiles in %s (harvest without profiles)' % self.name
         k = self.index(gid)
         i = int(self.spots['start'][k] + j)
-        with h5py.File(self.profiles, 'r') as f:
-            if 'profiles' not in f:
-                return None, 'no 1D profiles in %s' % self.profiles
-            sp = dict((c, f['spots'][c][i]) for c in ('hs', 'hf', 'ho', 's', 'f', 's0', 'f0', 'h', 'k', 'l'))
-            off = f['profiles/offset'][i:i + 2]
-            obs = f['profiles/data'][off[0]:off[1]].astype(float)
+        f = self._open('prof')
+        if 'profiles' not in f:
+            return None, 'no 1D profiles in %s' % self.profiles
+        sp = dict((c, f['spots'][c][i]) for c in ('hs', 'hf', 'ho', 's', 'f', 's0', 'f0', 'h', 'k', 'l'))
+        off = f['profiles/offset'][i:i + 2]
+        obs = f['profiles/data'][off[0]:off[1]].astype(float)
         lrn, nref, isref = None, 0, False
         if self.learned:
-            with h5py.File(self.learned, 'r') as f:
-                lo = f['offset'][i:i + 2]
-                lrn = f['data'][lo[0]:lo[1]].astype(float)
-                nref, isref = int(f['n_ref'][i]), bool(f['reference'][i])
+            f = self._open('learn')
+            lo = f['offset'][i:i + 2]
+            lrn = f['data'][lo[0]:lo[1]].astype(float)
+            nref, isref = int(f['n_ref'][i]), bool(f['reference'][i])
         a, b, c = harvester.profile_slices(sp['hs'], sp['hf'], sp['ho'], 0)
         out = dict(spot=i, hkl=(int(sp['h']), int(sp['k']), int(sp['l'])), n_ref=nref, is_reference=isref)
         for d, sl, h, x0 in (('s', a, sp['hs'], sp['s'] - sp['s0']), ('f', b, sp['hf'], sp['f'] - sp['f0']),
@@ -322,7 +336,9 @@ class GrainView(object):
             self.a2 = np.where(ok, (n * spy - sp_ * sy) / det, self.a)
             self.b2 = np.where(ok, (spp * sy - sp_ * spy) / det, 0.0)
             sig = np.sqrt(np.maximum(self.var, 0))
-            self.sig_row = np.array([np.median(s[v]) if v.any() else np.nan for s, v in zip(sig, self.valid)])
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', RuntimeWarning)         # rows without valid scans -> nan
+                self.sig_row = np.nanmedian(np.where(self.valid, sig, np.nan), axis=1)
             self.offset_sig = self.b2 / self.sig_row
         self.pmax = self.calc.max(1)
         return self
@@ -383,7 +399,7 @@ SPOT_COLS = ('grain', 'h', 'k', 'l', 's', 'f', 's0', 'f0', 'hs', 'hf', 'ho', 'bw
 
 def spot_row(src, ispot):
     g = src.h5['spots']
-    return dict((k, g[k][ispot]) for k in SPOT_COLS)
+    return dict((k, src.spots[k][ispot] if k in src.spots else g[k][ispot]) for k in SPOT_COLS)
 
 
 def stored_row(src, ispot, iscan, z=None):
@@ -410,9 +426,15 @@ def neighbours(src, ispot, iscan, frames_omega):
     rf = sp['hf'][i] + sp['bw'][i]
     step = src.omega_step
     lo, hi = np.min(frames_omega), np.max(frames_omega)
-    c = np.flatnonzero((np.abs(sp['s0'] - sp['s0'][i]) <= rs + sp['hs']) &
-                       (np.abs(sp['f0'] - sp['f0'][i]) <= rf + sp['hf']) &
-                       (sp['omega'] + (sp['ho'] + 0.5) * step >= lo) & (sp['omega'] - (sp['ho'] + 0.5) * step <= hi))
+    if src._s0sort is None:                                  # spots ordered by s0 (once per Results)
+        order = np.argsort(sp['s0'], kind='stable')
+        src._s0sort = (order, sp['s0'][order], int(sp['hs'].max()))
+    order, s0s, hsmax = src._s0sort
+    w = int(rs) + hsmax                                      # superset window in s0; exact tests follow
+    c = np.sort(order[np.searchsorted(s0s, sp['s0'][i] - w):np.searchsorted(s0s, sp['s0'][i] + w, 'right')])
+    c = c[(np.abs(sp['s0'][c] - sp['s0'][i]) <= rs + sp['hs'][c]) &
+          (np.abs(sp['f0'][c] - sp['f0'][i]) <= rf + sp['hf'][c]) &
+          (sp['omega'][c] + (sp['ho'][c] + 0.5) * step >= lo) & (sp['omega'][c] - (sp['ho'][c] + 0.5) * step <= hi)]
     c = c[c != i]
     g = sp['grain'][c]
     T = src.T[g]
@@ -657,8 +679,9 @@ class Viewer(object):
         self.w_shape.observe(lambda _: self.load(self.gid, reshape=True), 'value')
         for w in (self.w_mode, self.w_sort, self.w_tth, self.w_hide):
             w.observe(lambda _: self.draw_sino(), 'value')
-        for w in (self.w_extra, self.w_log, self.w_allnb):
-            w.observe(lambda _: self.select_scan(self.c), 'value')
+        self.w_extra.observe(lambda _: self.select_scan(self.c), 'value')
+        for w in (self.w_log, self.w_allnb):
+            w.observe(lambda _: self.redraw_boxes(), 'value')
         self.w_prev.on_click(lambda _: self.step_row(-1))
         self.w_next.on_click(lambda _: self.step_row(1))
         self.w_sprev.on_click(lambda _: self.select_scan(None if self.c is None else self.c - 1))
@@ -670,7 +693,6 @@ class Viewer(object):
                      W.HBox([self.w_prev, self.w_next, self.w_sprev, self.w_snext, self.w_extra, self.w_log, self.w_allnb]),
                      self.fig3.canvas, self.w_text, self.fig2.canvas])
         display(ui)
-        self.draw_map()
         self.load(self.gid)
 
     def switch(self, name):
@@ -680,7 +702,6 @@ class Viewer(object):
         self.src = self.results(name)
         gid = self.src.into.get(int(self.gid), int(self.gid))
         self.g = None
-        self.draw_map()
         self.load(gid)
 
     def status(self, s):
@@ -729,6 +750,7 @@ class Viewer(object):
                 self.g = GrainView(self.src, gid, shape=self.w_shape.value)
         except Exception as e:
             self.status('grain {}: {!r}'.format(gid, e))
+            self.draw_map()
             return
         self.gid = int(gid)
         self.w_gid.value = self.gid
@@ -745,12 +767,24 @@ class Viewer(object):
 
     def draw_map(self):
         ax = self.ax_map
-        ax.clear()
         rgb, idmap = self.src.grain_map()
-        ax.imshow(rgb, origin='lower', interpolation='nearest')
+        if getattr(self, '_map_rgb', None) is rgb and self._map_im in ax.images:      # same map: only the contours change
+            for cs in self._map_cs:
+                try:
+                    cs.remove()
+                except AttributeError:
+                    for c in cs.collections:
+                        c.remove()
+            ax.set_xlim(-0.5, rgb.shape[1] - 0.5)
+            ax.set_ylim(-0.5, rgb.shape[0] - 0.5)
+        else:
+            ax.clear()
+            self._map_im = ax.imshow(rgb, origin='lower', interpolation='nearest')
+            self._map_rgb = rgb
+        self._map_cs = []
         if self.g is not None:
-            ax.contour(idmap == self.gid, levels=[0.5], colors='k', linewidths=1.2)
-            ax.contour(self.g.rho > 0, levels=[0.5], colors='w', linewidths=0.6, linestyles=':')
+            self._map_cs.append(ax.contour(idmap == self.gid, levels=[0.5], colors='k', linewidths=1.2))
+            self._map_cs.append(ax.contour(self.g.rho > 0, levels=[0.5], colors='w', linewidths=0.6, linestyles=':'))
         ax.set_title('{}: grain map - click a grain; grain {}'.format(self.source, self.gid), fontsize=9, loc='left')
         ax.set_xticks([])
         ax.set_yticks([])
@@ -867,7 +901,6 @@ class Viewer(object):
         ax.plot(d, g.a2[j] * g.calc[j] + g.b2[j], '--', color='tab:orange', lw=1.2,
                 label='a2 P + b2  (b2={:.3g} = {:.2f} sigma)'.format(g.b2[j], g.offset_sig[j]))
         ax.axhline(0, color='k', lw=0.5)
-        ax.axvspan(d[col] - 0.05, d[col] + 0.05, color='r', alpha=0.15)
         ax.set_xlabel('dty')
         ax.set_ylabel('counts (monitor scaled)')
         if m.any():
@@ -917,9 +950,15 @@ class Viewer(object):
                   "(obs net {:.1f})".format(
                       g.a[self.j] * g.calc[self.j, col], g.a2[self.j] * g.calc[self.j, col] + g.b2[self.j],
                       g.net[self.j, col]))
+        self.redraw_boxes()
+        self.status('grain {}  reflection {}  scan {} (dty {:.2f})'.format(self.gid, self.j, g.iscan[col], g.dty[col]))
+
+    def redraw_boxes(self):
+        """the frame figure from the last re-harvest (self.r): log / all-neighbours only change the drawing"""
+        if self.r is None:
+            return
         draw_boxes(self.fig2, self.r, log=self.w_log.value, all_neighbours=self.w_allnb.value)
         self.fig2.canvas.draw_idle()
-        self.status('grain {}  reflection {}  scan {} (dty {:.2f})'.format(self.gid, self.j, g.iscan[col], g.dty[col]))
 
 
 def draw_boxes(fig, r, log=False, ncols=None, all_neighbours=False):
@@ -942,13 +981,14 @@ def draw_boxes(fig, r, log=False, ncols=None, all_neighbours=False):
     nb = r['neighbours']
     step = r['omega_step']
     ann = r['good'] & ~r['inbox']
+    bad = ~r['good']
+    overlay = np.ma.masked_where(~bad, np.ones_like(st[0])) if bad.any() and n else None
     for i in range(n):
         ax = fig.add_subplot(gs[i // ncols, i % ncols])
         img = st[i] if not log else np.where(st[i] > 0, st[i], np.nan)
         ax.imshow(img, norm=norm, cmap='viridis', interpolation='nearest', origin='upper')
-        bad = ~r['good']
-        if bad.any():
-            ax.imshow(np.ma.masked_where(~bad, np.ones_like(st[i])), cmap='gray', vmin=0, vmax=2, alpha=0.8)
+        if overlay is not None:
+            ax.imshow(overlay, cmap='gray', vmin=0, vmax=2, alpha=0.8)
         if r['used'][i]:
             ax.add_patch(Rectangle((bw - 0.5, bw - 0.5), 2 * hf + 1, 2 * hs + 1, fill=False, ec='r', lw=1.2))
             ax.add_patch(Rectangle((-0.5, -0.5), 2 * rf + 1, 2 * rs + 1, fill=False, ec='c', lw=1.2))

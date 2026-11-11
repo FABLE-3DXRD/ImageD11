@@ -353,22 +353,18 @@ def invert_dxdy(sc, fc, dx, dy, iterations=5):
         s, f = sc - dy[i, j], fc - dx[i, j]
     return s, f
 
-def correct_dxdy_bilinear(s, f, dx, dy):
+def correct_dxdy(s, f, dx, dy):
     """Distortion corrected (sc, fc) from raw (s, f), with the dx/dy maps
-    interpolated bilinearly (detector_spatial uses the nearest pixel).
+    looked up at the nearest pixel (clipped to the map), as in detector_spatial.
     If dx is None there is no distortion and the input is returned (copied)."""
     s = numpy.asarray(s, float)
     f = numpy.asarray(f, float)
     if dx is None:
         return s.copy(), f.copy()
     ns, nf = dx.shape
-    s0 = numpy.clip(numpy.floor(s).astype(int), 0, ns - 2)
-    f0 = numpy.clip(numpy.floor(f).astype(int), 0, nf - 2)
-    ds_, df_ = numpy.clip(s - s0, 0, 1), numpy.clip(f - f0, 0, 1)
-    def interp(m):
-        return ((1 - ds_) * (1 - df_) * m[s0, f0] + ds_ * (1 - df_) * m[s0 + 1, f0] +
-                (1 - ds_) * df_ * m[s0, f0 + 1] + ds_ * df_ * m[s0 + 1, f0 + 1])
-    return s + interp(dy), f + interp(dx)
+    i = numpy.clip(numpy.round(s).astype(int), 0, ns - 1)
+    j = numpy.clip(numpy.round(f).astype(int), 0, nf - 1)
+    return s + dy[i, j], f + dx[i, j]
 
 class detector_spatial(object):
     def __init__(self,
@@ -402,10 +398,6 @@ class detector_spatial(object):
             pks['sc'] = self.dy[ si, fi ] + pks['s_raw']
         return pks
     
-    def correct_bilinear(self, s, f):
-        """ (sc, fc) for raw (s, f) arrays, dx/dy interpolated bilinearly """
-        return correct_dxdy_bilinear(s, f, self.dx, self.dy)
-
     def distort(self, sc, fc, iterations=5):
         """ raw (s, f) for corrected (sc, fc) arrays (inverse of the correction) """
         return invert_dxdy(sc, fc, self.dx, self.dy, iterations=iterations)

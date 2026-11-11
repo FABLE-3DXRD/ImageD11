@@ -37,12 +37,11 @@ def _footprint(sx, sy, omegas, y0, ymin, ystep, ny):
     u = (dty - ymin) / ystep
     i0 = np.floor(u).astype(np.int64)
     f1 = u - i0
-    p = np.repeat(np.arange(len(omegas)), len(sx)).reshape(len(omegas), len(sx))
-    v = np.tile(np.arange(len(sx)), (len(omegas), 1))
+    nv = len(sx)
     out = []
     for ii, ww in ((i0, 1 - f1), (i0 + 1, f1)):
-        ok = (ii >= 0) & (ii < ny)
-        out.append((p[ok], ii[ok], v[ok], ww[ok]))
+        k = np.flatnonzero((ii >= 0) & (ii < ny))         # flat (omega, voxel) index of the entries on the dty range
+        out.append((k // nv, ii.ravel()[k], k % nv, ww.ravel()[k]))
     return [np.concatenate(x) for x in zip(*out)]
 
 
@@ -58,19 +57,29 @@ def project(rho, omegas, y0, ymin, ystep, ny, chunk=2e7):
     n = max(1, int(chunk // len(w)))
     for a in range(0, len(omegas), n):
         p, i, v, f = _footprint(sx, sy, omegas[a:a + n], y0, ymin, ystep, ny)
-        o = np.zeros(out[a:a + n].size)
-        np.add.at(o, p * ny + i, f * w[v])
-        out[a:a + n] = o.reshape(-1, ny)
+        out[a:a + n] = np.bincount(p * ny + i, f * w[v], minlength=out[a:a + n].size).reshape(-1, ny)
     return out
 
 
-def shape_projector(support, omegas, y0, ymin, ystep, ny):
+def shape_projector(support, omegas, y0, ymin, ystep, ny, chunk=5e6):
     """sparse (len(omegas) * ny, nvox) matrix projecting the voxels of the bool image support (row p * ny + i:
     projection p, dty bin i) and the voxel (row, column) indices"""
     ri, rj = np.nonzero(support)
     sx, sy = geometry.recon_to_sample(ri, rj, support.shape, ystep)
-    p, i, v, f = _footprint(sx, sy, omegas, y0, ymin, ystep, ny)
-    A = scipy.sparse.csr_matrix((f, (p * ny + i, v)), shape=(len(omegas) * ny, len(ri)))
+    n = max(1, int(chunk // max(len(ri), 1)))                # omegas per block of rows: bounds the temporaries
+    blocks = []
+    for a in range(0, len(omegas), n):
+        p, i, v, f = _footprint(sx, sy, omegas[a:a + n], y0, ymin, ystep, ny)
+        blocks.append(scipy.sparse.csr_matrix((f, (p * ny + i, v)), shape=(len(omegas[a:a + n]) * ny, len(ri))))
+    if len(blocks) == 1:
+        A = blocks[0]
+    else:                                                    # stack the row blocks by hand (scipy's vstack goes via coo)
+        off = np.cumsum([0] + [b.nnz for b in blocks])
+        A = scipy.sparse.csr_matrix((np.concatenate([b.data for b in blocks]),
+                                     np.concatenate([b.indices for b in blocks]),
+                                     np.concatenate([blocks[0].indptr[:1]] + [b.indptr[1:] + o
+                                                                              for b, o in zip(blocks, off)])),
+                                    shape=(len(omegas) * ny, len(ri)))
     return A, (ri, rj)
 
 

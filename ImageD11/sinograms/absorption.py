@@ -57,6 +57,20 @@ def sample_shape(sino, omegas, y0, ymin, ystep, shape, niter=60, threshold=0.1):
     return rho, mask
 
 
+@numba.njit(cache=True)
+def _inside(A, x0, y0, ux, uy, n, tlo, thi):
+    """(tlo, thi) narrowed to where the pixel coordinate A . (x0 + ux t, y0 + uy t, 1) is within a pixel of 0 .. n - 1"""
+    a0 = A[0] * x0 + A[1] * y0 + A[2]
+    a1 = A[0] * ux + A[1] * uy
+    if a1 > 1e-12:
+        return max(tlo, (-1.0 - a0) / a1), min(thi, (n - a0) / a1)
+    if a1 < -1e-12:
+        return max(tlo, (n - a0) / a1), min(thi, (-1.0 - a0) / a1)
+    if a0 < -1.0 or a0 > n:
+        return tlo, -1.0
+    return tlo, thi
+
+
 @numba.njit(cache=True, parallel=True)
 def _paths(x0, y0, uxi, uyi, uxo, uyo, hn, mask, Ai, Aj, step, lmax):
     n = x0.shape[0]
@@ -67,14 +81,18 @@ def _paths(x0, y0, uxi, uyi, uxo, uyo, hn, mask, Ai, Aj, step, lmax):
         for d in range(2):
             ux = uxi[r] if d == 0 else uxo[r]
             uy = uyi[r] if d == 0 else uyo[r]
-            t = 0.0
+            # the samples t = k step with k kmin .. kmax: only those within a pixel of the grid can be inside it
+            tlo, thi = _inside(Ai, x0[r], y0[r], ux, uy, ni, 0.0, lmax)
+            tlo, thi = _inside(Aj, x0[r], y0[r], ux, uy, nj, tlo, thi)
             L = 0.0
-            while t < lmax:
+            for k in range(int(np.ceil(tlo / step)), int(np.floor(thi / step)) + 1):
+                t = k * step
+                if t >= lmax:
+                    break
                 i = int(np.rint(Ai[0] * (x0[r] + ux * t) + Ai[1] * (y0[r] + uy * t) + Ai[2]))
                 j = int(np.rint(Aj[0] * (x0[r] + ux * t) + Aj[1] * (y0[r] + uy * t) + Aj[2]))
                 if 0 <= i < ni and 0 <= j < nj and mask[i, j]:
                     L += step
-                t += step
             Ls += L if d == 0 else L / hn[r]
         out[r] = Ls
     return out
@@ -87,11 +105,10 @@ def path_lengths(mask, ystep, x, y, omega, tth, eta, step=None):
     omega = np.asarray(omega, float)
     x = np.broadcast_to(np.asarray(x, float), omega.shape).copy()
     y = np.broadcast_to(np.asarray(y, float), omega.shape).copy()
-    ii, jj = np.mgrid[0:mask.shape[0], 0:mask.shape[1]]
-    sx, sy = geometry.recon_to_sample(ii.ravel(), jj.ravel(), mask.shape, ystep)
-    X = np.column_stack((sx, sy, np.ones(sx.size)))
-    Ai = np.linalg.lstsq(X, ii.ravel(), rcond=None)[0]       # sample (x, y) -> reconstruction pixel
-    Aj = np.linalg.lstsq(X, jj.ravel(), rcond=None)[0]
+    ni, nj = mask.shape
+    # geometry.recon_to_sample: sx = (i - ni // 2) ystep, sy = -(j - nj // 2) ystep
+    Ai = np.array([1.0 / ystep, 0.0, ni // 2])                # sample (x, y) -> reconstruction pixel
+    Aj = np.array([0.0, -1.0 / ystep, nj // 2])
     w, t2, e = np.radians(omega), np.radians(tth), np.radians(eta)
     c, s = np.cos(w), np.sin(w)
     dx, dy = np.cos(t2), -np.sin(t2) * np.sin(e)              # horizontal part of the diffracted direction (lab)
@@ -100,5 +117,5 @@ def path_lengths(mask, ystep, x, y, omega, tth, eta, step=None):
     uxi, uyi = -c, s                                          # back along the incident beam, sample frame
     uxo, uyo = (dx * c + dy * s) / hn, (-dx * s + dy * c) / hn
     step = 0.5 * ystep if step is None else float(step)
-    lmax = 2.0 * max(np.ptp(sx), np.ptp(sy))
+    lmax = 2.0 * max(ni - 1, nj - 1) * ystep                  # twice the larger extent of the grid
     return _paths(x, y, uxi, uyi, uxo, uyo, hn, np.ascontiguousarray(mask, dtype=np.uint8), Ai, Aj, step, lmax)
