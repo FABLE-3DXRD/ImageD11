@@ -13,18 +13,19 @@ class test_dxdy(unittest.TestCase):
         rng = np.random.RandomState(1)
         s = rng.uniform(5, 190, 500)
         f = rng.uniform(5, 290, 500)
-        sc, fc = blobcorrector.correct_dxdy_bilinear(s, f, self.dx, self.dy)
+        sc, fc = blobcorrector.correct_dxdy(s, f, self.dx, self.dy)
         s2, f2 = blobcorrector.invert_dxdy(sc, fc, self.dx, self.dy, iterations=8)
-        # the inverse uses nearest pixel look ups, so is good to a fraction of the map gradient
+        # nearest pixel look ups both ways, so good to a fraction of the map gradient
         self.assertLess(np.abs(s2 - s).max(), 0.05)
         self.assertLess(np.abs(f2 - f).max(), 0.05)
 
-    def test_bilinear_vs_nearest(self):
+    def test_correct_vs_call(self):
         ds = blobcorrector.detector_spatial.__new__(blobcorrector.detector_spatial)
         ds.dx, ds.dy = self.dx, self.dy
-        s, f = np.arange(10.0, 100.0), np.arange(20.0, 110.0)     # integer pixels: identical
+        rng = np.random.RandomState(2)
+        s, f = rng.uniform(0, 199, 500), rng.uniform(0, 299, 500)
         pk = ds({'s_raw': s, 'f_raw': f})
-        sc, fc = ds.correct_bilinear(s, f)
+        sc, fc = blobcorrector.correct_dxdy(s, f, self.dx, self.dy)
         self.assertTrue(np.allclose(sc, pk['sc']) and np.allclose(fc, pk['fc']))
 
     def test_pixel_lut(self):
@@ -41,7 +42,7 @@ class test_dxdy(unittest.TestCase):
     def test_none(self):
         s, f = np.array([1.5]), np.array([2.5])
         for fn in (lambda: blobcorrector.invert_dxdy(s, f, None, None),
-                   lambda: blobcorrector.correct_dxdy_bilinear(s, f, None, None)):
+                   lambda: blobcorrector.correct_dxdy(s, f, None, None)):
             a, b = fn()
             self.assertTrue(a[0] == 1.5 and b[0] == 2.5)
 

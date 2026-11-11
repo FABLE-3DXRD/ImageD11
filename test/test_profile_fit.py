@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from ImageD11.sinograms import profile_fit
+from ImageD11.sinograms import profile_fit, absorption
 
 NY, YSTEP, Y0, YMIN = 61, 1.0, 0.0, -30.0
 SHAPE = (61, 61)
@@ -105,6 +105,25 @@ class TestProfileFit(unittest.TestCase):
         iou = (found & (rho > 0)).sum() / float((found | (rho > 0)).sum())
         self.assertGreater(iou, 0.8)
         self.assertLess(rec[~(rho > 0)].sum() / rec.sum(), 0.1)
+
+    def test_shape_projector_chunks(self):
+        """row blocks (chunk) give the same matrix as one block; its product is project() of the same density"""
+        support = grain() > 0
+        om = np.linspace(-90, 90, 37)
+        A1, _ = profile_fit.shape_projector(support, om, Y0, YMIN, YSTEP, NY, chunk=1e9)
+        A2, _ = profile_fit.shape_projector(support, om, Y0, YMIN, YSTEP, NY, chunk=300)
+        self.assertEqual(abs(A1 - A2).max(), 0)
+        P = profile_fit.project(support.astype(float), om, Y0, YMIN, YSTEP, NY)
+        self.assertLess(abs(A1.dot(np.ones(A1.shape[1])).reshape(-1, NY) - P).max(), 1e-9)
+
+    def test_path_lengths_chord(self):
+        """square mask, odd and even shape: the chord through the centre along the beam is the mask width"""
+        for n in (21, 20):
+            mask = np.ones((n, n), bool)
+            L = absorption.path_lengths(mask, 1.0, 0.0, 0.0, [0.0, 90.0], [0.0, 0.0], [0.0, 0.0], step=0.25)
+            self.assertTrue(np.all(abs(L - n) <= 1.5), L)            # tth = 0: incident and diffracted halves
+            far = absorption.path_lengths(mask, 1.0, 1000.0, 1000.0, [0.0], [5.0], [10.0])
+            self.assertEqual(far[0], 0.0)
 
 
 if __name__ == '__main__':

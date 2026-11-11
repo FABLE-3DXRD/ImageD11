@@ -162,8 +162,25 @@ class ShoeboxModel(object):
                  np.round(np.median(self.eps), 6),
                  self.nsigma, self.bg_factor))
 
+    @staticmethod
+    def _geometry(spots, pars):
+        """(|grad tth|, |grad eta|, unit radial, unit tangential directions) on the detector (deg per pixel), for
+        a grain at the rotation axis. They depend on the positions and pars only, not on the model terms."""
+        sc, fc = spots['sc'], spots['fc']
+        def te(ds_, df_):
+            return tth_eta_from_pixels(sc + ds_, fc + df_, 0.0, pars)
+        t_sp, e_sp = te(0.5, 0); t_sm, e_sm = te(-0.5, 0); t_fp, e_fp = te(0, 0.5); t_fm, e_fm = te(0, -0.5)
+        gt = np.array([t_sp - t_sm, t_fp - t_fm])
+        ge = np.array([(e_sp - e_sm + 180) % 360 - 180, (e_fp - e_fm + 180) % 360 - 180])
+        ngt, nge = np.linalg.norm(gt, axis=0), np.linalg.norm(ge, axis=0)
+        return ngt, nge, gt / ngt, ge / nge
+
     def sigmas(self, spots, pars, omega_step):
         """rms widths (sigma_s, sigma_f in pixels, sigma_omega in frames) of each reflection"""
+        return self._sigmas(spots, self._geometry(spots, pars), omega_step)
+
+    def _sigmas(self, spots, geometry, omega_step):
+        """sigmas with the parameter-independent detector geometry (self._geometry) given"""
         g = spots['grain']
         phi_g = np.broadcast_to(np.asarray(self.phi, float), (g.max() + 1,))[g] if np.ndim(self.phi) else self.phi
         eps_g = np.broadcast_to(np.asarray(self.eps, float), (g.max() + 1,))[g] if np.ndim(self.eps) else self.eps
@@ -173,16 +190,9 @@ class ShoeboxModel(object):
         th = np.radians(spots['tth'] / 2)
         d2th = np.degrees(2 * np.tan(th) * eps_tot)            # radial, deg of 2 theta
         deta = np.degrees(phi_t / np.cos(th))                  # tangential, deg of eta
-        # local gradients of tth and eta on the detector (deg per pixel), for a grain at the rotation axis
-        sc, fc = spots['sc'], spots['fc']
-        def te(ds_, df_):
-            return tth_eta_from_pixels(sc + ds_, fc + df_, 0.0, pars)
-        t_sp, e_sp = te(0.5, 0); t_sm, e_sm = te(-0.5, 0); t_fp, e_fp = te(0, 0.5); t_fm, e_fm = te(0, -0.5)
-        gt = np.array([t_sp - t_sm, t_fp - t_fm])
-        ge = np.array([(e_sp - e_sm + 180) % 360 - 180, (e_fp - e_fm + 180) % 360 - 180])
-        R = d2th / np.linalg.norm(gt, axis=0)                   # radial spread in pixels
-        T = deta / np.linalg.norm(ge, axis=0)                   # tangential spread in pixels
-        r = gt / np.linalg.norm(gt, axis=0); t = ge / np.linalg.norm(ge, axis=0)
+        ngt, nge, r, t = geometry
+        R = d2th / ngt                                          # radial spread in pixels
+        T = deta / nge                                          # tangential spread in pixels
         sig_s = np.sqrt(self.psf ** 2 + (R * r[0]) ** 2 + (T * t[0]) ** 2)
         sig_f = np.sqrt(self.psf ** 2 + (R * r[1]) ** 2 + (T * t[1]) ** 2)
         se = np.maximum(np.abs(np.sin(np.radians(spots['eta']))), self.sin_eta_min)
@@ -200,6 +210,11 @@ class ShoeboxModel(object):
         return hs, hf, ho, bw
 
 
+# what fit_shoebox_model reads from a harvest file (Harvester.run(lean=True) writes only these)
+FIT_SPOTS = ('grain', 'tth', 'eta', 'sc', 'fc', 'n_overlap', 'touch_mask', 'edge')
+FIT_PER_SCAN = ('spot', 'scan', 'box', 'bg', 'var', 'ms', 'mss', 'mf', 'mff', 'mw', 'mww')
+
+
 def fit_shoebox_model(outfile, pars, model=None, min_snr=30.0, sin_eta_min=0.3, nmax=200000, seed=0, omega_step=None):
     """Fit the instrumental terms of a ShoeboxModel (psf, phi0 (rocking), phi0_t (perpendicular to the scattering
     plane), omega0 (rocking, independent of eta) and the instrumental d-spacing spread, reported as `bandpass` =
@@ -213,7 +228,7 @@ def fit_shoebox_model(outfile, pars, model=None, min_snr=30.0, sin_eta_min=0.3, 
     import scipy.optimize
     model = ShoeboxModel() if model is None else model
     with h5py.File(outfile, 'r') as h:
-        sp = dict((k, h['spots'][k][()]) for k in ('grain', 'tth', 'eta', 'sc', 'fc', 'n_overlap', 'touch_mask', 'edge'))
+        sp = dict((k, h['spots'][k][()]) for k in FIT_SPOTS)
         ps = h['per_scan']
         spot = ps['spot'][()]
         I = ps['box'][()] - ps['bg'][()]
@@ -223,7 +238,7 @@ def fit_shoebox_model(outfile, pars, model=None, min_snr=30.0, sin_eta_min=0.3, 
         rows = np.flatnonzero(good)
         if len(rows) > nmax:
             rows = np.sort(np.random.RandomState(seed).choice(rows, nmax, replace=False))
-        mom = dict((k, ps[k][()][rows]) for k in ('ms', 'mss', 'mf', 'mff', 'mw', 'mww'))
+        mom = dict((k, ps[k][()][rows]) for k in FIT_PER_SCAN[5:])
         step = omega_step
         if step is None and 'box_omega_step' in h.attrs:
             step = float(h.attrs['box_omega_step'])
@@ -244,16 +259,18 @@ def fit_shoebox_model(outfile, pars, model=None, min_snr=30.0, sin_eta_min=0.3, 
     def setp(p):
         trial.psf, trial.phi0, trial.phi0_t, trial.bandpass, trial.omega0 = p[0], p[1], p[2], p[3] * 2.355, p[4]
 
+    geometry = trial._geometry(sub, pars)         # does not depend on p
+
     def resid(p):
         setp(p)
-        a, b, c = trial.sigmas(sub, pars, step)
+        a, b, c = trial._sigmas(sub, geometry, step)
         return np.log(np.concatenate([a / meas_s, b / meas_f, c / meas_w]))
     p0 = [model.psf, model.phi0, model.phi0 if model.phi0_t is None else model.phi0_t, model.bandpass / 2.355,
           model.omega0]
     r = scipy.optimize.least_squares(resid, p0, bounds=([0, 0, 0, 0, 0], [10, 5, 5, 0.05, 5]), loss='soft_l1',
                                      f_scale=0.3)
     setp(r.x)
-    a, b, c = trial.sigmas(sub, pars, step)
+    a, b, c = trial._sigmas(sub, geometry, step)
     info = dict(nrows=int(ok.sum()), psf=r.x[0], phi0=r.x[1], phi0_t=r.x[2], eps0=r.x[3], omega0=r.x[4],
                 median_ratio_s=float(np.median(meas_s / a)), median_ratio_f=float(np.median(meas_f / b)),
                 median_ratio_omega=float(np.median(meas_w / c)))
@@ -270,13 +287,14 @@ class H5FrameReader(object):
         self.h = h5py.File(filename, 'r')
         self.d = self.h[path]
         self.good = good.ravel().astype(bool)
+        self.bad = np.flatnonzero(~self.good)
         self.buf = np.empty(self.d.shape[1:], self.d.dtype)
 
     def __call__(self, i):
         """Frame i -> (flat indices, ascending; values as float32) of non-zero unmasked pixels"""
         self.d.read_direct(self.buf, np.s_[i])
         b = self.buf.ravel()
-        b[~self.good] = 0
+        b[self.bad] = 0
         idx = np.flatnonzero(b)
         return idx, b[idx].astype(np.float32)
 
@@ -422,6 +440,17 @@ def _poisson_upper(mean, p):
     """smallest integer t with P(X > t) <= p for X ~ Poisson(mean)"""
     if mean <= 0:
         return 0.0
+    if mean >= 700.0:
+        # exp(-mean) underflows: sum the upper tail downwards from a Bernstein bound where it is below 1e-13 p
+        lp = 30.0 - math.log(p) if p > 0 else 700.0
+        t = int(mean + 2.0 * lp / 3.0 + math.sqrt(2.0 * lp * mean)) + 2
+        term = math.exp(t * math.log(mean) - mean - math.lgamma(t + 1.0))     # pmf(t)
+        tail = 0.0                                                          # P(X > t)
+        while tail + term <= p and t > 0:
+            tail += term                                                    # P(X > t - 1)
+            term *= t / mean                                                # pmf(t - 1)
+            t -= 1
+        return float(t)
     term = np.exp(-mean)
     cdf = term
     t = 0
@@ -588,6 +617,29 @@ def _integrate_frame_core(idx, vals, nfast, adj, spots, s0, f0, hs, hf, bw, nbox
             acc[k, 12] = vmax
         acc[k, 13] += nused
         acc[k, 14] += nnz
+
+
+@numba.njit(cache=True)
+def _weight_sums_kernel(flat, off, good, hs, hf, s0, f0):
+    """SB, SW, SC = sums over the good box pixels of (S F)^2, S F and (S F)^3, per reflection"""
+    H, W = good.shape
+    n = hs.shape[0]
+    SB, SW, SC = np.zeros(n), np.zeros(n), np.zeros(n)
+    for k in range(n):
+        r0, c0 = s0[k] - hs[k], f0[k] - hf[k]
+        a0, a1, b0, b1 = max(r0, 0), min(s0[k] + hs[k] + 1, H), max(c0, 0), min(f0[k] + hf[k] + 1, W)
+        if a1 <= a0 or b1 <= b0:
+            continue
+        o = off[k]
+        for r in range(a0, a1):
+            S = flat[o + r - r0]
+            for c in range(b0, b1):
+                if good[r, c]:
+                    w = S * flat[o + 2 * hs[k] + 1 + c - c0]
+                    SB[k] += w * w
+                    SW[k] += w
+                    SC[k] += w * w * w
+    return SB, SW, SC
 
 
 @numba.njit(cache=True)
@@ -1055,11 +1107,15 @@ def deoverlap_solve(F, I, sigI=None, ridge=1e-3, link=0.5, niter=50, tol=1e-3, v
         print('deoverlap: %d single, %d blocks (largest %d), %d links outside blocks (%.0f s)' % (
             single.sum(), len(blocks), np.diff(bstart).max() if len(blocks) else 0, Fout.nnz, time.time() - t0))
     s1 = np.flatnonzero(single & (lab >= 0))        # no overlap at all (lab -1): T = max(I, 0)
+    nout = np.diff(Fout.indptr)
+    coupled = [bool(nout[m].any()) for m, _, _ in blocks]     # the others have the same right-hand side every time
     for it in range(niter):
         r = I - Fout.dot(T)
         new = T.copy()
         new[s1] = np.maximum(r[s1], 0) / (1 + ridge ** 2)
-        for m, Aw, w in blocks:
+        for k, (m, Aw, w) in enumerate(blocks):
+            if it > 0 and not coupled[k]:
+                continue                        # keeps T from the first iteration
             new[m] = scipy.optimize.nnls(Aw, np.concatenate([w * r[m], np.zeros(len(m))]))[0]
         change = np.max(np.abs(new - T) / sig)
         T = new
@@ -1209,10 +1265,30 @@ class Harvester(object):
         sp['s0'] = np.round(sp['s']).astype(np.int64)
         sp['f0'] = np.round(sp['f']).astype(np.int64)
         self.spots = sp
+        return self.resize_boxes()
+
+    def resize_boxes(self, box=None):
+        """Set the box (if given) and recompute what depends on it (box sizes, mask sums, n_overlap) for the
+        existing prediction, without predicting again (the predicted spots do not depend on the box)"""
+        if box is not None:
+            self.box = box
+        sp = self.spots
         sp['hs'], sp['hf'], sp['ho'], sp['bw'] = self.box.sizes(sp, self.pars, self.omega_step())
         self._static()
         self._overlaps()
         return sp
+
+    def _dty_pred(self):
+        """dty at which each reflection's grain is in the beam: y0 - x sin(omega) - y cos(omega), cached (8 bytes
+        per reflection) while the spots, their omega and the grain positions are the same"""
+        sp = self.spots
+        T = np.array([g.translation for g in self.grains], float)
+        c = getattr(self, '_dty_cache', None)
+        if c is None or c[0] is not sp or c[1] is not sp['omega'] or not np.array_equal(c[2], T):
+            w = np.radians(sp['omega'])
+            g = sp['grain']
+            self._dty_cache = c = (sp, sp['omega'], T, self.ds.y0 - T[g, 0] * np.sin(w) - T[g, 1] * np.cos(w))
+        return c[3]
 
     def profile_offsets(self):
         """offsets of each reflection's [s | f | omega] profile in the flat profile array (length n + 1)"""
@@ -1225,21 +1301,8 @@ class Harvester(object):
         sp = self.spots
         flat, off = self.weights
         good = self._good
-        H, W = good.shape
-        n = len(sp['hs'])
-        SB, SW, SC = np.zeros(n), np.zeros(n), np.zeros(n)
-        for k in range(n):
-            hs, hf, s0, f0 = int(sp['hs'][k]), int(sp['hf'][k]), int(sp['s0'][k]), int(sp['f0'][k])
-            S = flat[off[k]:off[k] + 2 * hs + 1]
-            F = flat[off[k] + 2 * hs + 1:off[k] + 2 * hs + 2 * hf + 2]
-            r0, c0 = s0 - hs, f0 - hf
-            a0, a1, b0, b1 = max(r0, 0), min(s0 + hs + 1, H), max(c0, 0), min(f0 + hf + 1, W)
-            if a1 <= a0 or b1 <= b0:
-                continue
-            g = good[a0:a1, b0:b1]
-            w = np.outer(S[a0 - r0:a1 - r0], F[b0 - c0:b1 - c0]) * g
-            SB[k], SW[k], SC[k] = (w * w).sum(), w.sum(), (w * w * w).sum()
-        return SB, SW, SC
+        return _weight_sums_kernel(flat, np.asarray(off, np.int64), np.ascontiguousarray(good), sp['hs'], sp['hf'],
+                                   sp['s0'], sp['f0'])
 
     def omega_step(self):
         om = np.asarray(self.ds.omega[0], float)
@@ -1250,10 +1313,8 @@ class Harvester(object):
         and whose grain can be in the beam in the same scan (|dty_pred difference| < sum of radii)"""
         sp = self.spots
         step = self.omega_step()
-        T = np.array([g.translation for g in self.grains], float)
         g = sp['grain']
-        w = np.radians(sp['omega'])
-        dty = self.ds.y0 - T[g, 0] * np.sin(w) - T[g, 1] * np.cos(w)
+        dty = self._dty_pred()
         cell = int(2 * max(sp['hs'].max(), sp['hf'].max()) + 1)
         cs, cf = sp['s0'] // cell, sp['f0'] // cell
         ncf = int(cf.max()) + 3
@@ -1313,10 +1374,8 @@ class Harvester(object):
             else:
                 sigmas = (sp['hs'] / 3.0, sp['hf'] / 3.0, sp['ho'] / 3.0)
         sig_s, sig_f, sig_w = [np.maximum(np.asarray(x, float), 0.3) for x in sigmas]
-        T = np.array([g.translation for g in self.grains], float)
         g = sp['grain']
-        w = np.radians(sp['omega'])
-        dty = self.ds.y0 - T[g, 0] * np.sin(w) - T[g, 1] * np.cos(w)
+        dty = self._dty_pred()
         cell = int(2 * max(sp['hs'].max(), sp['hf'].max()) + 1)
         cs, cf = sp['s0'] // cell, sp['f0'] // cell
         ncf = int(cf.max()) + 3
@@ -1332,10 +1391,8 @@ class Harvester(object):
     def _grid_order(self):
         """(key, omega in frames, sort order, ncf, dty of the grain at each reflection) for the neighbour kernels"""
         sp = self.spots
-        T = np.array([g.translation for g in self.grains], float)
         g = sp['grain']
-        w = np.radians(sp['omega'])
-        dty = self.ds.y0 - T[g, 0] * np.sin(w) - T[g, 1] * np.cos(w)
+        dty = self._dty_pred()
         cell = int(2 * max(sp['hs'].max(), sp['hf'].max()) + 1)
         cs, cf = sp['s0'] // cell, sp['f0'] // cell
         ncf = int(cf.max()) + 3
@@ -1401,9 +1458,7 @@ class Harvester(object):
         om_f = np.asarray(ds.omega[iscan], float)
         dty = float(np.mean(ds.dty[iscan]))
         g = sp['grain']
-        T = np.array([gr.translation for gr in self.grains], float)
-        w = np.radians(sp['omega'])
-        dty_pred = ds.y0 - T[g, 0] * np.sin(w) - T[g, 1] * np.cos(w)
+        dty_pred = self._dty_pred()
         cand = np.flatnonzero(np.abs(dty - dty_pred) <= self.radius[g])
         if len(cand) == 0:
             return None
@@ -1477,13 +1532,15 @@ class Harvester(object):
         return iscan, ids, acc, len(frames), time.time() - t0, extra
 
     # ---------------------------------------------------------------- run
-    def run(self, scans=None, nproc=None, outfile=None, verbose=True):
+    def run(self, scans=None, nproc=None, outfile=None, verbose=True, lean=False):
         """Integrate all predicted reflections over the scans (default: all whose files exist).
 
         Per-reflection totals are accumulated in memory (see merged()). With outfile, the per
         (reflection, scan) rows are written to an HDF5 file as they arrive (group 'per_scan', with the
         reflection table in 'spots'), for sinogram / tomographic use. Scans whose file cannot be read are
-        skipped and listed in self.failed_scans (and 'failed_scans' in outfile)."""
+        skipped and listed in self.failed_scans (and 'failed_scans' in outfile).
+        lean: write only what fit_shoebox_model reads (FIT_SPOTS, FIT_PER_SCAN, the box attributes), no merged
+        group."""
         if self.spots is None:
             self.predict()
         if scans is None:
@@ -1498,18 +1555,25 @@ class Harvester(object):
             self._gint = np.zeros((good.shape[0] + 1, good.shape[1] + 1))
             self._gint[1:, 1:] = good.cumsum(0).cumsum(1)
         if self.weights is not None:
+            tw = time.time()
             self._SB, self._SW, self._SC = self._weight_sums()
+            if verbose:
+                print('weight sums %.0f s' % (time.time() - tw))
+        self._dty_pred()            # before the fork: the workers share it
         _WORKER['h'] = self
         h5 = None
         if outfile is not None:
             h5 = h5py.File(outfile, 'w')
             gsp = h5.create_group('spots')
             for k, v in self.spots.items():
-                gsp.create_dataset(k, data=v)
+                if not lean or k in FIT_SPOTS:
+                    gsp.create_dataset(k, data=v)
             gps = h5.create_group('per_scan')
             dsets = dict(spot=gps.create_dataset('spot', (0,), np.int32, maxshape=(None,), chunks=(65536,)),
                          scan=gps.create_dataset('scan', (0,), np.int32, maxshape=(None,), chunks=(65536,)))
             for k in ACC + (ACCW if self.weights is not None else []):
+                if lean and k not in FIT_PER_SCAN:
+                    continue
                 dsets[k] = gps.create_dataset(k, (0,), np.float32, maxshape=(None,), chunks=(65536,))
             h5.attrs['box'] = repr(self.box)
             h5.attrs['box_omega_step'] = self.omega_step()
@@ -1546,11 +1610,10 @@ class Harvester(object):
                     src = np.arange(int(n_.sum()))
                     dst = np.repeat(gpoff[ids], n_) + src - np.repeat(np.cumsum(n_) - n_, n_)
                     gprof[dst] += extra['prof']
-                for c in range(NACC):
-                    if ACC[c] == 'maxval':
-                        tot[ids, c] = np.maximum(tot[ids, c], acc[:, c])
-                    else:
-                        tot[ids, c] += acc[:, c]
+                mx = _I['maxval']
+                vmax = np.maximum(tot[ids, mx], acc[:, mx])
+                tot[ids] += acc             # ids are unique (np.unique) within a scan
+                tot[ids, mx] = vmax
                 nscans[ids] += 1
                 if h5 is not None:
                     n0 = dsets['spot'].shape[0]
@@ -1559,10 +1622,12 @@ class Harvester(object):
                     dsets['spot'][n0:] = ids
                     dsets['scan'][n0:] = iscan
                     for c, name in enumerate(ACC):
-                        dsets[name][n0:] = acc[:, c]
+                        if name in dsets:
+                            dsets[name][n0:] = acc[:, c]
                     if self.weights is not None:
                         for c, name in enumerate(ACCW):
-                            dsets[name][n0:] = extra['accw'][:, c]
+                            if name in dsets:
+                                dsets[name][n0:] = extra['accw'][:, c]
                 if verbose and (k % 20 == 0 or k == len(scans) - 1):
                     el = time.time() - t0
                     print('%d/%d scans, %d frames, %.0f s, %.0f frames/s' % (k + 1, len(scans), nframes, el, nframes / max(el, 1e-9)))
@@ -1587,9 +1652,10 @@ class Harvester(object):
                                       'omega profile (2 ho + 1 frames, centred on the predicted omega)], net counts '
                                       'summed over scans; dty profile = per_scan rows')
             h5.create_dataset('failed_scans', data=np.array([f[0] for f in failed], np.int32))
-            gm = h5.create_group('merged')
-            for k, v in m.items():
-                gm.create_dataset(k, data=v)
+            if not lean:
+                gm = h5.create_group('merged')
+                for k, v in m.items():
+                    gm.create_dataset(k, data=v)
             h5.close()
         return m
 
@@ -1625,7 +1691,7 @@ class Harvester(object):
             out['sig_f'] = np.sqrt(np.maximum(t[:, _I['mff']] / I - df_ ** 2, 0))
             out['sig_omega'] = np.sqrt(np.maximum(t[:, _I['mww']] / I - dw_ ** 2, 0))
         ok = np.isfinite(out['s']) & np.isfinite(out['f'])
-        sc, fc = ImageD11.blobcorrector.correct_dxdy_bilinear(np.where(ok, out['s'], 0), np.where(ok, out['f'], 0), self.e2dx, self.e2dy)
+        sc, fc = ImageD11.blobcorrector.correct_dxdy(np.where(ok, out['s'], 0), np.where(ok, out['f'], 0), self.e2dx, self.e2dy)
         out['sc'] = np.where(ok, sc, np.nan)
         out['fc'] = np.where(ok, fc, np.nan)
         return out
@@ -1695,10 +1761,8 @@ class Harvester(object):
                   'f %.2f px, omega %.2f frames; %.0f%% |offset| s %.2f f %.2f px, omega %.2f frames -> %r'
                   % (strong.sum(), core.sum(), 100 * (1 - core.mean() / strong.mean()), ws, wf, ww, quantile * 100,
                      os_, of_, ow_, box))
-        self.box = box
-        self.spots = None
         self.results = None
-        self.predict()
+        self.resize_boxes(box)
         return box
 
     # ---------------------------------------------------------------- viewing

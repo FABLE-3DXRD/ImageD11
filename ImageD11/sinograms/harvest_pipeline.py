@@ -182,8 +182,10 @@ def harvest_with(cfg, sp, grains, radius, gid, members, fname, **kw):
     h = harvester.Harvester(ds, grains, P, ds_max=ds_max, radius=radius, datapath=raw_data(cfg, ds),
                             reader=cfg['harvest']['reader'], box=box, **kw)
     h.spots = sp
+    t0 = time.time()
     h._static()
     h._overlaps()
+    log('harvest %s: static and overlaps %.0f s' % (fname, time.time() - t0))
     t0 = time.time()
     h.run(nproc=cfg['nproc'], outfile=fname)
     log('harvest %s: %.0f s' % (fname, time.time() - t0))
@@ -209,11 +211,8 @@ def grain_spreads(ubi, eps, mask):
     """(mean UBI, rms misorientation to the mean orientation in deg, rms deviatoric strain spread) of the voxels
     mask of a refined point-by-point map (ubi (..., 3, 3), eps (..., 3, 3) strain tensors)"""
     u = ubi[mask]
-    U = []
-    for b in np.linalg.inv(u):
-        w, _, vt = np.linalg.svd(b)
-        U.append(np.dot(w, vt))
-    U = np.array(U)
+    w, _, vt = np.linalg.svd(np.linalg.inv(u))
+    U = np.matmul(w, vt)
     w, _, vt = np.linalg.svd(U.mean(0))
     R0 = np.dot(w, vt)
     ang = np.degrees(np.arccos(np.clip((np.einsum('nij,ij->n', U, R0) - 1) / 2, -1, 1)))
@@ -253,20 +252,26 @@ def step_harvest(cfg):
         rmap = ref.refinedmap.best_ubi, ref.refinedmap.best_eps
         log('harvest: refined map %s' % path)
     gid, grains, radius, phi, eps = [], [], [], [], []
+    # bounding box of each grain (label 0 included: shift by one, labels < 0 are background), then all work on it
+    boxes = ndi.find_objects(np.where(labels >= 0, labels + 1, 0), len(gss))
+    finite = None if rmap is None else np.isfinite(rmap[0][..., 0, 0])
     for k, gs in enumerate(gss):
-        cc, n = ndi.label(labels == k)
-        if n == 0:
+        if boxes[k] is None:
             log('harvest: grain %d has no voxels in the labels, left out' % k)
             continue
+        sl = boxes[k]
+        mk = labels[sl] == k
+        cc, n = ndi.label(mk)
         main = ndi.binary_fill_holes(cc == (np.argmax(np.bincount(cc.ravel())[1:]) + 1))
         ii, jj = np.nonzero(main)
+        ii, jj = ii + sl[0].start, jj + sl[1].start
         t = np.asarray(gs.grain.translation, float)
         radius.append(np.hypot(bc[ii] - t[0], -bc[jj] - t[1]).max() + c['radius_margin'] * ds.ystep)
         ubi, ph, ep = gs.grain.ubi, np.nan, np.nan
         if rmap is not None:
-            m = (labels == k) & np.isfinite(rmap[0][..., 0, 0])
+            m = mk & finite[sl]
             if m.sum() >= c['min_voxels']:
-                u, ph, ep = grain_spreads(rmap[0], rmap[1], m)
+                u, ph, ep = grain_spreads(rmap[0][sl], rmap[1][sl], m)
                 if c['ubi'] == 'refined_map':
                     ubi = u
         grains.append(ImageD11.grain.grain(ubi, translation=t))
@@ -282,20 +287,25 @@ def step_harvest(cfg):
         box.nsigma = c['fit_nsigma']
     h = harvester.Harvester(ds, grains, P, ds_max=c['ds_max'], radius=np.array(radius), datapath=raw_data(cfg, ds),
                             reader=c['reader'], box=box)
+    t0 = time.time()
     h.predict()
+    log('harvest: predict %.0f s' % (time.time() - t0))
     fit = {}
     if c['fit_every']:
         pilot = out(cfg, 'harvest_pilot.h5')
         t0 = time.time()
-        h.run(scans=h.present_scans()[::c['fit_every']], nproc=cfg['nproc'], outfile=pilot, verbose=False)
+        h.run(scans=h.present_scans()[::c['fit_every']], nproc=cfg['nproc'], outfile=pilot, verbose=False, lean=True)
+        log('harvest: pilot run %.0f s' % (time.time() - t0))
+        t1 = time.time()
         pars = P.get_parameters() if hasattr(P, 'get_parameters') else P
         box, fit = harvester.fit_shoebox_model(pilot, pars, model=box, omega_step=h.omega_step())
         box.nsigma = nsigma
         os.remove(pilot)
+        log('harvest: ShoeboxModel fit %.0f s' % (time.time() - t1))
         log('harvest: ShoeboxModel fitted to every %d-th scan (%.0f s): %s' % (c['fit_every'], time.time() - t0, fit))
-        h = harvester.Harvester(ds, grains, P, ds_max=c['ds_max'], radius=np.array(radius),
-                                datapath=raw_data(cfg, ds), reader=c['reader'], box=box)
-        h.predict()
+        t1 = time.time()
+        h.resize_boxes(box)         # the prediction does not depend on the box
+        log('harvest: resize boxes %.0f s' % (time.time() - t1))
     log('harvest: %d grains, %d reflections, %s' % (len(grains), len(h.spots['h']), box))
     t0 = time.time()
     part = fname + '.part'          # renamed when complete: an interrupted run leaves no harvest to reuse
@@ -320,16 +330,21 @@ def step_duplicates(cfg):
     from ImageD11 import sym_u
     c = cfg['duplicates']
     fn = first_harvest(cfg)
+    t0 = time.time()
     h = harvester_from_file(cfg, fn)
     with h5py.File(fn, 'r') as f:
         m = dict((k, f['merged'][k][()]) for k in ('I', 'sigI', 's', 'f', 'omega'))
+    log('duplicates: load %.0f s' % (time.time() - t0))
     t0 = time.time()
     M = h.pair_overlaps()
+    log('duplicates: pair_overlaps %.0f s' % (time.time() - t0))
+    t1 = time.time()
     groups, pairs = harvester.duplicate_groups(h.spots, m, [g.ubi for g in h.grains],
                                                sym_u.getgroup(c['symmetry'])().group, h.omega_step(),
                                                max_angle=c['max_angle'], min_shared=c['min_shared'],
                                                in_box=c['in_box'], to_partner=c['to_partner'], min_snr=c['min_snr'],
                                                pair_overlaps=M)
+    log('duplicates: duplicate_groups %.0f s' % (time.time() - t1))
     gid = h.gid
     res = dict(groups=[[int(gid[x]) for x in g] for g in groups],
                pairs=[dict(gid_i=int(gid[i]), gid_j=int(gid[j]), misorientation=a, in_box=b, to_partner=t)
@@ -400,6 +415,7 @@ def step_sample(cfg):
     ny = len(ds.ybincens)
     om = np.asarray(ds.omega, float)
     edges = np.arange(np.floor(om.min()), np.ceil(om.max()) + c['omega_bin'], c['omega_bin'])
+    t0 = time.time()
     with h5py.File(out(cfg, 'pass1.h5'), 'r') as f:
         omega = f['spots/omega'][()]
         ps = f['per_scan']
@@ -408,9 +424,12 @@ def step_sample(cfg):
         for a in range(0, n, chunk):
             sino += absorption.sinogram(omega, ps['spot'][a:a + chunk], ps['scan'][a:a + chunk],
                                         ps['box'][a:a + chunk] - ps['bg'][a:a + chunk], edges, ny)
+    log('sample: sinogram %.0f s' % (time.time() - t0))
+    t0 = time.time()
     nb = len(recon_bins(ds.ybincens, ds.ymin, ds.ystep, ds.y0)[1])
     rho, mask = absorption.sample_shape(sino, 0.5 * (edges[1:] + edges[:-1]), ds.y0, ds.ymin, ds.ystep, (nb, nb),
                                         niter=c['niter'], threshold=c['threshold'])
+    log('sample: sample_shape (MLEM) %.0f s' % (time.time() - t0))
     with h5py.File(out(cfg, 'sample.h5'), 'w') as o:
         o.create_dataset('density', data=rho.astype(np.float32), compression='gzip')
         o.create_dataset('mask', data=mask, compression='gzip')
@@ -424,6 +443,7 @@ def step_flags(cfg):
     from ImageD11.sinograms import harvester
     c = cfg['flags']
     fn = out(cfg, 'pass1.h5')
+    t0 = time.time()
     h = harvester_from_file(cfg, fn)
     # the box model of the first harvest gives the expected spot widths of the sources
     with h5py.File(first_harvest(cfg), 'r') as f0, h5py.File(fn, 'r') as f:
@@ -444,9 +464,11 @@ def step_flags(cfg):
     # union boxes: their peaks are spread over the whole box
     for i, hk in enumerate(('hs', 'hf', 'ho')):
         sig[i] = np.where(merged_grain, np.maximum(sig[i], (sp[hk] - 1) / 3.0), sig[i])
+    log('flags: load and sigmas %.0f s' % (time.time() - t0))
     t0 = time.time()
     d = h.deoverlap(I, sigI, sigmas=sig, method=c['deoverlap'], verbose=True, **c['deoverlap_args'])
-    log('deoverlap %.0f s' % (time.time() - t0))
+    log('deoverlap %.0f s (overlap fractions and solve; see above)' % (time.time() - t0))
+    t0 = time.time()
     flag = d['contamination'] > np.maximum(c['contam_frac'] * np.maximum(I, 0), c['contam_nsig'] * sigI)
     g = sp['grain']
     with h5py.File(out(cfg, 'flags.h5'), 'w') as o:
@@ -455,20 +477,26 @@ def step_flags(cfg):
         o.attrs['rule'] = "contaminated = de-overlapped contamination > max(%g I, %g sigI)" % (
             c['contam_frac'], c['contam_nsig'])
     stamp(out(cfg, 'flags.h5'), cfg)
+    log('flags: write flags.h5 %.0f s' % (time.time() - t0))
+    t0 = time.time()
     sigf = I > 3 * sigI
+    ng = len(h.grains)
+    n_sig = np.bincount(g[sigf], minlength=ng)
+    n_cl = np.bincount(g[sigf & ~flag], minlength=ng)
+    n_fl = np.bincount(g[sigf & flag], minlength=ng)
     rows = []
-    for k in range(len(h.grains)):
-        m = (g == k) & sigf
-        n_clean = int((m & ~flag).sum())
-        drop = n_clean < c['min_clean'] or n_clean < c['min_clean_frac'] * m.sum()
-        rows.append(dict(gid=int(h.gid[k]), members=' '.join(members[k]), n_significant=int(m.sum()),
-                         n_clean=n_clean, frac_contaminated=float(flag[m].mean()) if m.any() else np.nan,
+    for k in range(ng):
+        n_clean = int(n_cl[k])
+        drop = n_clean < c['min_clean'] or n_clean < c['min_clean_frac'] * n_sig[k]
+        rows.append(dict(gid=int(h.gid[k]), members=' '.join(members[k]), n_significant=int(n_sig[k]),
+                         n_clean=n_clean, frac_contaminated=float(n_fl[k] / n_sig[k]) if n_sig[k] else np.nan,
                          refine=not drop))
     with open(out(cfg, 'grains.csv'), 'w') as fh:
         w = csv.DictWriter(fh, fieldnames=['gid', 'members', 'n_significant', 'n_clean', 'frac_contaminated',
                                            'refine'])
         w.writeheader()
         w.writerows(rows)
+    log('flags: grain table %.0f s' % (time.time() - t0))
     log('flags: %.1f%% of significant reflections contaminated; %d of %d grains dropped' % (
         100 * flag[sigf].mean(), sum(not r['refine'] for r in rows), len(rows)))
 
@@ -497,16 +525,26 @@ def step_learn(cfg):
 
 def step_pass2(cfg):
     import ImageD11.grain
+    t0 = time.time()
     with h5py.File(out(cfg, 'learned.h5'), 'r') as w, h5py.File(out(cfg, 'pass1.h5'), 'r') as f:
         weights = (w['data'][()].astype(float), w['offset'][()])
         sp = dict((c, f['spots'][c][()]) for c in COLS)
         gid, members = f['gid'][()], [x.split() for x in f['members'][()].astype(str)]
         radius = f['radius'][()]
         grains = [ImageD11.grain.grain(u, translation=t) for u, t in zip(f['ubi'][()], f['translation'][()])]
+    log('pass2: load %.0f s' % (time.time() - t0))
     harvest_with(cfg, sp, grains, radius, gid, members, out(cfg, 'pass2.h5'), weights=weights)
 
 
 _G = {}
+
+
+def _one_thread():
+    """pool initializer: the workers are the parallelism; numba parallel kernels (absorption.path_lengths) run
+    on one thread in each, not nproc threads each"""
+    import numba
+    if hasattr(numba, 'set_num_threads'):       # numba >= 0.49
+        numba.set_num_threads(1)
 
 
 def _grain(k):
@@ -625,22 +663,27 @@ def step_grains(cfg):
     log('grains: loaded in %.0f s' % (time.time() - t0))
     # fork: the workers share _G (the default start method may be spawn; python 2 has no get_context and forks)
     mp = multiprocessing.get_context('fork') if hasattr(multiprocessing, 'get_context') else multiprocessing
-    pool = mp.Pool(cfg['nproc'])
+    pool = mp.Pool(cfg['nproc'], _one_thread)
+    tw = 0.0
+    t1 = time.time()
     try:
         with h5py.File(out(cfg, 'grains.h5'), 'w') as fo, h5py.File(out(cfg, 'shapes.h5'), 'w') as fs:
             for n, (gid, grp, rho, nrows, nout) in enumerate(pool.imap_unordered(_grain, range(len(_G['gid'])))):
+                tc = time.time()
                 g = fo.create_group(str(gid))
                 for x, v in grp.items():
                     g.create_dataset(x, data=v, compression='gzip' if np.ndim(v) == 2 else None)
                 gs = fs.create_group(str(gid))
                 gs.create_dataset('recon', data=rho, compression='gzip')
                 gs.attrs['nrows'], gs.attrs['n_outliers'] = nrows, nout
+                tw += time.time() - tc
                 if n % 50 == 0:
                     log('%d/%d grain %d: %d MLEM rows (%.0f s)' % (n + 1, len(_G['gid']), gid, nrows,
                                                                     time.time() - t0))
     finally:
         pool.close()
         pool.join()
+    log('grains: per-grain loop %.0f s, of which writing %.0f s' % (time.time() - t1, tw))
     with h5py.File(out(cfg, 'grains.h5'), 'a') as fo:
         fo.attrs['absorption_mu_per_dty_unit'] = _G['mu']
     stamp(out(cfg, 'grains.h5'), cfg)
