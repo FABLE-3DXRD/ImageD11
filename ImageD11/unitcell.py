@@ -206,15 +206,35 @@ class Phases(AnalysisSchema):
             # set the name of the unitcell from the phase name
             self.unitcells[phase_name].name = phase_name
 
+# R space groups can be on hexagonal (standard) or rhombohedral axes
+RHOMBOHEDRAL_SPACEGROUPS = (146, 148, 155, 160, 161, 166, 167)
+# relative change of the metric tensor accepted as symmetric
+METRIC_TOL = 1e-5
+
+
+def laue_misfit(g, spacegroup, cell_choice="standard"):
+    """
+    Largest change of the real space metric tensor g under the Laue class
+    rotations of spacegroup, relative to g. Zero when the cell has the symmetry.
+    """
+    from ImageD11 import sym_u
+    ops = sym_u.laue_rotations(spacegroup, cell_choice).group
+    return max(np.abs(np.dot(np.dot(o, g), o.T) - g).max() for o in ops) / np.abs(g).max()
+
+
 class unitcell:
     # Unit cell stuff
     # Generate a list of peaks from a unit cell
-    def __init__(self, lattice_parameters, symmetry="P", verbose=0, name=None):
+    def __init__(self, lattice_parameters, symmetry="P", verbose=0, name=None, sgname=None):
         """
         Unit cell class
         supply a list (tuple etc) of a,b,c,alpha,beta,gamma
         optionally a lattice symmetry, one of "P","A","B","C","I","F","R"
         or : a space group number (integer)
+        optionally sgname : an xfab space group name (cell_sg in a .par file)
+          e.g. "Fm-3m" or "R-3mr" (rhombohedral axes). It overrides symmetry
+          for the space group and the hkls.
+        With a space group, a warning is logged if the cell does not have its symmetry.
         """
         self.lattice_parameters = np.array(lattice_parameters)
         if self.lattice_parameters.shape[0] != 6:
@@ -299,7 +319,41 @@ class unitcell:
         
         # orix stuff
         self._orix_phase = None
-    
+
+        self.sgname = sgname
+        self.cell_choice = "standard"
+        if sgname is not None:
+            self._set_sgname(sgname)
+        elif isinstance(self.symmetry, int):
+            if (self.spacegroup in RHOMBOHEDRAL_SPACEGROUPS and
+                    laue_misfit(self.g, self.spacegroup) > METRIC_TOL and
+                    laue_misfit(self.g, self.spacegroup, "rhombohedral") <= METRIC_TOL):
+                self.cell_choice = "rhombohedral"
+        if hasattr(self, "spacegroup"):
+            misfit = laue_misfit(self.g, self.spacegroup, self.cell_choice)
+            if misfit > METRIC_TOL:
+                logging.warning("Unit cell %s does not have the symmetry of space group %s (%s axes): "
+                                "the metric changes by %.2g under its rotations. Check the lattice "
+                                "parameters, or the setting (monoclinic: unique axis b)." % (
+                                    str(self.lattice_parameters), str(self.spacegroup),
+                                    self.cell_choice, misfit))
+
+    def _set_sgname(self, sgname):
+        """ Space group from an xfab name, checked against self.symmetry """
+        from xfab import sg
+        spg = sg.sg(sgname=sgname)
+        self.cell_choice = spg.cell_choice
+        if isinstance(self.symmetry, int):
+            if self.symmetry != spg.no:
+                logging.warning("Space group %d does not match %s (number %d): using %s" % (
+                    self.symmetry, sgname, spg.no, sgname))
+        else:
+            centring = "P" if spg.cell_choice == "rhombohedral" else spg.name[0]
+            if self.symmetry != centring:
+                logging.warning("Lattice %s does not match %s (lattice %s): using %s" % (
+                    self.symmetry, sgname, centring, sgname))
+        self.spacegroup = spg.no
+
     def __repr__(self):
         if (not hasattr(self, 'name')) or (self.name is None):
             return "Unitcell" + " | " + str(self.lattice_parameters) + " | " + str(self.symmetry)
@@ -463,10 +517,13 @@ class unitcell:
             sgnum = self.symmetry
         else:
             sgnum = None
+        # a name carries its own axes (e.g. 'R-3mr'), a number uses those found for the cell
+        cell_choice = self.cell_choice if spg is None else "standard"
         raw_peaks = tools.genhkl_all(self.lattice_parameters,
                                      0, stl_max,
                                      sgname=spg,
                                      sgno=sgnum,
+                                     cell_choice=cell_choice,
                                      output_stl=True)
         peaks = []
         for i in range(len(raw_peaks)):
@@ -488,6 +545,8 @@ class unitcell:
         """
         if dsmax == self.limit and self.peaks is not None:
             return self.peaks
+        if self.sgname is not None:
+            return self.gethkls_xfab(dsmax, spg=self.sgname)
         if isinstance(self.symmetry, int):
             return self.gethkls_xfab(dsmax, spg=None)
         h = k = 0
@@ -764,7 +823,9 @@ class unitcell:
                 pars_dict[parname] = self.lattice_parameters[inc]
             else:
                 pars_dict[parname] = self.symmetry
-        
+        if self.sgname is not None:
+            pars_dict['cell_sg'] = self.sgname
+
         if hasattr(self, 'name') and self.name is not None:
             pars_dict['phase_name'] = self.name
         return pars_dict
@@ -896,8 +957,13 @@ def ubi_equiv(ubilist, ublist, tol=1e-8):
 
 def unitcell_from_parameters(pars):
     parnames = "_a _b _c alpha beta gamma".split()
+    try:
+        sgname = pars.get("cell_sg")  # optional
+    except KeyError:
+        sgname = None
     cell = unitcell([pars.get("cell_%s" % (s)) for s in parnames],
-                    pars.get("cell_lattice_[P,A,B,C,I,F,R]"))
+                    pars.get("cell_lattice_[P,A,B,C,I,F,R]"),
+                    sgname=sgname)
 
     return cell
 

@@ -6,7 +6,7 @@
 #
 bslz4-to-sparse==0.0.15
     # via ImageD11 (setup.py)
-certifi==2024.8.30
+certifi==2026.10.18
     # via requests
 charset-normalizer==3.4.0
     # via requests
