@@ -248,6 +248,15 @@ class refinegrains:
         Save the refined grains
 
         """
+        gl = self.update_columns(sort_npks)
+        grain.write_grain_file(filename, [g[0] for g in gl])
+
+    def update_columns(self, sort_npks=True):
+        """
+        Fill the per peak columns (gx, h, hr, tth_per_grain, ...) from the
+        refined grains and count their unique reflections (nuniq).
+        Returns [(grain, key), ...] in the order savegrains writes them.
+        """
         ks = list(self.grains.keys())
         # sort by number of peaks indexed to write out
         if sort_npks:
@@ -281,7 +290,7 @@ class refinegrains:
             uniq_list = [ (int(h),int(k),int(l),int(s)) for
                     (h,k,l),s in zip( hkl.T, sign_eta) ]
             g.nuniq = len( set(uniq_list ) )
-        grain.write_grain_file(filename, [g[0] for g in gl])
+        return gl
 
 
 
@@ -775,11 +784,18 @@ class refinegrains:
             start = time.time()
 
             # We have the labels set in self.scandata!!!
+            # peaks of each grain from one sort, not a pass over all peaks per grain
+            order = numpy.argsort(int_tmp, kind='stable')
+            sorted_labels = int_tmp[order]
             for g in self.grainnames:
                 gr = self.grains[ ( g, s) ]
 
-                ind = numpy.compress(int_tmp == g,
-                                     numpy.arange(nr) )
+                if isinstance(g, (int, numpy.integer)):
+                    ind = order[numpy.searchsorted(sorted_labels, g, 'left'):
+                                numpy.searchsorted(sorted_labels, g, 'right')]
+                else:
+                    ind = numpy.compress(int_tmp == g,
+                                         numpy.arange(nr) )
                 #print 'x',gr.x[:10]
                 #print 'ind',ind[:10]
                 gr.ind = ind # use this to push back h,k,l later
@@ -920,17 +936,18 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2, quiet = Fal
     """
     Add up the intensity in colfile for peaks given in indices
     """
+    # only the rows in indices are used: take them before any arithmetic
     if "sum_intensity" in colfile.titles:
-        raw_intensities = colfile.sum_intensity
+        raw_intensities = numpy.take(colfile.sum_intensity, indices)
     else:
         if ("Number_of_pixels" in colfile.titles) and \
            ("avg_intensity"    in colfile.titles):
-            raw_intensities = colfile.Number_of_pixels * colfile.avg_intensity
+            raw_intensities = numpy.take(colfile.Number_of_pixels, indices) * numpy.take(colfile.avg_intensity, indices)
         else:
             try:
-                raw_intensities = colfile.npixels * colfile.avg_intensity
+                raw_intensities = numpy.take(colfile.npixels, indices) * numpy.take(colfile.avg_intensity, indices)
             except:
-                raw_intensities = numpy.ones(colfile.nrows)
+                raw_intensities = numpy.ones(len(indices))
     # Lorentz factor requires eta per grain. This would be tedious to
     # compute, but should eventually be added
     if "Lorentz_per_grain" in colfile.titles:
@@ -947,7 +964,7 @@ def compute_total_intensity( colfile, indices, tth_range, ntrim = 2, quiet = Fal
         lor = numpy.ones( colfile.nrows, numpy.float32 )
 
     # risk divide by zero here...
-    intensities = numpy.take( raw_intensities * lor , indices )
+    intensities = raw_intensities * numpy.take( lor, indices )
     #print "Compute intensity",intensities,lor[indices]
     sigma_i = numpy.sum(intensities)
     if tth_range is not None:
