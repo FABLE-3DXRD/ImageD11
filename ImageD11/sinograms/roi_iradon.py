@@ -92,6 +92,24 @@ def _get_fourier_filter(size, filter_name):
     return fourier_filter[:, np.newaxis]
 
 
+@numba.njit(nogil=True, cache=True)
+def _backproject_linear(ypr, xpr, cos_t, sin_t, x0, proj, out):
+    """out[p] += sum_i np.interp(ypr[p]*cos_t[i] - xpr[p]*sin_t[i], x0[i] + arange(n),
+    proj[i], left=0, right=0)   i.e. linear interpolation on a unit-spaced grid"""
+    n = proj.shape[1]
+    for i in range(proj.shape[0]):
+        c = cos_t[i]
+        s = sin_t[i]
+        for p in range(out.shape[0]):
+            u = (ypr[p] * c - xpr[p] * s) - x0[i]
+            if u >= 0 and u <= n - 1:
+                j = int(u)
+                if j >= n - 1:
+                    out[p] += proj[i, n - 1]
+                else:
+                    out[p] += proj[i, j] + (u - j) * (proj[i, j + 1] - proj[i, j])
+
+
 # skimage.transform.iradon
 def iradon(radon_image,
            theta,
@@ -156,7 +174,29 @@ def iradon(radon_image,
     # interpolate data in parallel
     # if we are linear interpolating, np.interp is much faster
 
-    if interpolation == "linear":
+    if projection_shifts is None:
+        shift_per_proj = np.zeros(angles_count)
+    elif (projection_shifts == projection_shifts[:1]).all():
+        shift_per_proj = projection_shifts[0]
+    else:
+        shift_per_proj = None
+
+    if interpolation == "linear" and shift_per_proj is not None:
+        # each projection is sampled on a unit grid starting at x[0] + shift:
+        # fused numba loop, no temporaries, releases the GIL
+        xp_flat = xpr.ravel().astype(float)
+        yp_flat = ypr.ravel().astype(float)
+        cos_t = np.cos(rtheta)
+        sin_t = np.sin(rtheta)
+        x0 = x[0] + shift_per_proj
+        rf_t = np.ascontiguousarray(radon_filtered.T)
+
+        def run_interp(idx):
+            idx = np.asarray(idx, dtype=np.intp)
+            out = np.zeros(xp_flat.shape, float)
+            _backproject_linear(yp_flat, xp_flat, cos_t[idx], sin_t[idx], x0[idx], rf_t[idx], out)
+            return out.reshape(xpr.shape)
+    elif interpolation == "linear":
         def run_interp(idx):
             result = 0
             for i in idx:
