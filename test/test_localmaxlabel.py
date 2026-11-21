@@ -4,6 +4,8 @@ import numpy as np
 import timeit
 from ImageD11.cImageD11 import localmaxlabel, sparse_localmaxlabel
 import unittest, sys
+import scipy.ndimage
+import ImageD11.cImageD11 as cid
 
 timer = timeit.default_timer
 
@@ -320,6 +322,31 @@ class test_localmaxlabel( unittest.TestCase ):
         m = im > 0
         assert (las[m] == la[m]).all()
         
+class TestLocalmaxlabelThreads(unittest.TestCase):
+
+    @unittest.skipIf(cid.cores_available() < 16,
+                     "the race shows only with many threads (14/500 runs at 32, 0/500 at 4)")
+    def test_threads_match_one_thread(self):
+        # smoothed noise gives many basins with long uphill paths
+        rs = np.random.RandomState(0)
+        im = scipy.ndimage.gaussian_filter(rs.random_sample((2048, 2048)), 4).astype(np.float32)
+        im -= np.median(im)
+        im[im < 0] = 0
+        lab = np.empty(im.shape, np.int32)
+        wrk = np.empty(im.shape, np.int8)
+        cid.cimaged11_omp_set_num_threads(1)
+        n1 = cid.localmaxlabel(im, lab, wrk)
+        ref = lab.copy()
+        cid.cimaged11_omp_set_num_threads(min(32, cid.cores_available()))
+        try:
+            for _ in range(500):
+                lab[:] = rs.randint(1, 10 ** 6, lab.shape)  # stale labels
+                n = cid.localmaxlabel(im, lab, wrk)
+                self.assertEqual(n, n1)
+                self.assertTrue(np.array_equal(lab, ref))
+        finally:
+            cid.cimaged11_omp_set_num_threads(cid.cores_available())
+
 if __name__== "__main__":
     import sys
     if len(sys.argv)>1:

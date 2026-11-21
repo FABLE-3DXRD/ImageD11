@@ -11,6 +11,18 @@
  *  otherwise o[ l-1 ] give the offset
  */
 
+/* Threads read l[] of pixels that another thread is relabelling. A thread
+ * that reads l[q] == 0 then reads lout[q], so lout[q] must be written before
+ * l[q] is zeroed and the reader must see them in that order.
+ */
+#if defined(__GNUC__) || defined(__clang__)
+#define LOAD_ACQ(p) __atomic_load_n((p), __ATOMIC_ACQUIRE)
+#define STORE_REL(p, v) __atomic_store_n((p), (v), __ATOMIC_RELEASE)
+#else /* msvc: volatile accesses have acquire / release semantics on x86 */
+#define LOAD_ACQ(p) (*(volatile uint8_t *)(p))
+#define STORE_REL(p, v) (*(volatile uint8_t *)(p) = (v))
+#endif
+
 #define pick(A, B, I, J)                                                       \
     if ((A) > (B)) {                                                           \
         (B) = (A);                                                             \
@@ -100,6 +112,7 @@ int localmaxlabel(const float *restrict im, // input
                   int dim1) {
     // old msvc for python 2.7 requires ALL variables declared up here.
     int i, j, p, k, q, npk, t, nt, tid, lo, hi, npks;
+    uint8_t v;
     //   int noisy=0;
 #define noisy 0
     double tic, toc;
@@ -165,7 +178,7 @@ int localmaxlabel(const float *restrict im, // input
     // This is the same for all versions (optimised or not)
     //  ... perhaps re-write to be a manual loop and fill in
     //  ... the steps that are thread local
-#pragma omp parallel private(q, i, tid, nt, k, lo, hi)
+#pragma omp parallel private(q, i, tid, nt, k, lo, hi, v)
     {
 #ifdef _OPENMP
         tid = omp_get_thread_num();
@@ -177,28 +190,33 @@ int localmaxlabel(const float *restrict im, // input
         lo = dim0 * dim1 * tid / nt;
         hi = dim0 * dim1 * (tid + 1) / nt;
         for (i = lo; i < hi; i++) {
-            if (l[i] == 0)
+            v = LOAD_ACQ(&l[i]);
+            if (v == 0)
                 continue; // done
             // Now we need to walk to find a label
             k = 0;
-            q = i + o[l[i]];
-            while (l[q]) {
-                q = q + o[l[q]];
+            q = i + o[v];
+            v = LOAD_ACQ(&l[q]);
+            while (v) {
+                q = q + o[v];
+                v = LOAD_ACQ(&l[q]);
                 k++;
             } // Now q addresses a max or a correct label
             lout[i] = lout[q]; // take label from max
             if (k >
                 0) { // relabel the path taken while we know the top label value
-                q = i + o[l[i]];
-                while (l[q]) {
+                q = i + o[LOAD_ACQ(&l[i])];
+                v = LOAD_ACQ(&l[q]);
+                while (v) {
                     if ((q >= lo) && (q < hi)) {
-                        l[q] = 0;
-                        lout[q] = lout[i];
+                        lout[q] = lout[i]; // label first, then mark done
+                        STORE_REL(&l[q], 0);
                     }
-                    q = q + o[l[q]];
+                    q = q + o[v];
+                    v = LOAD_ACQ(&l[q]);
                 }
             }
-            l[i] = 0; // sharing problems??
+            STORE_REL(&l[i], 0);
         }
     }
     if (noisy) {
