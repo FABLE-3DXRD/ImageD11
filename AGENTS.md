@@ -122,3 +122,7 @@ Keep `.py` files ASCII (`->`, `--`, `deg`, `Angstrom`, `omega`, `sigma`); then n
   shape that does not fit. Say what is worth keeping and what specifically does not
   work. Disagree with evidence: a case where behaviour differs beats an opinion.
   Resolve issues in the design instead of recording them for later.
+
+## IPF colours
+
+See `ImageD11/rgb_colors/README.md`.
