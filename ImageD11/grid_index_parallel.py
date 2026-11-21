@@ -83,6 +83,24 @@ def domap(  pars,
     return gl
 
 
+def domap_robust( pars, colfile, grains, gridpars ):
+    """
+    domap, but a grain whose refinement fails (e.g. a left handed UBI from
+    a fit to too few peaks) is dropped instead of losing the whole batch
+    """
+    ss = sys.stdout
+    try:
+        return domap( pars, colfile, grains, gridpars )
+    except AssertionError:
+        sys.stdout = ss
+    kept = []
+    for g in grains:
+        try:
+            kept += domap( pars, colfile, [g], gridpars )
+        except AssertionError:
+            sys.stdout = ss
+    return kept
+
 
 def doindex( gve, x, y, z, w, gridpars):
     """
@@ -145,6 +163,8 @@ def test_many_points( args ):
     s += " %d to do"%(len(translations))
     s += "%s %s"%(colfile, parameters)
     print(s)
+    # set here: workers started from a fork server inherit its openmp threads
+    cImageD11.cimaged11_omp_set_num_threads( int( gridpars.get('NTHREAD', 1) ) )
     mytransformer = transformer.transformer()
     mytransformer.loadfiltered( colfile )
     mytransformer.loadfileparameters(  parameters )
@@ -165,10 +185,10 @@ def test_many_points( args ):
         grains = doindex(gve, t_x,t_y,t_z, w, gridpars)
         ng = len(grains)
         if ng > 0:
-            grains = domap( mytransformer.parameterobj ,
-                            mytransformer.colfile ,
-                            grains,
-                            gridpars)
+            grains = domap_robust( mytransformer.parameterobj ,
+                                   mytransformer.colfile ,
+                                   grains,
+                                   gridpars)
             nk = len(grains)
             if len(grains) > 0:
                 test_many_points.q.put( grains, False ) # do not wait
@@ -286,6 +306,7 @@ def grid_index_parallel( fltfile, parfile, tmp, gridpars, translations ):
     """
     gridpars = initgrid( fltfile, parfile, tmp, gridpars )
     print( "Done init" )
+    nthreads_before = cImageD11.cimaged11_omp_get_max_threads()
     if 'NPROC' not in gridpars or gridpars['NPROC'] is None:
         NPR = max( cImageD11.cores_available() - 1, 1 )
         cImageD11.cimaged11_omp_set_num_threads(1)
@@ -325,10 +346,18 @@ def grid_index_parallel( fltfile, parfile, tmp, gridpars, translations ):
                 break
         except KeyboardInterrupt:
             break
+    # drain: a worker cannot exit until everything it put on the queue is read,
+    # so p.join() hangs if results are left behind
+    while True:
+        try:
+            ul.add( q.get(True, 1) )
+        except Queue.Empty:
+            break
     # write here to be on the safe side .... 
     grain.write_grain_file( gridpars['output_filename'], ul.uniqgrains )
     p.close()
     p.join()
+    cImageD11.cimaged11_omp_set_num_threads( nthreads_before )
 
 
 if __name__=="__main__":
