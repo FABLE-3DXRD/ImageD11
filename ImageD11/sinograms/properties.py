@@ -389,14 +389,20 @@ class pks_table:
         ipk = np.empty(npk.shape[0] + 1, int)
         ipk[0] = 0
         ipk[1:] = np.cumsum(npk[:, 0])
-        self.ipk = self.share("ipk", ipk)
         # pointers to r/c positions
         rpk = np.empty(npk.shape[0] + 1, int)
         rpk[0] = 0
         rpk[1:] = np.cumsum(npk[:, 1] + npk[:, 2])
-        self.rpk = self.share("rpk", rpk)
-        self.pk_props = self.share("pk_props", shape=(5, s[0]), dtype=np.int64)
-        self.rc = self.share("rc", shape=(3, s[1] + s[2]), dtype=np.int64)
+        if self.use_shm:
+            self.ipk = self.share("ipk", ipk)
+            self.rpk = self.share("rpk", rpk)
+            self.pk_props = self.share("pk_props", shape=(5, s[0]), dtype=np.int64)
+            self.rc = self.share("rc", shape=(3, s[1] + s[2]), dtype=np.int64)
+        else:
+            self.ipk = ipk
+            self.rpk = rpk
+            self.pk_props = np.zeros((5, s[0]), np.int64)
+            self.rc = np.zeros((3, s[1] + s[2]), np.int64)
 
     def export(self):
         return {name: self.shared[name].export() for name in self.shared}
@@ -841,8 +847,8 @@ def process(qin, qshm, qout, hname, dsfilename, options):
     """
     Worker process.
         qin : gives a block of scans from qin to label (start, end)
-        qshm : gives us shared memory to store/return results
-        qout : numbers of overlaps
+        qshm : gives us the (ipk, rpk) pointers into the parent's table
+        qout : numbers of overlaps, then (row, pk_props, rc) for each row
         hname = sparse pixels
         dsfilename = load omega
         options (passed through)
@@ -873,23 +879,17 @@ def process(qin, qshm, qout, hname, dsfilename, options):
         # number of pair overlaps required for the big matrix
         qout.put((i, len(mypks[i][0]), n1, n2))
         prev = scan
-    # Now we are waiting for the shared memory to save the results
-    shm = qshm.get()
-    pkst = pks_table.fromSHM(shm)
-    ip = pkst.ipk
-    rc = pkst.rc
-    # For each row, save our local results
+    # Now we are waiting for the parent to allocate the table
+    ip, rpk = qshm.get()
+    # For each row, send our local results back to the parent
     for i in range(start, end + 1):
         if (i == start) and (i > 0):
             # will be done by the previous worker
             continue
-        # now copy our results to shared memory. First the peaks:
-        pkst.pk_props[:, ip[i] : ip[i + 1]] = mypks[i]
-        #
-        # find the unique starting id for each frame:
-        # Where to store these in the shared memory
-        s = ipstart = pkst.rpk[i]
-        ipend = pkst.rpk[i + 1]
+        # this row's block of the rc array, indexed from 0
+        s = ipstart = 0
+        ipend = rpk[i + 1] - rpk[i]
+        rc = np.empty((3, ipend), np.int64)
         #
         if 0:  # debugging
             n1 = sum(pii[i][k][0] for k in pii[i])
@@ -915,9 +915,8 @@ def process(qin, qshm, qout, hname, dsfilename, options):
             rc[1, s:e] = ip[row2] + pkid[row2][frame2] + ijn[:, 1] - 1  # row
             rc[2, s:e] = ijn[:, 2]  # num pixels
             s = e
-        if i == 0:
-            continue  # no pairs to previous row exit
-        for (row1, frame1, row2, frame2), (npairs, ijn) in pij[i].items():
+        # row 0 has no pairs to a previous row
+        for (row1, frame1, row2, frame2), (npairs, ijn) in pij.get(i, {}).items():
             if npairs == 0:
                 continue
             assert (row1 == i) and (row2 == i - 1)
@@ -927,6 +926,11 @@ def process(qin, qshm, qout, hname, dsfilename, options):
             rc[1, s:e] = ip[row2] + pkid[row2][frame2] + ijn[:, 1] - 1  # row
             rc[2, s:e] = ijn[:, 2]  # num pixels
             s = e
+        assert s == ipend
+        qout.put((i, mypks.pop(i), rc))
+        del rc
+        pii.pop(i)
+        pij.pop(i, None)
     qout.put(start)
 
 
@@ -956,17 +960,23 @@ def goforit(ds, sparsename, options):
         ks, P = compute_storage(out)
         assert len(ks) == len(ds.scans)
         mem = pks_table(P)
-        shm = mem.export()
-        # workers fill the shared memory
+        # workers send their rows back, we copy them into the table
         for i in range(options["nproc"]):
-            qshm.put(shm)
+            qshm.put((mem.ipk, mem.rpk))
         dones = set()
-        for i in tqdm.tqdm(range(options["nproc"])):
-            # check done
-            f = qresult.get()
-            dones.add(f)
-            if len(dones) == options["nproc"]:
-                break
+        rows = set()
+        with tqdm.tqdm(total=len(ds.scans)) as pbar:
+            while len(dones) < options["nproc"]:
+                ans = qresult.get()
+                if not isinstance(ans, tuple):
+                    dones.add(ans)
+                    continue
+                i, pks, rc = ans
+                mem.pk_props[:, mem.ipk[i] : mem.ipk[i + 1]] = pks
+                mem.rc[:, mem.rpk[i] : mem.rpk[i + 1]] = rc
+                rows.add(i)
+                pbar.update(1)
+        assert len(rows) == len(ds.scans)
     return out, ks, P, mem
 
 
@@ -1045,7 +1055,7 @@ def main(dsfilename, sparsefile=None, pksfile=None, options={}):
         raise
     finally:
         if rmem is not None:
-            print("Trying to clean up shared memory")
+            print("Freeing peak table")
             del rmem
     return
 
@@ -1061,8 +1071,6 @@ if __name__ == "__main__":
 
     main(dsname, sparsename, pkname, options)
 
-    print("Your stuff left in shm:")
-    os.system("ls -l /dev/shm | grep %s" % (os.environ["USER"]))
     print("... all done")
 
 
