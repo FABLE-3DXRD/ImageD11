@@ -100,14 +100,22 @@ def cores_available():
     First choice = os.sched_getaffinity
     Second choice = os.cpu_count (may be high)
     Third choice = os.environ['NUMBER_OF_PROCESSORS'] (windows+old)
+    Fourth choice = multiprocessing.cpu_count (python 2 on linux/mac)
     Guess at 1 when os.cpu_count someone returns None or 0
     """
+    ncpu = None
     if hasattr(os, "sched_getaffinity"):
         ncpu = len(os.sched_getaffinity(os.getpid()))
     elif hasattr(os, "cpu_count"):
         ncpu = os.cpu_count()
     elif 'NUMBER_OF_PROCESSORS' in os.environ:
         ncpu = int(os.environ['NUMBER_OF_PROCESSORS'])
+    else:
+        import multiprocessing
+        try:
+            ncpu = multiprocessing.cpu_count()
+        except NotImplementedError:
+            pass
     if ncpu is None or ncpu < 1:
         return 1
     else:
