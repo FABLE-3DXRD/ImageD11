@@ -203,7 +203,15 @@ def quat2euler(q):
 
 
 def euler2quat(e):
-    #euler angle conventions are taken from EMSoft
+    """Convert Bunge ZXZ Euler angles to an active scalar-first quaternion.
+    Args:
+        e: Euler triplet (phi1, Phi, phi2) in radians, as in euler2u.
+    Returns:
+        q: Unit quaternion (w, x, y, z) for crystal-to-sample rotation.
+            quat2u(q) equals euler2u(e), not its transpose.
+    Notes:
+        Euler angle conventions are taken from EMSoft.
+    """
     ee = np.array(e) / 2
     cphi = np.cos(ee[1])
     sphi = np.sin(ee[1])
@@ -212,7 +220,7 @@ def euler2quat(e):
     cp = np.cos(ee[0] + ee[2])
     sp = np.sin(ee[0] + ee[2])
 
-    res = np.array([cphi * cp, -sphi * cm, -sphi * sm, -cphi * sp])    
+    res = np.array([cphi * cp, sphi * cm, sphi * sm, cphi * sp])
 
     return flip_up(res)
 
