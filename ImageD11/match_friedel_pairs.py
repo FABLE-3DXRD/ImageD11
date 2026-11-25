@@ -233,7 +233,6 @@ def prepare_bash_script(dsfile, parfile, pairing_options_file,
  
     if id11_code_path is None:
         id11_code_path = os.path.dirname(os.path.dirname(os.path.abspath(ImageD11.__file__)))
-    this_script = os.path.join(id11_code_path, 'ImageD11', 'match_friedel_pairs.py')
 
     # build the python argument string -- omit optional args when None / empty
     py_args     = [
@@ -271,7 +270,7 @@ def prepare_bash_script(dsfile, parfile, pairing_options_file,
         'echo "------------------------------------------------------------"\n'
         '\n'
         '# -- run pipeline ---------------------------------------------\n'
-        'PYTHONPATH={code_path} python {script} \\\n'
+        'PYTHONPATH={code_path} python -m ImageD11.match_friedel_pairs \\\n'
         '    {py_args}\n'
         '\n'
         'echo "------------------------------------------------------------"\n'
@@ -285,7 +284,6 @@ def prepare_bash_script(dsfile, parfile, pairing_options_file,
         partition = opts.slurm_partition,
         sdir      = sdir,
         dsfile    = dsfile,
-        script    = this_script,
         code_path = id11_code_path,
         py_args   = py_args_str,
     )
