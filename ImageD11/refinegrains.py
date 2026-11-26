@@ -932,6 +932,46 @@ def polarization( tth, eta, eta0=0, factor=1.0 ):
     return P
 
 
+def best_twin_variant( ubi, gv, intensity, tth, eta, spacegroup, sf,
+                       cell_choice="standard" ):
+    """
+    Choose between the twin variants of a grain from its peak intensities.
+
+    The variants (sym_u.twin_variants) index the same peak positions, so only
+    intensities tell them apart. Each one is scored by the Pearson correlation of
+    the observed intensities, corrected by lf / polarization, with the structure
+    factors |F|^2 it predicts for the peaks.
+
+    ubi        : (3,3) orientation of the grain
+    gv         : (N,3) g-vectors of the peaks of this grain
+    intensity  : (N,) peak intensities (e.g. sum_intensity)
+    tth, eta   : (N,) peak angles in degrees
+    spacegroup : space group number (1-230)
+    sf         : structure factors with valid_mask(hkl) and sf_values(hkl), hkl (3,N),
+                 e.g. sinograms.sinogram.StructureFactorCorrection.from_cif(...).
+                 Reflections it does not tabulate are predicted as 0.
+    cell_choice: "standard" or "rhombohedral" (R groups on rhombohedral axes)
+
+    Returns (best_ubi, scores), scores holds one correlation per variant in the
+    order of sym_u.twin_variants (nan when it cannot be computed).
+    """
+    from ImageD11.sym_u import twin_variants
+    variants = twin_variants( ubi, spacegroup, cell_choice )
+    gv = numpy.asarray( gv, float )
+    observed = numpy.asarray( intensity, float ) * lf( tth, eta ) / polarization( tth, eta )
+    scores = numpy.full( len(variants), numpy.nan )
+    for i, variant in enumerate( variants ):
+        hkl = numpy.round( numpy.dot( variant, gv.T ) ).astype( int )
+        valid = sf.valid_mask( hkl )
+        predicted = numpy.zeros( hkl.shape[1] )
+        predicted[valid] = sf.sf_values( hkl[:, valid] )
+        if observed.std() > 0 and predicted.std() > 0:
+            scores[i] = numpy.corrcoef( observed, predicted )[0, 1]
+    if numpy.isnan( scores ).all():
+        return variants[0], scores
+    return variants[ int( numpy.nanargmax( scores ) ) ], scores
+
+
 def compute_total_intensity( colfile, indices, tth_range, ntrim = 2, quiet = False ):
     """
     Add up the intensity in colfile for peaks given in indices
