@@ -5,6 +5,8 @@
 #    ----------------------
 #    omega pairs : (h,k,l), -(h,k,l) reflexion 180 deg apart in omega:              g -> -g, eta -> 180 - eta
 #    eta pairs   : "entry" and "exit" (h,k,l),-(h,k,l) reflexions at omega +- theta:  g -> -g, eta -> 180 + eta
+#    horizontal pairs : the same (h,k,l) at its two omega solutions, left and right of the beam:
+#                       g -> g, eta -> -eta
 #
 # Works both for box-beam and scanning-3DXRD
 # Two modes of pairing: 
@@ -80,6 +82,7 @@ class PeakSubsets:
         - pairs of mirror dty scans
         - pairs of mirror omega-dty frames (omega-pairs)
         - pairs of mirror eta bins (eta, eta+180 deg) (eta-pairs)
+        - pairs of mirror eta bins (eta, -eta) (horizontal pairs)
     Columnfile is sorted, either in sinogram order (dty, omega) for omega-pairs or in eta order for eta-pairs 
     and subset indices are stored in lookup tables (LUT) for fast selection. 
     """
@@ -93,9 +96,11 @@ class PeakSubsets:
         self.scans_subsets = None
         self.frames_subsets = None
         self.eta_bins_subsets = None
+        self.minus_eta_bins_subsets = None
         self.valid_scans_subsets = None
         self.valid_frames_subsets = None
         self.valid_eta_bins_subsets = None
+        self.valid_minus_eta_bins_subsets = None
         
         self._get_y0(y0)
         self._set_aliases()
@@ -115,6 +120,7 @@ class PeakSubsets:
             self.get_scan_subsets()
             self.get_frames_subsets()
         self.get_eta_bins_subsets(n_eta_bins)
+        self.get_minus_eta_bins_subsets()
 
     def _reset_LUTs(self):
         for attr in list(self.__dict__.keys()):
@@ -258,6 +264,25 @@ class PeakSubsets:
         logger.info(
             "[get_eta_bins_subsets] %d pairs of eta bins ",
             len(pairs))
+
+    def get_minus_eta_bins_subsets(self):
+        """
+        Find mirror pairs of eta bins for horizontal pairs, using the bins
+        from get_eta_bins_subsets:
+            bin lo :  eta_lo < 0
+            bin hi :  -eta_lo
+
+        Sets self.minus_eta_bins_subsets: list of Pair namedtuples ('Pair', ['ei_hi', 'ei_lo', 'eta_hi', 'eta_lo'])
+        where ei_* are indices into self.ebincens. Uses the eta_bins_LUT.
+        """
+        ec = self.ebincens
+        n_eta = len(ec)
+        pairs = [_make_eta_pair(n_eta - 1 - ei_lo, ei_lo, ec)
+                 for ei_lo in range(n_eta // 2)]
+        self.minus_eta_bins_subsets = pairs
+        logger.info(
+            "[get_minus_eta_bins_subsets] %d pairs of eta bins ",
+            len(pairs))
     
 
     def sort_by_sinogram(self):
@@ -382,6 +407,7 @@ class PeakSubsets:
                 npeaks=int(cnt),
                 sumI=float(gs))
             for lo, cnt, gs in zip(first_idx, counts, group_sums)}
+        self.minus_eta_bins_LUT = self.eta_bins_LUT
         
         # 3. Statistics
         n_bins_total = len(ec)
@@ -400,7 +426,7 @@ class PeakSubsets:
 
         # which types of subsets: eta_bins / scans + frames. depends on sorting order
         cf = self.columnfile
-        subset_type_list = ['eta_bins'] if cf.sortedby == 'eta' else ['scans', 'frames']
+        subset_type_list = ['eta_bins', 'minus_eta_bins'] if cf.sortedby == 'eta' else ['scans', 'frames']
         
         for subset_type in subset_type_list:
             # Check if LUT is defined in PeakSubset
@@ -647,6 +673,10 @@ def _rle2(a, b):
 
 _shared_cf = None
 
+# pair type found by each chunking of match_friedel_pairs_by_chunks
+_CHUNK_PAIR_TYPE = {'scans': 'omega', 'frames': 'omega',
+                    'eta_bins': 'eta', 'minus_eta_bins': 'horizontal'}
+
 class FriedelPairIndexer:
     """
     Match Friedel reflection pairs in a columnfile
@@ -655,6 +685,8 @@ class FriedelPairIndexer:
     ----------------------
     omega pairs : (h,k,l), -(h,k,l) reflexion 180 deg apart in omega:              g -> -g, eta -> 180 - eta
     eta pairs   : "entry" and "exit" (h,k,l),-(h,k,l) reflexions at omega +- theta:  g -> -g, eta -> 180 + eta
+    horizontal pairs : the same (h,k,l) at its two omega solutions, left and right of the beam:
+                       g -> g, eta -> -eta
 
     Parameters 
     ----------
@@ -734,13 +766,13 @@ class FriedelPairIndexer:
         an iterative nearerst-neighbor search is performed to find the pairs
         within a certain distance defined by the tolerance thresholds. 
 
-        Works both for omega-pairs and eta-pairs.
+        Works for omega-pairs, eta-pairs and horizontal pairs.
         WARNING: do not use on large (>10M peaks) sanning-3DXRD peakfiles: very slow!
                  Use the chunk approach instead (self.match_omega_pairs_by_chunks)
         
         Parameters
         ----------
-        pair_type     : str; 'omega' or 'eta'
+        pair_type     : str; 'omega', 'eta' or 'horizontal'
         drop_unpaired : bool; If True non-paired peaks are filtered out from self.cf 
         timeout       : float; max execution time (s) before timeout for _run_pairing.
         filter_mode   : str; 'strict' or 'relaxed'
@@ -757,9 +789,9 @@ class FriedelPairIndexer:
         
         # -- 1. Initialization: sort and split
         self.reset_outputs()
-        self.cf.sortby(pair_type)
+        self.cf.sortby('omega' if pair_type == 'omega' else 'eta')
         
-        if pair_type == 'eta':
+        if pair_type in ('eta', 'horizontal'):
             idx1 = np.nonzero(self.cf.eta < 0)[0]
             idx2 = np.nonzero(self.cf.eta > 0)[0]
         else:
@@ -833,10 +865,11 @@ class FriedelPairIndexer:
 
         Parameters
         ----------
-        chunk_type    : str 'frames', 'scans', 'eta_bins' ( default: 'scans')
+        chunk_type    : str 'frames', 'scans', 'eta_bins', 'minus_eta_bins' ( default: 'scans')
                         For omega pairs, use 'frames' or 'scans' for friedel pair search at 
                         different levels of chunking granularity.
-                        For eta pairs, use 'eta_bins' 
+                        For eta pairs, use 'eta_bins'
+                        For horizontal pairs, use 'minus_eta_bins'
         n_eta_bins    : int, even nb. number of bins for eta chunks.  
         drop_unpaired : bool (default False)
         reset_psub    : bool (default False). reset self.Peaksubset if True. 
@@ -852,7 +885,7 @@ class FriedelPairIndexer:
         """
         global _shared_cf
 
-        pair_type = 'eta' if chunk_type == 'eta_bins' else 'omega'
+        pair_type = _CHUNK_PAIR_TYPE[chunk_type]
         self.logger.info('--- MATCH FRIEDEL PAIRS [%s pairs] ---', pair_type)
 
         # -- 1. Checks + init ---------------------------------------------------
@@ -1180,9 +1213,9 @@ class FriedelPairIndexer:
         """ Initialization and checks for match_friedel_pairs_by_chunks(): """
 
         # identify chunking scheme and pair_type
-        assert chunk_type in ['frames','scans', 'eta_bins'], "chunk_type must be 'frames', 'scans' or 'eta_bins' " 
+        assert chunk_type in _CHUNK_PAIR_TYPE, "chunk_type must be one of " + str(sorted(_CHUNK_PAIR_TYPE))
         self.logger.info('Chunk type for pairing: %s', chunk_type)
-        pair_type = 'eta' if chunk_type=='eta_bins' else 'omega'
+        pair_type = _CHUNK_PAIR_TYPE[chunk_type]
 
         # initialize peaksubset and sort accordingly with pair_type
         if self.PeakSubsets is None or reset:
@@ -1319,7 +1352,7 @@ class FriedelPairIndexer:
         Parameters
         ----------
         cf_target     : columnfile to write into (defaults to self.cf)
-        pair_type     : 'omega' or 'eta'
+        pair_type     : 'omega', 'eta' or 'horizontal'
         drop_broken   : bool -- if True, remove singleton pair_ids from cf
         drop_unpaired : bool -- if True, remove non-paired peaks from cf
         """
@@ -1457,8 +1490,8 @@ def _search_space(cf, idx, weights=None, flip=None):
               user-defined scaling factors for search dimensions
               > 1 increase importance, < 1 decrease it, ~0 mutes it
 
-    flip    : None | 'omega' | 'eta'.
-              Flip partner space for omega or eta-pairs search
+    flip    : None | 'omega' | 'eta' | 'horizontal'.
+              Flip partner space for omega, eta or horizontal pairs search
     Returns
     -------
     space   : (N, 5) search space rescaled according to input weights
@@ -1480,6 +1513,8 @@ def _search_space(cf, idx, weights=None, flip=None):
     elif flip == 'eta':
         gx, gy, gz = -gx, -gy, -gz
         eta = _wrap_eta(180.0 + eta)
+    elif flip == 'horizontal':
+        eta = _wrap_eta(-eta)
 
     space = np.column_stack([
         gx   * _w['gx'],
@@ -1571,21 +1606,25 @@ def _physical_pair_distance(cf, idx1, idx2, pair_type='omega'):
     Parameters
     ----------
     idx1 / idx2 : indices of paired subsets in cf
-    pair_type   : 'eta' or 'omega'
+    pair_type   : 'eta', 'omega' or 'horizontal'
 
     Returns
     -------
     d_gvec, d_eta, d_logI
     """
-    # g-vector distance :(hkl),-(hkl) pairs: g + -g ~ 0 
-    dgx = cf.gx[idx1] + cf.gx[idx2]
-    dgy = cf.gy[idx1] + cf.gy[idx2]
-    dgz = cf.gz[idx1] + cf.gz[idx2]
+    # g-vector distance :(hkl),-(hkl) pairs: g + -g ~ 0, horizontal: g - g ~ 0
+    s = -1 if pair_type == 'horizontal' else 1
+    dgx = cf.gx[idx1] + s * cf.gx[idx2]
+    dgy = cf.gy[idx1] + s * cf.gy[idx2]
+    dgz = cf.gz[idx1] + s * cf.gz[idx2]
     d_gvec = np.sqrt(dgx**2 + dgy**2 + dgz**2)
     # eta distance
     if pair_type == 'omega':
         diff = cf.eta[idx1] - (180-cf.eta[idx2])   # absolute difference without modulo 
         d_eta = np.abs( _wrap_eta(diff) )          # wrap to [-180,180)
+    elif pair_type == 'horizontal':
+        diff = cf.eta[idx1] + cf.eta[idx2]
+        d_eta = np.abs( _wrap_eta(diff) )
     else:
         diff = cf.eta[idx1] - (180+cf.eta[idx2])
         d_eta = np.abs( _wrap_eta(diff) )
@@ -1652,7 +1691,7 @@ def _run_pairing(cf, idx1, idx2,
     ----------
     cf          : ImageD11 columnfile (read-only)
     idx1, idx2  : int arrays -- indices into cf defining the two subsets
-    pair_type   : 'omega' or 'eta'
+    pair_type   : 'omega', 'eta' or 'horizontal'
     weights     : dict | None -- search-space dimension weights,
                   keys: 'gx', 'gy', 'gz', 'eta', 'I'
     tol_gv      : float -- g-vector tolerance (Angstrom^-1)
@@ -1904,7 +1943,7 @@ def plot_pair_distances(cf, pair_type='omega', bins=50, log_scale=False, **kwarg
     Parameters
     ----------
     cf        : ImageD11 columnfile. Must contain a '{pair_type}_pair_id' column.
-    pair_type : 'omega' or 'eta', used for column name lookup and title
+    pair_type : 'omega', 'eta' or 'horizontal', used for column name lookup and title
     bins      : number of histogram bins
     log_scale : bool, log y-axis
     """
