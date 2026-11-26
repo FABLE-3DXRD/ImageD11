@@ -972,6 +972,81 @@ def best_twin_variant( ubi, gv, intensity, tth, eta, spacegroup, sf,
     return variants[ int( numpy.nanargmax( scores ) ) ], scores
 
 
+def consistent_twin_variants( ubis, gvs, intensities, spacegroup, cell_choice="standard",
+                              niter=3, min_common=10 ):
+    """
+    Choose the twin variant of every grain so that all grains agree on their
+    intensities, without knowing the structure: an R-merge across grains.
+
+    The grain with the most peaks is the reference and keeps its own variant. Each
+    other grain takes the variant (sym_u.twin_variants) whose intensities, scaled to
+    the merged table, give the lowest R-merge = sum|I_merged - k I| / sum I_merged
+    over the unique reflections (Laue class and Friedel pairs) they share. The merged
+    table is then rebuilt from all grains and the choice repeated niter times.
+
+    The result is consistent, not absolute: without a structure the reference may
+    itself be the twin of the true orientation. best_twin_variant with structure
+    factors on the reference, or on the merged table, settles that.
+
+    ubis        : list of (3,3) orientations
+    gvs         : list of (N_i,3) g-vectors of the peaks of each grain
+    intensities : list of (N_i,) corrected intensities (e.g. sum_intensity * lf / polarization)
+    spacegroup  : space group number (1-230)
+    cell_choice : "standard" or "rhombohedral" (R groups on rhombohedral axes)
+    min_common  : fewest shared unique reflections to compute an R-merge
+
+    Returns (chosen ubis, variant index per grain, rmerge (ngrains, nvariants), nan where
+    it cannot be computed)
+    """
+    from ImageD11.sym_u import twin_operators, laue_rotations, find_uniq_hkls, hklmax
+    ops = twin_operators( spacegroup, cell_choice )
+    laue = laue_rotations( spacegroup, cell_choice )
+    ngrains, nvar = len( ubis ), len( ops )
+
+    def unique_reflections( ubi, gv, intensity ):
+        # mean intensity of each unique reflection (Laue class and Friedel pairs)
+        hkl = numpy.round( numpy.dot( ubi, numpy.asarray( gv, float ).T ) ).astype( int )
+        key = numpy.maximum( hklmax( find_uniq_hkls( hkl, laue ) ),
+                             hklmax( find_uniq_hkls( -hkl, laue ) ) )
+        keys, inv = numpy.unique( key, return_inverse=True )
+        mean = numpy.bincount( inv, weights=intensity ) / numpy.bincount( inv )
+        return keys, mean
+
+    # unique reflections of every grain under every variant
+    tables = [ [ unique_reflections( numpy.dot( op, ubi ), gv, numpy.asarray( I, float ) )
+                 for op in ops ] for ubi, gv, I in zip( ubis, gvs, intensities ) ]
+
+    def compare( keys, I, mkeys, mI ):
+        # scale k of I to the merged table and the R-merge over the common reflections
+        common, a, b = numpy.intersect1d( mkeys, keys, return_indices=True )
+        if len( common ) < min_common or not ( I[b] ** 2 ).sum() > 0:
+            return numpy.nan, numpy.nan
+        k = ( mI[a] * I[b] ).sum() / ( I[b] ** 2 ).sum()
+        return numpy.abs( mI[a] - k * I[b] ).sum() / numpy.abs( mI[a] ).sum(), k
+
+    ref = int( numpy.argmax( [ len( gv ) for gv in gvs ] ) )
+    choice = numpy.zeros( ngrains, int )
+    mkeys, mI = tables[ref][0]
+    rmerge = numpy.full( ( ngrains, nvar ), numpy.nan )
+    for _ in range( niter ):
+        scales = numpy.full( ngrains, numpy.nan )
+        for i in range( ngrains ):
+            for j in range( nvar ):
+                rmerge[i, j] = compare( tables[i][j][0], tables[i][j][1], mkeys, mI )[0]
+            if i != ref and not numpy.isnan( rmerge[i] ).all():
+                choice[i] = int( numpy.nanargmin( rmerge[i] ) )
+            scales[i] = compare( tables[i][choice[i]][0], tables[i][choice[i]][1], mkeys, mI )[1]
+        # merged table: mean of the scaled intensities of every grain that could be scaled
+        allkeys = numpy.concatenate( [ tables[i][choice[i]][0] for i in range( ngrains )
+                                       if numpy.isfinite( scales[i] ) ] )
+        allI = numpy.concatenate( [ scales[i] * tables[i][choice[i]][1] for i in range( ngrains )
+                                    if numpy.isfinite( scales[i] ) ] )
+        mkeys, inv = numpy.unique( allkeys, return_inverse=True )
+        mI = numpy.bincount( inv, weights=allI ) / numpy.bincount( inv )
+    chosen = [ numpy.dot( ops[c], ubi ) for c, ubi in zip( choice, ubis ) ]
+    return chosen, choice, rmerge
+
+
 def compute_total_intensity( colfile, indices, tth_range, ntrim = 2, quiet = False ):
     """
     Add up the intensity in colfile for peaks given in indices
