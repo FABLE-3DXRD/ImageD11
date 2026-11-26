@@ -62,6 +62,7 @@ import os
 import sys
 import time
 import multiprocessing
+import warnings
 
 import numpy as np
 try:
@@ -1257,6 +1258,8 @@ class Harvester(object):
                 mask = fabio.open(ds.maskfile).data != 0
             else:
                 mask = None
+                if 'eiger' in str(getattr(ds, 'limapath', '')).lower():
+                    warnings.warn('Eiger detector needs a maskfile that is missing: gaps and dead pixels are summed')
         self.mask = None if mask is None else np.asarray(mask).astype(bool)
         if e2dx is None and getattr(ds, 'e2dxfile', None):
             import fabio

@@ -380,5 +380,17 @@ class TestOmegaBins(unittest.TestCase):
             self.assertEqual(list(ptr[1:]), [expect, expect])
 
 
+class TestMaskWarning(unittest.TestCase):
+
+    def test_eiger_without_mask(self):
+        import warnings
+        ds = FakeDataset('none')
+        ds.limapath = '/1.1/measurement/eiger'
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            harvester.Harvester(ds, [], PARS, ds_max=0.5)
+        self.assertTrue(any('maskfile' in str(x.message) for x in w))
+
+
 if __name__ == '__main__':
     unittest.main()
