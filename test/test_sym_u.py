@@ -220,6 +220,14 @@ class test_twin_variants( unittest.TestCase ):
             self.assertEqual( len( ImageD11.sym_u.twin_variants( np.eye(3), no, choice ) ), n,
                               (no, choice) )
 
+    def test_quartz_flipmats(self):
+        # the hand-written flipmats for quartz in pf3dxrd: identity and the 2-fold along c
+        ops = ImageD11.sym_u.twin_operators( 154 )
+        laue = ImageD11.sym_u.laue_rotations( 154 )
+        self.assertEqual( len( ops ), 2 )
+        self.assertTrue( np.allclose( ops[0], np.eye(3) ) )
+        self.assertTrue( laue.isMember( np.dot( ops[1], np.linalg.inv( np.diag( [-1., -1., 1.] ) ) ) ) )
+
     def test_same_peaks_not_laue_equivalent(self):
         rng = np.random.RandomState( 42 )
         for no, choice, cell in all_settings():

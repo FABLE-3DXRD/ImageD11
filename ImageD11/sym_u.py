@@ -305,15 +305,15 @@ def lattice_group(spacegroup, cell_choice="standard"):
         key = _holohedry[spg.crystal_system]
     return generate_group(*laue_generators[key])
 
-def twin_variants(ubi, spacegroup, cell_choice="standard"):
+def twin_operators(spacegroup, cell_choice="standard"):
     """
-    Orientations that index the same peak positions as ubi but predict different
-    intensities: op.ubi for one op per coset of laue_rotations() in lattice_group().
-    The first one is ubi itself. When the Laue class is the lattice group (e.g. m-3m)
-    there is no ambiguity and the list is [ubi]. Otherwise only intensities can choose,
-    e.g. two variants for 4/m, m-3, 6/m or the Dauphine twin of quartz (-3m1).
+    One rotation per coset of laue_rotations() in lattice_group(), the identity first.
+    Applied as op.ubi, they give the orientations that index the same peak positions
+    but predict different intensities (the "flipmats" of a lattice-only indexing).
+    Only the identity when the Laue class is the lattice group (e.g. m-3m); two for
+    4/m, m-3, 6/m or the Dauphine twin of quartz (-3m1); four for -3 on hexagonal axes.
     cell_choice is "standard" or "rhombohedral" (R groups on rhombohedral axes)
-    Returns a list of ubi matrices
+    Returns a list of 3x3 matrices
     """
     laue = laue_rotations(spacegroup, cell_choice)
     lattice = lattice_group(spacegroup, cell_choice)
@@ -321,7 +321,15 @@ def twin_variants(ubi, spacegroup, cell_choice="standard"):
     for op in lattice.group:  # the identity comes first
         if not any(laue.isMember(np.dot(op, np.linalg.inv(o))) for o in ops):
             ops.append(op)
-    return [np.dot(op, ubi) for op in ops]
+    return ops
+
+def twin_variants(ubi, spacegroup, cell_choice="standard"):
+    """
+    The twin variants of ubi: op.ubi for each op of twin_operators(), ubi first.
+    cell_choice is "standard" or "rhombohedral" (R groups on rhombohedral axes)
+    Returns a list of ubi matrices
+    """
+    return [np.dot(op, ubi) for op in twin_operators(spacegroup, cell_choice)]
 
 def cartesian(grp, B):
     """
