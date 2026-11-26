@@ -1453,6 +1453,8 @@ def DS_KAM_and_GB(DS, kernel_size=5, kernel_cutoff=50, tol_dist=1.732, crystal_s
         raise ValueError("{} not supported".format(crystal_system))
 
     crystal_structure = Symmetry[crystal_system]
+    # Resolve the group once: the neighbour loop below runs per voxel pair.
+    symmetries = _disorientation_symmetries(crystal_structure, None, None, 'standard')
     if Umis_flag:
         try:
             from xfab.symmetry import Umis
@@ -1504,9 +1506,9 @@ def DS_KAM_and_GB(DS, kernel_size=5, kernel_cutoff=50, tol_dist=1.732, crystal_s
             if Umis_flag:
                 angle = Umis(center, neighbor, n_Umis)[:, 1].min()
             else:
-                angle_rad, _, _ = disorientation(np.asarray(center, dtype='float').T,
-                                             np.asarray(neighbor, dtype='float').T,
-                                             crystal_structure)
+                angle_rad, _, _ = _disorientation_pair(np.asarray(center, dtype='float').T,
+                                                       np.asarray(neighbor, dtype='float').T,
+                                                       symmetries)
                 angle = np.rad2deg(angle_rad)
             if min_angle <= angle <= max_angle:
                 # consider as intragranular voxel
@@ -1719,7 +1721,7 @@ class Symmetry(enum.Enum):
         else:
             return None
 
-    def symmetry_operators(self, use_miller_bravais=False):
+    def symmetry_operators(self, use_miller_bravais=False, spacegroup=None, lattice_parameters=None, cell_choice='standard'):
         """Define the equivalent crystal symmetries.
         Note that it takes the highest symmetry in each of the 7 crystal systems
         This may not be quite right if a specific point group with less symmetry is desired
@@ -1730,6 +1732,10 @@ class Symmetry(enum.Enum):
         :return array: A numpy array of shape (n, 3, 3) where n is the \
         number of symmetries of the given crystal structure.
         """
+        if spacegroup is not None:
+            if use_miller_bravais:
+                raise ValueError('Explicit space-group operators are returned in Cartesian coordinates only.')
+            return symmetry_operators_from_spacegroup(spacegroup, lattice_parameters, cell_choice)
         if self is Symmetry.cubic:
             sym = np.zeros((24, 3, 3), dtype=float)
             sym[0] = np.array([[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]])
@@ -2018,204 +2024,223 @@ class Symmetry(enum.Enum):
 
 # these functions are adapted from pymicro/crystal/microstructure.py
 # but every one has been rewritten to correct bugs and improve efficiency
-def disorientation_list(ori1_list, ori2_list, crystal_structure=Symmetry.triclinic):
-    """
-    Compute the misorientation for lists of crystal orientations.
-    
-    Arguments:
-    ori1_list: A list or array of 3x3 rotation matrices (shape: [N, 3, 3] or [3, 3])
-        describing the first set of orientations.
-    ori2_list: A list or array of 3x3 rotation matrices (shape: [N, 3, 3] or [3, 3])
-        describing the second set of orientations.
-    crystal_structure: An instance of the `Symmetry` class describing the crystal symmetry.
-    
+def symmetry_operators_from_spacegroup(spacegroup, lattice_parameters, cell_choice='standard', include_friedel=False):
+    """Build proper Cartesian rotations for the actual phase point group.
+    Args:
+        spacegroup: Integer International space-group number, 1 through 230.
+        lattice_parameters: Reference [a, b, c, alpha, beta, gamma], in
+            angstrom/degrees, using the same setting as the orientation B.
+        cell_choice: xfab setting, standard or rhombohedral.
+        include_friedel: Add inversion before selecting proper rotations,
+            giving the proper Laue group instead of the proper point group.
     Returns:
-    A list of numpy arrays:
-    - angles: Misorientation angles in radians (shape: [N]).
-    - axes: Misorientation axes in crystal coordinates (shape: [N, 3]).
-    - axes_xyz: Misorientation axes in sample coordinates (shape: [N, 3]).
+        symmetries: Array (n, 3, 3) in the ImageD11 B-compatible crystal frame.
+    Notes:
+        Uses existing xfab symmetry tables, not its 2*pi reciprocal basis.
+        Pass this array as crystal_structure to reuse it for many comparisons.
     """
-    # Ensure inputs are numpy arrays
-    ori1_list = np.asarray(ori1_list)
-    ori2_list = np.asarray(ori2_list)
-    symmetries = crystal_structure.symmetry_operators()  # Shape: [num_sym_ops, 3, 3]
-    if len(ori1_list.shape) == 2 and len(ori2_list.shape) == 2:
-        # both are 3*3 arrays
-        num_orientations = 1
-    elif len(ori1_list.shape) == 3 and len(ori2_list.shape)==2:
-        # ori1_list is N*3*3, but ori2_list is 3*3 array
-        num_orientations = len(ori1_list)
-        ori2_list = np.repeat(ori2_list[np.newaxis, :, :], num_orientations, axis=0)
-    elif len(ori1_list.shape) == 2 and len(ori2_list.shape)==3:
-        # ori1_list is 3*3, but ori2_list is N*3*3 array
-        num_orientations = len(ori2_list)
-        ori1_list = np.repeat(ori1_list[np.newaxis, :, :], num_orientations, axis=0)
-    elif len(ori1_list.shape) == 3 and len(ori2_list.shape)==3:
-        # both are N*3*3 arrays
-        num_orientations = len(ori1_list)
+    from xfab import sg
+    import numbers
+    if isinstance(spacegroup, (bool, np.bool_)) or not isinstance(spacegroup, numbers.Integral) or not 1 <= spacegroup <= 230:
+        raise ValueError('spacegroup must be an integer from 1 through 230.')
+    parameters = np.asarray(lattice_parameters, dtype=float)
+    if parameters.shape != (6,) or not np.isfinite(parameters).all():
+        raise ValueError('Supply six reference lattice_parameters for the selected space-group setting.')
+    if np.any(parameters[:3] <= 0) or np.any(parameters[3:] <= 0) or np.any(parameters[3:] >= 180):
+        raise ValueError('Cell lengths must be positive and angles must be between 0 and 180 degrees.')
+    if cell_choice not in ('standard', 'rhombohedral'):
+        raise ValueError('cell_choice must be standard or rhombohedral.')
+    if cell_choice == 'rhombohedral' and spacegroup not in (146, 148, 155, 160, 161, 166, 167):
+        raise ValueError('Rhombohedral axes require a rhombohedral space group.')
+    ca, cb, cg = np.cos(np.radians(parameters[3:]))
+    metric = np.array([[1, cg, cb], [cg, 1, ca], [cb, ca, 1]]) * np.outer(parameters[:3], parameters[:3])
+    if np.linalg.eigvalsh(metric).min() <= 1e-12 * np.max(np.diag(metric)):
+        raise ValueError('Cell parameters do not define a positive-volume lattice.')
+    B = np.linalg.cholesky(np.linalg.inv(metric)).T
+    A = np.linalg.inv(B).T
+    rotations = np.asarray(sg.sg(sgno=int(spacegroup), cell_choice=cell_choice).rot, dtype=float)
+    if include_friedel:
+        rotations = np.concatenate((rotations, -rotations))
+    # Deduplicate without np.unique(axis=...) to retain older NumPy support.
+    keys = sorted(set(tuple(rotation.ravel()) for rotation in rotations))
+    rotations = np.array(keys).reshape(-1, 3, 3)
+    for rotation in rotations:
+        if not np.allclose(np.dot(rotation.T, np.dot(metric, rotation)), metric, rtol=1e-7, atol=1e-7 * np.max(np.diag(metric))):
+            raise ValueError('Lattice parameters do not match the selected space-group setting.')
+    rotations = rotations[np.linalg.det(rotations) > 0]
+    symmetries = np.einsum('ij,njk,kl->nil', A, rotations, np.linalg.inv(A))
+    identity = np.argmin(np.sum((symmetries - np.eye(3)) ** 2, axis=(1, 2)))
+    symmetries[[0, identity]] = symmetries[[identity, 0]]
+    return symmetries
+
+
+def _disorientation_symmetries(crystal_structure, spacegroup, lattice_parameters, cell_choice):
+    """Resolve a system enum, explicit operator array or phase space group.
+    Args:
+        crystal_structure: Legacy Symmetry enum or Cartesian operator array.
+        spacegroup: Optional actual phase number, overriding the system enum.
+        lattice_parameters: Required reference cell when spacegroup is supplied.
+        cell_choice: Setting for the explicit space group.
+    Returns:
+        operators: Validated complete group of proper Cartesian rotations.
+    """
+    if spacegroup is not None:
+        operators = symmetry_operators_from_spacegroup(spacegroup, lattice_parameters, cell_choice)
+    elif isinstance(crystal_structure, Symmetry):
+        operators = crystal_structure.symmetry_operators()
     else:
-        print('Only supports 2 or 3 dimensional inputs.')
+        operators = np.asarray(crystal_structure, dtype=float)
+    if operators.ndim != 3 or operators.shape[1:] != (3, 3) or len(operators) == 0 or not np.isfinite(operators).all():
+        raise ValueError('crystal_structure must provide a nonempty (n, 3, 3) symmetry group.')
+    gram = np.einsum('nji,njk->nik', operators, operators)
+    if not np.allclose(gram, np.eye(3), atol=1e-6, rtol=0) or not np.allclose(np.linalg.det(operators), 1, atol=1e-6, rtol=0):
+        raise ValueError('Symmetry operators must be proper Cartesian rotations.')
+    return operators
 
-    assert len(ori1_list) == len(ori2_list), "ori1_list must have the same length as ori2_list"
 
-    # Initialize outputs
-    angles = []
-    axes = []
-    axes_xyz = []
+def _unit_axis(axis):
+    """Normalize a rotation axis and clear negative zeros.
+    Args:
+        axis: Rotation axis components, shape (3,).
+    Returns:
+        axis: Unit vector, or zeros when the input has zero length.
+    Notes:
+        The sign is retained: it carries the rotation sense, so flipping it
+        would return the inverse rotation. Consumers that only need a
+        direction must handle the antisymmetry themselves.
+    """
+    axis = np.asarray(axis, dtype=float)
+    length = np.linalg.norm(axis)
+    if length == 0:
+        return np.zeros(3)
+    return np.where(axis == 0, 0.0, axis / length)
 
-    # Iterate through all orientations
-    if num_orientations > 1:
-        for idx in range(num_orientations):
-            ori1 = ori1_list[idx]
-            ori2 = ori2_list[idx]
-            the_angle, the_axis, the_axis_xyz = disorientation(ori1, ori2, crystal_structure=crystal_structure)
-            angles.append(the_angle)
-            axes.append(the_axis)
-            axes_xyz.append(the_axis_xyz)
-    else:
-        ori1_list = np.squeeze(ori1_list)
-        ori2_list = np.squeeze(ori2_list)
-        the_angle, the_axis, the_axis_xyz = disorientation(ori1_list, ori2_list, crystal_structure=crystal_structure)
-        angles.append(the_angle)
-        axes.append(the_axis)
-        axes_xyz.append(the_axis_xyz)
 
+def _disorientation_pair(ori1, ori2, symmetries):
+    """Compare one pair using a prevalidated symmetry group.
+    Args:
+        ori1: First sample-to-crystal matrix (U1.T).
+        ori2: Second sample-to-crystal matrix (U2.T).
+        symmetries: Complete proper crystal symmetry group, shape (n, 3, 3).
+    Returns:
+        angle, axis, axis_xyz: Minimum angle in radians, axis in the first
+            crystal frame and in the sample frame.
+    Notes:
+        The angle is the physical quantity. Several symmetry operators can
+        reach the same minimum and each gives a different but equivalent
+        crystal axis. Ties return the lexicographically smallest of those
+        unit axes, so the result does not depend on the operator order. It is
+        still one representative, not a fundamental-zone reduction, and it is
+        not canonicalised in sign; swapping ori1 and ori2 reverses the axis.
+        axis_xyz is U1*axis and inherits the same choice.
+    """
+    ori1, ori2 = np.asarray(ori1, dtype=float), np.asarray(ori2, dtype=float)
+    for orientation in (ori1, ori2):
+        if orientation.shape != (3, 3) or not np.isfinite(orientation).all():
+            raise ValueError('Orientations must be finite 3 by 3 matrices.')
+        if not np.allclose(np.dot(orientation, orientation.T), np.eye(3), atol=1e-6, rtol=0) or np.linalg.det(orientation) <= 0:
+            raise ValueError('Orientations must be proper rotation matrices, not UB matrices.')
+    relative = np.dot(ori2, ori1.T)
+    deltas = np.einsum('nij,jk->nik', symmetries, relative)
+    # Group closure and cyclic trace invariance reduce the two-sided angle
+    # search to one group. This also removes the unsafe AB/BA axis indexing.
+    traces = np.trace(deltas, axis1=1, axis2=2)
+    best = int(np.argmax(traces))
+    angle = misorientation_angle_from_delta(deltas[best])
+    if angle <= 1e-14:
+        return 0.0, np.zeros(3), np.zeros(3)
+    tie_tolerance = max(1e-12, 2.0 * abs(np.sin(angle)) * 1e-12)
+    ties = np.flatnonzero(traces >= traces[best] - tie_tolerance)
+    axes = [_unit_axis(misorientation_axis_from_delta(deltas[index])) for index in ties]
+    axis = min(axes, key=tuple)
+    return angle, axis, np.dot(ori1.T, axis)
+
+
+def disorientation_list(ori1_list, ori2_list, crystal_structure=Symmetry.triclinic, spacegroup=None, lattice_parameters=None, cell_choice='standard'):
+    """Compare lists of sample-to-crystal matrices, retaining legacy outputs.
+    Args:
+        ori1_list: U1.T or an array (n, 3, 3) of transposed U matrices.
+        ori2_list: U2.T or an array (n, 3, 3); singleton lists broadcast.
+        crystal_structure: Legacy system Symmetry enum or a complete proper
+            Cartesian rotation group. System enums use the highest symmetry.
+        spacegroup: Optional actual phase number; overrides crystal_structure.
+        lattice_parameters: Reference cell in angstrom/degrees for spacegroup.
+        cell_choice: Standard or rhombohedral setting for spacegroup.
+    Returns:
+        angles, axes, axes_xyz: Lists of radian angles and axes in the first
+            crystal and sample frames. Empty inputs return three empty lists.
+    """
+    first, second = np.asarray(ori1_list, dtype=float), np.asarray(ori2_list, dtype=float)
+    if first.ndim == 2:
+        first = first[np.newaxis, :, :]
+    if second.ndim == 2:
+        second = second[np.newaxis, :, :]
+    if first.ndim != 3 or second.ndim != 3 or first.shape[1:] != (3, 3) or second.shape[1:] != (3, 3):
+        raise ValueError('Inputs must have shape (3, 3) or (n, 3, 3).')
+    if len(first) != len(second) and len(first) != 1 and len(second) != 1:
+        raise ValueError('Orientation lists must have matching or singleton lengths.')
+    count = min(len(first), len(second)) if len(first) == 0 or len(second) == 0 else max(len(first), len(second))
+    symmetries = _disorientation_symmetries(crystal_structure, spacegroup, lattice_parameters, cell_choice)
+    angles, axes, axes_xyz = [], [], []
+    for index in range(count):
+        result = _disorientation_pair(first[0 if len(first) == 1 else index], second[0 if len(second) == 1 else index], symmetries)
+        angles.append(result[0])
+        axes.append(result[1])
+        axes_xyz.append(result[2])
     return angles, axes, axes_xyz
 
 
-def disorientation(ori1, ori2, crystal_structure=Symmetry.triclinic):
+def disorientation(ori1, ori2, crystal_structure=Symmetry.triclinic, spacegroup=None, lattice_parameters=None, cell_choice='standard'):
+    """Compute same-phase disorientation, retaining the sample-to-crystal API.
+    Args:
+        ori1: First sample-to-crystal rotation, U1.T, shape (3, 3).
+        ori2: Second sample-to-crystal rotation, U2.T, shape (3, 3).
+        crystal_structure: Legacy system Symmetry enum or a complete group
+            of proper Cartesian operators in the crystal frame used by B.
+        spacegroup: Optional actual phase number; overrides crystal_structure.
+        lattice_parameters: Required reference cell when specifying spacegroup.
+        cell_choice: Standard or rhombohedral space-group setting.
+    Returns:
+        angle, axis, axis_xyz: Minimum angle in radians, axis in the first
+            crystal frame and in the sample frame. Identity has zero axes.
+    Notes:
+        Pass U.T, not U. Transposing inputs can change the reduced ANGLE as
+        well as the axes because crystal symmetry acts on a specific side.
+        Equivalent orientations return zero. The angle is the physical result
+        and does not depend on which symmetry operator reaches the minimum;
+        the axis does. Ties return the lexicographically smallest unit axis,
+        which is reproducible but is not a fundamental-zone reduction, and the
+        axis is not canonicalised in sign, so swapping the two orientations
+        reverses it. Crystal axes are expressed in the first orientation's
+        crystal frame and axis_xyz in the sample frame.
+        Crystal-system enums retain their legacy highest-symmetry meaning.
+        Supply the actual spacegroup and lattice_parameters for a lower point
+        group, or precompute symmetry_operators_from_spacegroup once and pass
+        that array as crystal_structure. Both orientations must share a phase.
     """
-    Compute the disorientation between two orientations using vectorized symmetry operations.
-    Note that ori1 and ori2 are matrices converting sample to grain, i.e. transpose of standard U matrix
-    If you input U matrices directly, it does not affect the output of misorientation angle, but it affects the misorientation axes
-    Therefore, it is recommend to input U1.T and U2.T
-
-    Arguments:
-    ori1: A 3x3 rotation matrix representing the first orientation.
-    ori2: A 3x3 rotation matrix representing the second orientation.
-    crystal_structure: A `Symmetry` class instance describing the crystal symmetry.
-    
-    Returns: Tuple (misorientation angle in radians, misorientation axis in crystal coordinates,
-              misorientation axis in sample coordinates).
-                  
-    Replace the function disorientation_deprecated, speed up by 10x faster
-    """
-    if np.allclose(ori1, ori2, rtol=1e-06, atol=1e-08):
-        the_angle = 0.0
-        the_axis = np.array([0.0, 0.0, 1.0])
-        the_axis_xyz = np.array([0.0, 0.0, 1.0])
-    else:
-        the_angle = np.pi
-        the_axis = np.array([0., 0., 1.])
-        the_axis_xyz = np.array([0., 0., 1.])
-
-        # Get symmetry operators as an array of shape (N, 3, 3)
-        symmetries = crystal_structure.symmetry_operators()  # Shape: [N, 3, 3]
-        num_sym_ops = symmetries.shape[0]
-
-        # Apply symmetries to ori1 and ori2
-        oj_list = np.einsum('nij,jk->nik', symmetries, ori1)
-        oi_list = np.einsum('nij,jk->nik', symmetries, ori2)
-
-        # Compute all combinations of symmetrized ori1 and ori2
-        delta_list_AB = np.einsum('aij,bkj->abik', oi_list, oj_list)
-        delta_list_BA = np.einsum('aij,bkj->abik', oj_list, oi_list)
-        
-        # Flatten (2*Nsymmetry*Nsymmetry, 3, 3)
-        delta_list = np.concatenate([
-            delta_list_AB.reshape(-1, 3, 3),
-            delta_list_BA.reshape(-1, 3, 3)
-        ])
-
-        # Calculate misorientation angles for all delta matrices
-        mis_angles = np.array([misorientation_angle_from_delta(delta) for delta in delta_list])
-
-        # Find the minimum non-zero misorientation angle
-        nonzero_mask = mis_angles > 0
-        try:
-            if np.any(nonzero_mask):
-                min_idx = np.argmin(mis_angles[nonzero_mask])
-                min_idx = np.where(nonzero_mask)[0][min_idx]
-        except ValueError:
-            min_idx = 0
-            print("No non-zero misorientation angles found.")
-        except Exception as e:
-            min_idx = 0
-            print("An unexpected error occurred: {}".format(e))            
-
-        the_angle = mis_angles[min_idx]
-
-        # Compute misorientation axis for the minimum angle
-        delta_min = delta_list[min_idx]
-        the_axis = misorientation_axis_from_delta(delta_min)
-
-        # Calculate the axis in sample coordinates
-        oi_min = oi_list[min_idx // num_sym_ops]
-        the_axis_xyz = np.dot(oi_min.T, the_axis)
-
-    return the_angle, the_axis, the_axis_xyz
+    symmetries = _disorientation_symmetries(crystal_structure, spacegroup, lattice_parameters, cell_choice)
+    return _disorientation_pair(ori1, ori2, symmetries)
 
 
 def disorientation_deprecated(ori1, ori2, crystal_structure=Symmetry.triclinic):
-    """This function is deprecated. Use `new_function` instead."""
-    
-    """Compute the disorientation another crystal orientation.
-
-    Considering all the possible crystal symmetries, the disorientation
-    is defined as the combination of the minimum misorientation angle
-    and the misorientation axis lying in the fundamental zone, which
-    can be used to bring the two lattices into coincidence.
-
-    .. note::
-
-     Both orientations are supposed to have the same symmetry. This is not
-     necessarily the case in multi-phase materials.
-
-    :param orientation: an instance of
-        :py:class:`~pymicro.crystal.microstructure.Orientation` class
-        describing the other crystal orientation from which to compute the
-        angle.
-    :param crystal_structure: an instance of the `Symmetry` class
-        describing the crystal symmetry, triclinic (no symmetry) by
-        default.
-    :returns tuple: the misorientation angle in radians, the axis as a
-        numpy vector (crystal coordinates), the axis as a numpy vector
-        (sample coordinates).
+    """Retain the deprecated name while using the corrected implementation.
+    Args:
+        ori1: First sample-to-crystal matrix, U1.T.
+        ori2: Second sample-to-crystal matrix, U2.T.
+        crystal_structure: Legacy Symmetry enum or Cartesian operator group.
+    Returns:
+        angle, axis, axis_xyz: Radians, first-crystal axis and sample axis.
     """
-    the_angle = np.pi
-    the_axis = np.array([0., 0., 1.])
-    the_axis_xyz = np.array([0., 0., 1.])
-    symmetries = crystal_structure.symmetry_operators()
-    (gA, gB) = (ori1, ori2)  # nicknames
-    for (g1, g2) in [(gA, gB), (gB, gA)]:
-        for j in range(symmetries.shape[0]):
-            sym_j = symmetries[j]
-            oj = np.dot(sym_j, g1)  # the crystal symmetry operator is left applied
-            for i in range(symmetries.shape[0]):
-                sym_i = symmetries[i]
-                oi = np.dot(sym_i, g2)
-                delta = np.dot(oi, oj.T)
-                mis_angle = misorientation_angle_from_delta(delta)
-                if mis_angle < the_angle:
-                    # now compute the misorientation axis, should check if it lies in the fundamental zone
-                    mis_axis = misorientation_axis_from_delta(delta)
-                    # here we have np.dot(oi.T, mis_axis) = np.dot(oj.T, mis_axis)
-                    # print(mis_axis, mis_angle*180/np.pi, np.dot(oj.T, mis_axis))
-                    the_angle = mis_angle
-                    the_axis = mis_axis
-                    the_axis_xyz = np.dot(oi.T, the_axis)
-    return the_angle, the_axis, the_axis_xyz
+    return disorientation(ori1, ori2, crystal_structure)
 
 
 @njit
 def misorientation_angle_from_delta(delta):
-    """
-    Compute the misorientation angle from the misorientation matrix.
-    It is defined as: ω = arccos((trace(Δg) - 1)/2)
-    Rewritten to be supported by numba.njit
-    
-    :param delta: The 3x3 misorientation matrix.
-    :returns float: the misorientation angle in radians.
+    """Calculate the angle of a proper relative rotation using atan2.
+    Args:
+        delta: Relative rotation matrix, shape (3, 3).
+    Returns:
+        angle: Angle in radians in [0, pi], stable near zero and half turns.
     """
     trace_val = delta[0, 0] + delta[1, 1] + delta[2, 2]
     cw = 0.5 * (trace_val - 1)
@@ -2224,21 +2249,33 @@ def misorientation_angle_from_delta(delta):
         cw = 1.0
     elif cw < -1.0:
         cw = -1.0
-    omega = np.arccos(cw)
+    # atan2 retains small-angle information lost by arccos near identity.
+    sx = delta[2, 1] - delta[1, 2]
+    sy = delta[0, 2] - delta[2, 0]
+    sz = delta[1, 0] - delta[0, 1]
+    sw = 0.5 * np.sqrt(sx*sx + sy*sy + sz*sz)
+    omega = np.arctan2(sw, cw)
     return omega
 
 
 @njit
 def misorientation_axis_from_delta(delta):
+    """Calculate the physical rotation axis from a passive delta matrix.
+    Args:
+        delta: Proper passive relative rotation, shape (3, 3).
+    Returns:
+        axis: Unit axis of the inverse (active) rotation. Identity has zero
+            axis; exact half turns use a quaternion instead of a zero skew part.
     """
-    Compute the misorientation axis from the misorientation matrix.
-    
-    :param delta: The 3x3 misorientation matrix.
-    :returns: the misorientation axis (normalised vector).
-    """
+    if delta[0, 0] + delta[1, 1] + delta[2, 2] < -0.999999:
+        q = ori_converter.u2quat(delta)
+        if q[0] < 0:
+            q = -q
+        axis = -q[1:]
+        return axis / np.linalg.norm(axis)
     n = np.array([delta[1, 2] - delta[2, 1],
                   delta[2, 0] - delta[0, 2],
-                  delta[0, 1] - delta[1, 0]])
+                  delta[0, 1] - delta[1, 0]], dtype=np.float64)
     norm = np.sqrt(n[0]**2 + n[1]**2 + n[2]**2)
     if norm > 0:
         n[0] /= norm
