@@ -138,7 +138,7 @@ class GrainSinogram:
                                     sf_correction=None, apply_lf_pol=True):
         """Write a corrected-intensity column and return its name.
         correction = lf/pol (needs tth,eta) and/or 1/structure-factor (needs every hkl
-        tabulated — run filter_valid_hkls first)."""
+        tabulated -- run filter_valid_hkls first)."""
         cf = self.cf_for_sino
         corr = np.ones(cf.nrows, "d")
         if apply_lf_pol:

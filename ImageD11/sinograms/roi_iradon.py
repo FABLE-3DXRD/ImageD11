@@ -38,11 +38,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """
 
-from scipy.fft import fft, ifft, fftfreq, fftshift
+try:
+    from scipy.fft import fft, ifft, fftfreq, fftshift
+except ImportError:  # scipy < 1.4 (python 2.7): numpy.fft has no workers argument
+    import numpy.fft
+    from numpy.fft import fftfreq, fftshift
+
+    def fft(a, axis=-1, workers=None):
+        return numpy.fft.fft(a, axis=axis)
+
+    def ifft(a, axis=-1, workers=None):
+        return numpy.fft.ifft(a, axis=axis)
 from scipy.interpolate import interp1d
 import numpy as np
 import concurrent.futures, os
-import skimage.transform.radon_transform
+import skimage.transform
 import numba
 from ImageD11 import cImageD11, nputils
 
@@ -338,11 +348,11 @@ def radon(image, theta,
             dx = projection_shifts.T[i]  # measured positions are shifted
         else:
             dx = None
-        rotated = skimage.transform.radon_transform.warp(padded_image, fxyrot,
-                                                         map_args={'angle': rtheta[i],
-                                                                   'center': center,
-                                                                   'projection_shifts': dx},
-                                                         clip=False)
+        rotated = skimage.transform.warp(padded_image, fxyrot,
+                                         map_args={'angle': rtheta[i],
+                                                   'center': center,
+                                                   'projection_shifts': dx},
+                                         clip=False)
         radon_image[:, i] = rotated.sum(0)
 
     slices = list(range(angles_count))
@@ -452,7 +462,7 @@ def mlem(sino,
     An "MLEM" algorithm from XRDUA was used in this paper:
 
     "Impurity precipitation in atomized particles evidenced by nano x-ray diffraction computed tomography"
-    Anne Bonnin; Jonathan P. Wright; Rémi Tucoulou; Hervé Palancher
+    Anne Bonnin; Jonathan P. Wright; Remi Tucoulou; Herve Palancher
     Appl. Phys. Lett. 105, 084103 (2014) https://doi.org/10.1063/1.4894009
 
     This python code implements something similar based on a youtube video (https://www.youtube.com/watch?v=IhETD4nSJec)
