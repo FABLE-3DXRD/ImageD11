@@ -33,6 +33,9 @@ class FakeDataset(object):
         self.limapath = '/data'
         self.scans = ['1.1']
         self.omega = (np.arange(NFRAMES) * 1.0 - 89.5)[None, :]
+        self.ostep = 1.0                    # as DataSet.guessbins
+        self.obinedges = np.arange(NFRAMES + 1) - 90.0
+        self.omega_wraps = False
         self.dty = np.zeros((1, NFRAMES))
         self.y0 = 0.0
         self.ystep = 1.0
@@ -212,10 +215,10 @@ class TestHarvester(unittest.TestCase):
         M = h.pair_overlaps()
         self.assertGreater(M[0, 1] / float(n[0]), 0.5)
         groups, pairs = harvester.duplicate_groups(sp, m, [g.ubi for g in h.grains], sym_u.getgroup('cubic')().group,
-                                                   h.omega_step(), pair_overlaps=M)
+                                                   h.omega_step(), False, pair_overlaps=M)
         self.assertEqual(len(groups), 1)
         self.assertEqual(sorted(groups[0]), [0, 1])
-        merged, match = harvester.union_spots(sp, groups[0], [g.ubi for g in h.grains], h.omega_step())
+        merged, match = harvester.union_spots(sp, groups[0], [g.ubi for g in h.grains], h.omega_step(), False)
         k0 = groups[0][0]
         rows0 = np.flatnonzero(sp['grain'] == k0)
         self.assertTrue(np.all(merged['hs'] >= sp['hs'][rows0]))
@@ -302,6 +305,79 @@ class TestDeoverlap(unittest.TestCase):
         self.assertTrue(np.allclose(d['I_deoverlapped'], [100, 50, 10, 50, 50, 7], rtol=1e-6))
         self.assertTrue(np.allclose(d['contamination'][:3], np.dot(F, T)[:3], rtol=1e-6))
         self.assertEqual(list(d['largest_row']), [1, 0, 0, 4, 3, -1])
+
+
+class _Grain(object):
+    def __init__(self):
+        self.translation = np.zeros(3)
+
+
+class TestOmegaBins(unittest.TestCase):
+    """frames and predictions on the dataset's omega bins (DataSet.ostep, obinedges, omega_wraps)"""
+
+    def harvester(self, omega, ostep, obinedges, wraps, spot_omega, ho):
+        ds = FakeDataset('none')
+        ds.omega = np.asarray(omega, float)[None, :]
+        ds.dty = np.zeros_like(ds.omega)
+        ds.ostep, ds.obinedges, ds.omega_wraps = ostep, np.asarray(obinedges, float), wraps
+        h = harvester.Harvester.__new__(harvester.Harvester)
+        h.ds, h.grains, h.radius = ds, [_Grain()], np.array([1.0])
+        h.spots = dict(grain=np.zeros(1, np.int32), omega=np.array([spot_omega]), ho=np.array([ho]))
+        return h
+
+    def test_interlaced_row(self):
+        """every other frame first: the window is (ho + 0.5) ostep, not twice that"""
+        step = 0.1
+        om = np.concatenate([np.arange(0, 180, 2 * step), np.arange(step, 180, 2 * step)])
+        h = self.harvester(om, step, np.arange(1801) * step - step / 2, False, 90.0, 5)
+        frames, ptr, spot, dom = h.plan_scan(0)
+        self.assertEqual(len(frames), 11)
+        self.assertTrue(np.allclose(np.sort(dom), (np.arange(11) - 5) * step))
+
+    def test_wrap_seam(self):
+        """a scan that wraps: the box at 359.6 takes frames on both sides of the fold, with circular offsets"""
+        h = self.harvester(np.arange(360.0), 1.0, np.arange(361) - 0.5, True, 359.4, 3)
+        frames, ptr, spot, dom = h.plan_scan(0)
+        self.assertEqual(sorted(frames), [0, 1, 2, 356, 357, 358, 359])
+        self.assertTrue(np.allclose(np.sort(dom), np.arange(-3, 4) - 0.4))
+        self.assertEqual(h._omega_period(), 360.0)
+
+    def test_no_wrap_seam(self):
+        """a scan that does not wrap: no frames across the ends of the range"""
+        h = self.harvester(np.arange(360.0), 1.0, np.arange(361) - 0.5, False, 359.4, 3)
+        frames, ptr, spot, dom = h.plan_scan(0)
+        self.assertEqual(sorted(frames), [356, 357, 358, 359])
+        self.assertEqual(h._omega_period(), 0.0)
+
+    def test_predict_copies(self):
+        """one copy per turn within omega_range"""
+        ubi = np.eye(3) * 4.1
+        one = harvester.predict_spots(ubi, np.zeros(3), PARS, 0.75, SHAPE, omega_range=(-180, 180))
+        n = len(one['omega'])
+        folded = harvester.predict_spots(ubi, np.zeros(3), PARS, 0.75, SHAPE, omega_range=(10.0, 370.0))
+        self.assertEqual(len(folded['omega']), n)
+        self.assertTrue((folded['omega'] >= 10).all() and (folded['omega'] < 370).all())
+        two = harvester.predict_spots(ubi, np.zeros(3), PARS, 0.75, SHAPE, omega_range=(-180, 540))
+        self.assertEqual(len(two['omega']), 2 * n)
+
+    def test_kernels_across_the_fold(self):
+        """boxes of two grains either side of the fold overlap only when the scan wraps (period in frames)"""
+        wf = np.array([0.2, 359.8])
+        key = np.zeros(2, np.int64)
+        i2, f2 = np.zeros(2, np.int64), np.ones(2)
+        ho = np.array([3, 3], np.int64)
+        grain = np.array([0, 1], np.int32)
+        for wper, expect in ((360.0, 1), (0.0, 0)):
+            n = harvester._count_overlaps(np.arange(2), key, wf, i2, i2, ho, ho, ho, grain, np.zeros(2), f2, 3, 6,
+                                          wper)
+            self.assertEqual(list(n), [expect, expect])
+            M = harvester._pair_overlaps(key, wf, i2, i2, ho, ho, ho, grain, np.zeros(2), f2, 3, 6, wper, 2)
+            self.assertEqual(M[0, 1], expect)
+            ptr = np.zeros(3, np.int64)
+            args = (key, wf, np.zeros(2), np.zeros(2), i2, i2, ho, ho, ho, f2, f2, f2, grain, np.zeros(2), f2, 3, 6,
+                    wper, 1e-4)
+            harvester._overlap_fractions(*(args + (ptr, np.zeros(0, np.int64), np.zeros(0))))
+            self.assertEqual(list(ptr[1:]), [expect, expect])
 
 
 if __name__ == '__main__':

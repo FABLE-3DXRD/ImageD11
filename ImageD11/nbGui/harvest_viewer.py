@@ -453,15 +453,13 @@ def reharvest(src, ispot, iscan, extra=3, z=None):
     h = src.harvester()
     ds = src.ctx.ds
     sp = spot_row(src, ispot)
-    om_f = np.asarray(ds.omega[iscan], float)
-    order = np.argsort(om_f)
-    oms = om_f[order]
-    step = float(np.median(np.abs(np.diff(oms))))
-    half = (sp['ho'] + 0.5) * step
+    order, oms = h._sorted_frames(iscan)
+    half = (sp['ho'] + 0.5) * h.omega_step()
     lo = int(np.searchsorted(oms, sp['omega'] - half))          # as Harvester.plan_scan
     hi = int(np.searchsorted(oms, sp['omega'] + half))
     box_frames = order[lo:hi]
-    show = order[max(lo - extra, 0):min(hi + extra, len(order))]
+    sl = slice(max(lo - extra, 0), min(hi + extra, len(order)))
+    show, show_om = order[sl], oms[sl]       # frames and their omega next to the prediction
     T = h.grains[int(sp['grain'])].translation
     w = np.radians(sp['omega'])
     dty_pred = ds.y0 - T[0] * np.sin(w) - T[1] * np.cos(w)
@@ -498,7 +496,7 @@ def reharvest(src, ispot, iscan, extra=3, z=None):
                 harvester._integrate_frame(idx, vals, nfast, h._adj, one, arr['s0'], arr['f0'], arr['hs'],
                                            arr['hf'], arr['bw'], arr['nbox'], arr['nann'], arr['S1s'],
                                            arr['S1f'], arr['S2s'], arr['S2f'],
-                                           np.array([om_f[fr] - sp['omega']]), float(h.scale[iscan, fr]),
+                                           np.array([show_om[n] - sp['omega']]), float(h.scale[iscan, fr]),
                                            clipped, h.p_clip, acc)
                 per[n] = acc[0]
     finally:
@@ -506,14 +504,14 @@ def reharvest(src, ispot, iscan, extra=3, z=None):
     I = harvester._I
     tot = per[used].sum(0)
     tot[I['maxval']] = per[used, I['maxval']].max() if used.any() else 0
-    out = dict(ispot=int(ispot), iscan=int(iscan), spot=sp, frames=show, omega=om_f[show], used=used,
+    out = dict(ispot=int(ispot), iscan=int(iscan), spot=sp, frames=show, omega=show_om, used=used,
                inbeam=bool(inbeam), dty=float(ds.ybincens[iscan]), dty_pred=float(dty_pred),
                scale=np.asarray(h.scale[iscan, show], float), stack=stack, good=good, inbox=inbox, bw=bw,
                threshold=thr, per_frame=dict((k, per[:, I[k]]) for k in harvester.ACC),
                total=dict((k, float(tot[I[k]])) for k in harvester.ACC),
                stored=stored_row(src, ispot, iscan, z), file=h.scan_file(iscan), omega_step=src.omega_step)
     out['total']['net'] = out['total']['box'] - out['total']['bg']
-    out['neighbours'] = neighbours(src, ispot, iscan, om_f[show])
+    out['neighbours'] = neighbours(src, ispot, iscan, show_om)
     return out
 
 

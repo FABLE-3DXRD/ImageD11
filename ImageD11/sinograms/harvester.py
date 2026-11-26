@@ -312,6 +312,10 @@ class SparseFrameReader(object):
             raise ImportError('bslz4_to_sparse is not available')
         self.h = h5py.File(filename, 'r')
         self.d = self.h[path]
+        if self.d.chunks != (1,) + self.d.shape[1:]:
+            self.h.close()
+            raise ValueError('%s: chunks %s, the sparse reader needs one frame per chunk %s' % (
+                filename, self.d.chunks, (1,) + self.d.shape[1:]))
         kw = {}
         if hasattr(bslz4_to_sparse, 'detect_codec'):     # releases up to 0.0.16 are lz4 only, with no codec argument
             kw['codec'] = bslz4_to_sparse.detect_codec(self.d)
@@ -390,7 +394,8 @@ def predict_spots(ubi, translation, pars, ds_max, shape, e2dx=None, e2dy=None, o
     translation : (x, y, z) sample-frame position of the grain (same units as the distance)
     pars        : ImageD11 parameters dict (wavelength, wedge, chi, detector geometry)
     shape       : detector shape (slow, fast)
-    omega_range : (min, max) in degrees, or None for all
+    omega_range : (lo, hi) in degrees: every copy omega + 360 k with lo <= omega < hi (one per turn, so a range of
+                  exactly 360 gives each reflection once, folded onto it); None: omega in [-180, 180)
     Returns a dict of arrays: h, k, l, ds, tth, eta, omega, sc, fc (corrected) and s, f (raw pixels).
     """
     ubi = np.asarray(ubi, float)
@@ -417,9 +422,14 @@ def predict_spots(ubi, translation, pars, ds_max, shape, e2dx=None, e2dy=None, o
     om = (om + 180.0) % 360.0 - 180.0
     if omega_range is not None:
         lo, hi = omega_range
-        k = ((om >= lo) & (om <= hi)) | ((om + 360 >= lo) & (om + 360 <= hi)) | ((om - 360 >= lo) & (om - 360 <= hi))
-        om = np.where((om < lo), om + 360, np.where(om > hi, om - 360, om))
-        hkl, dsv, tth, eta, om = hkl[k], dsv[k], tth[k], eta[k], om[k]
+        sel, oms = [], []
+        for turn in range(int(np.floor((lo - 180.0) / 360.0)), int(np.ceil((hi + 180.0) / 360.0)) + 1):
+            o = om + 360.0 * turn
+            k = np.flatnonzero((o >= lo) & (o < hi))
+            sel.append(k)
+            oms.append(o[k])
+        k = np.concatenate(sel)
+        hkl, dsv, tth, eta, om = hkl[k], dsv[k], tth[k], eta[k], np.concatenate(oms)
     sc, fc = detector_position(tth, eta, lab_x(translation, om), pars)
     s, f = ImageD11.blobcorrector.invert_dxdy(sc, fc, e2dx, e2dy)
     on = (s > -margin) & (s < shape[0] + margin) & (f > -margin) & (f < shape[1] + margin)
@@ -643,10 +653,18 @@ def _weight_sums_kernel(flat, off, good, hs, hf, s0, f0):
 
 
 @numba.njit(cache=True)
-def _count_overlaps(order, key, wf, s0, f0, hs, hf, ho, grain, dty, rad, ncf, wmax):
-    """for reflections sorted by (grid cell, omega): count boxes of other grains overlapping in s, f, omega"""
+def _shift(q, nsh, wper):
+    """omega shift (frames) of the q-th of nsh searches: 0, or -wper, 0, +wper for a scan that wraps"""
+    return (q - 1) * wper if nsh == 3 else 0.0
+
+
+@numba.njit(cache=True)
+def _count_overlaps(order, key, wf, s0, f0, hs, hf, ho, grain, dty, rad, ncf, wmax, wper):
+    """for reflections sorted by (grid cell, omega): count boxes of other grains overlapping in s, f, omega.
+    wper: omega period in frames for a scan that wraps (boxes either side of the fold overlap), 0: none"""
     n = key.shape[0]
     out = np.zeros(n, np.int32)
+    nsh = 3 if wper > 0 else 1
     for i in range(n):
         for dc in (-ncf - 1, -ncf, -ncf + 1, -1, 0, 1, ncf - 1, ncf, ncf + 1):
             kk = key[i] + dc
@@ -654,28 +672,32 @@ def _count_overlaps(order, key, wf, s0, f0, hs, hf, ho, grain, dty, rad, ncf, wm
             hi = np.searchsorted(key, kk + 1)
             if hi <= lo:
                 continue
-            a = lo + np.searchsorted(wf[lo:hi], wf[i] - wmax)
-            b = lo + np.searchsorted(wf[lo:hi], wf[i] + wmax, side='right')
-            for j in range(a, b):
-                if j == i or grain[j] == grain[i]:
-                    continue
-                if abs(wf[j] - wf[i]) > ho[i] + ho[j]:
-                    continue
-                if abs(s0[j] - s0[i]) > hs[i] + hs[j] or abs(f0[j] - f0[i]) > hf[i] + hf[j]:
-                    continue
-                if abs(dty[j] - dty[i]) >= rad[i] + rad[j]:
-                    continue
-                out[i] += 1
+            for q in range(nsh):
+                wi = wf[i] + _shift(q, nsh, wper)
+                a = lo + np.searchsorted(wf[lo:hi], wi - wmax)
+                b = lo + np.searchsorted(wf[lo:hi], wi + wmax, side='right')
+                for j in range(a, b):
+                    if j == i or grain[j] == grain[i]:
+                        continue
+                    if abs(wf[j] - wi) > ho[i] + ho[j]:
+                        continue
+                    if abs(s0[j] - s0[i]) > hs[i] + hs[j] or abs(f0[j] - f0[i]) > hf[i] + hf[j]:
+                        continue
+                    if abs(dty[j] - dty[i]) >= rad[i] + rad[j]:
+                        continue
+                    out[i] += 1
     return out
 
 
 @numba.njit(cache=True)
-def _overlap_contamination(key, wf, s, f, s0, f0, hs, hf, ho, sig_s, sig_f, sig_w, grain, dty, rad, I, ncf, wmax):
+def _overlap_contamination(key, wf, s, f, s0, f0, hs, hf, ho, sig_s, sig_f, sig_w, grain, dty, rad, I, ncf, wmax,
+                           wper):
     """for reflections sorted by (grid cell, omega): intensity of other grains' reflections expected inside each box,
-    sum_j max(I_j, 0) * (fraction of j's Gaussian profile, widths sig_*, inside i's box)"""
+    sum_j max(I_j, 0) * (fraction of j's Gaussian profile, widths sig_*, inside i's box); wper as _count_overlaps"""
     n = key.shape[0]
     out = np.zeros(n)
     nmax = np.zeros(n)
+    nsh = 3 if wper > 0 else 1
     for i in range(n):
         for dc in (-ncf - 1, -ncf, -ncf + 1, -1, 0, 1, ncf - 1, ncf, ncf + 1):
             kk = key[i] + dc
@@ -683,33 +705,31 @@ def _overlap_contamination(key, wf, s, f, s0, f0, hs, hf, ho, sig_s, sig_f, sig_
             hi = np.searchsorted(key, kk + 1)
             if hi <= lo:
                 continue
-            a = lo + np.searchsorted(wf[lo:hi], wf[i] - wmax)
-            b = lo + np.searchsorted(wf[lo:hi], wf[i] + wmax, side='right')
-            for j in range(a, b):
-                if j == i or grain[j] == grain[i] or I[j] <= 0:
-                    continue
-                if abs(dty[j] - dty[i]) >= rad[i] + rad[j]:
-                    continue
-                fr = 1.0
-                for c, w, sg, h in ((s[j] - s0[i], 0.0, sig_s[j], hs[i]), (f[j] - f0[i], 0.0, sig_f[j], hf[i]),
-                                    (wf[j] - wf[i], 0.0, sig_w[j], ho[i])):
-                    lo_ = (-h - 0.5 - c) / (np.sqrt(2.0) * sg)
-                    hi_ = (h + 0.5 - c) / (np.sqrt(2.0) * sg)
-                    fr *= 0.5 * (math.erf(hi_) - math.erf(lo_))
-                if fr > 1e-4:
-                    out[i] += fr * I[j]
-                    if fr * I[j] > nmax[i]:
-                        nmax[i] = fr * I[j]
+            for q in range(nsh):
+                sh = _shift(q, nsh, wper)
+                a = lo + np.searchsorted(wf[lo:hi], wf[i] + sh - wmax)
+                b = lo + np.searchsorted(wf[lo:hi], wf[i] + sh + wmax, side='right')
+                for j in range(a, b):
+                    if j == i or grain[j] == grain[i] or I[j] <= 0:
+                        continue
+                    if abs(dty[j] - dty[i]) >= rad[i] + rad[j]:
+                        continue
+                    fr = _profile_in_box(i, j, s, f, wf, s0, f0, hs, hf, ho, sig_s, sig_f, sig_w, sh)
+                    if fr > 1e-4:
+                        out[i] += fr * I[j]
+                        if fr * I[j] > nmax[i]:
+                            nmax[i] = fr * I[j]
     return out, nmax
 
 
 @numba.njit(cache=True)
-def _pair_overlaps(key, wf, s0, f0, hs, hf, ho, grain, dty, rad, ncf, wmax, ng):
+def _pair_overlaps(key, wf, s0, f0, hs, hf, ho, grain, dty, rad, ncf, wmax, wper, ng):
     """for reflections sorted by (grid cell, omega): M[gi, gj] = number of reflections of grain gi whose box is
-    overlapped by at least one box of grain gj while both grains can be in the beam"""
+    overlapped by at least one box of grain gj while both grains can be in the beam; wper as _count_overlaps"""
     n = key.shape[0]
     M = np.zeros((ng, ng), np.int32)
     last = np.full(ng, -1, np.int64)
+    nsh = 3 if wper > 0 else 1
     for i in range(n):
         for dc in (-ncf - 1, -ncf, -ncf + 1, -1, 0, 1, ncf - 1, ncf, ncf + 1):
             kk = key[i] + dc
@@ -717,29 +737,32 @@ def _pair_overlaps(key, wf, s0, f0, hs, hf, ho, grain, dty, rad, ncf, wmax, ng):
             hi = np.searchsorted(key, kk + 1)
             if hi <= lo:
                 continue
-            a = lo + np.searchsorted(wf[lo:hi], wf[i] - wmax)
-            b = lo + np.searchsorted(wf[lo:hi], wf[i] + wmax, side='right')
-            for j in range(a, b):
-                gj = grain[j]
-                if gj == grain[i] or last[gj] == i:
-                    continue
-                if abs(wf[j] - wf[i]) > ho[i] + ho[j]:
-                    continue
-                if abs(s0[j] - s0[i]) > hs[i] + hs[j] or abs(f0[j] - f0[i]) > hf[i] + hf[j]:
-                    continue
-                if abs(dty[j] - dty[i]) >= rad[i] + rad[j]:
-                    continue
-                last[gj] = i
-                M[grain[i], gj] += 1
+            for q in range(nsh):
+                wi = wf[i] + _shift(q, nsh, wper)
+                a = lo + np.searchsorted(wf[lo:hi], wi - wmax)
+                b = lo + np.searchsorted(wf[lo:hi], wi + wmax, side='right')
+                for j in range(a, b):
+                    gj = grain[j]
+                    if gj == grain[i] or last[gj] == i:
+                        continue
+                    if abs(wf[j] - wi) > ho[i] + ho[j]:
+                        continue
+                    if abs(s0[j] - s0[i]) > hs[i] + hs[j] or abs(f0[j] - f0[i]) > hf[i] + hf[j]:
+                        continue
+                    if abs(dty[j] - dty[i]) >= rad[i] + rad[j]:
+                        continue
+                    last[gj] = i
+                    M[grain[i], gj] += 1
     return M
 
 
 @numba.njit(cache=True)
-def _profile_in_box(i, j, s, f, wf, s0, f0, hs, hf, ho, sig_s, sig_f, sig_w):
-    """fraction of reflection j's Gaussian profile (widths sig_*) inside the box of reflection i"""
+def _profile_in_box(i, j, s, f, wf, s0, f0, hs, hf, ho, sig_s, sig_f, sig_w, sh):
+    """fraction of reflection j's Gaussian profile (widths sig_*) inside the box of reflection i, with i's omega
+    shifted by sh frames (a turn, for boxes either side of the fold of a scan that wraps)"""
     fr = 1.0
     for c, sg, h in ((s[j] - s0[i], sig_s[j], hs[i]), (f[j] - f0[i], sig_f[j], hf[i]),
-                     (wf[j] - wf[i], sig_w[j], ho[i])):
+                     (wf[j] - wf[i] - sh, sig_w[j], ho[i])):
         lo_ = (-h - 0.5 - c) / (np.sqrt(2.0) * sg)
         hi_ = (h + 0.5 - c) / (np.sqrt(2.0) * sg)
         fr *= 0.5 * (math.erf(hi_) - math.erf(lo_))
@@ -747,13 +770,15 @@ def _profile_in_box(i, j, s, f, wf, s0, f0, hs, hf, ho, sig_s, sig_f, sig_w):
 
 
 @numba.njit(cache=True, parallel=True)
-def _overlap_fractions(key, wf, s, f, s0, f0, hs, hf, ho, sig_s, sig_f, sig_w, grain, dty, rad, ncf, wmax, frmin,
-                       ptr, col, frac):
+def _overlap_fractions(key, wf, s, f, s0, f0, hs, hf, ho, sig_s, sig_f, sig_w, grain, dty, rad, ncf, wmax, wper,
+                       frmin, ptr, col, frac):
     """for reflections sorted by (grid cell, omega): CSR matrix F[i, j] = fraction of reflection j's profile inside
     the box of i, other grains only, while both can be in the beam, F >= frmin. With col empty, ptr[i + 1] gets the
-    number of entries of row i (call again with the cumulated ptr and col, frac allocated to fill them)."""
+    number of entries of row i (call again with the cumulated ptr and col, frac allocated to fill them).
+    wper as _count_overlaps."""
     n = key.shape[0]
     fill = col.shape[0] > 0
+    nsh = 3 if wper > 0 else 1
     for i in numba.prange(n):
         k = ptr[i] if fill else 0
         for dc in (-ncf - 1, -ncf, -ncf + 1, -1, 0, 1, ncf - 1, ncf, ncf + 1):
@@ -762,20 +787,22 @@ def _overlap_fractions(key, wf, s, f, s0, f0, hs, hf, ho, sig_s, sig_f, sig_w, g
             hi = np.searchsorted(key, kk + 1)
             if hi <= lo:
                 continue
-            a = lo + np.searchsorted(wf[lo:hi], wf[i] - wmax)
-            b = lo + np.searchsorted(wf[lo:hi], wf[i] + wmax, side='right')
-            for j in range(a, b):
-                if j == i or grain[j] == grain[i]:
-                    continue
-                if abs(dty[j] - dty[i]) >= rad[i] + rad[j]:
-                    continue
-                fr = _profile_in_box(i, j, s, f, wf, s0, f0, hs, hf, ho, sig_s, sig_f, sig_w)
-                if fr < frmin:
-                    continue
-                if fill:
-                    col[k] = j
-                    frac[k] = fr
-                k += 1
+            for q in range(nsh):
+                sh = _shift(q, nsh, wper)
+                a = lo + np.searchsorted(wf[lo:hi], wf[i] + sh - wmax)
+                b = lo + np.searchsorted(wf[lo:hi], wf[i] + sh + wmax, side='right')
+                for j in range(a, b):
+                    if j == i or grain[j] == grain[i]:
+                        continue
+                    if abs(dty[j] - dty[i]) >= rad[i] + rad[j]:
+                        continue
+                    fr = _profile_in_box(i, j, s, f, wf, s0, f0, hs, hf, ho, sig_s, sig_f, sig_w, sh)
+                    if fr < frmin:
+                        continue
+                    if fill:
+                        col[k] = j
+                        frac[k] = fr
+                    k += 1
         if not fill:
             ptr[i + 1] = k
 
@@ -933,9 +960,15 @@ def twin_law_distance(U1, U2, group, angle, axis):
     return min(misorientation(np.dot(U1, np.dot(op, np.dot(R, op.T))), U2, group) for op in ops)
 
 
-def _match(H_a, ubi_a, ubi_b, H_b, om_a, om_b):
+def _domega(a, b, wraps):
+    """a - b in degrees: on the circle, in [-180, 180), when the scan wraps (DataSet.omega_wraps)"""
+    d = np.asarray(a, float) - b
+    return (d + 180.0) % 360.0 - 180.0 if wraps else d
+
+
+def _match(H_a, ubi_a, ubi_b, H_b, om_a, om_b, wraps):
     """for each reflection of grain a: the row of grain b with the same reflection (h_b = round(ubi_b inv(ubi_a))
-    h_a, the omega solution closest to a's), or -1"""
+    h_a, the omega solution closest to a's, on the circle if the scan wraps), or -1"""
     M = np.round(np.dot(ubi_b, np.linalg.inv(ubi_a))).astype(int)
     hb = np.dot(H_a, M.T)
     lut = {}
@@ -945,15 +978,16 @@ def _match(H_a, ubi_a, ubi_b, H_b, om_a, om_b):
     for p, key in enumerate(map(tuple, hb)):
         c = lut.get(key)
         if c:
-            out[p] = min(c, key=lambda q: abs((om_b[q] - om_a[p] + 180) % 360 - 180))
+            out[p] = min(c, key=lambda q: abs(_domega(om_b[q], om_a[p], wraps)))
     return out
 
 
-def union_spots(spots, members, ubis, omega_step, max_sep=4.0):
+def union_spots(spots, members, ubis, omega_step, wraps, max_sep=4.0):
     """One box per reflection for a group of duplicate grains (members: grain indices, the first is the main one):
     each reflection of the main grain is matched to the same reflection of every other member (Miller indices
     through round(ubi_b inv(ubi_a)), nearest omega solution, predicted positions within max_sep box half sizes)
     and its box becomes the bounding box (s, f, omega) of all the matched boxes, so every pixel is counted once.
+    wraps: the scan wraps (DataSet.omega_wraps), omega differences are taken on the circle.
     Returns (spots dict for the merged grain, {member: matched row of each main reflection, -1 if none})."""
     start = np.searchsorted(spots['grain'], np.arange(np.max(spots['grain']) + 2))
     blk = [dict((c, np.asarray(spots[c])[start[m]:start[m + 1]]) for c in spots) for m in members]
@@ -965,16 +999,19 @@ def union_spots(spots, members, ubis, omega_step, max_sep=4.0):
     bw = A['bw'].copy()
     match = {members[0]: np.arange(start[members[0]], start[members[0] + 1])}
     for m, B in zip(members[1:], blk[1:]):
-        j = _match(H, ubis[members[0]], ubis[m], np.column_stack((B['h'], B['k'], B['l'])), A['omega'], B['omega'])
+        j = _match(H, ubis[members[0]], ubis[m], np.column_stack((B['h'], B['k'], B['l'])), A['omega'], B['omega'],
+                   wraps)
         a = np.flatnonzero(j >= 0)
         b = j[a]
+        bom = A['omega'][a] + _domega(B['omega'][b], A['omega'][a], wraps)      # B's omega next to A's
         sep = np.max([np.abs(B['s'][b] - A['s'][a]) / A['hs'][a], np.abs(B['f'][b] - A['f'][a]) / A['hf'][a],
-                      np.abs(B['omega'][b] - A['omega'][a]) / omega_step / A['ho'][a]], axis=0)
-        a, b = a[sep < max_sep], b[sep < max_sep]
+                      np.abs(bom - A['omega'][a]) / omega_step / A['ho'][a]], axis=0)
+        keep = sep < max_sep
+        a, b, bom = a[keep], b[keep], bom[keep]
         lo_s[a] = np.minimum(lo_s[a], B['s0'][b] - B['hs'][b]); hi_s[a] = np.maximum(hi_s[a], B['s0'][b] + B['hs'][b])
         lo_f[a] = np.minimum(lo_f[a], B['f0'][b] - B['hf'][b]); hi_f[a] = np.maximum(hi_f[a], B['f0'][b] + B['hf'][b])
-        lo_w[a] = np.minimum(lo_w[a], B['omega'][b] - B['ho'][b] * omega_step)
-        hi_w[a] = np.maximum(hi_w[a], B['omega'][b] + B['ho'][b] * omega_step)
+        lo_w[a] = np.minimum(lo_w[a], bom - B['ho'][b] * omega_step)
+        hi_w[a] = np.maximum(hi_w[a], bom + B['ho'][b] * omega_step)
         bw[a] = np.maximum(bw[a], B['bw'][b])
         mm = np.full(len(H), -1, np.int64)
         mm[a] = start[m] + b
@@ -990,14 +1027,15 @@ def union_spots(spots, members, ubis, omega_step, max_sep=4.0):
     return sp, match
 
 
-def duplicate_groups(spots, merged, ubis, group, omega_step, max_angle=2.0, min_shared=0.3, in_box=0.5,
+def duplicate_groups(spots, merged, ubis, group, omega_step, wraps, max_angle=2.0, min_shared=0.3, in_box=0.5,
                      to_partner=0.5, min_snr=20.0, pair_overlaps=None):
     """Groups of grains that integrate the same peaks (duplicate indexings of one crystal, or domains that the boxes
     cannot resolve). A pair is a duplicate when the misorientation (under the rotations of group) is below max_angle,
     they share boxes for more than min_shared of their reflections (pair_overlaps, from Harvester.pair_overlaps), and
     either the partner's predicted peak lies inside the box for more than in_box of the reflections, or the measured
     centroids (s, f, omega, in box half sizes) of strong reflections (I / sigI > min_snr) lie closer to the partner's
-    prediction than to their own for more than to_partner of them. merged: dict with I, sigI, s, f, omega. Pairs are joined into groups (union-find). Returns a list of lists of grain
+    prediction than to their own for more than to_partner of them. merged: dict with I, sigI, s, f, omega. wraps: the
+    scan wraps (DataSet.omega_wraps), omega differences are taken on the circle. Pairs are joined into groups (union-find). Returns a list of lists of grain
     indices, the main grain (most strong reflections) first, and the list of (gi, gj, angle, in_box, to_partner)."""
     ng = len(ubis)
     U = []
@@ -1024,18 +1062,18 @@ def duplicate_groups(spots, merged, ubis, group, omega_step, max_angle=2.0, min_
             rb = np.arange(start[b], start[b + 1])
             H = np.column_stack((spots['h'][ra], spots['k'][ra], spots['l'][ra]))
             m = _match(H, ubis[a], ubis[b], np.column_stack((spots['h'][rb], spots['k'][rb], spots['l'][rb])),
-                       spots['omega'][ra], spots['omega'][rb])
+                       spots['omega'][ra], spots['omega'][rb], wraps)
             ok = m >= 0
             pa, pb = ra[ok], rb[m[ok]]
             hs, hf, ho = spots['hs'][pa], spots['hf'][pa], spots['ho'][pa]
             inb = np.mean((np.abs(spots['s'][pb] - spots['s'][pa]) <= hs) & (np.abs(spots['f'][pb] - spots['f'][pa]) <= hf)
-                          & (np.abs(spots['omega'][pb] - spots['omega'][pa]) <= ho * omega_step)) if ok.any() else 0.0
+                          & (np.abs(_domega(spots['omega'][pb], spots['omega'][pa], wraps)) <= ho * omega_step)) if ok.any() else 0.0
             st = merged['I'][pa] > min_snr * merged['sigI'][pa]
             wst = ho * omega_step
             own = np.sqrt(((merged['s'][pa] - spots['s'][pa]) / hs) ** 2 + ((merged['f'][pa] - spots['f'][pa]) / hf) ** 2
-                          + ((merged['omega'][pa] - spots['omega'][pa]) / wst) ** 2)
+                          + (_domega(merged['omega'][pa], spots['omega'][pa], wraps) / wst) ** 2)
             par = np.sqrt(((merged['s'][pa] - spots['s'][pb]) / hs) ** 2 + ((merged['f'][pa] - spots['f'][pb]) / hf) ** 2
-                          + ((merged['omega'][pa] - spots['omega'][pb]) / wst) ** 2)
+                          + (_domega(merged['omega'][pa], spots['omega'][pb], wraps) / wst) ** 2)
             sel = st & np.isfinite(own) & np.isfinite(par)
             tp = np.mean(par[sel] < own[sel]) if sel.sum() > 10 else 0.0
             best = (max(best[0], inb), max(best[1], tp))
@@ -1252,9 +1290,13 @@ class Harvester(object):
 
     # ---------------------------------------------------------------- prediction
     def predict(self):
-        """Predict the reflections of all grains (sets self.spots, a dict of arrays, one entry per reflection)"""
+        """Predict the reflections of all grains (sets self.spots, a dict of arrays, one entry per reflection).
+        On the dataset's omega bins: for a scan that wraps (ds.omega_wraps) each reflection once, folded onto
+        [obinedges[0], obinedges[0] + 360) as ds.omega_for_bins; otherwise every copy omega + 360 k within 1 degree
+        of the bin range (a box cut by the ends of the range is the pipeline's omega_edge)."""
         shape = self.detector_shape()
-        orange = (np.min(self.ds.omega) - 1, np.max(self.ds.omega) + 1)
+        e = self.ds.obinedges
+        orange = (e[0], e[0] + 360.0) if self.ds.omega_wraps else (e[0] - 1, e[-1] + 1)
         cols = {}
         for gid, g in enumerate(self.grains):
             p = predict_spots(g.ubi, g.translation, self.pars, self.ds_max, shape, self.e2dx, self.e2dy, orange)
@@ -1305,8 +1347,27 @@ class Harvester(object):
                                    sp['s0'], sp['f0'])
 
     def omega_step(self):
-        om = np.asarray(self.ds.omega[0], float)
-        return float(np.median(np.abs(np.diff(om)))) if om.size > 1 else 1.0
+        """the dataset's omega bin width, ds.ostep (degrees): one frame"""
+        return float(self.ds.ostep)
+
+    def _omega_period(self):
+        """one turn in frames (360 / omega_step) for the neighbour kernels if the scan wraps, else 0"""
+        return 360.0 / self.omega_step() if self.ds.omega_wraps else 0.0
+
+    def _sorted_frames(self, iscan):
+        """(frame indices, omega) of scan iscan sorted by omega on the dataset's bins. If the scan wraps, omega is
+        folded as ds.omega_for_bins and the frames are repeated one turn either side, so that the frames around any
+        predicted omega (folded the same way, see predict) are one contiguous range."""
+        om = np.asarray(self.ds.omega[iscan], float)
+        if self.ds.omega_wraps:
+            e0 = self.ds.obinedges[0]
+            om = (om - e0) % 360.0 + e0
+        order = np.argsort(om, kind='stable')
+        oms = om[order]
+        if self.ds.omega_wraps:
+            order = np.concatenate([order, order, order])
+            oms = np.concatenate([oms - 360.0, oms, oms + 360.0])
+        return order, oms
 
     def _overlaps(self):
         """n_overlap: number of other predicted reflections whose box overlaps this one (in s, f and omega)
@@ -1323,7 +1384,8 @@ class Harvester(object):
         order = np.lexsort((wf, key))
         sp['n_overlap'] = _count_overlaps(order, key[order], wf[order], sp['s0'][order], sp['f0'][order], sp['hs'][order],
                                           sp['hf'][order], sp['ho'][order], g[order], dty[order],
-                                          self.radius[g][order], ncf, int(2 * sp['ho'].max()))[np.argsort(order)]
+                                          self.radius[g][order], ncf, int(2 * sp['ho'].max()),
+                                          self._omega_period())[np.argsort(order)]
 
     def _static(self):
         """Per-reflection box geometry from the mask: good pixels in box and annulus, coordinate sums for
@@ -1384,7 +1446,8 @@ class Harvester(object):
         o = np.lexsort((wf, key))
         c, cmax = _overlap_contamination(key[o], wf[o], sp['s'][o], sp['f'][o], sp['s0'][o], sp['f0'][o], sp['hs'][o],
                                          sp['hf'][o], sp['ho'][o], sig_s[o], sig_f[o], sig_w[o], g[o], dty[o],
-                                         self.radius[g][o], np.asarray(I, float)[o], ncf, int(2 * sp['ho'].max()))
+                                         self.radius[g][o], np.asarray(I, float)[o], ncf, int(2 * sp['ho'].max()),
+                                         self._omega_period())
         inv = np.argsort(o)
         return c[inv], cmax[inv]
 
@@ -1407,7 +1470,8 @@ class Harvester(object):
         key, wf, o, ncf, dty = self._grid_order()
         g = sp['grain']
         return _pair_overlaps(key[o], wf[o], sp['s0'][o], sp['f0'][o], sp['hs'][o], sp['hf'][o], sp['ho'][o], g[o],
-                              dty[o], self.radius[g][o], ncf, int(2 * sp['ho'].max()), len(self.grains))
+                              dty[o], self.radius[g][o], ncf, int(2 * sp['ho'].max()), self._omega_period(),
+                              len(self.grains))
 
     def overlap_fractions(self, sigmas=None, frmin=1e-4):
         """sparse (nrefl, nrefl) CSR matrix F[i, j] = fraction of reflection j's profile (Gaussian, widths sigmas
@@ -1426,7 +1490,7 @@ class Harvester(object):
         n = len(o)
         args = (key[o], wf[o], sp['s'][o], sp['f'][o], sp['s0'][o], sp['f0'][o], sp['hs'][o], sp['hf'][o],
                 sp['ho'][o], sig_s[o], sig_f[o], sig_w[o], g[o], dty[o], self.radius[g][o], ncf,
-                int(2 * sp['ho'].max()), float(frmin))
+                int(2 * sp['ho'].max()), self._omega_period(), float(frmin))
         ptr = np.zeros(n + 1, np.int64)
         _overlap_fractions(*(args + (ptr, np.zeros(0, np.int64), np.zeros(0))))
         ptr = np.cumsum(ptr)
@@ -1453,19 +1517,16 @@ class Harvester(object):
     # ---------------------------------------------------------------- planning
     def plan_scan(self, iscan):
         """(frame indices, CSR pointers, reflection ids, omega offsets) for one scan: which reflections
-        are integrated on which frames"""
+        are integrated on which frames (omega offsets frame - prediction, on the circle if the scan wraps)"""
         ds, sp = self.ds, self.spots
-        om_f = np.asarray(ds.omega[iscan], float)
         dty = float(np.mean(ds.dty[iscan]))
         g = sp['grain']
         dty_pred = self._dty_pred()
         cand = np.flatnonzero(np.abs(dty - dty_pred) <= self.radius[g])
         if len(cand) == 0:
             return None
-        order = np.argsort(om_f)
-        oms = om_f[order]
-        step = np.median(np.abs(np.diff(oms))) if len(oms) > 1 else 1.0
-        half = (sp['ho'][cand] + 0.5) * step
+        order, oms = self._sorted_frames(iscan)
+        half = (sp['ho'][cand] + 0.5) * self.omega_step()
         lo = np.searchsorted(oms, sp['omega'][cand] - half)
         hi = np.searchsorted(oms, sp['omega'][cand] + half)
         n = hi - lo
@@ -1477,7 +1538,7 @@ class Harvester(object):
         pos = np.arange(n.sum()) - np.repeat(np.cumsum(n) - n, n) + lo[rep]
         frame = order[pos]
         spot = cand[rep]
-        dom = om_f[frame] - sp['omega'][spot]
+        dom = oms[pos] - sp['omega'][spot]
         o = np.argsort(frame, kind='stable')
         frame, spot, dom = frame[o], spot[o], dom[o]
         frames, ptr = np.unique(frame, return_index=True)
@@ -1561,6 +1622,18 @@ class Harvester(object):
                 print('weight sums %.0f s' % (time.time() - tw))
         self._dty_pred()            # before the fork: the workers share it
         _WORKER['h'] = self
+        if nproc is None:
+            nproc = max(1, len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else
+                        multiprocessing.cpu_count())
+        if nproc > 1:
+            # fork: the workers share the Harvester (python 2 has no get_context and forks); before the output
+            # file is opened, so that the workers do not inherit it
+            mp = multiprocessing.get_context('fork') if hasattr(multiprocessing, 'get_context') else multiprocessing
+            pool = mp.Pool(nproc)
+            it = pool.imap_unordered(_work_scan, scans)
+        else:
+            pool = None
+            it = map(_work_scan, scans)
         h5 = None
         if outfile is not None:
             h5 = h5py.File(outfile, 'w')
@@ -1578,23 +1651,16 @@ class Harvester(object):
             h5.attrs['box'] = repr(self.box)
             h5.attrs['box_omega_step'] = self.omega_step()
             for k, v in vars(self.box).items():
-                if v is not None:
+                if v is None:
+                    continue
+                if np.ndim(v):          # per-grain terms (ShoeboxModel phi, eps): datasets, not attributes
+                    h5.create_dataset('box_' + k, data=np.asarray(v))
+                else:
                     h5.attrs['box_' + k] = v
             h5.attrs['ds_max'] = self.ds_max
         t0 = time.time()
         nframes = 0
         failed = []
-        if nproc is None:
-            nproc = max(1, len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else
-                        multiprocessing.cpu_count())
-        if nproc > 1:
-            # fork: the workers share the Harvester (python 2 has no get_context and forks)
-            mp = multiprocessing.get_context('fork') if hasattr(multiprocessing, 'get_context') else multiprocessing
-            pool = mp.Pool(nproc)
-            it = pool.imap_unordered(_work_scan, scans)
-        else:
-            pool = None
-            it = map(_work_scan, scans)
         try:
             for k, (iscan, ids, acc, nf, dt, extra) in enumerate(it):
                 if ids is None:
@@ -1733,7 +1799,7 @@ class Harvester(object):
         present = self.present_scans()
         sel = [present[i] for i in np.linspace(0, len(present) - 1, min(nscans, len(present))).astype(int)]
         m = self.run(scans=sel, nproc=nproc, verbose=False)
-        step = float(np.median(np.abs(np.diff(self.ds.omega[sel[0]]))))
+        step = self.omega_step()
         strong = (m['I'] > min_snr * m['sigI']) & ~m['touch_mask'] & ~m['edge']
         if strong.sum() < 20:
             self.box = keep_box
@@ -1768,12 +1834,13 @@ class Harvester(object):
     # ---------------------------------------------------------------- viewing
     def spot_frames(self, ispot, iscan, extra=4):
         """Pixel stack (frames, rows, cols) around reflection ispot in scan iscan, covering the box and
-        annulus (plus `extra` frames either side), the omega of each frame, and the box corner."""
+        annulus (plus `extra` frames either side), the omega of each frame (next to the predicted omega, also
+        across the fold of a scan that wraps), and the box corner."""
         sp = self.spots
-        om_f = np.asarray(self.ds.omega[iscan], float)
-        step = float(np.median(np.abs(np.diff(om_f))))
-        fr = np.flatnonzero(np.abs(om_f - sp['omega'][ispot]) <= (sp['ho'][ispot] + extra + 0.5) * step)
-        fr = fr[np.argsort(om_f[fr])]
+        order, oms = self._sorted_frames(iscan)
+        half = (sp['ho'][ispot] + extra + 0.5) * self.omega_step()
+        lo, hi = np.searchsorted(oms, [sp['omega'][ispot] - half, sp['omega'][ispot] + half])
+        fr, om_fr = order[lo:hi], oms[lo:hi]
         hs, hf = int(sp['hs'][ispot] + sp['bw'][ispot]), int(sp['hf'][ispot] + sp['bw'][ispot])
         s0, f0 = int(sp['s0'][ispot]), int(sp['f0'][ispot])
         out = np.zeros((len(fr), 2 * hs + 1, 2 * hf + 1), np.float32)
@@ -1787,7 +1854,7 @@ class Harvester(object):
                 out[j, r[k] - s0 + hs, c[k] - f0 + hf] = vals[k] * self.scale[iscan, i]
         finally:
             rd.close()
-        return out, om_f[fr], (s0 - hs, f0 - hf)
+        return out, om_fr, (s0 - hs, f0 - hf)
 
     def show_spot(self, ispot, iscan, extra=2, ncols=8, vmax=None):
         """Plot the frames of one reflection in one scan, with the box (red) and annulus (blue) marked"""
@@ -1800,7 +1867,7 @@ class Harvester(object):
         vmax = vmax or max(float(stack.max()), 1.0)
         bw, phs, phf = int(sp['bw'][ispot]), int(sp['hs'][ispot]), int(sp['hf'][ispot])
         hs, hf = phs + bw, phf + bw
-        inbox = np.abs(oms - sp['omega'][ispot]) <= (sp['ho'][ispot] + 0.5) * np.median(np.abs(np.diff(oms)))
+        inbox = np.abs(oms - sp['omega'][ispot]) <= (sp['ho'][ispot] + 0.5) * self.omega_step()
         for j, ax in enumerate(axs.ravel()):
             ax.set_axis_off()
             if j >= n:

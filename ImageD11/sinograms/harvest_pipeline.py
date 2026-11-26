@@ -200,10 +200,11 @@ def harvest_with(cfg, sp, grains, radius, gid, members, fname, **kw):
 
 
 def labels_recon(grainsfile, group):
-    """grain label image of a TensorMap in the reconstruction frame (TensorMap.map_order_to_recon_order)"""
+    """grain label image of a TensorMap in the reconstruction frame (first z layer)"""
+    from ImageD11.sinograms.tensor_map import TensorMap
     with h5py.File(grainsfile, 'r') as f:
-        m = f[group]['maps']['labels'][0]
-    return np.flip(np.swapaxes(m, 0, 1), 1).astype(int)
+        m = f[group]['maps']['labels'][0:1]
+    return TensorMap.map_order_to_recon_order(m).astype(int)
 
 
 # ---------------------------------------------------------------------------------------------- steps
@@ -341,6 +342,7 @@ def step_duplicates(cfg):
     t1 = time.time()
     groups, pairs = harvester.duplicate_groups(h.spots, m, [g.ubi for g in h.grains],
                                                sym_u.getgroup(c['symmetry'])().group, h.omega_step(),
+                                               h.ds.omega_wraps,
                                                max_angle=c['max_angle'], min_shared=c['min_shared'],
                                                in_box=c['in_box'], to_partner=c['to_partner'], min_snr=c['min_snr'],
                                                pair_overlaps=M)
@@ -387,7 +389,7 @@ def final_set(cfg):
     parts = [sp]
     for n, gr in enumerate(groups):
         ks = [k_of[g] for g in gr]
-        msp, _ = harvester.union_spots(sp0, ks, ubis, h.omega_step())
+        msp, _ = harvester.union_spots(sp0, ks, ubis, h.omega_step(), h.ds.omega_wraps)
         msp['grain'] = np.full(len(msp['h']), len(keep) + n, np.int32)
         parts.append(dict((c, msp[c]) for c in COLS))
         w = np.array([h.radius[k] ** 2 for k in ks])
@@ -413,11 +415,10 @@ def step_sample(cfg):
     c = cfg['sample']
     ds, _ = dataset_and_pars(cfg)
     ny = len(ds.ybincens)
-    om = np.asarray(ds.omega, float)
-    edges = np.arange(np.floor(om.min()), np.ceil(om.max()) + c['omega_bin'], c['omega_bin'])
     t0 = time.time()
     with h5py.File(out(cfg, 'pass1.h5'), 'r') as f:
         omega = f['spots/omega'][()]
+        edges = np.arange(np.floor(omega.min()), np.ceil(omega.max()) + c['omega_bin'], c['omega_bin'])
         ps = f['per_scan']
         sino = np.zeros((len(edges) - 1, ny))
         n, chunk = ps['spot'].shape[0], 1 << 25
@@ -456,6 +457,8 @@ def step_flags(cfg):
         kw = dict((k[4:], a[k]) for k in a if k.startswith('box_') and k[4:] in
                   ('psf', 'bandpass', 'phi0', 'phi0_t', 'omega0', 'phi', 'eps', 'frame', 'sin_eta_min'))
         for k in ('phi', 'eps'):
+            if 'box_' + k in f0:            # per-grain arrays are datasets (attributes in older files)
+                kw[k] = f0['box_' + k][()]
             kw[k] = np.broadcast_to(np.asarray(kw.get(k, 0.0), float), (len(gid0),))[main]
         model = harvester.ShoeboxModel(**kw)
     sp = h.spots
@@ -575,7 +578,10 @@ def _grain(k):
     H = np.column_stack((sp['h'], sp['k'], sp['l']))
     # boxes cut by the ends of the omega range
     half = (sp['ho'] + 0.5) * G['ostep']
-    omega_edge = (sp['omega'] - half < G['omega_range'][0]) | (sp['omega'] + half > G['omega_range'][1])
+    if G['omega_range'] is None:        # the scan wraps: no ends
+        omega_edge = np.zeros(nr, bool)
+    else:
+        omega_edge = (sp['omega'] - half < G['omega_range'][0]) | (sp['omega'] + half > G['omega_range'][1])
     use = np.all(H % int(c['hkl_divisor']) == 0, axis=1) & ~G['drop'][a:b] & ~sp['edge'] & ~sp['touch_mask'] & \
         ~omega_edge & (np.abs(np.sin(np.radians(sp['eta']))) >= c['min_sin_eta']) & (I_sum > c['snr_min'] * s_sum)
     idx = np.flatnonzero(use)
@@ -644,9 +650,8 @@ def step_grains(cfg):
     _G['start'] = np.searchsorted(_G['sp']['grain'], np.arange(len(_G['gid']) + 1))
     _G['rstart'] = np.searchsorted(_G['spot'], _G['start'])
     _G['cfg'], _G['ds'] = cfg, ds
-    om = np.asarray(ds.omega, float)
-    _G['omega_range'] = (om.min(), om.max())
-    _G['ostep'] = float(np.median(np.abs(np.diff(om, axis=-1))))
+    _G['omega_range'] = None if ds.omega_wraps else (ds.obinedges[0], ds.obinedges[-1])
+    _G['ostep'] = float(ds.ostep)
     _G['mask'], _G['mu'] = None, 0.0
     ca = cfg['absorption']
     if ca['formula'] is not None:
@@ -691,6 +696,10 @@ def step_grains(cfg):
 
 
 def run(cfg, steps=None):
+    # The steps fork worker pools after numba parallel kernels have run in this process (flags, then pass2 and
+    # grains); GNU OpenMP does not survive a fork, so ask numba for a fork-safe threading layer.
+    import numba
+    numba.config.THREADING_LAYER = 'forksafe'
     for s in (steps or STEPS):
         t0 = time.time()
         log('=== %s' % s)
