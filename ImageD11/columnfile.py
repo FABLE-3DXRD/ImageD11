@@ -623,6 +623,8 @@ try:
                 g.create_dataset( t, data = dat,
                                   compression=compression,
                                   compression_opts=compression_opts )
+        add_nexus_attributes(g)
+
         if opened:
             h.close()
 
@@ -646,6 +648,7 @@ try:
             else:
                 ty = np.float64
             g.create_dataset( t, data = getattr(cf, t).astype( ty ) )
+        add_nexus_attributes(g)
         h.close()
 
     def colfile_from_hdf( hdffile , name=None, obj=None ):
@@ -1060,6 +1063,25 @@ def colfile2db( colfilename, dbname ):
     curs.close()
     dbo.commit()
     dbo.close()
+
+SIGNALS = ('Number_of_pixels', 'sum_intensity', 'avg_intensity')
+AXES_COUPLES = (('ds', 'eta'), ('fc', 'sc'), ('f_raw', 's_raw'))
+
+def add_nexus_attributes(group):
+    col_attributes = set(group.keys())
+    available_signals = [s for s in SIGNALS if s in col_attributes]
+    if not available_signals:
+        return
+    group.parent.attrs['default'] = group.name
+    group.attrs['NX_class'] = 'NXdata'
+    group.attrs['signal'] = available_signals[0]
+    if available_signals[1:]:
+        group.attrs['auxiliary_signals'] = available_signals[1:]
+
+    for (ax0, ax1) in AXES_COUPLES:
+        if ax0 in col_attributes and ax1 in col_attributes:
+            group.attrs['axes'] = [ax0, ax1]
+            return
 
 if __name__ == "__main__":
     bench()
