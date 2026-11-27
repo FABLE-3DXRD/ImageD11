@@ -79,6 +79,10 @@ class TestReaderBslz4(unittest.TestCase):
         self.options.bg = np.random.RandomState(1).uniform(0, 2, (10, 64, 128))
         self.compare()
 
+    def test_no_mask(self):
+        self.options.mask = None
+        self.compare()
+
 
 if __name__ == "__main__":
     unittest.main()

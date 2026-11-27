@@ -255,6 +255,9 @@ def reader(frms, mask, cut, start=0):
     returns sparseframes
     """
     assert start < len(frms)
+    if mask is None:
+        # put in a dummy now that we have the frame shape
+        mask = OPTIONS.mask = np.ones(frms.shape[1:], dtype=np.uint8)
     bgh5 = None
     bg = OPTIONS.bg
     try:
@@ -364,9 +367,6 @@ def segment_lima(args):
             g.attrs["shape1"] = frms.shape[2]
             npx = 0
             nframes = frms.shape[0]
-            if OPTIONS.mask is None:
-                # put in a dummy now that we have the frame shape
-                OPTIONS.mask = np.ones((frms.shape[1], frms.shape[2]), dtype=np.uint8)
             for i, spf in enumerate(reader(frms, OPTIONS.mask, OPTIONS.cut)):
                 if i % 100 == 0:
                     if spf is None:
