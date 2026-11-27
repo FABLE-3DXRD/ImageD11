@@ -1487,7 +1487,9 @@ def get_opts_seg(mask = None, bg = None, cut = 1, pixels_in_spot = 1):
         cut (float):     keep values abuve cut in first look at image
         pixels_in_spot:  minimum number of pixels in a single spot
     """
-    thresholds = tuple([cut * pow(2, i) for i in range(6)])
+    # top_pixels doubles the threshold: start from 1 if cut is not > 0
+    base = cut if cut > 0 else 1
+    thresholds = tuple([base * pow(2, i) for i in range(6)])
     opts_seg = {"mask": mask,
         "bg": bg,
         "cut": cut,           # keep values abuve cut in first look at image

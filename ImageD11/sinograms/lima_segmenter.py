@@ -86,7 +86,9 @@ class SegmenterOptions:
         )
 
     def setup(self):
-        self.thresholds = tuple([self.cut * pow(2, i) for i in range(6)])
+        # top_pixels doubles the threshold: start from 1 if cut is not > 0
+        base = self.cut if self.cut > 0 else 1
+        self.thresholds = tuple([base * pow(2, i) for i in range(6)])
         # validate input
         if len(self.maskfile):
             # The mask must have:

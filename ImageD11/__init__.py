@@ -24,3 +24,12 @@ __author_email__ = 'wright@esrf.fr'
 
 
 
+
+import sys
+if sys.version_info[0] == 2:
+    # hdf5plugin 1.4.1 (the python 2 pin) sets HDF5_PLUGIN_PATH and refuses
+    # to import after h5py: load it before any ImageD11 module loads h5py
+    try:
+        import hdf5plugin  # noqa: F401
+    except ImportError:
+        pass
