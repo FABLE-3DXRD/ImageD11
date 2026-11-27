@@ -1570,33 +1570,21 @@ def _clean_dist_matrix(dij, verbose=True):
     nnz_row = np.count_nonzero(dij.getnnz(axis=1))
     N_candidates = min(nnz_col, nnz_row)
 
-    dij_inv      = dij.copy()
-    dij_inv.data = 1.0 / dij_inv.data
+    coo   = dij.tocoo()
+    rows, cols, dists = coo.row, coo.col, coo.data
 
-    # pass 1: for each column keep only the closest row
-    row_ind  = np.array(dij_inv.argmax(axis=0)).ravel()
-    col_ind  = np.arange(dij_inv.shape[1])
-    max_vals = np.array(dij_inv[row_ind, col_ind]).ravel()
-    valid    = max_vals > 0
-    dij_inv  = csr_matrix(
-        (max_vals[valid], (row_ind[valid], col_ind[valid])),
-        shape=dij_inv.shape)
+    # pass 1: for each column keep only the closest row (lowest row on ties)
+    order = np.lexsort((rows, dists, cols))
+    keep  = order[np.r_[True, cols[order][1:] != cols[order][:-1]]]
+    rows, cols, dists = rows[keep], cols[keep], dists[keep]
 
-    # pass 2: for each row keep only the closest column
-    col_ind  = np.array(dij_inv.argmax(axis=1)).ravel()
-    row_ind  = np.arange(dij_inv.shape[0])
-    max_vals = np.array(dij_inv[row_ind, col_ind]).ravel()
-    valid    = max_vals > 0
-    dij_inv  = csr_matrix(
-        (max_vals[valid], (row_ind[valid], col_ind[valid])),
-        shape=dij_inv.shape)
-
-    dij_inv.eliminate_zeros()
-    rows, cols = dij_inv.nonzero()
-    dists      = 1.0 / dij_inv.data
+    # pass 2: for each row keep only the closest column (lowest column on ties)
+    order = np.lexsort((cols, dists, rows))
+    keep  = order[np.r_[True, rows[order][1:] != rows[order][:-1]]]
+    rows, cols, dists = rows[keep], cols[keep], dists[keep]
 
     if verbose:
-        print('{} pairs kept out of {} possible matches'.format(dij_inv.nnz, N_candidates))
+        print('{} pairs kept out of {} possible matches'.format(len(rows), N_candidates))
     return dists, rows, cols
 
 def _physical_pair_distance(cf, idx1, idx2, pair_type='omega'):
