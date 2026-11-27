@@ -350,11 +350,7 @@ class GrainSinogram:
         if method == "iradon":
             recon_function = ImageD11.sinograms.roi_iradon.run_iradon
         elif method == "mlem":
-            # MLEM has niter as an extra argument
             recon_function = ImageD11.sinograms.roi_iradon.run_mlem
-            # Overwrite the default argument if self.recon_niter is set
-            if self.recon_niter is not None and "niter" not in extra_args:
-                extra_args["niter"] = self.recon_niter
             # TODO: We should think about default reconstruction arguments in more detail
             # At the moment, we could pass None for pad or shift etc to recon_function if they are not manually set, which seems dangerous
             # Do we check for None at the start of this function?
@@ -362,6 +358,9 @@ class GrainSinogram:
             
         elif method == "astra":
             recon_function = run_astra
+        # mlem and astra iterate: self.recon_niter overrides their default niter
+        if method != "iradon" and self.recon_niter is not None and "niter" not in extra_args:
+            extra_args["niter"] = self.recon_niter
 
         # These two are properties of the sinogram and of the finished
         # reconstruction, not of the backend, so handle them here rather than
