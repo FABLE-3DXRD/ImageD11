@@ -333,7 +333,7 @@ class transformer:
             self.colfile.nrows))
 
     def tth_entropy(self):
-        """
+        r"""
         Compute the entropy of the two theta values
         ... this may depend on the number of tth bins (perhaps?)
         ... to be used for cell parameter free line straightening

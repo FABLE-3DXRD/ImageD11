@@ -653,7 +653,7 @@ def cf_plot_sino(cfs, skip=1, hist2d_plot=False, bins=(3620, 400)):
             cbar = plt.colorbar(scatter, ax=a[i])
             cbar.set_label('Sum Intensity')  # Label for the colorbar        
         a[i].set_xlabel('Omega ($^{o}$)')
-        a[i].set_ylabel('dty ($\mu$m)')
+        a[i].set_ylabel(r'dty ($\mu$m)')
     
     plt.tight_layout()
     plt.show()

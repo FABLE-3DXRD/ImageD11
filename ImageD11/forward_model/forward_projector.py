@@ -816,7 +816,7 @@ date""".format(
                    bins = (self.omega_angles.shape[0], self.dtys.shape[0]), norm='log')
         plt.colorbar(label="Log Intensity")
         plt.xlabel("Omega ($^{o}$)")
-        plt.ylabel("dty ($\mu$m)")
+        plt.ylabel(r"dty ($\mu$m)")
         plt.show()
 
 
