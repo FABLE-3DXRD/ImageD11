@@ -31,7 +31,7 @@ def list_a_folder( folder ):
         things it doesn't understand (no number)
     """
 #    NotGreedyAnything:Digit:~Digit:End
-    reg = re.compile("(.*?)(\d*)(\D*)$")
+    reg = re.compile(r"(.*?)(\d*)(\D*)$")
     direcs = []
     names = []
     files  = {} # keyed by extension, then stem, then num sorted

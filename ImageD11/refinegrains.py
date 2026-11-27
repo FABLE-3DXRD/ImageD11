@@ -840,7 +840,7 @@ class refinegrains:
 
 
 def compute_lp_factor( colfile, **kwds ):
-    """
+    r"""
     We'll assume for simplicity that wedge, chi, tilts are all zero
     Of course we should put that in sometime in the near future
 
