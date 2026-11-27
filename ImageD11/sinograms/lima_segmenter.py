@@ -15,12 +15,12 @@ os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 import sys
 import time
 import math
+import re
 import logging
 import numpy as np
 import h5py
 import hdf5plugin
 import fabio
-import numba
 import warnings
 
 from ImageD11 import sparseframe
@@ -29,9 +29,15 @@ import ImageD11.cImageD11
 
 
 try:
+    import bslz4_to_sparse
     from bslz4_to_sparse import chunk2sparse
 except ImportError:
     chunk2sparse = None
+
+# bslz4_to_sparse >= 0.0.22 applies top_pixels while decoding
+CHUNK2SPARSE_HOWMANY = chunk2sparse is not None and tuple(
+    int(x) for x in re.findall(r"\d+", getattr(bslz4_to_sparse, "version", "0"))[:3]
+) >= (0, 0, 22)
 
 # Code to clean the 2D image and reduce it to a sparse array:
 # things we might edit
@@ -135,22 +141,17 @@ class SegmenterOptions:
                     grp.attrs[name] = value
 
 
-@numba.njit
 def select(img, mask, row, col, val, cut):
     # TODO: This is in now cImageD11.tosparse_{u16|f32}
     # Choose the pixels that are > cut and put into sparse arrays
-    k = 0
-    for s in range(img.shape[0]):
-        for f in range(img.shape[1]):
-            if img[s, f] * mask[s, f] > cut:
-                row[k] = s
-                col[k] = f
-                val[k] = img[s, f]
-                k += 1
+    r, c = np.nonzero(img * mask > cut)
+    k = len(r)
+    row[:k] = r
+    col[:k] = c
+    val[:k] = img[r, c]
     return k
 
 
-@numba.njit
 def top_pixels(nnz, row, col, val, howmany, thresholds):
     """
     selects the strongest pixels from a sparse collection
@@ -161,30 +162,19 @@ def top_pixels(nnz, row, col, val, howmany, thresholds):
     # quick return if there are already few enough pixels
     if nnz <= howmany:
         return nnz
-    # histogram of how many pixels are above each threshold
-    h = np.zeros(len(thresholds), dtype=np.uint32)
-    for k in range(nnz):
-        for i, t in enumerate(thresholds):
-            if val[k] > t:
-                h[i] += 1
-            else:
-                break
-    # choose the one to use. This is the first that is lower than howmany
+    v = val[:nnz]
+    # choose the first threshold leaving fewer than howmany, else the last
     tcut = thresholds[-1]
-    for n, t in zip(h, thresholds):
-        if n < howmany:
+    for t in thresholds:
+        if np.count_nonzero(v > t) < howmany:
             tcut = t
             break
     # now we filter the pixels
-    n = 0
-    for k in range(nnz):
-        if val[k] > tcut:
-            row[n] = row[k]
-            col[n] = col[k]
-            val[n] = val[k]
-            n += 1
-            if n >= howmany:
-                break
+    keep = np.flatnonzero(v > tcut)[:howmany]
+    n = len(keep)
+    row[:n] = row[keep]
+    col[:n] = col[keep]
+    val[:n] = v[keep]
     return n
 
 
@@ -202,6 +192,20 @@ class frmtosparse:
     def __call__(self, frm, cut):
         nnz = select(frm, self.mask, self.row, self.col, self.val, cut)
         return nnz, self.row[:nnz], self.col[:nnz], self.val[:nnz]
+
+
+class frmtosparse_bslz4:
+    """As frmtosparse, plus top_pixels, done by bslz4_to_sparse >= 0.0.22"""
+
+    def __init__(self, mask, dtype, howmany, thresholds):
+        self.c2s = chunk2sparse(mask, dtype, howmany=howmany, thresholds=thresholds)
+        self.nj = mask.shape[1]
+
+    def __call__(self, frm, cut):
+        npx, (val, idx) = self.c2s.from_frames(frm[np.newaxis], cut)
+        nnz = int(npx[0])
+        row, col = np.divmod(idx[0, :nnz], self.nj)
+        return nnz, row.astype(np.uint16), col.astype(np.uint16), val[0, :nnz].copy()
 
 
 def clean(nnz, row, col, val, config_options= None):
@@ -282,21 +286,40 @@ def reader(frms, mask, cut, start=0):
             and (bg is None)
         ):
             print("# reading compressed chunks")
-            fun = chunk2sparse(mask, dtype=frms.dtype)
+            if CHUNK2SPARSE_HOWMANY:
+                fun = chunk2sparse(
+                    mask,
+                    dtype=frms.dtype,
+                    howmany=OPTIONS.howmany,
+                    thresholds=OPTIONS.thresholds,
+                )
+            else:  # older versions: clean() calls top_pixels instead
+                fun = chunk2sparse(mask, dtype=frms.dtype)
             for i in range(start, frms.shape[0]):
                 filters, chunk = frms.id.read_direct_chunk((i, 0, 0))
                 npx, row, col, val = fun.coo(chunk, cut)
                 spf = clean(npx, row, col, val)
                 yield spf
         else:
-            fun = frmtosparse(mask, frms.dtype)
+            # buffers reused for every frame
+            raw = np.empty(frms.shape[1:], frms.dtype)
+            frm = raw if bg is None else np.empty(raw.shape, np.float32)
+            if bg is not None:
+                bgi = np.empty(raw.shape, np.float32)
+                if bg.ndim == 2:
+                    bgi[...] = bg
+            if CHUNK2SPARSE_HOWMANY:
+                fun = frmtosparse_bslz4(
+                    mask, frm.dtype, OPTIONS.howmany, OPTIONS.thresholds
+                )
+            else:
+                fun = frmtosparse(mask, frm.dtype)
             for i in range(start, frms.shape[0]):
-                frm = frms[i]
+                frms.read_direct(raw, np.s_[i])
                 if bg is not None:
                     if bg.ndim == 3:
-                        frm = frm.astype(np.float32) - bg[i]
-                    else:
-                        frm = frm.astype(np.float32) - bg
+                        bgi[...] = bg[i]
+                    np.subtract(raw, bgi, out=frm, dtype=np.float32)
                 npx, row, col, val = fun(frm, cut)
                 spf = clean(npx, row, col, val)
                 yield spf
