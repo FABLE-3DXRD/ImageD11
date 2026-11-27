@@ -184,6 +184,64 @@ class test_laue_rotations( unittest.TestCase ):
                                               np.dot( U, np.dot( s, B ) ) ) )
 
 
+class test_lattice_group( unittest.TestCase ):
+
+    def test_keeps_cell_and_contains_laue(self):
+        for no, choice, cell in all_settings():
+            lattice = ImageD11.sym_u.lattice_group( no, choice )
+            ubi = np.linalg.inv( ImageD11.unitcell.unitcell( cell ).B )
+            g = np.dot( ubi, ubi.T )
+            for a in lattice.group:
+                self.assertTrue( np.allclose( np.dot( np.dot( a, g ), a.T ), g ), (no, choice) )
+            for o in ImageD11.sym_u.laue_rotations( no, choice ).group:
+                self.assertTrue( lattice.isMember( o ), (no, choice) )
+
+    def test_named_groups(self):
+        for no, choice, name in [ (2, "standard", "triclinic"), (14, "standard", "monoclinic_b"),
+                                  (62, "standard", "orthorhombic"), (88, "standard", "tetragonal"),
+                                  (147, "standard", "hexagonal"), (150, "standard", "hexagonal"),
+                                  (164, "standard", "hexagonal"), (176, "standard", "hexagonal"),
+                                  (148, "standard", "trigonal"), (167, "standard", "trigonal"),
+                                  (148, "rhombohedral", "rhombohedralP"),
+                                  (205, "standard", "cubic"), (225, "standard", "cubic") ]:
+            self.assertTrue( ImageD11.sym_u.lattice_group( no, choice ) is
+                             ImageD11.sym_u.getgroup( name )(), (no, choice) )
+
+
+class test_twin_variants( unittest.TestCase ):
+
+    def test_counts(self):
+        # |lattice group| / |Laue class|, rotations only
+        for no, choice, n in [ (2, "standard", 1), (14, "standard", 1), (88, "standard", 2),
+                               (139, "standard", 1), (147, "standard", 4), (148, "standard", 2),
+                               (148, "rhombohedral", 2), (150, "standard", 2), (154, "standard", 2),
+                               (164, "standard", 2), (166, "standard", 1), (176, "standard", 2),
+                               (194, "standard", 1), (205, "standard", 2), (225, "standard", 1) ]:
+            self.assertEqual( len( ImageD11.sym_u.twin_variants( np.eye(3), no, choice ) ), n,
+                              (no, choice) )
+
+    def test_quartz_flipmats(self):
+        # the hand-written flipmats for quartz in pf3dxrd: identity and the 2-fold along c
+        ops = ImageD11.sym_u.twin_operators( 154 )
+        laue = ImageD11.sym_u.laue_rotations( 154 )
+        self.assertEqual( len( ops ), 2 )
+        self.assertTrue( np.allclose( ops[0], np.eye(3) ) )
+        self.assertTrue( laue.isMember( np.dot( ops[1], np.linalg.inv( np.diag( [-1., -1., 1.] ) ) ) ) )
+
+    def test_same_peaks_not_laue_equivalent(self):
+        rng = np.random.RandomState( 42 )
+        for no, choice, cell in all_settings():
+            U = np.linalg.qr( rng.normal( size = (3,3) ) )[0]
+            ubi = np.linalg.inv( np.dot( U, ImageD11.unitcell.unitcell( cell ).B ) )
+            variants = ImageD11.sym_u.twin_variants( ubi, no, choice )
+            self.assertTrue( np.allclose( variants[0], ubi ) )
+            laue = ImageD11.sym_u.laue_rotations( no, choice )
+            for i, v in enumerate( variants ):
+                # same metric: the same lattice, so the same peak positions
+                self.assertTrue( np.allclose( np.dot( v, v.T ), np.dot( ubi, ubi.T ) ), (no, choice) )
+                for w in variants[:i]:
+                    self.assertFalse( laue.isMember( np.dot( v, np.linalg.inv( w ) ) ), (no, choice) )
+
 
 if __name__=="__main__":
     unittest.main()

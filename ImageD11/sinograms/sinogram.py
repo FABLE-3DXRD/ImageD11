@@ -45,6 +45,30 @@ class StructureFactorCorrection:
         shifted = hkl - self.hkl_min[:, np.newaxis]
         return self.sf_dense[shifted[0], shifted[1], shifted[2]]
 
+    @classmethod
+    def from_cif(cls, cif_path, wavelength, tth_max, min_fraction=1e-3):
+        """X-ray structure factors |F|^2 of every reflection up to tth_max (degrees)
+        at wavelength (Angstrom), computed from a CIF with Dans_Diffraction.
+        The hkl are in the cell of the CIF, which should be the standard setting.
+        Reflections weaker than min_fraction of the strongest are not tabulated
+        (systematic absences and nearly absent ones), so dividing by sf_values
+        stays finite."""
+        import Dans_Diffraction as dif  # optional dependency
+        crystal = dif.Crystal(cif_path)
+        crystal.Scatter.setup_scatter(scattering_type="xray", wavelength_a=wavelength,
+                                      output=False)
+        hkl = np.asarray(crystal.Cell.all_hkl(wavelength_a=wavelength, max_angle=tth_max),
+                         dtype=int)
+        sf = np.asarray(crystal.Scatter.intensity(hkl), dtype=float)
+        hkl_min = hkl.min(axis=0)
+        shape = tuple(hkl.max(axis=0) - hkl_min + 1)
+        sf_dense = np.zeros(shape, dtype=float)
+        valid = np.zeros(shape, dtype=bool)
+        idx = tuple((hkl - hkl_min).T)
+        sf_dense[idx] = sf
+        valid[idx] = sf > min_fraction * sf.max()
+        return cls(sf_dense, valid, hkl_min)
+
 class GrainSinogram:
     """Class to build, hold and reconstruct sinograms of grains for Scanning 3DXRD data"""
 

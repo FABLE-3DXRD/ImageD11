@@ -273,6 +273,64 @@ def laue_rotations(spacegroup, cell_choice="standard"):
     """
     return generate_group(*laue_generators[laue_class(spacegroup, cell_choice)])
 
+# Holohedry (point group of the lattice) of each crystal system, a key of laue_generators.
+# Trigonal space groups are split below: hP lattice (6/mmm) or hR lattice (-3m).
+_holohedry = {
+    "triclinic"    : "-1",
+    "monoclinic"   : "2/m",
+    "orthorhombic" : "mmm",
+    "tetragonal"   : "4/mmm",
+    "hexagonal"    : "6/mmm",
+    "cubic"        : "m-3m",
+}
+
+def lattice_group(spacegroup, cell_choice="standard"):
+    """
+    Rotations of the point group of the lattice (holohedry) of a space group
+    (number 1-230), as the same group objects as cubic(), hexagonal(), etc.
+    Peak positions only see the lattice: these are the orientations that index
+    the same peaks. It contains laue_rotations(spacegroup, cell_choice).
+    cell_choice is "standard" or "rhombohedral" (R groups on rhombohedral axes)
+    """
+    from xfab import sg
+    spg = sg.sg(sgno=spacegroup)
+    if spg.crystal_system == "trigonal":
+        if not spg.name.startswith("R"):
+            key = "6/mmm"   # a primitive trigonal lattice is hexagonal
+        elif cell_choice == "rhombohedral":
+            key = "-3mR"
+        else:
+            key = "-3m1"
+    else:
+        key = _holohedry[spg.crystal_system]
+    return generate_group(*laue_generators[key])
+
+def twin_operators(spacegroup, cell_choice="standard"):
+    """
+    One rotation per coset of laue_rotations() in lattice_group(), the identity first.
+    Applied as op.ubi, they give the orientations that index the same peak positions
+    but predict different intensities (the "flipmats" of a lattice-only indexing).
+    Only the identity when the Laue class is the lattice group (e.g. m-3m); two for
+    4/m, m-3, 6/m or the Dauphine twin of quartz (-3m1); four for -3 on hexagonal axes.
+    cell_choice is "standard" or "rhombohedral" (R groups on rhombohedral axes)
+    Returns a list of 3x3 matrices
+    """
+    laue = laue_rotations(spacegroup, cell_choice)
+    lattice = lattice_group(spacegroup, cell_choice)
+    ops = []
+    for op in lattice.group:  # the identity comes first
+        if not any(laue.isMember(np.dot(op, np.linalg.inv(o))) for o in ops):
+            ops.append(op)
+    return ops
+
+def twin_variants(ubi, spacegroup, cell_choice="standard"):
+    """
+    The twin variants of ubi: op.ubi for each op of twin_operators(), ubi first.
+    cell_choice is "standard" or "rhombohedral" (R groups on rhombohedral axes)
+    Returns a list of ubi matrices
+    """
+    return [np.dot(op, ubi) for op in twin_operators(spacegroup, cell_choice)]
+
 def cartesian(grp, B):
     """
     The operations of grp as rotations S of the crystal frame of B:
