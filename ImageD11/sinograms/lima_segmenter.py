@@ -18,8 +18,8 @@ import math
 import re
 import logging
 import numpy as np
-import h5py
 import hdf5plugin
+import h5py
 import fabio
 import warnings
 

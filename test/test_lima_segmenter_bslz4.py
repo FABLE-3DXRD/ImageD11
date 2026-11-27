@@ -6,12 +6,17 @@ when top_pixels has to cut frames."""
 
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 
+if sys.version_info[0] == 2 and "h5py" in sys.modules:
+    # hdf5plugin 1.4.1 (setup.py pin for python 2) will not import after h5py
+    raise unittest.SkipTest("hdf5plugin 1.4.1 cannot import after h5py")
+
 import numpy as np
-import h5py
 import hdf5plugin
+import h5py
 
 from ImageD11.sinograms import lima_segmenter
 
