@@ -1375,7 +1375,8 @@ class TensorMap:
             # iterate over phases
             for phase_id in self.phases.keys():
                 if backend == "orix":
-                    phase_mask = self.phase_ids == phase_id
+                    # same voxels as get_meta_orix_orien: this phase and a non-nan U
+                    phase_mask = (self.phase_ids == phase_id) & ~np.isnan(self.U[..., 0, 0])
                     inds = np.mgrid[0:shape[0] * shape[1] * shape[2]][phase_mask.ravel()]
                     rgb_flat = self.phases[phase_id].get_ipf_colour_from_orix_orien(self.get_meta_orix_orien(phase_id),
                                                                                     axis=axis, key=key, backend=backend)
