@@ -206,3 +206,17 @@ def test_chunks(sim, folder, pair_type, chunk_type):
     print(pair_type, chunk_type, good, wrong, npos // 2)
     assert wrong == 0
     assert good > 0.85 * npos / 2
+
+
+def test_clean_dist_matrix():
+    # (row, col, dist): col 0 -> row 1 (closer); col 2 tie -> row 2 (lower
+    # row), then row 2 prefers col 3; row 3 is left unmatched; a zero
+    # distance is a match.
+    entries = [(0, 0, 1.0), (1, 0, 0.5), (0, 1, 2.0), (2, 2, 1.0),
+               (3, 2, 1.0), (2, 3, 0.5), (4, 4, 0.0)]
+    r, c, d = [np.array(x) for x in zip(*entries)]
+    dij = fp.csr_matrix((d, (r, c)), shape=(5, 5))
+    dists, rows, cols = fp._clean_dist_matrix(dij, verbose=False)
+    assert rows.tolist() == [0, 1, 2, 4]
+    assert cols.tolist() == [1, 0, 3, 4]
+    assert dists.tolist() == [2.0, 0.5, 0.5, 0.0]
