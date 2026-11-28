@@ -76,7 +76,6 @@ class test_orthorhombic_rh(  unittest.TestCase , trh):
 # a cell compatible with each group, in the setting the group expects
 CELLS = { 'cubic' : (4.,4.,4.,90.,90.,90.),
           'hexagonal' : (3.,3.,5.,90.,90.,120.),
-          'trigonal' : (4.913,4.913,5.405,90.,90.,120.),
           'trigonalH' : (4.913,4.913,5.405,90.,90.,120.),
           'trigonalP' : (5.,5.,5.,70.,70.,70.),
           'rhombohedralP' : (5.,5.,5.,70.,70.,70.),
@@ -100,7 +99,7 @@ class test_ops_keep_cell( unittest.TestCase ):
     def test_find_uniq_u_trigonal(self):
         # issue 662 : alpha quartz came back as 4.913, 8.51, 5.405, 90, 90, 30
         rng = np.random.RandomState( 42 )
-        B = ImageD11.unitcell.unitcell( CELLS['trigonal'] ).B
+        B = ImageD11.unitcell.unitcell( CELLS['trigonalH'] ).B
         g = np.linalg.inv( np.dot( B.T, B ) )
         grp = ImageD11.sym_u.trigonal()
         for i in range( 100 ):
@@ -163,7 +162,7 @@ class test_laue_rotations( unittest.TestCase ):
 
     def test_same_as_holohedral_groups(self):
         for no, old in [ (2, 'triclinic'), (14, 'monoclinic_b'), (62, 'orthorhombic'),
-                         (139, 'tetragonal'), (150, 'trigonal'), (194, 'hexagonal'),
+                         (139, 'tetragonal'), (166, 'trigonalH'), (194, 'hexagonal'),
                          (225, 'cubic') ]:
             self.assertTrue( ImageD11.sym_u.laue_rotations( no ) is
                              ImageD11.sym_u.getgroup( old )(), no )
@@ -201,11 +200,16 @@ class test_lattice_group( unittest.TestCase ):
                                   (62, "standard", "orthorhombic"), (88, "standard", "tetragonal"),
                                   (147, "standard", "hexagonal"), (150, "standard", "hexagonal"),
                                   (164, "standard", "hexagonal"), (176, "standard", "hexagonal"),
-                                  (148, "standard", "trigonal"), (167, "standard", "trigonal"),
+                                  (148, "standard", "trigonalH"), (167, "standard", "trigonalH"),
                                   (148, "rhombohedral", "rhombohedralP"),
+                                  (167, "rhombohedral", "trigonalP"),
                                   (205, "standard", "cubic"), (225, "standard", "cubic") ]:
             self.assertTrue( ImageD11.sym_u.lattice_group( no, choice ) is
                              ImageD11.sym_u.getgroup( name )(), (no, choice) )
+
+    def test_trigonal_raises(self):
+        # a P trigonal lattice is hexagonal : the name "trigonal" gave half the group
+        self.assertRaises( ValueError, ImageD11.sym_u.getgroup, 'trigonal' )
 
 
 class test_twin_variants( unittest.TestCase ):
