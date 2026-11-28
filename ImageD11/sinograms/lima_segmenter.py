@@ -26,6 +26,7 @@ import warnings
 from ImageD11 import sparseframe
 from ImageD11.sinograms import dataset
 import ImageD11.cImageD11
+from ImageD11.nputils import read_direct_chunk
 
 
 try:
@@ -301,7 +302,7 @@ def reader(frms, mask, cut, start=0):
             else:  # older versions: clean() calls top_pixels instead
                 fun = chunk2sparse(mask, dtype=frms.dtype)
             for i in range(start, frms.shape[0]):
-                filters, chunk = frms.id.read_direct_chunk((i, 0, 0))
+                filters, chunk = read_direct_chunk(frms, (i, 0, 0))
                 npx, row, col, val = fun.coo(chunk, cut)
                 spf = clean(npx, row, col, val)
                 yield spf
