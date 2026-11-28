@@ -178,6 +178,13 @@ scripts = ["ImageD11/rsv_mapper.py",
 ################################################################################
 # Things we depend on. This generally borks things if pip
 # tries to do source installs of all of these.
+#
+# - Take whatever pip resolves. New python with new packages should work.
+# - A ">=" floor is fine where older releases are bad.
+# - "==" or "<=" only for an old python (2.7), where newer releases have
+#   no Requires-Python and pip would pick something broken.
+# - Every pin must have binary wheels on all the CI platforms.
+# - Do not add constraints for python versions that do not exist yet.
 
 # sfood -I ImageD11/depreciated -I build/ -v -u >sfood.out 2>sfood.err
 
@@ -192,19 +199,17 @@ useful = [   # stuff you probably want, and should be able to get easily
     "xfab>=0.0.4", #
        # comes from xfab : "PyCifRW",
     "matplotlib",  # tkGui
-    'pyopengl==3.1.7 ; python_version < "3"',
+    'pyopengl==3.1.6 ; python_version < "3"',  # last with a py2 wheel
     'pyopengl ; python_version >= "3"',
     "pyopengltk",  # plot3d in tkGui
     "scipy",       #
-    'hdf5plugin==1.4.1 ; python_version < "3"',   #  and sys_platform == "win32" ',
+    'hdf5plugin==1.4.1 ; python_version < "3" and sys_platform == "win32" ',
+    'hdf5plugin==2.3.2 ; python_version < "3" and sys_platform != "win32" ',
     'hdf5plugin ; python_version >= "3" ',
     'h5py',
     'pyyaml',
     "pytest",       # for the CI
-    'numba==0.46.0 ; python_version < "3" ',       # for some test cases
-    'llvmlite==0.30.0 ; python_version < "3" ',    # for some test cases
-    'numba ; python_version >= "3" and python_version < "3.14" ',               # for some test cases
-    'numba>=0.63.0b1; python_version == "3.14"',
+    'numba',       # for some test cases
     "bslz4_to_sparse",
     "fast_histogram",
     "scikit-image",
