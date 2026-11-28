@@ -486,10 +486,39 @@ def test():
 
 def getgroup(s):
     """
-    convert a user supplied string to a group
-    ... a little vague still
+    The group function for a name: getgroup("cubic") is cubic.
+
+    The names are lattice groups (holohedries): the rotations that map the
+    lattice onto itself. Orientations related by them index the same peak
+    positions, so these are the groups for indexing and makeuniq.
+
+    Space group number -> name
+        1-2      triclinic
+        3-15     monoclinic_b (unique axis b; monoclinic_a, monoclinic_c)
+        16-74    orthorhombic
+        75-142   tetragonal
+        143-167  hexagonal for a P lattice. R lattice (146 148 155 160 161
+                 166 167): trigonalH on hexagonal axes, trigonalP (same as
+                 rhombohedralP) on rhombohedral axes
+        168-194  hexagonal
+        195-230  cubic
+    lattice_group(number, cell_choice) gives the same groups.
+
+    The Laue group, laue_rotations(number, cell_choice), is what intensities
+    cannot tell apart. It is smaller than the lattice group in the Laue
+    classes 4/m, -3, 6/m and m-3, and for -3m1 and -31m on a P lattice.
+    Orientations related by the lattice group but not by the Laue group index
+    the same peaks with different intensities (twins by merohedry):
+    twin_operators(number, cell_choice) lists them.
+
+    "trigonal" raises ValueError: a P trigonal lattice is hexagonal.
     """
-    groups =['cubic', 'hexagonal','trigonal','tetragonal',
+    if s == 'trigonal':
+        raise ValueError('"trigonal" is ambiguous. Use "hexagonal" for a P '
+                         'trigonal lattice, "trigonalH" for an R lattice on '
+                         'hexagonal axes or "trigonalP" for an R lattice on '
+                         'rhombohedral axes. See help(ImageD11.sym_u.getgroup)')
+    groups =['cubic', 'hexagonal','tetragonal',
              'orthorhombic','monoclinic_c','monoclinic_a',
              'monoclinic_b','triclinic','rhombohedralP',
              'trigonalH','trigonalP']

@@ -203,7 +203,7 @@ class uniq_grain_list(object):
     Cope with finding the same grain over and over...
     """
     def __init__(self, symmetry, toldist, tolangle, grains=None):
-        self.grp = getattr( sym_u, symmetry )()
+        self.grp = sym_u.getgroup( symmetry )()
         self.dt2 = toldist*toldist
         self.tar  = np.radians(tolangle)
         self.uniqgrains = []
