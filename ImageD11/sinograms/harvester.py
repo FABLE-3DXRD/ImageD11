@@ -77,6 +77,7 @@ import ImageD11.transform
 import ImageD11.blobcorrector
 import ImageD11.unitcell
 import ImageD11.columnfile
+from ImageD11.nputils import read_direct_chunk
 
 try:
     import bslz4_to_sparse
@@ -323,7 +324,7 @@ class SparseFrameReader(object):
         self.dec = bslz4_to_sparse.chunk2sparse(np.ascontiguousarray(good, dtype=np.uint8), dtype=self.d.dtype, **kw)
 
     def __call__(self, i):
-        _, chunk = self.d.id.read_direct_chunk((i, 0, 0))
+        _, chunk = read_direct_chunk(self.d, (i, 0, 0))
         npx, (vals, idx) = self.dec(chunk, 0)
         idx = idx[:npx].astype(np.int64)
         vals = vals[:npx].astype(np.float32)
