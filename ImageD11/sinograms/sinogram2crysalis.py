@@ -10,6 +10,7 @@ import sys, os
 import ImageD11.cImageD11
 import ImageD11.sinograms.dataset
 import ImageD11.sinograms.lima_segmenter
+from ImageD11.nputils import read_direct_chunk
 import fabio.app.eiger2crysalis, fabio.limaimage
 import bslz4_to_sparse
 import tqdm
@@ -107,7 +108,7 @@ def integrate_sino( ds, image_mask, sinomask=None, nomega = 10):
                     for t in todo:
                         num = obin.flat[address + t] // nomega
                         try:
-                            chunks.append( (num, dset.id.read_direct_chunk((t,0,0))[1]) )
+                            chunks.append( (num, read_direct_chunk(dset, (t,0,0))[1]) )
                         except:
                             print("FAIL",ds.datapath, sourcefile,t,dset)
                             raise
