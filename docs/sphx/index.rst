@@ -9,7 +9,8 @@ Welcome to ImageD11's documentation!
 
 Beware: you might find some of this information is out of date or wrong. Please
 fix anything you find that is wrong and send a pull request. This documentation
-lives in the docs/sphx part of the sources.
+lives in the docs/sphx part of the sources. The notebooks
+are shown as saved in git; the documentation build does not run them.
 
 ImageD11 is for identifying individual grains in spotty area detector
 diffraction images. It finds the spots and helps you to try to index them. After
@@ -29,9 +30,8 @@ orientation matrices. ImageD11 is mainly written using the python language, with
 a few extension modules in c for increased performance.
 
 
-Here is a pdf file with a worked example for making a centre of mass grain map
-:download:`com_guide.pdf<../com_guide.pdf>`
-
+The compiled C code is in the separate c2ImageD11 package, documented at
+https://fable-3dxrd.github.io/c2ImageD11/
 
 Contents:
 
@@ -39,31 +39,15 @@ Contents:
    :maxdepth: 1
 
    installation
-   programs
-   peaksearching
-   filtering
-   calibration
-   indexing
-   index_unknown
-   refinement
-   advanced
-   parallel
-   fileformats
-   batchprocessing
-   rsv_mapper
-   related
-   changelog
+   workflows
+   notes
+   historical/index
+   api/modules
+   compiled
 
 
 Indices and tables
 ==================
-
-All the code docstrings can be found via:
-
-.. toctree::
-   :maxdepth: 1
-
-   api/modules
 
 * :ref:`genindex`
 * :ref:`modindex`
