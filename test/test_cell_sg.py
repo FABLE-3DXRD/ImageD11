@@ -84,5 +84,16 @@ class test_cell_sg(unittest.TestCase):
             self.assertEqual(unitcell.unitcell_from_parameters(p).sgname, None)
 
 
+class TestCentringAbsences(unittest.TestCase):
+    """ Centring letters give the same hkls as a space group with only that centring """
+
+    def test_letters_match_spacegroups(self):
+        cell = [3., 4., 5., 90., 90., 90.]
+        for letter, sg in [("P", 47), ("A", 38), ("C", 65), ("I", 71), ("F", 69)]:
+            a = set(h for d, h in unitcell.unitcell(cell, letter).gethkls(1.19))
+            b = set(tuple(h) for d, h in unitcell.unitcell(cell, sg).gethkls(1.19))
+            self.assertEqual(a, b, letter)
+
+
 if __name__ == "__main__":
     unittest.main()

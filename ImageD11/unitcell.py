@@ -121,7 +121,7 @@ def R(h, k, l):
 
 outif = {
     "P": P,
-    "A": I,
+    "A": A,
     "B": B,
     "C": C,
     "I": I,
